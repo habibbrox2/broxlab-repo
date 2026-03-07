@@ -1,0 +1,29 @@
+node_modules
+broxbhai.zip
+dist
+vendor
+*.zip
+*.tar.gz
+_backup
+*.log
+storage/*
+
+
+# Database backups and exports
+Database/backups/
+Database/exports/
+Database/*.sql.backup
+
+# Local development only
+app/uploads/*
+!app/uploads/.gitkeep
+public_html/uploads/*
+!public_html/uploads/.gitkeep
+
+# IDE and Editor
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
