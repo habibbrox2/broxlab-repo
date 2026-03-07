@@ -7,7 +7,7 @@
 `.env` ফাইল খুলুন এবং আপনার repo যোগ করুন:
 
 ```env
-GITHUB_REPO_URL=https://github.com/your-username/broxbhai.git
+GITHUB_REPO_URL=https://github.com/habibbrox2/broxlab.git
 ```
 
 ### 2️⃣ প্রথমবার সেটআপ

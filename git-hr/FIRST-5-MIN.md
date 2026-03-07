@@ -9,7 +9,7 @@
 `.env` ফাইল খুলুন:
 
 ```env
-GITHUB_REPO_URL=https://github.com/your-username/broxbhai.git
+GITHUB_REPO_URL=https://github.com/habibbrox2/broxlab.git
 WORK_LOCATION=office          # আপনি এখন কোথায় আছেন?
 ```
 

@@ -57,9 +57,12 @@ npm run sync
 Script এটা করে:
 1. `.env` থেকে `WORK_LOCATION` পড়ে → `office`
 2. Opposite branch determine করে → `home` (কারণ আপনি office এ আছেন)
-3. Clone করে `home` branch
-4. Dependencies বসায় (composer, npm)
-5. Setup প্রিন্ট করে
+3. **⚠️ বর্তমান ডিরেক্টরির tracked ফাইলগুলো রিমুভ করে**
+4. **সরাসরি বর্তমান ডিরেক্টরিতে clone করে** (কোন সাবফোল্ডারে নয়)
+5. Dependencies বসায় (composer, npm)
+6. Setup প্রিন্ট করে
+
+**⚠️ WARNING:** এই কমান্ড বর্তমান ডিরেক্টরির সব tracked ফাইল (যেগুলো GitHub-এ পুশ হয়) রিমুভ করে দেবে!
 
 ---
 
@@ -74,6 +77,10 @@ npm run sync
 # Output দেখবেন:
 # 📍 Current location: OFFICE → Cloning home branch
 # (You'll get the HOME location's code)
+# 
+# Cleaning Existing Tracked Files...
+# Found X tracked files/folders to remove...
+# Removed X tracked files/folders.
 #
 # এখন home branch ক্লোন হয়েছে!
 ```
@@ -91,6 +98,10 @@ npm run sync
 # Output দেখবেন:
 # 📍 Current location: HOME → Cloning office branch
 # (You'll get the OFFICE location's code)
+#
+# Cleaning Existing Tracked Files...
+# Found X tracked files/folders to remove...
+# Removed X tracked files/folders.
 #
 # এখন office branch ক্লোন হয়েছে!
 ```

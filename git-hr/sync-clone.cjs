@@ -133,32 +133,55 @@ async function main() {
     }
   }
 
-  // Extract project directory name from URL
+  // Extract project directory name from URL (for display only)
   const dirName = clonePath || repoUrl.split("/").pop().replace(".git", "");
   
   log(`📦 Repository: ${bold(repoUrl)}`);
-  log(`📂 Directory: ${bold(dirName)}`);
+  log(`📂 Directory: ${bold("current directory (.)")}`);
   if (branchToClone) {
     log(`🌿 Branch: ${bold(branchToClone)}`);
   }
 
-  // Check if directory already exists
-  if (fs.existsSync(dirName)) {
-    warn(`Directory ${bold(dirName)} already exists!`);
-    fatal("Please remove or choose a different directory.");
+  // ⚠️  Remove existing tracked files before cloning
+  header("Cleaning Existing Tracked Files");
+  log("Getting list of tracked files…");
+  const trackedFiles = capture("git ls-files").split("\n").filter(f => f.trim());
+  
+  if (trackedFiles.length > 0) {
+    warn(`Found ${trackedFiles.length} tracked files/folders to remove:`);
+    trackedFiles.slice(0, 10).forEach(file => console.log(`  ${dim(file)}`));
+    if (trackedFiles.length > 10) console.log(`  ${dim(`... and ${trackedFiles.length - 10} more`)}`);
+    
+    // Remove tracked files/folders
+    log("Removing tracked files…");
+    trackedFiles.forEach(file => {
+      if (fs.existsSync(file)) {
+        try {
+          const stat = fs.statSync(file);
+          if (stat.isDirectory()) {
+            shell.rm("-rf", file);
+          } else {
+            fs.unlinkSync(file);
+          }
+        } catch (err) {
+          warn(`Could not remove ${file}: ${err.message}`);
+        }
+      }
+    });
+    ok(`Removed ${trackedFiles.length} tracked files/folders.`);
+  } else {
+    log("No tracked files found to remove.");
   }
 
-  // Clone repository with opposite branch
-  log(`\n🔄 Cloning repository…`);
+  // Clone repository directly into current directory
+  log(`\n🔄 Cloning repository into current directory…`);
   const cloneCmd = branchToClone 
-    ? `git clone --branch ${branchToClone} ${repoUrl} ${dirName}`
-    : `git clone ${repoUrl} ${dirName}`;
+    ? `git clone --branch ${branchToClone} ${repoUrl} .`
+    : `git clone ${repoUrl} .`;
   run(cloneCmd);
-  ok(`Repository cloned successfully.`);
+  ok(`Repository cloned successfully into current directory.`);
 
-  // Change to cloned directory
-  process.chdir(dirName);
-  log(`Entered directory: ${bold(dirName)}`);
+  // Stay in current directory (no chdir needed)
 
   // Install PHP dependencies (if composer.json exists)
   if (fs.existsSync("composer.json")) {
