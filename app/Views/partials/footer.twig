@@ -1,0 +1,132 @@
+{#
+  ============================================================
+  FOOTER TEMPLATE - SEO & CSS OPTIMIZED
+  ============================================================
+  
+  This footer section includes:
+  - Complete CSS class integration from components.css, themes.css, core.css
+  - Schema.org WPFooter microdata
+  - Responsive design support
+  - Dark mode support
+  - Accessibility attributes
+  - Social media integration
+  - Legal links section
+  
+  ============================================================
+#}
+
+<footer class="footer-custom py-4 py-md-5 border-top" role="contentinfo" itemscope itemtype="https://schema.org/WPFooter">
+    <div class="container">
+        <div class="row mb-4 mb-md-5">
+            
+            {# ===== FOOTER SECTION 1: About Company ===== #}
+            <div class="col-md-4 mb-4 mb-md-0">
+                <h5 class="fw-bold mb-3 text-light" itemprop="name">
+                    <i class="bi bi-phone-fill me-2" aria-hidden="true"></i>{{ app_settings.site_name }}
+                </h5>
+                <p class="small text-light-secondary footer-text" itemprop="description">
+                    {{ app_settings.site_description|default('Your trusted source for mobile reviews and tech insights.') }}
+                </p>
+                
+                {# Social Media Links #}
+                {% if app_settings.social_twitter or app_settings.social_instagram or app_settings.social_facebook %}
+                <nav aria-label="Social media links">
+                    <div class="d-flex gap-3 footer-social-links">
+                        {% if app_settings.social_twitter %}
+                        <a href="{{ app_settings.social_twitter }}" 
+                           class="footer-social-link hover-text-primary" 
+                           title="Follow us on Twitter/X"
+                           rel="noopener noreferrer" 
+                           target="_blank"
+                           aria-label="Twitter/X">
+                            <i class="bi bi-twitter-x fs-6" aria-hidden="true"></i>
+                        </a>
+                        {% endif %}
+                        
+                        {% if app_settings.social_instagram %}
+                        <a href="{{ app_settings.social_instagram }}" 
+                           class="footer-social-link hover-text-primary" 
+                           title="Follow us on Instagram"
+                           rel="noopener noreferrer" 
+                           target="_blank"
+                           aria-label="Instagram">
+                            <i class="bi bi-instagram fs-6" aria-hidden="true"></i>
+                        </a>
+                        {% endif %}
+                        
+                        {% if app_settings.social_facebook %}
+                        <a href="{{ app_settings.social_facebook }}" 
+                           class="footer-social-link hover-text-primary" 
+                           title="Follow us on Facebook"
+                           rel="noopener noreferrer" 
+                           target="_blank"
+                           aria-label="Facebook">
+                            <i class="bi bi-facebook fs-6" aria-hidden="true"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </nav>
+                {% endif %}
+            </div>
+
+            {# ===== FOOTER SECTION 2: Quick Links ===== #}
+            <div class="col-md-4 mb-4 mb-md-0">
+                <h6 class="fw-bold mb-3 text-light">Quick Links</h6>
+                <ul class="list-unstyled small footer-links" role="navigation" aria-label="Quick navigation">
+                    <li><a href="/about-us" class="text-decoration-none footer-link hover-footer-link">
+                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>About Us
+                    </a></li>
+                    <li><a href="/contact" class="text-decoration-none footer-link hover-footer-link">
+                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>Contact
+                    </a></li>
+                    <li><a href="/newsletter" class="text-decoration-none footer-link hover-footer-link">
+                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>Newsletter
+                    </a></li>
+                    <li><a href="/advertise" class="text-decoration-none footer-link hover-footer-link">
+                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>Advertise
+                    </a></li>
+                    <li><a href="/faq" class="text-decoration-none footer-link hover-footer-link">
+                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>FAQ
+                    </a></li>
+                </ul>
+            </div>
+
+            {# ===== FOOTER SECTION 3: Legal & Compliance ===== #}
+            <div class="col-md-4">
+                <h6 class="fw-bold mb-3 text-light">Legal</h6>
+                <ul class="list-unstyled small footer-links" role="navigation" aria-label="Legal navigation">
+                    <li><a href="/terms" class="text-decoration-none footer-link hover-footer-link">
+                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>Terms of Service
+                    </a></li>
+                    <li><a href="/privacy" class="text-decoration-none footer-link hover-footer-link">
+                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>Privacy Policy
+                    </a></li>
+                    <li><a href="/sitemap" class="text-decoration-none footer-link hover-footer-link">
+                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>Sitemap
+                    </a></li>
+                    <li><a href="/sitemap.xml" class="text-decoration-none footer-link hover-footer-link">
+                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>XML Sitemap
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+
+        {# ===== FOOTER DIVIDER ===== #}
+        <hr class="opacity-25" role="doc-pagebreak" aria-hidden="true">
+
+        {# ===== FOOTER BOTTOM: Copyright & Contact ===== #}
+        <div class="row">
+            <div class="col-12">
+                <p class="mb-0 small text-light-secondary footer-copyright">
+                    &copy; {{ "now"|date("Y") }} <strong class="text-light">{{ app_settings.site_name }}</strong>. All rights reserved. 
+                    {% if app_settings.contact_email %}
+                    | <a href="mailto:{{ app_settings.contact_email }}" 
+                        class="text-decoration-none footer-link hover-footer-link" 
+                        title="Email us">{{ app_settings.contact_email }}</a>
+                    {% endif %}
+                    <span class="ms-2 d-inline-block footer-tagline">Designed for maximum performance &amp; accessibility.</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>

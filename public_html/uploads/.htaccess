@@ -1,0 +1,146 @@
+# File Security Configuration for Upload Directory
+# Prevents direct execution of scripts while allowing file serving
+
+# Prevent directory listing
+Options -Indexes
+
+# Disable script execution
+<FilesMatch "\.php$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.phtml$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.php3$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.php4$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.php5$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.phps$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.pht$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.phar$">
+    Require all denied
+</FilesMatch>
+
+# Disable access to .htaccess files
+<FilesMatch "^\\.htaccess$">
+    Require all denied
+</FilesMatch>
+
+# Set proper content types for served files
+<IfModule mod_headers.c>
+    <FilesMatch "\.(jpg|jpeg)$">
+        Header set Content-Type "image/jpeg"
+    </FilesMatch>
+
+    <FilesMatch "\.png$">
+        Header set Content-Type "image/png"
+    </FilesMatch>
+
+    <FilesMatch "\.webp$">
+        Header set Content-Type "image/webp"
+    </FilesMatch>
+</IfModule>
+
+
+<FilesMatch "\.svg$">
+    Header set Content-Type "image/svg+xml"
+</FilesMatch>
+
+<FilesMatch "\.pdf$">
+    Header set Content-Type "application/pdf"
+</FilesMatch>
+
+<FilesMatch "\.mp4$">
+    Header set Content-Type "video/mp4"
+</FilesMatch>
+
+<FilesMatch "\.webm$">
+    Header set Content-Type "video/webm"
+</FilesMatch>
+
+<FilesMatch "\.mp3$">
+    Header set Content-Type "audio/mpeg"
+</FilesMatch>
+
+<FilesMatch "\.wav$">
+    Header set Content-Type "audio/wav"
+</FilesMatch>
+
+# Security headers
+Header set X-Content-Type-Options "nosniff"
+Header set X-Frame-Options "DENY"
+Header set X-XSS-Protection "1; mode=block"
+
+# Disable ETags (optional, for consistency)
+FileETag None
+
+# Cache control for different file types
+<FilesMatch "\.(jpg|jpeg|png|gif|webp|svg)$">
+    Header set Cache-Control "max-age=31536000, public"
+</FilesMatch>
+
+<FilesMatch "\.(pdf|doc|docx|xls|xlsx)$">
+    Header set Cache-Control "max-age=604800, public"
+</FilesMatch>
+
+<FilesMatch "\.(mp4|webm|mp3|wav)$">
+    Header set Cache-Control "max-age=604800, public"
+</FilesMatch>
+
+# Prevent access to sensitive files
+<FilesMatch "\.(env|config|sql|log|bak|tmp)$">
+    Require all denied
+</FilesMatch>
+
+# Disable double extension exploits (e.g., image.php.jpg)
+<FilesMatch "\.php\.">
+    Require all denied
+</FilesMatch>
+
+# ModSecurity/WAF rules (if available)
+# <IfModule mod_security.c>
+#     SecFilterEngine On
+#     SecFilterScanPOST On
+#     SecFilterCheckURLEncoding On
+#     SecFilterCheckCookieFormat On
+#     SecFilterCheckUnicodeEncoding On
+#     SecFilterNormalizeCookies On
+#     SecFilterRemoveNulls On
+# </IfModule>
+
+# Performance optimizations
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# MIME type compression exclusions
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE image/jpeg
+    DeflateCompressionLevel 9
+</IfModule>

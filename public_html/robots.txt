@@ -1,0 +1,25 @@
+# robots.txt - Broxbhai Mobile Tech News
+# Generated automatically - DO NOT EDIT
+
+# Allow all bots
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /user/private/
+Disallow: /api/
+
+
+# Sitemap URL
+Sitemap: https://broxlab.online/sitemap.xml
+
+# Google-specific
+User-agent: Googlebot
+Allow: /
+
+
+# Bing-specific
+User-agent: Bingbot
+Allow: /
+

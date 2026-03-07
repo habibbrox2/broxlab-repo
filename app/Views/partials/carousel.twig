@@ -1,0 +1,100 @@
+{# ===============================
+   Image Carousel (v2)
+   =============================== #}
+
+{% set cid = id|default('carousel_' ~ random()) %}
+{% set imgs = images|default([]) %}
+{% set count = imgs|length %}
+
+{% set config = {
+    show_indicators: show_indicators|default(true),
+    show_controls: show_controls|default(true),
+    height: height|default('240px'),
+    interval: interval|default(5000),
+    pause: pause|default('hover'),
+    gradient: gradient|default(null),
+    title: title|default('Gallery')
+} %}
+
+{% if count > 0 %}
+<div id="{{ cid }}"
+     class="carousel slide rounded-4 overflow-hidden"
+     role="region"
+     aria-roledescription="carousel"
+     aria-label="{{ config.title }}"
+     data-bs-ride="carousel"
+     data-interval="{{ config.interval }}"
+     data-pause="{{ config.pause }}">
+
+    {# Indicators #}
+    {% if config.show_indicators and count > 1 %}
+    <div class="carousel-indicators">
+        {% for img in imgs %}
+        <button type="button"
+                data-bs-target="#{{ cid }}"
+                data-bs-slide-to="{{ loop.index0 }}"
+                class="{% if loop.first %}active{% endif %}"
+                aria-label="Slide {{ loop.index }}"
+                aria-current="{{ loop.first ? 'true' : 'false' }}">
+        </button>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# Slides #}
+    <div class="carousel-inner" style="height: {{ config.height }};">
+        {% for img in imgs %}
+        {% set src = img.url|default(img) %}
+        {% set alt = img.alt|default(config.title ~ ' image ' ~ loop.index) %}
+
+        <div class="carousel-item h-100 {% if loop.first %}active{% endif %}">
+            <div class="position-relative w-100 h-100">
+
+                {# Background image #}
+                <img src="{{ src }}"
+                     class="d-block w-100 h-100 inl-c-0001"
+                    
+                     alt="{{ alt }}"
+                     loading="lazy"
+                     decoding="async">
+
+                {# Optional Gradient Overlay #}
+                {% if config.gradient %}
+                <div class="position-absolute top-0 start-0 w-100 h-100"
+                     style="background: {{ config.gradient }}; opacity: .35;"
+                     aria-hidden="true"></div>
+                {% endif %}
+
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {# Controls #}
+    {% if config.show_controls and count > 1 %}
+    <button class="carousel-control-prev"
+            type="button"
+            data-bs-target="#{{ cid }}"
+            data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+        <span class="visually-hidden">Previous</span>
+    </button>
+
+    <button class="carousel-control-next"
+            type="button"
+            data-bs-target="#{{ cid }}"
+            data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+        <span class="visually-hidden">Next</span>
+    </button>
+    {% endif %}
+</div>
+
+{% else %}
+{# Placeholder #}
+<div class="bg-light rounded-4 d-flex align-items-center justify-content-center"
+     style="height: {{ config.height }};">
+    <i class="bi bi-image text-muted fs-1" aria-hidden="true"></i>
+    <span class="visually-hidden">No images available</span>
+</div>
+{% endif %}

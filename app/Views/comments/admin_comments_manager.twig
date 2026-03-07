@@ -1,0 +1,506 @@
+{% extends "admin/layout.twig" %}
+{% block title %}Manage Comments{% endblock %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h1 class="h3 mb-0 fw-bold">
+              <i class="bi bi-chat-square-dots me-2"></i> Comments Management
+            </h1>
+            <p class="text-muted mt-2 mb-0">Manage and moderate user comments across your site</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <p class="text-muted small mb-0">Total Comments</p>
+                <h3 class="mb-0 fw-bold">{{ total_comments }}</h3>
+              </div>
+              <div class="bg-primary bg-opacity-10 p-3 rounded">
+                <i class="bi bi-chat-left-text fs-5 text-primary"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <p class="text-muted small mb-0">Today's Comments</p>
+                <h3 class="mb-0 fw-bold">{{ today_count }}</h3>
+              </div>
+              <div class="bg-success bg-opacity-10 p-3 rounded">
+                <i class="bi bi-calendar-check fs-5 text-success"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <p class="text-muted small mb-0">Pending Approval</p>
+                <h3 class="mb-0 fw-bold">{{ pending_count }}</h3>
+              </div>
+              <div class="bg-warning bg-opacity-10 p-3 rounded">
+                <i class="bi bi-hourglass-split fs-5 text-warning"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <p class="text-muted small mb-0">Avg Per Day</p>
+                <h3 class="mb-0 fw-bold">{{ (total_comments / 30)|round }}</h3>
+              </div>
+              <div class="bg-info bg-opacity-10 p-3 rounded">
+                <i class="bi bi-graph-up fs-5 text-info"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Comments Table -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-light border-bottom">
+        <form class="row g-2 align-items-end" method="GET">
+          <div class="col-md-3">
+            <label class="form-label small text-muted mb-1">Search</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+              <input type="text"
+                     class="form-control form-control-sm"
+                     placeholder="Search comments..."
+                     name="search"
+                     value="{{ search }}">
+            </div>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-muted mb-1">Status</label>
+            <select class="form-select form-select-sm" name="status">
+              <option value="all" {% if status == 'all' %}selected{% endif %}>All Status</option>
+              <option value="approved" {% if status == 'approved' %}selected{% endif %}>Approved</option>
+              <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-muted mb-1">Limit</label>
+            <select name="limit" class="form-select form-select-sm">
+              <option value="10">10 items</option>
+              <option value="20" selected>20 items</option>
+              <option value="50">50 items</option>
+              <option value="100">100 items</option>
+            </select>
+          </div>
+          <div class="col-md-3 text-end">
+            <button type="submit" class="btn btn-sm btn-primary">
+              <i class="bi bi-funnel me-1"></i> Apply
+            </button>
+          </div>
+        </form>
+      </div>
+      <div class="table-responsive">
+        {% if comments %}
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="inl-p-0016">
+                  <input type="checkbox" class="form-check-input" id="selectAll">
+                </th>
+                <th>Author</th>
+                <th class="inl-p-0017">Comment Content</th>
+                <th>Date</th>
+                <th class="inl-p-0018">Engagement</th>
+                <th class="inl-p-0019">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for comment in comments %}
+                <tr>
+                  <td>
+                    <input type="checkbox"
+                           class="form-check-input comment-checkbox"
+                           value="{{ comment.id }}">
+                  </td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="bg-primary bg-opacity-10 rounded-circle p-2 inl-p-0020">
+                        <i class="bi bi-person text-primary"></i>
+                      </div>
+                      <div>
+                        <p class="mb-0 fw-bold small">
+                          {% if comment.user_id %}
+                            User #{{ comment.user_id }}
+                          {% else %}
+                            {{ comment.guest_name }}
+                          {% endif %}
+                        </p>
+                        <p class="mb-0 text-muted small">{{ comment.user_id ? 'Registered' : 'Guest' }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <p class="mb-0 text-truncate" title="{{ comment.content|striptags }}">
+                      {{ comment.content|striptags|slice(0, 80) }}
+                      {% if comment.content|length > 80 %}...{% endif %}
+                    </p>
+                    <p class="mb-0 text-muted small mt-1">
+                      On: <strong>{{ comment.content_type|capitalize }} #{{ comment.content_id }}</strong>
+                      {% if comment.parent_id %}<span class="badge bg-secondary bg-opacity-10 text-secondary">Reply</span>{% endif %}
+                    </p>
+                  </td>
+                  <td>
+                    <small class="text-muted">
+                      {{ comment.created_at|date("M d, Y") }}
+                      <br>
+                      {{ comment.created_at|date("H:i") }}
+                    </small>
+                  </td>
+                  <td>
+                    <small class="text-muted">
+                      <i class="bi bi-hand-thumbs-up"></i> {{ comment.likes|default(0) }}
+                      <br>
+                      <i class="bi bi-chat"></i> {{ comment.reply_count|default(0) }}
+                    </small>
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                      <a href="/admin/comments/{{ comment.id }}"
+                         class="btn btn-outline-primary"
+                         title="View Details">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                      <button type="button"
+                              class="btn btn-outline-info"
+                              onclick="editCommentQuick({{ comment.id }})"
+                              title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      {% if comment.status != 'hidden' %}
+                        <button type="button"
+                                class="btn btn-outline-warning"
+                                onclick="hideCommentQuick({{ comment.id }})"
+                                title="Hide">
+                          <i class="bi bi-eye-slash"></i>
+                        </button>
+                      {% else %}
+                        <button type="button"
+                                class="btn btn-outline-success"
+                                onclick="unhideCommentQuick({{ comment.id }})"
+                                title="Unhide">
+                          <i class="bi bi-eye"></i>
+                        </button>
+                      {% endif %}
+                      <button type="button"
+                              class="btn btn-outline-danger"
+                              onclick="deleteComment({{ comment.id }})"
+                              title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <!-- Bulk Actions -->
+          <div class="card-footer bg-light">
+            <div class="row align-items-center">
+              <div class="col">
+                <div class="d-flex gap-2">
+                  <select class="form-select form-select-sm inl-p-0021" id="bulkAction">
+                    <option value="">Bulk Actions</option>
+                    <option value="approve">Approve Selected</option>
+                    <option value="delete">Delete Selected</option>
+                  </select>
+                  <button type="button"
+                          class="btn btn-sm btn-outline-secondary"
+                          onclick="executeBulkAction()">Apply</button>
+                </div>
+              </div>
+              <div class="col-auto text-muted small">
+                <span id="selectedCount">0</span> selected
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="card-body text-center py-5">
+            <div class="mb-3">
+              <i class="bi bi-chat-left-dots fs-1 text-muted"></i>
+            </div>
+            <p class="text-muted mb-0">No comments found</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    <!-- Pagination -->
+    {% include "admin/partials/pagination.twig" %}
+  </div>
+  <!-- Comment Detail Modal -->
+  <div class="modal fade" id="commentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold">Comment Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="commentModalBody">
+          <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-danger" id="deleteCommentBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+let currentCommentId = null;
+
+// Toggle select all
+document.getElementById('selectAll')?.addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.comment-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+    });
+    updateSelectedCount();
+});
+
+// Update selected count
+document.querySelectorAll('.comment-checkbox')?.forEach(checkbox => {
+    checkbox.addEventListener('change', updateSelectedCount);
+});
+
+function updateSelectedCount() {
+    const checked = document.querySelectorAll('.comment-checkbox:checked').length;
+    document.getElementById('selectedCount').textContent = checked;
+}
+
+// View comment
+function viewComment(commentId) {
+    currentCommentId = commentId;
+    const modal = new bootstrap.Modal(document.getElementById('commentModal'));
+
+    // Show loading spinner
+    document.getElementById('commentModalBody').innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+
+    modal.show();
+
+    // Load comment details
+    fetch(`/admin/comments/detail?id=${commentId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('commentModalBody').innerHTML = `
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">AUTHOR</label>
+                        <p class="fw-bold">${data.author}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">CONTENT</label>
+                        <div class="border rounded p-3 bg-light">${data.content}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small fw-bold">DATE</label>
+                            <p>${data.created_at}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small fw-bold">LIKES</label>
+                            <p><i class="bi bi-hand-thumbs-up text-primary"></i> ${data.likes}</p>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">CONTENT TYPE</label>
+                        <p>${data.content_type} #${data.content_id}</p>
+                    </div>
+                `;
+            } else {
+                document.getElementById('commentModalBody').innerHTML = `
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        ${data.message || 'Failed to load comment details'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commentModalBody').innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Error loading comment details
+                </div>
+            `;
+        });
+}
+
+// Delete comment from modal
+document.getElementById('deleteCommentBtn')?.addEventListener('click', function() {
+    if (currentCommentId) {
+        deleteComment(currentCommentId);
+    }
+});
+
+// Delete comment
+function deleteComment(commentId) {
+    if (!confirm('Delete this comment permanently? This action cannot be undone.')) return;
+
+    fetch(`/admin/comments/${commentId}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal if open
+            const modalElement = document.getElementById('commentModal');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) modal.hide();
+
+            // Show success message
+            alert('Comment deleted successfully');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to delete comment'));
+        }
+    })
+    .catch(error => {
+        alert('Error deleting comment');
+    });
+}
+
+// Edit comment quick action
+function editCommentQuick(commentId) {
+    window.location.href = `/admin/comments/${commentId}`;
+}
+
+// Hide comment quick action
+function hideCommentQuick(commentId) {
+    const reason = prompt('Why are you hiding this comment? (optional)');
+
+    const formData = new FormData();
+    if (reason) formData.append('reason', reason);
+
+    fetch(`/admin/comments/${commentId}/hide`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert('Comment hidden successfully');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to hide comment'));
+        }
+    })
+    .catch(error => {
+        alert('Error hiding comment');
+    });
+}
+
+// Unhide comment quick action
+function unhideCommentQuick(commentId) {
+    if (!confirm('Unhide this comment?')) return;
+
+    fetch(`/admin/comments/${commentId}/unhide`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert('Comment unhidden successfully');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to unhide comment'));
+        }
+    })
+    .catch(error => {
+        alert('Error unhiding comment');
+    });
+}
+
+// Bulk actions
+function executeBulkAction() {
+    const action = document.getElementById('bulkAction').value;
+    const checked = document.querySelectorAll('.comment-checkbox:checked');
+
+    if (!action) {
+        alert('Please select an action');
+        return;
+    }
+
+    if (checked.length === 0) {
+        alert('Please select at least one comment');
+        return;
+    }
+
+    const ids = Array.from(checked).map(c => parseInt(c.value));
+
+    let confirmMsg = '';
+    if (action === 'approve') {
+        confirmMsg = `Approve ${ids.length} comment(s)?`;
+    } else if (action === 'delete') {
+        confirmMsg = `Delete ${ids.length} comment(s) permanently? This action cannot be undone.`;
+    }
+
+    if (!confirm(confirmMsg)) return;
+
+    fetch('/admin/comments/bulk-action', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            action: action,
+            ids: ids
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'Bulk action completed');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to complete bulk action'));
+        }
+    })
+    .catch(error => {
+        alert('Error executing bulk action');
+    });
+}
+  </script>
+{% endblock %}

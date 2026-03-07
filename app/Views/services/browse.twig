@@ -1,0 +1,175 @@
+﻿{# templates/services/browse.twig #}
+{% extends 'layout.twig' %}
+{% block title %}Available Services - {{ app_name }}{% endblock %}
+{% set breadcrumbs = [{"label": "Services", "url": "/services", "icon": "briefcase"}] %}
+{% block content %}
+  <style>
+    .inl-p-0005 {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .inl-p-0002 {
+      width: 88px;
+      height: 88px;
+      margin: 0 auto;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      color: #fff;
+      font-size: 2rem;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+    }
+    .inl-p-0008 {
+      flex: 1 1 320px;
+    }
+    .inl-p-0009 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .inl-p-0009 .search-input {
+      flex: 1 1 auto;
+    }
+  </style>
+  {# Structured Data - Service Collection Schema #}
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "Available Services",
+  "description": "Browse our complete range of services",
+  "url": "{{ current_url }}"
+}
+  </script>
+  {# Hero Section #}
+  <section class="hero-section position-relative py-5 mb-5 overflow-hidden inl-p-0005">
+    <div class="container">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+          <h1 class="display-4 fw-bold text-white mb-3">
+            <i class="bi bi-award me-2"></i>Available Services
+          </h1>
+          <p class="lead text-white-50 fs-5">Explore our comprehensive range of professional services</p>
+        </div>
+        <div class="col-lg-4 text-center">
+          <div class="hero-icon inl-p-0002">
+            <i class="bi bi-stars" aria-hidden="true"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="container py-5">
+    <div class="listing-header">
+      <h2>
+        <i class="bi bi-award text-primary me-2"></i>Our Services
+      </h2>
+    </div>
+    {# Filter Card #}
+    <div class="filter-card">
+      <div class="filter-group">
+        {# Search #}
+        <div class="filter-section inl-p-0008">
+          <form method="get" class="inl-p-0009">
+            <input type="text"
+                   name="search"
+                   value="{{ search|default("") }}"
+                   class="search-input"
+                   placeholder="Search services...">
+            <button type="submit" class="btn-search">
+              <i class="bi bi-search"></i>
+            </button>
+          </form>
+        </div>
+        {# Category Filter #}
+        <div class="filter-section">
+          <label>Category</label>
+          <form method="get">
+            <select name="category" class="filter-select" onchange="this.form.submit()">
+              <option value="">All Categories</option>
+              {% for category in categories %}
+                <option value="{{ category }}"
+                        {% if selected_category == category %}selected{% endif %}>{{ category }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        </div>
+        {# Sort #}
+        <div class="filter-section">
+          <label>Sort By</label>
+          <form method="get">
+            <select name="sort" class="filter-select" onchange="this.form.submit()">
+              <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Latest</option>
+              <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+              <option value="popularity" {% if sort == 'popularity' %}selected{% endif %}>Popular</option>
+            </select>
+          </form>
+        </div>
+      </div>
+    </div>
+    {# Services Grid #}
+    {% if services is not empty %}
+      <div class="listing-grid">
+        {% for service in services %}
+          {% include 'partials/content-card.twig' with { item: {
+          images: service.image_urls|default(service.images|default([])),
+          image: service.featured_image_url|default(service.image_urls|first|default(service.featured_image.thumbnail_path|default(service.featured_image.image_path|default(service.image_path|default(service.thumbnail|default(null)))))),
+          title: service.name,
+          subtitle: service.description|default('')|striptags|slice(0, 100) ~ '...',
+          rich_excerpt_html: service.description|default(''),
+          categories: service.categories|default([]),
+          tags: service.tags|default([]),
+          created_at: service.created_at,
+          url: service.slug,
+          id: service.id,
+          slug: service.slug,
+          type: 'service',
+          price: service.price,
+          status: service.status|default(''),
+          is_premium: service.is_premium|default(0),
+          is_free: service.is_free|default(0),
+          views: service.views|default(0),
+          impressions: service.impressions|default(0)
+          }, index: loop.index } %}
+        {% endfor %}
+      </div>
+      {# Pagination #}
+      {% if total_pages > 1 %}
+        <div class="pagination-container">
+          <div class="pagination">
+            {% if current_page > 1 %}
+              <a class="pagination-link"
+                 href="?page={{ current_page - 1 }}&search={{ search|default("") }}&sort={{ sort|default("latest") }}&category={{ selected_category|default("") }}"
+                 aria-label="Previous">
+                <i class="bi bi-chevron-left"></i>
+              </a>
+            {% else %}
+              <span class="pagination-link disabled"><i class="bi bi-chevron-left"></i></span>
+            {% endif %}
+            {% for p in 1..total_pages %}
+              <a class="pagination-link {% if p == current_page %}active{% endif %}"
+                 href="?page={{ p }}&search={{ search|default("") }}&sort={{ sort|default("latest") }}&category={{ selected_category|default("") }}">{{ p }}</a>
+            {% endfor %}
+            {% if current_page < total_pages %}
+              <a class="pagination-link"
+                 href="?page={{ current_page + 1 }}&search={{ search|default("") }}&sort={{ sort|default("latest") }}&category={{ selected_category|default("") }}"
+                 aria-label="Next">
+                <i class="bi bi-chevron-right"></i>
+              </a>
+            {% else %}
+              <span class="pagination-link disabled"><i class="bi bi-chevron-right"></i></span>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="empty-state">
+        <i class="bi bi-award"></i>
+        <h3>No services found</h3>
+        <p>Try adjusting your search criteria</p>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,187 @@
+{% extends 'admin/layout.twig' %}
+{% block title %}Scheduled Notifications{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4" id="scheduledNotificationsRoot">
+    <div class="admin-page-header mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <div class="admin-page-title">
+          <i class="bi bi-calendar-event"></i> Scheduled Notifications
+        </div>
+        <p class="admin-page-subtitle">Plan, review, and manage notification schedules.</p>
+      </div>
+      <button class="modern-btn modern-btn-primary"
+              data-action="open-schedule-modal">
+        <i class="bi bi-plus-lg me-2"></i>New Schedule
+      </button>
+    </div>
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-body">
+            <ul class="nav nav-tabs border-bottom" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active"
+                        id="scheduled-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#scheduled-content"
+                        type="button"
+                        role="tab">Scheduled</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link"
+                        id="sent-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#sent-content"
+                        type="button"
+                        role="tab">Sent</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link"
+                        id="failed-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#failed-content"
+                        type="button"
+                        role="tab">Failed</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link"
+                        id="draft-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#draft-content"
+                        type="button"
+                        role="tab">Draft</button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-content">
+      <div class="tab-pane fade show active"
+           id="scheduled-content"
+           role="tabpanel">
+        <div class="row" id="scheduled-list">
+          <div class="col-12">
+            <div class="text-center py-5 text-muted">Loading...</div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="sent-content" role="tabpanel">
+        <div class="row" id="sent-list">
+          <div class="col-12">
+            <div class="text-center py-5 text-muted">Loading...</div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="failed-content" role="tabpanel">
+        <div class="row" id="failed-list">
+          <div class="col-12">
+            <div class="text-center py-5 text-muted">Loading...</div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="draft-content" role="tabpanel">
+        <div class="row" id="draft-list">
+          <div class="col-12">
+            <div class="text-center py-5 text-muted">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade"
+       id="scheduleModal"
+       tabindex="-1"
+       aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Create Scheduled Notification</h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"></button>
+        </div>
+        <form id="scheduleForm">
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="notifTitle">Title</label>
+                <input type="text" class="form-control" id="notifTitle" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="recipientType">Recipient Type</label>
+                <select class="form-select" id="recipientType" required>
+                  <option value="all">All</option>
+                  <option value="guest">Guest</option>
+                  <option value="user">Specific Users</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="notifBody">Message</label>
+                <textarea class="form-control" id="notifBody" rows="3" required></textarea>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="scheduledDate">Date</label>
+                <input type="date" class="form-control" id="scheduledDate" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="scheduledTime">Time</label>
+                <input type="time" class="form-control" id="scheduledTime" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="userTimezone">Timezone</label>
+                <select class="form-select" id="userTimezone" required>
+                  <option value="Asia/Dhaka" selected>Asia/Dhaka</option>
+                  <option value="UTC">UTC</option>
+                  <option value="Asia/Kolkata">Asia/Kolkata</option>
+                  <option value="Europe/London">Europe/London</option>
+                  <option value="America/New_York">America/New_York</option>
+                </select>
+              </div>
+              <div class="col-12 inl-a-0006" id="recipientIdsDiv">
+                <label class="form-label" for="recipientIds">User IDs (comma separated)</label>
+                <input type="text"
+                       class="form-control"
+                       id="recipientIds"
+                       placeholder="Example: 1,2,3">
+              </div>
+              <div class="col-12">
+                <label class="form-label d-block">Channels</label>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input"
+                         type="checkbox"
+                         id="channel-push"
+                         value="push"
+                         checked>
+                  <label class="form-check-label" for="channel-push">Push</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input"
+                         type="checkbox"
+                         id="channel-in_app"
+                         value="in_app">
+                  <label class="form-check-label" for="channel-in_app">In-App</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input"
+                         type="checkbox"
+                         id="channel-email"
+                         value="email">
+                  <label class="form-check-label" for="channel-email">Email</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+              <i class="bi bi-check-lg me-2"></i>Schedule
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}

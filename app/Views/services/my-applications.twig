@@ -1,0 +1,192 @@
+{# templates/services/my-applications.twig #}
+{% extends 'layout.twig' %}
+{% block title %}My Applications - Service Portal{% endblock %}
+{% set breadcrumbs = [
+  {
+    "label": "Services",
+    "url": "/services",
+    "icon": "award"
+  },
+  {
+    "label": "My Applications",
+    "icon": "clipboard-list"
+  }
+] %}
+{% block content %}
+  <style>
+    .inl-p-0056 {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+    .inl-p-0056 h1 {
+      color: #fff;
+      text-shadow: 0 4px 16px rgba(0, 0, 0, 0.24);
+    }
+  </style>
+  <!-- Hero Section -->
+  <div class="bg-gradient py-5 inl-p-0056">
+    <div class="container">
+      <h1 class="display-5 fw-bold mb-0">
+        <i class="bi bi-clipboard2-check"></i> My Applications
+      </h1>
+    </div>
+  </div>
+  <div class="container py-5">
+    <!-- Statistics Cards -->
+    <div class="row g-3 mb-5">
+      <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm rounded-4 text-center h-100">
+          <div class="card-body py-4">
+            <i class="bi bi-hourglass-split text-warning fs-2 mb-2 d-block"></i>
+            <h6 class="text-muted small text-uppercase">Pending</h6>
+            <h3 class="fw-bold mb-0">{{ stats.pending|default(0) }}</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm rounded-4 text-center h-100">
+          <div class="card-body py-4">
+            <i class="bi bi-arrow-repeat text-info fs-2 mb-2 d-block"></i>
+            <h6 class="text-muted small text-uppercase">Processing</h6>
+            <h3 class="fw-bold mb-0">{{ stats.processing|default(0) }}</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm rounded-4 text-center h-100">
+          <div class="card-body py-4">
+            <i class="bi bi-check-circle text-success fs-2 mb-2 d-block"></i>
+            <h6 class="text-muted small text-uppercase">Approved</h6>
+            <h3 class="fw-bold mb-0">{{ stats.approved|default(0) }}</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm rounded-4 text-center h-100">
+          <div class="card-body py-4">
+            <i class="bi bi-x-circle text-danger fs-2 mb-2 d-block"></i>
+            <h6 class="text-muted small text-uppercase">Rejected</h6>
+            <h3 class="fw-bold mb-0">{{ stats.rejected|default(0) }}</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Applications Table/Cards -->
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-0">
+        <!-- Mobile Cards View -->
+        <div class="d-md-none">
+          {% for application in applications %}
+            <div class="border-bottom p-3 {% if not loop.last %}border-bottom{% endif %}">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h6 class="fw-bold mb-0">
+                  <i class="bi bi-briefcase text-primary"></i> {{ application.service_name }}
+                </h6>
+                {% if application.status == 'pending' %}
+                  <span class="badge bg-warning text-surface-dark">Pending</span>
+                {% elseif application.status == 'processing' %}
+                  <span class="badge bg-info">Processing</span>
+                {% elseif application.status == 'approved' %}
+                  <span class="badge bg-success">Approved</span>
+                {% elseif application.status == 'rejected' %}
+                  <span class="badge bg-danger">Rejected</span>
+                {% else %}
+                  <span class="badge bg-secondary">{{ application.status }}</span>
+                {% endif %}
+              </div>
+              <p class="text-muted small mb-2">
+                <i class="bi bi-calendar"></i> {{ application.created_at|date("M d, Y") }}
+              </p>
+              <p class="text-muted small mb-3">
+                <i class="bi bi-info-circle"></i> ID: {{ application.id }}
+              </p>
+              <a href="/services/applications/{{ application.id }}"
+                 class="btn btn-sm btn-outline-primary w-100">
+                <i class="bi bi-eye"></i> View Details
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+        <!-- Desktop Table View -->
+        <div class="d-none d-md-block">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-4">
+                  <i class="bi bi-briefcase text-primary"></i> Service
+                </th>
+                <th class="text-center">
+                  <i class="bi bi-tag"></i> Status
+                </th>
+                <th class="text-center">
+                  <i class="bi bi-calendar"></i> Submitted
+                </th>
+                <th class="text-center">
+                  <i class="bi bi-check"></i> Approved
+                </th>
+                <th class="text-end pe-4">
+                  <i class="bi bi-gear"></i> Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for app in applications %}
+                <tr>
+                  <td class="ps-4 fw-semibold">
+                    <div class="d-flex align-items-center gap-2">
+                      <i class="bi bi-briefcase text-primary"></i>
+                      <div>
+                        <div>{{ app.service_name }}</div>
+                        <small class="text-muted">ID: #{{ app.id }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    {% set status_colors = {"pending": "warning", "processing": "info", "approved": "success", "rejected": "danger"} %}
+                    <span class="badge bg-{{ status_colors[app.status]|default("secondary") }}">{{ app.status|title }}</span>
+                  </td>
+                  <td class="text-center text-muted small">{{ app.created_at|date("M d, Y") }}</td>
+                  <td class="text-center text-muted small">
+                    {% if app.approved_at %}
+                      {{ app.approved_at|date("M d, Y") }}
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end pe-4">
+                    <div class="btn-group btn-group-sm" role="group">
+                      <a href="/services/applications/{{ app.id }}"
+                         class="btn btn-outline-primary"
+                         title="View details">
+                        <i class="bi bi-eye"></i> View
+                      </a>
+                      {% if app.status == 'rejected' %}
+                        <a href="/services/{{ app.service_slug }}"
+                           class="btn btn-outline-success"
+                           title="Reapply">
+                          <i class="bi bi-arrow-clockwise"></i> Reapply
+                        </a>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="5" class="text-center py-4 text-muted">
+                    <p>
+                      <i class="bi bi-inbox fs-2 mb-3"></i>
+                    </p>
+                    <p>You haven't submitted any applications yet.</p>
+                    <a href="/services" class="btn btn-primary btn-sm">
+                      <i class="bi bi-search"></i> Browse Services
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

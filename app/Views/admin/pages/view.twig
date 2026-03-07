@@ -1,0 +1,72 @@
+{% extends "admin/layout.twig" %}
+{% block title %}{{ page.title }}{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-file-text me-2"></i>
+        Page Details
+      </div>
+      <div class="admin-page-subtitle">View page information</div>
+    </div>
+    <!-- Page Header -->
+    <div class="admin-panel-card mb-4">
+      <div class="admin-panel-card-header">
+        <h6 class="admin-panel-card-title mb-0">
+          <i class="bi bi-file-text me-2"></i>{{ page.title }}
+        </h6>
+      </div>
+      <div class="admin-panel-card-body">
+        <p class="mb-1 text-muted">
+          <i class="bi bi-calendar me-1"></i> {{ page.created_at|date("Y-m-d H:i") }}
+        </p>
+        <!-- Stats -->
+        <p class="small mb-0">
+          <span class="badge bg-primary me-2">
+            <i class="bi bi-graph-up me-1"></i>{{ page.impressions }} Impressions
+          </span>
+          <span class="badge bg-success">
+            <i class="bi bi-eye me-1"></i>{{ page.views }} Views
+          </span>
+        </p>
+      </div>
+    </div>
+    <!-- Page Content -->
+    <div class="admin-panel-card mb-4">
+      <div class="admin-panel-card-body">{{ page.content|raw }}</div>
+    </div>
+    <!-- Comments Section -->
+    <div class="admin-panel-card mb-4">
+      <div class="admin-panel-card-header">
+        <h6 class="admin-panel-card-title mb-0">
+          <i class="bi bi-chat-dots me-2"></i>Comments & Feedback
+        </h6>
+      </div>
+      <div class="admin-panel-card-body">
+        <p class="text-muted">
+          <i class="bi bi-info-circle me-1"></i>
+          Comments are managed through the main Comments panel.
+          <a href="/admin/comments" class="modern-btn btn-sm btn-primary ms-2">
+            <i class="bi bi-chat-dots me-1"></i>Go to Comments Management
+          </a>
+        </p>
+        <p class="mb-0">
+          <small class="text-muted">
+            <i class="bi bi-people-fill me-1"></i>Users can post comments on the public page at:
+            <a href="/pages/view/{{ page.slug }}"
+               target="_blank"
+               class="text-primary">/pages/view/{{ page.slug }}</a>
+          </small>
+        </p>
+      </div>
+    </div>
+    <!-- Back Button -->
+    <div class="d-flex justify-content-end">
+      <a href="/admin/pages" class="modern-btn modern-btn-white">
+        <i class="bi bi-arrow-left me-1"></i> Back to Pages
+      </a>
+    </div>
+  </div>
+{% endblock %}

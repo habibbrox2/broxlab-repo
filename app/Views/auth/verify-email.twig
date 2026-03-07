@@ -1,0 +1,100 @@
+{% extends "layout.twig" %}
+{% import '_macros/flash.twig' as flash_macros %}
+{% block title %}Verify Your Email - {{ app_settings.site_name|default("BroxBhai") }}{% endblock %}
+{% block content %}
+  <div class="auth-page auth-page-shell">
+    <div class="auth-shell auth-shell-md">
+      <div class="auth-card auth-card--shell">
+        <div class="auth-card-header auth-shell-header text-center">
+          <div class="auth-shell-icon text-white mb-2">
+            <i class="bi bi-envelope-open"></i>
+          </div>
+          <h2 class="auth-shell-title mb-2">Verify Your Email</h2>
+          <p class="auth-shell-subtitle mb-0">
+            We sent a verification code to <strong>{{ email }}</strong>
+          </p>
+        </div>
+        <div class="auth-card-body auth-shell-body">
+            {% if error %}{{ flash_macros.render_flash({ message: error, type: 'danger' }) }}{% endif %}
+            {% if success %}{{ flash_macros.render_flash({ message: success, type: 'success' }) }}{% endif %}
+            <form method="POST" action="/verify-email" id="verifyForm" novalidate>
+              <!-- CSRF Token -->
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="email" value="{{ email }}">
+              <!-- Verification Token Field -->
+              <div class="mb-4">
+                <label for="verification_token" class="form-label">Verification Token</label>
+                <input type="text"
+                       class="form-control form-control-lg text-center"
+                       id="verification_token"
+                       name="verification_token"
+                       value="{{ token }}"
+                       placeholder="Enter token from email"
+                       maxlength="100"
+                       {% if token %}readonly{% else %}required{% endif %}>
+                <div class="form-text">
+                  {% if token %}
+                    Token auto-populated from verification link
+                  {% else %}
+                    Check your email inbox and spam folder for the verification token.
+                  {% endif %}
+                </div>
+                <div class="invalid-feedback">Please enter a valid verification token.</div>
+              </div>
+              <!-- Submit Button -->
+              <button type="submit"
+                      class="btn btn-primary w-100 mb-3 btn-lg"
+                      id="submitBtn">
+                <span id="btnText">Verify Email</span>
+                <span id="spinner"
+                      class="spinner-border spinner-border-sm ms-2 auth-hidden"
+                      role="status"
+                      aria-hidden="true"></span>
+              </button>
+            </form>
+            <!-- Resend Link -->
+            <hr class="my-4">
+            <div class="text-center">
+              <p class="mb-3 text-muted">Didn't receive the token?</p>
+              <form method="POST" action="/resend-verification-email" id="resendForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="email" value="{{ email }}">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                  <i class="bi bi-arrow-clockwise me-2"></i>Resend Verification Token
+                </button>
+              </form>
+            </div>
+            <!-- Resend Timer -->
+            <div id="resendTimer"
+                 class="text-center mt-3 text-danger small auth-hidden">
+              <i class="bi bi-hourglass-split me-2"></i>Please wait <span id="timerSeconds">60</span> seconds before resending
+            </div>
+            <!-- Help -->
+            <div class="auth-footer mt-4">
+              <p class="text-muted mb-0">
+                Wrong email? <a href="/register" class="text-primary fw-bold">Create new account</a>
+              </p>
+            </div>
+        </div>
+      </div>
+      <div class="auth-shell-notes">
+        <div class="alert alert-info auth-shell-note" role="alert">
+          <h6 class="alert-heading">
+            <i class="bi bi-question-circle-fill me-2"></i>Why verify your email?
+          </h6>
+          <ul class="mb-0 ps-3">
+            <li>Ensures we have your correct email address</li>
+            <li>Helps secure your account</li>
+            <li>Allows us to send important notifications</li>
+            <li>Only takes a few seconds!</li>
+          </ul>
+        </div>
+        <!-- Privacy Note -->
+        <div class="alert alert-secondary auth-shell-note" role="alert">
+          <small>We respect your privacy. Your email is used only for account security and important notifications.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  {# Inline script removed - use external JavaScript file instead #}
+{% endblock %}

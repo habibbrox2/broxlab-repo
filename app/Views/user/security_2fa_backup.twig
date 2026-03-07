@@ -1,0 +1,176 @@
+{% extends "layout.twig" %}
+{% block title %}Backup Codes{% endblock %}
+{% block content %}
+  <div class="container py-5">
+    <!-- Breadcrumb / Header -->
+    <div class="mb-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="/profile" class="text-decoration-none">Profile</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="/user/security/2fa" class="text-decoration-none">2FA Settings</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">Backup Codes</li>
+        </ol>
+      </nav>
+      <h1 class="h2 mb-1 fw-bold">
+        <i class="bi bi-download text-warning me-2"></i>ব্যাকআপ কোড
+      </h1>
+      <p class="text-muted mb-0">
+        এই কোডগুলি নিরাপদ স্থানে সংরক্ষণ করুন; এগুলি আপনার 2FA কোড ব্যর্থ হলে ব্যবহার হবে।
+      </p>
+    </div>
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="card shadow-sm border-warning">
+          <div class="card-header bg-warning text-surface-dark">
+            <h4 class="mb-0">
+              <i class="bi bi-download"></i> আপনার ব্যাকআপ কোডগুলি সংরক্ষণ করুন
+            </h4>
+          </div>
+          <div class="card-body p-5">
+            <div class="alert alert-danger" role="alert">
+              <strong><i class="bi bi-exclamation-circle-fill"></i> মনোযোগ!</strong>
+              <p class="mt-2 mb-0">
+                এই কোডগুলি শুধুমাত্র এখন দেখানো হবে। সেগুলি নিরাপদ জায়গায় সংরক্ষণ করুন।
+                আপনি যদি আপনার ফোন হারান, এই কোডগুলি আপনার অ্যাকাউন্টে অ্যাক্সেস পেতে সাহায্য করবে।
+              </p>
+            </div>
+            <!-- Backup Codes Display -->
+            <div class="backup-codes-box bg-light p-4 rounded mb-4 inl-p-0127">
+              <p class="text-muted mb-3">
+                <i class="bi bi-shield-fill"></i> প্রতিটি কোড একবার ব্যবহার করা যায়:
+              </p>
+              <div class="codes-list">
+                {% for code in backup_codes %}
+                  <div class="code-item mb-2 p-2 bg-white rounded border">
+                    <code class="fw-bold inl-p-0128">
+                      {{ code }}
+                    </code>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+            <!-- Action Buttons -->
+            <div class="row">
+              <div class="col-md-6">
+                <button type="button" class="btn btn-info w-100" onclick="copyAllCodes()">
+                  <i class="bi bi-clipboard-fill"></i> সবগুলি কপি করুন
+                </button>
+              </div>
+              <div class="col-md-6">
+                <button type="button" class="btn btn-secondary w-100" onclick="printCodes()">
+                  <i class="bi bi-printer-fill"></i> প্রিন্ট করুন
+                </button>
+              </div>
+            </div>
+            <hr class="my-4">
+            <!-- Safe Storage Tips -->
+            <div class="card bg-light border-0">
+              <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                  <i class="bi bi-lock-fill"></i> নিরাপদ সংরক্ষণ পরামর্শ
+                </h5>
+              </div>
+              <div class="card-body">
+                <p>
+                  এই কোডগুলি সংরক্ষণ করার জন্য সুপারিশকৃত উপায়গুলি:
+                </p>
+                <ul>
+                  <li>
+                    <strong>✅ ভালো:</strong> শক্তিশালী পাসওয়ার্ড দিয়ে এনক্রিপ্ট করা ফাইলে
+                  </li>
+                  <li>
+                    <strong>✅ ভালো:</strong> নিরাপদ স্থানে মুদ্রিত এবং সংরক্ষিত
+                  </li>
+                  <li>
+                    <strong>✅ ভালো:</strong> নির্ভরযোগ্য পাসওয়ার্ড ম্যানেজারে
+                  </li>
+                  <li>
+                    <strong>❌ খারাপ:</strong> সাধারণ টেক্সট ফাইলে
+                  </li>
+                  <li>
+                    <strong>❌ খারাপ:</strong> ইমেইল বা ক্লাউডে অরক্ষিত
+                  </li>
+                  <li>
+                    <strong>❌ খারাপ:</strong> অন্য কারো কাছে পাঠানো
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <hr class="my-4">
+            <!-- How to Use -->
+            <div class="card bg-light border-0">
+              <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                  <i class="bi bi-question-circle-fill"></i> কীভাবে ব্যবহার করবেন?
+                </h5>
+              </div>
+              <div class="card-body">
+                <p>
+                  যদি আপনি আপনার ফোন হারান বা Authenticator অ্যাপ অ্যাক্সেস করতে না পারেন:
+                </p>
+                <ol>
+                  <li>লগইন পৃষ্ঠায় যান</li>
+                  <li>ইমেইল এবং পাসওয়ার্ড প্রবেশ করুন</li>
+                  <li>
+                    2FA কোড পাওয়ার জায়গায়, এই ব্যাকআপ কোডগুলির একটি ব্যবহার করুন
+                  </li>
+                  <li>আপনি লগইন করার পরে, নতুন 2FA সেটআপ করুন</li>
+                </ol>
+                <p class="mt-3 text-danger">
+                  <strong>নোট:</strong> প্রতিটি ব্যাকআপ কোড শুধুমাত্র একবার ব্যবহার করা যায়!
+                </p>
+              </div>
+            </div>
+            <hr class="my-4">
+            <!-- Next Steps -->
+            <div class="alert alert-success" role="alert">
+              <strong><i class="bi bi-check-circle-fill"></i> সম্পন্ন!</strong>
+              <p class="mt-2 mb-0">
+                আপনার 2FA সেটআপ সম্পূর্ণ। আপনার অ্যাকাউন্ট এখন সুরক্ষিত।
+                পরবর্তী লগইনে, আপনাকে একটি 2FA কোড প্রদান করতে হবে।
+              </p>
+            </div>
+            <a href="/user/security/2fa" class="btn btn-primary btn-lg w-100">
+              <i class="bi bi-arrow-left"></i> 2FA সেটিংসে ফিরে যান
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+function copyAllCodes() {
+    const codeItems = document.querySelectorAll('.code-item code');
+    let allCodes = '';
+    codeItems.forEach(code => {
+        allCodes += code.textContent + '\n';
+    });
+
+    navigator.clipboard.writeText(allCodes).then(() => {
+        alert('সব কোড কপি করা হয়েছে!');
+    });
+}
+
+function printCodes() {
+    window.print();
+}
+
+// ক্লিক করে কোড কপি করুন
+document.querySelectorAll('.code-item').forEach(item => {
+    item.addEventListener('click', function() {
+        const code = this.querySelector('code').textContent;
+        navigator.clipboard.writeText(code).then(() => {
+            const originalBg = this.style.backgroundColor;
+            this.style.backgroundColor = '#c3e6cb';
+            setTimeout(() => {
+                this.style.backgroundColor = originalBg;
+            }, 200);
+        });
+    });
+});
+  </script>
+{% endblock %}

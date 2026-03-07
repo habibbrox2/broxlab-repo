@@ -1,0 +1,311 @@
+{% extends "layout.twig" %}
+{% block title %}{{ page.title }} | {{ app_settings.site_name|default("BroxBhai") }}{% endblock %}
+{% set breadcrumbs = [
+  { label: 'Pages', url: '/pages', icon: 'file' },
+  { label: page.title|slice(0, 40) ~ (page.title|length > 40 ? '...' : ''), icon: 'file-text' }
+] %}
+{% block content %}
+  {# Structured Data - Web Page Schema #}
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": {{ page.title|json_encode }},
+  "description": {{ page.content|striptags|slice(0, 160)|json_encode }},
+  "url": "{{ current_url }}",
+    "image": {{ (page.featured_image|default(page.image|default(app_settings.site_logo|default(url ~ 'assets/images/default-image.png')))) | json_encode }},
+  "datePublished": "{{ page.created_at|date('Y-m-d\\TH:i:s\\Z') }}",
+  {% if page.updated_at %}"dateModified": "{{ page.updated_at|date('Y-m-d\\TH:i:s\\Z') }}",{% endif %}
+  "publisher": {
+    "@type": "Organization",
+    "name": {{ app_settings.site_name|json_encode }},
+    "logo": {
+      "@type": "ImageObject",
+    "url": "{{ app_settings.site_logo|default(url ~ 'assets/images/default-logo.png') }}"
+    }
+  }
+}
+  </script>
+  {# Hero Header Section #}
+  <section class="position-relative overflow-hidden mb-5 inl-p-0048">
+    <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10"
+         aria-hidden="true">
+      <div class="position-absolute inl-p-0049"></div>
+      <div class="position-absolute inl-p-0050"></div>
+    </div>
+    <div class="container position-relative">
+      <div class="row align-items-center">
+        <div class="col-lg-8">
+          <h1 class="display-5 fw-bold text-white mb-3 text-shadow-lg">{{ page.title }}</h1>
+          {# Meta Information #}
+          <div class="d-flex flex-wrap gap-3 mb-3">
+            {% if page.created_at %}
+              <div class="text-white">
+                <i class="bi bi-calendar-check me-1"></i>
+                <time datetime="{{ page.created_at|date("Y-m-d") }}">
+                  {{ page.created_at|date("F d, Y") }}
+                </time>
+              </div>
+            {% endif %}
+            <div class="text-white">
+              <i class="bi bi-eye-fill me-1"></i>
+              {{ page.views|number_format }} views
+            </div>
+            <div class="text-white">
+              <i class="bi bi-bar-chart-fill me-1"></i>
+              {{ page.impressions|number_format }} impressions
+            </div>
+          </div>
+          {# Categories & Tags #}
+          <div class="d-flex flex-wrap gap-2">
+            {% if page.categories %}
+              {% for cat in page.categories %}
+                <a href="/category/{{ cat.slug }}"
+                   class="badge bg-white text-success text-decoration-none px-3 py-2 rounded-pill">
+                  <i class="bi bi-folder-fill me-1"></i>{{ cat.name }}
+                </a>
+              {% endfor %}
+            {% endif %}
+            {% if page.tags %}
+              {% for tag in page.tags %}
+                <a href="/tag/{{ tag.slug }}"
+                   class="badge bg-white bg-opacity-75 text-theme-strong text-decoration-none px-3 py-2 rounded-pill">
+                  <i class="bi bi-tag-fill me-1"></i>{{ tag.name }}
+                </a>
+              {% endfor %}
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-lg-4 text-center text-lg-end mt-4 mt-lg-0">
+          <div class="d-inline-block p-4 bg-white bg-opacity-10 rounded-circle">
+            <i class="bi bi-file-earmark-text-fill text-white inl-p-0002"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="container pb-5">
+    {# Quick Access Panel #}
+    {% include 'partials/quick-access.twig' with { context_type: 'page', context_id: page.id } %}
+    <div class="row g-4">
+      {# Main Content Column #}
+      <div class="col-lg-8">
+        {# Page Content Card #}
+        <article class="card border-0 shadow-sm rounded-4 mb-4">
+          <div class="card-body p-4 p-md-5">
+            <div class="content-wrapper fs-6 lh-lg">{{ page.content|raw }}</div>
+          </div>
+        </article>
+        {% include 'partials/content-rating.twig' with { content_type: 'page', content_id: page.id } %}
+        {# Share Section #}
+        <div class="mb-4">
+          {% include 'partials/share.twig' with {
+          url: current_url,
+          title: page.title,
+          description: page.content|striptags|slice(0, 100)
+          } %}
+        </div>
+        {# Previous / Next Navigation #}
+        <nav class="card border-0 shadow-sm rounded-4 mb-4"
+             aria-label="Page navigation">
+          <div class="card-body p-3">
+            <div class="row g-2">
+              <div class="col-6">
+                {% if previousPage %}
+                  <a href="/pages/view/{{ previousPage.slug }}"
+                     class="btn btn-outline-success w-100 rounded-pill"
+                     aria-label="Previous page: {{ previousPage.title }}">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    <span class="d-none d-md-inline">Previous</span>
+                  </a>
+                {% else %}
+                  <button class="btn btn-outline-secondary w-100 rounded-pill" disabled>
+                    <i class="bi bi-arrow-left me-2"></i>
+                    <span class="d-none d-md-inline">Previous</span>
+                  </button>
+                {% endif %}
+              </div>
+              <div class="col-6">
+                {% if nextPage %}
+                  <a href="/pages/view/{{ nextPage.slug }}"
+                     class="btn btn-outline-success w-100 rounded-pill"
+                     aria-label="Next page: {{ nextPage.title }}">
+                    <span class="d-none d-md-inline">Next</span>
+                    <i class="bi bi-arrow-right ms-2"></i>
+                  </a>
+                {% else %}
+                  <button class="btn btn-outline-secondary w-100 rounded-pill" disabled>
+                    <span class="d-none d-md-inline">Next</span>
+                    <i class="bi bi-arrow-right ms-2"></i>
+                  </button>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </nav>
+        {# Comments Section #}
+        <section id="comments-wrapper" class="mb-4" aria-labelledby="comments-title">
+          <h2 id="comments-title" class="visually-hidden">Comments Section</h2>
+          {% include 'comments/comments.twig' with { content_type: 'page', content_id: page.id, comments: comments } %}
+        </section>
+        {# Related Pages Section #}
+        {% include 'partials/related-section.twig' with {
+        items: relatedPages,
+        title: 'Related Pages',
+        type: 'page',
+        gradient: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
+        view_all_url: '/pages',
+        id: 'related-pages-title',
+        variant: 'pro'
+        } %}
+      </div>
+      {# Sidebar #}
+      <aside class="col-lg-4" role="complementary" aria-label="Sidebar">
+        <div>
+          {# Quick Navigation #}
+          <nav class="card border-0 shadow-sm rounded-4 mb-4"
+               aria-labelledby="quick-nav-title">
+            <div class="card-header bg-primary text-white p-3 border-0">
+              <h2 id="quick-nav-title" class="mb-0 h6 fw-bold">
+                <i class="bi bi-list-ul me-2"></i>Quick Navigation
+              </h2>
+            </div>
+            <div class="card-body p-3">
+              <ul class="list-unstyled mb-0 small">
+                <li class="mb-2">
+                  <a href="#comments-wrapper"
+                     class="text-decoration-none d-flex align-items-center p-2 rounded hover-bg-light">
+                    <i class="bi bi-chat-dots me-2 text-primary"></i>
+                    <span>Comments</span>
+                  </a>
+                </li>
+                {% if relatedPages %}
+                  <li class="mb-2">
+                    <a href="#related-pages-title"
+                       class="text-decoration-none d-flex align-items-center p-2 rounded hover-bg-light">
+                      <i class="bi bi-link-45deg me-2 text-success"></i>
+                      <span>Related Pages</span>
+                    </a>
+                  </li>
+                {% endif %}
+                <li class="mb-0">
+                  <a href="/pages"
+                     class="text-decoration-none d-flex align-items-center p-2 rounded hover-bg-light">
+                    <i class="bi bi-grid-3x3-gap me-2 text-secondary"></i>
+                    <span>All Pages</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </nav>
+          {# Categories Widget #}
+          {% if page.categories and page.categories|length > 0 %}
+            <section class="card border-0 shadow-sm rounded-4 mb-4"
+                     aria-labelledby="categories-title">
+              <div class="card-header bg-warning text-white p-3 border-0">
+                <h2 id="categories-title" class="mb-0 h6 fw-bold">
+                  <i class="bi bi-folder-fill me-2"></i>Categories
+                </h2>
+              </div>
+              <div class="card-body p-3">
+                <div class="d-flex flex-wrap gap-2">
+                  {% for cat in page.categories %}
+                    <a href="/category/{{ cat.slug }}"
+                       class="badge bg-light text-surface-dark p-2 text-decoration-none rounded-pill hover-bg-warning">
+                      <i class="bi bi-folder-open me-1"></i>{{ cat.name }}
+                    </a>
+                  {% endfor %}
+                </div>
+              </div>
+            </section>
+          {% endif %}
+          {# Tags Cloud #}
+          {% if page.tags and page.tags|length > 0 %}
+            <section class="card border-0 shadow-sm rounded-4 mb-4"
+                     aria-labelledby="tags-title">
+              <div class="card-header bg-info text-white p-3 border-0">
+                <h2 id="tags-title" class="mb-0 h6 fw-bold">
+                  <i class="bi bi-tags-fill me-2"></i>Tags
+                </h2>
+              </div>
+              <div class="card-body p-3">
+                <div class="d-flex flex-wrap gap-2">
+                  {% for tag in page.tags %}
+                    <a href="/tag/{{ tag.slug }}"
+                       class="badge bg-light text-surface-dark p-2 text-decoration-none rounded-pill hover-bg-info">
+                      <i class="bi bi-tag me-1"></i>{{ tag.name }}
+                    </a>
+                  {% endfor %}
+                </div>
+              </div>
+            </section>
+          {% endif %}
+          {# Page Stats Card #}
+          <section class="card border-0 shadow-sm rounded-4"
+                   aria-labelledby="stats-title">
+            <div class="card-header bg-gradient text-white p-3 border-0 inl-p-0051">
+              <h2 id="stats-title" class="mb-0 h6 fw-bold">
+                <i class="bi bi-graph-up me-2"></i>Page Statistics
+              </h2>
+            </div>
+            <div class="card-body p-3">
+              <div class="d-flex flex-column gap-3">
+                <div class="d-flex align-items-center justify-content-between">
+                  <span class="text-muted small">
+                    <i class="bi bi-eye-fill text-primary me-1"></i>Views
+                  </span>
+                  <span class="fw-bold">{{ page.views|number_format }}</span>
+                </div>
+                <div class="d-flex align-items-center justify-content-between">
+                  <span class="text-muted small">
+                    <i class="bi bi-bar-chart-fill text-success me-1"></i>Impressions
+                  </span>
+                  <span class="fw-bold">{{ page.impressions|number_format }}</span>
+                </div>
+                {% if page.created_at %}
+                  <div class="d-flex align-items-center justify-content-between">
+                    <span class="text-muted small">
+                      <i class="bi bi-calendar-check text-info me-1"></i>Published
+                    </span>
+                    <span class="fw-bold small">{{ page.created_at|date("M d, Y") }}</span>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </section>
+        </div>
+      </aside>
+    </div>
+  </div>
+  {# Custom Styles #}
+  {# JavaScript #}
+  <script>
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const targetId = this.getAttribute('href');
+            if (targetId === '#') return;
+
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                e.preventDefault();
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+
+                // Update focus for accessibility
+                targetElement.setAttribute('tabindex', '-1');
+                targetElement.focus();
+            }
+        });
+    });
+
+    // Add loading state to external links
+    document.querySelectorAll('.content-wrapper a[href^="http"]').forEach(link => {
+        link.setAttribute('target', '_blank');
+        link.setAttribute('rel', 'noopener noreferrer');
+        link.innerHTML += ' <i class="bi bi-box-arrow-up-right small"></i>';
+    });
+  </script>
+{% endblock %}

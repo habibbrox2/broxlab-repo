@@ -1,0 +1,6 @@
+<link rel="stylesheet" href="{{ asset('/assets/css/ai-assistant.css') }}">
+{% if assistant_variant == 'public' %}
+<script type="module" src="{{ asset('/assets/ai-assistant/dist/public-assistant.js') }}"></script>
+{% elseif assistant_variant == 'admin' %}
+<script type="module" src="{{ asset('/assets/ai-assistant/dist/admin-assistant.js') }}"></script>
+{% endif %}

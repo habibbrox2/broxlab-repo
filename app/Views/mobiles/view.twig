@@ -1,0 +1,278 @@
+{% extends "layout.twig" %}
+{% block title %}{{ mobile.brand_name }} {{ mobile.model_name }} - Phone Specifications & Reviews{% endblock %}
+{% set breadcrumbs = [
+  { label: 'Mobiles', url: '/mobiles', icon: 'mobile' },
+  { label: mobile.brand_name|slice(0, 20), icon: 'phone' }
+] %}
+{% block content %}
+  {# Structured Data - Product Schema #}
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "{{ mobile.brand_name|json }} {{ mobile.model_name|json }}",
+  "description": "Complete specifications and information about {{ mobile.brand_name|json }} {{ mobile.model_name|json }} phone",
+  "brand": {
+    "@type": "Brand",
+    "name": "{{ mobile.brand_name|json }}"
+  },
+  "offers": {
+    "@type": "Offer",
+    "url": "{{ current_url }}",
+    "availability": "https://schema.org/InStock",
+    "priceCurrency": "BDT"
+  }
+}
+  </script>
+  <div class="container my-4 mb-5">
+    <!-- Mobile Header Card -->
+    <div class="card shadow-lg mb-4 border-0 rounded-4 overflow-hidden">
+      <div class="bg-gradient bg-primary text-white p-4 text-center">
+        <h2 class="card-title fw-bold mb-2">{{ mobile.brand_name }} {{ mobile.model_name }}</h2>
+        <span class="badge bg-light text-surface-dark px-3 py-2 fs-6 shadow-sm">
+          <i class="bi bi-check-circle me-1"></i>{{ mobile.status }}
+        </span>
+        <p class="text-light mt-2 mb-0">
+          <i class="bi bi-calendar-event me-1"></i> Released on:
+          <span class="fw-semibold">{{ mobile.release_date|date("F d, Y") }}</span>
+        </p>
+        <!-- Tags -->
+        {% if mobile.tags %}
+          <p class="mb-0">
+            <strong>Tags:</strong>
+            {% for tag in mobile.tags %}
+              <a href="/mobiles?tag={{ tag.slug }}"
+                 class="badge bg-light text-secondary text-decoration-none">{{ tag.name }}</a>
+            {% endfor %}
+          </p>
+        {% endif %}
+      </div>
+    </div>
+    <!-- Tabs (Unified for Desktop & Mobile) -->
+    <div class="card shadow-sm rounded-4 border-0 mb-4">
+      <div class="card-header border-0 bg-light">
+        <ul class="nav nav-tabs card-header-tabs" id="mobileTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active"
+                    id="specs-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#tab-specs"
+                    type="button"
+                    role="tab">
+              <i class="bi bi-list-check me-1"></i> Specifications
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link"
+                    id="images-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#tab-images"
+                    type="button"
+                    role="tab">
+              <i class="bi bi-images me-1"></i> Images
+            </button>
+          </li>
+          {% if mobile.official_price or mobile.unofficial_price %}
+            <li class="nav-item" role="presentation">
+              <button class="nav-link"
+                      id="price-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#tab-price"
+                      type="button"
+                      role="tab">
+                <i class="bi bi-cash-coin me-1"></i> Price
+              </button>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+    <!-- Tab Contents -->
+    <div class="tab-content" id="mobileTabsContent">
+      <!-- Specifications -->
+      <div class="tab-pane fade show active" id="tab-specs" role="tabpanel">
+        {% if specifications %}
+          <ul class="list-group list-group-flush shadow-sm rounded-4">
+            {% for spec in specifications %}
+              <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                <span class="fw-bold text-primary fs-6">{{ spec.spec_key }}</span>
+                <span class="text-secondary fs-6">{{ spec.spec_value }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted text-center my-4">
+            <i class="bi bi-exclamation-circle me-1"></i> No specifications available.
+          </p>
+        {% endif %}
+      </div>
+      <!-- Images -->
+      <div class="tab-pane fade" id="tab-images" role="tabpanel">
+        {% if images %}
+          <div class="row g-3">
+            {% for img in images %}
+              <div class="col-6 col-md-4 col-lg-3">
+                <a href="{{ img.image_url }}" target="_blank" class="d-block">
+                  <div class="ratio ratio-1x1 rounded-3 overflow-hidden shadow-sm hover-zoom">
+                    <img src="{{ img.image_url }}"
+                         alt="{{ mobile.brand_name }} {{ mobile.model_name }}"
+                         loading="lazy"
+                         class="img-fluid">
+                  </div>
+                </a>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted text-center my-4">
+            <i class="bi bi-image-alt me-1"></i> No images available.
+          </p>
+        {% endif %}
+      </div>
+      <!-- Price -->
+      {% if mobile.official_price or mobile.unofficial_price %}
+        <div class="tab-pane fade" id="tab-price" role="tabpanel">
+          <div class="card shadow-sm rounded-4 border-0 text-center py-4">
+            {% if mobile.official_price %}
+              <p class="mb-2">
+                <span class="badge bg-success me-1">Official</span>
+                <span class="fw-bold">{{ mobile.official_price|number_format(2, '.', ',') }} ৳</span>
+              </p>
+            {% endif %}
+            {% if mobile.unofficial_price %}
+              <p class="mb-0">
+                <span class="badge bg-danger me-1">Unofficial</span>
+                <span class="fw-bold">{{ mobile.unofficial_price|number_format(2, '.', ',') }} ৳</span>
+              </p>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  <!-- Floating Bottom Navigation (Mobile only) -->
+  <nav class="bottom-nav d-md-none">
+    <div class="bottom-nav-container">
+      <button class="nav-link active flex-column ripple"
+              data-bs-toggle="tab"
+              data-bs-target="#tab-specs"
+              type="button">
+        <i class="bi bi-list-check fs-5"></i>
+        <small class="tab-label">Specs</small>
+      </button>
+      <button class="nav-link flex-column ripple"
+              data-bs-toggle="tab"
+              data-bs-target="#tab-images"
+              type="button">
+        <i class="bi bi-images fs-5"></i>
+        <small class="tab-label">Images</small>
+      </button>
+      {% if mobile.official_price or mobile.unofficial_price %}
+        <button class="nav-link flex-column ripple"
+                data-bs-toggle="tab"
+                data-bs-target="#tab-price"
+                type="button">
+          <i class="bi bi-cash-coin fs-5"></i>
+          <small class="tab-label">Price</small>
+        </button>
+      {% endif %}
+    </div>
+  </nav>
+  <!-- Comments Section -->
+  <div id="comments-wrapper" class="mb-5">
+    {% include 'comments/comments.twig' with { content_type: 'mobiles', content_id: mobile.id, comments: comments } %}
+  </div>
+  {# ==================== RELATED MOBILES SECTION ==================== #}
+  {% if related_mobiles is defined and related_mobiles|length > 0 %}
+    <section class="py-5 bg-light">
+      <div class="container">
+        <div class="text-center mb-5">
+          <div class="d-flex align-items-center justify-content-center mb-4">
+            <h5 class="mb-0 fw-bold display-6">
+              <i class="bi bi-link-45deg me-2 text-info"></i>Related Mobiles
+            </h5>
+          </div>
+          <p class="lead text-muted">Similar devices you might like</p>
+        </div>
+        <div class="row g-4 justify-content-center">
+          {% for mob in related_mobiles|slice(0, 3) %}
+            <div class="col-md-6 col-lg-4">
+              <div class="card h-100 border-0 shadow-lg hover-shadow-lg rounded-4 overflow-hidden transition-all inl-p-0042">
+                <!-- Featured Image/Carousel -->
+                {% if mob.images is defined and mob.images|length > 0 %}
+                  {% include 'partials/carousel.twig' with {
+                  id: 'related_mobile_carousel_' ~ mob.id,
+                  images: mob.images,
+                  title: mob.brand_name ~ ' ' ~ mob.model_name,
+                  show_indicators: mob.images|length > 1,
+                  show_controls: mob.images|length > 1,
+                  height: '220px',
+                  gradient: 'linear-gradient(135deg, rgba(59, 130, 246, 0.4) 0%, rgba(139, 92, 246, 0.4) 100%)'
+                  } %}
+                {% elseif mob.image %}
+                  <div class="position-relative overflow-hidden inl-p-0043">
+                    <div style="background: url('{{ mob.image }}') center/cover;
+                                height: 100%;
+                                position: relative">
+                      <div class="inl-p-0044"></div>
+                    </div>
+                  </div>
+                {% else %}
+                  <div class="inl-p-0045">
+                    <i class="bi bi-phone fs-1 text-white"></i>
+                  </div>
+                {% endif %}
+                <div class="position-absolute top-0 start-0 p-2">
+                  <span class="badge bg-white text-info"><i class="bi bi-smartphone me-1"></i>Phone</span>
+                </div>
+                <div class="card-body d-flex flex-column">
+                  <h6 class="card-title fw-bold mb-2">
+                    {{ mob.brand_name }} {{ mob.model_name|slice(0, 30) ~ (mob.model_name|length > 30 ? '...' : '') }}
+                  </h6>
+                  <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                    {% if mob.official_price %}
+                      <span class="badge bg-success"><i class="bi bi-currency-taka me-1"></i>{{ mob.official_price|number_format(0, '.', ',') }}</span>
+                    {% endif %}
+                    {% if mob.release_date %}
+                      <small class="text-muted"><i class="bi bi-calendar3 me-1"></i>{{ mob.release_date|date("Y") }}</small>
+                    {% endif %}
+                  </div>
+                  <p class="card-text small text-muted flex-grow-1 mb-3">
+                    {% if mob.processor %}
+                      <i class="bi bi-cpu me-1"></i>{{ mob.processor }}
+                      <br>
+                    {% endif %}
+                    {% if mob.ram %}<i class="bi bi-memory me-1"></i>{{ mob.ram }}{% endif %}
+                  </p>
+                  <a href="/mobiles/view/{{ mob.url }}"
+                     class="btn btn-sm btn-info rounded-pill fw-semibold w-100 mt-auto"><i class="bi bi-arrow-right me-1"></i>View Specs</a>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  {% endif %}
+  <link rel="stylesheet" href="/assets/css/mobile.css">
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".ripple").forEach(btn => {
+        btn.addEventListener("click", function (e) {
+            const circle = document.createElement("span");
+            circle.classList.add("ripple-effect");
+
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            circle.style.width = circle.style.height = size + "px";
+            circle.style.left = e.clientX - rect.left - size / 2 + "px";
+            circle.style.top = e.clientY - rect.top - size / 2 + "px";
+
+            this.appendChild(circle);
+
+            setTimeout(() => circle.remove(), 600);
+        });
+    });
+});
+  </script>
+{% endblock %}

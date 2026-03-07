@@ -1,0 +1,479 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}AI Article Queue{% endblock %}
+
+{% block content %}
+{# Stats Cards #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex align-items-center">
+        <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+          <i class="bi bi-list-check text-primary fs-4"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Total Queue</div>
+          <div class="fw-bold fs-4 mb-0">{{ stats.total|default(0) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex align-items-center">
+        <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+          <i class="bi bi-check-circle text-success fs-4"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Published</div>
+          <div class="fw-bold fs-4 mb-0">{{ stats.published|default(0) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex align-items-center">
+        <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+          <i class="bi bi-robot text-warning fs-4"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Processing</div>
+          <div class="fw-bold fs-4 mb-0">{{ stats.processing|default(0) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex align-items-center">
+        <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+          <i class="bi bi-cloud-download text-info fs-4"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Collected Today</div>
+          <div class="fw-bold fs-4 mb-0">{{ stats.collected_today|default(0) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold mb-0"><i class="bi bi-list-check me-2"></i>Article Queue</h4>
+  <div class="d-flex gap-2">
+    <button type="button" id="btn-collect-now" class="btn btn-primary btn-sm px-3 shadow-sm">
+      <i class="bi bi-cloud-download me-1"></i>Collect Feed
+    </button>
+    <button type="button" id="btn-process-now" class="btn btn-success btn-sm px-3 shadow-sm">
+      <i class="bi bi-cpu me-1"></i>Process AI
+    </button>
+  </div>
+</div>
+
+<style>
+  .sticky-bulk-bar {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(33, 37, 41, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    z-index: 1050;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: white;
+  }
+  .sticky-bulk-bar.active { transform: translateX(-50%) translateY(0); }
+  .bulk-count { font-weight: bold; background: var(--bs-primary); width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 0.8rem; }
+  .table-select-checkbox { transform: scale(1.2); cursor: pointer; }
+  
+  /* Status Timeline Styles */
+  .status-timeline {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+  }
+  .status-step {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #e9ecef;
+    transition: all 0.3s ease;
+  }
+  .status-step.completed { background: #198754; }
+  .status-step.current { background: #0d6efd; animation: pulse 2s infinite; }
+  .status-step.failed { background: #dc3545; }
+  
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7); }
+    70% { box-shadow: 0 0 0 6px rgba(13, 110, 253, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0); }
+  }
+  
+  /* Row hover effects */
+  .queue-table tbody tr {
+    transition: all 0.2s ease;
+  }
+  .queue-table tbody tr:hover {
+    background: linear-gradient(90deg, rgba(13, 110, 253, 0.03) 0%, transparent 100%);
+    transform: translateX(2px);
+  }
+  
+  /* Quick action buttons */
+  .quick-actions .btn {
+    opacity: 0.7;
+    transition: all 0.2s ease;
+  }
+  .queue-table tbody tr:hover .quick-actions .btn {
+    opacity: 1;
+  }
+  
+  /* Enhanced badges */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+  .status-badge:hover {
+    transform: scale(1.05);
+  }
+  .status-badge.collected { background: #e3f2fd; color: #0d47a9; }
+  .status-badge.processing { background: #fff3e0; color: #e65100; }
+  .status-badge.processed { background: #e8f5e9; color: #1b5e20; }
+  .status-badge.approved { background: #d1ecf1; color: #0c5460; }
+  .status-badge.published { background: #d4edda; color: #155724; }
+  .status-badge.rejected { background: #f8d7da; color: #721c24; }
+  .status-badge.failed { background: #fce4ec; color: #b71c1c; }
+  
+  /* Empty state */
+  .empty-state {
+    padding: 3rem;
+    text-align: center;
+  }
+  .empty-state-icon {
+    font-size: 4rem;
+    opacity: 0.3;
+    margin-bottom: 1rem;
+  }
+</style>
+
+{# Status Filter Tabs #}
+<ul class="nav nav-pills mb-3 flex-wrap gap-1">
+  <li class="nav-item">
+    <a class="nav-link {{ current_status == '' ? 'active' : '' }} btn-sm" href="/admin/autoblog/queue">All</a>
+  </li>
+  {% for status_key in ['collected', 'processing', 'processed', 'approved', 'published', 'rejected', 'failed'] %}
+    <li class="nav-item">
+      <a class="nav-link {{ current_status == status_key ? 'active' : '' }} btn-sm"
+         href="/admin/autoblog/queue?status={{ status_key }}">
+        {{ status_key|capitalize }}
+      </a>
+    </li>
+  {% endfor %}
+</ul>
+
+{# Search #}
+<form method="GET" action="/admin/autoblog/queue" class="mb-3">
+  {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+  <div class="input-group input-group-sm" style="max-width: 400px;">
+    <input type="text" class="form-control" name="search" value="{{ search }}" placeholder="Search by title...">
+    <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+    {% if search %}<a href="/admin/autoblog/queue{% if current_status %}?status={{ current_status }}{% endif %}" class="btn btn-outline-danger"><i class="bi bi-x"></i></a>{% endif %}
+  </div>
+</form>
+
+{# Queue Table #}
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle queue-table">
+        <thead class="table-light">
+          <tr>
+            <th width="40" class="text-center">
+              <input type="checkbox" id="select-all-checkbox" class="form-check-input table-select-checkbox">
+            </th>
+            <th width="50">ID</th>
+            <th>Article Information</th>
+            <th>Source</th>
+            <th>Pipeline Status</th>
+            <th width="70">SEO</th>
+            <th width="70">Words</th>
+            <th>Created</th>
+            <th width="120">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr id="row-{{ item.id }}">
+            <td class="text-center">
+              <input type="checkbox" class="form-check-input table-select-checkbox item-checkbox" value="{{ item.id }}" data-status="{{ item.status }}">
+            </td>
+            <td class="text-muted small">#{{ item.id }}</td>
+            <td>
+              <a href="/admin/autoblog/queue/view?id={{ item.id }}" class="text-decoration-none fw-bold text-dark d-block">
+                {{ item.ai_title ?? item.original_title ?? 'Untitled' }}
+              </a>
+              {% if item.original_author %}
+                <small class="text-primary d-block mb-1" style="font-size: 0.7rem;"><i class="bi bi-person me-1"></i>{{ item.original_author }}</small>
+              {% endif %}
+              {% if item.source_url %}
+                <small class="text-muted text-truncate d-block" style="max-width: 400px; font-size: 0.75rem;">{{ item.source_url }}</small>
+              {% endif %}
+            </td>
+            <td><span class="badge bg-light text-dark border">{{ item.source_name ?? '-' }}</span></td>
+            <td>
+              <span class="status-badge {{ item.status }}">
+                {% if item.status == 'collected' %}<i class="bi bi-download"></i>
+                {% elseif item.status == 'processing' %}<i class="bi bi-robot"></i>
+                {% elseif item.status == 'processed' %}<i class="bi bi-check-circle"></i>
+                {% elseif item.status == 'approved' %}<i class="bi bi-hand-thumbs-up"></i>
+                {% elseif item.status == 'published' %}<i class="bi bi-newspaper"></i>
+                {% elseif item.status == 'rejected' %}<i class="bi bi-x-circle"></i>
+                {% elseif item.status == 'failed' %}<i class="bi bi-exclamation-triangle"></i>
+                {% endif %}
+                {{ item.status|capitalize }}
+              </span>
+            </td>
+            <td class="text-center">
+              {% if item.seo_score is defined and item.seo_score > 0 %}
+                <div class="small fw-bold {% if item.seo_score >= 70 %}text-success{% elseif item.seo_score >= 40 %}text-warning{% else %}text-danger{% endif %}">
+                  {{ item.seo_score }}%
+                </div>
+              {% else %}-{% endif %}
+            </td>
+            <td class="text-muted small">{{ item.word_count > 0 ? item.word_count : '-' }}</td>
+            <td class="small text-muted">{{ item.created_at|date('M d, H:i') }}</td>
+            <td>
+              <div class="btn-group btn-group-sm">
+                <a href="/admin/autoblog/queue/view?id={{ item.id }}" class="btn btn-outline-primary" title="Full Editor">
+                  <i class="bi bi-pencil-square"></i>
+                </a>
+                {% if item.status in ['processed', 'failed'] %}
+                  <button type="button" class="btn btn-outline-success" title="Quick Approve" onclick="approveQueueItem({{ item.id }})">
+                    <i class="bi bi-check-lg"></i>
+                  </button>
+                {% endif %}
+                <button type="button" class="btn btn-outline-danger" title="Delete" onclick="deleteQueueItem({{ item.id }})">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-4">
+              <i class="bi bi-inbox fs-1 d-block mb-3 opacity-25"></i>
+              <h5 class="text-muted mb-2">No articles found</h5>
+              <p class="text-muted small mb-0">
+                {% if current_status %}
+                  No articles with status "{{ current_status }}". Try a different filter.
+                {% else %}
+                  Your queue is empty. Click <strong>Collect Feed</strong> to scrape new articles.
+                {% endif %}
+              </p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {# Pagination #}
+  {% if pagination.total_pages > 1 %}
+  <div class="card-footer bg-white">
+    <nav>
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% for p in 1..pagination.total_pages %}
+          <li class="page-item {{ pagination.page == p ? 'active' : '' }}">
+            <a class="page-link" href="/admin/autoblog/queue?page={{ p }}{% if current_status %}&status={{ current_status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+              {{ p }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+
+{# Sticky Bulk Action Bar #}
+<div id="bulk-action-bar" class="sticky-bulk-bar">
+    <div class="bulk-count" id="selected-count">0</div>
+    <span class="small opacity-75">Selected</span>
+    <div class="vr h-100 opacity-25"></div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-success btn-sm rounded-pill px-3" onclick="doBulkAction('approve')">
+            <i class="bi bi-check-lg me-1"></i>Approve
+        </button>
+        <button type="button" class="btn btn-primary btn-sm rounded-pill px-3" onclick="doBulkAction('process')">
+            <i class="bi bi-cpu me-1"></i>Process AI
+        </button>
+        <button type="button" class="btn btn-danger btn-sm rounded-pill px-3" onclick="doBulkAction('delete')">
+            <i class="bi bi-trash me-1"></i>Delete
+        </button>
+    </div>
+    <button type="button" class="btn-close btn-close-white ms-2" onclick="clearSelection()" style="font-size: 0.7rem;"></button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Select All Logic ---
+    const selectAll = document.getElementById('select-all-checkbox');
+    const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+    const bulkBar = document.getElementById('bulk-action-bar');
+    const selectedCountSpan = document.getElementById('selected-count');
+
+    function updateBulkBar() {
+        const checked = document.querySelectorAll('.item-checkbox:checked');
+        selectedCountSpan.innerText = checked.length;
+        if (checked.length > 0) {
+            bulkBar.classList.add('active');
+        } else {
+            bulkBar.classList.remove('active');
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            itemCheckboxes.forEach(cb => cb.checked = selectAll.checked);
+            updateBulkBar();
+        });
+    }
+
+    itemCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateBulkBar);
+    });
+
+    // --- Button Actions ---
+    const btnCollect = document.getElementById('btn-collect-now');
+    const btnProcess = document.getElementById('btn-process-now');
+    
+    function getCsrfToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    }
+
+    async function handleAction(btn, url) {
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>...';
+
+        try {
+            const response = await fetch(url + '?ajax=1', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() },
+                body: `csrf_token=${getCsrfToken()}`
+            });
+            const result = await response.json();
+            if (result.success) {
+                Swal.fire({ icon: 'success', title: 'Success', text: result.message, timer: 3000 }).then(() => window.location.reload());
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: result.message });
+            }
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Network Error', text: 'Connection failed' });
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+
+    if (btnCollect) btnCollect.addEventListener('click', () => handleAction(btnCollect, '/admin/autoblog/api/collect'));
+    if (btnProcess) btnProcess.addEventListener('click', () => handleAction(btnProcess, '/admin/autoblog/api/process'));
+});
+
+// --- Individual Actions ---
+async function approveQueueItem(id) {
+    try {
+        const response = await fetch('/admin/autoblog/queue/approve?ajax=1', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() },
+            body: `id=${id}&csrf_token=${getCsrfToken()}`
+        });
+        const result = await response.json();
+        if (result.success) {
+            Swal.fire({ icon: 'success', title: 'Approved!', text: result.message, timer: 1500, showConfirmButton: false });
+            document.getElementById(`row-${id}`).classList.add('table-success', 'opacity-50');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            Swal.fire('Error', result.message, 'error');
+        }
+    } catch (e) { Swal.fire('Error', 'Connection failed', 'error'); }
+}
+
+async function deleteQueueItem(id) {
+    const result = await Swal.fire({
+        title: 'Delete article?',
+        text: "This cannot be undone.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33'
+    });
+    
+    if (result.isConfirmed) {
+        try {
+            const response = await fetch('/admin/autoblog/queue/delete?ajax=1', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() },
+                body: `id=${id}&csrf_token=${getCsrfToken()}`
+            });
+            const res = await response.json();
+            if (res.success) {
+                document.getElementById(`row-${id}`).remove();
+                if (document.querySelectorAll('.item-checkbox').length === 0) window.location.reload();
+            }
+        } catch (e) { Swal.fire('Error', 'Delete failed', 'error'); }
+    }
+}
+
+// --- Bulk Action Logic ---
+async function doBulkAction(action) {
+    const checkboxes = document.querySelectorAll('.item-checkbox:checked');
+    const ids = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (ids.length === 0) return;
+
+    Swal.fire({
+        title: 'Processing...',
+        html: `Performing <b>${action}</b> on ${ids.length} items.`,
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const response = await fetch('/admin/autoblog/queue/bulk-action?ajax=1', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() },
+            body: `action=${action}&ids=${JSON.stringify(ids)}&csrf_token=${getCsrfToken()}`
+        });
+        const result = await response.json();
+        if (result.success) {
+            Swal.fire({ icon: 'success', title: 'Completed', text: result.message }).then(() => window.location.reload());
+        } else {
+            Swal.fire('Partial Success / Error', result.message, 'warning');
+        }
+    } catch (e) { Swal.fire('Error', 'Bulk action failed', 'error'); }
+}
+
+function clearSelection() {
+    document.getElementById('select-all-checkbox').checked = false;
+    document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = false);
+    document.getElementById('bulk-action-bar').classList.remove('active');
+}
+</script>
+{% endblock %}

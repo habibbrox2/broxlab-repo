@@ -1,0 +1,131 @@
+.bb-assistant-admin {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  font-family: "Segoe UI", "Noto Sans Bengali", sans-serif;
+}
+
+.bb-assistant-admin .assistant-console-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+.bb-assistant-admin .assistant-console-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #d6dee8;
+  border-radius: 10px;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.bb-assistant-admin:hover .assistant-console-menu,
+.bb-assistant-admin:focus-within .assistant-console-menu {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.bb-assistant-admin .assistant-console-btn,
+.bb-assistant-admin .admin-assistant-fab {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 18px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  box-shadow: none;
+}
+
+.bb-assistant-admin .assistant-console-btn:hover,
+.bb-assistant-admin .admin-assistant-fab:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.bb-assistant-admin .admin-assistant-chat {
+  position: absolute;
+  bottom: 62px;
+  right: 0;
+  width: min(390px, calc(100vw - 32px));
+  height: min(620px, calc(100vh - 112px));
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #cfd8e3;
+}
+
+.bb-assistant-admin .admin-assistant-header,
+.bb-assistant-admin .assistant-control-bar,
+.bb-assistant-admin .admin-assistant-footer,
+.bb-assistant-admin .admin-assistant-messages,
+.bb-assistant-admin .message,
+.bb-assistant-admin .assistant-composer,
+.bb-assistant-admin .assistant-advanced-panel,
+.bb-assistant-admin .assistant-chip,
+.bb-assistant-admin .assistant-mini-btn,
+.bb-assistant-admin .assistant-select,
+.bb-assistant-admin .assistant-inline-input,
+.bb-assistant-admin .assistant-setting input[type="number"],
+.bb-assistant-admin .assistant-setting select,
+.bb-assistant-admin .assistant-attachment-pill,
+.bb-assistant-admin .assistant-reasoning-banner,
+.bb-assistant-admin .assistant-message-action-btn,
+.bb-assistant-admin .typing-indicator {
+  box-sizing: border-box;
+}
+
+.bb-assistant-public #publicAssistantBtn,
+.bb-assistant-public #publicAssistantChat,
+.bb-assistant-public .chat-header,
+.bb-assistant-public .chat-body,
+.bb-assistant-public .chat-footer,
+.bb-assistant-public .message,
+.bb-assistant-public .assistant-lang-toggle,
+.bb-assistant-public .typing-indicator {
+  box-sizing: border-box;
+}
+
+.bb-assistant-public #publicAssistantBtn {
+  position: fixed;
+  bottom: 20px;
+  right: 120px;
+  z-index: 1000;
+}
+
+@media (max-width: 576px) {
+  .bb-assistant-admin .admin-assistant-chat {
+    right: 0;
+    width: min(100vw - 24px, 368px);
+    height: min(72vh, 560px);
+  }
+
+  .bb-assistant-admin .assistant-control-row,
+  .bb-assistant-admin .assistant-settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bb-assistant-admin .assistant-feature-actions {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .tw-home-glass-card {
+    border-radius: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 10px 30px rgba(2, 6, 23, 0.12);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .tw-surface-card {
+    border-radius: 1rem;
+    border: 1px solid rgba(99, 102, 241, 0.16);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98));
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  }
+
+  .tw-soft-input {
+    border: 1px solid #dbe4f3;
+    border-radius: 0.75rem;
+    background: #ffffff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .tw-soft-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+    outline: none;
+  }
+
+  .tw-btn-elevated {
+    border-radius: 0.75rem;
+    box-shadow: 0 8px 18px rgba(99, 102, 241, 0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .tw-btn-elevated:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(99, 102, 241, 0.28);
+  }
+
+  .tw-pill-chip {
+    border-radius: 999px;
+    border: 1px solid rgba(99, 102, 241, 0.18);
+    background: rgba(99, 102, 241, 0.08);
+  }
+
+  [data-theme="dark"] .tw-home-glass-card {
+    border-color: rgba(51, 65, 85, 0.6);
+    background-color: rgba(15, 23, 42, 0.7);
+  }
+
+  [data-theme="dark"] .tw-surface-card {
+    border-color: rgba(148, 163, 184, 0.22);
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.78), rgba(15, 23, 42, 0.88));
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  [data-theme="dark"] .tw-soft-input {
+    border-color: rgba(148, 163, 184, 0.35);
+    background: rgba(15, 23, 42, 0.8);
+    color: #e2e8f0;
+  }
+
+  [data-theme="dark"] .tw-soft-input:focus {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.22);
+  }
+
+  [data-theme="dark"] .tw-pill-chip {
+    border-color: rgba(129, 140, 248, 0.35);
+    background: rgba(129, 140, 248, 0.14);
+  }
+}
+
+/* Persistent helper classes (kept outside @layer to avoid purge removal) */
+.tw-home-glass-card {
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.tw-surface-card {
+  border-radius: 1rem;
+  border: 1px solid rgba(99, 102, 241, 0.16);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98));
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.tw-soft-input {
+  border: 1px solid #dbe4f3;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tw-soft-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+  outline: none;
+}
+
+.tw-btn-elevated {
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 18px rgba(99, 102, 241, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tw-btn-elevated:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(99, 102, 241, 0.28);
+}
+
+.tw-pill-chip {
+  border-radius: 999px;
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+[data-theme="dark"] .tw-home-glass-card {
+  border-color: rgba(51, 65, 85, 0.6);
+  background-color: rgba(15, 23, 42, 0.7);
+}
+
+[data-theme="dark"] .tw-surface-card {
+  border-color: rgba(148, 163, 184, 0.22);
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.78), rgba(15, 23, 42, 0.88));
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .tw-soft-input {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.8);
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .tw-soft-input:focus {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.22);
+}
+
+[data-theme="dark"] .tw-pill-chip {
+  border-color: rgba(129, 140, 248, 0.35);
+  background: rgba(129, 140, 248, 0.14);
+}

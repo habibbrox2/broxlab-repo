@@ -1,0 +1,173 @@
+{# Clean Login Template - No Inline Scripts #}
+{% extends "layout.twig" %}
+{% set suppress_layout_flash = true %}
+{% block title %}Login - {{ app_settings.site_name|default("BroxBhai") }}{% endblock %}
+{% block content %}
+  {# Structured Data - Login Page #}
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "{{ app_settings.site_name|default('BroxBhai')|json }}",
+  "url": "{{ url }}"
+}
+  </script>
+
+  {# page-specific styles – does not override global Tailwind #}
+  <style>
+    /* limit checkbox styles to login card only */
+    .login-card .form-check-input {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+    .login-card .form-check-label {
+      font-weight: 500;
+    }
+  </style>
+  <div class="auth-page login-container d-flex align-items-center justify-content-center" style="min-height:100vh;">
+    <div class="auth-card login-card w-100 tw-bg-white tw-rounded-lg tw-shadow-md" style="max-width:400px;">
+      <div class="auth-card-header login-header">
+        <h2>
+          <i class="bi bi-box-arrow-in-right"></i> Welcome Back
+        </h2>
+        <p class="subtitle">Sign in to your {{ app_settings.site_name|default("BroxBhai") }} account</p>
+      </div>
+      <div class="auth-card-body login-body">
+        {% set oauth_status_message = error|default('') %}
+        {% set oauth_status_type_raw = "danger" %}
+        {% if oauth_status_message == '' and flash_message %}
+          {% set oauth_status_message = flash_message.text|default(flash_message.message|default('')) %}
+          {% set oauth_status_type_raw = flash_message.status|default(flash_message.type|default('info')) %}
+        {% endif %}
+        {% set oauth_status_type = oauth_status_type_raw in ['success', 'danger', 'warning', 'info']
+          ? oauth_status_type_raw
+          : 'info'
+        %}
+        <div id="oauth-status"
+             class="auth-response auth-response--{{ oauth_status_type }} auth-response-hidden"
+             role="status"
+             aria-live="polite"
+             data-initial-message="{{ oauth_status_message }}"
+             data-initial-type="{{ oauth_status_type }}"></div>
+        <form method="POST"
+              action="/login"
+              id="loginForm"
+              class="auth-form"
+              data-redirect-url="{{ oauth_redirect }}"
+              data-firebase-auth="{{ enable_firebase_oauth ? '1' : '0' }}"
+              novalidate>
+          <!-- CSRF Token -->
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          {% if oauth_redirect %}
+            <input type="hidden" name="redirect" value="{{ oauth_redirect }}">
+          {% endif %}
+          <!-- Email/Username Field -->
+          <div class="form-group mb-3">
+            <label for="username" class="form-label">Email or Username</label>
+            <div class="input-wrapper">
+              <i class="bi bi-person-fill input-icon"></i>
+              <input type="text"
+                     class="form-control"
+                     id="username"
+                     name="username"
+                     value="{{ old_username|default(old_email|default('')) }}"
+                     placeholder="Enter email or username"
+                     autocomplete="username"
+                     required>
+            </div>
+            <div class="form-text">Use the email or username associated with your account.</div>
+          </div>
+          <!-- Password Field -->
+          <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <div class="input-wrapper">
+              <i class="bi bi-lock-fill input-icon"></i>
+              <input type="password"
+                     class="form-control"
+                     id="password"
+                     name="password"
+                     placeholder="••••••••"
+                     autocomplete="current-password"
+                     required>
+              <i class="bi bi-eye password-toggle"
+                 id="passwordToggle"
+                 role="button"
+                 tabindex="0"
+                 aria-label="Show password"
+                 aria-controls="password"
+                 aria-pressed="false"></i>
+            </div>
+          </div>
+          <!-- Remember Me -->
+          {% if enable_remember_me %}
+            <div class="form-check mb-3">
+              <input type="checkbox"
+                     class="form-check-input"
+                     id="remember_me"
+                     name="remember_me">
+              <label class="form-check-label" for="remember_me">Remember me for 30 days</label>
+            </div>
+          {% endif %}
+          <!-- Login Button -->
+          <button type="submit" class="btn-login">
+            <i class="bi bi-box-arrow-in-right"></i> Sign In
+          </button>
+        </form>
+        {% if enable_firebase_oauth %}
+          <!-- Divider -->
+          <div class="divider">
+            <div class="divider-text">Continue With</div>
+          </div>
+          <!-- Firebase Auth Buttons -->
+          <div id="auth-buttons" class="d-flex justify-content-center gap-2 mt-3">
+            <button type="button"
+                    class="btn btn-outline-secondary auth-btn"
+                    id="auth-google-btn"
+                    title="Sign in with Google"
+                    aria-label="Sign in with Google">
+              <i class="bi bi-google"></i>
+            </button>
+            <button type="button"
+                    class="btn btn-outline-secondary auth-btn"
+                    id="auth-facebook-btn"
+                    title="Sign in with Facebook"
+                    aria-label="Sign in with Facebook">
+              <i class="bi bi-facebook"></i>
+            </button>
+            <button type="button"
+                    class="btn btn-outline-secondary auth-btn"
+                    id="auth-guest-btn"
+                    title="Continue as Guest"
+                    aria-label="Continue as guest">
+              <i class="bi bi-person"></i>
+            </button>
+          </div>
+          <!-- Hidden: FirebaseUI Mount (using custom buttons instead) -->
+          <div class="auth-buttons auth-buttons-hidden">
+            <div id="firebaseui-auth-container"
+                 class="firebaseui-auth-container"
+                 {% if oauth_redirect %}data-redirect-url="{{ oauth_redirect }}"{% endif %}></div>
+          </div>
+        {% endif %}
+        <!-- Footer Links -->
+        <div class="auth-footer footer-links">
+          <p>
+            <a href="/forgot-password"><i class="bi bi-question-circle"></i> Forgot your password?</a>
+          </p>
+          <p>
+            Don't have an account?
+            <br>
+            <a href="/register{% if oauth_redirect %}?redirect={{ oauth_redirect|url_encode }}{% endif %}">Create an account</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Firebase initialization handled in layout.twig -->
+  <!-- Login form handler -->
+  <script src="{{ asset('/assets/js/dist/auth/login.js') }}"
+          defer
+          type="module"></script>
+  {# Account conflict resolution modal (Firebase auth) #}
+  {% include 'auth/account-conflict-modal.twig' %}
+{% endblock %}

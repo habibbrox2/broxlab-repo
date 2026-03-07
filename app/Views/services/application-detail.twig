@@ -1,0 +1,642 @@
+﻿{# templates/services/application-detail.twig #}
+{% extends 'layout.twig' %}
+{% block title %}Application #{{ application.id }} Details{% endblock %}
+{% set breadcrumbs = [
+  { 'label': 'Services', 'url': '/services', 'icon': 'award' },
+  { 'label': 'My Applications', 'url': '/services/my-applications', 'icon': 'clipboard-list' },
+  { 'label': 'Application #' ~ application.id, 'icon': 'file-lines' }
+] %}
+{% block content %}
+  {% set payment_data = payment|default({}) %}
+  {% if (payment_data is not iterable or payment_data is empty) and application.application_data is iterable %}
+    {% set payment_data = application.application_data._payment|default(application.application_data.payment|default(application.application_data.payment_info|default({}))) %}
+  {% endif %}
+  <style>
+    .inl-p-0056 {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+    .inl-p-0056 .application-detail-title,
+    .inl-p-0056 .application-detail-subtitle {
+      color: #fff;
+    }
+    .inl-p-0057 {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .inl-p-0058 {
+      word-break: break-word;
+    }
+    .inl-p-0059 {
+      border: 1px solid rgba(13, 110, 253, 0.16);
+      background: #f8fbff;
+    }
+    .inl-p-0060 {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: inherit;
+      color: #212529;
+    }
+    .timeline {
+      position: relative;
+      margin-left: 1.1rem;
+      padding-left: 1.5rem;
+    }
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 0.5rem;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #e9ecef;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+    .timeline-item:last-child {
+      margin-bottom: 0;
+    }
+    .timeline-marker {
+      position: absolute;
+      left: -1.55rem;
+      top: 0.05rem;
+      width: 1.4rem;
+      height: 1.4rem;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 3px #fff;
+      z-index: 1;
+    }
+    .timeline-marker i {
+      font-size: 0.72rem;
+    }
+    .doc-preview-frame {
+      width: 100%;
+      min-height: 70vh;
+      border: 0;
+      border-radius: 0.5rem;
+      background: #fff;
+    }
+    .doc-preview-img {
+      display: block;
+      max-width: 100%;
+      max-height: 76vh;
+      margin: 0 auto;
+      border-radius: 0.5rem;
+      object-fit: contain;
+      background: #fff;
+    }
+  </style>
+  <!-- Hero Section -->
+  <div class="bg-gradient py-5 inl-p-0056">
+    <div class="container">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <h1 class="display-5 fw-bold mb-2 application-detail-title">Application Details</h1>
+          <p class="mb-0 application-detail-subtitle">{{ application.service_name }}</p>
+        </div>
+        {% set status_colors = {"pending": "warning", "processing": "info", "approved": "success", "rejected": "danger"} %}
+        <span class="badge bg-{{ status_colors[application.status]|default("secondary") }} fs-6">
+          {{ application.status|title }}
+        </span>
+      </div>
+    </div>
+  </div>
+  <div class="container py-5">
+    <div class="row g-4">
+      <!-- Main Content -->
+      <div class="col-lg-8">
+        <!-- Status Timeline Card -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+          <div class="card-body">
+            <h5 class="card-title fw-bold mb-4">
+              <i class="bi bi-list-task text-primary"></i> Application Status
+            </h5>
+            <div class="timeline">
+              <div class="timeline-item">
+                <div class="timeline-marker bg-success">
+                  <i class="bi bi-check-lg text-white"></i>
+                </div>
+                <div class="timeline-content">
+                  <p class="mb-1">
+                    <strong>Submitted</strong>
+                  </p>
+                  <small class="text-muted">{{ application.created_at|date("M d, Y H:i") }}</small>
+                </div>
+              </div>
+              {% if application.status == 'pending' %}
+                <div class="timeline-item">
+                  <div class="timeline-marker bg-warning">
+                    <i class="bi bi-hourglass-split text-white"></i>
+                  </div>
+                  <div class="timeline-content">
+                    <p class="mb-1">
+                      <strong>Pending Review</strong>
+                    </p>
+                    <small class="text-muted">Waiting for admin review...</small>
+                  </div>
+                </div>
+              {% elseif application.status == 'processing' %}
+                <div class="timeline-item">
+                  <div class="timeline-marker bg-success">
+                    <i class="bi bi-arrow-repeat text-white"></i>
+                  </div>
+                  <div class="timeline-content">
+                    <p class="mb-1">
+                      <strong>Under Processing</strong>
+                    </p>
+                    <small class="text-muted">Your application is being reviewed...</small>
+                  </div>
+                </div>
+              {% elseif application.status == 'approved' %}
+                <div class="timeline-item">
+                  <div class="timeline-marker bg-success">
+                    <i class="bi bi-check-circle text-white"></i>
+                  </div>
+                  <div class="timeline-content">
+                    <p class="mb-1">
+                      <strong>Approved</strong>
+                      {% if approver %}by {{ approver.username }}{% endif %}
+                    </p>
+                    <small class="text-muted">{{ application.approved_at|date("M d, Y H:i") }}</small>
+                  </div>
+                </div>
+              {% elseif application.status == 'rejected' %}
+                <div class="timeline-item">
+                  <div class="timeline-marker bg-danger">
+                    <i class="bi bi-x-circle text-white"></i>
+                  </div>
+                  <div class="timeline-content">
+                    <p class="mb-1">
+                      <strong>Rejected</strong>
+                    </p>
+                    <small class="text-muted">{{ application.updated_at|date("M d, Y H:i") }}</small>
+                    {% if application.rejection_reason %}
+                      <p class="mt-2 mb-0">
+                        <strong class="text-danger">Reason:</strong> {{ application.rejection_reason }}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <!-- Application Data Card -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+          <div class="card-body">
+            <h5 class="card-title fw-bold mb-4">
+              <i class="bi bi-clipboard2 text-primary"></i> Submitted Information
+            </h5>
+            <div class="row">
+              {% for field, value in application.application_data %}
+                {% set normalized_field = field|lower %}
+                {% if normalized_field not in ['_payment', 'payment', 'payment_info'] %}
+                  <div class="col-md-6 mb-4">
+                    <div class="form-group">
+                      {% set field_label = form_field_labels[field]|default(form_field_labels[normalized_field]|default('')) %}
+                      {% if field_label == '' %}
+                        {% set field_label = normalized_field == '_documents' ? 'Documents' : (field|replace({'_': ' ', '-': ' '})|title) %}
+                      {% endif %}
+                      <label class="small text-muted text-uppercase fw-semibold d-block mb-2">{{ field_label }}</label>
+                      {% if value is iterable %}
+                        {% if normalized_field == '_documents' %}
+                          {% if value|length > 0 %}
+                            <ul class="mb-0 ps-3">
+                              {% for doc in value %}
+                                <li class="mb-1">
+                                  {% set doc_name = doc.name|default('Document ' ~ loop.index) %}
+                                  {% if doc.url|default('') %}
+                                    <div class="d-flex flex-wrap align-items-center gap-2">
+                                      <a href="{{ doc.url }}" target="_blank" rel="noopener noreferrer">{{ doc_name }}</a>
+                                      <button type="button"
+                                              class="btn btn-sm btn-outline-primary js-doc-preview"
+                                              data-doc-url="{{ doc.url|e("html_attr") }}"
+                                              data-doc-name="{{ doc_name|e("html_attr") }}"
+                                              data-doc-mime="{{ doc.mime_type|default("") |e('html_attr') }}">
+                                        <i class="bi bi-eye"></i> Preview
+                                      </button>
+                                    </div>
+                                  {% else %}
+                                    <span class="fw-semibold">{{ doc_name }}</span>
+                                  {% endif %}
+                                </li>
+                              {% endfor %}
+                            </ul>
+                          {% else %}
+                            <p class="mb-0 text-theme-strong">N/A</p>
+                          {% endif %}
+                        {% else %}
+                          <pre class="bg-light rounded-3 p-2 small mb-0 inl-p-0057">{{ value|json_encode(constant('JSON_UNESCAPED_UNICODE')) }}</pre>
+                        {% endif %}
+                      {% else %}
+                        <p class="mb-0 text-theme-strong inl-p-0058">
+                          {% if value is same as(null) or value is same as('') %}
+                            N/A
+                          {% elseif value is same as(true) %}
+                            Yes
+                          {% elseif value is same as(false) %}
+                            No
+                          {% else %}
+                            {{ value }}
+                          {% endif %}
+                        </p>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% if payment_data is iterable and payment_data is not empty %}
+          {% set payment_status = (payment_data.status|default('submitted'))|lower %}
+          {% set payment_status_class = payment_status in ['paid', 'completed', 'success', 'approved'] ? 'success' : (payment_status in ['submitted', 'pending', 'pending_gateway', 'initiated', 'processing'] ? 'warning text-surface-dark' : (payment_status in ['failed', 'rejected', 'cancelled', 'error'] ? 'danger' : 'secondary')) %}
+          <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body">
+              <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+                <h5 class="card-title fw-bold mb-0">
+                  <i class="bi bi-credit-card text-primary"></i> Payment
+                </h5>
+                <span class="badge bg-{{ payment_status_class }} px-3 py-2 rounded-pill text-capitalize">{{ payment_data.status|default('Submitted') }}</span>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <small class="text-muted text-uppercase fw-semibold">Mode</small>
+                  <p class="mb-0 fw-semibold text-capitalize">{{ payment_data.mode|default('manual') }}</p>
+                </div>
+                <div class="col-md-6">
+                  <small class="text-muted text-uppercase fw-semibold">Method / Gateway</small>
+                  <p class="mb-0 fw-semibold text-capitalize">{{ payment_data.method|default(payment_data.gateway|default('N/A')) }}</p>
+                </div>
+                <div class="col-md-6">
+                  <small class="text-muted text-uppercase fw-semibold">Sender Number</small>
+                  <p class="mb-0 fw-semibold">{{ payment_data.sender_number|default('N/A') }}</p>
+                </div>
+                <div class="col-md-6">
+                  <small class="text-muted text-uppercase fw-semibold">Payer Name</small>
+                  <p class="mb-0 fw-semibold">{{ payment_data.payer_name|default('N/A') }}</p>
+                </div>
+                <div class="col-md-6">
+                  <small class="text-muted text-uppercase fw-semibold">Transaction ID</small>
+                  <p class="mb-0 fw-semibold">{{ payment_data.transaction_id|default('N/A') }}</p>
+                </div>
+                <div class="col-md-6">
+                  <small class="text-muted text-uppercase fw-semibold">Amount</small>
+                  <p class="mb-0 fw-semibold">
+                    {{ payment_data.currency|default('BDT') }} {{ payment_data.amount|default(0)|number_format(2, '.', ',') }}
+                  </p>
+                </div>
+                {% if payment_data.receiver_account|default('') %}
+                  <div class="col-md-6">
+                    <small class="text-muted text-uppercase fw-semibold">Receiver Account</small>
+                    <p class="mb-0 fw-semibold">{{ payment_data.receiver_account }}</p>
+                  </div>
+                {% endif %}
+                {% if payment_data.submitted_at|default('') %}
+                  <div class="col-md-6">
+                    <small class="text-muted text-uppercase fw-semibold">Submitted At</small>
+                    <p class="mb-0 fw-semibold">{{ payment_data.submitted_at|date('M d, Y H:i') }}</p>
+                  </div>
+                {% endif %}
+                {% if payment_data.instruction_message|default('') %}
+                  <div class="col-12">
+                    <small class="text-muted text-uppercase fw-semibold">Instruction</small>
+                    <p class="mb-0">{{ payment_data.instruction_message }}</p>
+                  </div>
+                {% endif %}
+              </div>
+
+              <details class="mt-4">
+                <summary class="small fw-semibold text-primary cursor-pointer">View Raw Payment JSON</summary>
+                <pre class="bg-light rounded-3 p-3 small mt-2 mb-0 inl-p-0057">{{ payment_data|json_encode(constant('JSON_UNESCAPED_UNICODE')) }}</pre>
+              </details>
+            </div>
+          </div>
+        {% endif %}
+        <!-- Admin Notes Card -->
+        {% if application.admin_notes %}
+          <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body">
+              <h5 class="card-title fw-bold mb-3">
+                <i class="bi bi-stickies text-primary"></i> Admin Notes
+              </h5>
+              <div class="alert alert-light rounded-3 mb-0 inl-p-0059">
+                <pre class="inl-p-0060">{{ application.admin_notes }}</pre>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+        <!-- Audit Log -->
+        {% if audit_log and audit_log|length > 0 %}
+          <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body">
+              <h5 class="card-title fw-bold mb-4">
+                <i class="bi bi-clock-history text-primary"></i> Audit Log
+              </h5>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="ps-0">
+                        <i class="bi bi-calendar"></i> Date
+                      </th>
+                      <th>
+                        <i class="bi bi-list-check"></i> Action
+                      </th>
+                      <th>
+                        <i class="bi bi-person"></i> User
+                      </th>
+                      <th class="text-end pe-0">Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for log in audit_log %}
+                      <tr>
+                        <td class="ps-0">
+                          <small>{{ log.created_at|date("M d, H:i") }}</small>
+                        </td>
+                        <td>
+                          <small><span class="badge bg-light text-surface-dark">{{ log.action_type }}</span></small>
+                        </td>
+                        <td>
+                          <small>{{ log.username ?? 'System' }}</small>
+                        </td>
+                        <td class="text-end pe-0">
+                          <small class="text-muted">{{ log.details }}</small>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+      <!-- Sidebar -->
+      <div class="col-lg-4">
+        <!-- Summary Card -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+          <div class="card-body">
+            <h5 class="card-title fw-bold mb-4">
+              <i class="bi bi-info-circle text-primary"></i> Summary
+            </h5>
+            <div class="row mb-3">
+              <div class="col-12">
+                <small class="text-muted text-uppercase fw-semibold">Application ID</small>
+                <p class="mb-0 fw-semibold">{{ application.id }}</p>
+              </div>
+            </div>
+            <hr>
+            <div class="row mb-3">
+              <div class="col-12">
+                <small class="text-muted text-uppercase fw-semibold">Service</small>
+                <p class="mb-0">{{ application.service_name }}</p>
+              </div>
+            </div>
+            <hr>
+            <div class="row mb-3">
+              <div class="col-12">
+                <small class="text-muted text-uppercase fw-semibold">Submitted Date</small>
+                <p class="mb-0">{{ application.created_at|date("M d, Y") }}</p>
+                <small class="text-muted">{{ application.created_at|date("H:i") }}</small>
+              </div>
+            </div>
+            <hr>
+            {% if application.approved_at %}
+              <div class="row mb-3">
+                <div class="col-12">
+                  <small class="text-muted text-uppercase fw-semibold">Approved Date</small>
+                  <p class="mb-0">{{ application.approved_at|date("M d, Y") }}</p>
+                  <small class="text-muted">{{ application.approved_at|date("H:i") }}</small>
+                </div>
+              </div>
+              <hr>
+            {% endif %}
+            {% if application.status == 'approved' and not application.service_activated %}
+              <div class="row">
+                <div class="col-12">
+                  <small class="text-muted text-uppercase fw-semibold">Activation Status</small>
+                  <p class="mb-0">
+                    <span class="badge bg-warning">Pending Activation</span>
+                  </p>
+                </div>
+              </div>
+            {% elseif application.service_activated %}
+              <div class="row">
+                <div class="col-12">
+                  <small class="text-muted text-uppercase fw-semibold">Activated</small>
+                  <p class="mb-0">{{ application.activated_at|date("M d, Y") }}</p>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Status Badge Card -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+          <div class="card-body text-center py-5">
+            {% if application.status == 'approved' %}
+              <div class="mb-3">
+                <i class="bi bi-check-circle text-success fs-1"></i>
+              </div>
+              <h6 class="fw-bold mb-2">Application Approved!</h6>
+              <p class="text-muted small mb-0">Congratulations! Your application has been approved.</p>
+            {% elseif application.status == 'rejected' %}
+              <div class="mb-3">
+                <i class="bi bi-x-circle text-danger fs-1"></i>
+              </div>
+              <h6 class="fw-bold mb-2">Application Rejected</h6>
+              <p class="text-muted small mb-0">Unfortunately, your application was rejected.</p>
+            {% elseif application.status == 'processing' %}
+              <div class="mb-3">
+                <i class="bi bi-arrow-repeat text-info fs-1"></i>
+              </div>
+              <h6 class="fw-bold mb-2">Under Review</h6>
+              <p class="text-muted small mb-0">Your application is being reviewed by our team.</p>
+            {% else %}
+              <div class="mb-3">
+                <i class="bi bi-hourglass-split text-warning fs-1"></i>
+              </div>
+              <h6 class="fw-bold mb-2">Pending Review</h6>
+              <p class="text-muted small mb-0">Waiting for admin review. Please check back later.</p>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Help Card -->
+        <div class="card border-0 shadow-sm rounded-4">
+          <div class="card-body">
+            <h5 class="card-title fw-bold mb-3">
+              <i class="bi bi-question-circle text-primary"></i> Need Help?
+            </h5>
+            <p class="text-muted small mb-3">If you have questions about your application, please contact our support team.</p>
+            <a href="/contact" class="btn btn-outline-primary w-100 rounded-3">
+              <i class="bi bi-envelope"></i> Contact Support
+            </a>
+          </div>
+        </div>
+        <!-- Action Buttons -->
+        <div class="mt-4">
+          <a href="/services/applications/{{ application.id }}/copy"
+             class="btn btn-primary w-100 rounded-3 mb-2"
+             target="_blank"
+             rel="noopener">
+            <i class="bi bi-file-earmark-pdf"></i> Application Copy (PDF)
+          </a>
+          {% if application.status == 'rejected' %}
+            <a href="/services" class="btn btn-primary w-100 rounded-3 mb-2">
+              <i class="bi bi-search"></i> Browse Services
+            </a>
+          {% endif %}
+          <a href="/services/my-applications"
+             class="btn btn-outline-secondary w-100 rounded-3">
+            <i class="bi bi-arrow-left"></i> Back to Applications
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade"
+       id="docPreviewModal"
+       tabindex="-1"
+       aria-labelledby="docPreviewModalLabel"
+       aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header">
+          <h5 class="modal-title" id="docPreviewModalLabel">Document Preview</h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-2 p-md-3" id="docPreviewBody">
+          <div class="text-muted small">Loading preview...</div>
+        </div>
+        <div class="modal-footer">
+          <a href="#"
+             target="_blank"
+             rel="noopener noreferrer"
+             id="docPreviewOpenLink"
+             class="btn btn-primary">
+            <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
+          </a>
+          <button type="button"
+                  class="btn btn-outline-secondary"
+                  data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+(() => {
+    const notifyUser = (message, type = 'info', duration = 4000) => {
+        if (typeof window.showMessage === 'function') {
+            return window.showMessage(message, type, duration);
+        }
+
+        if (typeof window.showToast === 'function') {
+            return window.showToast(message, type, duration);
+        }
+
+        if (typeof window.Swal !== 'undefined' && typeof window.Swal.fire === 'function') {
+            const iconMap = {
+                success: 'success',
+                danger: 'error',
+                error: 'error',
+                warning: 'warning',
+                info: 'info'
+            };
+
+            return window.Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: iconMap[type] || 'info',
+                title: String(message),
+                showConfirmButton: false,
+                timer: Number(duration) > 0 ? Number(duration) : 3000
+            });
+        }
+
+        console[type === 'danger' || type === 'error' ? 'error' : 'log'](message);
+        return Promise.resolve();
+    };
+
+    const modalEl = document.getElementById('docPreviewModal');
+    const titleEl = document.getElementById('docPreviewModalLabel');
+    const bodyEl = document.getElementById('docPreviewBody');
+    const openLinkEl = document.getElementById('docPreviewOpenLink');
+
+    if (!modalEl || typeof bootstrap === 'undefined') return;
+
+    const modal = new bootstrap.Modal(modalEl);
+
+    const isImageByExt = (url) => /\.(png|jpe?g|gif|webp|bmp|svg|avif)$/i.test(url);
+    const isPdfByExt = (url) => /\.pdf$/i.test(url);
+
+    const detectType = (url, mime) => {
+        const cleanUrl = (url || '').split('#')[0].split('?')[0];
+        const mimeType = (mime || '').toLowerCase();
+        if (mimeType.startsWith('image/')) return 'image';
+        if (mimeType === 'application/pdf') return 'pdf';
+        if (isImageByExt(cleanUrl)) return 'image';
+        if (isPdfByExt(cleanUrl)) return 'pdf';
+        return 'other';
+    };
+
+    const resetBody = () => {
+        bodyEl.innerHTML = '';
+    };
+
+    document.addEventListener('click', (event) => {
+        const trigger = event.target.closest('.js-doc-preview');
+        if (!trigger) return;
+
+        event.preventDefault();
+
+        const url = (trigger.getAttribute('data-doc-url') || '').trim();
+        const name = (trigger.getAttribute('data-doc-name') || 'Document Preview').trim();
+        const mime = (trigger.getAttribute('data-doc-mime') || '').trim();
+
+        if (!url) {
+            notifyUser('Document preview URL is missing.', 'warning');
+            return;
+        }
+
+        resetBody();
+        titleEl.textContent = name;
+        openLinkEl.href = url;
+
+        const type = detectType(url, mime);
+        if (type === 'image') {
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = name;
+            img.className = 'doc-preview-img';
+            bodyEl.appendChild(img);
+        } else if (type === 'pdf') {
+            const frame = document.createElement('iframe');
+            frame.src = url;
+            frame.className = 'doc-preview-frame';
+            frame.setAttribute('title', name);
+            bodyEl.appendChild(frame);
+        } else {
+            bodyEl.innerHTML = `
+                <div class="alert alert-warning mb-0">
+                    <div class="fw-semibold mb-1">Preview is not available for this file type.</div>
+                    <div class="small text-muted">Use "Open in New Tab" to view or download this document.</div>
+                </div>
+            `;
+        }
+
+        modal.show();
+    });
+})();
+  </script>
+{% endblock %}

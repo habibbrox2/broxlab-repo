@@ -1,0 +1,281 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}Queue Item #{{ item.id }}{% endblock %}
+
+{% block stylesheets %}
+<style>
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --shadow-soft: 0 8px 32px rgba(0,0,0,0.08);
+    --shadow-hover: 0 12px 40px rgba(0,0,0,0.12);
+    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  }
+
+  .editor-glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-soft);
+    height: 100%;
+    transition: all 0.3s ease;
+  }
+
+  .editor-glass-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+  }
+
+  .compare-container {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 2rem;
+    height: calc(100vh - 280px);
+    min-height: 650px;
+  }
+
+  @media (max-width: 1200px) {
+    .compare-container {
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+  }
+
+  .scroll-pane {
+    overflow-y: auto;
+    padding: 1.5rem;
+    height: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  .scroll-pane::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scroll-pane::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scroll-pane::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+
+  .sticky-actions {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(255,255,255,0.98), rgba(255,255,255,0.95));
+    backdrop-filter: blur(8px);
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    margin: 0 -1.5rem -1.5rem -1.5rem;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .seo-floating-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.1rem;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    z-index: 10;
+    transition: transform 0.3s ease;
+  }
+
+  .seo-floating-badge:hover {
+    transform: scale(1.1);
+  }
+
+  .content-preview-raw {
+    font-size: 0.95rem;
+    color: #475569;
+    line-height: 1.8;
+  }
+  .content-preview-raw img { 
+    max-width: 100%; 
+    height: auto; 
+    border-radius: 12px; 
+    margin: 1rem 0; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .content-preview-raw p {
+    margin-bottom: 1rem;
+  }
+
+  .panel-header {
+    background: linear-gradient(to right, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+    border-radius: 16px 16px 0 0;
+    padding: 1rem 1.5rem;
+    margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+  }
+
+  .panel-header h6 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .form-control-lg {
+    font-size: 1.1rem;
+    padding: 0.875rem 1rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+  }
+
+  .form-control-lg:focus {
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+  }
+
+  .form-control {
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .form-control:focus {
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .badge-seo {
+    padding: 0.5rem 0.85rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.8rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <a href="/admin/autoblog/queue" class="btn btn-sm btn-outline-secondary mb-2"><i class="bi bi-arrow-left me-1"></i>Back to Queue</a>
+    <h4 class="fw-bold mb-0">{{ item.ai_title ?? item.original_title ?? 'Queue Item #' ~ item.id }}</h4>
+  </div>
+  <div class="d-flex gap-2">
+    {% if item.status in ['processed', 'failed'] %}
+      <form method="POST" action="/admin/autoblog/queue/approve">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="id" value="{{ item.id }}">
+        <button class="btn btn-success btn-sm"><i class="bi bi-check-lg me-1"></i>Approve</button>
+      </form>
+      <form method="POST" action="/admin/autoblog/queue/reject">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="id" value="{{ item.id }}">
+        <button class="btn btn-outline-dark btn-sm"><i class="bi bi-x-lg me-1"></i>Reject</button>
+      </form>
+    {% endif %}
+    {% if item.status in ['processed', 'approved'] %}
+      <form method="POST" action="/admin/autoblog/queue/publish">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="id" value="{{ item.id }}">
+        <button class="btn btn-primary btn-sm"><i class="bi bi-send me-1"></i>Publish Now</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="compare-container mb-4">
+  {# LEFT: Original Content #}
+  <div class="card editor-glass-card shadow-sm">
+    <div class="panel-header d-flex justify-content-between align-items-center">
+      <h6 class="fw-bold mb-0 text-secondary"><i class="bi bi-file-earmark-text me-2"></i>Original Source</h6>
+      {% if item.source_url %}
+        <a href="{{ item.source_url }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill"><i class="bi bi-link-45deg me-1"></i>View</a>
+      {% endif %}
+    </div>
+    <div class="scroll-pane">
+       <h5 class="fw-bold mb-3 text-dark">{{ item.original_title }}</h5>
+       <div class="content-preview-raw">
+         {{ item.original_content|raw }}
+       </div>
+    </div>
+  </div>
+
+  {# RIGHT: AI Enhanced Content #}
+  <div class="card editor-glass-card shadow-sm position-relative">
+    <div class="panel-header d-flex justify-content-between align-items-center">
+      <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-stars me-2"></i>AI Enhanced Content</h6>
+      <span class="badge-seo bg-primary bg-opacity-10 text-primary"><i class="bi bi-text-paragraph me-1"></i>{{ item.word_count }} Words</span>
+    </div>
+
+    {# SEO Badge #}
+    <div class="seo-floating-badge {% if item.seo_score >= 70 %}bg-success{% elseif item.seo_score >= 40 %}bg-warning{% else %}bg-danger{% endif %} text-white">
+      <i class="bi bi-graph-up"></i>
+    </div>
+
+    <form method="POST" action="/admin/autoblog/queue/edit" class="scroll-pane h-100">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="id" value="{{ item.id }}">
+      
+      <div class="mb-4">
+        <label class="small fw-bold text-muted text-uppercase mb-2">Refined Title</label>
+        <input type="text" name="ai_title" class="form-control form-control-lg border-0 bg-light-subtle" value="{{ item.ai_title }}" placeholder="AI Generated Title">
+        <div class="progress mt-2" style="height: 3px;">
+          <div class="progress-bar {% if item.ai_title|length > 60 %}bg-danger{% else %}bg-success{% endif %}" style="width: {{ (item.ai_title|length / 60 * 100)|min(100) }}%"></div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="small fw-bold text-muted text-uppercase mb-2">Meta Description</label>
+        <textarea name="ai_meta_description" class="form-control border-0 bg-light-subtle" rows="3">{{ item.ai_meta_description }}</textarea>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="small fw-bold text-muted text-uppercase mb-2">Slug</label>
+          <input type="text" name="ai_slug" class="form-control border-0 bg-light-subtle" value="{{ item.ai_slug }}">
+        </div>
+        <div class="col-md-6">
+          <label class="small fw-bold text-muted text-uppercase mb-2">Category</label>
+          <input type="text" name="ai_category" class="form-control border-0 bg-light-subtle" value="{{ item.ai_category }}">
+        </div>
+      </div>
+
+      <div class="mb-5">
+        <label class="small fw-bold text-muted text-uppercase mb-2">Full Content (Markdown/HTML Support)</label>
+        <textarea name="ai_content" id="ai_content_editor" class="form-control border-0 bg-light-subtle" rows="20">{{ item.ai_content }}</textarea>
+      </div>
+
+      {# Tags & Summary (Display Only in side-by-side) #}
+      <div class="mb-4 border-top pt-4">
+        <h6 class="small fw-bold text-muted text-uppercase mb-3">AI Suggestions</h6>
+        <div class="mb-3">
+          {% set tags = item.ai_tags|default('[]') %}
+          {% for tag in tags|json_decode %}
+            <span class="badge bg-secondary bg-opacity-10 text-secondary me-1 mb-1">{{ tag }}</span>
+          {% endfor %}
+        </div>
+        <p class="x-small text-muted font-italic">{{ item.ai_summary }}</p>
+      </div>
+
+      {# Sticky Action Bar #}
+      <div class="sticky-actions d-flex justify-content-between align-items-center">
+        <div class="d-flex gap-2">
+           <button type="submit" class="btn btn-primary"><i class="bi bi-save me-2"></i>Save Progress</button>
+           {% if item.status == 'processed' %}
+           <button type="button" class="btn btn-success" onclick="approveItem({{ item.id }})"><i class="bi bi-check-lg me-2"></i>Approve Now</button>
+           {% endif %}
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmDelete({{ item.id }})"><i class="bi bi-trash"></i></button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

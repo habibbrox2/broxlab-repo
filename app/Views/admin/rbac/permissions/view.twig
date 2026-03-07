@@ -1,0 +1,85 @@
+{% extends "admin/layout.twig" %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-key me-2"></i>
+        Permission Details
+      </div>
+      <div class="admin-page-subtitle">View permission details</div>
+    </div>
+    <div class="row mb-4">
+      <div class="col">
+        <h1 class="h3 mb-0">
+          <a href="/admin/permissions" class="text-decoration-none text-theme-strong">
+            <i class="bi bi-key me-2"></i>Permissions
+          </a>
+          <span class="text-muted">/</span>
+          <span><code>{{ permission.name }}</code></span>
+        </h1>
+      </div>
+      <div class="col-md-4 text-end">
+        <a href="/admin/permissions/{{ permission.id }}/edit"
+           class="modern-btn modern-btn-secondary btn-sm">
+          <i class="bi bi-pencil me-2"></i>Edit
+        </a>
+        <form method="POST"
+              action="/admin/permissions/{{ permission.id }}/delete"
+              class="delete-btn-inline"
+              onsubmit="return confirm('Delete this permission?')">
+          <button type="submit" class="modern-btn modern-btn-primary btn-sm">
+            <i class="bi bi-trash me-2"></i>Delete
+          </button>
+        </form>
+        <a href="/admin/permissions" class="modern-btn modern-btn-white btn-sm">
+          <i class="bi bi-arrow-left me-2"></i>Back
+        </a>
+      </div>
+    </div>
+    <div class="admin-panel-card border-0 shadow-sm">
+      <div class="admin-panel-card-header bg-light border-bottom">
+        <h5 class="mb-0">Permission Details</h5>
+      </div>
+      <div class="admin-panel-card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="text-muted small text-uppercase">Permission Name</label>
+              <p class="h5 mb-0">
+                <code>{{ permission.name }}</code>
+              </p>
+            </div>
+            <div class="mb-3">
+              <label class="text-muted small text-uppercase">Module</label>
+              <p class="mb-0">
+                <span class="badge bg-light text-surface-dark">{{ permission.module }}</span>
+              </p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="text-muted small text-uppercase">Created</label>
+              <p class="mb-0 small">{{ permission.created_at|date("M d, Y H:i") }}</p>
+            </div>
+            <div class="mb-3">
+              <label class="text-muted small text-uppercase">Updated</label>
+              <p class="mb-0 small">
+                {% if permission.updated_at %}
+                  {{ permission.updated_at|date("M d, Y H:i") }}
+                {% else %}
+                  Never
+                {% endif %}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="mb-0">
+          <label class="text-muted small text-uppercase d-block mb-2">Description</label>
+          <p class="mb-0">{{ permission.description|default("No description provided") }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

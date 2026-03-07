@@ -1,0 +1,20 @@
+{% extends "admin/layout.twig" %}
+{% block title %}Notifications Kill Switch{% endblock %}
+{% block content %}
+  <div class="container py-4">
+    <h3>Notifications Kill Switch</h3>
+    <div class="mb-3">
+      <label class="form-label">Status</label>
+      <div>
+        <button id="toggleBtn" class="modern-btn"></button>
+      </div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Maintenance message</label>
+      <textarea id="maintenanceMsg" class="form-control" rows="3"></textarea>
+    </div>
+    <div>
+      <button id="saveBtn" class="modern-btn modern-btn-primary">Save</button>
+    </div>
+  </div>
+{% endblock %}

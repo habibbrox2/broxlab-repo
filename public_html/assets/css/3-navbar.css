@@ -1,0 +1,445 @@
+/* =================================================================
+   3. NAVBAR — Brox Responsive Navbar
+   ================================================================= */
+
+/* ── Container ── */
+.brox-navbar-container {
+  background: linear-gradient(135deg, rgba(15,23,42,0.98) 0%, rgba(30,41,59,0.96) 100%) !important;
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 4px 12px rgba(99,102,241,0.1);
+  padding: 0.75rem 0 !important;
+  transition: all var(--t-base);
+}
+
+.brox-navbar-container.is-scrolled {
+  box-shadow: 0 8px 24px rgba(15,23,42,0.25);
+}
+
+/* ── Brand ── */
+.brox-brand-link {
+  color: #fff !important;
+  font-weight: 800;
+  font-size: 1.3rem;
+  letter-spacing: -0.5px;
+  text-decoration: none !important;
+  transition: all var(--t-fast);
+}
+.brox-brand-link:hover { color: var(--primary-color) !important; transform: translateX(4px); }
+
+.brox-brand-logo { width: 40px; height: 40px; object-fit: contain; border-radius: 0.5rem; }
+
+.brox-brand-icon {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 0.75rem;
+  transition: all var(--t-fast);
+}
+.brox-brand-icon:hover { transform: scale(1.1) rotate(5deg); }
+
+/* ── Mobile Toggle ── */
+.brox-mobile-toggle {
+  border: 2px solid rgba(255,255,255,0.3) !important;
+  border-radius: 0.5rem !important;
+  background: rgba(255,255,255,0.05) !important;
+  padding: 0.5rem !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  transition: all var(--t-fast) !important;
+}
+.brox-mobile-toggle:hover,
+.brox-mobile-toggle:focus {
+  background: rgba(99,102,241,0.2) !important;
+  border-color: rgba(99,102,241,0.5) !important;
+  box-shadow: 0 0 0 0.2rem rgba(99,102,241,0.25) !important;
+}
+
+.brox-toggle-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255,255,255,0.95%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='3' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+}
+
+/* ── Nav Links ── */
+.brox-nav-link {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 500 !important;
+  font-size: 0.95rem !important;
+  color: rgba(255,255,255,0.75) !important;
+  padding: 0.6rem 1rem !important;
+  min-height: 44px !important;
+  border-radius: 0.5rem !important;
+  white-space: nowrap;
+  text-decoration: none !important;
+  position: relative;
+  transition: all var(--t-fast) !important;
+}
+
+.brox-nav-link::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 0; height: 2px;
+  background: var(--primary-color);
+  border-radius: 1px;
+  transition: width var(--t-fast);
+}
+
+.brox-nav-link:hover {
+  color: #fff !important;
+  background: rgba(99,102,241,0.12) !important;
+  transform: translateY(-2px);
+}
+.brox-nav-link:hover::before,
+.brox-nav-link.brox-active::before { width: 100%; }
+
+.brox-nav-link.brox-active {
+  color: #fff !important;
+  background: rgba(99,102,241,0.2) !important;
+  font-weight: 600 !important;
+}
+
+.brox-nav-link i { font-size: 1rem; transition: all var(--t-fast); }
+.brox-nav-link:hover i { color: var(--primary-color); transform: scale(1.1); }
+
+/* ── User Dropdown Toggle ── */
+.brox-user-dropdown-toggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 0.5rem 0.75rem !important;
+  min-height: 44px !important;
+  border-radius: 2rem !important;
+  background: rgba(99,102,241,0.05) !important;
+  border: 1px solid rgba(99,102,241,0.2) !important;
+  color: rgba(255,255,255,0.9) !important;
+  text-decoration: none !important;
+  transition: all var(--t-fast) !important;
+}
+.brox-user-dropdown-toggle:hover {
+  background: rgba(99,102,241,0.15) !important;
+  border-color: rgba(99,102,241,0.4) !important;
+  transform: translateY(-2px);
+  color: #fff !important;
+}
+
+.brox-user-avatar {
+  width: 32px; height: 32px;
+  border: 2px solid var(--primary-color);
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* ── Dropdown Menu ── */
+.brox-dropdown-menu {
+  background: #fff !important;
+  border: 1px solid rgba(0,0,0,0.1) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
+}
+
+.brox-dropdown-header {
+  padding: 0.75rem 1rem !important;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.brox-dropdown-user-name { color: #1e293b !important; font-size: 0.95rem; }
+
+.brox-dropdown-item {
+  padding: 0.6rem 1rem !important;
+  color: #475569 !important;
+  text-decoration: none !important;
+  transition: all var(--t-fast) !important;
+}
+.brox-dropdown-item:hover { background: rgba(99,102,241,0.1) !important; color: var(--primary-600) !important; }
+.brox-dropdown-item i { width: 20px; }
+
+.brox-dropdown-divider { margin: 0.5rem 0 !important; border-color: #e2e8f0 !important; }
+
+/* ── Notification Bell ── */
+.brox-notification-bell {
+  position: relative;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0.5rem !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  border-radius: 0.5rem !important;
+  color: rgba(255,255,255,0.9) !important;
+  text-decoration: none !important;
+  transition: all var(--t-fast) !important;
+}
+
+.brox-notification-bell i { font-size: 1.25rem; color: rgba(255,255,255,0.9) !important; transition: all var(--t-fast); }
+.brox-notification-bell:hover { background: rgba(99,102,241,0.1) !important; transform: scale(1.05); }
+.brox-notification-bell:hover i { color: var(--primary-color) !important; transform: scale(1.1); }
+
+.brox-notification-badge {
+  position: absolute !important;
+  top: 0 !important; right: 0 !important;
+  transform: translate(25%, -25%) !important;
+  min-width: 18px !important; height: 18px !important;
+  padding: 0.2rem 0.4rem !important;
+  font-weight: 600 !important; font-size: 0.65rem !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  border-radius: 10px !important;
+  animation: notifPulse 2s infinite;
+}
+
+.brox-notification-badge.d-none {
+  display: none !important;
+}
+
+@keyframes notifPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+.brox-notification-wrapper {
+  position: relative;
+}
+
+.brox-notification-dropdown {
+  /* open from bell icon area */
+  position: absolute !important;
+  top: calc(100% + 0.5rem) !important;
+  right: 0 !important;
+  left: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  width: min(90vw, 420px) !important;
+  max-width: 420px !important;
+  max-height: min(72vh, 560px) !important;
+  display: none !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  background: #fff !important;
+  border: 1px solid rgba(0,0,0,0.1) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
+  animation: slideDownMenu 0.3s ease-out;
+  z-index: 1090 !important;
+}
+.brox-notification-dropdown.show {
+  display: flex !important;
+}
+
+
+
+@keyframes slideDownMenu {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.brox-notification-dropdown-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 1rem 1.5rem !important;
+  border-radius: 0.75rem 0.75rem 0 0 !important;
+}
+.brox-notification-dropdown-header h6 { color: #1e293b !important; font-weight: 600; margin: 0; }
+.brox-notification-list { padding: 1rem !important; color: #1e293b !important; }
+.brox-notification-list {
+  max-height: calc(min(72vh, 560px) - 110px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+.brox-notification-list .notification-entry {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  transition: background-color var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
+}
+.brox-notification-list .notification-entry > .d-flex { min-width: 0; }
+.brox-notification-list .notification-entry .flex-grow-1 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.brox-notification-list .notification-entry [data-action="mark-read"] { flex-shrink: 0; }
+.brox-notification-list .notification-entry:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+.brox-notification-list .notification-entry.bg-light {
+  background: #eef2ff !important;
+  border-color: rgba(99,102,241,0.35) !important;
+}
+.brox-notification-list .notification-entry .fw-semibold { color: #0f172a; }
+.brox-notification-list .notification-entry .text-muted { color: #475569 !important; }
+.brox-notification-list .notification-entry .text-secondary { color: #64748b !important; }
+
+/* ── Theme Toggle ── */
+.brox-theme-toggle {
+  width: 44px !important; height: 44px !important;
+  padding: 0.5rem !important;
+  border: 1.5px solid rgba(255,255,255,0.2) !important;
+  border-radius: 0.5rem !important;
+  background: transparent !important;
+  color: rgba(255,255,255,0.7) !important;
+  cursor: pointer;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  position: relative;
+  transition: all var(--t-fast) !important;
+}
+.brox-theme-toggle:hover,
+.brox-theme-toggle:focus {
+  background: rgba(99,102,241,0.15) !important;
+  border-color: rgba(99,102,241,0.4) !important;
+  color: #fff !important;
+  outline: none !important;
+}
+
+.brox-theme-toggle i { font-size: 1.1rem; position: absolute; transition: all var(--t-base); }
+.brox-theme-toggle i:nth-child(1) { opacity: 1;  transform: rotate(0deg) scale(1); }
+.brox-theme-toggle i:nth-child(2) { opacity: 0;  transform: rotate(-180deg) scale(0.5); }
+.brox-theme-toggle:hover i:nth-child(1) { opacity: 0; transform: rotate(180deg) scale(0.5); }
+.brox-theme-toggle:hover i:nth-child(2) { opacity: 1; transform: rotate(0deg) scale(1); }
+
+/* ── Notification Scrollbar ── */
+.brox-notification-dropdown::-webkit-scrollbar { width: 6px; }
+.brox-notification-dropdown::-webkit-scrollbar-track { background: #f8fafc; }
+.brox-notification-dropdown::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 3px; }
+
+/* ── Responsive ── */
+@media (min-width: 992px) {
+  .brox-navbar-collapse { display: flex !important; flex-basis: auto; }
+  .brox-mobile-toggle   { display: none !important; }
+}
+
+@media (max-width: 991px) {
+  .brox-navbar-container { padding: 0.5rem 0 !important; }
+
+  .brox-navbar-collapse.collapse:not(.show) { display: none !important; }
+  .brox-navbar-collapse.collapse.show {
+    display: block !important;
+    width: 100%;
+    padding: 1rem;
+    margin-top: 0.5rem;
+    max-height: calc(100vh - 5rem);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    background: rgba(15,23,42,0.95);
+    border-radius: 0 0 0.75rem 0.75rem;
+  }
+
+  .brox-navbar-collapse .navbar-nav { flex-direction: column !important; width: 100% !important; gap: 0.5rem; }
+  .brox-navbar-collapse .nav-item   { width: 100% !important; }
+  .brox-navbar-collapse .brox-nav-link,
+  .brox-navbar-collapse .brox-notification-bell,
+  .brox-navbar-collapse .brox-user-dropdown-toggle {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    padding: 0.75rem 1rem !important;
+  }
+  .brox-navbar-collapse .brox-user-dropdown-toggle { border-radius: 0.5rem !important; }
+
+  .brox-navbar-collapse .dropdown-menu {
+    position: static !important;
+    width: 100% !important;
+    margin-top: 0.5rem !important;
+    max-height: min(62vh, 420px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    border: 1px solid rgba(148,163,184,0.35) !important;
+    border-left: 3px solid var(--primary-color) !important;
+    background: #ffffff !important;
+    box-shadow: 0 10px 24px rgba(15,23,42,0.18) !important;
+    transform: none !important;
+  }
+
+  .brox-navbar-collapse .brox-dropdown-item {
+    color: #334155 !important;
+  }
+  .brox-navbar-collapse .brox-dropdown-item:hover {
+    background: rgba(99,102,241,0.12) !important;
+    color: #1e293b !important;
+  }
+
+  .brox-navbar-collapse .brox-notification-dropdown-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%) !important;
+    border-bottom: 1px solid #dbeafe !important;
+  }
+  .brox-navbar-collapse .brox-notification-list {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  .brox-navbar-collapse .brox-notification-wrapper {
+    position: static !important;
+  }
+  .brox-navbar-collapse .brox-notification-dropdown {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    left: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-top: 0.5rem !important;
+    max-height: min(68vh, 420px) !important;
+  }
+  .brox-notification-list {
+    max-height: calc(min(68vh, 420px) - 104px) !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .brox-brand-link  { font-size: 1.1rem !important; }
+  .brox-brand-logo,
+  .brox-brand-icon  { width: 32px !important; height: 32px !important; }
+  .brox-nav-link    { padding: 0.6rem 0.75rem !important; font-size: 0.9rem !important; }
+  .brox-user-avatar { width: 28px !important; height: 28px !important; }
+  .brox-notification-dropdown { max-height: min(66vh, 360px) !important; }
+  .brox-notification-list { max-height: calc(min(66vh, 360px) - 98px) !important; }
+}
+
+@media (max-width: 400px) {
+  .brox-brand-text  { display: none !important; }
+  .brox-brand-logo,
+  .brox-brand-icon  { width: 30px !important; height: 30px !important; }
+  .brox-user-dropdown-username { display: none !important; }
+}
+
+/* Additional navbar polish */
+.brox-nav-link.brox-active {
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.35);
+}
+
+.brox-nav-link:focus-visible,
+.brox-mobile-toggle:focus-visible,
+.brox-user-dropdown-toggle:focus-visible,
+.brox-notification-bell:focus-visible,
+.brox-theme-toggle:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.65) !important;
+  outline-offset: 2px;
+}
+
+.brox-dropdown-menu,
+.brox-notification-dropdown {
+  overflow: hidden;
+}
+
+.brox-notification-dropdown {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.brox-user-avatar {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.18);
+  transition: transform var(--t-fast), box-shadow var(--t-fast);
+}
+
+.brox-user-dropdown-toggle:hover .brox-user-avatar {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.45);
+}
+
+@media (hover: none) {
+  .brox-nav-link:hover,
+  .brox-user-dropdown-toggle:hover,
+  .brox-notification-bell:hover,
+  .brox-brand-link:hover {
+    transform: none;
+  }
+}

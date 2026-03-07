@@ -1,0 +1,82 @@
+<div id="publicAssistantWrapper" class="bb-assistant-public">
+    <button id="publicAssistantBtn" title="Chat with Assistant" aria-label="Open Chat">
+        <i class="bi bi-chat-dots-fill"></i>
+    </button>
+
+    <div id="publicAssistantChat" class="public-assistant-shell hidden d-none">
+        <div class="assistant-header">
+            <div class="assistant-header-inner">
+                <div class="assistant-avatar">
+                    <i class="bi bi-stars"></i>
+                </div>
+                <div class="assistant-header-info">
+                    <div class="assistant-header-title-row">
+                        <div class="assistant-title" id="publicAssistantTitle">Brox Assistant</div>
+                        <span class="assistant-badge">broxlab</span>
+                    </div>
+                    <div id="publicAssistantStatusText" class="assistant-status">Friendly help, fast answers</div>
+                    <div class="assistant-subtitle">broxlab.online support, guidance and quick answers in one place.</div>
+                </div>
+                <div class="assistant-header-controls">
+                    <div class="assistant-lang-toggle" role="group" aria-label="Language toggle">
+                        <button type="button" id="publicAssistantLangBn" class="btn-light">Bangla</button>
+                        <button type="button" id="publicAssistantLangEn" class="btn-outline-light">EN</button>
+                    </div>
+                    <button id="closePublicAssistant" class="assistant-close-btn" aria-label="Close">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="publicAssistantPreChat" class="chat-body">
+            <div class="prechat-intro-card">
+                <div class="intro-label">BroxLab</div>
+                <div class="intro-heading">Ask about services, support, content or billing.</div>
+                <div class="intro-desc">Start with your details so the assistant can keep the conversation relevant.</div>
+            </div>
+            <div class="prechat-step step-name">
+                <label for="introName" id="introNameLabel">Your Name</label>
+                <input type="text" id="introName" placeholder="Enter your name">
+                <button class="btn-next" id="introNext1">Next</button>
+            </div>
+            <div class="prechat-step step-contact d-none">
+                <label for="introEmail" id="introEmailLabel">Email (Optional)</label>
+                <input type="email" id="introEmail" placeholder="Enter your email">
+                <label for="introMobile" id="introMobileLabel">Mobile Number (Optional)</label>
+                <input type="text" id="introMobile" placeholder="Enter your mobile number">
+                <button class="btn-next" id="introNext2">Next</button>
+            </div>
+            <div class="prechat-step step-topic d-none">
+                <label id="introTopicLabel">Select your topics</label>
+                <div class="topic-multiselect" id="introTopicOptions">
+                    <label class="topic-option" data-topic-key="general"><input type="checkbox" class="intro-topic-option" value="general" checked><span class="topic-label">General</span></label>
+                    <label class="topic-option" data-topic-key="support"><input type="checkbox" class="intro-topic-option" value="support"><span class="topic-label">Support</span></label>
+                    <label class="topic-option" data-topic-key="billing"><input type="checkbox" class="intro-topic-option" value="billing"><span class="topic-label">Billing</span></label>
+                    <label class="topic-option" data-topic-key="feedback"><input type="checkbox" class="intro-topic-option" value="feedback"><span class="topic-label">Feedback</span></label>
+                </div>
+                <button class="btn-start" id="introStartChat">Start Chat</button>
+            </div>
+        </div>
+
+        <div id="publicAssistantMessages" class="chat-body d-none assistant-messages">
+            <div class="message assistant">Hello, I am your Brox assistant. How can I help you?</div>
+        </div>
+
+        <div class="chat-footer d-none" id="publicAssistantFooter">
+            <div id="publicAssistantLoading" class="typing-indicator d-none" aria-live="polite">
+                <span id="publicAssistantTypingText">Typing...</span>
+                <span class="typing-dots"><span></span><span></span><span></span></span>
+            </div>
+            <div class="assistant-input-row">
+                <button type="button" class="assistant-action-btn" id="btnAttachFile" title="Attach file">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+                <input type="text" id="publicAssistantInput" placeholder="Ask me anything..." aria-label="Message">
+                <button class="assistant-send-btn" id="sendToPublicAssistant" aria-label="Send">
+                    <i class="bi bi-rocket-fill"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

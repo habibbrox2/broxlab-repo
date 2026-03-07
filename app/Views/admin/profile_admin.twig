@@ -1,0 +1,165 @@
+{% extends "admin/layout.twig" %}
+{% block title %}Admin Profile{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-person-shield"></i>
+        Admin Profile
+      </div>
+      <div class="admin-page-subtitle">View and manage your admin profile information</div>
+    </div>
+    <div class="d-flex justify-content-end gap-2 mb-4">
+      <a href="/admin/profile/edit" class="modern-btn modern-btn-primary">
+        <i class="bi bi-pencil-square me-1"></i> Edit Profile
+      </a>
+      <a href="/admin/profile/password" class="modern-btn modern-btn-white">
+        <i class="bi bi-key me-1"></i> Change Password
+      </a>
+      <a href="/admin/security/2fa" class="modern-btn btn-outline-success">
+        <i class="bi bi-shield-lock me-1"></i> 2FA Settings
+      </a>
+    </div>
+    {% set role_names = [] %}
+    {% if user.roles is iterable %}
+      {% for role_item in user.roles %}
+        {% if role_item.name is defined and role_item.name %}
+          {% set role_names = role_names|merge([role_item.name]) %}
+        {% elseif role_item is not iterable and role_item %}
+          {% set role_names = role_names|merge([role_item]) %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    {% set primary_role = role_names|first|default(user.role|default('')) %}
+    {% if (primary_role is empty) and user.is_super_admin %}
+      {% set primary_role = "super_admin" %}
+    {% endif %}
+    {% if primary_role is empty %}
+      {% set primary_role = "N/A" %}
+    {% endif %}
+    <div class="row">
+      <!-- Basic Info Card -->
+      <div class="col-md-6">
+        <div class="admin-panel-card h-100">
+          <div class="admin-panel-card-body">
+            <h5 class="admin-panel-card-title mb-3">
+              <i class="bi bi-person-badge me-2 text-primary"></i>Basic Information
+            </h5>
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item">
+                <strong>Username:</strong> {{ user.username }}
+              </li>
+              <li class="list-group-item">
+                <strong>Email:</strong> {{ user.email }}
+              </li>
+              <li class="list-group-item">
+                <strong>Full Name:</strong> {{ user.first_name }} {{ user.last_name }}
+              </li>
+              <li class="list-group-item">
+                <strong>Gender:</strong> {{ user.gender|default("N/A") }}
+              </li>
+              <li class="list-group-item">
+                <strong>Date of Birth:</strong> {{ user.dob ? user.dob|date("d M, Y") : 'N/A' }}
+              </li>
+              <li class="list-group-item">
+                <strong>Phone:</strong> {{ user.phone|default("N/A") }}
+              </li>
+              <li class="list-group-item">
+                <strong>Alternate Phone:</strong> {{ user.alternate_phone|default("N/A") }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <!-- Address & Status Card -->
+      <div class="col-md-6">
+        <div class="admin-panel-card h-100">
+          <div class="admin-panel-card-body">
+            <h5 class="admin-panel-card-title mb-3">
+              <i class="bi bi-geo-alt me-2 text-success"></i>Address & Status
+            </h5>
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item">
+                <strong>Address:</strong> {{ user.address }}, {{ user.city }}, {{ user.state }}, {{ user.country }} - {{ user.zipcode }}
+              </li>
+              <li class="list-group-item">
+                <strong>Role:</strong> <span class="badge bg-danger">{{ primary_role|replace({"_": " "}) |title }}</span>
+              </li>
+              <li class="list-group-item">
+                <strong>Status:</strong> <span class="badge bg-{{ user.status == 'active' ? 'success' : 'secondary' }}">{{ user.status|capitalize }}</span>
+              </li>
+              <li class="list-group-item">
+                <strong>Email Verified:</strong> {{ user.email_verified ? 'Yes' : 'No' }}
+              </li>
+              <li class="list-group-item">
+                <strong>Phone Verified:</strong> {{ user.phone_verified ? 'Yes' : 'No' }}
+              </li>
+              <li class="list-group-item">
+                <strong>Last Login:</strong> {{ user.last_login|default("Never") }}
+              </li>
+              <li class="list-group-item">
+                <strong>Login IP:</strong> {{ user.login_ip|default("N/A") }}
+              </li>
+              <li class="list-group-item">
+                <strong>Device:</strong> {{ user.login_device|default("N/A") }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <!-- Roles Card -->
+      <div class="col-md-6">
+        <div class="admin-panel-card h-100">
+          <div class="admin-panel-card-body">
+            <h5 class="admin-panel-card-title mb-3">
+              <i class="bi bi-person-badge me-2 text-primary"></i>Roles
+            </h5>
+            {% if role_names|length > 0 %}
+              <ul class="list-group list-group-flush">
+                {% for role_name in role_names %}
+                  <li class="list-group-item">{{ role_name|replace({"_": " "}) |title }}</li>
+                {% endfor %}
+              </ul>
+            {% elseif user.role %}
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item">{{ user.role|replace({"_": " "}) |title }}</li>
+              </ul>
+            {% else %}
+              <p class="text-muted">No roles assigned</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <!-- Social Links Card -->
+      <div class="col-12">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-body">
+            <h5 class="admin-panel-card-title mb-3">
+              <i class="bi bi-share me-2 text-info"></i>Social Links
+            </h5>
+            <p class="mb-0">
+              {% set has_social = user.facebook_url or user.twitter_url or user.instagram_url or user.linkedin_url %}
+              {% if has_social %}
+                {% if user.facebook_url %}
+                  <a href="{{ user.facebook_url }}" target="_blank" class="me-3"><i class="bi bi-facebook text-primary"></i> Facebook</a>
+                {% endif %}
+                {% if user.twitter_url %}
+                  <a href="{{ user.twitter_url }}" target="_blank" class="me-3"><i class="bi bi-twitter text-info"></i> Twitter</a>
+                {% endif %}
+                {% if user.instagram_url %}
+                  <a href="{{ user.instagram_url }}" target="_blank" class="me-3"><i class="bi bi-instagram text-danger"></i> Instagram</a>
+                {% endif %}
+                {% if user.linkedin_url %}
+                  <a href="{{ user.linkedin_url }}" target="_blank" class="me-3"><i class="bi bi-linkedin text-primary"></i> LinkedIn</a>
+                {% endif %}
+              {% else %}
+                N/A
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

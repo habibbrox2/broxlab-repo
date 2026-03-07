@@ -1,0 +1,1112 @@
+{% extends "layout.twig" %}
+{% block title %}My Settings | Account Management{% endblock %}
+{% block content %}
+  <div class="container mt-5 mb-5">
+    <!-- Page Header -->
+    <div class="mb-4 settings-page-header">
+      <h1 class="h3 fw-bold settings-page-title">Account Settings</h1>
+      <p class="text-muted mb-0 settings-page-subtitle">
+        Manage your account security, linked providers, notifications and privacy preferences all from one place.
+      </p>
+    </div>
+    <!-- mobile menu button -->
+    <button class="btn btn-outline-secondary d-lg-none mb-3"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#settingsSidebar"
+            aria-controls="#settingsSidebar">
+      <i class="bi bi-list"></i> Menu
+    </button>
+    <div class="offcanvas offcanvas-start"
+         tabindex="-1"
+         id="settingsSidebar"
+         aria-labelledby="settingsSidebarLabel">
+      <div class="offcanvas-header">
+        <h5 id="settingsSidebarLabel">Settings</h5>
+        <button type="button"
+                class="btn-close text-reset"
+                data-bs-dismiss="offcanvas"
+                aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body p-0">
+        <div class="list-group list-group-flush">
+          <a href="#password-security"
+             class="list-group-item list-group-item-action active"
+             data-bs-toggle="tab">
+            <i class="bi bi-lock-fill me-2 text-danger"></i> Password & Security
+          </a>
+          <a href="#oauth-accounts"
+             class="list-group-item list-group-item-action"
+             data-bs-toggle="tab">
+            <i class="bi bi-link-45deg me-2 text-info"></i> Linked Accounts
+          </a>
+          <a href="#notifications-prefs"
+             class="list-group-item list-group-item-action"
+             data-bs-toggle="tab">
+            <i class="bi bi-bell-fill me-2 text-warning"></i> Notifications
+          </a>
+          <a href="#device-management"
+             class="list-group-item list-group-item-action"
+             data-bs-toggle="tab">
+            <i class="bi bi-phone-fill me-2 text-primary"></i> Devices
+          </a>
+          <a href="#privacy"
+             class="list-group-item list-group-item-action"
+             data-bs-toggle="tab">
+            <i class="bi bi-shield-fill me-2 text-success"></i> Privacy & Data
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <!-- Sidebar Navigation -->
+      <div class="col-lg-3 mb-4 d-none d-lg-block">
+        <div class="card border-0 shadow-sm inl-p-0130">
+          <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+              <a href="#password-security"
+                 class="list-group-item list-group-item-action active"
+                 data-bs-toggle="tab">
+                <i class="bi bi-lock-fill me-2 text-danger"></i> Password & Security
+              </a>
+              <a href="#oauth-accounts"
+                 class="list-group-item list-group-item-action"
+                 data-bs-toggle="tab">
+                <i class="bi bi-link-45deg me-2 text-info"></i> Linked Accounts
+              </a>
+              <a href="#notifications-prefs"
+                 class="list-group-item list-group-item-action"
+                 data-bs-toggle="tab">
+                <i class="bi bi-bell-fill me-2 text-warning"></i> Notifications
+              </a>
+              <a href="#device-management"
+                 class="list-group-item list-group-item-action"
+                 data-bs-toggle="tab">
+                <i class="bi bi-phone-fill me-2 text-primary"></i> Devices
+              </a>
+              <a href="#privacy"
+                 class="list-group-item list-group-item-action"
+                 data-bs-toggle="tab">
+                <i class="bi bi-shield-fill me-2 text-success"></i> Privacy & Data
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Main Content -->
+      <div class="col-lg-9">
+        <!-- Alerts Section -->
+        <div id="alerts-container"></div>
+        <!-- Profile Summary -->
+        <div class="card mb-4 settings-wrapper">
+          <div class="card-body d-flex align-items-center gap-3">
+            <img src="{{ user.photo_url|default("/assets/profile-placeholder.png") }}"
+                 class="rounded-circle"
+                 width="64"
+                 height="64"
+                 alt="Profile">
+            <div>
+              <h5 class="mb-1">{{ user.full_name|default(user.username) }}</h5>
+              <small class="text-muted d-block">{{ user.email }}</small>
+              <a href="/user/settings" class="btn btn-sm btn-outline-secondary mt-2">
+                <i class="bi bi-gear me-1"></i>Edit Profile
+              </a>
+            </div>
+          </div>
+        </div>
+        <!-- Account Information Tab -->
+        <div class="tab-content">
+          <!-- Password & Security Tab -->
+          <div class="tab-pane fade show active"
+               id="password-security"
+               role="tabpanel">
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">
+                  <i class="bi bi-lock-fill me-2"></i> Password & Security
+                </h5>
+              </div>
+              <div class="card-body">
+                <!-- Change Password Section -->
+                <h6 class="mb-3 text-muted text-uppercase">Change Password</h6>
+                <form id="change-password-form">
+                  <div class="mb-3">
+                    <label class="form-label fw-bold">Current Password</label>
+                    <input type="password"
+                           class="form-control"
+                           id="current_password"
+                           placeholder="Enter your current password"
+                           required>
+                    <small class="form-text text-muted">Required for security verification</small>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label fw-bold">New Password</label>
+                    <input type="password"
+                           class="form-control"
+                           id="new_password"
+                           placeholder="Enter new password"
+                           required>
+                    <small class="form-text text-muted">At least 8 characters, including uppercase, lowercase, number, and special character</small>
+                    <div class="password-strength mt-2">
+                      <div class="strength-meter">
+                        <div class="strength-meter-fill" id="strength-meter-fill"></div>
+                      </div>
+                      <span class="strength-text" id="strength-text">Very Weak</span>
+                    </div>
+                    <ul class="password-requirements small mt-2" id="password-requirements">
+                      <li id="req-length">At least 8 characters</li>
+                      <li id="req-uppercase">One uppercase letter (A-Z)</li>
+                      <li id="req-lowercase">One lowercase letter (a-z)</li>
+                      <li id="req-number">One number (0-9)</li>
+                      <li id="req-special">One special character (!@#$%^&*)</li>
+                    </ul>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label fw-bold">Confirm New Password</label>
+                    <input type="password"
+                           class="form-control"
+                           id="confirm_password"
+                           placeholder="Confirm new password"
+                           required>
+                  </div>
+                  <input type="hidden" id="csrf_token" value="{{ csrf_token }}">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i> Update Password
+                  </button>
+                  <button type="reset" class="btn btn-secondary ms-2">Clear</button>
+                </form>
+                <hr class="my-4">
+                <!-- Two-Factor Authentication -->
+                <h6 class="mb-3 text-muted text-uppercase">Two-Factor Authentication</h6>
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <p class="mb-1">
+                      <strong>Two-Factor Authentication</strong>
+                    </p>
+                    <small class="text-muted">Add an extra layer of security to your account</small>
+                  </div>
+                  <button class="btn btn-sm btn-outline-primary"
+                          onclick="window.location.href='/user/security/2fa'">
+                    <i class="bi bi-shield-fill me-1"></i> Setup 2FA
+                  </button>
+                </div>
+                <!-- Active Sessions -->
+                <h6 class="mb-3 text-muted text-uppercase">Active Sessions</h6>
+                <div class="alert alert-info small">
+                  <i class="bi bi-info-circle-fill me-2"></i>
+                  You are currently logged in from this browser.
+                </div>
+                <button class="btn btn-sm btn-danger" id="logout-all-btn">
+                  <i class="bi bi-box-arrow-right me-1"></i> Logout from All Devices
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- Firebase Auth Linked Accounts Tab -->
+          <div class="tab-pane fade" id="oauth-accounts" role="tabpanel">
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">
+                  <i class="bi bi-link-45deg me-2"></i> Connected Accounts
+                </h5>
+              </div>
+              <div class="card-body">
+                <p class="text-muted mb-4">Manage your linked email addresses for account access and recovery.</p>
+                <!-- Linked Accounts Section -->
+                <!-- Firebase Auth Providers (Link external accounts) -->
+                <div class="mt-3 mb-3">
+                  <h6 class="mb-3 text-muted text-uppercase fw-bold">
+                    <i class="bi bi-box-arrow-in-right me-2"></i> Link External Accounts
+                  </h6>
+                  <div id="oauth-providers-container"
+                       class="d-flex flex-wrap gap-2 oauth-provider-grid">
+                    <div class="text-center py-3 w-100">
+                      <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                      <p class="text-muted small mt-2">Loading authentication providers...</p>
+                    </div>
+                  </div>
+                </div>
+                <div id="oauth-accounts-container" class="oauth-accounts-wrapper mb-3">
+                  <h6 class="mb-2 text-muted text-uppercase fw-bold">
+                    <i class="bi bi-person-check me-2"></i> Connected Accounts
+                  </h6>
+                  <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                    <p class="text-muted small mt-2">Loading your connected accounts...</p>
+                  </div>
+                </div>
+                <div id="linked-emails-container" class="mb-4">
+                  <h6 class="mb-3 text-muted text-uppercase fw-bold">Your Linked Emails</h6>
+                  <div class="text-center py-4">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="text-muted small mt-2">Loading your linked accounts...</p>
+                  </div>
+                </div>
+                <!-- Link New Email Section -->
+                <div class="mt-4 pt-3 border-top">
+                  <h6 class="mb-3 text-muted text-uppercase fw-bold">
+                    <i class="bi bi-plus-circle me-2"></i>Link New Email
+                  </h6>
+                  <p class="small text-muted mb-3">
+                    Add additional email addresses to your account for enhanced security and account recovery options.
+                  </p>
+                  <form id="link-email-form" class="needs-validation">
+                    <div class="input-group mb-3">
+                      <input type="email"
+                             class="form-control"
+                             id="new-email"
+                             name="email"
+                             placeholder="Enter email address"
+                             required>
+                      <button class="btn btn-primary" type="submit" id="link-email-btn">
+                        <i class="bi bi-link-45deg me-1"></i> Link Email
+                      </button>
+                    </div>
+                    <div id="link-email-message" class="alert d-none" role="alert"></div>
+                  </form>
+                </div>
+                <!-- Email Security Info -->
+                <div class="alert alert-info small mt-4 mb-0">
+                  <i class="bi bi-shield-fill me-2"></i>
+                  <strong>Security:</strong> Only you can link or unlink email addresses. We'll send a verification link to confirm the email.
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Notifications Preferences Tab -->
+          <div class="tab-pane fade" id="notifications-prefs" role="tabpanel">
+            <!-- Notification Channels Card -->
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">
+                  <i class="bi bi-bell-fill me-2"></i> Notification Channels
+                </h5>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input notification-channel"
+                               type="checkbox"
+                               id="email-notifications"
+                               checked
+                               data-channel="email">
+                        <label class="form-check-label" for="email-notifications">
+                          <strong>Email Notifications</strong>
+                          <small class="d-block text-muted">Receive updates via email</small>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input notification-channel"
+                               type="checkbox"
+                               id="push-notifications"
+                               checked
+                               data-channel="push">
+                        <label class="form-check-label" for="push-notifications">
+                          <strong>Push Notifications</strong>
+                          <small class="d-block text-muted">Browser push notifications</small>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input notification-channel"
+                               type="checkbox"
+                               id="sms-notifications"
+                               data-channel="sms">
+                        <label class="form-check-label" for="sms-notifications">
+                          <strong>SMS Notifications</strong>
+                          <small class="d-block text-muted">Text message alerts (if available)</small>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input notification-channel"
+                               type="checkbox"
+                               id="in-app-notifications"
+                               checked
+                               data-channel="in-app">
+                        <label class="form-check-label" for="in-app-notifications">
+                          <strong>In-App Notifications</strong>
+                          <small class="d-block text-muted">Alerts within the application</small>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Notification Categories Card -->
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">
+                  <i class="bi bi-tag-fill me-2"></i> Notification Categories
+                </h5>
+              </div>
+              <div class="card-body">
+                <div class="notification-categories-list">
+                  <div class="mb-3 pb-3 border-bottom">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input notification-category"
+                             type="checkbox"
+                             id="cat-comments"
+                             checked
+                             data-category="comments">
+                      <label class="form-check-label" for="cat-comments">
+                        <strong>Comments & Replies</strong>
+                        <small class="d-block text-muted">When someone comments on your content</small>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="mb-3 pb-3 border-bottom">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input notification-category"
+                             type="checkbox"
+                             id="cat-messages"
+                             checked
+                             data-category="messages">
+                      <label class="form-check-label" for="cat-messages">
+                        <strong>Messages & Communications</strong>
+                        <small class="d-block text-muted">When you receive new messages</small>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="mb-3 pb-3 border-bottom">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input notification-category"
+                             type="checkbox"
+                             id="cat-marketing"
+                             data-category="marketing">
+                      <label class="form-check-label" for="cat-marketing">
+                        <strong>Marketing & Promotions</strong>
+                        <small class="d-block text-muted">News, announcements, and special offers</small>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="mb-3 pb-3 border-bottom">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input notification-category"
+                             type="checkbox"
+                             id="cat-system"
+                             checked
+                             data-category="system">
+                      <label class="form-check-label" for="cat-system">
+                        <strong>System & Updates</strong>
+                        <small class="d-block text-muted">Important system notifications and updates</small>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input notification-category"
+                             type="checkbox"
+                             id="cat-activity"
+                             checked
+                             data-category="activity">
+                      <label class="form-check-label" for="cat-activity">
+                        <strong>Activity Updates</strong>
+                        <small class="d-block text-muted">Likes, follows, and engagement notifications</small>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Notification Schedule Card -->
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">
+                  <i class="bi bi-clock-fill me-2"></i> Quiet Hours & Schedule
+                </h5>
+              </div>
+              <div class="card-body">
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input"
+                         type="checkbox"
+                         id="enable-quiet-hours"
+                         data-feature="quiet-hours">
+                  <label class="form-check-label" for="enable-quiet-hours">
+                    <strong>Enable Quiet Hours</strong>
+                    <small class="d-block text-muted">Suppress notifications outside specified times</small>
+                  </label>
+                </div>
+                <div id="quiet-hours-config" class="inl-p-0004">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <label for="quiet-start-time" class="form-label">Start Time</label>
+                      <input type="time" class="form-control" id="quiet-start-time" value="22:00">
+                    </div>
+                    <div class="col-md-6">
+                      <label for="quiet-end-time" class="form-label">End Time</label>
+                      <input type="time" class="form-control" id="quiet-end-time" value="08:00">
+                    </div>
+                  </div>
+                  <small class="text-muted d-block mt-2">Notifications during these hours will be silenced</small>
+                </div>
+              </div>
+            </div>
+            <!-- Sound & Vibration Card -->
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">
+                  <i class="bi bi-volume-up-fill me-2"></i> Sound & Vibration
+                </h5>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input"
+                           type="checkbox"
+                           id="notification-sound"
+                           checked
+                           data-feature="sound">
+                    <label class="form-check-label" for="notification-sound">
+                      <strong>Notification Sound</strong>
+                      <small class="d-block text-muted">Play sound for incoming notifications</small>
+                    </label>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input"
+                           type="checkbox"
+                           id="notification-vibration"
+                           checked
+                           data-feature="vibration">
+                    <label class="form-check-label" for="notification-vibration">
+                      <strong>Vibration</strong>
+                      <small class="d-block text-muted">Vibrate on mobile devices for notifications</small>
+                    </label>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label for="notification-volume" class="form-label">Volume Level</label>
+                  <input type="range"
+                         class="form-range"
+                         id="notification-volume"
+                         min="0"
+                         max="100"
+                         value="70">
+                  <small class="text-muted d-block mt-1"><span id="volume-display">70</span>%</small>
+                </div>
+              </div>
+            </div>
+            <!-- Device Preferences Card -->
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">
+                  <i class="bi bi-phone-fill me-2"></i> Device Preferences
+                </h5>
+              </div>
+              <div class="card-body">
+                <div id="registered-devices" class="device-list">
+                  <!-- Devices will be populated via JavaScript -->
+                  <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i> Loading your registered devices...
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Notification History Card -->
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                  <i class="bi bi-clock-history me-2"></i> Recent Notifications
+                </h5>
+                <button class="btn btn-sm btn-outline-danger" id="clear-history-btn">
+                  <i class="bi bi-trash me-1"></i> Clear History
+                </button>
+              </div>
+              <div class="card-body">
+                <div id="notification-history" class="notification-history-list">
+                  <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i> Loading notification history...
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Save Button -->
+            <div class="d-flex gap-2">
+              <button class="btn btn-primary" id="save-notifications-btn">
+                <i class="bi bi-check-circle me-1"></i> Save All Preferences
+              </button>
+              <button class="btn btn-outline-secondary" id="reset-notifications-btn">
+                <i class="bi bi-arrow-clockwise me-1"></i> Reset to Defaults
+              </button>
+            </div>
+          </div>
+          <!-- Device Management Tab -->
+          <div class="tab-pane fade" id="device-management" role="tabpanel">
+            <div class="card settings-card border-0 shadow-sm mb-4">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">
+                  <i class="bi bi-phone-fill me-2"></i> My Connected Devices
+                </h5>
+              </div>
+              <div class="card-body">
+                <p class="text-muted mb-4">Manage your registered devices and notifications on each device.</p>
+                <!-- Current Device Info -->
+                <div class="alert alert-info mb-4">
+                  <i class="bi bi-info-circle-fill me-2"></i>
+                  <strong>Current Device:</strong> <span id="current-device-badge">Loading...</span>
+                </div>
+                <!-- Devices List -->
+                <div id="devices-container">
+                  <div class="text-center py-5">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="text-muted">Loading your registered devices...</p>
+                  </div>
+                </div>
+                <!-- Empty State -->
+                <div id="devices-empty" class="inl-p-0004">
+                  <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>No devices registered yet.</strong> Grant notification permission to register this device.
+                  </div>
+                </div>
+                <!-- Bulk Actions -->
+                <div class="mt-4 pt-3 border-top inl-p-0004" id="devices-bulk-actions">
+                  <h6 class="mb-3 text-muted text-uppercase">Bulk Actions</h6>
+                  <button class="btn btn-outline-danger btn-sm" id="revoke-all-btn">
+                    <i class="bi bi-x-circle me-1"></i> Revoke All Devices
+                  </button>
+                  <small class="d-block text-danger mt-2">Warning: You will need to grant permission again to receive notifications.</small>
+                </div>
+              </div>
+            </div>
+            <!-- Device Notification Settings -->
+            <div class="card settings-card border-0 shadow-sm mb-4">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">
+                  <i class="bi bi-sliders me-2"></i> Device-Specific Settings
+                </h5>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input device-setting"
+                           type="checkbox"
+                           id="notify-this-device"
+                           checked
+                           data-setting="active">
+                    <label class="form-check-label" for="notify-this-device">
+                      <strong>Enable Notifications on This Device</strong>
+                      <small class="d-block text-muted">Toggle to pause/resume notifications for this device only</small>
+                    </label>
+                  </div>
+                </div>
+                <hr class="my-3">
+                <h6 class="mb-3 text-muted">Rename This Device</h6>
+                <div class="input-group mb-3">
+                  <input type="text"
+                         class="form-control"
+                         id="device-name-input"
+                         placeholder="e.g., My Laptop, Work Phone">
+                  <button class="btn btn-primary" id="rename-device-btn">
+                    <i class="bi bi-check-lg me-1"></i> Update
+                  </button>
+                </div>
+                <small class="text-muted">Give your device a memorable name to identify it easily.</small>
+              </div>
+            </div>
+            <!-- Sign Out Section -->
+            <div class="card settings-card border-0 shadow-sm">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">
+                  <i class="bi bi-box-arrow-right me-2"></i> Sign Out
+                </h5>
+              </div>
+              <div class="card-body">
+                <p class="text-muted mb-3">Sign out from this device to revoke notification permissions.</p>
+                <button class="btn btn-danger" id="signout-device-btn">
+                  <i class="bi bi-box-arrow-right me-1"></i> Sign Out This Device
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- Privacy & Data Tab -->
+          <div class="tab-pane fade" id="privacy" role="tabpanel">
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">
+                  <i class="bi bi-shield-fill me-2"></i> Privacy & Data
+                </h5>
+              </div>
+              <div class="card-body">
+                <h6 class="mb-3 text-muted text-uppercase">Data Management</h6>
+                <div class="list-group list-group-flush">
+                  <a href="#" class="list-group-item list-group-item-action">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <strong>Download My Data</strong>
+                        <small class="d-block text-muted">Get a copy of your personal data</small>
+                      </div>
+                      <button class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-download me-1"></i> Download
+                      </button>
+                    </div>
+                  </a>
+                  <a href="#" class="list-group-item list-group-item-action">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <strong>Delete My Account</strong>
+                        <small class="d-block text-muted">Permanently delete your account and all data</small>
+                      </div>
+                      <button class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash-fill me-1"></i> Delete
+                      </button>
+                    </div>
+                  </a>
+                </div>
+                <div class="alert alert-warning mt-4">
+                  <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                  <strong>Warning:</strong> Deleting your account is permanent and cannot be undone.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Password Change Modal -->
+  <div class="modal fade" id="passwordSuccessModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title">
+            <i class="bi bi-check-circle-fill me-2"></i> Password Updated
+          </h5>
+          <button type="button"
+                  class="btn-close btn-close-white"
+                  data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          Your password has been successfully changed. Please use your new password for future logins.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-success" data-bs-dismiss="modal">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+document.addEventListener('DOMContentLoaded', function() {
+    initUnifiedAccountSettings();
+    initLinkedEmailsManager();
+    setupNotificationPreferences();
+    setupDeviceManagement();
+});
+
+async function initUnifiedAccountSettings() {
+    try {
+        const mod = await import('/assets/js/dist/account-settings-shared.js');
+        const oauthInit = mod?.initAccountSettingsOAuth || mod?.default?.initAccountSettingsOAuth;
+        const passwordInit = mod?.initAccountPasswordChange || mod?.default?.initAccountPasswordChange;
+        if (typeof oauthInit === 'function') {
+            const oauthApi = oauthInit({
+                theme: 'bootstrap',
+                accountsContainerId: 'oauth-accounts-container',
+                providersContainerId: 'oauth-providers-container',
+                alertsContainerId: 'alerts-container',
+                csrfTokenSelector: '#csrf_token',
+                showAlert: (message, type) => showAlert(message, type || 'info')
+            });
+
+            document.querySelector('a[href="#oauth-accounts"]')?.addEventListener('shown.bs.tab', function() {
+                oauthApi?.reloadAccounts?.();
+            });
+        }
+
+        if (typeof passwordInit === 'function') {
+            passwordInit({
+                formId: 'change-password-form',
+                currentPasswordId: 'current_password',
+                newPasswordId: 'new_password',
+                confirmPasswordId: 'confirm_password',
+                csrfTokenSelector: '#csrf_token',
+                alertsContainerId: 'alerts-container',
+                showAlert: (message, type) => showAlert(message, type || 'info')
+            });
+        }
+    } catch (error) {
+        console.error('Account settings helper initialization failed:', error);
+    }
+}
+
+// Linked emails management
+async function initLinkedEmailsManager() {
+    try {
+        const mod = await import('/assets/js/dist/linked-emails.js');
+        const initLinkedEmails = mod?.default || mod?.initLinkedEmails;
+        if (typeof initLinkedEmails === 'function') {
+            initLinkedEmails({
+                containerSelector: '#linked-emails-container',
+                formSelector: '#link-email-form',
+                emailInputSelector: '#new-email',
+                messageSelector: '#link-email-message',
+                csrfTokenSelector: '#csrf_token'
+            });
+        }
+    } catch (error) {
+        console.error('Linked emails initialization failed:', error);
+    }
+}
+
+// Account password + Firebase Auth handling is centralized in /assets/js/dist/account-settings-shared.js
+
+function setupNotificationPreferences() {
+    const saveBtn = document.getElementById('save-notifications-btn');
+
+    // load current preferences and apply to form
+    async function loadCurrent() {
+        try {
+            const resp = await fetch('/api/user/notification-preferences');
+            const j = await resp.json();
+            if (j.success) {
+                if (j.channels) {
+                    for (const ch in j.channels) {
+                        const el = document.getElementById(ch + '-notifications');
+                        if (el) el.checked = !!j.channels[ch];
+                    }
+                }
+                if (typeof j.marketing_emails !== 'undefined') {
+                    const me = document.getElementById('marketing-emails');
+                    if (me) me.checked = !!j.marketing_emails;
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load notification prefs', e);
+        }
+    }
+
+    loadCurrent();
+
+    saveBtn?.addEventListener('click', function() {
+        const csrfToken = document.getElementById('csrf_token')?.value || '';
+
+        const data = {
+            email_notifications: document.getElementById('email-notifications')?.checked || false,
+            push_notifications: document.getElementById('push-notifications')?.checked || false,
+            sms_notifications: document.getElementById('sms-notifications')?.checked || false,
+            'in-app_notifications': document.getElementById('in-app-notifications')?.checked || false,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRF-Token': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams(data)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('Notification preferences saved successfully', 'success');
+            } else {
+                showAlert(data.error || 'Failed to save preferences', 'danger');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            showAlert('An error occurred', 'danger');
+        });
+    });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showAlert(message, type) {
+    const normalizedType = type === 'error' ? 'danger' : (type || 'info');
+    if (typeof window.showMessage === 'function') {
+        window.showMessage(message, normalizedType, 5000);
+        return;
+    }
+
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${normalizedType} alert-dismissible fade show`;
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        <i class="bi bi-${normalizedType === 'success' ? 'check-circle-fill' : normalizedType === 'danger' ? 'exclamation-circle-fill' : 'info-circle-fill'} me-2"></i>
+        ${escapeHtml(message)}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    const container = document.getElementById('alerts-container');
+    if (container) {
+        container.appendChild(alertDiv);
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            alertDiv.close?.();
+            alertDiv.remove?.();
+        }, 5000);
+    }
+}
+
+// Device Management Functions
+function loadUserDevices() {
+    const container = document.getElementById('devices-container');
+    const emptyState = document.getElementById('devices-empty');
+    const bulkActions = document.getElementById('devices-bulk-actions');
+
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+
+    fetch('/api/user/my-devices', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success || !data.devices || data.devices.length === 0) {
+            container.style.display = 'none';
+            emptyState.style.display = 'block';
+            if (bulkActions) bulkActions.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'block';
+        emptyState.style.display = 'none';
+        if (bulkActions) bulkActions.style.display = 'block';
+
+        const currentDeviceId = localStorage.getItem('__fcm_device_id');
+        const devicesHtml = data.devices.map(device => {
+            const isCurrent = device.device_id === currentDeviceId;
+            const badge = isCurrent ? '<span class="badge bg-info ms-2">Current Device</span>' : '';
+            const lastActive = device.last_active ? new Date(device.last_active).toLocaleDateString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            }) : 'Unknown';
+
+            // Extract browser and OS from user agent
+            const userAgent = device.user_agent || '';
+            let browser = 'Unknown';
+            let os = 'Unknown';
+            if (userAgent.includes('Chrome')) browser = 'Chrome';
+            else if (userAgent.includes('Safari')) browser = 'Safari';
+            else if (userAgent.includes('Firefox')) browser = 'Firefox';
+            else if (userAgent.includes('Edge')) browser = 'Edge';
+
+            if (userAgent.includes('Windows')) os = 'Windows';
+            else if (userAgent.includes('Mac')) os = 'macOS';
+            else if (userAgent.includes('Linux')) os = 'Linux';
+            else if (userAgent.includes('Android')) os = 'Android';
+            else if (userAgent.includes('iPhone')) os = 'iOS';
+
+            return `
+                <div class="card device-card mb-3 ${isCurrent ? 'border-info' : ''}" id="device-${device.device_id}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-${device.device_type === 'mobile' ? 'phone' : device.device_type === 'tablet' ? 'tablet' : 'laptop'} me-2 fs-5"></i>
+                                    <h6 class="mb-0">${escapeHtml(device.device_name || 'Unnamed Device')}</h6>
+                                    ${badge}
+                                </div>
+                                <small class="text-muted d-block">
+                                    <strong>Browser:</strong> ${escapeHtml(browser)} | <strong>OS:</strong> ${escapeHtml(os)}
+                                </small>
+                                <small class="text-muted d-block">
+                                    <strong>Type:</strong> ${escapeHtml(device.device_type || 'Web')}
+                                </small>
+                                <small class="text-muted d-block" title="${escapeHtml(userAgent)}">
+                                    <strong>User Agent:</strong> ${escapeHtml(userAgent.substring(0, 50) + (userAgent.length > 50 ? '...' : ''))}
+                                </small>
+                                <small class="text-muted d-block"><strong>Last Active:</strong> ${escapeHtml(lastActive)}</small>
+                                <small class="text-muted d-block"><strong>Tokens:</strong> ${device.token_count || 1}</small>
+                            </div>
+                            ${!isCurrent ? `
+                                <button class="btn btn-sm btn-outline-danger" onclick="revokeDevice('${device.device_id}')">
+                                    <i class="bi bi-trash me-1"></i> Revoke
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = devicesHtml;
+
+        // Set current device name
+        const currentDeviceCard = document.querySelector(`#device-${currentDeviceId?.replace(/"/g, '\\"')}`);
+        if (currentDeviceCard) {
+            const name = currentDeviceCard.querySelector('h6').textContent.trim();
+            document.getElementById('current-device-badge').textContent = name;
+            document.getElementById('device-name-input').value = name;
+        }
+    })
+    .catch(err => {
+        console.error('Error loading devices:', err);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-circle me-2"></i>
+                Failed to load devices. Please try again later.
+            </div>
+        `;
+    });
+}
+
+function revokeDevice(deviceId) {
+    if (!confirm('Are you sure you want to revoke this device? You will need to grant notification permission again.')) {
+        return;
+    }
+
+    fetch('/api/user/revoke-device', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': document.getElementById('csrf_token')?.value || ''
+        },
+        body: JSON.stringify({ device_id: deviceId })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('ডিভাইস সফলভাবে পরিত্যক্ত হয়েছে', 'success');
+            const card = document.getElementById(`device-${deviceId}`);
+            if (card) {
+                card.style.opacity = '0.5';
+                setTimeout(() => card.remove(), 300);
+            }
+            // Reload devices list
+            setTimeout(loadUserDevices, 1000);
+        } else {
+            showAlert(data.error || 'Failed to revoke device', 'danger');
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showAlert('একটি ত্রুটি ঘটেছে', 'danger');
+    });
+}
+
+function setupDeviceManagement() {
+    // Load devices on page load
+    if (document.getElementById('device-management')) {
+        loadUserDevices();
+    }
+
+    // Rename device button
+    const renameBtn = document.getElementById('rename-device-btn');
+    if (renameBtn) {
+        renameBtn.addEventListener('click', function() {
+            const newName = document.getElementById('device-name-input')?.value?.trim();
+            if (!newName) {
+                showAlert('Please enter a device name', 'warning');
+                return;
+            }
+
+            const deviceId = localStorage.getItem('__fcm_device_id');
+            if (!deviceId) {
+                showAlert('Device ID not found', 'danger');
+                return;
+            }
+
+            // Update local display
+            document.getElementById('current-device-badge').textContent = newName;
+            showAlert('Device name updated locally (will sync on next page load)', 'success');
+        });
+    }
+
+    // Revoke all devices button
+    const revokeAllBtn = document.getElementById('revoke-all-btn');
+    if (revokeAllBtn) {
+        revokeAllBtn.addEventListener('click', function() {
+            if (!confirm('This will revoke ALL devices. You will need to grant notification permission again on each device. Continue?')) {
+                return;
+            }
+
+            const devices = document.querySelectorAll('[id^="device-"]');
+            let revokeCount = 0;
+
+            devices.forEach(card => {
+                const deviceId = card.id.replace('device-', '');
+                const currentDeviceId = localStorage.getItem('__fcm_device_id');
+
+                // Skip current device if you want to keep it active
+                if (deviceId !== currentDeviceId) {
+                    fetch('/api/user/revoke-device', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': document.getElementById('csrf_token')?.value || ''
+                        },
+                        body: JSON.stringify({ device_id: deviceId })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) revokeCount++;
+                        if (revokeCount === devices.length - 1) {
+                            showAlert(`${revokeCount} devices revoked successfully`, 'success');
+                            setTimeout(loadUserDevices, 1000);
+                        }
+                    })
+                    .catch(err => console.error('Revoke error:', err));
+                }
+            });
+        });
+    }
+
+    // Sign out device button
+    const signoutBtn = document.getElementById('signout-device-btn');
+    if (signoutBtn) {
+        signoutBtn.addEventListener('click', function() {
+            if (confirm('Sign out from this device? You will be logged out immediately.')) {
+                if (typeof window.performUnifiedLogout === 'function') {
+                    window.performUnifiedLogout({ context: 'user-settings' });
+                } else {
+                    window.location.href = '/logout';
+                }
+            }
+        });
+    }
+
+    // Notify this device toggle
+    const notifyToggle = document.getElementById('notify-this-device');
+    if (notifyToggle) {
+        notifyToggle.addEventListener('change', function() {
+            const enabled = this.checked;
+            const message = enabled ? 'Notifications enabled for this device' : 'Notifications disabled for this device';
+            showAlert(message, 'info');
+            // Store preference in localStorage
+            try {
+                localStorage.setItem('__device_notifications_enabled', enabled ? '1' : '0');
+            } catch (e) {}
+        });
+    }
+}
+
+// Initialize on tab switch
+document.addEventListener('shown.bs.tab', function(e) {
+    if (e.target.getAttribute('href') === '#device-management') {
+        loadUserDevices();
+    }
+});
+  </script>
+{% endblock %}

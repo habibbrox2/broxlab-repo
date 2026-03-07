@@ -1,0 +1,810 @@
+/* ============================================================
+   AI Assistant – Custom CSS (no Tailwind)
+   Covers both Admin and Public assistant widgets
+   ============================================================ */
+
+/* ── Shared: typing dots animation ── */
+@keyframes assistantBlink {
+
+    0%,
+    80%,
+    100% {
+        opacity: 0;
+        transform: scale(0.7);
+    }
+
+    40% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.typing-dots span {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    margin: 0 1px;
+    animation: assistantBlink 1.2s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+/* ── Shared: message bubbles ── */
+.assistant-messages .message {
+    max-width: 88%;
+    padding: 8px 13px;
+    border-radius: 18px;
+    font-size: 13px;
+    line-height: 1.55;
+    word-break: break-word;
+    margin-bottom: 6px;
+}
+
+.assistant-messages .message.user {
+    margin-left: auto;
+}
+
+.assistant-messages .message.assistant {
+    margin-right: auto;
+}
+
+/* ── Shared: action strip buttons ── */
+.assistant-action-strip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.assistant-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.18s, transform 0.15s;
+    background: transparent;
+    padding: 0;
+}
+
+.assistant-action-btn:hover {
+    transform: scale(1.08);
+}
+
+/* ── Shared: language toggle ── */
+.assistant-lang-toggle {
+    display: flex;
+    border-radius: 999px;
+    overflow: hidden;
+    padding: 3px;
+}
+
+.assistant-lang-toggle button {
+    border: none;
+    cursor: pointer;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 10px;
+    font-weight: 600;
+    transition: background 0.18s, color 0.18s;
+}
+
+/* ============================================================
+   ADMIN ASSISTANT
+   ============================================================ */
+
+/* Wrapper – fixed bottom-right */
+#adminAssistantWrapper {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Toggle button */
+#adminAssistantBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 22px;
+    border: 1px solid rgba(125, 211, 252, 0.3);
+    background: radial-gradient(circle at top, rgba(56, 189, 248, 0.38), rgba(15, 23, 42, 0.95) 58%, rgba(2, 6, 23, 1) 100%);
+    color: #f0f9ff;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 18px 48px rgba(14, 165, 233, 0.32);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+#adminAssistantBtn:hover {
+    transform: translateY(-4px) scale(1.03);
+}
+
+/* Chat window */
+.admin-assistant-shell {
+    position: fixed;
+    bottom: 96px;
+    right: 16px;
+    width: min(344px, calc(100vw - 16px));
+    height: min(544px, calc(100vh - 100px));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 28px;
+    border: 1px solid rgba(186, 230, 253, 0.2);
+    background: rgba(2, 6, 23, 0.96);
+    box-shadow: 0 28px 100px rgba(8, 47, 73, 0.48);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+@media (min-width: 640px) {
+    .admin-assistant-shell {
+        right: 20px;
+    }
+}
+
+/* Header */
+.admin-assistant-shell .assistant-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, rgba(2, 6, 23, 0.95) 0%, rgba(14, 165, 233, 0.9) 54%, rgba(8, 47, 73, 0.96) 100%);
+    padding: 12px 14px;
+    color: #fff;
+}
+
+.admin-assistant-shell .assistant-header-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.admin-assistant-shell .assistant-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 16px;
+    background: rgba(56, 189, 248, 0.15);
+    box-shadow: 0 0 0 1px rgba(186, 230, 253, 0.25);
+    font-size: 12px;
+    color: #e0f2fe;
+}
+
+.admin-assistant-shell .assistant-header-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-assistant-shell .assistant-header-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-assistant-shell .assistant-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-assistant-shell .assistant-badge {
+    border-radius: 999px;
+    border: 1px solid rgba(125, 211, 252, 0.35);
+    background: rgba(56, 189, 248, 0.1);
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: #e0f2fe;
+    white-space: nowrap;
+}
+
+.admin-assistant-shell .assistant-status {
+    margin-top: 4px;
+    font-size: 11px;
+    color: rgba(224, 242, 254, 0.8);
+}
+
+.admin-assistant-shell .assistant-subtitle {
+    margin-top: 4px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: rgba(224, 242, 254, 0.45);
+}
+
+.admin-assistant-shell .assistant-header-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.admin-assistant-shell .assistant-lang-toggle {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-assistant-shell .assistant-lang-toggle button {
+    color: rgba(255, 255, 255, 0.8);
+    background: transparent;
+}
+
+.admin-assistant-shell .assistant-lang-toggle button.active,
+.admin-assistant-shell .assistant-lang-toggle button.btn-light {
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+}
+
+.admin-assistant-shell .assistant-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.18s, color 0.18s;
+}
+
+.admin-assistant-shell .assistant-close-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+/* Messages area */
+.admin-assistant-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: radial-gradient(circle at top, rgba(56, 189, 248, 0.14), rgba(15, 23, 42, 0.96) 30%, rgba(2, 6, 23, 1) 100%);
+}
+
+.admin-assistant-messages .message.user {
+    background: rgba(14, 165, 233, 0.22);
+    color: #e0f2fe;
+    border-radius: 18px 18px 4px 18px;
+}
+
+.admin-assistant-messages .message.assistant {
+    background: rgba(255, 255, 255, 0.06);
+    color: #cbd5e1;
+    border-radius: 18px 18px 18px 4px;
+}
+
+.admin-assistant-messages .typing-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(125, 211, 252, 0.25);
+    background: rgba(15, 23, 42, 0.8);
+    padding: 6px 12px;
+    font-size: 12px;
+    color: rgba(224, 242, 254, 0.8);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    align-self: flex-start;
+}
+
+/* Footer / input area */
+.admin-assistant-shell .assistant-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(2, 6, 23, 0.9);
+    padding: 10px;
+}
+
+.admin-assistant-shell .assistant-footer-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: rgba(224, 242, 254, 0.6);
+    margin-bottom: 8px;
+}
+
+.admin-assistant-shell .assistant-input-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 24px;
+    border: 1px solid rgba(186, 230, 253, 0.12);
+    background: rgba(15, 23, 42, 0.9);
+    padding: 6px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.admin-assistant-shell .assistant-input-row input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    color: #e2e8f0;
+    font-size: 13px;
+    padding: 6px;
+    outline: none;
+}
+
+.admin-assistant-shell .assistant-input-row input[type="text"]::placeholder {
+    color: #64748b;
+}
+
+.admin-assistant-shell .assistant-input-row .assistant-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(186, 230, 253, 0.7);
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+    flex-shrink: 0;
+}
+
+.admin-assistant-shell .assistant-input-row .assistant-action-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #e0f2fe;
+}
+
+.admin-assistant-shell .assistant-send-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+    color: #0f172a;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+    transition: transform 0.15s;
+    flex-shrink: 0;
+}
+
+.admin-assistant-shell .assistant-send-btn:hover {
+    transform: scale(1.05);
+}
+
+/* ============================================================
+   PUBLIC ASSISTANT
+   ============================================================ */
+
+/* Wrapper */
+#publicAssistantWrapper {
+    position: fixed;
+    bottom: 20px;
+    right: 96px;
+    /* offset right so it doesn't overlap scroll-to-top button */
+    z-index: 1000;
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Toggle button */
+#publicAssistantBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 22px;
+    border: 1px solid rgba(253, 186, 116, 0.7);
+    background: linear-gradient(135deg, rgba(255, 247, 237, 0.98) 0%, rgba(255, 237, 213, 0.98) 48%, rgba(251, 191, 36, 0.95) 100%);
+    color: #431407;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 18px 48px rgba(251, 146, 60, 0.28);
+    transition: transform 0.3s;
+}
+
+#publicAssistantBtn:hover {
+    transform: translateY(-4px) scale(1.03);
+}
+
+/* Chat window */
+.public-assistant-shell {
+    position: fixed;
+    bottom: 96px;
+    right: 16px;
+    width: min(360px, calc(100vw - 16px));
+    height: 505px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 30px;
+    border: 1px solid rgba(253, 186, 116, 0.7);
+    background: linear-gradient(180deg, rgba(255, 251, 235, 0.96) 0%, rgba(255, 255, 255, 0.96) 100%);
+    box-shadow: 0 24px 80px rgba(251, 146, 60, 0.18);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+@media (min-width: 640px) {
+    .public-assistant-shell {
+        right: 20px;
+    }
+}
+
+/* Header */
+.public-assistant-shell .assistant-header {
+    border-bottom: 1px solid #fed7aa;
+    background: linear-gradient(135deg, rgba(255, 247, 237, 1) 0%, rgba(254, 243, 199, 0.98) 52%, rgba(251, 191, 36, 0.92) 100%);
+    padding: 16px;
+    color: #1e293b;
+}
+
+.public-assistant-shell .assistant-header-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.public-assistant-shell .assistant-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 0 0 1px rgba(253, 186, 116, 0.8);
+    font-size: 14px;
+    color: #f97316;
+}
+
+.public-assistant-shell .assistant-header-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.public-assistant-shell .assistant-header-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.public-assistant-shell .assistant-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #1e293b;
+}
+
+.public-assistant-shell .assistant-badge {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: #ea580c;
+}
+
+.public-assistant-shell .assistant-status {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #475569;
+}
+
+.public-assistant-shell .assistant-subtitle {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.public-assistant-shell .assistant-header-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.public-assistant-shell .assistant-lang-toggle {
+    border: 1px solid #fed7aa;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.public-assistant-shell .assistant-lang-toggle button {
+    color: #78350f;
+    background: transparent;
+}
+
+.public-assistant-shell .assistant-lang-toggle button.active,
+.public-assistant-shell .assistant-lang-toggle button.btn-light {
+    background: rgba(255, 255, 255, 0.85);
+    color: #92400e;
+}
+
+.public-assistant-shell .assistant-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid #fed7aa;
+    background: rgba(255, 255, 255, 0.7);
+    color: #475569;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.18s, color 0.18s;
+}
+
+.public-assistant-shell .assistant-close-btn:hover {
+    background: #fff;
+    color: #1e293b;
+}
+
+/* Pre-chat / messages body */
+.public-assistant-shell .chat-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background: radial-gradient(circle at top, rgba(254, 215, 170, 0.28), rgba(255, 255, 255, 1) 42%, rgba(255, 251, 235, 1) 100%);
+}
+
+.public-assistant-shell .chat-body .prechat-intro-card {
+    border-radius: 22px;
+    border: 1px solid #fed7aa;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 12px;
+    box-shadow: 0 10px 28px rgba(251, 146, 60, 0.08);
+    margin-bottom: 16px;
+}
+
+.public-assistant-shell .chat-body .prechat-intro-card .intro-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: #f97316;
+}
+
+.public-assistant-shell .chat-body .prechat-intro-card .intro-heading {
+    margin-top: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.public-assistant-shell .chat-body .prechat-intro-card .intro-desc {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.public-assistant-shell .prechat-step {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.public-assistant-shell .prechat-step label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #334155;
+}
+
+.public-assistant-shell .prechat-step input[type="text"],
+.public-assistant-shell .prechat-step input[type="email"] {
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #334155;
+    outline: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.public-assistant-shell .prechat-step input:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+}
+
+.public-assistant-shell .prechat-step .btn-next,
+.public-assistant-shell .prechat-step .btn-start {
+    align-self: flex-end;
+    border-radius: 16px;
+    border: none;
+    background: linear-gradient(135deg, #f97316, #fbbf24);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
+    transition: transform 0.15s;
+}
+
+.public-assistant-shell .prechat-step .btn-next:hover,
+.public-assistant-shell .prechat-step .btn-start:hover {
+    transform: scale(1.02);
+}
+
+/* Topic multiselect */
+.topic-multiselect {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.topic-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 14px;
+    border: 1.5px solid #e2e8f0;
+    background: #fff;
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #334155;
+    transition: border-color 0.18s, background 0.18s;
+}
+
+.topic-option input[type="checkbox"] {
+    accent-color: #f97316;
+}
+
+.topic-option:has(input:checked) {
+    border-color: #f97316;
+    background: #fff7ed;
+    color: #9a3412;
+}
+
+/* Public messages */
+.public-assistant-shell .chat-body .message.user {
+    background: linear-gradient(135deg, #f97316, #fbbf24);
+    color: #fff;
+    border-radius: 18px 18px 4px 18px;
+}
+
+.public-assistant-shell .chat-body .message.assistant {
+    background: #fff;
+    color: #334155;
+    border-radius: 18px 18px 18px 4px;
+    border: 1px solid #fed7aa;
+    box-shadow: 0 2px 8px rgba(251, 146, 60, 0.08);
+}
+
+.public-assistant-shell .chat-body .typing-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    border: 1px solid #fed7aa;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #64748b;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    align-self: flex-start;
+}
+
+/* Footer */
+.public-assistant-shell .chat-footer {
+    border-top: 1px solid #e2e8f0;
+    background: #fff;
+    padding: 12px;
+}
+
+.public-assistant-shell .assistant-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 24px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    padding: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.public-assistant-shell .assistant-input-row input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: #fff;
+    color: #334155;
+    font-size: 13px;
+    padding: 8px;
+    outline: none;
+}
+
+.public-assistant-shell .assistant-input-row input[type="text"]::placeholder {
+    color: #94a3b8;
+}
+
+.public-assistant-shell .assistant-input-row .assistant-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+
+.public-assistant-shell .assistant-input-row .assistant-action-btn:hover {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.public-assistant-shell .assistant-send-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #f97316, #fbbf24);
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
+    transition: transform 0.15s;
+    flex-shrink: 0;
+}
+
+.public-assistant-shell .assistant-send-btn:hover {
+    transform: scale(1.05);
+}
+
+.public-assistant-shell .assistant-action-btn {
+    color: #78350f;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.public-assistant-shell .assistant-action-btn:hover {
+    background: #fff;
+}
+
+/* ── Utility: hidden ── */
+.assistant-hidden,
+.hidden {
+    display: none !important;
+}

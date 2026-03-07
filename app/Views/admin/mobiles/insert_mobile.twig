@@ -1,0 +1,148 @@
+{% extends "admin/layout.twig" %}
+{% block title %}{{ mobile is defined ? 'Edit Mobile' : 'Insert Mobile' }}{% endblock %}
+{% block content %}
+  {% set filler = old is defined and old ? old : (mobile is defined ? mobile : {}) %}
+  <div class="container-fluid py-4">
+    <div class="admin-panel-card">
+      <div class="admin-panel-card-header d-flex align-items-center justify-content-between">
+        <h4 class="mb-0">
+          <i class="bi bi-{{ mobile is defined ? 'pencil-square text-primary' : 'plus-circle text-success' }} me-2"></i>{{ mobile is defined ? 'Edit Mobile' : 'Insert Mobile' }}
+        </h4>
+        <a href="/admin/mobiles/all" class="modern-btn modern-btn-white btn-sm"><i class="bi bi-arrow-left me-1"></i> Back to List</a>
+      </div>
+      <div class="admin-panel-card-body">
+        <form method="post" enctype="multipart/form-data" id="mobileForm">
+          {% if mobile is defined %}<input type="hidden" name="id" value="{{ mobile.id }}">{% endif %}
+          <div class="row g-3">
+            <!-- Brand & Model -->
+            <div class="col-md-6">
+              <label class="form-label">Brand</label>
+              <input type="text"
+                     name="brand_name"
+                     class="form-control"
+                     placeholder="Enter Brand"
+                     required
+                     value="{{ filler.brand_name|default("") }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Model</label>
+              <input type="text"
+                     name="model_name"
+                     class="form-control"
+                     placeholder="Enter Model"
+                     required
+                     value="{{ filler.model_name|default("") }}">
+            </div>
+            <!-- Prices -->
+            <div class="col-md-6">
+              <label class="form-label">Official Price</label>
+              <input type="number"
+                     step="0.01"
+                     name="official_price"
+                     class="form-control"
+                     placeholder="৳0.00"
+                     value="{{ filler.official_price|default("") }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Unofficial Price</label>
+              <input type="number"
+                     step="0.01"
+                     name="unofficial_price"
+                     class="form-control"
+                     placeholder="৳0.00"
+                     value="{{ filler.unofficial_price|default("") }}">
+            </div>
+            <!-- Status & Release Date -->
+            <div class="col-md-6">
+              <label class="form-label">Status</label>
+              <select name="status" class="form-select" required>
+                <option value="official"
+                        {% if filler.status=='official' %}selected{% endif %}>Official</option>
+                <option value="unofficial"
+                        {% if filler.status=='unofficial' %}selected{% endif %}>Unofficial</option>
+                <option value="both" {% if filler.status=='both' %}selected{% endif %}>Both</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Release Date</label>
+              <input type="text"
+                     name="release_date"
+                     class="form-control datepicker"
+                     required
+                     value="{{ filler.release_date|default('') }}"
+                     placeholder="DD-MM-YYYY">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input"
+                       type="checkbox"
+                       id="is_official"
+                       name="is_official"
+                       value="1"
+                       {% if filler.is_official|default(false) %}checked{% endif %}>
+                <label class="form-check-label" for="is_official">Is Official</label>
+              </div>
+            </div>
+          </div>
+          <!-- Specifications -->
+          <h5 class="mt-4">
+            <i class="bi bi-list-check me-2"></i>Specifications
+          </h5>
+          <div id="specs-container" class="mb-3"></div>
+          <button type="button"
+                  class="btn btn-sm btn-outline-secondary mb-3"
+                  onclick="addSpec()">
+            <i class="bi bi-plus-lg me-1"></i> Add Spec
+          </button>
+          <!-- Tags -->
+          <h5 class="mt-4">
+            <i class="bi bi-tags me-2"></i>Tags
+          </h5>
+          <div class="mb-3">
+            <label for="tags" class="form-label">Add labels</label>
+            {% set selectedTagIds = [] %}
+            {% for st in (old is defined and old and old.tags is defined ? old.tags : mobile_tags|default([])) %}
+              {% if st is iterable and st.id is defined %}
+                {% set selectedTagIds = selectedTagIds|merge([st.id ~ '']) %}
+              {% elseif (st ~ '') matches '/^[0-9]+$/' %}
+                {% set selectedTagIds = selectedTagIds|merge([st ~ '']) %}
+              {% endif %}
+            {% endfor %}
+            <select multiple class="form-control blogspot-tags" id="tags" name="tags[]">
+              {% for tag in tags|default([]) %}
+                {% set tagId = tag.id ~ '' %}
+                <option value="{{ tag.id }}" {{ tagId in selectedTagIds ? 'selected' : '' }}>{{ tag.name }}
+                </option>
+              {% endfor %}
+            </select>
+            <small class="form-text text-muted mt-1">Type to search or create new tags</small>
+          </div>
+          <!-- Images -->
+          <h5 class="mt-4">
+            <i class="bi bi-image-fill me-2"></i>Images
+          </h5>
+          <div class="mb-3">
+            <input type="file"
+                   name="images[]"
+                   id="images-input"
+                   class="form-control"
+                   multiple
+                   accept="image/*">
+          </div>
+          <div id="images-preview" class="d-flex flex-wrap gap-2 mb-3"></div>
+          <!-- Submit -->
+          <button type="submit" class="modern-btn modern-btn-success">
+            <i class="bi bi-check-circle me-1"></i> Save
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Datalist for specs -->
+  <datalist id="spec_keys">
+    {% for spec in specifications %}<option value="{{ spec.spec_key }}"></option>{% endfor %}
+  </datalist>
+  <div id="mobile-insert-data"
+       data-initial-tags='{{ mobile_tags|default([]) |json_encode|e("html_attr") }}'
+       style="display:none"></div>
+{% endblock %}
