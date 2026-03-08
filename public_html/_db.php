@@ -1068,6 +1068,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     exit;
 }
+
+// When included from CLI scripts, skip the HTML UI output.
+if (php_sapi_name() === 'cli') {
+    return;
+}
 ?>
 
 <!DOCTYPE html>

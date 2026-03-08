@@ -32,8 +32,8 @@ class EnhancedImageDownloader
 
     public function __construct(array $config = [])
     {
-        $this->uploadPath = $config['upload_path'] ?? __DIR__ . '/../../uploads/autoblog/';
-        $this->baseUrl = $config['base_url'] ?? '/uploads/autoblog/';
+        $this->uploadPath = $config['upload_path'] ?? __DIR__ . '/../../uploads/autocontent/';
+        $this->baseUrl = $config['base_url'] ?? '/uploads/autocontent/';
         $this->maxFileSize = $config['max_file_size'] ?? 5242880;
         $this->maxWidth = $config['max_width'] ?? 1920;
         $this->maxHeight = $config['max_height'] ?? 1080;

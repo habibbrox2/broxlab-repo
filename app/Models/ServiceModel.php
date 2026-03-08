@@ -503,7 +503,8 @@ class ServiceModel {
         ");
         $stmt->bind_param('i', $serviceId);
         $stmt->execute();
-        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC) ?: [];
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC) ?: [];
+        return array_map([$this, 'normalizeServiceImageRow'], $rows);
     }
 
     /**
@@ -519,7 +520,8 @@ class ServiceModel {
         ");
         $stmt->bind_param('i', $serviceId);
         $stmt->execute();
-        return $stmt->get_result()->fetch_assoc() ?: null;
+        $row = $stmt->get_result()->fetch_assoc() ?: null;
+        return $row ? $this->normalizeServiceImageRow($row) : null;
     }
 
     /**
@@ -683,6 +685,55 @@ class ServiceModel {
     }
 
     /**
+     * Normalize stored image paths so stale thumbnail references do not break callers.
+     * If a thumbnail file no longer exists but the original image does, fall back to the original.
+     * @param array $row
+     * @return array
+     */
+    private function normalizeServiceImageRow(array $row): array {
+        $imagePath = $this->resolveMaybeMediaReference($row['image_path'] ?? '');
+        $thumbnailPath = $this->resolveMaybeMediaReference($row['thumbnail_path'] ?? '');
+
+        if ($thumbnailPath !== '' && !$this->serviceImagePathExists($thumbnailPath)) {
+            $thumbnailPath = $imagePath;
+        }
+
+        if ($imagePath !== '' && !$this->serviceImagePathExists($imagePath) && $thumbnailPath !== '') {
+            $imagePath = $thumbnailPath;
+        }
+
+        $row['image_path'] = $imagePath !== '' ? $imagePath : null;
+        $row['thumbnail_path'] = $thumbnailPath !== '' ? $thumbnailPath : null;
+        return $row;
+    }
+
+    /**
+     * Check whether a local upload-backed image path exists on disk.
+     * External URLs are treated as valid because they cannot be verified locally.
+     * @param string $path
+     * @return bool
+     */
+    private function serviceImagePathExists(string $path): bool {
+        $path = trim($path);
+        if ($path === '') {
+            return false;
+        }
+
+        if (preg_match('#^(?:https?:)?//#i', $path) || strpos($path, 'data:') === 0) {
+            return true;
+        }
+
+        if (function_exists('brox_upload_web_path_to_fs_path')) {
+            $fsPath = brox_upload_web_path_to_fs_path($path);
+            if ($fsPath !== null) {
+                return file_exists($fsPath);
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Add image to service
      * @param int $serviceId
      * @param string $imagePath
@@ -811,7 +862,8 @@ class ServiceModel {
         ");
         $stmt->bind_param('i', $imageId);
         $stmt->execute();
-        return $stmt->get_result()->fetch_assoc() ?: null;
+        $row = $stmt->get_result()->fetch_assoc() ?: null;
+        return $row ? $this->normalizeServiceImageRow($row) : null;
     }
 
     /**

@@ -434,6 +434,19 @@ php -l app/Helpers/SomeHelper.php
 npm run naming:check -- --changed
 ```
 
+### Clone + Restore (one command)
+If you need to clone the repo on a new machine and restore the latest database dump:
+
+```powershell
+# PowerShell (Windows)
+.\scripts\clone-and-restore.ps1 -RepoUrl "https://github.com/your/repo.git" -Destination "C:\path\to\broxbhai"
+```
+
+```bash
+# Bash / WSL / macOS
+./scripts/clone-and-restore.sh https://github.com/your/repo.git /path/to/broxbhai
+```
+
 ---
 
 ## Support and Docs
@@ -442,6 +455,10 @@ npm run naming:check -- --changed
 - PHP: https://www.php.net/docs.php
 - Twig: https://twig.symfony.com/doc/
 - MySQL: https://dev.mysql.com/doc/
+
+**Quick setup scripts** (clone + restore database):
+- PowerShell: `scripts/clone-and-restore.ps1`
+- Bash/WSL/macOS: `scripts/clone-and-restore.sh`
 
 ---
 

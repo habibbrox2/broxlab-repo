@@ -13,7 +13,10 @@ const UI = {
   sendBtn: document.getElementById('sendToAssistant'),
   toggleBtn: document.getElementById('adminAssistantBtn'),
   closeBtn: document.getElementById('closeAssistant'),
+  statusIndicator: document.getElementById('adminAssistantStatusIndicator'),
   status: document.getElementById('adminAssistantStatus'),
+  publicModeBadge: document.getElementById('adminAssistantPublicModeBadge'),
+  signInBtn: document.getElementById('btnPuterSignIn'),
   title: document.getElementById('adminAssistantTitle'),
   langBnBtn: document.getElementById('adminAssistantLangBn'),
   langEnBtn: document.getElementById('adminAssistantLangEn'),
@@ -111,6 +114,36 @@ const ACTION_PERMISSIONS = {
   create_mobile: 'mobile.create', edit_mobile: 'mobile.edit', delete_mobile: 'mobile.delete'
 };
 
+window.PUTER_PROXY_PUBLIC_ONLY = true;
+
+function isPublicMode() {
+  return Boolean(window.PUTER_PROXY_PUBLIC_ONLY);
+}
+
+function updatePublicModeBadge() {
+  if (!UI.publicModeBadge) return;
+  if (isPublicMode()) {
+    UI.publicModeBadge.classList.remove('d-none');
+    if (UI.signInBtn) UI.signInBtn.classList.add('d-none');
+  } else {
+    UI.publicModeBadge.classList.add('d-none');
+    if (UI.signInBtn) UI.signInBtn.classList.remove('d-none');
+  }
+}
+
+if (UI.signInBtn) {
+  UI.signInBtn.addEventListener('click', async () => {
+    try {
+      await ensurePuterReady({ interactive: true, allowAuth: true, t: (key) => (typeof t === 'function' ? t(key) : key), openPopup: getOpenSignInPopup() });
+      if (UI.signInBtn) UI.signInBtn.classList.add('d-none');
+      if (UI.publicModeBadge) UI.publicModeBadge.classList.add('d-none');
+      setStatus('status_ready');
+    } catch (err) {
+      setStatus(String(err?.message || 'Sign-in failed'), { raw: true });
+    }
+  });
+}
+
 const LINK_ACTIONS = {
   upload_file: { url: '/admin/media/upload', label: '/admin/media/upload' },
   view_uploads: { url: '/admin/media', label: '/admin/media' },
@@ -124,7 +157,7 @@ const I18N = {
     title: 'ব্রক্স সহকারী',
     input_placeholder: 'আপনার নির্দেশ লিখুন...',
     typing_text: 'টাইপ করছে...',
-    default_greeting: 'আমি আপনার BroxLab অ্যাডমিন সহকারী। পোস্ট, পেজ, সার্ভিস, মিডিয়া, অ্যানালিটিক্স বা অন্য অ্যাডমিন কাজ নিয়ে জিজ্ঞেস করুন। প্রথম মেসেজে Puter সাইন-ইন চাইতে পারে।',
+    default_greeting: 'আমি আপনার BroxLab অ্যাডমিন সহকারী। পোস্ট, পেজ, সার্ভিস, মিডিয়া, অ্যানালিটিক্স বা অন্য অ্যাডমিন কাজ নিয়ে জিজ্ঞেস করুন। এই অ্যাসিস্ট্যান্ট public mode-এ Puter sign-in ছাড়াই কাজ করে।',
     status_initializing: 'চালু হচ্ছে...',
     status_ready: 'সহকারী প্রস্তুত',
     status_ready_to_connect: 'বার্তা পাঠালে সংযুক্ত হবে',
@@ -145,7 +178,7 @@ const I18N = {
     title: 'Brox Assistant',
     input_placeholder: 'Type your instruction...',
     typing_text: 'Typing...',
-    default_greeting: 'I am your Brox admin assistant. Ask about posts, pages, services, media, analytics, or other admin work. Puter may ask you to sign in on your first message.',
+    default_greeting: 'I am your Brox admin assistant. Ask about posts, pages, services, media, analytics, or other admin work. This assistant runs in public mode without requiring Puter sign-in.',
     status_initializing: 'Initializing...',
     status_ready: 'Assistant Ready',
     status_ready_to_connect: 'Will connect on first message',
@@ -226,11 +259,20 @@ function t(key) {
 
 function setStatus(textKey, { raw = false } = {}) {
   if (!UI.status) return;
+
   if (raw) {
     UI.status.textContent = textKey;
+    if (UI.statusIndicator) UI.statusIndicator.classList.remove('ready');
     return;
   }
-  UI.status.textContent = t(textKey);
+
+  const text = t(textKey);
+  UI.status.textContent = text;
+
+  if (!UI.statusIndicator) return;
+  const readyKeys = ['status_ready', 'status_ready_to_connect'];
+  const isReady = readyKeys.includes(textKey);
+  UI.statusIndicator.classList.toggle('ready', isReady);
 }
 
 function loadAssistantPrefs() {
@@ -454,12 +496,12 @@ async function populateModelOptions() {
     const models = await puter.ai.listModels(OPENAI_PROVIDER);
     const openAiModels = Array.isArray(models)
       ? models
-          .map((model) => {
-            const id = String(model?.id || model?.model || model?.name || '').trim();
-            if (!id) return null;
-            return { value: id, label: id };
-          })
-          .filter(Boolean)
+        .map((model) => {
+          const id = String(model?.id || model?.model || model?.name || '').trim();
+          if (!id) return null;
+          return { value: id, label: id };
+        })
+        .filter(Boolean)
       : [];
 
     for (const model of openAiModels) {
@@ -518,7 +560,7 @@ function attachSpeechAction(messageNode, text) {
   speakBtn.title = 'Speak this reply';
   speakBtn.addEventListener('click', async () => {
     try {
-      await ensurePuterReady({ interactive: true, t: (key) => t(key), openPopup: getOpenSignInPopup() });
+      await ensurePuterReady({ interactive: false, t: (key) => t(key) });
       if (lastAssistantAudio) {
         lastAssistantAudio.pause?.();
       }
@@ -672,9 +714,9 @@ async function buildMessages(userText, { defaultUserText = '' } = {}) {
 
   const userContent = fileParts.length
     ? [
-        ...fileParts,
-        ...(normalizedText ? [{ type: 'text', text: normalizedText }] : [])
-      ]
+      ...fileParts,
+      ...(normalizedText ? [{ type: 'text', text: normalizedText }] : [])
+    ]
     : normalizedText;
 
   return [
@@ -962,11 +1004,39 @@ function initQuickActionBar() {
   if (manageChats) manageChats.remove();
 }
 
+function setAssistantInteractivity(enabled) {
+  if (!UI.wrapper) return;
+
+  if (!enabled && UI.wrapper.contains(document.activeElement) && document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+
+  UI.wrapper.toggleAttribute('inert', !enabled);
+
+  if (!enabled) {
+    UI.chat?.classList.add('hidden');
+    UI.chat?.classList.add('d-none');
+  }
+}
+
+function syncAssistantWithModalState() {
+  const hasVisibleModal = Array.from(document.querySelectorAll('.modal.show'))
+    .some((modal) => !UI.wrapper?.contains(modal));
+  setAssistantInteractivity(!hasVisibleModal);
+}
+
 function bindEvents() {
   UI.langBnBtn?.addEventListener('click', () => { currentLang = 'bn'; setLanguage('bn'); applyLanguage(); renderHistory(); });
   UI.langEnBtn?.addEventListener('click', () => { currentLang = 'en'; setLanguage('en'); applyLanguage(); renderHistory(); });
 
   UI.toggleBtn?.addEventListener('click', () => {
+    const isClosed = UI.chat?.classList.contains('hidden') || UI.chat?.classList.contains('d-none');
+    if (isClosed) {
+      // When opening the assistant, default to chat mode and hide advanced controls.
+      syncModePreset('assistant', { preserveModel: true });
+      UI.advancedPanel?.classList.add('d-none');
+      UI.input?.focus?.();
+    }
     UI.chat?.classList.toggle('hidden');
     UI.chat?.classList.toggle('d-none');
   });
@@ -1060,7 +1130,7 @@ function bindEvents() {
   UI.imageUrlInput?.addEventListener('input', updateAttachmentChip);
   UI.generateImageBtn?.addEventListener('click', async () => {
     try {
-      await ensurePuterReady({ interactive: true, t: (key) => t(key), openPopup: getOpenSignInPopup() });
+      await ensurePuterReady({ interactive: false, t: (key) => t(key) });
       await handleImageGeneration(String(UI.input?.value || '').trim());
       if (UI.input) UI.input.value = '';
       setStatus('status_ready');
@@ -1071,12 +1141,22 @@ function bindEvents() {
   });
   UI.speakLastReplyBtn?.addEventListener('click', async () => {
     try {
-      await ensurePuterReady({ interactive: true, t: (key) => t(key), openPopup: getOpenSignInPopup() });
+      await ensurePuterReady({ interactive: false, t: (key) => t(key) });
       await speakLastReply();
     } catch (error) {
       appendAssistant(UI.messages, String(error?.message || 'Text-to-speech failed'), { animate: true });
     }
   });
+
+  document.addEventListener('show.bs.modal', (event) => {
+    if (UI.wrapper?.contains(event.target)) return;
+    setAssistantInteractivity(false);
+  }, true);
+
+  document.addEventListener('hidden.bs.modal', (event) => {
+    if (UI.wrapper?.contains(event.target)) return;
+    syncAssistantWithModalState();
+  }, true);
 }
 
 async function handleUserMessage() {
@@ -1098,7 +1178,7 @@ async function handleUserMessage() {
   if (text.startsWith('/image ')) {
     UI.input.value = '';
     try {
-      await ensurePuterReady({ interactive: true, t: (key) => t(key), openPopup: getOpenSignInPopup() });
+      await ensurePuterReady({ interactive: false, t: (key) => t(key) });
       await handleImageGeneration(text.slice(7));
       setStatus('status_ready');
     } catch (error) {
@@ -1134,7 +1214,7 @@ async function handleUserMessage() {
   setReasoningBanner('');
 
   try {
-    await ensurePuterReady({ interactive: true, t: (key) => t(key), openPopup: getOpenSignInPopup() });
+    await ensurePuterReady({ interactive: false, t: (key) => t(key) });
 
     if (shouldUseVisionTransport) {
       const result = await runVisionConversation(text);
@@ -1265,8 +1345,8 @@ function applyAssistantPrefillFromQuery() {
 
 async function enhanceContentWithAI({ content, prompt }) {
   try {
-    await ensurePuterReady({ interactive: true, t: (key) => t(key), openPopup: getOpenSignInPopup() });
-    
+    await ensurePuterReady({ interactive: false, t: (key) => t(key), openPopup: getOpenSignInPopup() });
+
     const enhancementMessages = [
       {
         role: 'system',
@@ -1283,7 +1363,7 @@ async function enhanceContentWithAI({ content, prompt }) {
     });
 
     const enhancedText = extractResponseText(response) || '';
-    
+
     if (!enhancedText || enhancedText.trim().length === 0) {
       throw new Error('AI returned empty response');
     }
@@ -1452,39 +1532,41 @@ function init() {
   loadAssistantPrefs();
   applyLanguage();
   applyAssistantPrefsToUi();
+  updatePublicModeBadge();
   renderHistory();
   if (historyExpired) appendAssistant(UI.messages, t('notice_session_expired'));
   bindEvents();
   initQuickActionBar();
   updateAttachmentChip();
   applyAssistantPrefillFromQuery();
+  syncAssistantWithModalState();
   setStatus('status_ready_to_connect');
   populateModelOptions();
-  
+
   // Expose enhancement function globally for RTE sidebar
   window.enhanceContentWithAI = enhanceContentWithAI;
-  
+
   // Initialize log monitoring
   logMonitor.onLogUpdate((eventType, data) => {
     if (eventType === 'errors' && data && data.length > 0) {
       // Alert admin if new errors detected
       const errorCount = data.length;
       let alertMsg = `🚨 **${errorCount} new error(s) detected!**\n\n`;
-      
+
       data.slice(0, 3).forEach((err, idx) => {
         alertMsg += `**Error ${idx + 1}:** [${err.severity}] ${err.message}\n`;
       });
-      
+
       if (errorCount > 3) {
         alertMsg += `\n... and ${errorCount - 3} more errors.\n`;
       }
-      
+
       alertMsg += `\nType "show errors" to view all error logs.`;
-      
+
       appendAssistant(UI.messages, alertMsg, { animate: true });
     }
   });
-  
+
   // Start monitoring logs for new errors
   logMonitor.startPolling();
 }

@@ -1,8 +1,8 @@
 -- ========================================
 -- টেবিল / Table: notification_logs
--- তারিখ / Date: 2026-03-07 01:28:42
+-- তারিখ / Date: 2026-03-08 02:32:40
 -- মোড / Mode: Full Export
--- মোট সারি / Total Rows: 184
+-- মোট সারি / Total Rows: 185
 -- ========================================
 
 CREATE TABLE IF NOT EXISTS `notification_logs` (
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS `notification_logs` (
   KEY `idx_message_id` (`message_id`),
   KEY `idx_channel` (`channel`),
   KEY `idx_status_created` (`status`,`created_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=189 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=190 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ডাটা ইনসার্ট / Data Insert
 
@@ -211,6 +211,7 @@ INSERT INTO `notification_logs` (`id`, `notification_id`, `user_id`, `device_id`
 INSERT INTO `notification_logs` (`id`, `notification_id`, `user_id`, `device_id`, `channel`, `ip_address`, `token`, `status`, `response`, `message_id`, `provider_response`, `metadata`, `created_at`) VALUES ('183', '222', '1', '1771252844192-qsf7y40og', 'push', NULL, 'cKZ2c4-T13JOlG7rSiuL79:APA91bHuVFcBdAjfZ_hNMSk98AWYHzPMytnVFi-Fs4sgFJzW9YCiqm6SvrL-Ye390UCHdv3UMTAoMRZgApa3pwQhnxW9qlaZ0GRgeFyB7aww2YdANK0LXPE', 'sent', NULL, '{\"name\":\"projects\\/broxlab-dbd2a\\/messages\\/10d1b5a4-0bcf-4fd7-a01e-3d3cf5a7109b\"}', NULL, '{\"action_type\":\"admin_new_application\",\"application_id\":\"21\",\"user_name\":\"Hh\",\"service_name\":\"\\u0985\\u09a8\\u09b2\\u09be\\u0987\\u09a8 \\u099c\\u09a8\\u09cd\\u09ae \\u09a8\\u09bf\\u09ac\\u09a8\\u09cd\\u09a7\\u09a8\",\"action_url\":\"\\/admin\\/applications\\/21\"}', '2026-03-05 22:28:39');
 INSERT INTO `notification_logs` (`id`, `notification_id`, `user_id`, `device_id`, `channel`, `ip_address`, `token`, `status`, `response`, `message_id`, `provider_response`, `metadata`, `created_at`) VALUES ('184', '222', '1', '1772605118505-ymbgmerc1', 'push', NULL, 'dogmgu8kqnfIRJbVFnsFpj:APA91bGR4d6o6iWjtkRJdN_t_rZLhMQRQWJTJYj5gOiCwB34mZaD5Y95wSpd6NzIMQtTZI1ljS00Od89iEXkmaBbJUwcV_TK7seVPD1jrj32q7QMmAfteWo', 'sent', NULL, '{\"name\":\"projects\\/broxlab-dbd2a\\/messages\\/3339f33f-54a0-4bc6-adac-d38d8a4b5ef8\"}', NULL, '{\"action_type\":\"admin_new_application\",\"application_id\":\"21\",\"user_name\":\"Hh\",\"service_name\":\"\\u0985\\u09a8\\u09b2\\u09be\\u0987\\u09a8 \\u099c\\u09a8\\u09cd\\u09ae \\u09a8\\u09bf\\u09ac\\u09a8\\u09cd\\u09a7\\u09a8\",\"action_url\":\"\\/admin\\/applications\\/21\"}', '2026-03-05 22:28:39');
 INSERT INTO `notification_logs` (`id`, `notification_id`, `user_id`, `device_id`, `channel`, `ip_address`, `token`, `status`, `response`, `message_id`, `provider_response`, `metadata`, `created_at`) VALUES ('185', '223', '1', NULL, 'login', '103.13.193.100', NULL, 'sent', 'system', NULL, NULL, NULL, '2026-03-06 08:49:57');
-INSERT INTO `notification_logs` (`id`, `notification_id`, `user_id`, `device_id`, `channel`, `ip_address`, `token`, `status`, `response`, `message_id`, `provider_response`, `metadata`, `created_at`) VALUES ('186', '224', '1', NULL, 'login', '::1', NULL, 'sent', 'system', NULL, NULL, NULL, '2026-03-07 02:29:48');
-INSERT INTO `notification_logs` (`id`, `notification_id`, `user_id`, `device_id`, `channel`, `ip_address`, `token`, `status`, `response`, `message_id`, `provider_response`, `metadata`, `created_at`) VALUES ('187', '225', '1', NULL, 'login', '127.0.0.1', NULL, 'sent', 'system', NULL, NULL, NULL, '2026-03-07 03:39:34');
-INSERT INTO `notification_logs` (`id`, `notification_id`, `user_id`, `device_id`, `channel`, `ip_address`, `token`, `status`, `response`, `message_id`, `provider_response`, `metadata`, `created_at`) VALUES ('188', '226', '1', NULL, 'login', '::1', NULL, 'sent', 'system', NULL, NULL, NULL, '2026-03-07 06:12:47');
+INSERT INTO `notification_logs` (`id`, `notification_id`, `user_id`, `device_id`, `channel`, `ip_address`, `token`, `status`, `response`, `message_id`, `provider_response`, `metadata`, `created_at`) VALUES ('186', '224', '1', NULL, 'login', '::1', NULL, 'sent', 'system', NULL, NULL, NULL, '2026-03-07 15:41:52');
+INSERT INTO `notification_logs` (`id`, `notification_id`, `user_id`, `device_id`, `channel`, `ip_address`, `token`, `status`, `response`, `message_id`, `provider_response`, `metadata`, `created_at`) VALUES ('187', '225', '1', NULL, 'login', '::1', NULL, 'sent', 'system', NULL, NULL, NULL, '2026-03-08 04:56:04');
+INSERT INTO `notification_logs` (`id`, `notification_id`, `user_id`, `device_id`, `channel`, `ip_address`, `token`, `status`, `response`, `message_id`, `provider_response`, `metadata`, `created_at`) VALUES ('188', '226', '1', NULL, 'login', '127.0.0.1', NULL, 'sent', 'system', NULL, NULL, NULL, '2026-03-08 05:03:15');
+INSERT INTO `notification_logs` (`id`, `notification_id`, `user_id`, `device_id`, `channel`, `ip_address`, `token`, `status`, `response`, `message_id`, `provider_response`, `metadata`, `created_at`) VALUES ('189', '227', '1', NULL, 'login', '::1', NULL, 'sent', 'system', NULL, NULL, NULL, '2026-03-08 05:26:03');

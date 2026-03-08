@@ -39,7 +39,7 @@ export function formatMeta({ role, ts, responseMs, lang = 'en' }) {
   return parts.join(' • ');
 }
 
-export async function animateBody(node, text, { trustedHtml = false } = {}) {
+export async function animateBody(node, text, { trustedHtml = false, append = false } = {}) {
   if (!node) return;
   const normalized = String(text ?? '');
   if (!normalized) {
@@ -48,18 +48,23 @@ export async function animateBody(node, text, { trustedHtml = false } = {}) {
   }
 
   if (trustedHtml || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-    node.innerHTML = formatBody(normalized, trustedHtml);
+    node.innerHTML = formatBody(append ? (node.textContent || '') + normalized : normalized, trustedHtml);
     scrollToBottom(node.parentElement);
     return;
   }
 
-  const chunkSize = Math.max(1, Math.ceil(normalized.length / TYPEWRITER_MAX_STEPS));
-  for (let i = 0; i < normalized.length; i += chunkSize) {
-    node.textContent = normalized.slice(0, i + chunkSize);
+  const base = append ? String(node.textContent || '') : '';
+  const full = base + normalized;
+  const start = base.length;
+  const remaining = full.slice(start);
+
+  const chunkSize = Math.max(1, Math.ceil(full.length / TYPEWRITER_MAX_STEPS));
+  for (let i = 0; i < remaining.length; i += chunkSize) {
+    node.textContent = full.slice(0, start + i + chunkSize);
     scrollToBottom(node.parentElement?.parentElement);
     await new Promise((res) => window.setTimeout(res, TYPEWRITER_CHUNK_DELAY_MS));
   }
-  node.innerHTML = formatBody(normalized, trustedHtml);
+  node.innerHTML = formatBody(full, trustedHtml);
   scrollToBottom(node.parentElement?.parentElement);
 }
 

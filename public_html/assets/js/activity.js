@@ -249,6 +249,61 @@
         sendWithXhr(formData, headers, retry);
     }
 
+    function getSafeXhrResponseMeta(xhr) {
+        const responseType = String(xhr?.responseType || '').toLowerCase();
+
+        if (!responseType || responseType === 'text') {
+            const responseText = String(xhr?.responseText || '');
+            return {
+                response_size: responseText.length,
+                response_text: responseText.slice(0, 500)
+            };
+        }
+
+        if (responseType === 'blob') {
+            const blob = xhr?.response;
+            return {
+                response_size: Number(blob?.size || 0),
+                response_text: `[blob:${blob?.type || 'application/octet-stream'}]`
+            };
+        }
+
+        if (responseType === 'arraybuffer') {
+            const buffer = xhr?.response;
+            return {
+                response_size: Number(buffer?.byteLength || 0),
+                response_text: '[arraybuffer]'
+            };
+        }
+
+        if (responseType === 'document') {
+            return {
+                response_size: 0,
+                response_text: '[document]'
+            };
+        }
+
+        if (responseType === 'json') {
+            try {
+                const jsonText = JSON.stringify(xhr?.response ?? null);
+                return {
+                    response_size: jsonText.length,
+                    response_text: jsonText.slice(0, 500)
+                };
+            } catch (_error) {
+                return {
+                    response_size: 0,
+                    response_text: '[json]'
+                };
+            }
+        }
+
+        return {
+            response_size: 0,
+            response_text: `[${responseType}]`
+        };
+    }
+
     function processLogQueue() {
         if (!State.logQueue.length) return;
         const queued = State.logQueue.shift();
@@ -483,13 +538,14 @@
 
             const onLoad = () => {
                 if (isLogEndpoint) return;
+                const responseMeta = getSafeXhrResponseMeta(this);
                 sendLog(`AJAX Success: ${method} ${url}`, 'ajax_response', null, {
                     event: 'ajax_success',
                     method,
                     url,
                     status: this.status,
                     status_text: this.statusText,
-                    response_size: String(this.responseText || '').length,
+                    response_size: responseMeta.response_size,
                     duration_ms: Date.now() - startedAt,
                     page_url: window.location.href,
                     response_time: new Date().toISOString()
@@ -498,13 +554,15 @@
 
             const onError = () => {
                 if (isLogEndpoint) return;
+                const responseMeta = getSafeXhrResponseMeta(this);
                 sendLog(`AJAX Error: ${method} ${url}`, 'ajax_error', null, {
                     event: 'ajax_error',
                     method,
                     url,
                     status: this.status,
                     status_text: this.statusText,
-                    response_text: String(this.responseText || '').slice(0, 500),
+                    response_text: responseMeta.response_text,
+                    response_size: responseMeta.response_size,
                     duration_ms: Date.now() - startedAt,
                     page_url: window.location.href,
                     error_time: new Date().toISOString()

@@ -1,11 +1,28 @@
 import * as esbuild from 'esbuild';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { copyFileSync, mkdirSync } from 'fs';
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const assistantCssSource = `${__dirname}/../public_html/assets/ai-assistant/styles/assistant-ui.css`;
 const assistantCssDest = `${__dirname}/../public_html/assets/ai-assistant/dist/assistant-ui.css`;
+
+function patchBuiltAssistantFile(filePath) {
+    const source = readFileSync(filePath, 'utf8');
+    const patched = source.replace(
+        /initializeSocket\(\)\s*\{[\s\S]*?bindSocketEvents\(\);\s*\}/,
+        `initializeSocket() {
+    if (this.socket) {
+      this.socket.disconnect();
+    }
+    this.socket = null;
+  }`
+    );
+
+    if (patched !== source) {
+        writeFileSync(filePath, patched, 'utf8');
+    }
+}
 
 const copyAssistantCssPlugin = {
     name: 'copy-assistant-css',
@@ -17,10 +34,34 @@ const copyAssistantCssPlugin = {
     }
 };
 
-const entryPoints = [
-    'bootstrap/admin-assistant.js',
-    'bootstrap/public-assistant.js'
-].map(f => `${__dirname}/../public_html/assets/ai-assistant/${f}`);
+const patchPuterFsSocketPlugin = {
+    name: 'patch-puter-fs-socket',
+    setup(build) {
+        build.onLoad({ filter: /@heyputer[\\\/]puter\.js[\\\/]src[\\\/]modules[\\\/]FileSystem[\\\/]index\.js$/ }, async (args) => {
+            const source = readFileSync(args.path, 'utf8');
+            const patched = source.replace(
+                /initializeSocket\s*\(\)\s*\{[\s\S]*?this\.bindSocketEvents\(\);\s*\}/,
+                `initializeSocket () {\n        if ( this.socket ) {\n            this.socket.disconnect();\n        }\n        this.socket = null;\n    }`
+            );
+
+            return {
+                contents: patched,
+                loader: 'js'
+            };
+        });
+    }
+};
+
+const builds = [
+    {
+        entry: `${__dirname}/../public_html/assets/ai-assistant/bootstrap/admin-assistant.js`,
+        outfile: `${__dirname}/../public_html/assets/ai-assistant/dist/admin-assistant.js`
+    },
+    {
+        entry: `${__dirname}/../public_html/assets/ai-assistant/bootstrap/public-assistant.js`,
+        outfile: `${__dirname}/../public_html/assets/ai-assistant/dist/public-assistant.js`
+    }
+];
 
 const args = process.argv.slice(2);
 const isWatch = args.includes('--watch');
@@ -28,24 +69,33 @@ const hasSourceMap = args.includes('--sourcemap=external');
 const hasMinify = args.includes('--minify');
 
 const options = {
-    entryPoints,
-    outdir: `${__dirname}/../public_html/assets/ai-assistant/dist`,
     bundle: true,
     format: 'esm',
-    splitting: true,
-    chunkNames: 'chunks/[name]-[hash]',
     target: 'es2020',
     platform: 'browser',
-    plugins: [copyAssistantCssPlugin],
+    plugins: [patchPuterFsSocketPlugin, copyAssistantCssPlugin],
     minify: hasMinify,
     sourcemap: hasSourceMap ? 'external' : isWatch ? true : false
 };
 
 if (isWatch) {
-    const ctx = await esbuild.context(options);
-    await ctx.watch();
+    const contexts = await Promise.all(
+        builds.map(({ entry, outfile }) => esbuild.context({
+            ...options,
+            entryPoints: [entry],
+            outfile
+        }))
+    );
+    await Promise.all(contexts.map((ctx) => ctx.watch()));
     console.log('[assistants] watching for changes...');
 } else {
-    await esbuild.build(options).catch(() => process.exit(1));
+    await Promise.all(
+        builds.map(({ entry, outfile }) => esbuild.build({
+            ...options,
+            entryPoints: [entry],
+            outfile
+        }))
+    ).catch(() => process.exit(1));
+    builds.forEach(({ outfile }) => patchBuiltAssistantFile(outfile));
     console.log('[assistants] build complete');
 }

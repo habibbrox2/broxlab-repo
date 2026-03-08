@@ -20,8 +20,8 @@ class ImageDownloaderService
 
     public function __construct(array $config = [])
     {
-        $this->uploadPath = $config['upload_path'] ?? __DIR__ . '/../../uploads/autoblog/';
-        $this->baseUrl = $config['base_url'] ?? '/uploads/autoblog/';
+        $this->uploadPath = $config['upload_path'] ?? __DIR__ . '/../../uploads/autocontent/';
+        $this->baseUrl = $config['base_url'] ?? '/uploads/autocontent/';
 
         // Ensure upload directory exists
         if (!is_dir($this->uploadPath)) {

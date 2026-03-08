@@ -8,6 +8,11 @@
 // ---------------------------------------------------------------------------
 // Environment detection
 // ---------------------------------------------------------------------------
+require_once __DIR__ . '/../vendor/autoload.php';
+
+// Load environment variables (similar to other scripts)
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+$dotenv->load();
 $env = $_ENV + $_SERVER;
 $APP_ENV = $env['APP_ENV'] ?? 'production';
 $IS_DEV  = ($APP_ENV === 'development');
@@ -69,9 +74,9 @@ if (!$dbName || !$dbUser) {
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
 try {
-    $mysqli = new mysqli($dbHost, $dbUser, $dbPass, $dbName);
+    $mysqli = new mysqli("p:$dbHost", $dbUser, $dbPass, $dbName);
     $mysqli->set_charset($dbCharset);
-    
+
     // Log successful connection in development mode
     if ($IS_DEV && function_exists('logDebug')) {
         logDebug('Database connection successful', [
@@ -80,7 +85,6 @@ try {
             'charset' => $dbCharset
         ]);
     }
-    
 } catch (mysqli_sql_exception $e) {
     // Log the detailed database connection error
     $errorDetails = [
@@ -91,7 +95,7 @@ try {
         'user' => $dbUser,
         'timestamp' => date('Y-m-d H:i:s')
     ];
-    
+
     // Log to error log file
     if (function_exists('logError')) {
         logError('Database connection failed', 'CRITICAL', [
@@ -103,14 +107,13 @@ try {
         // Fallback if logError is not available
         error_log('[DB CONNECTION ERROR] ' . json_encode($errorDetails, JSON_PRETTY_PRINT));
     }
-    
+
     // Show generic error message (no database details exposed)
     if ($IS_DEV) {
         die('Database connection failed. Check error logs for details.');
     } else {
         die('Unable to connect to database. Please try again later.');
     }
-    
 } catch (Throwable $e) {
     // Catch any other unexpected errors
     error_log('[DB CONNECTION ERROR] ' . $e->getMessage());
@@ -121,7 +124,7 @@ try {
 // Set custom error handler for all mysqli queries
 // ---------------------------------------------------------------------------
 // This will catch all database query errors and log them without displaying
-set_error_handler(function($errno, $errstr, $errfile, $errline) use ($IS_DEV) {
+set_error_handler(function ($errno, $errstr, $errfile, $errline) use ($IS_DEV) {
     // Check if this is a mysqli error
     if (strpos($errstr, 'mysqli') !== false || strpos($errfile, 'mysqli') !== false) {
         // Log the database error
@@ -135,16 +138,16 @@ set_error_handler(function($errno, $errstr, $errfile, $errline) use ($IS_DEV) {
         } else {
             error_log("[DB ERROR] $errstr in $errfile:$errline");
         }
-        
+
         // Don't show the error on frontend
         if ($IS_DEV) {
             // In development, show generic message
             echo "<!-- Database error logged. Check error logs. -->";
         }
-        
+
         return true; // Prevent default error handler
     }
-    
+
     // For non-database errors, use default handler
     return false;
 }, E_ALL);

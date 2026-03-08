@@ -119,7 +119,7 @@ class EnhancedDuplicateChecker
      */
     public function checkUrlExists(string $url, ?int $excludeId = null): array
     {
-        $sql = "SELECT id, title FROM autoblog_articles WHERE url = ?";
+        $sql = "SELECT id, title FROM autocontent_articles WHERE url = ?";
         $params = [$url];
         $types = 's';
 
@@ -153,7 +153,7 @@ class EnhancedDuplicateChecker
     public function checkTitleSimilarity(string $title, ?int $excludeId = null): array
     {
         // Get all titles (with limit for performance)
-        $sql = "SELECT id, title FROM autoblog_articles WHERE 1=1";
+        $sql = "SELECT id, title FROM autocontent_articles WHERE 1=1";
         $params = [];
         $types = '';
 
@@ -213,7 +213,7 @@ class EnhancedDuplicateChecker
         $currentHash = $this->calculateSimHash($content);
 
         // Get articles with pre-computed hashes
-        $sql = "SELECT id, title, simhash FROM autoblog_articles WHERE simhash IS NOT NULL AND simhash != ''";
+        $sql = "SELECT id, title, simhash FROM autocontent_articles WHERE simhash IS NOT NULL AND simhash != ''";
         $params = [];
         $types = '';
 
@@ -265,7 +265,7 @@ class EnhancedDuplicateChecker
     {
         $hash = md5($this->normalizeText($content));
 
-        $sql = "SELECT id, title FROM autoblog_articles WHERE content_hash = ?";
+        $sql = "SELECT id, title FROM autocontent_articles WHERE content_hash = ?";
         $params = [$hash];
         $types = 's';
 
@@ -572,7 +572,7 @@ class EnhancedDuplicateChecker
         $contentHash = md5($this->normalizeText($content));
 
         $stmt = $this->mysqli->prepare(
-            "UPDATE autoblog_articles SET simhash = ?, content_hash = ? WHERE id = ?"
+            "UPDATE autocontent_articles SET simhash = ?, content_hash = ? WHERE id = ?"
         );
         $stmt->bind_param('ssi', $simHash, $contentHash, $articleId);
         $result = $stmt->execute();
@@ -589,8 +589,8 @@ class EnhancedDuplicateChecker
         $sql = "SELECT a1.id as id1, a1.title as title1, a1.url as url1,
                        a2.id as id2, a2.title as title2, a2.url as url2,
                        a1.simhash as hash1, a2.simhash as hash2
-                FROM autoblog_articles a1
-                INNER JOIN autoblog_articles a2 ON a1.id < a2.id
+                FROM autocontent_articles a1
+                INNER JOIN autocontent_articles a2 ON a1.id < a2.id
                 WHERE a1.simhash IS NOT NULL AND a2.simhash IS NOT NULL
                 ORDER BY a1.id DESC
                 LIMIT ?";

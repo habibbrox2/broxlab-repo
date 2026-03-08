@@ -11,10 +11,15 @@
 (function () {
     'use strict';
 
-    /**
-     * Central Configuration
-     */
+    // configuration and logging helper
     const MessageConfig = {
+        // enable or disable console logging for debugging purposes
+        // can be toggled at runtime via MessageHandler.enableLogs()/disableLogs()
+        enableLogs: false,
+
+        /**
+         * Central Configuration
+         */
         // SweetAlert2 position for toasts
         toastPosition: 'top-right', // top-start, top-center, top-end, center-start, center, center-end, bottom-start, bottom-center, bottom-end
 
@@ -38,6 +43,13 @@
         showConfirmButton: true,
         showCancelButton: false
     };
+
+    // simple wrapper that respects MessageConfig.enableLogs
+    function log(...args) {
+        if (MessageConfig.enableLogs && console && typeof console.log === 'function') {
+            console.log(...args);
+        }
+    }
 
     /**
      * Get color based on status type
@@ -420,7 +432,7 @@
             delete window.__INITIAL_FLASH;
             delete window.__INITIAL_FLASH_QUEUE;
 
-            console.log('✅ SweetAlert2 Message Handler v3.0 initialized');
+            log('✅ SweetAlert2 Message Handler v3.0 initialized');
         },
 
         getConfig: function () {
@@ -457,6 +469,17 @@
         hideLoading: function () {
             Swal.hideLoading();
             Swal.close();
+        },
+
+        /* logging controls */
+        enableLogs: function () {
+            MessageConfig.enableLogs = true;
+        },
+        disableLogs: function () {
+            MessageConfig.enableLogs = false;
+        },
+        logsEnabled: function () {
+            return !!MessageConfig.enableLogs;
         }
     };
 

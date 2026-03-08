@@ -1,4 +1,4 @@
-import { appendAssistant, appendMessage, buildStaticReplyMatcher } from '../../core/render.js';
+import { appendAssistant, appendMessage, animateBody, buildStaticReplyMatcher } from '../../core/render.js';
 import { createHistoryStore } from '../../core/storage.js';
 import { createLanguageState } from '../../core/i18n.js';
 import { buildChatClient, buildPopupSignIn, ensurePuterReady, extractResponseText } from '../../core/puter.js';
@@ -11,6 +11,7 @@ const UI = {
   sendBtn: document.getElementById('sendToPublicAssistant'),
   loading: document.getElementById('publicAssistantLoading'),
   closeBtn: document.getElementById('closePublicAssistant'),
+  statusIndicator: document.getElementById('publicAssistantStatusIndicator'),
   status: document.getElementById('publicAssistantStatusText'),
   langBnBtn: document.getElementById('publicAssistantLangBn'),
   langEnBtn: document.getElementById('publicAssistantLangEn'),
@@ -19,6 +20,9 @@ const UI = {
   preChat: document.getElementById('publicAssistantPreChat'),
   btnNewChat: null
 };
+
+// Enable public-only mode to skip sign-in requirements
+window.PUTER_PROXY_PUBLIC_ONLY = true;
 
 const CHAT_MODEL = typeof window.BROX_PUBLIC_ASSISTANT_MODEL === 'string' ? window.BROX_PUBLIC_ASSISTANT_MODEL.trim() : '';
 const CHAT_STORAGE_KEY = 'brox.publicAssistant.chat.v2';
@@ -147,6 +151,12 @@ function t(key) {
 
 function setStatus(text) {
   if (UI.status) UI.status.textContent = text;
+  if (!UI.statusIndicator) return;
+
+  // Green when assistant is ready; red otherwise
+  const readyTexts = [t('assistant_status'), t('default_greeting')];
+  const isReady = readyTexts.includes(text);
+  UI.statusIndicator.classList.toggle('ready', isReady);
 }
 
 function setTyping(active) {
@@ -369,13 +379,37 @@ async function handleUserMessage() {
   setStatus(t('assistant_status'));
   const started = performance.now();
   try {
-    await ensurePuterReady({ interactive: true, t: (key) => t(key), openPopup: getOpenSignInPopup() });
-    const response = await getChatClient().chatWithFallback(buildMessages(text));
-    const aiText = extractResponseText(response) || t('fallback_error');
+    await ensurePuterReady({ interactive: false, t: (key) => t(key) });
+
+    const messages = await buildMessages(text);
+    const streamMessage = appendMessage(UI.messages, 'assistant', '', { ts: new Date().toISOString(), responseMs: 0 });
+
+    const stream = await getChatClient().chatWithFallback(messages, { stream: true });
+    let textSoFar = '';
+    for await (const part of stream) {
+      if (typeof part?.text === 'string') {
+        textSoFar += part.text;
+        if (streamMessage) {
+          const body = streamMessage.querySelector('.message-content');
+          if (body) {
+            await animateBody(body, part.text, { append: true });
+            streamMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }
+        }
+      }
+    }
+
     const responseMs = Math.max(0, Math.round(performance.now() - started));
-    chatHistory.push({ role: 'assistant', text: aiText, ts: new Date().toISOString(), responseMs });
+    if (streamMessage) {
+      const meta = streamMessage.querySelector('.message-time');
+      if (meta) {
+        const duration = responseMs < 1000 ? `${responseMs}ms` : `${(responseMs / 1000).toFixed(1)}s`;
+        meta.textContent = `${t('response_time_label')}: ${duration}`;
+      }
+    }
+
+    chatHistory.push({ role: 'assistant', text: textSoFar, ts: new Date().toISOString(), responseMs });
     historyStore.save(chatHistory);
-    await appendAssistant(UI.messages, aiText, { animate: true, responseMs });
     setStatus(t('assistant_status'));
   } catch (err) {
     const msg = String(err?.message || t('fallback_error'));

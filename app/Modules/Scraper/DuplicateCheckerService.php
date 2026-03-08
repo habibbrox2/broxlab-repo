@@ -8,7 +8,7 @@ use mysqli;
 
 /**
  * DuplicateCheckerService.php
- * Checks for duplicate content in the autoblog articles
+ * Checks for duplicate content in the Auto Content articles
  */
 class DuplicateCheckerService
 {
@@ -26,7 +26,7 @@ class DuplicateCheckerService
      */
     public function urlExists(string $url, ?int $excludeId = null): bool
     {
-        $sql = "SELECT COUNT(*) as count FROM autoblog_articles WHERE url = ?";
+        $sql = "SELECT COUNT(*) as count FROM autocontent_articles WHERE url = ?";
         $params = [$url];
         $types = 's';
 
@@ -55,7 +55,7 @@ class DuplicateCheckerService
      */
     public function titleExists(string $title, ?int $excludeId = null): bool
     {
-        $sql = "SELECT COUNT(*) as count FROM autoblog_articles WHERE title = ?";
+        $sql = "SELECT COUNT(*) as count FROM autocontent_articles WHERE title = ?";
         $params = [$title];
         $types = 's';
 
@@ -85,7 +85,7 @@ class DuplicateCheckerService
     public function isDuplicate(string $content, ?int $excludeId = null): ?array
     {
         // Simple exact match check
-        $sql = "SELECT id, title, original_content FROM autoblog_articles WHERE 1=1";
+        $sql = "SELECT id, title, original_content FROM autocontent_articles WHERE 1=1";
         $params = [];
         $types = '';
 
@@ -259,8 +259,8 @@ class DuplicateCheckerService
     {
         $sql = "SELECT a1.id as id1, a1.title as title1, a1.url as url1,
                        a2.id as id2, a2.title as title2, a2.url as url2
-                FROM autoblog_articles a1
-                INNER JOIN autoblog_articles a2 ON a1.id < a2.id
+                FROM autocontent_articles a1
+                INNER JOIN autocontent_articles a2 ON a1.id < a2.id
                 WHERE a1.status != 'published' AND a2.status != 'published'
                 ORDER BY a1.id DESC
                 LIMIT 50";

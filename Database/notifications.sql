@@ -1,8 +1,8 @@
 -- ========================================
 -- টেবিল / Table: notifications
--- তারিখ / Date: 2026-03-07 01:28:42
+-- তারিখ / Date: 2026-03-08 02:32:40
 -- মোড / Mode: Full Export
--- মোট সারি / Total Rows: 226
+-- মোট সারি / Total Rows: 227
 -- ========================================
 
 CREATE TABLE IF NOT EXISTS `notifications` (
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   KEY `idx_created_by` (`created_by`),
   KEY `idx_status` (`status`),
   CONSTRAINT `notifications_ibfk_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=227 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=228 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ডাটা ইনসার্ট / Data Insert
 
@@ -263,6 +263,7 @@ INSERT INTO `notifications` (`id`, `user_id`, `created_by`, `title`, `message`, 
 INSERT INTO `notifications` (`id`, `user_id`, `created_by`, `title`, `message`, `type`, `data`, `action_url`, `is_read`, `status`, `paused`, `paused_at`, `pause_reason`, `created_at`, `updated_at`, `sent_to_all_at`, `scheduled_at`, `read_by_users`, `delivery_status`) VALUES ('221', '20', NULL, 'New service application', 'Hh submitted an application for \"অনলাইন জন্ম নিবন্ধন\".', 'general', NULL, '/admin/applications/21', '0', 'sent', '0', NULL, NULL, '2026-03-05 22:28:38', '2026-03-05 22:28:38', NULL, NULL, NULL, 'pending');
 INSERT INTO `notifications` (`id`, `user_id`, `created_by`, `title`, `message`, `type`, `data`, `action_url`, `is_read`, `status`, `paused`, `paused_at`, `pause_reason`, `created_at`, `updated_at`, `sent_to_all_at`, `scheduled_at`, `read_by_users`, `delivery_status`) VALUES ('222', '1', NULL, 'New service application', 'Hh submitted an application for \"অনলাইন জন্ম নিবন্ধন\".', 'general', NULL, '/admin/applications/21', '1', 'sent', '0', NULL, NULL, '2026-03-05 22:28:38', '2026-03-05 23:06:33', NULL, NULL, NULL, 'pending');
 INSERT INTO `notifications` (`id`, `user_id`, `created_by`, `title`, `message`, `type`, `data`, `action_url`, `is_read`, `status`, `paused`, `paused_at`, `pause_reason`, `created_at`, `updated_at`, `sent_to_all_at`, `scheduled_at`, `read_by_users`, `delivery_status`) VALUES ('223', '1', '1', 'নতুন লগইন', 'আপনার অ্যাকাউন্টে সফলভাবে লগইন হয়েছে।', 'update', '{\"channels\":[\"push\",\"in_app\",\"email\"]}', '', '1', 'sent', '0', NULL, NULL, '2026-03-06 08:49:57', '2026-03-06 08:51:07', NULL, NULL, NULL, 'pending');
-INSERT INTO `notifications` (`id`, `user_id`, `created_by`, `title`, `message`, `type`, `data`, `action_url`, `is_read`, `status`, `paused`, `paused_at`, `pause_reason`, `created_at`, `updated_at`, `sent_to_all_at`, `scheduled_at`, `read_by_users`, `delivery_status`) VALUES ('224', '1', '1', 'নতুন লগইন', 'আপনার অ্যাকাউন্টে সফলভাবে লগইন হয়েছে।', 'update', '{\"channels\":[\"push\",\"in_app\",\"email\"]}', '', '0', 'sent', '0', NULL, NULL, '2026-03-07 02:29:48', '2026-03-07 02:29:48', NULL, NULL, NULL, 'pending');
-INSERT INTO `notifications` (`id`, `user_id`, `created_by`, `title`, `message`, `type`, `data`, `action_url`, `is_read`, `status`, `paused`, `paused_at`, `pause_reason`, `created_at`, `updated_at`, `sent_to_all_at`, `scheduled_at`, `read_by_users`, `delivery_status`) VALUES ('225', '1', '1', 'নতুন লগইন', 'আপনার অ্যাকাউন্টে সফলভাবে লগইন হয়েছে।', 'update', '{\"channels\":[\"push\",\"in_app\",\"email\"]}', '', '0', 'sent', '0', NULL, NULL, '2026-03-07 03:39:34', '2026-03-07 03:39:34', NULL, NULL, NULL, 'pending');
-INSERT INTO `notifications` (`id`, `user_id`, `created_by`, `title`, `message`, `type`, `data`, `action_url`, `is_read`, `status`, `paused`, `paused_at`, `pause_reason`, `created_at`, `updated_at`, `sent_to_all_at`, `scheduled_at`, `read_by_users`, `delivery_status`) VALUES ('226', '1', '1', 'নতুন লগইন', 'আপনার অ্যাকাউন্টে সফলভাবে লগইন হয়েছে।', 'update', '{\"channels\":[\"push\",\"in_app\",\"email\"]}', '', '0', 'sent', '0', NULL, NULL, '2026-03-07 06:12:47', '2026-03-07 06:12:47', NULL, NULL, NULL, 'pending');
+INSERT INTO `notifications` (`id`, `user_id`, `created_by`, `title`, `message`, `type`, `data`, `action_url`, `is_read`, `status`, `paused`, `paused_at`, `pause_reason`, `created_at`, `updated_at`, `sent_to_all_at`, `scheduled_at`, `read_by_users`, `delivery_status`) VALUES ('224', '1', '1', 'নতুন লগইন', 'আপনার অ্যাকাউন্টে সফলভাবে লগইন হয়েছে।', 'update', '{\"channels\":[\"push\",\"in_app\",\"email\"]}', '', '0', 'sent', '0', NULL, NULL, '2026-03-07 15:41:52', '2026-03-07 15:41:52', NULL, NULL, NULL, 'pending');
+INSERT INTO `notifications` (`id`, `user_id`, `created_by`, `title`, `message`, `type`, `data`, `action_url`, `is_read`, `status`, `paused`, `paused_at`, `pause_reason`, `created_at`, `updated_at`, `sent_to_all_at`, `scheduled_at`, `read_by_users`, `delivery_status`) VALUES ('225', '1', '1', 'নতুন লগইন', 'আপনার অ্যাকাউন্টে সফলভাবে লগইন হয়েছে।', 'update', '{\"channels\":[\"push\",\"in_app\",\"email\"]}', '', '0', 'sent', '0', NULL, NULL, '2026-03-08 04:56:04', '2026-03-08 04:56:04', NULL, NULL, NULL, 'pending');
+INSERT INTO `notifications` (`id`, `user_id`, `created_by`, `title`, `message`, `type`, `data`, `action_url`, `is_read`, `status`, `paused`, `paused_at`, `pause_reason`, `created_at`, `updated_at`, `sent_to_all_at`, `scheduled_at`, `read_by_users`, `delivery_status`) VALUES ('226', '1', '1', 'নতুন লগইন', 'আপনার অ্যাকাউন্টে সফলভাবে লগইন হয়েছে।', 'update', '{\"channels\":[\"push\",\"in_app\",\"email\"]}', '', '0', 'sent', '0', NULL, NULL, '2026-03-08 05:03:15', '2026-03-08 05:03:15', NULL, NULL, NULL, 'pending');
+INSERT INTO `notifications` (`id`, `user_id`, `created_by`, `title`, `message`, `type`, `data`, `action_url`, `is_read`, `status`, `paused`, `paused_at`, `pause_reason`, `created_at`, `updated_at`, `sent_to_all_at`, `scheduled_at`, `read_by_users`, `delivery_status`) VALUES ('227', '1', '1', 'নতুন লগইন', 'আপনার অ্যাকাউন্টে সফলভাবে লগইন হয়েছে।', 'update', '{\"channels\":[\"push\",\"in_app\",\"email\"]}', '', '0', 'sent', '0', NULL, NULL, '2026-03-08 05:26:03', '2026-03-08 05:26:03', NULL, NULL, NULL, 'pending');

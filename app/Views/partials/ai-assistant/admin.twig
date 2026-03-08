@@ -33,7 +33,11 @@
                 </div>
                 <div class="lh-1">
                     <div class="fw-bold small" id="adminAssistantTitle">Brox Assistant</div>
-                    <div id="adminAssistantStatus" class="text-white-50" style="font-size: 0.7rem;">Initializing...</div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span id="adminAssistantStatusIndicator" class="assistant-status-indicator"></span>
+                        <div id="adminAssistantStatus" class="text-white-50" style="font-size: 0.7rem;">Initializing...</div>
+                        <span id="adminAssistantPublicModeBadge" class="badge bg-success text-dark small d-none" style="font-weight: 400;">Public</span>
+                    </div>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2 ms-auto">
@@ -41,6 +45,7 @@
                     <button type="button" id="adminAssistantLangBn" class="btn btn-sm btn-light active">Bangla</button>
                     <button type="button" id="adminAssistantLangEn" class="btn btn-sm btn-outline-light">EN</button>
                 </div>
+                <button type="button" id="btnPuterSignIn" class="btn btn-sm btn-outline-light d-none" title="Sign in to Puter">Sign in</button>
                 <button type="button" id="closeAssistant" class="btn-close btn-close-white"></button>
             </div>
         </div>
@@ -64,7 +69,7 @@
                     <option value="">Auto Model</option>
                 </select>
             </div>
-            <div id="adminAssistantAdvancedPanel" class="assistant-advanced-panel">
+            <div id="adminAssistantAdvancedPanel" class="assistant-advanced-panel d-none">
                 <div class="assistant-chip-row">
                     <label class="assistant-chip">
                         <input type="checkbox" id="adminAssistantStream" checked>
@@ -557,6 +562,18 @@
     #adminAssistantWrapper .typing-indicator.active {
         display: flex !important;
     }
+    #adminAssistantWrapper .assistant-status-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #dc3545;
+        display: inline-block;
+        transition: background 0.2s ease;
+        margin-right: 6px;
+    }
+    #adminAssistantWrapper .assistant-status-indicator.ready {
+        background: #28a745;
+    }
     #adminAssistantWrapper .admin-assistant-footer {
         padding: 14px;
         background: #ffffff;
@@ -657,11 +674,11 @@
     }
 </style>
 <script>
-    if (!window.puterScriptLoaded) {
-        window.puterScriptLoaded = true;
-        var script = document.createElement('script');
-        script.src = 'https://js.puter.com/v2/';
-        document.head.appendChild(script);
-    }
+    window.PUTER_API_PROXY_ORIGIN = window.PUTER_API_PROXY_ORIGIN
+        || new URL('/__/puter', window.location.href).toString().replace(/\/+$/, '');
+    window.PUTER_API_ORIGIN = window.PUTER_API_ORIGIN || window.PUTER_API_PROXY_ORIGIN;
+    window.PUTER_API_ORIGIN_ENV = window.PUTER_API_ORIGIN_ENV || window.PUTER_API_PROXY_ORIGIN;
+    window.PUTER_PROXY_PUBLIC_ONLY = true;
+    window.PUTER_DISABLE_FS_SOCKET = true;
 </script>
 <script type="module" src="{{ asset('/assets/ai-assistant/dist/admin-assistant.js') }}"></script>

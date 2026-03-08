@@ -1,0 +1,291 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-robot me-2 text-primary"></i>AI Auto Content Engine Settings</h4>
+        <p class="text-muted small mb-0">Configure Puter AI content generation, publishing rules, and pipeline behavior.</p>
+    </div>
+    <a href="/admin/autocontent" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+    </a>
+</div>
+
+<form action="/admin/autocontent/settings" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="row g-4">
+
+        {# -- Puter AI Config ----------------------------------------------- #}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-cpu me-2"></i>Puter AI Configuration</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info py-2 small border-0 mb-3">
+                        <i class="bi bi-info-circle-fill me-1"></i>
+                        <strong>Puter AI</strong> is free and requires no API key for basic usage.
+                        Leave the endpoint blank to use the default Puter endpoint.
+                        Optionally set a <a href="https://puter.com" target="_blank">Puter token</a> for higher rate limits.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">AI Endpoint <span class="text-muted fw-normal">(leave blank for Puter default)</span></label>
+                        <input type="url" name="ai_endpoint" class="form-control font-monospace small"
+                               value="{{ config.ai_endpoint }}"
+                               placeholder="https://api.puter.com/puterai/openai/v1/chat/completions">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Model Name</label>
+                        <select name="ai_model" class="form-select">
+                            {% set models = [
+                                'gpt-4o-mini',
+                                'gpt-4o',
+                                'claude-3-5-sonnet',
+                                'claude-3-haiku',
+                                'gemini-2.0-flash',
+                                'gemini-1.5-pro',
+                                'meta-llama/llama-3.1-8b-instruct',
+                                'mistralai/mistral-7b-instruct'
+                            ] %}
+                            {% for m in models %}
+                                <option value="{{ m }}" {% if config.ai_model == m %}selected{% endif %}>{{ m }}</option>
+                            {% endfor %}
+                            <option value="custom" {% if config.ai_model not in models %}selected{% endif %}>Custom�</option>
+                        </select>
+                        <input type="text" name="ai_model_custom" id="ai_model_custom" class="form-control mt-2 font-monospace small {% if config.ai_model in models %}d-none{% endif %}"
+                               value="{% if config.ai_model not in models %}{{ config.ai_model }}{% endif %}"
+                               placeholder="Enter custom model name">
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold small text-muted">
+                            Puter Token / API Key
+                            {% if config.ai_key_set %}<span class="badge bg-success ms-1">Set ?</span>{% endif %}
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-key-fill"></i></span>
+                            <input type="password" name="ai_key" class="form-control border-start-0"
+                                   placeholder="{% if config.ai_key_set %}???????????? (already set � leave blank to keep){% else %}Optional: Enter Puter token for higher limits{% endif %}">
+                        </div>
+                        <div class="form-text">Leave blank to keep existing key. Clear by entering a single space.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# -- Engine Settings ------------------------------------------------ #}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-sliders me-2"></i>Engine & Publishing Rules</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="autocontent_enabled" id="autocontent_enabled"
+                               {% if config.autocontent_enabled %}checked{% endif %}>
+                        <label class="form-check-label fw-semibold" for="autocontent_enabled">
+                            Enable Auto Content Engine
+                        </label>
+                    </div>
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" name="auto_publish" id="auto_publish"
+                               {% if config.auto_publish %}checked{% endif %}>
+                        <label class="form-check-label fw-semibold" for="auto_publish">
+                            Auto-Publish Approved Articles
+                        </label>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small text-muted">Min Word Count</label>
+                            <input type="number" name="min_word_count" class="form-control"
+                                   value="{{ config.min_word_count }}" min="100" max="5000">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small text-muted">Min SEO Score</label>
+                            <input type="number" name="min_seo_score" class="form-control"
+                                   value="{{ config.min_seo_score }}" min="0" max="100">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small text-muted">Default Author Name</label>
+                            <input type="text" name="default_author" class="form-control"
+                                   value="{{ config.default_author }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small text-muted">Target Language</label>
+                            <select name="target_language" class="form-select">
+                                {% for lang in ['Bengali', 'English', 'Hindi', 'Arabic', 'Urdu', 'Spanish', 'French', 'Portuguese'] %}
+                                    <option value="{{ lang }}" {% if config.target_language == lang %}selected{% endif %}>{{ lang }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# -- Pipeline Batch Settings ----------------------------------------- #}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-layers me-2"></i>Pipeline Batch Sizes</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-4">
+                            <label class="form-label fw-semibold small text-muted">Process Batch</label>
+                            <input type="number" name="process_batch" class="form-control"
+                                   value="{{ config.process_batch }}" min="1" max="20">
+                            <div class="form-text">Articles per AI run</div>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label fw-semibold small text-muted">Publish Batch</label>
+                            <input type="number" name="publish_batch" class="form-control"
+                                   value="{{ config.publish_batch }}" min="1" max="10">
+                            <div class="form-text">Articles per publish run</div>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label fw-semibold small text-muted">Max Retries</label>
+                            <input type="number" name="max_retry_attempts" class="form-control"
+                                   value="{{ config.max_retry_attempts }}" min="1" max="10">
+                            <div class="form-text">Before giving up</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small text-muted">Max Daily Publish</label>
+                            <input type="number" name="max_daily_publish" class="form-control"
+                                   value="{{ config.max_daily_publish }}" min="1" max="50">
+                            <div class="form-text">Articles per day limit</div>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label fw-semibold small text-muted">Publish Start</label>
+                            <input type="time" name="publish_time_start" class="form-control"
+                                   value="{{ config.publish_time_start|default('06:00') }}">
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label fw-semibold small text-muted">Publish End</label>
+                            <input type="time" name="publish_time_end" class="form-control"
+                                   value="{{ config.publish_time_end|default('23:00') }}">
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+                    <div class="bg-light rounded p-3">
+                        <p class="small fw-semibold mb-2 text-muted"><i class="bi bi-terminal me-1"></i>Recommended Crontab</p>
+                        <pre class="small mb-0 text-success" style="font-size:0.75rem;">*/15 * * * * php /path/to/scripts/autocontent_collect.php
+*/10 * * * * php /path/to/scripts/autocontent_process.php
+*/5  * * * * php /path/to/scripts/autocontent_publish.php
+*/30 * * * * php /path/to/scripts/autocontent_retry.php</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# -- Module Integrations --------------------------------------------- #}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-puzzle me-2"></i>Module Integrations</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="telegram_enabled" id="telegram_enabled"
+                               {% if config.telegram_enabled %}checked{% endif %}>
+                        <label class="form-check-label fw-semibold small" for="telegram_enabled">
+                            Notify on Published via Telegram
+                        </label>
+                    </div>
+                    <div class="form-text small text-muted mb-3">
+                        Sends a Telegram message when an article is published.
+                    </div>
+                    <div class="alert alert-warning py-2 small mb-0 border-0">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        Telegram Bot Token & Chat ID are managed in
+                        <a href="/admin/telegram-settings" class="fw-bold">Telegram System Settings</a>.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# -- AI System Prompt ----------------------------------------------- #}
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-chat-left-dots me-2"></i>AI System Prompt (Instructions)</h6>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="resetPromptBtn">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Default
+                    </button>
+                </div>
+                <div class="card-body">
+                    <textarea name="system_prompt" id="system_prompt" class="form-control font-monospace small" rows="12">{{ config.system_prompt }}</textarea>
+                    <div class="form-text mt-2">
+                        Leave blank to use the built-in dynamic prompt. The prompt instructs the AI on language, tone, HTML formatting, and SEO.
+                        Available variables: <code>{targetLang}</code>, <code>{style}</code>.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# -- Save Button ---------------------------------------------------- #}
+        <div class="col-12">
+            <div class="d-flex gap-2 justify-content-end">
+                <a href="/admin/autocontent" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary px-5 fw-bold">
+                    <i class="bi bi-save-fill me-2"></i>Save Settings
+                </button>
+            </div>
+        </div>
+
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Custom model input toggle
+document.querySelector('[name="ai_model"]').addEventListener('change', function() {
+    const customInput = document.getElementById('ai_model_custom');
+    if (this.value === 'custom') {
+        customInput.classList.remove('d-none');
+        customInput.required = true;
+    } else {
+        customInput.classList.add('d-none');
+        customInput.required = false;
+    }
+});
+
+// Override ai_model with custom value on submit
+document.querySelector('form').addEventListener('submit', function() {
+    const select = this.querySelector('[name="ai_model"]');
+    const custom = document.getElementById('ai_model_custom');
+    if (select.value === 'custom' && custom.value.trim()) {
+        select.value = custom.value.trim();
+    }
+});
+
+// Reset prompt button
+document.getElementById('resetPromptBtn').addEventListener('click', async function() {
+    const result = typeof window.showConfirm === 'function'
+        ? await window.showConfirm(
+            'This will clear the custom prompt and use the default auto-generated prompt.',
+            'Reset System Prompt?',
+            'warning',
+            {
+                confirmButtonText: 'Reset',
+                cancelButtonText: 'Cancel'
+            }
+        )
+        : true;
+    
+    if (result) {
+        document.getElementById('system_prompt').value = '';
+        if (typeof window.showMessage === 'function') {
+            await window.showMessage('Prompt cleared. Default will be used.', 'success', 2000);
+        }
+    }
+});
+</script>
+{% endblock %}

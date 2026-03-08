@@ -78,7 +78,8 @@ Use these status values to control appearance and color:
     warningColor: '#ffc107',          // Bootstrap warning
     infoColor: '#0dcaf0',             // Bootstrap info
     closeonEscape: true,              // Escape key closes modals
-    announceToasts: true              // Screen reader announcements
+    announceToasts: true,             // Screen reader announcements
+    enableLogs: false                  // if true, internal debug logs appear via console.log
 }
 ```
 
@@ -99,6 +100,20 @@ MessageHandlerConfig.setAll({
 // Get current config
 const config = MessageHandlerConfig.getAll();
 console.log(config);
+
+// --- debug logging ---
+//
+// the message handler maintains an `enableLogs` flag you can toggle at runtime
+// to show or hide console messages (useful during development).
+//
+// Use the following helper methods:
+//
+//     MessageHandler.enableLogs();
+//     MessageHandler.disableLogs();
+//     const active = MessageHandler.logsEnabled();
+//
+// You may also set the flag directly via `MessageHandlerConfig.set('enableLogs', true)`
+// before initialization (e.g. with server‑rendered config).
 ```
 
 ---

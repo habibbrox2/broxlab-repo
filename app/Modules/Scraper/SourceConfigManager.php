@@ -88,7 +88,7 @@ class SourceConfigManager
             return [];
         }
 
-        $sql = "SELECT * FROM autoblog_sources WHERE is_active = 1 ORDER BY id DESC";
+        $sql = "SELECT * FROM autocontent_sources WHERE is_active = 1 ORDER BY id DESC";
         $result = $this->mysqli->query($sql);
 
         $loadedSources = [];
@@ -300,7 +300,7 @@ class SourceConfigManager
         }
 
         $stmt = $this->mysqli->prepare(
-            "UPDATE autoblog_sources SET last_fetch = NOW() WHERE id = ?"
+            "UPDATE autocontent_sources SET last_fetch = NOW() WHERE id = ?"
         );
         $stmt->bind_param('i', $source['id']);
         $result = $stmt->execute();
@@ -326,7 +326,7 @@ class SourceConfigManager
         $source['selectors'] = $data['selectors'] ?? [];
         
         $stmt = $this->mysqli->prepare("
-            INSERT INTO autoblog_sources (
+            INSERT INTO autocontent_sources (
                 name, url, type, category_id,
                 selector_list_container, selector_list_item,
                 selector_list_title, selector_list_date, selector_list_url,
@@ -397,7 +397,7 @@ class SourceConfigManager
         $values[] = $id;
         $types .= 'i';
 
-        $sql = "UPDATE autoblog_sources SET " . implode(', ', $fields) . " WHERE id = ?";
+        $sql = "UPDATE autocontent_sources SET " . implode(', ', $fields) . " WHERE id = ?";
         
         $stmt = $this->mysqli->prepare($sql);
         $stmt->bind_param($types, ...$values);
@@ -420,7 +420,7 @@ class SourceConfigManager
             return false;
         }
 
-        $stmt = $this->mysqli->prepare("DELETE FROM autoblog_sources WHERE id = ?");
+        $stmt = $this->mysqli->prepare("DELETE FROM autocontent_sources WHERE id = ?");
         $stmt->bind_param('i', $id);
         $result = $stmt->execute();
         $stmt->close();

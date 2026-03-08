@@ -1,13 +1,101 @@
+import { puter as importedPuter } from '@heyputer/puter.js';
+
 const DEFAULT_POPUP = { width: 600, height: 700, timeoutMs: 2 * 60 * 1000 };
 
 let puterInstance = null;
+let puterRealtimeDisabled = false;
+
+function getPuterApiProxyOrigin() {
+  try {
+    const proxy = window.PUTER_API_PROXY_ORIGIN;
+    if (typeof proxy === 'string' && proxy.trim()) {
+      return proxy.trim().replace(/\/+$/, '');
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    return new URL('/__/puter', window.location.href).toString().replace(/\/+$/, '');
+  } catch {
+    return null;
+  }
+}
+
+function applyPuterApiOrigin(proxyOrigin) {
+  if (!proxyOrigin || typeof window === 'undefined') return;
+  window.PUTER_API_PROXY_ORIGIN = proxyOrigin;
+  window.PUTER_API_ORIGIN = proxyOrigin;
+  window.PUTER_API_ORIGIN_ENV = proxyOrigin;
+}
+
+function clearPuterAuthTokenSilently() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage?.removeItem('puter.auth.token');
+  } catch {
+    // ignore
+  }
+}
+
+function disablePuterRealtimeSocket(puterClient) {
+  if (!puterClient || puterRealtimeDisabled) return;
+
+  const fs = puterClient.fs;
+  if (!fs) return;
+
+  try {
+    fs.socket?.disconnect?.();
+  } catch {
+    // ignore
+  }
+
+  fs.socket = null;
+  fs.initializeSocket = () => {
+    fs.socket = null;
+  };
+  fs.setAPIOrigin = (APIOrigin) => {
+    fs.APIOrigin = APIOrigin;
+  };
+  fs.setAuthToken = (authToken) => {
+    fs.authToken = authToken;
+  };
+
+  puterRealtimeDisabled = true;
+}
 
 async function getPuter() {
-  if (window.puter) return window.puter;
-  if (!puterInstance) {
-    const module = await import('@heyputer/puter.js');
-    puterInstance = module.puter;
+  const proxyOrigin = getPuterApiProxyOrigin();
+  applyPuterApiOrigin(proxyOrigin);
+
+  if (window.PUTER_PROXY_PUBLIC_ONLY) {
+    clearPuterAuthTokenSilently();
   }
+
+  if (window.puter) {
+    disablePuterRealtimeSocket(window.puter);
+    if (proxyOrigin && typeof window.puter.setAPIOrigin === 'function') {
+      try {
+        window.puter.setAPIOrigin(proxyOrigin);
+      } catch {
+        // ignore failures; continue with default origin
+      }
+    }
+    return window.puter;
+  }
+
+  if (!puterInstance) {
+    puterInstance = importedPuter;
+    disablePuterRealtimeSocket(puterInstance);
+
+    if (proxyOrigin && typeof puterInstance.setAPIOrigin === 'function') {
+      try {
+        puterInstance.setAPIOrigin(proxyOrigin);
+      } catch {
+        // ignore failures; continue with default origin
+      }
+    }
+  }
+  disablePuterRealtimeSocket(puterInstance);
   return puterInstance;
 }
 
@@ -123,7 +211,7 @@ export function buildPopupSignIn({ popupSize = DEFAULT_POPUP, t } = {}) {
         if (settled) return;
         settled = true;
         cleanup();
-        try { popup.close(); } catch {}
+        try { popup.close(); } catch { }
         cb(value);
       };
 
@@ -161,7 +249,7 @@ export function buildPopupSignIn({ popupSize = DEFAULT_POPUP, t } = {}) {
   };
 }
 
-export async function ensurePuterReady({ interactive = false, t, openPopup }) {
+export async function ensurePuterReady({ interactive = false, allowAuth = false, t, openPopup } = {}) {
   const p = await getPuter();
   if (!p?.ai?.chat) throw buildError(t?.('error_puter_missing') || 'Puter client missing');
   const auth = p.auth;
@@ -171,6 +259,32 @@ export async function ensurePuterReady({ interactive = false, t, openPopup }) {
     const state = auth.isSignedIn();
     signedIn = state && typeof state.then === 'function' ? await state : Boolean(state);
   }
+  // If we think we're signed in, validate the session by calling whoami.
+  // This helps recover from stale/invalid tokens where isSignedIn() may still return true.
+  // If we are running in “public-only” proxy mode, skip any sign-in requirements unless explicitly allowed.
+  if (typeof window !== 'undefined' && window.PUTER_PROXY_PUBLIC_ONLY && !allowAuth) {
+    try {
+      clearPuterAuthTokenSilently();
+      if (typeof p.resetAuthToken === 'function') {
+        p.resetAuthToken();
+      } else if (typeof p.setAuthToken === 'function') {
+        p.setAuthToken(null);
+      }
+    } catch {
+      // ignore
+    }
+    return;
+  }
+
+  if (signedIn && typeof auth.whoami === 'function') {
+    try {
+      await auth.whoami();
+    } catch (err) {
+      // Treat any whoami failure as a sign that the current session is no longer valid.
+      signedIn = false;
+    }
+  }
+
   if (!signedIn && interactive) {
     if (openPopup) {
       await openPopup();

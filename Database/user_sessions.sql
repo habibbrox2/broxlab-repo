@@ -1,8 +1,8 @@
 -- ========================================
 -- টেবিল / Table: user_sessions
--- তারিখ / Date: 2026-03-07 01:28:44
+-- তারিখ / Date: 2026-03-08 02:32:43
 -- মোড / Mode: Full Export
--- মোট সারি / Total Rows: 91
+-- মোট সারি / Total Rows: 88
 -- ========================================
 
 CREATE TABLE IF NOT EXISTS `user_sessions` (
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS `user_sessions` (
   KEY `fk_user_sessions_user_id` (`user_id`),
   KEY `idx_session_id` (`session_id`),
   KEY `idx_user_active` (`user_id`,`is_active`)
-) ENGINE=InnoDB AUTO_INCREMENT=96 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Track active user sessions for concurrent login control';
+) ENGINE=InnoDB AUTO_INCREMENT=93 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Track active user sessions for concurrent login control';
 
 -- ডাটা ইনসার্ট / Data Insert
 
@@ -109,10 +109,7 @@ INSERT INTO `user_sessions` (`id`, `user_id`, `session_id`, `ip_address`, `user_
 INSERT INTO `user_sessions` (`id`, `user_id`, `session_id`, `ip_address`, `user_agent`, `device_name`, `last_activity`, `is_active`, `created_at`, `expires_at`) VALUES ('86', '1', '35d5618dfb8a349544caca15ae2854d9', '103.25.248.131', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', NULL, '2026-03-05 23:35:43', '1', '2026-03-05 23:35:43', '2026-03-06 04:35:43');
 INSERT INTO `user_sessions` (`id`, `user_id`, `session_id`, `ip_address`, `user_agent`, `device_name`, `last_activity`, `is_active`, `created_at`, `expires_at`) VALUES ('87', '1', '995c4072d76dc4d16f9653defb8cd4c7', '103.25.248.131', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', NULL, '2026-03-05 23:35:45', '1', '2026-03-05 23:35:45', '2026-03-06 04:35:45');
 INSERT INTO `user_sessions` (`id`, `user_id`, `session_id`, `ip_address`, `user_agent`, `device_name`, `last_activity`, `is_active`, `created_at`, `expires_at`) VALUES ('88', '1', 'bacc5e95479be3ff4cd280f3165554da', '103.13.193.100', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', NULL, '2026-03-06 08:49:57', '1', '2026-03-06 08:49:57', '2026-03-06 13:49:57');
-INSERT INTO `user_sessions` (`id`, `user_id`, `session_id`, `ip_address`, `user_agent`, `device_name`, `last_activity`, `is_active`, `created_at`, `expires_at`) VALUES ('89', '1', 'lto5f7svotkl6h1mk4vop9k5e7', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', NULL, '2026-03-07 02:29:48', '1', '2026-03-07 02:29:48', '2026-03-07 03:29:48');
-INSERT INTO `user_sessions` (`id`, `user_id`, `session_id`, `ip_address`, `user_agent`, `device_name`, `last_activity`, `is_active`, `created_at`, `expires_at`) VALUES ('90', '21', 'hemhsthvahkm3dtt4t2f22t5cu', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', NULL, '2026-03-07 03:39:18', '1', '2026-03-07 03:39:18', '2026-03-07 04:39:18');
-INSERT INTO `user_sessions` (`id`, `user_id`, `session_id`, `ip_address`, `user_agent`, `device_name`, `last_activity`, `is_active`, `created_at`, `expires_at`) VALUES ('91', '21', '7d33guat3g26s0mghk4tivlso2', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', NULL, '2026-03-07 03:39:27', '1', '2026-03-07 03:39:27', '2026-03-07 04:39:27');
-INSERT INTO `user_sessions` (`id`, `user_id`, `session_id`, `ip_address`, `user_agent`, `device_name`, `last_activity`, `is_active`, `created_at`, `expires_at`) VALUES ('92', '1', 'fpqk3vf5n5anah0duarkdan2ff', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', NULL, '2026-03-07 03:39:34', '1', '2026-03-07 03:39:34', '2026-03-07 04:39:34');
-INSERT INTO `user_sessions` (`id`, `user_id`, `session_id`, `ip_address`, `user_agent`, `device_name`, `last_activity`, `is_active`, `created_at`, `expires_at`) VALUES ('93', '1', 'j53e5m4sse3odi28igbalc6boo', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', NULL, '2026-03-07 03:59:24', '1', '2026-03-07 03:59:24', '2026-03-07 04:59:24');
-INSERT INTO `user_sessions` (`id`, `user_id`, `session_id`, `ip_address`, `user_agent`, `device_name`, `last_activity`, `is_active`, `created_at`, `expires_at`) VALUES ('94', '1', 'c87ibhmqalq51kdut5jn6mf6se', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', NULL, '2026-03-07 03:59:33', '1', '2026-03-07 03:59:33', '2026-03-07 04:59:33');
-INSERT INTO `user_sessions` (`id`, `user_id`, `session_id`, `ip_address`, `user_agent`, `device_name`, `last_activity`, `is_active`, `created_at`, `expires_at`) VALUES ('95', '1', 'o8a8v605v5kld1bcfo55dsfbpd', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', NULL, '2026-03-07 06:12:47', '1', '2026-03-07 06:12:47', '2026-03-07 07:12:47');
+INSERT INTO `user_sessions` (`id`, `user_id`, `session_id`, `ip_address`, `user_agent`, `device_name`, `last_activity`, `is_active`, `created_at`, `expires_at`) VALUES ('89', '1', 'r6vvd7rgv70d6qtpaoauem2llq', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', NULL, '2026-03-07 15:41:52', '1', '2026-03-07 15:41:52', '2026-03-07 16:41:52');
+INSERT INTO `user_sessions` (`id`, `user_id`, `session_id`, `ip_address`, `user_agent`, `device_name`, `last_activity`, `is_active`, `created_at`, `expires_at`) VALUES ('90', '1', 'ufeedjk7msc75uh3mql0b52hbv', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', NULL, '2026-03-08 04:56:04', '1', '2026-03-08 04:56:04', '2026-03-08 05:56:04');
+INSERT INTO `user_sessions` (`id`, `user_id`, `session_id`, `ip_address`, `user_agent`, `device_name`, `last_activity`, `is_active`, `created_at`, `expires_at`) VALUES ('91', '1', 'i5m0llu4d8o55r6m603jhu5tmn', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0', NULL, '2026-03-08 05:03:15', '1', '2026-03-08 05:03:15', '2026-03-08 06:03:15');
+INSERT INTO `user_sessions` (`id`, `user_id`, `session_id`, `ip_address`, `user_agent`, `device_name`, `last_activity`, `is_active`, `created_at`, `expires_at`) VALUES ('92', '1', 'n7hogdc46dfok2fg7fibq11ebg', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', NULL, '2026-03-08 05:26:03', '1', '2026-03-08 05:26:03', '2026-03-08 06:26:03');

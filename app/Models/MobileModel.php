@@ -2,6 +2,7 @@
 
 // classes/MobileModel.php
 
+namespace App\Models;
 
 
 class MobileModel {

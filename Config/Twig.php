@@ -58,7 +58,15 @@ if (!function_exists('normalizeEnvValue')) {
 if (!function_exists('brox_is_development_env')) {
     function brox_is_development_env(): bool
     {
-        return env('APP_ENV', 'production') === 'development';
+        $env = env('APP_ENV', 'production');
+        if ($env === 'development') {
+            return true;
+        }
+
+        $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+        $host = preg_replace('/:\d+$/', '', $host) ?? $host;
+
+        return in_array($host, ['localhost', '127.0.0.1', '::1'], true);
     }
 }
 
@@ -180,19 +188,25 @@ if (!function_exists('brox_resolve_asset_for_development')) {
 
         if (strpos($url, '/assets/js/dist/') === 0) {
             $relative = substr($url, strlen('/assets/js/dist/'));
-            $sourceUrl = '/assets/js/' . ltrim($relative, '/');
-            $sourceAbs = $projectRoot . '/public_html' . $sourceUrl;
+            $distAbs = $projectRoot . '/public_html/assets/js/dist/' . str_replace('/', DIRECTORY_SEPARATOR, $relative);
+            $watchRoots = [
+                $projectRoot . '/public_html/assets/js',
+                $projectRoot . '/public_html/assets/datepicker/datepicker.js',
+                $projectRoot . '/build/esbuild.config.js',
+            ];
 
-            if (file_exists($sourceAbs)) {
-                return $sourceUrl;
+            $distMtime = brox_latest_mtime($distAbs);
+            $sourceMtime = 0;
+
+            foreach ($watchRoots as $watchRoot) {
+                $mtime = brox_latest_mtime($watchRoot);
+                if ($mtime > $sourceMtime) {
+                    $sourceMtime = $mtime;
+                }
             }
 
-            if ($url === '/assets/js/dist/datepicker.js') {
-                $datepickerUrl = '/assets/datepicker/datepicker.js';
-                $datepickerAbs = $projectRoot . '/public_html' . $datepickerUrl;
-                if (file_exists($datepickerAbs)) {
-                    return $datepickerUrl;
-                }
+            if ($sourceMtime > $distMtime || !file_exists($distAbs)) {
+                brox_try_run_dev_build('app-dist', 'npm run build:app:dist', $projectRoot);
             }
 
             return $url;
@@ -200,13 +214,25 @@ if (!function_exists('brox_resolve_asset_for_development')) {
 
         $buildMap = [
             '/assets/ai-assistant/dist/' => [
-                'sourceRoot' => $projectRoot . '/public_html/assets/ai-assistant',
+                'watchRoots' => [
+                    $projectRoot . '/public_html/assets/ai-assistant/bootstrap',
+                    $projectRoot . '/public_html/assets/ai-assistant/core',
+                    $projectRoot . '/public_html/assets/ai-assistant/modules',
+                    $projectRoot . '/public_html/assets/ai-assistant/styles',
+                    $projectRoot . '/node_modules/@heyputer/puter.js/src',
+                    $projectRoot . '/build/esbuild-assistants.mjs',
+                ],
                 'distRoot' => $projectRoot . '/public_html/assets/ai-assistant/dist',
                 'commandKey' => 'assistants',
                 'command' => 'npm run build:assistants',
             ],
             '/assets/firebase/v2/dist/' => [
-                'sourceRoot' => $projectRoot . '/public_html/assets/firebase/v2',
+                'watchRoots' => [
+                    $projectRoot . '/public_html/assets/firebase/v2/src',
+                    $projectRoot . '/public_html/assets/firebase/v2/modules',
+                    $projectRoot . '/public_html/assets/firebase/v2/core',
+                    $projectRoot . '/build/esbuild-firebase.mjs',
+                ],
                 'distRoot' => $projectRoot . '/public_html/assets/firebase/v2/dist',
                 'commandKey' => 'firebase-v2',
                 'command' => 'npm run build:firebase:v2',
@@ -220,10 +246,15 @@ if (!function_exists('brox_resolve_asset_for_development')) {
 
             $relative = substr($url, strlen($prefix));
             $distAbs = $config['distRoot'] . '/' . str_replace('/', DIRECTORY_SEPARATOR, $relative);
-            $sourceAbs = $config['sourceRoot'] . '/' . str_replace('/', DIRECTORY_SEPARATOR, $relative);
-
             $distMtime = brox_latest_mtime($distAbs);
-            $sourceMtime = brox_latest_mtime($sourceAbs);
+            $sourceMtime = 0;
+
+            foreach (($config['watchRoots'] ?? []) as $watchRoot) {
+                $mtime = brox_latest_mtime($watchRoot);
+                if ($mtime > $sourceMtime) {
+                    $sourceMtime = $mtime;
+                }
+            }
 
             if ($sourceMtime > $distMtime || !file_exists($distAbs)) {
                 brox_try_run_dev_build($config['commandKey'], $config['command'], $projectRoot);

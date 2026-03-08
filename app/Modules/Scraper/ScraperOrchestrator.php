@@ -18,7 +18,7 @@ class ScraperOrchestrator
     private ?EnhancedDuplicateChecker $duplicateChecker = null;
     private ?EnhancedImageDownloader $imageDownloader = null;
     private ?ContentCleanerService $contentCleaner = null;
-    
+
     private ?\mysqli $mysqli = null;
     private array $config = [];
     private array $stats = [
@@ -63,11 +63,11 @@ class ScraperOrchestrator
     {
         $this->mysqli = $mysqli;
         $this->sourceManager->setDatabase($mysqli);
-        
+
         if ($this->config['check_duplicates']) {
             $this->duplicateChecker = new EnhancedDuplicateChecker($mysqli);
         }
-        
+
         return $this;
     }
 
@@ -110,7 +110,7 @@ class ScraperOrchestrator
         ];
 
         $source = $this->sourceManager->getSourceById($sourceId);
-        
+
         if (!$source) {
             return [
                 'success' => false,
@@ -131,11 +131,50 @@ class ScraperOrchestrator
         try {
             // Get article list
             $type = $source['type'] ?? 'html';
-            
+
+            // Extract custom selectors from source
+            $selectors = [];
+            if (!empty($source['selector_list_container'])) {
+                $selectors['list_container'] = $source['selector_list_container'];
+            }
+            if (!empty($source['selector_list_item'])) {
+                $selectors['list_item'] = $source['selector_list_item'];
+            }
+            if (!empty($source['selector_list_title'])) {
+                $selectors['list_title'] = $source['selector_list_title'];
+            }
+            if (!empty($source['selector_list_link'])) {
+                $selectors['list_link'] = $source['selector_list_link'];
+            }
+            if (!empty($source['selector_list_date'])) {
+                $selectors['list_date'] = $source['selector_list_date'];
+            }
+            if (!empty($source['selector_list_image'])) {
+                $selectors['list_image'] = $source['selector_list_image'];
+            }
+            if (!empty($source['selector_title'])) {
+                $selectors['title'] = $source['selector_title'];
+            }
+            if (!empty($source['selector_content'])) {
+                $selectors['content'] = $source['selector_content'];
+            }
+            if (!empty($source['selector_image'])) {
+                $selectors['image'] = $source['selector_image'];
+            }
+            if (!empty($source['selector_excerpt'])) {
+                $selectors['excerpt'] = $source['selector_excerpt'];
+            }
+            if (!empty($source['selector_date'])) {
+                $selectors['date'] = $source['selector_date'];
+            }
+            if (!empty($source['selector_author'])) {
+                $selectors['author'] = $source['selector_author'];
+            }
+
             if ($type === 'rss') {
                 $listResult = $this->articleScraper->scrapeRss($source['url']);
             } else {
-                $listResult = $this->articleScraper->scrapeList($source['url']);
+                $listResult = $this->articleScraper->scrapeList($source['url'], $selectors);
             }
 
             if (!$listResult['success']) {
@@ -151,16 +190,16 @@ class ScraperOrchestrator
 
             for ($i = 0; $i < $maxArticles; $i++) {
                 $articleUrl = $articles[$i]['url'] ?? '';
-                
+
                 if (empty($articleUrl)) {
                     continue;
                 }
 
                 // Scrape individual article
                 $articleResult = $this->processArticle($articleUrl, $source, $options);
-                
+
                 $results['articles'][] = $articleResult;
-                
+
                 if ($articleResult['saved']) {
                     $results['saved']++;
                 } elseif ($articleResult['duplicate']) {
@@ -199,9 +238,30 @@ class ScraperOrchestrator
         ];
 
         try {
-            // Scrape article content
-            $articleData = $this->articleScraper->scrape($url);
-            
+            // Build selectors array from source for detail page
+            $detailSelectors = [];
+            if (!empty($source['selector_title'])) {
+                $detailSelectors['title'] = $source['selector_title'];
+            }
+            if (!empty($source['selector_content'])) {
+                $detailSelectors['content'] = $source['selector_content'];
+            }
+            if (!empty($source['selector_image'])) {
+                $detailSelectors['image'] = $source['selector_image'];
+            }
+            if (!empty($source['selector_excerpt'])) {
+                $detailSelectors['excerpt'] = $source['selector_excerpt'];
+            }
+            if (!empty($source['selector_date'])) {
+                $detailSelectors['date'] = $source['selector_date'];
+            }
+            if (!empty($source['selector_author'])) {
+                $detailSelectors['author'] = $source['selector_author'];
+            }
+
+            // Scrape article content with custom selectors
+            $articleData = $this->articleScraper->scrape($url, $detailSelectors);
+
             if (!$articleData['success']) {
                 $result['error'] = $articleData['error'];
                 return $result;
@@ -238,13 +298,13 @@ class ScraperOrchestrator
 
             // Save to database
             $articleId = $this->saveArticle($article, $source);
-            
+
             if ($articleId) {
                 $result['success'] = true;
                 $result['saved'] = true;
                 $result['article_id'] = $articleId;
                 $this->stats['articles_saved']++;
-                
+
                 // Save hash for duplicate detection
                 if ($this->duplicateChecker) {
                     $this->duplicateChecker->saveHash($articleId, $article['content']);
@@ -287,7 +347,7 @@ class ScraperOrchestrator
     private function downloadArticleImages(array $article, string $url): array
     {
         $images = [];
-        
+
         // Download featured image
         if (!empty($article['featured_image'])) {
             $featuredId = $this->imageDownloader->download($article['featured_image']);
@@ -296,7 +356,7 @@ class ScraperOrchestrator
                 $this->stats['images_downloaded']++;
             }
         }
-        
+
         return $article;
     }
 
@@ -310,7 +370,7 @@ class ScraperOrchestrator
         }
 
         $stmt = $this->mysqli->prepare("
-            INSERT INTO autoblog_articles (
+            INSERT INTO autocontent_articles (
                 title, content, excerpt, author, url, original_url,
                 source_id, category_id, featured_image, published_date,
                 status, created_at
@@ -409,7 +469,7 @@ class ScraperOrchestrator
             'errors' => 0,
             'images_downloaded' => 0,
         ];
-        
+
         $this->httpClient->resetStats();
     }
 

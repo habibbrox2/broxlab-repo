@@ -1,0 +1,50 @@
+-- ========================================
+-- টেবিল / Table: autocontent_articles
+-- তারিখ / Date: 2026-03-08 02:32:37
+-- মোড / Mode: Full Export
+-- মোট সারি / Total Rows: 11
+-- ========================================
+
+CREATE TABLE IF NOT EXISTS `autocontent_articles` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `source_id` int(11) NOT NULL,
+  `url` varchar(2048) NOT NULL,
+  `title` varchar(500) DEFAULT '',
+  `content` longtext DEFAULT NULL,
+  `excerpt` text DEFAULT NULL,
+  `author` varchar(255) DEFAULT '',
+  `image_url` varchar(2048) DEFAULT '',
+  `published_at` datetime DEFAULT NULL,
+  `status` enum('collected','processing','processed','approved','published','failed') DEFAULT 'collected',
+  `ai_title` varchar(500) DEFAULT '',
+  `ai_content` longtext DEFAULT NULL,
+  `ai_summary` text DEFAULT NULL,
+  `ai_excerpt` text DEFAULT NULL,
+  `seo_score` int(11) DEFAULT 0,
+  `original_content` longtext DEFAULT NULL,
+  `content_hash` varchar(64) DEFAULT '',
+  `simhash` varchar(64) DEFAULT '',
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_source_id` (`source_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_published_at` (`published_at`),
+  KEY `idx_created_at` (`created_at`),
+  KEY `idx_url` (`url`(500)),
+  KEY `idx_content_hash` (`content_hash`)
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- ডাটা ইনসার্ট / Data Insert
+
+INSERT INTO `autocontent_articles` (`id`, `source_id`, `url`, `title`, `content`, `excerpt`, `author`, `image_url`, `published_at`, `status`, `ai_title`, `ai_content`, `ai_summary`, `ai_excerpt`, `seo_score`, `original_content`, `content_hash`, `simhash`, `created_at`, `updated_at`) VALUES ('1', '18', 'https://www.bbc.com/food', 'BBC Food - Recipes and inspiration from your favourite BBC programmes and chefs', 'Find recipes from your favourite BBC programmes and chefs, or browse by ingredient or dish. With over 13000 recipes you\'re sure to find the perfect dish.', 'Find recipes from your favourite BBC programmes and chefs, or browse by ingredient or dish. With over 13000 recipes you\'re sure to find the perfect dish.', '', 'https://ichef.bbci.co.uk/ace/standard/480/cpsprodpb/5d36/live/24d01300-c707-11f0-a892-01d657345866.png', '2026-03-07 19:10:30', 'collected', '', NULL, NULL, NULL, '0', NULL, '', '', '2026-03-07 19:10:30', NULL);
+INSERT INTO `autocontent_articles` (`id`, `source_id`, `url`, `title`, `content`, `excerpt`, `author`, `image_url`, `published_at`, `status`, `ai_title`, `ai_content`, `ai_summary`, `ai_excerpt`, `seo_score`, `original_content`, `content_hash`, `simhash`, `created_at`, `updated_at`) VALUES ('2', '18', 'https://www.bbc.com', 'BBC Home - Breaking News, World News, US News, Sports, Business, Innovation, Climate, Culture, Travel, Video & Audio', 'Visit BBC for trusted reporting on the latest world and US news, sports, business, climate, innovation, culture and much more.', 'Visit BBC for trusted reporting on the latest world and US news, sports, business, climate, innovation, culture and much more.', '', '', '2026-03-07 19:10:31', 'collected', '', NULL, NULL, NULL, '0', NULL, '', '', '2026-03-07 19:10:31', NULL);
+INSERT INTO `autocontent_articles` (`id`, `source_id`, `url`, `title`, `content`, `excerpt`, `author`, `image_url`, `published_at`, `status`, `ai_title`, `ai_content`, `ai_summary`, `ai_excerpt`, `seo_score`, `original_content`, `content_hash`, `simhash`, `created_at`, `updated_at`) VALUES ('3', '18', 'https://www.bbc.com/food/#main-heading', 'BBC Food - Recipes and inspiration from your favourite BBC programmes and chefs', 'Find recipes from your favourite BBC programmes and chefs, or browse by ingredient or dish. With over 13000 recipes you\'re sure to find the perfect dish.', 'Find recipes from your favourite BBC programmes and chefs, or browse by ingredient or dish. With over 13000 recipes you\'re sure to find the perfect dish.', '', 'https://ichef.bbci.co.uk/ace/standard/480/cpsprodpb/5d36/live/24d01300-c707-11f0-a892-01d657345866.png', '2026-03-07 19:10:32', 'collected', '', NULL, NULL, NULL, '0', NULL, '', '', '2026-03-07 19:10:32', NULL);
+INSERT INTO `autocontent_articles` (`id`, `source_id`, `url`, `title`, `content`, `excerpt`, `author`, `image_url`, `published_at`, `status`, `ai_title`, `ai_content`, `ai_summary`, `ai_excerpt`, `seo_score`, `original_content`, `content_hash`, `simhash`, `created_at`, `updated_at`) VALUES ('4', '18', 'https://www.bbc.co.uk/accessibility/', 'Accessibility - BBC', '(No description found)', '(No description found)', '', '', '2026-03-07 19:10:32', 'collected', '', NULL, NULL, NULL, '0', NULL, '', '', '2026-03-07 19:10:32', NULL);
+INSERT INTO `autocontent_articles` (`id`, `source_id`, `url`, `title`, `content`, `excerpt`, `author`, `image_url`, `published_at`, `status`, `ai_title`, `ai_content`, `ai_summary`, `ai_excerpt`, `seo_score`, `original_content`, `content_hash`, `simhash`, `created_at`, `updated_at`) VALUES ('5', '18', 'https://account.bbc.com/account?lang=en-GB&amp;ptrt=https%3A%2F%2Fwww.bbc.co.uk%2Ffood', 'BBC', '(No description found)', '(No description found)', '', '', '2026-03-07 19:10:34', 'collected', '', NULL, NULL, NULL, '0', NULL, '', '', '2026-03-07 19:10:34', NULL);
+INSERT INTO `autocontent_articles` (`id`, `source_id`, `url`, `title`, `content`, `excerpt`, `author`, `image_url`, `published_at`, `status`, `ai_title`, `ai_content`, `ai_summary`, `ai_excerpt`, `seo_score`, `original_content`, `content_hash`, `simhash`, `created_at`, `updated_at`) VALUES ('6', '18', 'https://account.bbc.com/account?lang=en-GB&amp;ptrt=https%3A%2F%2Fwww.bbc.co.uk%2Ffood', 'BBC', '(No description found)', '(No description found)', '', '', '2026-03-07 19:10:39', 'collected', '', NULL, NULL, NULL, '0', NULL, '', '', '2026-03-07 19:10:39', NULL);
+INSERT INTO `autocontent_articles` (`id`, `source_id`, `url`, `title`, `content`, `excerpt`, `author`, `image_url`, `published_at`, `status`, `ai_title`, `ai_content`, `ai_summary`, `ai_excerpt`, `seo_score`, `original_content`, `content_hash`, `simhash`, `created_at`, `updated_at`) VALUES ('7', '17', 'https://www.bbc.com/travel', 'BBC Travel | Food & drink, History, Destinations, Road trips', 'BBC Travel brings you the latest travel news and coverage from around the world, including culture, identity, food & drink, sustainability, adventure, experiences, destinations and more', 'BBC Travel brings you the latest travel news and coverage from around the world, including culture, identity, food & drink, sustainability, adventure, experiences, destinations and more', '', '', '2026-03-07 19:13:11', 'collected', '', NULL, NULL, NULL, '0', NULL, '', '', '2026-03-07 19:13:11', NULL);
+INSERT INTO `autocontent_articles` (`id`, `source_id`, `url`, `title`, `content`, `excerpt`, `author`, `image_url`, `published_at`, `status`, `ai_title`, `ai_content`, `ai_summary`, `ai_excerpt`, `seo_score`, `original_content`, `content_hash`, `simhash`, `created_at`, `updated_at`) VALUES ('8', '17', 'https://www.bbc.com/travel/#main-content', 'BBC Travel | Food & drink, History, Destinations, Road trips', 'BBC Travel brings you the latest travel news and coverage from around the world, including culture, identity, food & drink, sustainability, adventure, experiences, destinations and more', 'BBC Travel brings you the latest travel news and coverage from around the world, including culture, identity, food & drink, sustainability, adventure, experiences, destinations and more', '', '', '2026-03-07 19:13:13', 'collected', '', NULL, NULL, NULL, '0', NULL, '', '', '2026-03-07 19:13:13', NULL);
+INSERT INTO `autocontent_articles` (`id`, `source_id`, `url`, `title`, `content`, `excerpt`, `author`, `image_url`, `published_at`, `status`, `ai_title`, `ai_content`, `ai_summary`, `ai_excerpt`, `seo_score`, `original_content`, `content_hash`, `simhash`, `created_at`, `updated_at`) VALUES ('9', '17', 'https://www.bbc.com/travel/', 'BBC Travel | Food & drink, History, Destinations, Road trips', 'BBC Travel brings you the latest travel news and coverage from around the world, including culture, identity, food & drink, sustainability, adventure, experiences, destinations and more', 'BBC Travel brings you the latest travel news and coverage from around the world, including culture, identity, food & drink, sustainability, adventure, experiences, destinations and more', '', '', '2026-03-07 19:13:15', 'collected', '', NULL, NULL, NULL, '0', NULL, '', '', '2026-03-07 19:13:15', NULL);
+INSERT INTO `autocontent_articles` (`id`, `source_id`, `url`, `title`, `content`, `excerpt`, `author`, `image_url`, `published_at`, `status`, `ai_title`, `ai_content`, `ai_summary`, `ai_excerpt`, `seo_score`, `original_content`, `content_hash`, `simhash`, `created_at`, `updated_at`) VALUES ('10', '17', 'https://www.bbc.com/travel/news', 'Page Not Found - BBC Travel', 'The latest stories from BBC Travel on travel topics from all over the globe: culture, identity, food, history, heritage, archaeology, nature, sustainability, adventure, experiences, destinations and other themes that celebrate the people and places that make the world diverse and amazing.', 'The latest stories from BBC Travel on travel topics from all over the globe: culture, identity, food, history, heritage, archaeology, nature, sustainability, adventure, experiences, destinations and o', '', 'https://ychef.files.bbci.co.uk/960x540/p0984kwj.png', '2026-03-07 19:13:21', 'collected', '', NULL, NULL, NULL, '0', NULL, '', '', '2026-03-07 19:13:21', NULL);
+INSERT INTO `autocontent_articles` (`id`, `source_id`, `url`, `title`, `content`, `excerpt`, `author`, `image_url`, `published_at`, `status`, `ai_title`, `ai_content`, `ai_summary`, `ai_excerpt`, `seo_score`, `original_content`, `content_hash`, `simhash`, `created_at`, `updated_at`) VALUES ('11', '17', 'https://www.bbc.com/travel/sport', 'BBC', '(No description found)', '(No description found)', '', '', '2026-03-07 19:13:26', 'collected', '', NULL, NULL, NULL, '0', NULL, '', '', '2026-03-07 19:13:26', NULL);

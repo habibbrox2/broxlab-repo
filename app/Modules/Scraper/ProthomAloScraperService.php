@@ -183,7 +183,7 @@ class ProthomAloScraperService
      */
     private function saveArticle(array $data): bool
     {
-        $sql = "INSERT INTO autoblog_articles (
+        $sql = "INSERT INTO autocontent_articles (
             title, original_content, clean_content, url, author,
             published_date, featured_image, images, word_count,
             source, status, created_at, updated_at
@@ -223,19 +223,19 @@ class ProthomAloScraperService
         $stats = [];
 
         // Total articles
-        $result = $this->mysqli->query("SELECT COUNT(*) as total FROM autoblog_articles WHERE source = 'prothom_alo'");
+        $result = $this->mysqli->query("SELECT COUNT(*) as total FROM autocontent_articles WHERE source = 'prothom_alo'");
         if ($result && $row = $result->fetch_assoc()) {
             $stats['total_articles'] = (int)$row['total'];
         }
 
         // Today's articles
-        $result = $this->mysqli->query("SELECT COUNT(*) as today FROM autoblog_articles WHERE source = 'prothom_alo' AND DATE(created_at) = CURDATE()");
+        $result = $this->mysqli->query("SELECT COUNT(*) as today FROM autocontent_articles WHERE source = 'prothom_alo' AND DATE(created_at) = CURDATE()");
         if ($result && $row = $result->fetch_assoc()) {
             $stats['today_articles'] = (int)$row['today'];
         }
 
         // Published articles
-        $result = $this->mysqli->query("SELECT COUNT(*) as published FROM autoblog_articles WHERE source = 'prothom_alo' AND status = 'published'");
+        $result = $this->mysqli->query("SELECT COUNT(*) as published FROM autocontent_articles WHERE source = 'prothom_alo' AND status = 'published'");
         if ($result && $row = $result->fetch_assoc()) {
             $stats['published_articles'] = (int)$row['published'];
         }

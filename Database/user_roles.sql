@@ -1,8 +1,8 @@
 -- ========================================
 -- টেবিল / Table: user_roles
--- তারিখ / Date: 2026-03-07 01:28:44
+-- তারিখ / Date: 2026-03-08 02:32:43
 -- মোড / Mode: Full Export
--- মোট সারি / Total Rows: 14
+-- মোট সারি / Total Rows: 13
 -- ========================================
 
 CREATE TABLE IF NOT EXISTS `user_roles` (
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS `user_roles` (
   UNIQUE KEY `user_role` (`user_id`,`role_id`),
   KEY `user_id` (`user_id`),
   KEY `role_id` (`role_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ডাটা ইনসার্ট / Data Insert
 
@@ -31,4 +31,3 @@ INSERT INTO `user_roles` (`id`, `user_id`, `role_id`, `created_at`) VALUES ('17'
 INSERT INTO `user_roles` (`id`, `user_id`, `role_id`, `created_at`) VALUES ('19', '19', '2', '2026-03-02 23:09:54');
 INSERT INTO `user_roles` (`id`, `user_id`, `role_id`, `created_at`) VALUES ('22', '20', '2', '2026-03-05 13:23:47');
 INSERT INTO `user_roles` (`id`, `user_id`, `role_id`, `created_at`) VALUES ('23', '20', '4', '2026-03-05 13:23:47');
-INSERT INTO `user_roles` (`id`, `user_id`, `role_id`, `created_at`) VALUES ('24', '21', '4', '2026-03-07 03:39:18');

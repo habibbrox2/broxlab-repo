@@ -1,30 +1,46 @@
-node_modules
-broxbhai.zip
-dist
-vendor
+# Node / PHP dependencies
+node_modules/
+vendor/
+
+# Build artifacts
+/dist/
+/public_html/assets/**/dist/
+
+# Local runtime storage
+/storage/
+
+# Local database backups / exports
+/Database/backups/
+/Database/exports/
+
+# Uploads (user data)
+/app/uploads/
+/public_html/uploads/
+
+# Environment files
+.env
+.env.local
+
+# Logs
+*.log
+
+# Archives
 *.zip
 *.tar.gz
-_backup
-*.log
-storage/*
 
 
-# Database backups and exports
-Database/backups/
-Database/exports/
-Database/*.sql.backup
+# Backups
+_backup/
 
-# Local development only
-app/uploads/*
-!app/uploads/.gitkeep
-public_html/uploads/*
-!public_html/uploads/.gitkeep
-
-# IDE and Editor
-.idea/
+# OS files
 .DS_Store
 Thumbs.db
+
+# Editor temp files
 *.swp
 *.swo
 *~
 .tmp.*
+git/
+composer.lock
+package-lock.json

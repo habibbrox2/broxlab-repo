@@ -623,7 +623,10 @@
                     </div>
                     <div>
                         <h6 class="mb-0" id="publicAssistantTitle">ব্রক্স সহকারী</h6>
-                        <small class="text-success" id="publicAssistantStatusText">অনলাইন ও প্রস্তুত</small>
+                        <div class="d-flex align-items-center gap-1">
+                            <span id="publicAssistantStatusIndicator" class="assistant-status-indicator"></span>
+                            <small class="text-success" id="publicAssistantStatusText">অনলাইন ও প্রস্তুত</small>
+                        </div>
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
@@ -808,6 +811,19 @@
         #publicAssistantBtn:hover {
             transform: scale(1.1) rotate(5deg);
             box-shadow: 0 6px 20px rgba(13, 110, 253, 0.4);
+        }
+
+        .assistant-status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #dc3545; /* red by default */
+            display: inline-block;
+            transition: background 0.2s ease;
+        }
+
+        .assistant-status-indicator.ready {
+            background: #28a745; /* green */
         }
 
         /* Chat Window */
@@ -1015,13 +1031,26 @@
         }
     </style>
     <script>
-        // Guard to prevent duplicate loading of Puter.js which causes custom element errors
-        if (!window.puterScriptLoaded) {
-            window.puterScriptLoaded = true;
-            var script = document.createElement('script');
-            script.src = 'https://js.puter.com/v2/';
-            document.head.appendChild(script);
-        }
+        // Configure Puter API proxy host (used when running under localhost / dev)
+        // This routes all Puter API calls through our own server endpoint at /__/puter.
+        window.PUTER_API_PROXY_ORIGIN = new URL('/__/puter', window.location.href).toString().replace(/\/+$/, '');
+
+        // Optionally force public-only mode (no Authorization header passed through).
+        // Default to true for public/chat usage unless explicitly disabled.
+        window.PUTER_PROXY_PUBLIC_ONLY = {{ ("" ~ (_ENV['PUTER_PROXY_PUBLIC_ONLY'] ?? '') )|lower in ['0','false','no'] ? 'false' : 'true' }};
+
+        // If we're running in public-only mode, ensure the UI reflects that.
+        // This is helpful when using the Admin Assistant (which may show a sign-in button).
+        (function () {
+            const publicOnly = Boolean(window.PUTER_PROXY_PUBLIC_ONLY);
+            const badge = document.getElementById('adminAssistantPublicModeBadge');
+            const signInBtn = document.getElementById('btnPuterSignIn');
+            if (badge) badge.classList.toggle('d-none', !publicOnly);
+            if (signInBtn) signInBtn.classList.toggle('d-none', publicOnly);
+        })();
+
+        // Puter is bundled into the assistant modules. Do not inject the CDN build here,
+        // otherwise pages that already import the bundled SDK will double-register custom elements.
     </script>
 
     {% if show_public_assistant %}

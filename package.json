@@ -37,10 +37,10 @@
         "serve": "python -m http.server 8000 -d public_html",
         "firebase:providers:sync": "node scripts/firebase/activate-firebaseui-providers.mjs",
         "lint": "eslint --config build/eslint.config.cjs \"public_html/assets/js/**/*.js\" \"public_html/assets/firebase/v2/**/*.js\" \"public_html/assets/ai-assistant/**/*.js\" \"build/Scripts/**/*.mjs\" \"build/esbuild.config.js\" \"build/esbuild-firebase.mjs\" \"build/esbuild-assistants.mjs\"",
-        "git": "node git-hr/git-helper.cjs",
-        "sync": "node git-hr/sync-clone.cjs",
-        "branch": "node git-hr/branch-manager.cjs",
-        "test": "echo \"No tests configured\""
+        "menu":   "node git/git-menu.cjs",
+        "git":    "node git/git-manager.cjs git",
+        "sync":   "node git/git-manager.cjs sync",
+        "branch": "node git/git-manager.cjs branch"
     },
     "keywords": [
         "firebase",
@@ -69,4 +69,3 @@
         "node": ">=18.0.0"
     }
 }
-
