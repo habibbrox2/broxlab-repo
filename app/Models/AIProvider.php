@@ -609,7 +609,12 @@ class AIProvider
      */
     private function getAPIKey(string $providerName): string
     {
-        // Check environment variable first
+        // For OpenRouter, we only use the stored DB key (do not read from env vars)
+        if ($providerName === 'openrouter') {
+            return $this->getSetting('openrouter_api_key', '') ?: '';
+        }
+
+        // For other providers, allow environment override (legacy behavior)
         $envKey = strtoupper($providerName) . '_API_KEY';
         $key = getenv($envKey);
 
@@ -1026,6 +1031,11 @@ class AIProvider
         $provider = $this->getByName($providerName);
         if (!$provider) {
             return ['success' => false, 'error' => 'Provider not found'];
+        }
+
+        $apiKey = $this->getAPIKey($providerName);
+        if (empty($apiKey)) {
+            return ['success' => false, 'error' => 'API key not configured'];
         }
 
         $config = self::getProviderConfig($providerName);

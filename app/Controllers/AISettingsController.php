@@ -17,9 +17,25 @@ if (isset($router)) {
         $aiProvider = new AIProvider($mysqli);
 
         $providers = $aiProvider->getAll();
+        // Remove Puter provider from UI/config management - Puter is only used client-side as a fallback.
+        $providers = array_filter($providers, fn($p) => ($p['provider_name'] ?? '') !== 'puter');
+
         $settings = $aiProvider->getSettings();
+        // Ensure frontend provider never returns the old Puter option
+        if (($settings['frontend_provider'] ?? '') === 'puter-js' || ($settings['frontend_provider'] ?? '') === 'puter') {
+            $settings['frontend_provider'] = 'openrouter';
+        }
+
         $defaultProvider = $aiProvider->getDefault();
+        if ($defaultProvider && ($defaultProvider['provider_name'] ?? '') === 'puter') {
+            $defaultProvider = $aiProvider->getEffectiveProvider();
+        }
+
         $providerConfigs = AIProvider::getAllProviderConfigs();
+
+        // Determine where OpenRouter key comes from (DB vs environment).
+        $openrouterDbKey = $settings['openrouter_api_key'] ?? '';
+        $settings['openrouter_key_source'] = !empty($openrouterDbKey) ? 'db' : 'none';
 
         $breadcrumbs = [
             ['label' => 'Dashboard', 'url' => '/admin'],
@@ -42,13 +58,68 @@ if (isset($router)) {
         $aiProvider = new AIProvider($mysqli);
         $settings = $aiProvider->getSettings();
 
+        // Prefer stored settings, but fall back to environment variables when present.
+        $fireworksDbKey = $settings['fireworks_api_key'] ?? '';
+        $fireworksEnvKey = getenv('FIREWORKS_API_KEY') ?: '';
+        $fireworksKey = $fireworksDbKey ?: $fireworksEnvKey;
+
+        $openrouterDbKey = $settings['openrouter_api_key'] ?? '';
+        $openrouterKey = $openrouterDbKey;
+
+        $openrouterKeySource = !empty($openrouterDbKey) ? 'db' : 'none';
+
+        // Ensure frontend provider never returns a Puter option (Puter is only used as a pure frontend fallback)
+        $frontendProvider = $settings['frontend_provider'] ?? 'openrouter';
+        if ($frontendProvider === 'puter-js' || $frontendProvider === 'puter') {
+            $frontendProvider = 'openrouter';
+        }
+
+        // Default model selection varies by provider.
+        $defaultModel = $settings['default_model'] ?? '';
+        if (empty($defaultModel)) {
+            if ($frontendProvider === 'openrouter') {
+                // OpenRouter expects a model like openrouter/free, openrouter/gpt-4, etc.
+                // If no model is configured, default to the free router.
+                $defaultModel = array_key_first(self::getProviderConfig('openrouter')['models'] ?? ['openrouter/free' => 'Free']);
+            } else {
+                $defaultModel = 'openai/gpt-5.2';
+            }
+        }
+
+        // Build provider list for frontend use (includes API keys for active providers)
+        $activeProviders = $aiProvider->getActive();
+        $providerList = [];
+        foreach ($activeProviders as $p) {
+            $providerName = $p['provider_name'];
+            $key = '';
+
+            if ($providerName === 'openrouter') {
+                $key = $settings['openrouter_api_key'] ?? '';
+            } else {
+                $envKey = strtoupper($providerName) . '_API_KEY';
+                $key = getenv($envKey) ?: ($settings[$providerName . '_api_key'] ?? '');
+            }
+
+            $providerList[] = [
+                'provider_name' => $providerName,
+                'display_name' => $p['display_name'],
+                'api_key' => $key,
+                'has_api_key' => !empty($key),
+                'models' => $p['supported_models'] ?? [],
+                'is_default' => !empty($p['is_default']),
+                'is_active' => !empty($p['is_active'])
+            ];
+        }
+
         header('Content-Type: application/json');
         echo json_encode([
-            'provider' => $settings['frontend_provider'] ?? 'openrouter',
-            'model' => $settings['default_model'] ?? 'openai/gpt-5.2',
+            'provider' => $frontendProvider,
+            'model' => $defaultModel,
+            'providers' => $providerList,
             // include transparent API keys for client JS (will be kept secret in production)
-            'fireworks_api_key' => $settings['fireworks_api_key'] ?? '',
-            'openrouter_api_key' => $settings['openrouter_api_key'] ?? ''
+            'fireworks_api_key' => $fireworksKey,
+            'openrouter_api_key' => $openrouterKey,
+            'openrouter_key_source' => $openrouterKeySource
         ]);
     });
 

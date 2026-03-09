@@ -23,7 +23,7 @@ export function formatBody(text, trustedHtml = false) {
   return trustedHtml ? String(text ?? '') : linkify(String(text ?? ''));
 }
 
-export function formatMeta({ role, ts, responseMs, lang = 'en', model }) {
+export function formatMeta({ role, ts, responseMs, lang = 'en', model, provider }) {
   const parts = [];
   const locale = lang === 'bn' ? 'bn-BD' : 'en-US';
   if (ts) {
@@ -31,6 +31,9 @@ export function formatMeta({ role, ts, responseMs, lang = 'en', model }) {
     if (!Number.isNaN(dt.getTime())) {
       parts.push(new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(dt));
     }
+  }
+  if (provider) {
+    parts.push(`🧩 ${provider}`);
   }
   if (model) {
     parts.push(`🤖 ${model}`);

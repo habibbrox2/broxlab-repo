@@ -2,7 +2,7 @@
 // This file is used as a lightweight bridge to the Puter client.
 
 const DEFAULT_POPUP = { width: 600, height: 700, timeoutMs: 2 * 60 * 1000 };
-const DEFAULT_PUTER_ESM = 'https://cdn.jsdelivr.net/npm/@heyputer/puter.js@2.2.11/src/index.js';
+const DEFAULT_PUTER_CDN = 'https://js.puter.com/v2/';
 
 let puterInstance = null;
 let puterLoading = null;
@@ -12,7 +12,7 @@ function getPuterCdnUrl() {
   if (typeof window !== 'undefined' && typeof window.PUTER_CDN_URL === 'string' && window.PUTER_CDN_URL.trim()) {
     return window.PUTER_CDN_URL.trim();
   }
-  return DEFAULT_PUTER_ESM;
+  return DEFAULT_PUTER_CDN;
 }
 
 function clearPuterAuthTokenSilently() {
@@ -61,6 +61,59 @@ async function loadPuter() {
     return puterInstance;
   }
 
+  // In web browsers, dynamically inject the CDN script so we never import the
+  // ESM source bundle (which imports CJS-only modules like @heyputer/kv.js).
+  if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    const src = getPuterCdnUrl();
+    puterLoading = (async () => {
+      await new Promise((resolve, reject) => {
+        const existing = document.querySelector(`script[src="${src}"]`);
+        if (existing && existing.getAttribute('data-puter-loaded') === 'true') {
+          return resolve();
+        }
+
+        const script = existing || document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.onload = () => {
+          script.setAttribute('data-puter-loaded', 'true');
+          resolve();
+        };
+        script.onerror = () => reject(new Error(`Failed to load Puter script: ${src}`));
+
+        if (!existing) {
+          document.head.appendChild(script);
+        }
+      });
+
+      if (window.puter) {
+        puterInstance = window.puter;
+        disablePuterRealtimeSocket(puterInstance);
+        return puterInstance;
+      }
+
+      // Fallback to dynamic import for non-browser environments, or if the
+      // global wasn't populated by the script.
+      const module = await import(src);
+      let client = module.puter || module.default?.puter || module.default || module;
+      if (!client && typeof window !== 'undefined' && window.puter) {
+        client = window.puter;
+      }
+      if (!client) {
+        throw new Error('Puter client not found');
+      }
+      if (typeof window !== 'undefined') {
+        window.puter = client;
+      }
+      disablePuterRealtimeSocket(client);
+      return client;
+    })();
+
+    puterInstance = await puterLoading;
+    return puterInstance;
+  }
+
+  // Non-browser fallback: use ESM dynamic import.
   puterLoading = (async () => {
     const src = getPuterCdnUrl();
     const module = await import(src);

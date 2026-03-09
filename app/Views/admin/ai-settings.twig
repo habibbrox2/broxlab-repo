@@ -48,9 +48,8 @@
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="provider-icon me-3">
-                                                {% if provider.provider_name == 'puter' %}
-                                                    <i class="bi bi-rocket-takeoff fs-4 text-info"></i>
-                                                {% elseif provider.provider_name == 'openrouter' %}
+                                                {% if provider.provider_name == 'openrouter' %}
+                                                    <i class="bi bi-globe fs-4 text-primary"></i>
                                                     <i class="bi bi-globe fs-4 text-primary"></i>
                                                 {% elseif provider.provider_name == 'openai' %}
                                                     <i class="bi bi-cpu fs-4 text-success"></i>
@@ -68,6 +67,17 @@
                                             </div>
                                             <div>
                                                 <strong>{{ provider.display_name }}</strong>
+                                                {% if provider.provider_name == 'openrouter' %}
+                                                    {% if settings.openrouter_key_source == 'db' %}
+                                                        <span class="badge bg-success ms-1 openrouter-key-fix" data-provider-id="{{ provider.id }}" title="Click to edit OpenRouter key. Expiry: unknown">Key (DB)</span>
+                                                    {% elseif settings.openrouter_key_source == 'env' %}
+                                                        <span class="badge bg-info text-dark ms-1 openrouter-key-fix" data-provider-id="{{ provider.id }}" title="Click to edit OpenRouter key. Expiry: unknown">Key (env)</span>
+                                                    {% else %}
+                                                        <span class="badge bg-warning text-dark ms-1 openrouter-key-fix" data-provider-id="{{ provider.id }}" title="Click to edit OpenRouter key. Expiry: unknown">No key</span>
+                                                    {% endif %}
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm ms-1 openrouter-key-test-btn" data-provider-id="{{ provider.id }}" title="Test OpenRouter key">Test key</button>
+                                                    <span class="openrouter-key-test-result ms-2"></span>
+                                                {% endif %}
                                                 <br>
                                                 <small class="text-muted">{{ provider.provider_name }}</small>
                                             </div>
@@ -156,7 +166,6 @@
                                 <select name="frontend_provider" class="form-select" id="frontendProviderSelect">
                                     <option value="openrouter" {% if settings.frontend_provider == 'openrouter' or not settings.frontend_provider %}selected{% endif %}>OpenRouter (Default)</option>
                                     <option value="fireworks" {% if settings.frontend_provider == 'fireworks' %}selected{% endif %}>Fireworks AI</option>
-                                    <option value="puter-js" {% if settings.frontend_provider == 'puter-js' %}selected{% endif %}>Puter.js (Free Fallback)</option>
                                     {% for provider in providers %}
                                         {% if provider.is_active and provider.provider_name not in ['puter', 'openrouter', 'fireworks'] %}
                                         <option value="{{ provider.provider_name }}" 
@@ -167,6 +176,17 @@
                                     {% endfor %}
                                 </select>
                                 <small class="text-muted">AI for website assistant chat</small>
+                                {% if settings.frontend_provider == 'openrouter' %}
+                                <div class="mt-1" id="openrouterKeyStatus">
+                                    {% if settings.openrouter_key_source == 'db' %}
+                                        <span class="badge bg-success">OpenRouter key configured (DB)</span>
+                                    {% elseif settings.openrouter_key_source == 'env' %}
+                                        <span class="badge bg-info text-dark">OpenRouter key configured (env)</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">OpenRouter key missing</span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-semibold">Backend AI Provider (AutoContent)</label>
@@ -301,8 +321,7 @@
 
                         <h6 class="fw-bold mb-3"><i class="bi bi-key me-2"></i>API Keys</h6>
                         <p class="text-muted small mb-3">
-                            Configure API keys for each provider. Keys are stored securely and can also be set via environment variables 
-                            (e.g., <code>OPENROUTER_API_KEY</code>, <code>OPENAI_API_KEY</code>).
+                            Configure API keys for each provider. Keys are stored securely in the database and must be entered here.
                         </p>
                         <div class="row g-3">
                             {% for provider in providers %}
@@ -312,6 +331,7 @@
                                 <div class="input-group">
                                     <input type="password" class="form-control api-key-input" 
                                            name="api_keys[{{ provider.provider_name }}]" 
+                                           {% if provider.provider_name == 'openrouter' %}id="apiKeyOpenRouter"{% endif %}
                                            placeholder="{% if provider.has_api_key %}{{ provider.api_key_preview }} (click to update){% else %}Enter API key{% endif %}"
                                            autocomplete="new-password">
                                     <button class="btn btn-outline-secondary toggle-password" type="button">
@@ -356,7 +376,7 @@
                     {% if default_provider %}
                     <div class="mb-3">
                         <small class="text-muted d-block">Frontend AI (Assistant)</small>
-                        <strong>{% if settings.frontend_provider == 'puter-js' %}Puter.js{% elseif settings.frontend_provider == 'openrouter' %}OpenRouter{% elseif settings.frontend_provider == 'fireworks' %}Fireworks AI{% else %}{{ settings.frontend_provider|default('OpenRouter')|upper }}{% endif %}</strong>
+                        <strong>{% if settings.frontend_provider == 'openrouter' %}OpenRouter{% elseif settings.frontend_provider == 'fireworks' %}Fireworks AI{% else %}{{ settings.frontend_provider|default('OpenRouter')|upper }}{% endif %}</strong>
                     </div>
                     <div class="mb-3">
                         <small class="text-muted d-block">Backend AI (AutoContent)</small>
@@ -431,7 +451,6 @@
                                         <li><a href="https://console.anthropic.com/" target="_blank">Anthropic</a></li>
                                         <li><a href="https://fireworks.ai/" target="_blank">Fireworks AI</a></li>
                                         <li><a href="https://huggingface.co/settings/inference-tokens" target="_blank">Hugging Face</a></li>
-                                        <li><strong>Puter AI</strong> - No API key required (free)</li>
                                     </ul>
                                 </div>
                             </div>
@@ -451,18 +470,12 @@
                         <div class="accordion-item border-0">
                             <h2 class="accordion-header">
                                 <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#help3">
-                                    Environment Variables
+                                    API Keys Storage
                                 </button>
                             </h2>
                             <div id="help3" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
                                 <div class="accordion-body small text-muted p-3">
-                                    You can set API keys via environment variables:
-                                    <code class="d-block mt-2">OPENROUTER_API_KEY</code>
-                                    <code class="d-block">OPENAI_API_KEY</code>
-                                    <code class="d-block">ANTHROPIC_API_KEY</code>
-                                    <code class="d-block">FIREWORKS_API_KEY</code>
-                                    <code class="d-block">GOOGLE_API_KEY</code>
-                                    <code class="d-block">HUGGINGFACE_API_KEY</code>
+                                    API keys are stored in the database and should be configured via the form above.
                                 </div>
                             </div>
                         </div>
@@ -786,6 +799,74 @@ document.querySelectorAll('.toggle-password').forEach(function(btn) {
             icon.classList.remove('bi-eye-slash');
             icon.classList.add('bi-eye');
         }
+    });
+});
+
+// Jump to OpenRouter API key input
+function focusApiKeyInput(providerName) {
+    const input = document.querySelector('input[name="api_keys[' + providerName + ']"]');
+    if (!input) return;
+
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    input.focus({ preventScroll: true });
+}
+
+// Test OpenRouter API key without sending a full chat request
+function validateOpenRouterKey(providerId, statusEl) {
+    const resultEl = statusEl.closest('td')?.querySelector('.openrouter-key-test-result');
+    if (resultEl) {
+        resultEl.textContent = 'Testing...';
+    }
+
+    fetch('/admin/ai-settings/update-provider', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'csrf_token=' + encodeURIComponent('{{ csrf_token }}') +
+              '&provider_id=' + providerId +
+              '&action=test' +
+              '&model=' + encodeURIComponent('openai/gpt-5.2')
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (resultEl) {
+            if (data.success) {
+                resultEl.textContent = '✅ Valid';
+                resultEl.classList.remove('text-danger');
+                resultEl.classList.add('text-success');
+            } else {
+                resultEl.textContent = '❌ Invalid';
+                resultEl.classList.remove('text-success');
+                resultEl.classList.add('text-danger');
+            }
+        }
+        if (!data.success) {
+            showAlert('OpenRouter key test failed: ' + (data.error || 'Unknown error'), 'danger');
+        }
+    })
+    .catch(error => {
+        if (resultEl) {
+            resultEl.textContent = '❌ Error';
+            resultEl.classList.remove('text-success');
+            resultEl.classList.add('text-danger');
+        }
+        showAlert('Error testing OpenRouter key: ' + error.message, 'danger');
+    });
+}
+
+// OpenRouter key helpers
+document.querySelectorAll('.openrouter-key-fix').forEach(function(el) {
+    el.addEventListener('click', function(event) {
+        event.preventDefault();
+        focusApiKeyInput('openrouter');
+    });
+});
+
+document.querySelectorAll('.openrouter-key-test-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        const providerId = this.dataset.providerId;
+        validateOpenRouterKey(providerId, this);
     });
 });
 

@@ -65,7 +65,7 @@ const CHAT_MODEL_PREFERENCES = [
 
 // Fireworks AI API call function
 async function callFireworksAI(messages, options = {}) {
-  const apiKey = window.FIREWORKS_API_KEY || 'your_api_key_here'; // Set your API key here or via window.FIREWORKS_API_KEY
+  const apiKey = window.FIREWORKS_API_KEY || ''; // Set your API key here or via window.FIREWORKS_API_KEY
   const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -136,7 +136,11 @@ const DEFAULT_PREFS = {
 
 // OpenRouter AI API call function
 async function callOpenRouterAI(messages, options = {}) {
-  const apiKey = window.OPENROUTER_API_KEY || 'your_api_key_here'; // Set your API key here or via window.OPENROUTER_API_KEY
+  const apiKey = String(window.OPENROUTER_API_KEY || '').trim();
+  if (!apiKey || apiKey === '') {
+    throw new Error('Missing OpenRouter API key. Configure it in AI settings and refresh the page.');
+  }
+
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -148,12 +152,44 @@ async function callOpenRouterAI(messages, options = {}) {
     body: JSON.stringify({
       model: options.model || 'openrouter/free',
       messages: messages,
-      stream: options.stream || false,
+      stream: options.stream || true,
       ...options
     })
   });
-  if (!response.ok) throw new Error('OpenRouter API error');
-  return await response.json();
+
+  if (!response.ok) {
+    let errText = '';
+    try {
+      const text = await response.text();
+      // Try to extract a human-friendly error message from JSON responses.
+      try {
+        const json = JSON.parse(text);
+        if (json?.error?.message) {
+          errText = json.error.message;
+        } else {
+          errText = text;
+        }
+      } catch {
+        errText = text;
+      }
+    } catch (e) {
+      // ignore
+    }
+    throw new Error(`OpenRouter API error (${response.status}): ${errText || response.statusText}`);
+  }
+
+  try {
+    return await response.json();
+  } catch (parseErr) {
+    // If parsing fails, include the raw response text for easier debugging.
+    let rawText = '';
+    try {
+      rawText = await response.text();
+    } catch (e) {
+      // ignore
+    }
+    throw new Error(`OpenRouter API response parse error: ${parseErr.message}${rawText ? ` - ${rawText}` : ''}`);
+  }
 }
 
 const REDIRECT_ACTIONS = new Set([
@@ -536,11 +572,26 @@ async function populateModelOptions() {
     }
   };
 
-  // try provider-specific discovery first
+  // try provider-specific discovery first (based on enabled providers and their API keys)
   try {
-    if (assistantPrefs.provider === 'fireworks') {
-      const apiKey = window.FIREWORKS_API_KEY;
-      if (apiKey) {
+    const providerList = Array.isArray(assistantPrefs.providers) ? assistantPrefs.providers : [];
+
+    for (const prov of providerList) {
+      const providerName = prov.provider_name;
+      const apiKey = prov.api_key;
+
+      // Always include OpenRouter Free router as a selectable option.
+      if (providerName === 'openrouter') {
+        addModels([{ value: 'openrouter/free', label: 'OpenRouter Free (router)' }]);
+      }
+
+      // Add any configured supported models if present.
+      if (Array.isArray(prov.models) && prov.models.length) {
+        addModels(prov.models.map((mid) => ({ value: mid, label: mid })));
+      }
+
+      // Provider-specific remote discovery
+      if (providerName === 'fireworks' && apiKey) {
         const resp = await fetch('https://api.fireworks.ai/inference/v1/models', {
           headers: { Authorization: `Bearer ${apiKey}` }
         });
@@ -549,17 +600,24 @@ async function populateModelOptions() {
           const fw = Array.isArray(data.models) ? data.models.map(m => ({ value: m.id || m.model || m.name, label: m.name || m.id || m.model })) : [];
           addModels(fw.filter(Boolean));
         }
-      }
-    } else if (assistantPrefs.provider === 'openrouter') {
-      const apiKey = window.OPENROUTER_API_KEY;
-      if (apiKey) {
+      } else if (providerName === 'openrouter' && apiKey) {
         const resp = await fetch('https://openrouter.ai/api/v1/models', {
           headers: { Authorization: `Bearer ${apiKey}` }
         });
         if (resp.ok) {
           const data = await resp.json();
-          const orModels = Array.isArray(data.models) ? data.models.map(m => ({ value: m.id || m.name, label: m.name || m.id })) : [];
-          addModels(orModels.filter(Boolean));
+          const modelList = Array.isArray(data.data) ? data.data : Array.isArray(data.models) ? data.models : [];
+          const orModels = modelList.map((m) => {
+            const id = String(m?.id || m?.canonical_slug || m?.name || '').trim();
+            if (!id) return null;
+            const label = m?.name ? `${m.name} (${id})` : id;
+            const option = { value: id, label };
+            if (m?.description) {
+              option.title = m.description;
+            }
+            return option;
+          }).filter(Boolean);
+          addModels(orModels);
         }
       }
     }
@@ -574,10 +632,10 @@ async function populateModelOptions() {
     const models = await puter.ai.listModels(assistantPrefs.provider || OPENAI_PROVIDER);
     const pmodels = Array.isArray(models)
       ? models.map((model) => {
-          const id = String(model?.id || model?.model || model?.name || '').trim();
-          if (!id) return null;
-          return { value: id, label: id };
-        }).filter(Boolean)
+        const id = String(model?.id || model?.model || model?.name || '').trim();
+        if (!id) return null;
+        return { value: id, label: id };
+      }).filter(Boolean)
       : [];
     addModels(pmodels);
   } catch (e) {
@@ -1394,11 +1452,11 @@ async function handleUserMessage() {
     await ensurePuterReady({ interactive: false, t: (key) => t(key) });
 
     // Try settings provider (Fireworks/OpenRouter) if API key is available
-    const hasFireworksKey = Boolean(window.FIREWORKS_API_KEY && window.FIREWORKS_API_KEY !== 'your_api_key_here');
-    const hasOpenRouterKey = Boolean(window.OPENROUTER_API_KEY && window.OPENROUTER_API_KEY !== 'your_api_key_here');
-    const isProviderConfigured = (assistantPrefs.provider === 'fireworks' && hasFireworksKey) || 
-                                  (assistantPrefs.provider === 'openrouter' && hasOpenRouterKey);
-    
+    const hasFireworksKey = Boolean(window.FIREWORKS_API_KEY && window.FIREWORKS_API_KEY !== '');
+    const hasOpenRouterKey = Boolean(window.OPENROUTER_API_KEY && window.OPENROUTER_API_KEY !== '');
+    const isProviderConfigured = (assistantPrefs.provider === 'fireworks' && hasFireworksKey) ||
+      (assistantPrefs.provider === 'openrouter' && hasOpenRouterKey);
+
     if (isProviderConfigured) {
       try {
         // Try settings provider
@@ -1413,11 +1471,15 @@ async function handleUserMessage() {
 
         let model, response;
         if (assistantPrefs.provider === 'openrouter') {
-          model = assistantPrefs.model && assistantPrefs.model.includes('/') ? assistantPrefs.model : 'openai/gpt-5.2';
-          response = await callOpenRouterAI(messages, { stream: false, model });
+          // When using OpenRouter in public/admin mode, prefer the free router model
+          // when no explicit model is configured.
+          model = (assistantPrefs.model && assistantPrefs.model.includes('/'))
+            ? assistantPrefs.model
+            : 'openrouter/free';
+          response = await callOpenRouterAI(messages, { stream: true, model });
         } else {
           model = assistantPrefs.model || 'accounts/fireworks/models/deepseek-v3p1';
-          response = await callFireworksAI(messages, { stream: false, model });
+          response = await callFireworksAI(messages, { stream: true, model });
         }
 
         const aiText = extractResponseText(response) || t('status_error');
@@ -1533,7 +1595,7 @@ async function handleUserMessage() {
     clearAttachmentState({ clearUrl: true });
     setStatus('status_ready');
   } catch (err) {
-    const msg = String(err?.message || t('status_error'));
+    const msg = String(err?.message ?? err ?? t('status_error'));
     const errorNode = await appendAssistant(UI.messages, msg, { animate: true });
     attachSpeechAction(errorNode, msg);
     lastAssistantReplyText = msg;
@@ -1781,15 +1843,15 @@ async function loadAssistantPrefs() {
       const data = await response.json();
       assistantPrefs.provider = data.provider;
       assistantPrefs.model = data.model;
+      assistantPrefs.providers = Array.isArray(data.providers) ? data.providers : [];
       localStorage.setItem('brox.assistant.prefs', JSON.stringify(assistantPrefs));
 
-      // expose API keys globally for use in our client JS calls
-      if (data.fireworks_api_key) {
-        window.FIREWORKS_API_KEY = data.fireworks_api_key;
-      }
-      if (data.openrouter_api_key) {
-        window.OPENROUTER_API_KEY = data.openrouter_api_key;
-      }
+      // Expose provider API keys globally for use in client-side calls.
+      (assistantPrefs.providers || []).forEach((p) => {
+        if (!p.api_key) return;
+        const keyName = p.provider_name.toUpperCase();
+        window[`${keyName}_API_KEY`] = p.api_key;
+      });
     }
   } catch (err) {
     console.log('Failed to load assistant prefs from backend:', err);

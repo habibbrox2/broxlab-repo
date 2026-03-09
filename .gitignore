@@ -11,6 +11,7 @@
 *.log
 /logs/
 storage/logs/
+**/dist/**
 
 # Cache
 /cache/

@@ -1,6 +1,8 @@
 <link rel="stylesheet" href="{{ asset('/assets/ai-assistant/styles/assistant-ui.css') }}">
+{# Load Puter client from official CDN so we avoid importing @heyputer/puter.js source which pulls in unsupported CJS dependencies (e.g. @heyputer/kv.js) #}
+<script src="https://js.puter.com/v2/"></script>
 {% if assistant_variant == 'public' %}
-<script type="module" src="{{ asset('/assets/ai-assistant/dist/public-assistant.js') }}"></script>
+<script type="module" src="{{ asset('/assets/ai-assistant/bootstrap/public-assistant.js') }}"></script>
 {% elseif assistant_variant == 'admin' %}
-<script type="module" src="{{ asset('/assets/ai-assistant/dist/admin-assistant.js') }}"></script>
+<script type="module" src="{{ asset('/assets/ai-assistant/bootstrap/admin-assistant.js') }}"></script>
 {% endif %}
