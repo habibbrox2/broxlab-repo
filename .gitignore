@@ -16,6 +16,7 @@ storage/logs/
 /cache/
 storage/cache/
 storage/tmp/
+.tmp.*
 
 # Uploads
 /uploads/
