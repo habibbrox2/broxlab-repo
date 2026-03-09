@@ -17,22 +17,10 @@ if (!window.BroxAdminInstance) {
             this.history = JSON.parse(sessionStorage.getItem(ADMIN_CONFIG.chatKey)) || [];
             this.isThinking = false;
             this.csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
-
-            this.loadCSS();
             this.initUI();
             this.bindEvents();
             this.startLogMonitor();
             this.renderHistory();
-        }
-
-        loadCSS() {
-            const href = window.BROX_AI_CSS_URL || '/ai/css/ai-style.css';
-            if (!document.querySelector(`link[href="${href}"]`)) {
-                const link = document.createElement('link');
-                link.rel = 'stylesheet';
-                link.href = href;
-                document.head.appendChild(link);
-            }
         }
 
         initUI() {
@@ -65,6 +53,22 @@ if (!window.BroxAdminInstance) {
         renderHistory() {
             if (!this.nodes.body) return;
             this.history.forEach(m => this.addMessage(m.role, m.content, false));
+        }
+
+        startLogMonitor() {
+            let lastTs = Math.floor(Date.now() / 1000);
+            const check = async () => {
+                try {
+                    const res = await fetch(`${ADMIN_CONFIG.logUrl}?since=${lastTs}`);
+                    const data = await res.json();
+                    if (data.errors?.length > 0 && this.nodes.body) {
+                        this.addMessage('assistant', `⚠️ System Alert: ${data.errors.length} new errors detected in logs.`);
+                    }
+                    lastTs = data.latest_timestamp || lastTs;
+                } catch { }
+                setTimeout(check, 60000); // Check every minute
+            };
+            setTimeout(check, 5000); // Initial delay
         }
 
         async handleSend() {
@@ -206,22 +210,6 @@ if (!window.BroxAdminInstance) {
 
             if (res.success) alert('Connection successful!');
             else alert('Connection failed: ' + (res.error || 'Unknown error'));
-        }
-
-        async startLogMonitor() {
-            let lastTs = Math.floor(Date.now() / 1000);
-            const check = async () => {
-                try {
-                    const res = await fetch(`${ADMIN_CONFIG.logUrl}?since=${lastTs}`);
-                    const data = await res.json();
-                    if (data.errors?.length > 0) {
-                        this.addMessage('assistant', `⚠️ System Alert: ${data.errors.length} new errors detected in logs.`);
-                    }
-                    lastTs = data.latest_timestamp || lastTs;
-                } catch { }
-                setTimeout(check, 60000); // Check every minute
-            };
-            setTimeout(check, 5000); // Initial delay
         }
 
         // Hooks for external tools (RTE, Selector Detector)

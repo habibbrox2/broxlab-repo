@@ -540,6 +540,9 @@ class AIProvider
             return ['success' => false, 'error' => 'API key not configured for ' . $config['name']];
         }
 
+        // [PATCH] Fix common non-prefixed model names for OpenRouter
+        $model = $this->ensureModelPrefix($providerName, $model);
+
         // Build request based on provider
         $requestData = $this->buildRequest($providerName, $model, $prompt, $options);
         $headers = $this->buildHeaders($providerName, $apiKey, $requestData);
@@ -1055,5 +1058,34 @@ class AIProvider
         }
 
         return $result;
+    }
+
+    /**
+     * Ensure model ID is correctly prefixed for specific providers (e.g. OpenRouter)
+     */
+    private function ensureModelPrefix(string $providerName, string $model): string
+    {
+        if ($providerName !== 'openrouter' && $providerName !== 'kilo') {
+            return $model;
+        }
+
+        // If it already has a slash, assume it's correctly prefixed (e.g., openai/..., anthropic/...)
+        if (strpos($model, '/') !== false) {
+            return $model;
+        }
+
+        // Mapping for legacy or un-prefixed common model names for OpenRouter
+        $mapping = [
+            'gpt-4o' => 'openai/gpt-4o',
+            'gpt-4o-mini' => 'openai/gpt-4o-mini',
+            'gpt-4' => 'openai/gpt-4',
+            'gpt-3.5-turbo' => 'openai/gpt-3.5-turbo',
+            'claude-3-opus' => 'anthropic/claude-3-opus',
+            'claude-3-sonnet' => 'anthropic/claude-3-sonnet',
+            'claude-3-haiku' => 'anthropic/claude-3-haiku',
+            'auto' => 'openrouter/auto'
+        ];
+
+        return $mapping[$model] ?? 'openai/' . $model;
     }
 }

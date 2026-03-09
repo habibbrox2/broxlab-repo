@@ -46,21 +46,10 @@ class BroxAssistant {
         this.user = JSON.parse(localStorage.getItem(CONFIG.userKey)) || null;
         this.isThinking = false;
 
-        this.loadCSS();
         this.initUI();
         if (this.nodes.btn) {
             this.bindEvents();
             this.renderInitialState();
-        }
-    }
-
-    loadCSS() {
-        const href = window.BROX_AI_CSS_URL || '/ai/css/ai-style.css';
-        if (!document.querySelector(`link[href="${href}"]`)) {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = href;
-            document.head.appendChild(link);
         }
     }
 
