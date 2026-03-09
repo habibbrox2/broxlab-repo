@@ -1,46 +1,47 @@
-# Node / PHP dependencies
-node_modules/
-vendor/
+# Dependencies
+/vendor/
 
-# Build artifacts
-/dist/
-/public_html/assets/**/dist/
-
-# Local runtime storage
-/storage/
-
-# Local database backups / exports
-/Database/backups/
-/Database/exports/
-
-# Uploads (user data)
-/app/uploads/
-/public_html/uploads/
-
-# Environment files
+# Environment variables
 .env
 .env.local
+.env.production
+.env.example
 
 # Logs
 *.log
+/logs/
+storage/logs/
 
-# Archives
-*.zip
-*.tar.gz
+# Cache
+/cache/
+storage/cache/
+storage/tmp/
 
+# Uploads
+/uploads/
+public_html/uploads/
+public_html/assets/uploads/
 
-# Backups
-_backup/
+# Database backups
+/Database/
+db.sql
 
-# OS files
+# Firebase config
+Config/broxlab-firebase.json
+
+# Node modules
+node_modules/
+
+# Build
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
 .DS_Store
 Thumbs.db
 
-# Editor temp files
-*.swp
-*.swo
-*~
-.tmp.*
-git/
+# Composer
 composer.lock
-package-lock.json
