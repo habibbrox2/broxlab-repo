@@ -1,84 +1,68 @@
-<div id="publicAssistantWrapper" class="bb-assistant-public">
-    <button id="publicAssistantBtn" title="Chat with Assistant" aria-label="Open Chat">
-        <i class="bi bi-chat-dots-fill"></i>
-    </button>
-
-    <div id="publicAssistantChat" class="public-assistant-shell hidden d-none">
-        <div class="assistant-header">
-            <div class="assistant-header-inner">
-                <div class="assistant-avatar">
-                    <i class="bi bi-stars"></i>
-                </div>
-                <div class="assistant-header-info">
-                    <div class="assistant-header-title-row">
-                        <div class="assistant-title" id="publicAssistantTitle">Brox Assistant</div>
-                        <span class="assistant-badge">broxlab</span>
-                    </div>
-                    <div id="publicAssistantStatusText" class="assistant-status">Friendly help, fast answers</div>
-                    <div id="publicAssistantOpenRouterKeyStatus" class="assistant-status" style="font-size:0.75rem; opacity:0.85;">OpenRouter key status unavailable</div>
-                    <div id="publicAssistantFallbackBadge" class="badge bg-warning text-dark d-none" style="font-size:0.7rem;">Using Puter fallback</div>
-                    <div class="assistant-subtitle">broxlab.online support, guidance and quick answers in one place.</div>
-                </div>
-                <div class="assistant-header-controls">
-                    <div class="assistant-lang-toggle" role="group" aria-label="Language toggle">
-                        <button type="button" id="publicAssistantLangBn" class="btn-light">Bangla</button>
-                        <button type="button" id="publicAssistantLangEn" class="btn-outline-light">EN</button>
-                    </div>
-                    <button id="closePublicAssistant" class="assistant-close-btn" aria-label="Close">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
-                </div>
-            </div>
+{# Premium AI Assistant Shell for Visitors #}
+<div id="aiShell" class="ai-chat-shell hidden">
+    <div class="ai-header">
+        <div class="ai-header-info">
+            <div class="ai-header-title" id="aiTitle">Brox Automation</div>
+            <div class="ai-header-status" id="aiStatus">Online</div>
         </div>
+        <div class="ai-header-actions">
+            <div class="ai-lang-toggle">
+                <button id="aiLangBn" class="active">BN</button>
+                <button id="aiLangEn">EN</button>
+            </div>
+            <button id="aiClose" class="btn-close btn-close-white ms-2" style="font-size: 0.8rem;"></button>
+        </div>
+    </div>
 
-        <div id="publicAssistantPreChat" class="chat-body">
-            <div class="prechat-intro-card">
-                <div class="intro-label">BroxLab</div>
-                <div class="intro-heading">Ask about services, support, content or billing.</div>
-                <div class="intro-desc">Start with your details so the assistant can keep the conversation relevant.</div>
+    {# Chat History Body #}
+    <div id="aiBody" class="ai-body d-none">
+        {# Messages injected via assistant.js #}
+    </div>
+
+    {# Pre-chat Data Collection (Parity Feature) #}
+    <div id="aiPrechat" class="ai-body">
+        <div class="ai-prechat">
+            <div class="ai-form-group">
+                <label for="aiUserName">Your Name</label>
+                <input type="text" id="aiUserName" class="ai-input" placeholder="Enter your name...">
             </div>
-            <div class="prechat-step step-name">
-                <label for="introName" id="introNameLabel">Your Name</label>
-                <input type="text" id="introName" placeholder="Enter your name">
-                <button class="btn-next" id="introNext1">Next</button>
-            </div>
-            <div class="prechat-step step-contact d-none">
-                <label for="introEmail" id="introEmailLabel">Email (Optional)</label>
-                <input type="email" id="introEmail" placeholder="Enter your email">
-                <label for="introMobile" id="introMobileLabel">Mobile Number (Optional)</label>
-                <input type="text" id="introMobile" placeholder="Enter your mobile number">
-                <button class="btn-next" id="introNext2">Next</button>
-            </div>
-            <div class="prechat-step step-topic d-none">
-                <label id="introTopicLabel">Select your topics</label>
-                <div class="topic-multiselect" id="introTopicOptions">
-                    <label class="topic-option" data-topic-key="general"><input type="checkbox" class="intro-topic-option" value="general" checked><span class="topic-label">General</span></label>
-                    <label class="topic-option" data-topic-key="support"><input type="checkbox" class="intro-topic-option" value="support"><span class="topic-label">Support</span></label>
-                    <label class="topic-option" data-topic-key="billing"><input type="checkbox" class="intro-topic-option" value="billing"><span class="topic-label">Billing</span></label>
-                    <label class="topic-option" data-topic-key="feedback"><input type="checkbox" class="intro-topic-option" value="feedback"><span class="topic-label">Feedback</span></label>
+            <div class="ai-form-group">
+                <label for="aiUserTopics">How can we help you?</label>
+                <div class="ai-topic-grid">
+                    <label class="ai-topic-chip">
+                        <input type="checkbox" value="Web Design"> 🎨 Web Design
+                    </label>
+                    <label class="ai-topic-chip">
+                        <input type="checkbox" value="SEO/Marketing"> 🚀 Marketing
+                    </label>
+                    <label class="ai-topic-chip">
+                        <input type="checkbox" value="Software Support"> 🔧 Support
+                    </label>
+                    <label class="ai-topic-chip">
+                        <input type="checkbox" value="Billing/General"> 💳 Billing
+                    </label>
                 </div>
-                <button class="btn-start" id="introStartChat">Start Chat</button>
             </div>
+            <button id="aiStartBtn" class="ai-btn-primary">Start Chatting</button>
         </div>
+    </div>
 
-        <div id="publicAssistantMessages" class="chat-body d-none assistant-messages">
-            <div class="message assistant">Hello, I am your Brox assistant. How can I help you?</div>
-        </div>
-
-        <div class="chat-footer d-none" id="publicAssistantFooter">
-            <div id="publicAssistantLoading" class="typing-indicator d-none" aria-live="polite">
-                <span id="publicAssistantTypingText">Typing...</span>
-                <span class="typing-dots"><span></span><span></span><span></span></span>
-            </div>
-            <div class="assistant-input-row">
-                <button type="button" class="assistant-action-btn" id="btnAttachFile" title="Attach file">
-                    <i class="bi bi-plus-lg"></i>
-                </button>
-                <input type="text" id="publicAssistantInput" placeholder="Ask me anything..." aria-label="Message">
-                <button class="assistant-send-btn" id="sendToPublicAssistant" aria-label="Send">
-                    <i class="bi bi-rocket-fill"></i>
-                </button>
-            </div>
+    {# Chat Input Footer #}
+    <div id="aiFooter" class="ai-footer d-none">
+        <div class="ai-composer">
+            <input type="text" id="aiInput" placeholder="Ask anything...">
+            <button id="aiSend" class="ai-send-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                </svg>
+            </button>
         </div>
     </div>
 </div>
+
+{# Floating Toggle Button #}
+<button id="aiBtn" class="ai-btn-toggle">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+</button>

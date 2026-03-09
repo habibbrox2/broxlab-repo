@@ -17,8 +17,7 @@ class AIProvider
             'auth_type' => 'bearer',
             'supports_streaming' => true,
             'models' => [
-                'openrouter/free' => 'Auto Select (Free)',
-                'openrouter/gpt-4' => 'GPT-4 (OpenRouter)',
+                'openrouter/auto' => 'Auto Router (OpenRouter)',
                 'anthropic/claude-3.5-sonnet' => 'Claude 3.5 Sonnet',
                 'anthropic/claude-3-haiku' => 'Claude 3 Haiku',
                 'openai/gpt-4o' => 'GPT-4o',
@@ -384,7 +383,7 @@ class AIProvider
     }
 
     /**
-     * Get AI settings
+     * Get AI SYSTEM settings
      */
     public function getSettings(): array
     {
@@ -442,7 +441,7 @@ class AIProvider
     }
 
     /**
-     * Update AI settings
+     * Update AI SYSTEM settings
      */
     public function updateSettings(array $settings): bool
     {

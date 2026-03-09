@@ -1,8 +1,8 @@
-# AI Settings / OpenRouter Key (Documentation)
+# AI SYSTEM / OpenRouter Key (Documentation)
 
 ## Overview
 
-This document explains how the AI Settings system works in the BroxBhai project, specifically how OpenRouter API key handling works, and how the "Test Key" feature behaves.
+This document explains how the AI SYSTEM system works in the BroxBhai project, specifically how OpenRouter API key handling works, and how the "Test Key" feature behaves.
 
 এই ডকুমেন্টে BroxBhai প্রোজেক্টে AI সেটিংস সিস্টেম কিভাবে কাজ করে তা ব্যাখ্যা করা হয়েছে, বিশেষ করে OpenRouter API কী কীভাবে হ্যান্ডেল করা হয় এবং "Test Key" ফিচার কীভাবে কাজ করে।
 
@@ -20,10 +20,10 @@ This document explains how the AI Settings system works in the BroxBhai project,
 
 ---
 
-## 2. Admin UI Behavior (AI Settings Page)
+## 2. Admin UI Behavior (AI SYSTEM Page)
 
 ### English
-- On the **AI Settings** admin page, each provider row includes:
+- On the **AI SYSTEM** admin page, each provider row includes:
   - Provider name + icon
   - Current key status (Configured / Missing)
   - A **Test Key** button for OpenRouter
@@ -32,7 +32,7 @@ This document explains how the AI Settings system works in the BroxBhai project,
 - The OpenRouter key status is derived purely from whether a key exists and where it comes from.
 
 ### বাংলা
-- **AI Settings** অ্যাডমিন পেইজে, প্রতিটি প্রোভাইডার রো-তে থাকে:
+- **AI SYSTEM** অ্যাডমিন পেইজে, প্রতিটি প্রোভাইডার রো-তে থাকে:
   - প্রোভাইডারের নাম ও আইকন
   - বর্তমান কী স্ট্যাটাস (কনফিগার্ড / অনুপস্থিত)
   - OpenRouter-এর জন্য **Test Key** বাটন
@@ -59,11 +59,11 @@ This document explains how the AI Settings system works in the BroxBhai project,
 ## 4. Frontend Assistant Key Status (Public Assistant)
 
 ### English
-- The public assistant fetches `/api/ai-settings/frontend` to learn which provider and key is configured.
+- The public assistant fetches `/api/ai-system/frontend` to learn which provider and key is configured.
 - The assistant shows the OpenRouter key status (configured / missing), but no longer warns about OpenAI-style keys.
 
 ### বাংলা
-- জনসাধারণের অ্যাসিস্ট্যান্ট `/api/ai-settings/frontend` থেকে জানতে পারে কোন প্রোভাইডার ও কী কনফিগার করা আছে।
+- জনসাধারণের অ্যাসিস্ট্যান্ট `/api/ai-system/frontend` থেকে জানতে পারে কোন প্রোভাইডার ও কী কনফিগার করা আছে।
 - অ্যাসিস্ট্যান্ট OpenRouter কী স্ট্যাটাস দেখায় (কনফিগার্ড / অনুপস্থিত), কিন্তু আর OpenAI-স্টাইল কী নিয়ে সতর্ক করে না।
 
 ---
@@ -71,9 +71,9 @@ This document explains how the AI Settings system works in the BroxBhai project,
 ## 5. Notes & Troubleshooting
 
 ### English
-- If you get a 401 “User not found” or other OpenRouter error, the key is likely invalid or expired; update it via the AI Settings page.
+- If you get a 401 “User not found” or other OpenRouter error, the key is likely invalid or expired; update it via the AI SYSTEM page.
 - The system no longer tries to guess key types based on prefix (`sk-`) — it relies on OpenRouter’s actual response.
 
 ### বাংলা
-- যদি 401 “User not found” বা অন্য কোনো OpenRouter ত্রুটি দেখায়, তাহলে সম্ভবত কীটি অবৈধ বা মেয়াদোত্তীর্ণ; AI Settings পেইজ থেকে কী আপডেট করুন।
+- যদি 401 “User not found” বা অন্য কোনো OpenRouter ত্রুটি দেখায়, তাহলে সম্ভবত কীটি অবৈধ বা মেয়াদোত্তীর্ণ; AI SYSTEM পেইজ থেকে কী আপডেট করুন।
 - সিস্টেম আর কী প্রিক্স (`sk-`) দেখে কী টাইপ অনুমান করে না — এটি OpenRouter-এর আসল রেসপন্সের উপর নির্ভর করে।
