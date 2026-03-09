@@ -50,4 +50,5 @@ package-lock.json
 
 # Drive Tmp
 .tmp.*
+.tmp.driveupload
 /vs-code-ex
