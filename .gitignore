@@ -49,3 +49,4 @@ package-lock.json
 
 # Drive Tmp
 .tmp.*
+/vs-code-ex
