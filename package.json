@@ -37,10 +37,14 @@
         "serve": "python -m http.server 8000 -d public_html",
         "firebase:providers:sync": "node scripts/firebase/activate-firebaseui-providers.mjs",
         "lint": "eslint --config build/eslint.config.cjs \"public_html/assets/js/**/*.js\" \"public_html/assets/firebase/v2/**/*.js\" \"public_html/assets/ai-assistant/**/*.js\" \"build/Scripts/**/*.mjs\" \"build/esbuild.config.js\" \"build/esbuild-firebase.mjs\" \"build/esbuild-assistants.mjs\"",
-        "menu":   "node git/git-menu.cjs",
-        "git":    "node git/git-manager.cjs git",
-        "sync":   "node git/git-manager.cjs sync",
-        "branch": "node git/git-manager.cjs branch"
+        "test": "echo \"No tests configured\"",
+        "git": "node git/git-launcher.cjs",
+        "git-helper": "node git/git-terminal.cjs",
+        "clone": "node git/git-terminal.cjs clone",
+        "branch": "node git/git-terminal.cjs location",
+        "sync": "node git/git-terminal.cjs smart-clone",
+        "backup-db": "php scripts/db-backup.php",
+        "restore-db": "php scripts/db-restore.php"
     },
     "keywords": [
         "firebase",
@@ -52,7 +56,9 @@
     "author": "BroxBhai Team",
     "license": "MIT",
     "dependencies": {
+        "@anthropic-ai/sdk": "^0.78.0",
         "@genkit-ai/googleai": "^1.16.1",
+        "@google/generative-ai": "^0.24.1",
         "@heyputer/puter.js": "^2.2.11",
         "@openrouter/sdk": "^0.9.11",
         "firebase": "^12.9.0",

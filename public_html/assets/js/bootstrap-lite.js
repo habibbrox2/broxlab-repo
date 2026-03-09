@@ -1,15 +1,6 @@
 (function () {
     'use strict';
 
-    // temporarily disable console output in all JS files unless explicitly enabled.
-    // setting `window.ENABLE_CONSOLE_LOGS = true` from the browser console will restore
-    // normal behaviour. this is useful for production debugging or when logs are noisy.
-    if (!window.ENABLE_CONSOLE_LOGS) {
-        ['log','debug','info','warn','error','trace'].forEach((fn) => {
-            console[fn] = () => {};
-        });
-    }
-
     if (window.bootstrap && window.bootstrap.__BROX_LITE__) return;
     if (window.bootstrap && typeof window.bootstrap.Modal === 'function' && typeof window.bootstrap.Collapse === 'function') return;
 

@@ -23,7 +23,7 @@ export function formatBody(text, trustedHtml = false) {
   return trustedHtml ? String(text ?? '') : linkify(String(text ?? ''));
 }
 
-export function formatMeta({ role, ts, responseMs, lang = 'en' }) {
+export function formatMeta({ role, ts, responseMs, lang = 'en', model }) {
   const parts = [];
   const locale = lang === 'bn' ? 'bn-BD' : 'en-US';
   if (ts) {
@@ -31,6 +31,9 @@ export function formatMeta({ role, ts, responseMs, lang = 'en' }) {
     if (!Number.isNaN(dt.getTime())) {
       parts.push(new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(dt));
     }
+  }
+  if (model) {
+    parts.push(`🤖 ${model}`);
   }
   if (role === 'assistant' && Number.isFinite(responseMs)) {
     const duration = responseMs < 1000 ? `${responseMs}ms` : `${(responseMs / 1000).toFixed(1)}s`;
@@ -68,7 +71,7 @@ export async function animateBody(node, text, { trustedHtml = false, append = fa
   scrollToBottom(node.parentElement?.parentElement);
 }
 
-export function appendMessage(container, role, text, { ts = new Date().toISOString(), responseMs = null, trustedHtml = false } = {}) {
+export function appendMessage(container, role, text, { ts = new Date().toISOString(), responseMs = null, trustedHtml = false, model } = {}) {
   if (!container) return null;
   const msg = document.createElement('div');
   msg.className = `message ${role}`;
@@ -77,7 +80,7 @@ export function appendMessage(container, role, text, { ts = new Date().toISOStri
   body.innerHTML = formatBody(text, trustedHtml);
   msg.appendChild(body);
 
-  const meta = formatMeta({ role, ts, responseMs });
+  const meta = formatMeta({ role, ts, responseMs, model });
   if (meta) {
     const metaDiv = document.createElement('div');
     metaDiv.className = 'message-time';
@@ -90,16 +93,173 @@ export function appendMessage(container, role, text, { ts = new Date().toISOStri
   return msg;
 }
 
+export function typeMessage(node, text, { speed = 30 } = {}) {
+  if (!node) return Promise.resolve();
+  return new Promise((resolve) => {
+    node.innerHTML = '';
+    let i = 0;
+    const interval = window.setInterval(() => {
+      node.innerHTML += escapeHtml(text.charAt(i));
+      i += 1;
+      if (i >= text.length) {
+        window.clearInterval(interval);
+        resolve();
+      }
+    }, speed);
+  });
+}
+
+export function parseResponseConfig(text) {
+  const result = { config: null, content: text };
+  if (typeof text !== 'string') return result;
+
+  const trimmed = text.trimStart();
+  if (!trimmed.startsWith('---')) return result;
+
+  const parts = trimmed.split(/\r?\n/);
+  let inHeader = false;
+  const headerLines = [];
+  let i = 0;
+  for (; i < parts.length; i += 1) {
+    const line = parts[i];
+    if (i === 0 && line.trim() === '---') {
+      inHeader = true;
+      continue;
+    }
+    if (inHeader && line.trim() === '---') {
+      i += 1;
+      break;
+    }
+    if (inHeader) headerLines.push(line);
+  }
+  if (!inHeader || headerLines.length === 0) return result;
+
+  const config = {};
+  let currentKey = null;
+  for (const line of headerLines) {
+    const trimmedLine = line.trim();
+    if (trimmedLine === '' || trimmedLine.startsWith('#')) continue;
+    const match = trimmedLine.match(/^([a-zA-Z0-9_]+):\s*(.*)$/);
+    if (match) {
+      currentKey = match[1];
+      const value = match[2] ?? '';
+      if (value === '') {
+        config[currentKey] = [];
+      } else {
+        config[currentKey] = value;
+      }
+      continue;
+    }
+    const listMatch = trimmedLine.match(/^[-*]\s+(.*)$/);
+    if (listMatch && currentKey) {
+      if (!Array.isArray(config[currentKey])) {
+        config[currentKey] = [config[currentKey]];
+      }
+      config[currentKey].push(listMatch[1]);
+      continue;
+    }
+  }
+
+  result.config = config;
+  result.content = parts.slice(i).join('\n').trim();
+  return result;
+}
+
+export function attachAssistantTools(message, { text, onRun } = {}) {
+  if (!message) return;
+  const tools = document.createElement('div');
+  tools.className = 'assistant-message-tools';
+
+  // Copy button
+  const copyBtn = document.createElement('button');
+  copyBtn.type = 'button';
+  copyBtn.className = 'assistant-message-tool-btn';
+  copyBtn.title = 'Copy reply';
+  copyBtn.textContent = '⧉';
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      copyBtn.textContent = '✔';
+      setTimeout(() => { copyBtn.textContent = '⧉'; }, 1200);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+  });
+  tools.appendChild(copyBtn);
+
+  // Run button
+  if (typeof onRun === 'function') {
+    const runBtn = document.createElement('button');
+    runBtn.type = 'button';
+    runBtn.className = 'assistant-message-tool-btn';
+    runBtn.title = 'Run as new prompt';
+    runBtn.textContent = '⟳';
+    runBtn.addEventListener('click', () => onRun(text));
+    tools.appendChild(runBtn);
+  }
+
+  // Expand/collapse button
+  const expandBtn = document.createElement('button');
+  expandBtn.type = 'button';
+  expandBtn.className = 'assistant-message-tool-btn';
+  expandBtn.title = 'Toggle expand';
+  expandBtn.textContent = '⤢';
+  expandBtn.addEventListener('click', () => {
+    message.classList.toggle('assistant-expanded');
+  });
+  tools.appendChild(expandBtn);
+
+  message.appendChild(tools);
+}
+
 export async function appendAssistant(container, text, opts = {}) {
   const animate = opts.animate === true;
+  const { config } = opts;
   const msg = appendMessage(container, 'assistant', text, {
     ts: opts.ts,
     responseMs: opts.responseMs,
-    trustedHtml: opts.trustedHtml
+    trustedHtml: opts.trustedHtml,
+    model: opts.model
   });
+
+  // Optional suggestion chips
+  if (msg && config?.suggestions && Array.isArray(config.suggestions)) {
+    const chipRow = document.createElement('div');
+    chipRow.className = 'assistant-suggestions';
+    config.suggestions.forEach((suggestion) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'assistant-suggestion-btn';
+      btn.textContent = suggestion.label || String(suggestion.action || '');
+      btn.addEventListener('click', () => {
+        if (typeof opts.onSuggestion === 'function') {
+          opts.onSuggestion(suggestion);
+        }
+      });
+      chipRow.appendChild(btn);
+    });
+    msg.appendChild(chipRow);
+  }
+
+  // Optional toolbox
+  if (msg && (opts.onRun || opts.tools)) {
+    attachAssistantTools(msg, { text, onRun: opts.onRun });
+  }
+
   if (animate && msg) {
     const body = msg.querySelector('.message-content');
-    await animateBody(body, text, { trustedHtml: opts.trustedHtml });
+    if (opts.animation === 'typing_effect') {
+      await typeMessage(body, text, { speed: opts.animationSpeed || 30 });
+    } else {
+      await animateBody(body, text, { trustedHtml: opts.trustedHtml });
+    }
   }
   return msg;
 }

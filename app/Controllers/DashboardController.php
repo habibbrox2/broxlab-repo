@@ -8,8 +8,6 @@
 
 declare(strict_types=1);
 
-use App\Models\MobileModel;
-
 // ========= ADMIN DASHBOARD ==========
 
 /**

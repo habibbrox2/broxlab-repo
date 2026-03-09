@@ -1,31 +1,18 @@
-import { puter as importedPuter } from '@heyputer/puter.js';
+// Load Puter.js directly from the CDN to avoid build steps.
+// This file is used as a lightweight bridge to the Puter client.
 
 const DEFAULT_POPUP = { width: 600, height: 700, timeoutMs: 2 * 60 * 1000 };
+const DEFAULT_PUTER_ESM = 'https://cdn.jsdelivr.net/npm/@heyputer/puter.js@2.2.11/src/index.js';
 
 let puterInstance = null;
+let puterLoading = null;
 let puterRealtimeDisabled = false;
 
-function getPuterApiProxyOrigin() {
-  try {
-    const proxy = window.PUTER_API_PROXY_ORIGIN;
-    if (typeof proxy === 'string' && proxy.trim()) {
-      return proxy.trim().replace(/\/+$/, '');
-    }
-  } catch {
-    // ignore
+function getPuterCdnUrl() {
+  if (typeof window !== 'undefined' && typeof window.PUTER_CDN_URL === 'string' && window.PUTER_CDN_URL.trim()) {
+    return window.PUTER_CDN_URL.trim();
   }
-  try {
-    return new URL('/__/puter', window.location.href).toString().replace(/\/+$/, '');
-  } catch {
-    return null;
-  }
-}
-
-function applyPuterApiOrigin(proxyOrigin) {
-  if (!proxyOrigin || typeof window === 'undefined') return;
-  window.PUTER_API_PROXY_ORIGIN = proxyOrigin;
-  window.PUTER_API_ORIGIN = proxyOrigin;
-  window.PUTER_API_ORIGIN_ENV = proxyOrigin;
+  return DEFAULT_PUTER_ESM;
 }
 
 function clearPuterAuthTokenSilently() {
@@ -39,16 +26,13 @@ function clearPuterAuthTokenSilently() {
 
 function disablePuterRealtimeSocket(puterClient) {
   if (!puterClient || puterRealtimeDisabled) return;
-
   const fs = puterClient.fs;
   if (!fs) return;
-
   try {
     fs.socket?.disconnect?.();
   } catch {
     // ignore
   }
-
   fs.socket = null;
   fs.initializeSocket = () => {
     fs.socket = null;
@@ -59,52 +43,49 @@ function disablePuterRealtimeSocket(puterClient) {
   fs.setAuthToken = (authToken) => {
     fs.authToken = authToken;
   };
-
   puterRealtimeDisabled = true;
 }
 
-async function getPuter() {
-  const proxyOrigin = getPuterApiProxyOrigin();
-  applyPuterApiOrigin(proxyOrigin);
-
-  if (window.PUTER_PROXY_PUBLIC_ONLY) {
-    clearPuterAuthTokenSilently();
+async function loadPuter() {
+  if (typeof window !== 'undefined' && window.PUTER_DISABLED) {
+    throw new Error('Puter client disabled');
   }
 
-  if (window.puter) {
-    disablePuterRealtimeSocket(window.puter);
-    if (proxyOrigin && typeof window.puter.setAPIOrigin === 'function') {
-      try {
-        window.puter.setAPIOrigin(proxyOrigin);
-      } catch {
-        // ignore failures; continue with default origin
-      }
-    }
-    return window.puter;
-  }
+  if (puterInstance) return puterInstance;
+  if (puterLoading) return puterLoading;
 
-  if (!puterInstance) {
-    puterInstance = importedPuter;
+  // If Puter is already loaded globally (via <script src="https://js.puter.com/v2/">), reuse it.
+  if (typeof window !== 'undefined' && window.puter) {
+    puterInstance = window.puter;
     disablePuterRealtimeSocket(puterInstance);
-
-    if (proxyOrigin && typeof puterInstance.setAPIOrigin === 'function') {
-      try {
-        puterInstance.setAPIOrigin(proxyOrigin);
-      } catch {
-        // ignore failures; continue with default origin
-      }
-    }
+    return puterInstance;
   }
-  disablePuterRealtimeSocket(puterInstance);
+
+  puterLoading = (async () => {
+    const src = getPuterCdnUrl();
+    const module = await import(src);
+    const client = module.puter || module.default?.puter || module.default || module;
+    if (!client) {
+      throw new Error('Puter client not found');
+    }
+    if (typeof window !== 'undefined') {
+      window.puter = client;
+    }
+    disablePuterRealtimeSocket(client);
+    return client;
+  })();
+
+  puterInstance = await puterLoading;
   return puterInstance;
 }
 
-// For synchronous access, but will be null until loaded
-let puter = null;
 
 export async function getPuterClient() {
-  return getPuter();
+  return loadPuter();
 }
+
+// Alias for backward compatibility
+export { getPuterClient as getPuter };
 
 function getCenteredPopupFeatures({ width, height }) {
   const dualScreenLeft = window.screenLeft ?? window.screenX ?? 0;
@@ -250,6 +231,11 @@ export function buildPopupSignIn({ popupSize = DEFAULT_POPUP, t } = {}) {
 }
 
 export async function ensurePuterReady({ interactive = false, allowAuth = false, t, openPopup } = {}) {
+  // If Puter is disabled, skip entirely
+  if (typeof window !== 'undefined' && window.PUTER_DISABLED) {
+    throw buildError(t?.('error_puter_missing') || 'Puter client disabled');
+  }
+
   const p = await getPuter();
   if (!p?.ai?.chat) throw buildError(t?.('error_puter_missing') || 'Puter client missing');
   const auth = p.auth;
@@ -478,4 +464,9 @@ export async function speakText(text, {
     test_mode: testMode
   });
   return audio;
+}
+
+// Make getPuter available globally for Puter library compatibility
+if (typeof window !== 'undefined') {
+  window.getPuter = getPuterClient;
 }

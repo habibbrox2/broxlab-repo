@@ -1,5 +1,5 @@
 import { scrollToBottom } from '../../core/dom.js';
-import { appendAssistant, appendMessage, buildStaticReplyMatcher, formatBody } from '../../core/render.js';
+import { appendAssistant, appendMessage, attachAssistantTools, buildStaticReplyMatcher, formatBody, parseResponseConfig, typeMessage } from '../../core/render.js';
 import { createHistoryStore } from '../../core/storage.js';
 import { createLanguageState } from '../../core/i18n.js';
 import { buildChatClient, buildPopupSignIn, ensurePuterReady, extractResponseText, generateImage, getPuterClient, speakText } from '../../core/puter.js';
@@ -62,6 +62,38 @@ const CHAT_MODEL_PREFERENCES = [
   'gpt-4.1-mini', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4o', 'claude-3-5-sonnet', 'claude-3-7-sonnet',
   'gemini-2.0-flash', 'gemini-2.5-flash'
 ];
+
+// Fireworks AI API call function
+async function callFireworksAI(messages, options = {}) {
+  const apiKey = window.FIREWORKS_API_KEY || 'your_api_key_here'; // Set your API key here or via window.FIREWORKS_API_KEY
+  const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'accounts/fireworks/models/deepseek-v3p1',
+      messages: messages,
+      stream: options.stream || false,
+      ...options
+    })
+  });
+  if (!response.ok) throw new Error('Fireworks API error');
+  return await response.json();
+}
+
+// Parse suggestions from response text
+function parseSuggestionsFromText(text) {
+  const match = text.match(/\[SUGGESTION:\s*(.*?)\]/);
+  if (match) {
+    const suggestions = match[1].split(',').map(s => s.trim());
+    const cleanText = text.replace(/\[SUGGESTION:\s*.*?\]/, '').trim();
+    return { text: cleanText, suggestions };
+  }
+  return { text, suggestions: [] };
+}
+
 const ASSISTANT_SITE_URL = 'https://broxlab.online';
 const OPENAI_PROVIDER = 'openai';
 const DEFAULT_IMAGE_MODEL = 'gpt-image-1.5';
@@ -89,7 +121,8 @@ const MODE_PRESETS = {
 };
 const DEFAULT_PREFS = {
   mode: 'assistant',
-  model: '',
+  provider: 'puter-js',
+  model: 'gemini-2.0-flash',
   stream: true,
   webSearch: true,
   temperature: 0.7,
@@ -100,6 +133,28 @@ const DEFAULT_PREFS = {
   imageAspect: '1:1',
   ttsVoice: 'alloy'
 };
+
+// OpenRouter AI API call function
+async function callOpenRouterAI(messages, options = {}) {
+  const apiKey = window.OPENROUTER_API_KEY || 'your_api_key_here'; // Set your API key here or via window.OPENROUTER_API_KEY
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': window.location.origin, // Optional
+      'X-OpenRouter-Title': 'BroxBhai Assistant' // Optional
+    },
+    body: JSON.stringify({
+      model: options.model || 'openrouter/free',
+      messages: messages,
+      stream: options.stream || false,
+      ...options
+    })
+  });
+  if (!response.ok) throw new Error('OpenRouter API error');
+  return await response.json();
+}
 
 const REDIRECT_ACTIONS = new Set([
   'create_mobile', 'edit_mobile', 'create_post', 'edit_post', 'create_page', 'edit_page', 'create_service', 'edit_service'
@@ -115,6 +170,7 @@ const ACTION_PERMISSIONS = {
 };
 
 window.PUTER_PROXY_PUBLIC_ONLY = true;
+window.PUTER_DISABLED = false; // Enable Puter.js as a fallback when backend AI is unavailable
 
 function isPublicMode() {
   return Boolean(window.PUTER_PROXY_PUBLIC_ONLY);
@@ -273,25 +329,6 @@ function setStatus(textKey, { raw = false } = {}) {
   const readyKeys = ['status_ready', 'status_ready_to_connect'];
   const isReady = readyKeys.includes(textKey);
   UI.statusIndicator.classList.toggle('ready', isReady);
-}
-
-function loadAssistantPrefs() {
-  try {
-    const raw = window.sessionStorage.getItem(PREFS_STORAGE_KEY);
-    if (!raw) {
-      assistantPrefs = { ...DEFAULT_PREFS };
-      return;
-    }
-    const parsed = JSON.parse(raw);
-    assistantPrefs = {
-      ...DEFAULT_PREFS,
-      ...parsed,
-      temperature: Number.isFinite(Number(parsed?.temperature)) ? Number(parsed.temperature) : DEFAULT_PREFS.temperature,
-      maxTokens: Number.isFinite(Number(parsed?.maxTokens)) ? Number(parsed.maxTokens) : DEFAULT_PREFS.maxTokens
-    };
-  } catch {
-    assistantPrefs = { ...DEFAULT_PREFS };
-  }
 }
 
 function saveAssistantPrefs() {
@@ -490,27 +527,61 @@ async function populateModelOptions() {
   const currentValue = assistantPrefs.model;
   const options = [...FALLBACK_OPENAI_MODELS];
 
+  // helper to add a list if not already present
+  const addModels = (list) => {
+    for (const m of list) {
+      if (!options.some((item) => item.value === m.value)) {
+        options.push(m);
+      }
+    }
+  };
+
+  // try provider-specific discovery first
+  try {
+    if (assistantPrefs.provider === 'fireworks') {
+      const apiKey = window.FIREWORKS_API_KEY;
+      if (apiKey) {
+        const resp = await fetch('https://api.fireworks.ai/inference/v1/models', {
+          headers: { Authorization: `Bearer ${apiKey}` }
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          const fw = Array.isArray(data.models) ? data.models.map(m => ({ value: m.id || m.model || m.name, label: m.name || m.id || m.model })) : [];
+          addModels(fw.filter(Boolean));
+        }
+      }
+    } else if (assistantPrefs.provider === 'openrouter') {
+      const apiKey = window.OPENROUTER_API_KEY;
+      if (apiKey) {
+        const resp = await fetch('https://openrouter.ai/api/v1/models', {
+          headers: { Authorization: `Bearer ${apiKey}` }
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          const orModels = Array.isArray(data.models) ? data.models.map(m => ({ value: m.id || m.name, label: m.name || m.id })) : [];
+          addModels(orModels.filter(Boolean));
+        }
+      }
+    }
+  } catch (e) {
+    console.log('provider model discovery failed', e);
+  }
+
+  // always try Puter list (covers openai and other backends)
   try {
     await ensurePuterReady({ interactive: false, t: (key) => t(key) });
     const puter = await getPuterClient();
-    const models = await puter.ai.listModels(OPENAI_PROVIDER);
-    const openAiModels = Array.isArray(models)
-      ? models
-        .map((model) => {
+    const models = await puter.ai.listModels(assistantPrefs.provider || OPENAI_PROVIDER);
+    const pmodels = Array.isArray(models)
+      ? models.map((model) => {
           const id = String(model?.id || model?.model || model?.name || '').trim();
           if (!id) return null;
           return { value: id, label: id };
-        })
-        .filter(Boolean)
+        }).filter(Boolean)
       : [];
-
-    for (const model of openAiModels) {
-      if (!options.some((item) => item.value === model.value)) {
-        options.push(model);
-      }
-    }
-  } catch {
-    // fallback list is enough when model discovery is unavailable
+    addModels(pmodels);
+  } catch (e) {
+    // ignore
   }
 
   UI.modelSelect.innerHTML = '';
@@ -547,6 +618,95 @@ function setTyping(active) {
   if (!UI.loading) return;
   UI.loading.classList.toggle('d-none', !active);
   UI.loading.classList.toggle('active', active);
+}
+
+function normalizeSuggestions(rawSuggestions) {
+  if (!rawSuggestions) return [];
+  if (Array.isArray(rawSuggestions)) {
+    return rawSuggestions.map((item) => {
+      if (typeof item === 'string') return { label: item, action: item };
+      if (item && typeof item === 'object') return { label: item.label || item.action || String(item), action: item.action || item.label || String(item) };
+      return null;
+    }).filter(Boolean);
+  }
+  if (typeof rawSuggestions === 'string') {
+    return [{ label: rawSuggestions, action: rawSuggestions }];
+  }
+  return [];
+}
+
+function renderSuggestChips(message, suggestions = []) {
+  const chips = normalizeSuggestions(suggestions);
+  if (!chips.length) return;
+  const existing = message.querySelector('.assistant-suggestions');
+  if (existing) existing.remove();
+
+  const chipRow = document.createElement('div');
+  chipRow.className = 'assistant-suggestions';
+  chips.forEach((suggestion) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'assistant-suggestion-btn';
+    btn.textContent = suggestion.label;
+    btn.addEventListener('click', () => {
+      UI.input.value = suggestion.action;
+      UI.input.focus();
+      handleUserMessage();
+    });
+    chipRow.appendChild(btn);
+  });
+  chipRow.tabIndex = 0;
+  chipRow.addEventListener('keydown', (e) => {
+    const buttons = Array.from(chipRow.querySelectorAll('button'));
+    if (!buttons.length) return;
+    const idx = buttons.indexOf(document.activeElement);
+    let nextIdx = -1;
+
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      nextIdx = idx < 0 ? 0 : (idx + 1) % buttons.length;
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      nextIdx = idx < 0 ? buttons.length - 1 : (idx - 1 + buttons.length) % buttons.length;
+    } else if (e.key === 'Home') {
+      nextIdx = 0;
+    } else if (e.key === 'End') {
+      nextIdx = buttons.length - 1;
+    }
+
+    if (nextIdx >= 0) {
+      e.preventDefault();
+      buttons[nextIdx].focus();
+    }
+  });
+
+  message.appendChild(chipRow);
+}
+
+async function applyResponseConfig(message, rawText) {
+  const { config, content } = parseResponseConfig(rawText || '');
+  if (!config) return rawText;
+
+  const body = message.querySelector('.message-content');
+  if (!body) return rawText;
+
+  const finalText = content || rawText;
+  const animation = (config.animation || config.animation_type || '').toLowerCase();
+  const speed = parseInt(config.animation_speed || config.animationSpeed, 10) || 30;
+
+  if (animation === 'typing_effect') {
+    try {
+      await typeMessage(body, finalText, { speed });
+    } catch {
+      body.textContent = finalText;
+    }
+  } else {
+    body.textContent = finalText;
+  }
+
+  if (config.suggestions) {
+    renderSuggestChips(message, config.suggestions);
+  }
+
+  return finalText;
 }
 
 function attachSpeechAction(messageNode, text) {
@@ -598,6 +758,15 @@ function createStreamingAssistantMessage() {
   UI.messages.appendChild(msg);
   scrollToBottom(UI.messages);
 
+  attachAssistantTools(msg, {
+    text: '',
+    onRun: () => {
+      const currentText = msg.querySelector('.message-content')?.textContent || '';
+      UI.input.value = currentText;
+      handleUserMessage();
+    }
+  });
+
   return {
     node: msg,
     setText(text) {
@@ -611,10 +780,11 @@ function createStreamingAssistantMessage() {
       setReasoningBanner(normalized);
       scrollToBottom(UI.messages);
     },
-    finalize({ text, responseMs }) {
-      lastAssistantReplyText = text;
+    async finalize({ text, responseMs, responseConfig }) {
+      const finalText = await applyResponseConfig(msg, text, { responseConfig });
+      lastAssistantReplyText = finalText;
       meta.textContent = responseMs < 1000 ? `${responseMs}ms` : `${(responseMs / 1000).toFixed(1)}s`;
-      attachSpeechAction(msg, text);
+      attachSpeechAction(msg, finalText);
       setReasoningBanner('');
     }
   };
@@ -1209,18 +1379,88 @@ async function handleUserMessage() {
   }
 
   setTyping(true);
-  setStatus('status_connecting');
+  setStatus('status_thinking');
   const started = performance.now();
   setReasoningBanner('');
 
   try {
+    // Check if we should use backend AI (for simple chat without advanced features)
+    const useBackendAI = !shouldUseAdminTools() && !shouldUseWebSearch() && !hasContextInput && assistantPrefs.mode !== 'vision';
+
+    let backendError = null;
+
+    // Removed backend AI API usage; always use Puter.js for AI calls
+
     await ensurePuterReady({ interactive: false, t: (key) => t(key) });
 
+    // Try settings provider (Fireworks/OpenRouter) if API key is available
+    const hasFireworksKey = Boolean(window.FIREWORKS_API_KEY && window.FIREWORKS_API_KEY !== 'your_api_key_here');
+    const hasOpenRouterKey = Boolean(window.OPENROUTER_API_KEY && window.OPENROUTER_API_KEY !== 'your_api_key_here');
+    const isProviderConfigured = (assistantPrefs.provider === 'fireworks' && hasFireworksKey) || 
+                                  (assistantPrefs.provider === 'openrouter' && hasOpenRouterKey);
+    
+    if (isProviderConfigured) {
+      try {
+        // Try settings provider
+        const messages = [
+          {
+            role: 'system',
+            content: 'You are Brox Assistant. Always use typing animation for responses. Provide concise, helpful answers. At the end of your response, add suggestions in the format [SUGGESTION: option1, option2] for follow-up actions.'
+          },
+          ...chatHistory.map((row) => ({ role: row.role, content: row.text })),
+          { role: 'user', content: userMessageText }
+        ];
+
+        let model, response;
+        if (assistantPrefs.provider === 'openrouter') {
+          model = assistantPrefs.model && assistantPrefs.model.includes('/') ? assistantPrefs.model : 'openai/gpt-5.2';
+          response = await callOpenRouterAI(messages, { stream: false, model });
+        } else {
+          model = assistantPrefs.model || 'accounts/fireworks/models/deepseek-v3p1';
+          response = await callFireworksAI(messages, { stream: false, model });
+        }
+
+        const aiText = extractResponseText(response) || t('status_error');
+
+        // Parse suggestions
+        const { text: cleanText, suggestions } = parseSuggestionsFromText(aiText);
+
+        const responseMs = Math.max(0, Math.round(performance.now() - started));
+        const usedModel = model.replace('accounts/fireworks/models/', '').replace('openai/', '');
+        const msg = await appendAssistant(UI.messages, cleanText, {
+          animate: true,
+          responseMs,
+          config: { suggestions },
+          model: usedModel,
+          tools: true,
+          onRun: (text) => {
+            UI.input.value = text;
+            handleUserMessage();
+          }
+        });
+        const finalText = await applyResponseConfig(msg, cleanText);
+        attachSpeechAction(msg, finalText);
+        lastAssistantReplyText = finalText;
+        chatHistory.push({ role: 'assistant', text: finalText, ts: new Date().toISOString(), responseMs });
+        historyStore.save(chatHistory);
+        await cleanupUploadedContextAttachments();
+        clearAttachmentState({ clearUrl: true });
+        setStatus('status_ready');
+        return;
+      } catch (providerErr) {
+        console.log('Settings provider failed, falling back to Puter:', providerErr.message);
+        // Fall through to Puter.js fallback
+      }
+    } else {
+      console.log('No API key configured for ' + assistantPrefs.provider + ', using Puter.js directly');
+    }
+
+    // Fallback to Puter.js
     if (shouldUseVisionTransport) {
       const result = await runVisionConversation(text);
       const responseMs = result.responseMs || Math.max(0, Math.round(performance.now() - started));
       if (!shouldUseStream()) {
-        const msg = await appendAssistant(UI.messages, result.text, { animate: true, responseMs });
+        const msg = await appendAssistant(UI.messages, result.text, { animate: true, responseMs, model: 'Puter AI' });
         attachSpeechAction(msg, result.text);
       }
       chatHistory.push({ role: 'assistant', text: result.text, ts: new Date().toISOString(), responseMs });
@@ -1276,9 +1516,19 @@ async function handleUserMessage() {
     const responseMs = Math.max(0, Math.round(performance.now() - started));
     chatHistory.push({ role: 'assistant', text: aiText, ts: new Date().toISOString(), responseMs });
     historyStore.save(chatHistory);
-    const msg = await appendAssistant(UI.messages, aiText, { animate: true, responseMs });
-    attachSpeechAction(msg, aiText);
-    lastAssistantReplyText = aiText;
+    const msg = await appendAssistant(UI.messages, aiText, {
+      animate: true,
+      responseMs,
+      model: 'Puter AI',
+      tools: true,
+      onRun: (text) => {
+        UI.input.value = text;
+        handleUserMessage();
+      }
+    });
+    const finalText = await applyResponseConfig(msg, aiText);
+    attachSpeechAction(msg, finalText);
+    lastAssistantReplyText = finalText;
     await cleanupUploadedContextAttachments();
     clearAttachmentState({ clearUrl: true });
     setStatus('status_ready');
@@ -1521,6 +1771,28 @@ async function handleViewLogStats() {
     appendAssistant(UI.messages, logText);
   } catch (error) {
     appendAssistant(UI.messages, `❌ Failed to get log statistics: ${error.message}`);
+  }
+}
+
+async function loadAssistantPrefs() {
+  try {
+    const response = await fetch('/api/ai-settings/frontend');
+    if (response.ok) {
+      const data = await response.json();
+      assistantPrefs.provider = data.provider;
+      assistantPrefs.model = data.model;
+      localStorage.setItem('brox.assistant.prefs', JSON.stringify(assistantPrefs));
+
+      // expose API keys globally for use in our client JS calls
+      if (data.fireworks_api_key) {
+        window.FIREWORKS_API_KEY = data.fireworks_api_key;
+      }
+      if (data.openrouter_api_key) {
+        window.OPENROUTER_API_KEY = data.openrouter_api_key;
+      }
+    }
+  } catch (err) {
+    console.log('Failed to load assistant prefs from backend:', err);
   }
 }
 

@@ -3,20 +3,13 @@
 /**
  * controllers/PuterProxyController.php
  *
- * Simple proxy to forward requests from the browser to Puter's API.
- *
- * This is used to avoid CORS issues and allow the browser to call Puter
- * via a same-origin endpoint (e.g. `/__/puter/*`).
- *
- * Optionally, you can define a server-side token to avoid requiring users
- * to sign in via the Puter popup.
- *
- * Add to your .env:
- *   PUTER_API_PROXY_TOKEN=your_server_side_puter_token
- *
- * Routes:
- *   ANY /__/puter/*   -> proxies to https://api.puter.com/*
+ * Proxy support for Puter has been disabled. The assistant uses Puter.js
+ * directly from the browser (client-side) and does not expose any server
+ * proxy endpoint.
  */
+
+// Proxy is disabled by design (fallback only) - do not register any routes.
+return;
 
 // Make $router available within this controller
 global $router;

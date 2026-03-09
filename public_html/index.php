@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 // Enable output buffering to prevent "headers already sent" errors
@@ -14,10 +15,64 @@ header('Content-Type: text/html; charset=utf-8');
 require_once __DIR__ . '/../vendor/autoload.php';
 
 // ============================================================================
+// Optional extension stubs (used only for static analysis / IDE hints)
+// These classes are provided by PHP extensions (redis, memcached) when installed.
+// The stubs do not affect runtime behavior because the code paths are gated
+// behind `extension_loaded(...)` checks.
+// ============================================================================
+if (!class_exists('Redis')) {
+    class Redis
+    {
+        public function connect(string $host, int $port = 6379, float $timeout = 0.0): bool
+        {
+            return true;
+        }
+
+        public function keys(string $pattern): array
+        {
+            return [];
+        }
+
+        public function ttl(string $key): int
+        {
+            return -1;
+        }
+
+        public function del(string $key): int
+        {
+            return 0;
+        }
+    }
+}
+
+if (!class_exists('Memcached')) {
+    class Memcached
+    {
+        public function addServer(string $host, int $port, int $weight = 0): bool
+        {
+            return true;
+        }
+
+        public function getAllKeys(): array|false
+        {
+            return [];
+        }
+
+        public function delete(string $key): bool
+        {
+            return true;
+        }
+    }
+}
+
+// ============================================================================
 // Load Environment Variables
 // ============================================================================
+// .env is optional (may be absent in production / distributed packages)
+// Use safeLoad() so missing env file does not cause a fatal error.
+// If you need custom env vars, create a `.env` file in the project root.
 $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
-$dotenv->load();
+$dotenv->safeLoad();
 
 // ============================================================================
 // Timezone (before anything time-related)
@@ -181,9 +236,12 @@ function cleanCache(AppSettings $settingsModel): void
             break;
 
         case 'redis':
-            if (extension_loaded('redis')) {
+            if (extension_loaded('redis') && class_exists('Redis')) {
                 try {
-                    $redis = new Redis();
+                    /** @var \Redis $redis */
+                    /** @psalm-suppress UndefinedClass */
+                    /** @phpstan-ignore-next-line */
+                    $redis = new \Redis();
                     $redis->connect($_ENV['REDIS_HOST'] ?? '127.0.0.1', (int)($_ENV['REDIS_PORT'] ?? 6379));
                     foreach ($redis->keys('*') as $key) {
                         if ($redis->ttl($key) < $lifetime) {
@@ -197,9 +255,9 @@ function cleanCache(AppSettings $settingsModel): void
             break;
 
         case 'memcached':
-            if (extension_loaded('memcached')) {
+            if (extension_loaded('memcached') && class_exists('Memcached')) {
                 try {
-                    $mem = new Memcached();
+                    $mem = new \Memcached();
                     $mem->addServer($_ENV['MEMCACHED_HOST'] ?? '127.0.0.1', (int)($_ENV['MEMCACHED_PORT'] ?? 11211));
                     $keys = $mem->getAllKeys();
                     if ($keys) {

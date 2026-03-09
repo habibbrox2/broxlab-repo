@@ -43,16 +43,16 @@
                 </div>
                 <div class="card-footer bg-transparent">
                     <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-primary flex-grow-1 btn-edit-preset" 
-                                data-id="{{ preset.id }}">
+                        <button class="btn btn-sm btn-outline-primary flex-grow-1" 
+                                onclick="editPreset({{ preset.id }})">
                             <i class="bi bi-pencil me-1"></i>Edit
                         </button>
-                        <button class="btn btn-sm btn-outline-success btn-view-preset" 
-                                data-id="{{ preset.id }}">
+                        <button class="btn btn-sm btn-outline-success" 
+                                onclick="previewPreset({{ preset.id }})">
                             <i class="bi bi-eye"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger btn-delete-preset" 
-                                data-id="{{ preset.id }}" data-name="{{ preset.name|escape('js') }}">
+                        <button class="btn btn-sm btn-outline-danger" 
+                                onclick="deletePreset({{ preset.id }}, '{{ preset.name|escape('js') }}')">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
@@ -168,26 +168,6 @@
                     <div class="invalid-feedback">Please enter a valid URL</div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Page Layer *</label>
-                    <select class="form-select" id="ai_page_layer" required>
-                        <option value="">Select page type...</option>
-                        <option value="home">Home Page</option>
-                        <option value="category">Category/Listing Page</option>
-                        <option value="article">Article/Detail Page</option>
-                        <option value="search">Search Results</option>
-                        <option value="archive">Archive/Pagination</option>
-                    </select>
-                    <small class="text-muted">Select the type of page for better selector detection</small>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Scraper Method *</label>
-                    <select class="form-select" id="ai_scraper_method" required>
-                        <option value="guzzle-symfony">PHP Scraper (Guzzle / cURL)</option>
-                        <option value="native-php">Native PHP (file_get_contents)</option>
-                    </select>
-                    <small class="text-muted">Choose the method to fetch the webpage</small>
-                </div>
-                <div class="mb-3">
                     <label class="form-label">Preset Name *</label>
                     <input type="text" class="form-control" id="ai_preset_name" required 
                            placeholder="e.g., Example News">
@@ -257,17 +237,6 @@
                             </button>
                         </div>
                         <small class="text-muted">Enter a URL and click AI Detect to automatically find selectors</small>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Page Layer</label>
-                        <select class="form-select" id="preset_page_layer">
-                            <option value="">Select page type (optional)</option>
-                            <option value="home">Home Page</option>
-                            <option value="category">Category/Listing Page</option>
-                            <option value="article">Article/Detail Page</option>
-                            <option value="search">Search Results</option>
-                            <option value="archive">Archive/Pagination</option>
-                        </select>
                     </div>
 
                     <hr>
@@ -357,7 +326,6 @@
                     </div>
 
                     <input type="hidden" name="id" value="0">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -373,44 +341,6 @@
 <script>
 let presets = {{ presets|json_encode|raw }};
 let detectedSelectors = {};
-
-function getCsrfToken() {
-    var meta = document.querySelector('meta[name="csrf-token"]');
-    return meta ? (meta.getAttribute('content') || '') : '';
-}
-
-// Event delegation for preset buttons
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Presets page loaded, total presets:', presets ? presets.length : 0);
-    
-    // Edit button handler
-    document.querySelectorAll('.btn-edit-preset').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var id = parseInt(this.getAttribute('data-id'));
-            console.log('Edit button clicked, preset id:', id);
-            editPreset(id);
-        });
-    });
-    
-    // View/Preview button handler
-    document.querySelectorAll('.btn-view-preset').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var id = parseInt(this.getAttribute('data-id'));
-            console.log('View button clicked, preset id:', id);
-            previewPreset(id);
-        });
-    });
-    
-    // Delete button handler
-    document.querySelectorAll('.btn-delete-preset').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var id = parseInt(this.getAttribute('data-id'));
-            var name = this.getAttribute('data-name');
-            console.log('Delete button clicked, preset id:', id, 'name:', name);
-            deletePreset(id, name);
-        });
-    });
-});
 
 function showPresetMessage(message, status, duration) {
     if (!message) {
@@ -446,7 +376,6 @@ function confirmPresetAction(message, title, status, options) {
 
 // Inline validation function
 function validateField(input) {
-    if (!input) return;
     if (input.checkValidity()) {
         input.classList.remove('is-invalid');
         input.classList.add('is-valid');
@@ -455,76 +384,6 @@ function validateField(input) {
         input.classList.add('is-invalid');
     }
 }
-
-function normalizePresetKey(value) {
-    return (value || '')
-        .toString()
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .replace(/-+/g, '-');
-}
-
-function bindPresetKeySync(nameInput, keyInput) {
-    if (!nameInput || !keyInput) return;
-
-    const syncKeyFromName = () => {
-        if (keyInput.readOnly) return;
-        const currentKey = normalizePresetKey(keyInput.value);
-        const generatedKey = normalizePresetKey(nameInput.value);
-        if (!currentKey || currentKey === normalizePresetKey(nameInput.dataset.lastPresetName || '')) {
-            keyInput.value = generatedKey;
-        }
-        nameInput.dataset.lastPresetName = nameInput.value;
-        validateField(keyInput);
-    };
-
-    nameInput.addEventListener('input', function() {
-        syncKeyFromName();
-        validateField(this);
-    });
-
-    keyInput.addEventListener('input', function() {
-        this.value = normalizePresetKey(this.value);
-        validateField(this);
-    });
-}
-
-// Add input validation listeners
-document.addEventListener('DOMContentLoaded', function() {
-    var nameInput = document.getElementById('preset_name');
-    var keyInput = document.getElementById('preset_key');
-    var aiNameInput = document.getElementById('ai_preset_name');
-    var aiKeyInput = document.getElementById('ai_preset_key');
-    
-    if (nameInput) {
-        nameInput.addEventListener('blur', function() {
-            validateField(this);
-        });
-    }
-    
-    if (keyInput) {
-        keyInput.addEventListener('blur', function() {
-            validateField(this);
-        });
-    }
-
-    if (aiNameInput) {
-        aiNameInput.addEventListener('blur', function() {
-            validateField(this);
-        });
-    }
-
-    if (aiKeyInput) {
-        aiKeyInput.addEventListener('blur', function() {
-            validateField(this);
-        });
-    }
-
-    bindPresetKeySync(nameInput, keyInput);
-    bindPresetKeySync(aiNameInput, aiKeyInput);
-});
 
 // AI Detect and Save directly
 function aiDetectAndSave() {
@@ -560,8 +419,6 @@ async function runAiDetect() {
     try {
         const formData = new FormData();
         formData.append('url', urlInput.value);
-        formData.append('page_layer', document.getElementById('ai_page_layer')?.value || 'category');
-        formData.append('scraper_method', document.getElementById('ai_scraper_method')?.value || 'guzzle-symfony');
         
         const response = await fetch('/admin/autocontent/api/ai-detect-selectors', {
             method: 'POST',
@@ -579,27 +436,16 @@ async function runAiDetect() {
             resultsDiv.classList.remove('d-none');
             selectorsDiv.innerHTML = '';
             
-            // Show metadata if available
-            if (data.metadata) {
-                const metadataDiv = document.createElement('div');
-                metadataDiv.className = 'col-12 mb-2';
-                metadataDiv.innerHTML = '<small class="text-muted">' +
-                    '<strong>Source:</strong> ' + (data.metadata.source || 'N/A') + ' | ' +
-                    '<strong>Method:</strong> ' + (data.metadata.method || 'N/A') + ' | ' +
-                    '<strong>Confidence:</strong> ' + (data.metadata.confidence || 'N/A') +
-                    '</small>';
-                selectorsDiv.appendChild(metadataDiv);
-            }
-            
-            for (var key in data.selectors) {
-                if (data.selectors.hasOwnProperty(key) && data.selectors[key]) {
-                    var value = data.selectors[key];
-                    selectorsDiv.innerHTML += '<div class="col-md-6">' +
-                        '<div class="p-2 bg-light rounded">' +
-                        '<strong>' + key + ':</strong>' +
-                        '<code class="d-block text-truncate">' + value + '</code>' +
-                        '</div>' +
-                        '</div>';
+            for (const [key, value] of Object.entries(data.selectors)) {
+                if (value) {
+                    selectorsDiv.innerHTML += `
+                        <div class="col-md-6">
+                            <div class="p-2 bg-light rounded">
+                                <strong>${key}:</strong>
+                                <code class="d-block text-truncate">${value}</code>
+                            </div>
+                        </div>
+                    `;
                 }
             }
             
@@ -619,10 +465,8 @@ async function runAiDetect() {
 }
 
 async function saveAiDetectedPreset() {
-    const name = document.getElementById('ai_preset_name').value.trim();
-    const keyInput = document.getElementById('ai_preset_key');
-    const key = normalizePresetKey(keyInput.value || name);
-    keyInput.value = key;
+    const name = document.getElementById('ai_preset_name').value;
+    const key = document.getElementById('ai_preset_key').value;
     
     const formData = new FormData();
     formData.append('name', name);
@@ -661,20 +505,8 @@ async function saveAiDetectedPreset() {
 }
 
 function editPreset(id) {
-    console.log('editPreset called with id:', id);
-    var presetId = parseInt(id);
-    var preset = null;
-    for (var i = 0; i < presets.length; i++) {
-        if (presets[i].id == presetId) {
-            preset = presets[i];
-            break;
-        }
-    }
-    if (!preset) {
-        console.error('Preset not found for id:', id);
-        return;
-    }
-    console.log('Found preset:', preset.name);
+    const preset = presets.find(p => p.id === id);
+    if (!preset) return;
 
     document.getElementById('presetModalLabel').textContent = 'Edit Preset';
     document.querySelector('#presetForm input[name="id"]').value = preset.id;
@@ -702,19 +534,11 @@ function editPreset(id) {
     document.querySelector('#presetForm input[name="selector_category"]').value = preset.selector_category || '';
     document.querySelector('#presetForm input[name="selector_tags"]').value = preset.selector_tags || '';
     
-    // Run validation on form fields
-    var nameInput = document.getElementById('preset_name');
-    var keyInput = document.getElementById('preset_key');
-    if (nameInput) validateField(nameInput);
-    if (keyInput) validateField(keyInput);
-    
     new bootstrap.Modal(document.getElementById('presetModal')).show();
 }
 
 function deletePreset(id, name) {
-    console.log('deletePreset called, id:', id, 'name:', name);
-    var message = 'Are you sure you want to delete "' + name + '"?';
-    confirmPresetAction(message, 'Delete Preset?', 'danger', {
+    confirmPresetAction(`Are you sure you want to delete "${name}"?`, 'Delete Preset?', 'danger', {
         confirmButtonText: 'Delete',
         cancelButtonText: 'Cancel'
     }).then(function(confirmed) {
@@ -724,11 +548,7 @@ function deletePreset(id, name) {
 
         fetch('/admin/autocontent/api/delete-preset', {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-Token': getCsrfToken()
-            },
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: 'id=' + id
         })
         .then(r => r.json())
@@ -757,8 +577,6 @@ async function aiDetectForPreset() {
     try {
         const formData = new FormData();
         formData.append('url', url);
-        formData.append('page_layer', document.getElementById('preset_page_layer')?.value || 'category');
-        formData.append('scraper_method', document.getElementById('ai_scraper_method')?.value || 'guzzle-symfony');
         
         const response = await fetch('/admin/autocontent/api/ai-detect-selectors', {
             method: 'POST',
@@ -795,25 +613,14 @@ async function aiDetectForPreset() {
 
 document.getElementById('presetForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    console.log('Form submitted');
     
     const formData = new FormData(this);
-    const keyInput = document.getElementById('preset_key');
-    if (keyInput && !keyInput.readOnly) {
-        keyInput.value = normalizePresetKey(keyInput.value || document.getElementById('preset_name')?.value || '');
-        formData.set('preset_key', keyInput.value);
-    }
-
     const submitBtn = document.getElementById('btn-save');
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
     
     fetch('/admin/autocontent/api/save-preset', {
         method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-Token': getCsrfToken()
-        },
         body: formData
     })
     .then(r => r.json())
@@ -862,20 +669,8 @@ document.getElementById('aiDetectModal').addEventListener('hidden.bs.modal', fun
 let currentPreviewPreset = null;
 
 function previewPreset(id) {
-    console.log('previewPreset called with id:', id);
-    var presetId = parseInt(id);
-    var preset = null;
-    for (var i = 0; i < presets.length; i++) {
-        if (presets[i].id == presetId) {
-            preset = presets[i];
-            break;
-        }
-    }
-    if (!preset) {
-        console.error('Preset not found for id:', id);
-        return;
-    }
-    console.log('Found preset for preview:', preset.name);
+    const preset = presets.find(p => p.id === id);
+    if (!preset) return;
     
     currentPreviewPreset = preset;
     document.getElementById('preview_url').value = '';
@@ -956,38 +751,37 @@ async function runPreview() {
 }
 
 function displayPreviewResults(data, previewType) {
-    var extractedDataDiv = document.getElementById('extractedData');
-    var selectorMatchesDiv = document.getElementById('selectorMatches');
-    var rawHtmlDiv = document.getElementById('rawHtmlPreview');
+    const extractedDataDiv = document.getElementById('extractedData');
+    const selectorMatchesDiv = document.getElementById('selectorMatches');
+    const rawHtmlDiv = document.getElementById('rawHtmlPreview');
     
     // Display extracted data
-    var extractedHtml = '';
+    let extractedHtml = '';
     if (previewType === 'list') {
         if (data.items && data.items.length > 0) {
             extractedHtml = '<ul class="list-group list-group-flush">';
-            data.items.slice(0, 5).forEach(function(item, index) {
-                var titleHtml = item.title ? '<strong>Title:</strong> ' + escapeHtml(item.title.substring(0, 100)) + '<br>' : '';
-                var linkHtml = item.link ? '<strong>Link:</strong> <code>' + escapeHtml(item.link.substring(0, 50)) + '</code><br>' : '';
-                var dateHtml = item.date ? '<strong>Date:</strong> ' + escapeHtml(item.date) + '<br>' : '';
-                var imageHtml = item.image ? '<strong>Image:</strong> <code>' + escapeHtml(item.image.substring(0, 50)) + '</code>' : '';
-                extractedHtml += '<li class="list-group-item px-0">' +
-                    '<strong>#' + (index + 1) + '</strong><br>' +
-                    titleHtml + linkHtml + dateHtml + imageHtml +
-                    '</li>';
+            data.items.slice(0, 5).forEach((item, index) => {
+                extractedHtml += `<li class="list-group-item px-0">
+                    <strong>#${index + 1}</strong><br>
+                    ${item.title ? '<strong>Title:</strong> ' + escapeHtml(item.title.substring(0, 100)) + '<br>' : ''}
+                    ${item.link ? '<strong>Link:</strong> <code>' + escapeHtml(item.link.substring(0, 50)) + '</code><br>' : ''}
+                    ${item.date ? '<strong>Date:</strong> ' + escapeHtml(item.date) + '<br>' : ''}
+                    ${item.image ? '<strong>Image:</strong> <code>' + escapeHtml(item.image.substring(0, 50)) + '</code>' : ''}
+                </li>`;
             });
             extractedHtml += '</ul>';
-            extractedHtml += '<div class="text-muted small mt-2">Found ' + data.items.length + ' items total</div>';
+            extractedHtml += `<div class="text-muted small mt-2">Found ${data.items.length} items total</div>`;
         } else {
             extractedHtml = '<p class="text-muted">No items found with the specified selectors</p>';
         }
     } else {
         if (data.content) {
-            extractedHtml = data.content.title ? '<p><strong>Title:</strong> ' + escapeHtml(data.content.title) + '</p>' : '';
-            extractedHtml += data.content.excerpt ? '<p><strong>Excerpt:</strong> ' + escapeHtml(data.content.excerpt.substring(0, 200)) + '...</p>' : '';
-            extractedHtml += data.content.author ? '<p><strong>Author:</strong> ' + escapeHtml(data.content.author) + '</p>' : '';
-            extractedHtml += data.content.date ? '<p><strong>Date:</strong> ' + escapeHtml(data.content.date) + '</p>' : '';
-            extractedHtml += data.content.image ? '<p><strong>Image:</strong> <code>' + escapeHtml(data.content.image.substring(0, 100)) + '</code></p>' : '';
-            extractedHtml += '<hr><strong>Content Preview:</strong><div class="mt-2 small">' + (data.content.content ? escapeHtml(data.content.content.substring(0, 500)) : 'No content found') + '...</div>';
+            extractedHtml = `${data.content.title ? '<p><strong>Title:</strong> ' + escapeHtml(data.content.title) + '</p>' : ''}`;
+            extractedHtml += `${data.content.excerpt ? '<p><strong>Excerpt:</strong> ' + escapeHtml(data.content.excerpt.substring(0, 200)) + '...</p>' : ''}`;
+            extractedHtml += `${data.content.author ? '<p><strong>Author:</strong> ' + escapeHtml(data.content.author) + '</p>' : ''}`;
+            extractedHtml += `${data.content.date ? '<p><strong>Date:</strong> ' + escapeHtml(data.content.date) + '</p>' : ''}`;
+            extractedHtml += `${data.content.image ? '<p><strong>Image:</strong> <code>' + escapeHtml(data.content.image.substring(0, 100)) + '</code></p>' : ''}`;
+            extractedHtml += `<hr><strong>Content Preview:</strong><div class="mt-2 small">${escapeHtml(data.content.content ? data.content.content.substring(0, 500) : 'No content found')}...</div>`;
         } else {
             extractedHtml = '<p class="text-muted">No content found with the specified selectors</p>';
         }
@@ -995,78 +789,41 @@ function displayPreviewResults(data, previewType) {
     extractedDataDiv.innerHTML = extractedHtml;
     
     // Display selector match info
-    var matchesHtml = '';
-    var i, matchStatus;
+    let matchesHtml = '';
     if (previewType === 'list') {
-        var containerSel = data.selectors.container || 'N/A';
-        var itemSel = data.selectors.item || 'N/A';
-        var titleSel = data.selectors.title || 'N/A';
-        var linkSel = data.selectors.link || 'N/A';
-        var dateSel = data.selectors.date || 'N/A';
-        var imageSel = data.selectors.image || 'N/A';
-        
-        var containerStatus = data.matches.container ? 'success' : 'danger';
-        var containerText = data.matches.container ? 'Found' : 'Not Found';
-        var itemStatus = data.matches.item ? 'success' : 'danger';
-        var itemText = data.matches.item ? 'Found' : 'Not Found';
-        var titleStatus = data.matches.title ? 'success' : 'danger';
-        var titleText = data.matches.title ? 'Found' : 'Not Found';
-        var linkStatus = data.matches.link ? 'success' : 'danger';
-        var linkText = data.matches.link ? 'Found' : 'Not Found';
-        var dateStatus = data.matches.date ? 'success' : 'warning';
-        var dateText = data.matches.date ? 'Found' : 'Optional';
-        var imageStatus = data.matches.image ? 'success' : 'warning';
-        var imageText = data.matches.image ? 'Found' : 'Optional';
-        
-        matchesHtml = '<ul class="list-unstyled small">' +
-            '<li class="mb-2"><strong>Container:</strong> <code>' + escapeHtml(containerSel) + '</code>' +
-            ' <span class="badge bg-' + containerStatus + '">' + containerText + '</span></li>' +
-            '<li class="mb-2"><strong>Item:</strong> <code>' + escapeHtml(itemSel) + '</code>' +
-            ' <span class="badge bg-' + itemStatus + '">' + itemText + '</span></li>' +
-            '<li class="mb-2"><strong>Title:</strong> <code>' + escapeHtml(titleSel) + '</code>' +
-            ' <span class="badge bg-' + titleStatus + '">' + titleText + '</span></li>' +
-            '<li class="mb-2"><strong>Link:</strong> <code>' + escapeHtml(linkSel) + '</code>' +
-            ' <span class="badge bg-' + linkStatus + '">' + linkText + '</span></li>' +
-            '<li class="mb-2"><strong>Date:</strong> <code>' + escapeHtml(dateSel) + '</code>' +
-            ' <span class="badge bg-' + dateStatus + '">' + dateText + '</span></li>' +
-            '<li><strong>Image:</strong> <code>' + escapeHtml(imageSel) + '</code>' +
-            ' <span class="badge bg-' + imageStatus + '">' + imageText + '</span></li>' +
-            '</ul>';
+        matchesHtml = `
+            <ul class="list-unstyled small">
+                <li class="mb-2"><strong>Container:</strong> <code>${escapeHtml(data.selectors.container || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.container ? 'success' : 'danger'}">${data.matches.container ? 'Found' : 'Not Found'}</span></li>
+                <li class="mb-2"><strong>Item:</strong> <code>${escapeHtml(data.selectors.item || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.item ? 'success' : 'danger'}">${data.matches.item ? 'Found' : 'Not Found'}</span></li>
+                <li class="mb-2"><strong>Title:</strong> <code>${escapeHtml(data.selectors.title || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.title ? 'success' : 'danger'}">${data.matches.title ? 'Found' : 'Not Found'}</span></li>
+                <li class="mb-2"><strong>Link:</strong> <code>${escapeHtml(data.selectors.link || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.link ? 'success' : 'danger'}">${data.matches.link ? 'Found' : 'Not Found'}</span></li>
+                <li class="mb-2"><strong>Date:</strong> <code>${escapeHtml(data.selectors.date || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.date ? 'success' : 'warning'}">${data.matches.date ? 'Found' : 'Optional'}</span></li>
+                <li><strong>Image:</strong> <code>${escapeHtml(data.selectors.image || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.image ? 'success' : 'warning'}">${data.matches.image ? 'Found' : 'Optional'}</span></li>
+            </ul>
+        `;
     } else {
-        var titleSelD = data.selectors.title || 'N/A';
-        var contentSelD = data.selectors.content || 'N/A';
-        var imageSelD = data.selectors.image || 'N/A';
-        var excerptSelD = data.selectors.excerpt || 'N/A';
-        var dateSelD = data.selectors.date || 'N/A';
-        var authorSelD = data.selectors.author || 'N/A';
-        
-        var titleStatusD = data.matches.title ? 'success' : 'danger';
-        var titleTextD = data.matches.title ? 'Found' : 'Not Found';
-        var contentStatusD = data.matches.content ? 'success' : 'danger';
-        var contentTextD = data.matches.content ? 'Found' : 'Not Found';
-        var imageStatusD = data.matches.image ? 'success' : 'warning';
-        var imageTextD = data.matches.image ? 'Found' : 'Optional';
-        var excerptStatusD = data.matches.excerpt ? 'success' : 'warning';
-        var excerptTextD = data.matches.excerpt ? 'Found' : 'Optional';
-        var dateStatusD = data.matches.date ? 'success' : 'warning';
-        var dateTextD = data.matches.date ? 'Found' : 'Optional';
-        var authorStatusD = data.matches.author ? 'success' : 'warning';
-        var authorTextD = data.matches.author ? 'Found' : 'Optional';
-        
-        matchesHtml = '<ul class="list-unstyled small">' +
-            '<li class="mb-2"><strong>Title:</strong> <code>' + escapeHtml(titleSelD) + '</code>' +
-            ' <span class="badge bg-' + titleStatusD + '">' + titleTextD + '</span></li>' +
-            '<li class="mb-2"><strong>Content:</strong> <code>' + escapeHtml(contentSelD) + '</code>' +
-            ' <span class="badge bg-' + contentStatusD + '">' + contentTextD + '</span></li>' +
-            '<li class="mb-2"><strong>Image:</strong> <code>' + escapeHtml(imageSelD) + '</code>' +
-            ' <span class="badge bg-' + imageStatusD + '">' + imageTextD + '</span></li>' +
-            '<li class="mb-2"><strong>Excerpt:</strong> <code>' + escapeHtml(excerptSelD) + '</code>' +
-            ' <span class="badge bg-' + excerptStatusD + '">' + excerptTextD + '</span></li>' +
-            '<li class="mb-2"><strong>Date:</strong> <code>' + escapeHtml(dateSelD) + '</code>' +
-            ' <span class="badge bg-' + dateStatusD + '">' + dateTextD + '</span></li>' +
-            '<li><strong>Author:</strong> <code>' + escapeHtml(authorSelD) + '</code>' +
-            ' <span class="badge bg-' + authorStatusD + '">' + authorTextD + '</span></li>' +
-            '</ul>';
+        matchesHtml = `
+            <ul class="list-unstyled small">
+                <li class="mb-2"><strong>Title:</strong> <code>${escapeHtml(data.selectors.title || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.title ? 'success' : 'danger'}">${data.matches.title ? 'Found' : 'Not Found'}</span></li>
+                <li class="mb-2"><strong>Content:</strong> <code>${escapeHtml(data.selectors.content || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.content ? 'success' : 'danger'}">${data.matches.content ? 'Found' : 'Not Found'}</span></li>
+                <li class="mb-2"><strong>Image:</strong> <code>${escapeHtml(data.selectors.image || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.image ? 'success' : 'warning'}">${data.matches.image ? 'Found' : 'Optional'}</span></li>
+                <li class="mb-2"><strong>Excerpt:</strong> <code>${escapeHtml(data.selectors.excerpt || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.excerpt ? 'success' : 'warning'}">${data.matches.excerpt ? 'Found' : 'Optional'}</span></li>
+                <li class="mb-2"><strong>Date:</strong> <code>${escapeHtml(data.selectors.date || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.date ? 'success' : 'warning'}">${data.matches.date ? 'Found' : 'Optional'}</span></li>
+                <li><strong>Author:</strong> <code>${escapeHtml(data.selectors.author || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.author ? 'success' : 'warning'}">${data.matches.author ? 'Found' : 'Optional'}</span></li>
+            </ul>
+        `;
     }
     selectorMatchesDiv.innerHTML = matchesHtml;
     

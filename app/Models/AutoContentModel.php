@@ -10,40 +10,10 @@ declare(strict_types=1);
 class AutoContentModel
 {
     private $mysqli;
-    private $redis;
 
     public function __construct(mysqli $mysqli)
     {
         $this->mysqli = $mysqli;
-        $this->redis = new \Predis\Client();
-        try {
-            $this->redis->connect();
-        } catch (\Exception $e) {
-            $this->redis = null;
-        }
-    }
-
-    /**
-     * Encrypt sensitive data
-     */
-    private function encrypt(string $data): string
-    {
-        $key = 'your-encryption-key-here'; // Use env var in production
-        $iv = openssl_random_pseudo_bytes(16);
-        $encrypted = openssl_encrypt($data, 'AES-256-CBC', $key, 0, $iv);
-        return base64_encode($iv . $encrypted);
-    }
-
-    /**
-     * Decrypt sensitive data
-     */
-    private function decrypt(string $data): string
-    {
-        $key = 'your-encryption-key-here'; // Use env var in production
-        $data = base64_decode($data);
-        $iv = substr($data, 0, 16);
-        $encrypted = substr($data, 16);
-        return openssl_decrypt($encrypted, 'AES-256-CBC', $key, 0, $iv);
     }
 
     // ================== SOURCE MANAGEMENT ==================
@@ -133,6 +103,14 @@ class AutoContentModel
         $catId = isset($data['category_id']) ? (int)$data['category_id'] : null;
         $values[] = $catId;
         $types .= 'i';
+
+        // Add website preset key if column exists
+        if (in_array('website_preset_key', $existingColumns)) {
+            $columns[] = 'website_preset_key';
+            $placeholders[] = '?';
+            $values[] = sanitize_input($data['website_preset_key'] ?? '');
+            $types .= 's';
+        }
 
         $columns[] = 'fetch_interval';
         $placeholders[] = '?';
@@ -277,6 +255,13 @@ class AutoContentModel
         $catId = isset($data['category_id']) ? (int)$data['category_id'] : null;
         $values[] = $catId;
         $types .= 'i';
+
+        // Add website preset key if column exists
+        if (in_array('website_preset_key', $existingColumns)) {
+            $setParts[] = 'website_preset_key = ?';
+            $values[] = sanitize_input($data['website_preset_key'] ?? '');
+            $types .= 's';
+        }
 
         $setParts[] = 'fetch_interval = ?';
         $fetchInt = isset($data['fetch_interval']) ? (int)$data['fetch_interval'] : 3600;
@@ -979,14 +964,6 @@ class AutoContentModel
      */
     public function getSettings(): array
     {
-        $cacheKey = 'autocontent_settings';
-        if ($this->redis) {
-            $cached = $this->redis->get($cacheKey);
-            if ($cached) {
-                return json_decode($cached, true);
-            }
-        }
-
         $sql = "SELECT setting_key, setting_value FROM autocontent_settings";
         $result = $this->mysqli->query($sql);
 
@@ -996,11 +973,6 @@ class AutoContentModel
                 $settings[$row['setting_key']] = $row['setting_value'];
             }
             $result->free();
-        }
-
-        // Decrypt sensitive settings
-        if (isset($settings['ai_key']) && !empty($settings['ai_key'])) {
-            $settings['ai_key'] = $this->decrypt($settings['ai_key']);
         }
 
         // Check if AI key is set
@@ -1029,10 +1001,6 @@ class AutoContentModel
         // Override ai_key_set with computed value
         $settings['ai_key_set'] = $aiKeySet;
 
-        if ($this->redis) {
-            $this->redis->setex($cacheKey, 300, json_encode($settings));
-        }
-
         return $settings;
     }
 
@@ -1041,11 +1009,6 @@ class AutoContentModel
      */
     public function saveSetting(string $key, string $value): bool
     {
-        // Encrypt sensitive settings
-        if ($key === 'ai_key' && !empty($value)) {
-            $value = $this->encrypt($value);
-        }
-
         $stmt = $this->mysqli->prepare("
             INSERT INTO autocontent_settings (setting_key, setting_value) 
             VALUES (?, ?) 
@@ -1054,10 +1017,6 @@ class AutoContentModel
         $stmt->bind_param("sss", $key, $value, $value);
         $success = $stmt->execute();
         $stmt->close();
-
-        if ($success && $this->redis) {
-            $this->redis->del('autocontent_settings');
-        }
 
         return $success;
     }
@@ -1229,6 +1188,7 @@ class AutoContentModel
                 url TEXT NOT NULL,
                 type ENUM('rss', 'html', 'api', 'scrape') DEFAULT 'rss',
                 category_id INT DEFAULT NULL,
+                website_preset_key VARCHAR(50) DEFAULT '',
                 selectors TEXT,
                 fetch_interval INT DEFAULT 3600,
                 is_active TINYINT(1) DEFAULT 1,
@@ -1319,6 +1279,12 @@ class AutoContentModel
         $result = $this->mysqli->query("SHOW COLUMNS FROM autocontent_sources LIKE 'use_browser'");
         if (!$result || $result->num_rows === 0) {
             $this->mysqli->query("ALTER TABLE autocontent_sources ADD COLUMN use_browser TINYINT(1) DEFAULT 0");
+        }
+
+        // Add website preset key column if not exists
+        $result = $this->mysqli->query("SHOW COLUMNS FROM autocontent_sources LIKE 'website_preset_key'");
+        if (!$result || $result->num_rows === 0) {
+            $this->mysqli->query("ALTER TABLE autocontent_sources ADD COLUMN website_preset_key VARCHAR(50) DEFAULT ''");
         }
 
         // Create articles table
@@ -1567,24 +1533,8 @@ class AutoContentModel
      */
     public function saveWebsitePreset(array $data): int
     {
-        // Debug logging
-        error_log('saveWebsitePreset called with: ' . json_encode($data));
-        
-        error_log('Data keys count: ' . count($data));
-        error_log('Data keys: ' . implode(', ', array_keys($data)));
-        
-        // Ensure string values (convert null to empty string), keep id as integer
-        $id = isset($data['id']) ? (int)$data['id'] : 0;
-        $data = array_map(function($val) {
-            return $val ?? '';
-        }, $data);
-        $data['id'] = $id;
-        
-        error_log('After processing - id type: ' . gettype($data['id']) . ', value: ' . $data['id']);
-        
-        if ($data['id'] > 0) {
+        if (isset($data['id']) && $data['id'] > 0) {
             // Update existing
-            error_log('Using UPDATE query');
             $stmt = $this->mysqli->prepare("
                 UPDATE autocontent_website_presets SET
                     name = ?, preset_key = ?,
@@ -1598,14 +1548,8 @@ class AutoContentModel
                     selector_category = ?, selector_tags = ?
                 WHERE id = ?
             ");
-            
-            if ($stmt === false) {
-                error_log('UPDATE prepare failed: ' . $this->mysqli->error);
-                throw new \Exception('Failed to prepare UPDATE statement: ' . $this->mysqli->error);
-            }
-            
             $stmt->bind_param(
-                'sssssssssssssssssssi',
+                'sssssssssssssssssi',
                 $data['name'],
                 $data['preset_key'],
                 $data['selector_list_container'],
@@ -1626,13 +1570,11 @@ class AutoContentModel
                 $data['selector_tags'],
                 $data['id']
             );
-            error_log('UPDATE: bind_param called with 19 values');
             $stmt->execute();
             $stmt->close();
             return $data['id'];
         } else {
             // Insert new
-            error_log('Using INSERT query');
             $stmt = $this->mysqli->prepare("
                 INSERT INTO autocontent_website_presets
                 (preset_key, name, selector_list_container, selector_list_item,
@@ -1642,14 +1584,8 @@ class AutoContentModel
                  selector_category, selector_tags)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            
-            if ($stmt === false) {
-                error_log('INSERT prepare failed: ' . $this->mysqli->error);
-                throw new \Exception('Failed to prepare INSERT statement: ' . $this->mysqli->error);
-            }
-            
             $stmt->bind_param(
-                'sssssssssssssssssss',
+                'ssssssssssssssssss',
                 $data['preset_key'],
                 $data['name'],
                 $data['selector_list_container'],
@@ -1669,7 +1605,6 @@ class AutoContentModel
                 $data['selector_category'],
                 $data['selector_tags']
             );
-            error_log('INSERT: bind_param called with 18 values');
             $stmt->execute();
             $id = $stmt->insert_id;
             $stmt->close();

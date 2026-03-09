@@ -12,9 +12,7 @@
     "mpdf/mpdf": "^8.2",
     "guzzlehttp/guzzle": "^7.8",
     "symfony/dom-crawler": "^6.4",
-    "symfony/css-selector": "^6.4",
-    "predis/predis": "^3.4",
-    "monolog/monolog": "^3.10"
+    "symfony/css-selector": "^6.4"
   },
   "autoload": {
     "psr-4": {

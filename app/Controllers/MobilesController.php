@@ -1,8 +1,6 @@
 <?php
 // controllers/MobilesController.php
 
-use App\Models\MobileModel;
-
 global $mysqli;
 
 $mobileModel  = new MobileModel($mysqli);

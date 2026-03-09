@@ -1031,16 +1031,11 @@
         }
     </style>
     <script>
-        // Configure Puter API proxy host (used when running under localhost / dev)
-        // This routes all Puter API calls through our own server endpoint at /__/puter.
-        window.PUTER_API_PROXY_ORIGIN = new URL('/__/puter', window.location.href).toString().replace(/\/+$/, '');
-
         // Optionally force public-only mode (no Authorization header passed through).
         // Default to true for public/chat usage unless explicitly disabled.
         window.PUTER_PROXY_PUBLIC_ONLY = {{ ("" ~ (_ENV['PUTER_PROXY_PUBLIC_ONLY'] ?? '') )|lower in ['0','false','no'] ? 'false' : 'true' }};
 
         // If we're running in public-only mode, ensure the UI reflects that.
-        // This is helpful when using the Admin Assistant (which may show a sign-in button).
         (function () {
             const publicOnly = Boolean(window.PUTER_PROXY_PUBLIC_ONLY);
             const badge = document.getElementById('adminAssistantPublicModeBadge');
@@ -1049,8 +1044,13 @@
             if (signInBtn) signInBtn.classList.toggle('d-none', publicOnly);
         })();
 
-        // Puter is bundled into the assistant modules. Do not inject the CDN build here,
-        // otherwise pages that already import the bundled SDK will double-register custom elements.
+        // Guard to prevent duplicate loading of Puter.js which causes custom element errors
+        if (!window.puterScriptLoaded) {
+            window.puterScriptLoaded = true;
+            var script = document.createElement('script');
+            script.src = 'https://js.puter.com/v2/';
+            document.head.appendChild(script);
+        }
     </script>
 
     {% if show_public_assistant %}

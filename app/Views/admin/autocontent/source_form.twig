@@ -11,6 +11,7 @@
   <div class="card-body">
     <form method="POST" action="/admin/autocontent/sources/{{ isCreate ? 'create' : 'edit' }}" novalidate>
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" id="website_preset_key" name="website_preset_key" value="{{ source.website_preset_key ?? '' }}">
       {% if not isCreate and source %}
         <input type="hidden" name="id" value="{{ source.id }}">
       {% endif %}
@@ -131,6 +132,71 @@
         </div>
       </div>
 
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="mb-3">Selectors (Optional)</h5>
+          <p class="text-muted small mb-3">Choose a website preset to auto-fill these selectors (or enter custom values).</p>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="selector_list_container" class="form-label fw-semibold">List Container</label>
+              <input type="text" class="form-control" id="selector_list_container" name="selector_list_container"
+                     value="{{ source.selector_list_container ?? '' }}"
+                     placeholder=".article-list, .posts">
+              <div class="form-text">CSS selector for the element that contains the list of items.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label for="selector_list_item" class="form-label fw-semibold">List Item</label>
+              <input type="text" class="form-control" id="selector_list_item" name="selector_list_item"
+                     value="{{ source.selector_list_item ?? '' }}"
+                     placeholder=".article, .post">
+              <div class="form-text">CSS selector for each item within the list.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label for="selector_list_title" class="form-label fw-semibold">List Title</label>
+              <input type="text" class="form-control" id="selector_list_title" name="selector_list_title"
+                     value="{{ source.selector_list_title ?? '' }}"
+                     placeholder="h3 a, .title a">
+              <div class="form-text">CSS selector for the title/link inside each list item.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label for="selector_list_link" class="form-label fw-semibold">List Link</label>
+              <input type="text" class="form-control" id="selector_list_link" name="selector_list_link"
+                     value="{{ source.selector_list_link ?? '' }}"
+                     placeholder="a, a[href]">
+              <div class="form-text">CSS selector for extracting the link from each list item.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label for="selector_title" class="form-label fw-semibold">Detail Title</label>
+              <input type="text" class="form-control" id="selector_title" name="selector_title"
+                     value="{{ source.selector_title ?? '' }}"
+                     placeholder="h1.title">
+              <div class="form-text">CSS selector for the title on the detail/article page.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label for="selector_content" class="form-label fw-semibold">Detail Content</label>
+              <input type="text" class="form-control" id="selector_content" name="selector_content"
+                     value="{{ source.selector_content ?? '' }}"
+                     placeholder=".article-body, .post-content">
+              <div class="form-text">CSS selector for the main content area on the detail page.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label for="selector_image" class="form-label fw-semibold">Detail Image</label>
+              <input type="text" class="form-control" id="selector_image" name="selector_image"
+                     value="{{ source.selector_image ?? '' }}"
+                     placeholder=".featured-image img, img.featured">
+              <div class="form-text">Optional selector for the main image on the detail page.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="d-flex gap-2">
         <button type="submit" class="btn btn-primary">
           <i class="bi bi-check-lg me-1"></i>{{ isCreate ? 'Add Source' : 'Update Source' }}
@@ -212,6 +278,13 @@
         });
         
         console.log('Loaded ' + data.presets.length + ' presets');
+
+        // If a preset was previously selected (e.g., after a validation error), apply it
+        var presetKeyInput = document.getElementById('website_preset_key');
+        if (presetKeyInput && presetKeyInput.value) {
+          document.getElementById('website_preset').value = presetKeyInput.value;
+          applyPreset();
+        }
       } else {
         console.log('No presets found or API returned error');
       }
@@ -223,12 +296,46 @@
   // Apply preset - load from database
   function applyPreset() {
     var presetKey = document.getElementById('website_preset').value;
-    if (!presetKey) return;
+    var presetKeyInput = document.getElementById('website_preset_key');
+
+    // Clear selection (manual selectors) when no preset is chosen
+    if (!presetKey) {
+      if (presetKeyInput) {
+        presetKeyInput.value = '';
+      }
+      showPageMessage('Website preset cleared. You can enter selectors manually.', 'info', 4000);
+      return;
+    }
 
     var preset = presetsFromDB[presetKey];
     if (!preset) {
       showPageMessage('Preset not found in database.', 'warning', 5000);
       return;
+    }
+
+    // Map preset selectors to form fields (if present)
+    var selectorFields = [
+      'selector_list_container',
+      'selector_list_item',
+      'selector_list_title',
+      'selector_list_link',
+      'selector_title',
+      'selector_content',
+      'selector_image'
+    ];
+
+    selectorFields.forEach(function (field) {
+      if (preset[field] !== undefined) {
+        var el = document.getElementById(field);
+        if (el) {
+          el.value = preset[field] || '';
+        }
+      }
+    });
+
+    // Remember selected preset (for potential future extensions)
+    if (presetKeyInput) {
+      presetKeyInput.value = presetKey;
     }
 
     showPageMessage('Applied "' + preset.name + '" preset.', 'success', 5000);

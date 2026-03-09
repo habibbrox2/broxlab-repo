@@ -74,7 +74,7 @@ if (!$dbName || !$dbUser) {
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
 try {
-    $mysqli = new mysqli("p:$dbHost", $dbUser, $dbPass, $dbName);
+    $mysqli = new mysqli($dbHost, $dbUser, $dbPass, $dbName);
     $mysqli->set_charset($dbCharset);
 
     // Log successful connection in development mode

@@ -674,11 +674,14 @@
     }
 </style>
 <script>
-    window.PUTER_API_PROXY_ORIGIN = window.PUTER_API_PROXY_ORIGIN
-        || new URL('/__/puter', window.location.href).toString().replace(/\/+$/, '');
-    window.PUTER_API_ORIGIN = window.PUTER_API_ORIGIN || window.PUTER_API_PROXY_ORIGIN;
-    window.PUTER_API_ORIGIN_ENV = window.PUTER_API_ORIGIN_ENV || window.PUTER_API_PROXY_ORIGIN;
+    // Public mode ensures Puter will not attempt to sign in by default.
     window.PUTER_PROXY_PUBLIC_ONLY = true;
-    window.PUTER_DISABLE_FS_SOCKET = true;
+    (function () {
+        const publicOnly = Boolean(window.PUTER_PROXY_PUBLIC_ONLY);
+        const badge = document.getElementById('adminAssistantPublicModeBadge');
+        const signInBtn = document.getElementById('btnPuterSignIn');
+        if (badge) badge.classList.toggle('d-none', !publicOnly);
+        if (signInBtn) signInBtn.classList.toggle('d-none', publicOnly);
+    })();
 </script>
 <script type="module" src="{{ asset('/assets/ai-assistant/dist/admin-assistant.js') }}"></script>

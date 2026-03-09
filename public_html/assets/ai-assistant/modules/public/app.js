@@ -1,7 +1,7 @@
-import { appendAssistant, appendMessage, animateBody, buildStaticReplyMatcher } from '../../core/render.js';
+import { appendAssistant, appendMessage, animateBody, attachAssistantTools, buildStaticReplyMatcher, parseResponseConfig, typeMessage } from '../../core/render.js';
 import { createHistoryStore } from '../../core/storage.js';
 import { createLanguageState } from '../../core/i18n.js';
-import { buildChatClient, buildPopupSignIn, ensurePuterReady, extractResponseText } from '../../core/puter.js';
+import { ensurePuterReady, getPuterClient, extractResponseText } from '../../core/puter.js';
 
 const UI = {
   btn: document.getElementById('publicAssistantBtn'),
@@ -22,31 +22,51 @@ const UI = {
 };
 
 // Enable public-only mode to skip sign-in requirements
+// Puter.js is only used as fallback when backend AI is unavailable.
 window.PUTER_PROXY_PUBLIC_ONLY = true;
+window.PUTER_DISABLED = false; // Allow Puter.js fallback when needed
 
-const CHAT_MODEL = typeof window.BROX_PUBLIC_ASSISTANT_MODEL === 'string' ? window.BROX_PUBLIC_ASSISTANT_MODEL.trim() : '';
 const CHAT_STORAGE_KEY = 'brox.publicAssistant.chat.v2';
 const LAST_ACTIVITY_KEY = 'brox.publicAssistant.lastActivity.v2';
 const LANGUAGE_KEY = 'brox.publicAssistant.language.v2';
 const USER_INFO_KEY = 'brox.publicAssistant.userInfo.v2';
 const MAX_STORED_MESSAGES = 40;
 const INACTIVITY_LIMIT_MS = 30 * 60 * 1000;
-const PUTER_POPUP_SIZE = { width: 600, height: 700, timeoutMs: 2 * 60 * 1000 };
 const ASSISTANT_SITE_URL = 'https://broxlab.online';
-const CHAT_MODEL_PREFERENCES = [
-  'openai/gpt-4.1-mini', 'openai/gpt-4o-mini', 'openai/gpt-4.1', 'openai/gpt-4o',
-  'anthropic/claude-3-5-sonnet', 'anthropic/claude-3-7-sonnet',
-  'google/gemini-2.0-flash', 'google/gemini-2.5-flash',
-  'gpt-4.1-mini', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4o',
-  'claude-3-5-sonnet', 'claude-3-7-sonnet',
-  'gemini-2.0-flash', 'gemini-2.5-flash'
-];
 const TOPIC_KEYS = ['general', 'support', 'billing', 'feedback'];
+
+const DEFAULT_PREFS = {
+  provider: 'puter-js',
+  model: 'gemini-2.0-flash'
+};
+
+let assistantPrefs = { ...DEFAULT_PREFS };
+
+async function loadAssistantPrefs() {
+  try {
+    const response = await fetch('/api/ai-settings/frontend');
+    if (response.ok) {
+      const data = await response.json();
+      assistantPrefs.provider = data.provider;
+      assistantPrefs.model = data.model;
+
+      if (data.fireworks_api_key) {
+        window.FIREWORKS_API_KEY = data.fireworks_api_key;
+      }
+      if (data.openrouter_api_key) {
+        window.OPENROUTER_API_KEY = data.openrouter_api_key;
+      }
+    }
+  } catch (err) {
+    console.log('Failed to load assistant prefs from backend:', err);
+  }
+}
 
 const I18N = {
   bn: {
     assistant_title: 'ব্রক্স সহকারী',
     assistant_status: 'বার্তা পাঠালে সংযুক্ত হবে',
+    status_thinking: 'ভাবছে...',
     default_greeting: 'হ্যালো, আমি আপনার BroxLab সহকারী। কীভাবে সাহায্য করতে পারি?',
     close_label: 'বন্ধ করুন',
     chat_input_placeholder: 'আপনার প্রশ্ন লিখুন...',
@@ -75,6 +95,7 @@ const I18N = {
   en: {
     assistant_title: 'Brox Assistant',
     assistant_status: 'Will connect on first message',
+    status_thinking: 'Thinking...',
     default_greeting: 'Hello, I am your Brox assistant. How can I help you today?',
     close_label: 'Close',
     chat_input_placeholder: 'Ask your question...',
@@ -128,21 +149,58 @@ const historyStore = createHistoryStore({
   maxMessages: MAX_STORED_MESSAGES,
   inactivityMs: INACTIVITY_LIMIT_MS
 });
-let openSignInPopup = null;
 
-function getOpenSignInPopup() {
-  if (!openSignInPopup) {
-    openSignInPopup = buildPopupSignIn({ popupSize: PUTER_POPUP_SIZE, t: (key) => t(key) });
-  }
-  return openSignInPopup;
+// Fireworks AI API call function
+async function callFireworksAI(messages, options = {}) {
+  const apiKey = window.FIREWORKS_API_KEY || 'your_api_key_here'; // Set your API key here or via window.FIREWORKS_API_KEY
+  const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: options.model || 'accounts/fireworks/models/deepseek-v3p1',
+      messages: messages,
+      stream: options.stream || false,
+      ...options
+    })
+  });
+  if (!response.ok) throw new Error('Fireworks API error');
+  return await response.json();
 }
-let chatClient = null;
 
-function getChatClient() {
-  if (!chatClient) {
-    chatClient = buildChatClient({ chatModel: CHAT_MODEL, modelPreferences: CHAT_MODEL_PREFERENCES });
+// OpenRouter AI API call function
+async function callOpenRouterAI(messages, options = {}) {
+  const apiKey = window.OPENROUTER_API_KEY || 'your_api_key_here'; // Set your API key here or via window.OPENROUTER_API_KEY
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': window.location.origin, // Optional
+      'X-OpenRouter-Title': 'BroxBhai Assistant' // Optional
+    },
+    body: JSON.stringify({
+      model: options.model || 'openai/gpt-5.2',
+      messages: messages,
+      stream: options.stream || false,
+      ...options
+    })
+  });
+  if (!response.ok) throw new Error('OpenRouter API error');
+  return await response.json();
+}
+
+// Parse suggestions from response text
+function parseSuggestionsFromText(text) {
+  const match = text.match(/\[SUGGESTION:\s*(.*?)\]/);
+  if (match) {
+    const suggestions = match[1].split(',').map(s => s.trim());
+    const cleanText = text.replace(/\[SUGGESTION:\s*.*?\]/, '').trim();
+    return { text: cleanText, suggestions };
   }
-  return chatClient;
+  return { text, suggestions: [] };
 }
 
 function t(key) {
@@ -162,6 +220,96 @@ function setStatus(text) {
 function setTyping(active) {
   UI.loading?.classList.toggle('d-none', !active);
   UI.loading?.classList.toggle('active', active);
+}
+
+function normalizeSuggestions(rawSuggestions) {
+  if (!rawSuggestions) return [];
+  if (Array.isArray(rawSuggestions)) {
+    return rawSuggestions.map((item) => {
+      if (typeof item === 'string') return { label: item, action: item };
+      if (item && typeof item === 'object') return { label: item.label || item.action || String(item), action: item.action || item.label || String(item) };
+      return null;
+    }).filter(Boolean);
+  }
+  if (typeof rawSuggestions === 'string') {
+    return [{ label: rawSuggestions, action: rawSuggestions }];
+  }
+  return [];
+}
+
+function renderSuggestChips(message, suggestions = []) {
+  const chips = normalizeSuggestions(suggestions);
+  if (!chips.length) return;
+  const existing = message.querySelector('.assistant-suggestions');
+  if (existing) existing.remove();
+
+  const chipRow = document.createElement('div');
+  chipRow.className = 'assistant-suggestions';
+  chips.forEach((suggestion) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'assistant-suggestion-btn';
+    btn.textContent = suggestion.label;
+    btn.addEventListener('click', () => {
+      UI.input.value = suggestion.action;
+      UI.input.focus();
+      handleUserMessage();
+    });
+    chipRow.appendChild(btn);
+  });
+  chipRow.tabIndex = 0;
+  chipRow.addEventListener('keydown', (e) => {
+    const buttons = Array.from(chipRow.querySelectorAll('button'));
+    if (!buttons.length) return;
+    const idx = buttons.indexOf(document.activeElement);
+    let nextIdx = -1;
+
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      nextIdx = idx < 0 ? 0 : (idx + 1) % buttons.length;
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      nextIdx = idx < 0 ? buttons.length - 1 : (idx - 1 + buttons.length) % buttons.length;
+    } else if (e.key === 'Home') {
+      nextIdx = 0;
+    } else if (e.key === 'End') {
+      nextIdx = buttons.length - 1;
+    }
+
+    if (nextIdx >= 0) {
+      e.preventDefault();
+      buttons[nextIdx].focus();
+    }
+  });
+
+  message.appendChild(chipRow);
+}
+
+async function applyResponseConfig(message, rawText, opts = {}) {
+  const responseConfig = opts.responseConfig || null;
+  const { config, content } = responseConfig ? { config: responseConfig, content: rawText } : parseResponseConfig(rawText || '');
+  if (!config) return rawText;
+
+  const body = message.querySelector('.message-content');
+  if (!body) return rawText;
+
+  const finalText = content || rawText;
+  const animation = (config.animation || config.animation_type || '').toLowerCase();
+  const speed = parseInt(config.animation_speed || config.animationSpeed, 10) || 30;
+
+  if (animation === 'typing_effect') {
+    try {
+      await typeMessage(body, finalText, { speed });
+    } catch {
+      body.textContent = finalText;
+    }
+  } else {
+    body.textContent = finalText;
+  }
+
+  if (config.suggestions) {
+    renderSuggestChips(message, config.suggestions);
+  }
+
+  return finalText;
 }
 
 function updateLangButtons() {
@@ -376,49 +524,98 @@ async function handleUserMessage() {
   }
 
   setTyping(true);
-  setStatus(t('assistant_status'));
+  setStatus(t('status_thinking'));
   const started = performance.now();
-  try {
-    await ensurePuterReady({ interactive: false, t: (key) => t(key) });
 
-    const messages = await buildMessages(text);
-    const streamMessage = appendMessage(UI.messages, 'assistant', '', { ts: new Date().toISOString(), responseMs: 0 });
+  let usedModel;
+  
+  // Check if configured provider has valid API key
+  const hasFireworksKey = Boolean(window.FIREWORKS_API_KEY && window.FIREWORKS_API_KEY !== 'your_api_key_here');
+  const hasOpenRouterKey = Boolean(window.OPENROUTER_API_KEY && window.OPENROUTER_API_KEY !== 'your_api_key_here');
+  const isProviderConfigured = (assistantPrefs.provider === 'fireworks' && hasFireworksKey) || 
+                                (assistantPrefs.provider === 'openrouter' && hasOpenRouterKey);
+  
+  // Try configured provider first if API key is available
+  if (isProviderConfigured) {
+    try {
+      const apiMessages = [
+        { role: 'system', content: buildSystemPrompt() },
+        ...chatHistory.map((r) => ({ role: r.role, content: r.text })),
+        { role: 'user', content: text }
+      ];
+      
+      let model, response;
+      if (assistantPrefs.provider === 'openrouter') {
+        model = assistantPrefs.model && assistantPrefs.model.includes('/') ? assistantPrefs.model : 'openai/gpt-5.2';
+        response = await callOpenRouterAI(apiMessages, { stream: false, model });
+      } else {
+        model = assistantPrefs.model || 'accounts/fireworks/models/deepseek-v3p1';
+        response = await callFireworksAI(apiMessages, { stream: false, model });
+      }
+      
+      const reply = extractResponseText(response) || t('fallback_error');
+      usedModel = model.replace('accounts/fireworks/models/', '').replace('openai/', '');
 
-    const stream = await getChatClient().chatWithFallback(messages, { stream: true });
-    let textSoFar = '';
-    for await (const part of stream) {
-      if (typeof part?.text === 'string') {
-        textSoFar += part.text;
-        if (streamMessage) {
-          const body = streamMessage.querySelector('.message-content');
-          if (body) {
-            await animateBody(body, part.text, { append: true });
-            streamMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
-          }
+      const assistantMsg = await appendAssistant(UI.messages, reply, {
+        animate: true,
+        model: usedModel,
+        tools: true,
+        onRun: () => {
+          UI.input.value = reply;
+          handleUserMessage();
         }
-      }
+      });
+      const finalContent = await applyResponseConfig(assistantMsg, reply, { responseConfig: {} });
+      const responseMs = Math.max(0, Math.round(performance.now() - started));
+      chatHistory.push({ role: 'assistant', text: finalContent, ts: new Date().toISOString(), responseMs });
+      historyStore.save(chatHistory);
+      setStatus(t('assistant_status'));
+      setTyping(false);
+      historyStore.updateActivity();
+      return;
+    } catch (providerErr) {
+      console.log('Settings provider failed, falling back to Puter:', providerErr.message);
+      // Fall through to Puter.js fallback
     }
+  }
+  
+  // Use Puter.js directly (no sign-in required)
+  try {
+    await ensurePuterReady({ interactive: false, allowAuth: false, t: (key) => t(key) });
+    const puter = await getPuterClient();
+    const model = assistantPrefs.model || 'gemini-2.0-flash';
+    usedModel = model;
+    
+    const apiMessages = [
+      { role: 'system', content: buildSystemPrompt() },
+      ...chatHistory.map((r) => ({ role: r.role, content: r.text })),
+      { role: 'user', content: text }
+    ];
+    
+    const response = await puter.ai.chat(apiMessages, { model: model, stream: false });
+    const reply = extractResponseText(response) || t('fallback_error');
 
+    const assistantMsg = await appendAssistant(UI.messages, reply, {
+      animate: true,
+      model: usedModel,
+      tools: true,
+      onRun: () => {
+        UI.input.value = reply;
+        handleUserMessage();
+      }
+    });
+    const finalContent = await applyResponseConfig(assistantMsg, reply, { responseConfig: {} });
     const responseMs = Math.max(0, Math.round(performance.now() - started));
-    if (streamMessage) {
-      const meta = streamMessage.querySelector('.message-time');
-      if (meta) {
-        const duration = responseMs < 1000 ? `${responseMs}ms` : `${(responseMs / 1000).toFixed(1)}s`;
-        meta.textContent = `${t('response_time_label')}: ${duration}`;
-      }
-    }
-
-    chatHistory.push({ role: 'assistant', text: textSoFar, ts: new Date().toISOString(), responseMs });
+    chatHistory.push({ role: 'assistant', text: finalContent, ts: new Date().toISOString(), responseMs });
     historyStore.save(chatHistory);
     setStatus(t('assistant_status'));
-  } catch (err) {
-    const msg = String(err?.message || t('fallback_error'));
+  } catch (puterErr) {
+    const msg = String(puterErr?.message || t('fallback_error'));
     await appendAssistant(UI.messages, msg, { animate: true });
     setStatus(msg);
-  } finally {
-    setTyping(false);
-    historyStore.updateActivity();
   }
+  setTyping(false);
+  historyStore.updateActivity();
 }
 
 function sendSupportMessage(messageText) {
@@ -440,7 +637,8 @@ function sendSupportMessage(messageText) {
   return true;
 }
 
-function init() {
+async function init() {
+  await loadAssistantPrefs();
   loadUserInfo();
   const { history, expired } = historyStore.load();
   chatHistory = history;

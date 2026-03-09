@@ -15,7 +15,6 @@ use App\Modules\Scraper\DuplicateCheckerService;
 use App\Modules\Scraper\ImageDownloaderService;
 use App\Modules\Scraper\MultiLayerScraperService;
 use App\Modules\Scraper\SitemapCrawlerService;
-use App\Models\MobileModel;
 
 // Ensure database tables exist
 $autoContentModel = new AutoContentModel($mysqli);
@@ -657,8 +656,6 @@ $router->post('/admin/autocontent/api/ai-detect-selectors', [], function () use 
 
     try {
         $url = $_POST['url'] ?? '';
-        $pageLayer = $_POST['page_layer'] ?? 'category';
-        $scraperMethod = $_POST['scraper_method'] ?? 'guzzle-symfony';
 
         if (empty($url)) {
             echo json_encode(['success' => false, 'message' => 'URL is required']);
@@ -670,33 +667,37 @@ $router->post('/admin/autocontent/api/ai-detect-selectors', [], function () use 
             exit;
         }
 
-        // Fetch cleaned HTML first, then let AI infer selectors from the HTML itself.
-        $detector = new \App\Modules\Scraper\SelectorDetectorService();
-        $preparedHtml = $detector->prepareCleanHtmlPayload($url, [
-            'page_layer' => $pageLayer,
-            'scraper_method' => $scraperMethod
+        // Fetch raw HTML
+        $html = '';
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            CURLOPT_ENCODING => '',
         ]);
-        $result = detectSelectorsWithAI($preparedHtml['html'] ?? '', $url, $pageLayer);
-        
-        // Handle both flat array and structured response
-        $selectors = [];
-        $metadata = null;
-        if (isset($result['selectors'])) {
-            $selectors = $result['selectors'];
-            $metadata = $result['_metadata'] ?? null;
-        } else {
-            // Legacy flat array format
-            $selectors = $result;
+        $html = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if (empty($html) || $httpCode !== 200) {
+            echo json_encode(['success' => false, 'message' => 'Failed to fetch URL content (HTTP ' . $httpCode . ')']);
+            exit;
         }
+
+        // Use AI to detect selectors
+        $selectors = detectSelectorsWithAI($html, $url);
 
         echo json_encode([
             'success' => true,
-            'message' => 'Selectors detected successfully from cleaned HTML',
+            'message' => 'AI selectors detected successfully',
             'selectors' => $selectors,
-            'metadata' => $metadata,
-            'method' => $scraperMethod,
-            'page_layer' => $pageLayer,
-            'html_length' => $preparedHtml['clean_length'] ?? 0
+            'method' => 'ai'
         ]);
         exit;
     } catch (Throwable $e) {
@@ -708,34 +709,18 @@ $router->post('/admin/autocontent/api/ai-detect-selectors', [], function () use 
 
 /**
  * Use Puter AI to detect CSS selectors from HTML
- * Returns structured JSON with confidence scores and metadata
  */
-function detectSelectorsWithAI(string $html, string $url, string $pageLayer = 'category'): array
+function detectSelectorsWithAI(string $html, string $url): array
 {
-    $fallbackSelectors = analyzeHtmlStructure($html, $url, $pageLayer);
-    $structuredResult = [
-        'selectors' => [],
-        'metadata' => [
-            'source' => 'ai',
-            'method' => 'puter-ai',
-            'page_layer' => $pageLayer,
-            'url' => $url,
-            'confidence' => 'high',
-            'timestamp' => date('c')
-        ]
-    ];
-
     // Prepare HTML sample (limit to 30KB for API efficiency)
     $htmlSample = substr($html, 0, 30000);
 
-    // Build prompt for AI with structured JSON output request
+    // Build prompt for AI
     $prompt = "Analyze this HTML from URL: {$url}\n\nHTML (first 30KB):\n{$htmlSample}\n\n";
     $prompt .= 'Return a JSON object with CSS selectors for web scraping. Use these exact field names: ';
     $prompt .= 'list_container, list_item, list_title, list_link, list_date, list_image, title, content, image, excerpt, date, author. ';
-    $prompt .= 'Use CSS selectors only. Do not return XPath. Avoid generic selectors like body, html, div, or //body. ';
-    $prompt .= "This page should be treated as a {$pageLayer} page. ";
-    $prompt .= 'Prefer stable class-based selectors, but return empty strings for fields that do not exist.';
-    $prompt .= "\n\nReturn your response as a clean JSON object with confidence scores (0-100) for each selector. Example format: \"{\"list_container\": {\"selector\": \".news-list\", \"confidence\": 85}, ...}\"";
+    $prompt .= 'Use class selectors (.class) not IDs (#id) for flexibility. Prefer semantic HTML5 (article, section, time). ';
+    $prompt .= 'Look for card, item, post, article, story, news in class names.';
 
     // Call Puter AI API
     $apiUrl = 'https://api.puter.com/ai/chat';
@@ -762,29 +747,12 @@ function detectSelectorsWithAI(string $html, string $url, string $pageLayer = 'c
 
     $response = curl_exec($ch);
     $error = curl_error($ch);
-    $statusCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    if ($error || empty($response) || $statusCode >= 400) {
-        logDebug('AI selector detection fell back to local detection', [
-            'source' => 'fallback',
-            'reason' => 'http_error_or_empty_response',
-            'url' => $url,
-            'page_layer' => $pageLayer,
-            'http_status' => $statusCode,
-            'curl_error' => $error ?: null,
-            'response_length' => strlen((string) $response),
-            'fallback_selector_count' => countDetectedSelectors($fallbackSelectors),
-        ]);
-        error_log("AI detection failed, falling back to local detection. HTTP {$statusCode}; error: " . $error);
-        
-        // Return structured fallback response
-        $structuredResult['selectors'] = $fallbackSelectors;
-        $structuredResult['metadata']['source'] = 'fallback';
-        $structuredResult['metadata']['method'] = 'pattern-analysis';
-        $structuredResult['metadata']['confidence'] = 'medium';
-        $structuredResult['metadata']['reason'] = 'AI API error';
-        return $structuredResult['selectors'];
+    if ($error || empty($response)) {
+        // Fallback to pattern-based detection
+        error_log("AI detection failed, falling back to pattern detection: " . $error);
+        return analyzeHtmlStructure($html, $url);
     }
 
     $data = json_decode($response, true);
@@ -798,86 +766,22 @@ function detectSelectorsWithAI(string $html, string $url, string $pageLayer = 'c
     }
 
     if (empty($content)) {
-        logDebug('AI selector detection fell back to local detection', [
-            'source' => 'fallback',
-            'reason' => 'empty_ai_content',
-            'url' => $url,
-            'page_layer' => $pageLayer,
-            'http_status' => $statusCode,
-            'response_length' => strlen($response),
-            'fallback_selector_count' => countDetectedSelectors($fallbackSelectors),
-        ]);
-        error_log('AI detection returned empty content, falling back to local detection.');
-        
-        // Return structured fallback response
-        $structuredResult['selectors'] = $fallbackSelectors;
-        $structuredResult['metadata']['source'] = 'fallback';
-        $structuredResult['metadata']['method'] = 'pattern-analysis';
-        $structuredResult['metadata']['confidence'] = 'medium';
-        $structuredResult['metadata']['reason'] = 'Empty AI response';
-        return $structuredResult['selectors'];
+        return analyzeHtmlStructure($html, $url);
     }
 
     // Parse JSON from response
-    $parsedSelectors = parseAISelectorResponse($content);
-    
-    if (countDetectedSelectors($parsedSelectors) === 0) {
-        logDebug('AI selector detection fell back to local detection', [
-            'source' => 'fallback',
-            'reason' => 'unparseable_or_empty_selector_payload',
-            'url' => $url,
-            'page_layer' => $pageLayer,
-            'http_status' => $statusCode,
-            'response_length' => strlen($response),
-            'ai_content_preview' => substr(trim($content), 0, 300),
-            'fallback_selector_count' => countDetectedSelectors($fallbackSelectors),
-        ]);
-
-        // Return structured fallback response
-        $structuredResult['selectors'] = normalizeDetectedSelectors($fallbackSelectors, $pageLayer);
-        $structuredResult['metadata']['source'] = 'fallback';
-        $structuredResult['metadata']['method'] = 'pattern-analysis';
-        $structuredResult['metadata']['confidence'] = 'medium';
-        $structuredResult['metadata']['reason'] = 'Unparseable AI response';
-        return $structuredResult['selectors'];
-    }
-
-    $selectors = normalizeDetectedSelectors($parsedSelectors, $pageLayer);
+    $selectors = parseAISelectorResponse($content);
 
     // Validate and merge with pattern-based detection as backup
-    foreach ($fallbackSelectors as $key => $value) {
+    $patternSelectors = analyzeHtmlStructure($html, $url);
+
+    foreach ($patternSelectors as $key => $value) {
         if (empty($selectors[$key]) && !empty($value)) {
             $selectors[$key] = $value;
         }
     }
 
-    $normalizedSelectors = normalizeDetectedSelectors($selectors, $pageLayer);
-
-    logDebug('AI selector detection used API response', [
-        'source' => 'ai_response',
-        'reason' => 'ai_payload_parsed',
-        'url' => $url,
-        'page_layer' => $pageLayer,
-        'http_status' => $statusCode,
-        'response_length' => strlen($response),
-        'ai_selector_count' => countDetectedSelectors($parsedSelectors),
-        'final_selector_count' => countDetectedSelectors($normalizedSelectors),
-        'final_selector_keys' => array_keys(array_filter(
-            $normalizedSelectors,
-            static fn($value): bool => trim((string) $value) !== ''
-        )),
-    ]);
-
-    // Add structured metadata to return value for API response
-    return [
-        'selectors' => $normalizedSelectors,
-        '_metadata' => [
-            'source' => 'ai',
-            'method' => 'puter-ai',
-            'confidence' => 'high',
-            'detected_at' => date('c')
-        ]
-    ];
+    return $selectors;
 }
 
 /**
@@ -885,63 +789,7 @@ function detectSelectorsWithAI(string $html, string $url, string $pageLayer = 'c
  */
 function parseAISelectorResponse(string $response): array
 {
-    $default = getEmptySelectorMap();
-
-    try {
-        // Try to find JSON in the response
-        if (preg_match('/\{[\s\S]*\}/', $response, $matches)) {
-            $parsed = json_decode($matches[0], true);
-            if (is_array($parsed)) {
-                // Check if it's structured with confidence scores
-                $selectors = extractSelectorsWithConfidence($response, $parsed);
-                return $selectors;
-            }
-        }
-    } catch (Throwable $e) {
-        error_log("Parse AI selector error: " . $e->getMessage());
-    }
-
-    return $default;
-}
-
-/**
- * Extract selectors with confidence scores from AI response
- * Supports structured JSON: {"selector": "value", "confidence": 85}
- * or simple key-value pairs
- */
-function extractSelectorsWithConfidence(string $response, array $parsed): array
-{
-    $default = getEmptySelectorMap();
-    $result = [];
-    
-    $selectorFields = [
-        'list_container', 'list_item', 'list_title', 'list_link', 'list_date', 'list_image',
-        'title', 'content', 'image', 'excerpt', 'date', 'author'
-    ];
-    
-    foreach ($selectorFields as $field) {
-        if (isset($parsed[$field])) {
-            $value = $parsed[$field];
-            
-            // Check if structured format: {"selector": "...", "confidence": 85}
-            if (is_array($value) && isset($value['selector'])) {
-                $result[$field] = $value['selector'];
-            } elseif (is_array($value) && isset($value['value'])) {
-                $result[$field] = $value['value'];
-            } else {
-                $result[$field] = is_string($value) ? $value : '';
-            }
-        } else {
-            $result[$field] = '';
-        }
-    }
-    
-    return array_merge($default, $result);
-}
-
-function getEmptySelectorMap(): array
-{
-    return [
+    $default = [
         'list_container' => '',
         'list_item' => '',
         'list_title' => '',
@@ -955,80 +803,42 @@ function getEmptySelectorMap(): array
         'date' => '',
         'author' => ''
     ];
-}
 
-function countDetectedSelectors(array $selectors): int
-{
-    $count = 0;
-
-    foreach ($selectors as $value) {
-        if (trim((string) $value) !== '') {
-            $count++;
+    try {
+        // Try to find JSON in the response
+        if (preg_match('/\{[\s\S]*\}/', $response, $matches)) {
+            $parsed = json_decode($matches[0], true);
+            if (is_array($parsed)) {
+                return array_merge($default, $parsed);
+            }
         }
+    } catch (Throwable $e) {
+        error_log("Parse AI selector error: " . $e->getMessage());
     }
 
-    return $count;
-}
-
-function normalizeDetectedSelectors(array $selectors, string $pageLayer = 'category'): array
-{
-    $normalized = getEmptySelectorMap();
-    $genericSelectors = ['body', 'html', '//body', '//html', './/body', './/html', '/html/body'];
-
-    foreach ($normalized as $key => $_) {
-        $value = trim((string) ($selectors[$key] ?? ''));
-        $value = preg_replace('/\s+/', ' ', $value) ?? $value;
-
-        if ($value === '' || in_array(strtolower($value), $genericSelectors, true)) {
-            $normalized[$key] = '';
-            continue;
-        }
-
-        if (strpos($value, '//') === 0 || strpos($value, './/') === 0) {
-            $normalized[$key] = '';
-            continue;
-        }
-
-        $normalized[$key] = $value;
-    }
-
-    if ($pageLayer === 'article') {
-        $normalized['list_container'] = '';
-        $normalized['list_item'] = '';
-        $normalized['list_title'] = '';
-        $normalized['list_link'] = '';
-        $normalized['list_date'] = '';
-        $normalized['list_image'] = '';
-    }
-
-    return $normalized;
+    return $default;
 }
 
 /**
  * Analyze HTML structure to guess CSS selectors
  */
-function analyzeHtmlStructure(string $html, string $url, string $pageLayer = 'category'): array
+function analyzeHtmlStructure(string $html, string $url): array
 {
-    $selectors = getEmptySelectorMap();
+    $selectors = [
+        'list_container' => '',
+        'list_item' => '',
+        'list_title' => '',
+        'list_date' => '',
+        'title' => '',
+        'content' => '',
+        'image' => '',
+        'excerpt' => '',
+        'date' => '',
+        'author' => ''
+    ];
 
     if (empty($html)) {
         return $selectors;
-    }
-
-    if (strpos($url, 'bdcgny.org') !== false) {
-        if ($pageLayer === 'article') {
-            $selectors['title'] = '.white-bg .jumbotron p[align="center"] strong, .white-bg .jumbotron h1, .white-bg .jumbotron h2';
-            $selectors['content'] = '.white-bg .jumbotron';
-            $selectors['excerpt'] = 'meta[name="description"]';
-            $selectors['image'] = 'meta[property="og:image"], .white-bg .jumbotron img';
-            return normalizeDetectedSelectors($selectors, $pageLayer);
-        }
-
-        $selectors['list_container'] = '.white-bg, .blog-right, .recent-news';
-        $selectors['list_item'] = '.recent-news .listy, .blog-right .listy';
-        $selectors['list_title'] = '.recent-news .listy a, .blog-right .listy a';
-        $selectors['list_link'] = '.recent-news .listy a, .blog-right .listy a';
-        return normalizeDetectedSelectors($selectors, $pageLayer);
     }
 
     // Check for known Bengali news sites
@@ -1046,7 +856,7 @@ function analyzeHtmlStructure(string $html, string $url, string $pageLayer = 'ca
         $selectors['excerpt'] = 'meta[name="description"]';
         $selectors['date'] = 'time[datetime]';
         $selectors['author'] = '.author-name, .contributor-name';
-        return normalizeDetectedSelectors($selectors, $pageLayer);
+        return $selectors;
     }
 
     // BD News 24 Bengali
@@ -1064,7 +874,7 @@ function analyzeHtmlStructure(string $html, string $url, string $pageLayer = 'ca
         $selectors['excerpt'] = '.details-title h2, h2.shoulder-text';
         $selectors['date'] = '.pub-up .pub, .pub-up span:first-child';
         $selectors['author'] = '.author-name-wrap .author, .detail-author-name .author';
-        return normalizeDetectedSelectors($selectors, $pageLayer);
+        return $selectors;
     }
 
     if (strpos($url, 'bbc.com') !== false) {
@@ -1075,7 +885,7 @@ function analyzeHtmlStructure(string $html, string $url, string $pageLayer = 'ca
 
         $selectors['title'] = 'h1';
         $selectors['content'] = 'article';
-        return normalizeDetectedSelectors($selectors, $pageLayer);
+        return $selectors;
     }
 
     // General detection for unknown sites
@@ -1087,94 +897,153 @@ function analyzeHtmlStructure(string $html, string $url, string $pageLayer = 'ca
 
         $xpath = new \DOMXPath($dom);
 
-        if ($pageLayer === 'article') {
-            $contentNode = findBestContentNode($xpath);
-            $titleNode = findBestTitleNode($xpath, $contentNode);
+        // Detect List Page Selectors
+        // Look for containers with multiple similar items
+        $listContainerCandidates = [
+            '//div[contains(@class, "list") or contains(@class, "feed") or contains(@class, "articles")]',
+            '//section[contains(@class, "list") or contains(@class, "feed")]',
+            '//ul[contains(@class, "list") or contains(@class, "articles")]',
+            '//main',
+            '//body'
+        ];
+        $selectors['list_container'] = findFirstWorkingSelector($xpath, $listContainerCandidates);
 
-            if ($contentNode instanceof \DOMElement) {
-                $selectors['content'] = buildCssSelector($contentNode);
-            }
-            if ($titleNode instanceof \DOMElement) {
-                $selectors['title'] = buildCssSelector($titleNode);
-            }
+        // Look for article items within containers
+        $listItemCandidates = [
+            './/article',
+            './/div[contains(@class, "item") or contains(@class, "post") or contains(@class, "article") or contains(@class, "story") or contains(@class, "news")]',
+            './/li[contains(@class, "item") or contains(@class, "post")]',
+            './/div[contains(@class, "card") or contains(@class, "block")]'
+        ];
+        $selectors['list_item'] = findFirstWorkingSelector($xpath, $listItemCandidates);
 
-            $selectors['image'] = findFirstWorkingCssSelector($xpath, [
-                'meta[property="og:image"]' => '//meta[@property="og:image"]/@content',
-                'meta[name="twitter:image"]' => '//meta[@name="twitter:image"]/@content',
-                'article img' => '//article//img[1]',
-                '.jumbotron img' => '//div[contains(concat(" ", normalize-space(@class), " "), " jumbotron ")]//img[1]',
-            ]);
-            $selectors['excerpt'] = findFirstWorkingCssSelector($xpath, [
-                'meta[name="description"]' => '//meta[@name="description"]/@content',
-                'meta[property="og:description"]' => '//meta[@property="og:description"]/@content',
-                '.excerpt' => '//*[contains(concat(" ", normalize-space(@class), " "), " excerpt ")]',
-                '.summary' => '//*[contains(concat(" ", normalize-space(@class), " "), " summary ")]',
-            ]);
-            $selectors['date'] = findFirstWorkingCssSelector($xpath, [
-                'time[datetime]' => '//time[@datetime]',
-                'time' => '//time',
-                '.publish-date' => '//*[contains(@class, "publish") and contains(@class, "date")]',
-                '.date' => '//*[contains(concat(" ", normalize-space(@class), " "), " date ")]',
-            ]);
-            $selectors['author'] = findFirstWorkingCssSelector($xpath, [
-                'meta[name="author"]' => '//meta[@name="author"]/@content',
-                '.author' => '//*[contains(concat(" ", normalize-space(@class), " "), " author ")]',
-                '.byline' => '//*[contains(concat(" ", normalize-space(@class), " "), " byline ")]',
-            ]);
+        // Look for title links within items
+        $listTitleCandidates = [
+            './/h1//a',
+            './/h2//a',
+            './/h3//a',
+            './/h4//a',
+            './/a[contains(@class, "title") or contains(@class, "headline") or contains(@href, "article") or contains(@href, "post")]',
+            './/a[string-length(text()) > 10]' // Links with substantial text
+        ];
+        $selectors['list_title'] = findFirstWorkingSelector($xpath, $listTitleCandidates);
 
-            return normalizeDetectedSelectors($selectors, $pageLayer);
-        }
+        // Look for dates in list
+        $listDateCandidates = [
+            './/time',
+            './/span[contains(@class, "date") or contains(@class, "time") or contains(@class, "published")]',
+            './/div[contains(@class, "date") or contains(@class, "time")]'
+        ];
+        $selectors['list_date'] = findFirstWorkingSelector($xpath, $listDateCandidates);
 
-        $selectors['list_container'] = findFirstWorkingCssSelector($xpath, [
-            '.news-list' => '//*[contains(@class, "news-list")]',
-            '.article-list' => '//*[contains(@class, "article-list")]',
-            '.content-list' => '//*[contains(@class, "content-list")]',
-            'main' => '//main',
-        ]);
-        $selectors['list_item'] = findFirstWorkingCssSelector($xpath, [
-            'article' => '//article',
-            '.news-item' => '//*[contains(@class, "news-item")]',
-            '.article-item' => '//*[contains(@class, "article-item")]',
-            '.card' => '//*[contains(concat(" ", normalize-space(@class), " "), " card ")]',
-        ]);
-        $selectors['list_title'] = findFirstWorkingCssSelector($xpath, [
-            'h3 a' => '//h3//a',
-            'h2 a' => '//h2//a',
-            '.title a' => '//*[contains(concat(" ", normalize-space(@class), " "), " title ")]//a | //a[contains(concat(" ", normalize-space(@class), " "), " title ")]',
-            '.headline a' => '//*[contains(concat(" ", normalize-space(@class), " "), " headline ")]//a | //a[contains(concat(" ", normalize-space(@class), " "), " headline ")]',
-        ]);
-        $selectors['list_link'] = $selectors['list_title'];
-        $selectors['list_date'] = findFirstWorkingCssSelector($xpath, [
-            'time' => '//time',
-            '.date' => '//*[contains(concat(" ", normalize-space(@class), " "), " date ")]',
-            '.published' => '//*[contains(@class, "published")]',
-        ]);
+        // Detect Article Page Selectors - expanded list
+        $titleCandidates = [
+            '//h1',
+            '//h1[contains(@class, "title")]',
+            '//h1[contains(@class, "headline")]',
+            '//article//h1',
+            '//div[contains(@class, "headline")]/h1',
+            '//div[contains(@class, "post")]/h1',
+            '//div[contains(@class, "article")]/h1',
+            '//div[contains(@class, "story")]/h1',
+            '//meta[@property="og:title"]/@content',
+            '//meta[@name="twitter:title"]/@content',
+            '//head/title'
+        ];
+        $selectors['title'] = findFirstWorkingSelector($xpath, $titleCandidates);
+
+        // Detect Content Selector - expanded list
+        $contentCandidates = [
+            '//article',
+            '//article[contains(@class, "content")]',
+            '//article[contains(@class, "article")]',
+            '//div[contains(@class, "content")]',
+            '//div[contains(@class, "post-content")]',
+            '//div[contains(@class, "entry-content")]',
+            '//div[contains(@class, "article-content")]',
+            '//div[contains(@class, "story-content")]',
+            '//div[contains(@class, "post-body")]',
+            '//main',
+            '//main[contains(@class, "content")]',
+            '//section[contains(@class, "content")]'
+        ];
+        $selectors['content'] = findFirstWorkingSelector($xpath, $contentCandidates);
+
+        // Detect Image Selector - expanded list
+        $imageCandidates = [
+            '//meta[@property="og:image"]/@content',
+            '//meta[@property="og:image:url"]/@content',
+            '//meta[@name="twitter:image"]/@content',
+            '//meta[@name="twitter:image:src"]/@content',
+            '//article//img[contains(@class, "featured")]/@src',
+            '//article//img[contains(@class, "thumbnail")]/@src',
+            '//article//img[1]/@src',
+            '//div[contains(@class, "featured")]/img/@src',
+            '//div[contains(@class, "thumbnail")]/img/@src',
+            '//div[contains(@class, "story")]/img/@src'
+        ];
+        $selectors['image'] = findFirstWorkingSelector($xpath, $imageCandidates);
+
+        // Detect Excerpt Selector
+        $excerptCandidates = [
+            '//meta[@name="description"]/@content',
+            '//meta[@property="og:description"]/@content',
+            '//div[contains(@class, "excerpt")]',
+            '//div[contains(@class, "summary")]',
+            '//div[contains(@class, "description")]'
+        ];
+        $selectors['excerpt'] = findFirstWorkingSelector($xpath, $excerptCandidates);
+
+        // Detect Date Selector - expanded list
+        $dateCandidates = [
+            '//meta[@property="article:published_time"]/@content',
+            '//meta[@property="og:updated_time"]/@content',
+            '//meta[@name="date"]/@content',
+            '//meta[@name="pubdate"]/@content',
+            '//time/@datetime',
+            '//time[contains(@class, "published")]',
+            '//time[contains(@class, "date")]',
+            '//span[contains(@class, "published")]',
+            '//span[contains(@class, "date")]',
+            '//span[contains(@class, "timestamp")]',
+            '//span[contains(@class, "time")]',
+            '//div[contains(@class, "published")]',
+            '//div[contains(@class, "date")]'
+        ];
+        $selectors['date'] = findFirstWorkingSelector($xpath, $dateCandidates);
+
+        // Detect Author Selector - expanded list
+        $authorCandidates = [
+            '//meta[@name="author"]/@content',
+            '//meta[@property="article:author"]/@content',
+            '//span[contains(@class, "author")]',
+            '//span[contains(@class, "byline")]',
+            '//span[contains(@class, "writer")]',
+            '//a[contains(@class, "author")]',
+            '//a[contains(@class, "byline")]',
+            '//div[contains(@class, "author")]',
+            '//div[contains(@class, "byline")]'
+        ];
+        $selectors['author'] = findFirstWorkingSelector($xpath, $authorCandidates);
     } catch (\Exception $e) {
         error_log("HTML Analysis Error: " . $e->getMessage());
     }
 
-    return normalizeDetectedSelectors($selectors, $pageLayer);
+    return $selectors;
 }
 
 /**
- * Find the first CSS selector whose XPath candidate returns a meaningful node.
+ * Find the first XPath that returns results
  */
-function findFirstWorkingCssSelector(\DOMXPath $xpath, array $candidates): string
+function findFirstWorkingSelector(\DOMXPath $xpath, array $candidates): string
 {
-    foreach ($candidates as $cssSelector => $xpathQuery) {
+    foreach ($candidates as $xpathQuery) {
         try {
             $nodes = $xpath->query($xpathQuery);
             if ($nodes && $nodes->length > 0) {
                 $node = $nodes->item(0);
-                $value = '';
-                if ($node instanceof \DOMAttr) {
-                    $value = trim((string) $node->value);
-                } elseif ($node instanceof \DOMNode) {
-                    $value = trim((string) ($node->nodeValue ?? $node->textContent ?? ''));
-                }
-
-                if ($value !== '' || $node instanceof \DOMElement) {
-                    return $cssSelector;
+                if ($node && !empty(trim($node->nodeValue ?? $node->textContent ?? ''))) {
+                    return $xpathQuery;
                 }
             }
         } catch (\Exception $e) {
@@ -1182,223 +1051,6 @@ function findFirstWorkingCssSelector(\DOMXPath $xpath, array $candidates): strin
         }
     }
     return '';
-}
-
-function findBestContentNode(\DOMXPath $xpath): ?\DOMElement
-{
-    $nodes = $xpath->query('//article | //main | //section | //div');
-    if (!$nodes) {
-        return null;
-    }
-
-    $bestNode = null;
-    $bestScore = 0;
-
-    foreach ($nodes as $node) {
-        if (!$node instanceof \DOMElement) {
-            continue;
-        }
-
-        $className = strtolower($node->getAttribute('class'));
-        if (preg_match('/nav|menu|header|footer|sidebar|search|breadcrumb|recent-news|blog-right|widget/', $className)) {
-            continue;
-        }
-
-        $text = normalizeSelectorText($node->textContent ?? '');
-        $textLength = function_exists('mb_strlen') ? mb_strlen($text) : strlen($text);
-        if ($textLength < 300) {
-            continue;
-        }
-
-        $paragraphs = $xpath->query('.//p', $node)?->length ?? 0;
-        $listItems = $xpath->query('.//li', $node)?->length ?? 0;
-        $headings = $xpath->query('.//h1 | .//h2 | .//h3 | .//strong', $node)?->length ?? 0;
-
-        $score = $textLength + ($paragraphs * 120) + ($listItems * 60) + ($headings * 40);
-
-        if (preg_match('/content|article|story|entry|body|main|jumbotron|detail/', $className)) {
-            $score += 400;
-        }
-
-        if ($score > $bestScore) {
-            $bestScore = $score;
-            $bestNode = $node;
-        }
-    }
-
-    return $bestNode;
-}
-
-function findBestTitleNode(\DOMXPath $xpath, ?\DOMElement $contentNode = null): ?\DOMElement
-{
-    if ($contentNode instanceof \DOMElement) {
-        $nodes = $xpath->query('.//h1 | .//h2 | .//h3 | .//p[strong or em or u] | .//strong[parent::p]', $contentNode);
-    } else {
-        $nodes = $xpath->query('//h1 | //h2 | //h3 | //p[strong or em or u] | //strong[parent::p]');
-    }
-    if (!$nodes) {
-        return null;
-    }
-
-    $bestNode = null;
-    $bestScore = 0;
-    $position = 0;
-
-    foreach ($nodes as $node) {
-        $position++;
-        if (!$node instanceof \DOMElement) {
-            continue;
-        }
-
-        $text = normalizeSelectorText($node->textContent ?? '');
-        $length = function_exists('mb_strlen') ? mb_strlen($text) : strlen($text);
-        if ($length < 8 || $length > 220) {
-            continue;
-        }
-
-        $score = 300 - min($position * 5, 120);
-        $tagName = strtolower($node->tagName);
-
-        if ($tagName === 'h1') {
-            $score += 250;
-        } elseif ($tagName === 'h2') {
-            $score += 180;
-        } elseif ($tagName === 'h3') {
-            $score += 120;
-        }
-
-        if ($node->getAttribute('align') === 'center') {
-            $score += 100;
-        }
-
-        if ($xpath->query('.//strong | .//em | .//u', $node)?->length > 0) {
-            $score += 80;
-        }
-
-        if (preg_match('/step|other conditions|procedure/i', $text)) {
-            $score -= 150;
-        }
-
-        if ($score > $bestScore) {
-            $bestScore = $score;
-            $bestNode = $node;
-        }
-    }
-
-    return $bestNode;
-}
-
-function buildCssSelector(\DOMNode $node): string
-{
-    if ($node instanceof \DOMAttr) {
-        $node = $node->ownerElement;
-    }
-
-    if (!$node instanceof \DOMElement) {
-        return '';
-    }
-
-    $segments = [];
-    $current = $node;
-
-    while ($current instanceof \DOMElement && strtolower($current->tagName) !== 'body') {
-        $segment = strtolower($current->tagName);
-        $id = trim($current->getAttribute('id'));
-
-        if ($id !== '' && preg_match('/^[A-Za-z][A-Za-z0-9\-_:\.]*$/', $id)) {
-            array_unshift($segments, '#' . $id);
-            break;
-        }
-
-        $classes = getUsefulCssClasses($current);
-        if (!empty($classes)) {
-            $segment .= '.' . implode('.', array_slice($classes, 0, 2));
-        } else {
-            $segment .= getNthOfTypeSuffix($current);
-        }
-
-        array_unshift($segments, $segment);
-        $current = $current->parentNode instanceof \DOMElement ? $current->parentNode : null;
-    }
-
-    return implode(' > ', $segments);
-}
-
-function getUsefulCssClasses(\DOMElement $node): array
-{
-    $classAttr = trim($node->getAttribute('class'));
-    if ($classAttr === '') {
-        return [];
-    }
-
-    $ignoredPatterns = [
-        '/^col-(xs|sm|md|lg)-\d+$/i',
-        '/^row$/i',
-        '/^container$/i',
-        '/^pull-(left|right)$/i',
-        '/^navbar/i',
-        '/^nav$/i',
-        '/^dropdown/i',
-        '/^btn/i',
-        '/^fa/i',
-        '/^well$/i',
-        '/^input-group/i',
-        '/^form-control$/i',
-        '/^clearfix$/i',
-    ];
-
-    $classes = preg_split('/\s+/', $classAttr) ?: [];
-    $useful = [];
-
-    foreach ($classes as $className) {
-        $className = trim($className);
-        if ($className === '' || !preg_match('/^[A-Za-z_][A-Za-z0-9_-]*$/', $className)) {
-            continue;
-        }
-
-        $ignored = false;
-        foreach ($ignoredPatterns as $pattern) {
-            if (preg_match($pattern, $className)) {
-                $ignored = true;
-                break;
-            }
-        }
-
-        if (!$ignored) {
-            $useful[] = $className;
-        }
-    }
-
-    return array_values(array_unique($useful));
-}
-
-function getNthOfTypeSuffix(\DOMElement $node): string
-{
-    $index = 1;
-    $sibling = $node->previousSibling;
-
-    while ($sibling !== null) {
-        if ($sibling instanceof \DOMElement && strtolower($sibling->tagName) === strtolower($node->tagName)) {
-            $index++;
-        }
-        $sibling = $sibling->previousSibling;
-    }
-
-    $nextSibling = $node->nextSibling;
-    while ($nextSibling !== null) {
-        if ($nextSibling instanceof \DOMElement && strtolower($nextSibling->tagName) === strtolower($node->tagName)) {
-            return ':nth-of-type(' . $index . ')';
-        }
-        $nextSibling = $nextSibling->nextSibling;
-    }
-
-    return '';
-}
-
-function normalizeSelectorText(string $text): string
-{
-    $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
-    return trim($text);
 }
 
 /**
@@ -2309,10 +1961,7 @@ $router->post('/admin/autocontent/queue/edit', ['middleware' => ['auth', 'admin_
 
         // Update title if provided
         if (!empty($_POST['ai_title'])) {
-            $stmt = $mysqli->prepare("UPDATE autocontent_articles SET title = ? WHERE id = ?");
-            $stmt->bind_param("si", $_POST['ai_title'], $id);
-            $stmt->execute();
-            $stmt->close();
+            $mysqli->query("UPDATE autocontent_articles SET title = '" . $mysqli->real_escape_string($_POST['ai_title']) . "' WHERE id = " . $id);
         }
 
         if ($isAjax) {
@@ -2797,9 +2446,6 @@ $router->post('/admin/autocontent/api/save-preset', ['middleware' => ['auth', 'a
     header('Content-Type: application/json');
 
     try {
-        // Debug: log incoming data
-        error_log('save-preset received: ' . json_encode($_POST));
-        
         $data = [
             'id' => isset($_POST['id']) ? (int)$_POST['id'] : 0,
             'preset_key' => $_POST['preset_key'] ?? '',
@@ -2821,9 +2467,6 @@ $router->post('/admin/autocontent/api/save-preset', ['middleware' => ['auth', 'a
             'selector_category' => $_POST['selector_category'] ?? '',
             'selector_tags' => $_POST['selector_tags'] ?? ''
         ];
-
-        $data['preset_key'] = normalizePresetKey($data['preset_key'] ?: $data['name']);
-        $data['name'] = trim((string) $data['name']);
 
         if (empty($data['preset_key']) || empty($data['name'])) {
             echo json_encode([
@@ -2859,16 +2502,6 @@ $router->post('/admin/autocontent/api/save-preset', ['middleware' => ['auth', 'a
     }
     exit;
 });
-
-function normalizePresetKey(string $value): string
-{
-    $value = trim(strtolower($value));
-    $value = preg_replace('/[^a-z0-9]+/', '-', $value) ?? $value;
-    $value = trim($value, '-');
-    $value = preg_replace('/-+/', '-', $value) ?? $value;
-
-    return $value;
-}
 
 /**
  * Delete Website Preset

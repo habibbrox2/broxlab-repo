@@ -2,27 +2,28 @@
 
 namespace App\Modules\AutoContent;
 
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
+require_once __DIR__ . '/../../Models/AIProvider.php';
+
+use App\Models\AIProvider;
 
 /**
  * AI Content Enhancer Service
  * Uses AI to enhance, rewrite, and improve scraped content
+ * Now supports multiple AI providers via the AIProvider model
  */
 class AiContentEnhancer
 {
     private $mysqli;
     private $settings;
     private $model;
-    private $logger;
+    private $aiProvider;
 
     public function __construct(\mysqli $mysqli)
     {
         $this->mysqli = $mysqli;
         $this->model = new \AutoContentModel($mysqli);
         $this->settings = $this->model->getSettings();
-        $this->logger = new Logger('ai_enhancer');
-        $this->logger->pushHandler(new StreamHandler(__DIR__ . '/../../../logs/ai_enhancer.log', Logger::INFO));
+        $this->aiProvider = new AIProvider($mysqli);
     }
 
     /**
@@ -40,12 +41,19 @@ class AiContentEnhancer
             ];
         }
 
+        // Check if AI enhancement is enabled
+        $aiEnabled = $this->aiProvider->getSetting('content_enhancement_enabled', true);
+        if (!$aiEnabled) {
+            return [
+                'success' => false,
+                'message' => 'AI content enhancement is disabled'
+            ];
+        }
+
         // Update status to processing
         $this->model->updateArticleStatus($articleId, 'processing');
 
         try {
-            $this->logger->info('Starting AI processing for article', ['article_id' => $articleId]);
-
             // Get original content
             $originalTitle = $article['original_title'] ?? '';
             $originalContent = $article['original_content'] ?? '';
@@ -83,8 +91,6 @@ class AiContentEnhancer
             // Update status to processed
             $this->model->updateArticleStatus($articleId, 'processed');
 
-            $this->logger->info('AI processing completed', ['article_id' => $articleId, 'seo_score' => $seoScore, 'word_count' => $wordCount]);
-
             return [
                 'success' => true,
                 'message' => 'Article processed successfully',
@@ -92,7 +98,6 @@ class AiContentEnhancer
                 'word_count' => $wordCount
             ];
         } catch (\Exception $e) {
-            $this->logger->error('AI processing failed', ['article_id' => $articleId, 'error' => $e->getMessage()]);
             $this->model->updateArticleStatus($articleId, 'failed', $e->getMessage());
             return [
                 'success' => false,
@@ -102,28 +107,63 @@ class AiContentEnhancer
     }
 
     /**
-     * Enhance content using AI API
+     * Enhance content using AI API (using new AIProvider system)
      */
     private function enhanceContent(string $title, string $content, string $excerpt, string $sourceName): array
     {
-        $endpoint = $this->settings['ai_endpoint'] ?? '';
-        $model = $this->settings['ai_model'] ?? 'gpt-4o-mini';
-        $apiKey = $this->settings['ai_key'] ?? '';
+        // Get backend provider from settings (for AutoContent)
+        $backendProviderName = $this->aiProvider->getSetting('backend_provider', 'kilo');
 
-        // Use default Puter endpoint if not set
-        if (empty($endpoint)) {
-            $endpoint = 'https://api.puter.com/puterai/openai/v1/chat/completions';
+        // Get provider by name
+        $provider = $this->aiProvider->getByName($backendProviderName);
+
+        if (!$provider) {
+            throw new \Exception('No backend AI provider configured. Please configure Backend AI Provider in AI Settings.');
         }
+
+        $providerName = $provider['provider_name'];
+        $model = $this->aiProvider->getSetting('default_model', 'gpt-4o-mini');
 
         // Build the prompt
         $prompt = $this->buildEnhancementPrompt($title, $content, $excerpt, $sourceName);
 
-        // Make API request with fallback models
-        $models = ['openai/gpt-4o-mini', 'anthropic/claude-3-haiku', 'meta-llama/llama-3-8b-instruct'];
-        $response = $this->callAiApi($endpoint, $models, $apiKey, $prompt);
+        // Get additional settings
+        $maxTokens = $this->aiProvider->getSetting('max_tokens', 4000);
+        $temperature = $this->aiProvider->getSetting('temperature', 0.7);
+
+        // Make API request using the new provider system
+        $result = $this->aiProvider->callAPI(
+            $providerName,
+            $model,
+            $prompt,
+            [
+                'max_tokens' => $maxTokens,
+                'temperature' => $temperature
+            ]
+        );
+
+        if (!$result['success']) {
+            // Try fallback if enabled
+            $enableFallback = $this->aiProvider->getSetting('enable_fallback', true);
+            if ($enableFallback && $providerName !== 'kilo') {
+                // Try Kilo as fallback
+                $fallbackResult = $this->aiProvider->callAPI(
+                    'kilo',
+                    'gpt-4o-mini',
+                    $prompt,
+                    ['max_tokens' => $maxTokens, 'temperature' => $temperature]
+                );
+
+                if ($fallbackResult['success']) {
+                    return $this->parseAiResponse($fallbackResult['content'], $title, $content);
+                }
+            }
+
+            throw new \Exception('AI API error: ' . ($result['error'] ?? 'Unknown error'));
+        }
 
         // Parse the response
-        return $this->parseAiResponse($response, $title, $content);
+        return $this->parseAiResponse($result['content'], $title, $content);
     }
 
     /**
@@ -168,72 +208,36 @@ PROMPT;
     }
 
     /**
-     * Call AI API
-     */
-    private function callAiApi(string $endpoint, array $models, string $apiKey, string $prompt): string
-    {
-        $headers = [
-            'Content-Type: application/json',
-        ];
-
-        if (!empty($apiKey)) {
-            $headers[] = 'Authorization: Bearer ' . $apiKey;
-        }
-
-        foreach ($models as $model) {
-            $data = [
-                'model' => $model,
-                'messages' => [
-                    [
-                        'role' => 'user',
-                        'content' => $prompt
-                    ]
-                ],
-                'temperature' => 0.7,
-                'max_tokens' => 4000
-            ];
-
-            $ch = curl_init($endpoint);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 120);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-            if (curl_errno($ch)) {
-                curl_close($ch);
-                continue;
-            }
-
-            curl_close($ch);
-
-            if ($httpCode === 200) {
-                return $response;
-            }
-        }
-
-        throw new \Exception('All AI API calls failed');
-    }
-
-    /**
      * Parse AI API response
      */
     private function parseAiResponse(string $response, string $defaultTitle, string $defaultContent): array
     {
+        // Handle different response formats based on provider
         $data = json_decode($response, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new \Exception('Failed to parse AI response');
         }
 
-        // Try to extract JSON from response
-        $content = $data['choices'][0]['message']['content'] ?? '';
+        // Try to extract JSON from response (some providers return text with JSON)
+        $content = '';
+
+        // OpenAI format
+        if (isset($data['choices'][0]['message']['content'])) {
+            $content = $data['choices'][0]['message']['content'];
+        }
+        // Anthropic format
+        elseif (isset($data['content']) && is_array($data['content'])) {
+            foreach ($data['content'] as $block) {
+                if ($block['type'] === 'text') {
+                    $content .= $block['text'];
+                }
+            }
+        }
+        // Direct content
+        elseif (is_string($response)) {
+            $content = $response;
+        }
 
         // Find JSON in response (in case AI adds extra text)
         $jsonMatch = [];
