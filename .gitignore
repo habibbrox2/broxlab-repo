@@ -45,3 +45,7 @@ Thumbs.db
 
 # Composer
 composer.lock
+package-lock.json
+
+# Drive Tmp
+.tmp.*
