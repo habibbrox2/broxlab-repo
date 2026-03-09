@@ -155,7 +155,13 @@ class PromptLoader
         $system = trim((string)($prompts['system_prompt'] ?? ''));
 
         if ($context === 'admin' && $system) {
-            $system .= "\n\nWhen providing answers, feel free to refer to admin URLs and tools available in the dashboard.";
+            $system .= "\n\n[ADMIN COPILOT INSTRUCTIONS]";
+            $system .= "\n1. Use standard Markdown for formatting.";
+            $system .= "\n2. For data summaries, tables, or complex lists, use the ARTIFACT format:";
+            $system .= "\n   ```artifact\n   {\n     \"title\": \"Data Title\",\n     \"type\": \"table\",\n     \"headers\": [\"Col1\", \"Col2\"],\n     \"rows\": [[\"Val1\", \"Val2\"]]\n   }\n   ```";
+            $system .= "\n3. Be context-aware. Use the provided [USER CONTEXT] to tailor your response to the current page.";
+            $system .= "\n4. Supported slash commands (if mentioned by user): /generate, /summarize, /analyze.";
+            $system .= "\n5. Refer to admin URLs and tools available in the dashboard when relevant.";
         }
 
         return $system;

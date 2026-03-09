@@ -350,7 +350,10 @@ if (isset($router)) {
     // POST /api/ai-system/chat
     // Proxies chat requests to AI providers using server-side API keys.
     $router->post('/api/ai-system/chat', function () use ($mysqli) {
+        require_once __DIR__ . '/../Helpers/PromptLoader.php';
+        require_once __DIR__ . '/../Models/AIChatModel.php';
         $aiProvider = new AIProvider($mysqli);
+        $chatModel = new AIChatModel($mysqli);
         
         // Get request data
         $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
@@ -359,6 +362,9 @@ if (isset($router)) {
         $provider = $input['provider'] ?? '';
         $model = $input['model'] ?? '';
         $options = $input['options'] ?? [];
+        $isAdmin = !empty($input['isAdmin']);
+        $visitorToken = $input['visitorToken'] ?? null;
+        $contextData = $input['context'] ?? null;
         
         if (empty($messages)) {
             header('Content-Type: application/json');
@@ -366,20 +372,115 @@ if (isset($router)) {
             return;
         }
 
+        // Load system prompt
+        $contextType = $isAdmin ? 'admin' : 'public';
+        $systemPrompt = PromptLoader::getSystemPrompt($contextType, $mysqli);
+        
+        if ($contextData && is_array($contextData)) {
+            $systemPrompt .= "\n\n[USER CONTEXT]\n";
+            foreach ($contextData as $key => $val) {
+                if (is_scalar($val)) $systemPrompt .= ucfirst($key) . ": $val\n";
+            }
+        }
+
+        // Add system prompt
+        if (empty($messages) || $messages[0]['role'] !== 'system') {
+            array_unshift($messages, ['role' => 'system', 'content' => $systemPrompt]);
+        } else {
+            $messages[0]['content'] = $systemPrompt;
+        }
+
+        // Identify conversation for logging
+        $convId = null;
+        if (!$isAdmin && $visitorToken) {
+            $convId = $chatModel->getOrCreateConversation(null, $visitorToken);
+            // Log the latest user message
+            $lastUserMsg = end($messages);
+            if ($lastUserMsg && $lastUserMsg['role'] === 'user') {
+                $chatModel->addMessage($convId, 'user', $lastUserMsg['content']);
+            }
+        }
+
         // If provider/model not specified, use defaults
         if (empty($provider) || empty($model)) {
             $settings = $aiProvider->getSettings();
             $effective = $aiProvider->getEffectiveProvider();
-            
             $provider = $provider ?: ($effective['provider_name'] ?? 'openrouter');
             $model = $model ?: ($settings['default_model'] ?? 'openrouter/auto');
         }
 
-        // Call the API
+        // Call the AI API
         $response = $aiProvider->callAPI($provider, $model, $messages, $options);
         
+        // Log AI response if it's a tracked conversation
+        if ($convId && $response['success']) {
+            $aiText = $response['text'] ?? $response['message']['content'] ?? '';
+            if ($aiText) {
+                $chatModel->addMessage($convId, 'assistant', $aiText);
+            }
+        }
+
         header('Content-Type: application/json');
         echo json_encode($response);
+    });
+
+    // --- ADMIN CHAT MANAGEMENT ROUTES ---
+    
+    // GET /admin/ai-chats - Conversations Management Dashboard
+    $router->get('/admin/ai-chats', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+        $breadcrumbs = [
+            ['label' => 'Dashboard', 'url' => '/admin'],
+            ['label' => 'AI Conversations', 'url' => '/admin/ai-chats']
+        ];
+
+        echo $twig->render('admin/ai-chats.twig', [
+            'title' => 'AI Conversations',
+            'breadcrumbs' => $breadcrumbs,
+            'current_page' => 'ai-chats',
+            'csrf_token' => generateCsrfToken()
+        ]);
+    });
+
+    // GET /api/admin/ai-chats - List all conversations
+    $router->get('/api/admin/ai-chats', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        require_once __DIR__ . '/../Models/AIChatModel.php';
+        $chatModel = new AIChatModel($mysqli);
+        $page = (int)($_GET['page'] ?? 1);
+        $limit = 20;
+        $offset = ($page - 1) * $limit;
+        
+        $convs = $chatModel->listConversations($limit, $offset);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'conversations' => $convs]);
+    });
+
+    // GET /api/admin/ai-chats/{id} - Get transcript
+    $router->get('/api/admin/ai-chats/(\d+)', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+        require_once __DIR__ . '/../Models/AIChatModel.php';
+        $chatModel = new AIChatModel($mysqli);
+        $messages = $chatModel->getMessages((int)$id);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'messages' => $messages]);
+    });
+
+    // POST /api/admin/ai-chats/reply - Log manual admin response
+    $router->post('/api/admin/ai-chats/reply', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        require_once __DIR__ . '/../Models/AIChatModel.php';
+        $chatModel = new AIChatModel($mysqli);
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        $convId = $input['conversation_id'] ?? 0;
+        $content = $input['content'] ?? '';
+        
+        if (!$convId || !$content) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Conversation ID and content are required']);
+            return;
+        }
+
+        $result = $chatModel->addMessage((int)$convId, 'assistant', $content);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $result]);
     });
 
     // POST /api/ai-system/set-default

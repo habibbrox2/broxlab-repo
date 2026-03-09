@@ -7,6 +7,7 @@ const CONFIG = {
     chatKey: 'brox.ai.history',
     userKey: 'brox.ai.user',
     langKey: 'brox.ai.lang',
+    tokenKey: 'brox.ai.visitor_token',
     proxyUrl: '/api/ai-system/chat'
 };
 
@@ -44,6 +45,7 @@ class BroxAssistant {
         this.lang = localStorage.getItem(CONFIG.langKey) || 'bn';
         this.history = this.loadHistory();
         this.user = JSON.parse(localStorage.getItem(CONFIG.userKey)) || null;
+        this.visitorToken = this.getVisitorToken();
         this.isThinking = false;
 
         this.initUI();
@@ -54,6 +56,15 @@ class BroxAssistant {
     }
 
     t(key) { return I18N[this.lang][key] || key; }
+
+    getVisitorToken() {
+        let token = localStorage.getItem(CONFIG.tokenKey);
+        if (!token) {
+            token = 'vt_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+            localStorage.setItem(CONFIG.tokenKey, token);
+        }
+        return token;
+    }
 
     loadHistory() {
         try {
@@ -90,7 +101,6 @@ class BroxAssistant {
         if (this.nodes.status) this.nodes.status.textContent = this.isThinking ? this.t('thinking') : this.t('status');
         this.nodes.input.placeholder = this.t('placeholder');
 
-        // Update labels if pre-chat is visible
         const nameLabel = document.querySelector('label[for="aiUserName"]');
         const topicLabel = document.querySelector('label[for="aiUserTopics"]');
         const startBtn = document.getElementById('aiStartBtn');
@@ -117,7 +127,7 @@ class BroxAssistant {
             if (this.history.length === 0) {
                 this.addMessage('assistant', this.t('welcome'));
             } else {
-                this.nodes.body.innerHTML = ''; // Clear before bulk render
+                this.nodes.body.innerHTML = '';
                 this.history.forEach(m => this.addMessage(m.role, m.content, false));
             }
         }
@@ -125,7 +135,6 @@ class BroxAssistant {
 
     bindEvents() {
         if (!this.nodes.btn) return;
-
         this.nodes.btn.onclick = () => this.nodes.shell?.classList.toggle('hidden');
         if (this.nodes.close) this.nodes.close.onclick = () => this.nodes.shell?.classList.add('hidden');
         if (this.nodes.langBn) this.nodes.langBn.onclick = () => { this.lang = 'bn'; this.saveLang(); };
@@ -208,7 +217,6 @@ class BroxAssistant {
     async getAIResponse() {
         this.isThinking = true;
         this.updateLangUI();
-
         const typing = this.showTyping();
 
         try {
@@ -217,6 +225,7 @@ class BroxAssistant {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     messages: this.history,
+                    visitorToken: this.visitorToken,
                     context: this.user
                 })
             });
@@ -253,7 +262,6 @@ class BroxAssistant {
     }
 }
 
-// Global Singleton Guard
 if (!window.broxAssistant) {
     document.addEventListener('DOMContentLoaded', () => {
         window.broxAssistant = new BroxAssistant();

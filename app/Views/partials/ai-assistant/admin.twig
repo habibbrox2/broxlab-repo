@@ -1,9 +1,9 @@
-{# Premium AI Assistant Shell for Admin Panel #}
-<div id="adminAiShell" class="ai-chat-shell hidden">
+{# 2026 Standard AI Copilot Sidebar for Admin Panel #}
+<div id="adminAiShell" class="ai-chat-shell admin-sidebar hidden">
     <div class="ai-header admin">
         <div class="ai-header-info">
-            <div class="ai-header-title">Admin Assistant</div>
-            <div class="ai-header-status">System Live</div>
+            <div class="ai-header-title" id="adminAiTitle">Admin Copilot</div>
+            <div class="ai-header-status" id="adminAiStatus">Context: Dashboard</div>
         </div>
         <div class="ai-header-actions">
             <button id="adminAiClose" class="btn-close btn-close-white" style="font-size: 0.8rem;"></button>
@@ -12,13 +12,29 @@
 
     {# Chat History Body #}
     <div id="adminAiBody" class="ai-body">
-        {# Messages injected via ai-admin.js #}
+        {# Messages & Artifacts injected via ai-admin.js #}
+    </div>
+
+    {# Slash Menu (Hidden by default) #}
+    <div id="adminAiSlashMenu" class="ai-slash-menu hidden">
+        <div class="ai-slash-item" data-cmd="/generate">
+            <span class="cmd">/generate</span>
+            <span class="desc">Create new content or data</span>
+        </div>
+        <div class="ai-slash-item" data-cmd="/summarize">
+            <span class="cmd">/summarize</span>
+            <span class="desc">Summarize current page data</span>
+        </div>
+        <div class="ai-slash-item" data-cmd="/analyze">
+            <span class="cmd">/analyze</span>
+            <span class="desc">Deep analyze patterns</span>
+        </div>
     </div>
 
     {# Chat Input Footer #}
     <div id="adminAiFooter" class="ai-footer">
         <div class="ai-composer">
-            <input type="text" id="adminAiInput" placeholder="System query or support...">
+            <input type="text" id="adminAiInput" placeholder="Type / for commands..." autocomplete="off">
             <button id="adminAiSend" class="ai-send-btn bg-dark">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
@@ -28,11 +44,10 @@
     </div>
 </div>
 
-{# Admin Floating Toggle Button #}
+{# Admin Sidebar Toggle (Minimalist) #}
 <button id="adminAiBtn" class="admin-assistant-fab">
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/>
-        <path d="M12 6a1 1 0 0 0-1 1v5a1 1 0 0 0 2 0V7a1 1 0 0 0-1-1zm0 10a1 1 0 1 0 1 1 1 1 0 0 0-1-1z"/>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
     </svg>
 </button>
 
