@@ -118,7 +118,7 @@ class AiContentEnhancer
         $provider = $this->aiProvider->getByName($backendProviderName);
 
         if (!$provider) {
-            throw new \Exception('No backend AI provider configured. Please configure Backend AI Provider in AI Settings.');
+            throw new \Exception('No backend AI provider configured. Please configure Backend AI Provider in AI SYSTEM.');
         }
 
         $providerName = $provider['provider_name'];

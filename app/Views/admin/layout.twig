@@ -197,7 +197,7 @@
   {% if auth_user.is_super_admin %}
       {% set settings_children = settings_children|merge([
           {'name': 'App Settings', 'url': '/admin/app-settings', 'key': 'app-settings'},
-          {'name': 'AI Settings', 'url': '/admin/ai-settings', 'key': 'ai-settings'},
+          {'name': 'AI SYSTEM', 'url': '/admin/ai-system', 'key': 'ai-settings'},
           {'name': 'Telegram Settings', 'url': '/admin/telegram-settings', 'key': 'telegram-settings'},
           {'name': 'Feature Flags', 'url': '/admin/feature-flags', 'key': 'feature-flags'},
           {'name': 'Device Control Logs', 'url': '/admin/device-control', 'key': 'device-control'}

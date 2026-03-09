@@ -1,7 +1,7 @@
 <?php
 
 /**
- * AISettingsController.php
+ * AISystemController.php
  * Handles AI provider configuration routes in the Admin Panel.
  * All database operations are handled by AIProvider model.
  */
@@ -12,8 +12,8 @@ require_once __DIR__ . '/../Models/AppSettings.php';
 // Check if router is available
 if (isset($router)) {
 
-    // ==================== GET /admin/ai-settings ====================
-    $router->get('/admin/ai-settings', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    // ==================== GET /admin/ai-system ====================
+    $router->get('/admin/ai-system', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
         $aiProvider = new AIProvider($mysqli);
 
         $providers = $aiProvider->getAll();
@@ -39,11 +39,11 @@ if (isset($router)) {
 
         $breadcrumbs = [
             ['label' => 'Dashboard', 'url' => '/admin'],
-            ['label' => 'AI Settings', 'url' => '/admin/ai-settings']
+            ['label' => 'AI SYSTEM', 'url' => '/admin/ai-system']
         ];
 
-        echo $twig->render('admin/ai-settings.twig', [
-            'title' => 'AI Settings',
+        echo $twig->render('admin/ai-system.twig', [
+            'title' => 'AI SYSTEM',
             'breadcrumbs' => $breadcrumbs,
             'providers' => $providers,
             'settings' => $settings,
@@ -53,8 +53,8 @@ if (isset($router)) {
         ]);
     });
 
-    // ==================== GET /api/ai-settings/frontend ====================
-    $router->get('/api/ai-settings/frontend', function () use ($mysqli) {
+    // ==================== GET /api/ai-system/frontend ====================
+    $router->get('/api/ai-system/frontend', function () use ($mysqli) {
         $aiProvider = new AIProvider($mysqli);
         $settings = $aiProvider->getSettings();
 
@@ -78,11 +78,11 @@ if (isset($router)) {
         $defaultModel = $settings['default_model'] ?? '';
         if (empty($defaultModel)) {
             if ($frontendProvider === 'openrouter') {
-                // OpenRouter expects a model like openrouter/free, openrouter/gpt-4, etc.
-                // If no model is configured, default to the free router.
-                $defaultModel = array_key_first(self::getProviderConfig('openrouter')['models'] ?? ['openrouter/free' => 'Free']);
+                // OpenRouter expects a model like openrouter/auto (auto router) or any other supported model ID.
+                // If no model is configured, default to the auto router.
+                $defaultModel = array_key_first(self::getProviderConfig('openrouter')['models'] ?? ['openrouter/auto' => 'Auto Router']);
             } else {
-                $defaultModel = 'openai/gpt-5.2';
+                $defaultModel = 'openrouter/auto';
             }
         }
 
@@ -123,8 +123,8 @@ if (isset($router)) {
         ]);
     });
 
-    // ==================== POST /admin/ai-settings/save ====================
-    $router->post('/admin/ai-settings/save', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    // ==================== POST /admin/ai-system/save ====================
+    $router->post('/admin/ai-system/save', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
         $aiProvider = new AIProvider($mysqli);
 
         // Save general settings
@@ -132,7 +132,7 @@ if (isset($router)) {
             'default_provider' => $_POST['default_provider'] ?? 'kilo',
             'frontend_provider' => $_POST['frontend_provider'] ?? 'openrouter',
             'backend_provider' => $_POST['backend_provider'] ?? $_POST['default_provider'] ?? 'kilo',
-            'default_model' => $_POST['default_model'] ?? 'openai/gpt-5.2',
+            'default_model' => $_POST['default_model'] ?? 'openrouter/auto',
             'max_tokens' => (int)($_POST['max_tokens'] ?? 4000),
             'temperature' => (float)($_POST['temperature'] ?? 0.7),
             'enable_fallback' => isset($_POST['enable_fallback']),
@@ -163,12 +163,12 @@ if (isset($router)) {
             }
         }
 
-        showMessage('AI settings saved successfully!', 'success');
-        redirect('/admin/ai-settings');
+        showMessage('AI SYSTEM saved successfully!', 'success');
+        redirect('/admin/ai-system');
     });
 
-    // ==================== POST /admin/ai-settings/add-provider ====================
-    $router->post('/admin/ai-settings/add-provider', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    // ==================== POST /admin/ai-system/add-provider ====================
+    $router->post('/admin/ai-system/add-provider', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
         $aiProvider = new AIProvider($mysqli);
 
         $displayName = trim($_POST['display_name'] ?? '');
@@ -177,7 +177,7 @@ if (isset($router)) {
 
         if (empty($displayName) || empty($apiEndpoint)) {
             showMessage('Please provide provider name and API endpoint.', 'danger');
-            redirect('/admin/ai-settings');
+            redirect('/admin/ai-system');
             return;
         }
 
@@ -199,11 +199,11 @@ if (isset($router)) {
         }
 
         showMessage('Provider "' . htmlspecialchars($displayName) . '" added successfully!', 'success');
-        redirect('/admin/ai-settings');
+        redirect('/admin/ai-system');
     });
 
-    // ==================== POST /admin/ai-settings/update-provider ====================
-    $router->post('/admin/ai-settings/update-provider', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    // ==================== POST /admin/ai-system/update-provider ====================
+    $router->post('/admin/ai-system/update-provider', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
         $aiProvider = new AIProvider($mysqli);
 
         if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
@@ -246,8 +246,8 @@ if (isset($router)) {
         }
     });
 
-    // ==================== POST /admin/ai-settings/delete-provider ====================
-    $router->post('/admin/ai-settings/delete-provider', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    // ==================== POST /admin/ai-system/delete-provider ====================
+    $router->post('/admin/ai-system/delete-provider', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
         $aiProvider = new AIProvider($mysqli);
 
         if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
@@ -345,5 +345,110 @@ if (isset($router)) {
         }
 
         echo json_encode(['success' => true, 'models' => $remote]);
+    });
+
+    // POST /api/ai-system/chat
+    // Proxies chat requests to AI providers using server-side API keys.
+    $router->post('/api/ai-system/chat', function () use ($mysqli) {
+        $aiProvider = new AIProvider($mysqli);
+        
+        // Get request data
+        $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        
+        $messages = $input['messages'] ?? [];
+        $provider = $input['provider'] ?? '';
+        $model = $input['model'] ?? '';
+        $options = $input['options'] ?? [];
+        
+        if (empty($messages)) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Messages are required']);
+            return;
+        }
+
+        // If provider/model not specified, use defaults
+        if (empty($provider) || empty($model)) {
+            $settings = $aiProvider->getSettings();
+            $effective = $aiProvider->getEffectiveProvider();
+            
+            $provider = $provider ?: ($effective['provider_name'] ?? 'openrouter');
+            $model = $model ?: ($settings['default_model'] ?? 'openrouter/auto');
+        }
+
+        // Call the API
+        $response = $aiProvider->callAPI($provider, $model, $messages, $options);
+        
+        header('Content-Type: application/json');
+        echo json_encode($response);
+    });
+
+    // POST /api/ai-system/set-default
+    $router->post('/api/ai-system/set-default', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        $aiProvider = new AIProvider($mysqli);
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id = $input['id'] ?? 0;
+        
+        if (!$id) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'ID is required']);
+            return;
+        }
+
+        $result = $aiProvider->setAsDefault($id);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $result]);
+    });
+
+    // POST /api/ai-system/toggle-provider
+    $router->post('/api/ai-system/toggle-provider', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        $aiProvider = new AIProvider($mysqli);
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id = $input['id'] ?? 0;
+        $active = $input['active'] ?? false;
+
+        $result = $aiProvider->update($id, ['is_active' => $active]);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $result]);
+    });
+
+    // POST /api/ai-system/delete-provider
+    $router->post('/api/ai-system/delete-provider', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        $aiProvider = new AIProvider($mysqli);
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id = $input['id'] ?? 0;
+
+        $provider = $aiProvider->getById($id);
+        if (!$provider) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Provider not found']);
+            return;
+        }
+
+        if ($provider['provider_name'] === 'custom' && $provider['sort_order'] >= 90) {
+            $result = $aiProvider->delete($id);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => $result]);
+        } else {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Cannot delete built-in providers']);
+        }
+    });
+
+    // POST /api/ai-system/test
+    $router->post('/api/ai-system/test', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        $aiProvider = new AIProvider($mysqli);
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id = $input['id'] ?? 0;
+        $model = $input['model'] ?? null;
+
+        $provider = $aiProvider->getById($id);
+        if ($provider) {
+            $result = $aiProvider->testConnection($provider['provider_name'], $model);
+            header('Content-Type: application/json');
+            echo json_encode($result);
+        } else {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Provider not found']);
+        }
     });
 }
