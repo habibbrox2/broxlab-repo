@@ -1,57 +1,71 @@
 /* 
  * BroxBhai AI SYSTEM - Premium 2026 Design System
  * Path: /public_html/ai/css/ai-style.css
+ * 
+ * Features:
+ *  - Glassmorphism with premium gradients
+ *  - Mobile responsive (admin-specific)
+ *  - Typing indicators
+ *  - File attachment support
+ *  - Dark mode support
+ *  - Smooth animations
+ *  - Unique class names to avoid conflicts
+ * 
+ * Class Prefix: brox-ai-
  */
 
 :root {
     /* 2026 Modern Palette */
-    --ai-primary: #2563eb;
-    --ai-primary-soft: #dbeafe;
-    --ai-primary-gradient: linear-gradient(135deg, #2563eb, #7c3aed);
-    --ai-admin-gradient: linear-gradient(135deg, #0f172a, #1e293b);
+    --brox-ai-primary: #2563eb;
+    --brox-ai-primary-soft: #dbeafe;
+    --brox-ai-primary-gradient: linear-gradient(135deg, #2563eb, #7c3aed);
+    --brox-ai-admin-gradient: linear-gradient(135deg, #0f172a, #1e293b);
+    --brox-ai-admin-surface: #1e293b;
 
     /* Glassmorphism Redefined */
-    --ai-glass-bg: rgba(255, 255, 255, 0.75);
-    --ai-glass-border: rgba(255, 255, 255, 0.4);
-    --ai-blur: blur(20px);
+    --brox-ai-glass-bg: rgba(255, 255, 255, 0.75);
+    --brox-ai-glass-bg-admin: rgba(15, 23, 42, 0.95);
+    --brox-ai-glass-border: rgba(255, 255, 255, 0.4);
+    --brox-ai-blur: blur(20px);
 
     /* Surfaces */
-    --ai-bg-main: #f8fafc;
-    --ai-bg-msg-user: #2563eb;
-    --ai-bg-msg-ai: rgba(255, 255, 255, 0.9);
+    --brox-ai-bg-main: #f8fafc;
+    --brox-ai-bg-msg-user: #2563eb;
+    --brox-ai-bg-msg-ai: rgba(255, 255, 255, 0.9);
 
     /* Accents */
-    --ai-success: #10b981;
-    --ai-warning: #f59e0b;
-    --ai-danger: #ef4444;
+    --brox-ai-success: #10b981;
+    --brox-ai-warning: #f59e0b;
+    --brox-ai-danger: #ef4444;
 
     /* Typography & Spacing */
-    --ai-shadow-premium: 0 20px 50px -12px rgba(0, 0, 0, 0.15);
-    --ai-radius-lg: 24px;
-    --ai-radius-md: 16px;
-    --ai-font: 'Inter', 'Noto Sans Bengali', system-ui, -apple-system, sans-serif;
-    --ai-transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --brox-ai-shadow-premium: 0 20px 50px -12px rgba(0, 0, 0, 0.15);
+    --brox-ai-radius-lg: 24px;
+    --brox-ai-radius-md: 16px;
+    --brox-ai-radius-sm: 8px;
+    --brox-ai-font: 'Inter', 'Noto Sans Bengali', system-ui, -apple-system, sans-serif;
+    --brox-ai-transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* --- Base Floating Button --- */
+/* --- Base Floating Button (Public) --- */
 #publicAssistantBtn {
     position: fixed;
-    bottom: 25px;
+    bottom: 90px;
     right: 25px;
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: var(--ai-primary-gradient);
+    background: var(--brox-ai-primary-gradient);
     color: white;
     border: none;
     box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
     cursor: pointer;
-    z-index: 2000;
+    z-index: 1999;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.8rem;
-    transition: var(--ai-transition);
+    transition: var(--brox-ai-transition);
 }
 
 #publicAssistantBtn:hover {
@@ -59,209 +73,975 @@
     box-shadow: 0 15px 35px rgba(37, 99, 235, 0.45);
 }
 
-/* --- Chat Shell (2026 Premium) --- */
-.ai-chat-shell {
+/* --- Admin Copilot Trigger Button --- */
+#adminAiBtn.brox-ai-trigger-fab {
     position: fixed;
-    bottom: 100px;
+    bottom: 90px;
     right: 25px;
-    width: 420px;
-    height: 700px;
-    max-height: calc(100vh - 140px);
-    background: var(--ai-glass-bg);
-    backdrop-filter: var(--ai-blur);
-    border: 1px solid var(--ai-glass-border);
-    border-radius: var(--ai-radius-lg);
-    box-shadow: var(--ai-shadow-premium);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--brox-ai-admin-gradient);
+    color: white;
+    border: none;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.4);
+    cursor: pointer;
+    z-index: 2000;
     display: flex;
-    flex-direction: row;
-    /* For Sidebar support */
-    overflow: hidden;
-    z-index: 2001;
-    transition: var(--ai-transition);
-    font-family: var(--ai-font);
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    transition: var(--brox-ai-transition);
+    border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
-.ai-chat-shell.hidden {
+#adminAiBtn.brox-ai-trigger-fab:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 15px 35px rgba(15, 23, 42, 0.5);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* FAB Toggle Icons */
+.brox-ai-fab-icon-open,
+.brox-ai-fab-icon-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--brox-ai-transition);
+}
+
+#adminAiBtn.brox-ai-trigger-fab.brox-ai-active .brox-ai-fab-icon-open,
+.brox-ai-public-fab.brox-ai-active .brox-ai-fab-icon-open {
+    display: none;
+}
+
+#adminAiBtn.brox-ai-trigger-fab.brox-ai-active .brox-ai-fab-icon-close,
+.brox-ai-public-fab.brox-ai-active .brox-ai-fab-icon-close {
+    display: flex;
+}
+
+/* --- Public Floating Action Button --- */
+.brox-ai-public-fab {
+    position: fixed;
+    bottom: 90px;
+    right: 25px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--brox-ai-primary-gradient);
+    color: white;
+    border: none;
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
+    cursor: pointer;
+    z-index: 1999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: var(--brox-ai-transition);
+}
+
+.brox-ai-public-fab:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 15px 35px rgba(37, 99, 235, 0.45);
+}
+
+/* FAB Badge */
+.brox-ai-fab-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--brox-ai-danger);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     opacity: 0;
-    transform: translateY(40px) scale(0.95);
+    transform: scale(0);
+    transition: var(--brox-ai-transition);
+}
+
+.brox-ai-fab-badge.show {
+    opacity: 1;
+    transform: scale(1);
+}
+
+#adminAiBtn.brox-ai-trigger-fab .brox-ai-fab-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--brox-ai-danger);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0);
+    transition: var(--brox-ai-transition);
+}
+
+#adminAiBtn.brox-ai-trigger-fab .brox-ai-fab-badge.show {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* --- Admin Copilot Sidebar --- */
+.brox-ai-copilot-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 420px;
+    height: 100vh;
+    max-height: 100vh;
+    background: var(--brox-ai-glass-bg-admin);
+    backdrop-filter: var(--brox-ai-blur);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: -10px 0 40px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    z-index: 2001;
+    transition: var(--brox-ai-transition);
+    font-family: var(--brox-ai-font);
+}
+
+.brox-ai-copilot-sidebar.brox-ai-hidden {
+    opacity: 0;
+    transform: translateX(100%);
     pointer-events: none;
 }
 
-/* --- Internal Layout --- */
-.ai-chat-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
+.brox-ai-copilot-sidebar.d-none {
+    display: none;
 }
 
-/* --- Sidebar (Collapsible History) --- */
-.ai-sidebar {
-    width: 280px;
-    background: rgba(255, 255, 255, 0.4);
-    border-right: 1px solid var(--ai-glass-border);
-    display: flex;
-    flex-direction: column;
-    transition: var(--ai-transition);
-}
-
-.ai-sidebar.collapsed {
-    width: 0;
-    opacity: 0;
-}
-
-.ai-sidebar-header {
+/* --- Admin Header --- */
+.brox-ai-copilot-sidebar .brox-ai-header {
     padding: 20px;
-    font-weight: 700;
-    font-size: 0.9rem;
-    border-bottom: 1px solid var(--ai-glass-border);
-}
-
-.ai-history-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px;
-}
-
-.ai-history-item {
-    padding: 12px 15px;
-    border-radius: var(--ai-radius-md);
-    cursor: pointer;
-    font-size: 0.85rem;
-    margin-bottom: 5px;
-    transition: var(--ai-transition);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.ai-history-item:hover {
-    background: rgba(255, 255, 255, 0.6);
-}
-
-/* --- Premium Header --- */
-.ai-header {
-    padding: 24px;
-    background: transparent;
-    border-bottom: 1px solid var(--ai-glass-border);
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.9) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
 }
 
-.ai-header-info {
+.brox-ai-header-info {
     display: flex;
     flex-direction: column;
+    gap: 8px;
 }
 
-.ai-header-title {
+.brox-ai-header-title {
     font-weight: 800;
-    font-size: 1.1rem;
-    background: var(--ai-primary-gradient);
+    font-size: 1.25rem;
+    background: var(--brox-ai-primary-gradient);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.ai-header-status {
+.brox-ai-header-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.8rem;
+}
+
+.brox-ai-context-badge {
+    color: rgba(255, 255, 255, 0.6);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.brox-ai-save-indicator {
+    color: var(--brox-ai-success);
     font-size: 0.75rem;
     display: flex;
     align-items: center;
-    gap: 6px;
-    color: #64748b;
+    gap: 4px;
+    opacity: 0;
+    transition: var(--brox-ai-transition);
 }
 
-.ai-header-status::before {
-    content: '';
+.brox-ai-save-indicator.brox-ai-saving {
+    opacity: 1;
+    color: var(--brox-ai-warning);
+}
+
+.brox-ai-header-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.brox-ai-icon-btn,
+.brox-ai-icon-btn-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--brox-ai-radius-sm);
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--brox-ai-transition);
+}
+
+.brox-ai-icon-btn:hover,
+.brox-ai-icon-btn-sm:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.brox-ai-icon-btn-sm {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+}
+
+/* --- Status Bar --- */
+.brox-ai-status-bar {
+    padding: 8px 20px;
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.brox-ai-status-indicator {
     width: 8px;
     height: 8px;
-    background: var(--ai-success);
     border-radius: 50%;
-    box-shadow: 0 0 10px var(--ai-success);
+    background: var(--brox-ai-success);
+    box-shadow: 0 0 8px var(--brox-ai-success);
 }
 
-/* --- Body & Content --- */
-.ai-body {
+.brox-ai-status-indicator.brox-ai-thinking {
+    background: var(--brox-ai-warning);
+    box-shadow: 0 0 8px var(--brox-ai-warning);
+    animation: brox-ai-pulse 1s infinite;
+}
+
+.brox-ai-status-indicator.brox-ai-loading {
+    background: var(--brox-ai-primary);
+    box-shadow: 0 0 8px var(--brox-ai-primary);
+    animation: brox-ai-pulse 0.5s infinite;
+}
+
+.brox-ai-status-indicator.brox-ai-error {
+    background: var(--brox-ai-danger);
+    box-shadow: 0 0 8px var(--brox-ai-danger);
+}
+
+.brox-ai-model-badge {
+    margin-left: auto;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+}
+
+/* --- Body & Messages --- */
+.brox-ai-copilot-sidebar .brox-ai-body {
     flex: 1;
-    padding: 24px;
+    padding: 20px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
     scroll-behavior: smooth;
 }
 
-.ai-msg {
-    max-width: 85%;
-    padding: 16px 20px;
+/* Welcome Message */
+.brox-ai-welcome {
+    text-align: center;
+    padding: 40px 20px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.brox-ai-welcome-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    background: var(--brox-ai-primary-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    animation: brox-ai-float 3s ease-in-out infinite;
+}
+
+@keyframes brox-ai-float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.brox-ai-welcome h4 {
+    color: white;
+    margin-bottom: 8px;
+}
+
+.brox-ai-welcome p {
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+.brox-ai-welcome-commands {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.brox-ai-cmd-chip {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 20px;
-    font-size: 0.95rem;
-    line-height: 1.6;
+    color: white;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--brox-ai-transition);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.brox-ai-cmd-chip:hover {
+    background: var(--brox-ai-primary);
+    border-color: var(--brox-ai-primary);
+    transform: translateY(-2px);
+}
+
+/* Message Bubbles */
+.brox-ai-msg {
+    max-width: 85%;
+    padding: 12px 16px;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    line-height: 1.5;
     position: relative;
-    animation: ai-slide-up 0.4s ease-out;
+    animation: brox-ai-slide-up 0.3s ease-out;
+    display: flex;
+    gap: 10px;
 }
 
-.ai-msg.assistant {
-    align-self: flex-start;
-    background: var(--ai-bg-msg-ai);
-    color: #1e293b;
-    border: 1px solid var(--ai-glass-border);
-    border-bottom-left-radius: 4px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+@keyframes brox-ai-slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.ai-msg.user {
+.brox-ai-msg.brox-ai-user {
     align-self: flex-end;
-    background: var(--ai-bg-msg-user);
+    background: var(--brox-ai-primary);
     color: white;
     border-bottom-right-radius: 4px;
-    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
+    flex-direction: row-reverse;
 }
 
-.ai-msg-content {
-    font-family: inherit;
+.brox-ai-msg.brox-ai-assistant {
+    align-self: flex-start;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom-left-radius: 4px;
 }
 
-/* Markdown Support Styles */
-.ai-msg-content code {
-    background: rgba(0, 0, 0, 0.05);
+.brox-ai-msg-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.brox-ai-msg-content {
+    flex: 1;
+    word-wrap: break-word;
+}
+
+.brox-ai-msg-meta {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 4px;
+}
+
+/* Markdown Styles */
+.brox-ai-msg-content code {
+    background: rgba(0, 0, 0, 0.3);
     padding: 2px 6px;
     border-radius: 4px;
     font-family: 'Fira Code', monospace;
     font-size: 0.85em;
 }
 
-.ai-msg-content pre {
-    background: #1e293b;
-    color: #f8fafc;
-    padding: 16px;
-    border-radius: 12px;
+.brox-ai-msg-content pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 12px;
+    border-radius: 8px;
     overflow-x: auto;
-    margin: 12px 0;
+    margin: 8px 0;
+    font-size: 0.85em;
 }
 
-/* --- Agentic Status Bar --- */
-.ai-agentic-status {
+/* Artifacts */
+.brox-ai-artifact {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--brox-ai-radius-sm);
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.brox-ai-artifact-header {
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+}
+
+.brox-ai-artifact-body {
+    padding: 12px;
+    overflow-x: auto;
+}
+
+.brox-ai-artifact-table {
+    width: 100%;
+    font-size: 0.8rem;
+}
+
+/* --- Typing Indicator --- */
+.brox-ai-typing-indicator {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.brox-ai-typing-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--brox-ai-primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+}
+
+.brox-ai-typing-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.brox-ai-typing-dots {
+    display: inline-flex;
+    gap: 3px;
+}
+
+.brox-ai-typing-dots span {
+    width: 6px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    animation: brox-ai-typing 1.4s infinite;
+}
+
+.brox-ai-typing-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.brox-ai-typing-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes brox-ai-typing {
+
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.5;
+    }
+
+    30% {
+        transform: translateY(-4px);
+        opacity: 1;
+    }
+}
+
+.brox-ai-typing-text {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* --- Slash Command Menu --- */
+.brox-ai-slash-menu {
+    position: absolute;
+    bottom: 120px;
+    left: 20px;
+    right: 20px;
+    background: rgba(30, 41, 59, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--brox-ai-radius-md);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    z-index: 10;
+    overflow: hidden;
+    animation: brox-ai-slide-up 0.2s ease-out;
+}
+
+.brox-ai-slash-header {
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.brox-ai-slash-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+}
+
+.brox-ai-slash-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.brox-ai-slash-item {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: var(--brox-ai-transition);
+}
+
+.brox-ai-slash-item:hover {
+    background: rgba(37, 99, 235, 0.2);
+}
+
+.brox-ai-slash-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+.brox-ai-slash-info {
+    flex: 1;
+}
+
+.brox-ai-slash-info strong {
+    display: block;
+    color: white;
+    font-size: 0.9rem;
+}
+
+.brox-ai-slash-info small {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.75rem;
+}
+
+/* --- Attachment Preview --- */
+.brox-ai-attachment-preview {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+.brox-ai-attachment-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.brox-ai-attachment-name {
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.brox-ai-attachment-size {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.75rem;
+}
+
+.brox-ai-attachment-remove {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: var(--brox-ai-transition);
+}
+
+.brox-ai-attachment-remove:hover {
+    background: var(--brox-ai-danger);
+    color: white;
+}
+
+/* --- Footer (Input) --- */
+.brox-ai-copilot-sidebar .brox-ai-footer {
+    padding: 16px 20px 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Model Selector Bar */
+.brox-ai-model-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.brox-ai-model-bar .form-select {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 0.8rem;
+    border-radius: var(--brox-ai-radius-sm);
+}
+
+.brox-ai-model-bar .form-select:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--brox-ai-primary);
+    color: white;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+}
+
+/* Input Wrapper */
+.brox-ai-input-wrapper {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--brox-ai-radius-md);
+    padding: 8px;
+    border: 1px solid transparent;
+    transition: var(--brox-ai-transition);
+}
+
+.brox-ai-input-wrapper:focus-within {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--brox-ai-primary);
+}
+
+.brox-ai-input-container {
+    flex: 1;
+    position: relative;
+}
+
+.brox-ai-textarea {
+    width: 100%;
+    background: transparent !important;
+    border: none !important;
+    color: white !important;
+    font-size: 0.9rem;
+    resize: none;
+    outline: none;
+    padding: 8px 0;
+    max-height: 150px;
+    line-height: 1.5;
+}
+
+.brox-ai-textarea::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.brox-ai-char-count {
+    position: absolute;
+    bottom: 2px;
+    right: 0;
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.brox-ai-char-count.brox-ai-warning {
+    color: var(--brox-ai-warning);
+}
+
+.brox-ai-input-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.brox-ai-action-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--brox-ai-transition);
+    flex-shrink: 0;
+}
+
+.brox-ai-action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.brox-ai-action-btn-left {
+    margin-right: 8px;
+}
+
+.brox-ai-send-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--brox-ai-primary-gradient);
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+    transition: var(--brox-ai-transition);
+}
+
+.brox-ai-send-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 15px rgba(37, 99, 235, 0.4);
+}
+
+.brox-ai-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Input Hint */
+.brox-ai-input-hint {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 8px;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.brox-ai-input-hint kbd {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: inherit;
+}
+
+/* --- Chat Shell (Public) --- */
+.brox-ai-chat-shell {
+    position: fixed;
+    bottom: 110px;
+    right: 25px;
+    width: 420px;
+    height: 700px;
+    max-height: calc(100vh - 160px);
+    background: var(--brox-ai-glass-bg);
+    backdrop-filter: var(--brox-ai-blur);
+    border: 1px solid var(--brox-ai-glass-border);
+    border-radius: var(--brox-ai-radius-lg);
+    box-shadow: var(--brox-ai-shadow-premium);
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    z-index: 2001;
+    transition: var(--brox-ai-transition);
+    font-family: var(--brox-ai-font);
+}
+
+.brox-ai-chat-shell.brox-ai-hidden {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+    pointer-events: none;
+}
+
+.brox-ai-chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* Public Chat Header */
+.brox-ai-chat-shell .brox-ai-header {
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.8);
+    border-bottom: 1px solid var(--brox-ai-glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.brox-ai-chat-shell .brox-ai-header-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #1e293b;
+    -webkit-text-fill-color: #1e293b;
+    background: none;
+}
+
+.brox-ai-header-status {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.brox-ai-lang-toggle {
+    display: flex;
+    background: #f1f5f9;
+    border-radius: 20px;
+    padding: 2px;
+}
+
+.brox-ai-lang-toggle button {
+    padding: 4px 10px;
+    border: none;
+    background: transparent;
+    border-radius: 18px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: var(--brox-ai-transition);
+    color: #64748b;
+}
+
+.brox-ai-lang-toggle button.active {
+    background: var(--brox-ai-primary);
+    color: white;
+}
+
+/* Sidebar */
+.brox-ai-sidebar {
+    width: 280px;
+    background: rgba(255, 255, 255, 0.4);
+    border-right: 1px solid var(--brox-ai-glass-border);
+    display: flex;
+    flex-direction: column;
+    transition: var(--brox-ai-transition);
+}
+
+.brox-ai-sidebar.brox-ai-collapsed {
+    width: 0;
+    opacity: 0;
+}
+
+.brox-ai-sidebar-header {
+    padding: 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--brox-ai-glass-border);
+}
+
+.brox-ai-history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.brox-ai-history-item {
+    padding: 12px 15px;
+    border-radius: var(--brox-ai-radius-md);
+    cursor: pointer;
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+    transition: var(--brox-ai-transition);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.brox-ai-history-item:hover {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+/* --- Agentic Status Bar (Public) --- */
+.brox-ai-agentic-status {
     padding: 10px 24px;
     font-size: 0.8rem;
     color: #64748b;
     background: rgba(255, 255, 255, 0.3);
-    border-top: 1px solid var(--ai-glass-border);
+    border-top: 1px solid var(--brox-ai-glass-border);
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.ai-status-pill {
-    background: var(--ai-primary-soft);
-    color: var(--ai-primary);
+.brox-ai-status-pill {
+    background: var(--brox-ai-primary-soft);
+    color: var(--brox-ai-primary);
     padding: 2px 10px;
     border-radius: 20px;
     font-weight: 600;
 }
 
 /* --- Quick Actions --- */
-.ai-quick-actions {
+.brox-ai-quick-actions {
     padding: 10px 24px;
     display: flex;
     gap: 8px;
@@ -269,35 +1049,35 @@
     white-space: nowrap;
 }
 
-.ai-quick-actions::-webkit-scrollbar {
+.brox-ai-quick-actions::-webkit-scrollbar {
     display: none;
 }
 
-.ai-action-chip {
+.brox-ai-action-chip {
     padding: 8px 16px;
     background: white;
-    border: 1px solid var(--ai-glass-border);
+    border: 1px solid var(--brox-ai-glass-border);
     border-radius: 30px;
     font-size: 0.85rem;
     cursor: pointer;
-    transition: var(--ai-transition);
+    transition: var(--brox-ai-transition);
 }
 
-.ai-action-chip:hover {
-    background: var(--ai-primary-soft);
-    border-color: var(--ai-primary);
-    color: var(--ai-primary);
+.brox-ai-action-chip:hover {
+    background: var(--brox-ai-primary-soft);
+    border-color: var(--brox-ai-primary);
+    color: var(--brox-ai-primary);
     transform: translateY(-2px);
 }
 
-/* --- Modern Footer (Input) --- */
-.ai-footer {
+/* --- Footer (Public Input) --- */
+.brox-ai-footer-public {
     padding: 20px 24px 30px;
     background: white;
-    border-top: 1px solid var(--ai-glass-border);
+    border-top: 1px solid var(--brox-ai-glass-border);
 }
 
-.ai-composer-wrapper {
+.brox-ai-composer-wrapper {
     background: #f1f5f9;
     padding: 8px 8px 8px 20px;
     border-radius: 30px;
@@ -305,16 +1085,16 @@
     align-items: center;
     gap: 12px;
     border: 1px solid transparent;
-    transition: var(--ai-transition);
+    transition: var(--brox-ai-transition);
 }
 
-.ai-composer-wrapper:focus-within {
+.brox-ai-composer-wrapper:focus-within {
     background: white;
-    border-color: var(--ai-primary);
-    box-shadow: 0 0 0 4px var(--ai-primary-soft);
+    border-color: var(--brox-ai-primary);
+    box-shadow: 0 0 0 4px var(--brox-ai-primary-soft);
 }
 
-.ai-composer-wrapper input {
+.brox-ai-composer-wrapper input {
     flex: 1;
     border: none;
     background: transparent;
@@ -323,13 +1103,13 @@
     padding: 10px 0;
 }
 
-.ai-composer-tools {
+.brox-ai-composer-tools {
     display: flex;
     gap: 8px;
     margin-right: 5px;
 }
 
-.ai-tool-btn {
+.brox-ai-tool-btn {
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -340,36 +1120,154 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: var(--ai-transition);
+    transition: var(--brox-ai-transition);
 }
 
-.ai-tool-btn:hover {
-    color: var(--ai-primary);
-    background: var(--ai-primary-soft);
+.brox-ai-tool-btn:hover {
+    color: var(--brox-ai-primary);
+    background: var(--brox-ai-primary-soft);
 }
 
-.ai-send-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: var(--ai-primary-gradient);
+.brox-ai-tool-btn.brox-ai-recording {
+    background: var(--brox-ai-danger);
+    color: white;
+    animation: brox-ai-pulse 1s infinite;
+}
+
+/* --- File Attachment --- */
+.brox-ai-file-attachment {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    font-size: 0.9rem;
+}
+
+.brox-ai-file-attachment i {
+    font-size: 1.5rem;
+    color: var(--brox-ai-primary);
+}
+
+.brox-ai-file-attachment span {
+    flex: 1;
+    font-weight: 500;
+}
+
+.brox-ai-file-attachment small {
+    color: #64748b;
+    font-size: 0.75rem;
+}
+
+/* --- Pre-chat Form (Public) --- */
+.brox-ai-prechat {
+    padding: 30px 24px;
+}
+
+.brox-ai-prechat .brox-ai-form-group {
+    margin-bottom: 20px;
+}
+
+.brox-ai-prechat .brox-ai-form-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #334155;
+    margin-bottom: 8px;
+}
+
+.brox-ai-prechat .brox-ai-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    transition: var(--brox-ai-transition);
+    background: white;
+}
+
+.brox-ai-prechat .brox-ai-input:focus {
+    outline: none;
+    border-color: var(--brox-ai-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.brox-ai-prechat .brox-ai-btn-primary {
+    width: 100%;
+    padding: 14px 24px;
+    background: var(--brox-ai-primary-gradient);
     color: white;
     border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--brox-ai-transition);
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
-    transition: var(--ai-transition);
+    gap: 8px;
 }
 
-.ai-send-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 15px rgba(37, 99, 235, 0.4);
+.brox-ai-prechat .brox-ai-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+}
+
+/* Topic Selection Grid */
+.brox-ai-topic-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.brox-ai-topic-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: var(--brox-ai-transition);
+}
+
+.brox-ai-topic-chip:hover {
+    border-color: var(--brox-ai-primary);
+    background: var(--brox-ai-primary-soft);
+}
+
+.brox-ai-topic-chip input {
+    display: none;
+}
+
+.brox-ai-topic-chip input:checked+span {
+    color: var(--brox-ai-primary);
+    font-weight: 600;
+}
+
+.brox-ai-topic-chip span {
+    font-size: 0.9rem;
+    color: #475569;
+}
+
+/* Pre-chat Steps Visibility */
+.brox-ai-step-name,
+.brox-ai-step-contact,
+.brox-ai-step-topic {
+    transition: var(--brox-ai-transition);
+}
+
+.brox-ai-step-name.brox-ai-hidden,
+.brox-ai-step-contact.brox-ai-hidden,
+.brox-ai-step-topic.brox-ai-hidden {
+    display: none !important;
 }
 
 /* --- Animations --- */
-@keyframes ai-slide-up {
+@keyframes brox-ai-slide-up {
     from {
         opacity: 0;
         transform: translateY(20px);
@@ -381,7 +1279,7 @@
     }
 }
 
-@keyframes ai-pulse {
+@keyframes brox-ai-pulse {
     0% {
         opacity: 0.6;
     }
@@ -395,30 +1293,104 @@
     }
 }
 
-.ai-thinking-dots {
+@keyframes brox-ai-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.brox-ai-spin {
+    animation: brox-ai-spin 1s linear infinite;
+}
+
+/* Thinking Dots */
+.brox-ai-thinking-dots {
     display: inline-flex;
     gap: 3px;
 }
 
-.ai-thinking-dots span {
+.brox-ai-thinking-dots span {
     width: 4px;
     height: 4px;
     background: currentColor;
     border-radius: 50%;
-    animation: ai-pulse 1.4s infinite;
+    animation: brox-ai-pulse 1.4s infinite;
 }
 
-.ai-thinking-dots span:nth-child(2) {
+.brox-ai-thinking-dots span:nth-child(2) {
     animation-delay: 0.2s;
 }
 
-.ai-thinking-dots span:nth-child(3) {
+.brox-ai-thinking-dots span:nth-child(3) {
     animation-delay: 0.4s;
 }
 
-/* --- Mobile View --- */
+/* --- Mobile Responsive (Admin) --- */
+@media (max-width: 480px) {
+    .brox-ai-copilot-sidebar {
+        width: 100vw;
+        height: 100vh;
+        max-height: 100vh;
+        top: 0;
+        right: 0;
+        border-radius: 0;
+    }
+
+    .brox-ai-copilot-sidebar.brox-ai-hidden {
+        transform: translateY(100%);
+    }
+
+    .brox-ai-header {
+        padding: 16px;
+    }
+
+    .brox-ai-header-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .brox-ai-copilot-sidebar .brox-ai-body {
+        padding: 16px;
+    }
+
+    .brox-ai-msg {
+        max-width: 95%;
+        padding: 10px 14px;
+    }
+
+    .brox-ai-copilot-sidebar .brox-ai-footer {
+        padding: 12px 16px 16px;
+    }
+
+    .brox-ai-model-bar {
+        flex-direction: column;
+    }
+
+    .brox-ai-input-hint {
+        display: none;
+    }
+
+    .brox-ai-slash-menu {
+        left: 10px;
+        right: 10px;
+        bottom: 100px;
+    }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+    .brox-ai-copilot-sidebar {
+        width: 380px;
+    }
+}
+
+/* --- Mobile View (Public) --- */
 @media (max-width: 500px) {
-    .ai-chat-shell {
+    .brox-ai-chat-shell {
         width: 100vw;
         height: 100vh;
         max-height: 100vh;
@@ -427,34 +1399,311 @@
         border-radius: 0;
     }
 
-    .ai-sidebar {
+    .brox-ai-sidebar {
         position: absolute;
         z-index: 10;
         height: 100%;
     }
+
+    /* Public chat mobile header */
+    .brox-ai-chat-shell .brox-ai-header {
+        padding: 12px 16px;
+    }
+
+    .brox-ai-chat-shell .brox-ai-header-title {
+        font-size: 1rem;
+    }
+
+    /* Prechat form mobile */
+    .brox-ai-prechat {
+        padding: 20px 16px;
+    }
+
+    .brox-ai-topic-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Chat messages mobile */
+    .brox-ai-chat-shell .brox-ai-body {
+        padding: 16px;
+    }
+
+    .brox-ai-chat-shell .brox-ai-footer {
+        padding: 12px 16px;
+    }
+
+    /* Footer public mobile */
+    .brox-ai-footer-public {
+        padding: 16px;
+    }
+
+    .brox-ai-composer-wrapper {
+        padding: 6px 6px 6px 16px;
+    }
+
+    .brox-ai-composer-wrapper input {
+        font-size: 0.9rem;
+    }
+
+    /* Quick actions mobile */
+    .brox-ai-quick-actions {
+        padding: 10px 16px;
+    }
+
+    .brox-ai-action-chip {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+
+    /* Agentic status mobile */
+    .brox-ai-agentic-status {
+        padding: 8px 16px;
+        font-size: 0.75rem;
+    }
+
+    /* Sidebar mobile */
+    .brox-ai-sidebar {
+        width: 100%;
+    }
 }
 
-/* --- Dark Mode --- */
-[data-theme="dark"] {
-    --ai-glass-bg: rgba(15, 23, 42, 0.8);
-    --ai-glass-border: rgba(255, 255, 255, 0.1);
-    --ai-bg-main: #0f172a;
-    --ai-bg-msg-ai: rgba(30, 41, 59, 0.9);
+/* --- Additional Public Chat Styles --- */
+/* Message container */
+.brox-ai-chat-shell .brox-ai-body {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
 }
 
-[data-theme="dark"] .ai-footer,
-[data-theme="dark"] .ai-sidebar {
-    background: #1e293b;
+/* Public message bubbles */
+.brox-ai-chat-shell .brox-ai-msg {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    position: relative;
 }
 
-[data-theme="dark"] .ai-msg.assistant {
-    color: #f1f5f9;
+.brox-ai-chat-shell .brox-ai-msg.brox-ai-user {
+    align-self: flex-end;
+    background: var(--brox-ai-primary);
+    color: white;
+    border-bottom-right-radius: 4px;
 }
 
-[data-theme="dark"] .ai-history-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+.brox-ai-chat-shell .brox-ai-msg.brox-ai-assistant {
+    align-self: flex-start;
+    background: white;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-[data-theme="dark"] .ai-composer-wrapper {
-    background: #0f172a;
+.brox-ai-chat-shell .brox-ai-msg-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--brox-ai-primary-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+    color: var(--brox-ai-primary);
+}
+
+.brox-ai-chat-shell .brox-ai-msg-content {
+    flex: 1;
+    word-wrap: break-word;
+}
+
+.brox-ai-chat-shell .brox-ai-msg-meta {
+    font-size: 0.6rem;
+    color: rgba(0, 0, 0, 0.4);
+    margin-top: 4px;
+}
+
+/* Typing indicator public */
+.brox-ai-chat-shell .brox-ai-typing-indicator {
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.brox-ai-chat-shell .brox-ai-typing-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--brox-ai-primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: white;
+}
+
+.brox-ai-chat-shell .brox-ai-typing-content {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.brox-ai-chat-shell .brox-ai-typing-dots span {
+    width: 5px;
+    height: 5px;
+    background: #94a3b8;
+    border-radius: 50%;
+    animation: brox-ai-typing 1.4s infinite;
+}
+
+.brox-ai-chat-shell .brox-ai-typing-text {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+/* Empty state */
+.brox-ai-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+}
+
+.brox-ai-empty-state-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    background: var(--brox-ai-primary-soft);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--brox-ai-primary);
+}
+
+.brox-ai-empty-state h4 {
+    color: #334155;
+    margin-bottom: 8px;
+}
+
+.brox-ai-empty-state p {
+    font-size: 0.9rem;
+}
+
+/* --- Utility Classes --- */
+.brox-ai-hidden {
+    display: none !important;
+}
+
+.brox-ai-visible {
+    display: flex !important;
+}
+
+.brox-ai-opacity-0 {
+    opacity: 0;
+}
+
+.brox-ai-opacity-100 {
+    opacity: 1;
+}
+
+.brox-ai-pointer-events-none {
+    pointer-events: none;
+}
+
+.brox-ai-pointer-events-auto {
+    pointer-events: auto;
+}
+
+/* Transitions */
+.brox-ai-transition-fast {
+    transition: all 0.15s ease;
+}
+
+.brox-ai-transition-normal {
+    transition: all 0.3s ease;
+}
+
+.brox-ai-transition-slow {
+    transition: all 0.5s ease;
+}
+
+/* Scrollbar styling */
+.brox-ai-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.brox-ai-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.brox-ai-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.brox-ai-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* Dark mode scrollbar */
+.brox-ai-copilot-sidebar .brox-ai-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.brox-ai-copilot-sidebar .brox-ai-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* --- Tablet View --- */
+@media (min-width: 501px) and (max-width: 768px) {
+    .brox-ai-chat-shell {
+        width: 90vw;
+        height: 80vh;
+        right: 5vw;
+        bottom: 100px;
+    }
+
+    .brox-ai-sidebar {
+        width: 220px;
+    }
+}
+
+/* --- Large Screen --- */
+@media (min-width: 1200px) {
+    .brox-ai-chat-shell {
+        width: 480px;
+        height: 750px;
+    }
+}
+
+/* --- Print Styles --- */
+@media print {
+
+    .brox-ai-copilot-sidebar,
+    .brox-ai-chat-shell,
+    #publicAssistantBtn,
+    #adminAiBtn {
+        display: none !important;
+    }
+}
+
+/* --- Reduced Motion --- */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }

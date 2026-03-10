@@ -41,7 +41,7 @@ require_once __DIR__ . '/../Models/AppSettings.php';
             ['label' => 'AI SYSTEM', 'url' => '/admin/ai-system']
         ];
 
-        echo $twig->render('admin/ai-system.twig', [
+        echo $twig->render('admin/ai/system.twig', [
             'title' => 'AI SYSTEM',
             'breadcrumbs' => $breadcrumbs,
             'providers' => $providers,
@@ -503,7 +503,7 @@ require_once __DIR__ . '/../Models/AppSettings.php';
             ['label' => 'AI Conversations', 'url' => '/admin/ai-chats']
         ];
 
-        echo $twig->render('admin/ai-chats.twig', [
+        echo $twig->render('admin/ai/chats.twig', [
             'title' => 'AI Conversations',
             'breadcrumbs' => $breadcrumbs,
             'current_page' => 'ai-chats',
@@ -518,7 +518,7 @@ require_once __DIR__ . '/../Models/AppSettings.php';
             ['label' => 'AI Knowledge Base', 'url' => '/admin/ai-knowledge']
         ];
 
-        echo $twig->render('admin/ai-knowledge.twig', [
+        echo $twig->render('admin/ai/knowledge.twig', [
             'title' => 'AI Knowledge Base',
             'breadcrumbs' => $breadcrumbs,
             'csrf_token' => generateCsrfToken()
@@ -563,6 +563,25 @@ require_once __DIR__ . '/../Models/AppSettings.php';
         }
 
         $result = $chatModel->addMessage((int)$convId, 'assistant', $content);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $result]);
+    });
+
+    // POST /api/admin/ai-chats/end - Close conversation
+    $router->post('/api/admin/ai-chats/end', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+        require_once __DIR__ . '/../Models/AIChatModel.php';
+        $chatModel = new AIChatModel($mysqli);
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        $convId = $input['conversation_id'] ?? 0;
+        
+        if (!$convId) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Conversation ID is required']);
+            return;
+        }
+
+        $result = $chatModel->setStatus((int)$convId, 'closed');
         header('Content-Type: application/json');
         echo json_encode(['success' => $result]);
     });

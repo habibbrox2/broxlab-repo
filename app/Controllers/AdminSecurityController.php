@@ -51,7 +51,7 @@ $router->group('/admin/security', ['middleware' => ['auth', 'admin_or_super_only
                 // Get 2FA status
                 $twoFAStatus = $securityManager->get2FAStatus($userId);
 
-                echo $twig->render('admin/security-2fa.twig', [
+                echo $twig->render('admin/security/2fa.twig', [
                 'title' => 'Two-Factor Authentication',
                 'page_title' => 'Admin Two-Factor Authentication',
                 'user' => $user,
@@ -108,7 +108,7 @@ $router->group('/admin/security', ['middleware' => ['auth', 'admin_or_super_only
                     $qrImage = null;
                 }
 
-                echo $twig->render('admin/security-2fa-setup.twig', [
+                echo $twig->render('admin/security/2fa_setup.twig', [
                 'title' => 'Setup Two-Factor Authentication',
                 'page_title' => 'Setup 2FA for Admin',
                 'user' => $user,
@@ -291,7 +291,7 @@ $router->group('/admin/security', ['middleware' => ['auth', 'admin_or_super_only
                     exit;
                 }
 
-                echo $twig->render('admin/security-2fa-backup.twig', [
+                echo $twig->render('admin/security/2fa_backup.twig', [
                 'title' => 'Backup Codes',
                 'page_title' => 'Your 2FA Backup Codes',
                 'user' => $user,

@@ -117,7 +117,7 @@ $router->get('/admin/dashboard', ['middleware' => ['auth', 'admin_or_super_only'
         $userRoles = $userModel->getRoles($currentUser['id']);
         $userPermissions = $userModel->getPermissions($currentUser['id']);
         
-        echo $twig->render('admin/dashboard_admin.twig', [
+        echo $twig->render('admin/dashboard/index.twig', [
             'title'        => 'Admin Dashboard',
             'header_title' => 'Welcome back, ' . htmlspecialchars($currentUser['full_name'] ?? $currentUser['username'] ?? 'Admin'),
             'admin_user'    => $currentUser,
