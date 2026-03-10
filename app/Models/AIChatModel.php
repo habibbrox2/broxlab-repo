@@ -30,8 +30,13 @@ class AIChatModel {
         if ($row) return $row['id'];
 
         // Create new
-        $stmt = $this->db->prepare("INSERT INTO ai_conversations (user_id, guest_token) VALUES (?, ?)");
-        $stmt->bind_param("is", $userId, $guestToken);
+        if ($userId) {
+            $stmt = $this->db->prepare("INSERT INTO ai_conversations (user_id) VALUES (?)");
+            $stmt->bind_param("i", $userId);
+        } else {
+            $stmt = $this->db->prepare("INSERT INTO ai_conversations (guest_token) VALUES (?)");
+            $stmt->bind_param("s", $guestToken);
+        }
         $stmt->execute();
         $id = $stmt->insert_id;
         $stmt->close();

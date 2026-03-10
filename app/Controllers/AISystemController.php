@@ -8,6 +8,207 @@
 
 require_once __DIR__ . '/../Models/AIProvider.php';
 require_once __DIR__ . '/../Models/AppSettings.php';
+require_once __DIR__ . '/../Helpers/PromptLoader.php';
+require_once __DIR__ . '/../Models/AIChatModel.php';
+
+function aiChatSendJson(array $payload, int $status = 200): void
+{
+    header('Content-Type: application/json');
+    http_response_code($status);
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+}
+
+function aiChatStreamContent(string $content): void
+{
+    header('Content-Type: text/event-stream');
+    header('Cache-Control: no-cache');
+    header('X-Accel-Buffering: no');
+    @ini_set('output_buffering', 'off');
+    @ini_set('zlib.output_compression', '0');
+    while (ob_get_level() > 0) {
+        @ob_end_flush();
+    }
+    @ob_implicit_flush(true);
+
+    $chunkSize = 200;
+    if (function_exists('mb_strlen')) {
+        $length = mb_strlen($content, 'UTF-8');
+        for ($i = 0; $i < $length; $i += $chunkSize) {
+            $chunk = mb_substr($content, $i, $chunkSize, 'UTF-8');
+            echo 'data: ' . json_encode(['content' => $chunk], JSON_UNESCAPED_UNICODE) . "\n\n";
+            @ob_flush();
+            flush();
+        }
+    } else {
+        foreach (str_split($content, $chunkSize) as $chunk) {
+            echo 'data: ' . json_encode(['content' => $chunk], JSON_UNESCAPED_UNICODE) . "\n\n";
+            @ob_flush();
+            flush();
+        }
+    }
+
+    echo "data: [DONE]\n\n";
+    @ob_flush();
+    flush();
+}
+
+function aiChatNormalizeMessages($messages, int $maxMessages, int $maxChars, ?string &$error = null): array
+{
+    if (!is_array($messages)) {
+        $error = 'Messages array is required';
+        return [];
+    }
+
+    $out = [];
+    foreach ($messages as $msg) {
+        if (!is_array($msg)) {
+            continue;
+        }
+        $role = $msg['role'] ?? '';
+        if (!in_array($role, ['user', 'assistant'], true)) {
+            continue;
+        }
+        $content = $msg['content'] ?? '';
+        if (!is_string($content)) {
+            continue;
+        }
+        $content = trim($content);
+        if ($content === '') {
+            continue;
+        }
+        $len = function_exists('mb_strlen') ? mb_strlen($content, 'UTF-8') : strlen($content);
+        if ($len > $maxChars) {
+            $error = 'Message too long';
+            return [];
+        }
+        $out[] = ['role' => $role, 'content' => $content];
+    }
+
+    if (empty($out)) {
+        $error = 'No valid messages';
+        return [];
+    }
+
+    if (count($out) > $maxMessages) {
+        $out = array_slice($out, -$maxMessages);
+    }
+
+    return $out;
+}
+
+function aiChatLastUserMessage(array $messages): string
+{
+    for ($i = count($messages) - 1; $i >= 0; $i--) {
+        if (($messages[$i]['role'] ?? '') === 'user') {
+            return (string)($messages[$i]['content'] ?? '');
+        }
+    }
+    return '';
+}
+
+function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $allowOverrides): void
+{
+    $aiProvider = new AIProvider($mysqli);
+    $chatModel = new AIChatModel($mysqli);
+
+    $maxMessages = $isAdmin ? 40 : 20;
+    $maxChars = $isAdmin ? 8000 : 4000;
+    $error = null;
+    $messages = aiChatNormalizeMessages($input['messages'] ?? null, $maxMessages, $maxChars, $error);
+    if ($error) {
+        aiChatSendJson(['success' => false, 'error' => $error], 400);
+        return;
+    }
+
+    $stream = !empty($input['stream']);
+    $contextType = $isAdmin ? 'admin' : 'public';
+    $contextData = $input['context'] ?? null;
+
+    $systemPrompt = PromptLoader::getSystemPrompt($contextType, $mysqli);
+    if ($contextData && is_array($contextData)) {
+        $systemPrompt .= "\n\n[USER CONTEXT]\n";
+        foreach ($contextData as $key => $val) {
+            if (is_scalar($val)) {
+                $systemPrompt .= ucfirst((string)$key) . ": $val\n";
+            }
+        }
+    }
+
+    $lastUserMessage = aiChatLastUserMessage($messages);
+    if ($lastUserMessage !== '') {
+        $kbContext = PromptLoader::getKnowledgeContext($lastUserMessage, $mysqli);
+        if ($kbContext) {
+            $systemPrompt .= "\n\n" . $kbContext;
+        }
+    }
+
+    array_unshift($messages, ['role' => 'system', 'content' => $systemPrompt]);
+
+    $settings = $aiProvider->getSettings();
+    $effective = $aiProvider->getEffectiveProvider();
+    $provider = $effective['provider_name'] ?? 'openrouter';
+    $model = $settings['default_model'] ?? 'openrouter/auto';
+
+    if ($allowOverrides) {
+        if (!empty($input['provider']) && is_string($input['provider'])) {
+            $provider = $input['provider'];
+        }
+        if (!empty($input['model']) && is_string($input['model'])) {
+            $model = $input['model'];
+        }
+    }
+
+    $options = [];
+    if ($allowOverrides && isset($input['options']) && is_array($input['options'])) {
+        $options = $input['options'];
+    }
+    $options['max_tokens'] = isset($options['max_tokens'])
+        ? (int)$options['max_tokens']
+        : (int)($settings['max_tokens'] ?? 4000);
+    $options['temperature'] = isset($options['temperature'])
+        ? (float)$options['temperature']
+        : (float)($settings['temperature'] ?? 0.7);
+
+    $convId = null;
+    if (!$isAdmin) {
+        $visitorToken = $input['visitorToken'] ?? null;
+        if ($visitorToken) {
+            $convId = $chatModel->getOrCreateConversation(null, $visitorToken);
+            if ($convId && $lastUserMessage !== '') {
+                $chatModel->addMessage($convId, 'user', $lastUserMessage);
+            }
+        }
+    }
+
+    $response = $aiProvider->callAPI($provider, $model, $messages, $options);
+
+    if ($convId && !empty($response['success'])) {
+        $aiText = $response['content'] ?? '';
+        if ($aiText !== '') {
+            $chatModel->addMessage($convId, 'assistant', $aiText);
+        }
+    }
+
+    if ($stream) {
+        if (empty($response['success'])) {
+            aiChatSendJson(['success' => false, 'error' => $response['error'] ?? 'AI error'], 502);
+            return;
+        }
+        aiChatStreamContent($response['content'] ?? '');
+        return;
+    }
+
+    if (!empty($response['success'])) {
+        aiChatSendJson([
+            'success' => true,
+            'content' => $response['content'] ?? '',
+            'usage' => $response['usage'] ?? []
+        ]);
+        return;
+    }
+
+    aiChatSendJson(['success' => false, 'error' => $response['error'] ?? 'AI error'], 502);
+}
 
 
 
@@ -57,13 +258,7 @@ require_once __DIR__ . '/../Models/AppSettings.php';
         $aiProvider = new AIProvider($mysqli);
         $settings = $aiProvider->getSettings();
 
-        // Prefer stored settings, but fall back to environment variables when present.
-        $fireworksDbKey = $settings['fireworks_api_key'] ?? '';
-        $fireworksEnvKey = getenv('FIREWORKS_API_KEY') ?: '';
-        $fireworksKey = $fireworksDbKey ?: $fireworksEnvKey;
-
         $openrouterDbKey = $settings['openrouter_api_key'] ?? '';
-        $openrouterKey = $openrouterDbKey;
 
         $openrouterKeySource = !empty($openrouterDbKey) ? 'db' : 'none';
 
@@ -79,31 +274,22 @@ require_once __DIR__ . '/../Models/AppSettings.php';
             if ($frontendProvider === 'openrouter') {
                 // OpenRouter expects a model like openrouter/auto (auto router) or any other supported model ID.
                 // If no model is configured, default to the auto router.
-                $defaultModel = array_key_first(self::getProviderConfig('openrouter')['models'] ?? ['openrouter/auto' => 'Auto Router']);
+                $defaultModel = array_key_first(AIProvider::getProviderConfig('openrouter')['models'] ?? ['openrouter/auto' => 'Auto Router']);
             } else {
                 $defaultModel = 'openrouter/auto';
             }
         }
 
-        // Build provider list for frontend use (includes API keys for active providers)
+        // Build provider list for frontend use (no API keys exposed)
         $activeProviders = $aiProvider->getActive();
         $providerList = [];
         foreach ($activeProviders as $p) {
             $providerName = $p['provider_name'];
-            $key = '';
-
-            if ($providerName === 'openrouter') {
-                $key = $settings['openrouter_api_key'] ?? '';
-            } else {
-                $envKey = strtoupper($providerName) . '_API_KEY';
-                $key = getenv($envKey) ?: ($settings[$providerName . '_api_key'] ?? '');
-            }
 
             $providerList[] = [
                 'provider_name' => $providerName,
                 'display_name' => $p['display_name'],
-                'api_key' => $key,
-                'has_api_key' => !empty($key),
+                'has_api_key' => !empty($settings[$providerName . '_api_key'] ?? ''),
                 'models' => $p['supported_models'] ?? [],
                 'is_default' => !empty($p['is_default']),
                 'is_active' => !empty($p['is_active'])
@@ -115,9 +301,6 @@ require_once __DIR__ . '/../Models/AppSettings.php';
             'provider' => $frontendProvider,
             'model' => $defaultModel,
             'providers' => $providerList,
-            // include transparent API keys for client JS (will be kept secret in production)
-            'fireworks_api_key' => $fireworksKey,
-            'openrouter_api_key' => $openrouterKey,
             'openrouter_key_source' => $openrouterKeySource
         ]);
     });
@@ -346,81 +529,41 @@ require_once __DIR__ . '/../Models/AppSettings.php';
         echo json_encode(['success' => true, 'models' => $remote]);
     });
 
-    // POST /api/ai-system/chat
-    // Proxies chat requests to AI providers using server-side API keys.
-    $router->post('/api/ai-system/chat', function () use ($mysqli) {
-        require_once __DIR__ . '/../Helpers/PromptLoader.php';
-        require_once __DIR__ . '/../Models/AIChatModel.php';
-        $aiProvider = new AIProvider($mysqli);
-        $chatModel = new AIChatModel($mysqli);
-        
-        // Get request data
-        $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        
-        $messages = $input['messages'] ?? [];
-        $provider = $input['provider'] ?? '';
-        $model = $input['model'] ?? '';
-        $options = $input['options'] ?? [];
-        $isAdmin = !empty($input['isAdmin']);
-        $visitorToken = $input['visitorToken'] ?? null;
-        $contextData = $input['context'] ?? null;
-        
-        if (empty($messages)) {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'error' => 'Messages are required']);
-            return;
+    // POST /api/ai/chat (Public assistant)
+    $router->post('/api/ai/chat', function () use ($mysqli) {
+        run_middleware('rate_limit', [
+            'scope' => 'ai_public_chat',
+            'limit' => 30,
+            'window' => 60,
+            'is_api' => true
+        ]);
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
         }
 
-        // Load system prompt
-        $contextType = $isAdmin ? 'admin' : 'public';
-        $systemPrompt = PromptLoader::getSystemPrompt($contextType, $mysqli);
-        
-        if ($contextData && is_array($contextData)) {
-            $systemPrompt .= "\n\n[USER CONTEXT]\n";
-            foreach ($contextData as $key => $val) {
-                if (is_scalar($val)) $systemPrompt .= ucfirst($key) . ": $val\n";
-            }
+        aiChatHandleRequest($input, $mysqli, false, false);
+    });
+
+    // POST /api/admin/ai/chat (Admin-only)
+    $router->post('/api/admin/ai/chat', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
         }
 
-        // Add system prompt
-        if (empty($messages) || $messages[0]['role'] !== 'system') {
-            array_unshift($messages, ['role' => 'system', 'content' => $systemPrompt]);
-        } else {
-            $messages[0]['content'] = $systemPrompt;
+        aiChatHandleRequest($input, $mysqli, true, true);
+    });
+
+    // POST /api/ai-system/chat (Legacy alias for admin)
+    $router->post('/api/ai-system/chat', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
         }
 
-        // Identify conversation for logging
-        $convId = null;
-        if (!$isAdmin && $visitorToken) {
-            $convId = $chatModel->getOrCreateConversation(null, $visitorToken);
-            // Log the latest user message
-            $lastUserMsg = end($messages);
-            if ($lastUserMsg && $lastUserMsg['role'] === 'user') {
-                $chatModel->addMessage($convId, 'user', $lastUserMsg['content']);
-            }
-        }
-
-        // If provider/model not specified, use defaults
-        if (empty($provider) || empty($model)) {
-            $settings = $aiProvider->getSettings();
-            $effective = $aiProvider->getEffectiveProvider();
-            $provider = $provider ?: ($effective['provider_name'] ?? 'openrouter');
-            $model = $model ?: ($settings['default_model'] ?? 'openrouter/auto');
-        }
-
-        // Call the AI API
-        $response = $aiProvider->callAPI($provider, $model, $messages, $options);
-        
-        // Log AI response if it's a tracked conversation
-        if ($convId && $response['success']) {
-            $aiText = $response['text'] ?? $response['message']['content'] ?? '';
-            if ($aiText) {
-                $chatModel->addMessage($convId, 'assistant', $aiText);
-            }
-        }
-
-        header('Content-Type: application/json');
-        echo json_encode($response);
+        aiChatHandleRequest($input, $mysqli, true, true);
     });
 
         // ==================== Knowledge Base Management (Admin) ====================
@@ -534,6 +677,11 @@ require_once __DIR__ . '/../Models/AppSettings.php';
         $offset = ($page - 1) * $limit;
         
         $convs = $chatModel->listConversations($limit, $offset);
+        foreach ($convs as &$conv) {
+            if (!isset($conv['visitor_token'])) {
+                $conv['visitor_token'] = $conv['guest_token'] ?? null;
+            }
+        }
         header('Content-Type: application/json');
         echo json_encode(['success' => true, 'conversations' => $convs]);
     });

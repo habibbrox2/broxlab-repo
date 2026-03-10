@@ -171,14 +171,14 @@ if (!window.BroxAssistantLoaded) {
         initUI() {
             this.nodes = {
                 btn: document.getElementById('publicAssistantBtn'),
-                shell: document.getElementById('PublicAssistantChat'),
+                shell: document.getElementById('publicAssistantChat'),
                 sidebar: document.getElementById('publicAssistantSidebar'),
                 history: document.getElementById('publicAssistantHistory'),
                 toggleSidebar: document.getElementById('toggleAiSidebar'),
                 title: document.getElementById('publicAssistantTitle'),
                 status: document.getElementById('publicAssistantStatusText'),
                 agenticStatus: document.getElementById('publicAssistantAgenticStatus'),
-                statusDetail: document.querySelector('.brox-ai-status-detail'),
+                statusDetail: document.querySelector('.ai-status-detail'),
                 body: document.getElementById('publicAssistantMessages'),
                 footer: document.getElementById('publicAssistantFooter'),
                 input: document.getElementById('publicAssistantInput'),
@@ -191,7 +191,7 @@ if (!window.BroxAssistantLoaded) {
                 quickActions: document.getElementById('publicAssistantQuickActions'),
 
                 prechatSteps: {
-                    name: document.querySelector('.step-name'),
+                    name: document.querySelector('.brox-ai-step-name'),
                     contact: document.querySelector('.step-contact'),
                     topic: document.querySelector('.step-topic')
                 },
@@ -295,18 +295,18 @@ if (!window.BroxAssistantLoaded) {
             if (!this.nodes.prechat || !this.nodes.body || !this.nodes.footer) return;
 
             if (!this.user) {
-                this.nodes.prechat.classList.remove('d-none');
-                this.nodes.body.classList.add('d-none');
-                this.nodes.footer.classList.add('d-none');
-                this.nodes.quickActions?.classList.add('d-none');
-                if (this.nodes.prechatSteps.name) this.nodes.prechatSteps.name.classList.remove('d-none');
-                if (this.nodes.prechatSteps.contact) this.nodes.prechatSteps.contact.classList.add('d-none');
-                if (this.nodes.prechatSteps.topic) this.nodes.prechatSteps.topic.classList.add('d-none');
+                this.nodes.prechat.classList.remove('brox-ai-hidden');
+                this.nodes.body.classList.add('brox-ai-hidden');
+                this.nodes.footer.classList.add('brox-ai-hidden');
+                this.nodes.quickActions?.classList.add('brox-ai-hidden');
+                if (this.nodes.prechatSteps.name) this.nodes.prechatSteps.name.classList.remove('brox-ai-hidden');
+                if (this.nodes.prechatSteps.contact) this.nodes.prechatSteps.contact.classList.add('brox-ai-hidden');
+                if (this.nodes.prechatSteps.topic) this.nodes.prechatSteps.topic.classList.add('brox-ai-hidden');
             } else {
-                this.nodes.prechat.classList.add('d-none');
-                this.nodes.body.classList.remove('d-none');
-                this.nodes.footer.classList.remove('d-none');
-                this.nodes.quickActions?.classList.remove('d-none');
+                this.nodes.prechat.classList.add('brox-ai-hidden');
+                this.nodes.body.classList.remove('brox-ai-hidden');
+                this.nodes.footer.classList.remove('brox-ai-hidden');
+                this.nodes.quickActions?.classList.remove('brox-ai-hidden');
                 this.nodes.body.innerHTML = '';
 
                 if (this.history.length === 0) {
@@ -325,7 +325,7 @@ if (!window.BroxAssistantLoaded) {
 
             const models = await fetchModels(provider);
             if (!models.length) {
-                this.nodes.modelSel.classList.add('d-none');
+                this.nodes.modelSel.classList.add('brox-ai-hidden');
                 return;
             }
 
@@ -340,7 +340,7 @@ if (!window.BroxAssistantLoaded) {
 
             const defaultOpt = models.find(m => m.default);
             this.currentModel = defaultOpt ? defaultOpt.id : models[0].id;
-            this.nodes.modelSel.classList.remove('d-none');
+            this.nodes.modelSel.classList.remove('brox-ai-hidden');
 
             this.nodes.modelSel.addEventListener('change', () => {
                 this.currentModel = this.nodes.modelSel.value;
@@ -376,7 +376,7 @@ if (!window.BroxAssistantLoaded) {
             };
 
             this.recognition.onend = () => {
-                const micBtn = document.querySelector('.brox-ai-tool-btn[data-voice]');
+                const micBtn = document.querySelector('.brox-ai-tool-btn[title="Voice Input"]');
                 if (micBtn) micBtn.classList.remove('brox-ai-recording');
             };
 
@@ -396,7 +396,7 @@ if (!window.BroxAssistantLoaded) {
 
             const voiceMicBtn = document.querySelector('.brox-ai-tool-btn[title="Voice Input"]');
 
-            if (voiceMicBtn && voiceMicBtn.classList.contains('recording')) {
+            if (voiceMicBtn && voiceMicBtn.classList.contains('brox-ai-recording')) {
                 this.recognition.stop();
             } else {
                 this.recognition.lang = this.lang === 'bn' ? 'bn-BD' : 'en-US';
@@ -437,7 +437,18 @@ if (!window.BroxAssistantLoaded) {
             msg.className = 'brox-ai-msg user';
             const content = document.createElement('div');
             content.className = 'brox-ai-msg-content';
-            content.innerHTML = '<div class="brox-ai-file-attachment"><i class="bi bi-file-earmark"></i><span>' + file.name + '</span><small>' + this.formatFileSize(file.size) + '</small></div>';
+            const attachment = document.createElement('div');
+            attachment.className = 'brox-ai-file-attachment';
+            const icon = document.createElement('i');
+            icon.className = 'bi bi-file-earmark';
+            const name = document.createElement('span');
+            name.textContent = file.name;
+            const size = document.createElement('small');
+            size.textContent = this.formatFileSize(file.size);
+            attachment.appendChild(icon);
+            attachment.appendChild(name);
+            attachment.appendChild(size);
+            content.appendChild(attachment);
             msg.appendChild(content);
             const meta = document.createElement('div');
             meta.className = 'brox-ai-msg-meta';
@@ -459,26 +470,20 @@ if (!window.BroxAssistantLoaded) {
         bindEvents() {
             // Toggle chat open/close with icon change
             this.nodes.btn.onclick = () => {
-                if (this.nodes.shell?.classList.contains('d-none')) {
-                    this.nodes.shell.classList.remove('d-none');
-                    setTimeout(() => this.nodes.shell.classList.remove('brox-ai-hidden'), 10);
-                    // Show close icon
+                if (this.nodes.shell?.classList.contains('brox-ai-hidden')) {
+                    this.nodes.shell.classList.remove('brox-ai-hidden');
                     this.nodes.btn.classList.add('brox-ai-active');
                 } else {
                     this.nodes.shell?.classList.add('brox-ai-hidden');
-                    setTimeout(() => this.nodes.shell?.classList.add('d-none'), 300);
-                    // Show open icon
                     this.nodes.btn.classList.remove('brox-ai-active');
                 }
             };
             this.nodes.shell?.classList.add('brox-ai-hidden');
-            setTimeout(() => this.nodes.shell?.classList.add('d-none'), 300);
 
             // Close button handler
             if (this.nodes.close) {
                 this.nodes.close.onclick = () => {
                     this.nodes.shell?.classList.add('brox-ai-hidden');
-                    setTimeout(() => this.nodes.shell?.classList.add('d-none'), 300);
                     // Show open icon on FAB button
                     this.nodes.btn?.classList.remove('brox-ai-active');
                 };
@@ -512,8 +517,8 @@ if (!window.BroxAssistantLoaded) {
             if (this.nodes.prechatBtns.next1) {
                 this.nodes.prechatBtns.next1.onclick = () => {
                     if (!this.nodes.prechatInputs.name?.value.trim()) { alert(this.t('err_name')); return; }
-                    this.nodes.prechatSteps.name?.classList.add('d-none');
-                    this.nodes.prechatSteps.contact?.classList.remove('d-none');
+                    this.nodes.prechatSteps.name?.classList.add('brox-ai-hidden');
+                    this.nodes.prechatSteps.contact?.classList.remove('brox-ai-hidden');
                     // Update labels when moving to contact step
                     this.updatePrechatLabels();
                 };
@@ -533,8 +538,8 @@ if (!window.BroxAssistantLoaded) {
                         return;
                     }
 
-                    this.nodes.prechatSteps.contact?.classList.add('d-none');
-                    this.nodes.prechatSteps.topic?.classList.remove('d-none');
+                    this.nodes.prechatSteps.contact?.classList.add('brox-ai-hidden');
+                    this.nodes.prechatSteps.topic?.classList.remove('brox-ai-hidden');
                     this.updatePrechatLabels();
                 };
             }
@@ -569,10 +574,10 @@ if (!window.BroxAssistantLoaded) {
         }
 
         renderChatMode() {
-            this.nodes.prechat.classList.add('d-none');
-            this.nodes.body.classList.remove('d-none');
-            this.nodes.footer.classList.remove('d-none');
-            this.nodes.quickActions?.classList.remove('d-none');
+            this.nodes.prechat.classList.add('brox-ai-hidden');
+            this.nodes.body.classList.remove('brox-ai-hidden');
+            this.nodes.footer.classList.remove('brox-ai-hidden');
+            this.nodes.quickActions?.classList.remove('brox-ai-hidden');
             this.nodes.body.innerHTML = '';
 
             const greeting = (this.lang === 'bn' ? `হ্যালো ${this.user.name}! ` : `Hello ${this.user.name}! `) + this.t('welcome');
@@ -580,7 +585,7 @@ if (!window.BroxAssistantLoaded) {
 
             // Initialize chat in history
             this.history = [];
-            this.history.push({ role: 'user', content: name, timestamp: new Date().toISOString() });
+            this.history.push({ role: 'user', content: this.user.name, timestamp: new Date().toISOString() });
             this.saveHistory();
 
             this.renderHistorySidebar();
@@ -673,12 +678,12 @@ if (!window.BroxAssistantLoaded) {
         updateAgenticStatus(pillText, detailText) {
             if (!this.nodes.agenticStatus || !this.nodes.statusDetail) return;
             if (pillText) {
-                this.nodes.agenticStatus.classList.remove('d-none');
+                this.nodes.agenticStatus.classList.remove('brox-ai-hidden');
                 const pill = this.nodes.agenticStatus.querySelector('.brox-ai-status-pill');
                 if (pill) pill.textContent = pillText;
                 this.nodes.statusDetail.textContent = detailText || '';
             } else {
-                this.nodes.agenticStatus.classList.add('d-none');
+                this.nodes.agenticStatus.classList.add('brox-ai-hidden');
             }
         }
 
