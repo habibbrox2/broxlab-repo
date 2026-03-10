@@ -3,6 +3,18 @@
  * Path: /public_html/ai/js/ai-chat-manager.js
  */
 
+// ── Auto-inject ai-style.css (no <link> tag needed in HTML) ──────────────────
+(function injectAiCSS() {
+    const cssUrl = (document.currentScript?.src || '/ai/js/ai-chat-manager.js')
+        .replace(/\/js\/[^/]+$/, '/css/ai-style.css');
+    if (!document.querySelector(`link[href="${cssUrl}"]`)) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = cssUrl;
+        document.head.appendChild(link);
+    }
+})();
+
 class AIChatManager {
     constructor() {
         this.conversations = [];

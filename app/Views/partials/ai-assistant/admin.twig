@@ -1,55 +1,66 @@
 {# 2026 Standard AI Copilot Sidebar for Admin Panel #}
-<div id="adminAiShell" class="ai-chat-shell admin-sidebar hidden">
-    <div class="ai-header admin">
+<div id="adminAiShell" class="ai-copilot-sidebar hidden">
+    <!-- Header: Context Aware -->
+    <div class="ai-header admin-theme">
         <div class="ai-header-info">
-            <div class="ai-header-title" id="adminAiTitle">Admin Copilot</div>
-            <div class="ai-header-status" id="adminAiStatus">Context: Dashboard</div>
+            <h3 class="ai-header-title" id="adminAiTitle">
+                <i class="bi bi-robot"></i> Copilot
+            </h3>
+            <span class="ai-header-context" id="adminAiContextBadge">
+                Context: <span class="badge bg-secondary">Global</span>
+            </span>
         </div>
-        <div class="ai-header-actions">
-            <button id="adminAiClose" class="btn-close btn-close-white" style="font-size: 0.8rem;"></button>
-        </div>
+        <button id="adminAiClose" class="modern-btn-close ai-close" title="Close Sidebar"></button>
     </div>
 
-    {# Chat History Body #}
-    <div id="adminAiBody" class="ai-body">
+    <!-- Body: Chat & Artifacts -->
+    <div id="adminAiBody" class="ai-body custom-scrollbar">
         {# Messages & Artifacts injected via ai-admin.js #}
     </div>
 
-    {# Slash Menu (Hidden by default) #}
-    <div id="adminAiSlashMenu" class="ai-slash-menu hidden">
-        <div class="ai-slash-item" data-cmd="/generate">
-            <span class="cmd">/generate</span>
-            <span class="desc">Create new content or data</span>
-        </div>
-        <div class="ai-slash-item" data-cmd="/summarize">
-            <span class="cmd">/summarize</span>
-            <span class="desc">Summarize current page data</span>
-        </div>
-        <div class="ai-slash-item" data-cmd="/analyze">
-            <span class="cmd">/analyze</span>
-            <span class="desc">Deep analyze patterns</span>
-        </div>
+    <!-- Slash Menu Prompt (Hidden until '/' is typed) -->
+    <div id="adminAiSlashMenu" class="ai-slash-menu d-none">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item list-group-item-action" data-cmd="/summarize">
+                <strong><i class="bi bi-body-text"></i> /summarize</strong> <small class="text-muted">Summarize page data</small>
+            </li>
+            <li class="list-group-item list-group-item-action" data-cmd="/generate-report">
+                <strong><i class="bi bi-file-earmark-bar-graph"></i> /generate-report</strong> <small class="text-muted">Create analytics report</small>
+            </li>
+            <li class="list-group-item list-group-item-action" data-cmd="/query-db">
+                <strong><i class="bi bi-database"></i> /query-db</strong> <small class="text-muted">Direct SQL/Data query</small>
+            </li>
+        </ul>
     </div>
 
-    {# Chat Input Footer #}
+    <!-- Footer: Advanced Input + Model Selector -->
     <div id="adminAiFooter" class="ai-footer">
-        <div class="ai-composer">
-            <input type="text" id="adminAiInput" placeholder="Type / for commands..." autocomplete="off">
-            <button id="adminAiSend" class="ai-send-btn bg-dark">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-                </svg>
-            </button>
+        <!-- Model selector — populated remotely by ai-admin.js on boot -->
+        <div class="ai-model-bar px-2 pt-1">
+            <select id="adminAiModel"
+                    class="form-select form-select-sm d-none"
+                    title="AI Model"
+                    aria-label="Select AI Model">
+            </select>
+        </div>
+        <div class="ai-input-wrapper">
+            <textarea id="adminAiInput" 
+                      placeholder="Ask Copilot or type '/' for commands..." 
+                      rows="1" 
+                      class="form-control ai-textarea border-0 shadow-none"></textarea>
+            <div class="ai-input-actions">
+                <button class="btn btn-sm btn-link text-muted" title="Attach file"><i class="bi bi-paperclip"></i></button>
+                <button id="adminAiSend" class="btn btn-primary btn-sm rounded-circle">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
-{# Admin Sidebar Toggle (Minimalist) #}
-<button id="adminAiBtn" class="admin-assistant-fab">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-    </svg>
+<!-- Trigger Button (Top Nav or Bottom Right) -->
+<button id="adminAiBtn" class="ai-trigger-fab shadow-lg" title="Open Copilot">
+    <i class="bi bi-stars"></i>
 </button>
 
-<link rel="stylesheet" href="{{ asset('/ai/css/ai-style.css') }}">
 <script src="{{ asset('/ai/js/ai-admin.js') }}"></script>

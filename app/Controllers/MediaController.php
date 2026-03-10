@@ -96,7 +96,7 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                 }
 
                 if (!isset($_FILES['file']) || empty($_FILES['file'])) {
-                    throw new Exception('à¦•à§‹à¦¨ à¦«à¦¾à¦‡à¦² à¦¨à¦¿à¦°à§à¦¬à¦¾à¦šà¦¨ à¦•à¦°à¦¾ à¦¹à¦¯à¦¼à¦¨à¦¿à¥¤ (No file selected)');
+                    throw new Exception('কোন ফাইল নির্বাচন করা হয়নি। (No file selected)');
                 }
 
                 $file = $_FILES['file'];
@@ -110,7 +110,7 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
 
                 $validTypes = ['image', 'video', 'audio', 'document'];
                 if (!in_array($mediaType, $validTypes)) {
-                    throw new Exception('à¦…à¦¬à§ˆà¦§ à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦Ÿà¦¾à¦‡à¦ªà¥¤ (Invalid media type)');
+                    throw new Exception('অবৈধ মিডিয়া টাইপ। (Invalid media type)');
                 }
 
                 logDebug('MediaController::upload - Starting upload for user ' . $userId . ', file: ' . $file['name'] . ', type: ' . $mediaType);
@@ -125,7 +125,7 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                 ]);
 
                 if (!$result['success']) {
-                    throw new Exception($result['error'] ?? 'à¦†à¦ªà¦²à§‹à¦¡ à¦¬à§à¦¯à¦°à§à¦¥ à¦¹à¦¯à¦¼à§‡à¦›à§‡à¥¤ (Upload failed)');
+                    throw new Exception($result['error'] ?? 'আপলোড ব্যর্থ হয়েছে। (Upload failed)');
                 }
 
                 $uploadTime = round((microtime(true) - $uploadStartTime) * 1000, 2);
@@ -145,14 +145,14 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                     http_response_code(200);
                     echo json_encode([
                     'success' => true,
-                    'message' => 'à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦¸à¦«à¦²à¦­à¦¾à¦¬à§‡ à¦†à¦ªà¦²à§‹à¦¡ à¦•à¦°à¦¾ à¦¹à¦¯à¦¼à§‡à¦›à§‡! (Media uploaded successfully!)',
+                    'message' => 'মিডিয়া সফলভাবে আপলোড করা হয়েছে! (Media uploaded successfully!)',
                     'media_id' => $result['media_id'],
                     'redirect' => '/admin/media'
                     ]);
                     exit;
                 }
 
-                showMessage('à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦¸à¦«à¦²à¦­à¦¾à¦¬à§‡ à¦†à¦ªà¦²à§‹à¦¡ à¦•à¦°à¦¾ à¦¹à¦¯à¦¼à§‡à¦›à§‡! (Media uploaded successfully!)', 'success');
+                showMessage('মিডিয়া সফলভাবে আপলোড করা হয়েছে! (Media uploaded successfully!)', 'success');
                 header('Location: /admin/media');
                 exit;
 
@@ -182,7 +182,7 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                     exit;
                 }
 
-                showMessage('à¦†à¦ªà¦²à§‹à¦¡ à¦¬à§à¦¯à¦°à§à¦¥: ' . $errorMsg, 'error');
+                showMessage('আপলোড ব্যর্থ: ' . $errorMsg, 'error');
                 header('Location: /admin/media/upload');
                 exit;
             }
@@ -198,13 +198,13 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                 $mediaId = (int)$id;
 
                 if ($mediaId <= 0) {
-                    throw new Exception('à¦…à¦¬à§ˆà¦§ à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦†à¦‡à¦¡à¦¿à¥¤ (Invalid media ID)');
+                    throw new Exception('অবৈধ মিডিয়া আইডি। (Invalid media ID)');
                 }
 
                 $media = $mediaModel->getById($mediaId);
 
                 if (!$media) {
-                    throw new Exception('à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦ªà¦¾à¦“à¦¯à¦¼à¦¾ à¦¯à¦¾à¦¯à¦¼à¦¨à¦¿à¥¤ (Media not found)');
+                    throw new Exception('মিডিয়া পাওয়া যায়নি। (Media not found)');
                 }
 
                 echo $twig->render('admin/media/detail.twig', [
@@ -214,7 +214,7 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                 ]);
             }
             catch (Exception $e) {
-                showMessage('à¦¤à§à¦°à§à¦Ÿà¦¿: ' . $e->getMessage(), 'error');
+                showMessage('ত্রুটি: ' . $e->getMessage(), 'error');
                 header('Location: /admin/media');
                 exit;
             }
@@ -236,18 +236,18 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                 $mediaId = (int)$id;
 
                 if ($mediaId <= 0) {
-                    throw new Exception('à¦…à¦¬à§ˆà¦§ à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦†à¦‡à¦¡à¦¿à¥¤ (Invalid media ID)');
+                    throw new Exception('অবৈধ মিডিয়া আইডি। (Invalid media ID)');
                 }
 
                 if (!$mediaModel->exists($mediaId)) {
-                    throw new Exception('à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦ªà¦¾à¦“à¦¯à¦¼à¦¾ à¦¯à¦¾à¦¯à¦¼à¦¨à¦¿à¥¤ (Media not found)');
+                    throw new Exception('মিডিয়া পাওয়া যায়নি। (Media not found)');
                 }
 
                 $title = sanitize_input($_POST['title'] ?? '');
                 $description = sanitize_input($_POST['description'] ?? '');
 
                 if (empty($title)) {
-                    throw new Exception('à¦¶à¦¿à¦°à§‹à¦¨à¦¾à¦® à¦–à¦¾à¦²à¦¿ à¦¹à¦¤à§‡ à¦ªà¦¾à¦°à§‡ à¦¨à¦¾à¥¤ (Title cannot be empty)');
+                    throw new Exception('শিরোনাম খালি হতে পারে না। (Title cannot be empty)');
                 }
 
                 $data = [
@@ -256,17 +256,17 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                 ];
 
                 if (!$mediaModel->update($mediaId, $data)) {
-                    throw new Exception('à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦†à¦ªà¦¡à§‡à¦Ÿ à¦•à¦°à¦¤à§‡ à¦¬à§à¦¯à¦°à§à¦¥à¥¤ (Failed to update media)');
+                    throw new Exception('মিডিয়া আপডেট করতে ব্যর্থ। (Failed to update media)');
                 }
 
                 $data['_performed_by'] = $userId;
                 logActivity('Media Updated', 'media', $mediaId, $data, 'success');
-                showMessage('à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦¸à¦«à¦²à¦­à¦¾à¦¬à§‡ à¦†à¦ªà¦¡à§‡à¦Ÿ à¦•à¦°à¦¾ à¦¹à¦¯à¦¼à§‡à¦›à§‡! (Media updated successfully!)', 'success');
+                showMessage('মিডিয়া সফলভাবে আপডেট করা হয়েছে! (Media updated successfully!)', 'success');
             }
             catch (Exception $e) {
                 $failureDetails = ['error' => $e->getMessage(), 'user_id' => $userId ?? null];
                 logActivity('Update Media Failed', 'media', $mediaId ?? 0, $failureDetails, 'failure');
-                showMessage('à¦†à¦ªà¦¡à§‡à¦Ÿ à¦¬à§à¦¯à¦°à§à¦¥: ' . $e->getMessage(), 'error');
+                showMessage('আপডেট ব্যর্থ: ' . $e->getMessage(), 'error');
             }
 
             header('Location: /admin/media/' . ($mediaId ?? 0));
@@ -289,25 +289,25 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                 $mediaId = (int)$id;
 
                 if ($mediaId <= 0) {
-                    throw new Exception('à¦…à¦¬à§ˆà¦§ à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦†à¦‡à¦¡à¦¿à¥¤ (Invalid media ID)');
+                    throw new Exception('অবৈধ মিডিয়া আইডি। (Invalid media ID)');
                 }
 
                 if (!$mediaModel->exists($mediaId)) {
-                    throw new Exception('à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦ªà¦¾à¦“à¦¯à¦¼à¦¾ à¦¯à¦¾à¦¯à¦¼à¦¨à¦¿à¥¤ (Media not found)');
+                    throw new Exception('মিডিয়া পাওয়া যায়নি। (Media not found)');
                 }
 
                 if (!$mediaModel->softDelete($mediaId)) {
-                    throw new Exception('à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦®à§à¦›à¦¤à§‡ à¦¬à§à¦¯à¦°à§à¦¥à¥¤ (Failed to delete media)');
+                    throw new Exception('মিডিয়া মুছতে ব্যর্থ। (Failed to delete media)');
                 }
 
                 $details = ['action' => 'soft_delete', '_performed_by' => $userId];
                 logActivity('Media Deleted', 'media', $mediaId, $details, 'success');
-                showMessage('à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦¸à¦«à¦²à¦­à¦¾à¦¬à§‡ à¦®à§à¦›à§‡ à¦¦à§‡à¦“à¦¯à¦¼à¦¾ à¦¹à¦¯à¦¼à§‡à¦›à§‡! (Media deleted successfully!)', 'success');
+                showMessage('মিডিয়া সফলভাবে মুছে দেওয়া হয়েছে! (Media deleted successfully!)', 'success');
             }
             catch (Exception $e) {
                 $failureDetails = ['error' => $e->getMessage(), 'user_id' => $userId ?? null];
                 logActivity('Delete Media Failed', 'media', $mediaId ?? 0, $failureDetails, 'failure');
-                showMessage('à¦®à§‹à¦›à¦¾à¦° à¦¬à§à¦¯à¦°à§à¦¥: ' . $e->getMessage(), 'error');
+                showMessage('মুছতে ব্যর্থ: ' . $e->getMessage(), 'error');
             }
 
             header('Location: /admin/media');
@@ -365,7 +365,7 @@ $router->group('/api/media', ['middleware' => ['auth', 'admin_only']], function 
             catch (Exception $e) {
                 return json_response([
                 'success' => false,
-                'error' => 'à¦¡à§‡à¦Ÿà¦¾ à¦ªà§à¦¨à¦°à§à¦¦à§à¦§à¦¾à¦° à¦¬à§à¦¯à¦°à§à¦¥à¥¤ (Failed to retrieve data)',
+                'error' => 'ডেটা পুনরুদ্ধার ব্যর্থ। (Failed to retrieve data)',
                 'message' => $e->getMessage()
                 ], 500);
             }
@@ -383,7 +383,7 @@ $router->group('/api/media', ['middleware' => ['auth', 'admin_only']], function 
                 if ($mediaId <= 0) {
                     return json_response([
                     'success' => false,
-                    'error' => 'à¦…à¦¬à§ˆà¦§ à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦†à¦‡à¦¡à¦¿à¥¤ (Invalid media ID)'
+                    'error' => 'অবৈধ মিডিয়া আইডি। (Invalid media ID)'
                     ], 400);
                 }
 
@@ -392,7 +392,7 @@ $router->group('/api/media', ['middleware' => ['auth', 'admin_only']], function 
                 if (!$media) {
                     return json_response([
                     'success' => false,
-                    'error' => 'à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦ªà¦¾à¦“à¦¯à¦¼à¦¾ à¦¯à¦¾à¦¯à¦¼à¦¨à¦¿à¥¤ (Media not found)'
+                    'error' => 'মিডিয়া পাওয়া যায়নি। (Media not found)'
                     ], 404);
                 }
 
@@ -406,7 +406,7 @@ $router->group('/api/media', ['middleware' => ['auth', 'admin_only']], function 
             catch (Exception $e) {
                 return json_response([
                 'success' => false,
-                'error' => 'à¦®à¦¿à¦¡à¦¿à¦¯à¦¼à¦¾ à¦ªà§à¦¨à¦°à§à¦¦à§à¦§à¦¾à¦° à¦¬à§à¦¯à¦°à§à¦¥à¥¤ (Failed to retrieve media)',
+                'error' => 'মিডিয়া পুনরুদ্ধার ব্যর্থ। (Failed to retrieve media)',
                 'message' => $e->getMessage()
                 ], 500);
             }
@@ -423,7 +423,7 @@ $router->group('/api/media', ['middleware' => ['auth', 'admin_only']], function 
                 $typeStats = $mediaModel->getByMediaType();
 
                 if (!$stats) {
-                    throw new Exception('à¦ªà¦°à¦¿à¦¸à¦‚à¦–à§à¦¯à¦¾à¦¨ à¦ªà§à¦¨à¦°à§à¦¦à§à¦§à¦¾à¦° à¦•à¦°à¦¾ à¦¯à¦¾à¦¯à¦¼à¦¨à¦¿à¥¤ (Failed to retrieve statistics)');
+                    throw new Exception('পরিসংখ্যান পুনরুদ্ধার করা যায়নি। (Failed to retrieve statistics)');
                 }
 
                 return json_response([
@@ -435,7 +435,7 @@ $router->group('/api/media', ['middleware' => ['auth', 'admin_only']], function 
             catch (Exception $e) {
                 return json_response([
                 'success' => false,
-                'error' => 'à¦ªà¦°à¦¿à¦¸à¦‚à¦–à§à¦¯à¦¾à¦¨ à¦ªà§à¦¨à¦°à§à¦¦à§à¦§à¦¾à¦° à¦¬à§à¦¯à¦°à§à¦¥à¥¤ (Failed to retrieve statistics)',
+                'error' => 'পরিসংখ্যান পুনরুদ্ধার ব্যর্থ। (Failed to retrieve statistics)',
                 'message' => $e->getMessage()
                 ], 500);
             }

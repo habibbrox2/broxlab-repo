@@ -9,8 +9,7 @@
 require_once __DIR__ . '/../Models/AIProvider.php';
 require_once __DIR__ . '/../Models/AppSettings.php';
 
-// Check if router is available
-if (isset($router)) {
+
 
     // ==================== GET /admin/ai-system ====================
     $router->get('/admin/ai-system', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
@@ -424,6 +423,77 @@ if (isset($router)) {
         echo json_encode($response);
     });
 
+        // ==================== Knowledge Base Management (Admin) ====================
+        require_once __DIR__ . '/../Models/AIKnowledge.php';
+
+        // GET /api/admin/ai-knowledge - list knowledge slices
+        $router->get('/api/admin/ai-knowledge', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+            $model = new AIKnowledge($mysqli);
+            $page = max(1, (int)($_GET['page'] ?? 1));
+            $limit = 50;
+            $offset = ($page - 1) * $limit;
+            $rows = $model->list($limit, $offset);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'items' => $rows]);
+        });
+
+        // GET /api/admin/ai-knowledge/{id}
+        $router->get('/api/admin/ai-knowledge/(\d+)', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+            $model = new AIKnowledge($mysqli);
+            $row = $model->getById((int)$id);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => $row !== null, 'item' => $row]);
+        });
+
+        // POST /api/admin/ai-knowledge - create or update
+        $router->post('/api/admin/ai-knowledge', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+            $model = new AIKnowledge($mysqli);
+
+            // Support both JSON requests and multipart/form-data file uploads
+            $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+            $id = (int)($input['id'] ?? 0);
+            $title = trim($input['title'] ?? '');
+            $content = trim($input['content'] ?? '');
+            $source = in_array($input['source_type'] ?? 'text', ['text','pdf']) ? $input['source_type'] : 'text';
+
+            // Handle uploaded PDF file (optional)
+            if (!empty($_FILES['pdf_file']) && $_FILES['pdf_file']['error'] === UPLOAD_ERR_OK) {
+                $uploadDir = __DIR__ . '/../../public_html/uploads/knowledge';
+                if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
+                $tmp = $_FILES['pdf_file']['tmp_name'];
+                $orig = basename($_FILES['pdf_file']['name']);
+                $safe = preg_replace('/[^a-zA-Z0-9._-]/', '_', $orig);
+                $target = $uploadDir . '/' . time() . '_' . $safe;
+                if (move_uploaded_file($tmp, $target)) {
+                    // Store the public path in content for later processing
+                    $publicPath = '/uploads/knowledge/' . basename($target);
+                    $content = 'FILEPATH:' . $publicPath;
+                    $source = 'pdf';
+                }
+            }
+
+            if ($id > 0) {
+                $ok = $model->update($id, ['title' => $title, 'content' => $content, 'source_type' => $source]);
+                echo json_encode(['success' => $ok]);
+                return;
+            }
+
+            $newId = $model->create(['title' => $title, 'content' => $content, 'source_type' => $source]);
+            echo json_encode(['success' => $newId > 0, 'id' => $newId]);
+        });
+
+        // DELETE /api/admin/ai-knowledge/{id}
+        $router->post('/api/admin/ai-knowledge/delete', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+            $model = new AIKnowledge($mysqli);
+            $id = (int)($_POST['id'] ?? 0);
+            if (!$id) {
+                echo json_encode(['success' => false, 'error' => 'ID required']);
+                return;
+            }
+            $ok = $model->delete($id);
+            echo json_encode(['success' => $ok]);
+        });
+
     // --- ADMIN CHAT MANAGEMENT ROUTES ---
     
     // GET /admin/ai-chats - Conversations Management Dashboard
@@ -437,6 +507,20 @@ if (isset($router)) {
             'title' => 'AI Conversations',
             'breadcrumbs' => $breadcrumbs,
             'current_page' => 'ai-chats',
+            'csrf_token' => generateCsrfToken()
+        ]);
+    });
+
+    // GET /admin/ai-knowledge - Knowledge Base Management UI
+    $router->get('/admin/ai-knowledge', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+        $breadcrumbs = [
+            ['label' => 'Dashboard', 'url' => '/admin'],
+            ['label' => 'AI Knowledge Base', 'url' => '/admin/ai-knowledge']
+        ];
+
+        echo $twig->render('admin/ai-knowledge.twig', [
+            'title' => 'AI Knowledge Base',
+            'breadcrumbs' => $breadcrumbs,
             'csrf_token' => generateCsrfToken()
         ]);
     });
@@ -552,4 +636,4 @@ if (isset($router)) {
             echo json_encode(['success' => false, 'error' => 'Provider not found']);
         }
     });
-}
+
