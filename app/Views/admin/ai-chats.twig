@@ -1,0 +1,99 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}AI Conversations | BroxBhai{% endblock %}
+
+{% block stylesheets %}
+{# CSS is auto-loaded by ai-chat-manager.js #}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1 fw-bold text-gray-800">AI Conversations</h1>
+            <p class="text-muted small">Manage and monitor visitor interactions with BroxBhai AI.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button id="refreshList" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <div class="chat-manager-root">
+        <!-- Left Pane: Conversations -->
+        <div class="chat-list-pane">
+            <div class="chat-list-header">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control border-start-0" placeholder="Search conversations...">
+                </div>
+            </div>
+            <div class="chat-list-scroll" id="convList">
+                <!-- Items loaded via JS -->
+                <div class="p-4 text-center text-muted">Loading conversations...</div>
+            </div>
+        </div>
+
+        <!-- Center Pane: Chat Transcript -->
+        <div class="chat-main-pane">
+            <div class="chat-main-header d-none" id="chatHeader">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="chat-item-avatar" id="activeAvatar">U</div>
+                    <div>
+                        <div class="fw-bold" id="activeTitle">Visitor #123</div>
+                        <div class="small text-success"><i class="bi bi-circle-fill" style="font-size: 6px;"></i> Connected</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-danger px-3 rounded-pill">End Session</button>
+                </div>
+            </div>
+            
+            <div class="chat-main-body" id="chatTranscript">
+                <div class="empty-state">
+                    <i class="bi bi-chat-left-dots"></i>
+                    <h5>Select a conversation</h5>
+                    <p>Click on a conversation from the left to view the transcript and AI suggestions.</p>
+                </div>
+            </div>
+
+            <div class="p-3 border-top d-none" id="chatInputArea">
+                <div class="input-group">
+                    <textarea class="form-control" id="replyField" placeholder="Type a reply or use AI suggestion..." style="height: 60px;"></textarea>
+                    <button class="btn btn-primary px-4" id="btnSend">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Pane: User Info & AI suggestions -->
+        <div class="chat-side-pane">
+            <div class="side-panel-section border-bottom">
+                <h6 class="fw-bold mb-3">Visitor Details</h6>
+                <div class="small mb-2"><strong>ID:</strong> <span id="sideUserId" class="text-muted">---</span></div>
+                <div class="small mb-2"><strong>Token:</strong> <span id="sideToken" class="text-muted text-truncate d-inline-block" style="max-width: 150px;">---</span></div>
+                <div class="small"><strong>First Seen:</strong> <span id="sideFirstSeen" class="text-muted">---</span></div>
+            </div>
+
+            <div class="side-panel-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold m-0">AI Drafter (Beta)</h6>
+                    <button class="btn btn-sm text-primary p-0" id="btnDraft">
+                        <i class="bi bi-magic"></i> Draft
+                    </button>
+                </div>
+                
+                <div id="suggestionContainer">
+                    <div class="text-muted small text-center py-4">
+                        Select a chat to generate AI-powered reply suggestions.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ asset('/ai/js/ai-chat-manager.js') }}"></script>
+{% endblock %}

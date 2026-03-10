@@ -540,6 +540,9 @@ class AIProvider
             return ['success' => false, 'error' => 'API key not configured for ' . $config['name']];
         }
 
+        // [PATCH] Fix common non-prefixed model names for OpenRouter
+        $model = $this->ensureModelPrefix($providerName, $model);
+
         // Build request based on provider
         $requestData = $this->buildRequest($providerName, $model, $prompt, $options);
         $headers = $this->buildHeaders($providerName, $apiKey, $requestData);
@@ -878,6 +881,38 @@ class AIProvider
                 }
         }
 
+        // Best-effort recovery for unexpected but useful response shapes
+        // Example: some provider responses may include a `reasoning` or `reasoning_details` block
+        if (isset($data['choices'][0]['message']) && is_array($data['choices'][0]['message'])) {
+            $msg = $data['choices'][0]['message'];
+
+            // 1) Use `reasoning` field if present
+            if (!empty($msg['reasoning']) && is_string($msg['reasoning'])) {
+                return ['success' => true, 'content' => $msg['reasoning'], 'usage' => $data['usage'] ?? [], 'raw' => $data];
+            }
+
+            // 2) Scan `reasoning_details` for a summary item
+            if (!empty($msg['reasoning_details']) && is_array($msg['reasoning_details'])) {
+                foreach ($msg['reasoning_details'] as $detail) {
+                    if (!is_array($detail)) continue;
+                    // Newer providers may include a reasoning.summary entry
+                    if (!empty($detail['type']) && strpos($detail['type'], 'reasoning.summary') !== false && !empty($detail['summary'])) {
+                        return ['success' => true, 'content' => $detail['summary'], 'usage' => $data['usage'] ?? [], 'raw' => $data];
+                    }
+                    // Some detail items use content/text fields
+                    if (!empty($detail['content']) && is_string($detail['content'])) {
+                        return ['success' => true, 'content' => $detail['content'], 'usage' => $data['usage'] ?? [], 'raw' => $data];
+                    }
+                    if (!empty($detail['text']) && is_string($detail['text'])) {
+                        return ['success' => true, 'content' => $detail['text'], 'usage' => $data['usage'] ?? [], 'raw' => $data];
+                    }
+                }
+            }
+
+            // 3) Fall back to serializing the message object so callers at least see something useful
+            return ['success' => true, 'content' => json_encode($msg), 'usage' => $data['usage'] ?? [], 'raw' => $data];
+        }
+
         return ['success' => false, 'error' => 'Unexpected response format', 'raw' => $data];
     }
 
@@ -1055,5 +1090,34 @@ class AIProvider
         }
 
         return $result;
+    }
+
+    /**
+     * Ensure model ID is correctly prefixed for specific providers (e.g. OpenRouter)
+     */
+    private function ensureModelPrefix(string $providerName, string $model): string
+    {
+        if ($providerName !== 'openrouter' && $providerName !== 'kilo') {
+            return $model;
+        }
+
+        // If it already has a slash, assume it's correctly prefixed (e.g., openai/..., anthropic/...)
+        if (strpos($model, '/') !== false) {
+            return $model;
+        }
+
+        // Mapping for legacy or un-prefixed common model names for OpenRouter
+        $mapping = [
+            'gpt-4o' => 'openai/gpt-4o',
+            'gpt-4o-mini' => 'openai/gpt-4o-mini',
+            'gpt-4' => 'openai/gpt-4',
+            'gpt-3.5-turbo' => 'openai/gpt-3.5-turbo',
+            'claude-3-opus' => 'anthropic/claude-3-opus',
+            'claude-3-sonnet' => 'anthropic/claude-3-sonnet',
+            'claude-3-haiku' => 'anthropic/claude-3-haiku',
+            'auto' => 'openrouter/auto'
+        ];
+
+        return $mapping[$model] ?? 'openai/' . $model;
     }
 }

@@ -1,40 +1,66 @@
-{# Premium AI Assistant Shell for Admin Panel #}
-<div id="adminAiShell" class="ai-chat-shell hidden">
-    <div class="ai-header admin">
+{# 2026 Standard AI Copilot Sidebar for Admin Panel #}
+<div id="adminAiShell" class="ai-copilot-sidebar hidden">
+    <!-- Header: Context Aware -->
+    <div class="ai-header admin-theme">
         <div class="ai-header-info">
-            <div class="ai-header-title">Admin Assistant</div>
-            <div class="ai-header-status">System Live</div>
+            <h3 class="ai-header-title" id="adminAiTitle">
+                <i class="bi bi-robot"></i> Copilot
+            </h3>
+            <span class="ai-header-context" id="adminAiContextBadge">
+                Context: <span class="badge bg-secondary">Global</span>
+            </span>
         </div>
-        <div class="ai-header-actions">
-            <button id="adminAiClose" class="btn-close btn-close-white" style="font-size: 0.8rem;"></button>
-        </div>
+        <button id="adminAiClose" class="modern-btn-close ai-close" title="Close Sidebar"></button>
     </div>
 
-    {# Chat History Body #}
-    <div id="adminAiBody" class="ai-body">
-        {# Messages injected via ai-admin.js #}
+    <!-- Body: Chat & Artifacts -->
+    <div id="adminAiBody" class="ai-body custom-scrollbar">
+        {# Messages & Artifacts injected via ai-admin.js #}
     </div>
 
-    {# Chat Input Footer #}
+    <!-- Slash Menu Prompt (Hidden until '/' is typed) -->
+    <div id="adminAiSlashMenu" class="ai-slash-menu d-none">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item list-group-item-action" data-cmd="/summarize">
+                <strong><i class="bi bi-body-text"></i> /summarize</strong> <small class="text-muted">Summarize page data</small>
+            </li>
+            <li class="list-group-item list-group-item-action" data-cmd="/generate-report">
+                <strong><i class="bi bi-file-earmark-bar-graph"></i> /generate-report</strong> <small class="text-muted">Create analytics report</small>
+            </li>
+            <li class="list-group-item list-group-item-action" data-cmd="/query-db">
+                <strong><i class="bi bi-database"></i> /query-db</strong> <small class="text-muted">Direct SQL/Data query</small>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Footer: Advanced Input + Model Selector -->
     <div id="adminAiFooter" class="ai-footer">
-        <div class="ai-composer">
-            <input type="text" id="adminAiInput" placeholder="System query or support...">
-            <button id="adminAiSend" class="ai-send-btn bg-dark">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-                </svg>
-            </button>
+        <!-- Model selector — populated remotely by ai-admin.js on boot -->
+        <div class="ai-model-bar px-2 pt-1">
+            <select id="adminAiModel"
+                    class="form-select form-select-sm d-none"
+                    title="AI Model"
+                    aria-label="Select AI Model">
+            </select>
+        </div>
+        <div class="ai-input-wrapper">
+            <textarea id="adminAiInput" 
+                      placeholder="Ask Copilot or type '/' for commands..." 
+                      rows="1" 
+                      class="form-control ai-textarea border-0 shadow-none"></textarea>
+            <div class="ai-input-actions">
+                <button class="btn btn-sm btn-link text-muted" title="Attach file"><i class="bi bi-paperclip"></i></button>
+                <button id="adminAiSend" class="btn btn-primary btn-sm rounded-circle">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
-{# Admin Floating Toggle Button #}
-<button id="adminAiBtn" class="admin-assistant-fab">
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/>
-        <path d="M12 6a1 1 0 0 0-1 1v5a1 1 0 0 0 2 0V7a1 1 0 0 0-1-1zm0 10a1 1 0 1 0 1 1 1 1 0 0 0-1-1z"/>
-    </svg>
+<!-- Trigger Button (Top Nav or Bottom Right) -->
+<button id="adminAiBtn" class="ai-trigger-fab shadow-lg" title="Open Copilot">
+    <i class="bi bi-stars"></i>
 </button>
 
-<script>window.BROX_AI_CSS_URL = "{{ asset('/ai/css/ai-style.css') }}";</script>
 <script src="{{ asset('/ai/js/ai-admin.js') }}"></script>

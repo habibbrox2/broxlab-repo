@@ -1,68 +1,138 @@
-{# Premium AI Assistant Shell for Visitors #}
-<div id="aiShell" class="ai-chat-shell hidden">
-    <div class="ai-header">
-        <div class="ai-header-info">
-            <div class="ai-header-title" id="aiTitle">Brox Automation</div>
-            <div class="ai-header-status" id="aiStatus">Online</div>
-        </div>
-        <div class="ai-header-actions">
-            <div class="ai-lang-toggle">
-                <button id="aiLangBn" class="active">BN</button>
-                <button id="aiLangEn">EN</button>
-            </div>
-            <button id="aiClose" class="btn-close btn-close-white ms-2" style="font-size: 0.8rem;"></button>
-        </div>
-    </div>
+{# Premium AI Assistant – Public / Visitor Chat Shell (2026 Edition) #}
+{# IDs align with assistant.js (BroxAssistant class) #}
 
-    {# Chat History Body #}
-    <div id="aiBody" class="ai-body d-none">
-        {# Messages injected via assistant.js #}
-    </div>
+<div id="publicAssistantWrapper" class="bb-assistant-public">
 
-    {# Pre-chat Data Collection (Parity Feature) #}
-    <div id="aiPrechat" class="ai-body">
-        <div class="ai-prechat">
-            <div class="ai-form-group">
-                <label for="aiUserName">Your Name</label>
-                <input type="text" id="aiUserName" class="ai-input" placeholder="Enter your name...">
-            </div>
-            <div class="ai-form-group">
-                <label for="aiUserTopics">How can we help you?</label>
-                <div class="ai-topic-grid">
-                    <label class="ai-topic-chip">
-                        <input type="checkbox" value="Web Design"> 🎨 Web Design
-                    </label>
-                    <label class="ai-topic-chip">
-                        <input type="checkbox" value="SEO/Marketing"> 🚀 Marketing
-                    </label>
-                    <label class="ai-topic-chip">
-                        <input type="checkbox" value="Software Support"> 🔧 Support
-                    </label>
-                    <label class="ai-topic-chip">
-                        <input type="checkbox" value="Billing/General"> 💳 Billing
-                    </label>
+    {# ── Floating Action Button ── #}
+    <button id="publicAssistantBtn" title="Chat with Assistant" aria-label="Open Chat">
+        <i class="bi bi-chat-dots-fill"></i>
+    </button>
+
+    {# ── Chat Window Shell (2026 Premium) ── #}
+    <div id="publicAssistantChat" class="ai-chat-shell d-none hidden">
+
+        {# ── Sidebar (Collapsible History) ── #}
+        <div id="publicAssistantSidebar" class="ai-sidebar collapsed">
+            <div class="ai-sidebar-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>চ্যাট ইতিহাস</span>
+                    <button id="toggleAiSidebar" class="btn btn-sm btn-link p-0 text-muted"><i class="bi bi-x-lg"></i></button>
                 </div>
             </div>
-            <button id="aiStartBtn" class="ai-btn-primary">Start Chatting</button>
+            <div id="publicAssistantHistory" class="ai-history-list">
+                {# History items injected by JS #}
+            </div>
         </div>
-    </div>
 
-    {# Chat Input Footer #}
-    <div id="aiFooter" class="ai-footer d-none">
-        <div class="ai-composer">
-            <input type="text" id="aiInput" placeholder="Ask anything...">
-            <button id="aiSend" class="ai-send-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-                </svg>
-            </button>
-        </div>
-    </div>
-</div>
+        {# ── Main Chat Container ── #}
+        <div class="ai-chat-main">
+            
+            {# ── AI Header ── #}
+            <div class="ai-header">
+                <div class="ai-header-info">
+                    <div class="ai-header-title" id="publicAssistantTitle">ব্রক্স সহকারী</div>
+                    <div class="ai-header-status" id="publicAssistantStatusText">অনলাইন ও প্রস্তুত</div>
+                </div>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <div class="ai-lang-toggle">
+                        <button type="button" id="publicAssistantLangBn" class="active">বাং</button>
+                        <button type="button" id="publicAssistantLangEn">EN</button>
+                    </div>
+                    <button id="closePublicAssistant" class="btn-close" style="font-size: 0.7rem;"></button>
+                </div>
+            </div>
 
-{# Floating Toggle Button #}
-<button id="aiBtn" class="ai-btn-toggle">
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-    </svg>
-</button>
+            {# ── Pre-chat Workflow (Registration) ── #}
+            <div id="publicAssistantPreChat" class="ai-body">
+                {# Step 1: Introduction / Name #}
+                <div class="ai-prechat step-name">
+                    <div class="ai-form-group">
+                        <label for="introName" id="introNameLabel">আপনার নাম</label>
+                        <input type="text" id="introName" class="ai-input" placeholder="আপনার নাম লিখুন">
+                    </div>
+                    <button class="ai-btn-primary w-100 mt-3" id="introNext1">পরবর্তী <i class="bi bi-arrow-right ms-1"></i></button>
+                </div>
+
+                {# Step 2: Contact Info #}
+                <div class="prechat-step step-contact d-none">
+                    <div class="ai-form-group mb-3">
+                        <label for="introEmail" id="introEmailLabel">ইমেল (ঐচ্ছিক)</label>
+                        <input type="email" id="introEmail" class="ai-input" placeholder="আপনার ইমেল লিখুন">
+                    </div>
+                    <div class="ai-form-group mb-3">
+                        <label for="introMobile" id="introMobileLabel">মোবাইল নম্বর (ঐচ্ছিক)</label>
+                        <input type="text" id="introMobile" class="ai-input" placeholder="মোবাইল নম্বর লিখুন">
+                    </div>
+                    <button class="ai-btn-primary w-100" id="introNext2">পরবর্তী <i class="bi bi-arrow-right ms-1"></i></button>
+                </div>
+
+                {# Step 3: Topics #}
+                <div class="prechat-step step-topic d-none">
+                    <div class="ai-form-group">
+                        <label class="mb-2" id="introTopicLabel">আপনার জিজ্ঞাসার বিষয়</label>
+                        <div class="ai-topic-grid" id="introTopicOptions">
+                            <label class="ai-topic-chip">
+                                <input type="checkbox" value="general" checked>
+                                <span>সাধারণ তথ্য</span>
+                            </label>
+                            <label class="ai-topic-chip">
+                                <input type="checkbox" value="support">
+                                <span>সাপোর্ট</span>
+                            </label>
+                            <label class="ai-topic-chip">
+                                <input type="checkbox" value="billing">
+                                <span>বিলিং</span>
+                            </label>
+                            <label class="ai-topic-chip">
+                                <input type="checkbox" value="feedback">
+                                <span>মতামত</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button class="ai-btn-primary w-100 mt-4" id="introStartChat">চ্যাট শুরু করুন <i class="bi bi-chat-fill ms-1"></i></button>
+                </div>
+            </div>
+
+            {# ── Real-time Chat Messages ── #}
+            <div id="publicAssistantMessages" class="ai-body d-none">
+                {# Messages injected here by assistant.js #}
+            </div>
+
+            {# ── Agentic Status Bar ── #}
+            <div id="publicAssistantAgenticStatus" class="ai-agentic-status d-none">
+                <span class="ai-status-pill">Thinking</span>
+                <span class="ai-status-detail">Analyzing your request...</span>
+            </div>
+
+            {# ── Quick Action Chips ── #}
+            <div id="publicAssistantQuickActions" class="ai-quick-actions d-none">
+                <button class="ai-action-chip" data-prompt="Summarize this chat">Summarize</button>
+                <button class="ai-action-chip" data-prompt="Translate to Bengali">Translate</button>
+                <button class="ai-action-chip" data-prompt="Explain this in detail">Explain</button>
+            </div>
+
+            {# ── Footer / Input Area ── #}
+            <div class="ai-footer d-none" id="publicAssistantFooter">
+                <div class="ai-model-bar mb-3">
+                    <select id="publicAssistantModel" class="ai-input py-1 px-3 d-none" style="font-size: 0.8rem; height: auto;">
+                    </select>
+                </div>
+
+                <div class="ai-composer-wrapper">
+                    <input type="text" id="publicAssistantInput" placeholder="এখানে লিখুন...">
+                    <div class="ai-composer-tools">
+                        <button class="ai-tool-btn" title="Voice Input" disabled><i class="bi bi-mic"></i></button>
+                        <button class="ai-tool-btn" title="Attach Files" disabled><i class="bi bi-paperclip"></i></button>
+                    </div>
+                    <button class="ai-send-btn" id="sendToPublicAssistant">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </div>
+            </div>{# /.ai-footer #}
+
+        </div>{# /.ai-chat-main #}
+    </div>{# /.ai-chat-shell #}
+</div>{# /#publicAssistantWrapper #}
+
+<script src="{{ asset('/ai/js/assistant.js') }}"></script>

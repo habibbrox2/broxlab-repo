@@ -1,0 +1,47 @@
+# AI System Roadmap - Future Phases (2026+)
+
+This document outlines the remaining high-impact tasks and technical instructions for the next development cycles.
+
+---
+
+## 🚀 Phase 2: Intelligence & Integration
+
+### 1. AI Knowledge Base (RAG System)
+Enable the AI to answer specific questions about BroxBhai services by providing a custom data source.
+- **Task**: Create an admin UI to upload/edit "Knowledge Slices" (Text/PDF).
+- **Technical**: 
+  - Store text chunks in a new `ai_knowledge_base` table.
+  - Modify [PromptLoader.php](file:///h:/Web/broxbhai/app/Helpers/PromptLoader.php) to fetch relevant context from this table before calling the AI API.
+  - **Benefit**: Reduces hallucinations and provides accurate business-specific answers.
+
+### 2. Telegram Handoff & Notifications
+Ensure admins are notified of visitor activity without checking the dashboard.
+- **Task**: Integrate existing Telegram bot logic to send alerts.
+- **Technical**: 
+  - Update `AIChatModel::addMessage` to trigger a Telegram helper if the visitor asks a "Human" or "Support" related question.
+  - Include a deep link to the admin chat management page in the notification.
+
+---
+
+## 🔄 Phase 3: Real-time Persistence & Analytics
+
+### 3. Real-time Live Chat Sync
+Remove the need for clicking "Refresh" to see new messages.
+- **Task**: Implement a polling or WebSocket solution for the admin dashboard.
+- **Technical**: 
+  - Add a `last_checked_at` timestamp to the API requests in [ai-chat-manager.js](file:///h:/Web/broxbhai/public_html/ai/js/ai-chat-manager.js).
+  - Use `setInterval` (Long-polling) to fetch only new messages since the last timestamp.
+  - Update the UI dynamically without re-rendering the whole transcript.
+
+### 4. Sentiment Analysis & Auto-Tagging
+Automatically categorize visitor intent and emotion.
+- **Task**: Use a secondary AI call to "Tag" conversations.
+- **Technical**: 
+  - After a conversation ends or reaches 5 messages, send the transcript to AI with a prompt: "Tag this conversation: [Sales, Technical, Complaint, General] and Sentiment: [Positive, Neutral, Negative]".
+  - Store tags in `ai_conversations.tags`.
+
+---
+
+## 🛠️ Technical Debt & Polish
+- **Database Indexing**: Add indexes to `visitor_token` and `created_at` in `ai_messages` for faster lookups as the chat history grows.
+- **Token Usage Tracking**: Implement a logger for API token consumption to monitor costs per visitor/session.

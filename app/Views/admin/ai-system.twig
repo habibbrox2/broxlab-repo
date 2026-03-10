@@ -579,5 +579,86 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+let currentTestProviderId = null;
+const providersData = {{ providers|json_encode|raw }};
+
+function testConnection(id) {
+    currentTestProviderId = id;
+    const provider = providersData.find(p => p.id == id);
+    if (!provider) return;
+
+    const modal = new bootstrap.Modal(document.getElementById('testConnectionModal'));
+    const select = document.getElementById('testModelSelect');
+    const resultDiv = document.getElementById('testConnectionResult');
+
+    // Populate models
+    select.innerHTML = '';
+    const models = provider.supported_models || {};
+    Object.entries(models).forEach(([id, name]) => {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = name;
+        select.appendChild(opt);
+    });
+
+    if (select.options.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'No models available';
+        select.appendChild(opt);
+    }
+
+    resultDiv.innerHTML = '<div class="alert alert-info">Select a model and click "Run Test"</div>';
+    modal.show();
+}
+
+async function runTestConnection() {
+    if (!currentTestProviderId) return;
+
+    const model = document.getElementById('testModelSelect').value;
+    const resultDiv = document.getElementById('testConnectionResult');
+    const btn = document.querySelector('#testConnectionModal .btn-primary');
+    const originalBtnHtml = btn.innerHTML;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Testing...';
+    resultDiv.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary"></div><p class="mt-2">Sending test request...</p></div>';
+
+    try {
+        const response = await fetch('/api/ai-system/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                id: currentTestProviderId, 
+                model: model,
+                csrf_token: '{{ csrf_token }}'
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h6 class="alert-heading"><i class="bi bi-check-circle-fill me-2"></i>Success!</h6>
+                    <p class="mb-0 small"><strong>Model:</strong> ${data.model}</p>
+                    <hr>
+                    <p class="mb-0 small text-truncate"><strong>Response:</strong> ${data.response || 'OK'}</p>
+                </div>`;
+        } else {
+            resultDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>Failed</h6>
+                    <p class="mb-0 small">${data.error || 'Unknown error occurred'}</p>
+                </div>`;
+        }
+    } catch (e) {
+        resultDiv.innerHTML = `<div class="alert alert-danger">Network error: ${e.message}</div>`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHtml;
+    }
+}
 </script>
 {% endblock %}

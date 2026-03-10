@@ -9,8 +9,7 @@
 require_once __DIR__ . '/../Models/AIProvider.php';
 require_once __DIR__ . '/../Models/AppSettings.php';
 
-// Check if router is available
-if (isset($router)) {
+
 
     // ==================== GET /admin/ai-system ====================
     $router->get('/admin/ai-system', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
@@ -350,7 +349,10 @@ if (isset($router)) {
     // POST /api/ai-system/chat
     // Proxies chat requests to AI providers using server-side API keys.
     $router->post('/api/ai-system/chat', function () use ($mysqli) {
+        require_once __DIR__ . '/../Helpers/PromptLoader.php';
+        require_once __DIR__ . '/../Models/AIChatModel.php';
         $aiProvider = new AIProvider($mysqli);
+        $chatModel = new AIChatModel($mysqli);
         
         // Get request data
         $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
@@ -359,6 +361,9 @@ if (isset($router)) {
         $provider = $input['provider'] ?? '';
         $model = $input['model'] ?? '';
         $options = $input['options'] ?? [];
+        $isAdmin = !empty($input['isAdmin']);
+        $visitorToken = $input['visitorToken'] ?? null;
+        $contextData = $input['context'] ?? null;
         
         if (empty($messages)) {
             header('Content-Type: application/json');
@@ -366,20 +371,200 @@ if (isset($router)) {
             return;
         }
 
+        // Load system prompt
+        $contextType = $isAdmin ? 'admin' : 'public';
+        $systemPrompt = PromptLoader::getSystemPrompt($contextType, $mysqli);
+        
+        if ($contextData && is_array($contextData)) {
+            $systemPrompt .= "\n\n[USER CONTEXT]\n";
+            foreach ($contextData as $key => $val) {
+                if (is_scalar($val)) $systemPrompt .= ucfirst($key) . ": $val\n";
+            }
+        }
+
+        // Add system prompt
+        if (empty($messages) || $messages[0]['role'] !== 'system') {
+            array_unshift($messages, ['role' => 'system', 'content' => $systemPrompt]);
+        } else {
+            $messages[0]['content'] = $systemPrompt;
+        }
+
+        // Identify conversation for logging
+        $convId = null;
+        if (!$isAdmin && $visitorToken) {
+            $convId = $chatModel->getOrCreateConversation(null, $visitorToken);
+            // Log the latest user message
+            $lastUserMsg = end($messages);
+            if ($lastUserMsg && $lastUserMsg['role'] === 'user') {
+                $chatModel->addMessage($convId, 'user', $lastUserMsg['content']);
+            }
+        }
+
         // If provider/model not specified, use defaults
         if (empty($provider) || empty($model)) {
             $settings = $aiProvider->getSettings();
             $effective = $aiProvider->getEffectiveProvider();
-            
             $provider = $provider ?: ($effective['provider_name'] ?? 'openrouter');
             $model = $model ?: ($settings['default_model'] ?? 'openrouter/auto');
         }
 
-        // Call the API
+        // Call the AI API
         $response = $aiProvider->callAPI($provider, $model, $messages, $options);
         
+        // Log AI response if it's a tracked conversation
+        if ($convId && $response['success']) {
+            $aiText = $response['text'] ?? $response['message']['content'] ?? '';
+            if ($aiText) {
+                $chatModel->addMessage($convId, 'assistant', $aiText);
+            }
+        }
+
         header('Content-Type: application/json');
         echo json_encode($response);
+    });
+
+        // ==================== Knowledge Base Management (Admin) ====================
+        require_once __DIR__ . '/../Models/AIKnowledge.php';
+
+        // GET /api/admin/ai-knowledge - list knowledge slices
+        $router->get('/api/admin/ai-knowledge', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+            $model = new AIKnowledge($mysqli);
+            $page = max(1, (int)($_GET['page'] ?? 1));
+            $limit = 50;
+            $offset = ($page - 1) * $limit;
+            $rows = $model->list($limit, $offset);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'items' => $rows]);
+        });
+
+        // GET /api/admin/ai-knowledge/{id}
+        $router->get('/api/admin/ai-knowledge/(\d+)', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+            $model = new AIKnowledge($mysqli);
+            $row = $model->getById((int)$id);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => $row !== null, 'item' => $row]);
+        });
+
+        // POST /api/admin/ai-knowledge - create or update
+        $router->post('/api/admin/ai-knowledge', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+            $model = new AIKnowledge($mysqli);
+
+            // Support both JSON requests and multipart/form-data file uploads
+            $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+            $id = (int)($input['id'] ?? 0);
+            $title = trim($input['title'] ?? '');
+            $content = trim($input['content'] ?? '');
+            $source = in_array($input['source_type'] ?? 'text', ['text','pdf']) ? $input['source_type'] : 'text';
+
+            // Handle uploaded PDF file (optional)
+            if (!empty($_FILES['pdf_file']) && $_FILES['pdf_file']['error'] === UPLOAD_ERR_OK) {
+                $uploadDir = __DIR__ . '/../../public_html/uploads/knowledge';
+                if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
+                $tmp = $_FILES['pdf_file']['tmp_name'];
+                $orig = basename($_FILES['pdf_file']['name']);
+                $safe = preg_replace('/[^a-zA-Z0-9._-]/', '_', $orig);
+                $target = $uploadDir . '/' . time() . '_' . $safe;
+                if (move_uploaded_file($tmp, $target)) {
+                    // Store the public path in content for later processing
+                    $publicPath = '/uploads/knowledge/' . basename($target);
+                    $content = 'FILEPATH:' . $publicPath;
+                    $source = 'pdf';
+                }
+            }
+
+            if ($id > 0) {
+                $ok = $model->update($id, ['title' => $title, 'content' => $content, 'source_type' => $source]);
+                echo json_encode(['success' => $ok]);
+                return;
+            }
+
+            $newId = $model->create(['title' => $title, 'content' => $content, 'source_type' => $source]);
+            echo json_encode(['success' => $newId > 0, 'id' => $newId]);
+        });
+
+        // DELETE /api/admin/ai-knowledge/{id}
+        $router->post('/api/admin/ai-knowledge/delete', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+            $model = new AIKnowledge($mysqli);
+            $id = (int)($_POST['id'] ?? 0);
+            if (!$id) {
+                echo json_encode(['success' => false, 'error' => 'ID required']);
+                return;
+            }
+            $ok = $model->delete($id);
+            echo json_encode(['success' => $ok]);
+        });
+
+    // --- ADMIN CHAT MANAGEMENT ROUTES ---
+    
+    // GET /admin/ai-chats - Conversations Management Dashboard
+    $router->get('/admin/ai-chats', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+        $breadcrumbs = [
+            ['label' => 'Dashboard', 'url' => '/admin'],
+            ['label' => 'AI Conversations', 'url' => '/admin/ai-chats']
+        ];
+
+        echo $twig->render('admin/ai-chats.twig', [
+            'title' => 'AI Conversations',
+            'breadcrumbs' => $breadcrumbs,
+            'current_page' => 'ai-chats',
+            'csrf_token' => generateCsrfToken()
+        ]);
+    });
+
+    // GET /admin/ai-knowledge - Knowledge Base Management UI
+    $router->get('/admin/ai-knowledge', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+        $breadcrumbs = [
+            ['label' => 'Dashboard', 'url' => '/admin'],
+            ['label' => 'AI Knowledge Base', 'url' => '/admin/ai-knowledge']
+        ];
+
+        echo $twig->render('admin/ai-knowledge.twig', [
+            'title' => 'AI Knowledge Base',
+            'breadcrumbs' => $breadcrumbs,
+            'csrf_token' => generateCsrfToken()
+        ]);
+    });
+
+    // GET /api/admin/ai-chats - List all conversations
+    $router->get('/api/admin/ai-chats', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        require_once __DIR__ . '/../Models/AIChatModel.php';
+        $chatModel = new AIChatModel($mysqli);
+        $page = (int)($_GET['page'] ?? 1);
+        $limit = 20;
+        $offset = ($page - 1) * $limit;
+        
+        $convs = $chatModel->listConversations($limit, $offset);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'conversations' => $convs]);
+    });
+
+    // GET /api/admin/ai-chats/{id} - Get transcript
+    $router->get('/api/admin/ai-chats/(\d+)', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+        require_once __DIR__ . '/../Models/AIChatModel.php';
+        $chatModel = new AIChatModel($mysqli);
+        $messages = $chatModel->getMessages((int)$id);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'messages' => $messages]);
+    });
+
+    // POST /api/admin/ai-chats/reply - Log manual admin response
+    $router->post('/api/admin/ai-chats/reply', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        require_once __DIR__ . '/../Models/AIChatModel.php';
+        $chatModel = new AIChatModel($mysqli);
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        $convId = $input['conversation_id'] ?? 0;
+        $content = $input['content'] ?? '';
+        
+        if (!$convId || !$content) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Conversation ID and content are required']);
+            return;
+        }
+
+        $result = $chatModel->addMessage((int)$convId, 'assistant', $content);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $result]);
     });
 
     // POST /api/ai-system/set-default
@@ -451,4 +636,4 @@ if (isset($router)) {
             echo json_encode(['success' => false, 'error' => 'Provider not found']);
         }
     });
-}
+

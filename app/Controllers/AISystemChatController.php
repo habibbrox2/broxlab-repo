@@ -27,11 +27,25 @@ $router->post('/api/chat', function () use ($mysqli) {
     // Load context-aware system prompt using PromptLoader
     $systemPrompt = PromptLoader::getSystemPrompt($context, $mysqli);
 
+    // Append relevant knowledge-base context (if any) based on the user message
+    $kbContext = PromptLoader::getKnowledgeContext($message, $mysqli);
+    if ($kbContext) {
+        $systemPrompt .= "\n\n" . $kbContext;
+    }
+
     $messages = [
         ["role" => "system", "content" => $systemPrompt],
         ["role" => "user", "content" => $message]
     ];
 
-    $response = $agent->chat($messages, $provider, $model);
+    $extraContext = [];
+    if (isset($input['context']) && is_array($input['context'])) {
+        $extraContext = $input['context'];
+    }
+
+    $stream = isset($input['stream']) ? (bool)$input['stream'] : false;
+
+    // The chat method will exit script automatically if streaming is active.
+    $response = $agent->chat($messages, $provider, $model, $extraContext, $stream);
     echo json_encode($response);
 });

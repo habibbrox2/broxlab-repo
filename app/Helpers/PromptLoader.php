@@ -155,10 +155,76 @@ class PromptLoader
         $system = trim((string)($prompts['system_prompt'] ?? ''));
 
         if ($context === 'admin' && $system) {
-            $system .= "\n\nWhen providing answers, feel free to refer to admin URLs and tools available in the dashboard.";
+            $system .= "\n\n[ADMIN COPILOT INSTRUCTIONS]";
+            $system .= "\n1. Use standard Markdown for formatting.";
+            $system .= "\n2. For data summaries, tables, or complex lists, use the ARTIFACT format:";
+            $system .= "\n   ```artifact\n   {\n     \"title\": \"Data Title\",\n     \"type\": \"table\",\n     \"headers\": [\"Col1\", \"Col2\"],\n     \"rows\": [[\"Val1\", \"Val2\"]]\n   }\n   ```";
+            $system .= "\n3. Be context-aware. Use the provided [USER CONTEXT] to tailor your response to the current page.";
+            $system .= "\n4. Supported slash commands (if mentioned by user): /generate, /summarize, /analyze.";
+            $system .= "\n5. Refer to admin URLs and tools available in the dashboard when relevant.";
         }
 
         return $system;
+    }
+
+    /**
+     * Fetch relevant knowledge base snippets based on a user query.
+     * Returns a concatenated string (may be empty) to append to the system prompt.
+     */
+    public static function getKnowledgeContext(string $query, ?mysqli $mysqli = null, int $limit = 3): string
+    {
+        if (!$mysqli || trim($query) === '') {
+            return '';
+        }
+
+        // Basic keyword extraction: words longer than 3 chars
+        $words = preg_split('/\W+/', $query);
+        $keywords = [];
+        foreach ($words as $w) {
+            $w = trim($w);
+            if (strlen($w) >= 4) {
+                $keywords[] = $mysqli->real_escape_string($w);
+            }
+        }
+
+        if (empty($keywords)) {
+            return '';
+        }
+
+        // Build a simple LIKE-based query across title and content
+        $whereParts = [];
+        foreach ($keywords as $kw) {
+            $kwLike = "%{$kw}%";
+            $whereParts[] = "(`title` LIKE '" . $kwLike . "' OR `content` LIKE '" . $kwLike . "')";
+        }
+
+        $whereSql = implode(' OR ', $whereParts);
+        $sql = "SELECT `title`,`content` FROM `ai_knowledge_base` WHERE ({$whereSql}) ORDER BY `created_at` DESC LIMIT " . intval($limit);
+
+        $res = $mysqli->query($sql);
+        if (!$res) {
+            return '';
+        }
+
+        $snippets = [];
+        while ($row = $res->fetch_assoc()) {
+            $title = trim($row['title'] ?? '');
+            $content = trim($row['content'] ?? '');
+            // Keep short preview (first 800 chars)
+            $preview = mb_substr(preg_replace('/\s+/', ' ', strip_tags($content)), 0, 800);
+            if ($title) {
+                $snippets[] = "- " . $title . ": " . $preview;
+            } else {
+                $snippets[] = $preview;
+            }
+        }
+
+        if (empty($snippets)) {
+            return '';
+        }
+
+        $out = "[KNOWLEDGE BASE CONTEXT]\n" . implode("\n", $snippets);
+        return $out;
     }
 
     public static function parseResponseConfig(string $text): array
