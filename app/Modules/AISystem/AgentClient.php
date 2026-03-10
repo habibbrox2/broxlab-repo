@@ -32,8 +32,8 @@ class AgentClient {
         $effectiveModel = $model ?: ($this->aiProvider->getSetting('default_model') ?: 'moonshotai/Kimi-K2.5');
 
         $options = [
-            'max_tokens' => (int)($this->aiProvider->getSetting('max_tokens', 4000)),
-            'temperature' => (float)($this->aiProvider->getSetting('temperature', 0.7)),
+            'max_tokens' => (int)($this->aiProvider->getSetting('max_tokens', 300)),
+            'temperature' => (float)($this->aiProvider->getSetting('temperature', 0.3)),
             'timeout' => 15
         ];
 

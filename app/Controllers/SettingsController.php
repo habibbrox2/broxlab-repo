@@ -127,7 +127,7 @@ $router->get('/admin/app-settings', ['middleware' => ['auth', 'super_admin_only'
     }
 
     // Render the merged app settings page
-    echo $twig->render('admin/app-settings.twig', [
+    echo $twig->render('admin/settings/app.twig', [
         'settings' => $settings,
         'timezones' => $timezones,
         'languages' => $languages,
@@ -1003,7 +1003,7 @@ $router->get('/admin/account-settings', ['middleware' => ['auth', 'admin_or_supe
         $twoFAStatus = $securityManager->get2FAStatus($userId);
         
         // Render the account settings page
-        echo $twig->render('admin/account-settings.twig', [
+        echo $twig->render('admin/settings/account.twig', [
             'title' => 'Account Settings',
             'page_title' => 'Account Settings',
             'user' => $user,

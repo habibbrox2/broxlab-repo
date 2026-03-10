@@ -1,66 +1,211 @@
-{# 2026 Standard AI Copilot Sidebar for Admin Panel #}
-<div id="adminAiShell" class="ai-copilot-sidebar hidden">
-    <!-- Header: Context Aware -->
-    <div class="ai-header admin-theme">
-        <div class="ai-header-info">
-            <h3 class="ai-header-title" id="adminAiTitle">
-                <i class="bi bi-robot"></i> Copilot
+{# 
+    BroxBhai AI Admin Copilot - Premium 2026 Redesign
+    Features: CSRF refresh, input validation, file attachment, mobile responsive,
+    typing indicators, auto-save feedback, enhanced history management
+    
+    IMPORTANT: Uses unique 'brox-ai-' prefix for all classes to avoid conflicts
+    with other libraries/bundles
+#}
+
+{# Hidden file input for attachments #}
+<input type="file" id="adminAiFileInput" class="d-none" accept="image/*,.pdf,.txt,.doc,.docx" multiple>
+
+{# Main Copilot Sidebar #}
+<div id="adminAiShell" class="brox-ai-copilot-sidebar brox-ai-hidden" role="dialog" aria-labelledby="adminAiTitle" aria-modal="true">
+    {# Header: Context Aware with auto-save indicator #}
+    <div class="brox-ai-copilot-sidebar brox-ai-header admin-theme">
+        <div class="brox-ai-header-info">
+            <h3 class="brox-ai-header-title" id="adminAiTitle">
+                <i class="bi bi-stars"></i> Copilot
             </h3>
-            <span class="ai-header-context" id="adminAiContextBadge">
-                Context: <span class="badge bg-secondary">Global</span>
-            </span>
+            <div class="brox-ai-header-meta">
+                <span class="brox-ai-context-badge" id="adminAiContextBadge">
+                    <i class="bi bi-folder2"></i> <span id="adminAiContextModule">Global</span>
+                </span>
+                <span class="brox-ai-save-indicator" id="adminAiSaveIndicator">
+                    <i class="bi bi-check-circle-fill"></i> Saved
+                </span>
+            </div>
         </div>
-        <button id="adminAiClose" class="modern-btn-close ai-close" title="Close Sidebar"></button>
-    </div>
-
-    <!-- Body: Chat & Artifacts -->
-    <div id="adminAiBody" class="ai-body custom-scrollbar">
-        {# Messages & Artifacts injected via ai-admin.js #}
-    </div>
-
-    <!-- Slash Menu Prompt (Hidden until '/' is typed) -->
-    <div id="adminAiSlashMenu" class="ai-slash-menu d-none">
-        <ul class="list-group list-group-flush">
-            <li class="list-group-item list-group-item-action" data-cmd="/summarize">
-                <strong><i class="bi bi-body-text"></i> /summarize</strong> <small class="text-muted">Summarize page data</small>
-            </li>
-            <li class="list-group-item list-group-item-action" data-cmd="/generate-report">
-                <strong><i class="bi bi-file-earmark-bar-graph"></i> /generate-report</strong> <small class="text-muted">Create analytics report</small>
-            </li>
-            <li class="list-group-item list-group-item-action" data-cmd="/query-db">
-                <strong><i class="bi bi-database"></i> /query-db</strong> <small class="text-muted">Direct SQL/Data query</small>
-            </li>
-        </ul>
-    </div>
-
-    <!-- Footer: Advanced Input + Model Selector -->
-    <div id="adminAiFooter" class="ai-footer">
-        <!-- Model selector — populated remotely by ai-admin.js on boot -->
-        <div class="ai-model-bar px-2 pt-1">
-            <select id="adminAiModel"
-                    class="form-select form-select-sm d-none"
-                    title="AI Model"
-                    aria-label="Select AI Model">
-            </select>
+        <div class="brox-ai-header-actions">
+            <button id="adminAiMinimize" class="brox-ai-icon-btn" title="Minimize" aria-label="Minimize">
+                <i class="bi bi-dash-lg"></i>
+            </button>
+            <button id="adminAiClose" class="brox-ai-icon-btn brox-ai-close-btn" title="Close Sidebar" aria-label="Close">
+                <i class="bi bi-x-lg"></i>
+            </button>
         </div>
-        <div class="ai-input-wrapper">
-            <textarea id="adminAiInput" 
-                      placeholder="Ask Copilot or type '/' for commands..." 
-                      rows="1" 
-                      class="form-control ai-textarea border-0 shadow-none"></textarea>
-            <div class="ai-input-actions">
-                <button class="btn btn-sm btn-link text-muted" title="Attach file"><i class="bi bi-paperclip"></i></button>
-                <button id="adminAiSend" class="btn btn-primary btn-sm rounded-circle">
-                    <i class="bi bi-send-fill"></i>
+    </div>
+
+    {# Status Bar: AI Status + Model Info #}
+    <div class="brox-ai-status-bar" id="adminAiStatusBar">
+        <div class="brox-ai-status-indicator" id="adminAiStatusDot"></div>
+        <span class="brox-ai-status-text" id="adminAiStatusText">Ready</span>
+        <span class="brox-ai-model-badge" id="adminAiModelBadge">
+            <i class="bi bi-cpu"></i> <span id="adminAiCurrentModel">Loading...</span>
+        </span>
+    </div>
+
+    {# Body: Chat Messages & Artifacts #}
+    <div id="adminAiBody" class="brox-ai-copilot-sidebar brox-ai-body custom-scrollbar brox-ai-scrollbar" role="log" aria-live="polite">
+        {# Welcome message #}
+        <div class="brox-ai-welcome" id="adminAiWelcome">
+            <div class="brox-ai-welcome-icon">
+                <i class="bi bi-stars"></i>
+            </div>
+            <h4>Welcome to Admin Copilot</h4>
+            <p>Your AI assistant for administrative tasks. Try these commands:</p>
+            <div class="brox-ai-welcome-commands">
+                <button class="brox-ai-cmd-chip" data-cmd="/summarize">
+                    <i class="bi bi-body-text"></i> /summarize
+                </button>
+                <button class="brox-ai-cmd-chip" data-cmd="/generate-report">
+                    <i class="bi bi-file-earmark-bar-graph"></i> /generate-report
+                </button>
+                <button class="brox-ai-cmd-chip" data-cmd="/query-db">
+                    <i class="bi bi-database"></i> /query-db
                 </button>
             </div>
         </div>
     </div>
+
+    {# Typing Indicator #}
+    <div class="brox-ai-typing-indicator d-none" id="adminAiTypingIndicator">
+        <div class="brox-ai-typing-avatar">
+            <i class="bi bi-stars"></i>
+        </div>
+        <div class="brox-ai-typing-content">
+            <div class="brox-ai-typing-dots">
+                <span></span><span></span><span></span>
+            </div>
+            <span class="brox-ai-typing-text">Copilot is thinking...</span>
+        </div>
+    </div>
+
+    {# Slash Command Menu #}
+    <div id="adminAiSlashMenu" class="brox-ai-slash-menu d-none" role="menu">
+        <div class="brox-ai-slash-header">
+            <span>Commands</span>
+            <button class="brox-ai-slash-close" aria-label="Close menu">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
+        <ul class="brox-ai-slash-list">
+            <li class="brox-ai-slash-item" data-cmd="/summarize" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-body-text"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/summarize</strong>
+                    <small>Summarize current page data</small>
+                </div>
+            </li>
+            <li class="brox-ai-slash-item" data-cmd="/generate-report" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-file-earmark-bar-graph"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/generate-report</strong>
+                    <small>Create analytics report</small>
+                </div>
+            </li>
+            <li class="brox-ai-slash-item" data-cmd="/query-db" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-database"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/query-db</strong>
+                    <small>Direct SQL/Data query</small>
+                </div>
+            </li>
+            <li class="brox-ai-slash-item" data-cmd="/analyze-logs" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-journal-text"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/analyze-logs</strong>
+                    <small>Analyze system error logs</small>
+                </div>
+            </li>
+            <li class="brox-ai-slash-item" data-cmd="/export-data" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-download"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/export-data</strong>
+                    <small>Export current view data</small>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    {# Attachment Preview #}
+    <div class="brox-ai-attachment-preview d-none" id="adminAiAttachmentPreview">
+        <div class="brox-ai-attachment-info">
+            <i class="bi bi-paperclip"></i>
+            <span class="brox-ai-attachment-name" id="adminAiFileName">file.pdf</span>
+            <span class="brox-ai-attachment-size" id="adminAiFileSize">0 KB</span>
+        </div>
+        <button class="brox-ai-attachment-remove" id="adminAiRemoveAttachment" aria-label="Remove attachment">
+            <i class="bi bi-x"></i>
+        </button>
+    </div>
+
+    {# Footer: Input + Model Selector #}
+    <div id="adminAiFooter" class="brox-ai-copilot-sidebar brox-ai-footer">
+        {# Model Selector Bar #}
+        <div class="brox-ai-model-bar">
+            <select id="adminAiModel" class="form-select form-select-sm" title="Select AI Model" aria-label="AI Model">
+                <option value="">Loading models...</option>
+            </select>
+            <button id="adminAiRefreshModels" class="brox-ai-icon-btn-sm" title="Refresh models" aria-label="Refresh models">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+
+        {# Input Area #}
+        <div class="brox-ai-input-wrapper">
+            <button id="adminAiAttach" class="brox-ai-action-btn brox-ai-action-btn-left" title="Attach file" aria-label="Attach file">
+                <i class="bi bi-paperclip"></i>
+            </button>
+            <div class="brox-ai-input-container">
+                <textarea 
+                    id="adminAiInput" 
+                    placeholder="Ask Copilot or type '/' for commands..." 
+                    rows="1" 
+                    class="form-control brox-ai-textarea"
+                    aria-label="Message input"
+                    maxlength="5000"
+                ></textarea>
+                <div class="brox-ai-char-count" id="adminAiCharCount">0/5000</div>
+            </div>
+            <div class="brox-ai-input-actions">
+                <button id="adminAiClear" class="brox-ai-action-btn" title="Clear chat" aria-label="Clear chat">
+                    <i class="bi bi-trash3"></i>
+                </button>
+                <button id="adminAiSend" class="brox-ai-send-btn" title="Send message" aria-label="Send">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </div>
+        </div>
+        
+        {# Keyboard Shortcuts Hint #}
+        <div class="brox-ai-input-hint">
+            <span><kbd>Enter</kbd> Send</span>
+            <span><kbd>Shift + Enter</kbd> New line</span>
+            <span><kbd>/</kbd> Commands</span>
+        </div>
+    </div>
 </div>
 
-<!-- Trigger Button (Top Nav or Bottom Right) -->
-<button id="adminAiBtn" class="ai-trigger-fab shadow-lg" title="Open Copilot">
-    <i class="bi bi-stars"></i>
+{# Trigger FAB Button - Toggle with different icons #}
+<button id="adminAiBtn" class="brox-ai-trigger-fab" title="Open Copilot (Ctrl+Alt+A)" aria-label="Open AI Copilot">
+    <span class="brox-ai-fab-icon-open"><i class="bi bi-stars"></i></span>
+    <span class="brox-ai-fab-icon-close d-none"><i class="bi bi-x-lg"></i></span>
+    <span class="brox-ai-fab-badge" id="adminAiNotification">0</span>
 </button>
+
+{# Keyboard Shortcut Handler #}
+<script>
+    // Global keyboard shortcut handler
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+Alt+A to toggle copilot
+        if (e.ctrlKey && e.altKey && e.key === 'A') {
+            e.preventDefault();
+            const btn = document.getElementById('adminAiBtn');
+            if (btn) btn.click();
+        }
+    });
+</script>
 
 <script src="{{ asset('/ai/js/ai-admin.js') }}"></script>

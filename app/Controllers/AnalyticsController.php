@@ -36,7 +36,7 @@ $router->get('/admin/analytics', ['middleware' => ['auth', 'admin_only']], funct
     // Recent client-side events
     $recent_events = $analyticsModel->getRecentEvents(20);
     
-    echo $twig->render('admin/analytics-dashboard.twig', [
+    echo $twig->render('admin/dashboard/analytics.twig', [
         'title' => 'Admin Analytics',
         'user' => $user,
         'csrf_token' => generateCsrfToken(),
