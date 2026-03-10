@@ -921,6 +921,7 @@
     opacity: 0;
     transform: translateY(40px) scale(0.95);
     pointer-events: none;
+    display: flex !important;
 }
 
 .brox-ai-chat-main {

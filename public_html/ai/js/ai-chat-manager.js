@@ -120,21 +120,48 @@ class AIChatManager {
 
             const initial = conv.visitor_token ? conv.visitor_token.substring(0, 1).toUpperCase() : 'V';
             const timeStr = new Date(conv.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const preview = conv.last_text ? (conv.last_text.length > 40 ? conv.last_text.substring(0, 37) + '...' : conv.last_text) : '<i>No messages</i>';
+            const previewText = conv.last_text
+                ? (conv.last_text.length > 40 ? conv.last_text.substring(0, 37) + '...' : conv.last_text)
+                : 'No messages';
 
-            item.innerHTML = `
-                <div class="chat-item-avatar">${initial}</div>
-                <div class="chat-item-info">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="chat-item-title">Visitor ${conv.id}</div>
-                        <div class="small text-muted">${timeStr}</div>
-                    </div>
-                    <div class="chat-item-preview text-truncate small text-muted">${preview}</div>
-                    <div class="chat-item-meta mt-1">
-                        <span class="badge ${conv.status === 'open' ? 'bg-success' : 'bg-secondary'}">${conv.status}</span>
-                    </div>
-                </div>
-            `;
+            const avatar = document.createElement('div');
+            avatar.className = 'chat-item-avatar';
+            avatar.textContent = initial;
+
+            const info = document.createElement('div');
+            info.className = 'chat-item-info';
+
+            const header = document.createElement('div');
+            header.className = 'd-flex justify-content-between align-items-center';
+
+            const title = document.createElement('div');
+            title.className = 'chat-item-title';
+            title.textContent = `Visitor ${conv.id}`;
+
+            const time = document.createElement('div');
+            time.className = 'small text-muted';
+            time.textContent = timeStr;
+
+            header.appendChild(title);
+            header.appendChild(time);
+
+            const preview = document.createElement('div');
+            preview.className = 'chat-item-preview text-truncate small text-muted';
+            preview.textContent = previewText;
+
+            const meta = document.createElement('div');
+            meta.className = 'chat-item-meta mt-1';
+            const badge = document.createElement('span');
+            badge.className = `badge ${conv.status === 'open' ? 'bg-success' : 'bg-secondary'}`;
+            badge.textContent = conv.status || 'open';
+            meta.appendChild(badge);
+
+            info.appendChild(header);
+            info.appendChild(preview);
+            info.appendChild(meta);
+
+            item.appendChild(avatar);
+            item.appendChild(info);
             this.nodes.convList.appendChild(item);
         });
     }
@@ -165,13 +192,15 @@ class AIChatManager {
             if (data.success) {
                 this.currentTranscript = data.messages;
                 this.renderTranscript();
-                this.nodes.suggestionContainer.innerHTML = `
-                    <div class="text-center py-4">
-                        <button class="btn btn-primary btn-sm rounded-pill" onclick="window.chatManager.generateSuggestion()">
-                            <i class="bi bi-magic"></i> Generate Suggested Reply
-                        </button>
-                    </div>
-                `;
+                this.nodes.suggestionContainer.innerHTML = '';
+                const wrap = document.createElement('div');
+                wrap.className = 'text-center py-4';
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-primary btn-sm rounded-pill';
+                btn.innerHTML = '<i class="bi bi-magic"></i> Generate Suggested Reply';
+                btn.onclick = () => this.generateSuggestion();
+                wrap.appendChild(btn);
+                this.nodes.suggestionContainer.appendChild(wrap);
             }
         } catch (err) {
             this.nodes.chatTranscript.innerHTML = '<div class="text-center py-5 text-danger">Error loading transcript.</div>';
@@ -265,20 +294,23 @@ class AIChatManager {
                 ...this.currentTranscript.map(m => ({ role: m.role, content: m.content })).slice(-10)
             ];
 
-            const resp = await fetch('/api/ai-system/chat', {
+            const resp = await fetch('/api/admin/ai/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': this.csrfToken
+                },
                 body: JSON.stringify({
                     messages: messages,
-                    isAdmin: true,
                     provider: 'openrouter',
-                    model: 'openrouter/auto'
+                    model: 'openrouter/auto',
+                    csrf_token: this.csrfToken
                 })
             });
 
             const data = await resp.json();
             if (data.success) {
-                const suggestion = data.text || data.message?.content || '';
+                const suggestion = data.content || '';
                 this.renderSuggestion(suggestion);
             } else {
                 this.nodes.suggestionContainer.innerHTML = '<div class="text-danger small">Drafting failed.</div>';
@@ -289,22 +321,38 @@ class AIChatManager {
     }
 
     renderSuggestion(text) {
-        this.nodes.suggestionContainer.innerHTML = `
-            <div class="suggestion-card">
-                <div class="suggestion-header">
-                    <i class="bi bi-stars"></i> Suggested Reply
-                </div>
-                <div class="suggestion-content">${text}</div>
-                <button class="btn btn-primary btn-apply-suggestion btn-sm rounded-pill" onclick="window.chatManager.applySuggestion(\`${text.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)">
-                    Insert Suggestion
-                </button>
-            </div>
-            <div class="text-center mt-3">
-                <button class="btn btn-link btn-sm text-muted" onclick="window.chatManager.generateSuggestion()">
-                    <i class="bi bi-arrow-clockwise"></i> Try again
-                </button>
-            </div>
-        `;
+        this.nodes.suggestionContainer.innerHTML = '';
+
+        const card = document.createElement('div');
+        card.className = 'suggestion-card';
+
+        const header = document.createElement('div');
+        header.className = 'suggestion-header';
+        header.innerHTML = '<i class="bi bi-stars"></i> Suggested Reply';
+
+        const content = document.createElement('div');
+        content.className = 'suggestion-content';
+        content.textContent = text;
+
+        const applyBtn = document.createElement('button');
+        applyBtn.className = 'btn btn-primary btn-apply-suggestion btn-sm rounded-pill';
+        applyBtn.textContent = 'Insert Suggestion';
+        applyBtn.onclick = () => this.applySuggestion(text);
+
+        card.appendChild(header);
+        card.appendChild(content);
+        card.appendChild(applyBtn);
+
+        const retryWrap = document.createElement('div');
+        retryWrap.className = 'text-center mt-3';
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'btn btn-link btn-sm text-muted';
+        retryBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Try again';
+        retryBtn.onclick = () => this.generateSuggestion();
+        retryWrap.appendChild(retryBtn);
+
+        this.nodes.suggestionContainer.appendChild(card);
+        this.nodes.suggestionContainer.appendChild(retryWrap);
     }
 
     applySuggestion(text) {

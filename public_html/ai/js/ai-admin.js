@@ -35,7 +35,7 @@
 // ── Configuration ─────────────────────────────────────────────────────────────
 const ADMIN_CONFIG = {
     chatKey: 'brox.admin.history',
-    proxyUrl: '/api/ai-system/chat',
+    proxyUrl: '/api/admin/ai/chat',
     logUrl: '/api/admin/logs/errors',
     modelsUrl: '/api/ai/models',  // Fixed: was /api/ai-system/models
     puterCdn: 'https://js.puter.com/v2/',
@@ -696,9 +696,19 @@ if (!window.BroxAdminInstance) {
             this.scrollToBottom();
         }
 
+        escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         formatMessage(text) {
-            // Basic markdown-like formatting
-            return text
+            // Basic markdown-like formatting (after escaping HTML)
+            const safe = this.escapeHtml(text);
+            return safe
                 .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
                 .replace(/`([^`]+)`/g, '<code>$1</code>')
                 .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
@@ -733,7 +743,13 @@ if (!window.BroxAdminInstance) {
 
             const hdr = document.createElement('div');
             hdr.className = 'brox-ai-artifact-header';
-            hdr.innerHTML = `<span>${data.title || 'Data Artifact'}</span><span class="badge bg-primary">${data.type || 'Table'}</span>`;
+            const title = document.createElement('span');
+            title.textContent = data.title || 'Data Artifact';
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-primary';
+            badge.textContent = data.type || 'Table';
+            hdr.appendChild(title);
+            hdr.appendChild(badge);
             wrap.appendChild(hdr);
 
             const body = document.createElement('div');
@@ -1026,7 +1042,7 @@ if (!window.BroxAdminInstance) {
 
         // Expose helpers for Twig inline onclick calls
         window.testConnection = (id, model) => window.broxAdmin.testConnection(id, model);
-        window.deleteProvider = (id) => window.broxAdmin.apiCall('/api/ai-system/provider/delete', { id });
+        window.deleteProvider = (id) => window.broxAdmin.apiCall('/api/ai-system/delete-provider', { id });
 
         console.log('[Admin Copilot] Ready');
     });
