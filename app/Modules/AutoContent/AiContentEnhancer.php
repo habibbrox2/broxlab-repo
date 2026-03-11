@@ -141,7 +141,10 @@ class AiContentEnhancer
         }
 
         $providerName = $provider['provider_name'];
-        $model = $this->aiProvider->getSetting('default_model', 'gpt-4o-mini');
+        $model = $this->aiProvider->getSetting('backend_model', '');
+        if ($model === '') {
+            $model = $this->aiProvider->getSetting('default_model', 'gpt-4o-mini');
+        }
 
         // Build the prompt
         $prompt = $this->buildEnhancementPrompt($title, $content, $excerpt, $sourceName, $styleProfile);
@@ -271,7 +274,7 @@ PROMPT;
 
         $result = $this->aiProvider->callAPI(
             $provider['provider_name'],
-            $this->aiProvider->getSetting('default_model', 'gpt-4o-mini'),
+            $this->aiProvider->getSetting('backend_model', '') ?: $this->aiProvider->getSetting('default_model', 'gpt-4o-mini'),
             $prompt,
         ['max_tokens' => 500, 'temperature' => 0.3]
         );

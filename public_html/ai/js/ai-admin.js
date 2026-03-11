@@ -38,6 +38,8 @@ const ADMIN_CONFIG = {
     proxyUrl: '/api/admin/ai/chat',
     logUrl: '/api/admin/logs/errors',
     modelsUrl: '/api/ai/models',  // Fixed: was /api/ai-system/models
+    defaultProviderUrl: '/api/ai/default-provider',
+    adminDefaultsUrl: '/api/ai-system/admin-defaults',
     puterCdn: 'https://js.puter.com/v2/',
     csrfRefreshUrl: '/api/csrf-token',
     maxHistory: 40,
@@ -214,6 +216,42 @@ if (!window.BroxAdminInstance) {
         }
     }
 
+    async function fetchDefaultProvider() {
+        try {
+            const res = await fetch(ADMIN_CONFIG.defaultProviderUrl);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            return data.provider || 'openrouter';
+        } catch (e) {
+            console.warn('[Admin Provider] Default fetch failed:', e.message);
+            return 'openrouter';
+        }
+    }
+
+    async function fetchAdminDefaults() {
+        try {
+            const res = await fetch(ADMIN_CONFIG.adminDefaultsUrl);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            return data && typeof data === 'object' ? data : {};
+        } catch (e) {
+            console.warn('[Admin Defaults] Fetch failed:', e.message);
+            return {};
+        }
+    }
+
+    async function fetchProviderMap() {
+        try {
+            const res = await fetch(`${ADMIN_CONFIG.modelsUrl}?scope=admin`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            return data.providers || {};
+        } catch (e) {
+            console.warn('[Admin Provider] Map fetch failed:', e.message);
+            return {};
+        }
+    }
+
     // ── Main Admin Copilot Class ──────────────────────────────────────────────
     class BroxAdminCopilot {
         constructor() {
@@ -222,14 +260,17 @@ if (!window.BroxAdminInstance) {
             this.csrfToken = csrfToken;
             this.currentModel = null;
             this.currentProvider = 'openrouter';
+            this.preferredModel = '';
+            this.puterDisabled = false;
             this.fileHandler = null;
+            this.modelBarOpen = false;
 
             this.initUI();
             this.bindEvents();
             this.startLogMonitor();
             this.renderHistory();
             this.updateContext();
-            this.loadProviderModels();
+            this.bootstrapProviders();
 
             console.log('[Admin Copilot] Initialized with', this.history.length, 'messages');
         }
@@ -288,12 +329,16 @@ if (!window.BroxAdminInstance) {
                 close: document.getElementById('adminAiClose'),
                 slashMenu: document.getElementById('adminAiSlashMenu'),
                 typingIndicator: document.getElementById('adminAiTypingIndicator'),
+                providerSel: document.getElementById('adminAiProvider'),
                 modelSel: document.getElementById('adminAiModel'),
                 modelBadge: document.getElementById('adminAiCurrentModel'),
                 refreshModels: document.getElementById('adminAiRefreshModels'),
                 statusDot: document.getElementById('adminAiStatusDot'),
                 statusText: document.getElementById('adminAiStatusText'),
-                notification: document.getElementById('adminAiNotification')
+                notification: document.getElementById('adminAiNotification'),
+                modelBar: document.getElementById('adminAiModelBar'),
+                modelToggle: document.getElementById('adminAiModelToggle'),
+                modelLabel: document.getElementById('adminAiModelLabel')
             };
 
             // Initialize file handler
@@ -331,10 +376,47 @@ if (!window.BroxAdminInstance) {
         }
 
         // ── Model Management ───────────────────────────────────────────────────
-        async loadProviderModels(provider = 'openrouter') {
+        async bootstrapProviders() {
+            const defaults = await fetchAdminDefaults();
+            const defaultProvider = defaults.provider || await fetchDefaultProvider();
+            this.preferredModel = defaults.model || '';
+            const providerMap = await fetchProviderMap();
+
+            this.currentProvider = defaultProvider || 'openrouter';
+            if (this.preferredModel) {
+                this.currentModel = this.preferredModel;
+                this.updateModelLabel();
+            }
+
+            if (this.nodes.providerSel) {
+                this.nodes.providerSel.innerHTML = '';
+                const keys = Object.keys(providerMap);
+                if (keys.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.value = this.currentProvider;
+                    opt.textContent = this.currentProvider.toUpperCase();
+                    this.nodes.providerSel.appendChild(opt);
+                } else {
+                    keys.forEach((key) => {
+                        const opt = document.createElement('option');
+                        opt.value = key;
+                        opt.textContent = key.replace(/[_-]+/g, ' ').replace(/\b\w/g, m => m.toUpperCase());
+                        if (key === this.currentProvider) opt.selected = true;
+                        this.nodes.providerSel.appendChild(opt);
+                    });
+                }
+            }
+
+            await this.loadProviderModels(this.currentProvider, this.preferredModel);
+        }
+
+        async loadProviderModels(provider = 'openrouter', preferredModel = '') {
             if (!this.nodes.modelSel) return;
 
             this.currentProvider = provider;
+            if (this.nodes.providerSel) {
+                this.nodes.providerSel.value = provider;
+            }
             this.updateStatus('loading', 'Loading models...');
 
             const models = await fetchModels(provider);
@@ -346,20 +428,26 @@ if (!window.BroxAdminInstance) {
             }
 
             this.nodes.modelSel.innerHTML = '';
+            let hasPreferred = false;
             models.forEach(m => {
                 const opt = document.createElement('option');
                 opt.value = m.id;
                 opt.textContent = m.name + (m.id.endsWith(':free') ? ' (Free)' : '');
-                if (m.default) opt.selected = true;
+                if (preferredModel && preferredModel === m.id) {
+                    opt.selected = true;
+                    hasPreferred = true;
+                } else if (m.default && !hasPreferred) {
+                    opt.selected = true;
+                }
                 this.nodes.modelSel.appendChild(opt);
             });
 
-            const def = models.find(m => m.default);
+            const def = hasPreferred
+                ? models.find(m => m.id === preferredModel)
+                : models.find(m => m.default);
             this.currentModel = def ? def.id : models[0].id;
 
-            if (this.nodes.modelBadge) {
-                this.nodes.modelBadge.textContent = this.nodes.modelSel.options[this.nodes.modelSel.selectedIndex]?.text || this.currentModel;
-            }
+            this.updateModelLabel();
 
             this.updateStatus('ready', 'Ready');
             console.log('[Admin Models] Loaded', models.length, 'for', provider);
@@ -367,9 +455,7 @@ if (!window.BroxAdminInstance) {
             // Track selection changes
             this.nodes.modelSel.addEventListener('change', () => {
                 this.currentModel = this.nodes.modelSel.value;
-                if (this.nodes.modelBadge) {
-                    this.nodes.modelBadge.textContent = this.nodes.modelSel.options[this.nodes.modelSel.selectedIndex]?.text || this.currentModel;
-                }
+                this.updateModelLabel();
                 console.log('[Admin Models] Selected:', this.currentModel);
             });
         }
@@ -395,9 +481,7 @@ if (!window.BroxAdminInstance) {
 
             this.currentModel = fallbackModels[0].id;
 
-            if (this.nodes.modelBadge) {
-                this.nodes.modelBadge.textContent = fallbackModels[0].name;
-            }
+            this.updateModelLabel();
 
             this.updateStatus('ready', 'Ready (Offline)');
             console.log('[Admin Models] Using fallback models');
@@ -405,10 +489,28 @@ if (!window.BroxAdminInstance) {
             // Track selection changes
             this.nodes.modelSel.addEventListener('change', () => {
                 this.currentModel = this.nodes.modelSel.value;
-                if (this.nodes.modelBadge) {
-                    this.nodes.modelBadge.textContent = this.nodes.modelSel.options[this.nodes.modelSel.selectedIndex]?.text || this.currentModel;
-                }
+                this.updateModelLabel();
             });
+        }
+
+        updateModelLabel() {
+            const modelId = this.currentModel || '';
+            const rawLabel = this.nodes.modelSel?.options[this.nodes.modelSel.selectedIndex]?.text || modelId || 'AI';
+            const label = this.getShortModelLabel(modelId, rawLabel);
+            if (this.nodes.modelBadge) {
+                this.nodes.modelBadge.textContent = label;
+            }
+            if (this.nodes.modelLabel) {
+                this.nodes.modelLabel.textContent = label;
+            }
+        }
+
+        getShortModelLabel(modelId, fallbackLabel) {
+            const cleaned = (fallbackLabel || '').replace(/\s*\(Free\)\s*/i, '').trim();
+            if (cleaned) return cleaned;
+            const id = (modelId || '').split('/').pop() || '';
+            const shortId = id.split(':')[0] || id;
+            return shortId || 'AI';
         }
 
         // ── Status Management ──────────────────────────────────────────────────
@@ -459,6 +561,17 @@ if (!window.BroxAdminInstance) {
             if (this.nodes.refreshModels) {
                 this.nodes.refreshModels.onclick = () => {
                     this.loadProviderModels(this.currentProvider);
+                };
+            }
+
+            if (this.nodes.modelToggle) {
+                this.nodes.modelToggle.onclick = () => this.toggleModelBar();
+            }
+
+            if (this.nodes.providerSel) {
+                this.nodes.providerSel.onchange = () => {
+                    const provider = this.nodes.providerSel.value || 'openrouter';
+                    this.loadProviderModels(provider);
                 };
             }
 
@@ -514,6 +627,47 @@ if (!window.BroxAdminInstance) {
                     this.nodes.slashMenu?.classList.add('d-none');
                 }
             });
+
+            // Click outside to close model bar
+            document.addEventListener('pointerdown', (e) => {
+                if (!this.nodes.modelBar || this.nodes.modelBar.classList.contains('brox-ai-collapsed')) return;
+                const path = e.composedPath ? e.composedPath() : [];
+                const clickedInside = path.includes(this.nodes.modelBar) || this.nodes.modelBar.contains(e.target);
+                if (clickedInside) return;
+                this.closeModelBar();
+            });
+
+            // Click outside to close sidebar
+            document.addEventListener('pointerdown', (e) => {
+                if (!this.nodes.shell || !this.nodes.btn) return;
+                if (this.nodes.shell.classList.contains('brox-ai-hidden') || this.nodes.shell.classList.contains('d-none')) return;
+                const path = e.composedPath ? e.composedPath() : [];
+                const clickedInside = path.includes(this.nodes.shell) || path.includes(this.nodes.btn)
+                    || this.nodes.shell.contains(e.target) || this.nodes.btn.contains(e.target);
+                if (clickedInside) return;
+                this.closeSidebar();
+            });
+        }
+
+        toggleModelBar(forceState) {
+            if (!this.nodes.modelBar || !this.nodes.modelToggle) return;
+            const willOpen = typeof forceState === 'boolean' ? forceState : this.nodes.modelBar.classList.contains('brox-ai-collapsed');
+            if (willOpen) {
+                this.nodes.modelBar.classList.remove('brox-ai-collapsed');
+                this.nodes.modelBar.setAttribute('aria-expanded', 'true');
+                this.nodes.modelToggle.setAttribute('aria-expanded', 'true');
+                this.modelBarOpen = true;
+            } else {
+                this.closeModelBar();
+            }
+        }
+
+        closeModelBar() {
+            if (!this.nodes.modelBar || !this.nodes.modelToggle) return;
+            this.nodes.modelBar.classList.add('brox-ai-collapsed');
+            this.nodes.modelBar.setAttribute('aria-expanded', 'false');
+            this.nodes.modelToggle.setAttribute('aria-expanded', 'false');
+            this.modelBarOpen = false;
         }
 
         resizeInput() {
@@ -661,7 +815,7 @@ if (!window.BroxAdminInstance) {
             this.nodes.welcome?.classList.add('d-none');
 
             const msg = document.createElement('div');
-            msg.className = `brox-ai-msg ${role}`;
+            msg.className = `brox-ai-msg brox-ai-${role}`;
             msg.setAttribute('data-role', role);
 
             // Avatar
@@ -844,6 +998,7 @@ if (!window.BroxAdminInstance) {
                     context: ctx,
                     stream: true
                 };
+                if (this.currentProvider) payload.provider = this.currentProvider;
                 if (this.currentModel) payload.model = this.currentModel;
 
                 const resp = await fetch(ADMIN_CONFIG.proxyUrl, {
@@ -930,7 +1085,7 @@ if (!window.BroxAdminInstance) {
 
         createEmptyMessage(role) {
             const msg = document.createElement('div');
-            msg.className = `brox-ai-msg ${role}`;
+            msg.className = `brox-ai-msg brox-ai-${role}`;
             msg.setAttribute('data-role', role);
 
             const avatar = document.createElement('div');
@@ -951,6 +1106,11 @@ if (!window.BroxAdminInstance) {
 
         // ── Puter.js Fallback ───────────────────────────────────────────────────
         async puterFallback() {
+            if (this.puterDisabled) {
+                this.addMessage('assistant', '❌ Puter fallback is disabled (unauthorized). Please configure Puter or use a valid AI provider.');
+                this.updateStatus('error', 'Fallback disabled');
+                return;
+            }
             console.log('[Fallback] Using Puter AI (Admin)');
             this.updateStatus('fallback', 'Using fallback AI');
 
@@ -981,6 +1141,14 @@ if (!window.BroxAdminInstance) {
 
             } catch (fallbackErr) {
                 console.error('[Admin Fallback] Puter error:', fallbackErr);
+                const status = fallbackErr?.status || fallbackErr?.error?.status;
+                const message = fallbackErr?.message || fallbackErr?.error?.message || '';
+                if (status === 401 || /unauthorized/i.test(message)) {
+                    this.puterDisabled = true;
+                    this.addMessage('assistant', '❌ Puter unauthorized. Please login/configure Puter or use a valid provider.');
+                    this.updateStatus('error', 'Puter unauthorized');
+                    return;
+                }
                 this.addMessage('assistant', '❌ Connection error. Both primary AI and Puter are unavailable.');
                 this.updateStatus('error', 'All AI failed');
             }

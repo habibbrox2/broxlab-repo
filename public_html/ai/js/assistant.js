@@ -24,6 +24,7 @@ if (!window.BroxAssistantLoaded) {
         tokenKey: 'brox.ai.visitor_token',
         proxyUrl: '/api/ai/chat',
         modelsUrl: '/api/ai/models',
+        frontendSettingsUrl: '/api/ai-system/frontend',
         puterCdn: 'https://js.puter.com/v2/'     // Puter.js CDN (fallback only)
     };
 
@@ -125,17 +126,34 @@ if (!window.BroxAssistantLoaded) {
         }
     }
 
+    async function fetchFrontendSettings() {
+        try {
+            const res = await fetch(CONFIG.frontendSettingsUrl);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            return data && typeof data === 'object' ? data : null;
+        } catch (e) {
+            console.warn('[Frontend Settings] Failed to load:', e.message);
+            return null;
+        }
+    }
+
     // ─── Main Class ───────────────────────────────────────────────────────────────
     class BroxAssistant {
         constructor() {
             this.lang = localStorage.getItem(CONFIG.langKey) || 'bn';
             this.history = this.loadHistory();
-            // User data now session-only (not persisted to localStorage for privacy)
-            this.user = null; // Will be set per session, not stored
+            // User profile persists, chat history is session-only
+            this.user = this.loadUserProfile();
             this.visitorToken = this.getVisitorToken();
             this.isThinking = false;
             this.currentModel = null;    // will be set after model list loads
+            this.frontendProvider = 'openrouter';
+            this.frontendModel = '';
             this.recognition = null;     // Speech recognition instance
+            this.idleTimer = null;
+            this.isChatActive = false;
+            this.modelBarOpen = false;
 
             this.initUI();
             if (this.nodes.btn) {
@@ -143,7 +161,7 @@ if (!window.BroxAssistantLoaded) {
                 this.initSpeechRecognition();
                 this.initFileAttachment();
                 this.renderInitialState();
-                this.loadProviderModels();   // load default provider models on boot
+                this.bootstrapFrontendSettings();
             }
         }
 
@@ -159,12 +177,30 @@ if (!window.BroxAssistantLoaded) {
         }
 
         loadHistory() {
-            try { return JSON.parse(localStorage.getItem(CONFIG.chatKey)) || []; }
-            catch { return []; }
+            // Session-only chat: do not persist between reloads
+            return [];
         }
 
         saveHistory() {
-            localStorage.setItem(CONFIG.chatKey, JSON.stringify(this.history.slice(-40)));
+            // No-op: session-only chat history
+        }
+
+        loadUserProfile() {
+            try {
+                const raw = localStorage.getItem(CONFIG.userKey);
+                if (!raw) return null;
+                const data = JSON.parse(raw);
+                if (!data || typeof data !== 'object') return null;
+                if (!data.name) return null;
+                return data;
+            } catch {
+                return null;
+            }
+        }
+
+        saveUserProfile(profile) {
+            if (!profile || !profile.name) return;
+            localStorage.setItem(CONFIG.userKey, JSON.stringify(profile));
         }
 
         // ── UI Nodes ──────────────────────────────────────────────────────────────
@@ -177,12 +213,17 @@ if (!window.BroxAssistantLoaded) {
                 toggleSidebar: document.getElementById('toggleAiSidebar'),
                 title: document.getElementById('publicAssistantTitle'),
                 status: document.getElementById('publicAssistantStatusText'),
+                modelName: document.getElementById('publicAssistantModelName'),
+                modelBar: document.getElementById('publicAssistantModelBar'),
+                modelToggle: document.getElementById('publicAssistantModelToggle'),
+                modelLabel: document.getElementById('publicAssistantModelLabel'),
                 agenticStatus: document.getElementById('publicAssistantAgenticStatus'),
                 statusDetail: document.querySelector('.ai-status-detail'),
                 body: document.getElementById('publicAssistantMessages'),
                 footer: document.getElementById('publicAssistantFooter'),
                 input: document.getElementById('publicAssistantInput'),
                 send: document.getElementById('sendToPublicAssistant'),
+                suggestions: document.getElementById('publicAssistantSuggestions'),
                 prechat: document.getElementById('publicAssistantPreChat'),
                 langBn: document.getElementById('publicAssistantLangBn'),
                 langEn: document.getElementById('publicAssistantLangEn'),
@@ -209,7 +250,19 @@ if (!window.BroxAssistantLoaded) {
             if (this.nodes.btn) {
                 this.updateLangUI();
                 this.renderHistorySidebar();
+                this.renderQuickActions();
             }
+        }
+
+        async bootstrapFrontendSettings() {
+            const data = await fetchFrontendSettings();
+            this.frontendProvider = data?.provider || 'openrouter';
+            this.frontendModel = data?.frontend_model || data?.model || '';
+            if (this.frontendModel) {
+                this.currentModel = this.frontendModel;
+                this.updateModelLabel();
+            }
+            this.loadProviderModels(this.frontendProvider, this.frontendModel);
         }
 
         // ── Language ──────────────────────────────────────────────────────────────
@@ -239,6 +292,8 @@ if (!window.BroxAssistantLoaded) {
             localStorage.setItem(CONFIG.langKey, this.lang);
             this.updateLangUI();
             this.updatePrechatLabels();
+            this.renderQuickActions();
+            this.updateSuggestions();
         }
 
         // Update pre-chat labels when language changes
@@ -268,6 +323,55 @@ if (!window.BroxAssistantLoaded) {
             if (startBtn) startBtn.textContent = this.t('start_btn');
         }
 
+        applyUserProfileToForm() {
+            if (!this.user) return;
+            if (this.nodes.prechatInputs.name) this.nodes.prechatInputs.name.value = this.user.name || '';
+            if (this.nodes.prechatInputs.email) this.nodes.prechatInputs.email.value = this.user.email || '';
+            if (this.nodes.prechatInputs.mobile) this.nodes.prechatInputs.mobile.value = this.user.phone || '';
+
+            if (Array.isArray(this.user.topics) && this.user.topics.length) {
+                document.querySelectorAll('.brox-ai-topic-grid input').forEach((input) => {
+                    input.checked = this.user.topics.includes(input.value);
+                });
+            }
+        }
+
+        showTopicStep() {
+            this.nodes.prechat.classList.remove('brox-ai-hidden');
+            this.nodes.body.classList.add('brox-ai-hidden');
+            this.nodes.footer.classList.add('brox-ai-hidden');
+            this.nodes.modelBar?.classList.add('brox-ai-hidden');
+            this.nodes.quickActions?.classList.add('brox-ai-hidden');
+            if (this.nodes.prechatSteps.name) this.nodes.prechatSteps.name.classList.add('brox-ai-hidden');
+            if (this.nodes.prechatSteps.contact) this.nodes.prechatSteps.contact.classList.add('brox-ai-hidden');
+            if (this.nodes.prechatSteps.topic) this.nodes.prechatSteps.topic.classList.remove('brox-ai-hidden');
+        }
+
+        resetIdleTimer() {
+            if (this.idleTimer) clearTimeout(this.idleTimer);
+            if (!this.isChatActive) return;
+            this.idleTimer = setTimeout(() => this.resetSessionToTopics(), 15 * 60 * 1000);
+        }
+
+        markActivity() {
+            if (!this.isChatActive) return;
+            this.resetIdleTimer();
+        }
+
+        resetSessionToTopics() {
+            this.isChatActive = false;
+            this.history = [];
+            this.nodes.body.innerHTML = '';
+            this.isChatActive = true;
+            this.resetIdleTimer();
+            this.nodes.body.classList.add('brox-ai-hidden');
+            this.nodes.footer.classList.add('brox-ai-hidden');
+            this.nodes.quickActions?.classList.add('brox-ai-hidden');
+            this.showTopicStep();
+            this.renderHistorySidebar();
+            this.updateSuggestions();
+        }
+
         // ── Sidebar & History ─────────────────────────────────────────────────────
         renderHistorySidebar() {
             if (!this.nodes.history) return;
@@ -293,11 +397,23 @@ if (!window.BroxAssistantLoaded) {
         // ── Initial Render ────────────────────────────────────────────────────────
         renderInitialState() {
             if (!this.nodes.prechat || !this.nodes.body || !this.nodes.footer) return;
+            this.isChatActive = false;
+            this.nodes.body.innerHTML = '';
+            if (this.user) {
+                this.applyUserProfileToForm();
+                this.showTopicStep();
+                this.renderHistorySidebar();
+                return;
+            }
 
             if (!this.user) {
                 this.nodes.prechat.classList.remove('brox-ai-hidden');
                 this.nodes.body.classList.add('brox-ai-hidden');
                 this.nodes.footer.classList.add('brox-ai-hidden');
+<<<<<<< HEAD
+=======
+                this.nodes.modelBar?.classList.add('brox-ai-hidden');
+>>>>>>> 8dbe4f8 (chore: normalize line endings)
                 this.nodes.quickActions?.classList.add('brox-ai-hidden');
                 if (this.nodes.prechatSteps.name) this.nodes.prechatSteps.name.classList.remove('brox-ai-hidden');
                 if (this.nodes.prechatSteps.contact) this.nodes.prechatSteps.contact.classList.add('brox-ai-hidden');
@@ -306,6 +422,10 @@ if (!window.BroxAssistantLoaded) {
                 this.nodes.prechat.classList.add('brox-ai-hidden');
                 this.nodes.body.classList.remove('brox-ai-hidden');
                 this.nodes.footer.classList.remove('brox-ai-hidden');
+<<<<<<< HEAD
+=======
+                this.nodes.modelBar?.classList.remove('brox-ai-hidden');
+>>>>>>> 8dbe4f8 (chore: normalize line endings)
                 this.nodes.quickActions?.classList.remove('brox-ai-hidden');
                 this.nodes.body.innerHTML = '';
 
@@ -320,30 +440,49 @@ if (!window.BroxAssistantLoaded) {
         }
 
         // ── Remote Model Loading ──────────────────────────────────────────────────
-        async loadProviderModels(provider = 'openrouter') {
+        async loadProviderModels(provider = 'openrouter', preferredModel = '') {
             if (!this.nodes.modelSel) return;
 
             const models = await fetchModels(provider);
             if (!models.length) {
                 this.nodes.modelSel.classList.add('brox-ai-hidden');
+<<<<<<< HEAD
+=======
+                this.updateModelLabel();
+>>>>>>> 8dbe4f8 (chore: normalize line endings)
                 return;
             }
 
             this.nodes.modelSel.innerHTML = '';
+            let hasPreferred = false;
             models.forEach(m => {
                 const opt = document.createElement('option');
                 opt.value = m.id;
                 opt.textContent = m.name + (m.id.endsWith(':free') ? ' (Free)' : '');
-                if (m.default) opt.selected = true;
+                if (preferredModel && preferredModel === m.id) {
+                    opt.selected = true;
+                    hasPreferred = true;
+                } else if (m.default && !hasPreferred) {
+                    opt.selected = true;
+                }
                 this.nodes.modelSel.appendChild(opt);
             });
 
-            const defaultOpt = models.find(m => m.default);
+            const defaultOpt = hasPreferred
+                ? models.find(m => m.id === preferredModel)
+                : models.find(m => m.default);
             this.currentModel = defaultOpt ? defaultOpt.id : models[0].id;
+<<<<<<< HEAD
             this.nodes.modelSel.classList.remove('brox-ai-hidden');
+=======
+            this.nodes.modelSel.classList.remove('d-none');
+            this.nodes.modelSel.classList.remove('brox-ai-hidden');
+            this.updateModelLabel();
+>>>>>>> 8dbe4f8 (chore: normalize line endings)
 
             this.nodes.modelSel.addEventListener('change', () => {
                 this.currentModel = this.nodes.modelSel.value;
+                this.updateModelLabel();
             });
         }
 
@@ -434,7 +573,7 @@ if (!window.BroxAssistantLoaded) {
         addFileMessage(file) {
             if (!this.nodes.body) return;
             const msg = document.createElement('div');
-            msg.className = 'brox-ai-msg user';
+            msg.className = 'brox-ai-msg brox-ai-user';
             const content = document.createElement('div');
             content.className = 'brox-ai-msg-content';
             const attachment = document.createElement('div');
@@ -473,6 +612,7 @@ if (!window.BroxAssistantLoaded) {
                 if (this.nodes.shell?.classList.contains('brox-ai-hidden')) {
                     this.nodes.shell.classList.remove('brox-ai-hidden');
                     this.nodes.btn.classList.add('brox-ai-active');
+                    this.markActivity();
                 } else {
                     this.nodes.shell?.classList.add('brox-ai-hidden');
                     this.nodes.btn.classList.remove('brox-ai-active');
@@ -503,15 +643,32 @@ if (!window.BroxAssistantLoaded) {
             if (this.nodes.langEn) this.nodes.langEn.onclick = () => { this.lang = 'en'; this.saveLang(); };
 
             if (this.nodes.send) this.nodes.send.onclick = () => this.handleSend();
-            if (this.nodes.input) this.nodes.input.onkeypress = e => { if (e.key === 'Enter') this.handleSend(); };
+            if (this.nodes.input) {
+                this.nodes.input.onkeypress = e => { if (e.key === 'Enter') this.handleSend(); };
+                this.nodes.input.oninput = () => {
+                    this.updateSuggestions();
+                    this.markActivity();
+                };
+            }
 
             if (this.nodes.quickActions) {
-                this.nodes.quickActions.querySelectorAll('.brox-ai-action-chip').forEach(btn => {
-                    btn.onclick = () => {
-                        this.nodes.input.value = btn.dataset.prompt;
-                        this.handleSend();
-                    };
-                });
+                this.nodes.quickActions.onclick = (e) => {
+                    const btn = e.target.closest('.brox-ai-action-chip');
+                    if (!btn) return;
+                    this.nodes.input.value = btn.dataset.prompt || '';
+                    this.handleSend();
+                };
+            }
+
+            if (this.nodes.suggestions) {
+                this.nodes.suggestions.onclick = (e) => {
+                    const btn = e.target.closest('.brox-ai-suggestion-chip');
+                    if (!btn) return;
+                    this.nodes.input.value = btn.dataset.prompt || '';
+                    this.nodes.input.focus();
+                    this.updateSuggestions();
+                    this.markActivity();
+                };
             }
 
             if (this.nodes.prechatBtns.next1) {
@@ -546,6 +703,29 @@ if (!window.BroxAssistantLoaded) {
             if (this.nodes.prechatBtns.start) {
                 this.nodes.prechatBtns.start.onclick = () => this.startChat();
             }
+
+            if (this.nodes.modelToggle) {
+                this.nodes.modelToggle.onclick = () => this.toggleModelBar();
+            }
+
+            document.addEventListener('pointerdown', (e) => {
+                if (!this.nodes.shell || !this.nodes.btn) return;
+                if (this.nodes.shell.classList.contains('brox-ai-hidden')) return;
+                const path = e.composedPath ? e.composedPath() : [];
+                const clickedInside = path.includes(this.nodes.shell) || path.includes(this.nodes.btn)
+                    || this.nodes.shell.contains(e.target) || this.nodes.btn.contains(e.target);
+                if (clickedInside) return;
+                this.nodes.shell.classList.add('brox-ai-hidden');
+                this.nodes.btn.classList.remove('brox-ai-active');
+            });
+
+            document.addEventListener('pointerdown', (e) => {
+                if (!this.nodes.modelBar || this.nodes.modelBar.classList.contains('brox-ai-collapsed')) return;
+                const path = e.composedPath ? e.composedPath() : [];
+                const clickedInside = path.includes(this.nodes.modelBar) || this.nodes.modelBar.contains(e.target);
+                if (clickedInside) return;
+                this.closeModelBar();
+            });
         }
 
         startChat() {
@@ -566,9 +746,8 @@ if (!window.BroxAssistantLoaded) {
 
             const selected = Array.from(document.querySelectorAll('.brox-ai-topic-grid input:checked')).map(i => i.value);
 
-            // Store only session data (not in localStorage for privacy)
             this.user = { name, email, phone, topics: selected };
-            // DO NOT persist user data to localStorage - privacy concern
+            this.saveUserProfile(this.user);
 
             this.renderChatMode();
         }
@@ -577,8 +756,14 @@ if (!window.BroxAssistantLoaded) {
             this.nodes.prechat.classList.add('brox-ai-hidden');
             this.nodes.body.classList.remove('brox-ai-hidden');
             this.nodes.footer.classList.remove('brox-ai-hidden');
+<<<<<<< HEAD
+=======
+            this.nodes.modelBar?.classList.remove('brox-ai-hidden');
+>>>>>>> 8dbe4f8 (chore: normalize line endings)
             this.nodes.quickActions?.classList.remove('brox-ai-hidden');
             this.nodes.body.innerHTML = '';
+            this.isChatActive = true;
+            this.resetIdleTimer();
 
             const greeting = (this.lang === 'bn' ? `হ্যালো ${this.user.name}! ` : `Hello ${this.user.name}! `) + this.t('welcome');
             this.addMessage('assistant', greeting);
@@ -589,6 +774,28 @@ if (!window.BroxAssistantLoaded) {
             this.saveHistory();
 
             this.renderHistorySidebar();
+            this.renderQuickActions();
+        }
+
+        toggleModelBar(forceState) {
+            if (!this.nodes.modelBar || !this.nodes.modelToggle) return;
+            const willOpen = typeof forceState === 'boolean' ? forceState : this.nodes.modelBar.classList.contains('brox-ai-collapsed');
+            if (willOpen) {
+                this.nodes.modelBar.classList.remove('brox-ai-collapsed');
+                this.nodes.modelBar.setAttribute('aria-expanded', 'true');
+                this.nodes.modelToggle.setAttribute('aria-expanded', 'true');
+                this.modelBarOpen = true;
+            } else {
+                this.closeModelBar();
+            }
+        }
+
+        closeModelBar() {
+            if (!this.nodes.modelBar || !this.nodes.modelToggle) return;
+            this.nodes.modelBar.classList.add('brox-ai-collapsed');
+            this.nodes.modelBar.setAttribute('aria-expanded', 'false');
+            this.nodes.modelToggle.setAttribute('aria-expanded', 'false');
+            this.modelBarOpen = false;
         }
 
         async handleSend() {
@@ -602,6 +809,8 @@ if (!window.BroxAssistantLoaded) {
             this.history.push({ role: 'user', content: sanitized, timestamp: new Date().toISOString() });
             this.saveHistory();
             this.renderHistorySidebar();
+            this.renderQuickActions();
+            this.markActivity();
             await this.getAIResponse();
         }
 
@@ -612,7 +821,7 @@ if (!window.BroxAssistantLoaded) {
             existing?.remove();
 
             const msg = document.createElement('div');
-            msg.className = `brox-ai-msg ${role}`;
+            msg.className = `brox-ai-msg brox-ai-${role}`;
 
             const body = document.createElement('div');
             body.className = 'brox-ai-msg-content';
@@ -662,7 +871,7 @@ if (!window.BroxAssistantLoaded) {
         createEmptyMessage(role) {
             if (!this.nodes.body) return document.createElement('div');
             const msg = document.createElement('div');
-            msg.className = `brox-ai-msg ${role}`;
+            msg.className = `brox-ai-msg brox-ai-${role}`;
             const body = document.createElement('div');
             body.className = 'brox-ai-msg-content';
             msg.appendChild(body);
@@ -690,7 +899,7 @@ if (!window.BroxAssistantLoaded) {
         showTyping() {
             if (!this.nodes.body) return null;
             const div = document.createElement('div');
-            div.className = 'brox-ai-typing';
+            div.className = 'brox-ai-typing brox-ai-thinking-dots';
             div.innerHTML = `<span></span><span></span><span></span>`;
             this.nodes.body.appendChild(div);
             this.nodes.body.scrollTop = this.nodes.body.scrollHeight;
@@ -701,6 +910,15 @@ if (!window.BroxAssistantLoaded) {
             this.isThinking = true;
             this.updateLangUI();
             this.updateAgenticStatus('Thinking', 'নলেজ বেস চেক করছি...');
+            this.markActivity();
+            const typingEl = this.showTyping();
+            let typingRemoved = false;
+            const removeTyping = () => {
+                if (typingEl && !typingRemoved) {
+                    typingEl.remove();
+                    typingRemoved = true;
+                }
+            };
             try {
                 const payload = {
                     messages: this.history,
@@ -717,6 +935,7 @@ if (!window.BroxAssistantLoaded) {
                 this.updateAgenticStatus('Agentic', 'উত্তর জেনারেট করছি...');
                 if (!resp.ok) {
                     this.updateAgenticStatus(null);
+                    removeTyping();
                     return await this.puterFallback();
                 }
                 const msgBubble = this.createEmptyMessage('assistant');
@@ -734,6 +953,7 @@ if (!window.BroxAssistantLoaded) {
                         try {
                             const obj = JSON.parse(raw);
                             if (obj.content) {
+                                removeTyping();
                                 fullReply += obj.content;
                                 this.renderMarkdown(msgBubble, fullReply);
                                 this.nodes.body.scrollTop = this.nodes.body.scrollHeight;
@@ -741,17 +961,21 @@ if (!window.BroxAssistantLoaded) {
                         } catch (e) { }
                     }
                 }
+                removeTyping();
                 this.isThinking = false;
                 this.updateLangUI();
                 this.updateAgenticStatus(null);
                 if (fullReply) {
                     this.history.push({ role: 'assistant', content: fullReply, timestamp: new Date().toISOString() });
                     this.saveHistory();
+                    this.renderQuickActions();
+                    this.markActivity();
                 }
             } catch (err) {
                 this.isThinking = false;
                 this.updateLangUI();
                 this.updateAgenticStatus(null);
+                removeTyping();
                 await this.puterFallback();
             }
         }
@@ -773,10 +997,123 @@ if (!window.BroxAssistantLoaded) {
                 if (reply) {
                     this.history.push({ role: 'assistant', content: reply, timestamp: new Date().toISOString() });
                     this.saveHistory();
+                    this.renderQuickActions();
+                    this.markActivity();
                 }
             } catch (fallbackErr) {
                 this.addMessage('assistant', this.t('err_conn'));
             }
+        }
+
+        updateModelLabel() {
+            if (!this.nodes.modelName) return;
+            const modelId = this.currentModel || '';
+            const rawLabel = this.nodes.modelSel?.selectedOptions?.[0]?.textContent || modelId || 'AI';
+            const label = this.mapModelLabel(modelId, rawLabel);
+            this.nodes.modelName.textContent = label;
+            if (this.nodes.modelLabel) {
+                this.nodes.modelLabel.textContent = label;
+            }
+        }
+
+        mapModelLabel(modelId, fallbackLabel) {
+            const cleanedFallback = (fallbackLabel || '').replace(/\s*\(Free\)\s*/i, '').trim();
+            if (cleanedFallback) return cleanedFallback;
+            const id = (modelId || '').split('/').pop() || '';
+            const shortId = id.split(':')[0] || id;
+            return shortId || 'AI';
+        }
+
+        renderQuickActions() {
+            if (!this.nodes.quickActions) return;
+            const lastAssistant = [...this.history].reverse().find(m => m.role === 'assistant');
+            const lastUser = [...this.history].reverse().find(m => m.role === 'user');
+            const actions = [];
+
+            if (this.lang === 'bn') {
+                if (lastAssistant) {
+                    actions.push(
+                        { label: 'শেষ উত্তরের সারাংশ', prompt: 'শেষ উত্তরের সারাংশ দিন।' },
+                        { label: 'আরও বিস্তারিত', prompt: 'আরও বিস্তারিত ব্যাখ্যা করুন।' },
+                        { label: 'বাংলায় অনুবাদ', prompt: 'শেষ উত্তরের বাংলা অনুবাদ দিন।' }
+                    );
+                } else if (lastUser) {
+                    actions.push(
+                        { label: 'প্রশ্ন সংক্ষেপ', prompt: 'আমার প্রশ্ন সংক্ষেপ করুন।' },
+                        { label: 'দ্রুত উত্তর', prompt: 'এক লাইনে উত্তর দিন।' },
+                        { label: 'ধাপে ধাপে', prompt: 'ধাপে ধাপে উত্তর দিন।' }
+                    );
+                } else {
+                    actions.push(
+                        { label: 'কী করতে পারি?', prompt: 'আপনি কী কী করতে পারেন?' },
+                        { label: 'সাহায্য দরকার', prompt: 'আমি সাহায্য চাই।' }
+                    );
+                }
+            } else {
+                if (lastAssistant) {
+                    actions.push(
+                        { label: 'Summarize last reply', prompt: 'Summarize the last reply.' },
+                        { label: 'Go deeper', prompt: 'Explain in more detail.' },
+                        { label: 'Translate to Bengali', prompt: 'Translate the last reply to Bengali.' }
+                    );
+                } else if (lastUser) {
+                    actions.push(
+                        { label: 'Shorten my question', prompt: 'Shorten my question.' },
+                        { label: 'Quick answer', prompt: 'Give a one-line answer.' },
+                        { label: 'Step-by-step', prompt: 'Answer step by step.' }
+                    );
+                } else {
+                    actions.push(
+                        { label: 'What can you do?', prompt: 'What can you help with?' },
+                        { label: 'Need help', prompt: 'I need help.' }
+                    );
+                }
+            }
+
+            this.nodes.quickActions.innerHTML = actions.map(a =>
+                `<button class="brox-ai-action-chip" data-prompt="${a.prompt.replace(/"/g, '&quot;')}">${a.label}</button>`
+            ).join('');
+        }
+
+        updateSuggestions() {
+            if (!this.nodes.suggestions || !this.nodes.input) return;
+            const text = this.nodes.input.value.trim();
+            if (!text || text.length < 3) {
+                this.nodes.suggestions.classList.add('brox-ai-hidden');
+                this.nodes.suggestions.innerHTML = '';
+                return;
+            }
+
+            const suggestions = this.lang === 'bn'
+                ? [
+                    { label: 'পরবর্তী বাক্য', prompt: `এই বাক্যের পরবর্তী স্বাভাবিক বাক্যটি পূরণ করুন: ‘${text}’` },
+                    { label: 'পরবর্তী বাক্যাংশ', prompt: `এই বাক্যের পরবর্তী সংক্ষিপ্ত বাক্যাংশটি সাজান: ‘${text}’` },
+                    { label: 'পরবর্তী শব্দসমষ্টি', prompt: `এই বাক্যের পরবর্তী কয়েকটি শব্দ অনুমান করুন: ‘${text}’` },
+                    { label: 'বাক্য সম্পূর্ণ করুন', prompt: `এই বাক্যটি সম্পূর্ণ করুন: ‘${text}’` },
+                    { label: 'শব্দের পরামর্শ', prompt: `এই বাক্যের পরবর্তী সম্ভাব্য শব্দ বা সংক্ষিপ্ত বাক্যাংশটি লিখুন: ‘${text}’` },
+                    { label: 'শব্দ/বাক্য পূরণ', prompt: `এই ইনপুটের পরবর্তী প্রাকৃতিক শব্দ বা বাক্যাংশ লিখুন: ‘${text}’` },
+                    { label: 'সংক্ষেপে', prompt: `${text} (সংক্ষেপে বলুন)` },
+                    { label: 'উদাহরণসহ', prompt: `${text} (উদাহরণসহ)` },
+                    { label: 'ধাপে ধাপে', prompt: `${text} (ধাপে ধাপে)` },
+                    { label: 'ইংরেজিতে', prompt: `${text} (ইংরেজিতে লিখুন)` }
+                ]
+                : [
+                    { label: 'Next Sentence', prompt: `Complete the next natural sentence after: ‘${text}’` },
+                    { label: 'Next Phrase', prompt: `Predict the next short phrase for: ‘${text}’` },
+                    { label: 'Next Words', prompt: `Suggest the next few words after: ‘${text}’` },
+                    { label: 'Complete Sentence', prompt: `Complete this sentence: ‘${text}’` },
+                    { label: 'Word Suggestion', prompt: `Write the next possible word or short phrase for: ‘${text}’` },
+                    { label: 'Word/Phrase Completion', prompt: `Provide the next natural word or phrase following this input: ‘${text}’` },
+                    { label: 'Short', prompt: `${text} (short version)` },
+                    { label: 'With examples', prompt: `${text} (with examples)` },
+                    { label: 'Step‑by‑step', prompt: `${text} (step by step)` },
+                    { label: 'Translate to Bengali', prompt: `${text} (translate to Bengali)` }
+                ];
+
+            this.nodes.suggestions.innerHTML = suggestions.map(s =>
+                `<button class="brox-ai-suggestion-chip" data-prompt="${s.prompt.replace(/"/g, '&quot;')}">${s.label}</button>`
+            ).join('');
+            this.nodes.suggestions.classList.remove('brox-ai-hidden');
         }
     }
 
