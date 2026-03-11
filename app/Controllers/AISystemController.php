@@ -10,6 +10,10 @@ require_once __DIR__ . '/../Models/AIProvider.php';
 require_once __DIR__ . '/../Models/AppSettings.php';
 require_once __DIR__ . '/../Helpers/PromptLoader.php';
 require_once __DIR__ . '/../Models/AIChatModel.php';
+<<<<<<< HEAD
+=======
+require_once __DIR__ . '/../Models/AuthManager.php';
+>>>>>>> 8dbe4f8 (chore: normalize line endings)
 
 function aiChatSendJson(array $payload, int $status = 200): void
 {
@@ -106,6 +110,113 @@ function aiChatLastUserMessage(array $messages): string
     return '';
 }
 
+<<<<<<< HEAD
+=======
+function aiChatSelectFallbackProvider(AIProvider $aiProvider, string $currentProvider, array $settings): ?array
+{
+    $active = $aiProvider->getActive();
+    foreach ($active as $provider) {
+        $name = $provider['provider_name'] ?? '';
+        if ($name === '' || $name === $currentProvider) {
+            continue;
+        }
+        if (!$aiProvider->hasApiKey($name)) {
+            continue;
+        }
+
+        $models = $provider['supported_models'] ?? [];
+        if (empty($models)) {
+            $config = AIProvider::getProviderConfig($name);
+            $models = $config['models'] ?? [];
+        }
+
+        $defaultModel = $settings['default_model'] ?? '';
+        $model = ($defaultModel !== '' && isset($models[$defaultModel]))
+            ? $defaultModel
+            : array_key_first($models);
+
+        if (!$model) {
+            continue;
+        }
+
+        return [
+            'provider' => $name,
+            'model' => $model
+        ];
+    }
+
+    return null;
+}
+
+function aiChatLogUsage(mysqli $mysqli, string $provider, string $model, array $usage, string $status, ?string $error, ?int $userId, array $metadata): void
+{
+    $promptTokens = (int)($usage['prompt_tokens'] ?? $usage['input_tokens'] ?? 0);
+    $completionTokens = (int)($usage['completion_tokens'] ?? $usage['output_tokens'] ?? 0);
+    $totalTokens = (int)($usage['total_tokens'] ?? ($promptTokens + $completionTokens));
+    $cost = (float)($usage['cost'] ?? 0);
+    $requestType = 'chat';
+    $metadataJson = json_encode($metadata, JSON_UNESCAPED_UNICODE);
+
+    $stmt = $mysqli->prepare("
+        INSERT INTO ai_usage_logs
+        (provider_name, model_name, prompt_tokens, completion_tokens, total_tokens, cost, request_type, status, error_message, user_id, metadata)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+
+    if (!$stmt) {
+        return;
+    }
+
+    $stmt->bind_param(
+        'ssiiidsssis',
+        $provider,
+        $model,
+        $promptTokens,
+        $completionTokens,
+        $totalTokens,
+        $cost,
+        $requestType,
+        $status,
+        $error,
+        $userId,
+        $metadataJson
+    );
+    $stmt->execute();
+    $stmt->close();
+}
+
+function aiSystemGetProviderModels(string $providerName, array $providers): array
+{
+    foreach ($providers as $provider) {
+        if (($provider['provider_name'] ?? '') !== $providerName) {
+            continue;
+        }
+        $models = $provider['supported_models'] ?? [];
+        if (empty($models)) {
+            $config = AIProvider::getProviderConfig($providerName);
+            $models = $config['models'] ?? [];
+        }
+        return $models;
+    }
+
+    $config = AIProvider::getProviderConfig($providerName);
+    return $config['models'] ?? [];
+}
+
+function aiSystemResolveModel(string $providerName, string $selectedModel, array $providers, string $defaultModel = ''): string
+{
+    $models = aiSystemGetProviderModels($providerName, $providers);
+    if (!empty($selectedModel) && isset($models[$selectedModel])) {
+        return $selectedModel;
+    }
+    if (!empty($defaultModel) && isset($models[$defaultModel])) {
+        return $defaultModel;
+    }
+
+    return (string)array_key_first($models);
+}
+
+>>>>>>> 8dbe4f8 (chore: normalize line endings)
 function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $allowOverrides): void
 {
     $aiProvider = new AIProvider($mysqli);
@@ -148,6 +259,21 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     $effective = $aiProvider->getEffectiveProvider();
     $provider = $effective['provider_name'] ?? 'openrouter';
     $model = $settings['default_model'] ?? 'openrouter/auto';
+<<<<<<< HEAD
+=======
+    if (!$isAdmin) {
+        $frontendModel = $settings['frontend_model'] ?? '';
+        if ($frontendModel !== '') {
+            $model = $frontendModel;
+        } else {
+            $frontendProvider = $settings['frontend_provider'] ?? 'openrouter';
+            $config = AIProvider::getProviderConfig($frontendProvider);
+            if (!empty($config['models'])) {
+                $model = array_key_first($config['models']);
+            }
+        }
+    }
+>>>>>>> 8dbe4f8 (chore: normalize line endings)
 
     if ($allowOverrides) {
         if (!empty($input['provider']) && is_string($input['provider'])) {
@@ -169,6 +295,10 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         ? (float)$options['temperature']
         : (float)($settings['temperature'] ?? 0.7);
 
+<<<<<<< HEAD
+=======
+    $startTime = microtime(true);
+>>>>>>> 8dbe4f8 (chore: normalize line endings)
     $convId = null;
     if (!$isAdmin) {
         $visitorToken = $input['visitorToken'] ?? null;
@@ -182,6 +312,21 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
 
     $response = $aiProvider->callAPI($provider, $model, $messages, $options);
 
+<<<<<<< HEAD
+=======
+    $enableFallback = $settings['enable_fallback'] ?? true;
+    $fallbackUsed = false;
+    if (empty($response['success']) && $enableFallback) {
+        $fallback = aiChatSelectFallbackProvider($aiProvider, $provider, $settings);
+        if ($fallback) {
+            $provider = $fallback['provider'];
+            $model = $fallback['model'];
+            $response = $aiProvider->callAPI($provider, $model, $messages, $options);
+            $fallbackUsed = true;
+        }
+    }
+
+>>>>>>> 8dbe4f8 (chore: normalize line endings)
     if ($convId && !empty($response['success'])) {
         $aiText = $response['content'] ?? '';
         if ($aiText !== '') {
@@ -189,9 +334,28 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         }
     }
 
+<<<<<<< HEAD
     if ($stream) {
         if (empty($response['success'])) {
             aiChatSendJson(['success' => false, 'error' => $response['error'] ?? 'AI error'], 502);
+=======
+    $latencyMs = (int)round((microtime(true) - $startTime) * 1000);
+    $userId = AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null);
+    $usage = $response['usage'] ?? [];
+    $status = !empty($response['success']) ? 'success' : 'failed';
+    $errorMessage = $response['error'] ?? null;
+    aiChatLogUsage($mysqli, $provider, $model, $usage, $status, $errorMessage, $userId ? (int)$userId : null, [
+        'context' => $contextType,
+        'latency_ms' => $latencyMs,
+        'fallback_used' => $fallbackUsed,
+        'stream' => (bool)$stream
+    ]);
+
+    if ($stream) {
+        if (empty($response['success'])) {
+            $status = (isset($response['error']) && str_contains($response['error'], 'API key not configured')) ? 400 : 502;
+            aiChatSendJson(['success' => false, 'error' => $response['error'] ?? 'AI error'], $status);
+>>>>>>> 8dbe4f8 (chore: normalize line endings)
             return;
         }
         aiChatStreamContent($response['content'] ?? '');
@@ -207,7 +371,12 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         return;
     }
 
+<<<<<<< HEAD
     aiChatSendJson(['success' => false, 'error' => $response['error'] ?? 'AI error'], 502);
+=======
+    $status = (isset($response['error']) && str_contains($response['error'], 'API key not configured')) ? 400 : 502;
+    aiChatSendJson(['success' => false, 'error' => $response['error'] ?? 'AI error'], $status);
+>>>>>>> 8dbe4f8 (chore: normalize line endings)
 }
 
 
@@ -269,6 +438,7 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         }
 
         // Default model selection varies by provider.
+<<<<<<< HEAD
         $defaultModel = $settings['default_model'] ?? '';
         if (empty($defaultModel)) {
             if ($frontendProvider === 'openrouter') {
@@ -282,6 +452,25 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
 
         // Build provider list for frontend use (no API keys exposed)
         $activeProviders = $aiProvider->getActive();
+=======
+        $providers = $aiProvider->getActive();
+        $defaultModel = aiSystemResolveModel(
+            $frontendProvider,
+            (string)($settings['frontend_model'] ?? ''),
+            $providers,
+            (string)($settings['default_model'] ?? '')
+        );
+        $backendProvider = $settings['backend_provider'] ?? $frontendProvider;
+        $backendModel = aiSystemResolveModel(
+            $backendProvider,
+            (string)($settings['backend_model'] ?? ''),
+            $providers,
+            (string)($settings['default_model'] ?? '')
+        );
+
+        // Build provider list for frontend use (no API keys exposed)
+        $activeProviders = $providers;
+>>>>>>> 8dbe4f8 (chore: normalize line endings)
         $providerList = [];
         foreach ($activeProviders as $p) {
             $providerName = $p['provider_name'];
@@ -300,21 +489,60 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         echo json_encode([
             'provider' => $frontendProvider,
             'model' => $defaultModel,
+            'frontend_model' => $defaultModel,
+            'backend_model' => $backendModel,
             'providers' => $providerList,
             'openrouter_key_source' => $openrouterKeySource
+        ]);
+    });
+
+    // ==================== GET /api/ai-system/admin-defaults ====================
+    $router->get('/api/ai-system/admin-defaults', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        $aiProvider = new AIProvider($mysqli);
+        $settings = $aiProvider->getSettings();
+        $providers = $aiProvider->getActive();
+
+        $defaultProvider = trim((string)($settings['default_provider'] ?? ''));
+        if ($defaultProvider === '') {
+            $effective = $aiProvider->getEffectiveProvider();
+            $defaultProvider = $effective['provider_name'] ?? 'openrouter';
+        }
+
+        $defaultModel = aiSystemResolveModel(
+            $defaultProvider,
+            '',
+            $providers,
+            (string)($settings['default_model'] ?? '')
+        );
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'provider' => $defaultProvider,
+            'model' => $defaultModel,
+            'default_model' => $settings['default_model'] ?? ''
         ]);
     });
 
     // ==================== POST /admin/ai-system/save ====================
     $router->post('/admin/ai-system/save', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
         $aiProvider = new AIProvider($mysqli);
+        $providers = $aiProvider->getActive();
+        $frontendProvider = $_POST['frontend_provider'] ?? 'openrouter';
+        $backendProvider = $_POST['backend_provider'] ?? $_POST['default_provider'] ?? 'kilo';
+        $defaultModel = $_POST['default_model'] ?? 'openrouter/auto';
+        $frontendModelInput = $_POST['frontend_model'] ?? '';
+        $backendModelInput = $_POST['backend_model'] ?? '';
+        $frontendModel = aiSystemResolveModel($frontendProvider, $frontendModelInput, $providers, $defaultModel);
+        $backendModel = aiSystemResolveModel($backendProvider, $backendModelInput, $providers, $defaultModel);
 
         // Save general settings
         $settingsToSave = [
             'default_provider' => $_POST['default_provider'] ?? 'kilo',
-            'frontend_provider' => $_POST['frontend_provider'] ?? 'openrouter',
-            'backend_provider' => $_POST['backend_provider'] ?? $_POST['default_provider'] ?? 'kilo',
-            'default_model' => $_POST['default_model'] ?? 'openrouter/auto',
+            'frontend_provider' => $frontendProvider,
+            'backend_provider' => $backendProvider,
+            'default_model' => $defaultModel,
+            'frontend_model' => $frontendModel,
+            'backend_model' => $backendModel,
             'max_tokens' => (int)($_POST['max_tokens'] ?? 4000),
             'temperature' => (float)($_POST['temperature'] ?? 0.7),
             'enable_fallback' => isset($_POST['enable_fallback']),
@@ -343,6 +571,13 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
             if ($provider) {
                 $aiProvider->setAsDefault($provider['id']);
             }
+        }
+
+        if ($frontendModelInput !== '' && $frontendModelInput !== $frontendModel) {
+            showMessage('Frontend model corrected to a valid model for the selected provider.', 'warning');
+        }
+        if ($backendModelInput !== '' && $backendModelInput !== $backendModel) {
+            showMessage('Backend model corrected to a valid model for the selected provider.', 'warning');
         }
 
         showMessage('AI SYSTEM saved successfully!', 'success');
@@ -388,14 +623,23 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     $router->post('/admin/ai-system/update-provider', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
         $aiProvider = new AIProvider($mysqli);
 
-        if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
+        $payload = $_POST;
+        if (empty($payload)) {
+            $raw = file_get_contents('php://input');
+            $json = json_decode($raw, true);
+            if (is_array($json)) {
+                $payload = $json;
+            }
+        }
+
+        if (!validateCsrfToken($payload['csrf_token'] ?? '')) {
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => 'Invalid token']);
             return;
         }
 
-        $providerId = (int)($_POST['provider_id'] ?? 0);
-        $action = $_POST['action'] ?? '';
+        $providerId = (int)($payload['provider_id'] ?? 0);
+        $action = $payload['action'] ?? '';
 
         switch ($action) {
             case 'toggle':
@@ -416,11 +660,49 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
             case 'test':
                 $provider = $aiProvider->getById($providerId);
                 if ($provider) {
-                    $result = $aiProvider->testConnection($provider['provider_name'], $_POST['model'] ?? null);
+                    $result = $aiProvider->testConnection($provider['provider_name'], $payload['model'] ?? null);
                     echo json_encode($result);
                 } else {
                     echo json_encode(['success' => false, 'error' => 'Provider not found']);
                 }
+                break;
+            case 'update_config':
+                $provider = $aiProvider->getById($providerId);
+                if (!$provider) {
+                    echo json_encode(['success' => false, 'error' => 'Provider not found']);
+                    break;
+                }
+                if (($provider['provider_name'] ?? '') !== 'huggingface') {
+                    echo json_encode(['success' => false, 'error' => 'Only Hugging Face can be updated here']);
+                    break;
+                }
+
+                $apiEndpoint = trim((string)($payload['api_endpoint'] ?? ''));
+                $supportedModels = $payload['supported_models'] ?? null;
+                if (!is_array($supportedModels)) {
+                    echo json_encode(['success' => false, 'error' => 'Invalid supported_models']);
+                    break;
+                }
+
+                $normalized = [];
+                foreach ($supportedModels as $id => $label) {
+                    $id = trim((string)$id);
+                    $label = trim((string)$label);
+                    if ($id === '' || $label === '') {
+                        continue;
+                    }
+                    $normalized[$id] = $label;
+                }
+
+                $update = [
+                    'supported_models' => $normalized
+                ];
+                if ($apiEndpoint !== '') {
+                    $update['api_endpoint'] = $apiEndpoint;
+                }
+
+                $ok = $aiProvider->update($providerId, $update);
+                echo json_encode(['success' => $ok]);
                 break;
 
             default:
@@ -467,8 +749,24 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     // GET /api/ai/settings
     $router->get('/api/ai/settings', function () use ($mysqli) {
         $aiProvider = new AIProvider($mysqli);
+        $settings = $aiProvider->getSettings();
+        $providers = $aiProvider->getActive();
+        $frontendProvider = $settings['frontend_provider'] ?? 'openrouter';
+        $backendProvider = $settings['backend_provider'] ?? $frontendProvider;
+        $settings['frontend_model'] = aiSystemResolveModel(
+            $frontendProvider,
+            (string)($settings['frontend_model'] ?? ''),
+            $providers,
+            (string)($settings['default_model'] ?? '')
+        );
+        $settings['backend_model'] = aiSystemResolveModel(
+            $backendProvider,
+            (string)($settings['backend_model'] ?? ''),
+            $providers,
+            (string)($settings['default_model'] ?? '')
+        );
         header('Content-Type: application/json');
-        echo json_encode($aiProvider->getSettings());
+        echo json_encode($settings);
     });
 
     // POST /api/ai/test
@@ -508,25 +806,119 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         ]);
     });
 
+    // GET /api/ai/default-provider (Admin only)
+    $router->get('/api/ai/default-provider', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        $aiProvider = new AIProvider($mysqli);
+        $settings = $aiProvider->getSettings();
+
+        $provider = trim((string)($settings['default_provider'] ?? ''));
+        if ($provider === '') {
+            $effective = $aiProvider->getEffectiveProvider();
+            $provider = $effective['provider_name'] ?? 'openrouter';
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'provider' => $provider
+        ]);
+    });
+
     // GET /api/ai/models?provider=fireworks
     $router->get('/api/ai/models', function () use ($mysqli) {
         $providerName = $_GET['provider'] ?? '';
+        $scope = $_GET['scope'] ?? '';
         $aiProvider = new AIProvider($mysqli);
 
         header('Content-Type: application/json');
 
+        if ($providerName === 'ollama' || $scope === 'admin') {
+            if (!run_middleware('auth', ['method' => 'GET', 'uri' => '/api/ai/models'])
+                || !run_middleware('admin_only', ['method' => 'GET', 'uri' => '/api/ai/models'])) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'error' => 'Forbidden']);
+                return;
+            }
+        }
+
+        $settings = $aiProvider->getSettings();
+        $defaultModel = $settings['default_model'] ?? '';
+
         if (!$providerName) {
-            echo json_encode(['success' => false, 'error' => 'No provider specified']);
+            $providers = [];
+            foreach ($aiProvider->getActive() as $provider) {
+                $name = $provider['provider_name'] ?? '';
+                if ($name === '') {
+                    continue;
+                }
+                $models = $provider['supported_models'] ?? [];
+                if (empty($models)) {
+                    $config = AIProvider::getProviderConfig($name);
+                    $models = $config['models'] ?? [];
+                }
+
+                $list = [];
+                foreach ($models as $id => $label) {
+                    $list[] = [
+                        'id' => (string)$id,
+                        'name' => (string)$label,
+                        'default' => ($defaultModel !== '' && $defaultModel === (string)$id)
+                    ];
+                }
+
+                if (!empty($list) && !array_filter($list, fn($m) => !empty($m['default']))) {
+                    $list[0]['default'] = true;
+                }
+
+                $providers[$name] = $list;
+            }
+
+            echo json_encode([
+                'success' => true,
+                'providers' => $providers
+            ]);
             return;
         }
 
-        $remote = $aiProvider->fetchRemoteModels($providerName);
-        if (empty($remote)) {
-            echo json_encode(['success' => false, 'error' => 'No models available or unable to fetch']);
+        $provider = $aiProvider->getByName($providerName);
+        if (!$provider) {
+            echo json_encode(['success' => false, 'error' => 'Provider not found']);
             return;
         }
 
-        echo json_encode(['success' => true, 'models' => $remote]);
+        $models = $provider['supported_models'] ?? [];
+        if (empty($models)) {
+            $config = AIProvider::getProviderConfig($providerName);
+            $models = $config['models'] ?? [];
+        }
+
+        // Fireworks can optionally return remote list when configured
+        if ($providerName === 'fireworks') {
+            $remote = $aiProvider->fetchRemoteModels($providerName);
+            if (!empty($remote)) {
+                $models = $remote;
+            }
+        }
+
+        if (empty($models)) {
+            echo json_encode(['success' => false, 'error' => 'No models available']);
+            return;
+        }
+
+        $list = [];
+        foreach ($models as $id => $label) {
+            $list[] = [
+                'id' => (string)$id,
+                'name' => (string)$label,
+                'default' => ($defaultModel !== '' && $defaultModel === (string)$id)
+            ];
+        }
+
+        if (!empty($list) && !array_filter($list, fn($m) => !empty($m['default']))) {
+            $list[0]['default'] = true;
+        }
+
+        echo json_encode(['success' => true, 'models' => $list]);
     });
 
     // POST /api/ai/chat (Public assistant)

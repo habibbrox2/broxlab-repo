@@ -13,7 +13,7 @@
 {# Main Copilot Sidebar #}
 <div id="adminAiShell" class="brox-ai-copilot-sidebar brox-ai-hidden" role="dialog" aria-labelledby="adminAiTitle" aria-modal="true">
     {# Header: Context Aware with auto-save indicator #}
-    <div class="brox-ai-copilot-sidebar brox-ai-header admin-theme">
+    <div class="brox-ai-header admin-theme">
         <div class="brox-ai-header-info">
             <h3 class="brox-ai-header-title" id="adminAiTitle">
                 <i class="bi bi-stars"></i> Copilot
@@ -46,8 +46,27 @@
         </span>
     </div>
 
+    {# Model Selector Bar (Accordion) #}
+    <div class="brox-ai-model-bar brox-ai-model-accordion brox-ai-collapsed" id="adminAiModelBar" aria-expanded="false">
+        <button type="button" class="brox-ai-model-toggle" id="adminAiModelToggle" aria-expanded="false">
+            <span class="brox-ai-model-label" id="adminAiModelLabel">Model</span>
+            <i class="bi bi-chevron-down"></i>
+        </button>
+        <div class="brox-ai-model-panel" id="adminAiModelPanel">
+            <select id="adminAiProvider" class="form-select form-select-sm" title="Select Provider" aria-label="AI Provider">
+                <option value="">Loading providers...</option>
+            </select>
+            <select id="adminAiModel" class="form-select form-select-sm" title="Select AI Model" aria-label="AI Model">
+                <option value="">Loading models...</option>
+            </select>
+            <button id="adminAiRefreshModels" class="brox-ai-icon-btn-sm" title="Refresh models" aria-label="Refresh models">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+    </div>
+
     {# Body: Chat Messages & Artifacts #}
-    <div id="adminAiBody" class="brox-ai-copilot-sidebar brox-ai-body custom-scrollbar brox-ai-scrollbar" role="log" aria-live="polite">
+    <div id="adminAiBody" class="brox-ai-body custom-scrollbar brox-ai-scrollbar" role="log" aria-live="polite">
         {# Welcome message #}
         <div class="brox-ai-welcome" id="adminAiWelcome">
             <div class="brox-ai-welcome-icon">
@@ -141,18 +160,8 @@
         </button>
     </div>
 
-    {# Footer: Input + Model Selector #}
-    <div id="adminAiFooter" class="brox-ai-copilot-sidebar brox-ai-footer">
-        {# Model Selector Bar #}
-        <div class="brox-ai-model-bar">
-            <select id="adminAiModel" class="form-select form-select-sm" title="Select AI Model" aria-label="AI Model">
-                <option value="">Loading models...</option>
-            </select>
-            <button id="adminAiRefreshModels" class="brox-ai-icon-btn-sm" title="Refresh models" aria-label="Refresh models">
-                <i class="bi bi-arrow-clockwise"></i>
-            </button>
-        </div>
-
+    {# Footer: Input #}
+    <div id="adminAiFooter" class="brox-ai-footer">
         {# Input Area #}
         <div class="brox-ai-input-wrapper">
             <button id="adminAiAttach" class="brox-ai-action-btn brox-ai-action-btn-left" title="Attach file" aria-label="Attach file">

@@ -29,7 +29,8 @@ class AgentClient {
 
         // Use existing AIProvider logic to get the effective provider and model
         $effectiveProvider = $provider ?: ($this->aiProvider->getSetting('backend_provider') ?: 'kilo');
-        $effectiveModel = $model ?: ($this->aiProvider->getSetting('default_model') ?: 'moonshotai/Kimi-K2.5');
+        $backendModel = $this->aiProvider->getSetting('backend_model') ?: '';
+        $effectiveModel = $model ?: ($backendModel ?: ($this->aiProvider->getSetting('default_model') ?: 'moonshotai/Kimi-K2.5'));
 
         $options = [
             'max_tokens' => (int)($this->aiProvider->getSetting('max_tokens', 300)),

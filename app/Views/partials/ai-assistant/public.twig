@@ -30,9 +30,12 @@
         <div class="brox-ai-chat-main">
             
             {# ── AI Header ── #}
-            <div class="brox-ai-chat-shell brox-ai-header">
+            <div class="brox-ai-header">
                 <div class="brox-ai-header-info">
-                    <div class="brox-ai-chat-shell brox-ai-header-title" id="publicAssistantTitle">ব্রক্স সহকারী</div>
+                    <div class="brox-ai-header-title" id="publicAssistantTitle">ব্রক্স সহকারী</div>
+                    <div class="brox-ai-model-status" id="publicAssistantModelStatus">
+                        <span class="brox-ai-model-name" id="publicAssistantModelName">Loading...</span>
+                    </div>
                     <div class="brox-ai-header-status" id="publicAssistantStatusText">অনলাইন ও প্রস্তুত</div>
                 </div>
                 
@@ -45,8 +48,20 @@
                 </div>
             </div>
 
+            {# ── Model Bar (Accordion) ── #}
+            <div class="brox-ai-model-bar brox-ai-model-accordion brox-ai-collapsed brox-ai-hidden" id="publicAssistantModelBar" aria-expanded="false">
+                <button type="button" class="brox-ai-model-toggle" id="publicAssistantModelToggle" aria-expanded="false">
+                    <span class="brox-ai-model-label" id="publicAssistantModelLabel">Model</span>
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+                <div class="brox-ai-model-panel" id="publicAssistantModelPanel">
+                    <select id="publicAssistantModel" class="brox-ai-input py-1 px-3 d-none" style="font-size: 0.8rem; height: auto;">
+                    </select>
+                </div>
+            </div>
+
             {# ── Pre-chat Workflow (Registration) ── #}
-            <div id="publicAssistantPreChat" class="brox-ai-chat-shell brox-ai-body">
+            <div id="publicAssistantPreChat" class="brox-ai-body">
                 {# Step 1: Introduction / Name #}
                 <div class="brox-ai-prechat brox-ai-step-name">
                     <div class="brox-ai-form-group">
@@ -57,7 +72,7 @@
                 </div>
 
                 {# Step 2: Contact Info #}
-                <div class="prechat-step step-contact brox-ai-hidden">
+                <div class="brox-ai-prechat prechat-step brox-ai-step-contact step-contact brox-ai-hidden">
                     <div class="brox-ai-form-group mb-3">
                         <label for="introEmail" id="introEmailLabel">ইমেল (ঐচ্ছিক)</label>
                         <input type="email" id="introEmail" class="brox-ai-input" placeholder="আপনার ইমেল লিখুন">
@@ -70,26 +85,30 @@
                 </div>
 
                 {# Step 3: Topics #}
-                <div class="prechat-step step-topic brox-ai-hidden">
-                    <div class="brox-ai-form-group">
-                        <label class="mb-2" id="introTopicLabel">আপনার জিজ্ঞাসার বিষয়</label>
-                        <div class="brox-ai-topic-grid" id="introTopicOptions">
-                            <label class="brox-ai-topic-chip">
-                                <input type="checkbox" value="general" checked>
-                                <span>সাধারণ তথ্য</span>
-                            </label>
-                            <label class="brox-ai-topic-chip">
-                                <input type="checkbox" value="support">
-                                <span>সাপোর্ট</span>
-                            </label>
-                            <label class="brox-ai-topic-chip">
-                                <input type="checkbox" value="billing">
-                                <span>বিলিং</span>
-                            </label>
-                            <label class="brox-ai-topic-chip">
-                                <input type="checkbox" value="feedback">
-                                <span>মতামত</span>
-                            </label>
+                <div class="brox-ai-prechat prechat-step brox-ai-step-topic step-topic brox-ai-hidden">
+                    <div class="brox-ai-topic-prompt">
+                        <div class="brox-ai-msg brox-ai-assistant">
+                            <div class="brox-ai-msg-content">
+                                <strong id="introTopicLabel">আপনার জিজ্ঞাসার বিষয় নির্বাচন করুন</strong>
+                                <div class="brox-ai-topic-grid" id="introTopicOptions">
+                                    <label class="brox-ai-topic-chip">
+                                        <input type="checkbox" value="general" checked>
+                                        <span>সাধারণ তথ্য</span>
+                                    </label>
+                                    <label class="brox-ai-topic-chip">
+                                        <input type="checkbox" value="support">
+                                        <span>সাপোর্ট</span>
+                                    </label>
+                                    <label class="brox-ai-topic-chip">
+                                        <input type="checkbox" value="billing">
+                                        <span>বিলিং</span>
+                                    </label>
+                                    <label class="brox-ai-topic-chip">
+                                        <input type="checkbox" value="feedback">
+                                        <span>মতামত</span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <button class="brox-ai-btn-primary w-100 mt-4" id="introStartChat">চ্যাট শুরু করুন <i class="bi bi-chat-fill ms-1"></i></button>
@@ -97,7 +116,7 @@
             </div>
 
             {# ── Real-time Chat Messages ── #}
-            <div id="publicAssistantMessages" class="brox-ai-chat-shell brox-ai-body brox-ai-hidden">
+            <div id="publicAssistantMessages" class="brox-ai-body brox-ai-hidden">
                 {# Messages injected here by assistant.js #}
             </div>
 
@@ -108,18 +127,10 @@
             </div>
 
             {# ── Quick Action Chips ── #}
-            <div id="publicAssistantQuickActions" class="brox-ai-quick-actions brox-ai-hidden">
-                <button class="brox-ai-action-chip" data-prompt="Summarize this chat">Summarize</button>
-                <button class="brox-ai-action-chip" data-prompt="Translate to Bengali">Translate</button>
-                <button class="brox-ai-action-chip" data-prompt="Explain this in detail">Explain</button>
-            </div>
-
             {# ── Footer / Input Area ── #}
             <div class="brox-ai-footer-public brox-ai-hidden" id="publicAssistantFooter">
-                <div class="brox-ai-model-bar mb-3">
-                    <select id="publicAssistantModel" class="brox-ai-input py-1 px-3 d-none" style="font-size: 0.8rem; height: auto;">
-                    </select>
-                </div>
+                <div class="brox-ai-suggestions brox-ai-hidden" id="publicAssistantSuggestions"></div>
+                <div id="publicAssistantQuickActions" class="brox-ai-quick-actions brox-ai-hidden"></div>
 
                 <div class="brox-ai-composer-wrapper">
                     <input type="text" id="publicAssistantInput" placeholder="এখানে লিখুন...">

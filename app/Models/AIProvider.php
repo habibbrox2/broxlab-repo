@@ -629,6 +629,14 @@ class AIProvider
     }
 
     /**
+     * Check whether a provider has an API key configured.
+     */
+    public function hasApiKey(string $providerName): bool
+    {
+        return $this->getAPIKey($providerName) !== '';
+    }
+
+    /**
      * Build request data based on provider
      * 
      * @param string $providerName Provider name
