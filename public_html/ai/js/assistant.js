@@ -410,10 +410,7 @@ if (!window.BroxAssistantLoaded) {
                 this.nodes.prechat.classList.remove('brox-ai-hidden');
                 this.nodes.body.classList.add('brox-ai-hidden');
                 this.nodes.footer.classList.add('brox-ai-hidden');
-<<<<<<< HEAD
-=======
                 this.nodes.modelBar?.classList.add('brox-ai-hidden');
->>>>>>> 8dbe4f8 (chore: normalize line endings)
                 this.nodes.quickActions?.classList.add('brox-ai-hidden');
                 if (this.nodes.prechatSteps.name) this.nodes.prechatSteps.name.classList.remove('brox-ai-hidden');
                 if (this.nodes.prechatSteps.contact) this.nodes.prechatSteps.contact.classList.add('brox-ai-hidden');
@@ -422,10 +419,7 @@ if (!window.BroxAssistantLoaded) {
                 this.nodes.prechat.classList.add('brox-ai-hidden');
                 this.nodes.body.classList.remove('brox-ai-hidden');
                 this.nodes.footer.classList.remove('brox-ai-hidden');
-<<<<<<< HEAD
-=======
                 this.nodes.modelBar?.classList.remove('brox-ai-hidden');
->>>>>>> 8dbe4f8 (chore: normalize line endings)
                 this.nodes.quickActions?.classList.remove('brox-ai-hidden');
                 this.nodes.body.innerHTML = '';
 
@@ -446,10 +440,7 @@ if (!window.BroxAssistantLoaded) {
             const models = await fetchModels(provider);
             if (!models.length) {
                 this.nodes.modelSel.classList.add('brox-ai-hidden');
-<<<<<<< HEAD
-=======
                 this.updateModelLabel();
->>>>>>> 8dbe4f8 (chore: normalize line endings)
                 return;
             }
 
@@ -472,13 +463,9 @@ if (!window.BroxAssistantLoaded) {
                 ? models.find(m => m.id === preferredModel)
                 : models.find(m => m.default);
             this.currentModel = defaultOpt ? defaultOpt.id : models[0].id;
-<<<<<<< HEAD
-            this.nodes.modelSel.classList.remove('brox-ai-hidden');
-=======
             this.nodes.modelSel.classList.remove('d-none');
             this.nodes.modelSel.classList.remove('brox-ai-hidden');
             this.updateModelLabel();
->>>>>>> 8dbe4f8 (chore: normalize line endings)
 
             this.nodes.modelSel.addEventListener('change', () => {
                 this.currentModel = this.nodes.modelSel.value;
@@ -490,7 +477,6 @@ if (!window.BroxAssistantLoaded) {
         initSpeechRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
-                console.log('[Voice] Speech API not supported');
                 return;
             }
 
@@ -756,10 +742,7 @@ if (!window.BroxAssistantLoaded) {
             this.nodes.prechat.classList.add('brox-ai-hidden');
             this.nodes.body.classList.remove('brox-ai-hidden');
             this.nodes.footer.classList.remove('brox-ai-hidden');
-<<<<<<< HEAD
-=======
             this.nodes.modelBar?.classList.remove('brox-ai-hidden');
->>>>>>> 8dbe4f8 (chore: normalize line endings)
             this.nodes.quickActions?.classList.remove('brox-ai-hidden');
             this.nodes.body.innerHTML = '';
             this.isChatActive = true;
@@ -936,7 +919,17 @@ if (!window.BroxAssistantLoaded) {
                 if (!resp.ok) {
                     this.updateAgenticStatus(null);
                     removeTyping();
-                    return await this.puterFallback();
+                    let errData = null;
+                    try {
+                        errData = await resp.json();
+                    } catch (e) { }
+                    const code = errData?.error_code || '';
+                    if (code === 'no_providers' || code === 'providers_failed') {
+                        return await this.puterFallback();
+                    }
+                    const msg = errData?.error || this.t('err_conn');
+                    this.addMessage('assistant', msg);
+                    return;
                 }
                 const msgBubble = this.createEmptyMessage('assistant');
                 let fullReply = '';
@@ -976,7 +969,7 @@ if (!window.BroxAssistantLoaded) {
                 this.updateLangUI();
                 this.updateAgenticStatus(null);
                 removeTyping();
-                await this.puterFallback();
+                this.addMessage('assistant', this.t('err_conn'));
             }
         }
 

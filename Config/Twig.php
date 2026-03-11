@@ -1188,6 +1188,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         
         // App settings
         $twig->addGlobal('app_settings', $appSettings);
+        $twig->addGlobal('is_dev_env', brox_is_development_env());
         $publicNavItems = [];
         try {
             if ($settingsModel instanceof AppSettings) {

@@ -1016,7 +1016,13 @@ if (!window.BroxAdminInstance) {
                     console.warn('[Admin AI] Provider responded', resp.status);
                     this.updateStatus('error', 'AI error');
                     if (this.nodes.input) this.nodes.input.disabled = false;
-                    return await this.puterFallback();
+                    let errData = null;
+                    try {
+                        errData = await resp.json();
+                    } catch (e) { }
+                    const msg = errData?.error || 'AI error. Please check provider settings.';
+                    this.addMessage('assistant', '❌ ' + msg);
+                    return;
                 }
 
                 this.updateStatus('receiving', 'Receiving...');
@@ -1078,8 +1084,7 @@ if (!window.BroxAdminInstance) {
 
                 if (this.nodes.input) this.nodes.input.disabled = false;
 
-                // Network error → Puter fallback
-                await this.puterFallback();
+                this.addMessage('assistant', '❌ Connection error. Please try again or check provider settings.');
             }
         }
 

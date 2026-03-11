@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Modules\AISystem\Layer;
 
 /**
@@ -52,7 +53,7 @@ class OpenRouterClient
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: Bearer ' . $this->apiKey,
             'Content-Type: application/json',
-            'HTTP-Referer: ' . ($_SERVER['HTTP_HOST'] ?? 'broxbhai.local'), // Optional but recommended by OpenRouter
+            'HTTP-Referer: ' . ($_SERVER['HTTP_HOST'] ?? 'localhost'), // Optional but recommended by OpenRouter
             'X-Title: BroxBhai AI System' // Optional but recommended by OpenRouter
         ]);
         curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout);
@@ -83,7 +84,7 @@ class OpenRouterClient
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: Bearer ' . $this->apiKey,
             'Content-Type: application/json',
-            'HTTP-Referer: ' . ($_SERVER['HTTP_HOST'] ?? 'broxbhai.local'),
+            'HTTP-Referer: ' . ($_SERVER['HTTP_HOST'] ?? 'localhost'),
             'X-Title: BroxBhai AI System'
         ]);
         curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout);

@@ -202,6 +202,11 @@
           {'name': 'Feature Flags', 'url': '/admin/feature-flags', 'key': 'feature-flags'},
           {'name': 'Device Control Logs', 'url': '/admin/device-control', 'key': 'device-control'}
       ]) %}
+      {% if is_dev_env %}
+          {% set settings_children = settings_children|merge([
+              {'name': 'Deploy Tools', 'url': '/admin/deploy-tools', 'key': 'deploy-tools'}
+          ]) %}
+      {% endif %}
   {% endif %}
 
   {% set menu_items = [

@@ -4,6 +4,213 @@
     { 'label': 'Dashboard', 'url': '/admin' },
     { 'label': 'AI SYSTEM', 'url': '/admin/ai-system' }
 ] %}
+{% block stylesheets %}
+<style>
+/* AI System Enhanced Styling */
+.provider-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    transition: transform 0.2s ease;
+}
+.provider-icon-wrapper:hover {
+    transform: scale(1.05);
+}
+.provider-icon-wrapper.openrouter { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); }
+.provider-icon-wrapper.openai { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); }
+.provider-icon-wrapper.ollama { background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); }
+.provider-icon-wrapper.anthropic { background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); }
+.provider-icon-wrapper.fireworks { background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); }
+.provider-icon-wrapper.huggingface { background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); }
+.provider-icon-wrapper.kilo { background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); }
+
+/* Status badges */
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Card hover effects */
+.ai-card {
+    transition: all 0.3s ease;
+    border: none;
+}
+.ai-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Form controls */
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+
+/* Provider toggle switch */
+.toggle-provider {
+    cursor: pointer;
+    width: 44px;
+    height: 24px;
+}
+
+/* Model select animation */
+.model-refresh-btn {
+    transition: all 0.2s ease;
+}
+.model-refresh-btn:hover {
+    transform: rotate(180deg);
+}
+
+/* API key input */
+.api-key-group {
+    position: relative;
+}
+.api-key-group .toggle-password {
+    border-left: none;
+}
+.api-key-group .form-control {
+    border-right: none;
+}
+
+/* Ollama live status */
+.ollama-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.ollama-status::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #6c757d;
+}
+.ollama-status.online::before {
+    background: #198754;
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Section headers */
+.section-header {
+    position: relative;
+    padding-left: 16px;
+}
+.section-header::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 70%;
+    background: linear-gradient(180deg, #0d6efd 0%, #0dcaf0 100%);
+    border-radius: 2px;
+}
+
+/* Action buttons */
+.action-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+.action-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Help accordion */
+.accordion-button:not(.collapsed) {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    color: #0d6efd;
+}
+.accordion-button:focus {
+    box-shadow: none;
+    border-color: rgba(13, 110, 253, 0.25);
+}
+
+@media (max-width: 991.98px) {
+    .ai-system-table thead {
+        display: none;
+    }
+    .ai-system-table tbody,
+    .ai-system-table tr,
+    .ai-system-table td {
+        display: block;
+        width: 100%;
+    }
+    .ai-system-table tr {
+        border: 1px solid #e6e8ef;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 12px;
+        background: #fff;
+    }
+    .ai-system-table td {
+        padding: 8px 0 !important;
+        border: 0 !important;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        text-align: left;
+    }
+    .ai-system-table td::before {
+        content: attr(data-label);
+        font-size: 12px;
+        font-weight: 600;
+        color: #6c757d;
+        min-width: 110px;
+    }
+    .ai-system-table .btn-group {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .ai-system-table .provider-icon {
+        margin-right: 10px;
+    }
+    .ai-system-table .font-monospace {
+        word-break: break-all;
+    }
+}
+@media (max-width: 575.98px) {
+    #aiSettingsForm .row.g-3 > [class*="col-"] {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    #aiSettingsForm .form-control,
+    #aiSettingsForm .form-select,
+    #aiSettingsForm .form-range {
+        min-height: 44px;
+        font-size: 15px;
+    }
+    #aiSettingsForm .btn {
+        min-height: 44px;
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+    #aiSettingsForm .btn-link {
+        min-height: auto;
+    }
+}
+</style>
+{% endblock %}
 {% block content %}
 <div class="container-fluid py-4">
     <div class="admin-page-header mb-4">
@@ -31,7 +238,7 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle" id="providersTable">
+                        <table class="table table-hover align-middle ai-system-table" id="providersTable">
                             <thead class="table-light">
                                 <tr>
                                     <th>Provider</th>
@@ -42,14 +249,13 @@
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {% for provider in providers %}
-                                <tr data-provider-id="{{ provider.id }}" data-provider-name="{{ provider.provider_name }}">
-                                    <td>
-                                        <div class="d-flex align-items-center">
+                              <tbody>
+                                  {% for provider in providers %}
+                                  <tr data-provider-id="{{ provider.id }}" data-provider-name="{{ provider.provider_name }}">
+                                      <td data-label="Provider">
+                                          <div class="d-flex align-items-center">
                                             <div class="provider-icon me-3">
                                                 {% if provider.provider_name == 'openrouter' %}
-                                                    <i class="bi bi-globe fs-4 text-primary"></i>
                                                     <i class="bi bi-globe fs-4 text-primary"></i>
                                                 {% elseif provider.provider_name == 'openai' %}
                                                     <i class="bi bi-cpu fs-4 text-success"></i>
@@ -59,17 +265,22 @@
                                                     <i class="bi bi-fire fs-4 text-danger"></i>
                                                 {% elseif provider.provider_name == 'kilo' %}
                                                     <i class="bi bi-cpu fs-4 text-info"></i>
+                                                {% elseif provider.provider_name == 'ollama' %}
+                                                    <i class="bi bi-house fs-4 text-secondary"></i>
                                                 {% elseif provider.provider_name == 'huggingface' %}
                                                     <i class="bi bi-robot fs-4 text-purple" style="color: #FF9D00;"></i>
                                                 {% else %}
                                                     <i class="bi bi-gear fs-4 text-secondary"></i>
                                                 {% endif %}
                                             </div>
-                                            <div>
-                                                <strong>{{ provider.display_name }}</strong>
-                                                {% if provider.provider_name == 'openrouter' %}
-                                                    {% if settings.openrouter_key_source == 'db' %}
-                                                        <span class="badge bg-success ms-1 openrouter-key-fix" data-provider-id="{{ provider.id }}" title="Click to edit OpenRouter key. Expiry: unknown">Key (DB)</span>
+                                              <div>
+                                                  <strong>{{ provider.display_name }}</strong>
+                                                  {% if provider.provider_name == 'ollama' %}
+                                                      <span class="badge bg-secondary ms-2" id="ollamaLiveStatus">Checking...</span>
+                                                  {% endif %}
+                                                  {% if provider.provider_name == 'openrouter' %}
+                                                      {% if settings.openrouter_key_source == 'db' %}
+                                                          <span class="badge bg-success ms-1 openrouter-key-fix" data-provider-id="{{ provider.id }}" title="Click to edit OpenRouter key. Expiry: unknown">Key (DB)</span>
                                                     {% elseif settings.openrouter_key_source == 'env' %}
                                                         <span class="badge bg-info text-dark ms-1 openrouter-key-fix" data-provider-id="{{ provider.id }}" title="Click to edit OpenRouter key. Expiry: unknown">Key (env)</span>
                                                     {% else %}
@@ -83,10 +294,14 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
-                                        <small class="text-muted font-monospace" style="font-size: 11px;">{{ provider.api_endpoint|default(provider.config.endpoint)|default('N/A') }}</small>
+                                    <td data-label="Endpoint">
+                                        {% set endpoint = provider.api_endpoint|default(provider.config.endpoint)|default('') %}
+                                        <small class="text-muted font-monospace" style="font-size: 11px;">{{ endpoint ?: 'N/A' }}</small>
+                                        {% if provider.provider_name == 'ollama' and endpoint in ['http://127.0.0.1:11434', 'http://localhost:11434'] %}
+                                            <span class="badge bg-info text-dark ms-1">Auto-detected</span>
+                                        {% endif %}
                                     </td>
-                                    <td>
+                                    <td data-label="Status">
                                         <div class="form-check form-switch">
                                             <input class="form-check-input toggle-provider" 
                                                    type="checkbox" 
@@ -99,7 +314,7 @@
                                             </label>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td data-label="Default">
                                         {% if provider.is_default %}
                                             <span class="badge bg-primary">
                                                 <i class="bi bi-check-circle me-1"></i>Default
@@ -112,7 +327,7 @@
                                             </button>
                                         {% endif %}
                                     </td>
-                                    <td>
+                                    <td data-label="API Key">
                                         {% if provider.has_api_key %}
                                             <span class="text-success">
                                                 <i class="bi bi-key-fill me-1"></i>Configured
@@ -123,19 +338,21 @@
                                             </span>
                                         {% endif %}
                                     </td>
-                                    <td>
+                                    <td data-label="Actions">
                                         <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-info" 
+                                            <button type="button" class="btn btn-outline-info" 
                                                     data-bs-toggle="tooltip" 
                                                     title="Test Connection"
-                                                    onclick="testConnection({{ provider.id }})">
+                                                    data-action="test-connection"
+                                                    data-provider-id="{{ provider.id }}">
                                                 <i class="bi bi-plug"></i>
                                             </button>
                                             {% if provider.provider_name == 'huggingface' %}
                                             <button class="btn btn-outline-secondary"
                                                     data-bs-toggle="tooltip"
                                                     title="Edit Hugging Face Config"
-                                                    onclick="openProviderEdit({{ provider.id }})">
+                                                    data-action="edit-provider"
+                                                    data-provider-id="{{ provider.id }}">
                                                 <i class="bi bi-sliders"></i>
                                             </button>
                                             {% endif %}
@@ -143,7 +360,8 @@
                                             <button class="btn btn-outline-danger" 
                                                     data-bs-toggle="tooltip" 
                                                     title="Delete"
-                                                    onclick="deleteProvider({{ provider.id }})">
+                                                    data-action="delete-provider"
+                                                    data-provider-id="{{ provider.id }}">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                             {% endif %}
@@ -175,7 +393,7 @@
                                     <span class="badge bg-secondary" id="aiStatusActive">Provider: Checking...</span>
                                     <span class="badge bg-secondary" id="aiStatusTested">Last tested: Not tested</span>
                                 </div>
-                                <small class="text-muted">Status reflects the selected frontend provider.</small>
+                                <small class="text-muted">Status reflects the selected frontend provider. Public chat uses this provider/model first; then active providers fall back by sort order. Puter.js is only used if all providers fail.</small>
                             </div>
                         </div>
                         
@@ -193,10 +411,11 @@
                                         </option>
                                         {% endif %}
                                     {% endfor %}
-                                </select>
-                                <small class="text-muted">AI for website assistant chat</small>
-                                {% if settings.frontend_provider == 'openrouter' %}
-                                <div class="mt-1" id="openrouterKeyStatus">
+                                  </select>
+                                  <small class="text-muted">AI for website assistant chat</small>
+                                  <small class="text-muted d-none" id="hfTipsFrontend">Hugging Face tips: add <span class="font-monospace">:fastest</span>, <span class="font-monospace">:cheapest</span>, or <span class="font-monospace">:preferred</span> to auto-pick.</small>
+                                  {% if settings.frontend_provider == 'openrouter' %}
+                                  <div class="mt-1" id="openrouterKeyStatus">
                                     {% if settings.openrouter_key_source == 'db' %}
                                         <span class="badge bg-success">OpenRouter key configured (DB)</span>
                                     {% elseif settings.openrouter_key_source == 'env' %}
@@ -218,17 +437,28 @@
                                         </option>
                                         {% endif %}
                                     {% endfor %}
-                                </select>
-                                <small class="text-muted">AI for content scraping</small>
-                            </div>
+                                  </select>
+                                  <small class="text-muted">AI for content scraping</small>
+                                  <small class="text-muted d-none" id="hfTipsBackend">Hugging Face tips: add <span class="font-monospace">:fastest</span>, <span class="font-monospace">:cheapest</span>, or <span class="font-monospace">:preferred</span> to auto-pick.</small>
+                              </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Frontend Model (Assistant)</label>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <label class="form-label fw-semibold mb-1">Frontend Model (Assistant)</label>
+                                    <button type="button" class="btn btn-link btn-sm p-0" id="frontendModelRefresh">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                                    </button>
+                                </div>
                                 <select name="frontend_model" class="form-select" id="frontendModelSelect"></select>
                                 <small class="text-muted">Model used for website assistant</small>
                                 <div class="text-danger small d-none" id="frontendModelWarning">No models available for this provider.</div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Backend Model (AutoContent)</label>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <label class="form-label fw-semibold mb-1">Backend Model (AutoContent)</label>
+                                    <button type="button" class="btn btn-link btn-sm p-0" id="backendModelRefresh">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                                    </button>
+                                </div>
                                 <select name="backend_model" class="form-select" id="backendModelSelect"></select>
                                 <small class="text-muted">Model used for AutoContent</small>
                                 <div class="text-danger small d-none" id="backendModelWarning">No models available for this provider.</div>
@@ -371,7 +601,7 @@
                             <button type="button" class="btn btn-outline-secondary" onclick="location.reload()">
                                 <i class="bi bi-arrow-clockwise me-1"></i>Reset
                             </button>
-                            <button type="submit" class="btn btn-primary px-4">
+                            <button type="submit" class="btn btn-primary px-4" id="aiSettingsSaveBtn">
                                 <i class="bi bi-save-fill me-1"></i>Save Settings
                             </button>
                         </div>
@@ -454,25 +684,40 @@
                 </div>
                 <div class="card-body">
                     <div class="accordion" id="helpAccordion">
-                        <div class="accordion-item border-0">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#help1">
-                                    How do I get an API key?
-                                </button>
-                            </h2>
-                            <div id="help1" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
-                                <div class="accordion-body small text-muted p-3">
-                                    <p>Visit the provider's website to sign up and get an API key:</p>
-                                    <ul class="mb-0">
-                                        <li><a href="https://openrouter.ai/keys" target="_blank">OpenRouter</a></li>
-                                        <li><a href="https://platform.openai.com/api-keys" target="_blank">OpenAI</a></li>
-                                        <li><a href="https://console.anthropic.com/" target="_blank">Anthropic</a></li>
-                                        <li><a href="https://fireworks.ai/" target="_blank">Fireworks AI</a></li>
-                                        <li><a href="https://huggingface.co/settings/inference-tokens" target="_blank">Hugging Face</a></li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
+                      <div class="accordion-item border-0">
+                          <h2 class="accordion-header">
+                              <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#help1">
+                                  How do I get an API key?
+                              </button>
+                          </h2>
+                          <div id="help1" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                              <div class="accordion-body small text-muted p-3">
+                                  <p>Visit the provider's website to sign up and get an API key:</p>
+                                  <ul class="mb-0">
+                                      <li><a href="https://openrouter.ai/keys" target="_blank">OpenRouter</a></li>
+                                      <li><a href="https://platform.openai.com/api-keys" target="_blank">OpenAI</a></li>
+                                      <li><a href="https://console.anthropic.com/" target="_blank">Anthropic</a></li>
+                                      <li><a href="https://fireworks.ai/" target="_blank">Fireworks AI</a></li>
+                                      <li><a href="https://huggingface.co/settings/inference-tokens" target="_blank">Hugging Face</a></li>
+                                  </ul>
+                              </div>
+                          </div>
+                      </div>
+                      <div class="accordion-item border-0">
+                          <h2 class="accordion-header">
+                              <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#helpOllama">
+                                  Ollama (Local) Quick Start
+                              </button>
+                          </h2>
+                          <div id="helpOllama" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                              <div class="accordion-body small text-muted p-3">
+                                  <p class="mb-2">Local Ollama does not require an API key. Use the OpenAI-compatible endpoint:</p>
+                                  <pre class="mb-0"><code>curl -X POST http://localhost:11434/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"llama3.2","messages":[{"role":"user","content":"Hello"}]}'</code></pre>
+                              </div>
+                          </div>
+                      </div>
                         <div class="accordion-item border-0">
                             <h2 class="accordion-header">
                                 <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#help2">
@@ -585,20 +830,25 @@
 </div>
 
 <!-- Test Connection Modal -->
-<div class="modal fade" id="testConnectionModal" tabindex="-1" aria-labelledby="testConnectionModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="testConnectionModalLabel">
-                    <i class="bi bi-plug me-2"></i>Test Connection
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Select Model</label>
-                    <select class="form-select" id="testModelSelect">
-                        <option value="">Loading models...</option>
+  <div class="modal fade" id="testConnectionModal" tabindex="-1" aria-labelledby="testConnectionModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title" id="testConnectionModalLabel">
+                      <i class="bi bi-plug me-2"></i>Test Connection
+                  </h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                  <div class="alert alert-warning d-none small mb-2" id="testConnectionWarning"></div>
+                  <div class="mb-3">
+                      <label class="form-label">Select Provider</label>
+                      <select class="form-select" id="testProviderSelect"></select>
+                  </div>
+                  <div class="mb-3">
+                      <label class="form-label">Select Model</label>
+                      <select class="form-select" id="testModelSelect">
+                          <option value="">Loading models...</option>
                     </select>
                 </div>
                 <div id="testConnectionResult">
@@ -610,12 +860,12 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="runTestConnection()">
-                    <i class="bi bi-plug me-1"></i>Run Test
-                </button>
-            </div>
+              <div class="modal-footer">
+                  <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                  <button type="button" class="btn btn-primary" data-action="run-test">
+                      <i class="bi bi-plug me-1"></i>Run Test
+                  </button>
+              </div>
         </div>
     </div>
 </div>
@@ -623,59 +873,114 @@
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Temperature range slider
-    const tempRange = document.getElementById('temperatureRange');
-    const tempValue = document.getElementById('temperatureValue');
-    if (tempRange && tempValue) {
-        tempRange.addEventListener('input', function() {
-            tempValue.textContent = this.value;
-        });
-    }
-});
-
-let currentTestProviderId = null;
-const providersData = Object.values({{ providers|json_encode|raw }});
-const savedFrontendModel = {{ (settings.frontend_model|default(''))|json_encode|raw }};
-const savedBackendModel = {{ (settings.backend_model|default(''))|json_encode|raw }};
-const defaultModelSetting = {{ (settings.default_model|default(''))|json_encode|raw }};
-
-function testConnection(id) {
-    currentTestProviderId = id;
+// Make providers data available globally for the external JS file
+window.aiSystemProviders = {{ providers|json_encode|raw }};
+window.aiSystemSettings = {
+    frontend_model: {{ settings.frontend_model|default('')|json_encode|raw }},
+    backend_model: {{ settings.backend_model|default('')|json_encode|raw }},
+    default_model: {{ settings.default_model|default('')|json_encode|raw }},
+    csrf_token: '{{ csrf_token }}'
+};
+</script>
+<script src="{{ base_url }}/assets/js/ai-system-admin.js"></script>
+{% endblock %}
     const provider = providersData.find(p => p.id == id);
     if (!provider) return;
 
     const modal = new bootstrap.Modal(document.getElementById('testConnectionModal'));
+    const providerSelect = document.getElementById('testProviderSelect');
     const select = document.getElementById('testModelSelect');
     const resultDiv = document.getElementById('testConnectionResult');
+    const warningDiv = document.getElementById('testConnectionWarning');
 
-    // Populate models
-    select.innerHTML = '';
-    const models = getProviderModelMap(provider);
-    Object.entries(models).forEach(([id, name]) => {
-        const opt = document.createElement('option');
-        opt.value = id;
-        opt.textContent = name;
-        select.appendChild(opt);
-    });
+    // Populate providers
+    if (providerSelect) {
+        providerSelect.innerHTML = '';
+        providersData.forEach((p) => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.display_name || p.provider_name;
+            if (String(p.id) === String(id)) {
+                opt.selected = true;
+            }
+            providerSelect.appendChild(opt);
+        });
+    }
 
-    if (select.options.length === 0) {
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = 'No models available';
-        select.appendChild(opt);
+    const loadModelsForProvider = (providerRow) => {
+        select.innerHTML = '<option value="">Loading models...</option>';
+        if (warningDiv) warningDiv.classList.add('d-none');
+        fetchProviderModels(providerRow.provider_name)
+            .then((models) => {
+                select.innerHTML = '';
+                models.forEach((m) => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id;
+                    opt.textContent = m.name;
+                    if (m.default) {
+                        opt.selected = true;
+                    }
+                    select.appendChild(opt);
+                });
+                if (select.options.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.textContent = 'No models available';
+                    select.appendChild(opt);
+                }
+            })
+            .catch((e) => {
+                const fallback = getProviderModelMap(providerRow, true);
+                select.innerHTML = '';
+                Object.entries(fallback).forEach(([mid, name]) => {
+                    const opt = document.createElement('option');
+                    opt.value = mid;
+                    opt.textContent = name;
+                    select.appendChild(opt);
+                });
+                if (select.options.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.textContent = 'No models available';
+                    select.appendChild(opt);
+                }
+                if (warningDiv) {
+                    warningDiv.textContent = `Remote models unavailable (${e?.message || 'fetch failed'}). Using fallback list.`;
+                    warningDiv.classList.remove('d-none');
+                }
+            });
+    };
+
+    loadModelsForProvider(provider);
+
+    if (providerSelect) {
+        providerSelect.onchange = () => {
+            const newId = providerSelect.value;
+            currentTestProviderId = newId;
+            const selectedProvider = providersData.find(p => String(p.id) === String(newId));
+            if (selectedProvider) {
+                loadModelsForProvider(selectedProvider);
+            }
+        };
     }
 
     resultDiv.innerHTML = '<div class="alert alert-info">Select a model and click "Run Test"</div>';
     modal.show();
 }
 
-async function runTestConnection() {
-    if (!currentTestProviderId) return;
+  async function runTestConnection() {
+      if (!currentTestProviderId) return;
 
-    const model = document.getElementById('testModelSelect').value;
-    const resultDiv = document.getElementById('testConnectionResult');
-    const btn = document.querySelector('#testConnectionModal .btn-primary');
+      const model = document.getElementById('testModelSelect').value;
+      const resultDiv = document.getElementById('testConnectionResult');
+      const btn = document.querySelector('#testConnectionModal .btn-primary');
+      const warningDiv = document.getElementById('testConnectionWarning');
+
+      if (!model) {
+          // Use SweetAlert2 instead of inline alert
+          await window.showAlert('Please select a model before testing.', 'Warning', 'warning');
+          return;
+      }
     const originalBtnHtml = btn.innerHTML;
 
     btn.disabled = true;
@@ -696,19 +1001,20 @@ async function runTestConnection() {
         const data = await response.json();
         
         if (data.success) {
-            resultDiv.innerHTML = `
-                <div class="alert alert-success">
-                    <h6 class="alert-heading"><i class="bi bi-check-circle-fill me-2"></i>Success!</h6>
-                    <p class="mb-0 small"><strong>Model:</strong> ${data.model}</p>
-                    <hr>
-                    <p class="mb-0 small text-truncate"><strong>Response:</strong> ${data.response || 'OK'}</p>
-                </div>`;
+            // Use SweetAlert2 for success message
+            await window.showAlert(
+                `<strong>Model:</strong> ${data.model}<br><br><strong>Response:</strong> ${data.response || 'OK'}`,
+                'Connection Successful!',
+                'success',
+                { allowHtml: true }
+            );
         } else {
-            resultDiv.innerHTML = `
-                <div class="alert alert-danger">
-                    <h6 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>Failed</h6>
-                    <p class="mb-0 small">${data.error || 'Unknown error occurred'}</p>
-                </div>`;
+            // Use SweetAlert2 for error message
+            await window.showAlert(
+                data.error || 'Unknown error occurred',
+                'Connection Failed',
+                'error'
+            );
         }
         const provider = providersData.find(p => p.id == currentTestProviderId);
         if (provider) {
@@ -716,16 +1022,20 @@ async function runTestConnection() {
             updateStatusPills(provider.provider_name);
         }
     } catch (e) {
-        resultDiv.innerHTML = `<div class="alert alert-danger">Network error: ${e.message}</div>`;
+        // Use SweetAlert2 for network error
+        await window.showAlert(`Network error: ${e.message}`, 'Error', 'error');
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalBtnHtml;
     }
 }
 
-function getProviderModelMap(provider) {
-    const models = provider?.supported_models || {};
-    const labels = provider?.supported_models_select || models;
+function getProviderModelMap(provider, allowDbFallback) {
+    let models = provider?.config?.models || {};
+    if (allowDbFallback && (!models || Object.keys(models).length === 0)) {
+        models = provider?.supported_models || {};
+    }
+    const labels = models;
     const map = {};
     Object.keys(models).forEach((id) => {
         map[id] = labels[id] || models[id] || id;
@@ -733,40 +1043,199 @@ function getProviderModelMap(provider) {
     return map;
 }
 
-function buildModelOptions(providerName, selectEl, savedModel, warningEl) {
-    if (!selectEl) return;
-    selectEl.innerHTML = '';
-    const provider = providersData.find(p => p.provider_name === providerName);
-    const models = getProviderModelMap(provider);
-
-    const entries = Object.entries(models);
-    if (entries.length === 0) {
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = 'No models available';
-        opt.disabled = true;
-        opt.selected = true;
-        selectEl.appendChild(opt);
-        if (warningEl) warningEl.classList.remove('d-none');
-        return;
+async function fetchProviderModels(providerName) {
+    const res = await fetch(`/api/ai/models?provider=${encodeURIComponent(providerName)}&scope=admin`, {
+        credentials: 'same-origin'
+    });
+    if (!res.ok) {
+        console.warn('[AI Models] Fetch failed', providerName, res.status);
+        throw new Error(`HTTP ${res.status}`);
     }
+    const raw = await res.text();
+    let data = null;
+    try {
+        data = JSON.parse(raw);
+    } catch (e) {
+        console.warn('[AI Models] Non-JSON response', providerName, raw);
+        throw new Error('Non-JSON response');
+    }
+    if (!data || data.success === false) {
+        const apiError = data?.error ? String(data.error) : 'API returned success=false';
+        console.warn('[AI Models] API error', providerName, apiError);
+        throw new Error(apiError);
+    }
+    if (!Array.isArray(data.models)) {
+        console.warn('[AI Models] Invalid models payload', providerName, data);
+        throw new Error('Invalid models payload');
+    }
+    return data.models;
+}
+
+function isHuggingFaceChatModelId(modelId) {
+    const lower = String(modelId || '').toLowerCase();
+    const blocked = [
+        'sentence-transformers/',
+        'embedding',
+        'feature-extraction',
+        'text-embedding',
+        'text2vec',
+        'rerank',
+        're-rank'
+    ];
+    return !blocked.some(pattern => lower.includes(pattern));
+}
+
+function buildLoadingOption(selectEl, text) {
+    selectEl.innerHTML = '';
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = text || 'Loading models...';
+    opt.disabled = true;
+    opt.selected = true;
+    selectEl.appendChild(opt);
+}
+
+function setRefreshState(buttonEl, selectEl, isLoading) {
+    if (selectEl) {
+        selectEl.disabled = !!isLoading;
+    }
+    if (!buttonEl) return;
+    if (isLoading) {
+        if (!buttonEl.dataset.originalHtml) {
+            buttonEl.dataset.originalHtml = buttonEl.innerHTML;
+        }
+        buttonEl.disabled = true;
+        buttonEl.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Refreshing...';
+    } else {
+        buttonEl.disabled = false;
+        if (buttonEl.dataset.originalHtml) {
+            buttonEl.innerHTML = buttonEl.dataset.originalHtml;
+        } else {
+            buttonEl.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+        }
+    }
+}
+
+function updateAiSettingsSaveState() {
+    const frontendProviderSelect = document.getElementById('frontendProviderSelect');
+    const backendProviderSelect = document.getElementById('backendProviderSelect');
+    const frontendModelSelect = document.getElementById('frontendModelSelect');
+    const backendModelSelect = document.getElementById('backendModelSelect');
+    const aiSettingsSaveBtn = document.getElementById('aiSettingsSaveBtn');
+    if (!aiSettingsSaveBtn) return;
+
+    const frontendBlocked = frontendProviderSelect?.value === 'huggingface'
+        && frontendModelSelect?.dataset?.hfHasModels === '0';
+    const backendBlocked = backendProviderSelect?.value === 'huggingface'
+        && backendModelSelect?.dataset?.hfHasModels === '0';
+    const shouldDisable = frontendBlocked || backendBlocked;
+    aiSettingsSaveBtn.disabled = shouldDisable;
+    aiSettingsSaveBtn.title = shouldDisable
+        ? 'No chat-capable Hugging Face models available.'
+        : '';
+}
+
+async function buildModelOptions(providerName, selectEl, savedModel, warningEl, refreshBtn) {
+    if (!selectEl) return;
+    const reqId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    selectEl.dataset.reqId = reqId;
+    setRefreshState(refreshBtn, selectEl, true);
+    buildLoadingOption(selectEl, 'Loading models...');
     if (warningEl) warningEl.classList.add('d-none');
 
+    let models = [];
+    let usedFallback = false;
+    let usedDbFallback = false;
+    let fetchError = '';
+    try {
+        models = await fetchProviderModels(providerName);
+    } catch (e) {
+        fetchError = e?.message || 'Fetch failed';
+        console.warn('[AI Models] Using fallback list', providerName, e);
+        const provider = providersData.find(p => p.provider_name === providerName);
+        const fallbackMap = getProviderModelMap(provider, true);
+        if ((!provider?.config?.models || Object.keys(provider.config.models || {}).length === 0)
+            && provider?.supported_models && Object.keys(provider.supported_models).length > 0) {
+            usedDbFallback = true;
+        }
+        models = Object.entries(fallbackMap).map(([id, name]) => ({ id, name }));
+        usedFallback = true;
+    }
+
+    if (selectEl.dataset.reqId !== reqId) return;
+
+    let hiddenNonChat = false;
+    if (providerName === 'huggingface') {
+        const before = models.length;
+        models = models.filter(m => isHuggingFaceChatModelId(m.id));
+        hiddenNonChat = before > models.length;
+    }
+
+    if (!models.length) {
+        buildLoadingOption(selectEl, 'No models available');
+        if (warningEl) {
+            warningEl.textContent = providerName === 'huggingface'
+                ? 'No chat-capable Hugging Face models available for /v1/responses.'
+                : (usedFallback
+                    ? (fetchError
+                        ? `Remote models unavailable (${fetchError}). No config models found.`
+                        : 'Remote models unavailable. No config models found.')
+                    : 'No models available for this provider.');
+            warningEl.classList.remove('text-danger', 'text-warning');
+            warningEl.classList.add('text-danger');
+            warningEl.classList.remove('d-none');
+        }
+        selectEl.dataset.hfHasModels = '0';
+        setRefreshState(refreshBtn, selectEl, false);
+        return;
+    }
+
+    selectEl.innerHTML = '';
     let hasSaved = false;
-    entries.forEach(([id, name]) => {
+    let hasDefault = false;
+    models.forEach((m) => {
         const opt = document.createElement('option');
-        opt.value = id;
-        opt.textContent = name;
-        if (savedModel && savedModel === id) {
+        opt.value = m.id;
+        opt.textContent = m.name;
+        if (savedModel && savedModel === m.id) {
             opt.selected = true;
             hasSaved = true;
+        } else if (m.default && !hasSaved && !hasDefault) {
+            opt.selected = true;
+            hasDefault = true;
         }
         selectEl.appendChild(opt);
     });
 
-    if (!hasSaved) {
+    if (!hasSaved && !hasDefault) {
         selectEl.selectedIndex = 0;
     }
+
+    if (warningEl) {
+        if (providerName === 'huggingface' && hiddenNonChat) {
+            warningEl.textContent = 'Some Hugging Face models were hidden because /v1/responses requires chat models.';
+            warningEl.classList.remove('text-danger');
+            warningEl.classList.add('text-warning');
+            warningEl.classList.remove('d-none');
+        } else if (usedFallback) {
+            if (usedDbFallback) {
+                warningEl.textContent = fetchError
+                    ? `Remote fetch failed (${fetchError}). Using stored models for this provider.`
+                    : 'Remote fetch failed. Using stored models for this provider.';
+            } else {
+                warningEl.textContent = fetchError
+                    ? `Remote fetch failed (${fetchError}). Using config model list.`
+                    : 'Remote fetch failed. Using config model list.';
+            }
+            warningEl.classList.remove('text-danger');
+            warningEl.classList.add('text-warning');
+            warningEl.classList.remove('d-none');
+        } else {
+            warningEl.classList.add('d-none');
+        }
+    }
+    selectEl.dataset.hfHasModels = '1';
+    setRefreshState(refreshBtn, selectEl, false);
 }
 
 function selectModelById(selectEl, modelId) {
@@ -793,7 +1262,7 @@ function setLastTested(providerName) {
     localStorage.setItem(`brox.ai.last_tested.${providerName}`, new Date().toISOString());
 }
 
-function updateStatusPills(providerName) {
+  function updateStatusPills(providerName) {
     const apiKeyPill = document.getElementById('aiStatusApiKey');
     const activePill = document.getElementById('aiStatusActive');
     const testedPill = document.getElementById('aiStatusTested');
@@ -808,49 +1277,186 @@ function updateStatusPills(providerName) {
         activePill.className = 'badge ' + (provider.is_active ? 'bg-success' : 'bg-secondary');
         activePill.textContent = provider.is_active ? 'Provider: Active' : 'Provider: Inactive';
     }
-    if (testedPill) {
-        testedPill.className = 'badge bg-info text-dark';
-        testedPill.textContent = `Last tested: ${getLastTested(providerName)}`;
-    }
-}
+      if (testedPill) {
+          testedPill.className = 'badge bg-info text-dark';
+          testedPill.textContent = `Last tested: ${getLastTested(providerName)}`;
+      }
+  }
 
-document.addEventListener('DOMContentLoaded', function() {
-    const frontendProviderSelect = document.getElementById('frontendProviderSelect');
-    const backendProviderSelect = document.getElementById('backendProviderSelect');
-    const frontendModelSelect = document.getElementById('frontendModelSelect');
-    const backendModelSelect = document.getElementById('backendModelSelect');
-    const frontendModelWarning = document.getElementById('frontendModelWarning');
-    const backendModelWarning = document.getElementById('backendModelWarning');
-    const resetModelDefaults = document.getElementById('resetModelDefaults');
+  function updateProviderRowState(rowEl, isActive) {
+      if (!rowEl) return;
+      const badge = rowEl.querySelector('td[data-label="Status"] .badge');
+      if (badge) {
+          badge.className = `badge bg-${isActive ? 'success' : 'secondary'}`;
+          badge.textContent = isActive ? 'Active' : 'Inactive';
+      }
+      const defaultBtn = rowEl.querySelector('.set-default-btn');
+      if (defaultBtn) {
+          defaultBtn.disabled = !isActive;
+      }
+  }
 
-    if (frontendProviderSelect) {
-        buildModelOptions(frontendProviderSelect.value, frontendModelSelect, savedFrontendModel, frontendModelWarning);
-        updateStatusPills(frontendProviderSelect.value);
-        frontendProviderSelect.addEventListener('change', function() {
-            buildModelOptions(this.value, frontendModelSelect, '', frontendModelWarning);
-            updateStatusPills(this.value);
+  async function toggleProviderActive(inputEl) {
+      const id = inputEl?.dataset?.providerId;
+      if (!id) return;
+      const rowEl = inputEl.closest('tr');
+      const active = !!inputEl.checked;
+      inputEl.disabled = true;
+
+      try {
+          const res = await fetch('/api/ai-system/toggle-provider', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: parseInt(id, 10), active })
+          });
+          const data = await res.json();
+          if (!data.success) {
+              throw new Error(data.error || 'Update failed');
+          }
+          updateProviderRowState(rowEl, active);
+          const provider = providersData.find(p => String(p.id) === String(id));
+          if (provider) {
+              provider.is_active = active;
+          }
+      } catch (e) {
+          inputEl.checked = !active;
+          window.showAlert(e?.message || 'Failed to update provider', 'Error', 'error');
+      } finally {
+          inputEl.disabled = false;
+      }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+        const frontendProviderSelect = document.getElementById('frontendProviderSelect');
+        const backendProviderSelect = document.getElementById('backendProviderSelect');
+        const frontendModelSelect = document.getElementById('frontendModelSelect');
+        const backendModelSelect = document.getElementById('backendModelSelect');
+      const frontendModelWarning = document.getElementById('frontendModelWarning');
+      const backendModelWarning = document.getElementById('backendModelWarning');
+      const resetModelDefaults = document.getElementById('resetModelDefaults');
+      const frontendModelRefresh = document.getElementById('frontendModelRefresh');
+      const backendModelRefresh = document.getElementById('backendModelRefresh');
+      const hfTipsFrontend = document.getElementById('hfTipsFrontend');
+      const hfTipsBackend = document.getElementById('hfTipsBackend');
+      const toggleInputs = document.querySelectorAll('.toggle-provider');
+      const testButtons = document.querySelectorAll('[data-action="test-connection"]');
+      const editButtons = document.querySelectorAll('[data-action="edit-provider"]');
+      const deleteButtons = document.querySelectorAll('[data-action="delete-provider"]');
+      const runTestButton = document.querySelector('[data-action="run-test"]');
+      const updateHfTips = () => {
+          if (hfTipsFrontend) {
+              hfTipsFrontend.classList.toggle('d-none', frontendProviderSelect?.value !== 'huggingface');
+          }
+          if (hfTipsBackend) {
+              hfTipsBackend.classList.toggle('d-none', backendProviderSelect?.value !== 'huggingface');
+          }
+      };
+      const initModelSelects = async () => {
+          if (frontendProviderSelect) {
+              await buildModelOptions(frontendProviderSelect.value, frontendModelSelect, savedFrontendModel, frontendModelWarning, frontendModelRefresh);
+              updateAiSettingsSaveState();
+              updateStatusPills(frontendProviderSelect.value);
+              updateHfTips();
+              frontendProviderSelect.addEventListener('change', function() {
+                  buildModelOptions(this.value, frontendModelSelect, '', frontendModelWarning, frontendModelRefresh).then(updateAiSettingsSaveState);
+                  updateStatusPills(this.value);
+                  updateHfTips();
+              });
+          }
+
+          if (backendProviderSelect) {
+              await buildModelOptions(backendProviderSelect.value, backendModelSelect, savedBackendModel, backendModelWarning, backendModelRefresh);
+              updateAiSettingsSaveState();
+              updateHfTips();
+              backendProviderSelect.addEventListener('change', function() {
+                  buildModelOptions(this.value, backendModelSelect, '', backendModelWarning, backendModelRefresh).then(updateAiSettingsSaveState);
+                  updateHfTips();
+              });
+          }
+      };
+
+      initModelSelects();
+
+      if (toggleInputs?.length) {
+          toggleInputs.forEach((inputEl) => {
+              inputEl.addEventListener('change', () => toggleProviderActive(inputEl));
+          });
+      }
+      if (testButtons?.length) {
+          testButtons.forEach((btn) => {
+              btn.addEventListener('click', (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const id = btn.getAttribute('data-provider-id');
+                  if (id) {
+                      // Open modal first, then load models
+                      testConnection(id);
+                  }
+              });
+          });
+      }
+      if (editButtons?.length) {
+          editButtons.forEach((btn) => {
+              btn.addEventListener('click', () => {
+                  const id = btn.getAttribute('data-provider-id');
+                  if (id) openProviderEdit(id);
+              });
+          });
+      }
+      if (deleteButtons?.length) {
+          deleteButtons.forEach((btn) => {
+              btn.addEventListener('click', () => {
+                  const id = btn.getAttribute('data-provider-id');
+                  if (id) deleteProvider(id);
+              });
+          });
+      }
+      if (runTestButton) {
+          runTestButton.addEventListener('click', () => {
+              runTestConnection();
+          });
+      }
+
+    if (frontendModelRefresh) {
+        frontendModelRefresh.addEventListener('click', () => {
+            if (!frontendProviderSelect) return;
+            buildModelOptions(frontendProviderSelect.value, frontendModelSelect, '', frontendModelWarning, frontendModelRefresh).then(updateAiSettingsSaveState);
         });
     }
 
-    if (backendProviderSelect) {
-        buildModelOptions(backendProviderSelect.value, backendModelSelect, savedBackendModel, backendModelWarning);
-        backendProviderSelect.addEventListener('change', function() {
-            buildModelOptions(this.value, backendModelSelect, '', backendModelWarning);
+    if (backendModelRefresh) {
+        backendModelRefresh.addEventListener('click', () => {
+            if (!backendProviderSelect) return;
+            buildModelOptions(backendProviderSelect.value, backendModelSelect, '', backendModelWarning, backendModelRefresh).then(updateAiSettingsSaveState);
         });
     }
 
-    if (resetModelDefaults) {
-        resetModelDefaults.addEventListener('click', () => {
-            if (defaultModelSetting) {
-                selectModelById(frontendModelSelect, defaultModelSetting);
-                selectModelById(backendModelSelect, defaultModelSetting);
-            } else {
-                if (frontendModelSelect) frontendModelSelect.selectedIndex = 0;
-                if (backendModelSelect) backendModelSelect.selectedIndex = 0;
-            }
-        });
-    }
-});
+      if (resetModelDefaults) {
+          resetModelDefaults.addEventListener('click', () => {
+              if (defaultModelSetting) {
+                  selectModelById(frontendModelSelect, defaultModelSetting);
+                  selectModelById(backendModelSelect, defaultModelSetting);
+              } else {
+                  if (frontendModelSelect) frontendModelSelect.selectedIndex = 0;
+                  if (backendModelSelect) backendModelSelect.selectedIndex = 0;
+              }
+          });
+      }
+
+      const ollamaStatusEl = document.getElementById('ollamaLiveStatus');
+      if (ollamaStatusEl) {
+          fetchProviderModels('ollama')
+              .then((models) => {
+                  const online = Array.isArray(models) && models.length > 0;
+                  ollamaStatusEl.className = `badge ${online ? 'bg-success' : 'bg-secondary'} ms-2`;
+                  ollamaStatusEl.textContent = online ? 'Online' : 'Offline';
+              })
+              .catch(() => {
+                  ollamaStatusEl.className = 'badge bg-secondary ms-2';
+                  ollamaStatusEl.textContent = 'Offline';
+              });
+      }
+  });
 
 function openProviderEdit(id) {
     const provider = providersData.find(p => p.id == id);
@@ -932,12 +1538,16 @@ if (saveProviderBtn) {
             const backendModelSelect = document.getElementById('backendModelSelect');
             const frontendModelWarning = document.getElementById('frontendModelWarning');
             const backendModelWarning = document.getElementById('backendModelWarning');
+            const frontendModelRefresh = document.getElementById('frontendModelRefresh');
+            const backendModelRefresh = document.getElementById('backendModelRefresh');
 
             if (frontendProviderSelect?.value === 'huggingface') {
-                buildModelOptions('huggingface', frontendModelSelect, '', frontendModelWarning);
+                buildModelOptions('huggingface', frontendModelSelect, '', frontendModelWarning, frontendModelRefresh)
+                    .then(updateAiSettingsSaveState);
             }
             if (backendProviderSelect?.value === 'huggingface') {
-                buildModelOptions('huggingface', backendModelSelect, '', backendModelWarning);
+                buildModelOptions('huggingface', backendModelSelect, '', backendModelWarning, backendModelRefresh)
+                    .then(updateAiSettingsSaveState);
             }
 
             const modalEl = document.getElementById('editProviderModal');

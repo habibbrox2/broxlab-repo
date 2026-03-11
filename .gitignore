@@ -1,60 +1,48 @@
 # Dependencies
 /vendor/
+/node_modules/
 
-# Environment variables
+# Environment variables (keep example files)
 .env
-.env.local
-.env.production
-.env.example
+.env.*
+!.env.example
+!.env.sample
 
-# Logs
+# Logs & cache
 *.log
 /logs/
-storage/logs/
-**/dist/**
-
-# Cache
 /cache/
-storage/cache/
-storage/tmp/
+/storage/logs/
+/storage/cache/
+/storage/tmp/
+/storage/backups/
+/storage/logs/deploy_jobs/
 .tmp.*
 
-# Uploads
+# Uploads (user-generated content)
 /uploads/
-public_html/uploads/
-public_html/assets/uploads/
+/public_html/uploads/
+/public_html/assets/uploads/
 
-# Database backups
+# Build artifacts
+/build/
+**/dist/**
+/\.deploy/
+
+# Database dumps/backups
 /Database/
+/*.sql
 db.sql
 
-# Firebase config
-Config/broxlab-firebase.json
+# Secrets / service configs
+/Config/broxlab-firebase.json
 
-# Node modules
-node_modules/
-
-# Build
-build/
-
-# IDE
-.vscode/
-.idea/
-
-# OS
+# IDE / OS
+/.vscode/
+/.idea/
 .DS_Store
 Thumbs.db
-
-# Composer
-composer.lock
-package-lock.json
-
-# Drive Tmp
-.tmp.*
-.tmp.driveupload
 vs-code-ex/
 
-*.sql
-*.env
-*.log
+# Archives
 *.zip

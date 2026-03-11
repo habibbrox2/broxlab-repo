@@ -19,7 +19,7 @@ class UploadService
     {
         $this->mysqli = $mysqli;
         $this->userId = $userId;
-        $this->config = require dirname(__DIR__) . '/Config/Upload.php';
+        $this->config = require dirname(__DIR__, 2) . '/Config/Upload.php';
         $this->uploadDir = $this->config['base']['upload_dir'];
         $this->tempDir = $this->config['base']['temp_dir'];
         
@@ -117,7 +117,7 @@ class UploadService
             }
 
             // Step 8: Log success
-            $webPath = str_replace(dirname(__DIR__) . '/public_html', '', $uploadPath);
+            $webPath = $this->toWebPath($uploadPath);
             logDebug("File uploaded successfully", "FILE_UPLOAD", [
                 'filename' => $filename,
                 'category' => $category,
@@ -433,7 +433,7 @@ class UploadService
     ): ?int
     {
         try {
-            $webPath = str_replace(dirname(__DIR__) . '/public_html', '', $filePath);
+            $webPath = $this->toWebPath($filePath);
             $size = $file['size'];
             $identity = $resolvedIdentity ?: $this->resolveFileIdentity($file);
             $mimeType = (string)($identity['mime'] ?? ($file['type'] ?? 'application/octet-stream'));
@@ -652,5 +652,55 @@ class UploadService
     public function setConfig(array $config): void
     {
         $this->config = array_merge($this->config, $config);
+    }
+
+    private function normalizePath(string $path): string
+    {
+        return str_replace('\\', '/', $path);
+    }
+
+    private function getUploadsBasePath(): string
+    {
+        if (function_exists('brox_get_uploads_base_path')) {
+            return rtrim((string)brox_get_uploads_base_path(), '/\\');
+        }
+        if (defined('UPLOADS_DIR')) {
+            return rtrim((string)UPLOADS_DIR, '/\\');
+        }
+        $fallback = dirname(__DIR__, 2) . '/public_html/uploads';
+        return rtrim($fallback, '/\\');
+    }
+
+    private function getUploadsBaseUrl(): string
+    {
+        if (function_exists('brox_get_uploads_base_url')) {
+            return rtrim((string)brox_get_uploads_base_url(), '/');
+        }
+        if (defined('UPLOADS_PUBLIC_URL')) {
+            return '/' . trim((string)UPLOADS_PUBLIC_URL, '/');
+        }
+        return '/uploads';
+    }
+
+    private function toWebPath(string $filePath): string
+    {
+        $basePath = $this->getUploadsBasePath();
+        $normalizedFile = $this->normalizePath($filePath);
+        $normalizedBase = $this->normalizePath($basePath);
+        $baseUrl = $this->getUploadsBaseUrl();
+
+        if ($normalizedBase !== '' && strpos($normalizedFile, $normalizedBase) === 0) {
+            $relative = ltrim(substr($normalizedFile, strlen($normalizedBase)), '/');
+            return rtrim($baseUrl, '/') . '/' . $relative;
+        }
+
+        $publicMarker = '/public_html/';
+        $pos = strpos($normalizedFile, $publicMarker);
+        if ($pos !== false) {
+            $relative = substr($normalizedFile, $pos + strlen($publicMarker) - 1);
+            return $relative;
+        }
+
+        return $filePath;
     }
 }
