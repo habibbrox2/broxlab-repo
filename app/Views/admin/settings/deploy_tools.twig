@@ -2,6 +2,71 @@
 {% block title %}Deploy Tools{% endblock %}
 
 {% block content %}
+<style>
+  .file-tree {
+    font-family: 'Segoe UI', monospace;
+    font-size: 13px;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 15px;
+    border-radius: 8px;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+  .file-tree .folder {
+    cursor: pointer;
+    color: #ffd700;
+  }
+  .file-tree .folder:hover {
+    color: #fff;
+  }
+  .file-tree .file {
+    color: #9cdcfe;
+  }
+  .file-tree .file-twig { color: #c586c0; }
+  .file-tree .file-php { color: #4ec9b0; }
+  .file-tree .file-js { color: #dcdcaa; }
+  .file-tree .file-css { color: #d7ba7d; }
+  .file-tree .file-md { color: #6a9955; }
+  .file-tree .file-json { color: #ce9178; }
+  .file-tree .indent {
+    padding-left: 20px;
+    display: none;
+  }
+  .file-tree .indent.expanded {
+    display: block;
+  }
+  .file-tree .toggle {
+    display: inline-block;
+    width: 16px;
+    text-align: center;
+    margin-right: 4px;
+  }
+  .file-tree .size {
+    color: #6a9955;
+    font-size: 11px;
+    margin-left: 8px;
+  }
+  .file-tree-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .live-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+</style>
+
 <div class="container-fluid py-4">
   <div class="admin-page-header mb-4">
     <div class="admin-page-title">
@@ -11,118 +76,352 @@
     <div class="admin-page-subtitle">Local-only deploy + DB backup queue.</div>
   </div>
 
-  <div class="row g-4">
-    <div class="col-lg-4">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white">
-          <strong>Queue Jobs</strong>
-        </div>
-        <div class="card-body">
-          <form method="POST" action="/admin/deploy-tools/queue" class="mb-3">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="job_type" value="deploy">
-            <div class="form-check mb-3">
-              <input class="form-check-input" type="checkbox" name="with_vendor" id="withVendor">
-              <label class="form-check-label" for="withVendor">
-                Include vendor folder
-              </label>
+  <ul class="nav nav-tabs mb-4" id="deployTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="jobs-tab" data-bs-toggle="tab" data-bs-target="#jobs-pane" type="button">
+        <i class="bi bi-list-task me-1"></i> Jobs
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="filetree-tab" data-bs-toggle="tab" data-bs-target="#filetree-pane" type="button">
+        <i class="bi bi-folder me-1"></i> File Tree
+        <span class="live-indicator ms-1" title="Live"></span>
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="deployTabsContent">
+    <!-- Jobs Tab -->
+    <div class="tab-pane fade show active" id="jobs-pane" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-lg-4">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+              <strong>Queue Jobs</strong>
             </div>
-            <button type="submit" class="btn btn-primary w-100">
-              <i class="bi bi-cloud-upload me-1"></i> Queue Deploy
-            </button>
-          </form>
+            <div class="card-body">
+              <form method="POST" action="/admin/deploy-tools/queue" class="mb-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="job_type" value="deploy">
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" name="with_vendor" id="withVendor">
+                  <label class="form-check-label" for="withVendor">
+                    Include vendor folder
+                  </label>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                  <i class="bi bi-cloud-upload me-1"></i> Queue Deploy
+                </button>
+              </form>
 
-          <form method="POST" action="/admin/deploy-tools/queue">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="job_type" value="db_backup">
-            <button type="submit" class="btn btn-outline-secondary w-100">
-              <i class="bi bi-database-check me-1"></i> Queue DB Backup
-            </button>
-          </form>
-        </div>
-      </div>
+              <form method="POST" action="/admin/deploy-tools/queue">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="job_type" value="db_backup">
+                <button type="submit" class="btn btn-outline-secondary w-100">
+                  <i class="bi bi-database-check me-1"></i> Queue DB Backup
+                </button>
+              </form>
+            </div>
+          </div>
 
-      <div class="card border-0 shadow-sm mt-4">
-        <div class="card-header bg-white">
-          <strong>Home/Office Workflow</strong>
+          <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-white">
+              <strong>Home/Office Workflow</strong>
+            </div>
+            <div class="card-body">
+              <ol class="mb-0">
+                <li>Work on either machine.</li>
+                <li>Push to the central Git remote (origin).</li>
+                <li>On the deploy machine, <code>git pull</code> then run deploy script.</li>
+              </ol>
+            </div>
+          </div>
         </div>
-        <div class="card-body">
-          <ol class="mb-0">
-            <li>Work on either machine.</li>
-            <li>Push to the central Git remote (origin).</li>
-            <li>On the deploy machine, <code>git pull</code> then run deploy script.</li>
-          </ol>
-        </div>
-      </div>
-    </div>
 
-    <div class="col-lg-8">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white d-flex align-items-center justify-content-between">
-          <strong>Recent Jobs</strong>
-          <small class="text-muted">Newest first</small>
-        </div>
-        <div class="card-body">
-          {% if jobs is empty %}
-            <div class="text-muted">No jobs queued yet.</div>
-          {% else %}
-            <div class="table-responsive">
-              <table class="table table-sm table-hover align-middle">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Started</th>
-                    <th>Finished</th>
-                    <th>Log</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for job in jobs %}
-                    <tr>
-                      <td>{{ job.id }}</td>
-                      <td>{{ job.job_type|upper }}</td>
-                      <td>
-                        <span class="badge bg-{{ job.status == 'success' ? 'success' : (job.status == 'failed' ? 'danger' : (job.status == 'running' ? 'warning text-dark' : 'secondary')) }}">
-                          {{ job.status }}
-                        </span>
-                      </td>
-                      <td>{{ job.created_at|default('') }}</td>
-                      <td>{{ job.started_at|default('') }}</td>
-                      <td>{{ job.finished_at|default('') }}</td>
-                      <td>
-                        {% if job.log_path %}
-                          <a href="/admin/deploy-tools/log?id={{ job.id }}" class="btn btn-outline-secondary btn-sm">View</a>
-                        {% else %}
-                          <span class="text-muted">—</span>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
+        <div class="col-lg-8">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between">
+              <strong>Recent Jobs</strong>
+              <small class="text-muted">Newest first</small>
+            </div>
+            <div class="card-body">
+              {% if jobs is empty %}
+                <div class="text-muted">No jobs queued yet.</div>
+              {% else %}
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Started</th>
+                        <th>Finished</th>
+                        <th>Log</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for job in jobs %}
+                        <tr>
+                          <td>{{ job.id }}</td>
+                          <td>{{ job.job_type|upper }}</td>
+                          <td>
+                            <span class="badge bg-{{ job.status == 'success' ? 'success' : (job.status == 'failed' ? 'danger' : (job.status == 'running' ? 'warning text-dark' : 'secondary')) }}">
+                              {{ job.status }}
+                            </span>
+                          </td>
+                          <td>{{ job.created_at|default('') }}</td>
+                          <td>{{ job.started_at|default('') }}</td>
+                          <td>{{ job.finished_at|default('') }}</td>
+                          <td>
+                            {% if job.log_path %}
+                              <a href="/admin/deploy-tools/log?id={{ job.id }}" class="btn btn-outline-secondary btn-sm">View</a>
+                            else
+                              <span class="text-muted">—</span>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if log_job is defined %}
+            <div class="card border-0 shadow-sm mt-4">
+              <div class="card-header bg-white">
+                <strong>Log: Job #{{ log_job.id }}</strong>
+              </div>
+              <div class="card-body">
+                {% if log_content %}
+                  <pre class="small bg-light p-3 rounded border" style="max-height: 360px; overflow:auto;">{{ log_content }}</pre>
+                else
+                  <div class="text-muted">No log output available.</div>
+                {% endif %}
+              </div>
             </div>
           {% endif %}
         </div>
       </div>
+    </div>
 
-      {% if log_job is defined %}
-        <div class="card border-0 shadow-sm mt-4">
-          <div class="card-header bg-white">
-            <strong>Log: Job #{{ log_job.id }}</strong>
-          </div>
-          <div class="card-body">
-            {% if log_content %}
-              <pre class="small bg-light p-3 rounded border" style="max-height: 360px; overflow:auto;">{{ log_content }}</pre>
-            {% else %}
-              <div class="text-muted">No log output available.</div>
-            {% endif %}
+    <!-- File Tree Tab -->
+    <div class="tab-pane fade" id="filetree-pane" role="tabpanel">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+          <div class="file-tree-header">
+            <strong><i class="bi bi-folder-tree me-2"></i>Live Project File Tree</strong>
+            <div>
+              <button class="btn btn-sm btn-outline-secondary" onclick="refreshFileTree()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" onclick="toggleAutoRefresh()" id="autoRefreshBtn">
+                <i class="bi bi-clock"></i> Auto: Off
+              </button>
+            </div>
           </div>
         </div>
-      {% endif %}
+        <div class="card-body p-0">
+          <div id="fileTreeContainer" class="file-tree">
+            <div class="text-center py-5">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <div class="mt-2 text-muted">Loading file tree...</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
+
+<script>
+let autoRefresh = false;
+let autoRefreshInterval = null;
+let currentTreeData = null;
+
+function formatSize(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function formatDate(timestamp) {
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+function getFileClass(filename) {
+  const ext = filename.split('.').pop().toLowerCase();
+  const classes = {
+    'twig': 'file-twig',
+    'php': 'file-php',
+    'js': 'file-js',
+    'css': 'file-css',
+    'md': 'file-md',
+    'json': 'file-json'
+  };
+  return classes[ext] || '';
+}
+
+function renderTree(data, level = 0) {
+  let html = '';
+  const indent = '  '.repeat(level);
+  
+  if (level === 0) {
+    html += `<div class="folder" style="padding: 4px 0;" data-path="${data.path || ''}">`;
+    html += `<span class="toggle">📂</span>`;
+    html += `<span class="folder">${data.name}</span>`;
+    html += `<span class="size">${data.children ? data.children.length + ' items' : ''}</span>`;
+    html += '</div>';
+    
+    if (data.children && data.children.length > 0) {
+      html += `<div class="indent expanded">`;
+      for (const child of data.children) {
+        html += renderTree(child, level + 1);
+      }
+      html += `</div>`;
+    }
+    return html;
+  }
+  
+  if (data.type === 'folder') {
+    html += `<div class="folder" style="padding: 4px 0;" data-path="${data.path}">`;
+    html += `<span class="toggle" onclick="toggleFolder(this)">📁</span>`;
+    html += `<span class="folder" onclick="loadFolder('${data.path}', this)">${data.name}/</span>`;
+    html += '</div>';
+    html += `<div class="indent" id="folder-${data.path.replace(/[\\/]/g, '-')}">`;
+    html += `</div>`;
+  } else {
+    const fileClass = getFileClass(data.name);
+    html += `<div style="padding: 2px 0;" data-path="${data.path}">`;
+    html += `<span class="toggle">📄</span>`;
+    html += `<span class="file ${fileClass}">${data.name}</span>`;
+    html += `<span class="size">${formatSize(data.size)}</span>`;
+    html += '</div>';
+  }
+  
+  return html;
+}
+
+function toggleFolder(el) {
+  const folderDiv = el.parentElement;
+  const path = folderDiv.dataset.path;
+  const indent = folderDiv.nextElementSibling;
+  
+  if (indent && indent.classList.contains('indent')) {
+    if (indent.classList.contains('expanded')) {
+      indent.classList.remove('expanded');
+      el.textContent = '📁';
+    } else {
+      indent.classList.add('expanded');
+      el.textContent = '📂';
+    }
+  }
+}
+
+function loadFolder(path, el) {
+  const containerId = 'folder-' + path.replace(/[\\/]/g, '-');
+  const container = document.getElementById(containerId);
+  
+  if (!container) return;
+  
+  if (container.children.length > 0) {
+    // Already loaded, just toggle
+    if (container.classList.contains('expanded')) {
+      container.classList.remove('expanded');
+    } else {
+      container.classList.add('expanded');
+    }
+    return;
+  }
+  
+  container.innerHTML = '<div class="text-muted" style="padding: 4px 20px;">Loading...</div>';
+  
+  fetch(`/admin/deploy-tools/api/file-tree?path=${encodeURIComponent(path)}&refresh=${Date.now()}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        container.innerHTML = `<div class="text-danger" style="padding: 4px 20px;">Error: ${data.error}</div>`;
+        return;
+      }
+      
+      let html = '';
+      if (data.children) {
+        for (const child of data.children) {
+          html += renderTree(child, 0);
+        }
+      }
+      container.innerHTML = html || '<div class="text-muted" style="padding: 4px 20px;">Empty</div>';
+      container.classList.add('expanded');
+    })
+    .catch(err => {
+      container.innerHTML = `<div class="text-danger" style="padding: 4px 20px;">Error loading: ${err.message}</div>`;
+    });
+}
+
+function refreshFileTree() {
+  const container = document.getElementById('fileTreeContainer');
+  container.innerHTML = `
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <div class="mt-2 text-muted">Loading file tree...</div>
+    </div>
+  `;
+  
+  fetch(`/admin/deploy-tools/api/file-tree?refresh=${Date.now()}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        container.innerHTML = `<div class="text-danger p-3">Error: ${data.error}</div>`;
+        return;
+      }
+      currentTreeData = data;
+      container.innerHTML = renderTree(data);
+    })
+    .catch(err => {
+      container.innerHTML = `<div class="text-danger p-3">Error: ${err.message}</div>`;
+    });
+}
+
+function toggleAutoRefresh() {
+  autoRefresh = !autoRefresh;
+  const btn = document.getElementById('autoRefreshBtn');
+  
+  if (autoRefresh) {
+    btn.innerHTML = '<i class="bi bi-clock-fill"></i> Auto: On';
+    btn.classList.add('btn-primary');
+    btn.classList.remove('btn-outline-secondary');
+    autoRefreshInterval = setInterval(refreshFileTree, 5000);
+  } else {
+    btn.innerHTML = '<i class="bi bi-clock"></i> Auto: Off';
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-outline-secondary');
+    if (autoRefreshInterval) {
+      clearInterval(autoRefreshInterval);
+      autoRefreshInterval = null;
+    }
+  }
+}
+
+// Load on tab switch
+document.getElementById('filetree-tab').addEventListener('shown.bs.tab', function() {
+  if (!currentTreeData) {
+    refreshFileTree();
+  }
+});
+
+// Initial load if tab is already active
+if (document.getElementById('filetree-pane').classList.contains('active')) {
+  refreshFileTree();
+}
+</script>
 {% endblock %}
