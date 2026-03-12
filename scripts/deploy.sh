@@ -73,6 +73,14 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   RSYNC_FLAGS+=(--dry-run)
 fi
 
+# Cleanup function for temp SSH key
+cleanup_ssh_key() {
+    if [[ -n "$SSH_KEY_FILE" && -f "$SSH_KEY_FILE" ]]; then
+        rm -f "$SSH_KEY_FILE"
+    fi
+}
+trap cleanup_ssh_key EXIT
+
 echo "Staging files..."
 rsync "${RSYNC_FLAGS[@]}" "${RSYNC_EXCLUDES[@]}" "$REPO_ROOT/" "$STAGE_DIR/"
 
@@ -93,8 +101,12 @@ REMOTE_OLD="${DEPLOY_REMOTE_PATH}__old_${TIMESTAMP}"
 SSH_OPTS=(-p "$DEPLOY_SSH_PORT")
 SCP_OPTS=(-P "$DEPLOY_SSH_PORT")
 if [[ -n "$DEPLOY_SSH_KEY" ]]; then
-  SSH_OPTS+=(-i "$DEPLOY_SSH_KEY")
-  SCP_OPTS+=(-i "$DEPLOY_SSH_KEY")
+    # Write SSH key to temporary file
+    SSH_KEY_FILE=$(mktemp)
+    echo "$DEPLOY_SSH_KEY" > "$SSH_KEY_FILE"
+    chmod 600 "$SSH_KEY_FILE"
+    SSH_OPTS+=(-i "$SSH_KEY_FILE")
+    SCP_OPTS+=(-i "$SSH_KEY_FILE")
 fi
 
 echo "Uploading archive..."

@@ -114,15 +114,18 @@ if (!window.BroxAssistantLoaded) {
             const res = await fetch(`${CONFIG.modelsUrl}?provider=${encodeURIComponent(provider)}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            return Array.isArray(data.models) ? data.models : [];
+            return { models: Array.isArray(data.models) ? data.models : [], source: 'remote' };
         } catch (e) {
             console.warn('[Models] Failed to fetch model list:', e.message);
             // Return fallback models for public assistant
-            return [
-                { id: 'anthropic/claude-3-haiku:free', name: 'Claude 3 Haiku', default: true },
-                { id: 'google/gemini-pro-1.5:free', name: 'Gemini Pro 1.5' },
-                { id: 'openai/gpt-4o-mini:free', name: 'GPT-4o Mini' }
-            ];
+            return {
+                models: [
+                    { id: 'anthropic/claude-3-haiku:free', name: 'Claude 3 Haiku', default: true },
+                    { id: 'google/gemini-pro-1.5:free', name: 'Gemini Pro 1.5' },
+                    { id: 'openai/gpt-4o-mini:free', name: 'GPT-4o Mini' }
+                ],
+                source: 'fallback'
+            };
         }
     }
 
@@ -213,6 +216,7 @@ if (!window.BroxAssistantLoaded) {
                 title: document.getElementById('publicAssistantTitle'),
                 status: document.getElementById('publicAssistantStatusText'),
                 modelName: document.getElementById('publicAssistantModelName'),
+                modelStatusIndicator: document.getElementById('publicAssistantModelStatusIndicator'),
                 modelBar: document.getElementById('publicAssistantModelBar'),
                 modelToggle: document.getElementById('publicAssistantModelToggle'),
                 modelLabel: document.getElementById('publicAssistantModelLabel'),
@@ -250,6 +254,7 @@ if (!window.BroxAssistantLoaded) {
                 this.updateLangUI();
                 this.renderHistorySidebar();
                 this.renderQuickActions();
+                this.updateModelStatus('connecting');
             }
         }
 
@@ -445,10 +450,13 @@ if (!window.BroxAssistantLoaded) {
         async loadProviderModels(provider = 'openrouter', preferredModel = '') {
             if (!this.nodes.modelSel) return;
 
-            const models = await fetchModels(provider);
+            this.updateModelStatus('connecting');
+            const result = await fetchModels(provider);
+            const models = result?.models || [];
             if (!models.length) {
                 this.nodes.modelSel.classList.add('brox-ai-hidden');
                 this.updateModelLabel();
+                this.updateModelStatus('offline');
                 return;
             }
 
@@ -475,6 +483,8 @@ if (!window.BroxAssistantLoaded) {
             this.nodes.modelSel.classList.remove('d-none');
             this.nodes.modelSel.classList.remove('brox-ai-hidden');
             this.updateModelLabel();
+
+            this.updateModelStatus(result?.source === 'fallback' ? 'offline' : 'online');
 
             this.nodes.modelSel.addEventListener('change', () => {
                 this.currentModel = this.nodes.modelSel.value;
@@ -850,6 +860,7 @@ if (!window.BroxAssistantLoaded) {
             this.isThinking = true;
             const t0 = performance.now();
             this.updateLangUI();
+            this.updateModelStatus('connecting');
             this.updateAgenticStatus('Thinking', 'নলেজ বেস চেক করছি...');
             this.markActivity();
             const typingEl = this.showTyping();
@@ -886,6 +897,7 @@ if (!window.BroxAssistantLoaded) {
                         return await this.puterFallback();
                     }
                     const msg = errData?.error || this.t('err_conn');
+                    this.updateModelStatus('offline');
                     this.addMessage('assistant', msg);
                     return;
                 }
@@ -922,18 +934,21 @@ if (!window.BroxAssistantLoaded) {
                     this.renderQuickActions();
                     this.markActivity();
                 }
+                this.updateModelStatus('online');
                 this.updateResponseMeta(msgBubble, t0);
             } catch (err) {
                 this.isThinking = false;
                 this.updateLangUI();
                 this.updateAgenticStatus(null);
                 removeTyping();
+                this.updateModelStatus('offline');
                 this.addMessage('assistant', this.t('err_conn'));
             }
         }
 
         async puterFallback() {
             this.addMessage('assistant', this.t('fallback'));
+            this.updateModelStatus('offline', 'Fallback (Puter)');
             try {
                 const puter = await loadPuter();
                 const lastMsg = this.history.filter(m => m.role === 'user').pop();
@@ -957,6 +972,26 @@ if (!window.BroxAssistantLoaded) {
             } catch (fallbackErr) {
                 this.addMessage('assistant', this.t('err_conn'));
             }
+        }
+
+        updateModelStatus(status, title = null) {
+            if (!this.nodes.modelStatusIndicator) return;
+
+            this.nodes.modelStatusIndicator.classList.remove('brox-ai-online', 'brox-ai-offline', 'brox-ai-connecting');
+
+            if (status === 'online') {
+                this.nodes.modelStatusIndicator.classList.add('brox-ai-online');
+                this.nodes.modelStatusIndicator.title = title || 'AI Online';
+                return;
+            }
+            if (status === 'offline') {
+                this.nodes.modelStatusIndicator.classList.add('brox-ai-offline');
+                this.nodes.modelStatusIndicator.title = title || 'AI Offline';
+                return;
+            }
+
+            this.nodes.modelStatusIndicator.classList.add('brox-ai-connecting');
+            this.nodes.modelStatusIndicator.title = title || 'Connecting...';
         }
 
         updateModelLabel() {

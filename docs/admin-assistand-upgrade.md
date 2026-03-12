@@ -3,6 +3,32 @@
 **Summary**
 Admin Assistant‑কে নির্ভরযোগ্য, দ্রুত এবং স্থিতিশীল করতে UI/JS/API ফ্লোতে audit‑driven fixes, reliability guards, এবং test/monitoring যোগ করা হবে। লক্ষ্য: সব core feature (model load, chat stream, file upload, context, shortcuts, log monitor) স্থায়ীভাবে ঠিকভাবে কাজ করবে।
 
+---
+
+## ✅ Recently Fixed Issues (2026-03-12)
+
+### 1. CSS Positioning Fix
+- **Issue**: Admin Assistant was appearing on the LEFT side instead of RIGHT side
+- **Root Cause**: CSS `inset: 0 !important` was overriding positioning
+- **Fix**: Changed to explicit `right: 0 !important; left: auto !important` in `public_html/ai/css/ai-style.css`
+
+### 2. Model Status Indicator
+- **Issue**: No visual indication of AI model connectivity status
+- **Fix**: Added online/offline/connecting status indicator in `public_html/ai/js/ai-admin.js`
+  - Green: Online (model connected)
+  - Red: Offline (connection failed)
+  - Yellow: Connecting (in progress)
+
+### 3. Delete Button Removal
+- **Issue**: Delete button was present next to send button in input area (unnecessary)
+- **Fix**: Removed the trash icon button from input area in `app/Views/partials/ai-assistant/admin.twig`
+
+### 4. PHP Duplicate Require Fix
+- **Issue**: Duplicate `require_once` statement in `AISystemChatController.php`
+- **Fix**: Removed duplicate line 16 that was requiring PromptLoader.php twice
+
+---
+
 **Implementation Changes**
 - **Core Reliability (JS Runtime)**
   - `ai-admin.js`‑এ boot lifecycle audit: lazy‑load, init, DOM readiness, singleton guard ভেরিফাই।

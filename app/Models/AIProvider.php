@@ -92,7 +92,7 @@ class AIProvider
 
     private function getRemoteModelsCacheTtl(string $providerName): int
     {
-        return $providerName === 'ollama' ? 60 : 21600; // 60s for Ollama, 6h default
+        return $providerName === 'ollama' ? 60 : 1800; // 60s for Ollama, 30m default
     }
 
     private function getOllamaCacheEndpoint(): string
@@ -1295,14 +1295,13 @@ class AIProvider
         if (!$forceRefresh && is_array($cache) && !empty($cache['models'])) {
             $age = time() - (int)($cache['fetched_at'] ?? 0);
             $cacheTtl = (int)($cache['ttl'] ?? $ttl);
-            if ($cacheTtl > 0 && $age < $cacheTtl) {
-                $this->lastRemoteModelsMeta = [
-                    'cached_at' => (int)($cache['fetched_at'] ?? time()),
-                    'cache_ttl' => $cacheTtl,
-                    'source' => 'cache'
-                ];
-                return $cache['models'];
-            }
+            $isFresh = ($cacheTtl > 0 && $age < $cacheTtl);
+            $this->lastRemoteModelsMeta = [
+                'cached_at' => (int)($cache['fetched_at'] ?? time()),
+                'cache_ttl' => $cacheTtl,
+                'source' => $isFresh ? 'cache' : 'stale'
+            ];
+            return $cache['models'];
         }
 
         $models = $this->fetchRemoteModelsRemote($providerName);

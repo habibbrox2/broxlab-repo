@@ -13,7 +13,6 @@ require_once __DIR__ . '/../Helpers/PromptLoader.php';
 
 // Returns a system prompt (and structured prompt set) for the given context.
 // It loads YAML/JSON prompts from system/prompts/, with fallback to DB settings.
-require_once __DIR__ . '/../Helpers/PromptLoader.php';
 
 function getSystemPromptForContext(string $context, mysqli $mysqli): string
 {

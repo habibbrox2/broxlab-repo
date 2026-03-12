@@ -469,15 +469,30 @@ if (!window.BroxAdminInstance) {
             this.puterDisabled = false;
             this.fileHandler = null;
             this.modelBarOpen = false;
+            this._providersBootstrapped = false;
+            this._providersBootstrapPromise = null;
+            this._bgModelsRefresh = null;
+            this._bgModelsRefreshToken = 0;
 
             this.initUI();
             this.bindEvents();
             this.startLogMonitor();
             this.renderHistory();
             this.updateContext();
-            this.bootstrapProviders();
 
             console.log('[Admin Copilot] Initialized with', this.history.length, 'messages');
+        }
+
+        ensureProvidersBootstrapped() {
+            if (this._providersBootstrapped) return;
+            if (this._providersBootstrapPromise) return;
+
+            this._providersBootstrapPromise = (async () => {
+                await this.bootstrapProviders();
+                this._providersBootstrapped = true;
+            })().finally(() => {
+                this._providersBootstrapPromise = null;
+            });
         }
 
         loadHistory() {
@@ -707,7 +722,75 @@ if (!window.BroxAdminInstance) {
 
             if (!hasPreferred && preferredModel) {
                 this.updateStatus('warning', 'Model not available, using default');
-                setTimeout(() => this.updateStatus('ready', statusLabel), 2000);
+                setTimeout(() => {
+                    if (this.nodes.statusText?.textContent === 'Ready (updated)') return;
+                    this.updateStatus('ready', statusLabel);
+                }, 2000);
+            }
+
+            if (!refresh && this.lastModelMeta?.cache_source === 'stale') {
+                this.refreshProviderModelsInBackground(provider, preferredModel);
+            }
+        }
+
+        async refreshProviderModelsInBackground(provider, preferredModel) {
+            if (!this.nodes.modelSel) return;
+            if (this._bgModelsRefresh?.provider === provider) return;
+
+            const token = ++this._bgModelsRefreshToken;
+            this._bgModelsRefresh = { provider, token };
+
+            try {
+                const result = await fetchModels(provider, { refresh: true });
+                if (this._bgModelsRefreshToken !== token) return;
+                if (this.currentProvider !== provider) return;
+                if (!this.nodes.modelSel) return;
+
+                if (result?.meta?.cache_source && result.meta.cache_source !== 'remote') {
+                    return;
+                }
+
+                const models = result.models || [];
+                if (!models.length) return;
+
+                const keepSelected = this.nodes.modelSel.value || this.currentModel || '';
+
+                // Rebuild select while preserving the current selection if possible
+                if (this._modelChangeHandler) {
+                    this.nodes.modelSel.removeEventListener('change', this._modelChangeHandler);
+                    this._modelChangeHandler = null;
+                }
+
+                this.nodes.modelSel.innerHTML = '';
+                const ids = new Set(models.map(m => m.id));
+
+                const preferredAvailable = preferredModel && ids.has(preferredModel);
+                const keepAvailable = keepSelected && ids.has(keepSelected);
+                const def = models.find(m => m.default);
+                const selectedId = keepAvailable
+                    ? keepSelected
+                    : (preferredAvailable ? preferredModel : (def ? def.id : models[0].id));
+
+                models.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id;
+                    const shortLabel = this.getShortModelLabel(m.id, m.name);
+                    const isMulti = Boolean(m.supports_multimodal);
+                    opt.textContent = shortLabel + (m.id.endsWith(':free') ? ' (Free)' : '') + (isMulti ? ' (Multimodal)' : '');
+                    if (m.id === selectedId) {
+                        opt.selected = true;
+                    }
+                    this.nodes.modelSel.appendChild(opt);
+                });
+
+                this.currentModel = selectedId;
+                this.lastModelMeta = result.meta || this.lastModelMeta;
+                this.updateModelLabel();
+                this.updateStatus('ready', 'Ready (updated)');
+            } finally {
+                if (this._bgModelsRefresh?.token === token) {
+                    this._bgModelsRefresh = null;
+                }
             }
         }
 
@@ -1117,7 +1200,9 @@ if (!window.BroxAdminInstance) {
             this.updateContextUI();
 
             if (this.nodes.shell.classList.contains('brox-ai-hidden')) {
+                this.nodes.shell.classList.remove('d-none');
                 this.nodes.shell.classList.remove('brox-ai-hidden');
+                this.ensureProvidersBootstrapped();
                 setTimeout(() => {
                     this.nodes.input?.focus();
                 }, 10);

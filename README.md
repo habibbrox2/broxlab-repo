@@ -126,7 +126,20 @@ Deployment steps depend on your hosting provider. Common steps include:
 
 ---
 
-## 🛡 Security Notes
+## 🐛 Recent Bug Fixes & Improvements
+
+### Admin Assistant UI
+- Fixed CSS positioning issue (was appearing on left instead of right side)
+- Added AI model online/offline/connecting status indicator
+- Removed unnecessary delete button from input area
+
+### Backend
+- Fixed duplicate require_once statement in AISystemChatController.php
+- Code reviewed for security vulnerabilities (SQL injection, XSS protection verified)
+
+---
+
+## � Security Notes
 
 - Always keep dependencies up to date
 - Protect `.env` / config files from public access
