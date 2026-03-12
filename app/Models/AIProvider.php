@@ -8,6 +8,9 @@
 class AIProvider
 {
     private $mysqli;
+    private $lastRemoteModelsMeta = null;
+
+    private const REMOTE_MODELS_CACHE_DIR = 'storage/cache/ai-models';
 
     // Provider configurations
     private const PROVIDER_CONFIGS = [
@@ -75,6 +78,88 @@ class AIProvider
     public function __construct(mysqli $mysqli)
     {
         $this->mysqli = $mysqli;
+    }
+
+    private function getRemoteModelsCacheDir(): string
+    {
+        $root = dirname(__DIR__, 2);
+        $dir = $root . DIRECTORY_SEPARATOR . self::REMOTE_MODELS_CACHE_DIR;
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0777, true);
+        }
+        return $dir;
+    }
+
+    private function getRemoteModelsCacheTtl(string $providerName): int
+    {
+        return $providerName === 'ollama' ? 60 : 21600; // 60s for Ollama, 6h default
+    }
+
+    private function getOllamaCacheEndpoint(): string
+    {
+        $provider = $this->getByName('ollama');
+        $endpoint = $provider['api_endpoint']
+            ?? (self::getProviderConfig('ollama')['endpoint'] ?? '');
+        $endpoint = rtrim((string)$endpoint, '/');
+        $envHost = getenv('OLLAMA_HOST') ?: getenv('OLLAMA_BASE_URL') ?: '';
+        if (!empty($envHost)) {
+            $endpoint = rtrim($envHost, '/');
+        }
+        return $endpoint !== '' ? $endpoint : 'http://localhost:11434';
+    }
+
+    private function buildRemoteModelsCacheKey(string $providerName): string
+    {
+        $context = $providerName;
+        if ($providerName === 'ollama') {
+            $context .= '|' . $this->getOllamaCacheEndpoint();
+        } elseif (in_array($providerName, ['openai', 'openrouter', 'fireworks', 'huggingface', 'kilo'], true)) {
+            $apiKey = $this->getAPIKey($providerName);
+            if (!empty($apiKey)) {
+                $context .= '|' . $apiKey;
+            }
+        }
+        return sha1($context);
+    }
+
+    private function getRemoteModelsCachePath(string $providerName): string
+    {
+        $dir = $this->getRemoteModelsCacheDir();
+        $key = $this->buildRemoteModelsCacheKey($providerName);
+        return $dir . DIRECTORY_SEPARATOR . $providerName . '-' . $key . '.json';
+    }
+
+    private function readRemoteModelsCache(string $providerName): ?array
+    {
+        $path = $this->getRemoteModelsCachePath($providerName);
+        if (!file_exists($path)) {
+            return null;
+        }
+        $raw = @file_get_contents($path);
+        if ($raw === false || $raw === '') {
+            return null;
+        }
+        $data = json_decode($raw, true);
+        if (!is_array($data)) {
+            return null;
+        }
+        return $data;
+    }
+
+    private function writeRemoteModelsCache(string $providerName, array $models, int $ttl): void
+    {
+        $path = $this->getRemoteModelsCachePath($providerName);
+        $payload = [
+            'fetched_at' => time(),
+            'ttl' => $ttl,
+            'models' => $models
+        ];
+        @file_put_contents($path, json_encode($payload));
+    }
+
+    public function getLastRemoteModelsMeta(): ?array
+    {
+        return $this->lastRemoteModelsMeta;
     }
 
     /**
@@ -713,12 +798,17 @@ class AIProvider
         // Ensure each message has role and content
         $formattedMessages = [];
         foreach ($messages as $msg) {
-            if (is_array($msg) && isset($msg['role']) && isset($msg['content'])) {
-                $formattedMessages[] = [
-                    'role' => $msg['role'],
-                    'content' => is_array($msg['content']) ? json_encode($msg['content']) : $msg['content']
-                ];
+            if (!is_array($msg) || !isset($msg['role']) || !array_key_exists('content', $msg)) {
+                continue;
             }
+            $content = $this->normalizeMessageContentForProvider($providerName, $msg['content']);
+            if ($content === '' || $content === null) {
+                continue;
+            }
+            $formattedMessages[] = [
+                'role' => $msg['role'],
+                'content' => $content
+            ];
         }
 
         // If no valid messages, fallback to empty user message
@@ -754,6 +844,148 @@ class AIProvider
         }
 
         return $request;
+    }
+
+    /**
+     * Determine whether a provider supports rich/multimodal content.
+     *
+     * This is driven by:
+     * 1) Explicit provider config flags (supports_multimodal/supports_rich_content)
+     * 2) Provider row extra_settings overrides (for administrator toggles)
+     * 3) Known provider defaults (internal hardcoded list)
+     */
+    public function supportsRichContent(string $providerName, ?array $providerRow = null): bool
+    {
+        // Check for explicit provider row override (stored in extra_settings)
+        if (!is_array($providerRow)) {
+            $providerRow = $this->getByName($providerName);
+        }
+        if (is_array($providerRow)) {
+            $extra = $providerRow['extra_settings'] ?? [];
+            if (!is_array($extra)) {
+                $extra = [];
+            }
+            if (!empty($extra['supports_multimodal']) || !empty($extra['supports_rich_content'])) {
+                return true;
+            }
+        }
+
+        $config = self::getProviderConfig($providerName);
+        // Explicit config flags (useful for custom providers)
+        if (!empty($config['supports_multimodal']) || !empty($config['supports_rich_content'])) {
+            return true;
+        }
+        // OpenAI-like response formatting implies rich content support
+        if (!empty($config['uses_openai_format'])) {
+            return true;
+        }
+        return in_array($providerName, ['openai', 'openrouter', 'ollama', 'fireworks', 'kilo'], true);
+    }
+
+    /**
+     * Determine whether a specific model is considered multimodal.
+     *
+     * This allows per-model overrides stored in the provider's extra_settings.model_multimodal map.
+     */
+    public function modelSupportsMultimodal(string $providerName, string $modelId): bool
+    {
+        $provider = $this->getByName($providerName);
+        if (!$provider) {
+            return false;
+        }
+
+        $extra = $provider['extra_settings'] ?? [];
+        if (!is_array($extra)) {
+            $extra = [];
+        }
+
+        // Per-model overrides take precedence
+        if (!empty($extra['model_multimodal']) && is_array($extra['model_multimodal'])) {
+            if (array_key_exists($modelId, $extra['model_multimodal'])) {
+                return (bool)$extra['model_multimodal'][$modelId];
+            }
+        }
+
+        // Provider-level multimodal support
+        if ($this->supportsRichContent($providerName, $provider)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function normalizeMessageContentForProvider(string $providerName, $content)
+    {
+        if (!is_array($content)) {
+            return is_string($content) ? $content : '';
+        }
+
+        $parts = [];
+        foreach ($content as $part) {
+            if (!is_array($part)) {
+                continue;
+            }
+            $type = $part['type'] ?? '';
+            if ($type === 'text') {
+                $text = $part['text'] ?? '';
+                if (!is_string($text) || trim($text) === '') {
+                    continue;
+                }
+                $parts[] = ['type' => 'text', 'text' => $text];
+            } elseif ($type === 'image_url') {
+                $image = $part['image_url'] ?? [];
+                $url = $image['url'] ?? '';
+                if (!is_string($url) || trim($url) === '') {
+                    continue;
+                }
+                $artifact = ['url' => trim($url)];
+                if (!empty($image['name']) && is_string($image['name'])) {
+                    $artifact['name'] = trim($image['name']);
+                }
+                if (!empty($image['mime']) && is_string($image['mime'])) {
+                    $artifact['mime'] = trim($image['mime']);
+                }
+                if (isset($image['size']) && (is_int($image['size']) || is_numeric($image['size']))) {
+                    $artifact['size'] = (int)$image['size'];
+                }
+                $parts[] = ['type' => 'image_url', 'image_url' => $artifact];
+            }
+        }
+
+        if (empty($parts)) {
+            return '';
+        }
+
+        if ($this->supportsRichContent($providerName)) {
+            return $parts;
+        }
+
+        $lines = [];
+        foreach ($parts as $part) {
+            if ($part['type'] === 'text') {
+                $lines[] = (string)$part['text'];
+            } elseif ($part['type'] === 'image_url') {
+                $image = $part['image_url'] ?? [];
+                $url = $image['url'] ?? '';
+                $label = 'Image';
+                if (!empty($image['name']) && is_string($image['name'])) {
+                    $label = $image['name'];
+                }
+                $meta = [];
+                if (!empty($image['mime'])) {
+                    $meta[] = $image['mime'];
+                }
+                if (!empty($image['size'])) {
+                    $meta[] = $image['size'] . ' bytes';
+                }
+                $line = $label . ': ' . $url;
+                if (!empty($meta)) {
+                    $line .= ' (' . implode(', ', $meta) . ')';
+                }
+                $lines[] = $line;
+            }
+        }
+        return trim(implode("\n", array_filter($lines, fn($l) => $l !== '')));
     }
 
     /**
@@ -1009,6 +1241,9 @@ class AIProvider
 
         $row['supported_models_select'] = $this->buildSelectSafeModelLabels($row['supported_models']);
 
+        // Determine multimodal support (can be overridden per-provider via extra_settings)
+        $row['supports_multimodal'] = $this->supportsRichContent($row['provider_name'], $row);
+
         // Check if API key is set and show masked preview
         $apiKey = $this->getAPIKey($row['provider_name']);
         $row['has_api_key'] = !empty($apiKey);
@@ -1052,7 +1287,49 @@ class AIProvider
      * @param string $providerName
      * @return array<string,string> mapping model id =&gt; display name
      */
-    public function fetchRemoteModels(string $providerName): array
+    public function fetchRemoteModels(string $providerName, bool $forceRefresh = false): array
+    {
+        $ttl = $this->getRemoteModelsCacheTtl($providerName);
+        $cache = $this->readRemoteModelsCache($providerName);
+
+        if (!$forceRefresh && is_array($cache) && !empty($cache['models'])) {
+            $age = time() - (int)($cache['fetched_at'] ?? 0);
+            $cacheTtl = (int)($cache['ttl'] ?? $ttl);
+            if ($cacheTtl > 0 && $age < $cacheTtl) {
+                $this->lastRemoteModelsMeta = [
+                    'cached_at' => (int)($cache['fetched_at'] ?? time()),
+                    'cache_ttl' => $cacheTtl,
+                    'source' => 'cache'
+                ];
+                return $cache['models'];
+            }
+        }
+
+        $models = $this->fetchRemoteModelsRemote($providerName);
+        if (!empty($models)) {
+            $this->writeRemoteModelsCache($providerName, $models, $ttl);
+            $this->lastRemoteModelsMeta = [
+                'cached_at' => time(),
+                'cache_ttl' => $ttl,
+                'source' => 'remote'
+            ];
+            return $models;
+        }
+
+        if (is_array($cache) && !empty($cache['models'])) {
+            $this->lastRemoteModelsMeta = [
+                'cached_at' => (int)($cache['fetched_at'] ?? time()),
+                'cache_ttl' => (int)($cache['ttl'] ?? $ttl),
+                'source' => 'stale'
+            ];
+            return $cache['models'];
+        }
+
+        $this->lastRemoteModelsMeta = null;
+        return [];
+    }
+
+    private function fetchRemoteModelsRemote(string $providerName): array
     {
         if ($providerName === 'kilo') {
             $url = 'https://api.kilo.ai/api/gateway/models';
@@ -1671,11 +1948,11 @@ class AIProvider
      * @param string $providerName Provider name (e.g., 'ollama', 'openrouter', 'openai')
      * @param string $model Model identifier
      * @param string|array $prompt Either a string prompt or an array of message objects
-     * @param array $options Additional options (max_tokens, temperature, etc.)
      * @param callable $onChunk Callback function for each streaming chunk
+     * @param array $options Additional options (max_tokens, temperature, etc.)
      * @return array Response metadata
      */
-    public function streamAPI(string $providerName, string $model, $prompt, array $options = [], callable $onChunk): array
+    public function streamAPI(string $providerName, string $model, $prompt, callable $onChunk, array $options = []): array
     {
         // Validate prompt is either string or array
         if (!is_string($prompt) && !is_array($prompt)) {

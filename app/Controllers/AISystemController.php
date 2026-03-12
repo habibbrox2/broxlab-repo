@@ -11,6 +11,7 @@ require_once __DIR__ . '/../Models/AppSettings.php';
 require_once __DIR__ . '/../Helpers/PromptLoader.php';
 require_once __DIR__ . '/../Models/AIChatModel.php';
 require_once __DIR__ . '/../Models/AuthManager.php';
+require_once __DIR__ . '/../Models/UploadService.php';
 
 function aiChatSendJson(array $payload, int $status = 200): void
 {
@@ -53,6 +54,30 @@ function aiChatStreamContent(string $content): void
     flush();
 }
 
+function aiChatExtractText($content): string
+{
+    if (is_string($content)) {
+        return trim($content);
+    }
+    if (!is_array($content)) {
+        return '';
+    }
+    $parts = [];
+    foreach ($content as $part) {
+        if (!is_array($part)) {
+            continue;
+        }
+        if (($part['type'] ?? '') !== 'text') {
+            continue;
+        }
+        $text = $part['text'] ?? '';
+        if (is_string($text) && trim($text) !== '') {
+            $parts[] = trim($text);
+        }
+    }
+    return trim(implode("\n", $parts));
+}
+
 function aiChatNormalizeMessages($messages, int $maxMessages, int $maxChars, ?string &$error = null): array
 {
     if (!is_array($messages)) {
@@ -70,19 +95,69 @@ function aiChatNormalizeMessages($messages, int $maxMessages, int $maxChars, ?st
             continue;
         }
         $content = $msg['content'] ?? '';
-        if (!is_string($content)) {
+        $normalizedContent = null;
+        $contentLen = 0;
+        if (is_string($content)) {
+            $content = trim($content);
+            if ($content === '') {
+                continue;
+            }
+            $normalizedContent = $content;
+            $contentLen = function_exists('mb_strlen') ? mb_strlen($content, 'UTF-8') : strlen($content);
+        } elseif (is_array($content)) {
+            $parts = [];
+            $textLen = 0;
+            foreach ($content as $part) {
+                if (!is_array($part)) {
+                    continue;
+                }
+                $type = $part['type'] ?? '';
+                if ($type === 'text') {
+                    $text = $part['text'] ?? '';
+                    if (!is_string($text)) {
+                        continue;
+                    }
+                    $text = trim($text);
+                    if ($text === '') {
+                        continue;
+                    }
+                    $parts[] = ['type' => 'text', 'text' => $text];
+                    $textLen += function_exists('mb_strlen') ? mb_strlen($text, 'UTF-8') : strlen($text);
+                    continue;
+                }
+                if ($type === 'image_url') {
+                    $image = $part['image_url'] ?? [];
+                    $url = $image['url'] ?? '';
+                    if (!is_string($url) || trim($url) === '') {
+                        continue;
+                    }
+                    $artifact = ['url' => trim($url)];
+                    if (!empty($image['name']) && is_string($image['name'])) {
+                        $artifact['name'] = trim($image['name']);
+                    }
+                    if (!empty($image['mime']) && is_string($image['mime'])) {
+                        $artifact['mime'] = trim($image['mime']);
+                    }
+                    if (isset($image['size']) && (is_int($image['size']) || is_numeric($image['size']))) {
+                        $artifact['size'] = (int)$image['size'];
+                    }
+                    $parts[] = ['type' => 'image_url', 'image_url' => $artifact];
+                }
+            }
+            if (empty($parts)) {
+                continue;
+            }
+            $normalizedContent = $parts;
+            $contentLen = $textLen;
+        } else {
             continue;
         }
-        $content = trim($content);
-        if ($content === '') {
-            continue;
-        }
-        $len = function_exists('mb_strlen') ? mb_strlen($content, 'UTF-8') : strlen($content);
+        $len = $contentLen;
         if ($len > $maxChars) {
             $error = 'Message too long';
             return [];
         }
-        $out[] = ['role' => $role, 'content' => $content];
+        $out[] = ['role' => $role, 'content' => $normalizedContent];
     }
 
     if (empty($out)) {
@@ -101,10 +176,104 @@ function aiChatLastUserMessage(array $messages): string
 {
     for ($i = count($messages) - 1; $i >= 0; $i--) {
         if (($messages[$i]['role'] ?? '') === 'user') {
-            return (string)($messages[$i]['content'] ?? '');
+            return aiChatExtractText($messages[$i]['content'] ?? '');
         }
     }
     return '';
+}
+
+function aiChatExtractImageReferences(array $messages): array
+{
+    $refs = [];
+    foreach ($messages as $msg) {
+        if (!is_array($msg) || empty($msg['content']) || !is_array($msg['content'])) {
+            continue;
+        }
+        foreach ($msg['content'] as $part) {
+            if (!is_array($part) || ($part['type'] ?? '') !== 'image_url') {
+                continue;
+            }
+            $image = $part['image_url'] ?? [];
+            $url = $image['url'] ?? null;
+            if (!$url) {
+                continue;
+            }
+            $refs[] = [
+                'url' => $url,
+                'name' => $image['name'] ?? null,
+                'mime' => $image['mime'] ?? null,
+                'size' => isset($image['size']) ? (int)$image['size'] : null
+            ];
+        }
+    }
+    return $refs;
+}
+
+function aiChatMergeImageReferences(array $existing, array $incoming): array
+{
+    $merged = [];
+    $seen = [];
+    foreach (array_merge($existing, $incoming) as $ref) {
+        if (!is_array($ref) || empty($ref['url'])) {
+            continue;
+        }
+        $url = (string)$ref['url'];
+        if (isset($seen[$url])) {
+            continue;
+        }
+        $seen[$url] = true;
+        $merged[] = [
+            'url' => $url,
+            'name' => $ref['name'] ?? null,
+            'mime' => $ref['mime'] ?? null,
+            'size' => isset($ref['size']) ? (int)$ref['size'] : null
+        ];
+    }
+    return $merged;
+}
+
+function aiChatHasImageContent(array $messages): bool
+{
+    foreach ($messages as $msg) {
+        if (!is_array($msg) || empty($msg['content']) || !is_array($msg['content'])) {
+            continue;
+        }
+        foreach ($msg['content'] as $part) {
+            if (!is_array($part) || ($part['type'] ?? '') !== 'image_url') {
+                continue;
+            }
+            $url = $part['image_url']['url'] ?? null;
+            if (is_string($url) && trim($url) !== '') {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function aiChatAppendImageContext(string $prompt, array $imageRefs): string
+{
+    if (empty($imageRefs)) {
+        return $prompt;
+    }
+
+    $lines = ['\n\n[IMAGE CONTEXT]'];
+    foreach ($imageRefs as $img) {
+        $line = '- ' . ($img['name'] ? ($img['name'] . ': ') : 'Image: ') . ($img['url'] ?? '');
+        $metaParts = [];
+        if (!empty($img['mime'])) {
+            $metaParts[] = $img['mime'];
+        }
+        if (!empty($img['size'])) {
+            $metaParts[] = $img['size'] . ' bytes';
+        }
+        if (!empty($metaParts)) {
+            $line .= ' (' . implode(', ', $metaParts) . ')';
+        }
+        $lines[] = $line;
+    }
+
+    return $prompt . '\n' . implode("\n", $lines);
 }
 
 function aiChatSelectFallbackProvider(AIProvider $aiProvider, string $currentProvider, array $settings): ?array
@@ -228,6 +397,7 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     $aiProvider = new AIProvider($mysqli);
     $chatModel = new AIChatModel($mysqli);
     $providers = $aiProvider->getActive();
+    $settings = $aiProvider->getSettings();
 
     $maxMessages = $isAdmin ? 40 : 20;
     $maxChars = $isAdmin ? 8000 : 4000;
@@ -237,6 +407,69 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         aiChatSendJson(['success' => false, 'error' => $error], 400);
         return;
     }
+
+    // Track image context across a session so the assistant can reference previous images
+    $sessionImageKey = null;
+    if ($isAdmin) {
+        $userId = AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null);
+        if ($userId) {
+            $sessionImageKey = 'user_' . (int)$userId;
+        }
+    } else {
+        $visitorToken = $input['visitorToken'] ?? null;
+        if ($visitorToken) {
+            $sessionImageKey = 'visitor_' . (string)$visitorToken;
+        }
+    }
+
+    // Determine retention threshold (number of messages before clearing stored images)
+    $maxMessages = (int)($settings['image_context_max_messages'] ?? 10);
+    if ($maxMessages <= 0) {
+        $maxMessages = 10;
+    }
+
+    $imageRefs = aiChatExtractImageReferences($messages);
+    if ($sessionImageKey) {
+        if (!isset($_SESSION['ai_image_context']) || !is_array($_SESSION['ai_image_context'])) {
+            $_SESSION['ai_image_context'] = [];
+        }
+
+        $stored = $_SESSION['ai_image_context'][$sessionImageKey] ?? ['images' => [], 'message_count' => 0];
+        if (!is_array($stored)) {
+            $stored = ['images' => [], 'message_count' => 0];
+        }
+
+        $storedImages = $stored['images'] ?? [];
+        $storedCount = (int)($stored['message_count'] ?? 0);
+
+        // Merge new image refs into stored images
+        $merged = aiChatMergeImageReferences($storedImages, $imageRefs);
+        // Keep only the most recent 10 images
+        if (count($merged) > 10) {
+            $merged = array_slice($merged, -10);
+        }
+
+        // Only increment message count when the user contributes new input (text or images).
+        // This prevents idle polling or system prompts from counting toward image context retention.
+        $lastUserMessage = aiChatLastUserMessage($messages);
+        if ($lastUserMessage !== '' || !empty($imageRefs)) {
+            $storedCount++;
+        }
+
+        // Clear context when threshold exceeded
+        if ($storedCount >= $maxMessages) {
+            $merged = [];
+            $storedCount = 0;
+        }
+
+        $_SESSION['ai_image_context'][$sessionImageKey] = [
+            'images' => $merged,
+            'message_count' => $storedCount
+        ];
+        $imageRefs = $merged;
+    }
+
+    $hasImageContent = !empty($imageRefs);
 
     $stream = !empty($input['stream']);
     $contextType = $isAdmin ? 'admin' : 'public';
@@ -260,9 +493,13 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         }
     }
 
+    // Add image context to system prompt so non-multimodal providers are aware of visual inputs
+    if (!empty($imageRefs)) {
+        $systemPrompt = aiChatAppendImageContext($systemPrompt, $imageRefs);
+    }
+
     array_unshift($messages, ['role' => 'system', 'content' => $systemPrompt]);
 
-    $settings = $aiProvider->getSettings();
     $effective = $aiProvider->getEffectiveProvider();
     $provider = $effective['provider_name'] ?? 'openrouter';
     $model = $settings['default_model'] ?? 'openrouter/auto';
@@ -353,6 +590,34 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         $orderedProviders[] = $name;
     }
 
+    // Determine multimodal capability per provider/model when images are present.
+    $providerModelMultimodal = [];
+    if (!empty($hasImageContent)) {
+        foreach ($orderedProviders as $name) {
+            $selectedModel = ($name === $provider) ? $model : '';
+            $resolvedModel = aiSystemResolveModel(
+                $aiProvider,
+                $name,
+                (string)$selectedModel,
+                $providers,
+                (string)($settings['default_model'] ?? '')
+            );
+            $providerModelMultimodal[$name] = $resolvedModel
+                ? $aiProvider->modelSupportsMultimodal($name, $resolvedModel)
+                : false;
+        }
+
+        // Prefer providers/models that support multimodal content.
+        usort($orderedProviders, function ($a, $b) use ($providerModelMultimodal) {
+            $aMulti = $providerModelMultimodal[$a] ?? false;
+            $bMulti = $providerModelMultimodal[$b] ?? false;
+            if ($aMulti === $bMulti) {
+                return 0;
+            }
+            return $aMulti ? -1 : 1;
+        });
+    }
+
     $hasUsableProvider = false;
     $lastError = null;
     $primaryProvider = $provider;
@@ -434,7 +699,8 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         'context' => $contextType,
         'latency_ms' => $latencyMs,
         'fallback_used' => $fallbackUsed,
-        'stream' => (bool)$stream
+        'stream' => (bool)$stream,
+        'has_image_content' => (bool)$hasImageContent
     ]);
 
     if ($stream) {
@@ -664,6 +930,7 @@ $router->post('/admin/ai-system/save', ['middleware' => ['auth', 'admin_only', '
         'content_enhancement_enabled' => isset($_POST['content_enhancement_enabled']),
         'auto_publish_ai_content' => isset($_POST['auto_publish_ai_content']),
         'default_author' => $_POST['default_author'] ?? 'BroxBhai AI',
+        'image_context_max_messages' => (int)($_POST['image_context_max_messages'] ?? 10),
         // New separate prompts for Admin and Public assistants
         'admin_system_prompt' => $_POST['admin_system_prompt'] ?? '',
         'public_system_prompt' => $_POST['public_system_prompt'] ?? '',
@@ -790,6 +1057,46 @@ $router->post('/admin/ai-system/update-provider', ['middleware' => ['auth', 'adm
                 echo json_encode(['success' => false, 'error' => 'Provider not found']);
             }
             break;
+        case 'set_multimodal':
+            $provider = $aiProvider->getById($providerId);
+            if (!$provider) {
+                echo json_encode(['success' => false, 'error' => 'Provider not found']);
+                break;
+            }
+            $enabled = !empty($payload['enabled']);
+            $extra = $provider['extra_settings'] ?? [];
+            if (!is_array($extra)) {
+                $extra = [];
+            }
+            $extra['supports_multimodal'] = $enabled;
+            $ok = $aiProvider->update($providerId, ['extra_settings' => $extra]);
+            echo json_encode(['success' => $ok, 'supports_multimodal' => $enabled]);
+            break;
+
+        case 'set_model_multimodal':
+            $provider = $aiProvider->getById($providerId);
+            if (!$provider) {
+                echo json_encode(['success' => false, 'error' => 'Provider not found']);
+                break;
+            }
+            $modelId = trim((string)($payload['model_id'] ?? ''));
+            if ($modelId === '') {
+                echo json_encode(['success' => false, 'error' => 'Model ID is required']);
+                break;
+            }
+            $enabled = !empty($payload['enabled']);
+            $extra = $provider['extra_settings'] ?? [];
+            if (!is_array($extra)) {
+                $extra = [];
+            }
+            if (!isset($extra['model_multimodal']) || !is_array($extra['model_multimodal'])) {
+                $extra['model_multimodal'] = [];
+            }
+            $extra['model_multimodal'][$modelId] = $enabled;
+            $ok = $aiProvider->update($providerId, ['extra_settings' => $extra]);
+            echo json_encode(['success' => $ok, 'model_id' => $modelId, 'enabled' => $enabled]);
+            break;
+
         case 'update_config':
             $provider = $aiProvider->getById($providerId);
             if (!$provider) {
@@ -970,11 +1277,12 @@ $router->get('/api/ai/default-provider', ['middleware' => ['auth', 'admin_only']
 $router->get('/api/ai/models', function () use ($mysqli) {
     $providerName = $_GET['provider'] ?? '';
     $scope = $_GET['scope'] ?? '';
+    $forceRefresh = !empty($_GET['refresh']);
     $aiProvider = new AIProvider($mysqli);
 
     header('Content-Type: application/json');
 
-    if ($providerName === 'ollama' || $scope === 'admin') {
+    if ($providerName === 'ollama' || $scope === 'admin' || $forceRefresh) {
         if (
             !run_middleware('auth', ['method' => 'GET', 'uri' => '/api/ai/models'])
             || !run_middleware('admin_only', ['method' => 'GET', 'uri' => '/api/ai/models'])
@@ -990,6 +1298,7 @@ $router->get('/api/ai/models', function () use ($mysqli) {
 
     if (!$providerName) {
         $providers = [];
+        $providerMeta = [];
         foreach ($aiProvider->getActive() as $provider) {
             $name = $provider['provider_name'] ?? '';
             if ($name === '') {
@@ -1015,11 +1324,15 @@ $router->get('/api/ai/models', function () use ($mysqli) {
             }
 
             $providers[$name] = $list;
+            $providerMeta[$name] = [
+                'supports_multimodal' => !empty($provider['supports_multimodal'])
+            ];
         }
 
         echo json_encode([
             'success' => true,
-            'providers' => $providers
+            'providers' => $providers,
+            'provider_meta' => $providerMeta
         ]);
         return;
     }
@@ -1038,7 +1351,7 @@ $router->get('/api/ai/models', function () use ($mysqli) {
 
     // OpenRouter / OpenAI / Fireworks / Hugging Face / Ollama / Kilo can optionally return remote list when configured
     if (in_array($providerName, ['openrouter', 'openai', 'fireworks', 'huggingface', 'ollama', 'kilo'], true)) {
-        $remote = $aiProvider->fetchRemoteModels($providerName);
+        $remote = $aiProvider->fetchRemoteModels($providerName, $forceRefresh);
         if (!empty($remote)) {
             $models = $remote;
         }
@@ -1054,7 +1367,8 @@ $router->get('/api/ai/models', function () use ($mysqli) {
         $list[] = [
             'id' => (string)$id,
             'name' => (string)$label,
-            'default' => ($defaultModel !== '' && $defaultModel === (string)$id)
+            'default' => ($defaultModel !== '' && $defaultModel === (string)$id),
+            'supports_multimodal' => $aiProvider->modelSupportsMultimodal($providerName, (string)$id)
         ];
     }
 
@@ -1086,7 +1400,17 @@ $router->get('/api/ai/models', function () use ($mysqli) {
         $list[0]['default'] = true;
     }
 
-    echo json_encode(['success' => true, 'models' => $list]);
+    $payload = ['success' => true, 'models' => $list];
+    $meta = $aiProvider->getLastRemoteModelsMeta();
+    if (is_array($meta) && isset($meta['cached_at'], $meta['cache_ttl'])) {
+        $payload['cached_at'] = (int)$meta['cached_at'];
+        $payload['cache_ttl'] = (int)$meta['cache_ttl'];
+        if (!empty($meta['source'])) {
+            $payload['cache_source'] = (string)$meta['source'];
+        }
+    }
+
+    echo json_encode($payload);
 });
 
 // POST /api/ai/chat (Public assistant)
@@ -1104,6 +1428,70 @@ $router->post('/api/ai/chat', function () use ($mysqli) {
     }
 
     aiChatHandleRequest($input, $mysqli, false, false);
+});
+
+// POST /api/ai/clear-image-context
+$router->post('/api/ai/clear-image-context', function () use ($mysqli) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($input)) {
+        $input = [];
+    }
+
+    $sessionKey = null;
+    if (!empty($input['visitorToken'])) {
+        $sessionKey = 'visitor_' . (string)$input['visitorToken'];
+    } else {
+        $userId = AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null);
+        if ($userId) {
+            $sessionKey = 'user_' . (int)$userId;
+        }
+    }
+
+    if ($sessionKey && isset($_SESSION['ai_image_context'][$sessionKey])) {
+        unset($_SESSION['ai_image_context'][$sessionKey]);
+    }
+
+    header('Content-Type: application/json');
+    echo json_encode(['success' => true]);
+});
+
+// POST /api/admin/ai/upload (Admin-only image upload for copilot)
+$router->post('/api/admin/ai/upload', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    if (empty($_FILES['file']) || !is_array($_FILES['file'])) {
+        aiChatSendJson(['success' => false, 'error' => 'No file uploaded'], 400);
+        return;
+    }
+    $file = $_FILES['file'];
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        aiChatSendJson(['success' => false, 'error' => 'Upload failed'], 400);
+        return;
+    }
+
+    if (!class_exists('UploadService')) {
+        aiChatSendJson(['success' => false, 'error' => 'Upload service unavailable'], 500);
+        return;
+    }
+
+    $userId = 0;
+    if (isset($_SESSION['user_id'])) {
+        $userId = (int)$_SESSION['user_id'];
+    } elseif (!empty($_SESSION['auth_user_id'])) {
+        $userId = (int)$_SESSION['auth_user_id'];
+    }
+
+    $uploadService = new UploadService($mysqli, $userId);
+    $result = $uploadService->upload($file, 'ai_upload', ['preserve_name' => true]);
+    if (empty($result['success'])) {
+        aiChatSendJson(['success' => false, 'error' => $result['error'] ?? 'Upload failed'], 400);
+        return;
+    }
+
+    aiChatSendJson([
+        'success' => true,
+        'url' => $result['url'] ?? '',
+        'size' => $result['size'] ?? ($file['size'] ?? 0),
+        'mime' => $file['type'] ?? ''
+    ]);
 });
 
 // POST /api/admin/ai/chat (Admin-only)

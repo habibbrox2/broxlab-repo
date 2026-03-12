@@ -159,7 +159,6 @@ if (!window.BroxAssistantLoaded) {
             if (this.nodes.btn) {
                 this.bindEvents();
                 this.initSpeechRecognition();
-                this.initFileAttachment();
                 this.renderInitialState();
                 this.bootstrapFrontendSettings();
             }
@@ -370,6 +369,15 @@ if (!window.BroxAssistantLoaded) {
             this.showTopicStep();
             this.renderHistorySidebar();
             this.updateSuggestions();
+
+            // Clear server-side image context for this session, since it is being reset.
+            fetch('/api/ai/clear-image-context', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ visitorToken: this.visitorToken })
+            }).catch(() => {
+                // non-critical
+            });
         }
 
         // ── Sidebar & History ─────────────────────────────────────────────────────
@@ -449,7 +457,8 @@ if (!window.BroxAssistantLoaded) {
             models.forEach(m => {
                 const opt = document.createElement('option');
                 opt.value = m.id;
-                opt.textContent = m.name + (m.id.endsWith(':free') ? ' (Free)' : '');
+                const shortLabel = this.mapModelLabel(m.id, m.name);
+                opt.textContent = shortLabel + (m.id.endsWith(':free') ? ' (Free)' : '');
                 if (preferredModel && preferredModel === m.id) {
                     opt.selected = true;
                     hasPreferred = true;
@@ -528,67 +537,6 @@ if (!window.BroxAssistantLoaded) {
                 this.recognition.start();
                 if (voiceMicBtn) voiceMicBtn.classList.add('brox-ai-recording');
             }
-        }
-
-        // ── File Attachment ───────────────────────────────────────────────────
-        initFileAttachment() {
-            const attachBtn = document.querySelector('.brox-ai-tool-btn[title="Attach Files"]');
-            if (!attachBtn) return;
-
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.accept = 'image/*,.pdf,.doc,.docx,.txt';
-            fileInput.style.display = 'none';
-            document.body.appendChild(fileInput);
-
-            attachBtn.disabled = false;
-            attachBtn.onclick = () => fileInput.click();
-
-            fileInput.onchange = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                if (file.size > 5 * 1024 * 1024) {
-                    alert(this.lang === 'bn' ? 'ফাইলের আকার ৫MB এর বেশি হতে পারবে না।' : 'File size must be less than 5MB.');
-                    return;
-                }
-                this.addFileMessage(file);
-                fileInput.value = '';
-            };
-        }
-
-        addFileMessage(file) {
-            if (!this.nodes.body) return;
-            const msg = document.createElement('div');
-            msg.className = 'brox-ai-msg brox-ai-user';
-            const content = document.createElement('div');
-            content.className = 'brox-ai-msg-content';
-            const attachment = document.createElement('div');
-            attachment.className = 'brox-ai-file-attachment';
-            const icon = document.createElement('i');
-            icon.className = 'bi bi-file-earmark';
-            const name = document.createElement('span');
-            name.textContent = file.name;
-            const size = document.createElement('small');
-            size.textContent = this.formatFileSize(file.size);
-            attachment.appendChild(icon);
-            attachment.appendChild(name);
-            attachment.appendChild(size);
-            content.appendChild(attachment);
-            msg.appendChild(content);
-            const meta = document.createElement('div');
-            meta.className = 'brox-ai-msg-meta';
-            meta.textContent = new Date().toLocaleTimeString(this.lang === 'bn' ? 'bn-BD' : 'en-US', { hour: '2-digit', minute: '2-digit' });
-            msg.appendChild(meta);
-            this.nodes.body.appendChild(msg);
-            this.nodes.body.scrollTop = this.nodes.body.scrollHeight;
-            this.history.push({ role: 'user', content: '[File: ' + file.name + ']', timestamp: new Date().toISOString(), isFile: true });
-            this.saveHistory();
-        }
-
-        formatFileSize(bytes) {
-            if (bytes < 1024) return bytes + ' B';
-            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
         }
 
         // ── Events ────────────────────────────────────────────────────────────────
@@ -719,6 +667,15 @@ if (!window.BroxAssistantLoaded) {
             if (!name) { alert(this.t('err_name')); return; }
             const email = this.nodes.prechatInputs.email?.value.trim() || '';
             const phone = this.nodes.prechatInputs.mobile?.value.trim() || '';
+
+            // Clear any cached image context when starting a fresh chat
+            fetch('/api/ai/clear-image-context', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ visitorToken: this.visitorToken })
+            }).catch(() => {
+                // non-critical
+            });
 
             // Final validation
             if (email && !validateEmail(email)) {
@@ -891,6 +848,7 @@ if (!window.BroxAssistantLoaded) {
 
         async getAIResponse() {
             this.isThinking = true;
+            const t0 = performance.now();
             this.updateLangUI();
             this.updateAgenticStatus('Thinking', 'নলেজ বেস চেক করছি...');
             this.markActivity();
@@ -964,6 +922,7 @@ if (!window.BroxAssistantLoaded) {
                     this.renderQuickActions();
                     this.markActivity();
                 }
+                this.updateResponseMeta(msgBubble, t0);
             } catch (err) {
                 this.isThinking = false;
                 this.updateLangUI();
@@ -980,6 +939,7 @@ if (!window.BroxAssistantLoaded) {
                 const lastMsg = this.history.filter(m => m.role === 'user').pop();
                 if (!lastMsg) return;
                 const msgBubble = this.createEmptyMessage('assistant');
+                const t0 = performance.now();
                 let reply = '';
                 const stream = await puter.ai.chat(lastMsg.content, { stream: true });
                 for await (const chunk of stream) {
@@ -993,6 +953,7 @@ if (!window.BroxAssistantLoaded) {
                     this.renderQuickActions();
                     this.markActivity();
                 }
+                this.updateResponseMeta(msgBubble, t0);
             } catch (fallbackErr) {
                 this.addMessage('assistant', this.t('err_conn'));
             }
@@ -1010,11 +971,76 @@ if (!window.BroxAssistantLoaded) {
         }
 
         mapModelLabel(modelId, fallbackLabel) {
-            const cleanedFallback = (fallbackLabel || '').replace(/\s*\(Free\)\s*/i, '').trim();
-            if (cleanedFallback) return cleanedFallback;
             const id = (modelId || '').split('/').pop() || '';
             const shortId = id.split(':')[0] || id;
-            return shortId || 'AI';
+            if (shortId) return shortId;
+            const cleanedFallback = (fallbackLabel || '').replace(/\s*\(Free\)\s*/i, '').trim();
+            return cleanedFallback || 'AI';
+        }
+
+        formatMetaTime() {
+            const locale = this.lang === 'bn' ? 'bn-BD' : 'en-US';
+            return new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+        }
+
+        formatDuration(ms) {
+            return (ms / 1000).toFixed(1) + 's';
+        }
+
+        updateResponseMeta(bodyEl, startedAt) {
+            if (!bodyEl) return;
+            const meta = bodyEl.parentElement?.querySelector('.brox-ai-msg-meta');
+            if (!meta) return;
+            const timeLabel = this.formatMetaTime();
+            const duration = this.formatDuration(performance.now() - startedAt);
+            meta.innerHTML = `<span class="brox-ai-meta-time">${timeLabel}</span><span class="brox-ai-meta-sep"> • </span><span class="brox-ai-meta-duration">${duration}</span>`;
+        }
+
+        normalizeText(text) {
+            return String(text || '')
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+        }
+
+        getTopicLabels() {
+            if (this.lang === 'bn') {
+                return {
+                    general: 'সাধারণ তথ্য',
+                    support: 'সাপোর্ট',
+                    billing: 'বিলিং',
+                    feedback: 'মতামত'
+                };
+            }
+            return {
+                general: 'General',
+                support: 'Support',
+                billing: 'Billing',
+                feedback: 'Feedback'
+            };
+        }
+
+        getTopicKeywords() {
+            return {
+                general: ['general', 'info', 'information', 'guide', 'how to', 'what', 'why', 'কী', 'কি', 'তথ্য', 'জানতে'],
+                support: ['support', 'help', 'issue', 'problem', 'error', 'সাপোর্ট', 'সহায়তা', 'সমস্যা', 'ত্রুটি'],
+                billing: ['billing', 'bill', 'payment', 'price', 'pricing', 'invoice', 'বিল', 'পেমেন্ট', 'দাম', 'মূল্য', 'ইনভয়েস'],
+                feedback: ['feedback', 'review', 'suggestion', 'complaint', 'মতামত', 'প্রস্তাব', 'রিভিউ', 'অভিযোগ']
+            };
+        }
+
+        getRelatedTopics(text) {
+            const normalized = this.normalizeText(text);
+            if (!normalized) return new Set();
+            const keywords = this.getTopicKeywords();
+            const related = new Set();
+            Object.keys(keywords).forEach((topic) => {
+                if (keywords[topic].some((kw) => normalized.includes(kw))) {
+                    related.add(topic);
+                }
+            });
+            return related;
         }
 
         renderQuickActions() {
@@ -1063,9 +1089,25 @@ if (!window.BroxAssistantLoaded) {
                 }
             }
 
-            this.nodes.quickActions.innerHTML = actions.map(a =>
+            const selectedTopics = Array.isArray(this.user?.topics) ? this.user.topics : [];
+            const topicLabels = this.getTopicLabels();
+            const relatedTopics = lastAssistant ? this.getRelatedTopics(lastAssistant.content) : new Set();
+            let topicsHtml = '';
+            if (selectedTopics.length) {
+                const title = this.lang === 'bn' ? 'সাইট টপিক' : 'Site Topics';
+                const chips = selectedTopics.map((topic) => {
+                    const label = topicLabels[topic] || topic;
+                    const relatedClass = relatedTopics.has(topic) ? ' brox-ai-quick-related' : '';
+                    return `<span class="brox-ai-quick-topic${relatedClass}" data-topic="${topic}">${label}</span>`;
+                }).join('');
+                topicsHtml = `<div class="brox-ai-quick-topics"><div class="brox-ai-quick-title">${title}</div>${chips}</div>`;
+            }
+
+            const actionsHtml = actions.map(a =>
                 `<button class="brox-ai-action-chip" data-prompt="${a.prompt.replace(/"/g, '&quot;')}">${a.label}</button>`
             ).join('');
+
+            this.nodes.quickActions.innerHTML = topicsHtml + actionsHtml;
         }
 
         updateSuggestions() {

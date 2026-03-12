@@ -19,18 +19,65 @@
         initAISystem();
     });
 
+    function decodeHtmlEntities(value) {
+        if (!value || typeof value !== 'string') return value;
+        var txt = document.createElement('textarea');
+        txt.innerHTML = value;
+        return txt.value;
+    }
+
+    function readJsonAttr(el, attrName) {
+        if (!el) return null;
+        var raw = el.getAttribute(attrName);
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw);
+        } catch (e) {
+            var decoded = decodeHtmlEntities(raw);
+            if (decoded && decoded !== raw) {
+                try {
+                    return JSON.parse(decoded);
+                } catch (e2) {
+                    console.warn('[AI System] Invalid JSON in', attrName, e2);
+                    return null;
+                }
+            }
+            console.warn('[AI System] Invalid JSON in', attrName, e);
+            return null;
+        }
+    }
+
     function initAISystem() {
         // Load providers from global Twig variable if available
         if (typeof window.aiSystemProviders !== 'undefined') {
             providersData = window.aiSystemProviders;
+        } else {
+            var dataEl = document.getElementById('aiSystemData');
+            var providersFromDom = readJsonAttr(dataEl, 'data-providers');
+            if (providersFromDom) {
+                providersData = providersFromDom;
+            }
         }
 
         // Load settings from global variable if available
+        var settingsLoaded = false;
         if (typeof window.aiSystemSettings !== 'undefined') {
             savedFrontendModel = window.aiSystemSettings.frontend_model || '';
             savedBackendModel = window.aiSystemSettings.backend_model || '';
             defaultModelSetting = window.aiSystemSettings.default_model || '';
+            settingsLoaded = true;
         } else {
+            var settingsEl = document.getElementById('aiSystemData');
+            var settingsFromDom = readJsonAttr(settingsEl, 'data-settings');
+            if (settingsFromDom) {
+                savedFrontendModel = settingsFromDom.frontend_model || '';
+                savedBackendModel = settingsFromDom.backend_model || '';
+                defaultModelSetting = settingsFromDom.default_model || '';
+                settingsLoaded = true;
+            }
+        }
+
+        if (!settingsLoaded) {
             // Fallback: Get saved models from data attributes
             const frontendModelEl = document.getElementById('frontendModelSelect');
             const backendModelEl = document.getElementById('backendModelSelect');
@@ -89,6 +136,7 @@
             updateAiSettingsSaveState();
             updateStatusPills(frontendProviderSelect.value);
             updateHfTips(frontendProviderSelect.value);
+            setupModelMultimodalToggle(frontendProviderSelect, frontendModelSelect);
 
             frontendProviderSelect.addEventListener('change', function () {
                 buildModelOptions(this.value, frontendModelSelect, '', frontendModelWarning, frontendModelRefresh)
@@ -108,6 +156,7 @@
             );
             updateAiSettingsSaveState();
             updateHfTips(backendProviderSelect.value);
+            setupModelMultimodalToggle(backendProviderSelect, backendModelSelect);
 
             backendProviderSelect.addEventListener('change', function () {
                 buildModelOptions(this.value, backendModelSelect, '', backendModelWarning, backendModelRefresh)
@@ -123,6 +172,13 @@
         document.querySelectorAll('.toggle-provider').forEach(function (inputEl) {
             inputEl.addEventListener('change', function () {
                 toggleProviderActive(this);
+            });
+        });
+
+        // Toggle multimodal support per provider
+        document.querySelectorAll('.toggle-multimodal').forEach(function (inputEl) {
+            inputEl.addEventListener('change', function () {
+                toggleProviderMultimodal(this);
             });
         });
 
@@ -173,7 +229,8 @@
                     frontendModelSelect,
                     '',
                     frontendModelWarning,
-                    frontendModelRefresh
+                    frontendModelRefresh,
+                    true
                 ).then(updateAiSettingsSaveState);
             });
         }
@@ -190,7 +247,8 @@
                     backendModelSelect,
                     '',
                     backendModelWarning,
-                    backendModelRefresh
+                    backendModelRefresh,
+                    true
                 ).then(updateAiSettingsSaveState);
             });
         }
@@ -250,7 +308,7 @@
     }
 
     // Build model options for a provider
-    async function buildModelOptions(providerName, selectEl, savedModel, warningEl, refreshBtn) {
+    async function buildModelOptions(providerName, selectEl, savedModel, warningEl, refreshBtn, refresh) {
         return new Promise(function (resolve) {
             if (!selectEl) {
                 resolve();
@@ -263,7 +321,7 @@
             buildLoadingOption(selectEl, 'Loading models...');
             if (warningEl) warningEl.classList.add('d-none');
 
-            fetchProviderModels(providerName)
+            fetchProviderModels(providerName, refresh)
                 .then(function (models) {
                     if (selectEl.dataset.reqId !== reqId) {
                         resolve();
@@ -335,7 +393,10 @@
         models.forEach(function (m) {
             const opt = document.createElement('option');
             opt.value = m.id;
-            opt.textContent = m.name;
+            opt.textContent = m.name + (m.supports_multimodal ? ' (Multimodal)' : '');
+            if (m.supports_multimodal) {
+                opt.dataset.multimodal = '1';
+            }
             if (savedModel && savedModel === m.id) {
                 opt.selected = true;
                 hasSaved = true;
@@ -370,6 +431,9 @@
 
         selectEl.dataset.hfHasModels = '1';
         setRefreshState(refreshBtn, selectEl, false);
+
+        // Update the multimodal indicator checkbox for the selected model.
+        updateModelMultimodalCheckbox(selectEl);
     }
 
     // Build loading option
@@ -406,8 +470,14 @@
     }
 
     // Fetch provider models from API
-    async function fetchProviderModels(providerName) {
-        const res = await fetch('/api/ai/models?provider=' + encodeURIComponent(providerName) + '&scope=admin', {
+    async function fetchProviderModels(providerName, refresh) {
+        const params = new URLSearchParams();
+        params.set('provider', providerName);
+        params.set('scope', 'admin');
+        if (refresh) {
+            params.set('refresh', '1');
+        }
+        const res = await fetch('/api/ai/models?' + params.toString(), {
             credentials: 'same-origin'
         });
 
@@ -510,6 +580,104 @@
 
         aiSettingsSaveBtn.disabled = shouldDisable;
         aiSettingsSaveBtn.title = shouldDisable ? 'No chat-capable Hugging Face models available.' : '';
+    }
+
+    function getModelMultimodalCheckbox(selectEl) {
+        if (!selectEl) return null;
+        if (selectEl.id === 'frontendModelSelect') return document.getElementById('frontendModelMultimodal');
+        if (selectEl.id === 'backendModelSelect') return document.getElementById('backendModelMultimodal');
+        return null;
+    }
+
+    function getProviderNameForModelSelect(selectEl) {
+        if (!selectEl) return null;
+        if (selectEl.id === 'frontendModelSelect') {
+            const providerSelect = document.getElementById('frontendProviderSelect');
+            return providerSelect ? providerSelect.value : null;
+        }
+        if (selectEl.id === 'backendModelSelect') {
+            const providerSelect = document.getElementById('backendProviderSelect');
+            return providerSelect ? providerSelect.value : null;
+        }
+        return null;
+    }
+
+    function updateModelMultimodalCheckbox(selectEl) {
+        const checkbox = getModelMultimodalCheckbox(selectEl);
+        if (!checkbox) return;
+        const option = selectEl.options[selectEl.selectedIndex];
+        if (!option) {
+            checkbox.checked = false;
+            checkbox.disabled = true;
+            return;
+        }
+        const isMulti = option.dataset.multimodal === '1';
+        checkbox.checked = isMulti;
+        checkbox.disabled = false;
+    }
+
+    async function setModelMultimodal(providerName, modelId, enabled) {
+        const provider = providersData.find(function (p) {
+            return p.provider_name === providerName;
+        });
+        if (!provider) return;
+
+        try {
+            const res = await fetch('/admin/ai-system/update-provider', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'set_model_multimodal',
+                    provider_id: parseInt(provider.id, 10),
+                    model_id: modelId,
+                    enabled: enabled,
+                    csrf_token: document.querySelector('input[name="csrf_token"]').value
+                })
+            });
+            const data = await res.json();
+            if (!data.success) {
+                throw new Error(data.error || 'Update failed');
+            }
+
+            // Update local cached provider metadata to keep UI in sync
+            if (!provider.extra_settings || typeof provider.extra_settings !== 'object') {
+                provider.extra_settings = {};
+            }
+            if (!provider.extra_settings.model_multimodal || typeof provider.extra_settings.model_multimodal !== 'object') {
+                provider.extra_settings.model_multimodal = {};
+            }
+            provider.extra_settings.model_multimodal[modelId] = enabled;
+        } catch (e) {
+            console.warn('Failed to save model multimodal setting', e);
+        }
+    }
+
+    function setupModelMultimodalToggle(providerSelect, modelSelect) {
+        const checkbox = getModelMultimodalCheckbox(modelSelect);
+        if (!checkbox) return;
+
+        const update = () => {
+            updateModelMultimodalCheckbox(modelSelect);
+        };
+
+        modelSelect.addEventListener('change', update);
+        if (providerSelect) {
+            providerSelect.addEventListener('change', update);
+        }
+
+        checkbox.addEventListener('change', () => {
+            const providerName = getProviderNameForModelSelect(modelSelect);
+            const modelId = modelSelect.value;
+            if (providerName && modelId) {
+                setModelMultimodal(providerName, modelId, checkbox.checked);
+                const selectedOpt = modelSelect.selectedOptions[0];
+                if (selectedOpt) {
+                    selectedOpt.dataset.multimodal = checkbox.checked ? '1' : '0';
+                }
+            }
+        });
+
+        update();
     }
 
     // Test connection function
@@ -729,6 +897,58 @@
             }
         } catch (e) {
             inputEl.checked = !active;
+            var errMsg = e && e.message ? e.message : 'Failed to update provider';
+            if (window.showAlert) {
+                await window.showAlert(errMsg, 'Error', 'error');
+            } else {
+                alert(errMsg);
+            }
+        } finally {
+            inputEl.disabled = false;
+        }
+    }
+
+    // Toggle provider multimodal support
+    async function toggleProviderMultimodal(inputEl) {
+        var id = inputEl && inputEl.dataset ? inputEl.dataset.providerId : null;
+        if (!id) return;
+
+        var rowEl = inputEl.closest('tr');
+        var enabled = !!inputEl.checked;
+        inputEl.disabled = true;
+
+        try {
+            var res = await fetch('/admin/ai-system/update-provider', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'set_multimodal',
+                    provider_id: parseInt(id, 10),
+                    enabled: enabled,
+                    csrf_token: document.querySelector('input[name="csrf_token"]').value
+                })
+            });
+
+            var data = await res.json();
+            if (!data.success) {
+                throw new Error(data.error || 'Update failed');
+            }
+
+            var provider = providersData.find(function (p) {
+                return String(p.id) === String(id);
+            });
+            if (provider) {
+                provider.supports_multimodal = enabled;
+            }
+
+            // Update badge text
+            var badge = rowEl?.querySelector('td[data-label="Multimodal"] .badge');
+            if (badge) {
+                badge.className = 'badge ' + (enabled ? 'bg-success' : 'bg-secondary');
+                badge.textContent = enabled ? 'Yes' : 'No';
+            }
+        } catch (e) {
+            inputEl.checked = !enabled;
             var errMsg = e && e.message ? e.message : 'Failed to update provider';
             if (window.showAlert) {
                 await window.showAlert(errMsg, 'Error', 'error');

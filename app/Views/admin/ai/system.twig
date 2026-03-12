@@ -244,6 +244,7 @@
                                     <th>Provider</th>
                                     <th>Endpoint</th>
                                     <th>Status</th>
+                                    <th>Multimodal</th>
                                     <th>Default</th>
                                     <th>API Key</th>
                                     <th>Actions</th>
@@ -310,6 +311,19 @@
                                             <label class="form-check-label">
                                                 <span class="badge bg-{{ provider.is_active ? 'success' : 'secondary' }}">
                                                     {{ provider.is_active ? 'Active' : 'Inactive' }}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </td>
+                                    <td data-label="Multimodal">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input toggle-multimodal" 
+                                                   type="checkbox" 
+                                                   data-provider-id="{{ provider.id }}"
+                                                   {% if provider.supports_multimodal %}checked{% endif %}>
+                                            <label class="form-check-label">
+                                                <span class="badge bg-{{ provider.supports_multimodal ? 'success' : 'secondary' }}">
+                                                    {{ provider.supports_multimodal ? 'Yes' : 'No' }}
                                                 </span>
                                             </label>
                                         </div>
@@ -449,6 +463,10 @@
                                     </button>
                                 </div>
                                 <select name="frontend_model" class="form-select" id="frontendModelSelect"></select>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="frontendModelMultimodal">
+                                    <label class="form-check-label" for="frontendModelMultimodal">Multimodal (images & rich content)</label>
+                                </div>
                                 <small class="text-muted">Model used for website assistant</small>
                                 <div class="text-danger small d-none" id="frontendModelWarning">No models available for this provider.</div>
                             </div>
@@ -460,6 +478,10 @@
                                     </button>
                                 </div>
                                 <select name="backend_model" class="form-select" id="backendModelSelect"></select>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="backendModelMultimodal">
+                                    <label class="form-check-label" for="backendModelMultimodal">Multimodal (images & rich content)</label>
+                                </div>
                                 <small class="text-muted">Model used for AutoContent</small>
                                 <div class="text-danger small d-none" id="backendModelWarning">No models available for this provider.</div>
                             </div>
@@ -562,17 +584,14 @@
                                     <small class="d-block text-muted">Automatically publish AI-enhanced content</small>
                                 </div>
                             </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Image Context Retention (messages)</label>
+                            <input type="number" name="image_context_max_messages" class="form-control" 
+                                   value="{{ settings.image_context_max_messages|default(10) }}" 
+                                   min="1" max="100" step="1">
+                            <small class="text-muted">Clear stored image context after this many messages.</small>
                         </div>
-
-                        <hr class="my-4">
-
-                        <h6 class="fw-bold mb-3"><i class="bi bi-key me-2"></i>API Keys</h6>
-                        <p class="text-muted small mb-3">
-                            Configure API keys for each provider. Keys are stored securely in the database and must be entered here.
-                        </p>
-                        <div class="row g-3">
                             {% for provider in providers %}
-                            {% if provider.provider_name != 'custom' %}
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">{{ provider.display_name }} API Key</label>
                                 <div class="input-group">
@@ -593,7 +612,6 @@
                                     {% endif %}
                                 </small>
                             </div>
-                            {% endif %}
                             {% endfor %}
                         </div>
 
@@ -872,696 +890,14 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-// Make providers data available globally for the external JS file
-window.aiSystemProviders = {{ providers|json_encode|raw }};
-window.aiSystemSettings = {
-    frontend_model: {{ settings.frontend_model|default('')|json_encode|raw }},
-    backend_model: {{ settings.backend_model|default('')|json_encode|raw }},
-    default_model: {{ settings.default_model|default('')|json_encode|raw }},
-    csrf_token: '{{ csrf_token }}'
-};
-</script>
+<div id="aiSystemData"
+     class="d-none"
+     data-providers='{{ providers|json_encode|e("html_attr") }}'
+     data-settings='{{ {
+        "frontend_model": settings.frontend_model|default(""),
+        "backend_model": settings.backend_model|default(""),
+        "default_model": settings.default_model|default(""),
+        "csrf_token": csrf_token
+     }|json_encode|e("html_attr") }}'></div>
 <script src="{{ base_url }}/assets/js/ai-system-admin.js"></script>
-{% endblock %}
-    const provider = providersData.find(p => p.id == id);
-    if (!provider) return;
-
-    const modal = new bootstrap.Modal(document.getElementById('testConnectionModal'));
-    const providerSelect = document.getElementById('testProviderSelect');
-    const select = document.getElementById('testModelSelect');
-    const resultDiv = document.getElementById('testConnectionResult');
-    const warningDiv = document.getElementById('testConnectionWarning');
-
-    // Populate providers
-    if (providerSelect) {
-        providerSelect.innerHTML = '';
-        providersData.forEach((p) => {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = p.display_name || p.provider_name;
-            if (String(p.id) === String(id)) {
-                opt.selected = true;
-            }
-            providerSelect.appendChild(opt);
-        });
-    }
-
-    const loadModelsForProvider = (providerRow) => {
-        select.innerHTML = '<option value="">Loading models...</option>';
-        if (warningDiv) warningDiv.classList.add('d-none');
-        fetchProviderModels(providerRow.provider_name)
-            .then((models) => {
-                select.innerHTML = '';
-                models.forEach((m) => {
-                    const opt = document.createElement('option');
-                    opt.value = m.id;
-                    opt.textContent = m.name;
-                    if (m.default) {
-                        opt.selected = true;
-                    }
-                    select.appendChild(opt);
-                });
-                if (select.options.length === 0) {
-                    const opt = document.createElement('option');
-                    opt.value = '';
-                    opt.textContent = 'No models available';
-                    select.appendChild(opt);
-                }
-            })
-            .catch((e) => {
-                const fallback = getProviderModelMap(providerRow, true);
-                select.innerHTML = '';
-                Object.entries(fallback).forEach(([mid, name]) => {
-                    const opt = document.createElement('option');
-                    opt.value = mid;
-                    opt.textContent = name;
-                    select.appendChild(opt);
-                });
-                if (select.options.length === 0) {
-                    const opt = document.createElement('option');
-                    opt.value = '';
-                    opt.textContent = 'No models available';
-                    select.appendChild(opt);
-                }
-                if (warningDiv) {
-                    warningDiv.textContent = `Remote models unavailable (${e?.message || 'fetch failed'}). Using fallback list.`;
-                    warningDiv.classList.remove('d-none');
-                }
-            });
-    };
-
-    loadModelsForProvider(provider);
-
-    if (providerSelect) {
-        providerSelect.onchange = () => {
-            const newId = providerSelect.value;
-            currentTestProviderId = newId;
-            const selectedProvider = providersData.find(p => String(p.id) === String(newId));
-            if (selectedProvider) {
-                loadModelsForProvider(selectedProvider);
-            }
-        };
-    }
-
-    resultDiv.innerHTML = '<div class="alert alert-info">Select a model and click "Run Test"</div>';
-    modal.show();
-}
-
-  async function runTestConnection() {
-      if (!currentTestProviderId) return;
-
-      const model = document.getElementById('testModelSelect').value;
-      const resultDiv = document.getElementById('testConnectionResult');
-      const btn = document.querySelector('#testConnectionModal .btn-primary');
-      const warningDiv = document.getElementById('testConnectionWarning');
-
-      if (!model) {
-          // Use SweetAlert2 instead of inline alert
-          await window.showAlert('Please select a model before testing.', 'Warning', 'warning');
-          return;
-      }
-    const originalBtnHtml = btn.innerHTML;
-
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Testing...';
-    resultDiv.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary"></div><p class="mt-2">Sending test request...</p></div>';
-
-    try {
-        const response = await fetch('/api/ai-system/test', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                id: currentTestProviderId, 
-                model: model,
-                csrf_token: '{{ csrf_token }}'
-            })
-        });
-
-        const data = await response.json();
-        
-        if (data.success) {
-            // Use SweetAlert2 for success message
-            await window.showAlert(
-                `<strong>Model:</strong> ${data.model}<br><br><strong>Response:</strong> ${data.response || 'OK'}`,
-                'Connection Successful!',
-                'success',
-                { allowHtml: true }
-            );
-        } else {
-            // Use SweetAlert2 for error message
-            await window.showAlert(
-                data.error || 'Unknown error occurred',
-                'Connection Failed',
-                'error'
-            );
-        }
-        const provider = providersData.find(p => p.id == currentTestProviderId);
-        if (provider) {
-            setLastTested(provider.provider_name);
-            updateStatusPills(provider.provider_name);
-        }
-    } catch (e) {
-        // Use SweetAlert2 for network error
-        await window.showAlert(`Network error: ${e.message}`, 'Error', 'error');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalBtnHtml;
-    }
-}
-
-function getProviderModelMap(provider, allowDbFallback) {
-    let models = provider?.config?.models || {};
-    if (allowDbFallback && (!models || Object.keys(models).length === 0)) {
-        models = provider?.supported_models || {};
-    }
-    const labels = models;
-    const map = {};
-    Object.keys(models).forEach((id) => {
-        map[id] = labels[id] || models[id] || id;
-    });
-    return map;
-}
-
-async function fetchProviderModels(providerName) {
-    const res = await fetch(`/api/ai/models?provider=${encodeURIComponent(providerName)}&scope=admin`, {
-        credentials: 'same-origin'
-    });
-    if (!res.ok) {
-        console.warn('[AI Models] Fetch failed', providerName, res.status);
-        throw new Error(`HTTP ${res.status}`);
-    }
-    const raw = await res.text();
-    let data = null;
-    try {
-        data = JSON.parse(raw);
-    } catch (e) {
-        console.warn('[AI Models] Non-JSON response', providerName, raw);
-        throw new Error('Non-JSON response');
-    }
-    if (!data || data.success === false) {
-        const apiError = data?.error ? String(data.error) : 'API returned success=false';
-        console.warn('[AI Models] API error', providerName, apiError);
-        throw new Error(apiError);
-    }
-    if (!Array.isArray(data.models)) {
-        console.warn('[AI Models] Invalid models payload', providerName, data);
-        throw new Error('Invalid models payload');
-    }
-    return data.models;
-}
-
-function isHuggingFaceChatModelId(modelId) {
-    const lower = String(modelId || '').toLowerCase();
-    const blocked = [
-        'sentence-transformers/',
-        'embedding',
-        'feature-extraction',
-        'text-embedding',
-        'text2vec',
-        'rerank',
-        're-rank'
-    ];
-    return !blocked.some(pattern => lower.includes(pattern));
-}
-
-function buildLoadingOption(selectEl, text) {
-    selectEl.innerHTML = '';
-    const opt = document.createElement('option');
-    opt.value = '';
-    opt.textContent = text || 'Loading models...';
-    opt.disabled = true;
-    opt.selected = true;
-    selectEl.appendChild(opt);
-}
-
-function setRefreshState(buttonEl, selectEl, isLoading) {
-    if (selectEl) {
-        selectEl.disabled = !!isLoading;
-    }
-    if (!buttonEl) return;
-    if (isLoading) {
-        if (!buttonEl.dataset.originalHtml) {
-            buttonEl.dataset.originalHtml = buttonEl.innerHTML;
-        }
-        buttonEl.disabled = true;
-        buttonEl.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Refreshing...';
-    } else {
-        buttonEl.disabled = false;
-        if (buttonEl.dataset.originalHtml) {
-            buttonEl.innerHTML = buttonEl.dataset.originalHtml;
-        } else {
-            buttonEl.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
-        }
-    }
-}
-
-function updateAiSettingsSaveState() {
-    const frontendProviderSelect = document.getElementById('frontendProviderSelect');
-    const backendProviderSelect = document.getElementById('backendProviderSelect');
-    const frontendModelSelect = document.getElementById('frontendModelSelect');
-    const backendModelSelect = document.getElementById('backendModelSelect');
-    const aiSettingsSaveBtn = document.getElementById('aiSettingsSaveBtn');
-    if (!aiSettingsSaveBtn) return;
-
-    const frontendBlocked = frontendProviderSelect?.value === 'huggingface'
-        && frontendModelSelect?.dataset?.hfHasModels === '0';
-    const backendBlocked = backendProviderSelect?.value === 'huggingface'
-        && backendModelSelect?.dataset?.hfHasModels === '0';
-    const shouldDisable = frontendBlocked || backendBlocked;
-    aiSettingsSaveBtn.disabled = shouldDisable;
-    aiSettingsSaveBtn.title = shouldDisable
-        ? 'No chat-capable Hugging Face models available.'
-        : '';
-}
-
-async function buildModelOptions(providerName, selectEl, savedModel, warningEl, refreshBtn) {
-    if (!selectEl) return;
-    const reqId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    selectEl.dataset.reqId = reqId;
-    setRefreshState(refreshBtn, selectEl, true);
-    buildLoadingOption(selectEl, 'Loading models...');
-    if (warningEl) warningEl.classList.add('d-none');
-
-    let models = [];
-    let usedFallback = false;
-    let usedDbFallback = false;
-    let fetchError = '';
-    try {
-        models = await fetchProviderModels(providerName);
-    } catch (e) {
-        fetchError = e?.message || 'Fetch failed';
-        console.warn('[AI Models] Using fallback list', providerName, e);
-        const provider = providersData.find(p => p.provider_name === providerName);
-        const fallbackMap = getProviderModelMap(provider, true);
-        if ((!provider?.config?.models || Object.keys(provider.config.models || {}).length === 0)
-            && provider?.supported_models && Object.keys(provider.supported_models).length > 0) {
-            usedDbFallback = true;
-        }
-        models = Object.entries(fallbackMap).map(([id, name]) => ({ id, name }));
-        usedFallback = true;
-    }
-
-    if (selectEl.dataset.reqId !== reqId) return;
-
-    let hiddenNonChat = false;
-    if (providerName === 'huggingface') {
-        const before = models.length;
-        models = models.filter(m => isHuggingFaceChatModelId(m.id));
-        hiddenNonChat = before > models.length;
-    }
-
-    if (!models.length) {
-        buildLoadingOption(selectEl, 'No models available');
-        if (warningEl) {
-            warningEl.textContent = providerName === 'huggingface'
-                ? 'No chat-capable Hugging Face models available for /v1/responses.'
-                : (usedFallback
-                    ? (fetchError
-                        ? `Remote models unavailable (${fetchError}). No config models found.`
-                        : 'Remote models unavailable. No config models found.')
-                    : 'No models available for this provider.');
-            warningEl.classList.remove('text-danger', 'text-warning');
-            warningEl.classList.add('text-danger');
-            warningEl.classList.remove('d-none');
-        }
-        selectEl.dataset.hfHasModels = '0';
-        setRefreshState(refreshBtn, selectEl, false);
-        return;
-    }
-
-    selectEl.innerHTML = '';
-    let hasSaved = false;
-    let hasDefault = false;
-    models.forEach((m) => {
-        const opt = document.createElement('option');
-        opt.value = m.id;
-        opt.textContent = m.name;
-        if (savedModel && savedModel === m.id) {
-            opt.selected = true;
-            hasSaved = true;
-        } else if (m.default && !hasSaved && !hasDefault) {
-            opt.selected = true;
-            hasDefault = true;
-        }
-        selectEl.appendChild(opt);
-    });
-
-    if (!hasSaved && !hasDefault) {
-        selectEl.selectedIndex = 0;
-    }
-
-    if (warningEl) {
-        if (providerName === 'huggingface' && hiddenNonChat) {
-            warningEl.textContent = 'Some Hugging Face models were hidden because /v1/responses requires chat models.';
-            warningEl.classList.remove('text-danger');
-            warningEl.classList.add('text-warning');
-            warningEl.classList.remove('d-none');
-        } else if (usedFallback) {
-            if (usedDbFallback) {
-                warningEl.textContent = fetchError
-                    ? `Remote fetch failed (${fetchError}). Using stored models for this provider.`
-                    : 'Remote fetch failed. Using stored models for this provider.';
-            } else {
-                warningEl.textContent = fetchError
-                    ? `Remote fetch failed (${fetchError}). Using config model list.`
-                    : 'Remote fetch failed. Using config model list.';
-            }
-            warningEl.classList.remove('text-danger');
-            warningEl.classList.add('text-warning');
-            warningEl.classList.remove('d-none');
-        } else {
-            warningEl.classList.add('d-none');
-        }
-    }
-    selectEl.dataset.hfHasModels = '1';
-    setRefreshState(refreshBtn, selectEl, false);
-}
-
-function selectModelById(selectEl, modelId) {
-    if (!selectEl) return false;
-    const options = Array.from(selectEl.options || []);
-    const match = options.find(opt => opt.value === modelId);
-    if (match) {
-        match.selected = true;
-        return true;
-    }
-    selectEl.selectedIndex = 0;
-    return false;
-}
-
-function getLastTested(providerName) {
-    const raw = localStorage.getItem(`brox.ai.last_tested.${providerName}`) || '';
-    if (!raw) return 'Not tested';
-    const date = new Date(raw);
-    if (Number.isNaN(date.getTime())) return 'Not tested';
-    return date.toLocaleString();
-}
-
-function setLastTested(providerName) {
-    localStorage.setItem(`brox.ai.last_tested.${providerName}`, new Date().toISOString());
-}
-
-  function updateStatusPills(providerName) {
-    const apiKeyPill = document.getElementById('aiStatusApiKey');
-    const activePill = document.getElementById('aiStatusActive');
-    const testedPill = document.getElementById('aiStatusTested');
-    const provider = providersData.find(p => p.provider_name === providerName);
-    if (!provider) return;
-
-    if (apiKeyPill) {
-        apiKeyPill.className = 'badge ' + (provider.has_api_key ? 'bg-success' : 'bg-warning text-dark');
-        apiKeyPill.textContent = provider.has_api_key ? 'API Key: Present' : 'API Key: Missing';
-    }
-    if (activePill) {
-        activePill.className = 'badge ' + (provider.is_active ? 'bg-success' : 'bg-secondary');
-        activePill.textContent = provider.is_active ? 'Provider: Active' : 'Provider: Inactive';
-    }
-      if (testedPill) {
-          testedPill.className = 'badge bg-info text-dark';
-          testedPill.textContent = `Last tested: ${getLastTested(providerName)}`;
-      }
-  }
-
-  function updateProviderRowState(rowEl, isActive) {
-      if (!rowEl) return;
-      const badge = rowEl.querySelector('td[data-label="Status"] .badge');
-      if (badge) {
-          badge.className = `badge bg-${isActive ? 'success' : 'secondary'}`;
-          badge.textContent = isActive ? 'Active' : 'Inactive';
-      }
-      const defaultBtn = rowEl.querySelector('.set-default-btn');
-      if (defaultBtn) {
-          defaultBtn.disabled = !isActive;
-      }
-  }
-
-  async function toggleProviderActive(inputEl) {
-      const id = inputEl?.dataset?.providerId;
-      if (!id) return;
-      const rowEl = inputEl.closest('tr');
-      const active = !!inputEl.checked;
-      inputEl.disabled = true;
-
-      try {
-          const res = await fetch('/api/ai-system/toggle-provider', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: parseInt(id, 10), active })
-          });
-          const data = await res.json();
-          if (!data.success) {
-              throw new Error(data.error || 'Update failed');
-          }
-          updateProviderRowState(rowEl, active);
-          const provider = providersData.find(p => String(p.id) === String(id));
-          if (provider) {
-              provider.is_active = active;
-          }
-      } catch (e) {
-          inputEl.checked = !active;
-          window.showAlert(e?.message || 'Failed to update provider', 'Error', 'error');
-      } finally {
-          inputEl.disabled = false;
-      }
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-        const frontendProviderSelect = document.getElementById('frontendProviderSelect');
-        const backendProviderSelect = document.getElementById('backendProviderSelect');
-        const frontendModelSelect = document.getElementById('frontendModelSelect');
-        const backendModelSelect = document.getElementById('backendModelSelect');
-      const frontendModelWarning = document.getElementById('frontendModelWarning');
-      const backendModelWarning = document.getElementById('backendModelWarning');
-      const resetModelDefaults = document.getElementById('resetModelDefaults');
-      const frontendModelRefresh = document.getElementById('frontendModelRefresh');
-      const backendModelRefresh = document.getElementById('backendModelRefresh');
-      const hfTipsFrontend = document.getElementById('hfTipsFrontend');
-      const hfTipsBackend = document.getElementById('hfTipsBackend');
-      const toggleInputs = document.querySelectorAll('.toggle-provider');
-      const testButtons = document.querySelectorAll('[data-action="test-connection"]');
-      const editButtons = document.querySelectorAll('[data-action="edit-provider"]');
-      const deleteButtons = document.querySelectorAll('[data-action="delete-provider"]');
-      const runTestButton = document.querySelector('[data-action="run-test"]');
-      const updateHfTips = () => {
-          if (hfTipsFrontend) {
-              hfTipsFrontend.classList.toggle('d-none', frontendProviderSelect?.value !== 'huggingface');
-          }
-          if (hfTipsBackend) {
-              hfTipsBackend.classList.toggle('d-none', backendProviderSelect?.value !== 'huggingface');
-          }
-      };
-      const initModelSelects = async () => {
-          if (frontendProviderSelect) {
-              await buildModelOptions(frontendProviderSelect.value, frontendModelSelect, savedFrontendModel, frontendModelWarning, frontendModelRefresh);
-              updateAiSettingsSaveState();
-              updateStatusPills(frontendProviderSelect.value);
-              updateHfTips();
-              frontendProviderSelect.addEventListener('change', function() {
-                  buildModelOptions(this.value, frontendModelSelect, '', frontendModelWarning, frontendModelRefresh).then(updateAiSettingsSaveState);
-                  updateStatusPills(this.value);
-                  updateHfTips();
-              });
-          }
-
-          if (backendProviderSelect) {
-              await buildModelOptions(backendProviderSelect.value, backendModelSelect, savedBackendModel, backendModelWarning, backendModelRefresh);
-              updateAiSettingsSaveState();
-              updateHfTips();
-              backendProviderSelect.addEventListener('change', function() {
-                  buildModelOptions(this.value, backendModelSelect, '', backendModelWarning, backendModelRefresh).then(updateAiSettingsSaveState);
-                  updateHfTips();
-              });
-          }
-      };
-
-      initModelSelects();
-
-      if (toggleInputs?.length) {
-          toggleInputs.forEach((inputEl) => {
-              inputEl.addEventListener('change', () => toggleProviderActive(inputEl));
-          });
-      }
-      if (testButtons?.length) {
-          testButtons.forEach((btn) => {
-              btn.addEventListener('click', (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const id = btn.getAttribute('data-provider-id');
-                  if (id) {
-                      // Open modal first, then load models
-                      testConnection(id);
-                  }
-              });
-          });
-      }
-      if (editButtons?.length) {
-          editButtons.forEach((btn) => {
-              btn.addEventListener('click', () => {
-                  const id = btn.getAttribute('data-provider-id');
-                  if (id) openProviderEdit(id);
-              });
-          });
-      }
-      if (deleteButtons?.length) {
-          deleteButtons.forEach((btn) => {
-              btn.addEventListener('click', () => {
-                  const id = btn.getAttribute('data-provider-id');
-                  if (id) deleteProvider(id);
-              });
-          });
-      }
-      if (runTestButton) {
-          runTestButton.addEventListener('click', () => {
-              runTestConnection();
-          });
-      }
-
-    if (frontendModelRefresh) {
-        frontendModelRefresh.addEventListener('click', () => {
-            if (!frontendProviderSelect) return;
-            buildModelOptions(frontendProviderSelect.value, frontendModelSelect, '', frontendModelWarning, frontendModelRefresh).then(updateAiSettingsSaveState);
-        });
-    }
-
-    if (backendModelRefresh) {
-        backendModelRefresh.addEventListener('click', () => {
-            if (!backendProviderSelect) return;
-            buildModelOptions(backendProviderSelect.value, backendModelSelect, '', backendModelWarning, backendModelRefresh).then(updateAiSettingsSaveState);
-        });
-    }
-
-      if (resetModelDefaults) {
-          resetModelDefaults.addEventListener('click', () => {
-              if (defaultModelSetting) {
-                  selectModelById(frontendModelSelect, defaultModelSetting);
-                  selectModelById(backendModelSelect, defaultModelSetting);
-              } else {
-                  if (frontendModelSelect) frontendModelSelect.selectedIndex = 0;
-                  if (backendModelSelect) backendModelSelect.selectedIndex = 0;
-              }
-          });
-      }
-
-      const ollamaStatusEl = document.getElementById('ollamaLiveStatus');
-      if (ollamaStatusEl) {
-          fetchProviderModels('ollama')
-              .then((models) => {
-                  const online = Array.isArray(models) && models.length > 0;
-                  ollamaStatusEl.className = `badge ${online ? 'bg-success' : 'bg-secondary'} ms-2`;
-                  ollamaStatusEl.textContent = online ? 'Online' : 'Offline';
-              })
-              .catch(() => {
-                  ollamaStatusEl.className = 'badge bg-secondary ms-2';
-                  ollamaStatusEl.textContent = 'Offline';
-              });
-      }
-  });
-
-function openProviderEdit(id) {
-    const provider = providersData.find(p => p.id == id);
-    if (!provider || provider.provider_name !== 'huggingface') return;
-
-    const modalEl = document.getElementById('editProviderModal');
-    const modal = new bootstrap.Modal(modalEl);
-    const idInput = document.getElementById('editProviderId');
-    const endpointInput = document.getElementById('editProviderEndpoint');
-    const modelsInput = document.getElementById('editProviderModels');
-    const errorEl = document.getElementById('editProviderError');
-
-    if (idInput) idInput.value = provider.id;
-    if (endpointInput) endpointInput.value = provider.api_endpoint || provider.config?.endpoint || '';
-    if (modelsInput) modelsInput.value = JSON.stringify(provider.supported_models || {}, null, 2);
-    if (errorEl) errorEl.classList.add('d-none');
-
-    modal.show();
-}
-
-const saveProviderBtn = document.getElementById('saveProviderConfig');
-if (saveProviderBtn) {
-    saveProviderBtn.addEventListener('click', async () => {
-        const idInput = document.getElementById('editProviderId');
-        const endpointInput = document.getElementById('editProviderEndpoint');
-        const modelsInput = document.getElementById('editProviderModels');
-        const errorEl = document.getElementById('editProviderError');
-
-        const providerId = parseInt(idInput?.value || '0', 10);
-        if (!providerId) return;
-
-        let models = {};
-        try {
-            models = JSON.parse(modelsInput?.value || '{}');
-            if (!models || typeof models !== 'object' || Array.isArray(models)) {
-                throw new Error('Invalid JSON');
-            }
-            if (errorEl) errorEl.classList.add('d-none');
-        } catch (e) {
-            if (errorEl) {
-                errorEl.textContent = 'Invalid JSON. Provide a map of model_id to label.';
-                errorEl.classList.remove('d-none');
-            }
-            return;
-        }
-
-        const payload = {
-            action: 'update_config',
-            provider_id: providerId,
-            api_endpoint: endpointInput?.value || '',
-            supported_models: models,
-            csrf_token: '{{ csrf_token }}'
-        };
-
-        saveProviderBtn.disabled = true;
-        saveProviderBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
-
-        try {
-            const res = await fetch('/admin/ai-system/update-provider', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            if (!data.success) {
-                throw new Error(data.error || 'Update failed');
-            }
-
-            const provider = providersData.find(p => p.id == providerId);
-            if (provider) {
-                provider.supported_models = models;
-                provider.supported_models_select = models;
-                provider.api_endpoint = payload.api_endpoint;
-            }
-
-            const frontendProviderSelect = document.getElementById('frontendProviderSelect');
-            const backendProviderSelect = document.getElementById('backendProviderSelect');
-            const frontendModelSelect = document.getElementById('frontendModelSelect');
-            const backendModelSelect = document.getElementById('backendModelSelect');
-            const frontendModelWarning = document.getElementById('frontendModelWarning');
-            const backendModelWarning = document.getElementById('backendModelWarning');
-            const frontendModelRefresh = document.getElementById('frontendModelRefresh');
-            const backendModelRefresh = document.getElementById('backendModelRefresh');
-
-            if (frontendProviderSelect?.value === 'huggingface') {
-                buildModelOptions('huggingface', frontendModelSelect, '', frontendModelWarning, frontendModelRefresh)
-                    .then(updateAiSettingsSaveState);
-            }
-            if (backendProviderSelect?.value === 'huggingface') {
-                buildModelOptions('huggingface', backendModelSelect, '', backendModelWarning, backendModelRefresh)
-                    .then(updateAiSettingsSaveState);
-            }
-
-            const modalEl = document.getElementById('editProviderModal');
-            bootstrap.Modal.getInstance(modalEl)?.hide();
-        } catch (e) {
-            if (errorEl) {
-                errorEl.textContent = e.message;
-                errorEl.classList.remove('d-none');
-            }
-        } finally {
-            saveProviderBtn.disabled = false;
-            saveProviderBtn.innerHTML = '<i class="bi bi-save me-1"></i>Save Changes';
-        }
-    });
-}
-</script>
 {% endblock %}

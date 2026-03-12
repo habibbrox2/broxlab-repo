@@ -122,3 +122,19 @@ php h:\Web\broxbhai\scripts\deploy_worker.php
 - Uploads and storage are excluded by default.
 - Deploy uses an atomic swap by renaming the target folder on the server.
 - Make sure `ssh`, `scp`, `mysqldump`, and `mysql` are available in PATH.
+
+## Quality/Security/Performance Reports (Phase 2)
+Generate reports locally or on server (shared hosting compatible):
+```
+php scripts/quality_scan.php
+php scripts/security_scan.php
+php scripts/perf_report.php
+```
+Reports are written to `storage/logs/*.json` and `storage/logs/*.md`.
+
+### Cron example (shared hosting)
+```
+php /path/to/broxbhai/scripts/quality_scan.php
+php /path/to/broxbhai/scripts/security_scan.php
+php /path/to/broxbhai/scripts/perf_report.php
+```
