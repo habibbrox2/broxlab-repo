@@ -8,6 +8,9 @@
 class AIProvider
 {
     private $mysqli;
+    private $lastRemoteModelsMeta = null;
+
+    private const REMOTE_MODELS_CACHE_DIR = 'storage/cache/ai-models';
 
     // Provider configurations
     private const PROVIDER_CONFIGS = [
@@ -16,27 +19,14 @@ class AIProvider
             'endpoint' => 'https://openrouter.ai/api/v1/chat/completions',
             'auth_type' => 'bearer',
             'supports_streaming' => true,
-            'models' => [
-                'openrouter/auto' => 'Auto Router (OpenRouter)',
-                'anthropic/claude-3.5-sonnet' => 'Claude 3.5 Sonnet',
-                'anthropic/claude-3-haiku' => 'Claude 3 Haiku',
-                'openai/gpt-4o' => 'GPT-4o',
-                'openai/gpt-4o-mini' => 'GPT-4o Mini',
-                'google/gemini-2.0-flash' => 'Gemini 2.0 Flash',
-                'meta-llama/llama-3.1-8b-instruct' => 'Llama 3.1 8B'
-            ]
+            'models' => []
         ],
         'openai' => [
             'name' => 'OpenAI',
             'endpoint' => 'https://api.openai.com/v1/chat/completions',
             'auth_type' => 'bearer',
             'supports_streaming' => true,
-            'models' => [
-                'gpt-4o' => 'GPT-4o',
-                'gpt-4o-mini' => 'GPT-4o Mini',
-                'gpt-4-turbo' => 'GPT-4 Turbo',
-                'gpt-3.5-turbo' => 'GPT-3.5 Turbo'
-            ]
+            'models' => []
         ],
         'anthropic' => [
             'name' => 'Anthropic',
@@ -44,39 +34,14 @@ class AIProvider
             'auth_type' => 'anthropic-api-key',
             'supports_streaming' => true,
             'requires_project_header' => true,
-            'models' => [
-                'claude-sonnet-4-20250514' => 'Claude Sonnet 4',
-                'claude-3-5-sonnet-20241022' => 'Claude 3.5 Sonnet',
-                'claude-3-5-sonnet-20240620' => 'Claude 3.5 Sonnet (June)',
-                'claude-3-haiku-20240307' => 'Claude 3 Haiku'
-            ]
+            'models' => []
         ],
         'fireworks' => [
             'name' => 'Fireworks AI',
             'endpoint' => 'https://api.fireworks.ai/inference/v1/chat/completions',
             'auth_type' => 'bearer',
             'supports_streaming' => true,
-            'models' => [
-                // Public serverless models - you must deploy any used model
-                // in your Fireworks dashboard.  The keys here include the
-                // full path that the API expects.  If you get a 404, make
-                // sure the model is deployed/visible to your account.
-                'accounts/fireworks/models/deepseek-v3p1' => 'DeepSeek v3.1 p1',
-                'accounts/fireworks/models/kimi-k2-instruct-0905' => 'Kimi K2',
-                'accounts/fireworks/models/llama-v3.1-70b-instruct' => 'Llama 3.1 70B',
-                'accounts/fireworks/models/llama-v3.1-405b-instruct' => 'Llama 3.1 405B',
-                'accounts/fireworks/models/llama-v3-70b-instruct' => 'Llama 3 70B',
-                'accounts/fireworks/models/llama-v3-8b-instruct' => 'Llama 3 8B',
-                'accounts/fireworks/models/qwen2-72b-instruct' => 'Qwen2 72B',
-                'accounts/fireworks/models/qwen2-7b-instruct' => 'Qwen2 7B',
-                'accounts/fireworks/models/mixtral-8x7b-instruct-v0.1' => 'Mixtral 8x7B',
-                'accounts/fireworks/models/phi-3.5-mini-instruct' => 'Phi-3.5 Mini',
-                'accounts/fireworks/models/gemma2-9b-instruct' => 'Gemma 2 9B',
-                'accounts/fireworks/models/deepseek-coder-v2-instruct' => 'DeepSeek Coder V2',
-                'accounts/fireworks/models/deepseek-llm-67b-chat' => 'DeepSeek LLM 67B',
-                'accounts/fireworks/models/minimax-m2.1' => 'MiniMax M2.1',
-                'accounts/fireworks/models/minimax-m2.5' => 'MiniMax M2.5'
-            ]
+            'models' => []
         ],
 
         'kilo' => [
@@ -84,22 +49,7 @@ class AIProvider
             'endpoint' => 'https://api.kilo.ai/api/gateway',
             'auth_type' => 'bearer',
             'supports_streaming' => true,
-            'models' => [
-                // FREE MODELS (show at top)
-                'moonshotai/Kimi-K2.5' => '🚀 MoonshotAI Kimi K2.5 (Free)',
-                'minimax/MiniMax-M2.1' => '🚀 MiniMax M2.1 (Free)',
-                'zhipuai/GLM-4.7' => '🚀 Z.AI GLM 4.7 (Free)',
-                'gigapotato/Giga-Potato' => '🚀 Giga Potato (Free)',
-                'arceeai/Trinity-Large' => '🚀 Arcee Trinity Large (Free)',
-                // Premium models
-                'anthropic/claude-sonnet-4.5' => 'Claude Sonnet 4.5',
-                'anthropic/claude-3.5-sonnet' => 'Claude 3.5 Sonnet',
-                'openai/gpt-4o' => 'GPT-4o',
-                'openai/gpt-4o-mini' => 'GPT-4o Mini',
-                'meta-llama/llama-3.1-8b-instruct' => 'Llama 3.1 8B',
-                'google/gemini-1.5-flash' => 'Gemini 1.5 Flash',
-                'mistralai/mistral-7b-instruct-v0.2' => 'Mistral 7B'
-            ]
+            'models' => []
         ],
         'huggingface' => [
             'name' => 'Hugging Face',
@@ -107,20 +57,14 @@ class AIProvider
             'auth_type' => 'bearer',
             'supports_streaming' => true,
             'uses_openai_format' => true,
-            'models' => [
-                'meta-llama/Meta-Llama-3.1-8B-Instruct' => 'Llama 3.1 8B Instruct',
-                'meta-llama/Meta-Llama-3-8B-Instruct' => 'Llama 3 8B Instruct',
-                'Qwen/Qwen2.5-7B-Instruct' => 'Qwen 2.5 7B Instruct',
-                'Qwen/Qwen2.5-14B-Instruct' => 'Qwen 2.5 14B Instruct',
-                'microsoft/Phi-3-mini-128k-instruct' => 'Phi-3 Mini 128K',
-                'google/gemma-2-2b-it' => 'Gemma 2 2B Instruct',
-                'google/gemma-2-9b-it' => 'Gemma 2 9B Instruct',
-                'mistralai/Mistral-7B-Instruct-v0.2' => 'Mistral 7B Instruct v0.2',
-                'mistralai/Mixtral-8x7B-Instruct-v0.1' => 'Mixtral 8x7B Instruct',
-                'tiiuae/Falcon3-7B-Instruct' => 'Falcon 3 7B Instruct',
-                'bigcode/starcoder2-15b' => 'StarCoder 2 15B',
-                'facebook/opt-1.3b' => 'OPT 1.3B'
-            ]
+            'models' => []
+        ],
+        'ollama' => [
+            'name' => 'Ollama',
+            'endpoint' => 'http://localhost:11434',
+            'auth_type' => 'bearer',
+            'supports_streaming' => true,
+            'models' => []
         ],
         'custom' => [
             'name' => 'Custom Provider',
@@ -134,6 +78,88 @@ class AIProvider
     public function __construct(mysqli $mysqli)
     {
         $this->mysqli = $mysqli;
+    }
+
+    private function getRemoteModelsCacheDir(): string
+    {
+        $root = dirname(__DIR__, 2);
+        $dir = $root . DIRECTORY_SEPARATOR . self::REMOTE_MODELS_CACHE_DIR;
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0777, true);
+        }
+        return $dir;
+    }
+
+    private function getRemoteModelsCacheTtl(string $providerName): int
+    {
+        return $providerName === 'ollama' ? 60 : 21600; // 60s for Ollama, 6h default
+    }
+
+    private function getOllamaCacheEndpoint(): string
+    {
+        $provider = $this->getByName('ollama');
+        $endpoint = $provider['api_endpoint']
+            ?? (self::getProviderConfig('ollama')['endpoint'] ?? '');
+        $endpoint = rtrim((string)$endpoint, '/');
+        $envHost = getenv('OLLAMA_HOST') ?: getenv('OLLAMA_BASE_URL') ?: '';
+        if (!empty($envHost)) {
+            $endpoint = rtrim($envHost, '/');
+        }
+        return $endpoint !== '' ? $endpoint : 'http://localhost:11434';
+    }
+
+    private function buildRemoteModelsCacheKey(string $providerName): string
+    {
+        $context = $providerName;
+        if ($providerName === 'ollama') {
+            $context .= '|' . $this->getOllamaCacheEndpoint();
+        } elseif (in_array($providerName, ['openai', 'openrouter', 'fireworks', 'huggingface', 'kilo'], true)) {
+            $apiKey = $this->getAPIKey($providerName);
+            if (!empty($apiKey)) {
+                $context .= '|' . $apiKey;
+            }
+        }
+        return sha1($context);
+    }
+
+    private function getRemoteModelsCachePath(string $providerName): string
+    {
+        $dir = $this->getRemoteModelsCacheDir();
+        $key = $this->buildRemoteModelsCacheKey($providerName);
+        return $dir . DIRECTORY_SEPARATOR . $providerName . '-' . $key . '.json';
+    }
+
+    private function readRemoteModelsCache(string $providerName): ?array
+    {
+        $path = $this->getRemoteModelsCachePath($providerName);
+        if (!file_exists($path)) {
+            return null;
+        }
+        $raw = @file_get_contents($path);
+        if ($raw === false || $raw === '') {
+            return null;
+        }
+        $data = json_decode($raw, true);
+        if (!is_array($data)) {
+            return null;
+        }
+        return $data;
+    }
+
+    private function writeRemoteModelsCache(string $providerName, array $models, int $ttl): void
+    {
+        $path = $this->getRemoteModelsCachePath($providerName);
+        $payload = [
+            'fetched_at' => time(),
+            'ttl' => $ttl,
+            'models' => $models
+        ];
+        @file_put_contents($path, json_encode($payload));
+    }
+
+    public function getLastRemoteModelsMeta(): ?array
+    {
+        return $this->lastRemoteModelsMeta;
     }
 
     /**
@@ -533,19 +559,31 @@ class AIProvider
         if ($providerName === 'kilo') {
             $endpoint = rtrim($endpoint, '/') . '/chat/completions';
         }
+        // Ollama uses OpenAI-compatible /v1/chat/completions path (per official docs)
+        if ($providerName === 'ollama') {
+            $endpoint = (string)$endpoint;
+            $endpoint = rtrim($endpoint, '/');
+            $path = (string)parse_url($endpoint, PHP_URL_PATH);
+            if ($path === '' || $path === '/' || $path === false) {
+                $endpoint = $endpoint . '/v1/chat/completions';
+            }
+        }
 
         $apiKey = $this->getAPIKey($providerName);
-
         if (empty($apiKey)) {
-            return ['success' => false, 'error' => 'API key not configured for ' . $config['name']];
+            if (!($providerName === 'ollama' && $this->isLocalOllamaEndpoint((string)$endpoint))) {
+                return ['success' => false, 'error' => 'API key not configured for ' . $config['name']];
+            }
         }
 
         // [PATCH] Fix common non-prefixed model names for OpenRouter
         $model = $this->ensureModelPrefix($providerName, $model);
+        $model = $this->resolveValidModel($providerName, $model, $provider);
 
         // Build request based on provider
         $requestData = $this->buildRequest($providerName, $model, $prompt, $options);
-        $headers = $this->buildHeaders($providerName, $apiKey, $requestData);
+        $headers = $this->buildHeaders($providerName, $apiKey, $requestData, (string)$endpoint);
+        $this->logPayloadDebug($providerName, $model, $endpoint, $requestData);
 
         // Make the request
         $ch = curl_init($endpoint);
@@ -555,55 +593,78 @@ class AIProvider
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, $options['timeout'] ?? 120);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error = curl_error($ch);
+        $effectiveUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
         curl_close($ch);
 
         if ($error) {
-            return ['success' => false, 'error' => 'cURL error: ' . $error];
+            return ['success' => false, 'error' => 'Connection error: ' . $error, 'error_type' => 'network'];
         }
 
         if ($httpCode !== 200) {
             // Try to parse OpenAI-style error payloads so we can show a cleaner message.
-            $errorMessage = 'HTTP ' . $httpCode;
-            $parsed = json_decode($response, true);
-
-            if (json_last_error() === JSON_ERROR_NONE && is_array($parsed)) {
-                $errorPayload = $parsed['error'] ?? $parsed;
-
-                if (is_array($errorPayload)) {
-                    $details = [];
-                    if (!empty($errorPayload['type'])) {
-                        $details[] = $errorPayload['type'];
-                    }
-                    if (!empty($errorPayload['code'])) {
-                        $details[] = $errorPayload['code'];
-                    }
-                    if (!empty($errorPayload['message'])) {
-                        $details[] = $errorPayload['message'];
-                    }
-
-                    if (!empty($details)) {
-                        $errorMessage .= ' (' . implode(', ', $details) . ')';
-                    } else {
-                        $errorMessage .= ': ' . json_encode($errorPayload);
-                    }
-                } elseif (!empty($parsed['message'])) {
-                    $errorMessage .= ': ' . $parsed['message'];
-                } else {
-                    $errorMessage .= ': ' . $response;
-                }
-            } else {
-                $errorMessage .= ': ' . $response;
-            }
-
-            return ['success' => false, 'error' => $errorMessage];
+            $errorMessage = $this->parseHttpError($providerName, $httpCode, $response);
+            return ['success' => false, 'error' => $errorMessage, 'error_type' => 'http', 'http_code' => $httpCode];
         }
 
         // Parse response
         return $this->parseResponse($providerName, $response);
+    }
+
+    /**
+     * Parse HTTP error into user-friendly message
+     */
+    private function parseHttpError(string $providerName, int $httpCode, string $response): string
+    {
+        $errorMessage = 'HTTP ' . $httpCode;
+        $parsed = json_decode($response, true);
+
+        if (json_last_error() === JSON_ERROR_NONE && is_array($parsed)) {
+            $errorPayload = $parsed['error'] ?? $parsed;
+
+            if (is_array($errorPayload)) {
+                $details = [];
+                if (!empty($errorPayload['type'])) {
+                    $details[] = $errorPayload['type'];
+                }
+                if (!empty($errorPayload['code'])) {
+                    $details[] = $errorPayload['code'];
+                }
+                if (!empty($errorPayload['message'])) {
+                    $details[] = $errorPayload['message'];
+                }
+
+                if (!empty($details)) {
+                    $errorMessage .= ' (' . implode(', ', $details) . ')';
+                } else {
+                    $errorMessage .= ': ' . json_encode($errorPayload);
+                }
+            } elseif (!empty($parsed['message'])) {
+                $errorMessage .= ': ' . $parsed['message'];
+            } else {
+                $errorMessage .= ': ' . $response;
+            }
+        } else {
+            $errorMessage .= ': ' . $response;
+        }
+
+        // Add provider-specific error hints
+        if ($httpCode === 401) {
+            $errorMessage .= ' - Check your API key';
+        } elseif ($httpCode === 403) {
+            $errorMessage .= ' - Access forbidden';
+        } elseif ($httpCode === 429) {
+            $errorMessage .= ' - Rate limit exceeded';
+        } elseif ($httpCode >= 500) {
+            $errorMessage .= ' - Provider server error';
+        }
+
+        return $errorMessage;
     }
 
     /**
@@ -737,18 +798,27 @@ class AIProvider
         // Ensure each message has role and content
         $formattedMessages = [];
         foreach ($messages as $msg) {
-            if (is_array($msg) && isset($msg['role']) && isset($msg['content'])) {
-                $formattedMessages[] = [
-                    'role' => $msg['role'],
-                    'content' => is_array($msg['content']) ? json_encode($msg['content']) : $msg['content']
-                ];
+            if (!is_array($msg) || !isset($msg['role']) || !array_key_exists('content', $msg)) {
+                continue;
             }
+            $content = $this->normalizeMessageContentForProvider($providerName, $msg['content']);
+            if ($content === '' || $content === null) {
+                continue;
+            }
+            $formattedMessages[] = [
+                'role' => $msg['role'],
+                'content' => $content
+            ];
         }
 
         // If no valid messages, fallback to empty user message
         if (empty($formattedMessages)) {
             $formattedMessages = [['role' => 'user', 'content' => '']];
         }
+
+        $normalized = $this->normalizeMessagesForProvider($providerName, $formattedMessages);
+        $formattedMessages = $normalized['messages'];
+        $systemPrompt = $normalized['system'] ?? '';
 
         // Build request based on provider
         $request = [
@@ -759,6 +829,9 @@ class AIProvider
         ];
 
         // Provider-specific adjustments
+        if ($providerName === 'anthropic' && $systemPrompt !== '') {
+            $request['system'] = $systemPrompt;
+        }
         if ($providerName === 'fireworks') {
             // Fireworks expects accounts/fireworks/models/xxx format
             if (strpos($model, 'accounts/') !== 0) {
@@ -774,9 +847,151 @@ class AIProvider
     }
 
     /**
+     * Determine whether a provider supports rich/multimodal content.
+     *
+     * This is driven by:
+     * 1) Explicit provider config flags (supports_multimodal/supports_rich_content)
+     * 2) Provider row extra_settings overrides (for administrator toggles)
+     * 3) Known provider defaults (internal hardcoded list)
+     */
+    public function supportsRichContent(string $providerName, ?array $providerRow = null): bool
+    {
+        // Check for explicit provider row override (stored in extra_settings)
+        if (!is_array($providerRow)) {
+            $providerRow = $this->getByName($providerName);
+        }
+        if (is_array($providerRow)) {
+            $extra = $providerRow['extra_settings'] ?? [];
+            if (!is_array($extra)) {
+                $extra = [];
+            }
+            if (!empty($extra['supports_multimodal']) || !empty($extra['supports_rich_content'])) {
+                return true;
+            }
+        }
+
+        $config = self::getProviderConfig($providerName);
+        // Explicit config flags (useful for custom providers)
+        if (!empty($config['supports_multimodal']) || !empty($config['supports_rich_content'])) {
+            return true;
+        }
+        // OpenAI-like response formatting implies rich content support
+        if (!empty($config['uses_openai_format'])) {
+            return true;
+        }
+        return in_array($providerName, ['openai', 'openrouter', 'ollama', 'fireworks', 'kilo'], true);
+    }
+
+    /**
+     * Determine whether a specific model is considered multimodal.
+     *
+     * This allows per-model overrides stored in the provider's extra_settings.model_multimodal map.
+     */
+    public function modelSupportsMultimodal(string $providerName, string $modelId): bool
+    {
+        $provider = $this->getByName($providerName);
+        if (!$provider) {
+            return false;
+        }
+
+        $extra = $provider['extra_settings'] ?? [];
+        if (!is_array($extra)) {
+            $extra = [];
+        }
+
+        // Per-model overrides take precedence
+        if (!empty($extra['model_multimodal']) && is_array($extra['model_multimodal'])) {
+            if (array_key_exists($modelId, $extra['model_multimodal'])) {
+                return (bool)$extra['model_multimodal'][$modelId];
+            }
+        }
+
+        // Provider-level multimodal support
+        if ($this->supportsRichContent($providerName, $provider)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function normalizeMessageContentForProvider(string $providerName, $content)
+    {
+        if (!is_array($content)) {
+            return is_string($content) ? $content : '';
+        }
+
+        $parts = [];
+        foreach ($content as $part) {
+            if (!is_array($part)) {
+                continue;
+            }
+            $type = $part['type'] ?? '';
+            if ($type === 'text') {
+                $text = $part['text'] ?? '';
+                if (!is_string($text) || trim($text) === '') {
+                    continue;
+                }
+                $parts[] = ['type' => 'text', 'text' => $text];
+            } elseif ($type === 'image_url') {
+                $image = $part['image_url'] ?? [];
+                $url = $image['url'] ?? '';
+                if (!is_string($url) || trim($url) === '') {
+                    continue;
+                }
+                $artifact = ['url' => trim($url)];
+                if (!empty($image['name']) && is_string($image['name'])) {
+                    $artifact['name'] = trim($image['name']);
+                }
+                if (!empty($image['mime']) && is_string($image['mime'])) {
+                    $artifact['mime'] = trim($image['mime']);
+                }
+                if (isset($image['size']) && (is_int($image['size']) || is_numeric($image['size']))) {
+                    $artifact['size'] = (int)$image['size'];
+                }
+                $parts[] = ['type' => 'image_url', 'image_url' => $artifact];
+            }
+        }
+
+        if (empty($parts)) {
+            return '';
+        }
+
+        if ($this->supportsRichContent($providerName)) {
+            return $parts;
+        }
+
+        $lines = [];
+        foreach ($parts as $part) {
+            if ($part['type'] === 'text') {
+                $lines[] = (string)$part['text'];
+            } elseif ($part['type'] === 'image_url') {
+                $image = $part['image_url'] ?? [];
+                $url = $image['url'] ?? '';
+                $label = 'Image';
+                if (!empty($image['name']) && is_string($image['name'])) {
+                    $label = $image['name'];
+                }
+                $meta = [];
+                if (!empty($image['mime'])) {
+                    $meta[] = $image['mime'];
+                }
+                if (!empty($image['size'])) {
+                    $meta[] = $image['size'] . ' bytes';
+                }
+                $line = $label . ': ' . $url;
+                if (!empty($meta)) {
+                    $line .= ' (' . implode(', ', $meta) . ')';
+                }
+                $lines[] = $line;
+            }
+        }
+        return trim(implode("\n", array_filter($lines, fn($l) => $l !== '')));
+    }
+
+    /**
      * Build headers based on provider
      */
-    private function buildHeaders(string $providerName, string $apiKey, array $requestData): array
+    private function buildHeaders(string $providerName, string $apiKey, array $requestData, string $endpoint): array
     {
         $headers = ['Content-Type: application/json'];
 
@@ -788,11 +1003,66 @@ class AIProvider
             case 'google':
                 $headers[] = 'Authorization: Bearer ' . $apiKey;
                 break;
+            case 'ollama':
+                // Local Ollama does not require auth
+                if (!empty($apiKey) && !$this->isLocalOllamaEndpoint($endpoint)) {
+                    $headers[] = 'Authorization: Bearer ' . $apiKey;
+                }
+                break;
             default:
                 $headers[] = 'Authorization: Bearer ' . $apiKey;
         }
 
         return $headers;
+    }
+
+    private function isLocalOllamaEndpoint(string $endpoint): bool
+    {
+        $host = parse_url($endpoint, PHP_URL_HOST);
+        if ($host === null || $host === false || $host === '') {
+            return false;
+        }
+        return $host === 'localhost' || $host === '127.0.0.1';
+    }
+
+    /**
+     * Hugging Face /v1/responses requires chat-capable models.
+     */
+    public function isHuggingFaceChatModel(string $model): bool
+    {
+        $lower = strtolower($model);
+        $blockedPatterns = [
+            'sentence-transformers/',
+            'embedding',
+            'feature-extraction',
+            'text-embedding',
+            'text2vec',
+            'rerank',
+            're-rank'
+        ];
+        foreach ($blockedPatterns as $pattern) {
+            if (strpos($lower, $pattern) !== false) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Filter Hugging Face models to chat-capable entries only.
+     *
+     * @param array<string,string> $models
+     * @return array<string,string>
+     */
+    public function filterHuggingFaceChatModels(array $models): array
+    {
+        $out = [];
+        foreach ($models as $id => $label) {
+            if ($this->isHuggingFaceChatModel((string)$id)) {
+                $out[$id] = $label;
+            }
+        }
+        return $out;
     }
 
     /**
@@ -971,6 +1241,9 @@ class AIProvider
 
         $row['supported_models_select'] = $this->buildSelectSafeModelLabels($row['supported_models']);
 
+        // Determine multimodal support (can be overridden per-provider via extra_settings)
+        $row['supports_multimodal'] = $this->supportsRichContent($row['provider_name'], $row);
+
         // Check if API key is set and show masked preview
         $apiKey = $this->getAPIKey($row['provider_name']);
         $row['has_api_key'] = !empty($apiKey);
@@ -1014,55 +1287,433 @@ class AIProvider
      * @param string $providerName
      * @return array<string,string> mapping model id =&gt; display name
      */
-    public function fetchRemoteModels(string $providerName): array
+    public function fetchRemoteModels(string $providerName, bool $forceRefresh = false): array
     {
-        if ($providerName !== 'fireworks') {
-            return [];
-        }
+        $ttl = $this->getRemoteModelsCacheTtl($providerName);
+        $cache = $this->readRemoteModelsCache($providerName);
 
-        $accountId = getenv('FIREWORKS_ACCOUNT_ID') ?: $this->getSetting('fireworks_account_id', '');
-        if (empty($accountId)) {
-            return [];
-        }
-
-        $apiKey = $this->getAPIKey('fireworks');
-        if (empty($apiKey)) {
-            return [];
-        }
-
-        $url = "https://api.fireworks.ai/v1/accounts/" . urlencode($accountId) . "/models?pageSize=200";
-
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_HTTPGET, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Authorization: Bearer ' . $apiKey,
-            'Content-Type: application/json'
-        ]);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-
-        $resp = curl_exec($ch);
-        $err = curl_error($ch);
-        $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($err || $http !== 200) {
-            return [];
-        }
-
-        $data = json_decode($resp, true);
-        if (json_last_error() !== JSON_ERROR_NONE || !isset($data['models'])) {
-            return [];
-        }
-
-        $models = [];
-        foreach ($data['models'] as $m) {
-            if (isset($m['name'])) {
-                $models[$m['name']] = $m['displayName'] ?? $m['name'];
+        if (!$forceRefresh && is_array($cache) && !empty($cache['models'])) {
+            $age = time() - (int)($cache['fetched_at'] ?? 0);
+            $cacheTtl = (int)($cache['ttl'] ?? $ttl);
+            if ($cacheTtl > 0 && $age < $cacheTtl) {
+                $this->lastRemoteModelsMeta = [
+                    'cached_at' => (int)($cache['fetched_at'] ?? time()),
+                    'cache_ttl' => $cacheTtl,
+                    'source' => 'cache'
+                ];
+                return $cache['models'];
             }
         }
 
-        return $models;
+        $models = $this->fetchRemoteModelsRemote($providerName);
+        if (!empty($models)) {
+            $this->writeRemoteModelsCache($providerName, $models, $ttl);
+            $this->lastRemoteModelsMeta = [
+                'cached_at' => time(),
+                'cache_ttl' => $ttl,
+                'source' => 'remote'
+            ];
+            return $models;
+        }
+
+        if (is_array($cache) && !empty($cache['models'])) {
+            $this->lastRemoteModelsMeta = [
+                'cached_at' => (int)($cache['fetched_at'] ?? time()),
+                'cache_ttl' => (int)($cache['ttl'] ?? $ttl),
+                'source' => 'stale'
+            ];
+            return $cache['models'];
+        }
+
+        $this->lastRemoteModelsMeta = null;
+        return [];
+    }
+
+    private function fetchRemoteModelsRemote(string $providerName): array
+    {
+        if ($providerName === 'kilo') {
+            $url = 'https://api.kilo.ai/api/gateway/models';
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_HTTPGET, true);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json'
+            ]);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+            $resp = curl_exec($ch);
+            $err = curl_error($ch);
+            $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($err || $http !== 200) {
+                $this->logRemoteFetchStatus($providerName, 'http_error', $http, $err ?: null);
+                return [];
+            }
+
+            $data = json_decode($resp, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->logRemoteFetchStatus($providerName, 'parse_error');
+                return [];
+            }
+
+            $models = [];
+            $items = $data['data'] ?? [];
+            if (is_array($items)) {
+                foreach ($items as $m) {
+                    if (!is_array($m) || empty($m['id'])) continue;
+                    $id = (string)$m['id'];
+                    $label = (string)($m['name'] ?? $m['display_name'] ?? $id);
+                    $models[$id] = $label;
+                }
+            }
+
+            $this->logRemoteFetchStatus($providerName, 'ok', $http, null, count($models));
+            return $models;
+        }
+
+        if ($providerName === 'openai') {
+            $apiKey = $this->getAPIKey('openai');
+            if (empty($apiKey)) {
+                $this->logRemoteFetchStatus($providerName, 'missing_api_key');
+                return [];
+            }
+
+            $url = 'https://api.openai.com/v1/models';
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_HTTPGET, true);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Bearer ' . $apiKey,
+                'Content-Type: application/json'
+            ]);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+            $resp = curl_exec($ch);
+            $err = curl_error($ch);
+            $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($err || $http !== 200) {
+                $this->logRemoteFetchStatus($providerName, 'http_error', $http, $err ?: null);
+                return [];
+            }
+
+            $data = json_decode($resp, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->logRemoteFetchStatus($providerName, 'parse_error');
+                return [];
+            }
+
+            $models = [];
+            $items = $data['data'] ?? [];
+            if (is_array($items)) {
+                foreach ($items as $m) {
+                    if (!is_array($m) || empty($m['id'])) continue;
+                    $id = (string)$m['id'];
+                    $models[$id] = $id;
+                }
+            }
+
+            $this->logRemoteFetchStatus($providerName, 'ok', $http, null, count($models));
+            return $models;
+        }
+
+        if ($providerName === 'ollama') {
+            $provider = $this->getByName('ollama');
+            if (!$provider) {
+                $this->logRemoteFetchStatus($providerName, 'provider_not_found');
+                return [];
+            }
+            $providerId = (int)($provider['id'] ?? 0);
+            $currentEndpoint = trim((string)($provider['api_endpoint'] ?? ''));
+
+            $endpoint = $provider['api_endpoint']
+                ?? (self::getProviderConfig('ollama')['endpoint'] ?? '');
+            $endpoint = rtrim((string)$endpoint, '/');
+
+            $candidates = [];
+            if ($endpoint !== '') {
+                $candidates[] = $endpoint;
+            }
+
+            $envHost = getenv('OLLAMA_HOST') ?: getenv('OLLAMA_BASE_URL') ?: '';
+            if (!empty($envHost)) {
+                $candidates[] = rtrim($envHost, '/');
+            }
+            $candidates[] = 'http://localhost:11434';
+            $candidates[] = 'http://127.0.0.1:11434';
+
+
+            $tried = [];
+            foreach (array_unique($candidates) as $base) {
+                if ($base === '') continue;
+                $tried[] = $base;
+
+                // Try GET first (simpler, works with Ollama)
+                $url = $base . '/api/tags';
+                $ch = curl_init($url);
+                curl_setopt($ch, CURLOPT_HTTPGET, true);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Content-Type: application/json',
+                    'Accept: application/json'
+                ]);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+
+                $resp = curl_exec($ch);
+                $err = curl_error($ch);
+                $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+
+                $data = null;
+                $success = false;
+
+                // Check for HTTP errors first
+                if (!$err && $http === 200) {
+                    $data = json_decode($resp, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $success = true;
+                    }
+                }
+
+                // If GET failed, try POST with empty JSON body (per official docs)
+                if (!$success) {
+                    $ch = curl_init($url);
+                    curl_setopt($ch, CURLOPT_POST, true);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, '{}');
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                        'Content-Type: application/json',
+                        'Accept: application/json'
+                    ]);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+
+                    $resp = curl_exec($ch);
+                    $err = curl_error($ch);
+                    $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    curl_close($ch);
+
+                    if (!$err && $http === 200) {
+                        $data = json_decode($resp, true);
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $success = true;
+                        }
+                    }
+                }
+
+                if (!$success) {
+                    if ($err) {
+                        $this->logRemoteFetchStatus($providerName, 'curl_error', null, $err);
+                    } else {
+                        $this->logRemoteFetchStatus($providerName, 'http_error', $http, $resp);
+                    }
+                    continue;
+                }
+
+                // Check if response contains error
+                if (isset($data['error'])) {
+                    $errorMsg = is_array($data['error']) ? ($data['error']['message'] ?? json_encode($data['error'])) : $data['error'];
+                    $this->logRemoteFetchStatus($providerName, 'api_error', $http, $errorMsg);
+                    // If there's an error but we still have models, continue
+                    if (empty($data['models'])) {
+                        continue;
+                    }
+                }
+
+                $models = [];
+                $items = $data['models'] ?? [];
+                if (is_array($items)) {
+                    foreach ($items as $m) {
+                        if (!is_array($m)) continue;
+                        $id = (string)($m['name'] ?? '');
+                        if ($id === '') continue;
+
+                        // Get model details for better labels
+                        $label = $id;
+                        if (isset($m['details'])) {
+                            $details = $m['details'];
+                            if (!empty($details['family'])) {
+                                $label = $details['family'] . ' - ' . $id;
+                            }
+                        }
+                        $models[$id] = $label;
+                    }
+                }
+
+                // If we got models, return them
+                if (!empty($models)) {
+                    if ($providerId > 0 && $currentEndpoint !== $base) {
+                        $this->update($providerId, ['api_endpoint' => $base]);
+                    }
+                    $this->logRemoteFetchStatus($providerName, 'ok', $http, null, count($models));
+                    return $models;
+                }
+
+                // If models array is empty
+                $this->logRemoteFetchStatus($providerName, 'no_models', $http, 'Empty models array');
+            }
+
+            $this->logRemoteFetchStatus($providerName, 'missing_endpoint', null, 'Tried: ' . implode(', ', $tried));
+            return [];
+        }
+
+        if ($providerName === 'openrouter') {
+            $apiKey = $this->getAPIKey('openrouter');
+            if (empty($apiKey)) {
+                $this->logRemoteFetchStatus($providerName, 'missing_api_key');
+                return [];
+            }
+
+            $url = 'https://openrouter.ai/api/v1/models';
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_HTTPGET, true);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Bearer ' . $apiKey,
+                'Content-Type: application/json'
+            ]);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+            $resp = curl_exec($ch);
+            $err = curl_error($ch);
+            $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($err || $http !== 200) {
+                $this->logRemoteFetchStatus($providerName, 'http_error', $http, $err ?: null);
+                return [];
+            }
+
+            $data = json_decode($resp, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->logRemoteFetchStatus($providerName, 'parse_error');
+                return [];
+            }
+
+            $models = [];
+            $items = $data['data'] ?? [];
+            if (is_array($items)) {
+                foreach ($items as $m) {
+                    if (!is_array($m) || empty($m['id'])) continue;
+                    $id = (string)$m['id'];
+                    $label = (string)($m['name'] ?? $id);
+                    $models[$id] = $label;
+                }
+            }
+
+            $this->logRemoteFetchStatus($providerName, 'ok', $http, null, count($models));
+            return $models;
+        }
+
+        if ($providerName === 'fireworks') {
+            $apiKey = $this->getAPIKey('fireworks');
+            if (empty($apiKey)) {
+                $this->logRemoteFetchStatus($providerName, 'missing_api_key');
+                return [];
+            }
+
+            $url = "https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200";
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_HTTPGET, true);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Bearer ' . $apiKey,
+                'Content-Type: application/json'
+            ]);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+            $resp = curl_exec($ch);
+            $err = curl_error($ch);
+            $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($err || $http !== 200) {
+                $this->logRemoteFetchStatus($providerName, 'http_error', $http, $err ?: null);
+                return [];
+            }
+
+            $data = json_decode($resp, true);
+            if (json_last_error() !== JSON_ERROR_NONE || !isset($data['models'])) {
+                $this->logRemoteFetchStatus($providerName, 'parse_error');
+                return [];
+            }
+
+            $models = [];
+            foreach ($data['models'] as $m) {
+                if (isset($m['name'])) {
+                    $models[$m['name']] = $m['displayName'] ?? $m['name'];
+                }
+            }
+
+            $this->logRemoteFetchStatus($providerName, 'ok', $http, null, count($models));
+            return $models;
+        }
+
+        if ($providerName === 'huggingface') {
+            $apiKey = $this->getAPIKey('huggingface');
+            $url = 'https://router.huggingface.co/v1/models';
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_HTTPGET, true);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            $headers = ['Content-Type: application/json'];
+            if (!empty($apiKey)) {
+                $headers[] = 'Authorization: Bearer ' . $apiKey;
+            }
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+            $resp = curl_exec($ch);
+            $err = curl_error($ch);
+            $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($err || $http !== 200) {
+                $this->logRemoteFetchStatus($providerName, 'http_error', $http, $err ?: null);
+                return [];
+            }
+
+            $data = json_decode($resp, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->logRemoteFetchStatus($providerName, 'parse_error');
+                return [];
+            }
+
+            $models = [];
+            $items = $data['data'] ?? $data['models'] ?? [];
+            if (is_array($items)) {
+                foreach ($items as $m) {
+                    if (is_array($m) && isset($m['id'])) {
+                        $id = (string)$m['id'];
+                        $label = (string)($m['display_name'] ?? $m['name'] ?? $id);
+                        $models[$id] = $label;
+                    }
+                }
+            }
+
+            $this->logRemoteFetchStatus($providerName, 'ok', $http, null, count($models));
+            return $models;
+        }
+
+        return [];
+    }
+
+    private function logRemoteFetchStatus(string $providerName, string $status, ?int $httpCode = null, ?string $error = null, ?int $count = null): void
+    {
+        if (!getenv('AI_DEBUG_PAYLOAD')) {
+            return;
+        }
+        $payload = [
+            'provider' => $providerName,
+            'status' => $status
+        ];
+        if ($httpCode !== null) $payload['http'] = $httpCode;
+        if ($error) $payload['error'] = $error;
+        if ($count !== null) $payload['count'] = $count;
+        error_log('[AI Remote Models] ' . json_encode($payload));
     }
 
     /**
@@ -1075,13 +1726,42 @@ class AIProvider
             return ['success' => false, 'error' => 'Provider not found'];
         }
 
+        // For Ollama (local), API key is optional - it's a local service
         $apiKey = $this->getAPIKey($providerName);
-        if (empty($apiKey)) {
+        $endpoint = $provider['api_endpoint'] ?? self::getProviderConfig($providerName)['endpoint'] ?? '';
+        $isLocalOllama = $providerName === 'ollama' && $this->isLocalOllamaEndpoint((string)$endpoint);
+
+        if (empty($apiKey) && !$isLocalOllama) {
             return ['success' => false, 'error' => 'API key not configured'];
         }
 
         $config = self::getProviderConfig($providerName);
-        $testModel = $model ?? array_key_first($config['models'] ?? ['gpt-4o-mini' => 'Test']);
+        $models = $provider['supported_models'] ?? [];
+        if (empty($models)) {
+            $models = $config['models'] ?? [];
+        }
+        if (empty($model)) {
+            $testModel = (string)array_key_first($models);
+        } else {
+            $testModel = (string)$model;
+        }
+        if ($testModel === '') {
+            // Always try to fetch models remotely first
+            $remoteModels = $this->fetchRemoteModels($providerName);
+
+            if (!empty($remoteModels)) {
+                // Use first available model from remote fetch
+                $testModel = array_key_first($remoteModels);
+            } else {
+                // Fallback to provider's supported models from config
+                $models = $provider['supported_models'] ?? [];
+                if (empty($models)) {
+                    $config = self::getProviderConfig($providerName);
+                    $models = $config['models'] ?? [];
+                }
+                $testModel = (string)array_key_first($models) ?? '';
+            }
+        }
 
         // Simple test prompt
         $testPrompt = "Say 'OK' if you can read this.";
@@ -1101,31 +1781,529 @@ class AIProvider
     }
 
     /**
-     * Ensure model ID is correctly prefixed for specific providers (e.g. OpenRouter)
+     * Ensure model ID is correctly handled for specific providers.
+     * For OpenRouter, model IDs need provider prefix (e.g., openai/gpt-4o-mini).
      */
     private function ensureModelPrefix(string $providerName, string $model): string
     {
+        // Only process for providers that need prefixes
         if ($providerName !== 'openrouter' && $providerName !== 'kilo') {
             return $model;
         }
 
-        // If it already has a slash, assume it's correctly prefixed (e.g., openai/..., anthropic/...)
+        // If it already has a slash, assume it's correctly prefixed
         if (strpos($model, '/') !== false) {
             return $model;
         }
 
-        // Mapping for legacy or un-prefixed common model names for OpenRouter
-        $mapping = [
-            'gpt-4o' => 'openai/gpt-4o',
-            'gpt-4o-mini' => 'openai/gpt-4o-mini',
-            'gpt-4' => 'openai/gpt-4',
-            'gpt-3.5-turbo' => 'openai/gpt-3.5-turbo',
-            'claude-3-opus' => 'anthropic/claude-3-opus',
-            'claude-3-sonnet' => 'anthropic/claude-3-sonnet',
-            'claude-3-haiku' => 'anthropic/claude-3-haiku',
-            'auto' => 'openrouter/auto'
+        // For OpenRouter - add provider prefix for known models
+        if ($providerName === 'openrouter') {
+            // Map common model names to their providers for OpenRouter
+            $providerPrefixMap = [
+                'gpt-4o' => 'openai/gpt-4o',
+                'gpt-4o-mini' => 'openai/gpt-4o-mini',
+                'gpt-4' => 'openai/gpt-4',
+                'gpt-3.5-turbo' => 'openai/gpt-3.5-turbo',
+                'claude-3-opus' => 'anthropic/claude-3-opus',
+                'claude-3-sonnet' => 'anthropic/claude-3-sonnet',
+                'claude-3-haiku' => 'anthropic/claude-3-haiku',
+                'auto' => 'openrouter/auto'
+            ];
+
+            // Check if we have a mapping
+            if (isset($providerPrefixMap[$model])) {
+                return $providerPrefixMap[$model];
+            }
+
+            // For unknown models, let OpenRouter handle it (use as-is)
+            return $model;
+        }
+
+        return $model;
+    }
+
+    /**
+     * Normalize messages for provider-specific payload requirements.
+     *
+     * @return array{messages: array<int,array<string,mixed>>, system: string}
+     */
+    private function normalizeMessagesForProvider(string $providerName, array $messages): array
+    {
+        if ($providerName !== 'anthropic') {
+            return ['messages' => $messages, 'system' => ''];
+        }
+
+        $systemParts = [];
+        $filtered = [];
+        foreach ($messages as $msg) {
+            $role = $msg['role'] ?? '';
+            $content = $msg['content'] ?? '';
+            if ($role === 'system') {
+                if (is_string($content) && $content !== '') {
+                    $systemParts[] = $content;
+                }
+                continue;
+            }
+            $filtered[] = $msg;
+        }
+
+        if (empty($filtered)) {
+            $filtered = [['role' => 'user', 'content' => '']];
+        }
+
+        return [
+            'messages' => $filtered,
+            'system' => implode("\n\n", $systemParts)
+        ];
+    }
+
+    /**
+     * Resolve and validate a model against available provider models.
+     */
+    private function resolveValidModel(string $providerName, string $model, array $providerRow): string
+    {
+        $models = $providerRow['supported_models'] ?? [];
+        if (empty($models)) {
+            $config = self::getProviderConfig($providerName);
+            $models = $config['models'] ?? [];
+        }
+
+        if ($providerName === 'fireworks') {
+            $remote = $this->fetchRemoteModels($providerName);
+            if (!empty($remote)) {
+                $models = $remote;
+            }
+        }
+
+        if (empty($models)) {
+            return $model;
+        }
+
+        if ($providerName === 'huggingface') {
+            $chatModels = $this->filterHuggingFaceChatModels($models);
+            if (!empty($chatModels)) {
+                $models = $chatModels;
+            }
+            $hintResolved = $this->resolveHuggingFaceHintModel($model, $models);
+            if ($hintResolved !== '') {
+                return $hintResolved;
+            }
+        }
+
+        if (!isset($models[$model])) {
+            $fallback = (string)array_key_first($models);
+            if ($fallback !== '') {
+                $this->logPayloadWarning($providerName, $model, $fallback);
+                return $fallback;
+            }
+        }
+
+        return $model;
+    }
+
+    /**
+     * Resolve Hugging Face selection hints (:fastest, :cheapest, :preferred).
+     * Returns a concrete model id or empty string if no hint is used.
+     */
+    private function resolveHuggingFaceHintModel(string $model, array $models): string
+    {
+        $lower = strtolower($model);
+        $hint = '';
+        foreach ([':fastest', ':cheapest', ':preferred'] as $suffix) {
+            if (str_ends_with($lower, $suffix)) {
+                $hint = $suffix;
+                break;
+            }
+        }
+        if ($hint === '' || empty($models)) {
+            return '';
+        }
+
+        if ($hint === ':preferred') {
+            $preferred = $this->getSetting('huggingface_preferred_models', []);
+            if (is_string($preferred)) {
+                $preferred = array_filter(array_map('trim', explode(',', $preferred)));
+            }
+            if (is_array($preferred)) {
+                foreach ($preferred as $prefId) {
+                    if (isset($models[$prefId])) {
+                        return (string)$prefId;
+                    }
+                }
+            }
+            return (string)array_key_first($models);
+        }
+
+        if ($hint === ':cheapest') {
+            $last = array_key_last($models);
+            return $last ? (string)$last : '';
+        }
+
+        return (string)array_key_first($models);
+    }
+
+    /**
+     * Make streaming API call to AI provider
+     * 
+     * @param string $providerName Provider name (e.g., 'ollama', 'openrouter', 'openai')
+     * @param string $model Model identifier
+     * @param string|array $prompt Either a string prompt or an array of message objects
+     * @param callable $onChunk Callback function for each streaming chunk
+     * @param array $options Additional options (max_tokens, temperature, etc.)
+     * @return array Response metadata
+     */
+    public function streamAPI(string $providerName, string $model, $prompt, callable $onChunk, array $options = []): array
+    {
+        // Validate prompt is either string or array
+        if (!is_string($prompt) && !is_array($prompt)) {
+            return ['success' => false, 'error' => 'Prompt must be a string or array of messages'];
+        }
+
+        $provider = $this->getByName($providerName);
+        if (!$provider) {
+            return ['success' => false, 'error' => 'Provider not found'];
+        }
+
+        $config = self::getProviderConfig($providerName);
+        if (!$config) {
+            return ['success' => false, 'error' => 'Provider configuration not found'];
+        }
+
+        // Check if provider supports streaming
+        if (!($config['supports_streaming'] ?? false)) {
+            return ['success' => false, 'error' => 'Provider does not support streaming'];
+        }
+
+        // Build endpoint URL
+        $endpoint = $provider['api_endpoint'] ?? $config['endpoint'];
+
+        // Kilo.ai uses /chat/completions path
+        if ($providerName === 'kilo') {
+            $endpoint = rtrim($endpoint, '/') . '/chat/completions';
+        }
+        // Ollama uses OpenAI-compatible /v1/chat/completions path
+        if ($providerName === 'ollama') {
+            $endpoint = (string)$endpoint;
+            $endpoint = rtrim($endpoint, '/');
+            $path = (string)parse_url($endpoint, PHP_URL_PATH);
+            if ($path === '' || $path === '/' || $path === false) {
+                $endpoint = $endpoint . '/v1/chat/completions';
+            }
+        }
+
+        $apiKey = $this->getAPIKey($providerName);
+        if (empty($apiKey)) {
+            if (!($providerName === 'ollama' && $this->isLocalOllamaEndpoint((string)$endpoint))) {
+                return ['success' => false, 'error' => 'API key not configured for ' . $config['name']];
+            }
+        }
+
+        // Ensure model prefix for OpenRouter
+        $model = $this->ensureModelPrefix($providerName, $model);
+        $model = $this->resolveValidModel($providerName, $model, $provider);
+
+        // Build request with streaming enabled
+        $options['stream'] = true;
+        $requestData = $this->buildRequest($providerName, $model, $prompt, $options);
+        $headers = $this->buildHeaders($providerName, $apiKey, $requestData, (string)$endpoint);
+
+        // Make streaming request
+        return $this->makeStreamingRequest($endpoint, $headers, $requestData, $providerName, $onChunk);
+    }
+
+    /**
+     * Make streaming cURL request with proper SSE handling
+     */
+    private function makeStreamingRequest(string $endpoint, array $headers, array $requestData, string $providerName, callable $onChunk): array
+    {
+        $ch = curl_init($endpoint);
+
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, false); // Stream directly
+        curl_setopt($ch, CURLOPT_TIMEOUT, $requestData['timeout'] ?? 120);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+
+        // Handle SSE streaming
+        $buffer = '';
+        $firstChunk = true;
+        $totalTokens = 0;
+
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $data) use ($onChunk, &$buffer, &$firstChunk, &$totalTokens, $providerName) {
+            $buffer .= $data;
+
+            // Process complete SSE messages
+            while (($pos = strpos($buffer, "\n\n")) !== false) {
+                $line = substr($buffer, 0, $pos);
+                $buffer = substr($buffer, $pos + 2);
+
+                $line = trim($line);
+                if (strpos($line, 'data: ') === 0) {
+                    $jsonStr = substr($line, 6);
+
+                    // Skip [DONE] message
+                    if ($jsonStr === '[DONE]') {
+                        continue;
+                    }
+
+                    $chunk = json_decode($jsonStr, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        // Extract content based on provider format
+                        $content = $this->extractStreamingContent($providerName, $chunk);
+
+                        if ($content !== '') {
+                            $onChunk($content, $firstChunk);
+                            $firstChunk = false;
+                        }
+
+                        // Track token usage if available
+                        if (isset($chunk['usage'])) {
+                            $totalTokens = ($chunk['usage']['completion_tokens'] ?? 0);
+                        }
+                    }
+                }
+            }
+
+            return strlen($data);
+        });
+
+        $success = curl_exec($ch);
+        $error = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($error) {
+            return ['success' => false, 'error' => 'cURL error: ' . $error];
+        }
+
+        if ($httpCode !== 200) {
+            return ['success' => false, 'error' => 'HTTP ' . $httpCode];
+        }
+
+        return [
+            'success' => true,
+            'total_tokens' => $totalTokens
+        ];
+    }
+
+    /**
+     * Extract content from streaming response based on provider
+     */
+    private function extractStreamingContent(string $providerName, array $chunk): string
+    {
+        // OpenAI / OpenRouter / Ollama format
+        if (isset($chunk['choices'][0]['delta']['content'])) {
+            return $chunk['choices'][0]['delta']['content'];
+        }
+
+        // Anthropic format
+        if (isset($chunk['type']) && $chunk['type'] === 'content_block_delta') {
+            return $chunk['delta']['text'] ?? '';
+        }
+
+        // Generic delta content
+        if (isset($chunk['delta']['content'])) {
+            return $chunk['delta']['content'];
+        }
+
+        return '';
+    }
+
+    /**
+     * Check if provider supports streaming
+     */
+    public function supportsStreaming(string $providerName): bool
+    {
+        $config = self::getProviderConfig($providerName);
+        return $config['supports_streaming'] ?? false;
+    }
+
+    /**
+     * Check Ollama server status
+     * Returns server information if available
+     */
+    public function checkOllamaStatus(): array
+    {
+        $endpoints = [
+            getenv('OLLAMA_HOST') ?: getenv('OLLAMA_BASE_URL') ?: '',
+            'http://localhost:11434',
+            'http://127.0.0.1:11434'
         ];
 
-        return $mapping[$model] ?? 'openai/' . $model;
+        foreach (array_filter($endpoints) as $endpoint) {
+            $url = rtrim($endpoint, '/') . '/api/tags';
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_HTTPGET, true);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+
+            $resp = curl_exec($ch);
+            $err = curl_error($ch);
+            $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if (!$err && $http === 200) {
+                $data = json_decode($resp, true);
+                return [
+                    'success' => true,
+                    'online' => true,
+                    'endpoint' => $endpoint,
+                    'models_count' => count($data['models'] ?? []),
+                    'version' => $data['version'] ?? null
+                ];
+            }
+        }
+
+        return [
+            'success' => false,
+            'online' => false,
+            'error' => 'Ollama server not reachable. Make sure Ollama is running on localhost:11434'
+        ];
+    }
+
+    /**
+     * Get information about a specific Ollama model
+     */
+    public function getOllamaModelInfo(string $modelName): array
+    {
+        $status = $this->checkOllamaStatus();
+        if (!$status['online']) {
+            return ['success' => false, 'error' => 'Ollama server is not running'];
+        }
+
+        $endpoint = $status['endpoint'] ?? 'http://localhost:11434';
+        $url = rtrim($endpoint, '/') . '/api/show';
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['name' => $modelName]));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json'
+        ]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+        $resp = curl_exec($ch);
+        $err = curl_error($ch);
+        $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($err || $http !== 200) {
+            return ['success' => false, 'error' => $err ?: 'HTTP ' . $http];
+        }
+
+        $data = json_decode($resp, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return ['success' => false, 'error' => 'Failed to parse response'];
+        }
+
+        return [
+            'success' => true,
+            'model' => $modelName,
+            'details' => $data
+        ];
+    }
+
+    /**
+     * Test connection with verbose output for debugging
+     */
+    public function testConnectionVerbose(string $providerName, string $model = null): array
+    {
+        $provider = $this->getByName($providerName);
+        if (!$provider) {
+            return ['success' => false, 'error' => 'Provider not found'];
+        }
+
+        // For Ollama (local), API key is optional
+        $apiKey = $this->getAPIKey($providerName);
+        $endpoint = $provider['api_endpoint'] ?? self::getProviderConfig($providerName)['endpoint'] ?? '';
+        $isLocalOllama = $providerName === 'ollama' && $this->isLocalOllamaEndpoint((string)$endpoint);
+
+        $debug = [
+            'provider' => $providerName,
+            'endpoint' => $endpoint,
+            'has_api_key' => !empty($apiKey),
+            'is_local_ollama' => $isLocalOllama
+        ];
+
+        if (empty($apiKey) && !$isLocalOllama) {
+            $debug['error'] = 'API key not configured';
+            return ['success' => false, 'error' => 'API key not configured', 'debug' => $debug];
+        }
+
+        $config = self::getProviderConfig($providerName);
+        $models = $provider['supported_models'] ?? [];
+        if (empty($models)) {
+            $models = $config['models'] ?? [];
+        }
+        if (empty($model)) {
+            $testModel = (string)array_key_first($models);
+        } else {
+            $testModel = (string)$model;
+        }
+        if ($testModel === '') {
+            $remoteModels = $this->fetchRemoteModels($providerName);
+            if (!empty($remoteModels)) {
+                $testModel = array_key_first($remoteModels);
+            } else {
+                $models = $provider['supported_models'] ?? [];
+                if (empty($models)) {
+                    $config = self::getProviderConfig($providerName);
+                    $models = $config['models'] ?? [];
+                }
+                $testModel = (string)array_key_first($models) ?? '';
+            }
+        }
+
+        $debug['test_model'] = $testModel;
+
+        // Simple test prompt
+        $testPrompt = "Say 'OK' if you can read this.";
+
+        $result = $this->callAPI($providerName, $testModel, $testPrompt);
+
+        if ($result['success']) {
+            return [
+                'success' => true,
+                'message' => 'Connection successful!',
+                'model' => $testModel,
+                'response' => substr($result['content'], 0, 100),
+                'debug' => $debug
+            ];
+        }
+
+        $result['debug'] = $debug;
+        return $result;
+    }
+
+    private function logPayloadWarning(string $providerName, string $requested, string $fallback): void
+    {
+        if (!getenv('AI_DEBUG_PAYLOAD')) {
+            return;
+        }
+        error_log('[AI Payload] Invalid model for ' . $providerName . ': ' . $requested . ' -> ' . $fallback);
+    }
+
+    private function logPayloadDebug(string $providerName, string $model, string $endpoint, array $requestData): void
+    {
+        if (!getenv('AI_DEBUG_PAYLOAD')) {
+            return;
+        }
+        $meta = [
+            'provider' => $providerName,
+            'model' => $model,
+            'endpoint' => $endpoint,
+            'keys' => array_keys($requestData)
+        ];
+        if (isset($requestData['messages']) && is_array($requestData['messages'])) {
+            $meta['message_count'] = count($requestData['messages']);
+        }
+        if (isset($requestData['system']) && is_string($requestData['system'])) {
+            $meta['has_system'] = $requestData['system'] !== '';
+        }
+        error_log('[AI Payload] ' . json_encode($meta));
     }
 }

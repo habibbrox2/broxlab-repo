@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Modules\AISystem\Layer;
 
 /**
@@ -20,7 +21,6 @@ class FallbackEngine
 
         $defaultFallback = [
             ['provider' => 'openrouter', 'model' => 'google/gemini-2.0-flash'],
-            ['provider' => 'huggingface', 'model' => 'meta-llama/Meta-Llama-3.1-8B-Instruct']
         ];
 
         $this->fallbackChain = empty($fallbackChain) ? $defaultFallback : $fallbackChain;

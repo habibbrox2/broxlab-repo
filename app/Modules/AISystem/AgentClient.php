@@ -1,24 +1,27 @@
 <?php
 // Path: /app/Modules/AISystem/AgentClient.php
 
-require_once __DIR__.'/Cache.php';
-require_once __DIR__.'/RateLimiter.php';
-require_once __DIR__.'/../../Models/AIProvider.php';
+require_once __DIR__ . '/Cache.php';
+require_once __DIR__ . '/RateLimiter.php';
+require_once __DIR__ . '/../../Models/AIProvider.php';
 
-class AgentClient {
+class AgentClient
+{
     private $cache;
     private $rateLimiter;
     private $aiProvider;
 
-    public function __construct(mysqli $mysqli) {
+    public function __construct(mysqli $mysqli)
+    {
         $this->cache = new Cache();
         $this->rateLimiter = new RateLimiter();
         $this->aiProvider = new AIProvider($mysqli);
     }
 
-    public function chat(array $messages, ?string $provider = null, ?string $model = null) {
+    public function chat(array $messages, ?string $provider = null, ?string $model = null)
+    {
         $cacheKey = md5(($provider ?? 'default') . json_encode($messages) . $model);
-        
+
         if ($cached = $this->cache->get($cacheKey)) {
             return $cached;
         }
@@ -28,9 +31,9 @@ class AgentClient {
         }
 
         // Use existing AIProvider logic to get the effective provider and model
-        $effectiveProvider = $provider ?: ($this->aiProvider->getSetting('backend_provider') ?: 'kilo');
+        $effectiveProvider = $provider ?: ($this->aiProvider->getSetting('backend_provider') ?: '');
         $backendModel = $this->aiProvider->getSetting('backend_model') ?: '';
-        $effectiveModel = $model ?: ($backendModel ?: ($this->aiProvider->getSetting('default_model') ?: 'moonshotai/Kimi-K2.5'));
+        $effectiveModel = $model ?: ($backendModel ?: ($this->aiProvider->getSetting('default_model') ?: ''));
 
         $options = [
             'max_tokens' => (int)($this->aiProvider->getSetting('max_tokens', 300)),
