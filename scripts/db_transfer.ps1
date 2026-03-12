@@ -78,16 +78,30 @@ $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $remoteDump = "$remotePath/.deploy/db_$timestamp.sql"
 
 $scpArgs = @()
-if ($sshKey) { $scpArgs += "-i"; $scpArgs += $sshKey }
+if ($sshKey) { 
+    # Write SSH key to temporary file
+    $keyFile = [System.IO.Path]::GetTempFileName()
+    Set-Content -Path $keyFile -Value $sshKey -NoNewline
+    $scpArgs += "-i"; $scpArgs += $keyFile
+}
 if ($sshPort) { $scpArgs += "-P"; $scpArgs += $sshPort }
 $scpArgs += $DumpFile
 $scpArgs += "$sshUser@$sshHost:$remoteDump"
 
 Write-Host "Uploading dump..."
-if (-not $DryRun) { & scp @scpArgs } else { Write-Host "DRY RUN: scp $DumpFile $sshUser@$sshHost:$remoteDump" }
+if (-not $DryRun) { 
+    & scp @scpArgs 
+    # Clean up temp key file
+    if ($sshKey) { Remove-Item $keyFile -Force -ErrorAction SilentlyContinue }
+} else { Write-Host "DRY RUN: scp $DumpFile $sshUser@$sshHost:$remoteDump" }
 
 $sshArgs = @()
-if ($sshKey) { $sshArgs += "-i"; $sshArgs += $sshKey }
+if ($sshKey) { 
+    # Write SSH key to temporary file
+    $keyFile = [System.IO.Path]::GetTempFileName()
+    Set-Content -Path $keyFile -Value $sshKey -NoNewline
+    $sshArgs += "-i"; $sshArgs += $keyFile
+}
 if ($sshPort) { $sshArgs += "-p"; $sshArgs += $sshPort }
 $sshArgs += "$sshUser@$sshHost"
 
@@ -98,13 +112,13 @@ $escDb = Escape-BashSingle $remoteDbName
 $escDump = Escape-BashSingle $remoteDump
 
 $remoteCmd = @"
-set -e
-if [ ! -f '$escDump' ]; then
-  echo 'Dump file not found on server.'
-  exit 1
-fi
-MYSQL_PWD='$escPass' mysql -h '$escHost' -P '$remoteDbPort' -u '$escUser' '$escDb' < '$escDump'
-"@
+    set -e
+    if [ ! -f '$escDump' ]; then
+    echo 'Dump file not found on server.'
+    exit 1
+    fi
+    MYSQL_PWD='$escPass' mysql -h '$escHost' -P '$remoteDbPort' -u '$escUser' '$escDb' < '$escDump'
+    "@
 
 Write-Host "Importing on server..."
 if (-not $DryRun) { & ssh @sshArgs $remoteCmd } else { Write-Host "DRY RUN: ssh $sshUser@$sshHost <mysql import>" }

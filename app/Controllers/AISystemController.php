@@ -567,7 +567,20 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     if (!$isAdmin) {
         $visitorToken = $input['visitorToken'] ?? null;
         if ($visitorToken) {
-            $convId = $chatModel->getOrCreateConversation(null, $visitorToken);
+            // Get visitor info
+            $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
+            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+            $device = 'Desktop';
+            if (preg_match('/Mobile|Android|iPhone|iPad/i', $userAgent ?? '')) {
+                $device = 'Mobile';
+                if (preg_match('/iPad/i', $userAgent ?? '')) {
+                    $device = 'Tablet';
+                }
+            }
+            // Simple location (can be enhanced with geo-ip service)
+            $location = 'Unknown';
+
+            $convId = $chatModel->getOrCreateConversation(null, $visitorToken, $ipAddress, $device, $location, $userAgent);
             if ($convId && $lastUserMessage !== '') {
                 $chatModel->addMessage($convId, 'user', $lastUserMessage);
             }
@@ -1362,13 +1375,25 @@ $router->get('/api/ai/models', function () use ($mysqli) {
         return;
     }
 
+    $providerSupportsRich = $aiProvider->supportsRichContent($providerName, $provider);
+    $overrides = $provider['extra_settings']['model_multimodal'] ?? [];
+    if (!is_array($overrides)) {
+        $overrides = [];
+    }
+
     $list = [];
     foreach ($models as $id => $label) {
+        $modelId = (string)$id;
+        if (array_key_exists($modelId, $overrides)) {
+            $supportsMultimodal = (bool)$overrides[$modelId];
+        } else {
+            $supportsMultimodal = $providerSupportsRich;
+        }
         $list[] = [
-            'id' => (string)$id,
+            'id' => $modelId,
             'name' => (string)$label,
             'default' => ($defaultModel !== '' && $defaultModel === (string)$id),
-            'supports_multimodal' => $aiProvider->modelSupportsMultimodal($providerName, (string)$id)
+            'supports_multimodal' => $supportsMultimodal
         ];
     }
 

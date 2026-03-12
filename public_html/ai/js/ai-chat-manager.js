@@ -37,9 +37,16 @@ class AIChatManager {
             chatInputArea: document.getElementById('chatInputArea'),
             activeTitle: document.getElementById('activeTitle'),
             activeAvatar: document.getElementById('activeAvatar'),
+            activeStatus: document.getElementById('activeStatus'),
+            statusText: document.getElementById('statusText'),
             sideUserId: document.getElementById('sideUserId'),
             sideToken: document.getElementById('sideToken'),
-            sideFirstSeen: document.getElementById('sideFirstSeen'),
+            sideStatus: document.getElementById('sideStatus'),
+            sideIp: document.getElementById('sideIp'),
+            sideDevice: document.getElementById('sideDevice'),
+            sideLocation: document.getElementById('sideLocation'),
+            sideMsgCount: document.getElementById('sideMsgCount'),
+            sideLastActivity: document.getElementById('sideLastActivity'),
             suggestionContainer: document.getElementById('suggestionContainer'),
             replyField: document.getElementById('replyField'),
             btnSend: document.getElementById('btnSend'),
@@ -176,9 +183,25 @@ class AIChatManager {
         if (conv) {
             this.nodes.sideUserId.textContent = conv.user_id || 'Guest';
             this.nodes.sideToken.textContent = conv.visitor_token || '---';
-            this.nodes.sideFirstSeen.textContent = new Date(conv.created_at).toLocaleString();
+
+            // Update status display
+            const isActive = conv.status === 'open';
+            this.updateStatusDisplay(isActive);
+
+            // Update side panel with more visitor info
+            this.nodes.sideIp.textContent = conv.ip_address || 'Unknown';
+            this.nodes.sideDevice.textContent = conv.device || 'Unknown';
+            this.nodes.sideLocation.textContent = conv.location || 'Unknown';
+            this.nodes.sideMsgCount.textContent = conv.message_count || '0';
+            this.nodes.sideLastActivity.textContent = conv.updated_at ? new Date(conv.updated_at).toLocaleString() : '---';
+
             this.nodes.activeTitle.textContent = `Visitor #${conv.id}`;
             this.nodes.activeAvatar.textContent = (conv.visitor_token || 'V').substring(0, 1).toUpperCase();
+
+            // Show/hide End Session button based on status
+            if (this.nodes.btnEndSession) {
+                this.nodes.btnEndSession.style.display = isActive ? 'block' : 'none';
+            }
         }
 
         this.nodes.chatHeader.classList.remove('d-none');
@@ -192,6 +215,12 @@ class AIChatManager {
             if (data.success) {
                 this.currentTranscript = data.messages;
                 this.renderTranscript();
+
+                // Update message count after loading
+                if (this.nodes.sideMsgCount) {
+                    this.nodes.sideMsgCount.textContent = this.currentTranscript.length;
+                }
+
                 this.nodes.suggestionContainer.innerHTML = '';
                 const wrap = document.createElement('div');
                 wrap.className = 'text-center py-4';
@@ -204,6 +233,30 @@ class AIChatManager {
             }
         } catch (err) {
             this.nodes.chatTranscript.innerHTML = '<div class="text-center py-5 text-danger">Error loading transcript.</div>';
+        }
+    }
+
+    updateStatusDisplay(isActive) {
+        // Update header status
+        if (this.nodes.activeStatus && this.nodes.statusText) {
+            if (isActive) {
+                this.nodes.activeStatus.className = 'small text-success';
+                this.nodes.activeStatus.innerHTML = '<i class="bi bi-circle-fill" style="font-size: 6px;"></i> <span id="statusText">Active</span>';
+            } else {
+                this.nodes.activeStatus.className = 'small text-secondary';
+                this.nodes.activeStatus.innerHTML = '<i class="bi bi-circle-fill" style="font-size: 6px;"></i> <span id="statusText">Inactive</span>';
+            }
+        }
+
+        // Update side panel status badge
+        if (this.nodes.sideStatus) {
+            if (isActive) {
+                this.nodes.sideStatus.className = 'badge bg-success';
+                this.nodes.sideStatus.textContent = 'Active';
+            } else {
+                this.nodes.sideStatus.className = 'badge bg-secondary';
+                this.nodes.sideStatus.textContent = 'Inactive';
+            }
         }
     }
 
@@ -235,9 +288,19 @@ class AIChatManager {
             if (data.success) {
                 // Update local status
                 const conv = this.conversations.find(c => c.id == this.currentChatId);
-                if (conv) conv.status = 'closed';
+                if (conv) {
+                    conv.status = 'closed';
+                }
                 this.renderList();
                 this.selectConversation(this.currentChatId); // Refresh transcript area
+
+                // Update status to inactive after ending session
+                this.updateStatusDisplay(false);
+
+                // Hide End Session button
+                if (this.nodes.btnEndSession) {
+                    this.nodes.btnEndSession.style.display = 'none';
+                }
             } else {
                 alert("Failed to end session: " + (data.error || 'Unknown error'));
             }

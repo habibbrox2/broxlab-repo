@@ -45,7 +45,7 @@
                     <div class="chat-item-avatar" id="activeAvatar">U</div>
                     <div>
                         <div class="fw-bold" id="activeTitle">Visitor #123</div>
-                        <div class="small text-success"><i class="bi bi-circle-fill" style="font-size: 6px;"></i> Connected</div>
+                        <div class="small" id="activeStatus"><i class="bi bi-circle-fill" style="font-size: 6px;"></i> <span id="statusText">Active</span></div>
                     </div>
                 </div>
                 <div class="d-flex gap-2">
@@ -75,7 +75,12 @@
                 <h6 class="fw-bold mb-3">Visitor Details</h6>
                 <div class="small mb-2"><strong>ID:</strong> <span id="sideUserId" class="text-muted">---</span></div>
                 <div class="small mb-2"><strong>Token:</strong> <span id="sideToken" class="text-muted text-truncate d-inline-block" style="max-width: 150px;">---</span></div>
-                <div class="small"><strong>First Seen:</strong> <span id="sideFirstSeen" class="text-muted">---</span></div>
+                <div class="small mb-2"><strong>Status:</strong> <span id="sideStatus" class="badge bg-success">Active</span></div>
+                <div class="small mb-2"><strong>IP Address:</strong> <span id="sideIp" class="text-muted">---</span></div>
+                <div class="small mb-2"><strong>Device:</strong> <span id="sideDevice" class="text-muted">---</span></div>
+                <div class="small mb-2"><strong>Location:</strong> <span id="sideLocation" class="text-muted">---</span></div>
+                <div class="small mb-2"><strong>Messages:</strong> <span id="sideMsgCount" class="text-muted">0</span></div>
+                <div class="small"><strong>Last Activity:</strong> <span id="sideLastActivity" class="text-muted">---</span></div>
             </div>
 
             <div class="side-panel-section">

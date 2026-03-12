@@ -107,7 +107,12 @@ $remoteNew = "${remotePath}__new"
 $remoteOld = "${remotePath}__old_$timestamp"
 
 $scpArgs = @()
-if ($sshKey) { $scpArgs += "-i"; $scpArgs += $sshKey }
+if ($sshKey) { 
+    # Write SSH key to temporary file
+    $keyFile = [System.IO.Path]::GetTempFileName()
+    Set-Content -Path $keyFile -Value $sshKey -NoNewline
+    $scpArgs += "-i"; $scpArgs += $keyFile
+}
 if ($sshPort) { $scpArgs += "-P"; $scpArgs += $sshPort }
 $scpArgs += $zipPath
 $scpArgs += "$sshUser@$sshHost:$remoteZip"
@@ -115,8 +120,16 @@ $scpArgs += "$sshUser@$sshHost:$remoteZip"
 Write-Host "Uploading archive..."
 & scp @scpArgs
 
+# Clean up temp key file
+if ($sshKey) { Remove-Item $keyFile -Force -ErrorAction SilentlyContinue }
+
 $sshArgs = @()
-if ($sshKey) { $sshArgs += "-i"; $sshArgs += $sshKey }
+if ($sshKey) { 
+    # Write SSH key to temporary file
+    $keyFile = [System.IO.Path]::GetTempFileName()
+    Set-Content -Path $keyFile -Value $sshKey -NoNewline
+    $sshArgs += "-i"; $sshArgs += $keyFile
+}
 if ($sshPort) { $sshArgs += "-p"; $sshArgs += $sshPort }
 $sshArgs += "$sshUser@$sshHost"
 
