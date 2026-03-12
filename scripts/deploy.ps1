@@ -41,7 +41,12 @@ $envMap = Read-DotEnv $envPath
 
 $sshHost = Require-Value $envMap "DEPLOY_SSH_HOST"
 $sshUser = Require-Value $envMap "DEPLOY_SSH_USER"
-$sshPort = ($envMap["DEPLOY_SSH_PORT"] ?? "22")
+if ($envMap.ContainsKey("DEPLOY_SSH_PORT") -and $envMap["DEPLOY_SSH_PORT"] -ne "") {
+    $sshPort = $envMap["DEPLOY_SSH_PORT"]
+}
+else {
+    $sshPort = "22"
+}
 $sshKey = $envMap["DEPLOY_SSH_KEY"]
 $remotePath = Require-Value $envMap "DEPLOY_REMOTE_PATH"
 
@@ -99,7 +104,20 @@ if ($DryRun) {
 
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 Write-Host "Creating archive..."
-Compress-Archive -Path (Join-Path $stageDir "*") -DestinationPath $zipPath -Force
+
+# Create temp staging directory in case files are locked
+$tempStage = Join-Path $env:TEMP "deploy_stage_$(Get-Random)"
+Copy-Item -Path (Join-Path $stageDir "*") -Destination $tempStage -Recurse -Force -ErrorAction SilentlyContinue
+
+# Create archive from temp location
+$tempZip = Join-Path $env:TEMP "release_$(Get-Random).zip"
+Compress-Archive -Path "$tempStage\*" -DestinationPath $tempZip -Force
+
+# Move to final location
+Move-Item -Path $tempZip -Destination $zipPath -Force
+
+# Cleanup temp
+Remove-Item -Path $tempStage -Recurse -Force -ErrorAction SilentlyContinue
 
 $remoteZip = "$remotePath/.deploy/release.zip"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
@@ -111,11 +129,19 @@ if ($sshKey) {
     # Write SSH key to temporary file
     $keyFile = [System.IO.Path]::GetTempFileName()
     Set-Content -Path $keyFile -Value $sshKey -NoNewline
+    # Set proper permissions for the key file (Windows)
+    $acl = Get-Acl $keyFile
+    $acl.SetAccessRuleProtection($true, $false)
+    $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($currentUser, "FullControl", "Allow")
+    $acl.SetAccessRule($rule)
+    Set-Acl -Path $keyFile -AclObject $acl
     $scpArgs += "-i"; $scpArgs += $keyFile
 }
 if ($sshPort) { $scpArgs += "-P"; $scpArgs += $sshPort }
 $scpArgs += $zipPath
-$scpArgs += "$sshUser@$sshHost:$remoteZip"
+$scpDest = "${sshUser}@${sshHost}:${remoteZip}"
+$scpArgs += $scpDest
 
 Write-Host "Uploading archive..."
 & scp @scpArgs
@@ -128,6 +154,13 @@ if ($sshKey) {
     # Write SSH key to temporary file
     $keyFile = [System.IO.Path]::GetTempFileName()
     Set-Content -Path $keyFile -Value $sshKey -NoNewline
+    # Set proper permissions for the key file (Windows)
+    $acl = Get-Acl $keyFile
+    $acl.SetAccessRuleProtection($true, $false)
+    $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($currentUser, "FullControl", "Allow")
+    $acl.SetAccessRule($rule)
+    Set-Acl -Path $keyFile -AclObject $acl
     $sshArgs += "-i"; $sshArgs += $keyFile
 }
 if ($sshPort) { $sshArgs += "-p"; $sshArgs += $sshPort }

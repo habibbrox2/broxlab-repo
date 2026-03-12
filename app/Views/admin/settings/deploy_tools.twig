@@ -73,34 +73,40 @@
       <i class="bi bi-rocket-takeoff"></i>
       Deploy Tools
     </div>
-    <div class="admin-page-subtitle">Local-only deploy + DB backup queue.</div>
+    <div class="admin-page-subtitle">Local-only deploy + DB backup with live progress.</div>
   </div>
 
   <ul class="nav nav-tabs mb-4" id="deployTabs" role="tablist">
     <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="jobs-tab" data-bs-toggle="tab" data-bs-target="#jobs-pane" type="button">
+      <button class="nav-link active" id="deploy-tab" data-bs-toggle="tab" data-bs-target="#deploy-pane" type="button">
+        <i class="bi bi-rocket me-1"></i> Deploy
+        <span class="live-indicator ms-1" title="Live"></span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="jobs-tab" data-bs-toggle="tab" data-bs-target="#jobs-pane" type="button">
         <i class="bi bi-list-task me-1"></i> Jobs
       </button>
     </li>
     <li class="nav-item" role="presentation">
       <button class="nav-link" id="filetree-tab" data-bs-toggle="tab" data-bs-target="#filetree-pane" type="button">
         <i class="bi bi-folder me-1"></i> File Tree
-        <span class="live-indicator ms-1" title="Live"></span>
       </button>
     </li>
   </ul>
 
   <div class="tab-content" id="deployTabsContent">
-    <!-- Jobs Tab -->
-    <div class="tab-pane fade show active" id="jobs-pane" role="tabpanel">
+    <!-- Deploy Tab with Live Progress -->
+    <div class="tab-pane fade show active" id="deploy-pane" role="tabpanel">
       <div class="row g-4">
         <div class="col-lg-4">
           <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white">
-              <strong>Queue Jobs</strong>
+            <div class="card-header bg-white d-flex align-items-center justify-content-between">
+              <strong><i class="bi bi-play-fill text-success me-1"></i>Run Deploy</strong>
+              <span class="badge bg-success">Live</span>
             </div>
             <div class="card-body">
-              <form method="POST" action="/admin/deploy-tools/queue" class="mb-3">
+              <form id="runDeployForm" class="mb-3">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="job_type" value="deploy">
                 <div class="form-check mb-3">
@@ -109,10 +115,28 @@
                     Include vendor folder
                   </label>
                 </div>
-                <button type="submit" class="btn btn-primary w-100">
-                  <i class="bi bi-cloud-upload me-1"></i> Queue Deploy
+                <button type="submit" class="btn btn-success w-100" id="runDeployBtn">
+                  <i class="bi bi-play-fill me-1"></i> Run Deploy Now
                 </button>
               </form>
+
+              <hr>
+
+              <form method="POST" action="/admin/deploy-tools/queue" class="mb-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="job_type" value="deploy">
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" name="with_vendor" id="queueWithVendor">
+                  <label class="form-check-label" for="queueWithVendor">
+                    Include vendor folder
+                  </label>
+                </div>
+                <button type="submit" class="btn btn-outline-primary w-100">
+                  <i class="bi bi-clock me-1"></i> Queue Deploy
+                </button>
+              </form>
+
+              <hr>
 
               <form method="POST" action="/admin/deploy-tools/queue">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -129,14 +153,96 @@
               <strong>Home/Office Workflow</strong>
             </div>
             <div class="card-body">
-              <ol class="mb-0">
+              <ol class="mb-0 small">
                 <li>Work on either machine.</li>
-                <li>Push to the central Git remote (origin).</li>
-                <li>On the deploy machine, <code>git pull</code> then run deploy script.</li>
+                <li>Push to Git remote (origin).</li>
+                <li>On deploy machine: <code>git pull</code></li>
+                <li>Click "Run Deploy Now" above.</li>
               </ol>
             </div>
           </div>
         </div>
+
+        <div class="col-lg-8">
+          <!-- Live Progress Card -->
+          <div class="card border-0 shadow-sm mb-4" id="progressCard" style="display: none;">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between">
+              <strong>
+                <i class="bi bi-activity text-success me-1"></i>
+                <span id="progressTitle">Deploy Progress</span>
+              </strong>
+              <span class="badge bg-warning text-dark" id="progressStatus">Running</span>
+            </div>
+            <div class="card-body">
+              <!-- Progress Bar -->
+              <div class="mb-3">
+                <div class="progress" style="height: 25px;">
+                  <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                       id="progressBar" role="progressbar" style="width: 0%;">
+                    <span id="progressText">0%</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Current Step -->
+              <div class="alert alert-info mb-3">
+                <i class="bi bi-info-circle me-2"></i>
+                <span id="currentStep">Initializing...</span>
+              </div>
+
+              <!-- Steps Timeline -->
+              <div id="stepsContainer" class="small">
+                <div class="text-muted">Waiting for steps...</div>
+              </div>
+
+              <!-- Actions -->
+              <div class="mt-3">
+                <button class="btn btn-sm btn-outline-secondary" onclick="refreshProgress()">
+                  <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="cancelDeploy()" id="cancelBtn">
+                  <i class="bi bi-x-circle"></i> Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- No Deploy Running -->
+          <div class="card border-0 shadow-sm mb-4" id="noDeployCard">
+            <div class="card-body text-center py-5">
+              <i class="bi bi-rocket-takeoff display-1 text-muted"></i>
+              <h5 class="mt-3 text-muted">Ready to Deploy</h5>
+              <p class="text-muted">Click "Run Deploy Now" to start a live deployment.</p>
+              <p class="small text-muted">Progress will be shown in real-time.</p>
+            </div>
+          </div>
+
+          <!-- Completed Status -->
+          <div class="card border-0 shadow-sm mb-4" id="completedCard" style="display: none;">
+            <div class="card-body text-center py-4">
+              <i class="bi bi-check-circle-fill display-4 text-success"></i>
+              <h5 class="mt-3 text-success">Deploy Completed!</h5>
+              <p class="text-muted" id="completedMessage">Your deployment finished successfully.</p>
+              <button class="btn btn-success" onclick="resetDeployUI()">
+                <i class="bi bi-arrow-repeat"></i> Deploy Again
+              </button>
+            </div>
+          </div>
+
+          <!-- Failed Status -->
+          <div class="card border-0 shadow-sm mb-4" id="failedCard" style="display: none;">
+            <div class="card-body text-center py-4">
+              <i class="bi bi-x-circle-fill display-4 text-danger"></i>
+              <h5 class="mt-3 text-danger">Deploy Failed</h5>
+              <p class="text-muted" id="failedMessage">There was an error during deployment.</p>
+              <button class="btn btn-danger" onclick="resetDeployUI()">
+                <i class="bi bi-arrow-repeat"></i> Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
         <div class="col-lg-8">
           <div class="card border-0 shadow-sm">
@@ -240,6 +346,197 @@
 </div>
 
 <script>
+// =====================
+// LIVE DEPLOY FUNCTIONALITY
+// =====================
+let currentProgressId = null;
+let progressInterval = null;
+
+// Run Deploy Form Handler
+document.getElementById('runDeployForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const btn = document.getElementById('runDeployBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Starting...';
+  
+  const formData = new FormData(this);
+  
+  try {
+    const response = await fetch('/admin/deploy-tools/run', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const data = await response.json();
+    
+    if (data.error) {
+      alert('Error: ' + data.error);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Run Deploy Now';
+      return;
+    }
+    
+    // Start polling for progress
+    currentProgressId = data.progress_id;
+    showProgressCard();
+    startProgressPolling();
+    
+  } catch (err) {
+    alert('Error starting deploy: ' + err.message);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Run Deploy Now';
+  }
+});
+
+function showProgressCard() {
+  document.getElementById('noDeployCard').style.display = 'none';
+  document.getElementById('progressCard').style.display = 'block';
+  document.getElementById('completedCard').style.display = 'none';
+  document.getElementById('failedCard').style.display = 'none';
+}
+
+function startProgressPolling() {
+  if (progressInterval) clearInterval(progressInterval);
+  progressInterval = setInterval(refreshProgress, 2000);
+}
+
+function stopProgressPolling() {
+  if (progressInterval) {
+    clearInterval(progressInterval);
+    progressInterval = null;
+  }
+}
+
+async function refreshProgress() {
+  if (!currentProgressId) return;
+  
+  try {
+    const response = await fetch(`/admin/deploy-tools/progress?id=${currentProgressId}`);
+    const data = await response.json();
+    
+    if (data.error) {
+      console.log('Progress error:', data.error);
+      return;
+    }
+    
+    updateProgressUI(data);
+    
+    // Check if completed
+    if (data.status === 'completed' || data.status === 'done' || data.progress >= 100) {
+      stopProgressPolling();
+      showCompletedCard();
+    } else if (data.status === 'failed') {
+      stopProgressPolling();
+      showFailedCard(data.error || 'Deploy failed');
+    }
+    
+  } catch (err) {
+    console.log('Error fetching progress:', err);
+  }
+}
+
+function updateProgressUI(data) {
+  // Update progress bar
+  const progress = data.progress || 0;
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('progressText');
+  
+  progressBar.style.width = progress + '%';
+  progressText.textContent = progress + '%';
+  
+  // Update status badge
+  const statusBadge = document.getElementById('progressStatus');
+  if (data.status === 'running') {
+    statusBadge.className = 'badge bg-warning text-dark';
+    statusBadge.textContent = 'Running';
+  } else if (data.status === 'completed' || data.status === 'done') {
+    statusBadge.className = 'badge bg-success';
+    statusBadge.textContent = 'Completed';
+  } else if (data.status === 'failed') {
+    statusBadge.className = 'badge bg-danger';
+    statusBadge.textContent = 'Failed';
+  }
+  
+  // Update current step
+  const currentStep = document.getElementById('currentStep');
+  currentStep.textContent = data.current_step || 'Processing...';
+  
+  // Update steps timeline
+  const stepsContainer = document.getElementById('stepsContainer');
+  if (data.steps && data.steps.length > 0) {
+    let html = '';
+    data.steps.forEach((step, index) => {
+      const isLast = index === data.steps.length - 1;
+      html += `
+        <div class="d-flex align-items-start mb-2">
+          <div class="me-2">
+            ${isLast && data.status === 'running' 
+              ? '<span class="spinner-border spinner-border-sm text-success"></span>' 
+              : '<i class="bi bi-check-circle-fill text-success"></i>'}
+          </div>
+          <div class="flex-grow-1">
+            <div class="fw-bold">${step.step}</div>
+            <div class="text-muted small">${step.message}</div>
+            <div class="text-muted" style="font-size: 11px;">${step.timestamp || ''}</div>
+          </div>
+          <div class="text-muted small">${step.progress || 0}%</div>
+        </div>
+      `;
+    });
+    stepsContainer.innerHTML = html;
+  }
+}
+
+function showCompletedCard() {
+  document.getElementById('progressCard').style.display = 'none';
+  document.getElementById('completedCard').style.display = 'block';
+  document.getElementById('failedCard').style.display = 'none';
+  
+  // Refresh file tree if on that tab
+  if (document.getElementById('filetree-pane').classList.contains('active')) {
+    refreshFileTree();
+  }
+}
+
+function showFailedCard(message) {
+  document.getElementById('progressCard').style.display = 'none';
+  document.getElementById('completedCard').style.display = 'none';
+  document.getElementById('failedCard').style.display = 'block';
+  document.getElementById('failedMessage').textContent = message || 'There was an error during deployment.';
+}
+
+function resetDeployUI() {
+  currentProgressId = null;
+  stopProgressPolling();
+  
+  document.getElementById('noDeployCard').style.display = 'block';
+  document.getElementById('progressCard').style.display = 'none';
+  document.getElementById('completedCard').style.display = 'none';
+  document.getElementById('failedCard').style.display = 'none';
+  
+  // Reset progress bar
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('progressText').textContent = '0%';
+  document.getElementById('currentStep').textContent = 'Initializing...';
+  document.getElementById('stepsContainer').innerHTML = '<div class="text-muted">Waiting for steps...</div>';
+  
+  // Reset button
+  const btn = document.getElementById('runDeployBtn');
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Run Deploy Now';
+}
+
+function cancelDeploy() {
+  if (confirm('Are you sure you want to cancel the current deploy?')) {
+    stopProgressPolling();
+    resetDeployUI();
+  }
+}
+
+// =====================
+// FILE TREE FUNCTIONALITY
+// =====================
 let autoRefresh = false;
 let autoRefreshInterval = null;
 let currentTreeData = null;
@@ -333,7 +630,6 @@ function loadFolder(path, el) {
   if (!container) return;
   
   if (container.children.length > 0) {
-    // Already loaded, just toggle
     if (container.classList.contains('expanded')) {
       container.classList.remove('expanded');
     } else {
