@@ -54,14 +54,26 @@ function deploy_tools_is_dev_env(): bool
     return function_exists('brox_is_development_env') && brox_is_development_env();
 }
 
+function deploy_tools_ui_enabled(): bool
+{
+    $raw = getenv('DEPLOY_TOOLS_UI_ENABLED') ?: ($_ENV['DEPLOY_TOOLS_UI_ENABLED'] ?? '0');
+    $raw = strtolower(trim((string)$raw));
+    return in_array($raw, ['1', 'true', 'yes', 'on'], true);
+}
+
+function deploy_tools_access_allowed(): bool
+{
+    return deploy_tools_is_dev_env() && deploy_tools_ui_enabled();
+}
+
 /**
  * Validate that environment allows deploy tools
  * Returns null if valid, error message if invalid
  */
 function deploy_tools_validate_environment(): ?string
 {
-    if (!deploy_tools_is_dev_env()) {
-        return 'Deploy tools are only available in development environment';
+    if (!deploy_tools_access_allowed()) {
+        return 'Deploy tools are disabled';
     }
 
     // Check write permissions
@@ -77,6 +89,22 @@ function deploy_tools_validate_environment(): ?string
     }
 
     return null;
+}
+
+function deploy_tools_abort_if_access_denied(bool $json = true): void
+{
+    if (deploy_tools_access_allowed()) {
+        return;
+    }
+
+    http_response_code(404);
+    if ($json) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Not found']);
+    } else {
+        echo 'Not found';
+    }
+    exit;
 }
 
 /**
@@ -349,7 +377,7 @@ function git_get_status(): array
         foreach ($lines as $line) {
             // First line contains branch info
             if (strpos($line, '##') === 0) {
-                preg_match('### (.+?)(?:\.\.\.|$)#', $line, $matches);
+                preg_match('/## (.+?)(?:\.\.\.|$)/', $line, $matches);
                 $branch = $matches[1] ?? 'unknown';
                 continue;
             }
@@ -579,6 +607,8 @@ function git_get_branches(): array
  * Display dashboard with job queue and status
  */
 $router->get('/admin/deploy-tools', ['middleware' => ['auth', 'super_admin_only']], function () use ($twig, $mysqli) {
+    deploy_tools_abort_if_access_denied(false);
+
     // Validate environment
     $envError = deploy_tools_validate_environment();
 
@@ -772,6 +802,8 @@ $router->get('/admin/deploy-tools', ['middleware' => ['auth', 'super_admin_only'
 $router->post('/admin/deploy-tools/queue', ['middleware' => ['auth', 'super_admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
+    deploy_tools_abort_if_access_denied(true);
+
     // Validate environment
     $envError = deploy_tools_validate_environment();
     if ($envError) {
@@ -874,6 +906,8 @@ $router->post('/admin/deploy-tools/queue', ['middleware' => ['auth', 'super_admi
  */
 $router->post('/admin/deploy-tools/run', ['middleware' => ['auth', 'super_admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
+
+    deploy_tools_abort_if_access_denied(true);
 
     // Validate environment
     $envError = deploy_tools_validate_environment();
@@ -1247,6 +1281,8 @@ PSScript;
 $router->get('/admin/deploy-tools/progress', ['middleware' => ['auth', 'super_admin_only']], function () {
     header('Content-Type: application/json');
 
+    deploy_tools_abort_if_access_denied(true);
+
     try {
         $progressId = trim((string)($_GET['id'] ?? ''));
         if (empty($progressId)) {
@@ -1293,6 +1329,8 @@ $router->get('/admin/deploy-tools/progress', ['middleware' => ['auth', 'super_ad
  */
 $router->post('/admin/deploy-tools/cancel', ['middleware' => ['auth', 'super_admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
+
+    deploy_tools_abort_if_access_denied(true);
 
     try {
         $progressId = trim((string)($_POST['progress_id'] ?? ''));
@@ -1365,6 +1403,8 @@ $router->post('/admin/deploy-tools/cancel', ['middleware' => ['auth', 'super_adm
  * View deployment logs
  */
 $router->get('/admin/deploy-tools/log', ['middleware' => ['auth', 'super_admin_only']], function () use ($twig, $mysqli) {
+    deploy_tools_abort_if_access_denied(false);
+
     try {
         // Validate environment
         $envError = deploy_tools_validate_environment();
@@ -1446,6 +1486,8 @@ $router->get('/admin/deploy-tools/api/file-tree', ['middleware' => ['auth', 'sup
     header('Content-Type: application/json');
 
     try {
+        deploy_tools_abort_if_access_denied(true);
+
         // Validate environment
         $envError = deploy_tools_validate_environment();
         if ($envError) {
@@ -1498,6 +1540,8 @@ $router->get('/admin/deploy-tools/api/health', ['middleware' => ['auth', 'super_
     header('Content-Type: application/json');
 
     try {
+        deploy_tools_abort_if_access_denied(true);
+
         $health = [
             'success' => true,
             'status' => 'healthy',
@@ -1541,6 +1585,8 @@ $router->post('/admin/deploy-tools/api/retry', ['middleware' => ['auth', 'super_
     header('Content-Type: application/json');
 
     try {
+        deploy_tools_abort_if_access_denied(true);
+
         $jobId = (int)($_POST['job_id'] ?? 0);
         if ($jobId <= 0) {
             http_response_code(400);
@@ -1607,6 +1653,8 @@ $router->get('/admin/deploy-tools/api/git-status', ['middleware' => ['auth', 'su
     header('Content-Type: application/json');
 
     try {
+        deploy_tools_abort_if_access_denied(true);
+
         // Validate environment
         $envError = deploy_tools_validate_environment();
         if ($envError) {
@@ -1647,6 +1695,8 @@ $router->get('/admin/deploy-tools/api/git-log', ['middleware' => ['auth', 'super
     header('Content-Type: application/json');
 
     try {
+        deploy_tools_abort_if_access_denied(true);
+
         // Validate environment
         $envError = deploy_tools_validate_environment();
         if ($envError) {
@@ -1688,6 +1738,8 @@ $router->get('/admin/deploy-tools/api/git-branches', ['middleware' => ['auth', '
     header('Content-Type: application/json');
 
     try {
+        deploy_tools_abort_if_access_denied(true);
+
         // Validate environment
         $envError = deploy_tools_validate_environment();
         if ($envError) {
@@ -1727,6 +1779,8 @@ $router->post('/admin/deploy-tools/api/cleanup', ['middleware' => ['auth', 'supe
     header('Content-Type: application/json');
 
     try {
+        deploy_tools_abort_if_access_denied(true);
+
         $olderThan = (int)($_POST['older_than'] ?? DEPLOY_TOOLS_PROGRESS_CLEANUP_AGE);
         $deleted = 0;
         $failed = 0;
@@ -1889,28 +1943,91 @@ $router->post('/webhook/github', function () use ($mysqli) {
         $event = $_SERVER['HTTP_X_GITHUB_EVENT'] ?? '';
         $delivery = $_SERVER['HTTP_X_GITHUB_DELIVERY'] ?? '';
 
+        // Strict production posture: secret + signature are required when webhook is enabled
+        if (empty($secret)) {
+            http_response_code(503);
+            echo json_encode(['success' => false, 'message' => 'Webhook secret not configured']);
+            return;
+        }
+
+        // Basic content-type validation (GitHub should send JSON)
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? ($_SERVER['HTTP_CONTENT_TYPE'] ?? '');
+        if (stripos($contentType, 'application/json') !== 0) {
+            http_response_code(415);
+            echo json_encode(['success' => false, 'message' => 'Unsupported Content-Type']);
+            return;
+        }
+
+        if (empty($event) || empty($delivery)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Missing GitHub headers']);
+            return;
+        }
+
+        // Replay protection (delivery id uniqueness)
+        $stmt = $mysqli->prepare("SELECT 1 FROM deploy_webhook_logs WHERE delivery_id = ? LIMIT 1");
+        if ($stmt) {
+            $stmt->bind_param('s', $delivery);
+            $stmt->execute();
+            $exists = (bool)$stmt->get_result()->fetch_row();
+            $stmt->close();
+            if ($exists) {
+                http_response_code(409);
+                echo json_encode(['success' => false, 'message' => 'Duplicate delivery']);
+                return;
+            }
+        }
+
+        // Rate limit (per IP + event)
+        $remoteIp = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $rateKey = hash('sha256', "gh_webhook|{$remoteIp}|{$event}");
+        $rateFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'deploy_webhook_ratelimit_' . $rateKey . '.json';
+        $rateLock = $rateFile . '.lock';
+        $maxReq = 60;
+        $window = 300;
+
+        $lockHandle = @fopen($rateLock, 'c+');
+        if ($lockHandle && @flock($lockHandle, LOCK_EX)) {
+            $now = time();
+            $data = ['reset_at' => $now + $window, 'hits' => []];
+            if (is_file($rateFile)) {
+                $existing = json_decode((string)@file_get_contents($rateFile), true);
+                if (is_array($existing)) {
+                    $data = $existing + $data;
+                }
+            }
+            $hits = array_values(array_filter($data['hits'] ?? [], fn($t) => is_int($t) && ($now - $t) <= $window));
+            if (count($hits) >= $maxReq) {
+                @flock($lockHandle, LOCK_UN);
+                @fclose($lockHandle);
+                http_response_code(429);
+                echo json_encode(['success' => false, 'message' => 'Rate limit exceeded']);
+                return;
+            }
+            $hits[] = $now;
+            $data['hits'] = $hits;
+            @file_put_contents($rateFile, json_encode($data));
+            @flock($lockHandle, LOCK_UN);
+            @fclose($lockHandle);
+        }
+
         // Get raw payload
         $payload = file_get_contents('php://input');
         $payloadJson = json_decode($payload, true);
 
-        // Verify signature if secret is set
-        $signatureVerified = false;
-        if (!empty($secret)) {
-            if (empty($signature)) {
-                logError('GitHub webhook: No signature provided', 'WARNING');
-                http_response_code(401);
-                echo json_encode(['success' => false, 'message' => 'Signature required']);
-                return;
-            }
+        if (empty($signature)) {
+            logError('GitHub webhook: No signature provided', 'WARNING');
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Signature required']);
+            return;
+        }
 
-            $signatureVerified = $webhookModel->verifySignature($payload, $signature, $secret);
-
-            if (!$signatureVerified) {
-                logError('GitHub webhook: Invalid signature', 'WARNING');
-                http_response_code(401);
-                echo json_encode(['success' => false, 'message' => 'Invalid signature']);
-                return;
-            }
+        $signatureVerified = $webhookModel->verifySignature($payload, $signature, $secret);
+        if (!$signatureVerified) {
+            logError('GitHub webhook: Invalid signature', 'WARNING');
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Invalid signature']);
+            return;
         }
 
         // Check if event is allowed
@@ -2007,6 +2124,8 @@ $router->post('/webhook/github', function () use ($mysqli) {
  * Display webhook configuration page
  */
 $router->get('/admin/deploy-tools/webhook', ['middleware' => ['auth', 'super_admin_only']], function () use ($twig, $mysqli) {
+    deploy_tools_abort_if_access_denied(false);
+
     try {
         $webhookModel = new WebhookSettingsModel($mysqli);
         $settings = $webhookModel->getAllSettings(true);
@@ -2045,6 +2164,8 @@ $router->post('/admin/deploy-tools/webhook/update', ['middleware' => ['auth', 's
     header('Content-Type: application/json');
 
     try {
+        deploy_tools_abort_if_access_denied(true);
+
         // Verify CSRF
         $csrfToken = $_POST['csrf_token'] ?? '';
         if (!validateCsrfToken($csrfToken)) {
@@ -2141,6 +2262,8 @@ $router->get('/admin/deploy-tools/webhook/logs', ['middleware' => ['auth', 'supe
     header('Content-Type: application/json');
 
     try {
+        deploy_tools_abort_if_access_denied(true);
+
         $webhookModel = new WebhookSettingsModel($mysqli);
         $logs = $webhookModel->getLogs(50);
 
@@ -2162,6 +2285,8 @@ $router->post('/admin/deploy-tools/webhook/test', ['middleware' => ['auth', 'sup
     header('Content-Type: application/json');
 
     try {
+        deploy_tools_abort_if_access_denied(true);
+
         $webhookModel = new WebhookSettingsModel($mysqli);
 
         // Send a test payload to ourselves
@@ -2179,11 +2304,13 @@ $router->post('/admin/deploy-tools/webhook/test', ['middleware' => ['auth', 'sup
         $secret = $webhookModel->getSettingValue(WebhookSettingsModel::KEY_WEBHOOK_SECRET, '');
         $payloadJson = json_encode($testPayload);
 
-        // Generate signature if secret is set
-        $signature = '';
-        if (!empty($secret)) {
-            $signature = 'sha256=' . hash_hmac('sha256', $payloadJson, $secret);
+        if (empty($secret)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Webhook secret is not configured']);
+            return;
         }
+
+        $signature = 'sha256=' . hash_hmac('sha256', $payloadJson, $secret);
 
         // Make test request
         $ch = curl_init($url);
@@ -2193,7 +2320,7 @@ $router->post('/admin/deploy-tools/webhook/test', ['middleware' => ['auth', 'sup
             'Content-Type: application/json',
             'X-GitHub-Event: push',
             'X-GitHub-Delivery: test-' . uniqid(),
-            $signature ? 'X-Hub-Signature-256: ' . $signature : ''
+            'X-Hub-Signature-256: ' . $signature
         ]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
@@ -2223,6 +2350,8 @@ $router->get('/admin/deploy-tools/webhook/remote-status', ['middleware' => ['aut
     header('Content-Type: application/json');
 
     try {
+        deploy_tools_abort_if_access_denied(true);
+
         $webhookModel = new WebhookSettingsModel($mysqli);
         $adminApiKey = $webhookModel->getSettingValue('admin_api_key', '');
 
@@ -2233,9 +2362,10 @@ $router->get('/admin/deploy-tools/webhook/remote-status', ['middleware' => ['aut
 
         $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'];
-        $url = $protocol . '://' . $host . '/webhook/github.php?action=status&api_key=' . urlencode($adminApiKey);
+        $url = $protocol . '://' . $host . '/webhook/github.php?action=status';
 
         $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-Api-Key: ' . $adminApiKey]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         $response = curl_exec($ch);
@@ -2267,6 +2397,8 @@ $router->get('/admin/deploy-tools/webhook/remote-versions', ['middleware' => ['a
     header('Content-Type: application/json');
 
     try {
+        deploy_tools_abort_if_access_denied(true);
+
         $webhookModel = new WebhookSettingsModel($mysqli);
         $adminApiKey = $webhookModel->getSettingValue('admin_api_key', '');
 
@@ -2277,9 +2409,10 @@ $router->get('/admin/deploy-tools/webhook/remote-versions', ['middleware' => ['a
 
         $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'];
-        $url = $protocol . '://' . $host . '/webhook/github.php?action=versions&api_key=' . urlencode($adminApiKey);
+        $url = $protocol . '://' . $host . '/webhook/github.php?action=versions';
 
         $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-Api-Key: ' . $adminApiKey]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         $response = curl_exec($ch);
@@ -2311,6 +2444,8 @@ $router->post('/admin/deploy-tools/webhook/remote-rollback', ['middleware' => ['
     header('Content-Type: application/json');
 
     try {
+        deploy_tools_abort_if_access_denied(true);
+
         $versionTag = trim($_POST['version'] ?? '');
         if (empty($versionTag)) {
             http_response_code(400);
@@ -2336,9 +2471,10 @@ $router->post('/admin/deploy-tools/webhook/remote-rollback', ['middleware' => ['
 
         $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'];
-        $url = $protocol . '://' . $host . '/webhook/github.php?action=rollback&version=' . urlencode($versionTag) . '&api_key=' . urlencode($adminApiKey);
+        $url = $protocol . '://' . $host . '/webhook/github.php?action=rollback&version=' . urlencode($versionTag);
 
         $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-Api-Key: ' . $adminApiKey]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 60);
         $response = curl_exec($ch);

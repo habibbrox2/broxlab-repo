@@ -56,8 +56,10 @@ which php
 DEPLOY_SSH_HOST=example.com
 DEPLOY_SSH_USER=username
 DEPLOY_SSH_PORT=22
-DEPLOY_SSH_KEY=PATH_TO_PRIVATE_KEY   # optional
+DEPLOY_SSH_KEY_PATH=/path/to/private_key   # optional (recommended)
+DEPLOY_SSH_KEY=                         # optional legacy (key contents, not a path)
 DEPLOY_REMOTE_PATH=public_html/broxbhai
+DEPLOY_KEEP_OLD_RELEASES=5
 
 DEPLOY_REMOTE_DB_HOST=localhost
 DEPLOY_REMOTE_DB_PORT=3306
@@ -385,7 +387,9 @@ service cron status   # Linux
 
 ## Local Deploy UI (Queue + Status)
 
-The deploy UI is **local-only** and requires `APP_ENV=development`.
+The deploy UI is **local-only** and requires:
+- `APP_ENV=development`
+- `DEPLOY_TOOLS_UI_ENABLED=1`
 Open:
 ```
 /admin/deploy-tools

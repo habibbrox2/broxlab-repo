@@ -31,8 +31,10 @@ get_env() {
 DEPLOY_SSH_HOST="$(get_env DEPLOY_SSH_HOST)"
 DEPLOY_SSH_USER="$(get_env DEPLOY_SSH_USER)"
 DEPLOY_SSH_PORT="$(get_env DEPLOY_SSH_PORT)"
+DEPLOY_SSH_KEY_PATH="$(get_env DEPLOY_SSH_KEY_PATH)"
 DEPLOY_SSH_KEY="$(get_env DEPLOY_SSH_KEY)"
 DEPLOY_REMOTE_PATH="$(get_env DEPLOY_REMOTE_PATH)"
+DEPLOY_KEEP_OLD_RELEASES="$(get_env DEPLOY_KEEP_OLD_RELEASES)"
 
 if [[ -z "$DEPLOY_SSH_HOST" || -z "$DEPLOY_SSH_USER" || -z "$DEPLOY_REMOTE_PATH" ]]; then
   echo "Missing DEPLOY_* values in .env"
@@ -40,6 +42,7 @@ if [[ -z "$DEPLOY_SSH_HOST" || -z "$DEPLOY_SSH_USER" || -z "$DEPLOY_REMOTE_PATH"
 fi
 
 DEPLOY_SSH_PORT="${DEPLOY_SSH_PORT:-22}"
+DEPLOY_KEEP_OLD_RELEASES="${DEPLOY_KEEP_OLD_RELEASES:-5}"
 
 STAGE_DIR="$REPO_ROOT/.deploy/stage"
 ZIP_PATH="$REPO_ROOT/.deploy/release.zip"
@@ -75,7 +78,7 @@ fi
 
 # Cleanup function for temp SSH key
 cleanup_ssh_key() {
-    if [[ -n "$SSH_KEY_FILE" && -f "$SSH_KEY_FILE" ]]; then
+    if [[ -n "${SSH_KEY_FILE:-}" && -f "${SSH_KEY_FILE:-}" ]]; then
         rm -f "$SSH_KEY_FILE"
     fi
 }
@@ -100,9 +103,15 @@ REMOTE_OLD="${DEPLOY_REMOTE_PATH}__old_${TIMESTAMP}"
 
 SSH_OPTS=(-p "$DEPLOY_SSH_PORT")
 SCP_OPTS=(-P "$DEPLOY_SSH_PORT")
-if [[ -n "$DEPLOY_SSH_KEY" ]]; then
-    # Write SSH key to temporary file
-    SSH_KEY_FILE=$(mktemp)
+if [[ -n "$DEPLOY_SSH_KEY_PATH" ]]; then
+    if [[ ! -f "$DEPLOY_SSH_KEY_PATH" ]]; then
+        echo "DEPLOY_SSH_KEY_PATH file not found: $DEPLOY_SSH_KEY_PATH"
+        exit 1
+    fi
+    SSH_OPTS+=(-i "$DEPLOY_SSH_KEY_PATH")
+    SCP_OPTS+=(-i "$DEPLOY_SSH_KEY_PATH")
+elif [[ -n "$DEPLOY_SSH_KEY" ]]; then
+    SSH_KEY_FILE="$(mktemp)"
     echo "$DEPLOY_SSH_KEY" > "$SSH_KEY_FILE"
     chmod 600 "$SSH_KEY_FILE"
     SSH_OPTS+=(-i "$SSH_KEY_FILE")
@@ -123,6 +132,23 @@ if [ -d "${DEPLOY_REMOTE_PATH}" ]; then
   mv "${DEPLOY_REMOTE_PATH}" "${REMOTE_OLD}"
 fi
 mv "${REMOTE_NEW}" "${DEPLOY_REMOTE_PATH}"
+
+# Ensure required runtime directories exist (no secrets are deployed)
+mkdir -p "${DEPLOY_REMOTE_PATH}/storage/logs" "${DEPLOY_REMOTE_PATH}/storage/cache" "${DEPLOY_REMOTE_PATH}/storage/tmp" || true
+chmod -R 775 "${DEPLOY_REMOTE_PATH}/storage" 2>/dev/null || true
+
+# Retention: keep only last N old releases
+KEEP="${DEPLOY_KEEP_OLD_RELEASES}"
+if ! [[ "\$KEEP" =~ ^[0-9]+$ ]]; then KEEP=5; fi
+if [ "\$KEEP" -lt 1 ]; then KEEP=1; fi
+i=0
+for d in \$(ls -1dt "${DEPLOY_REMOTE_PATH}__old_"* 2>/dev/null); do
+  i=\$((i+1))
+  if [ "\$i" -le "\$KEEP" ]; then
+    continue
+  fi
+  rm -rf "\$d"
+done
 EOF
 
 echo "Deploy completed."

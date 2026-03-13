@@ -1,601 +1,564 @@
 <?php
 
-/**
- * GitHub Webhook Endpoint - Enhanced Version 4.0
- * Project: BROXBHAI | User: tdhuedhn
- *
- * Upload to: /home/tdhuedhn/public_html/webhook/github.php
- *
- * @version 4.0.0
- */
-
-// ============================================================
-// CONFIGURATION
-// ============================================================
-
-$db_config = [
-    'host'     => 'localhost',
-    'username' => 'your_db_username',  // cPanel → MySQL Databases থেকে নিন
-    'password' => 'your_db_password',
-    'database' => 'your_db_name'
-];
-
-// ============================================================
-// WEBHOOK SETTINGS
-// ============================================================
-
-$webhook_enabled = true;
-$target_branch   = 'main';
-$auto_deploy     = true;
-$webhook_secret  = 'your_webhook_secret_here';  // GitHub Webhook Secret এর সাথে মিলিয়ে দিন
-
-// ============================================================
-// DEPLOY & BACKUP PATHS
-// ============================================================
-
-// Deploy path — GitHub repo এখানে pull হবে
-$deploy_path = '/home/tdhuedhn/BROXBHAI';
-
-// Git repository URL
-$git_repo = 'https://github.com/habibbrox2/broxlab-repo.git';
-
-// Backup চালু/বন্ধ
-$create_backup = true;
-$max_backups   = 5;
-
-// Site/Project নাম — backup ফাইলের নামে ব্যবহার হবে
-// যেমন: broxbhai → site_broxbhai_20240101_120000
-$project_name = 'broxbhai';
-
-// ============================================================
-// SECURITY SETTINGS
-// ============================================================
-
-$admin_api_key      = 'change_this_to_a_strong_random_key_12345';
-$enable_ip_whitelist = false;
-
-// ============================================================
-// NOTIFICATION SETTINGS
-// ============================================================
-
-$email_enabled  = false;
-$notify_email   = 'your@email.com';
-$notify_from    = 'webhook@yourdomain.com';
-
-$slack_enabled     = false;
-$slack_webhook_url = 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK';
-
-// ============================================================
-// CODE — সাধারণত পরিবর্তনের দরকার নেই
-// ============================================================
+declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
-error_reporting(0);
-ini_set('display_errors', 0);
 
-define('SETTINGS_TABLE', 'deploy_webhook_settings');
-define('LOGS_TABLE',     'deploy_webhook_logs');
-define('VERSIONS_TABLE', 'deploy_versions');
-
-function getDbConnection($config)
-{
-    $mysqli = new mysqli($config['host'], $config['username'], $config['password'], $config['database']);
-    if ($mysqli->connect_error) return null;
-    $mysqli->set_charset('utf8mb4');
-    return $mysqli;
+require_once __DIR__ . '/../../app/Helpers/ErrorLogging.php';
+if (function_exists('initializeErrorLogging')) {
+    initializeErrorLogging();
 }
 
-function ensureTablesExist($mysqli)
+require_once __DIR__ . '/../../Config/Db.php';
+require_once __DIR__ . '/../../app/Models/WebhookSettingsModel.php';
+
+const WEBHOOK_RATE_LIMIT_WINDOW = 300;
+const WEBHOOK_RATE_LIMIT_MAX = 60;
+
+function webhook_env_bool(string $key, bool $default = false): bool
 {
-    $mysqli->query("CREATE TABLE IF NOT EXISTS " . SETTINGS_TABLE . " (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        setting_key VARCHAR(100) NOT NULL UNIQUE,
-        setting_value TEXT,
-        setting_type VARCHAR(20) DEFAULT 'string',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $raw = getenv($key) ?: ($_ENV[$key] ?? null);
+    if ($raw === null) return $default;
+    $raw = strtolower(trim((string)$raw));
+    return in_array($raw, ['1', 'true', 'yes', 'on'], true);
+}
 
-    $mysqli->query("CREATE TABLE IF NOT EXISTS " . LOGS_TABLE . " (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        delivery_id VARCHAR(100),
-        event_type VARCHAR(50),
-        payload LONGTEXT,
-        signature_verified TINYINT(1) DEFAULT 0,
-        deployment_triggered TINYINT(1) DEFAULT 0,
-        deployment_status VARCHAR(20),
-        deploy_path VARCHAR(500),
-        backup_created TINYINT(1) DEFAULT 0,
-        version_tag VARCHAR(100),
-        ip_address VARCHAR(45),
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+function webhook_json(int $status, array $data): void
+{
+    http_response_code($status);
+    echo json_encode($data, JSON_UNESCAPED_SLASHES);
+    exit;
+}
 
-    $mysqli->query("CREATE TABLE IF NOT EXISTS " . VERSIONS_TABLE . " (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        version_tag VARCHAR(100) NOT NULL,
-        commit_hash VARCHAR(100),
-        description TEXT,
-        backup_path VARCHAR(500),
-        db_backup_path VARCHAR(500),
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_version_tag (version_tag)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+function webhook_get_header(string $name): string
+{
+    $key = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
+    return (string)($_SERVER[$key] ?? '');
+}
 
-    $defaults = [
-        ['key' => 'webhook_enabled',      'value' => $GLOBALS['webhook_enabled'] ? '1' : '0'],
-        ['key' => 'webhook_secret',        'value' => $GLOBALS['webhook_secret']],
-        ['key' => 'webhook_branch',        'value' => $GLOBALS['target_branch']],
-        ['key' => 'webhook_auto_deploy',   'value' => $GLOBALS['auto_deploy'] ? '1' : '0'],
-        ['key' => 'deploy_path',           'value' => $GLOBALS['deploy_path']],
-        ['key' => 'create_backup',         'value' => $GLOBALS['create_backup'] ? '1' : '0'],
-        ['key' => 'max_backups',           'value' => (string)$GLOBALS['max_backups']],
-        ['key' => 'project_name',          'value' => $GLOBALS['project_name']],
-        ['key' => 'admin_api_key',         'value' => $GLOBALS['admin_api_key']],
-        ['key' => 'last_webhook_delivery', 'value' => 'Never'],
-    ];
+function webhook_rate_limit(string $bucket): void
+{
+    $key = hash('sha256', $bucket);
+    $dir = sys_get_temp_dir();
+    $dataFile = $dir . DIRECTORY_SEPARATOR . 'webhook_rl_' . $key . '.json';
+    $lockFile = $dataFile . '.lock';
 
-    foreach ($defaults as $default) {
-        $stmt = $mysqli->prepare("INSERT IGNORE INTO " . SETTINGS_TABLE . " (setting_key, setting_value) VALUES (?, ?)");
-        $stmt->bind_param("ss", $default['key'], $default['value']);
-        $stmt->execute();
-        $stmt->close();
+    $h = @fopen($lockFile, 'c+');
+    if (!$h) return;
+    if (!@flock($h, LOCK_EX)) {
+        @fclose($h);
+        return;
+    }
+
+    $now = time();
+    $data = ['hits' => []];
+    if (is_file($dataFile)) {
+        $existing = json_decode((string)@file_get_contents($dataFile), true);
+        if (is_array($existing)) {
+            $data = $existing + $data;
+        }
+    }
+
+    $hits = array_values(array_filter(
+        $data['hits'] ?? [],
+        fn($t) => is_int($t) && ($now - $t) <= WEBHOOK_RATE_LIMIT_WINDOW
+    ));
+
+    if (count($hits) >= WEBHOOK_RATE_LIMIT_MAX) {
+        @flock($h, LOCK_UN);
+        @fclose($h);
+        webhook_json(429, ['success' => false, 'message' => 'Rate limit exceeded']);
+    }
+
+    $hits[] = $now;
+    $data['hits'] = $hits;
+    @file_put_contents($dataFile, json_encode($data));
+
+    @flock($h, LOCK_UN);
+    @fclose($h);
+}
+
+function webhook_require_admin_allowed(): void
+{
+    if (!webhook_env_bool('WEBHOOK_ADMIN_ACTIONS_ENABLED', false)) {
+        webhook_json(404, ['success' => false, 'message' => 'Not found']);
     }
 }
 
-function getSetting($mysqli, $key, $default = null)
+function webhook_require_admin_key(WebhookSettingsModel $settings): void
 {
-    $stmt = $mysqli->prepare("SELECT setting_value FROM " . SETTINGS_TABLE . " WHERE setting_key = ?");
-    $stmt->bind_param("s", $key);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($row = $result->fetch_assoc()) {
-        $stmt->close();
-        return $row['setting_value'];
+    if (isset($_GET['api_key'])) {
+        webhook_json(400, ['success' => false, 'message' => 'Query api_key is not allowed']);
     }
-    $stmt->close();
-    return $default;
-}
 
-function verifySignature($payload, $signature, $secret)
-{
-    if (empty($secret)) return true;
-    return hash_equals('sha256=' . hash_hmac('sha256', $payload, $secret), $signature);
-}
+    $provided = webhook_get_header('X-Api-Key');
+    $expected = (string)$settings->getSettingValue(WebhookSettingsModel::KEY_ADMIN_API_KEY, '');
 
-function verifyAdminApiKey($provided_key)
-{
-    global $adminKey;
-    $expected = $adminKey;
-    if (empty($expected) || $expected === 'change_this_to_a_strong_random_key_12345') {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'message' => '$admin_api_key সেট করা হয়নি।']);
-        exit;
+    if ($expected === '') {
+        webhook_json(503, ['success' => false, 'message' => 'Admin API key not configured']);
     }
-    if (empty($provided_key) || !hash_equals($expected, $provided_key)) {
-        http_response_code(401);
-        echo json_encode(['success' => false, 'message' => 'Unauthorized: Invalid API Key']);
-        exit;
+
+    if ($provided === '' || !hash_equals($expected, $provided)) {
+        webhook_json(401, ['success' => false, 'message' => 'Unauthorized']);
     }
 }
 
-function verifyGitHubIP($remoteIP)
+function webhook_backup_root(): string
 {
-    $ranges = ['192.30.252.0/22', '185.199.108.0/22', '140.82.112.0/20', '143.55.64.0/20'];
-    foreach ($ranges as $cidr) {
-        list($subnet, $mask) = explode('/', $cidr);
-        if ((ip2long($remoteIP) & ~((1 << (32 - $mask)) - 1)) === ip2long($subnet)) return true;
+    $override = getenv('WEBHOOK_BACKUP_DIR') ?: ($_ENV['WEBHOOK_BACKUP_DIR'] ?? '');
+    $override = trim((string)$override);
+    if ($override !== '') return rtrim($override, "/\\");
+
+    $repoRoot = realpath(__DIR__ . '/../../') ?: (__DIR__ . '/../../');
+    $repoRoot = rtrim(str_replace('\\', '/', $repoRoot), '/');
+    return $repoRoot . '/storage/backups/webhook';
+}
+
+function webhook_safe_realpath(string $path): ?string
+{
+    $rp = realpath($path);
+    return $rp === false ? null : str_replace('\\', '/', $rp);
+}
+
+function webhook_copy_dir(string $src, string $dst): void
+{
+    if (!is_dir($src)) {
+        throw new RuntimeException('Source directory not found');
     }
-    return false;
-}
+    if (file_exists($dst)) {
+        throw new RuntimeException('Destination already exists');
+    }
+    if (!@mkdir($dst, 0755, true) && !is_dir($dst)) {
+        throw new RuntimeException('Failed to create directory');
+    }
 
-function logDelivery($mysqli, $data)
-{
-    $stmt = $mysqli->prepare("INSERT INTO " . LOGS_TABLE . "
-        (delivery_id, event_type, payload, signature_verified, deployment_triggered,
-         deployment_status, deploy_path, backup_created, version_tag, ip_address)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param(
-        "sssiississ",
-        $data['delivery_id'],
-        $data['event_type'],
-        $data['payload'],
-        $data['signature_verified'],
-        $data['deployment_triggered'],
-        $data['deployment_status'],
-        $data['deploy_path'],
-        $data['backup_created'],
-        $data['version_tag'],
-        $data['ip_address']
-    );
-    $stmt->execute();
-    $stmt->close();
-}
+    $src = rtrim($src, "/\\");
+    $dst = rtrim($dst, "/\\");
 
-/**
- * Site backup তৈরি করা
- * Path pattern: /home/tdhuedhn/repo/site_{projectname}_{datetime}/
- */
-function createBackup($deployPath, $projectName, $timestamp)
-{
-    $backupBaseDir = '/home/tdhuedhn/repo';
-    $backupDir     = $backupBaseDir . '/site_' . $projectName . '_' . $timestamp;
-
-    if (!is_dir($backupBaseDir)) mkdir($backupBaseDir, 0755, true);
-    if (!is_dir($backupDir))     mkdir($backupDir,     0755, true);
-
-    $exclude = ['.git', 'vendor', 'node_modules', '.env'];
-    copyDirectory($deployPath, $backupDir, $exclude);
-
-    return $backupDir;
-}
-
-/**
- * DB backup তৈরি করা
- * Path pattern: /home/tdhuedhn/repo/db/site_{projectname}_{datetime}.sql
- */
-function createDbBackup($dbConfig, $projectName, $timestamp)
-{
-    $dbBackupDir = '/home/tdhuedhn/repo/db';
-    if (!is_dir($dbBackupDir)) mkdir($dbBackupDir, 0755, true);
-
-    $backupFile = $dbBackupDir . '/site' . $projectName . '_' . $timestamp . '.sql';
-
-    $cmd = sprintf(
-        'mysqldump --host=%s --user=%s --password=%s %s > %s 2>&1',
-        escapeshellarg($dbConfig['host']),
-        escapeshellarg($dbConfig['username']),
-        escapeshellarg($dbConfig['password']),
-        escapeshellarg($dbConfig['database']),
-        escapeshellarg($backupFile)
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($src, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST
     );
 
-    exec($cmd, $output, $returnCode);
+    foreach ($it as $item) {
+        $rel = substr(str_replace('\\', '/', (string)$item->getPathname()), strlen(str_replace('\\', '/', $src)));
+        $target = $dst . $rel;
 
-    if ($returnCode !== 0 || !file_exists($backupFile)) {
-        return ['success' => false, 'path' => null, 'error' => implode("\n", $output)];
-    }
+        if ($item->isDir()) {
+            if (!is_dir($target) && !@mkdir($target, 0755, true)) {
+                throw new RuntimeException('Failed to create directory during copy');
+            }
+            continue;
+        }
 
-    return ['success' => true, 'path' => $backupFile];
-}
-
-function copyDirectory($src, $dst, $exclude = [])
-{
-    if (!is_dir($src)) return false;
-    if (!is_dir($dst)) mkdir($dst, 0755, true);
-    $dir = opendir($src);
-    while (($file = readdir($dir)) !== false) {
-        if (in_array($file, $exclude) || $file[0] === '.') continue;
-        $s = $src . '/' . $file;
-        $d = $dst . '/' . $file;
-        is_dir($s) ? copyDirectory($s, $d, $exclude) : copy($s, $d);
-    }
-    closedir($dir);
-    return true;
-}
-
-function cleanupOldBackups($projectName, $maxBackups)
-{
-    $backupBaseDir = '/home/tdhuedhn/repo';
-    $backups = glob($backupBaseDir . '/site_' . $projectName . '_*');
-    if (!$backups || count($backups) <= $maxBackups) return;
-    usort($backups, fn($a, $b) => filemtime($a) - filemtime($b));
-    while (count($backups) > $maxBackups) {
-        deleteDirectory(array_shift($backups));
+        if (!@copy((string)$item->getPathname(), $target)) {
+            throw new RuntimeException('Failed to copy file during backup');
+        }
     }
 }
 
-function cleanupOldDbBackups($projectName, $maxBackups)
-{
-    $dbBackupDir = '/home/tdhuedhn/repo/db';
-    $backups = glob($dbBackupDir . '/site' . $projectName . '_*.sql');
-    if (!$backups || count($backups) <= $maxBackups) return;
-    usort($backups, fn($a, $b) => filemtime($a) - filemtime($b));
-    while (count($backups) > $maxBackups) {
-        $oldest = array_shift($backups);
-        if (file_exists($oldest)) unlink($oldest);
-    }
-}
-
-function deleteDirectory($dir)
+function webhook_rrmdir(string $dir): void
 {
     if (!is_dir($dir)) return;
-    $files = array_diff(scandir($dir), ['.', '..']);
-    foreach ($files as $file) {
-        $path = "$dir/$file";
-        is_dir($path) ? deleteDirectory($path) : unlink($path);
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST
+    );
+    foreach ($it as $item) {
+        $path = (string)$item->getPathname();
+        if ($item->isDir()) {
+            @rmdir($path);
+        } else {
+            @unlink($path);
+        }
     }
-    rmdir($dir);
+    @rmdir($dir);
 }
 
-// [BUG FIX] branch এখন parameter থেকে আসে, hardcode নয়
-function runGitPull($deployPath, $branch = 'main')
+function webhook_versions_fetch(mysqli $mysqli, int $limit = 50): array
 {
-    if (!is_dir($deployPath . '/.git')) {
-        return ['success' => false, 'message' => 'Git repo পাওয়া যায়নি। আগে git clone করুন।'];
+    $limit = max(1, min(200, $limit));
+    $stmt = $mysqli->prepare("SELECT * FROM deploy_versions ORDER BY created_at DESC LIMIT ?");
+    if (!$stmt) return [];
+    $stmt->bind_param('i', $limit);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+    $stmt->close();
+    return $rows;
+}
+
+function webhook_versions_get(mysqli $mysqli, string $tag): ?array
+{
+    $stmt = $mysqli->prepare("SELECT * FROM deploy_versions WHERE version_tag = ? LIMIT 1");
+    if (!$stmt) return null;
+    $stmt->bind_param('s', $tag);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res ? $res->fetch_assoc() : null;
+    $stmt->close();
+    return $row ?: null;
+}
+
+function webhook_versions_insert(mysqli $mysqli, string $tag, ?string $commit, ?string $backupPath, ?string $dbBackupPath = null, ?string $desc = null): void
+{
+    $stmt = $mysqli->prepare("
+        INSERT INTO deploy_versions (version_tag, commit_hash, description, backup_path, db_backup_path)
+        VALUES (?, ?, ?, ?, ?)
+    ");
+    if (!$stmt) return;
+    $stmt->bind_param('sssss', $tag, $commit, $desc, $backupPath, $dbBackupPath);
+    $stmt->execute();
+    $stmt->close();
+}
+
+function webhook_delivery_exists(mysqli $mysqli, string $deliveryId): bool
+{
+    $stmt = $mysqli->prepare("SELECT 1 FROM deploy_webhook_logs WHERE delivery_id = ? LIMIT 1");
+    if (!$stmt) return false;
+    $stmt->bind_param('s', $deliveryId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $exists = (bool)($res ? $res->fetch_row() : false);
+    $stmt->close();
+    return $exists;
+}
+
+function webhook_run_git_pull(string $deployPath, string $branch): array
+{
+    $deployPath = rtrim($deployPath, "/\\");
+    if (!is_dir($deployPath . DIRECTORY_SEPARATOR . '.git')) {
+        return ['success' => false, 'message' => 'Deploy path is not a git repository'];
     }
-    chdir($deployPath);
-    $output = [];
-    $returnCode = 0;
-    exec('git pull origin ' . escapeshellarg($branch) . ' 2>&1', $output, $returnCode);
-    return ['success' => ($returnCode === 0), 'output' => implode("\n", $output), 'return_code' => $returnCode];
-}
 
-function getVersions($mysqli, $limit = 10)
-{
-    $result   = $mysqli->query("SELECT * FROM " . VERSIONS_TABLE . " ORDER BY created_at DESC LIMIT " . (int)$limit);
-    $versions = [];
-    while ($row = $result->fetch_assoc()) $versions[] = $row;
-    return $versions;
-}
+    $cmd = ['git', 'pull', 'origin', $branch];
+    $descriptors = [
+        1 => ['pipe', 'w'],
+        2 => ['pipe', 'w'],
+    ];
 
-function sendEmailNotification($status, $details, $projectName = 'BROXBHAI')
-{
-    if (!$GLOBALS['email_enabled']) return;
-    $emoji   = $status === 'success' ? '✅' : '❌';
-    $subject = $emoji . ' ' . strtoupper($projectName) . ' Deploy ' . strtoupper($status) . ' — ' . date('Y-m-d H:i:s');
-    $body    = "GitHub Webhook Deployment — " . strtoupper($projectName) . "\n";
-    $body   .= "======================================\n";
-    $body   .= "Status     : " . strtoupper($status) . "\n";
-    $body   .= "সময়       : " . date('Y-m-d H:i:s') . "\n";
-    $body   .= "Branch     : " . ($details['branch']     ?? 'N/A') . "\n";
-    $body   .= "Commit     : " . ($details['commit']     ?? 'N/A') . "\n";
-    $body   .= "Message    : " . ($details['message']    ?? 'N/A') . "\n";
-    $body   .= "Deploy Path: " . ($details['path']       ?? 'N/A') . "\n";
-    $body   .= "Site Backup: " . ($details['backup']     ?? 'N/A') . "\n";
-    $body   .= "DB Backup  : " . ($details['db_backup']  ?? 'N/A') . "\n";
-    if (!empty($details['git_output'])) $body .= "\nGit Output:\n" . $details['git_output'] . "\n";
-    $headers  = "From: {$GLOBALS['notify_from']}\r\nReply-To: {$GLOBALS['notify_from']}\r\nX-Mailer: " . strtoupper($projectName) . "-Webhook\r\n";
-    @mail($GLOBALS['notify_email'], $subject, $body, $headers);
-}
+    $proc = proc_open($cmd, $descriptors, $pipes, $deployPath);
+    if (!is_resource($proc)) {
+        return ['success' => false, 'message' => 'Failed to start git pull'];
+    }
 
-function sendSlackNotification($status, $details, $projectName = 'BROXBHAI')
-{
-    if (!$GLOBALS['slack_enabled'] || empty($GLOBALS['slack_webhook_url'])) return;
-    $emoji = $status === 'success' ? ':white_check_mark:' : ':x:';
-    $color = $status === 'success' ? '#36a64f' : '#cc0000';
-    $payload = json_encode(['attachments' => [[
-        'color'  => $color,
-        'title'  => $emoji . ' ' . strtoupper($projectName) . ' Deploy ' . strtoupper($status),
-        'fields' => [
-            ['title' => 'Branch',      'value' => $details['branch']    ?? 'N/A', 'short' => true],
-            ['title' => 'Status',      'value' => strtoupper($status),             'short' => true],
-            ['title' => 'Commit',      'value' => $details['commit']    ?? 'N/A', 'short' => true],
-            ['title' => 'সময়',        'value' => date('Y-m-d H:i:s'),             'short' => true],
-            ['title' => 'Commit Msg',  'value' => $details['message']   ?? 'N/A', 'short' => false],
-            ['title' => 'Site Backup', 'value' => $details['backup']    ?? 'N/A', 'short' => false],
-            ['title' => 'DB Backup',   'value' => $details['db_backup'] ?? 'N/A', 'short' => false],
-        ],
-        'footer' => strtoupper($projectName) . ' GitHub Auto-Deploy',
-        'ts'     => time(),
-    ]]]);
-    $ch = curl_init($GLOBALS['slack_webhook_url']);
-    curl_setopt_array($ch, [
-        CURLOPT_POST => 1,
-        CURLOPT_POSTFIELDS => $payload,
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 5
-    ]);
-    curl_exec($ch);
-    curl_close($ch);
-}
+    $stdout = stream_get_contents($pipes[1]) ?: '';
+    $stderr = stream_get_contents($pipes[2]) ?: '';
+    fclose($pipes[1]);
+    fclose($pipes[2]);
 
-// ============================================================
-// MAIN HANDLER
-// ============================================================
+    $code = proc_close($proc);
+
+    return [
+        'success' => $code === 0,
+        'exit_code' => $code,
+        'output' => trim($stdout . ($stderr !== '' ? "\n" . $stderr : '')),
+    ];
+}
 
 try {
-    $mysqli = getDbConnection($db_config);
-    if (!$mysqli) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Database সংযোগ ব্যর্থ।']);
-        exit;
+    /** @var mysqli $mysqli */
+    if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
+        webhook_json(500, ['success' => false, 'message' => 'DB not initialized']);
     }
 
-    ensureTablesExist($mysqli);
+    $settings = new WebhookSettingsModel($mysqli);
 
-    $enabled    = getSetting($mysqli, 'webhook_enabled',    $webhook_enabled);
-    $secret     = getSetting($mysqli, 'webhook_secret',     $webhook_secret);
-    $branch     = getSetting($mysqli, 'webhook_branch',     $target_branch);
-    $auto       = getSetting($mysqli, 'webhook_auto_deploy', $auto_deploy);
-    $deployPath = getSetting($mysqli, 'deploy_path',        $deploy_path);
-    $doBackup   = getSetting($mysqli, 'create_backup',      $create_backup);
-    $maxBackups = (int)getSetting($mysqli, 'max_backups',   $max_backups);
-    $projectName = getSetting($mysqli, 'project_name',     $project_name);
-    $adminKey   = getSetting($mysqli, 'admin_api_key',     $admin_api_key);
+    $action = trim((string)($_GET['action'] ?? ''));
 
-    $action = $_GET['action'] ?? 'webhook';
+    // ---------------------------------------------------------------------
+    // Admin actions (disabled by default)
+    // ---------------------------------------------------------------------
+    if ($action !== '') {
+        webhook_require_admin_allowed();
+        webhook_require_admin_key($settings);
 
-    // ===== ACTION: webhook =====
-    if ($action === 'webhook') {
+        $enabled = (bool)$settings->getSettingValue(WebhookSettingsModel::KEY_WEBHOOK_ENABLED, false);
+        $branch = (string)$settings->getSettingValue(WebhookSettingsModel::KEY_WEBHOOK_BRANCH, 'main');
+        $deployPath = (string)$settings->getSettingValue(WebhookSettingsModel::KEY_DEPLOY_PATH, '');
+        $projectName = (string)$settings->getSettingValue(WebhookSettingsModel::KEY_PROJECT_NAME, 'project');
+        $backupRoot = webhook_backup_root();
 
-        if (!$enabled) {
-            http_response_code(404);
-            echo json_encode(['success' => false, 'message' => 'Webhook বন্ধ আছে।']);
-            exit;
-        }
+        if ($action === 'status') {
+            $lastDelivery = (string)$settings->getSettingValue(WebhookSettingsModel::KEY_LAST_WEBHOOK_DELIVERY, '');
+            $lastStatus = (string)$settings->getSettingValue(WebhookSettingsModel::KEY_LAST_WEBHOOK_STATUS, '');
 
-        $remoteIP = $_SERVER['REMOTE_ADDR'] ?? '';
-        if ($enable_ip_whitelist && !verifyGitHubIP($remoteIP)) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'Forbidden: অননুমোদিত IP।']);
-            exit;
-        }
-
-        $signature   = $_SERVER['HTTP_X_HUB_SIGNATURE_256'] ?? '';
-        $event       = $_SERVER['HTTP_X_GITHUB_EVENT'] ?? '';
-        $delivery    = $_SERVER['HTTP_X_GITHUB_DELIVERY'] ?? uniqid();
-        $payload     = file_get_contents('php://input');
-        $payloadJson = json_decode($payload, true);
-
-        if (!empty($secret) && !verifySignature($payload, $signature, $secret)) {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'message' => 'Invalid signature।']);
-            exit;
-        }
-
-        if ($event !== 'push') {
-            echo json_encode(['success' => true, 'message' => 'Event উপেক্ষা করা হয়েছে।', 'event' => $event]);
-            exit;
-        }
-
-        $ref             = $payloadJson['ref'] ?? '';
-        $triggeredBranch = preg_replace('#^refs/heads/#', '', $ref);
-        $shouldDeploy    = ($triggeredBranch === $branch);
-
-        $backupCreated = 0;
-        $versionTag    = '';
-        $gitResult     = [];
-        $deployStatus  = 'ignored';
-        $backupPath    = null;
-        $dbBackupPath  = null;
-        $commitHash    = $payloadJson['after'] ?? '';
-        $commitMessage = $payloadJson['head_commit']['message'] ?? 'Webhook deployment';
-
-        if ($shouldDeploy && $auto) {
-            $timestamp  = date('Y-m-d_His');
-            $versionTag = 'v' . date('YmdHis');
-
-            if ($doBackup) {
-                // Site files backup → /home/tdhuedhn/repo/site_broxbhai_TIMESTAMP/
-                $backupPath = createBackup($deployPath, $projectName, $timestamp);
-                cleanupOldBackups($projectName, $maxBackups);
-
-                // DB backup → /home/tdhuedhn/repo/db/sitebroxbhai_TIMESTAMP.sql
-                $dbResult   = createDbBackup($db_config, $projectName, $timestamp);
-                $dbBackupPath = $dbResult['success'] ? $dbResult['path'] : 'DB backup ব্যর্থ';
-                cleanupOldDbBackups($projectName, $maxBackups);
-
-                // Version DB তে সেভ করা
-                $stmt = $mysqli->prepare("INSERT INTO " . VERSIONS_TABLE . " (version_tag, commit_hash, description, backup_path, db_backup_path) VALUES (?, ?, ?, ?, ?)");
-                $stmt->bind_param("sssss", $versionTag, $commitHash, $commitMessage, $backupPath, $dbBackupPath);
-                $stmt->execute();
-                $stmt->close();
-
-                $backupCreated = 1;
+            $backupCount = 0;
+            if (is_dir($backupRoot)) {
+                $pattern = rtrim($backupRoot, "/\\") . DIRECTORY_SEPARATOR . 'site_' . $projectName . '_*';
+                $backupCount = count(glob($pattern, GLOB_ONLYDIR) ?: []);
             }
 
-            // Git pull
-            $gitResult    = runGitPull($deployPath, $branch);
-            $deployStatus = $gitResult['success'] ? 'success' : 'failed';
-
-            // Notification
-            $notifyDetails = [
-                'branch'    => $triggeredBranch,
-                'commit'    => substr($commitHash, 0, 7),
-                'message'   => $commitMessage,
-                'path'      => $deployPath,
-                'backup'    => $backupPath    ?? 'তৈরি হয়নি',
-                'db_backup' => $dbBackupPath  ?? 'তৈরি হয়নি',
-                'git_output' => $gitResult['output'] ?? '',
-            ];
-            sendEmailNotification($deployStatus, $notifyDetails, $projectName);
-            sendSlackNotification($deployStatus, $notifyDetails, $projectName);
-        }
-
-        logDelivery($mysqli, [
-            'delivery_id'          => $delivery,
-            'event_type'           => $event,
-            'payload'              => $payload,
-            'signature_verified'   => !empty($signature) ? 1 : 0,
-            'deployment_triggered' => ($shouldDeploy && $auto) ? 1 : 0,
-            'deployment_status'    => $deployStatus,
-            'deploy_path'          => $deployPath,
-            'backup_created'       => $backupCreated,
-            'version_tag'          => $versionTag,
-            'ip_address'           => $remoteIP
-        ]);
-
-        $mysqli->query("INSERT INTO " . SETTINGS_TABLE . " (setting_key, setting_value) VALUES ('last_webhook_delivery', NOW())
-            ON DUPLICATE KEY UPDATE setting_value = NOW()");
-
-        echo json_encode([
-            'success'        => $gitResult['success'] ?? !$shouldDeploy,
-            'message'        => $shouldDeploy ? ($gitResult['success'] ? 'Deploy সফল!' : 'Deploy ব্যর্থ।') : 'Branch মেলেনি।',
-            'branch'         => $triggeredBranch,
-            'version'        => $versionTag,
-            'backup_path'    => $backupPath,
-            'db_backup_path' => $dbBackupPath,
-            'git_output'     => $gitResult['output'] ?? null
-        ]);
-    }
-
-    // ===== ACTION: versions =====
-    elseif ($action === 'versions') {
-        verifyAdminApiKey($_GET['api_key'] ?? $_SERVER['HTTP_X_API_KEY'] ?? '');
-        echo json_encode(['success' => true, 'versions' => getVersions($mysqli)]);
-    }
-
-    // ===== ACTION: rollback =====
-    elseif ($action === 'rollback') {
-        verifyAdminApiKey($_GET['api_key'] ?? $_SERVER['HTTP_X_API_KEY'] ?? '');
-
-        $versionTag = $_GET['version'] ?? '';
-        if (empty($versionTag)) {
-            echo json_encode(['success' => false, 'message' => '?version= দরকার।']);
-            exit;
-        }
-
-        $stmt = $mysqli->prepare("SELECT * FROM " . VERSIONS_TABLE . " WHERE version_tag = ?");
-        $stmt->bind_param("s", $versionTag);
-        $stmt->execute();
-        $version = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
-
-        if (!$version) {
-            echo json_encode(['success' => false, 'message' => 'Version পাওয়া যায়নি।']);
-            exit;
-        }
-
-        // Rollback-এর আগে current state সংরক্ষণ
-        $ts            = date('Y-m-d_His');
-        $currentBackup = createBackup($deployPath, $projectName . '_prerollback', $ts);
-        createDbBackup($db_config, $projectName . '_prerollback', $ts);
-
-        if (is_dir($version['backup_path'])) {
-            copyDirectory($version['backup_path'], $deployPath);
-            sendEmailNotification('success', [
+            webhook_json(200, [
+                'success' => true,
+                'enabled' => $enabled,
                 'branch' => $branch,
-                'commit' => $version['commit_hash'],
-                'message' => 'Rollback to ' . $versionTag,
-                'path' => $deployPath,
-                'backup' => $currentBackup
-            ], $projectName);
-            sendSlackNotification('success', [
-                'branch' => $branch,
-                'commit' => $version['commit_hash'],
-                'message' => 'Rollback to ' . $versionTag,
-                'path' => $deployPath,
-                'backup' => $currentBackup
-            ], $projectName);
-            echo json_encode(['success' => true, 'message' => 'Rollback সফল।', 'version' => $versionTag]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Backup ফোল্ডার নেই।']);
+                'deploy_path' => $deployPath,
+                'project' => $projectName,
+                'backup_root' => $backupRoot,
+                'backup_count' => $backupCount,
+                'last_delivery' => $lastDelivery,
+                'last_status' => $lastStatus,
+            ]);
         }
+
+        if ($action === 'versions') {
+            webhook_json(200, ['success' => true, 'versions' => webhook_versions_fetch($mysqli, 50)]);
+        }
+
+        if ($action === 'rollback') {
+            $tag = trim((string)($_GET['version'] ?? ''));
+            if ($tag === '') {
+                webhook_json(400, ['success' => false, 'message' => 'version is required']);
+            }
+
+            $version = webhook_versions_get($mysqli, $tag);
+            if (!$version) {
+                webhook_json(404, ['success' => false, 'message' => 'Version not found']);
+            }
+
+            $deployPath = rtrim($deployPath, "/\\");
+            if ($deployPath === '' || !is_dir($deployPath)) {
+                webhook_json(400, ['success' => false, 'message' => 'Deploy path not configured']);
+            }
+
+            $backupPath = (string)($version['backup_path'] ?? '');
+            $backupRootReal = webhook_safe_realpath($backupRoot);
+            $backupReal = webhook_safe_realpath($backupPath);
+            if (!$backupRootReal || !$backupReal || strpos($backupReal, $backupRootReal . '/') !== 0) {
+                webhook_json(400, ['success' => false, 'message' => 'Invalid backup path']);
+            }
+            if (!is_dir($backupReal)) {
+                webhook_json(404, ['success' => false, 'message' => 'Backup directory not found']);
+            }
+
+            // Concurrency lock
+            $lockFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'webhook_deploy_lock';
+            $lock = @fopen($lockFile, 'c+');
+            if (!$lock || !@flock($lock, LOCK_EX | LOCK_NB)) {
+                webhook_json(409, ['success' => false, 'message' => 'Another operation is running']);
+            }
+
+            $ts = date('Ymd_His');
+            $preTag = 'prerollback_' . $ts;
+            $preBackupDir = rtrim($backupRoot, "/\\") . DIRECTORY_SEPARATOR . 'site_' . $projectName . '_' . $preTag;
+
+            try {
+                if (!is_dir($backupRoot) && !@mkdir($backupRoot, 0755, true)) {
+                    throw new RuntimeException('Backup root not writable');
+                }
+
+                // Backup current state before rollback
+                if (is_dir($deployPath)) {
+                    webhook_copy_dir($deployPath, $preBackupDir);
+                    webhook_versions_insert($mysqli, $preTag, null, $preBackupDir, null, 'Pre-rollback snapshot');
+                }
+
+                // Restore into a temp dir, then swap
+                $restoreDir = $deployPath . '__restore_' . $ts;
+                webhook_copy_dir($backupReal, $restoreDir);
+
+                $oldDir = $deployPath . '__old_' . $ts;
+                if (is_dir($deployPath)) {
+                    @rename($deployPath, $oldDir);
+                }
+                if (!@rename($restoreDir, $deployPath)) {
+                    if (is_dir($oldDir)) {
+                        @rename($oldDir, $deployPath);
+                    }
+                    throw new RuntimeException('Failed to activate restored version');
+                }
+
+                webhook_json(200, ['success' => true, 'message' => 'Rollback completed', 'version' => $tag]);
+            } catch (Throwable $e) {
+                webhook_json(500, ['success' => false, 'message' => $e->getMessage()]);
+            } finally {
+                @flock($lock, LOCK_UN);
+                @fclose($lock);
+            }
+        }
+
+        webhook_json(400, ['success' => false, 'message' => 'Unknown action']);
     }
 
-    // ===== ACTION: status =====
-    elseif ($action === 'status') {
-        verifyAdminApiKey($_GET['api_key'] ?? $_SERVER['HTTP_X_API_KEY'] ?? '');
-        $lastDelivery = getSetting($mysqli, 'last_webhook_delivery', 'কখনো হয়নি');
-        $siteBackups  = count(glob('/home/tdhuedhn/repo/site_' . $projectName . '_*') ?: []);
-        $dbBackups    = count(glob('/home/tdhuedhn/repo/db/site' . $projectName . '_*.sql') ?: []);
-        echo json_encode([
-            'success'       => true,
-            'project'       => $projectName,
-            'enabled'       => (bool)$enabled,
-            'branch'        => $branch,
-            'deploy_path'   => $deployPath,
-            'last_delivery' => $lastDelivery,
-            'site_backups'  => $siteBackups,
-            'db_backups'    => $dbBackups,
+    // ---------------------------------------------------------------------
+    // GitHub webhook (POST only)
+    // ---------------------------------------------------------------------
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        webhook_json(404, ['success' => false, 'message' => 'Not found']);
+    }
+
+    $enabled = (bool)$settings->getSettingValue(WebhookSettingsModel::KEY_WEBHOOK_ENABLED, false);
+    if (!$enabled) {
+        webhook_json(404, ['success' => false, 'message' => 'Not found']);
+    }
+
+    $secret = (string)$settings->getSettingValue(WebhookSettingsModel::KEY_WEBHOOK_SECRET, '');
+    if ($secret === '') {
+        webhook_json(503, ['success' => false, 'message' => 'Webhook secret not configured']);
+    }
+
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? ($_SERVER['HTTP_CONTENT_TYPE'] ?? '');
+    if (stripos($contentType, 'application/json') !== 0) {
+        webhook_json(415, ['success' => false, 'message' => 'Unsupported Content-Type']);
+    }
+
+    $event = webhook_get_header('X-GitHub-Event');
+    $delivery = webhook_get_header('X-GitHub-Delivery');
+    $signature = webhook_get_header('X-Hub-Signature-256');
+    $remoteIp = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+
+    if ($event === '' || $delivery === '' || $signature === '') {
+        webhook_json(400, ['success' => false, 'message' => 'Missing required headers']);
+    }
+
+    webhook_rate_limit("github|{$remoteIp}|{$event}");
+
+    if (webhook_delivery_exists($mysqli, $delivery)) {
+        webhook_json(409, ['success' => false, 'message' => 'Duplicate delivery']);
+    }
+
+    $payload = (string)file_get_contents('php://input');
+    if ($payload === '') {
+        webhook_json(400, ['success' => false, 'message' => 'Empty body']);
+    }
+
+    $sigOk = $settings->verifySignature($payload, $signature, $secret);
+    if (!$sigOk) {
+        webhook_json(401, ['success' => false, 'message' => 'Invalid signature']);
+    }
+
+    $payloadJson = json_decode($payload, true);
+    if (!is_array($payloadJson)) {
+        webhook_json(400, ['success' => false, 'message' => 'Invalid JSON']);
+    }
+
+    $allowedEvents = $settings->getSettingValue(WebhookSettingsModel::KEY_WEBHOOK_EVENTS, ['push']);
+    $allowedEvents = is_array($allowedEvents) ? $allowedEvents : ['push'];
+    if (!in_array($event, $allowedEvents, true)) {
+        $settings->logDelivery([
+            'delivery_id' => $delivery,
+            'event_type' => $event,
+            'payload' => substr($payload, 0, 50000),
+            'signature_verified' => true,
+            'deployment_triggered' => false,
+            'deployment_status' => 'ignored',
+            'ip_address' => $remoteIp,
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null
         ]);
+        webhook_json(200, ['success' => true, 'message' => 'Ignored event', 'event' => $event]);
+    }
+
+    $allowedBranch = (string)$settings->getSettingValue(WebhookSettingsModel::KEY_WEBHOOK_BRANCH, 'main');
+    $autoDeploySetting = (bool)$settings->getSettingValue(WebhookSettingsModel::KEY_WEBHOOK_AUTO_DEPLOY, false);
+    $autoDeployAllowed = webhook_env_bool('WEBHOOK_AUTO_DEPLOY_ALLOWED', false);
+    $shouldDeploy = false;
+    $triggeredBranch = '';
+
+    if ($event === 'push') {
+        $ref = (string)($payloadJson['ref'] ?? '');
+        $triggeredBranch = preg_replace('#^refs/heads/#', '', $ref);
+        $shouldDeploy = ($triggeredBranch === $allowedBranch);
     } else {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'অজানা action।']);
+        $shouldDeploy = true;
     }
+
+    $deployTriggered = $shouldDeploy && $autoDeploySetting && $autoDeployAllowed;
+    $deployStatus = null;
+    $versionTag = null;
+    $backupCreated = false;
+    $backupPath = null;
+
+    $deployPath = (string)$settings->getSettingValue(WebhookSettingsModel::KEY_DEPLOY_PATH, '');
+    $projectName = (string)$settings->getSettingValue(WebhookSettingsModel::KEY_PROJECT_NAME, 'project');
+    $createBackup = (bool)$settings->getSettingValue(WebhookSettingsModel::KEY_CREATE_BACKUP, true);
+    $maxBackups = (int)$settings->getSettingValue(WebhookSettingsModel::KEY_MAX_BACKUPS, 5);
+    $backupRoot = webhook_backup_root();
+
+    if ($deployTriggered) {
+        $lockFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'webhook_deploy_lock';
+        $lock = @fopen($lockFile, 'c+');
+        if (!$lock || !@flock($lock, LOCK_EX | LOCK_NB)) {
+            webhook_json(409, ['success' => false, 'message' => 'Another operation is running']);
+        }
+
+        try {
+            $commit = (string)($payloadJson['after'] ?? '');
+            $versionTag = date('Ymd_His') . ($commit !== '' ? '_' . substr($commit, 0, 7) : '');
+
+            if ($createBackup) {
+                if (!is_dir($backupRoot) && !@mkdir($backupRoot, 0755, true)) {
+                    throw new RuntimeException('Backup directory not writable');
+                }
+                $backupPath = rtrim($backupRoot, "/\\") . DIRECTORY_SEPARATOR . 'site_' . $projectName . '_' . $versionTag;
+                webhook_copy_dir($deployPath, $backupPath);
+                $backupCreated = true;
+                webhook_versions_insert($mysqli, $versionTag, $commit !== '' ? $commit : null, $backupPath, null, 'Auto backup');
+
+                $pattern = rtrim($backupRoot, "/\\") . DIRECTORY_SEPARATOR . 'site_' . $projectName . '_*';
+                $dirs = glob($pattern, GLOB_ONLYDIR) ?: [];
+                usort($dirs, fn($a, $b) => strcmp($b, $a));
+                $keep = max(1, min(50, $maxBackups));
+                foreach (array_slice($dirs, $keep) as $d) {
+                    webhook_rrmdir($d);
+                }
+            }
+
+            $git = webhook_run_git_pull($deployPath, $allowedBranch);
+            $deployStatus = ($git['success'] ?? false) ? 'success' : 'failed';
+
+            $settings->updateSetting(WebhookSettingsModel::KEY_LAST_WEBHOOK_STATUS, $deployStatus);
+            $settings->updateSetting(WebhookSettingsModel::KEY_LAST_WEBHOOK_DELIVERY, date('Y-m-d H:i:s'));
+
+            $settings->logDelivery([
+                'delivery_id' => $delivery,
+                'event_type' => $event,
+                'payload' => substr($payload, 0, 50000),
+                'signature_verified' => true,
+                'deployment_triggered' => true,
+                'deployment_status' => $deployStatus,
+                'ip_address' => $remoteIp,
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null
+            ]);
+
+            webhook_json(200, [
+                'success' => (bool)($git['success'] ?? false),
+                'message' => ($git['success'] ?? false) ? 'Deployed' : 'Deploy failed',
+                'branch' => $triggeredBranch !== '' ? $triggeredBranch : $allowedBranch,
+                'version' => $versionTag,
+                'backup_path' => $backupCreated ? $backupPath : null,
+                'git_output' => $git['output'] ?? null,
+            ]);
+        } catch (Throwable $e) {
+            webhook_json(500, ['success' => false, 'message' => $e->getMessage()]);
+        } finally {
+            @flock($lock, LOCK_UN);
+            @fclose($lock);
+        }
+    }
+
+    $settings->logDelivery([
+        'delivery_id' => $delivery,
+        'event_type' => $event,
+        'payload' => substr($payload, 0, 50000),
+        'signature_verified' => true,
+        'deployment_triggered' => false,
+        'deployment_status' => $shouldDeploy ? 'auto_deploy_disabled' : 'ignored',
+        'ip_address' => $remoteIp,
+        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null
+    ]);
+
+    $settings->updateSetting(WebhookSettingsModel::KEY_LAST_WEBHOOK_DELIVERY, date('Y-m-d H:i:s'));
+    $settings->updateSetting(WebhookSettingsModel::KEY_LAST_WEBHOOK_STATUS, $shouldDeploy ? 'received' : 'ignored');
+
+    webhook_json(200, [
+        'success' => true,
+        'message' => $shouldDeploy ? 'Webhook received, auto-deploy disabled' : 'Webhook received, ignored',
+        'event' => $event,
+        'branch' => $triggeredBranch,
+        'expected_branch' => $allowedBranch,
+    ]);
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+    webhook_json(500, ['success' => false, 'message' => 'Server error']);
 }
+
