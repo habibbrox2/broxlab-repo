@@ -13,58 +13,27 @@
     max-height: 500px;
     overflow-y: auto;
   }
-  .file-tree .folder {
-    cursor: pointer;
-    color: #ffd700;
-  }
-  .file-tree .folder:hover {
-    color: #fff;
-  }
-  .file-tree .file {
-    color: #9cdcfe;
-  }
+  .file-tree .folder { cursor: pointer; color: #ffd700; }
+  .file-tree .folder:hover { color: #fff; }
+  .file-tree .file { color: #9cdcfe; }
   .file-tree .file-twig { color: #c586c0; }
   .file-tree .file-php { color: #4ec9b0; }
   .file-tree .file-js { color: #dcdcaa; }
   .file-tree .file-css { color: #d7ba7d; }
   .file-tree .file-md { color: #6a9955; }
   .file-tree .file-json { color: #ce9178; }
-  .file-tree .indent {
-    padding-left: 20px;
-    display: none;
-  }
-  .file-tree .indent.expanded {
-    display: block;
-  }
-  .file-tree .toggle {
-    display: inline-block;
-    width: 16px;
-    text-align: center;
-    margin-right: 4px;
-  }
-  .file-tree .size {
-    color: #6a9955;
-    font-size: 11px;
-    margin-left: 8px;
-  }
-  .file-tree-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  .live-indicator {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    background: #22c55e;
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
+  .file-tree .indent { padding-left: 20px; display: none; }
+  .file-tree .indent.expanded { display: block; }
+  .file-tree .toggle { display: inline-block; width: 16px; text-align: center; margin-right: 4px; }
+  .file-tree .size { color: #6a9955; font-size: 11px; margin-left: 8px; }
+  .file-tree-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .live-indicator { display: inline-block; width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .webhook-status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+  .webhook-status.active { background: #22c55e; }
+  .webhook-status.inactive { background: #6b7280; }
+  .version-card { border-left: 3px solid #007bff; }
+  .backup-list { max-height: 300px; overflow-y: auto; }
 </style>
 
 <div class="container-fluid py-4">
@@ -73,46 +42,76 @@
       <i class="bi bi-rocket-takeoff"></i>
       Deploy Tools
     </div>
-    <div class="admin-page-subtitle">Local-only deploy + DB backup queue.</div>
+    <div class="admin-page-subtitle">Complete deployment solution with GitHub webhook, backup & rollback</div>
   </div>
 
   <ul class="nav nav-tabs mb-4" id="deployTabs" role="tablist">
     <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="jobs-tab" data-bs-toggle="tab" data-bs-target="#jobs-pane" type="button">
+      <button class="nav-link active" id="deploy-tab" data-bs-toggle="tab" data-bs-target="#deploy-pane" type="button">
+        <i class="bi bi-rocket me-1"></i> Deploy
+        <span class="live-indicator ms-1" title="Live"></span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="webhook-tab" data-bs-toggle="tab" data-bs-target="#webhook-pane" type="button">
+        <i class="bi bi-git me-1"></i> GitHub Webhook
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="versions-tab" data-bs-toggle="tab" data-bs-target="#versions-pane" type="button">
+        <i class="bi bi-clock-history me-1"></i> Versions & Backup
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="jobs-tab" data-bs-toggle="tab" data-bs-target="#jobs-pane" type="button">
         <i class="bi bi-list-task me-1"></i> Jobs
       </button>
     </li>
     <li class="nav-item" role="presentation">
       <button class="nav-link" id="filetree-tab" data-bs-toggle="tab" data-bs-target="#filetree-pane" type="button">
         <i class="bi bi-folder me-1"></i> File Tree
-        <span class="live-indicator ms-1" title="Live"></span>
       </button>
     </li>
   </ul>
 
   <div class="tab-content" id="deployTabsContent">
-    <!-- Jobs Tab -->
-    <div class="tab-pane fade show active" id="jobs-pane" role="tabpanel">
+    <!-- Deploy Tab -->
+    <div class="tab-pane fade show active" id="deploy-pane" role="tabpanel">
       <div class="row g-4">
         <div class="col-lg-4">
           <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white">
-              <strong>Queue Jobs</strong>
+            <div class="card-header bg-white d-flex align-items-center justify-content-between">
+              <strong><i class="bi bi-play-fill text-success me-1"></i>Run Deploy</strong>
+              <span class="badge bg-success">Live</span>
             </div>
             <div class="card-body">
-              <form method="POST" action="/admin/deploy-tools/queue" class="mb-3">
+              <form id="runDeployForm" class="mb-3">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="job_type" value="deploy">
                 <div class="form-check mb-3">
                   <input class="form-check-input" type="checkbox" name="with_vendor" id="withVendor">
-                  <label class="form-check-label" for="withVendor">
-                    Include vendor folder
-                  </label>
+                  <label class="form-check-label" for="withVendor">Include vendor folder</label>
                 </div>
-                <button type="submit" class="btn btn-primary w-100">
-                  <i class="bi bi-cloud-upload me-1"></i> Queue Deploy
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" name="with_backup" id="withBackup" checked>
+                  <label class="form-check-label" for="withBackup">Create backup before deploy</label>
+                </div>
+                <button type="submit" class="btn btn-success w-100" id="runDeployBtn">
+                  <i class="bi bi-play-fill me-1"></i> Run Deploy Now
                 </button>
               </form>
+
+              <hr>
+
+              <form method="POST" action="/admin/deploy-tools/queue" class="mb-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="job_type" value="deploy">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                  <i class="bi bi-clock me-1"></i> Queue Deploy
+                </button>
+              </form>
+
+              <hr>
 
               <form method="POST" action="/admin/deploy-tools/queue">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -126,82 +125,337 @@
 
           <div class="card border-0 shadow-sm mt-4">
             <div class="card-header bg-white">
-              <strong>Home/Office Workflow</strong>
+              <strong>Quick Deploy Info</strong>
             </div>
-            <div class="card-body">
-              <ol class="mb-0">
-                <li>Work on either machine.</li>
-                <li>Push to the central Git remote (origin).</li>
-                <li>On the deploy machine, <code>git pull</code> then run deploy script.</li>
-              </ol>
+            <div class="card-body small">
+              <div class="row mb-2">
+                <div class="col-5 text-muted">Webhook:</div>
+                <div class="col-7">
+                  <span class="webhook-status {{ webhook_settings.enabled ? 'active' : 'inactive' }}"></span>
+                  {{ webhook_settings.enabled ? 'Enabled' : 'Disabled' }}
+                </div>
+              </div>
+              <div class="row mb-2">
+                <div class="col-5 text-muted">Target Branch:</div>
+                <div class="col-7"><code>{{ webhook_settings.branch ?: 'main' }}</code></div>
+              </div>
+              <div class="row mb-2">
+                <div class="col-5 text-muted">Auto Deploy:</div>
+                <div class="col-7">{{ webhook_settings.auto_deploy ? 'Yes' : 'No' }}</div>
+              </div>
+              <div class="row mb-2">
+                <div class="col-5 text-muted">Backup:</div>
+                <div class="col-7">{{ webhook_settings.create_backup ? 'Yes' : 'No' }}</div>
+              </div>
+              <div class="row mb-0">
+                <div class="col-5 text-muted">Last Deploy:</div>
+                <div class="col-7">{{ webhook_settings.last_delivery ?: 'Never' }}</div>
+              </div>
             </div>
           </div>
         </div>
 
         <div class="col-lg-8">
-          <div class="card border-0 shadow-sm">
+          <!-- Live Progress Card -->
+          <div class="card border-0 shadow-sm mb-4" id="progressCard" style="display: none;">
             <div class="card-header bg-white d-flex align-items-center justify-content-between">
-              <strong>Recent Jobs</strong>
-              <small class="text-muted">Newest first</small>
+              <strong><i class="bi bi-activity text-success me-1"></i><span id="progressTitle">Deploy Progress</span></strong>
+              <span class="badge bg-warning text-dark" id="progressStatus">Running</span>
             </div>
             <div class="card-body">
-              {% if jobs is empty %}
-                <div class="text-muted">No jobs queued yet.</div>
-              {% else %}
-                <div class="table-responsive">
-                  <table class="table table-sm table-hover align-middle">
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Type</th>
-                        <th>Status</th>
-                        <th>Created</th>
-                        <th>Started</th>
-                        <th>Finished</th>
-                        <th>Log</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% for job in jobs %}
-                        <tr>
-                          <td>{{ job.id }}</td>
-                          <td>{{ job.job_type|upper }}</td>
-                          <td>
-                            <span class="badge bg-{{ job.status == 'success' ? 'success' : (job.status == 'failed' ? 'danger' : (job.status == 'running' ? 'warning text-dark' : 'secondary')) }}">
-                              {{ job.status }}
-                            </span>
-                          </td>
-                          <td>{{ job.created_at|default('') }}</td>
-                          <td>{{ job.started_at|default('') }}</td>
-                          <td>{{ job.finished_at|default('') }}</td>
-                          <td>
-                            {% if job.log_path %}
-                              <a href="/admin/deploy-tools/log?id={{ job.id }}" class="btn btn-outline-secondary btn-sm">View</a>
-                            else
-                              <span class="text-muted">—</span>
-                            {% endif %}
-                          </td>
-                        </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
+              <div class="mb-3">
+                <div class="progress" style="height: 25px;">
+                  <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" id="progressBar" role="progressbar" style="width: 0%;">
+                    <span id="progressText">0%</span>
+                  </div>
                 </div>
-              {% endif %}
+              </div>
+              <div class="alert alert-info mb-3">
+                <i class="bi bi-info-circle me-2"></i>
+                <span id="currentStep">Initializing...</span>
+              </div>
+              <div id="stepsContainer" class="small"><div class="text-muted">Waiting for steps...</div></div>
+              <div class="mt-3">
+                <button class="btn btn-sm btn-outline-secondary" onclick="refreshProgress()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                <button class="btn btn-sm btn-outline-danger" onclick="cancelDeploy()" id="cancelBtn"><i class="bi bi-x-circle"></i> Cancel</button>
+              </div>
             </div>
           </div>
 
-          {% if log_job is defined %}
-            <div class="card border-0 shadow-sm mt-4">
-              <div class="card-header bg-white">
-                <strong>Log: Job #{{ log_job.id }}</strong>
+          <div class="card border-0 shadow-sm mb-4" id="noDeployCard">
+            <div class="card-body text-center py-5">
+              <i class="bi bi-rocket-takeoff display-1 text-muted"></i>
+              <h5 class="mt-3 text-muted">Ready to Deploy</h5>
+              <p class="text-muted">Click "Run Deploy Now" to start a live deployment.</p>
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm mb-4" id="completedCard" style="display: none;">
+            <div class="card-body text-center py-4">
+              <i class="bi bi-check-circle-fill display-4 text-success"></i>
+              <h5 class="mt-3 text-success">Deploy Completed!</h5>
+              <p class="text-muted" id="completedMessage">Your deployment finished successfully.</p>
+              <button class="btn btn-success" onclick="resetDeployUI()"><i class="bi bi-arrow-repeat"></i> Deploy Again</button>
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm mb-4" id="failedCard" style="display: none;">
+            <div class="card-body text-center py-4">
+              <i class="bi bi-x-circle-fill display-4 text-danger"></i>
+              <h5 class="mt-3 text-danger">Deploy Failed</h5>
+              <p class="text-muted" id="failedMessage">There was an error during deployment.</p>
+              <button class="btn btn-danger" onclick="resetDeployUI()"><i class="bi bi-arrow-repeat"></i> Try Again</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GitHub Webhook Tab -->
+    <div class="tab-pane fade" id="webhook-pane" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between">
+              <strong><i class="bi bi-gear me-2"></i>Webhook Configuration</strong>
+              <span class="webhook-status {{ webhook_settings.enabled ? 'active' : 'inactive' }}"></span>
+            </div>
+            <div class="card-body">
+              <form id="webhookForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                
+                <div class="form-check form-switch mb-4">
+                  <input class="form-check-input" type="checkbox" name="webhook_enabled" id="webhookEnabled" {{ webhook_settings.enabled ? 'checked' : '' }}>
+                  <label class="form-check-label" for="webhookEnabled">Enable GitHub Webhook</label>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Webhook URL</label>
+                  <div class="input-group">
+                    <input type="text" class="form-control" value="{{ webhook_url }}" readonly id="webhookUrl">
+                    <button class="btn btn-outline-secondary" type="button" onclick="copyWebhookUrl()"><i class="bi bi-clipboard"></i></button>
+                  </div>
+                  <small class="text-muted">Use this URL in GitHub webhook settings</small>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Webhook Secret</label>
+                  <div class="input-group">
+                    <input type="password" class="form-control" name="webhook_secret" value="{{ webhook_settings.secret }}" placeholder="Enter secret">
+                    <button class="btn btn-outline-secondary" type="button" onclick="toggleSecret()"><i class="bi bi-eye" id="eyeIcon"></i></button>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="generateNewSecret()">
+                    <i class="bi bi-arrow-repeat me-1"></i> Generate New Secret
+                  </button>
+                  <input type="hidden" name="generate_secret" id="generateSecret" value="0">
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Target Branch</label>
+                  <input type="text" class="form-control" name="webhook_branch" value="{{ webhook_settings.branch ?: 'main' }}">
+                </div>
+
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" name="webhook_auto_deploy" id="webhookAutoDeploy" {{ webhook_settings.auto_deploy ? 'checked' : '' }}>
+                  <label class="form-check-label" for="webhookAutoDeploy">Auto-deploy on webhook trigger</label>
+                </div>
+
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" name="create_backup" id="createBackup" {{ webhook_settings.create_backup ? 'checked' : '' }}>
+                  <label class="form-check-label" for="createBackup">Create backup before deploy</label>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Max Backups to Keep</label>
+                  <input type="number" class="form-control" name="max_backups" value="{{ webhook_settings.max_backups ?: 5 }}" min="1" max="20">
+                  <small class="text-muted">Older backups will be automatically deleted</small>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Deploy Path (cPanel)</label>
+                  <input type="text" class="form-control" name="deploy_path" value="{{ webhook_settings.deploy_path }}" placeholder="/home/username/BROXBHAI">
+                  <small class="text-muted">Full path to your project on the server</small>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Project Name</label>
+                  <input type="text" class="form-control" name="project_name" value="{{ webhook_settings.project_name ?: 'broxbhai' }}" placeholder="broxbhai">
+                  <small class="text-muted">Used for backup naming</small>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Admin API Key (for cPanel webhook)</label>
+                  <div class="input-group">
+                    <input type="password" class="form-control" name="admin_api_key" value="{{ webhook_settings.admin_api_key }}" placeholder="Enter a strong random key">
+                    <button class="btn btn-outline-secondary" type="button" onclick="toggleAdminApiKey()"><i class="bi bi-eye" id="adminApiEyeIcon"></i></button>
+                  </div>
+                  <small class="text-muted">Use this key for remote management API</small>
+                </div>
+
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Save Settings</button>
+                <button type="button" class="btn btn-outline-success ms-2" onclick="testWebhook()"><i class="bi bi-send me-1"></i> Test Webhook</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm guide-card mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div class="card-body">
+              <h5><i class="bi bi-book me-2"></i>Setup Guide</h5>
+              <hr style="border-color: rgba(255,255,255,0.3);">
+              <ol>
+                <li><strong>Save settings</strong> above</li>
+                <li><strong>Copy Webhook URL</strong></li>
+                <li><strong>GitHub:</strong> Repo → Settings → Webhooks → Add</li>
+                <li><strong>Payload URL:</strong> <code>{{ webhook_url }}</code></li>
+                <li><strong>Secret:</strong> {{ webhook_settings.secret ?: '[generate one]' }}</li>
+                <li><strong>Events:</strong> Select "Pushes"</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white"><strong>Status</strong></div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-6">
+                  <small class="text-muted">Last Delivery</small>
+                  <strong>{{ webhook_settings.last_delivery ?: 'Never' }}</strong>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted">Last Status</small>
+                  <strong class="{{ webhook_settings.last_status == 'triggered' ? 'text-success' : 'text-muted' }}">
+                    {{ webhook_settings.last_status ?: 'N/A' }}
+                  </strong>
+                </div>
               </div>
-              <div class="card-body">
-                {% if log_content %}
-                  <pre class="small bg-light p-3 rounded border" style="max-height: 360px; overflow:auto;">{{ log_content }}</pre>
-                else
-                  <div class="text-muted">No log output available.</div>
-                {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Versions & Backup Tab -->
+    <div class="tab-pane fade" id="versions-pane" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+              <strong><i class="bi bi-clock-history me-2"></i>Version History</strong>
+              <button class="btn btn-sm btn-outline-secondary" onclick="loadVersions()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+            </div>
+            <div class="card-body backup-list" id="versionsList">
+              <div class="text-center py-4 text-muted">
+                <i class="bi bi-inbox display-4"></i>
+                <p>No versions yet</p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+              <strong><i class="bi bi-arrow-counterclockwise me-2"></i>Rollback</strong>
+            </div>
+            <div class="card-body">
+              <p class="text-muted">Select a version from the list to rollback.</p>
+              
+              <div class="mb-3">
+                <label class="form-label">Rollback to Version</label>
+                <select class="form-select" id="rollbackVersion">
+                  <option value="">Select version...</option>
+                </select>
+              </div>
+
+              <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                A backup of current state will be created before rollback.
+              </div>
+
+              <button class="btn btn-danger" onclick="performRollback()" id="rollbackBtn">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Rollback Now
+              </button>
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-white">
+              <strong>Webhook Deploy History</strong>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Branch</th>
+                      <th>Status</th>
+                      <th>Backup</th>
+                    </tr>
+                  </thead>
+                  <tbody id="webhookLogs">
+                    <tr><td colspan="4" class="text-muted">No logs yet</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Jobs Tab -->
+    <div class="tab-pane fade" id="jobs-pane" role="tabpanel">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <strong>Recent Jobs</strong>
+        </div>
+        <div class="card-body">
+          {% if jobs is empty %}
+            <div class="text-muted">No jobs queued yet.</div>
+          {% else %}
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Started</th>
+                    <th>Finished</th>
+                    <th>Log</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for job in jobs %}
+                    <tr>
+                      <td>{{ job.id }}</td>
+                      <td>{{ job.job_type|upper }}</td>
+                      <td>
+                        <span class="badge bg-{{ job.status == 'success' ? 'success' : (job.status == 'failed' ? 'danger' : (job.status == 'running' ? 'warning text-dark' : 'secondary')) }}">
+                          {{ job.status }}
+                        </span>
+                      </td>
+                      <td>{{ job.created_at|default('') }}</td>
+                      <td>{{ job.started_at|default('') }}</td>
+                      <td>{{ job.finished_at|default('') }}</td>
+                      <td>
+                        {% if job.log_path %}
+                          <a href="/admin/deploy-tools/log?id={{ job.id }}" class="btn btn-outline-secondary btn-sm">View</a>
+                        {% else %}
+                          <span class="text-muted">—</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
             </div>
           {% endif %}
         </div>
@@ -213,23 +467,16 @@
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-white">
           <div class="file-tree-header">
-            <strong><i class="bi bi-folder-tree me-2"></i>Live Project File Tree</strong>
+            <strong><i class="bi bi-folder-tree me-2"></i>Project File Tree</strong>
             <div>
-              <button class="btn btn-sm btn-outline-secondary" onclick="refreshFileTree()">
-                <i class="bi bi-arrow-clockwise"></i> Refresh
-              </button>
-              <button class="btn btn-sm btn-outline-secondary" onclick="toggleAutoRefresh()" id="autoRefreshBtn">
-                <i class="bi bi-clock"></i> Auto: Off
-              </button>
+              <button class="btn btn-sm btn-outline-secondary" onclick="refreshFileTree()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
             </div>
           </div>
         </div>
         <div class="card-body p-0">
           <div id="fileTreeContainer" class="file-tree">
             <div class="text-center py-5">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-              </div>
+              <div class="spinner-border text-primary" role="status"></div>
               <div class="mt-2 text-muted">Loading file tree...</div>
             </div>
           </div>
@@ -240,142 +487,349 @@
 </div>
 
 <script>
-let autoRefresh = false;
-let autoRefreshInterval = null;
-let currentTreeData = null;
+// =====================
+// DEPLOY FUNCTIONALITY
+// =====================
+let currentProgressId = null;
+let progressInterval = null;
 
-function formatSize(bytes) {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-}
-
-function formatDate(timestamp) {
-  const date = new Date(timestamp * 1000);
-  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-}
-
-function getFileClass(filename) {
-  const ext = filename.split('.').pop().toLowerCase();
-  const classes = {
-    'twig': 'file-twig',
-    'php': 'file-php',
-    'js': 'file-js',
-    'css': 'file-css',
-    'md': 'file-md',
-    'json': 'file-json'
-  };
-  return classes[ext] || '';
-}
-
-function renderTree(data, level = 0) {
-  let html = '';
-  const indent = '  '.repeat(level);
+document.getElementById('runDeployForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('runDeployBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Starting...';
   
-  if (level === 0) {
-    html += `<div class="folder" style="padding: 4px 0;" data-path="${data.path || ''}">`;
-    html += `<span class="toggle">📂</span>`;
-    html += `<span class="folder">${data.name}</span>`;
-    html += `<span class="size">${data.children ? data.children.length + ' items' : ''}</span>`;
-    html += '</div>';
+  const formData = new FormData(this);
+  
+  try {
+    const response = await fetch('/admin/deploy-tools/run', { method: 'POST', body: formData });
+    const data = await response.json();
     
-    if (data.children && data.children.length > 0) {
-      html += `<div class="indent expanded">`;
-      for (const child of data.children) {
-        html += renderTree(child, level + 1);
-      }
-      html += `</div>`;
+    if (data.error) {
+      alert('Error: ' + data.error);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Run Deploy Now';
+      return;
     }
-    return html;
+    
+    currentProgressId = data.progress_id;
+    showProgressCard();
+    startProgressPolling();
+  } catch (err) {
+    alert('Error starting deploy: ' + err.message);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Run Deploy Now';
+  }
+});
+
+function showProgressCard() {
+  document.getElementById('noDeployCard').style.display = 'none';
+  document.getElementById('progressCard').style.display = 'block';
+  document.getElementById('completedCard').style.display = 'none';
+  document.getElementById('failedCard').style.display = 'none';
+}
+
+function startProgressPolling() {
+  if (progressInterval) clearInterval(progressInterval);
+  progressInterval = setInterval(refreshProgress, 2000);
+}
+
+function stopProgressPolling() {
+  if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+}
+
+async function refreshProgress() {
+  if (!currentProgressId) return;
+  try {
+    const response = await fetch(`/admin/deploy-tools/progress?id=${currentProgressId}`);
+    const data = await response.json();
+    if (data.error) return;
+    updateProgressUI(data);
+    if (data.status === 'completed' || data.status === 'done' || data.progress >= 100) {
+      stopProgressPolling();
+      showCompletedCard();
+    } else if (data.status === 'failed') {
+      stopProgressPolling();
+      showFailedCard(data.error || 'Deploy failed');
+    }
+  } catch (err) { console.log('Error:', err); }
+}
+
+function updateProgressUI(data) {
+  const progress = data.progress || 0;
+  document.getElementById('progressBar').style.width = progress + '%';
+  document.getElementById('progressText').textContent = progress + '%';
+  
+  const statusBadge = document.getElementById('progressStatus');
+  if (data.status === 'running') {
+    statusBadge.className = 'badge bg-warning text-dark';
+    statusBadge.textContent = 'Running';
+  } else if (data.status === 'completed' || data.status === 'done') {
+    statusBadge.className = 'badge bg-success';
+    statusBadge.textContent = 'Completed';
+  } else if (data.status === 'failed') {
+    statusBadge.className = 'badge bg-danger';
+    statusBadge.textContent = 'Failed';
   }
   
-  if (data.type === 'folder') {
-    html += `<div class="folder" style="padding: 4px 0;" data-path="${data.path}">`;
-    html += `<span class="toggle" onclick="toggleFolder(this)">📁</span>`;
-    html += `<span class="folder" onclick="loadFolder('${data.path}', this)">${data.name}/</span>`;
-    html += '</div>';
-    html += `<div class="indent" id="folder-${data.path.replace(/[\\/]/g, '-')}">`;
-    html += `</div>`;
+  document.getElementById('currentStep').textContent = data.current_step || 'Processing...';
+  
+  const stepsContainer = document.getElementById('stepsContainer');
+  if (data.steps && data.steps.length > 0) {
+    let html = '';
+    data.steps.forEach((step, index) => {
+      const isLast = index === data.steps.length - 1;
+      html += `<div class="d-flex align-items-start mb-2">
+        <div class="me-2">${isLast && data.status === 'running' ? '<span class="spinner-border spinner-border-sm text-success"></span>' : '<i class="bi bi-check-circle-fill text-success"></i>'}</div>
+        <div class="flex-grow-1">
+          <div class="fw-bold">${step.step}</div>
+          <div class="text-muted small">${step.message}</div>
+        </div>
+        <div class="text-muted small">${step.progress || 0}%</div>
+      </div>`;
+    });
+    stepsContainer.innerHTML = html;
+  }
+}
+
+function showCompletedCard() {
+  document.getElementById('progressCard').style.display = 'none';
+  document.getElementById('completedCard').style.display = 'block';
+  document.getElementById('failedCard').style.display = 'none';
+}
+
+function showFailedCard(message) {
+  document.getElementById('progressCard').style.display = 'none';
+  document.getElementById('completedCard').style.display = 'none';
+  document.getElementById('failedCard').style.display = 'block';
+  document.getElementById('failedMessage').textContent = message;
+}
+
+function resetDeployUI() {
+  currentProgressId = null;
+  stopProgressPolling();
+  document.getElementById('noDeployCard').style.display = 'block';
+  document.getElementById('progressCard').style.display = 'none';
+  document.getElementById('completedCard').style.display = 'none';
+  document.getElementById('failedCard').style.display = 'none';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('progressText').textContent = '0%';
+  document.getElementById('currentStep').textContent = 'Initializing...';
+  document.getElementById('stepsContainer').innerHTML = '<div class="text-muted">Waiting for steps...</div>';
+  const btn = document.getElementById('runDeployBtn');
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Run Deploy Now';
+}
+
+function cancelDeploy() {
+  if (confirm('Cancel current deploy?')) {
+    stopProgressPolling();
+    resetDeployUI();
+  }
+}
+
+// =====================
+// WEBHOOK FUNCTIONS
+// =====================
+function copyWebhookUrl() {
+  const urlInput = document.getElementById('webhookUrl');
+  urlInput.select();
+  navigator.clipboard.writeText(urlInput.value).then(() => alert('URL copied!'));
+}
+
+function toggleSecret() {
+  const secretInput = document.querySelector('input[name="webhook_secret"]');
+  const eyeIcon = document.getElementById('eyeIcon');
+  if (secretInput.type === 'password') {
+    secretInput.type = 'text';
+    eyeIcon.classList.remove('bi-eye');
+    eyeIcon.classList.add('bi-eye-slash');
   } else {
-    const fileClass = getFileClass(data.name);
-    html += `<div style="padding: 2px 0;" data-path="${data.path}">`;
-    html += `<span class="toggle">📄</span>`;
-    html += `<span class="file ${fileClass}">${data.name}</span>`;
-    html += `<span class="size">${formatSize(data.size)}</span>`;
-    html += '</div>';
-  }
-  
-  return html;
-}
-
-function toggleFolder(el) {
-  const folderDiv = el.parentElement;
-  const path = folderDiv.dataset.path;
-  const indent = folderDiv.nextElementSibling;
-  
-  if (indent && indent.classList.contains('indent')) {
-    if (indent.classList.contains('expanded')) {
-      indent.classList.remove('expanded');
-      el.textContent = '📁';
-    } else {
-      indent.classList.add('expanded');
-      el.textContent = '📂';
-    }
+    secretInput.type = 'password';
+    eyeIcon.classList.remove('bi-eye-slash');
+    eyeIcon.classList.add('bi-eye');
   }
 }
 
-function loadFolder(path, el) {
-  const containerId = 'folder-' + path.replace(/[\\/]/g, '-');
-  const container = document.getElementById(containerId);
+function toggleAdminApiKey() {
+  const apiKeyInput = document.querySelector('input[name="admin_api_key"]');
+  const eyeIcon = document.getElementById('adminApiEyeIcon');
+  if (apiKeyInput.type === 'password') {
+    apiKeyInput.type = 'text';
+    eyeIcon.classList.remove('bi-eye');
+    eyeIcon.classList.add('bi-eye-slash');
+  } else {
+    apiKeyInput.type = 'password';
+    eyeIcon.classList.remove('bi-eye-slash');
+    eyeIcon.classList.add('bi-eye');
+  }
+}
+
+function generateNewSecret() {
+  if (confirm('Generate new secret? This will break existing webhook.')) {
+    const randomSecret = Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    document.querySelector('input[name="webhook_secret"]').value = randomSecret;
+    document.getElementById('generateSecret').value = '1';
+  }
+}
+
+document.getElementById('webhookForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const formData = new FormData(this);
+  formData.set('webhook_enabled', document.getElementById('webhookEnabled').checked ? '1' : '0');
+  formData.set('webhook_auto_deploy', document.getElementById('webhookAutoDeploy').checked ? '1' : '0');
+  formData.set('create_backup', document.getElementById('createBackup').checked ? '1' : '0');
   
-  if (!container) return;
-  
-  if (container.children.length > 0) {
-    // Already loaded, just toggle
-    if (container.classList.contains('expanded')) {
-      container.classList.remove('expanded');
+  try {
+    const response = await fetch('/admin/deploy-tools/webhook/update', { method: 'POST', body: formData });
+    const data = await response.json();
+    if (data.success) {
+      alert('Settings saved!');
+      location.reload();
     } else {
-      container.classList.add('expanded');
+      alert('Error: ' + data.message);
     }
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+});
+
+async function testWebhook() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testing...';
+  
+  try {
+    const formData = new FormData();
+    formData.append('csrf_token', '{{ csrf_token }}');
+    const response = await fetch('/admin/deploy-tools/webhook/test', { method: 'POST', body: formData });
+    const data = await response.json();
+    alert(data.success ? 'Test successful!' : 'Test failed: ' + (data.error || data.message));
+    if (data.success) loadVersions();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-send me-1"></i> Test Webhook';
+  }
+}
+
+// =====================
+// VERSIONS & ROLLBACK
+// =====================
+async function loadVersions() {
+  try {
+    const response = await fetch('/admin/deploy-tools/webhook/logs');
+    const data = await response.json();
+    
+    const versionsList = document.getElementById('versionsList');
+    const rollbackSelect = document.getElementById('rollbackVersion');
+    const webhookLogs = document.getElementById('webhookLogs');
+    
+    if (data.logs && data.logs.length > 0) {
+      let versionsHtml = '';
+      let optionsHtml = '<option value="">Select version...</option>';
+      let logsHtml = '';
+      
+      data.logs.forEach(log => {
+        const time = new Date(log.created_at).toLocaleString();
+        const statusClass = log.deployment_triggered ? 'success' : 'secondary';
+        
+        versionsHtml += `<div class="d-flex align-items-center p-2 border-bottom">
+          <div class="flex-grow-1">
+            <strong>${log.version_tag || 'N/A'}</strong>
+            <div class="small text-muted">${time}</div>
+          </div>
+          <div>
+            <span class="badge bg-${statusClass}">${log.deployment_triggered ? 'Deployed' : 'Ignored'}</span>
+            ${log.backup_created ? '<span class="badge bg-info ms-1">Backup</span>' : ''}
+          </div>
+        </div>`;
+        
+        if (log.version_tag) {
+          optionsHtml += `<option value="${log.version_tag}">${log.version_tag} - ${time}</option>`;
+        }
+        
+        logsHtml += `<tr>
+          <td>${time}</td>
+          <td><code>${log.deploy_path || 'N/A'}</code></td>
+          <td><span class="badge bg-${statusClass}">${log.deployment_triggered ? 'Deployed' : 'Ignored'}</span></td>
+          <td>${log.backup_created ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-muted"></i>'}</td>
+        </tr>`;
+      });
+      
+      versionsList.innerHTML = versionsHtml || '<div class="text-muted text-center py-4">No versions</div>';
+      rollbackSelect.innerHTML = optionsHtml;
+      webhookLogs.innerHTML = logsHtml;
+    } else {
+      versionsList.innerHTML = '<div class="text-muted text-center py-4"><i class="bi bi-inbox display-4"></i><p>No versions yet</p></div>';
+    }
+  } catch (err) {
+    console.error('Error loading versions:', err);
+  }
+}
+
+async function performRollback() {
+  const version = document.getElementById('rollbackVersion').value;
+  if (!version) {
+    alert('Please select a version to rollback to');
     return;
   }
   
-  container.innerHTML = '<div class="text-muted" style="padding: 4px 20px;">Loading...</div>';
+  if (!confirm(`Rollback to ${version}? Current state will be backed up first.`)) {
+    return;
+  }
   
-  fetch(`/admin/deploy-tools/api/file-tree?path=${encodeURIComponent(path)}&refresh=${Date.now()}`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.error) {
-        container.innerHTML = `<div class="text-danger" style="padding: 4px 20px;">Error: ${data.error}</div>`;
-        return;
-      }
-      
-      let html = '';
-      if (data.children) {
-        for (const child of data.children) {
-          html += renderTree(child, 0);
-        }
-      }
-      container.innerHTML = html || '<div class="text-muted" style="padding: 4px 20px;">Empty</div>';
-      container.classList.add('expanded');
-    })
-    .catch(err => {
-      container.innerHTML = `<div class="text-danger" style="padding: 4px 20px;">Error loading: ${err.message}</div>`;
-    });
+  const btn = document.getElementById('rollbackBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Rolling back...';
+  
+  try {
+    const response = await fetch(`/webhook/github.php?action=rollback&version=${version}`);
+    const data = await response.json();
+    
+    if (data.success) {
+      alert('Rollback successful!');
+      loadVersions();
+    } else {
+      alert('Rollback failed: ' + data.message);
+    }
+  } catch (err) {
+    alert('Error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-arrow-counterclockwise me-1"></i> Rollback Now';
+  }
+}
+
+// Load versions when tab is shown
+document.getElementById('versions-tab').addEventListener('shown.bs.tab', loadVersions);
+
+// =====================
+// FILE TREE
+// =====================
+function renderTree(data, level = 0) {
+  let html = '';
+  if (level === 0) {
+    html += `<div class="folder" style="padding: 4px 0;"><span class="toggle">📂</span><span class="folder">${data.name}</span></div>`;
+    if (data.children && data.children.length > 0) {
+      html += '<div class="indent expanded">';
+      data.children.forEach(child => html += renderTree(child, level + 1));
+      html += '</div>';
+    }
+    return html;
+  }
+  if (data.type === 'folder') {
+    html += `<div class="folder" style="padding: 4px 0;"><span class="toggle">📁</span><span class="folder">${data.name}/</span></div>`;
+  } else {
+    html += `<div style="padding: 2px 0;"><span class="toggle">📄</span><span class="file">${data.name}</span></div>`;
+  }
+  return html;
 }
 
 function refreshFileTree() {
   const container = document.getElementById('fileTreeContainer');
-  container.innerHTML = `
-    <div class="text-center py-5">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-      <div class="mt-2 text-muted">Loading file tree...</div>
-    </div>
-  `;
+  container.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
   
   fetch(`/admin/deploy-tools/api/file-tree?refresh=${Date.now()}`)
     .then(res => res.json())
@@ -384,7 +838,6 @@ function refreshFileTree() {
         container.innerHTML = `<div class="text-danger p-3">Error: ${data.error}</div>`;
         return;
       }
-      currentTreeData = data;
       container.innerHTML = renderTree(data);
     })
     .catch(err => {
@@ -392,36 +845,8 @@ function refreshFileTree() {
     });
 }
 
-function toggleAutoRefresh() {
-  autoRefresh = !autoRefresh;
-  const btn = document.getElementById('autoRefreshBtn');
-  
-  if (autoRefresh) {
-    btn.innerHTML = '<i class="bi bi-clock-fill"></i> Auto: On';
-    btn.classList.add('btn-primary');
-    btn.classList.remove('btn-outline-secondary');
-    autoRefreshInterval = setInterval(refreshFileTree, 5000);
-  } else {
-    btn.innerHTML = '<i class="bi bi-clock"></i> Auto: Off';
-    btn.classList.remove('btn-primary');
-    btn.classList.add('btn-outline-secondary');
-    if (autoRefreshInterval) {
-      clearInterval(autoRefreshInterval);
-      autoRefreshInterval = null;
-    }
-  }
-}
-
-// Load on tab switch
 document.getElementById('filetree-tab').addEventListener('shown.bs.tab', function() {
-  if (!currentTreeData) {
-    refreshFileTree();
-  }
-});
-
-// Initial load if tab is already active
-if (document.getElementById('filetree-pane').classList.contains('active')) {
   refreshFileTree();
-}
+});
 </script>
 {% endblock %}

@@ -257,7 +257,7 @@ function aiChatAppendImageContext(string $prompt, array $imageRefs): string
         return $prompt;
     }
 
-    $lines = ['\n\n[IMAGE CONTEXT]'];
+    $lines = ["\n\n[IMAGE CONTEXT]"];
     foreach ($imageRefs as $img) {
         $line = '- ' . ($img['name'] ? ($img['name'] . ': ') : 'Image: ') . ($img['url'] ?? '');
         $metaParts = [];
@@ -273,7 +273,104 @@ function aiChatAppendImageContext(string $prompt, array $imageRefs): string
         $lines[] = $line;
     }
 
-    return $prompt . '\n' . implode("\n", $lines);
+    return $prompt . "\n" . implode("\n", $lines);
+}
+
+function aiChatParseSlashCommand(string $text): ?array
+{
+    $text = trim($text);
+    if ($text === '' || $text[0] !== '/') {
+        return null;
+    }
+    if (!preg_match('/^\/([a-zA-Z0-9_-]+)(?:\s+(.*))?$/', $text, $m)) {
+        return null;
+    }
+    return [
+        'cmd' => strtolower($m[1]),
+        'args' => trim((string)($m[2] ?? '')),
+    ];
+}
+
+function aiChatResolveErrorLogPath(): string
+{
+    if (defined('BASE_PATH')) {
+        return rtrim((string)BASE_PATH, "/\\") . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'errors.log';
+    }
+    return dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'errors.log';
+}
+
+function aiChatReadLastLines(string $path, int $n): array
+{
+    $lines = [];
+    $fp = @fopen($path, 'r');
+    if (!$fp) return $lines;
+
+    @fseek($fp, 0, SEEK_END);
+    $pos = (int)@ftell($fp);
+    $buffer = '';
+    $lineCount = 0;
+
+    while ($pos > 0 && $lineCount < $n) {
+        $chunk = min(4096, $pos);
+        $pos -= $chunk;
+        @fseek($fp, $pos);
+        $buffer = (string)@fread($fp, $chunk) . $buffer;
+        $lineCount = substr_count($buffer, "\n");
+    }
+
+    @fclose($fp);
+    $all = explode("\n", $buffer);
+    if (end($all) === '') array_pop($all);
+    return array_slice($all, -$n);
+}
+
+function aiChatRedactSecrets(string $line): string
+{
+    $patterns = [
+        '/(authorization\s*[:=]\s*)([^\s,;]+)/i',
+        '/(api[_-]?key\s*[:=]\s*)([^\s,;]+)/i',
+        '/(token\s*[:=]\s*)([^\s,;]+)/i',
+        '/(password\s*[:=]\s*)([^\s,;]+)/i',
+        '/(DB_PASS\s*[:=]\s*)([^\s,;]+)/i',
+    ];
+    foreach ($patterns as $p) {
+        $line = preg_replace($p, '$1[REDACTED]', $line) ?? $line;
+    }
+    return $line;
+}
+
+function aiChatSelectRecentErrors(array $lines, int $limit = 20): array
+{
+    $out = [];
+    foreach (array_reverse($lines) as $line) {
+        $line = trim((string)$line);
+        if ($line === '') continue;
+        $u = strtoupper($line);
+        $match = str_contains($u, '[ERROR]') || str_contains($u, '[CRITICAL]') || str_contains($u, '[WARNING]')
+            || str_contains($u, 'PHP FATAL') || str_contains($u, 'PHP WARNING') || str_contains($u, 'PHP ERROR');
+        if (!$match) continue;
+        $line = aiChatRedactSecrets($line);
+        if (strlen($line) > 800) {
+            $line = substr($line, 0, 800) . '…';
+        }
+        $out[] = $line;
+        if (count($out) >= $limit) break;
+    }
+    return array_reverse($out);
+}
+
+function aiChatBuildRecentConversationText(array $messages, int $max = 10): string
+{
+    $slice = array_slice($messages, -$max);
+    $parts = [];
+    foreach ($slice as $m) {
+        $role = (string)($m['role'] ?? '');
+        $content = aiChatExtractText($m['content'] ?? '');
+        if ($content === '') continue;
+        $label = $role === 'assistant' ? 'Assistant' : 'User';
+        $parts[] = $label . ': ' . $content;
+    }
+    return implode("\n", $parts);
 }
 
 function aiChatSelectFallbackProvider(AIProvider $aiProvider, string $currentProvider, array $settings): ?array
@@ -486,8 +583,74 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     }
 
     $lastUserMessage = aiChatLastUserMessage($messages);
+
+    // Admin-only slash commands routing
+    $cmd = ($isAdmin && $lastUserMessage !== '') ? aiChatParseSlashCommand($lastUserMessage) : null;
+    if ($cmd) {
+        $supported = ['summarize', 'analyze-logs'];
+        if (!in_array($cmd['cmd'], $supported, true)) {
+            aiChatSendJson([
+                'success' => false,
+                'error' => 'Not implemented yet. Supported: /summarize, /analyze-logs',
+                'error_code' => 'unsupported_command'
+            ], 400);
+            return;
+        }
+
+        // Command mode disables KB + image context (logs-only addon; no DOM snapshot)
+        $imageRefs = [];
+        $hasImageContent = false;
+
+        if ($cmd['cmd'] === 'summarize') {
+            $summarizerPath = __DIR__ . '/../../system/prompts/summarizer.md';
+            $summarizerPrompt = file_exists($summarizerPath) ? (string)file_get_contents($summarizerPath) : '';
+            $target = $cmd['args'] !== ''
+                ? $cmd['args']
+                : ("[ADMIN CONTEXT]\n" . trim((string)($contextData ? json_encode($contextData, JSON_UNESCAPED_UNICODE) : '')) . "\n\n"
+                    . "[RECENT CONVERSATION]\n" . aiChatBuildRecentConversationText($messages, 10));
+
+            $systemPrompt .= "\n\n[MODE: SUMMARIZE]\nReturn a concise summary. Follow the summarizer rules below.\n\n" . $summarizerPrompt;
+            $messages = [
+                ['role' => 'user', 'content' => $target]
+            ];
+            $lastUserMessage = $target;
+        }
+
+        if ($cmd['cmd'] === 'analyze-logs') {
+            $path = aiChatResolveErrorLogPath();
+            if (!file_exists($path)) {
+                aiChatSendJson([
+                    'success' => false,
+                    'error' => 'Log file not found: storage/logs/errors.log',
+                    'error_code' => 'log_missing'
+                ], 404);
+                return;
+            }
+            $raw = aiChatReadLastLines($path, 200);
+            $errors = aiChatSelectRecentErrors($raw, 25);
+            $errorsText = $errors ? implode("\n", $errors) : '(No recent ERROR/CRITICAL/WARNING lines found.)';
+
+            $hint = $cmd['args'] !== '' ? ("\n\n[HINT]\n" . $cmd['args']) : '';
+            $userText =
+                "[RECENT ERRORS]\n" . $errorsText . "\n\n" .
+                "[ADMIN CONTEXT]\n" . trim((string)($contextData ? json_encode($contextData, JSON_UNESCAPED_UNICODE) : '')) .
+                $hint . "\n\n" .
+                "Analyze the errors and provide:\n"
+                . "1) Most likely root cause (ranked)\n"
+                . "2) Concrete next steps\n"
+                . "3) What to check in /admin/error-logs\n";
+
+            $systemPrompt .= "\n\n[MODE: ANALYZE LOGS]\nDo not request secrets. Do not suggest destructive actions without confirmation.\n";
+            $messages = [
+                ['role' => 'user', 'content' => $userText]
+            ];
+            $lastUserMessage = $userText;
+        }
+    }
+
     if ($lastUserMessage !== '') {
-        $kbContext = PromptLoader::getKnowledgeContext($lastUserMessage, $mysqli);
+        // Skip KB context in slash-command mode to keep output deterministic
+        $kbContext = $cmd ? '' : PromptLoader::getKnowledgeContext($lastUserMessage, $mysqli);
         if ($kbContext) {
             $systemPrompt .= "\n\n" . $kbContext;
         }

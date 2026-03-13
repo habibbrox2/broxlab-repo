@@ -271,7 +271,7 @@ class AIChatManager {
     async handleEndSession() {
         if (!this.currentChatId) return;
 
-        const confirmValue = window.confirm("Are you sure you want to end this session? This will mark it as closed.");
+        const confirmValue = await window.showConfirm("Are you sure you want to end this session? This will mark it as closed.", "End Session", "warning");
         if (!confirmValue) return;
 
         try {
@@ -302,10 +302,10 @@ class AIChatManager {
                     this.nodes.btnEndSession.style.display = 'none';
                 }
             } else {
-                alert("Failed to end session: " + (data.error || 'Unknown error'));
+                await window.showAlert("Failed to end session: " + (data.error || 'Unknown error'), "Error", "danger");
             }
         } catch (err) {
-            alert("Connection error.");
+            await window.showAlert("Connection error.", "Error", "danger");
         }
     }
 
@@ -450,10 +450,10 @@ class AIChatManager {
                 this.renderTranscript();
                 this.nodes.replyField.value = '';
             } else {
-                alert("Failed to send reply: " + (data.error || 'Unknown error'));
+                await window.showAlert("Failed to send reply: " + (data.error || 'Unknown error'), "Error", "danger");
             }
         } catch (err) {
-            alert("Connection error while sending reply.");
+            await window.showAlert("Connection error while sending reply.", "Error", "danger");
         } finally {
             this.nodes.btnSend.disabled = false;
         }

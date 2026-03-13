@@ -196,7 +196,7 @@ if (!window.BroxAdminInstance) {
 
             // Validate file size
             if (file.size > ADMIN_CONFIG.maxFileSize) {
-                alert(`File too large. Maximum size is ${ADMIN_CONFIG.maxFileSize / 1024 / 1024}MB`);
+                window.showAlert(`File too large. Maximum size is ${ADMIN_CONFIG.maxFileSize / 1024 / 1024}MB`, 'File Too Large', 'warning');
                 return;
             }
 
@@ -2261,8 +2261,8 @@ if (!window.BroxAdminInstance) {
 
         async testConnection(id, model = null) {
             const res = await this.apiCall('/api/ai-system/test', { id, model });
-            if (res.success) alert('Connection successful!');
-            else alert('Connection failed: ' + (res.error || 'Unknown error'));
+            if (res.success) window.showAlert('Connection successful!', 'Success', 'success');
+            else window.showAlert('Connection failed: ' + (res.error || 'Unknown error'), 'Connection Failed', 'error');
         }
     }
 

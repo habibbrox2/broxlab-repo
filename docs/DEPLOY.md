@@ -406,6 +406,14 @@ The File Tree tab shows a live view of your project directory structure:
 
 Security: Hidden folders (.git, node_modules, vendor, etc.) are automatically excluded.
 
+### Live Deploy Run
+The Deploy tab provides real-time deployment with live progress:
+
+- **Run Deploy Now** - Start an immediate deploy with live progress
+- **Live Progress Bar** - Shows real-time deployment progress
+- **Step Timeline** - Shows each step of the deployment process
+- **Auto Refresh** - File tree automatically refreshes after deploy completes
+
 Queue actions and run the worker locally:
 ```
 php scripts/deploy_worker.php
