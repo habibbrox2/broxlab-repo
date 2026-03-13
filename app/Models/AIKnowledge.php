@@ -13,8 +13,68 @@ class AIKnowledge
         $this->mysqli = $mysqli;
     }
 
+    /**
+     * Ensure the table has all required columns
+     */
+    public function ensureTableSchema(): bool
+    {
+        try {
+            // First check if the table exists
+            $result = $this->mysqli->query("SHOW TABLES LIKE 'ai_knowledge_base'");
+            if (!$result || $result->num_rows === 0) {
+                // Create the table if it doesn't exist
+                $this->mysqli->query("
+                    CREATE TABLE IF NOT EXISTS ai_knowledge_base (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        title VARCHAR(255) NOT NULL DEFAULT '',
+                        content TEXT NOT NULL,
+                        category VARCHAR(100) DEFAULT NULL,
+                        source_type VARCHAR(50) NOT NULL DEFAULT 'text',
+                        is_active TINYINT(1) NOT NULL DEFAULT 1,
+                        priority INT NOT NULL DEFAULT 0,
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        INDEX idx_category (category),
+                        INDEX idx_is_active (is_active),
+                        INDEX idx_priority (priority),
+                        INDEX idx_created_at (created_at)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                ");
+                return true;
+            }
+
+            // Check if category column exists
+            $result = $this->mysqli->query("SHOW COLUMNS FROM ai_knowledge_base LIKE 'category'");
+            if (!$result || $result->num_rows === 0) {
+                // Add missing columns
+                $this->mysqli->query("ALTER TABLE ai_knowledge_base ADD COLUMN category VARCHAR(100) DEFAULT NULL AFTER content");
+            }
+
+            $result = $this->mysqli->query("SHOW COLUMNS FROM ai_knowledge_base LIKE 'priority'");
+            if (!$result || $result->num_rows === 0) {
+                $this->mysqli->query("ALTER TABLE ai_knowledge_base ADD COLUMN priority INT DEFAULT 0 AFTER is_active");
+            }
+
+            $result = $this->mysqli->query("SHOW COLUMNS FROM ai_knowledge_base LIKE 'is_active'");
+            if (!$result || $result->num_rows === 0) {
+                $this->mysqli->query("ALTER TABLE ai_knowledge_base ADD COLUMN is_active TINYINT(1) DEFAULT 1 AFTER source_type");
+            }
+
+            return true;
+        } catch (Throwable $e) {
+            // Log error but don't throw - table operations should be resilient
+            error_log("AIKnowledge ensureTableSchema error: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function list(int $limit = 50, int $offset = 0, ?string $category = null, bool $activeOnly = true): array
     {
+        // Ensure table has required columns
+        if (!$this->ensureTableSchema()) {
+            return [];
+        }
+
         $whereClause = '1=1';
         $params = [];
         $types = '';
@@ -52,6 +112,10 @@ class AIKnowledge
 
     public function getById(int $id): ?array
     {
+        if (!$this->ensureTableSchema()) {
+            return null;
+        }
+
         $stmt = $this->mysqli->prepare("SELECT id, title, content, category, source_type, is_active, priority, created_at, updated_at FROM ai_knowledge_base WHERE id = ? LIMIT 1");
         $stmt->bind_param('i', $id);
         $stmt->execute();
@@ -63,6 +127,10 @@ class AIKnowledge
 
     public function create(array $data): int
     {
+        if (!$this->ensureTableSchema()) {
+            return 0;
+        }
+
         $title = $data['title'] ?? '';
         $content = $data['content'] ?? '';
         $category = $data['category'] ?? null;
@@ -80,6 +148,10 @@ class AIKnowledge
 
     public function update(int $id, array $data): bool
     {
+        if (!$this->ensureTableSchema()) {
+            return false;
+        }
+
         $title = $data['title'] ?? '';
         $content = $data['content'] ?? '';
         $category = $data['category'] ?? null;
@@ -105,6 +177,10 @@ class AIKnowledge
 
     public function toggleActive(int $id): bool
     {
+        if (!$this->ensureTableSchema()) {
+            return false;
+        }
+
         $stmt = $this->mysqli->prepare("UPDATE ai_knowledge_base SET is_active = NOT is_active, updated_at = NOW() WHERE id = ?");
         $stmt->bind_param('i', $id);
         $res = $stmt->execute();
@@ -114,6 +190,10 @@ class AIKnowledge
 
     public function getCategories(): array
     {
+        if (!$this->ensureTableSchema()) {
+            return [];
+        }
+
         $stmt = $this->mysqli->query("SELECT DISTINCT category FROM ai_knowledge_base WHERE category IS NOT NULL ORDER BY category");
         $rows = $stmt->fetch_all(MYSQLI_ASSOC);
         return array_column($rows, 'category');
@@ -121,6 +201,10 @@ class AIKnowledge
 
     public function search(string $query, int $limit = 5): array
     {
+        if (!$this->ensureTableSchema()) {
+            return [];
+        }
+
         // Basic keyword extraction: words longer than 3 chars
         $words = preg_split('/\W+/', $query);
         $keywords = [];

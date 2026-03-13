@@ -174,6 +174,18 @@ class PromptLoader
             return '';
         }
 
+        // First check if the table exists
+        $tableCheck = $mysqli->query("SHOW TABLES LIKE 'ai_knowledge_base'");
+        if (!$tableCheck || $tableCheck->num_rows === 0) {
+            return '';
+        }
+
+        // Check if is_active column exists (schema version check)
+        $columnCheck = $mysqli->query("SHOW COLUMNS FROM ai_knowledge_base LIKE 'is_active'");
+        if (!$columnCheck || $columnCheck->num_rows === 0) {
+            return '';
+        }
+
         // Basic keyword extraction: words longer than 3 chars
         $words = preg_split('/\W+/', $query);
         $keywords = [];

@@ -1734,6 +1734,9 @@ $router->post('/api/admin/ai-knowledge', ['middleware' => ['auth', 'admin_only',
     $title = trim($input['title'] ?? '');
     $content = trim($input['content'] ?? '');
     $source = in_array($input['source_type'] ?? 'text', ['text', 'pdf']) ? $input['source_type'] : 'text';
+    $category = !empty($input['category']) ? trim($input['category']) : null;
+    $priority = isset($input['priority']) ? (int)$input['priority'] : 0;
+    $isActive = isset($input['is_active']) ? ($input['is_active'] ? 1 : 0) : 1;
 
     // Handle uploaded PDF file (optional)
     if (!empty($_FILES['pdf_file']) && $_FILES['pdf_file']['error'] === UPLOAD_ERR_OK) {
@@ -1752,12 +1755,26 @@ $router->post('/api/admin/ai-knowledge', ['middleware' => ['auth', 'admin_only',
     }
 
     if ($id > 0) {
-        $ok = $model->update($id, ['title' => $title, 'content' => $content, 'source_type' => $source]);
+        $ok = $model->update($id, [
+            'title' => $title,
+            'content' => $content,
+            'source_type' => $source,
+            'category' => $category,
+            'priority' => $priority,
+            'is_active' => $isActive
+        ]);
         echo json_encode(['success' => $ok]);
         return;
     }
 
-    $newId = $model->create(['title' => $title, 'content' => $content, 'source_type' => $source]);
+    $newId = $model->create([
+        'title' => $title,
+        'content' => $content,
+        'source_type' => $source,
+        'category' => $category,
+        'priority' => $priority,
+        'is_active' => $isActive
+    ]);
     echo json_encode(['success' => $newId > 0, 'id' => $newId]);
 });
 

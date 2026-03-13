@@ -1,11 +1,19 @@
 (function () {
     var apiList = '/api/admin/ai-knowledge';
     var allItems = [];
+    var showInactive = false;
 
     function showAlert(msg, type) {
         type = type || 'success';
         var el = document.getElementById('alertContainer');
         el.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' + msg + '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+        // Auto dismiss after 5 seconds
+        setTimeout(function () {
+            var alert = el.querySelector('.alert');
+            if (alert) {
+                alert.remove();
+            }
+        }, 5000);
     }
 
     function escapeHtml(s) {
@@ -37,29 +45,64 @@
             return;
         }
 
-        var html = '<div class="list-group">';
+        var html = '<div class="table-responsive"><table class="table table-hover mb-0">' +
+            '<thead><tr>' +
+            '<th style="width: 50px;">ID</th>' +
+            '<th>Title</th>' +
+            '<th>Category</th>' +
+            '<th>Type</th>' +
+            '<th>Priority</th>' +
+            '<th>Status</th>' +
+            '<th style="width: 150px;">Actions</th>' +
+            '</tr></thead><tbody>';
+
         items.forEach(function (item) {
+            var categoryBadge = getCategoryBadge(item.category);
             var sourceBadge = getSourceBadge(item.source_type);
-            html += '<div class="list-group-item">' +
-                '<div class="d-flex justify-content-between align-items-start">' +
-                '<div class="flex-grow-1">' +
-                '<h6 class="mb-1">' + escapeHtml(item.title) + '</h6>' +
-                '<small class="text-muted">' + escapeHtml(item.excerpt || '') + '</small>' +
-                '<div class="mt-1">' + sourceBadge + '</div>' +
-                '</div>' +
-                '<div class="btn-group-nowrap">' +
-                '<button class="btn btn-sm btn-outline-primary me-1" data-id="' + item.id + '" onclick="kbEdit(' + item.id + ')">' +
-                '<i class="bi bi-pencil"></i> Edit' +
+            var statusBadge = item.is_active ?
+                '<span class="badge bg-success">Active</span>' :
+                '<span class="badge bg-secondary">Inactive</span>';
+
+            html += '<tr>' +
+                '<td>' + item.id + '</td>' +
+                '<td>' +
+                '<strong>' + escapeHtml(item.title) + '</strong>' +
+                '<br><small class="text-muted">' + escapeHtml(item.excerpt || '') + '</small>' +
+                '</td>' +
+                '<td>' + categoryBadge + '</td>' +
+                '<td>' + sourceBadge + '</td>' +
+                '<td><span class="badge bg-info">' + (item.priority || 0) + '</span></td>' +
+                '<td>' + statusBadge + '</td>' +
+                '<td>' +
+                '<button class="btn btn-sm btn-outline-primary me-1" data-id="' + item.id + '" onclick="kbEdit(' + item.id + ')" title="Edit">' +
+                '<i class="bi bi-pencil"></i>' +
                 '</button>' +
-                '<button class="btn btn-sm btn-outline-danger" data-id="' + item.id + '" onclick="kbDelete(' + item.id + ')">' +
-                '<i class="bi bi-trash"></i> Delete' +
+                '<button class="btn btn-sm btn-outline-' + (item.is_active ? 'warning' : 'success') + ' me-1" data-id="' + item.id + '" onclick="kbToggle(' + item.id + ')" title="' + (item.is_active ? 'Deactivate' : 'Activate') + '">' +
+                '<i class="bi bi-' + (item.is_active ? 'eye-slash' : 'eye') + '"></i>' +
                 '</button>' +
-                '</div>' +
-                '</div>' +
-                '</div>';
+                '<button class="btn btn-sm btn-outline-danger" data-id="' + item.id + '" onclick="kbDelete(' + item.id + ')" title="Delete">' +
+                '<i class="bi bi-trash"></i>' +
+                '</button>' +
+                '</td>' +
+                '</tr>';
         });
-        html += '</div>';
+        html += '</tbody></table></div>';
         container.innerHTML = html;
+    }
+
+    function getCategoryBadge(category) {
+        if (!category) return '<span class="badge bg-light text-dark">-</span>';
+        var badges = {
+            'general': '<span class="badge bg-primary">General</span>',
+            'admin': '<span class="badge bg-purple" style="background-color: #6f42c1 !important;">Admin</span>',
+            'api': '<span class="badge bg-info">API</span>',
+            'features': '<span class="badge bg-success">Features</span>',
+            'security': '<span class="badge bg-danger">Security</span>',
+            'deployment': '<span class="badge bg-warning text-dark">Deployment</span>',
+            'content': '<span class="badge bg-dark">Content</span>',
+            'notification': '<span class="badge bg-pink" style="background-color: #e83e8c !important;">Notification</span>'
+        };
+        return badges[category] || '<span class="badge bg-secondary">' + escapeHtml(category) + '</span>';
     }
 
     function getSourceBadge(type) {
@@ -74,18 +117,34 @@
 
     function filterItems() {
         var searchInput = document.getElementById('kbSearch');
+        var filterCategory = document.getElementById('kbFilterCategory');
         var filterSelect = document.getElementById('kbFilterType');
 
         var searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+        var categoryFilter = filterCategory ? filterCategory.value : '';
         var typeFilter = filterSelect ? filterSelect.value : '';
 
         var filtered = allItems;
+
+        // Filter by active status
+        if (!showInactive) {
+            filtered = filtered.filter(function (item) {
+                return item.is_active != 0 && item.is_active != false;
+            });
+        }
 
         if (searchTerm) {
             filtered = filtered.filter(function (item) {
                 return (item.title && item.title.toLowerCase().includes(searchTerm)) ||
                     (item.excerpt && item.excerpt.toLowerCase().includes(searchTerm)) ||
-                    (item.content && item.content.toLowerCase().includes(searchTerm));
+                    (item.content && item.content.toLowerCase().includes(searchTerm)) ||
+                    (item.category && item.category.toLowerCase().includes(searchTerm));
+            });
+        }
+
+        if (categoryFilter) {
+            filtered = filtered.filter(function (item) {
+                return item.category === categoryFilter;
             });
         }
 
@@ -119,7 +178,7 @@
             filterItems();
         } catch (e) {
             console.error('Failed to fetch knowledge base:', e);
-            showAlert('Failed to load knowledge base', 'danger');
+            showAlert('Failed to load knowledge base: ' + e.message, 'danger');
         }
     }
 
@@ -137,11 +196,38 @@
             document.getElementById('kb_title').value = it.title || '';
             document.getElementById('kb_content').value = it.content || '';
             document.getElementById('kb_source_type').value = it.source_type || 'text';
+            document.getElementById('kb_category').value = it.category || '';
+            document.getElementById('kb_priority').value = it.priority || 0;
+            document.getElementById('kb_is_active').checked = it.is_active != 0 && it.is_active != false;
             var modal = new bootstrap.Modal(document.getElementById('kbModal'));
             modal.show();
         } catch (e) {
             console.error('Failed to load item:', e);
             showAlert('Failed to load item', 'danger');
+        }
+    };
+
+    window.kbToggle = async function (id) {
+        var item = allItems.find(function (i) { return i.id === id; });
+        if (!item) return;
+
+        var newStatus = !(item.is_active != 0 && item.is_active != false);
+        var form = new FormData();
+        form.append('id', id);
+        form.append('is_active', newStatus ? 1 : 0);
+        form.append('csrf_token', document.querySelector('input[name=csrf_token]').value);
+
+        try {
+            var res = await fetch(apiList, { method: 'POST', body: form, credentials: 'same-origin' });
+            var data = await res.json();
+            if (data.success) {
+                showAlert('Status updated successfully');
+                fetchList();
+            } else {
+                showAlert('Update failed: ' + (data.error || 'Unknown error'), 'danger');
+            }
+        } catch (e) {
+            showAlert('Update failed: ' + e.message, 'danger');
         }
     };
 
@@ -175,6 +261,9 @@
             title: title,
             content: content,
             source_type: document.getElementById('kb_source_type').value,
+            category: document.getElementById('kb_category').value,
+            priority: parseInt(document.getElementById('kb_priority').value) || 0,
+            is_active: document.getElementById('kb_is_active').checked,
             csrf_token: document.querySelector('input[name=csrf_token]').value
         };
         try {
@@ -204,13 +293,30 @@
 
         // Search and filter handlers
         var searchInput = document.getElementById('kbSearch');
+        var filterCategory = document.getElementById('kbFilterCategory');
         var filterSelect = document.getElementById('kbFilterType');
+        var showInactiveToggle = document.getElementById('kbShowInactive');
+        var refreshBtn = document.getElementById('btnRefresh');
 
         if (searchInput) {
             searchInput.addEventListener('input', filterItems);
         }
+        if (filterCategory) {
+            filterCategory.addEventListener('change', filterItems);
+        }
         if (filterSelect) {
             filterSelect.addEventListener('change', filterItems);
+        }
+        if (showInactiveToggle) {
+            showInactiveToggle.addEventListener('change', function () {
+                showInactive = this.checked;
+                filterItems();
+            });
+        }
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', function () {
+                fetchList();
+            });
         }
 
         // Add button handler
@@ -218,6 +324,9 @@
             document.getElementById('kbForm').reset();
             document.getElementById('kb_id').value = 0;
             document.getElementById('kb_source_type').value = 'text';
+            document.getElementById('kb_category').value = '';
+            document.getElementById('kb_priority').value = 0;
+            document.getElementById('kb_is_active').checked = true;
             var modal = new bootstrap.Modal(document.getElementById('kbModal'));
             modal.show();
         });
