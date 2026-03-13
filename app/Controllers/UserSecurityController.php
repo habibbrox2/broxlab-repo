@@ -1,6 +1,6 @@
 <?php
 // controllers/UserSecurityController.php
-// ইজার সেলফ-সার্ভিস 2FA ম্যানেজমেন্ট
+// ইউজার সেলফ-সার্ভিস 2FA ম্যানেজমেন্ট
 
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
@@ -27,7 +27,7 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
 
             echo $twig->render('user/security_2fa.twig', [
             'title' => 'Two-Factor Authentication',
-            'header_title' => '2FA à¦¸à§‡à¦Ÿà¦¿à¦‚à¦¸',
+            'header_title' => '2FA সেটিংস',
             'user' => $user,
             'twofa_enabled' => $security['enabled'],
             'twofa_created' => $security['created_at'] ?? null,
@@ -36,8 +36,8 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
         }
         );
 
-        // ==================== 2FA à¦¸à§‡à¦Ÿà¦†à¦ª à¦¶à§à¦°à§ à¦•à¦°à§à¦¨ ====================
-        // GET /user/security/2fa/setup - QR à¦•à§‹à¦¡ à¦à¦¬à¦‚ à¦¸à§‡à¦Ÿà¦†à¦ª à¦«à¦°à§à¦® à¦¦à§‡à¦–à§à¦¨
+        // ==================== 2FA সেটআপ শুরু করুন ====================
+        // GET /user/security/2fa/setup - QR কোড এবং সেটআপ ফর্ম দেখুন
         $router->get('/2fa/setup', function () use ($twig) {
             if (session_status() === PHP_SESSION_NONE)
                 session_start();
@@ -48,7 +48,7 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
                 exit;
             }
 
-            // à¦¨à¦¤à§à¦¨ à¦¸à¦¿à¦•à§à¦°à§‡à¦Ÿ à¦œà§‡à¦¨à¦¾à¦°à§‡à¦Ÿ à¦•à¦°à§à¦¨ (à¦¯à¦¦à¦¿ à¦¸à§‡à¦¶à¦¨à§‡ à¦¨à¦¾ à¦¥à¦¾à¦•à§‡)
+            // নতুন সিক্রেট জেনারেট করুন (যদি সেশনে না থাকে)
             if (!isset($_SESSION['temp_2fa_secret'])) {
                 $_SESSION['temp_2fa_secret'] = generateBase32Secret();
             }
@@ -56,10 +56,10 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
             $secret = $_SESSION['temp_2fa_secret'];
             $email = $user['email'];
 
-            // TOTP URI à¦¤à§ˆà¦°à¦¿ à¦•à¦°à§à¦¨ (Google Authenticator à¦à¦° à¦œà¦¨à§à¦¯)
+            // TOTP URI তৈরি করুন (Google Authenticator এর জন্য)
             $totp_uri = "otpauth://totp/broxbhai:{$email}?secret={$secret}&issuer=Broxbhai";
 
-            // QR à¦•à§‹à¦¡ à¦œà§‡à¦¨à¦¾à¦°à§‡à¦Ÿ à¦•à¦°à§à¦¨
+            // QR কোড জেনারেট করুন
             try {
                 $qrCode = new QrCode($totp_uri);
                 $writer = new PngWriter();
@@ -72,7 +72,7 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
 
             echo $twig->render('user/security_2fa_setup.twig', [
             'title' => 'Setup Two-Factor Authentication',
-            'header_title' => '2FA à¦¸à§‡à¦Ÿà¦†à¦ª à¦•à¦°à§à¦¨',
+            'header_title' => '2FA সেটআপ করুন',
             'user' => $user,
             'secret' => $secret,
             'qr_image' => $qrImage,
@@ -82,13 +82,12 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
         }
         );
 
-        // ==================== 2FA à¦¸à§‡à¦Ÿà¦†à¦ª à¦¯à¦¾à¦šà¦¾à¦‡ à¦•à¦°à§à¦¨ ====================
-        // POST /user/security/2fa/verify - à¦‡à¦‰à¦œà¦¾à¦° à¦à¦° à¦•à§‹à¦¡ à¦¯à¦¾à¦šà¦¾à¦‡ à¦à¦¬à¦‚ à¦¸à¦•à§à¦·à¦® à¦•à¦°à§à¦¨
+        // ==================== 2FA সেটআপ যাচাই করুন ====================
+        // POST /user/security/2fa/verify - ইউজার এর কোড যাচাই এবং সক্ষম করুন
         $router->post('/2fa/verify', function () use ($twig, $securityManager) {
             if (session_status() === PHP_SESSION_NONE)
                 session_start();
 
-            // CSRF à¦¯à¦¾à¦šà¦¾à¦‡ à¦•à¦°à§à¦¨
             if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
                 showMessage("Invalid CSRF token", "error");
                 header("Location: /user/security/2fa/setup");
@@ -102,7 +101,7 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
                 exit;
             }
 
-            // à¦¸à¦¿à¦•à§à¦°à§‡à¦Ÿ à¦à¦¬à¦‚ à¦•à§‹à¦¡ à¦ªà§à¦°à¦¾à¦ªà§à¦¤ à¦•à¦°à§à¦¨
+            // সিক্রেট এবং কোড প্রাপ্ত করুন
             $secret = $_SESSION['temp_2fa_secret'] ?? null;
             $code = sanitize_input($_POST['code'] ?? '');
 
@@ -118,7 +117,7 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
                 exit;
             }
 
-            // TOTP à¦•à§‹à¦¡ à¦¯à¦¾à¦šà¦¾à¦‡ à¦•à¦°à§à¦¨
+            // TOTP কোড যাচাই করুন
             if (!$securityManager->verifyNewTOTPCode($secret, $code)) {
                 showMessage("Invalid code. Please check and try again.", "error");
                 header("Location: /user/security/2fa/setup");
@@ -132,7 +131,7 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
                 exit;
             }
 
-            // à¦¸à§‡à¦¶à¦¨ à¦ªà¦°à¦¿à¦·à§à¦•à¦¾à¦° à¦•à¦°à§à¦¨
+            // সেশন পরিষ্কার করুন
             unset($_SESSION['temp_2fa_secret']);
 
             showMessage("2FA enabled successfully! Please save your backup codes.", "success");
@@ -141,8 +140,8 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
         }
         );
 
-        // ==================== à¦¬à§à¦¯à¦¾à¦•à¦†à¦ª à¦•à§‹à¦¡ à¦¦à§‡à¦–à§à¦¨ ====================
-        // GET /user/security/2fa/backup - à¦¬à§à¦¯à¦¾à¦•à¦†à¦ª à¦•à§‹à¦¡ à¦¡à¦¾à¦‰à¦¨à¦²à§‹à¦¡/à¦¦à§‡à¦–à§à¦¨
+        // ==================== ব্যাকআপ কোড দেখুন ====================
+        // GET /user/security/2fa/backup - ব্যাকআপ কোড ডাউনলোড/দেখুন
         $router->get('/2fa/backup', function () use ($twig, $securityManager) {
             if (session_status() === PHP_SESSION_NONE)
                 session_start();
@@ -164,7 +163,7 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
 
             echo $twig->render('user/security_2fa_backup.twig', [
             'title' => 'Backup Codes',
-            'header_title' => 'à¦¬à§à¦¯à¦¾à¦•à¦†à¦ª à¦•à§‹à¦¡à¦—à§à¦²à¦¿ à¦¸à¦‚à¦°à¦•à§à¦·à¦£ à¦•à¦°à§à¦¨',
+            'header_title' => 'ব্যাকআপ কোডগুলি সংরক্ষণ করুন',
             'user' => $user,
             'backup_codes' => $backupCodes,
             'csrf_token' => generateCsrfToken(),
@@ -172,13 +171,13 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
         }
         );
 
-        // ==================== 2FA à¦ªà§à¦°à¦¤à¦¿à¦¬à¦¨à§à¦§à§€ à¦•à¦°à§à¦¨ ====================
-        // POST /user/security/2fa/disable - à¦ªà¦¾à¦¸à¦“à¦¯à¦¼à¦¾à¦°à§à¦¡ à¦¯à¦¾à¦šà¦¾à¦‡à¦¯à¦¼à§‡à¦° à¦ªà¦°à§‡ à¦ªà§à¦°à¦¤à¦¿à¦¬à¦¨à§à¦§à§€ à¦•à¦°à§à¦¨
+        // ==================== 2FA নিষ্ক্রিয় করুন ====================
+        // POST /user/security/2fa/disable - পাসওয়ার্ড যাচাইয়ের পরে নিষ্ক্রিয় করুন
         $router->post('/2fa/disable', function () use ($twig, $userModel, $securityManager) {
             if (session_status() === PHP_SESSION_NONE)
                 session_start();
 
-            // CSRF à¦¯à¦¾à¦šà¦¾à¦‡ à¦•à¦°à§à¦¨
+            // CSRF যাচাই করুন
             if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
                 showMessage("Invalid CSRF token", "error");
                 header("Location: /user/security/2fa");
@@ -192,7 +191,7 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
                 exit;
             }
 
-            // à¦ªà¦¾à¦¸à¦“à¦¯à¦¼à¦¾à¦°à§à¦¡ à¦¯à¦¾à¦šà¦¾à¦‡ à¦•à¦°à§à¦¨ (à¦¨à¦¿à¦°à¦¾à¦ªà¦¤à§à¦¤à¦¾à¦° à¦œà¦¨à§à¦¯)
+            // পাসওয়ার্ড যাচাই করুন (নিরাপত্তার জন্য)
             $password = $_POST['password'] ?? '';
             $dbUser = $userModel->findById($user['id']);
 
@@ -216,11 +215,11 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
         );
     });
 
-// ==================== à¦¸à¦¹à¦¾à¦¯à¦¼à¦• à¦«à¦¾à¦‚à¦¶à¦¨à¦—à§à¦²à¦¿ ====================
+// ==================== সহায়ক ফাংশনগুলি ====================
 
 /**
- * Base32 à¦¸à¦¿à¦•à§à¦°à§‡à¦Ÿ à¦œà§‡à¦¨à¦¾à¦°à§‡à¦Ÿ à¦•à¦°à§à¦¨
- * Google Authenticator à¦à¦° à¦œà¦¨à§à¦¯ à¦‰à¦ªà¦¯à§à¦•à§à¦¤ à¦«à¦°à¦®à§à¦¯à¦¾à¦Ÿà§‡
+ * Base32 সিক্রেট জেনারেট করুন
+ * Google Authenticator এর জন্য উপযুক্ত ফরম্যাটে
  */
 // ==================== PASSWORD CHANGE ====================
 

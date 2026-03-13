@@ -1,84 +1,137 @@
+{# Premium AI Assistant – Public / Visitor Chat Shell (2026 Edition) #}
+{# IMPORTANT: Uses unique 'brox-ai-' prefix for all classes to avoid conflicts with other libraries/bundles #}
+{# IDs align with assistant.js (BroxAssistant class) #}
+
 <div id="publicAssistantWrapper" class="bb-assistant-public">
-    <button id="publicAssistantBtn" title="Chat with Assistant" aria-label="Open Chat">
-        <i class="bi bi-chat-dots-fill"></i>
+
+    {# ── Floating Action Button - Toggle with different icons ── #}
+    <button id="publicAssistantBtn" class="brox-ai-public-fab" title="Chat with Assistant" aria-label="Open Chat">
+        <span class="brox-ai-fab-icon-open"><i class="bi bi-chat-dots-fill"></i></span>
+        <span class="brox-ai-fab-icon-close d-none"><i class="bi bi-x-lg"></i></span>
     </button>
 
-    <div id="publicAssistantChat" class="public-assistant-shell hidden d-none">
-        <div class="assistant-header">
-            <div class="assistant-header-inner">
-                <div class="assistant-avatar">
-                    <i class="bi bi-stars"></i>
+    {# ── Chat Window Shell (2026 Premium) ── #}
+    <div id="publicAssistantChat" class="brox-ai-chat-shell brox-ai-hidden">
+
+        {# ── Sidebar (Collapsible History) ── #}
+        <div id="publicAssistantSidebar" class="brox-ai-sidebar brox-ai-collapsed">
+            <div class="brox-ai-sidebar-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>চ্যাট ইতিহাস</span>
+                    <button id="toggleAiSidebar" class="btn btn-sm btn-link p-0 text-muted"><i class="bi bi-x-lg"></i></button>
                 </div>
-                <div class="assistant-header-info">
-                    <div class="assistant-header-title-row">
-                        <div class="assistant-title" id="publicAssistantTitle">Brox Assistant</div>
-                        <span class="assistant-badge">broxlab</span>
+            </div>
+            <div id="publicAssistantHistory" class="brox-ai-history-list">
+                {# History items injected by JS #}
+            </div>
+        </div>
+
+        {# ── Main Chat Container ── #}
+        <div class="brox-ai-chat-main">
+            
+            {# ── AI Header ── #}
+            <div class="brox-ai-header">
+                <div class="brox-ai-header-info">
+                    <div class="brox-ai-header-title" id="publicAssistantTitle">ব্রক্স সহকারী</div>
+                    <div class="brox-ai-model-status" id="publicAssistantModelStatus">
+                        <span class="brox-ai-status-indicator brox-ai-connecting" id="publicAssistantModelStatusIndicator" title="Connecting..."></span>
+                        <span class="brox-ai-model-name" id="publicAssistantModelName">Loading...</span>
                     </div>
-                    <div id="publicAssistantStatusText" class="assistant-status">Friendly help, fast answers</div>
-                    <div id="publicAssistantOpenRouterKeyStatus" class="assistant-status" style="font-size:0.75rem; opacity:0.85;">OpenRouter key status unavailable</div>
-                    <div id="publicAssistantFallbackBadge" class="badge bg-warning text-dark d-none" style="font-size:0.7rem;">Using Puter fallback</div>
-                    <div class="assistant-subtitle">broxlab.online support, guidance and quick answers in one place.</div>
+                    <div class="brox-ai-header-status" id="publicAssistantStatusText">অনলাইন ও প্রস্তুত</div>
                 </div>
-                <div class="assistant-header-controls">
-                    <div class="assistant-lang-toggle" role="group" aria-label="Language toggle">
-                        <button type="button" id="publicAssistantLangBn" class="btn-light">Bangla</button>
-                        <button type="button" id="publicAssistantLangEn" class="btn-outline-light">EN</button>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <div class="brox-ai-lang-toggle">
+                        <button type="button" id="publicAssistantLangBn" class="active">বাং</button>
+                        <button type="button" id="publicAssistantLangEn">EN</button>
                     </div>
-                    <button id="closePublicAssistant" class="assistant-close-btn" aria-label="Close">
-                        <i class="bi bi-x-lg"></i>
+                    <button id="closePublicAssistant" class="btn-close" style="font-size: 0.7rem;"></button>
+                </div>
+            </div>
+
+            {# ── Pre-chat Workflow (Registration) ── #}
+            <div id="publicAssistantPreChat" class="brox-ai-body">
+                {# Step 1: Introduction / Name #}
+                <div class="brox-ai-prechat brox-ai-step-name">
+                    <div class="brox-ai-form-group">
+                        <label for="introName" id="introNameLabel">আপনার নাম</label>
+                        <input type="text" id="introName" class="brox-ai-input" placeholder="আপনার নাম লিখুন">
+                    </div>
+                    <button class="brox-ai-btn-primary w-100 mt-3" id="introNext1">পরবর্তী <i class="bi bi-arrow-right ms-1"></i></button>
+                </div>
+
+                {# Step 2: Contact Info #}
+                <div class="brox-ai-prechat prechat-step brox-ai-step-contact step-contact brox-ai-hidden">
+                    <div class="brox-ai-form-group mb-3">
+                        <label for="introEmail" id="introEmailLabel">ইমেল (ঐচ্ছিক)</label>
+                        <input type="email" id="introEmail" class="brox-ai-input" placeholder="আপনার ইমেল লিখুন">
+                    </div>
+                    <div class="brox-ai-form-group mb-3">
+                        <label for="introMobile" id="introMobileLabel">মোবাইল নম্বর (ঐচ্ছিক)</label>
+                        <input type="text" id="introMobile" class="brox-ai-input" placeholder="মোবাইল নম্বর লিখুন">
+                    </div>
+                    <button class="brox-ai-btn-primary w-100" id="introNext2">পরবর্তী <i class="bi bi-arrow-right ms-1"></i></button>
+                </div>
+
+                {# Step 3: Topics #}
+                <div class="brox-ai-prechat prechat-step brox-ai-step-topic step-topic brox-ai-hidden">
+                    <div class="brox-ai-topic-prompt">
+                        <div class="brox-ai-msg brox-ai-assistant">
+                            <div class="brox-ai-msg-content">
+                                <strong id="introTopicLabel">আপনার জিজ্ঞাসার বিষয় নির্বাচন করুন</strong>
+                                <div class="brox-ai-topic-grid" id="introTopicOptions">
+                                    <label class="brox-ai-topic-chip">
+                                        <input type="checkbox" value="general" checked>
+                                        <span>সাধারণ তথ্য</span>
+                                    </label>
+                                    <label class="brox-ai-topic-chip">
+                                        <input type="checkbox" value="support">
+                                        <span>সাপোর্ট</span>
+                                    </label>
+                                    <label class="brox-ai-topic-chip">
+                                        <input type="checkbox" value="billing">
+                                        <span>বিলিং</span>
+                                    </label>
+                                    <label class="brox-ai-topic-chip">
+                                        <input type="checkbox" value="feedback">
+                                        <span>মতামত</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="brox-ai-btn-primary w-100 mt-4" id="introStartChat">চ্যাট শুরু করুন <i class="bi bi-chat-fill ms-1"></i></button>
+                </div>
+            </div>
+
+            {# ── Real-time Chat Messages ── #}
+            <div id="publicAssistantMessages" class="brox-ai-body brox-ai-hidden">
+                {# Messages injected here by assistant.js #}
+            </div>
+
+            {# ── Agentic Status Bar ── #}
+            <div id="publicAssistantAgenticStatus" class="brox-ai-agentic-status brox-ai-hidden">
+                <span class="brox-ai-status-pill">Thinking</span>
+                <span class="ai-status-detail">Analyzing your request...</span>
+            </div>
+
+            {# ── Quick Action Chips ── #}
+            {# ── Footer / Input Area ── #}
+            <div class="brox-ai-footer-public brox-ai-hidden" id="publicAssistantFooter">
+                <div class="brox-ai-suggestions brox-ai-hidden" id="publicAssistantSuggestions"></div>
+                <div id="publicAssistantQuickActions" class="brox-ai-quick-actions brox-ai-hidden"></div>
+
+                <div class="brox-ai-composer-wrapper">
+                    <input type="text" id="publicAssistantInput" placeholder="এখানে লিখুন...">
+                    <div class="brox-ai-composer-tools">
+                        <button class="brox-ai-tool-btn" title="Voice Input"><i class="bi bi-mic"></i></button>
+                    </div>
+                    <button class="brox-ai-send-btn" id="sendToPublicAssistant">
+                        <i class="bi bi-send-fill"></i>
                     </button>
                 </div>
             </div>
-        </div>
 
-        <div id="publicAssistantPreChat" class="chat-body">
-            <div class="prechat-intro-card">
-                <div class="intro-label">BroxLab</div>
-                <div class="intro-heading">Ask about services, support, content or billing.</div>
-                <div class="intro-desc">Start with your details so the assistant can keep the conversation relevant.</div>
-            </div>
-            <div class="prechat-step step-name">
-                <label for="introName" id="introNameLabel">Your Name</label>
-                <input type="text" id="introName" placeholder="Enter your name">
-                <button class="btn-next" id="introNext1">Next</button>
-            </div>
-            <div class="prechat-step step-contact d-none">
-                <label for="introEmail" id="introEmailLabel">Email (Optional)</label>
-                <input type="email" id="introEmail" placeholder="Enter your email">
-                <label for="introMobile" id="introMobileLabel">Mobile Number (Optional)</label>
-                <input type="text" id="introMobile" placeholder="Enter your mobile number">
-                <button class="btn-next" id="introNext2">Next</button>
-            </div>
-            <div class="prechat-step step-topic d-none">
-                <label id="introTopicLabel">Select your topics</label>
-                <div class="topic-multiselect" id="introTopicOptions">
-                    <label class="topic-option" data-topic-key="general"><input type="checkbox" class="intro-topic-option" value="general" checked><span class="topic-label">General</span></label>
-                    <label class="topic-option" data-topic-key="support"><input type="checkbox" class="intro-topic-option" value="support"><span class="topic-label">Support</span></label>
-                    <label class="topic-option" data-topic-key="billing"><input type="checkbox" class="intro-topic-option" value="billing"><span class="topic-label">Billing</span></label>
-                    <label class="topic-option" data-topic-key="feedback"><input type="checkbox" class="intro-topic-option" value="feedback"><span class="topic-label">Feedback</span></label>
-                </div>
-                <button class="btn-start" id="introStartChat">Start Chat</button>
-            </div>
-        </div>
-
-        <div id="publicAssistantMessages" class="chat-body d-none assistant-messages">
-            <div class="message assistant">Hello, I am your Brox assistant. How can I help you?</div>
-        </div>
-
-        <div class="chat-footer d-none" id="publicAssistantFooter">
-            <div id="publicAssistantLoading" class="typing-indicator d-none" aria-live="polite">
-                <span id="publicAssistantTypingText">Typing...</span>
-                <span class="typing-dots"><span></span><span></span><span></span></span>
-            </div>
-            <div class="assistant-input-row">
-                <button type="button" class="assistant-action-btn" id="btnAttachFile" title="Attach file">
-                    <i class="bi bi-plus-lg"></i>
-                </button>
-                <input type="text" id="publicAssistantInput" placeholder="Ask me anything..." aria-label="Message">
-                <button class="assistant-send-btn" id="sendToPublicAssistant" aria-label="Send">
-                    <i class="bi bi-rocket-fill"></i>
-                </button>
-            </div>
         </div>
     </div>
 </div>

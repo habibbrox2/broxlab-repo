@@ -1,7 +1,9 @@
 <?php
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../Config/Constants.php';
 require_once __DIR__ . '/../app/Helpers/ErrorLogging.php';
 require_once __DIR__ . '/../app/Helpers/BreadcrumbHelper.php';
 require_once __DIR__ . '/../app/Models/UserModel.php';
@@ -14,7 +16,8 @@ require_once __DIR__ . '/RteCacheConfig.php';
 // ============================================================
 
 if (!function_exists('env')) {
-    function env(string $key, $default = null) {
+    function env(string $key, $default = null)
+    {
         // 1️⃣ $_ENV check
         if (isset($_ENV[$key])) {
             return normalizeEnvValue($_ENV[$key]);
@@ -36,7 +39,8 @@ if (!function_exists('env')) {
 }
 
 if (!function_exists('normalizeEnvValue')) {
-    function normalizeEnvValue($value) {
+    function normalizeEnvValue($value)
+    {
         if (!is_string($value)) {
             return $value;
         }
@@ -272,7 +276,8 @@ if (!function_exists('brox_resolve_asset_for_development')) {
 // ============================================================
 
 if (!function_exists('getFlash')) {
-    function getFlash(?array &$session): ?array {
+    function getFlash(?array &$session): ?array
+    {
         if (!is_array($session)) {
             $session = [];
         }
@@ -285,20 +290,20 @@ if (!function_exists('getFlash')) {
                 session_start();
             }
         }
-        
+
         // First check $_SESSION, fallback to passed session array
         if (!empty($_SESSION['flash_message'])) {
             $msg = $_SESSION['flash_message'];
             unset($_SESSION['flash_message']);
             return $msg;
         }
-        
+
         if (!empty($session['flash_message'])) {
             $msg = $session['flash_message'];
             unset($session['flash_message']);
             return $msg;
         }
-        
+
         return null;
     }
 }
@@ -364,7 +369,6 @@ function loadUser(mysqli $mysqli, ?int $userId): array
 
         // Merge with defaults (user data overrides defaults)
         return array_merge($defaults, $user);
-
     } catch (Throwable $e) {
         logError(
             'Error loading user profile: ' . $e->getMessage(),
@@ -387,7 +391,7 @@ function loadUser(mysqli $mysqli, ?int $userId): array
 function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \Twig\Environment
 {
     global $settingsModel;
-    
+
     try {
         if (!is_array($session)) {
             $session = [];
@@ -404,12 +408,12 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         $twigCache = false;
         if (!empty($appSettings['enable_cache']) && $appSettings['enable_cache'] != '0') {
             $cacheDir = CACHE_DIR . 'twig' . DIRECTORY_SEPARATOR;
-            
+
             // Ensure cache directory exists with proper permissions
             if (!is_dir($cacheDir)) {
                 @mkdir($cacheDir, 0777, true);
             }
-            
+
             // Verify directory is writable
             if (is_dir($cacheDir) && is_writable($cacheDir)) {
                 $twigCache = $cacheDir;
@@ -438,11 +442,11 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         }
 
         $twig->addExtension(new \Twig\Extension\StringLoaderExtension());
-        
+
         // ============================================================
         // FILTERS
         // ============================================================
-        
+
         // Max filter (numbers or arrays)
         $twig->addFilter(new \Twig\TwigFilter('max', function ($value, $compare = null) {
             if (is_array($value)) {
@@ -474,7 +478,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             $number = (float) $number;
             return $symbol . number_format($number, 2, '.', ',');
         }));
-        
+
         // Unique filter (array or string)
         $twig->addFilter(new \Twig\TwigFilter('unique', function ($value) {
             if (is_array($value)) {
@@ -489,7 +493,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
 
             return $value;
         }));
-        
+
         // String replace filter
         $twig->addFilter(new \Twig\TwigFilter('str_replace', function ($search, $replace, $subject) {
             return str_replace($search, $replace, $subject);
@@ -505,7 +509,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             }
             return substr($text, 0, $length) . $suffix;
         }));
-        
+
         // Integer cast filter
         $twig->addFilter(new \Twig\TwigFilter('int', function ($value, $default = 0) {
             if (is_numeric($value)) {
@@ -517,21 +521,21 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         // File size format
         $twig->addFilter(new \Twig\TwigFilter('filesizeformat', function ($bytes, $decimals = 2) {
             $bytes = (float) $bytes;
-            
+
             if ($bytes <= 0) {
                 return '0 B';
             }
-            
+
             $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
             $factor = floor((strlen((string) $bytes) - 1) / 3);
-            
+
             return sprintf(
                 "%.{$decimals}f %s",
                 $bytes / pow(1024, $factor),
                 $units[$factor] ?? 'B'
             );
         }));
-        
+
         // Date only filter
         $twig->addFilter(new \Twig\TwigFilter('date', function ($date, $format = 'm-d-Y') {
             if (empty($date)) {
@@ -563,7 +567,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                 return $date;
             }
         }));
-        
+
         // Bengali date filter
         $twig->addFilter(new \Twig\TwigFilter('date_bn', function ($date, $format = 'd F Y') {
             if (empty($date)) {
@@ -576,22 +580,31 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
 
                 // Convert month names to Bengali
                 $months = [
-                    'January', 'February', 'March', 'April', 'May', 'June',
-                    'July', 'August', 'September', 'October', 'November', 'December'
+                    'January',
+                    'February',
+                    'March',
+                    'April',
+                    'May',
+                    'June',
+                    'July',
+                    'August',
+                    'September',
+                    'October',
+                    'November',
+                    'December'
                 ];
-                
+
                 foreach ($months as $month) {
                     $formatted = str_replace($month, enToBnMonth($month), $formatted);
                 }
 
                 // Convert digits to Bengali
                 return enToBnDigits($formatted);
-
             } catch (Exception $e) {
                 return $date;
             }
         }));
-        
+
         // Bengali datetime filter
         $twig->addFilter(new \Twig\TwigFilter('datetime_bn', function ($date, $format = 'd F Y, h:i A') {
             if (empty($date)) {
@@ -603,31 +616,40 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                 $formatted = $dt->format($format);
 
                 $months = [
-                    'January', 'February', 'March', 'April', 'May', 'June',
-                    'July', 'August', 'September', 'October', 'November', 'December'
+                    'January',
+                    'February',
+                    'March',
+                    'April',
+                    'May',
+                    'June',
+                    'July',
+                    'August',
+                    'September',
+                    'October',
+                    'November',
+                    'December'
                 ];
-                
+
                 foreach ($months as $month) {
                     $formatted = str_replace($month, enToBnMonth($month), $formatted);
                 }
 
                 return enToBnDigits($formatted);
-
             } catch (Exception $e) {
                 return $date;
             }
         }));
-        
+
         // Relative time (e.g., "2 hours ago")
         $twig->addFilter(new \Twig\TwigFilter('time_ago', function ($datetime) {
             if (empty($datetime)) {
                 return '';
             }
-            
+
             try {
                 $time = is_numeric($datetime) ? $datetime : strtotime($datetime);
                 $diff = time() - $time;
-                
+
                 if ($diff < 60) return 'just now';
                 if ($diff < 3600) return floor($diff / 60) . ' minutes ago';
                 if ($diff < 86400) return floor($diff / 3600) . ' hours ago';
@@ -639,7 +661,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                 return $datetime;
             }
         }));
-        
+
         // Slug filter
         $twig->addFilter(new \Twig\TwigFilter('slug', function ($text) {
             $text = preg_replace('~[^\pL\d]+~u', '-', $text);
@@ -649,22 +671,22 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             $text = preg_replace('~-+~', '-', $text);
             return strtolower($text);
         }));
-        
+
         // URL encode filter
         $twig->addFilter(new \Twig\TwigFilter('url_encode', function ($text) {
             return urlencode($text);
         }));
-        
+
         // JSON decode filter
         $twig->addFilter(new \Twig\TwigFilter('json_decode', function ($json, $assoc = true) {
             return json_decode($json, $assoc);
         }));
-        
+
         // Strip tags filter
         $twig->addFilter(new \Twig\TwigFilter('strip_tags', function ($text, $allowedTags = '') {
             return strip_tags($text, $allowedTags);
         }));
-        
+
         // Highlight search terms
         $twig->addFilter(new \Twig\TwigFilter('highlight', function ($text, $search) {
             if (empty($search)) {
@@ -676,22 +698,22 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                 $text
             );
         }, ['is_safe' => ['html']]));
-        
+
         // Number format filter
         $twig->addFilter(new \Twig\TwigFilter('number_format', function ($number, $decimals = 0, $decPoint = '.', $thousandsSep = ',') {
             return number_format((float) $number, $decimals, $decPoint, $thousandsSep);
         }));
-        
+
         // Percentage filter
         $twig->addFilter(new \Twig\TwigFilter('percentage', function ($number, $decimals = 2) {
             return number_format((float) $number, $decimals) . '%';
         }));
-        
+
         // Nl2br filter (newlines to <br>)
         $twig->addFilter(new \Twig\TwigFilter('nl2br', function ($text) {
             return nl2br($text);
         }, ['is_safe' => ['html']]));
-        
+
         // Excerpt filter (smart truncation at word boundary)
         $twig->addFilter(new \Twig\TwigFilter('excerpt', function ($text, $length = 150, $suffix = '...') {
             if (strlen($text) <= $length) {
@@ -707,14 +729,14 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             return json_encode(
                 $value,
                 JSON_UNESCAPED_SLASHES |
-                JSON_UNESCAPED_UNICODE |
-                JSON_HEX_TAG |
-                JSON_HEX_AMP |
-                JSON_HEX_APOS |
-                JSON_HEX_QUOT
+                    JSON_UNESCAPED_UNICODE |
+                    JSON_HEX_TAG |
+                    JSON_HEX_AMP |
+                    JSON_HEX_APOS |
+                    JSON_HEX_QUOT
             );
         }));
-        
+
         // Role badge filter
         $twig->addFilter(new \Twig\TwigFilter('role_badge', function ($roleName) {
             $badges = [
@@ -725,7 +747,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             ];
             return $badges[$roleName] ?? '<span class="badge bg-light text-dark">' . ucfirst($roleName) . '</span>';
         }, ['is_safe' => ['html']]));
-        
+
         // Role color filter
         $twig->addFilter(new \Twig\TwigFilter('role_color', function ($roleName) {
             $colors = [
@@ -739,21 +761,21 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         // ============================================================
         // BREADCRUMB FILTERS
         // ============================================================
-        
+
         // Sanitize breadcrumbs filter for JSON-LD schema validation
         $twig->addFilter(new \Twig\TwigFilter('sanitize_breadcrumbs', function ($breadcrumbs) {
             // Get base URL
             $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
             $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
             $baseUrl = $protocol . '://' . $host;
-            
+
             // Call helper function
             return sanitizeBreadcrumbs($breadcrumbs, $baseUrl);
-        }));        
+        }));
         // ============================================================
         // FUNCTIONS
         // ============================================================
-        
+
         // Media URL helper
         $twig->addFunction(new \Twig\TwigFunction('media_url', function ($filePath) {
             if (empty($filePath)) {
@@ -761,7 +783,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             }
             return '/uploads/media/' . ltrim($filePath, '/');
         }));
-        
+
         // Thumbnail URL helper
         $twig->addFunction(new \Twig\TwigFunction('thumbnail_url', function ($thumbnailPath) {
             if (!$thumbnailPath) {
@@ -769,7 +791,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             }
             return '/uploads/media/' . ltrim($thumbnailPath, '/');
         }));
-        
+
         // Format file size
         $twig->addFunction(new \Twig\TwigFunction('format_file_size', function ($bytes) {
             $sizes = ["B", "KB", "MB", "GB", "TB"];
@@ -779,7 +801,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             $i = floor(log($bytes, 1024));
             return round($bytes / pow(1024, $i), 2) . " " . $sizes[$i];
         }));
-        
+
         // Get file icon
         $twig->addFunction(new \Twig\TwigFunction('get_file_icon', function ($mimeType) {
             $iconMap = [
@@ -794,7 +816,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                 'code' => '💻',
                 'text' => '📄'
             ];
-            
+
             if (strpos($mimeType, 'image') !== false) return $iconMap['image'];
             if (strpos($mimeType, 'video') !== false) return $iconMap['video'];
             if (strpos($mimeType, 'audio') !== false) return $iconMap['audio'];
@@ -804,10 +826,10 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             if (strpos($mimeType, 'presentation') !== false) return $iconMap['powerpoint'];
             if (strpos($mimeType, 'zip') !== false || strpos($mimeType, 'rar') !== false) return $iconMap['archive'];
             if (strpos($mimeType, 'text') !== false) return $iconMap['text'];
-            
+
             return '📎';
         }));
-        
+
         // Asset URL helper (with version/cache busting)
         $twig->addFunction(new \Twig\TwigFunction('asset', function ($path, $version = true) {
             // Clean path (ensure it starts with /)
@@ -819,7 +841,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                 // Get document root safely
                 $documentRoot = $_SERVER['DOCUMENT_ROOT'] ?? dirname(__DIR__);
                 $fullPath = $documentRoot . $url;
-                
+
                 if (file_exists($fullPath)) {
                     $filemtime = @filemtime($fullPath);
                     if ($filemtime !== false) {
@@ -827,10 +849,10 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                     }
                 }
             }
-            
+
             return $url;
         }));
-        
+
         // Route URL generator
         $twig->addFunction(new \Twig\TwigFunction('route', function ($name, $params = []) {
             global $router;
@@ -839,7 +861,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             }
             return '#';
         }));
-        
+
         // Path function (alias for route)
         $twig->addFunction(new \Twig\TwigFunction('path', function ($name, $params = []) {
             global $router;
@@ -848,23 +870,23 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             }
             return '#';
         }));
-        
+
         // Current route checker - checks if current path contains the route name
         $twig->addFunction(new \Twig\TwigFunction('is_route', function ($routeName) {
             $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-            
+
             // Normalize paths for comparison
             $routeName = trim($routeName, '/');
             $currentPath = trim($currentPath, '/');
-            
+
             // Exact match or starts with check
             return $currentPath === $routeName || strpos($currentPath, $routeName) === 0;
         }));
-        
+
         // ============================================================
         // RBAC FUNCTIONS (Role-Based Access Control)
         // ============================================================
-        
+
         // Check if user has permission
         $twig->addFunction(new \Twig\TwigFunction('can', function ($permission, $userId = null) use ($mysqli) {
             if ($userId === null) {
@@ -882,7 +904,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                 return false;
             }
         }));
-        
+
         // Check if user has any permission
         $twig->addFunction(new \Twig\TwigFunction('canAny', function ($permissions, $userId = null) use ($mysqli) {
             if ($userId === null) {
@@ -900,7 +922,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                 return false;
             }
         }));
-        
+
         // Check if user has role
         $twig->addFunction(new \Twig\TwigFunction('hasRole', function ($roleName, $userId = null) use ($mysqli) {
             if ($userId === null) {
@@ -918,7 +940,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                 return false;
             }
         }));
-        
+
         // Check if user has any of multiple roles
         $twig->addFunction(new \Twig\TwigFunction('hasAnyRole', function ($roleNames, $userId = null) use ($mysqli) {
             if ($userId === null) {
@@ -936,7 +958,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                 return false;
             }
         }));
-        
+
         // Check if user is super admin
         $twig->addFunction(new \Twig\TwigFunction('isSuperAdmin', function ($userId = null) use ($mysqli) {
             if ($userId === null) {
@@ -954,7 +976,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                 return false;
             }
         }));
-        
+
         // Get user roles
         $twig->addFunction(new \Twig\TwigFunction('getUserRoles', function ($userId = null) use ($mysqli) {
             if ($userId === null) {
@@ -972,7 +994,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                 return [];
             }
         }));
-        
+
         // Get user permissions
         $twig->addFunction(new \Twig\TwigFunction('getUserPermissions', function ($userId = null) use ($mysqli) {
             if ($userId === null) {
@@ -990,74 +1012,74 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                 return [];
             }
         }));
-        
+
         // Get configuration value
         $twig->addFunction(new \Twig\TwigFunction('config', function ($key, $default = null) use ($appSettings) {
             return $appSettings[$key] ?? $default;
         }));
-        
+
         // Get old input (for form repopulation)
         $twig->addFunction(new \Twig\TwigFunction('old', function ($key, $default = '') use ($session) {
             return $session['old_input'][$key] ?? $default;
         }));
-        
+
         // Get validation error
         $twig->addFunction(new \Twig\TwigFunction('error', function ($field) use ($session) {
             return $session['errors'][$field] ?? null;
         }));
-        
+
         // Check if field has error
         $twig->addFunction(new \Twig\TwigFunction('has_error', function ($field) use ($session) {
             return isset($session['errors'][$field]);
         }));
-        
+
         // Generate random string
         $twig->addFunction(new \Twig\TwigFunction('random_string', function ($length = 10) {
             return bin2hex(random_bytes($length / 2));
         }));
-        
+
         // Current URL (full URL with protocol, host, and query params)
         $twig->addFunction(new \Twig\TwigFunction('current_url', function () {
             // Build full URL with protocol and host
-            $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
-                       (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+            $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+                (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
             $protocol = $isHttps ? 'https' : 'http';
             $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
             $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
-            
+
             return $protocol . '://' . $host . $requestUri;
         }));
-        
+
         // Base URL function (consistent with global variable)
         // Returns base URL with optional path
         $twig->addFunction(new \Twig\TwigFunction('base_url', function ($path = '') {
             // Get HTTPS detection
-            $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
-                       (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+            $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+                (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
             $protocol = $isHttps ? 'https' : 'http';
             $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
             $baseUrl = $protocol . '://' . $host;
-            
+
             if (empty($path)) {
                 return $baseUrl . '/';
             }
-            
+
             return $baseUrl . '/' . ltrim($path, '/');
         }));
-        
+
         // URL function (alias for base_url - for backward compatibility)
         $twig->addFunction(new \Twig\TwigFunction('url', function ($path = '') {
             // Get HTTPS detection
-            $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
-                       (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+            $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+                (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
             $protocol = $isHttps ? 'https' : 'http';
             $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
             $baseUrl = $protocol . '://' . $host;
-            
+
             if (empty($path)) {
                 return $baseUrl . '/';
             }
-            
+
             return $baseUrl . '/' . ltrim($path, '/');
         }));
 
@@ -1070,19 +1092,19 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             echo '</pre>';
             die();
         }));
-        
+
         // Get avatar URL
         $twig->addFunction(new \Twig\TwigFunction('avatar', function ($user, $size = 80) {
             if (!empty($user['avatar'])) {
                 return '/uploads/avatars/' . $user['avatar'];
             }
-            
+
             // Gravatar fallback
             $email = $user['email'] ?? '';
             $hash = md5(strtolower(trim($email)));
             return "https://www.gravatar.com/avatar/{$hash}?s={$size}&d=mp";
         }));
-        
+
         // Status badge helper
         $twig->addFunction(new \Twig\TwigFunction('status_badge', function ($status) {
             $badges = [
@@ -1094,10 +1116,10 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                 'draft' => '<span class="badge bg-secondary">Draft</span>',
                 'published' => '<span class="badge bg-primary">Published</span>',
             ];
-            
+
             return $badges[strtolower($status)] ?? '<span class="badge bg-secondary">' . ucfirst($status) . '</span>';
         }, ['is_safe' => ['html']]));
-        
+
         // Include SVG icon
         $twig->addFunction(new \Twig\TwigFunction('icon', function ($name, $class = '') {
             $iconPath = $_SERVER['DOCUMENT_ROOT'] . "/assets/icons/{$name}.svg";
@@ -1133,36 +1155,36 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         // ============================================================
         // GLOBAL VARIABLES - URL & BASE CONFIGURATION
         // ============================================================
-        
+
         // 1. Determine base URL (protocol + host)
-        $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
-                   (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+        $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+            (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
         $protocol = $isHttps ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         $baseUrl = $protocol . '://' . $host;
-        
+
         // 2. Get current path (without query string)
         $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
         $currentPath = !empty($currentPath) ? rtrim($currentPath, '/') : '/';
-        
+
         // 3. Full current URL with query string
         $fullCurrentUrl = $baseUrl . ($_SERVER['REQUEST_URI'] ?? '/');
-        
+
         // 4. Canonical URL (without query params/fragments)
         $canonicalPath = strtok($_SERVER['REQUEST_URI'] ?? '/', '?#');
         $canonicalPath = !empty($canonicalPath) ? rtrim($canonicalPath, '/') : '/';
         $canonicalUrl = $baseUrl . $canonicalPath;
-        
+
         // Add base URL global (same as url for backward compatibility)
         $twig->addGlobal('url', $baseUrl . '/');
         $twig->addGlobal('base_url', $baseUrl . '/');
         $twig->addGlobal('site_url', $baseUrl . '/');
-        
+
         // Add request URL globals
         $twig->addGlobal('current_url', $fullCurrentUrl);
         $twig->addGlobal('current_path', $currentPath);
         $twig->addGlobal('canonical_url', $canonicalUrl);
-        
+
         // Add CSRF token
         if (session_status() === PHP_SESSION_NONE) {
             if (function_exists('secureSession')) {
@@ -1172,7 +1194,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             }
         }
         $twig->addGlobal('csrf_token', generateCsrfToken());
-        
+
         // Flash message - use centralized function if available
         if (function_exists('getFlashMessage')) {
             $twig->addGlobal('flash_message', getFlashMessage());
@@ -1185,9 +1207,10 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         $twig->addGlobal('auth_user', $user);
         $twig->addGlobal('currentUserId', $user['id'] ?? 0);
         $twig->addGlobal('is_logged_in', $user['is_authenticated']);
-        
+
         // App settings
         $twig->addGlobal('app_settings', $appSettings);
+        $twig->addGlobal('is_dev_env', brox_is_development_env());
         $publicNavItems = [];
         try {
             if ($settingsModel instanceof AppSettings) {
@@ -1210,18 +1233,17 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         $twig->addGlobal('app_name', $appSettings['app_name'] ?? 'Application');
         $twig->addGlobal('site_name', $appSettings['site_name'] ?? 'Application');
         $twig->addGlobal('app_version', $appSettings['app_version'] ?? '1.0.0');
-        
+
         // Request info
         $twig->addGlobal('current_year', date('Y'));
         $twig->addGlobal('request_method', $_SERVER['REQUEST_METHOD'] ?? 'GET');
-        $twig->addGlobal('is_ajax', !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-                                    strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+        $twig->addGlobal('is_ajax', !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
 
         return $twig;
-        
     } catch (Throwable $e) {
         error_log("CRITICAL: Twig initialization error - message: {$e->getMessage()}, " .
-                "file: {$e->getFile()}, line: {$e->getLine()}");
+            "file: {$e->getFile()}, line: {$e->getLine()}");
         throw $e;
     }
 }

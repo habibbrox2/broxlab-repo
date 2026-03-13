@@ -55,6 +55,7 @@
     <link rel="stylesheet" href="{{ asset('/assets/css/2-base.css') }}">
     <link rel="stylesheet" href="{{ asset('/assets/css/7-dark-mode.css') }}">
     <link rel="stylesheet" href="{{ asset('/assets/css/admin.css') }}">
+    <link rel="stylesheet" href="{{ asset('/ai/css/ai-style.css') }}">
 
     {# Icons #}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
@@ -197,11 +198,16 @@
   {% if auth_user.is_super_admin %}
       {% set settings_children = settings_children|merge([
           {'name': 'App Settings', 'url': '/admin/app-settings', 'key': 'app-settings'},
-          {'name': 'AI Settings', 'url': '/admin/ai-settings', 'key': 'ai-settings'},
+          {'name': 'AI SYSTEM', 'url': '/admin/ai-system', 'key': 'ai-settings'},
           {'name': 'Telegram Settings', 'url': '/admin/telegram-settings', 'key': 'telegram-settings'},
           {'name': 'Feature Flags', 'url': '/admin/feature-flags', 'key': 'feature-flags'},
           {'name': 'Device Control Logs', 'url': '/admin/device-control', 'key': 'device-control'}
       ]) %}
+      {% if is_dev_env %}
+          {% set settings_children = settings_children|merge([
+              {'name': 'Deploy Tools', 'url': '/admin/deploy-tools', 'key': 'deploy-tools'}
+          ]) %}
+      {% endif %}
   {% endif %}
 
   {% set menu_items = [
@@ -223,6 +229,7 @@
           {'name': 'Content Queue', 'url': '/admin/autocontent/queue', 'key': 'autocontent-queue'},
           {'name': 'Settings', 'url': '/admin/autocontent/settings', 'key': 'autocontent-settings'}
       ]},
+      {'name': 'AI Conversations', 'icon': 'bi-chat-dots', 'url': '/admin/ai-chats', 'key': 'ai-chats'},
       {'name': 'Services', 'icon': 'bi-award-fill', 'url': '/admin/services', 'key': 'services', 'children': [
           {'name': 'All Services', 'url': '/admin/services', 'key': 'all-services'},
           {'name': 'Create Service', 'url': '/admin/services/create', 'key': 'create-service'}
@@ -258,6 +265,12 @@
       {'name': 'Email Templates', 'icon': 'bi-file-earmark-text', 'url': '/admin/email-templates', 'key': 'email-templates'},
       {'name': 'Settings', 'icon': 'bi-gear', 'url': '/admin/account-settings', 'key': 'settings', 'children': settings_children}
   ] %}
+
+  {% if auth_user.is_super_admin %}
+    {% set menu_items = menu_items|merge([
+      {'name': 'AI Knowledge Base', 'icon': 'bi-book', 'url': '/admin/ai-knowledge', 'key': 'ai-knowledge'}
+    ]) %}
+  {% endif %}
 
   {% macro render_menu(menu_items, current_page, prefix) %}
     <div class="list-group list-group-flush rounded-0">

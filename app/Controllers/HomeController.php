@@ -17,14 +17,14 @@ $router->get('/', function () use ($twig, $homeModel) {
     $topServices = $homeModel->getTopServices(8);
 
     echo $twig->render('public/home.twig', [
-    'contents' => $data['contents'],
-    'top_posts' => $topPosts,
-    'top_services' => $topServices,
-    'total_pages' => $data['total_pages'],
-    'current_page' => $page,
-    'sort' => $sort,
-    'stats' => $stats,
-    'title' => 'Home'
+        'contents' => $data['contents'],
+        'top_posts' => $topPosts,
+        'top_services' => $topServices,
+        'total_pages' => $data['total_pages'],
+        'current_page' => $page,
+        'sort' => $sort,
+        'stats' => $stats,
+        'title' => 'Home'
     ]);
 });
 
@@ -71,9 +71,9 @@ $router->post('/contact', function () use ($mysqli, $twig) {
 
     if (!empty($errors)) {
         echo $twig->render('public/contact.twig', [
-        'title' => 'Contact',
-        'errors' => $errors,
-        'old' => $_POST
+            'title' => 'Contact',
+            'errors' => $errors,
+            'old' => $_POST
         ]);
         return;
     }
@@ -134,132 +134,23 @@ $router->post('/contact', function () use ($mysqli, $twig) {
                 $notificationTitle,
                 $notificationBody,
                 null,
-            ['action_url' => '/admin/contact', 'message_id' => $contactId],
-            ['push']
+                ['action_url' => '/admin/contact', 'message_id' => $contactId],
+                ['push']
             );
         }
-    }
-    else {
+    } else {
         logActivity("Contact Message Failed", "contact", 0, ['name' => $name, 'email' => $email], 'failure');
     }
 
     // Success message
     echo $twig->render('public/contact.twig', [
-    'title' => 'Contact',
-    'success' => 'Thank you for contacting us! We will get back to you soon.'
+        'title' => 'Contact',
+        'success' => 'Thank you for contacting us! We will get back to you soon.'
     ]);
 });
 
 
-// ==================== PUBLIC AI CHAT API ====================
-// API endpoint for public assistant AI chat (uses backend AI provider)
-// Accepts context parameter: 'public' or 'admin' to use appropriate system prompt
 
-// Returns a system prompt (and structured prompt set) for the given context.
-// It loads YAML/JSON prompts from system/prompts/, with fallback to DB settings.
-require_once __DIR__ . '/../Helpers/PromptLoader.php';
-
-function getSystemPromptForContext(string $context, mysqli $mysqli): string
-{
-    return PromptLoader::getSystemPrompt($context, $mysqli);
-}
-
-// API endpoint used by public assistant when topic is support
-$router->post('/api/public-chat/support', function () use ($mysqli) {
-    header('Content-Type: application/json');
-    $contactModel = new ContactModel($mysqli);
-    $name = trim($_POST['name'] ?? '');
-    $contact = trim($_POST['contact'] ?? '');
-    $message = trim($_POST['message'] ?? '');
-    $ip = $_SERVER['REMOTE_ADDR'] ?? null;
-
-    if (empty($message)) {
-        echo json_encode(['success' => false, 'error' => 'Message is required']);
-        return;
-    }
-
-    // if user authenticated and missing info, pull from session
-    if ((empty($name) || empty($contact)) && AuthManager::isUserAuthenticated()) {
-        $user = AuthManager::getCurrentUserArray();
-        if (empty($name)) {
-            $name = $user['full_name'] ?? $user['username'] ?? '';
-        }
-        if (empty($contact)) {
-            $contact = $user['email'] ?? '';
-        }
-    }
-
-    if (empty($name) || empty($contact)) {
-        echo json_encode(['success' => false, 'error' => 'Name or contact missing']);
-        return;
-    }
-
-    $subject = 'Support Request (Public Chat)';
-    $contactId = $contactModel->createMessage($name, $contact, $subject, $message, $ip);
-
-    if ($contactId) {
-        // log activity and notify admins similar to standard contact
-        logActivity("Contact Message Submitted", "contact", $contactId, ['name' => $name, 'email' => $contact, 'subject' => $subject], 'success');
-
-        // send acknowledgement to user if contact looks like email
-        $settingsModel = new AppSettings($mysqli);
-        $appSettings = $settingsModel->getSettings();
-        $emailTemplate = new EmailTemplate($mysqli);
-        if (filter_var($contact, FILTER_VALIDATE_EMAIL)) {
-            $userAckSubject = $emailTemplate->renderSubject('contact_acknowledgment', [
-                'SUBJECT' => $subject,
-                'APP_NAME' => 'BroxBhai'
-            ]);
-            $userAckBody = $emailTemplate->render('contact_acknowledgment', [
-                'USER_NAME' => $name,
-                'USER_EMAIL' => $contact,
-                'SUBJECT' => $subject,
-                'APP_NAME' => 'BroxBhai'
-            ]);
-            if (!empty(trim($userAckBody))) {
-                sendEmail($contact, $userAckSubject, $userAckBody, $name);
-            }
-        }
-        // send notification email to admin if configured
-        if (!empty($appSettings['contact_email'])) {
-            $adminSubject = $emailTemplate->renderSubject('admin_contact_notification', [
-                'SUBJECT' => $subject,
-                'APP_NAME' => 'BroxBhai'
-            ]);
-            $adminBody = $emailTemplate->render('admin_contact_notification', [
-                'FROM_NAME' => $name,
-                'FROM_EMAIL' => $contact,
-                'SUBJECT' => $subject,
-                'MESSAGE' => $message,
-                'IP_ADDRESS' => $ip,
-                'APP_NAME' => 'BroxBhai'
-            ]);
-            sendEmail($appSettings['contact_email'], $adminSubject, $adminBody);
-        }
-
-        // push notification to admins as well
-        $adminIds = $contactModel->getAdminUserIds();
-        if (!empty($adminIds)) {
-            require_once __DIR__ . '/../Helpers/FirebaseHelper.php';
-            $notificationTitle = "নতুন যোগাযোগ বার্তা";
-            $notificationBody = "$name (" . substr($contact, 0, 15) . "...) একটা বার্তা পাঠিয়েছেন: \"$subject\"";
-            sendNotiAdmin(
-                $mysqli,
-                $adminIds,
-                $notificationTitle,
-                $notificationBody,
-                null,
-            ['action_url' => '/admin/contact', 'message_id' => $contactId],
-            ['push']
-            );
-        }
-
-        echo json_encode(['success' => true, 'id' => $contactId]);
-    }
-    else {
-        echo json_encode(['success' => false, 'error' => 'Failed to save message']);
-    }
-});
 
 // ---------------- IMAGE UPLOAD ----------------
 $router->post('/upload', function () use ($mysqli) {
@@ -307,8 +198,7 @@ $router->post('/upload', function () use ($mysqli) {
         $baseName = '';
         if (!empty($_POST['permalink'])) {
             $baseName = sanitize_input($_POST['permalink']);
-        }
-        else {
+        } else {
             // Try to infer from referer if editing a post
             $referer = $_SERVER['HTTP_REFERER'] ?? '';
             if (preg_match('/\/admin\/posts\/edit\?id=(\d+)/', $referer, $m)) {
@@ -356,14 +246,13 @@ $router->post('/upload', function () use ($mysqli) {
         // For editor compatibility, return absolute URL in `file` key (fallback to relative `url`)
         $returnFileUrl = $fullUrl ?: $webUrl ?: ($result['url'] ?? null);
         echo json_encode([
-        'success' => true,
-        'file' => $returnFileUrl,
-        'url' => $webUrl,
-        'full_url' => $fullUrl,
-        'media_id' => $result['media_id'] ?? null
+            'success' => true,
+            'file' => $returnFileUrl,
+            'url' => $webUrl,
+            'full_url' => $fullUrl,
+            'media_id' => $result['media_id'] ?? null
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         http_response_code(500);
         logError('Upload route error: ' . $e->getMessage(), 'UPLOAD_ERROR');
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
@@ -376,8 +265,8 @@ $router->post('/upload', function () use ($mysqli) {
 $router->get('/advertise', function () use ($twig, $statisticsModel) {
     $stats = $statisticsModel->getStatistics();
     echo $twig->render('public/advertise.twig', [
-    'title' => 'Advertise With Us',
-    'stats' => $stats
+        'title' => 'Advertise With Us',
+        'stats' => $stats
     ]);
 });
 
@@ -404,9 +293,9 @@ $router->post('/advertise', function () use ($twig, $advertisementModel) {
 
     if (!empty($errors)) {
         echo $twig->render('public/advertise.twig', [
-        'title' => 'Advertise With Us',
-        'errors' => $errors,
-        'old' => $_POST
+            'title' => 'Advertise With Us',
+            'errors' => $errors,
+            'old' => $_POST
         ]);
         return;
     }
@@ -419,20 +308,19 @@ $router->post('/advertise', function () use ($twig, $advertisementModel) {
             "Advertisement Inquiry",
             "advertise",
             $inquiryId,
-        ['name' => $name, 'company' => $company],
+            ['name' => $name, 'company' => $company],
             'success'
         );
 
         echo $twig->render('public/advertise.twig', [
-        'title' => 'Advertise With Us',
-        'success' => 'Thank you! We will review your inquiry and contact you soon.'
+            'title' => 'Advertise With Us',
+            'success' => 'Thank you! We will review your inquiry and contact you soon.'
         ]);
-    }
-    else {
+    } else {
         echo $twig->render('public/advertise.twig', [
-        'title' => 'Advertise With Us',
-        'errors' => ['Failed to submit inquiry. Please try again later.'],
-        'old' => $_POST
+            'title' => 'Advertise With Us',
+            'errors' => ['Failed to submit inquiry. Please try again later.'],
+            'old' => $_POST
         ]);
     }
 });

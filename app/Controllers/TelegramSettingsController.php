@@ -39,7 +39,7 @@ class TelegramSettingsController
             ];
         }
 
-        echo $twig->render('admin/telegram_settings.twig', [
+        echo $twig->render('admin/settings/telegram.twig', [
             'title' => 'Telegram Bot Settings',
             'settings' => [
                 'bot_token' => $botToken,

@@ -6,7 +6,7 @@
 $router->get('/admin/log-activity', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
 
 
-    echo $twig->render('admin/activity.twig', [
+    echo $twig->render('admin/logs/activity.twig', [
         'title'        => 'Activity Logs',
         'header_title' => 'Activity Logs',
     ]);

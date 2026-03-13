@@ -48,6 +48,7 @@ HTACCESS;
             defined('UPLOADS_CONTENT_DIR') ? UPLOADS_CONTENT_DIR : __DIR__ . '/../public_html/uploads/content',
             defined('UPLOADS_MEDIA_DIR') ? UPLOADS_MEDIA_DIR : __DIR__ . '/../public_html/uploads/media',
             defined('UPLOADS_SERVICES_DIR') ? UPLOADS_SERVICES_DIR : __DIR__ . '/../public_html/uploads/services',
+            __DIR__ . '/../public_html/uploads/ai',
         ];
 
         foreach ($uploadDirs as $dir) {
@@ -176,6 +177,13 @@ return [
         'profiles' => [
             'subdirectory' => 'profiles',
             'max_size' => defined('UPLOAD_MAX_PROFILE_SIZE') ? UPLOAD_MAX_PROFILE_SIZE : (2 * 1024 * 1024),
+            'type' => 'image',
+            'preserve_name' => true,
+            'watermark' => false
+        ],
+        'ai_upload' => [
+            'subdirectory' => 'ai',
+            'max_size' => 10 * 1024 * 1024,
             'type' => 'image',
             'preserve_name' => true,
             'watermark' => false
