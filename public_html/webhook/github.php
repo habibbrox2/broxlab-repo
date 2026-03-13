@@ -395,8 +395,9 @@ try {
     }
 
     $secret = (string)$settings->getSettingValue(WebhookSettingsModel::KEY_WEBHOOK_SECRET, '');
+    // Require secret in production
     if ($secret === '') {
-        webhook_json(503, ['success' => false, 'message' => 'Webhook secret not configured']);
+        webhook_json(503, ['success' => false, 'message' => 'Webhook secret not configured. Go to Admin Panel → Deploy Tools → GitHub Webhook to configure.']);
     }
 
     $contentType = $_SERVER['CONTENT_TYPE'] ?? ($_SERVER['HTTP_CONTENT_TYPE'] ?? '');
@@ -424,7 +425,11 @@ try {
         webhook_json(400, ['success' => false, 'message' => 'Empty body']);
     }
 
-    $sigOk = $settings->verifySignature($payload, $signature, $secret);
+    $sigOk = true;
+    if ($secret !== '') {
+        $signature256 = 'sha256=' . hash_hmac('sha256', $payload, $secret);
+        $sigOk = hash_equals($signature256, $signature);
+    }
     if (!$sigOk) {
         webhook_json(401, ['success' => false, 'message' => 'Invalid signature']);
     }
