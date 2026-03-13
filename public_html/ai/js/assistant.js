@@ -402,7 +402,7 @@ if (!window.BroxAssistantLoaded) {
             const firstMsg = this.history[0]?.content || 'চ্যাট সেশন';
             entry.textContent = firstMsg.substring(0, 30) + '...';
             entry.onclick = () => {
-                alert('এই চ্যাটটি বর্তমানে সক্রিয় আছে।');
+                window.showAlert(this.t('no_history'), this.t('chat_session'), 'info');
             };
             this.nodes.history.appendChild(entry);
         }
@@ -534,7 +534,7 @@ if (!window.BroxAssistantLoaded) {
 
         toggleVoiceInput() {
             if (!this.recognition) {
-                alert(this.lang === 'bn' ? 'ভয়েস ইনপুট সমর্থিত নয়' : 'Voice input not supported');
+                window.showAlert(this.lang === 'bn' ? 'ভয়েস ইনপুট সমর্থিত নয়' : 'Voice input not supported', 'Voice Input', 'warning');
                 return;
             }
 
@@ -617,7 +617,7 @@ if (!window.BroxAssistantLoaded) {
 
             if (this.nodes.prechatBtns.next1) {
                 this.nodes.prechatBtns.next1.onclick = () => {
-                    if (!this.nodes.prechatInputs.name?.value.trim()) { alert(this.t('err_name')); return; }
+                    if (!this.nodes.prechatInputs.name?.value.trim()) { window.showAlert(this.t('err_name'), 'Validation Error', 'warning'); return; }
                     this.nodes.prechatSteps.name?.classList.add('brox-ai-hidden');
                     this.nodes.prechatSteps.contact?.classList.remove('brox-ai-hidden');
                     // Update labels when moving to contact step
@@ -631,11 +631,11 @@ if (!window.BroxAssistantLoaded) {
                     const mobile = this.nodes.prechatInputs.mobile?.value.trim();
 
                     if (email && !validateEmail(email)) {
-                        alert(this.t('err_email_invalid'));
+                        window.showAlert(this.t('err_email_invalid'), 'Validation Error', 'warning');
                         return;
                     }
                     if (mobile && !validateMobile(mobile)) {
-                        alert(this.t('err_mobile_invalid'));
+                        window.showAlert(this.t('err_mobile_invalid'), 'Validation Error', 'warning');
                         return;
                     }
 
@@ -674,7 +674,7 @@ if (!window.BroxAssistantLoaded) {
 
         startChat() {
             const name = this.nodes.prechatInputs.name?.value.trim();
-            if (!name) { alert(this.t('err_name')); return; }
+            if (!name) { window.showAlert(this.t('err_name'), 'Validation Error', 'warning'); return; }
             const email = this.nodes.prechatInputs.email?.value.trim() || '';
             const phone = this.nodes.prechatInputs.mobile?.value.trim() || '';
 
@@ -689,11 +689,11 @@ if (!window.BroxAssistantLoaded) {
 
             // Final validation
             if (email && !validateEmail(email)) {
-                alert(this.t('err_email_invalid'));
+                window.showAlert(this.t('err_email_invalid'), 'Validation Error', 'warning');
                 return;
             }
             if (phone && !validateMobile(phone)) {
-                alert(this.t('err_mobile_invalid'));
+                window.showAlert(this.t('err_mobile_invalid'), 'Validation Error', 'warning');
                 return;
             }
 
