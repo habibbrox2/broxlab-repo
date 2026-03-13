@@ -42,7 +42,9 @@
       <i class="bi bi-rocket-takeoff"></i>
       Deploy Tools
     </div>
-    <div class="admin-page-subtitle">Complete deployment solution with GitHub webhook, backup & rollback</div>
+    <div class="admin-page-subtitle">
+      <i class="bi bi-arrow-repeat"></i> Localhost <code>git push</code> → GitHub Webhook → <i class="bi bi-cloud-download"></i> Auto Deploy
+    </div>
   </div>
 
   <ul class="nav nav-tabs mb-4" id="deployTabs" role="tablist">
@@ -303,18 +305,29 @@
         </div>
 
         <div class="col-lg-6">
-          <div class="card border-0 shadow-sm guide-card mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+          <div class="card border-0 shadow-sm guide-card mb-4" style="background: linear-gradient(135deg, #1e3a5f 0%, #0d6efd 100%); color: white;">
             <div class="card-body">
-              <h5><i class="bi bi-book me-2"></i>Setup Guide</h5>
+              <h5><i class="bi bi-github me-2"></i>GitHub Setup Guide</h5>
               <hr style="border-color: rgba(255,255,255,0.3);">
               <ol>
-                <li><strong>Save settings</strong> above</li>
-                <li><strong>Copy Webhook URL</strong></li>
-                <li><strong>GitHub:</strong> Repo → Settings → Webhooks → Add</li>
-                <li><strong>Payload URL:</strong> <code>{{ webhook_url }}</code></li>
-                <li><strong>Secret:</strong> {{ webhook_settings.secret ?: '[generate one]' }}</li>
-                <li><strong>Events:</strong> Select "Pushes"</li>
+                <li><strong>Save settings</strong> above (enable webhook & generate secret)</li>
+                <li><strong>Copy Webhook URL</strong>: <code>{{ webhook_url }}</code></li>
+                <li><strong>GitHub:</strong> Your Repo → Settings → Webhooks → Add webhook</li>
+                <li><strong>Configure:</strong>
+                  <ul>
+                    <li>Payload URL: <code>{{ webhook_url }}</code></li>
+                    <li>Content type: <code>application/json</code></li>
+                    <li>Secret: <code>{{ webhook_settings.secret ?: '[generate one above]' }}</code></li>
+                    <li>Events: Select <code>Just the push event</code></li>
+                  </ul>
+                </li>
+                <li><strong>Save</strong> - Click Add webhook</li>
+                <li><strong>Test</strong> - Push to '{{ webhook_settings.branch ?: 'main' }}' branch</li>
               </ol>
+              <div class="alert alert-info mt-3" style="background: rgba(255,255,255,0.15); border: none;">
+                <i class="bi bi-lightbulb me-2"></i>
+                <strong>How it works:</strong> When you push to GitHub, it sends a webhook to your server → Server runs <code>git pull</code> → Code updates automatically!
+              </div>
             </div>
           </div>
 
