@@ -349,7 +349,7 @@ function git_get_status(): array
         foreach ($lines as $line) {
             // First line contains branch info
             if (strpos($line, '##') === 0) {
-                preg_match('### (.+?)(?:\.\.\.|$)#', $line, $matches);
+                preg_match('/## (.+?)(?:\.\.\.|$)/', $line, $matches);
                 $branch = $matches[1] ?? 'unknown';
                 continue;
             }

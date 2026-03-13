@@ -241,7 +241,7 @@
                 <div class="mb-3">
                   <label class="form-label">Webhook Secret</label>
                   <div class="input-group">
-                    <input type="password" class="form-control" name="webhook_secret" value="{{ webhook_settings.secret }}" placeholder="Enter secret">
+                    <input type="text" class="form-control" name="webhook_secret" value="{{ webhook_settings.secret }}" placeholder="Enter secret">
                     <button class="btn btn-outline-secondary" type="button" onclick="toggleSecret()"><i class="bi bi-eye" id="eyeIcon"></i></button>
                   </div>
                 </div>
@@ -289,7 +289,7 @@
                 <div class="mb-3">
                   <label class="form-label">Admin API Key (for cPanel webhook)</label>
                   <div class="input-group">
-                    <input type="password" class="form-control" name="admin_api_key" value="{{ webhook_settings.admin_api_key }}" placeholder="Enter a strong random key">
+                    <input type="text" class="form-control" name="admin_api_key" value="{{ webhook_settings.admin_api_key }}" placeholder="Enter a strong random key">
                     <button class="btn btn-outline-secondary" type="button" onclick="toggleAdminApiKey()"><i class="bi bi-eye" id="adminApiEyeIcon"></i></button>
                   </div>
                   <small class="text-muted">Use this key for remote management API</small>
