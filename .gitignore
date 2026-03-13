@@ -27,6 +27,7 @@
 
 # Build artifacts
 /build/
+**/dist/
 /\.deploy/
 
 # Database dumps/backups
