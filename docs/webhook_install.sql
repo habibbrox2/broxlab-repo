@@ -54,8 +54,24 @@ IF NOT EXISTS `deploy_webhook_logs`
   `user_agent` VARCHAR
 (255) DEFAULT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `uniq_delivery_id` (`delivery_id`),
   INDEX `idx_created_at`
 (`created_at`),
   INDEX `idx_delivery_id`
 (`delivery_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Create versions table (backup / rollback history)
+CREATE TABLE
+IF NOT EXISTS `deploy_versions`
+(
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `version_tag` VARCHAR(100) NOT NULL,
+  `commit_hash` VARCHAR(100) DEFAULT NULL,
+  `description` TEXT,
+  `backup_path` VARCHAR(500) DEFAULT NULL,
+  `db_backup_path` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `uniq_version_tag` (`version_tag`),
+  INDEX `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

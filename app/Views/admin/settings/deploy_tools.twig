@@ -785,14 +785,24 @@ async function performRollback() {
   btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Rolling back...';
   
   try {
-    const response = await fetch(`/webhook/github.php?action=rollback&version=${version}`);
+    const formData = new FormData();
+    formData.append('csrf_token', '{{ csrf_token }}');
+    formData.append('version', version);
+
+    const response = await fetch('/admin/deploy-tools/webhook/remote-rollback', {
+      method: 'POST',
+      body: formData
+    });
     const data = await response.json();
     
-    if (data.success) {
+    const ok = data.success && data.data && data.data.success;
+
+    if (ok) {
       alert('Rollback successful!');
       loadVersions();
     } else {
-      alert('Rollback failed: ' + data.message);
+      const msg = (data.data && data.data.message) ? data.data.message : (data.message || 'Rollback failed');
+      alert('Rollback failed: ' + msg);
     }
   } catch (err) {
     alert('Error: ' + err.message);

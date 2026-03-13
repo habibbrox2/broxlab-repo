@@ -94,13 +94,13 @@ This endpoint:
 ### Webhook Endpoint
 
 ```
-POST /webhook/github
+POST /webhook/github.php
 ```
 
 **Headers:**
 - `X-GitHub-Event`: The type of event (push, release, workflow_run)
 - `X-GitHub-Delivery`: Unique delivery ID
-- `X-Hub-Signature-256`: HMAC-SHA256 signature (if secret configured)
+- `X-Hub-Signature-256`: HMAC-SHA256 signature (**required**)
 
 **Request Body:** GitHub webhook payload
 
@@ -124,11 +124,17 @@ POST /webhook/github
 
 ## Environment Variables
 
-No additional environment variables are required. The webhook system uses the existing database settings storage.
+Production defaults are intentionally strict:
+
+- `WEBHOOK_ADMIN_ACTIONS_ENABLED=0` (admin actions disabled by default)
+- `WEBHOOK_AUTO_DEPLOY_ALLOWED=0` (server-side auto-deploy disabled by default)
+
+The webhook system otherwise uses the existing database settings storage.
 
 ## Notes
 
 - The webhook endpoint is public (no authentication required) but secured by signature verification
+- Standalone webhook admin actions (`action=status|versions|rollback`) require `X-Api-Key` and are disabled unless `WEBHOOK_ADMIN_ACTIONS_ENABLED=1`
 - All deployments are queued and executed asynchronously
 - You can monitor deployment progress in the Deploy Tools dashboard
 - Webhook deliveries are logged for auditing purposes

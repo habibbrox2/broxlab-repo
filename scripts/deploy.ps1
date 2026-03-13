@@ -47,8 +47,13 @@ if ($envMap.ContainsKey("DEPLOY_SSH_PORT") -and $envMap["DEPLOY_SSH_PORT"] -ne "
 else {
     $sshPort = "22"
 }
+$sshKeyPath = $envMap["DEPLOY_SSH_KEY_PATH"]
 $sshKey = $envMap["DEPLOY_SSH_KEY"]
 $remotePath = Require-Value $envMap "DEPLOY_REMOTE_PATH"
+$keepOld = 5
+if ($envMap.ContainsKey("DEPLOY_KEEP_OLD_RELEASES") -and $envMap["DEPLOY_KEEP_OLD_RELEASES"] -ne "") {
+    $keepOld = [Math]::Max(1, [Math]::Min(50, [int]$envMap["DEPLOY_KEEP_OLD_RELEASES"]))
+}
 
 $deployDir = Join-Path $repoRoot ".deploy"
 $stageDir = Join-Path $deployDir "stage"
@@ -124,20 +129,26 @@ $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $remoteNew = "${remotePath}__new"
 $remoteOld = "${remotePath}__old_$timestamp"
 
-$scpArgs = @()
-if ($sshKey) { 
-    # Write SSH key to temporary file
-    $keyFile = [System.IO.Path]::GetTempFileName()
-    Set-Content -Path $keyFile -Value $sshKey -NoNewline
-    # Set proper permissions for the key file (Windows)
-    $acl = Get-Acl $keyFile
+$keyFileToUse = $null
+if ($sshKeyPath) {
+    if (!(Test-Path -LiteralPath $sshKeyPath)) {
+        throw "DEPLOY_SSH_KEY_PATH file not found: $sshKeyPath"
+    }
+    $keyFileToUse = $sshKeyPath
+} elseif ($sshKey) {
+    # Write SSH key contents to temporary file (legacy)
+    $keyFileToUse = [System.IO.Path]::GetTempFileName()
+    Set-Content -Path $keyFileToUse -Value $sshKey -NoNewline
+    $acl = Get-Acl $keyFileToUse
     $acl.SetAccessRuleProtection($true, $false)
     $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
     $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($currentUser, "FullControl", "Allow")
     $acl.SetAccessRule($rule)
-    Set-Acl -Path $keyFile -AclObject $acl
-    $scpArgs += "-i"; $scpArgs += $keyFile
+    Set-Acl -Path $keyFileToUse -AclObject $acl
 }
+
+$scpArgs = @()
+if ($keyFileToUse) { $scpArgs += "-i"; $scpArgs += $keyFileToUse }
 if ($sshPort) { $scpArgs += "-P"; $scpArgs += $sshPort }
 $scpArgs += $zipPath
 $scpDest = "${sshUser}@${sshHost}:${remoteZip}"
@@ -146,23 +157,8 @@ $scpArgs += $scpDest
 Write-Host "Uploading archive..."
 & scp @scpArgs
 
-# Clean up temp key file
-if ($sshKey) { Remove-Item $keyFile -Force -ErrorAction SilentlyContinue }
-
 $sshArgs = @()
-if ($sshKey) { 
-    # Write SSH key to temporary file
-    $keyFile = [System.IO.Path]::GetTempFileName()
-    Set-Content -Path $keyFile -Value $sshKey -NoNewline
-    # Set proper permissions for the key file (Windows)
-    $acl = Get-Acl $keyFile
-    $acl.SetAccessRuleProtection($true, $false)
-    $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($currentUser, "FullControl", "Allow")
-    $acl.SetAccessRule($rule)
-    Set-Acl -Path $keyFile -AclObject $acl
-    $sshArgs += "-i"; $sshArgs += $keyFile
-}
+if ($keyFileToUse) { $sshArgs += "-i"; $sshArgs += $keyFileToUse }
 if ($sshPort) { $sshArgs += "-p"; $sshArgs += $sshPort }
 $sshArgs += "$sshUser@$sshHost"
 
@@ -176,9 +172,27 @@ if [ -d "$remotePath" ]; then
   mv "$remotePath" "$remoteOld"
 fi
 mv "$remoteNew" "$remotePath"
+
+# Ensure required runtime directories exist (no secrets are deployed)
+mkdir -p "$remotePath/storage/logs" "$remotePath/storage/cache" "$remotePath/storage/tmp" || true
+chmod -R 775 "$remotePath/storage" 2>/dev/null || true
+
+# Retention: keep only last $keepOld previous releases
+i=0
+for d in \$(ls -1dt "${remotePath}__old_"* 2>/dev/null); do
+  i=\$((i+1))
+  if [ "\$i" -le "$keepOld" ]; then
+    continue
+  fi
+  rm -rf "\$d"
+done
 "@
 
 Write-Host "Deploying on server..."
 & ssh @sshArgs $remoteCmd
 
 Write-Host "Deploy completed."
+
+if ($sshKey -and $keyFileToUse -and ($keyFileToUse -ne $sshKeyPath)) {
+    Remove-Item $keyFileToUse -Force -ErrorAction SilentlyContinue
+}
