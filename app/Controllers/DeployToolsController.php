@@ -10,6 +10,7 @@ $dotenv->safeLoad();
 
 require_once __DIR__ . '/../Models/DeployJobModel.php';
 require_once __DIR__ . '/../Models/WebhookSettingsModel.php';
+require_once __DIR__ . '/../../Config/Constants.php';
 require_once __DIR__ . '/../Helpers/ErrorLogging.php';
 
 // ============================================================================

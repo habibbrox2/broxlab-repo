@@ -75,6 +75,9 @@ public_html/backups/
 # Webhook configurations (can contain sensitive data)
 public_html/webhook/config.php
 public_html/webhook/settings.php
+public_html/webhook/*.php
+public_html/webhook/*.html
+public_html/webhook/*.md
 
 # ===========================================
 # Scripts folder - Keep core scripts, ignore generated

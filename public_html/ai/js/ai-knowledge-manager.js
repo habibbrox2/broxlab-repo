@@ -101,6 +101,19 @@
     async function fetchList() {
         try {
             var res = await fetch(apiList + '?limit=100', { credentials: 'same-origin' });
+            if (!res.ok) {
+                // If not OK, check if it's a redirect (login required)
+                if (res.status === 401 || res.status === 403 || res.redirected) {
+                    console.warn('Knowledge base API requires authentication');
+                    showAlert('Please log in to access the knowledge base', 'warning');
+                    return;
+                }
+                throw new Error('HTTP ' + res.status);
+            }
+            var contentType = res.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Not JSON response');
+            }
             var data = await res.json();
             allItems = data.items || [];
             filterItems();
@@ -111,16 +124,25 @@
     }
 
     window.kbEdit = async function (id) {
-        var res = await fetch(apiList + '/' + id, { credentials: 'same-origin' });
-        var data = await res.json();
-        if (!data.success) { showAlert('Failed to load item', 'danger'); return; }
-        var it = data.item;
-        document.getElementById('kb_id').value = it.id;
-        document.getElementById('kb_title').value = it.title || '';
-        document.getElementById('kb_content').value = it.content || '';
-        document.getElementById('kb_source_type').value = it.source_type || 'text';
-        var modal = new bootstrap.Modal(document.getElementById('kbModal'));
-        modal.show();
+        try {
+            var res = await fetch(apiList + '/' + id, { credentials: 'same-origin' });
+            if (!res.ok) {
+                showAlert('Failed to load item', 'danger');
+                return;
+            }
+            var data = await res.json();
+            if (!data.success) { showAlert('Failed to load item', 'danger'); return; }
+            var it = data.item;
+            document.getElementById('kb_id').value = it.id;
+            document.getElementById('kb_title').value = it.title || '';
+            document.getElementById('kb_content').value = it.content || '';
+            document.getElementById('kb_source_type').value = it.source_type || 'text';
+            var modal = new bootstrap.Modal(document.getElementById('kbModal'));
+            modal.show();
+        } catch (e) {
+            console.error('Failed to load item:', e);
+            showAlert('Failed to load item', 'danger');
+        }
     };
 
     window.kbDelete = async function (id) {
@@ -155,16 +177,25 @@
             source_type: document.getElementById('kb_source_type').value,
             csrf_token: document.querySelector('input[name=csrf_token]').value
         };
-        var res = await fetch(apiList, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), credentials: 'same-origin' });
-        var data = await res.json();
-        if (data.success) {
-            showAlert('Knowledge slice saved successfully');
-            var modalEl = document.getElementById('kbModal');
-            var modal = bootstrap.Modal.getInstance(modalEl);
-            if (modal) modal.hide();
-            fetchList();
-        } else {
-            showAlert('Save failed: ' + (data.error || 'Unknown error'), 'danger');
+        try {
+            var res = await fetch(apiList, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), credentials: 'same-origin' });
+            if (!res.ok) {
+                showAlert('Save failed: HTTP error ' + res.status, 'danger');
+                return;
+            }
+            var data = await res.json();
+            if (data.success) {
+                showAlert('Knowledge slice saved successfully');
+                var modalEl = document.getElementById('kbModal');
+                var modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+                fetchList();
+            } else {
+                showAlert('Save failed: ' + (data.error || 'Unknown error'), 'danger');
+            }
+        } catch (e) {
+            console.error('Save failed:', e);
+            showAlert('Save failed: ' + (e.message || 'Network error'), 'danger');
         }
     }
 

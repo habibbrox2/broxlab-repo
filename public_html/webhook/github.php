@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
 
+require_once __DIR__ . '/../../Config/Constants.php';
 require_once __DIR__ . '/../../app/Helpers/ErrorLogging.php';
 if (function_exists('initializeErrorLogging')) {
     initializeErrorLogging();
@@ -561,4 +562,3 @@ try {
 } catch (Throwable $e) {
     webhook_json(500, ['success' => false, 'message' => 'Server error']);
 }
-
