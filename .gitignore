@@ -33,7 +33,7 @@
 # Database dumps/backups
 /Database/
 /*.sql
-db.sql
+
 
 # Secrets / service configs
 /Config/broxlab-firebase.json
@@ -78,7 +78,6 @@ public_html/backups/
 public_html/webhook/deploy_config.php
 public_html/webhook/deploy.php
 public_html/webhook/deploy.log
-version.json
 migrations/
 # ===========================================
 # Scripts folder - Keep core scripts, ignore generated

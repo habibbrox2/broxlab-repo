@@ -1115,6 +1115,52 @@ body {
     align-items: center;
 }
 
+/* --- Microphone Button --- */
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-mic-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--brox-ai-transition);
+    flex-shrink: 0;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-mic-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-mic-btn.recording {
+    background: var(--brox-ai-danger);
+    color: white;
+    animation: brox-ai-mic-pulse 1s infinite;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-mic-btn.recording:hover {
+    background: var(--brox-ai-danger);
+    color: white;
+}
+
+@keyframes brox-ai-mic-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
 :where(#adminAiShell, #publicAssistantChat) .brox-ai-action-btn {
     width: 36px;
     height: 36px;
