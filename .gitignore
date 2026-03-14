@@ -72,12 +72,20 @@ public_html/backups/
 # Deploy worker logs
 /deploy_worker*.log
 
-# Webhook configurations (keep core webhook files in repo)
-!public_html/webhook/github.php
-!public_html/webhook/*.json
-public_html/webhook/deploy_config.php
-public_html/webhook/deploy.php
-public_html/webhook/deploy.log
+# ===========================================
+# Webhook Deployment Files
+# ===========================================
+
+# Core webhook files (TRACKED - include in git)
+!public_html/webhook/github.php      # Advanced webhook (database-based)
+!public_html/webhook/deploy.php       # Simple webhook (config-based)
+!public_html/webhook/*.json           # Webhook settings
+
+# Sensitive files (IGNORED - DO NOT commit)
+public_html/webhook/deploy_config.php # Contains DB passwords, secrets
+public_html/webhook/deploy.log        # Deployment logs
+
+# Migration files
 migrations/
 # ===========================================
 # Scripts folder - Keep core scripts, ignore generated
