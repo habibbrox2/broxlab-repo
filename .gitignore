@@ -82,7 +82,7 @@ public_html/backups/
 !public_html/webhook/*.json           # Webhook settings
 
 # Sensitive files (IGNORED - DO NOT commit)
-public_html/webhook/deploy_config.php # Contains DB passwords, secrets
+!public_html/webhook/deploy_config.php # Contains DB passwords, secrets
 public_html/webhook/deploy.log        # Deployment logs
 
 # Migration files
