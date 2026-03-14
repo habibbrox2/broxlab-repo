@@ -1,6 +1,13 @@
 <?php
 // এই ফাইলটি Cpanel Webhosting এর জন্য তৈরি করা হয়েছে।
-$config = require __DIR__ . '/deploy_config.php';
+$configFile = __DIR__ . '/deploy_config.php';
+
+if (!file_exists($configFile)) {
+    http_response_code(404);
+    die('Deploy config not found. Please upload deploy_config.php to webhook folder.');
+}
+
+$config = require $configFile;
 
 
 
