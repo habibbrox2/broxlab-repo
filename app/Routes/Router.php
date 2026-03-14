@@ -1,6 +1,10 @@
 <?php
 // app/Routes/Router.php
 
+<<<<<<< HEAD
+=======
+require_once __DIR__ . '/../../Config/Constants.php';
+>>>>>>> temp_branch
 require_once __DIR__ . '/../Helpers/ErrorLogging.php';
 
 class Router
@@ -14,6 +18,7 @@ class Router
 
     // ================== HTTP METHOD HELPERS ==================
 
+<<<<<<< HEAD
     public function get($pattern, $optionsOrCallback, $maybeCallback = null) {
         return $this->addRoute('GET', $pattern, $optionsOrCallback, $maybeCallback);
     }
@@ -40,12 +45,52 @@ class Router
 
     public function any($pattern, $optionsOrCallback, $maybeCallback = null) {
         foreach (['GET','POST','PUT','PATCH','DELETE','OPTIONS'] as $method) {
+=======
+    public function get($pattern, $optionsOrCallback, $maybeCallback = null)
+    {
+        return $this->addRoute('GET', $pattern, $optionsOrCallback, $maybeCallback);
+    }
+
+    public function post($pattern, $optionsOrCallback, $maybeCallback = null)
+    {
+        return $this->addRoute('POST', $pattern, $optionsOrCallback, $maybeCallback);
+    }
+
+    public function put($pattern, $optionsOrCallback, $maybeCallback = null)
+    {
+        return $this->addRoute('PUT', $pattern, $optionsOrCallback, $maybeCallback);
+    }
+
+    public function patch($pattern, $optionsOrCallback, $maybeCallback = null)
+    {
+        return $this->addRoute('PATCH', $pattern, $optionsOrCallback, $maybeCallback);
+    }
+
+    public function delete($pattern, $optionsOrCallback, $maybeCallback = null)
+    {
+        return $this->addRoute('DELETE', $pattern, $optionsOrCallback, $maybeCallback);
+    }
+
+    public function options($pattern, $optionsOrCallback, $maybeCallback = null)
+    {
+        return $this->addRoute('OPTIONS', $pattern, $optionsOrCallback, $maybeCallback);
+    }
+
+    public function any($pattern, $optionsOrCallback, $maybeCallback = null)
+    {
+        foreach (['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] as $method) {
+>>>>>>> temp_branch
             $this->addRoute($method, $pattern, $optionsOrCallback, $maybeCallback);
         }
         return $this;
     }
 
+<<<<<<< HEAD
     public function match(array $methods, $pattern, $optionsOrCallback, $maybeCallback = null) {
+=======
+    public function match(array $methods, $pattern, $optionsOrCallback, $maybeCallback = null)
+    {
+>>>>>>> temp_branch
         foreach ($methods as $method) {
             $this->addRoute(strtoupper($method), $pattern, $optionsOrCallback, $maybeCallback);
         }
@@ -178,7 +223,11 @@ class Router
                 array_shift($matches);
 
                 foreach ($route['middleware'] as $mw) {
+<<<<<<< HEAD
                     if (!run_middleware($mw, compact('method','uri'))) {
+=======
+                    if (!run_middleware($mw, compact('method', 'uri'))) {
+>>>>>>> temp_branch
                         logMiddlewareReject(
                             $mw,
                             'access_denied',

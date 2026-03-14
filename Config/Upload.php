@@ -48,6 +48,10 @@ HTACCESS;
             defined('UPLOADS_CONTENT_DIR') ? UPLOADS_CONTENT_DIR : __DIR__ . '/../public_html/uploads/content',
             defined('UPLOADS_MEDIA_DIR') ? UPLOADS_MEDIA_DIR : __DIR__ . '/../public_html/uploads/media',
             defined('UPLOADS_SERVICES_DIR') ? UPLOADS_SERVICES_DIR : __DIR__ . '/../public_html/uploads/services',
+<<<<<<< HEAD
+=======
+            __DIR__ . '/../public_html/uploads/ai',
+>>>>>>> temp_branch
         ];
 
         foreach ($uploadDirs as $dir) {
@@ -179,6 +183,16 @@ return [
             'type' => 'image',
             'preserve_name' => true,
             'watermark' => false
+<<<<<<< HEAD
+=======
+        ],
+        'ai_upload' => [
+            'subdirectory' => 'ai',
+            'max_size' => 10 * 1024 * 1024,
+            'type' => 'image',
+            'preserve_name' => true,
+            'watermark' => false
+>>>>>>> temp_branch
         ]
     ]
 ];

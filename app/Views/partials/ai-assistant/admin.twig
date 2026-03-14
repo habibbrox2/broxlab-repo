@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {% set assistant_include_manage_chats = assistant_include_manage_chats|default(false) %}
 <div id="adminAssistantWrapper" class="admin-assistant-wrapper bb-assistant-admin">
     <div class="assistant-console-stack" aria-label="Assistant Console">
@@ -685,3 +686,313 @@
     })();
 </script>
 <script type="module" src="{{ asset('/assets/ai-assistant/bootstrap/admin-assistant.js') }}"></script>
+=======
+{# 
+    BroxBhai AI Admin Copilot - Premium 2026 Redesign
+    Features: CSRF refresh, input validation, file attachment, mobile responsive,
+    typing indicators, auto-save feedback, enhanced history management
+    
+    IMPORTANT: Uses unique 'brox-ai-' prefix for all classes to avoid conflicts
+    with other libraries/bundles
+#}
+
+{# Hidden file input for attachments #}
+<input type="file" id="adminAiFileInput" class="brox-ai-input-file" accept="image/*,.pdf,.txt,.doc,.docx" multiple>
+
+{# Main Copilot Sidebar #}
+<div id="adminAiShell" class="brox-ai-copilot-sidebar brox-ai-hidden" role="dialog" aria-labelledby="adminAiTitle" aria-modal="true">
+
+    {# Sidebar (Chat History with Tabs) #}
+    <div id="adminAiSidebar" class="brox-ai-sidebar brox-ai-collapsed">
+        <div class="brox-ai-sidebar-header">
+            <div class="brox-ai-sidebar-header-content">
+                <span>Copilot</span>
+                <button id="adminAiSidebarClose" class="brox-ai-icon-btn-sm" aria-label="Close sidebar"><i class="bi bi-x-lg"></i></button>
+            </div>
+        </div>
+
+        {# Tabs Navigation #}
+        <div class="brox-ai-tabs">
+            <div class="brox-ai-tabs-nav">
+                <button class="brox-ai-tabs-nav-item brox-ai-tabs-nav-item-active" data-tab="brox-ai-history-tab" aria-selected="true">
+                    <i class="bi bi-clock-history"></i> History
+                </button>
+                <button class="brox-ai-tabs-nav-item" data-tab="brox-ai-settings-tab" aria-selected="false">
+                    <i class="bi bi-gear"></i> Settings
+                </button>
+            </div>
+
+            {# History Tab Panel #}
+            <div class="brox-ai-tabs-content">
+                <div id="brox-ai-history-tab" class="brox-ai-tabs-panel brox-ai-tabs-panel-active" role="tabpanel">
+                    <div id="adminAiHistory" class="brox-ai-history-list"></div>
+                    <div class="brox-ai-history-empty">
+                        <i class="bi bi-inbox"></i>
+                        <p>No history yet</p>
+                    </div>
+                </div>
+
+                {# Settings Tab Panel #}
+                <div id="brox-ai-settings-tab" class="brox-ai-tabs-panel" role="tabpanel">
+                    <div class="brox-ai-settings-content">
+                        <div class="brox-ai-setting-item">
+                            <label class="brox-ai-setting-label">Clear History</label>
+                            <button id="adminAiClearHistory" class="brox-ai-btn-clear" title="Clear all history">
+                                <i class="bi bi-trash3"></i> Clear
+                            </button>
+                        </div>
+                        <div class="brox-ai-setting-item">
+                            <label class="brox-ai-setting-label">Auto-Save</label>
+                            <button class="brox-ai-toggle-switch" id="adminAiAutoSaveToggle" title="Toggle auto-save">
+                                <span class="brox-ai-toggle-slider"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="brox-ai-chat-main">
+        {# Header: Context Aware with auto-save indicator #}
+        <div class="brox-ai-header admin-theme">
+            <div class="brox-ai-header-info">
+                <h3 class="brox-ai-header-title" id="adminAiTitle">
+                    <i class="bi bi-stars"></i> Copilot
+                </h3>
+                <div class="brox-ai-header-meta">
+                    <span class="brox-ai-context-badge" id="adminAiContextBadge">
+                        <i class="bi bi-folder2"></i> <span id="adminAiContextModule">Global</span>
+                    </span>
+                    <span class="brox-ai-save-indicator" id="adminAiSaveIndicator">
+                        <i class="bi bi-check-circle-fill"></i> Saved
+                    </span>
+                    <div class="brox-ai-model-status" id="adminAiModelStatus">
+                        <span class="brox-ai-status-indicator" id="adminAiModelStatusIndicator" title="Model status"></span>
+                        <span class="brox-ai-model-name" id="adminAiCurrentModel">Loading...</span>
+                    </div>
+                    <div class="brox-ai-header-status" id="adminAiStatusText">Ready</div>
+                </div>
+            </div>
+            <div class="brox-ai-header-actions">
+                <button id="adminAiHistoryToggle" class="brox-ai-icon-btn" title="Chat history" aria-label="Chat history">
+                    <i class="bi bi-clock-history"></i>
+                </button>
+                <button id="adminAiMinimize" class="brox-ai-icon-btn" title="Minimize" aria-label="Minimize">
+                    <i class="bi bi-dash-lg"></i>
+                </button>
+                <button id="adminAiClose" class="brox-ai-icon-btn brox-ai-close-btn" title="Close Sidebar" aria-label="Close">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        {# Body: Chat Messages & Artifacts #}
+        <div id="adminAiBody" class="brox-ai-body custom-scrollbar brox-ai-scrollbar" role="log" aria-live="polite">
+            {# Welcome message #}
+            <div class="brox-ai-welcome" id="adminAiWelcome">
+                <div class="brox-ai-welcome-icon">
+                    <i class="bi bi-stars"></i>
+                </div>
+                <h4>Welcome to Admin Copilot</h4>
+                <p>Your AI assistant for administrative tasks. Try these commands:</p>
+                <div class="brox-ai-welcome-commands">
+                    <button class="brox-ai-cmd-chip" data-cmd="/summarize">
+                        <i class="bi bi-body-text"></i> /summarize
+                    </button>
+                    <button class="brox-ai-cmd-chip" data-cmd="/analyze-logs">
+                        <i class="bi bi-journal-text"></i> /analyze-logs
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    {# Typing Indicator #}
+    <div class="brox-ai-typing-indicator brox-ai-hidden" id="adminAiTypingIndicator">
+        <div class="brox-ai-typing-avatar">
+            <i class="bi bi-stars"></i>
+        </div>
+        <div class="brox-ai-typing-content">
+            <div class="brox-ai-typing-dots">
+                <span></span><span></span><span></span>
+            </div>
+            <span class="brox-ai-typing-text">Copilot is thinking...</span>
+        </div>
+    </div>
+
+    {# Slash Command Menu #}
+    <div id="adminAiSlashMenu" class="brox-ai-slash-menu brox-ai-hidden" role="menu">
+        <div class="brox-ai-slash-header">
+            <span>Commands</span>
+            <button class="brox-ai-slash-close" aria-label="Close menu">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
+        <ul class="brox-ai-slash-list">
+            <li class="brox-ai-slash-item" data-cmd="/summarize" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-body-text"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/summarize</strong>
+                    <small>Summarize current page data</small>
+                </div>
+            </li>
+            <li class="brox-ai-slash-item" data-cmd="/analyze-logs" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-journal-text"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/analyze-logs</strong>
+                    <small>Analyze system error logs</small>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    {# Attachment Preview #}
+    <div class="brox-ai-attachment-preview brox-ai-hidden" id="adminAiAttachmentPreview">
+        <div class="brox-ai-attachment-info">
+            <i class="bi bi-paperclip"></i>
+            <div class="brox-ai-attachment-thumb" id="adminAiAttachmentThumb"></div>
+            <span class="brox-ai-attachment-name" id="adminAiFileName">file.pdf</span>
+            <span class="brox-ai-attachment-size" id="adminAiFileSize">0 KB</span>
+        </div>
+        <div class="brox-ai-attachment-progress brox-ai-hidden" id="adminAiAttachmentProgress">
+            <span class="brox-ai-attachment-progress-bar" id="adminAiAttachmentProgressBar"></span>
+        </div>
+        <button class="brox-ai-attachment-remove" id="adminAiRemoveAttachment" aria-label="Remove attachment">
+            <i class="bi bi-x"></i>
+        </button>
+    </div>
+
+    {# Footer: Input #}
+    <div id="adminAiFooter" class="brox-ai-footer">
+        {# Input Area #}
+        <div class="brox-ai-input-wrapper">
+            <button id="adminAiAttach" class="brox-ai-action-btn brox-ai-action-btn-left" title="Attach file" aria-label="Attach file">
+                <i class="bi bi-paperclip"></i>
+            </button>
+            <div class="brox-ai-input-container">
+                <textarea 
+                    id="adminAiInput" 
+                    placeholder="Ask Copilot or type '/' for commands..." 
+                    rows="1" 
+                    class="form-control brox-ai-textarea"
+                    aria-label="Message input"
+                    maxlength="5000"
+                ></textarea>
+                <div class="brox-ai-char-count" id="adminAiCharCount">0/5000</div>
+            </div>
+            <button id="adminAiMic" class="brox-ai-action-btn brox-ai-mic-btn" title="Voice input" aria-label="Voice input">
+                <i class="bi bi-mic-fill"></i>
+            </button>
+            <div class="brox-ai-input-actions">
+                <button id="adminAiSend" class="brox-ai-send-btn" title="Send message" aria-label="Send">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </div>
+        </div>
+        
+        {# Keyboard Shortcuts Hint #}
+        <div class="brox-ai-input-hint">
+            <span><kbd>Enter</kbd> Send</span>
+            <span><kbd>Shift + Enter</kbd> New line</span>
+            <span><kbd>/</kbd> Commands</span>
+        </div>
+    </div>
+  </div>
+</div>
+
+{# Trigger FAB Button - Toggle with different icons #}
+<button id="adminAiBtn" class="brox-ai-trigger-fab" title="Open Copilot (Ctrl+Alt+A)" aria-label="Open AI Copilot">
+    <span class="brox-ai-fab-icon-open"><i class="bi bi-stars"></i></span>
+    <span class="brox-ai-fab-icon-close d-none"><i class="bi bi-x-lg"></i></span>
+    <span class="brox-ai-fab-badge" id="adminAiNotification">0</span>
+</button>
+
+{# Keyboard Shortcut Handler #}
+<script>
+    (function () {
+        const btn = document.getElementById('adminAiBtn');
+        if (!btn) return;
+        const jsUrl = "{{ asset('/ai/js/ai-admin.js') }}";
+        const cssUrl = "{{ asset('/ai/css/ai-style.css') }}";
+        let loading = false;
+
+        function ensureCss() {
+            if (document.querySelector(`link[href^="${cssUrl}"]`)) return;
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = cssUrl;
+            document.head.appendChild(link);
+        }
+
+        function waitForInstance(cb) {
+            let tries = 0;
+            const tick = () => {
+                if (window.BroxAdminInstance && window.broxAdmin) {
+                    cb();
+                    return;
+                }
+                tries += 1;
+                if (tries > 100) return;
+                setTimeout(tick, 50);
+            };
+            tick();
+        }
+
+        // Optional telemetry hook for debugging / logging
+        // Define this function in pages where you want to capture AI assistant failures.
+        // Example: send to a debug endpoint or log to console.
+        if (typeof window.broxAdminTelemetry !== 'function') {
+            window.broxAdminTelemetry = (event, details) => {
+                console.debug('[AdminCopilotTelemetry]', event, details);
+
+                // Optional: POST telemetry to a server endpoint (uncomment and adjust if needed)
+                // fetch('/api/admin/ai/telemetry', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify({ event, details, page: window.location.href })
+                // }).catch(() => {});
+            };
+        }
+
+        function loadCopilot(openAfter) {
+            if (window.BroxAdminInstance) {
+                if (openAfter && window.broxAdmin?.toggleSidebar) {
+                    window.broxAdmin.toggleSidebar();
+                }
+                return;
+            }
+            if (loading) return;
+            loading = true;
+            ensureCss();
+            const script = document.createElement('script');
+            script.src = jsUrl;
+            script.async = true;
+            script.onload = () => {
+                loading = false;
+                if (openAfter) {
+                    waitForInstance(() => window.broxAdmin?.toggleSidebar && window.broxAdmin.toggleSidebar());
+                }
+            };
+            script.onerror = () => {
+                loading = false;
+            };
+            document.head.appendChild(script);
+        }
+
+        btn.addEventListener('click', function (e) {
+            if (window.BroxAdminInstance) return;
+            e.preventDefault();
+            e.stopPropagation();
+            loadCopilot(true);
+        });
+
+        // Global keyboard shortcut handler
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.altKey && e.key === 'A') {
+                e.preventDefault();
+                loadCopilot(true);
+            }
+        });
+    })();
+</script>
+>>>>>>> temp_branch

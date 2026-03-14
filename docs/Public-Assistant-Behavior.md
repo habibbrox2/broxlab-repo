@@ -11,12 +11,20 @@ This document describes how the public-facing assistant (chat widget) behaves in
 ## 1. Provider & Key Initialization
 
 ### English
+<<<<<<< HEAD
 - The assistant initializes by calling `/api/ai-settings/frontend`.
+=======
+- The assistant initializes by calling `/api/ai-system/frontend`.
+>>>>>>> temp_branch
 - That endpoint returns which provider is configured for the frontend (e.g., `openrouter`, `fireworks`, or a custom provider) and the API key for that provider.
 - The assistant stores the provider and model in memory, and uses the key to make requests.
 
 ### বাংলা
+<<<<<<< HEAD
 - অ্যাসিস্ট্যান্ট `/api/ai-settings/frontend` এ কল করে শুরু হয়।
+=======
+- অ্যাসিস্ট্যান্ট `/api/ai-system/frontend` এ কল করে শুরু হয়।
+>>>>>>> temp_branch
 - সেই এন্ডপয়েন্টটি বলে দেয় কোন প্রোভাইডার ফ্রন্টএন্ডের জন্য কনফিগার করা আছে (যেমন `openrouter`, `fireworks`, বা একটি কাস্টম প্রোভাইডার) এবং সেই প্রোভাইডারের API কী কী।
 - অ্যাসিস্ট্যান্ট সেই প্রোভাইডার ও মডেল মনে রাখে এবং কী ব্যবহার করে রিকোয়েস্ট পাঠায়।
 
@@ -65,9 +73,17 @@ This document describes how the public-facing assistant (chat widget) behaves in
 ## 5. How to Update the Key
 
 ### English
+<<<<<<< HEAD
 - Update the OpenRouter key via the AI Settings admin page.
 - After updating, the assistant will automatically use the new key on the next load (or after a page refresh).
 
 ### বাংলা
 - OpenRouter কী অ্যাডমিনের AI Settings পেজ থেকে আপডেট করুন।
+=======
+- Update the OpenRouter key via the AI SYSTEM admin page.
+- After updating, the assistant will automatically use the new key on the next load (or after a page refresh).
+
+### বাংলা
+- OpenRouter কী অ্যাডমিনের AI SYSTEM পেজ থেকে আপডেট করুন।
+>>>>>>> temp_branch
 - আপডেটের পর, অ্যাসিস্ট্যান্ট পরবর্তী লোড (বা পেজ রিফ্রেশ) এ নতুন কী ব্যবহার করবে।

@@ -20,8 +20,20 @@ class ImageDownloaderService
 
     public function __construct(array $config = [])
     {
+<<<<<<< HEAD
         $this->uploadPath = $config['upload_path'] ?? __DIR__ . '/../../uploads/autocontent/';
         $this->baseUrl = $config['base_url'] ?? '/uploads/autocontent/';
+=======
+        $uploadsBasePath = function_exists('brox_get_uploads_base_path')
+            ? brox_get_uploads_base_path()
+            : (defined('UPLOADS_DIR') ? UPLOADS_DIR : dirname(__DIR__, 3) . '/public_html/uploads');
+        $uploadsBaseUrl = function_exists('brox_get_uploads_base_url')
+            ? brox_get_uploads_base_url()
+            : '/uploads';
+
+        $this->uploadPath = $config['upload_path'] ?? rtrim((string)$uploadsBasePath, '/\\') . '/autocontent/';
+        $this->baseUrl = $config['base_url'] ?? rtrim((string)$uploadsBaseUrl, '/') . '/autocontent/';
+>>>>>>> temp_branch
 
         // Ensure upload directory exists
         if (!is_dir($this->uploadPath)) {

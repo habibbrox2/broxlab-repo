@@ -1,4 +1,8 @@
 <?php
+<<<<<<< HEAD
+=======
+
+>>>>>>> temp_branch
 /**
  * Settings Controller
  * 
@@ -11,6 +15,20 @@ declare(strict_types=1);
 global $mysqli;
 
 
+<<<<<<< HEAD
+=======
+// ========= SETTINGS MANAGEMENT - Redirect /admin/settings to /admin/app-settings =========
+
+/**
+ * Redirect /admin/settings to /admin/app-settings
+ */
+$router->get('/admin/settings', function () {
+    header('Location: /admin/app-settings', true, 302);
+    exit;
+});
+
+
+>>>>>>> temp_branch
 // ========= SETTINGS MANAGEMENT - View & Edit ==========
 
 /**
@@ -20,7 +38,11 @@ global $mysqli;
 $router->get('/admin/app-settings', ['middleware' => ['auth', 'super_admin_only']], function () use ($twig, $mysqli) {
     $settingsModel = new AppSettings($mysqli);
     $appSecurityModel = new AppSecuritySettingsModel($mysqli);
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> temp_branch
     // Fetch all settings
     $settings = $settingsModel->getAll();
     $publicNavItems = $settingsModel->getPublicNavItems($settings, false);
@@ -127,7 +149,11 @@ $router->get('/admin/app-settings', ['middleware' => ['auth', 'super_admin_only'
     }
 
     // Render the merged app settings page
+<<<<<<< HEAD
     echo $twig->render('admin/app-settings.twig', [
+=======
+    echo $twig->render('admin/settings/app.twig', [
+>>>>>>> temp_branch
         'settings' => $settings,
         'timezones' => $timezones,
         'languages' => $languages,
@@ -152,7 +178,11 @@ $router->get('/admin/app-settings', ['middleware' => ['auth', 'super_admin_only'
 $router->post('/admin/app-settings', ['middleware' => ['auth', 'super_admin_only']], function () use ($mysqli) {
     $settingsModel = new AppSettings($mysqli);
     $appSecurityModel = new AppSecuritySettingsModel($mysqli);
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> temp_branch
     try {
         $errors = [];
         $warnings = [];
@@ -451,7 +481,11 @@ $router->post('/admin/app-settings', ['middleware' => ['auth', 'super_admin_only
                     $notificationModel->logDelivery($notifId, $currentUserId, "sent", null, null, "admin_settings", "in_app");
                 }
             }
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> temp_branch
             $successMessage = "Settings updated successfully";
             if (!empty($warnings)) {
                 $successMessage .= " | " . implode(" | ", $warnings);
@@ -463,10 +497,19 @@ $router->post('/admin/app-settings', ['middleware' => ['auth', 'super_admin_only
 
         header('Location: /admin/app-settings');
         exit;
+<<<<<<< HEAD
 
     } catch (Throwable $e) {
         logError("Settings Update Error: " . $e->getMessage(), "ERROR", 
             ['file' => $e->getFile(), 'line' => $e->getLine()]);
+=======
+    } catch (Throwable $e) {
+        logError(
+            "Settings Update Error: " . $e->getMessage(),
+            "ERROR",
+            ['file' => $e->getFile(), 'line' => $e->getLine()]
+        );
+>>>>>>> temp_branch
         showMessage("An error occurred while updating settings", "danger");
         header('Location: /admin/app-settings');
         exit;
@@ -480,7 +523,11 @@ $router->post('/admin/app-settings', ['middleware' => ['auth', 'super_admin_only
  */
 $router->post('/admin/app-settings/send-test-email', ['middleware' => ['auth', 'super_admin_only']], function () use ($mysqli) {
     $settingsModel = new AppSettings($mysqli);
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> temp_branch
     try {
         $settings = $settingsModel->getAll();
         $to = trim($_POST['test_email'] ?? '');
@@ -512,8 +559,16 @@ $router->post('/admin/app-settings/send-test-email', ['middleware' => ['auth', '
         header('Location: /admin/app-settings');
         exit;
     } catch (Throwable $e) {
+<<<<<<< HEAD
         logError('Send Test Email Error: ' . $e->getMessage(), "ERROR",
             ['file' => $e->getFile(), 'line' => $e->getLine()]);
+=======
+        logError(
+            'Send Test Email Error: ' . $e->getMessage(),
+            "ERROR",
+            ['file' => $e->getFile(), 'line' => $e->getLine()]
+        );
+>>>>>>> temp_branch
         showMessage('An error occurred while sending test email.', 'danger');
         header('Location: /admin/app-settings');
         exit;
@@ -527,7 +582,11 @@ $router->post('/admin/app-settings/send-test-email', ['middleware' => ['auth', '
  */
 $router->post('/admin/app-settings/send-test-email-ajax', ['middleware' => ['auth', 'super_admin_only']], function () use ($mysqli) {
     header('Content-Type: application/json');
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> temp_branch
     $settingsModel = new AppSettings($mysqli);
 
     try {
@@ -559,11 +618,21 @@ $router->post('/admin/app-settings/send-test-email-ajax', ['middleware' => ['aut
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Failed to send test email. Please check SMTP settings.']);
         }
+<<<<<<< HEAD
 
     } catch (Throwable $e) {
         http_response_code(500);
         logError('Send Test Email AJAX Error: ' . $e->getMessage(), "ERROR",
             ['file' => $e->getFile(), 'line' => $e->getLine()]);
+=======
+    } catch (Throwable $e) {
+        http_response_code(500);
+        logError(
+            'Send Test Email AJAX Error: ' . $e->getMessage(),
+            "ERROR",
+            ['file' => $e->getFile(), 'line' => $e->getLine()]
+        );
+>>>>>>> temp_branch
         echo json_encode(['success' => false, 'message' => 'An error occurred while sending test email.']);
     }
 });
@@ -577,7 +646,11 @@ $router->post('/admin/app-settings/send-test-email-ajax', ['middleware' => ['aut
  */
 $router->get('/api/settings', function () use ($mysqli) {
     header('Content-Type: application/json');
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> temp_branch
     try {
         $settingsModel = new AppSettings($mysqli);
         $settings = $settingsModel->getAll();
@@ -596,11 +669,21 @@ $router->get('/api/settings', function () use ($mysqli) {
             'data' => $settings,
             'timestamp' => date('Y-m-d H:i:s')
         ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+<<<<<<< HEAD
 
     } catch (Throwable $e) {
         http_response_code(500);
         logError('API Settings Error: ' . $e->getMessage(), "ERROR",
             ['file' => $e->getFile(), 'line' => $e->getLine()]);
+=======
+    } catch (Throwable $e) {
+        http_response_code(500);
+        logError(
+            'API Settings Error: ' . $e->getMessage(),
+            "ERROR",
+            ['file' => $e->getFile(), 'line' => $e->getLine()]
+        );
+>>>>>>> temp_branch
         echo json_encode(['success' => false, 'error' => 'Failed to retrieve settings']);
     }
 });
@@ -611,7 +694,11 @@ $router->get('/api/settings', function () use ($mysqli) {
  */
 $router->get('/api/settings/:key', function ($key) use ($mysqli) {
     header('Content-Type: application/json');
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> temp_branch
     try {
         $settingsModel = new AppSettings($mysqli);
         $value = $settingsModel->get($key);
@@ -637,11 +724,21 @@ $router->get('/api/settings/:key', function ($key) use ($mysqli) {
                 'timestamp' => date('Y-m-d H:i:s')
             ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
         }
+<<<<<<< HEAD
 
     } catch (Throwable $e) {
         http_response_code(500);
         logError('API Get Setting Error: ' . $e->getMessage(), "ERROR",
             ['file' => $e->getFile(), 'line' => $e->getLine()]);
+=======
+    } catch (Throwable $e) {
+        http_response_code(500);
+        logError(
+            'API Get Setting Error: ' . $e->getMessage(),
+            "ERROR",
+            ['file' => $e->getFile(), 'line' => $e->getLine()]
+        );
+>>>>>>> temp_branch
         echo json_encode(['success' => false, 'error' => 'Failed to retrieve setting']);
     }
 });
@@ -677,11 +774,21 @@ $router->post('/api/settings/:key', ['middleware' => ['auth', 'super_admin_only'
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => 'Failed to update setting']);
         }
+<<<<<<< HEAD
 
     } catch (Throwable $e) {
         http_response_code(500);
         logError('API Update Setting Error: ' . $e->getMessage(), "ERROR",
             ['file' => $e->getFile(), 'line' => $e->getLine()]);
+=======
+    } catch (Throwable $e) {
+        http_response_code(500);
+        logError(
+            'API Update Setting Error: ' . $e->getMessage(),
+            "ERROR",
+            ['file' => $e->getFile(), 'line' => $e->getLine()]
+        );
+>>>>>>> temp_branch
         echo json_encode(['success' => false, 'error' => 'An error occurred: ' . $e->getMessage()]);
     }
 });
@@ -702,10 +809,19 @@ $router->get('/admin/email-templates', ['middleware' => ['auth', 'admin_only']],
             'templates' => $templates,
             'page_title' => 'Email Templates'
         ]);
+<<<<<<< HEAD
 
     } catch (Throwable $e) {
         logError('Email Templates List Error: ' . $e->getMessage(), "ERROR",
             ['file' => $e->getFile(), 'line' => $e->getLine()]);
+=======
+    } catch (Throwable $e) {
+        logError(
+            'Email Templates List Error: ' . $e->getMessage(),
+            "ERROR",
+            ['file' => $e->getFile(), 'line' => $e->getLine()]
+        );
+>>>>>>> temp_branch
         showMessage("Failed to load email templates", "danger");
     }
 });
@@ -740,10 +856,19 @@ $router->get('/admin/email-templates/{id}/edit', ['middleware' => ['auth', 'admi
             'variables' => $variables,
             'page_title' => 'Edit Email Template: ' . $template['name']
         ]);
+<<<<<<< HEAD
 
     } catch (Throwable $e) {
         logError('Email Template Edit Error: ' . $e->getMessage(), "ERROR",
             ['file' => $e->getFile(), 'line' => $e->getLine()]);
+=======
+    } catch (Throwable $e) {
+        logError(
+            'Email Template Edit Error: ' . $e->getMessage(),
+            "ERROR",
+            ['file' => $e->getFile(), 'line' => $e->getLine()]
+        );
+>>>>>>> temp_branch
         showMessage("Failed to load email template", "danger");
         header('Location: /admin/email-templates');
         exit;
@@ -807,10 +932,19 @@ $router->post('/admin/email-templates/{id}', ['middleware' => ['auth', 'admin_on
 
         header('Location: /admin/email-templates/' . $id . '/edit');
         exit;
+<<<<<<< HEAD
 
     } catch (Throwable $e) {
         logError("Email Template Update Error: " . $e->getMessage(), "ERROR",
             ['file' => $e->getFile(), 'line' => $e->getLine()]);
+=======
+    } catch (Throwable $e) {
+        logError(
+            "Email Template Update Error: " . $e->getMessage(),
+            "ERROR",
+            ['file' => $e->getFile(), 'line' => $e->getLine()]
+        );
+>>>>>>> temp_branch
         showMessage("An error occurred while updating template", "danger");
         header('Location: /admin/email-templates');
         exit;
@@ -867,11 +1001,21 @@ $router->post('/admin/email-templates/{id}/preview', ['middleware' => ['auth', '
             'body' => $body,
             'variables' => $variables
         ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+<<<<<<< HEAD
 
     } catch (Throwable $e) {
         http_response_code(500);
         logError("Email Template Preview Error: " . $e->getMessage(), "ERROR",
             ['file' => $e->getFile(), 'line' => $e->getLine()]);
+=======
+    } catch (Throwable $e) {
+        http_response_code(500);
+        logError(
+            "Email Template Preview Error: " . $e->getMessage(),
+            "ERROR",
+            ['file' => $e->getFile(), 'line' => $e->getLine()]
+        );
+>>>>>>> temp_branch
         echo json_encode(['success' => false, 'error' => 'Failed to preview template: ' . $e->getMessage()]);
     }
 });
@@ -911,11 +1055,21 @@ $router->post('/admin/email-templates/{id}/delete', ['middleware' => ['auth', 'a
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => 'Failed to delete email template']);
         }
+<<<<<<< HEAD
 
     } catch (Throwable $e) {
         http_response_code(500);
         logError("Email Template Delete Error: " . $e->getMessage(), "ERROR",
             ['file' => $e->getFile(), 'line' => $e->getLine()]);
+=======
+    } catch (Throwable $e) {
+        http_response_code(500);
+        logError(
+            "Email Template Delete Error: " . $e->getMessage(),
+            "ERROR",
+            ['file' => $e->getFile(), 'line' => $e->getLine()]
+        );
+>>>>>>> temp_branch
         echo json_encode(['success' => false, 'error' => 'An error occurred: ' . $e->getMessage()]);
     }
 });
@@ -927,6 +1081,7 @@ $router->post('/admin/email-templates/{id}/delete', ['middleware' => ['auth', 'a
  * User Account Settings & OAuth Management
  * GET /user/settings
  */
+<<<<<<< HEAD
 $router->get('/user/settings', ['middleware'=>['auth']], function () use ($twig, $mysqli) {
     try {
         $userId = AuthManager::getCurrentUserId();
@@ -936,11 +1091,23 @@ $router->get('/user/settings', ['middleware'=>['auth']], function () use ($twig,
         // Get user profile
         $user = $userModel->getUserById($userId);
         
+=======
+$router->get('/user/settings', ['middleware' => ['auth']], function () use ($twig, $mysqli) {
+    try {
+        $userId = AuthManager::getCurrentUserId();
+
+        $userModel = new UserModel($mysqli);
+
+        // Get user profile
+        $user = $userModel->getUserById($userId);
+
+>>>>>>> temp_branch
         if (!$user) {
             showMessage("User not found", "danger");
             header('Location: /');
             exit;
         }
+<<<<<<< HEAD
         
         // Check if user has password set
         $userHasPassword = $userModel->userHasPassword($userId);
@@ -948,6 +1115,15 @@ $router->get('/user/settings', ['middleware'=>['auth']], function () use ($twig,
         // Check if needs first-time password setup
         $showPasswordSetup = $userModel->needsFirstTimePasswordSetup($userId);
         
+=======
+
+        // Check if user has password set
+        $userHasPassword = $userModel->userHasPassword($userId);
+
+        // Check if needs first-time password setup
+        $showPasswordSetup = $userModel->needsFirstTimePasswordSetup($userId);
+
+>>>>>>> temp_branch
         echo $twig->render('user/settings.twig', [
             'title'            => 'Account Settings',
             'user_data'             => $user,
@@ -957,10 +1133,19 @@ $router->get('/user/settings', ['middleware'=>['auth']], function () use ($twig,
             'current_page'     => 'account',
             'current_tab'      => $_GET['tab'] ?? 'account',
         ]);
+<<<<<<< HEAD
         
     } catch (Throwable $e) {
         logError("Account Settings Error: " . $e->getMessage(), "ERROR",
             ['file' => $e->getFile(), 'line' => $e->getLine()]);
+=======
+    } catch (Throwable $e) {
+        logError(
+            "Account Settings Error: " . $e->getMessage(),
+            "ERROR",
+            ['file' => $e->getFile(), 'line' => $e->getLine()]
+        );
+>>>>>>> temp_branch
         showMessage("Failed to load account settings", "danger");
         header('Location: /');
         exit;
@@ -978,11 +1163,16 @@ $router->get('/user/settings', ['middleware'=>['auth']], function () use ($twig,
 $router->get('/admin/account-settings', ['middleware' => ['auth', 'admin_or_super_only']], function () use ($twig, $mysqli) {
     try {
         $userId = AuthManager::getCurrentUserId();
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> temp_branch
         if (!$userId) {
             header('Location: /login');
             exit;
         }
+<<<<<<< HEAD
         
         $userModel = new UserModel($mysqli);
         $securityManager = new SecurityManager($mysqli);
@@ -990,11 +1180,21 @@ $router->get('/admin/account-settings', ['middleware' => ['auth', 'admin_or_supe
         // Get current user details
         $user = AuthManager::getCurrentUserArray();
         
+=======
+
+        $userModel = new UserModel($mysqli);
+        $securityManager = new SecurityManager($mysqli);
+
+        // Get current user details
+        $user = AuthManager::getCurrentUserArray();
+
+>>>>>>> temp_branch
         if (!$user) {
             showMessage("User not found", "error");
             header('Location: /admin/dashboard');
             exit;
         }
+<<<<<<< HEAD
         
         // Check if user has password set
         $userHasPassword = !empty($user['password']);
@@ -1004,6 +1204,17 @@ $router->get('/admin/account-settings', ['middleware' => ['auth', 'admin_or_supe
         
         // Render the account settings page
         echo $twig->render('admin/account-settings.twig', [
+=======
+
+        // Check if user has password set
+        $userHasPassword = !empty($user['password']);
+
+        // Get 2FA status
+        $twoFAStatus = $securityManager->get2FAStatus($userId);
+
+        // Render the account settings page
+        echo $twig->render('admin/settings/account.twig', [
+>>>>>>> temp_branch
             'title' => 'Account Settings',
             'page_title' => 'Account Settings',
             'user' => $user,
@@ -1012,13 +1223,25 @@ $router->get('/admin/account-settings', ['middleware' => ['auth', 'admin_or_supe
             'csrf_token' => generateCsrfToken(),
             'current_page' => 'account-settings',
         ]);
+<<<<<<< HEAD
         
     } catch (Throwable $e) {
         logError("Admin Account Settings Error: " . $e->getMessage(), "ERROR",
             ['file' => $e->getFile(), 'line' => $e->getLine()]);
+=======
+    } catch (Throwable $e) {
+        logError(
+            "Admin Account Settings Error: " . $e->getMessage(),
+            "ERROR",
+            ['file' => $e->getFile(), 'line' => $e->getLine()]
+        );
+>>>>>>> temp_branch
         showMessage("Failed to load account settings", "danger");
         header('Location: /admin/dashboard');
         exit;
     }
 });
+<<<<<<< HEAD
 
+=======
+>>>>>>> temp_branch

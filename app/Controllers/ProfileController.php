@@ -397,7 +397,11 @@ $router->group('/admin/profile', ['middleware' => ['auth', 'admin_or_super_only'
                 }
             }
 
+<<<<<<< HEAD
             echo $twig->render('admin/profile_admin.twig', [
+=======
+            echo $twig->render('admin/profile/view.twig', [
+>>>>>>> temp_branch
             'title' => 'Admin Profile',
             'header_title' => 'Admin Profile Details',
             'user' => $user,
@@ -407,7 +411,11 @@ $router->group('/admin/profile', ['middleware' => ['auth', 'admin_or_super_only'
 
         $router->get('/edit', function () use ($twig) {
             $user = AuthManager::getCurrentUserArray();
+<<<<<<< HEAD
             echo $twig->render('admin/profile_edit.twig', [
+=======
+            echo $twig->render('admin/profile/edit.twig', [
+>>>>>>> temp_branch
             'title' => 'Edit Admin Profile',
             'header_title' => 'Update Admin Info',
             'user' => $user,
@@ -530,7 +538,11 @@ $router->group('/admin/profile', ['middleware' => ['auth', 'admin_or_super_only'
         );
 
         $router->get('/password', function () use ($twig) {
+<<<<<<< HEAD
             echo $twig->render('admin/profile_password.twig', [
+=======
+            echo $twig->render('admin/profile/password.twig', [
+>>>>>>> temp_branch
             'title' => 'Change Admin Password',
             'header_title' => 'Update Password',
             'csrf_token' => generateCsrfToken(),

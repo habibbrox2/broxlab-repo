@@ -1,6 +1,11 @@
 <?php
 
+<<<<<<< HEAD
 declare(strict_types=1);
+=======
+declare(strict_types = 1)
+;
+>>>>>>> temp_branch
 
 namespace App\Modules\AutoContent;
 
@@ -73,14 +78,26 @@ class AutoPublisher
         $todayPublished = $this->getTodayPublishedCount();
 
         foreach ($articles as $article) {
+<<<<<<< HEAD
             if ($count >= $maxPublish) break;
             if ($todayPublished + $count >= $maxPublish) break;
+=======
+            if ($count >= $maxPublish)
+                break;
+            if ($todayPublished + $count >= $maxPublish)
+                break;
+>>>>>>> temp_branch
 
             $result = $this->publishArticle($article);
             if ($result['success']) {
                 $this->published[] = $result;
                 $count++;
+<<<<<<< HEAD
             } else {
+=======
+            }
+            else {
+>>>>>>> temp_branch
                 $this->errors[] = $result['error'];
             }
         }
@@ -196,6 +213,7 @@ class AutoPublisher
             $contentId = $this->mysqli->insert_id;
             $stmt->close();
 
+<<<<<<< HEAD
             // Add categories if specified
             if (!empty($this->config['categories'])) {
                 $this->addContentCategories($contentId, $this->config['categories']);
@@ -204,6 +222,37 @@ class AutoPublisher
             // Add tags if specified
             if (!empty($this->config['tags'])) {
                 $this->addContentTags($contentId, $this->config['tags']);
+=======
+            // Add categories
+            $categoryIds = $this->config['categories'] ?: [];
+            $tagIds = $this->config['tags'] ?: [];
+
+            // Use AI suggested metadata if available
+            if (!empty($article['metadata'])) {
+                $metadata = json_decode($article['metadata'], true);
+                if (!empty($metadata['suggested_categories'])) {
+                    foreach ($metadata['suggested_categories'] as $catName) {
+                        $catId = $this->getOrCreateCategory($catName);
+                        if ($catId)
+                            $categoryIds[] = $catId;
+                    }
+                }
+                if (!empty($metadata['suggested_tags'])) {
+                    foreach ($metadata['suggested_tags'] as $tagName) {
+                        $tagId = $this->getOrCreateTag($tagName);
+                        if ($tagId)
+                            $tagIds[] = $tagId;
+                    }
+                }
+            }
+
+            if (!empty($categoryIds)) {
+                $this->addContentCategories($contentId, array_unique($categoryIds));
+            }
+
+            if (!empty($tagIds)) {
+                $this->addContentTags($contentId, array_unique($tagIds));
+>>>>>>> temp_branch
             }
 
             // Update auto content article status
@@ -228,7 +277,12 @@ class AutoPublisher
                 'content_id' => $contentId,
                 'title' => $title
             ];
+<<<<<<< HEAD
         } catch (\Exception $e) {
+=======
+        }
+        catch (\Exception $e) {
+>>>>>>> temp_branch
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
@@ -313,6 +367,73 @@ class AutoPublisher
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * Get or create a category by name
+     */
+    private function getOrCreateCategory(string $name): ?int
+    {
+        $name = trim($name);
+        if (empty($name))
+            return null;
+
+        $stmt = $this->mysqli->prepare("SELECT id FROM categories WHERE name = ?");
+        $stmt->bind_param("s", $name);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($res = $result->fetch_assoc()) {
+            $stmt->close();
+            return (int)$res['id'];
+        }
+        $stmt->close();
+
+        // Create new category
+        $slug = $this->generateSlug($name);
+        $stmt = $this->mysqli->prepare("INSERT INTO categories (name, slug, status, created_at) VALUES (?, ?, 'active', NOW())");
+        $stmt->bind_param("ss", $name, $slug);
+        if ($stmt->execute()) {
+            $id = $this->mysqli->insert_id;
+            $stmt->close();
+            return (int)$id;
+        }
+        $stmt->close();
+        return null;
+    }
+
+    /**
+     * Get or create a tag by name
+     */
+    private function getOrCreateTag(string $name): ?int
+    {
+        $name = trim($name);
+        if (empty($name))
+            return null;
+
+        $stmt = $this->mysqli->prepare("SELECT id FROM tags WHERE name = ?");
+        $stmt->bind_param("s", $name);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($res = $result->fetch_assoc()) {
+            $stmt->close();
+            return (int)$res['id'];
+        }
+        $stmt->close();
+
+        // Create new tag
+        $slug = $this->generateSlug($name);
+        $stmt = $this->mysqli->prepare("INSERT INTO tags (name, slug) VALUES (?, ?)");
+        $stmt->bind_param("ss", $name, $slug);
+        if ($stmt->execute()) {
+            $id = $this->mysqli->insert_id;
+            $stmt->close();
+            return (int)$id;
+        }
+        $stmt->close();
+        return null;
+    }
+
+    /**
+>>>>>>> temp_branch
      * Get errors from last run
      */
     public function getErrors(): array

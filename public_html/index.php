@@ -374,5 +374,12 @@ try {
     renderError(500, 'Routing Error');
 }
 
+<<<<<<< HEAD
 // Flush output buffer
 ob_end_flush();
+=======
+// Flush output buffer (only if a buffer exists)
+if (ob_get_level() > 0) {
+    ob_end_flush();
+}
+>>>>>>> temp_branch

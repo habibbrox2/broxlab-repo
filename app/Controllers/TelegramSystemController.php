@@ -231,7 +231,11 @@ $router->get('/admin/feature-flags', ['middleware' => ['auth', 'super_admin_only
         }
     }
 
+<<<<<<< HEAD
     echo $twig->render('admin/feature_flags.twig', [
+=======
+    echo $twig->render('admin/settings/feature_flags.twig', [
+>>>>>>> temp_branch
         'title' => 'Feature Flags',
         'current_page' => 'feature-flags',
         'features' => $features,
@@ -288,7 +292,11 @@ $router->get('/admin/sms-logs', ['middleware' => ['auth', 'admin_only']], functi
         }
     }
 
+<<<<<<< HEAD
     echo $twig->render('admin/sms_logs.twig', [
+=======
+    echo $twig->render('admin/logs/sms.twig', [
+>>>>>>> temp_branch
         'title' => 'SMS Logs',
         'current_page' => 'sms-logs',
         'logs' => $logs,
@@ -303,7 +311,11 @@ $router->get('/admin/device-control', ['middleware' => ['auth', 'super_admin_onl
     $commands = $service->getRecentCommands($limit);
     $summary = $service->getDeviceSummary();
 
+<<<<<<< HEAD
     echo $twig->render('admin/device_control_logs.twig', [
+=======
+    echo $twig->render('admin/logs/device_control.twig', [
+>>>>>>> temp_branch
         'title' => 'Device Control Logs',
         'current_page' => 'device-control',
         'commands' => $commands,

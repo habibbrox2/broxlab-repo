@@ -64,14 +64,30 @@ class AiContentEnhancer
             $source = $this->model->getSourceById($sourceId);
             $sourceName = $source['name'] ?? 'Unknown';
 
+<<<<<<< HEAD
+=======
+            // Get style profile
+            $styleProfile = $this->aiProvider->getSetting('content_style_profile', 'professional');
+
+>>>>>>> temp_branch
             // Enhance content using AI
             $enhanced = $this->enhanceContent(
                 $originalTitle,
                 $originalContent,
                 $originalExcerpt,
+<<<<<<< HEAD
                 $sourceName
             );
 
+=======
+                $sourceName,
+                $styleProfile
+            );
+
+            // Suggest metadata (Categories and Tags)
+            $metadata = $this->suggestMetadata($originalTitle, $enhanced['content']);
+
+>>>>>>> temp_branch
             // Calculate SEO score
             $seoScore = $this->calculateSeoScore($enhanced['title'], $enhanced['content']);
 
@@ -88,6 +104,19 @@ class AiContentEnhancer
                 $wordCount
             );
 
+<<<<<<< HEAD
+=======
+            // Save suggested categories and tags if any
+            if (!empty($metadata['categories'])) {
+                // We'll store this in metadata field for now or log it
+                $this->model->saveArticleMetadata($articleId, [
+                    'suggested_categories' => $metadata['categories'],
+                    'suggested_tags' => $metadata['tags'] ?? [],
+                    'style_profile' => $styleProfile
+                ]);
+            }
+
+>>>>>>> temp_branch
             // Update status to processed
             $this->model->updateArticleStatus($articleId, 'processed');
 
@@ -95,9 +124,17 @@ class AiContentEnhancer
                 'success' => true,
                 'message' => 'Article processed successfully',
                 'seo_score' => $seoScore,
+<<<<<<< HEAD
                 'word_count' => $wordCount
             ];
         } catch (\Exception $e) {
+=======
+                'word_count' => $wordCount,
+                'suggested_categories' => $metadata['categories'] ?? []
+            ];
+        }
+        catch (\Exception $e) {
+>>>>>>> temp_branch
             $this->model->updateArticleStatus($articleId, 'failed', $e->getMessage());
             return [
                 'success' => false,
@@ -109,7 +146,11 @@ class AiContentEnhancer
     /**
      * Enhance content using AI API (using new AIProvider system)
      */
+<<<<<<< HEAD
     private function enhanceContent(string $title, string $content, string $excerpt, string $sourceName): array
+=======
+    private function enhanceContent(string $title, string $content, string $excerpt, string $sourceName, string $styleProfile = 'professional'): array
+>>>>>>> temp_branch
     {
         // Get backend provider from settings (for AutoContent)
         $backendProviderName = $this->aiProvider->getSetting('backend_provider', 'kilo');
@@ -118,6 +159,7 @@ class AiContentEnhancer
         $provider = $this->aiProvider->getByName($backendProviderName);
 
         if (!$provider) {
+<<<<<<< HEAD
             throw new \Exception('No backend AI provider configured. Please configure Backend AI Provider in AI Settings.');
         }
 
@@ -126,6 +168,19 @@ class AiContentEnhancer
 
         // Build the prompt
         $prompt = $this->buildEnhancementPrompt($title, $content, $excerpt, $sourceName);
+=======
+            throw new \Exception('No backend AI provider configured. Please configure Backend AI Provider in AI SYSTEM.');
+        }
+
+        $providerName = $provider['provider_name'];
+        $model = $this->aiProvider->getSetting('backend_model', '');
+        if ($model === '') {
+            $model = $this->aiProvider->getSetting('default_model', 'gpt-4o-mini');
+        }
+
+        // Build the prompt
+        $prompt = $this->buildEnhancementPrompt($title, $content, $excerpt, $sourceName, $styleProfile);
+>>>>>>> temp_branch
 
         // Get additional settings
         $maxTokens = $this->aiProvider->getSetting('max_tokens', 4000);
@@ -136,10 +191,17 @@ class AiContentEnhancer
             $providerName,
             $model,
             $prompt,
+<<<<<<< HEAD
             [
                 'max_tokens' => $maxTokens,
                 'temperature' => $temperature
             ]
+=======
+        [
+            'max_tokens' => $maxTokens,
+            'temperature' => $temperature
+        ]
+>>>>>>> temp_branch
         );
 
         if (!$result['success']) {
@@ -151,7 +213,11 @@ class AiContentEnhancer
                     'kilo',
                     'gpt-4o-mini',
                     $prompt,
+<<<<<<< HEAD
                     ['max_tokens' => $maxTokens, 'temperature' => $temperature]
+=======
+                ['max_tokens' => $maxTokens, 'temperature' => $temperature]
+>>>>>>> temp_branch
                 );
 
                 if ($fallbackResult['success']) {
@@ -167,6 +233,7 @@ class AiContentEnhancer
     }
 
     /**
+<<<<<<< HEAD
      * Build enhancement prompt for AI
      */
     private function buildEnhancementPrompt(string $title, string $content, string $excerpt, string $sourceName): string
@@ -204,10 +271,123 @@ Return your response as a JSON object with exactly these fields:
 }
 
 Ensure the JSON is valid and properly formatted. Do not include any additional text.
+=======
+     * Build enhancement prompt for AI with Style Profiles and Smart Truncation
+     */
+    private function buildEnhancementPrompt(string $title, string $content, string $excerpt, string $sourceName, string $styleProfile = 'professional'): string
+    {
+        // Smart Truncation: Break at paragraph or sentence boundary
+        $maxContentLength = 12000;
+        if (mb_strlen($content) > $maxContentLength) {
+            $truncated = mb_substr($content, 0, $maxContentLength);
+            // Try to find last closing tag or sentence end
+            $lastTag = mb_strrpos($truncated, '>');
+            $lastSentence = mb_strrpos($truncated, '.');
+            $breakPos = max($lastTag ?: 0, $lastSentence ?: 0);
+            $content = ($breakPos > $maxContentLength * 0.8) ? mb_substr($truncated, 0, $breakPos + 1) : $truncated;
+            $content .= "\n\n[Content truncated due to length...]";
+        }
+
+        $styleInstructions = [
+            'professional' => 'Maintain a professional, objective, and authoritative tone. Use clear and concise language.',
+            'viral' => 'Create a sensational, highly engaging, and "click-worthy" version. Use emotive language and strong hooks.',
+            'formal' => 'Use a sophisticated, scholarly, and very formal tone. Avoid contractions and informal phrasing.',
+            'friendly' => 'Write in a warm, conversational, and approachable manner. Like a friend explaining news to another friend.',
+            'minimal' => 'Keep it extremely brief and to the point. Focus only on the most critical facts.'
+        ];
+
+        $instruction = $styleInstructions[$styleProfile] ?? $styleInstructions['professional'];
+
+        return <<<PROMPT
+You are an expert content writer and SEO specialist. Your task is to enhance and improve article content for a news/blog website.
+
+STYLE PROFILE: {$styleProfile}
+INSTRUCTIONS: {$instruction}
+
+CONTEXT:
+Source: {$sourceName}
+Original Title: {$title}
+Original Excerpt: {$excerpt}
+
+ARTICLE CONTENT:
+{$content}
+
+TASKS:
+1. Improve the title to be more engaging and SEO-friendly (under 100 chars).
+2. Rewrite the content to be high-quality, unique, and follow the Style Profile.
+3. Create a compelling excerpt (under 200 chars).
+4. Maintain all factual accuracy from the original.
+5. Use proper HTML formatting (p, strong, ul, li) where appropriate.
+
+RESPONSE FORMAT:
+Return your response as a valid JSON object:
+{
+    "title": "enhanced title",
+    "content": "enhanced content with HTML formatting",
+    "excerpt": "compelling summary"
+}
+>>>>>>> temp_branch
 PROMPT;
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * Suggest Metadata (Categories and Tags) using AI
+     */
+    public function suggestMetadata(string $title, string $content): array
+    {
+        $backendProviderName = $this->aiProvider->getSetting('backend_provider', 'kilo');
+        $provider = $this->aiProvider->getByName($backendProviderName);
+
+        if (!$provider)
+            return ['categories' => [], 'tags' => []];
+
+        $prompt = <<<PROMPT
+Analyze the following article title and content. Suggest the most appropriate categories and tags for it.
+Categories should be broad (e.g., Technology, Health, Politics).
+Tags should be specific keywords.
+
+Title: {$title}
+Snippet: {mb_substr(strip_tags($content), 0, 1000)}
+
+Return ONLY a JSON object:
+{
+    "categories": ["Category 1", "Category 2"],
+    "tags": ["Tag 1", "Tag 2", "Tag 3"]
+}
+PROMPT;
+
+        $result = $this->aiProvider->callAPI(
+            $provider['provider_name'],
+            $this->aiProvider->getSetting('backend_model', '') ?: $this->aiProvider->getSetting('default_model', 'gpt-4o-mini'),
+            $prompt,
+        ['max_tokens' => 500, 'temperature' => 0.3]
+        );
+
+        if ($result['success']) {
+            $data = json_decode($result['content'], true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return [
+                    'categories' => $data['categories'] ?? [],
+                    'tags' => $data['tags'] ?? []
+                ];
+            }
+            // Try regex if direct parse fails
+            if (preg_match('/\{[\s\S]*\}/', $result['content'], $match)) {
+                $data = json_decode($match[0], true);
+                return [
+                    'categories' => $data['categories'] ?? [],
+                    'tags' => $data['tags'] ?? []
+                ];
+            }
+        }
+
+        return ['categories' => [], 'tags' => []];
+    }
+
+    /**
+>>>>>>> temp_branch
      * Parse AI API response
      */
     private function parseAiResponse(string $response, string $defaultTitle, string $defaultContent): array
@@ -272,9 +452,17 @@ PROMPT;
         $titleLength = strlen($title);
         if ($titleLength >= 30 && $titleLength <= 60) {
             $score += 15;
+<<<<<<< HEAD
         } elseif ($titleLength >= 20 && $titleLength <= 70) {
             $score += 10;
         } else {
+=======
+        }
+        elseif ($titleLength >= 20 && $titleLength <= 70) {
+            $score += 10;
+        }
+        else {
+>>>>>>> temp_branch
             $score += 5;
         }
 
@@ -291,16 +479,29 @@ PROMPT;
                 break;
             }
         }
+<<<<<<< HEAD
         if ($score > 25) $score = 25;
+=======
+        if ($score > 25)
+            $score = 25;
+>>>>>>> temp_branch
 
         // Content checks (50 points)
         $wordCount = str_word_count(strip_tags($content));
 
         if ($wordCount >= 300) {
             $score += 20;
+<<<<<<< HEAD
         } elseif ($wordCount >= 150) {
             $score += 10;
         } else {
+=======
+        }
+        elseif ($wordCount >= 150) {
+            $score += 10;
+        }
+        else {
+>>>>>>> temp_branch
             $score += 5;
         }
 
@@ -308,7 +509,12 @@ PROMPT;
         $paragraphs = preg_split('/\n\s*\n/', $content);
         if (count($paragraphs) >= 3) {
             $score += 15;
+<<<<<<< HEAD
         } elseif (count($paragraphs) >= 2) {
+=======
+        }
+        elseif (count($paragraphs) >= 2) {
+>>>>>>> temp_branch
             $score += 10;
         }
 
@@ -368,7 +574,12 @@ PROMPT;
             if ($result['success']) {
                 $processed++;
                 $totalSeoScore += $result['seo_score'];
+<<<<<<< HEAD
             } else {
+=======
+            }
+            else {
+>>>>>>> temp_branch
                 $failed++;
             }
         }
@@ -408,7 +619,12 @@ PROMPT;
 
             if ($result['success']) {
                 $processed++;
+<<<<<<< HEAD
             } else {
+=======
+            }
+            else {
+>>>>>>> temp_branch
                 $failed++;
             }
         }

@@ -22,7 +22,11 @@ $router->get('/admin/sim-routing', ['middleware' => ['auth', 'super_admin_only']
         }
     }
 
+<<<<<<< HEAD
     echo $twig->render('admin/sim_routing.twig', [
+=======
+    echo $twig->render('admin/settings/sim_routing.twig', [
+>>>>>>> temp_branch
         'title'        => 'SIM Routing',
         'current_page' => 'sim-routing',
         'routes'       => $routes,

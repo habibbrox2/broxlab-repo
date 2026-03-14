@@ -95,7 +95,10 @@ class HomeModel
         $testSql = "SELECT id, title, published FROM posts LIMIT 5";
         $testResult = $this->db->query($testSql);
         $testRows = $testResult->fetch_all(MYSQLI_ASSOC);
+<<<<<<< HEAD
         error_log("TEST POSTS: " . json_encode($testRows));
+=======
+>>>>>>> temp_branch
 
         $sql = "
         SELECT * FROM (

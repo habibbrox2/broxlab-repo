@@ -75,17 +75,24 @@
     <meta name="csrf-token" content="{{ csrf_token }}">
     {% if auth_user.id %}<meta name="user-id" content="{{ auth_user.id }}">{% endif %}
 
+<<<<<<< HEAD
     {# ===== PERFORMANCE: Preconnect & DNS-Prefetch ===== #}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://www.googletagmanager.com">
     
+=======
+    {# ===== PERFORMANCE: DNS-Prefetch & Preconnect ===== #}
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://www.googletagmanager.com">
+>>>>>>> temp_branch
     {# Firebase CDN Preconnect #}
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link rel="dns-prefetch" href="https://fcm.googleapis.com">
     <link rel="dns-prefetch" href="https://firebaseinstallations.googleapis.com">
 
+<<<<<<< HEAD
     {# Import map for bare module specifiers in browser ESM (Puter + Heyputer modules) #}
     <script type="importmap">
     {
@@ -94,16 +101,23 @@
       }
     }
     </script>
+=======
+>>>>>>> temp_branch
 
     {# ===== CRITICAL CSS PRELOAD ===== #}
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" as="style">
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" as="style">
+<<<<<<< HEAD
+=======
+    <link rel="preload" href="{{ asset('/assets/css/dist/public-bundle.css') }}" as="style">
+>>>>>>> temp_branch
 
     {# ===== BOOTSTRAP CSS (Critical Path) ===== #}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css" rel="stylesheet">
 
     {# ===== GOOGLE FONTS (Deferred Loading) ===== #}
+<<<<<<< HEAD
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
 
@@ -120,6 +134,18 @@
     <link rel="stylesheet" href="{{ asset('/assets/css/5-feed.css') }}">
     <link rel="stylesheet" href="{{ asset('/assets/css/6-pages.css') }}">
     <link rel="stylesheet" href="{{ asset('/assets/css/7-dark-mode.css') }}">
+=======
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'" async>
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+
+    {# ===== BOOTSTRAP ICONS (Deferred Loading) ===== #}
+    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" onload="this.onload=null;this.rel='stylesheet'" async>
+    <noscript><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"></noscript>
+
+    {# ===== APPLICATION STYLESHEETS (Bundled for Performance) ===== #}
+    {# Use bundled CSS for better performance #}
+    <link rel="stylesheet" href="{{ asset('/assets/css/dist/public-bundle.css') }}">
+>>>>>>> temp_branch
     <link rel="stylesheet" href="{{ asset('/assets/css/tailwind.css') }}">
 
     {% block extra_head %}{% endblock %}
@@ -129,7 +155,11 @@
 {# ===== BODY SECTION ===== #}
 <body role="application">
 
+<<<<<<< HEAD
     {# ===== JSON-LD SCHEMAS ===== #}
+=======
+    {# ===== JSON-LD SCHEMAS (Keep in head for SEO) ===== #}
+>>>>>>> temp_branch
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -514,6 +544,7 @@
         🔔
     </button>
 
+<<<<<<< HEAD
 
 
 
@@ -521,6 +552,8 @@
 
 
 
+=======
+>>>>>>> temp_branch
     <script>
         (function () {
             const initScrollTopButton = function () {
@@ -555,7 +588,11 @@
     <script src="{{ asset('/assets/js/bootstrap-lite.js') }}" defer></script>
 
     {# ===== STEP 1.5: SweetAlert2 + Global Message Handler ===== #}
+<<<<<<< HEAD
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
+=======
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js" defer></script>
+>>>>>>> temp_branch
     <script src="{{ asset('/assets/js/dist/sweetalert2-handler.js') }}" defer></script>
 {# ===== FIREBASE v2 INITIALIZATION (PRODUCTION SAFE) ===== #}
 
@@ -564,6 +601,7 @@
     {# Firebase v2 init is handled in /assets/js/script.js #}
 
     
+<<<<<<< HEAD
     {# ===== STEP 2: Load Application Core Scripts (can now use Firebase safely) ===== #}
     <script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}"></script>
 
@@ -580,6 +618,10 @@
     <script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}"></script>
 
 
+=======
+    {# ===== STEP 2: Load Application Core Scripts ===== #}
+    <script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}"></script>
+>>>>>>> temp_branch
     <script type="module" src="{{ asset('/assets/js/dist/script.js') }}"></script>
 
     {# ===== STEP 3: Load Feature Scripts (Non-critical) ===== #}
@@ -616,6 +658,7 @@
         ) %}
     {% set show_public_assistant = is_guest_user or is_regular_user %}
 
+<<<<<<< HEAD
     {% if show_public_assistant %}
     <div id="publicAssistantWrapper" class="bb-assistant-public">
         <!-- Floating Button -->
@@ -1065,6 +1108,15 @@
     {% if show_public_assistant %}
     <script type="module" src="{{ asset('/assets/ai-assistant/bootstrap/public-assistant.js') }}"></script>
     {% endif %}
+=======
+        {% if show_public_assistant %}
+        {% include 'partials/ai-assistant/public.twig' %}
+    {% elseif is_admin_user %}
+        {% include 'partials/ai-assistant/admin.twig' %}
+    {% endif %}
+
+    <script src="{{ asset('/ai/js/assistant.js') }}"></script>
+>>>>>>> temp_branch
 
 </body>
 </html>

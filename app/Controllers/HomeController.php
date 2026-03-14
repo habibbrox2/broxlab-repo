@@ -17,6 +17,7 @@ $router->get('/', function () use ($twig, $homeModel) {
     $topServices = $homeModel->getTopServices(8);
 
     echo $twig->render('public/home.twig', [
+<<<<<<< HEAD
     'contents' => $data['contents'],
     'top_posts' => $topPosts,
     'top_services' => $topServices,
@@ -25,6 +26,16 @@ $router->get('/', function () use ($twig, $homeModel) {
     'sort' => $sort,
     'stats' => $stats,
     'title' => 'Home'
+=======
+        'contents' => $data['contents'],
+        'top_posts' => $topPosts,
+        'top_services' => $topServices,
+        'total_pages' => $data['total_pages'],
+        'current_page' => $page,
+        'sort' => $sort,
+        'stats' => $stats,
+        'title' => 'Home'
+>>>>>>> temp_branch
     ]);
 });
 
@@ -71,9 +82,15 @@ $router->post('/contact', function () use ($mysqli, $twig) {
 
     if (!empty($errors)) {
         echo $twig->render('public/contact.twig', [
+<<<<<<< HEAD
         'title' => 'Contact',
         'errors' => $errors,
         'old' => $_POST
+=======
+            'title' => 'Contact',
+            'errors' => $errors,
+            'old' => $_POST
+>>>>>>> temp_branch
         ]);
         return;
     }
@@ -134,23 +151,37 @@ $router->post('/contact', function () use ($mysqli, $twig) {
                 $notificationTitle,
                 $notificationBody,
                 null,
+<<<<<<< HEAD
             ['action_url' => '/admin/contact', 'message_id' => $contactId],
             ['push']
             );
         }
     }
     else {
+=======
+                ['action_url' => '/admin/contact', 'message_id' => $contactId],
+                ['push']
+            );
+        }
+    } else {
+>>>>>>> temp_branch
         logActivity("Contact Message Failed", "contact", 0, ['name' => $name, 'email' => $email], 'failure');
     }
 
     // Success message
     echo $twig->render('public/contact.twig', [
+<<<<<<< HEAD
     'title' => 'Contact',
     'success' => 'Thank you for contacting us! We will get back to you soon.'
+=======
+        'title' => 'Contact',
+        'success' => 'Thank you for contacting us! We will get back to you soon.'
+>>>>>>> temp_branch
     ]);
 });
 
 
+<<<<<<< HEAD
 // ==================== PUBLIC AI CHAT API ====================
 // API endpoint for public assistant AI chat (uses backend AI provider)
 // Accepts context parameter: 'public' or 'admin' to use appropriate system prompt
@@ -260,6 +291,9 @@ $router->post('/api/public-chat/support', function () use ($mysqli) {
         echo json_encode(['success' => false, 'error' => 'Failed to save message']);
     }
 });
+=======
+
+>>>>>>> temp_branch
 
 // ---------------- IMAGE UPLOAD ----------------
 $router->post('/upload', function () use ($mysqli) {
@@ -307,8 +341,12 @@ $router->post('/upload', function () use ($mysqli) {
         $baseName = '';
         if (!empty($_POST['permalink'])) {
             $baseName = sanitize_input($_POST['permalink']);
+<<<<<<< HEAD
         }
         else {
+=======
+        } else {
+>>>>>>> temp_branch
             // Try to infer from referer if editing a post
             $referer = $_SERVER['HTTP_REFERER'] ?? '';
             if (preg_match('/\/admin\/posts\/edit\?id=(\d+)/', $referer, $m)) {
@@ -356,6 +394,7 @@ $router->post('/upload', function () use ($mysqli) {
         // For editor compatibility, return absolute URL in `file` key (fallback to relative `url`)
         $returnFileUrl = $fullUrl ?: $webUrl ?: ($result['url'] ?? null);
         echo json_encode([
+<<<<<<< HEAD
         'success' => true,
         'file' => $returnFileUrl,
         'url' => $webUrl,
@@ -364,6 +403,15 @@ $router->post('/upload', function () use ($mysqli) {
         ]);
     }
     catch (Throwable $e) {
+=======
+            'success' => true,
+            'file' => $returnFileUrl,
+            'url' => $webUrl,
+            'full_url' => $fullUrl,
+            'media_id' => $result['media_id'] ?? null
+        ]);
+    } catch (Throwable $e) {
+>>>>>>> temp_branch
         http_response_code(500);
         logError('Upload route error: ' . $e->getMessage(), 'UPLOAD_ERROR');
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
@@ -376,8 +424,13 @@ $router->post('/upload', function () use ($mysqli) {
 $router->get('/advertise', function () use ($twig, $statisticsModel) {
     $stats = $statisticsModel->getStatistics();
     echo $twig->render('public/advertise.twig', [
+<<<<<<< HEAD
     'title' => 'Advertise With Us',
     'stats' => $stats
+=======
+        'title' => 'Advertise With Us',
+        'stats' => $stats
+>>>>>>> temp_branch
     ]);
 });
 
@@ -404,9 +457,15 @@ $router->post('/advertise', function () use ($twig, $advertisementModel) {
 
     if (!empty($errors)) {
         echo $twig->render('public/advertise.twig', [
+<<<<<<< HEAD
         'title' => 'Advertise With Us',
         'errors' => $errors,
         'old' => $_POST
+=======
+            'title' => 'Advertise With Us',
+            'errors' => $errors,
+            'old' => $_POST
+>>>>>>> temp_branch
         ]);
         return;
     }
@@ -419,11 +478,16 @@ $router->post('/advertise', function () use ($twig, $advertisementModel) {
             "Advertisement Inquiry",
             "advertise",
             $inquiryId,
+<<<<<<< HEAD
         ['name' => $name, 'company' => $company],
+=======
+            ['name' => $name, 'company' => $company],
+>>>>>>> temp_branch
             'success'
         );
 
         echo $twig->render('public/advertise.twig', [
+<<<<<<< HEAD
         'title' => 'Advertise With Us',
         'success' => 'Thank you! We will review your inquiry and contact you soon.'
         ]);
@@ -433,6 +497,16 @@ $router->post('/advertise', function () use ($twig, $advertisementModel) {
         'title' => 'Advertise With Us',
         'errors' => ['Failed to submit inquiry. Please try again later.'],
         'old' => $_POST
+=======
+            'title' => 'Advertise With Us',
+            'success' => 'Thank you! We will review your inquiry and contact you soon.'
+        ]);
+    } else {
+        echo $twig->render('public/advertise.twig', [
+            'title' => 'Advertise With Us',
+            'errors' => ['Failed to submit inquiry. Please try again later.'],
+            'old' => $_POST
+>>>>>>> temp_branch
         ]);
     }
 });

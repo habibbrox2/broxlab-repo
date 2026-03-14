@@ -1,0 +1,133 @@
+{% extends "admin/layout.twig" %}
+{% block title %}AI Knowledge Base{% endblock %}
+{% set breadcrumbs = breadcrumbs ?? [] %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="admin-page-header mb-4">
+        <div class="admin-page-title"><i class="bi bi-book"></i> AI Knowledge Base</div>
+        <div class="admin-page-subtitle">Upload and manage knowledge slices used to ground AI responses.</div>
+    </div>
+
+    <div id="alertContainer"></div>
+
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <input type="text" class="form-control" id="kbSearch" placeholder="Search knowledge base...">
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" id="kbFilterCategory">
+                <option value="">All Categories</option>
+                <option value="general">General</option>
+                <option value="admin">Admin</option>
+                <option value="api">API</option>
+                <option value="features">Features</option>
+                <option value="security">Security</option>
+                <option value="deployment">Deployment</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" id="kbFilterType">
+                <option value="">All Types</option>
+                <option value="text">Text</option>
+                <option value="pdf">PDF</option>
+                <option value="url">URL</option>
+                <option value="document">Document</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <span class="badge bg-primary" id="kbCount">0 items</span>
+        </div>
+        <div class="col-md-3 text-end">
+            <button class="btn btn-outline-secondary btn-sm me-1" id="btnRefresh" title="Refresh">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            <button class="btn btn-primary btn-sm" id="btnAddSlice"><i class="bi bi-plus-lg"></i> Add Slice</button>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Knowledge Slices</h5>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="kbShowInactive">
+                <label class="form-check-label" for="kbShowInactive">Show Inactive</label>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="kbList"></div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="kbModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Knowledge Slice</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="kbForm">
+                <input type="hidden" name="id" id="kb_id" value="0">
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <label class="form-label">Title <span class="text-danger">*</span></label>
+                        <input class="form-control" name="title" id="kb_title" required placeholder="e.g., Company Policies">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Priority</label>
+                        <input type="number" class="form-control" name="priority" id="kb_priority" value="0" min="0" max="100">
+                        <small class="text-muted">Higher = more important</small>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" name="category" id="kb_category">
+                            <option value="">No Category</option>
+                            <option value="general">General</option>
+                            <option value="admin">Admin</option>
+                            <option value="api">API</option>
+                            <option value="features">Features</option>
+                            <option value="security">Security</option>
+                            <option value="deployment">Deployment</option>
+                            <option value="content">Content</option>
+                            <option value="notification">Notification</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Source Type</label>
+                        <select class="form-select" name="source_type" id="kb_source_type">
+                            <option value="text">Text</option>
+                            <option value="pdf">PDF Document</option>
+                            <option value="url">Web URL</option>
+                            <option value="document">Other Document</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Content <span class="text-danger">*</span></label>
+                    <textarea class="form-control" name="content" id="kb_content" rows="10" required placeholder="Enter the knowledge content here..."></textarea>
+                    <small class="text-muted">For PDFs/URLs, you may paste extracted text content for AI context.</small>
+                </div>
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="kb_is_active" checked>
+                    <label class="form-check-label" for="kb_is_active">Active</label>
+                </div>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" id="kbSaveBtn">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/ai/js/ai-knowledge-manager.js?v=4"></script>
+{% endblock %}

@@ -84,7 +84,19 @@ Options -Indexes
 #    Header set Referrer-Policy "strict-origin-when-cross-origin"
 #</IfModule>
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> temp_branch
 # ---------------- PHP version handler ----------------
 <IfModule mime_module>
   AddHandler application/x-httpd-ea-php82 .php .php8 .phtml
 </IfModule>
+<<<<<<< HEAD
+=======
+
+# ---------------- Favicon redirect for old path ----------------
+# Redirect old favicon path to new location
+RewriteRule ^uploads/logo/favicon-.*\.ico$ /assets/favicon.ico [R=301,L]
+>>>>>>> temp_branch

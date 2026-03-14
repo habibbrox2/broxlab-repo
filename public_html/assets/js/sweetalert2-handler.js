@@ -420,7 +420,10 @@
             delete window.__INITIAL_FLASH;
             delete window.__INITIAL_FLASH_QUEUE;
 
+<<<<<<< HEAD
             console.log('✅ SweetAlert2 Message Handler v3.0 initialized');
+=======
+>>>>>>> temp_branch
         },
 
         getConfig: function () {

@@ -1,0 +1,256 @@
+{% extends "admin/layout.twig" %}
+{# ============================
+FILE: templates/blog_dashboard.twig
+============================ #}
+{% import "_macros/dashboard_macros.twig" as ui %}
+{% block title %}Admin Dashboard{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid">
+    {# =========================
+      Dashboard Header
+      ========================= #}
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-speedometer2"></i> Welcome back, {{ admin_user.full_name|default(admin_user.username|title) }}
+      </div>
+      <p class="admin-page-subtitle">Content overview &middot; {{ "now"|date("F j, Y") }}</p>
+    </div>
+    {# =========================
+      User Roles & Permissions
+      ========================= #}
+    {% if user_roles and user_roles|length > 0 %}
+      <div class="alert alert-info alert-dismissible fade show rounded-4 mb-4"
+           role="alert">
+        <div class="d-flex align-items-start justify-content-between">
+          <div>
+            <h6 class="alert-heading mb-2">
+              <i class="bi bi-shield-check me-2"></i>Your Access Level
+            </h6>
+            <div class="d-flex flex-wrap gap-2 mb-2">
+              {% for role in user_roles %}
+                <span class="badge bg-{{ role.name|replace({"_": " "}) |title }} text-white">
+                  <i class="bi bi-shield-check me-1"></i>{{ role.name|replace({"_": " "}) |title }}
+                </span>
+              {% endfor %}
+            </div>
+            {% if user_permissions and user_permissions|length > 0 %}
+              {% set module_names = [] %}
+              {% for permission in user_permissions %}
+                {% if permission.module is not null %}
+                  {% set module_names = module_names | merge([permission.module]) %}
+                {% endif %}
+              {% endfor %}
+              <small class="text-muted d-block">You have <strong>{{ user_permissions|length }}</strong> permissions across {{ module_names|unique|length }} modules</small>
+            {% endif %}
+          </div>
+          <button type="button"
+                  class="modern-btn-close"
+                  data-bs-dismiss="alert"
+                  aria-label="Close"></button>
+        </div>
+      </div>
+    {% endif %}
+    {# =========================
+      Stat Cards
+      ========================= #}
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card success h-100">
+          <div class="stat-label">Total Posts</div>
+          <h3 class="stat-value">{{ stats.total_posts|default(0) }}</h3>
+          <div class="stat-change">+{{ stats.new_posts_today|default(0) }} today</div>
+          <i class="bi bi-journal-text stat-icon"></i>
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card info h-100">
+          <div class="stat-label">Comments Today</div>
+          <h3 class="stat-value">{{ stats.today_comments|default(0) }}</h3>
+          <div class="stat-change">Last sync {{ last_sync_at|default("now") |date("H:i") }}</div>
+          <i class="bi bi-chat-dots stat-icon"></i>
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card warning h-100">
+          <div class="stat-label">Pending Reviews</div>
+          <h3 class="stat-value">{{ stats.pending_reviews|default(0) }}</h3>
+          <div class="stat-change">Drafts: {{ stats.draft_count|default(0) }}</div>
+          <i class="bi bi-hourglass-split stat-icon"></i>
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card primary h-100">
+          <div class="stat-label">Subscribers</div>
+          <h3 class="stat-value">{{ stats.subscribers|default(0) }}</h3>
+          <div class="stat-change">New: {{ stats.new_subscribers|default(0) }}</div>
+          <i class="bi bi-people stat-icon"></i>
+        </div>
+      </div>
+    </div>
+    <div class="admin-panel-card mb-4">
+      <div class="admin-panel-card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Service Application & Payment Stats</h6>
+        <div class="d-flex align-items-center gap-2">
+          <a href="/admin/applications" class="modern-btn modern-btn-white btn-sm">Applications</a>
+          <a href="/admin/applications/receipts"
+             class="modern-btn modern-btn-white btn-sm">Receipts</a>
+        </div>
+      </div>
+      <div class="admin-panel-card-body">
+        <div class="row g-3">
+          <div class="col-12 col-sm-6 col-xl-3">
+            <a href="/admin/applications"
+               class="d-block h-100 text-decoration-none text-reset">
+              <div class="stat-card primary h-100">
+                <div class="stat-label">Service Applications</div>
+                <h3 class="stat-value">{{ stats.service_applications_total|default(0) }}</h3>
+                <div class="stat-change">
+                  Pending {{ stats.service_applications_pending|default(0) }} · Processing {{ stats.service_applications_processing|default(0) }}
+                </div>
+                <i class="bi bi-file-earmark-text stat-icon"></i>
+              </div>
+            </a>
+          </div>
+          <div class="col-12 col-sm-6 col-xl-3">
+            <a href="/admin/applications?status=approved"
+               class="d-block h-100 text-decoration-none text-reset">
+              <div class="stat-card success h-100">
+                <div class="stat-label">Approved</div>
+                <h3 class="stat-value">{{ stats.service_applications_approved|default(0) }}</h3>
+                <div class="stat-change">Rejected {{ stats.service_applications_rejected|default(0) }}</div>
+                <i class="bi bi-check2-circle stat-icon"></i>
+              </div>
+            </a>
+          </div>
+          <div class="col-12 col-sm-6 col-xl-3">
+            <a href="/admin/applications/receipts"
+               class="d-block h-100 text-decoration-none text-reset">
+              <div class="stat-card info h-100">
+                <div class="stat-label">Payment Records</div>
+                <h3 class="stat-value">{{ stats.service_payments_total|default(0) }}</h3>
+                <div class="stat-change">
+                  Paid {{ stats.service_payments_paid|default(0) }} · Pending {{ stats.service_payments_pending|default(0) }}
+                </div>
+                <i class="bi bi-credit-card stat-icon"></i>
+              </div>
+            </a>
+          </div>
+          <div class="col-12 col-sm-6 col-xl-3">
+            <a href="/admin/applications/receipts"
+               class="d-block h-100 text-decoration-none text-reset">
+              <div class="stat-card warning h-100">
+                <div class="stat-label">Payment Revenue</div>
+                <h3 class="stat-value">{{ stats.service_payments_revenue|default(0) |number_format(2) }}</h3>
+                <div class="stat-change">Failed {{ stats.service_payments_failed|default(0) }}</div>
+                <i class="bi bi-cash-coin stat-icon"></i>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {# =========================
+      Recent Posts
+      ========================= #}
+    <div class="row g-4">
+      <div class="col-12 col-xxl-8">
+        <div class="admin-panel-card border-0 shadow-sm rounded-4">
+          <div class="admin-panel-card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Recent Posts</h5>
+            <a href="/admin/posts" class="modern-btn btn-sm btn-outline-primary">View all</a>
+          </div>
+          <div class="admin-panel-card-body p-0">
+            {% if recent_posts is not empty %}
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>ID</th>
+                      <th>Title</th>
+                      <th>Author</th>
+                      <th>Status</th>
+                      <th>Published</th>
+                      <th class="text-end">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for post in recent_posts %}
+                      <tr>
+                        <td>#{{ post.id }}</td>
+                        <td class="fw-semibold">{{ post.title }}</td>
+                        <td>{{ post.author_name }}</td>
+                        <td>{{ ui.status_badge(post.status) }}</td>
+                        <td class="text-muted small">{{ post.published_at|date("d M, Y h:i A") }}</td>
+                        <td class="text-end">
+                          <a href="/admin/posts/{{ post.id }}"
+                             class="modern-btn btn-sm btn-outline-secondary">View</a>
+                          <a href="/admin/posts/{{ post.id }}/edit"
+                             class="modern-btn btn-sm btn-primary">Edit</a>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="p-4">{{ ui.empty_state('No recent posts', 'New blog posts will appear here.') }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {# Quick Actions & Recent Comments #}
+      <div class="col-12 col-xxl-4">
+        <div class="admin-panel-card mb-4">
+          <div class="admin-panel-card-header">
+            <h6 class="mb-0">Quick Actions</h6>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="d-grid gap-2">
+              <a class="modern-btn modern-btn-white" href="/admin/posts/create"><i class="bi bi-pencil-square me-2"></i>New Post</a>
+              <a class="modern-btn modern-btn-white" href="/admin/categories"><i class="bi bi-folder me-2"></i>Categories</a>
+              <a class="modern-btn modern-btn-white" href="/admin/tags"><i class="bi bi-hash me-2"></i>Tags</a>
+              <a class="modern-btn modern-btn-white" href="/admin/comments"><i class="bi bi-chat-dots me-2"></i>Comments</a>
+            </div>
+          </div>
+        </div>
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header">
+            <h6 class="mb-0">Recent Comments</h6>
+          </div>
+          <div class="admin-panel-card-body">
+            {% if recent_comments is not empty %}
+              <ul class="list-unstyled mb-0">
+                {% for comment in recent_comments %}
+                  <li class="mb-3">
+                    <div class="fw-semibold">{{ comment.author }}</div>
+                    <div class="small text-muted">On: {{ comment.post_title }}</div>
+                    <div class="text-muted small">{{ comment.created_at|date("d M, Y h:i A") }}</div>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              {{ ui.empty_state('No comments yet', "Readers' comments will appear here.") }}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {# Posts Trend Chart Placeholder #}
+    <div class="admin-panel-card mt-4">
+      <div class="admin-panel-card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Posts & Comments Trend</h6>
+        <div class="text-muted small">Last 30 days</div>
+      </div>
+      <div class="admin-panel-card-body">
+        <div id="chart-posts" class="chart-container w-100"></div>
+        <div class="small text-muted mt-2">Hook your JS chart here (e.g., ApexCharts / Chart.js)</div>
+      </div>
+    </div>
+  </div>
+  <div id="admin-dashboard-data"
+       data-trend-labels="{{ trend.labels|default([]) |json_encode|e('html_attr') }}"
+       data-trend-series="{{ trend.series|default([]) |json_encode|e('html_attr') }}"
+       class="inl-a-0006"></div>
+{% endblock %}
+{% block scripts %}{{ parent() }}{% endblock %}
