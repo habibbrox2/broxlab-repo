@@ -442,7 +442,14 @@ function aiChatLogUsage(mysqli $mysqli, string $provider, string $model, array $
         $userId,
         $metadataJson
     );
-    $stmt->execute();
+
+    // Execute with error handling - don't let logging failure break the chat
+    try {
+        $stmt->execute();
+    } catch (\Exception $e) {
+        // Log silently but don't break the chat functionality
+        error_log('AI usage logging failed: ' . $e->getMessage());
+    }
     $stmt->close();
 }
 

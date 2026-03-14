@@ -83,8 +83,21 @@ Options -Indexes
 #<IfModule mod_headers.c>
 #    Header set Referrer-Policy "strict-origin-when-cross-origin"
 #</IfModule>
+<FilesMatch "^(deploy|rollback|deploy_config)\.php$|^(deploy\.log|version\.json)$">
+    Deny from all
+</FilesMatch>
 
+<FilesMatch "^deploy\.php$">
+    Allow from 140.82.112.0/20
+    Allow from 185.199.108.0/22
+    Allow from 192.30.252.0/22
+    Allow from 143.55.64.0/20
+</FilesMatch>
 # ---------------- PHP version handler ----------------
 <IfModule mime_module>
   AddHandler application/x-httpd-ea-php82 .php .php8 .phtml
 </IfModule>
+
+# ---------------- Favicon redirect for old path ----------------
+# Redirect old favicon path to new location
+RewriteRule ^uploads/logo/favicon-.*\.ico$ /assets/favicon.ico [R=301,L]

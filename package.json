@@ -1,5 +1,5 @@
 {
-    "name": "broxbhai",
+    "name": "BroxLab",
     "version": "2.0.0",
     "description": "Bengali-first mobile tech platform with Firebase integration",
     "type": "module",
@@ -21,6 +21,8 @@
         "build:app:dist:maps": "node build/esbuild.config.js --target=app --sourcemap=external",
         "dev:tailwind": "tailwindcss -c build/tailwind.config.js -i ./public_html/assets/css/tailwind-input.css -o ./public_html/assets/css/tailwind.css --watch",
         "build:tailwind": "tailwindcss -c build/tailwind.config.js -i ./public_html/assets/css/tailwind-input.css -o ./public_html/assets/css/tailwind.css --minify",
+        "build:css": "node build/esbuild-css.mjs",
+        "build:css:watch": "node build/esbuild-css.mjs --watch",
         "clean:firebase:v2:dist": "node -e \"require('fs').rmSync('public_html/assets/firebase/v2/dist', { recursive: true, force: true })\"",
         "clean:build": "node -e \"require('fs').rmSync('public_html/assets/firebase/v2/dist', { recursive: true, force: true }); require('fs').rmSync('public_html/assets/ai-assistant/dist', { recursive: true, force: true }); require('fs').rmSync('public_html/assets/js/dist', { recursive: true, force: true })\"",
         "naming:check": "node build/Scripts/check-naming-conventions.mjs",
@@ -33,14 +35,7 @@
         "firebase:providers:sync": "node scripts/firebase/activate-firebaseui-providers.mjs",
         "lint": "eslint --config build/eslint.config.cjs \"public_html/assets/js/**/*.js\" \"public_html/assets/firebase/v2/**/*.js\" \"public_html/assets/ai-assistant/**/*.js\" \"build/Scripts/**/*.mjs\" \"build/esbuild.config.js\" \"build/esbuild-firebase.mjs\" \"build/esbuild-assistants.mjs\"",
         "e2e:ai-system": "node scripts/e2e/ai-system-sanity.mjs",
-        "test": "echo \"No tests configured\"",
-        "git": "node git/git-launcher.cjs",
-        "git-helper": "node git/git-terminal.cjs",
-        "clone": "node git/git-terminal.cjs clone",
-        "branch": "node git/git-terminal.cjs location",
-        "sync": "node git/git-terminal.cjs smart-clone",
-        "backup-db": "php scripts/db-backup.php",
-        "restore-db": "php scripts/db-restore.php"
+        "test": "echo \"No tests configured\""
     },
     "keywords": [
         "firebase",
@@ -49,7 +44,7 @@
         "auth",
         "pwa"
     ],
-    "author": "BroxBhai Team",
+    "author": "BroxLab Team",
     "license": "MIT",
     "dependencies": {
         "@anthropic-ai/sdk": "^0.78.0",

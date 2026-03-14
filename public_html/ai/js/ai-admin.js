@@ -469,6 +469,7 @@ if (!window.BroxAdminInstance) {
             this.puterDisabled = false;
             this.fileHandler = null;
             this.modelBarOpen = false;
+            this.isRecording = false; // Voice recording state
             this._providersBootstrapped = false;
             this._providersBootstrapPromise = null;
             this._bgModelsRefresh = null;
@@ -559,11 +560,142 @@ if (!window.BroxAdminInstance) {
                 historySidebar: document.getElementById('adminAiSidebar'),
                 historyList: document.getElementById('adminAiHistory'),
                 historyToggle: document.getElementById('adminAiHistoryToggle'),
-                historySidebarClose: document.getElementById('adminAiSidebarClose')
+                historySidebarClose: document.getElementById('adminAiSidebarClose'),
+                mic: document.getElementById('adminAiMic')
             };
 
             // Initialize file handler
             this.fileHandler = new FileAttachmentHandler();
+        }
+
+        // ── Voice Input (Speech Recognition) ───────────────────────────────────────
+        initVoiceInput() {
+            // Get mic button directly from DOM - more reliable than cached reference
+            const micBtn = document.getElementById('adminAiMic');
+
+            console.log('[Voice] initVoiceInput called, button found:', !!micBtn);
+
+            if (!micBtn) {
+                console.error('[Voice] Mic button not found in DOM');
+                return;
+            }
+
+            console.log('[Voice] Mic button:', micBtn);
+
+            // Check browser support
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                console.warn('[Voice] SpeechRecognition not supported');
+                micBtn.title = 'Voice input not supported in this browser';
+                micBtn.style.opacity = '0.5';
+                micBtn.style.cursor = 'not-allowed';
+                return;
+            }
+
+            console.log('[Voice] SpeechRecognition supported, creating instance...');
+
+            try {
+                const recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = true;
+                recognition.lang = 'en-US';
+
+                // Store reference
+                this.recognition = recognition;
+
+                // Use self reference to avoid 'this' binding issues
+                const self = this;
+
+                recognition.onstart = function () {
+                    console.log('[Voice] Recording started');
+                    self.isRecording = true;
+                    micBtn.classList.add('recording');
+                    micBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
+                    self.updateStatus('recording', 'Listening...');
+                };
+
+                recognition.onresult = function (event) {
+                    console.log('[Voice] Result received');
+                    let finalTranscript = '';
+                    let interimTranscript = '';
+
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript;
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+
+                    const inputEl = document.getElementById('adminAiInput');
+                    if (inputEl) {
+                        if (finalTranscript) {
+                            inputEl.value = (inputEl.value || '') + finalTranscript;
+                        } else if (interimTranscript) {
+                            inputEl.value = (inputEl.value || '') + interimTranscript;
+                        }
+
+                        // Auto-resize
+                        inputEl.style.height = 'auto';
+                        inputEl.style.height = Math.min(inputEl.scrollHeight, 150) + 'px';
+
+                        // Update character count
+                        const charCount = document.getElementById('adminAiCharCount');
+                        if (charCount) {
+                            const len = inputEl.value.length;
+                            charCount.textContent = `${len}/${ADMIN_CONFIG.maxInputLength}`;
+                        }
+                    }
+                };
+
+                recognition.onerror = function (event) {
+                    console.error('[Voice] Error:', event.error);
+                    self.isRecording = false;
+                    micBtn.classList.remove('recording');
+                    micBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
+                    self.updateStatus('ready', 'Ready');
+
+                    if (event.error === 'not-allowed') {
+                        self.updateStatus('error', 'Microphone access denied');
+                        alert('Please allow microphone access to use voice input.');
+                    }
+                };
+
+                recognition.onend = function () {
+                    console.log('[Voice] Recording ended');
+                    self.isRecording = false;
+                    micBtn.classList.remove('recording');
+                    micBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
+                    self.updateStatus('ready', 'Ready');
+                };
+
+                // Direct onclick handler - most reliable
+                micBtn.onclick = function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('[Voice] Mic clicked, isRecording:', self.isRecording);
+
+                    if (self.isRecording) {
+                        console.log('[Voice] Stopping recognition...');
+                        recognition.stop();
+                    } else {
+                        console.log('[Voice] Starting recognition...');
+                        try {
+                            recognition.start();
+                        } catch (err) {
+                            console.error('[Voice] Start error:', err);
+                            if (err.message && err.message.includes('already started')) {
+                                recognition.stop();
+                            }
+                        }
+                    }
+                };
+
+                console.log('[Voice] Voice input initialized successfully');
+            } catch (e) {
+                console.error('[Voice] Initialization error:', e);
+            }
         }
 
         // ── Context Management ─────────────────────────────────────────────────
@@ -881,6 +1013,14 @@ if (!window.BroxAdminInstance) {
             return cleaned || 'AI';
         }
 
+        formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
         // ── Status Management ──────────────────────────────────────────────────
         updateStatus(status, text) {
             if (this.nodes.statusDot) {
@@ -960,6 +1100,9 @@ if (!window.BroxAdminInstance) {
                     this.fileHandler?.input?.click();
                 };
             }
+
+            // Voice input (Microphone) - Initialize directly, don't rely on cached node
+            this.initVoiceInput();
 
             // Clear chat
             if (this.nodes.clear) {

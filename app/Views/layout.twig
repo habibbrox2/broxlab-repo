@@ -87,28 +87,23 @@
     {# ===== CRITICAL CSS PRELOAD ===== #}
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" as="style">
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" as="style">
+    <link rel="preload" href="{{ asset('/assets/css/dist/public-bundle.css') }}" as="style">
 
     {# ===== BOOTSTRAP CSS (Critical Path) ===== #}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css" rel="stylesheet">
 
     {# ===== GOOGLE FONTS (Deferred Loading) ===== #}
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'" async>
     <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
 
     {# ===== BOOTSTRAP ICONS (Deferred Loading) ===== #}
-    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" onload="this.onload=null;this.rel='stylesheet'" async>
     <noscript><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"></noscript>
 
-    {# ===== APPLICATION STYLESHEETS (with cache busting) ===== #}
-
-    <link rel="stylesheet" href="{{ asset('/assets/css/1-variables.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/css/2-base.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/css/3-navbar.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/css/4-components.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/css/5-feed.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/css/6-pages.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/css/7-dark-mode.css') }}">
+    {# ===== APPLICATION STYLESHEETS (Bundled for Performance) ===== #}
+    {# Use bundled CSS for better performance #}
+    <link rel="stylesheet" href="{{ asset('/assets/css/dist/public-bundle.css') }}">
     <link rel="stylesheet" href="{{ asset('/assets/css/tailwind.css') }}">
 
     {% block extra_head %}{% endblock %}
@@ -118,7 +113,7 @@
 {# ===== BODY SECTION ===== #}
 <body role="application">
 
-    {# ===== JSON-LD SCHEMAS ===== #}
+    {# ===== JSON-LD SCHEMAS (Keep in head for SEO) ===== #}
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -537,7 +532,7 @@
     <script src="{{ asset('/assets/js/bootstrap-lite.js') }}" defer></script>
 
     {# ===== STEP 1.5: SweetAlert2 + Global Message Handler ===== #}
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js" defer></script>
     <script src="{{ asset('/assets/js/dist/sweetalert2-handler.js') }}" defer></script>
 {# ===== FIREBASE v2 INITIALIZATION (PRODUCTION SAFE) ===== #}
 

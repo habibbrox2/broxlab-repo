@@ -96,8 +96,8 @@ $router->post('/api/public-chat/support', function () use ($mysqli) {
         $adminIds = $contactModel->getAdminUserIds();
         if (!empty($adminIds)) {
             require_once __DIR__ . '/../Helpers/FirebaseHelper.php';
-            $notificationTitle = "নতুন যোগাযোগ বার্তা";
-            $notificationBody = "$name (" . substr($contact, 0, 15) . "...) একটা বার্তা পাঠিয়েছেন: \"$subject\"";
+            $notificationTitle = "উপেন যোগাযোগ বার্তা";
+            $notificationBody = "$name (" . substr($contact, 0, 15) . "...) एকটা বার্তা পাঠাএং: \"$subject\"";
             sendNotiAdmin(
                 $mysqli,
                 $adminIds,
@@ -119,8 +119,10 @@ $router->post('/api/chat', function () use ($mysqli) {
 
     $input = json_decode(file_get_contents('php://input'), true);
     $message = $input['message'] ?? '';
-    $provider = $input['provider'] ?? null;
-    $model = $input['model'] ?? null;
+    // Provider and model may be sent as empty strings from the UI. Treat empty values as null
+    // so that AgentClient can apply auto‑switching logic.
+    $provider = (!empty($input['provider'])) ? $input['provider'] : null;
+    $model = (!empty($input['model'])) ? $input['model'] : null;
     $context = $input['context'] ?? 'public'; // 'public' or 'admin'
 
     if (!$message) {
@@ -154,4 +156,111 @@ $router->post('/api/chat', function () use ($mysqli) {
     // The chat method will exit script automatically if streaming is active.
     $response = $agent->chat($messages, $provider, $model, $extraContext, $stream);
     echo json_encode($response);
+});
+
+// ==================== NEW API ENDPOINTS FOR MODEL MANAGEMENT ====================
+
+// GET /api/ai/models/list - Get available models with caching
+$router->get('/api/ai/models/list', function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    $agent = new AgentClient($mysqli);
+    $provider = $_GET['provider'] ?? 'openrouter';
+
+    // Use reflection to access private methods for backward compatibility
+    $reflection = new ReflectionClass($agent);
+    $getAvailableModels = $reflection->getMethod('getAvailableModels');
+    $getAvailableModels->setAccessible(true);
+    $models = $getAvailableModels->invoke($agent, $provider);
+
+    echo json_encode([
+        'success' => true,
+        'provider' => $provider,
+        'models' => $models,
+        'cache_stats' => $agent->getCacheStats()
+    ]);
+});
+
+// GET /api/ai/models/info - Get specific model information
+$router->get('/api/ai/models/info', function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    $agent = new AgentClient($mysqli);
+    $provider = $_GET['provider'] ?? 'openrouter';
+    $modelName = $_GET['model'] ?? '';
+
+    if (empty($modelName)) {
+        echo json_encode(['success' => false, 'error' => 'Model name is required']);
+        return;
+    }
+
+    // Use reflection to access private methods
+    $reflection = new ReflectionClass($agent);
+    $getModelInfo = $reflection->getMethod('getModelInfo');
+    $getModelInfo->setAccessible(true);
+    $result = $getModelInfo->invoke($agent, $provider, $modelName);
+    echo json_encode($result);
+});
+
+// POST /api/ai/cache/clear - Clear cache
+$router->post('/api/ai/cache/clear', function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    $agent = new AgentClient($mysqli);
+    $type = $_POST['type'] ?? 'all'; // 'all', 'models', 'chat'
+
+    // Use reflection to access private methods
+    $reflection = new ReflectionClass($agent);
+    $clearAllCache = $reflection->getMethod('clearAllCache');
+    $clearAllCache->setAccessible(true);
+
+    switch ($type) {
+        case 'models':
+            $clearProviderCache = $reflection->getMethod('clearProviderCache');
+            $clearProviderCache->setAccessible(true);
+            $clearProviderCache->invoke($agent, $_POST['provider'] ?? 'openrouter');
+            break;
+        case 'chat':
+            $clearAllCache->invoke($agent);
+            break;
+        case 'all':
+        default:
+            $clearAllCache->invoke($agent);
+    }
+
+    echo json_encode(['success' => true, 'message' => 'Cache cleared successfully']);
+});
+
+// GET /api/ai/cache/stats - Get cache statistics
+$router->get('/api/ai/cache/stats', function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    $agent = new AgentClient($mysqli);
+    $stats = $agent->getCacheStats();
+
+    echo json_encode([
+        'success' => true,
+        'stats' => $stats
+    ]);
+});
+
+// POST /api/ai/test - Test AI connection with model caching
+$router->post('/api/ai/test', function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    $input = json_decode(file_get_contents('php://input'), true);
+    $provider = $input['provider'] ?? 'openrouter';
+    $model = $input['model'] ?? null;
+
+    $agent = new AgentClient($mysqli);
+
+    // Use reflection to access private property
+    $reflection = new ReflectionClass($agent);
+    $aiProviderProp = $reflection->getProperty('aiProvider');
+    $aiProviderProp->setAccessible(true);
+    $aiProvider = $aiProviderProp->getValue($agent);
+
+    $result = $aiProvider->testConnection($provider, $model);
+
+    echo json_encode($result);
 });
