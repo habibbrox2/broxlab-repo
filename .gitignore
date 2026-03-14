@@ -1,60 +1,3 @@
-<<<<<<< HEAD
-# Dependencies
-/vendor/
-
-# Environment variables
-.env
-.env.local
-.env.production
-.env.example
-
-# Logs
-*.log
-/logs/
-storage/logs/
-
-
-# Cache
-/cache/
-storage/cache/
-storage/tmp/
-.tmp.*
-
-# Uploads
-/uploads/
-public_html/uploads/
-public_html/assets/uploads/
-
-# Database backups
-/Database/
-db.sql
-
-# Firebase config
-Config/broxlab-firebase.json
-
-# Node modules
-node_modules/
-
-# Build
-build/
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Composer
-composer.lock
-package-lock.json
-
-# Drive Tmp
-.tmp.*
-.tmp.driveupload
-vs-code-ex/
-=======
 # ═══════════════════════════════════════════════════════════════════╗
 # ║                    PROJECT .gitignore                            ║
 # ║          GitHub Webhook → Enterprise Auto Deploy System          ║
@@ -66,7 +9,6 @@ vs-code-ex/
 /vendor/
 /node_modules/
 
-
 # ─────────────────────────────────────────────────────────────────
 #  2. ENVIRONMENT & SECRETS
 # ─────────────────────────────────────────────────────────────────
@@ -77,7 +19,6 @@ vs-code-ex/
 
 # Firebase & Service Configs (secrets)
 /Config/broxlab-firebase.json
-
 
 # ─────────────────────────────────────────────────────────────────
 #  3. LOGS & CACHE (development only)
@@ -92,7 +33,6 @@ vs-code-ex/
 /storage/logs/deploy_jobs/
 .tmp.*
 
-
 # ─────────────────────────────────────────────────────────────────
 #  4. USER UPLOADS (keep schema, ignore content)
 # ─────────────────────────────────────────────────────────────────
@@ -100,14 +40,12 @@ vs-code-ex/
 /public_html/uploads/
 /public_html/assets/uploads/
 
-
 # ─────────────────────────────────────────────────────────────────
 #  5. BUILD ARTIFACTS
 # ─────────────────────────────────────────────────────────────────
 /build/
 **/dist/
-/\.deploy/
-
+/.deploy/
 
 # ─────────────────────────────────────────────────────────────────
 #  6. IDE & OS FILES
@@ -119,12 +57,10 @@ Thumbs.db
 *.swp
 *.swo
 
-
 # ─────────────────────────────────────────────────────────────────
 #  7. ARCHIVES
 # ─────────────────────────────────────────────────────────────────
 *.zip
-
 
 # ═══════════════════════════════════════════════════════════════════╗
 # ║              DEPLOYMENT SYSTEM (GitHub Webhook)                 ║
@@ -138,26 +74,23 @@ Thumbs.db
 /deploy.last
 sys_temp_dir/deploy*               # Temp lock files
 
+# ─────────────────────────────────────────────────────────────────
+# Deployment Config Files (contains secrets - DO NOT COMMIT)
+# ─────────────────────────────────────────────────────────────────
+scripts/.deploy-config
+.deploy-config
 
 # ─────────────────────────────────────────────────────────────────
 # Webhook Core Files (TRACKED - very important!)
 # ─────────────────────────────────────────────────────────────────
-!public_html/github.php            # GitHub webhook handler
-+public_html/github.php            # GitHub webhook handler
-=public_html/github.php            # GitHub webhook handler
-public_html/github.php            # GitHub webhook handler
+public_html/github.php
 public_html/deploy_config.php
-
-
-
-
 
 version_file.json                   # Version tracking (generated at runtime)
 
 # ─────────────────────────────────────────────────────────────────
 # Database Schema (TRACKED - required for git)
 # ─────────────────────────────────────────────────────────────────
-# ✓ /Database/ - TRACKED (schema files)
 !Database/
 !Database/*.sql
 
@@ -165,17 +98,14 @@ version_file.json                   # Version tracking (generated at runtime)
 /Database/backups/
 *.sql.backup
 
-
 # ─────────────────────────────────────────────────────────────────
 # Migrations (TRACKED - required for git)
 # ─────────────────────────────────────────────────────────────────
-# ✓ /migrations/ - TRACKED (migration files)
 !migrations/
 !migrations/*.sql
 
 # Migration status tracking (generated at runtime)
 /migrations/.status
-
 
 # ─────────────────────────────────────────────────────────────────
 # SCRIPTS FOLDER
@@ -186,10 +116,21 @@ version_file.json                   # Version tracking (generated at runtime)
 /scripts/.idea/
 /scripts/.vscode/
 
+# ─────────────────────────────────────────────────────────────────
+# Database
+# ─────────────────────────────────────────────────────────────────
+/Database/
+db.sql
 
-# ═══════════════════════════════════════════════════════════════════
-# Local development files
-# ═══════════════════════════════════════════════════════════════════
+# ─────────────────────────────────────────────────────────────────
+# Composer
+# ─────────────────────────────────────────────────────────────────
+composer.lock
+package-lock.json
+
+# ═══════════════════════════════════════════════════════════════════╗
+# ║              Local development files                             ║
+# ═══════════════════════════════════════════════════════════════════╝
 .DS_Store
 /tmp/
 /temp/

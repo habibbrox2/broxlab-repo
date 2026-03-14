@@ -4,6 +4,20 @@
  * GitHub Webhook — Auto Deploy
  * cPanel / Shared Hosting — Signature-hardened edition
  *
+ * Features:
+ *   - GitHub webhook deployment (push events)
+ *   - Admin API for status, versions, rollback
+ *   - Signature verification (HMAC SHA256)
+ *   - Automatic backup and rollback
+ *   - Version tracking
+ *
+ * Admin API Endpoints (require ?action=... &api_key=...):
+ *   - ?action=status      → Get deployment status
+ *   - ?action=versions    → List available versions
+ *   - ?action=rollback&version=XXX → Rollback to version
+ *   - ?action=backup      → Create manual backup
+ *   - ?action=list        → List backups
+ *
  * Verified against GitHub's official test vector:
  *   secret  = "It's a Secret to Everybody"
  *   payload = "Hello, World!"
@@ -20,6 +34,275 @@
  */
 
 declare(strict_types=1);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// [0] Check for admin API actions FIRST (before signature verification)
+// ══════════════════════════════════════════════════════════════════════════════
+$action = $_GET['action'] ?? '';
+$apiKey = $_GET['api_key'] ?? '';
+
+if (!empty($action) && !empty($apiKey)) {
+    // Load config for admin API
+    $config = require __DIR__ . '/deploy_config.php';
+    $adminApiKey = $config['admin_api_key'] ?? '';
+
+    // Verify admin API key
+    if (empty($adminApiKey) || !hash_equals($adminApiKey, $apiKey)) {
+        http_response_code(401);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Invalid API key']);
+        exit;
+    }
+
+    // Handle admin actions
+    handleAdminAction($action, $config);
+    exit;
+}
+
+function handleAdminAction(string $action, array $config): void
+{
+    header('Content-Type: application/json');
+
+    switch ($action) {
+        case 'status':
+            // Get deployment status
+            $versionFile = $config['version_file'] ?? '';
+            $backupDir = $config['backup_dir'] ?? '';
+            $logFile = $config['log_file'] ?? '';
+
+            $status = [
+                'success' => true,
+                'status' => 'active',
+                'webhook' => 'configured',
+                'version' => null,
+                'deployed_at' => null,
+                'last_backup' => null,
+                'backups_count' => 0,
+                'disk_usage' => null,
+            ];
+
+            // Get version info
+            if (file_exists($versionFile)) {
+                $versionData = json_decode(file_get_contents($versionFile), true);
+                $status['version'] = $versionData['version'] ?? null;
+                $status['deployed_at'] = $versionData['deployed_at'] ?? null;
+            }
+
+            // Get backup count
+            if (is_dir($backupDir)) {
+                $backups = glob($backupDir . '/*', GLOB_ONLYDIR) ?: [];
+                $status['backups_count'] = count($backups);
+
+                // Get last backup
+                if (!empty($backups)) {
+                    usort($backups, function ($a, $b) {
+                        return filemtime($b) - filemtime($a);
+                    });
+                    $status['last_backup'] = basename($backups[0]);
+                }
+            }
+
+            // Get disk usage
+            if (is_dir($config['project_dir'] ?? '')) {
+                $status['disk_usage'] = round(disk_total_space($config['project_dir']) - disk_free_space($config['project_dir'])) / 1024 / 1024;
+            }
+
+            echo json_encode($status, JSON_PRETTY_PRINT);
+            break;
+
+        case 'versions':
+            // List deployment history
+            $versionFile = $config['version_file'] ?? '';
+
+            $result = [
+                'success' => true,
+                'current_version' => null,
+                'history' => [],
+                'available_backups' => [],
+            ];
+
+            if (file_exists($versionFile)) {
+                $versionData = json_decode(file_get_contents($versionFile), true);
+                $result['current_version'] = $versionData['version'] ?? null;
+                $result['history'] = $versionData['history'] ?? [];
+            }
+
+            // List available backups
+            $backupDir = $config['backup_dir'] ?? '';
+            if (is_dir($backupDir)) {
+                $backups = glob($backupDir . '/*', GLOB_ONLYDIR) ?: [];
+                usort($backups, function ($a, $b) {
+                    return filemtime($b) - filemtime($a);
+                });
+
+                foreach (array_slice($backups, 0, 20) as $backup) {
+                    $info = [
+                        'name' => basename($backup),
+                        'date' => date('Y-m-d H:i:s', filemtime($backup)),
+                        'size' => round(disk_total_space($backup) - disk_free_space($backup)) / 1024 / 1024,
+                    ];
+
+                    // Check for database backup
+                    if (file_exists($backup . '/db_backup.sql')) {
+                        $info['has_database'] = true;
+                    }
+
+                    $result['available_backups'][] = $info;
+                }
+            }
+
+            echo json_encode($result, JSON_PRETTY_PRINT);
+            break;
+
+        case 'rollback':
+            // Rollback to specific version
+            $version = $_GET['version'] ?? '';
+            $backupDir = $config['backup_dir'] ?? '';
+            $projectDir = $config['project_dir'] ?? '';
+            $versionFile = $config['version_file'] ?? '';
+
+            if (empty($version)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Version parameter required']);
+                break;
+            }
+
+            // Find backup
+            $backupPath = $backupDir . '/' . $version;
+            if (!is_dir($backupPath)) {
+                // Try partial match
+                $matches = glob($backupDir . '/*' . $version . '*', GLOB_ONLYDIR);
+                if (!empty($matches)) {
+                    $backupPath = $matches[0];
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['success' => false, 'error' => 'Backup not found: ' . $version]);
+                    break;
+                }
+            }
+
+            try {
+                // Create pre-rollback backup
+                $preRollbackBackup = $backupDir . '/pre_rollback_' . date('Y-m-d_H-i-s');
+                exec('cp -r ' . escapeshellarg($projectDir) . ' ' . escapeshellarg($preRollbackBackup));
+
+                // Restore files
+                exec('rm -rf ' . escapeshellarg($projectDir) . ' && cp -r ' . escapeshellarg($backupPath) . ' ' . escapeshellarg($projectDir));
+
+                // Restore database if available
+                $sqlFile = $backupPath . '/db_backup.sql';
+                if (file_exists($sqlFile)) {
+                    $cmd = 'mysql'
+                        . ' -h' . escapeshellarg($config['db_host'])
+                        . ' -u' . escapeshellarg($config['db_user'])
+                        . ' -p' . escapeshellarg($config['db_pass'])
+                        . ' '   . escapeshellarg($config['db_name'])
+                        . ' < ' . escapeshellarg($sqlFile) . ' 2>&1';
+                    exec($cmd);
+                }
+
+                // Update version file
+                if (file_exists($versionFile ?? '')) {
+                    $versionData = json_decode(file_get_contents($versionFile), true);
+                    $versionData['version'] = $version;
+                    $versionData['rolled_back_at'] = date('Y-m-d H:i:s');
+                    $versionData['rollback_from'] = $versionData['version'] ?? null;
+                    file_put_contents($versionFile, json_encode($versionData, JSON_PRETTY_PRINT));
+                }
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Rollback completed',
+                    'version' => $version,
+                    'timestamp' => date('Y-m-d H:i:s')
+                ], JSON_PRETTY_PRINT);
+            } catch (Throwable $e) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            }
+            break;
+
+        case 'backup':
+            // Create manual backup
+            $backupDir = $config['backup_dir'] ?? '';
+            $projectDir = $config['project_dir'] ?? '';
+            $versionFile = $config['version_file'] ?? '';
+
+            $currentVersion = 'manual';
+            if (file_exists($versionFile)) {
+                $versionData = json_decode(file_get_contents($versionFile), true);
+                $currentVersion = $versionData['version'] ?? 'manual';
+            }
+
+            $backupName = $currentVersion . '_' . date('Y-m-d_H-i-s');
+            $backupPath = $backupDir . '/' . $backupName;
+
+            if (!is_dir($backupDir)) {
+                mkdir($backupDir, 0755, true);
+            }
+
+            try {
+                // Copy files
+                exec('cp -r ' . escapeshellarg($projectDir) . ' ' . escapeshellarg($backupPath));
+
+                // Backup database
+                $cmd = 'mysqldump'
+                    . ' -h' . escapeshellarg($config['db_host'])
+                    . ' -u' . escapeshellarg($config['db_user'])
+                    . ' -p' . escapeshellarg($config['db_pass'])
+                    . ' '   . escapeshellarg($config['db_name'])
+                    . ' > ' . escapeshellarg($backupPath . '/db_backup.sql')
+                    . ' 2>&1';
+                exec($cmd);
+
+                echo json_encode([
+                    'success' => true,
+                    'backup' => $backupName,
+                    'path' => $backupPath,
+                    'timestamp' => date('Y-m-d H:i:s')
+                ], JSON_PRETTY_PRINT);
+            } catch (Throwable $e) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            }
+            break;
+
+        case 'list':
+            // List all backups
+            $backupDir = $config['backup_dir'] ?? '';
+
+            $result = [
+                'success' => true,
+                'backups' => [],
+                'count' => 0
+            ];
+
+            if (is_dir($backupDir)) {
+                $backups = glob($backupDir . '/*', GLOB_ONLYDIR) ?: [];
+                usort($backups, function ($a, $b) {
+                    return filemtime($b) - filemtime($a);
+                });
+
+                foreach ($backups as $backup) {
+                    $result['backups'][] = [
+                        'name' => basename($backup),
+                        'date' => date('Y-m-d H:i:s', filemtime($backup)),
+                        'size' => round(disk_total_space($backup) - disk_free_space($backup)) / 1024 / 1024,
+                        'has_database' => file_exists($backup . '/db_backup.sql')
+                    ];
+                }
+                $result['count'] = count($backups);
+            }
+
+            echo json_encode($result, JSON_PRETTY_PRINT);
+            break;
+
+        default:
+            http_response_code(400);
+            echo json_encode(['error' => 'Unknown action: ' . $action]);
+            break;
+    }
+}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // [1] Capture raw body IMMEDIATELY — absolute first statement, nothing before.

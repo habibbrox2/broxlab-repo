@@ -74,4 +74,11 @@ return [
     // ──────────────────────────────────────────────────────────────────────────
     'debug' => false,
 
+    // ──────────────────────────────────────────────────────────────────────────
+    // Admin API Key (for webhook management endpoints)
+    // Used for: status, versions, rollback, backup, list actions
+    // Generate a strong random key: openssl rand -hex 32
+    // ──────────────────────────────────────────────────────────────────────────
+    'admin_api_key' => '',
+
 ];
