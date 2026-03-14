@@ -1,0 +1,122 @@
+{% extends "layout.twig" %}
+
+{% block title %}All Tags | Browse Content by Topics | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+
+{% set breadcrumbs = [
+  { label: 'Tags', url: '/tags', icon: 'tag' }
+] %}
+
+{% block content %}
+<link rel="stylesheet" href="/assets/css/modern-listing.css">
+
+<section class="hero-section position-relative py-5 mb-5 overflow-hidden" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+  <div class="container">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-8">
+        <h1 class="display-4 fw-bold text-white mb-3">
+          <i class="bi bi-tags me-2"></i>All Tags
+        </h1>
+        <p class="lead text-white-50 fs-5">Discover content organized by topics. {{ total_tags }} tags to explore.</p>
+      </div>
+      <div class="col-lg-4 text-center">
+        <div class="hero-icon" style="font-size: 4rem;">🏷️</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="container py-5">
+  <div class="listing-header">
+    <h2><i class="bi bi-tags text-primary me-2"></i>Tags</h2>
+    <p class="text-muted">Browse all topic tags</p>
+  </div>
+
+  <div class="filter-card mb-4">
+    <div class="filter-group">
+      <div class="filter-section" style="flex: 2;">
+        <form method="get" style="display: flex; gap: 0.75rem;">
+          <input type="text" name="search" value="{{ search|default('') }}" class="search-input" placeholder="Search tags...">
+          <button type="submit" class="btn-search"><i class="bi bi-search"></i></button>
+        </form>
+      </div>
+
+      <div class="filter-section">
+        <label>Per Page</label>
+        <form method="get">
+          <select name="per_page" class="filter-select" onchange="this.form.submit()">
+            {% for opt in available_per_page|default([6, 12, 18, 24]) %}
+            <option value="{{ opt }}" {% if per_page == opt %}selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+
+      <div class="filter-section">
+        <label>Sort By</label>
+        <form method="get">
+          <select name="sort" class="filter-select" onchange="this.form.submit()">
+            <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Latest</option>
+            <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+          </select>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {% if tags|length > 0 %}
+    <div class="listing-grid">
+      {% for tag in tags %}
+        {% include 'partials/content-card.twig' with { item: {
+            title: tag.name,
+            subtitle: tag.description|default('No description'),
+            id: tag.slug,
+            slug: tag.slug,
+            url: tag.slug,
+            type: 'tag',
+            count: tag.count|default(0),
+            categories: [],
+            tags: [],
+            created_at: 'now'|date('Y-m-d H:i:s'),
+            views: tag.count|default(0),
+            impressions: 0
+        }, index: loop.index } %}
+      {% endfor %}
+    </div>
+
+    {% if total_pages > 1 %}
+      <div class="pagination-container">
+        <div class="pagination">
+          {% if current_page > 1 %}
+            <a class="pagination-link" href="?page=1&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}">First</a>
+            <a class="pagination-link" href="?page={{ current_page - 1 }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}">Previous</a>
+          {% endif %}
+
+          {% set start = max(1, current_page - 2) %}
+          {% set end = min(total_pages, current_page + 2) %}
+          {% for p in start..end %}
+            {% if p == current_page %}
+              <span class="pagination-link active">{{ p }}</span>
+            {% else %}
+              <a class="pagination-link" href="?page={{ p }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}">{{ p }}</a>
+            {% endif %}
+          {% endfor %}
+
+          {% if current_page < total_pages %}
+            <a class="pagination-link" href="?page={{ current_page + 1 }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}" aria-label="Next">Next</a>
+            <a class="pagination-link" href="?page={{ total_pages }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}" aria-label="Last">Last</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+  {% else %}
+    <div class="empty-state text-center py-5">
+      <i class="bi bi-inbox" style="font-size:3rem"></i>
+      <h4 class="mt-3">No tags found</h4>
+      <p class="text-muted">No tags available</p>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+ 

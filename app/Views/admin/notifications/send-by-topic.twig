@@ -1,0 +1,22 @@
+{% extends "admin/layout.twig" %}
+{% block title %}Send By Topic{% endblock %}
+{% block content %}
+  <div class="container py-4">
+    <h3>Send Notification By Topic</h3>
+    <div class="mb-3">
+      <label class="form-label">Topic</label>
+      <select id="topicSelect" class="form-control"></select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Title</label>
+      <input id="title" class="form-control" />
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Message</label>
+      <textarea id="message" class="form-control" rows="4"></textarea>
+    </div>
+    <div>
+      <button id="sendBtn" class="modern-btn modern-btn-primary">Send</button>
+    </div>
+  </div>
+{% endblock %}

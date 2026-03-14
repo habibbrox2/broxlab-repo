@@ -1,0 +1,512 @@
+﻿{% extends 'admin/layout.twig' %}
+
+{% block title %}AI Auto Content Dashboard{% endblock %}
+
+{% block stylesheets %}
+<style>
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --premium-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  }
+
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    transition: all 0.3s ease;
+  }
+  .glass-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.12);
+  }
+
+  .stat-icon-wrapper {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(0, 0, 0, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+  }
+
+  .chart-container {
+    padding: 1rem;
+    min-height: 300px;
+  }
+
+  .activity-feed {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .activity-item {
+    border-left: 2px solid #e2e8f0;
+    padding-left: 20px;
+    padding-bottom: 20px;
+    position: relative;
+  }
+  .activity-item::before {
+    content: '';
+    position: absolute;
+    left: -7px;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #6366f1;
+  }
+  .activity-item:last-child {
+    padding-bottom: 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-bold mb-1"><i class="bi bi-robot me-2"></i>AI Auto Content Dashboard</h4>
+    <p class="text-muted mb-0 small">Puter AI — Automated content collection, processing, and publishing</p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <button type="button" id="btn-collect-now" class="btn btn-outline-info btn-sm">
+      <i class="bi bi-cloud-download me-1"></i>Collect
+    </button>
+    <button type="button" id="btn-collect-multi" class="btn btn-outline-dark btn-sm">
+      <i class="bi bi-layers me-1"></i>Multi-Layer Scrape
+    </button>
+    <button type="button" id="btn-process-now" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-cpu me-1"></i>Process AI
+    </button>
+    <button type="button" id="btn-publish-now" class="btn btn-outline-success btn-sm">
+      <i class="bi bi-send me-1"></i>Publish
+    </button>
+    <button type="button" id="btn-retry-failed" class="btn btn-outline-warning btn-sm">
+      <i class="bi bi-arrow-repeat me-1"></i>Retry Failed
+    </button>
+    <button type="button" id="btn-run-pipeline" class="btn btn-primary btn-sm">
+      <i class="bi bi-play-fill me-1"></i>Run Pipeline
+    </button>
+    <a href="/admin/autocontent/settings" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-gear me-1"></i>Settings
+    </a>
+  </div>
+</div>
+
+{# Pipeline Overview #}
+<div class="card mb-4 border-0 shadow-sm">
+  <div class="card-body py-3">
+    <div class="d-flex align-items-center justify-content-center flex-wrap gap-2">
+      <span class="pipeline-step bg-info bg-opacity-10 text-info">📥 Collected ({{ stats.collected }})</span>
+      <i class="bi bi-arrow-right pipeline-arrow"></i>
+      <span class="pipeline-step bg-warning bg-opacity-10 text-warning">🤖 Processing ({{ stats.processing }})</span>
+      <i class="bi bi-arrow-right pipeline-arrow"></i>
+      <span class="pipeline-step bg-primary bg-opacity-10 text-primary">✅ Processed ({{ stats.processed }})</span>
+      <i class="bi bi-arrow-right pipeline-arrow"></i>
+      <span class="pipeline-step bg-success bg-opacity-10 text-success">📰 Published ({{ stats.published }})</span>
+    </div>
+  </div>
+</div>
+
+{# Stats Cards #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card glass-card h-100">
+      <div class="card-body">
+        <div class="d-flex flex-column gap-2">
+          <div class="stat-icon-wrapper text-info">
+            <i class="bi bi-cloud-download"></i>
+          </div>
+          <div>
+            <div class="fw-bold fs-3 text-dark">{{ stats.collected_today }}</div>
+            <div class="text-muted small fw-semibold text-uppercase">Collected Today</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card glass-card h-100">
+      <div class="card-body">
+        <div class="d-flex flex-column gap-2">
+          <div class="stat-icon-wrapper text-primary">
+            <i class="bi bi-cpu"></i>
+          </div>
+          <div>
+            <div class="fw-bold fs-3 text-dark">{{ stats.processed_today }}</div>
+            <div class="text-muted small fw-semibold text-uppercase">Processed Today</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card glass-card h-100">
+      <div class="card-body">
+        <div class="d-flex flex-column gap-2">
+          <div class="stat-icon-wrapper text-success">
+            <i class="bi bi-journal-check"></i>
+          </div>
+          <div>
+            <div class="fw-bold fs-3 text-dark">{{ stats.published_today }}</div>
+            <div class="text-muted small fw-semibold text-uppercase">Published Today</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card glass-card h-100">
+      <div class="card-body">
+        <div class="d-flex flex-column gap-2">
+          <div class="stat-icon-wrapper text-warning">
+            <i class="bi bi-graph-up-arrow"></i>
+          </div>
+          <div>
+            <div class="fw-bold fs-3 text-dark">{{ stats.avg_seo_score }}<small class="fs-6">/100</small></div>
+            <div class="text-muted small fw-semibold text-uppercase">Avg SEO Score</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Charts and Activity #}
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="card glass-card h-100">
+      <div class="card-header bg-transparent border-0 py-3">
+        <h6 class="fw-bold mb-0 text-dark">Processing Trends (Last 7 Days)</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="chart-container">
+          <canvas id="processingChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card glass-card h-100">
+      <div class="card-header bg-transparent border-0 py-3">
+        <h6 class="fw-bold mb-0 text-dark">Pipeline Health</h6>
+      </div>
+      <div class="card-body">
+        <div class="mb-4">
+          <div class="d-flex justify-content-between mb-1 small">
+            <span>Collection Rate</span>
+            <span class="fw-bold text-info">Active</span>
+          </div>
+          <div class="progress" style="height: 6px;">
+            <div class="progress-bar bg-info" style="width: 100%"></div>
+          </div>
+        </div>
+        <div class="mb-4">
+          <div class="d-flex justify-content-between mb-1 small">
+            <span>AI Efficiency</span>
+            <span class="fw-bold text-primary">{{ stats.processed > 0 ? (stats.processed / (stats.processed + stats.failed) * 100)|round : 0 }}%</span>
+          </div>
+          <div class="progress" style="height: 6px;">
+            <div class="progress-bar bg-primary" style="width: {{ stats.processed > 0 ? (stats.processed / (stats.processed + stats.failed) * 100)|round : 0 }}%"></div>
+          </div>
+        </div>
+        <div>
+          <h6 class="small fw-bold text-muted text-uppercase mb-3">System Activity</h6>
+          <ul class="activity-feed">
+            {% for item in recent_items|slice(0, 5) %}
+            <li class="activity-item">
+              <div class="small fw-bold text-dark text-truncate" style="max-width: 200px;">{{ item.ai_title ?? item.original_title }}</div>
+              <div class="x-small text-muted">{{ item.status|capitalize }} • {{ item.created_at|date('H:i') }}</div>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Quick Stats Row #}
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm text-center py-2">
+      <div class="fw-bold fs-4">{{ sources_count }}</div>
+      <div class="small text-muted">Active Sources</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm text-center py-2">
+      <div class="fw-bold fs-4">{{ stats.approved }}</div>
+      <div class="small text-muted">Awaiting Publish</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm text-center py-2">
+      <div class="fw-bold fs-4 text-danger">{{ stats.failed_today }}</div>
+      <div class="small text-muted">Failed Today</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm text-center py-2">
+      <div class="fw-bold fs-4">{{ stats.total }}</div>
+      <div class="small text-muted">Total in Queue</div>
+    </div>
+  </div>
+</div>
+
+{# Recent Queue Items #}
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2"></i>Recent Queue Items</h6>
+    <a href="/admin/autocontent/queue" class="btn btn-sm btn-outline-primary">View All</a>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Title</th>
+            <th>Source</th>
+            <th>Status</th>
+            <th>SEO</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in recent_items %}
+          <tr>
+            <td>{{ item.id }}</td>
+            <td class="text-truncate" style="max-width: 250px;">
+              {{ item.ai_title ?? item.original_title ?? 'Untitled' }}
+            </td>
+            <td><span class="badge bg-secondary">{{ item.source_name ?? 'Unknown' }}</span></td>
+            <td>
+              {% if item.status == 'collected' %}
+                <span class="badge bg-info">Collected</span>
+              {% elseif item.status == 'processing' %}
+                <span class="badge bg-warning">Processing</span>
+              {% elseif item.status == 'processed' %}
+                <span class="badge bg-primary">Processed</span>
+              {% elseif item.status == 'approved' %}
+                <span class="badge bg-success bg-opacity-75">Approved</span>
+              {% elseif item.status == 'published' %}
+                <span class="badge bg-success">Published</span>
+              {% elseif item.status == 'rejected' %}
+                <span class="badge bg-dark">Rejected</span>
+              {% elseif item.status == 'failed' %}
+                <span class="badge bg-danger">Failed</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if item.seo_score is defined and item.seo_score > 0 %}
+                <span class="badge {% if item.seo_score >= 70 %}bg-success{% elseif item.seo_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
+                  {{ item.seo_score }}
+                </span>
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td class="small">{{ item.created_at|date('M d, H:i') }}</td>
+            <td>
+              <a href="/admin/autocontent/queue/view?id={{ item.id }}" class="btn btn-sm btn-outline-primary" title="View">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">
+              <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+              No articles in queue yet. Add sources and collect articles.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  // ── Chart ──────────────────────────────────────────────────────────────────
+  const ctx = document.getElementById('processingChart').getContext('2d');
+  fetch('/admin/autocontent/stats/chart?days=7')
+    .then(r => r.json())
+    .then(data => {
+      // data is in Chart.js format: { labels: [], datasets: [{label, data, ...}] }
+      new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: true, position: 'bottom' } },
+          scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.04)' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    })
+    .catch(() => {
+      ctx.canvas.parentElement.innerHTML = '<p class="text-muted text-center py-4 small">Chart data unavailable</p>';
+    });
+
+  // ── Action helper ──────────────────────────────────────────────────────────
+  function getCsrfToken() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? (meta.getAttribute('content') || '') : '';
+  }
+
+  async function showResultMessage(messageText, isSuccess) {
+    if (typeof window.showAlert === 'function') {
+      await window.showAlert(messageText, isSuccess ? 'Done' : 'Completed with issues', isSuccess ? 'success' : 'warning');
+      return;
+    }
+
+    if (typeof window.showMessage === 'function') {
+      await window.showMessage(messageText, isSuccess ? 'success' : 'warning', isSuccess ? 3000 : 5000);
+    }
+  }
+
+  async function handleAction(btn, url, loadingText) {
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>${loadingText}`;
+
+    try {
+      const resp   = await fetch(url + '?ajax=1', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() },
+        body: `csrf_token=${getCsrfToken()}`
+      });
+      const result = await resp.json();
+
+      // Build detailed message
+      let messageText = result.message;
+      if (result.debug) {
+        messageText += `\n\nSources: ${result.debug.total_sources}, Errors: ${result.debug.errors_count}, Warnings: ${result.debug.warnings_count}`;
+      }
+      if (result.source_results && result.source_results.length > 0) {
+        const errors = result.source_results.filter(r => r.status === 'error');
+        const warnings = result.source_results.filter(r => r.status === 'warning');
+        if (errors.length > 0) {
+          messageText += '\n\n--- Errors ---';
+          errors.forEach(e => {
+            messageText += `\n• ${e.source_name}: ${e.error}`;
+          });
+        }
+        if (warnings.length > 0) {
+          messageText += '\n\n--- Warnings ---';
+          warnings.forEach(w => {
+            messageText += `\n• ${w.source_name}: ${w.error}`;
+          });
+        }
+      }
+
+      await showResultMessage(messageText, !!result.success);
+
+      if (result.success) window.location.reload();
+
+    } catch (err) {
+      if (typeof window.showAlert === 'function') {
+        await window.showAlert('Could not reach the server.', 'Network Error', 'danger');
+      }
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  }
+
+  // ── Button bindings ────────────────────────────────────────────────────────
+  const actions = {
+    'btn-collect-now':  ['/admin/autocontent/api/collect',  'Collecting…'],
+    'btn-collect-multi':['/admin/autocontent/api/collect-multi', 'Multi-Layer Scraping…'],
+    'btn-process-now':  ['/admin/autocontent/api/process',  'Processing AI…'],
+    'btn-publish-now':  ['/admin/autocontent/api/publish','Publishing…'],
+    'btn-retry-failed': ['/admin/autocontent/api/retry', 'Retrying…'],
+    'btn-run-pipeline': ['/admin/autocontent/api/run-pipeline', 'Running Pipeline…'],
+  };
+
+  // Special handler for multi-layer scrape with custom response handling
+  var multiLayerButton = document.getElementById('btn-collect-multi');
+  if (multiLayerButton) {
+    multiLayerButton.addEventListener('click', async function() {
+    const btn = this;
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Multi-Layer Scraping…`;
+
+    try {
+      const resp = await fetch('/admin/autocontent/api/collect-multi?ajax=1', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() },
+        body: `csrf_token=${getCsrfToken()}`
+      });
+      const result = await resp.json();
+
+      let messageText = result.message;
+      if (result.pipeline) {
+        messageText += `\n\nPipeline Results:`;
+        messageText += `\n• Links Found: ${result.pipeline.total_links_found || 0}`;
+        messageText += `\n• Articles Collected: ${result.pipeline.articles_collected || 0}`;
+        messageText += `\n• Steps Completed: ${result.pipeline.steps_completed || 0}/5`;
+      }
+      if (result.errors && result.errors.length > 0) {
+        messageText += `\n\nErrors: ${result.errors.length}`;
+      }
+      if (result.warnings && result.warnings.length > 0) {
+        messageText += `\nWarnings: ${result.warnings.length}`;
+      }
+
+      await showResultMessage(messageText, !!result.success);
+
+      if (result.success) window.location.reload();
+
+    } catch (err) {
+      if (typeof window.showAlert === 'function') {
+        await window.showAlert('Could not reach the server.', 'Network Error', 'danger');
+      }
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  });
+  }
+
+  Object.entries(actions).forEach(([id, [url, text]]) => {
+    const btn = document.getElementById(id);
+    if (btn && id !== 'btn-collect-multi') btn.addEventListener('click', () => handleAction(btn, url, text));
+  });
+
+});
+</script>
+{% endblock %}

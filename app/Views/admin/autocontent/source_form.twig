@@ -1,0 +1,483 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}{{ isCreate ? 'Add' : 'Edit' }} Article Source{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h4 class="fw-bold"><i class="bi bi-rss me-2"></i>{{ isCreate ? 'Add New' : 'Edit' }} Article Source</h4>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <form method="POST" action="/admin/autocontent/sources/{{ isCreate ? 'create' : 'edit' }}" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" id="website_preset_key" name="website_preset_key" value="{{ source.website_preset_key ?? '' }}">
+      {% if not isCreate and source %}
+        <input type="hidden" name="id" value="{{ source.id }}">
+      {% endif %}
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="name" class="form-label fw-semibold">Source Name <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="name" name="name"
+                 value="{{ source.name ?? '' }}" required placeholder="e.g., TechCrunch">
+          <div class="invalid-feedback" id="nameError">Source name is required.</div>
+          <div class="form-text">A friendly name to identify this source</div>
+        </div>
+
+        <div class="col-md-3">
+          <label for="type" class="form-label fw-semibold">Source Type</label>
+          <select class="form-select" id="type" name="type">
+            <option value="rss" {{ (source.type ?? 'rss') == 'rss' ? 'selected' }}>RSS/Atom Feed</option>
+            <option value="xml" {{ (source.type ?? '') == 'xml' ? 'selected' }}>XML Sitemap</option>
+            <option value="api" {{ (source.type ?? '') == 'api' ? 'selected' }}>JSON API</option>
+            <option value="scrape" {{ (source.type ?? '') == 'scrape' ? 'selected' }}>Web Scraping</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label for="content_type" class="form-label fw-semibold">Content Type</label>
+          <select class="form-select" id="content_type" name="content_type">
+            <option value="articles" {{ (source.content_type ?? 'articles') == 'articles' ? 'selected' }}>Articles</option>
+            <option value="pages" {{ (source.content_type ?? '') == 'pages' ? 'selected' }}>Pages</option>
+            <option value="mobiles" {{ (source.content_type ?? '') == 'mobiles' ? 'selected' }}>Mobiles</option>
+            <option value="services" {{ (source.content_type ?? '') == 'services' ? 'selected' }}>Services</option>
+          </select>
+          <div class="form-text">Where to save scraped data</div>
+        </div>
+
+        <div class="col-md-3">
+          <label for="scrape_depth" class="form-label fw-semibold">Scrape Depth</label>
+          <select class="form-select" id="scrape_depth" name="scrape_depth">
+            <option value="1" {{ (source.scrape_depth ?? '1') == '1' ? 'selected' }}>Level 1 - Category Listing</option>
+            <option value="2" {{ (source.scrape_depth ?? '') == '2' ? 'selected' }}>Level 2 - Article List</option>
+            <option value="3" {{ (source.scrape_depth ?? '') == '3' ? 'selected' }}>Level 3 - Article Page</option>
+          </select>
+          <div class="form-text">Level 1=Category pages, Level 2=Article list pages, Level 3=Individual article pages</div>
+        </div>
+
+        <div class="col-md-3">
+          <label for="website_preset" class="form-label fw-semibold">Website Preset</label>
+          <select class="form-select" id="website_preset" onchange="applyPreset()">
+            <option value="">-- Select Website --</option>
+            <!-- Presets will be loaded from database -->
+          </select>
+          <div class="form-text">
+            <a href="/admin/autocontent/presets" target="_blank" class="text-decoration-none">
+              <i class="bi bi-gear me-1"></i>Manage Presets
+            </a>
+          </div>
+        </div>
+
+        <div class="col-md-3 d-flex align-items-end">
+          <div class="form-check form-switch mb-3">
+            <input type="checkbox" class="form-check-input" id="use_browser" name="use_browser"
+                   {{ (source.use_browser ?? 0) ? 'checked' }}>
+            <label class="form-check-label fw-semibold" for="use_browser">Use Browser</label>
+          </div>
+          <div class="form-text">Use browser rotation for scraping</div>
+        </div>
+
+        <div class="col-12">
+          <label for="url" class="form-label fw-semibold">Source URL <span class="text-danger">*</span></label>
+          <input type="url" class="form-control" id="url" name="url"
+                 value="{{ source.url ?? '' }}" required placeholder="https://example.com/feed.xml or https://example.com/sitemap.xml">
+          <div class="invalid-feedback" id="urlError">Source URL is required and must be valid.</div>
+          <div class="form-text">Full URL to the RSS feed, sitemap, API endpoint, or webpage to scrape</div>
+        </div>
+
+        <div class="col-md-6">
+          <label for="category_id" class="form-label fw-semibold">Default Category</label>
+          <select class="form-select" id="category_id" name="category_id">
+            <option value="">-- Auto-detect --</option>
+            {% for category in categories %}
+              <option value="{{ category.id }}" {{ (source.category_id ?? '') == category.id ? 'selected' }}>
+                {{ category.name }}
+              </option>
+            {% endfor %}
+          </select>
+          <div class="form-text">Category to assign to articles from this source</div>
+        </div>
+
+        <div class="col-md-3">
+          <label for="fetch_interval" class="form-label fw-semibold">Fetch Interval</label>
+          <div class="input-group">
+            <input type="number" class="form-control" id="fetch_interval" name="fetch_interval"
+                   value="{{ ((source.fetch_interval ?? 600) / 60)|round }}" min="1" max="1440" required>
+            <span class="input-group-text">minutes</span>
+          </div>
+          <div class="invalid-feedback d-none" id="intervalError"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label for="max_pages" class="form-label fw-semibold">Max Pages</label>
+          <input type="number" class="form-control" id="max_pages" name="max_pages"
+                 value="{{ source.max_pages ?? 50 }}" min="1" max="500">
+          <div class="form-text">Max pages to crawl (for sitemap)</div>
+        </div>
+
+        <div class="col-md-3">
+          <label for="delay" class="form-label fw-semibold">Delay (seconds)</label>
+          <input type="number" class="form-control" id="delay" name="delay"
+                 value="{{ source.delay ?? 2 }}" min="1" max="10">
+          <div class="form-text">Request delay between pages</div>
+        </div>
+
+        <div class="col-md-3 d-flex align-items-end">
+          <div class="form-check form-switch mb-3">
+            <input type="checkbox" class="form-check-input" id="is_active" name="is_active"
+                   {{ (source.is_active ?? 1) ? 'checked' }}>
+            <label class="form-check-label fw-semibold" for="is_active">Active</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="mb-3">Selectors (Optional)</h5>
+          <p class="text-muted small mb-3">Choose a website preset to auto-fill these selectors (or enter custom values).</p>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="selector_list_container" class="form-label fw-semibold">List Container</label>
+              <input type="text" class="form-control" id="selector_list_container" name="selector_list_container"
+                     value="{{ source.selector_list_container ?? '' }}"
+                     placeholder=".article-list, .posts">
+              <div class="form-text">CSS selector for the element that contains the list of items.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label for="selector_list_item" class="form-label fw-semibold">List Item</label>
+              <input type="text" class="form-control" id="selector_list_item" name="selector_list_item"
+                     value="{{ source.selector_list_item ?? '' }}"
+                     placeholder=".article, .post">
+              <div class="form-text">CSS selector for each item within the list.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label for="selector_list_title" class="form-label fw-semibold">List Title</label>
+              <input type="text" class="form-control" id="selector_list_title" name="selector_list_title"
+                     value="{{ source.selector_list_title ?? '' }}"
+                     placeholder="h3 a, .title a">
+              <div class="form-text">CSS selector for the title/link inside each list item.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label for="selector_list_link" class="form-label fw-semibold">List Link</label>
+              <input type="text" class="form-control" id="selector_list_link" name="selector_list_link"
+                     value="{{ source.selector_list_link ?? '' }}"
+                     placeholder="a, a[href]">
+              <div class="form-text">CSS selector for extracting the link from each list item.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label for="selector_title" class="form-label fw-semibold">Detail Title</label>
+              <input type="text" class="form-control" id="selector_title" name="selector_title"
+                     value="{{ source.selector_title ?? '' }}"
+                     placeholder="h1.title">
+              <div class="form-text">CSS selector for the title on the detail/article page.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label for="selector_content" class="form-label fw-semibold">Detail Content</label>
+              <input type="text" class="form-control" id="selector_content" name="selector_content"
+                     value="{{ source.selector_content ?? '' }}"
+                     placeholder=".article-body, .post-content">
+              <div class="form-text">CSS selector for the main content area on the detail page.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label for="selector_image" class="form-label fw-semibold">Detail Image</label>
+              <input type="text" class="form-control" id="selector_image" name="selector_image"
+                     value="{{ source.selector_image ?? '' }}"
+                     placeholder=".featured-image img, img.featured">
+              <div class="form-text">Optional selector for the main image on the detail page.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-lg me-1"></i>{{ isCreate ? 'Add Source' : 'Update Source' }}
+        </button>
+        <a href="/admin/autocontent/sources" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Website presets - loaded from database API
+  var presetsFromDB = {};
+
+  function showPageMessage(message, status, duration) {
+    if (!message) {
+      return;
+    }
+
+    if (typeof window.showMessage === 'function') {
+      window.showMessage(message, status || 'info', duration || 4000);
+    }
+  }
+
+  // Load presets from database on page load
+  async function loadPresets() {
+    try {
+      console.log('Loading presets from API...');
+
+      // Build the preset API URL relative to the current admin section.
+      // This avoids hardcoding the app root and works even if the app is served from a subdirectory.
+      var basePath = window.location.pathname.split('/').slice(0, 3).join('/');
+      var apiUrl = basePath + '/api/website-presets';
+
+      var response = await fetch(apiUrl, { credentials: 'same-origin' });
+      
+      // If fetch was redirected to login (e.g., session expired), stop early.
+      if (response.redirected || (response.url && response.url.includes('/login'))) {
+        console.warn('Presets API request was redirected (likely not authenticated).');
+        return;
+      }
+
+      if (!response.ok) {
+        console.error('API response not ok:', response.status, response.statusText);
+        return;
+      }
+      
+      var contentType = (response.headers.get('content-type') || '').toLowerCase();
+      if (!contentType.includes('application/json')) {
+        console.warn('Presets API returned non-JSON response; skipping preset load.', contentType);
+        return;
+      }
+
+      var data;
+      try {
+        data = await response.json();
+      } catch (err) {
+        console.warn('Presets API response could not be parsed as JSON; skipping preset load.', err);
+        return;
+      }
+
+      console.log('Presets API response:', data);
+      
+      if (data.success && data.presets && data.presets.length > 0) {
+        var select = document.getElementById('website_preset');
+        
+        // Add presets from database
+        data.presets.forEach(function(preset) {
+          var option = document.createElement('option');
+          option.value = preset.preset_key;
+          option.textContent = preset.name;
+          select.appendChild(option);
+          
+          // Store for quick access
+          presetsFromDB[preset.preset_key] = preset;
+        });
+        
+        console.log('Loaded ' + data.presets.length + ' presets');
+
+        // If a preset was previously selected (e.g., after a validation error), apply it
+        var presetKeyInput = document.getElementById('website_preset_key');
+        if (presetKeyInput && presetKeyInput.value) {
+          document.getElementById('website_preset').value = presetKeyInput.value;
+          applyPreset();
+        }
+      } else {
+        console.log('No presets found or API returned error');
+      }
+    } catch (error) {
+      console.error('Error loading presets:', error);
+    }
+  }
+
+  // Apply preset - load from database
+  function applyPreset() {
+    var presetKey = document.getElementById('website_preset').value;
+    var presetKeyInput = document.getElementById('website_preset_key');
+
+    // Clear selection (manual selectors) when no preset is chosen
+    if (!presetKey) {
+      if (presetKeyInput) {
+        presetKeyInput.value = '';
+      }
+      showPageMessage('Website preset cleared. You can enter selectors manually.', 'info', 4000);
+      return;
+    }
+
+    var preset = presetsFromDB[presetKey];
+    if (!preset) {
+      showPageMessage('Preset not found in database.', 'warning', 5000);
+      return;
+    }
+
+    // Map preset selectors to form fields (if present)
+    var selectorFields = [
+      'selector_list_container',
+      'selector_list_item',
+      'selector_list_title',
+      'selector_list_link',
+      'selector_title',
+      'selector_content',
+      'selector_image'
+    ];
+
+    selectorFields.forEach(function (field) {
+      if (preset[field] !== undefined) {
+        var el = document.getElementById(field);
+        if (el) {
+          el.value = preset[field] || '';
+        }
+      }
+    });
+
+    // Remember selected preset (for potential future extensions)
+    if (presetKeyInput) {
+      presetKeyInput.value = presetKey;
+    }
+
+    showPageMessage('Applied "' + preset.name + '" preset.', 'success', 5000);
+  }
+
+  // Client-side form validation + convert fetch_interval from minutes to seconds before submit
+  (function () {
+    var form = document.querySelector('form');
+    var nameInput = document.getElementById('name');
+    var urlInput = document.getElementById('url');
+    var intervalInput = document.getElementById('fetch_interval');
+    var nameError = document.getElementById('nameError');
+    var urlError = document.getElementById('urlError');
+    var intervalError = document.getElementById('intervalError');
+
+    function setFieldError(input, errorElement, message) {
+      if (!input) {
+        return;
+      }
+
+      if (message) {
+        input.classList.add('is-invalid');
+        input.setAttribute('aria-invalid', 'true');
+      } else {
+        input.classList.remove('is-invalid');
+        input.removeAttribute('aria-invalid');
+      }
+
+      if (errorElement) {
+        errorElement.textContent = message || '';
+        if (errorElement.id === 'intervalError') {
+          errorElement.classList.toggle('d-none', !message);
+          errorElement.classList.toggle('d-block', !!message);
+        }
+      }
+    }
+
+    function validateName() {
+      var value = String(nameInput ? (nameInput.value || '') : '').trim();
+      var message = value ? '' : 'Please enter a source name.';
+      setFieldError(nameInput, nameError, message);
+      return !message;
+    }
+
+    function validateUrl() {
+      var urlValue = String(urlInput ? (urlInput.value || '') : '').trim();
+      var message = '';
+
+      if (!urlInput || !urlValue) {
+        message = 'Please enter a source URL.';
+      } else if (!/^https?:\/\/.+$/i.test(urlValue)) {
+        message = 'Please enter a valid URL starting with http:// or https://.';
+      }
+
+      setFieldError(urlInput, urlError, message);
+      return !message;
+    }
+
+    function validateInterval() {
+      var rawValue = String(intervalInput ? (intervalInput.value || '') : '').trim();
+      var numericValue = parseInt(rawValue, 10);
+      var message = '';
+
+      if (!intervalInput || !rawValue) {
+        message = 'Please enter a fetch interval in minutes.';
+      } else if (isNaN(numericValue) || numericValue < 1 || numericValue > 1440) {
+        message = 'Fetch interval must be between 1 and 1440 minutes.';
+      }
+
+      setFieldError(intervalInput, intervalError, message);
+      return !message;
+    }
+
+    function validateForm() {
+      var validationErrors = [];
+
+      if (!validateName()) {
+        validationErrors.push('Please enter a source name.');
+      }
+
+      if (!validateUrl()) {
+        validationErrors.push(urlError ? urlError.textContent : 'Please enter a valid source URL.');
+      }
+
+      if (!validateInterval()) {
+        validationErrors.push(intervalError ? intervalError.textContent : 'Please enter a valid fetch interval.');
+      }
+
+      return {
+        isValid: validationErrors.length === 0,
+        errors: validationErrors
+      };
+    }
+
+    if (nameInput) {
+      nameInput.addEventListener('input', validateName);
+      nameInput.addEventListener('blur', validateName);
+    }
+
+    if (urlInput) {
+      urlInput.addEventListener('input', validateUrl);
+      urlInput.addEventListener('blur', validateUrl);
+    }
+
+    if (intervalInput) {
+      intervalInput.addEventListener('input', validateInterval);
+      intervalInput.addEventListener('blur', validateInterval);
+    }
+
+    if (form) {
+      form.addEventListener('submit', function (e) {
+        var validation = validateForm();
+
+        if (!validation.isValid) {
+          e.preventDefault();
+
+          if (typeof window.showValidationErrors === 'function') {
+            window.showValidationErrors(validation.errors);
+          } else {
+            showPageMessage(validation.errors[0], 'danger', 5000);
+          }
+
+          // Scroll to the first invalid field to focus user attention
+          var firstInvalid = document.querySelector('.is-invalid');
+          if (firstInvalid) {
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstInvalid.focus({ preventScroll: true });
+          }
+
+          return;
+        }
+
+        if (intervalInput) {
+          intervalInput.value = parseInt(intervalInput.value, 10) * 60;
+        }
+      });
+    }
+  })();
+
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    loadPresets(); // Load presets from database
+  });
+</script>
+{% endblock %}

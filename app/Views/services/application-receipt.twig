@@ -1,0 +1,163 @@
+{% extends 'layout.twig' %}
+{% block title %}Application Receipt{% endblock %}
+{% block content %}
+  <style>
+    .inl-p-0057 {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .inl-p-0061 {
+      background: #f8fbff;
+      border-color: rgba(13, 110, 253, 0.22) !important;
+    }
+  </style>
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-9">
+        <div class="card border-0 rounded-4 shadow-sm">
+          <div class="card-body p-4 p-md-5">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+              <div>
+                <h3 class="fw-bold mb-1">
+                  <i class="bi bi-receipt me-2"></i>Application Receipt
+                </h3>
+                <div class="text-muted">Receipt No: SRV-{{ application.id }}-{{ application.created_at|date("Ymd") }}</div>
+              </div>
+              <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">Submitted</span>
+            </div>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <div class="small text-muted">Service</div>
+                <div class="fw-semibold">{{ service.name|default("N/A") }}</div>
+              </div>
+              <div class="col-md-6">
+                <div class="small text-muted">Submitted At</div>
+                <div class="fw-semibold">{{ application.created_at|date("d M Y, h:i A") }}</div>
+              </div>
+              <div class="col-md-6">
+                <div class="small text-muted">Application ID</div>
+                <div class="fw-semibold">#{{ application.id }}</div>
+              </div>
+              <div class="col-md-6">
+                <div class="small text-muted">Status</div>
+                <div class="fw-semibold text-capitalize">{{ application.status }}</div>
+              </div>
+            </div>
+            {% if payment %}
+              <div class="border rounded-4 p-3 p-md-4 mb-4 inl-p-0061">
+                <h5 class="fw-bold mb-3">
+                  <i class="bi bi-credit-card me-2"></i>Payment Information
+                </h5>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="small text-muted">Sender Number</div>
+                    <div class="fw-semibold">{{ payment.sender_number|default(payment.payer_name|default('N/A') ) }}</div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="small text-muted">Method</div>
+                    <div class="fw-semibold text-uppercase">{{ payment.method|default("N/A") }}</div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="small text-muted">Transaction ID</div>
+                    <div class="fw-semibold">{{ payment.transaction_id|default("N/A") }}</div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="small text-muted">Amount</div>
+                    <div class="fw-semibold">{{ payment.currency|default("USD") }} {{ payment.amount|default(0) |number_format(2) }}</div>
+                  </div>
+                  {% if payment.receiver_account|default('') %}
+                    <div class="col-md-6">
+                      <div class="small text-muted">Receiver Account</div>
+                      <div class="fw-semibold">{{ payment.receiver_account }}</div>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
+            {% if application.application_data is iterable %}
+              <div class="border rounded-4 p-3 p-md-4">
+                <h5 class="fw-bold mb-3">
+                  <i class="bi bi-file-earmark-text me-2"></i>Submitted Information
+                </h5>
+                <div class="row g-3">
+                  {% for key, value in application.application_data %}
+                    {% set normalized_key = key|lower %}
+                    {% if normalized_key != '_payment' %}
+                      <div class="col-md-6">
+                        {% set field_label = form_field_labels[key]|default(form_field_labels[normalized_key]|default('')) %}
+                        {% if field_label == '' %}
+                          {% set field_label = normalized_key == '_documents' ? 'Documents' : (key|replace({'_': ' ', '-': ' '})|title) %}
+                        {% endif %}
+                        <div class="small text-muted">{{ field_label }}</div>
+                        {% if value is iterable %}
+                          {% if normalized_key == '_documents' %}
+                            {% if value|length > 0 %}
+                              <ul class="mb-0 ps-3">
+                                {% for doc in value %}
+                                  <li class="mb-1">
+                                    {% set doc_name = doc.name|default('Document ' ~ loop.index) %}
+                                    {% if doc.url|default('') %}
+                                      <a href="{{ doc.url }}" target="_blank" rel="noopener noreferrer">{{ doc_name }}</a>
+                                    {% else %}
+                                      <span class="fw-semibold">{{ doc_name }}</span>
+                                    {% endif %}
+                                  </li>
+                                {% endfor %}
+                              </ul>
+                            {% else %}
+                              <div class="fw-semibold">N/A</div>
+                            {% endif %}
+                          {% else %}
+                            <pre class="bg-light rounded-3 p-2 small mb-0 inl-p-0057">{{ value|json_encode(constant('JSON_UNESCAPED_UNICODE')) }}</pre>
+                          {% endif %}
+                        {% else %}
+                          <div class="fw-semibold">
+                            {% if value is same as(null) or value is same as('') %}
+                              N/A
+                            {% elseif value is same as(true) %}
+                              Yes
+                            {% elseif value is same as(false) %}
+                              No
+                            {% else %}
+                              {{ value }}
+                            {% endif %}
+                          </div>
+                        {% endif %}
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+            <div class="d-flex flex-wrap gap-2 mt-4">
+              <a href="/services/receipt/{{ application.id }}/download"
+                 target="_blank"
+                 rel="noopener"
+                 class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-pdf me-1"></i>Preview PDF
+              </a>
+              <a href="/services/receipt/{{ application.id }}/download?output=download"
+                 class="btn btn-primary">
+                <i class="bi bi-download me-1"></i>Download PDF
+              </a>
+              <button type="button"
+                      class="btn btn-outline-secondary"
+                      onclick="window.print()">
+                <i class="bi bi-printer me-1"></i>Print Receipt
+              </button>
+              {% if is_logged_in %}
+                <a href="/services/my-applications" class="btn btn-primary">
+                  <i class="bi bi-person-lines-fill me-1"></i>My Applications
+                </a>
+              {% else %}
+                <a href="/services" class="btn btn-primary">
+                  <i class="bi bi-grid me-1"></i>Back to Services
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

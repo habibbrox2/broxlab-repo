@@ -1,0 +1,96 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Don't rewrite if already rewritten
+    RewriteCond %{ENV:REWRITE_PROCESSED} ^1$ [OR]
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Set flag to prevent reprocessing
+    RewriteRule ^ - [E=REWRITE_PROCESSED:1]
+
+    # Route all requests to index.php (except existing files/dirs)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# ---------------- Cache headers for assets ----------------
+# ===== CACHE CONTROL HEADERS =====
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 month"
+    
+    # Images (1 year - very stable)
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    
+    # CSS & JS with version params (1 year - safe to cache long)
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+    
+    # Fonts (1 year - immutable)
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/otf "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    
+    # HTML (no cache - always fresh)
+    ExpiresByType text/html "access plus 0 seconds"
+    
+    # API responses (5 minutes)
+    ExpiresByType application/json "access plus 5 minutes"
+    ExpiresByType application/xml "access plus 5 minutes"
+</IfModule>
+
+<IfModule mod_headers.c>
+    # ===== CACHE-CONTROL DIRECTIVES =====
+    
+    # CSS & JS files - Long cache (versioned)
+    <FilesMatch "\.(css|js)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    
+    # Images - Long cache
+    <FilesMatch "^.*\.(jpg|jpeg|png|gif|webp|svg|ico)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    
+    # Fonts - Very long cache
+    <FilesMatch "^.*\.(woff|woff2|ttf|otf|eot)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    
+    # HTML files - No cache (always check)
+    <FilesMatch "^.*\.html?$">
+        Header set Cache-Control "public, max-age=0, must-revalidate"
+    </FilesMatch>
+    
+
+</IfModule>
+
+# ---------------- Optional: Prevent directory listing ----------------
+Options -Indexes
+
+# ---------------- Referrer Policy ----------------
+#<IfModule mod_headers.c>
+#    Header set Referrer-Policy "strict-origin-when-cross-origin"
+#</IfModule>
+
+
+
+# ---------------- PHP version handler ----------------
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php82 .php .php8 .phtml
+</IfModule>
+
+# ---------------- Favicon redirect for old path ----------------
+# Redirect old favicon path to new location
+RewriteRule ^uploads/logo/favicon-.*\.ico$ /assets/favicon.ico [R=301,L]

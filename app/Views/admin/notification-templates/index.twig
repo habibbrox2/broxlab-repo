@@ -1,0 +1,233 @@
+{% extends "admin/layout.twig" %}
+{% block title %}{{ title }}{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css"
+        rel="stylesheet">
+  <div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="mdi mdi-bell-outline"></i>{{ title }}
+      </div>
+      <div class="admin-page-subtitle">Manage notification templates for multi-channel delivery across your platform</div>
+    </div>
+    <!-- Filter & Search Section -->
+    <div class="filter-section mb-4">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="filter-label">Search Templates</div>
+          <input type="text"
+                 class="form-control form-control-sm"
+                 placeholder="Search by name or slug..."
+                 id="searchTemplates">
+        </div>
+        <div class="col-md-3">
+          <div class="filter-label">Show Per Page</div>
+          <select class="form-select form-select-sm"
+                  onchange="location.href='?limit=' + this.value">
+            <option value="10" {% if request.get.limit == 10 %}selected{% endif %}>10 per page</option>
+            <option value="20" {% if request.get.limit == 20 %}selected{% endif %}>20 per page</option>
+            <option value="50" {% if request.get.limit == 50 %}selected{% endif %}>50 per page</option>
+          </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+          <a href="/admin/notification-templates/create"
+             class="modern-btn modern-btn-primary w-100">
+            <i class="mdi mdi-plus me-2"></i>Create Template
+          </a>
+        </div>
+      </div>
+    </div>
+    <!-- Templates Table Card -->
+    <div class="admin-panel-card">
+      <div class="admin-panel-card-header bg-light d-flex justify-content-between align-items-center">
+        <div>
+          <i class="mdi mdi-list"></i>
+          <strong>Notification Templates</strong>
+          <span class="badge bg-secondary ms-2">{{ pagination.total }} total</span>
+        </div>
+      </div>
+      <div class="table-wrapper table-container notification-templates-table-wrap">
+        <table class="table table-hover mb-0 notification-templates-table">
+          <thead class="table-light">
+            <tr>
+              <th width="5%">
+                <i class="mdi mdi-identifier"></i> ID
+              </th>
+              <th width="20%">
+                <i class="mdi mdi-alphabetical"></i> Name
+              </th>
+              <th width="15%">
+                <i class="mdi mdi-label"></i> Slug
+              </th>
+              <th width="20%">
+                <i class="mdi mdi-send-outline"></i> Channels
+              </th>
+              <th width="10%">
+                <i class="mdi mdi-check-circle"></i> Status
+              </th>
+              <th width="20%">
+                <i class="mdi mdi-tools"></i> Actions
+              </th>
+              <th width="10%">
+                <i class="mdi mdi-calendar"></i> Created
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if templates %}
+              {% for template in templates %}
+                <tr>
+                  <td data-label="ID">
+                    <small class="text-muted">#{{ template.id }}</small>
+                  </td>
+                  <td data-label="Name">
+                    <strong>{{ template.name }}</strong>
+                    {% if template.description %}
+                      <br>
+                      <small class="text-muted d-block">{{ template.description|truncate(50) }}</small>
+                    {% endif %}
+                  </td>
+                  <td data-label="Slug">
+                    <code class="bg-light p-1 rounded">{{ template.slug }}</code>
+                  </td>
+                  <td data-label="Channels">
+                    {% set channels = template.channels is iterable ? template.channels : template.channels|json_decode %}
+                    <div class="d-flex gap-1 flex-wrap">
+                      {% for channel in channels %}
+                        <span class="badge bg-info">
+                          {% if channel == 'in_app' %}
+                            <i class="mdi mdi-bell"></i> In-App
+                          {% elseif channel == 'fcm' %}
+                            <i class="mdi mdi-mobile-alert"></i> FCM
+                          {% elseif channel == 'email' %}
+                            <i class="mdi mdi-email"></i> Email
+                          {% elseif channel == 'sms' %}
+                            <i class="mdi mdi-message-text"></i> SMS
+                          {% else %}
+                            {{ channel }}
+                          {% endif %}
+                        </span>
+                      {% endfor %}
+                    </div>
+                  </td>
+                  <td data-label="Status">
+                    {% if template.is_active %}
+                      <span class="badge bg-success"><i class="mdi mdi-check-circle"></i> Active</span>
+                    {% else %}
+                      <span class="badge bg-secondary"><i class="mdi mdi-circle-outline"></i> Inactive</span>
+                    {% endif %}
+                  </td>
+                  <td data-label="Actions">
+                    <div class="d-flex gap-1">
+                      <a href="/admin/notification-templates/{{ template.id }}"
+                         class="modern-btn modern-btn-info modern-btn-sm"
+                         title="View">
+                        <i class="mdi mdi-eye"></i>
+                      </a>
+                      <a href="/admin/notification-templates/{{ template.id }}/edit"
+                         class="modern-btn modern-btn-primary modern-btn-sm"
+                         title="Edit">
+                        <i class="mdi mdi-pencil"></i>
+                      </a>
+                      <button type="button"
+                              class="modern-btn modern-btn-danger modern-btn-sm"
+                              title="Delete"
+                              onclick="deleteTemplate({{ template.id }})"
+                              aria-label="Delete template">
+                        <i class="mdi mdi-delete"></i>
+                      </button>
+                    </div>
+                  </td>
+                  <td data-label="Created">
+                    <small class="text-muted">{{ template.created_at|date("M d, Y") }}</small>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr class="notification-templates-empty-row">
+                <td colspan="7" class="text-center py-5 text-muted">
+                  <i class="mdi mdi-inbox-outline inl-a-0034"></i>
+                  <p class="mt-3">
+                    No templates found. <a href="/admin/notification-templates/create" class="text-primary">Create one now</a>
+                  </p>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+      <nav class="mt-4" aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+          {% if pagination.offset > 0 %}
+            <li class="page-item">
+              <a class="page-link" href="?offset=0&limit={{ pagination.limit }}"><i class="mdi mdi-chevron-double-left"></i> First</a>
+            </li>
+          {% endif %}
+          {% for i in 0..(pagination.pages - 1) %}
+            {% if loop.index0 * pagination.limit >= pagination.offset - (pagination.limit * 2) and loop.index0 * pagination.limit <= pagination.offset + (pagination.limit * 2) %}
+              <li class="page-item {% if loop.index0 * pagination.limit == pagination.offset %}active{% endif %}">
+                <a class="page-link"
+                   href="?offset={{ loop.index0 * pagination.limit }}&limit={{ pagination.limit }}">
+                  {{ loop.index }}
+                </a>
+              </li>
+            {% endif %}
+          {% endfor %}
+          {% if pagination.offset + pagination.limit < pagination.total %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="?offset={{ (pagination.pages - 1) * pagination.limit }}&limit={{ pagination.limit }}">Last <i class="mdi mdi-chevron-double-right"></i></a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  </div>
+  <script>
+function deleteTemplate(id) {
+    Swal.fire({
+        title: 'Delete Template?',
+        text: 'This action can be undone from the admin panel.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#dc3545'
+    }).then(result => {
+        if (!result.isConfirmed) return;
+
+        fetch(`/admin/notification-templates/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire('Deleted!', 'Template deleted successfully.', 'success')
+                    .then(() => location.reload());
+            } else {
+                Swal.fire('Error', data.message || 'Failed to delete template.', 'error');
+            }
+        })
+        .catch(e => Swal.fire('Error', e.message, 'error'));
+    });
+}
+
+// Live search
+document.getElementById('searchTemplates')?.addEventListener('input', function(e) {
+    const searchText = e.target.value.toLowerCase();
+    document.querySelectorAll('table tbody tr').forEach(row => {
+        const name = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+        const slug = row.querySelector('td:nth-child(3)')?.textContent.toLowerCase() || '';
+        row.style.display = (name.includes(searchText) || slug.includes(searchText)) ? '' : 'none';
+    });
+});
+  </script>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "admin/layout.twig" %}
+{% block title %}Upload Media - Admin{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-image me-2"></i>
+        Upload Media
+      </div>
+      <div class="admin-page-subtitle">Upload new media files</div>
+    </div>
+    <div class="row">
+      <div class="col-lg-8 mx-auto">
+        <!-- Header -->
+        <div class="mb-5">
+          <h1>
+            <i class="bi bi-cloud-upload"></i> Upload Media
+          </h1>
+          <p class="text-muted">Upload images, videos, audio files, or documents</p>
+        </div>
+        <!-- Error/Success Messages -->
+        <div id="alertContainer"></div>
+        <!-- Upload Form -->
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-body p-5">
+            <form method="POST"
+                  action="/admin/media/upload"
+                  enctype="multipart/form-data"
+                  id="mediaUploadForm"
+                  data-max-file-size="{{ max_file_size_bytes|default(52428800) }}">
+              <!-- CSRF Token -->
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <!-- File Input -->
+              <div class="mb-4">
+                <label for="file" class="form-label fw-bold">Select Media File</label>
+                <div class="upload-area border-2 border-dashed p-5 text-center bg-light inl-a-0021"
+                     id="uploadArea">
+                  <i class="bi bi-cloud-upload inl-a-0022"></i>
+                  <p class="mt-3 mb-0">
+                    <strong>Click to browse</strong> or drag and drop files here
+                  </p>
+                  <small class="text-muted">Max size: {{ max_file_size }}</small>
+                </div>
+                <input type="file"
+                       id="file"
+                       name="file"
+                       class="form-control d-none"
+                       required
+                       accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx">
+                <div id="fileInfo" class="mt-2"></div>
+              </div>
+              <!-- Media Type Selection -->
+              <div class="mb-4">
+                <label for="media_type" class="form-label fw-bold">Media Type</label>
+                <select name="media_type" id="media_type" class="form-select">
+                  <option value="image">📸 Image (JPG, PNG, WEBP, GIF)</option>
+                  <option value="video">🎥 Video (MP4, WEBM, MOV)</option>
+                  <option value="audio">🎵 Audio (MP3, WAV, OGG)</option>
+                  <option value="document">📄 Document (PDF, DOC, XLS)</option>
+                </select>
+              </div>
+              <!-- Title -->
+              <div class="mb-4">
+                <label for="title" class="form-label fw-bold">Title (Optional)</label>
+                <input type="text"
+                       id="title"
+                       name="title"
+                       class="form-control"
+                       placeholder="e.g., Product Photo - Summer 2026">
+                <small class="text-muted">If not provided, the filename will be used</small>
+              </div>
+              <!-- Description -->
+              <div class="mb-4">
+                <label for="description" class="form-label fw-bold">Description (Optional)</label>
+                <textarea id="description"
+                          name="description"
+                          class="form-control"
+                          rows="3"
+                          placeholder="Add notes about this media file..."></textarea>
+              </div>
+              <!-- Upload Progress -->
+              <div id="uploadProgress" class="mb-4 inl-a-0001">
+                <div class="progress inl-a-0023">
+                  <div class="progress-bar progress-bar-striped progress-bar-animated inl-a-0024"
+                       id="progressBar"
+                       role="progressbar">
+                    <span id="progressText" class="inl-a-0025">0%</span>
+                  </div>
+                </div>
+                <small id="uploadStatus" class="d-block mt-2 text-muted">Preparing upload...</small>
+              </div>
+              <!-- Buttons -->
+              <div class="d-grid gap-2">
+                <button type="submit"
+                        id="submitBtn"
+                        class="modern-btn modern-btn-primary btn-sm">
+                  <i class="bi bi-cloud-upload"></i> Upload Media
+                </button>
+                <a href="/admin/media" class="modern-btn modern-btn-white">
+                  <i class="bi bi-arrow-left"></i> Back to Media Library
+                </a>
+              </div>
+              <!-- Accepted Formats -->
+              <div class="alert alert-primary mt-4 mb-0">
+                <strong><i class="bi bi-info-circle"></i> Accepted Formats:</strong>
+                <ul class="mb-0 mt-2">
+                  <li>
+                    <strong>Images:</strong> JPG, PNG, WEBP, GIF (max 50MB)
+                  </li>
+                  <li>
+                    <strong>Videos:</strong> MP4, WEBM, MOV (max 50MB)
+                  </li>
+                  <li>
+                    <strong>Audio:</b> MP3, WAV, OGG (max 50MB)
+                    </li>
+                    <li>
+                      <strong>Documents:</b> PDF, DOC, DOCX, XLS, XLSX (max 50MB)
+                      </li>
+                    </ul>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <!-- Recent Uploads (if any) -->
+            <div class="mt-5">
+              <h5 class="mb-3">Recently Uploaded</h5>
+              <div class="alert alert-secondary">
+                <p class="mb-0 text-muted">Your recently uploaded media will appear here</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endblock %}

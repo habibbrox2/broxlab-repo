@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="bn">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title|default('আবেদনের কপি') }}</title>
+    <style>
+        @page { margin: 12mm; }
+        body {
+            font-family: solaimanlipi, nikosh, helvetica, sans-serif;
+            font-size: 12px;
+            color: #111827;
+            line-height: 1.45;
+        }
+        .wrap {
+            border: 1px solid #dbe3ee;
+            border-radius: 8px;
+            padding: 14px;
+        }
+        .header {
+            border-bottom: 2px solid #1d4ed8;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+        }
+        .title {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 4px 0;
+        }
+        .meta {
+            font-size: 11px;
+            color: #475569;
+        }
+        .section { margin-top: 12px; }
+        .section-title {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #dbe3ee;
+            padding: 7px 8px;
+            vertical-align: top;
+        }
+        th {
+            width: 32%;
+            background: #eff6ff;
+            text-align: left;
+            font-weight: 700;
+        }
+        .list {
+            margin: 0;
+            padding-left: 18px;
+        }
+        .list li { margin-bottom: 3px; }
+        .break { word-break: break-word; }
+        .muted { color: #64748b; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="header">
+            <h1 class="title">{{ header_title|default('আবেদনের কপি') }}</h1>
+            <div class="meta">জেনারেটেড সময়: {{ generated_at|default('') }}</div>
+        </div>
+
+        <div class="section">
+            <h3 class="section-title">প্রাথমিক তথ্য</h3>
+            <table>
+                <tr>
+                    <th>ইউনিয়ন</th>
+                    <td class="break">{{ union|default('N/A') }}</td>
+                </tr>
+                <tr>
+                    <th>সার্টিফিকেট টাইপ</th>
+                    <td class="break">
+                        {{ certificate_type_bn|default('') }}
+                        {% if certificate_type|default('') %}<span class="muted"> ({{ certificate_type }})</span>{% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h3 class="section-title">আবেদনের ডিটেইল</h3>
+            <table>
+                {% for key, value in detail %}
+                <tr>
+                    <th>{{ key|replace({'_': ' ', '-': ' '})|title }}</th>
+                    <td class="break">
+                        {% if value is iterable %}
+                            {{ value|json_encode(constant('JSON_UNESCAPED_UNICODE')) }}
+                        {% else %}
+                            {% if value is same as(null) or value is same as('') %}
+                                N/A
+                            {% elseif value is same as(true) %}
+                                Yes
+                            {% elseif value is same as(false) %}
+                                No
+                            {% else %}
+                                {{ value }}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <th>Detail</th>
+                    <td>N/A</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        {% if documents is iterable and documents|length > 0 %}
+        <div class="section">
+            <h3 class="section-title">সংযুক্ত ডকুমেন্ট</h3>
+            <ul class="list">
+                {% for doc in documents %}
+                <li>
+                    {{ doc.name|default('Document ' ~ loop.index) }}
+                    {% if doc.url|default('') %}<span class="muted"> ({{ doc.url }})</span>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if business_meta is iterable and business_meta|length > 0 %}
+        <div class="section">
+            <h3 class="section-title">ব্যবসায়িক তথ্য</h3>
+            <table>
+                {% for key, value in business_meta %}
+                <tr>
+                    <th>{{ key|replace({'_': ' ', '-': ' '})|title }}</th>
+                    <td class="break">
+                        {% if value is iterable %}
+                            {{ value|json_encode(constant('JSON_UNESCAPED_UNICODE')) }}
+                        {% else %}
+                            {{ value|default('N/A') }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

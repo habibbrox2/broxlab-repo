@@ -1,0 +1,211 @@
+{% extends "layout.twig" %}
+{% block title %}Setup Two-Factor Authentication{% endblock %}
+{% block content %}
+  <div class="container py-5">
+    <!-- Breadcrumb / Page Header -->
+    <div class="mb-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="/profile" class="text-decoration-none">Profile</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="/user/security/2fa" class="text-decoration-none">2FA Settings</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">Setup</li>
+        </ol>
+      </nav>
+      <h1 class="h2 mb-1 fw-bold">
+        <i class="bi bi-shield-fill text-success me-2"></i>2FA সেটআপ করুন
+      </h1>
+      <p class="text-muted mb-0">
+        নিচের ধাপগুলি অনুসরণ করে আপনার অ্যাকাউন্টে 2FA সক্ষম করুন।
+      </p>
+    </div>
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="card shadow-sm">
+          <div class="card-header bg-success text-white">
+            <h4 class="mb-0">
+              <i class="bi bi-shield-fill"></i> 2FA সেটআপ করুন
+            </h4>
+          </div>
+          <div class="card-body p-5">
+            <div class="alert alert-info" role="alert">
+              <i class="bi bi-info-circle-fill"></i>
+              <strong>ধাপ-দ্বি-ধাপ নির্দেশাবলী অনুসরণ করুন</strong>
+            </div>
+            <!-- Step 1 -->
+            <div class="step mb-5">
+              <h5 class="step-title">
+                <span class="badge bg-success">ধাপ ১</span> Authenticator অ্যাপ ডাউনলোড করুন
+              </h5>
+              <p class="mt-3">
+                নিম্নোক্ত অ্যাপগুলির যেকোনো একটি ডাউনলোড করুন:
+              </p>
+              <div class="row mt-3">
+                <div class="col-md-6">
+                  <ul>
+                    <li>
+                      <strong>Google Authenticator</strong> (সুপারিশকৃত)
+                    </li>
+                    <li>
+                      <strong>Microsoft Authenticator</strong>
+                    </li>
+                    <li>
+                      <strong>Authy</strong>
+                    </li>
+                  </ul>
+                </div>
+                <div class="col-md-6">
+                  <ul>
+                    <li>
+                      <strong>LastPass Authenticator</strong>
+                    </li>
+                    <li>
+                      <strong>FreeOTP</strong>
+                    </li>
+                    <li>
+                      <strong>AndOTP</strong>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <hr>
+            <!-- Step 2 -->
+            <div class="step mb-5">
+              <h5 class="step-title">
+                <span class="badge bg-success">ধাপ ২</span> QR কোড স্ক্যান করুন
+              </h5>
+              <p class="mt-3">
+                আপনার Authenticator অ্যাপে নতুন অ্যাকাউন্ট যোগ করুন এবং নিচের QR কোড স্ক্যান করুন:
+              </p>
+              {% if qr_image %}
+                <div class="qr-container text-center mt-4 mb-4">
+                  <img src="{{ qr_image }}" alt="2FA QR Code" class="inl-p-0129">
+                  <p class="mt-2 text-muted small">
+                    <i class="bi bi-camera-fill"></i> আপনার অ্যাপ দিয়ে এই QR কোড স্ক্যান করুন
+                  </p>
+                </div>
+              {% else %}
+                <div class="alert alert-warning">
+                  QR কোড জেনারেট করা যায়নি। নিচে ম্যানুয়াল এন্ট্রি ব্যবহার করুন।
+                </div>
+              {% endif %}
+              <!-- Manual Entry Option -->
+              <div class="alert alert-secondary mt-4">
+                <p class="mb-2">
+                  <strong>QR কোড স্ক্যান করতে পারছেন না?</strong>
+                  নিচের সিক্রেট কী ম্যানুয়ালি যোগ করুন:
+                </p>
+                <div class="input-group">
+                  <input type="text"
+                         class="form-control fw-bold"
+                         id="secretKey"
+                         value="{{ secret }}"
+                         readonly>
+                  <button class="btn btn-outline-secondary"
+                          type="button"
+                          id="copyBtn"
+                          title="কপি করুন">
+                    <i class="bi bi-clipboard-fill"></i>
+                  </button>
+                </div>
+                <small class="form-text text-muted mt-2">
+                  <strong>যোগ করার সময়:</strong>
+                  <ul class="mb-0 mt-2">
+                    <li>
+                      <strong>Account Name:</strong> {{ user.email }}
+                    </li>
+                    <li>
+                      <strong>Key:</strong> {{ secret }}
+                    </li>
+                    <li>
+                      <strong>Type:</strong> Time-based (TOTP)
+                    </li>
+                    <li>
+                      <strong>Algorithm:</strong> SHA-1
+                    </li>
+                  </ul>
+                </small>
+              </div>
+            </div>
+            <hr>
+            <!-- Step 3 -->
+            <div class="step mb-5">
+              <h5 class="step-title">
+                <span class="badge bg-success">ধাপ ৩</span> যাচাইকরণ কোড প্রদান করুন
+              </h5>
+              <p class="mt-3">
+                আপনার Authenticator অ্যাপ এ ছয়-অঙ্কের কোড দেখবেন। সেটি নিচে প্রবেশ করুন:
+              </p>
+              <form method="POST" action="/user/security/2fa/verify" class="mt-4">
+                <div class="mb-3">
+                  <label for="code" class="fw-bold">6-Digit Code:</label>
+                  <input type="text"
+                         class="form-control form-control-lg text-center"
+                         id="code"
+                         name="code"
+                         maxlength="6"
+                         placeholder="000000"
+                         inputmode="numeric"
+                         pattern="[0-9]{6}"
+                         autocomplete="off"
+                         required
+                         autofocus>
+                  <small class="form-text text-muted mt-2">
+                    <i class="bi bi-clock-fill"></i> কোড প্রতি ৩০ সেকেন্ডে পরিবর্তিত হয়
+                  </small>
+                </div>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="btn btn-success btn-lg w-100 mt-4">
+                  <i class="bi bi-check-lg"></i> যাচাই করুন এবং সক্ষম করুন
+                </button>
+              </form>
+              <a href="/user/security/2fa"
+                 class="btn btn-outline-secondary w-100 mt-2">বাতিল করুন</a>
+            </div>
+            <hr>
+            <!-- Important Notes -->
+            <div class="alert alert-warning mt-5" role="alert">
+              <strong><i class="bi bi-exclamation-triangle-fill"></i> গুরুত্বপূর্ণ:</strong>
+              <ul class="mb-0 mt-2">
+                <li>আপনার সিক্রেট কী নিরাপদ জায়গায় রাখুন</li>
+                <li>
+                  সফলভাবে যাচাইয়ের পরে, ব্যাকআপ কোড সংরক্ষণ করুন
+                </li>
+                <li>
+                  আপনার ফোন হারিয়ে গেলে এই কোডগুলি অ্যাক্সেস পাবেন
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+// Copy সিক্রেট কী ফাংশন
+document.getElementById('copyBtn').addEventListener('click', function() {
+    const secretKey = document.getElementById('secretKey');
+    secretKey.select();
+    document.execCommand('copy');
+
+    const btn = this;
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+    btn.disabled = true;
+
+    setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+    }, 2000);
+});
+
+// শুধুমাত্র সংখ্যা প্রবেশ করুন
+document.getElementById('code').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '');
+});
+  </script>
+{% endblock %}

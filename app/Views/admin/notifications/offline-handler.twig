@@ -1,0 +1,220 @@
+{% extends 'admin/layout.twig' %}
+{% block title %}Offline Notification Manager{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4" id="offlineHandlerRoot">
+    <div class="admin-page-header mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <div class="admin-page-title">
+          <i class="bi bi-wifi-off"></i> Offline Notification Manager
+        </div>
+        <p class="admin-page-subtitle">Manage buffered notifications, retry queue, and delivery history.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="modern-btn modern-btn-outline-secondary btn-sm"
+                data-action="refresh-buffer">
+          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+        <button class="modern-btn modern-btn-primary btn-sm"
+                data-action="process-queue">
+          <i class="bi bi-lightning-charge me-1"></i>Process Queue
+        </button>
+        <button class="modern-btn modern-btn-warning btn-sm"
+                data-action="simulate-offline">
+          <i class="bi bi-plug me-1"></i>Simulate Offline
+        </button>
+      </div>
+    </div>
+    <div class="row mb-4">
+      <div class="col-md-3 mb-3">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-body">
+            <small class="text-muted">Buffered</small>
+            <h4 class="mb-0" id="bufferCount">0</h4>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-body">
+            <small class="text-muted">Retry Queue</small>
+            <h4 class="mb-0" id="retryCount">0</h4>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-body">
+            <small class="text-muted">Success</small>
+            <h4 class="mb-0" id="successCount">0</h4>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-body">
+            <small class="text-muted">Failure Rate</small>
+            <h4 class="mb-0" id="failureRate">0%</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-12">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0">Buffered Notifications</h6>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" data-action="refresh-buffer">Refresh</button>
+                <button class="btn btn-outline-secondary" data-action="clear-expired-cache">Clear Expired</button>
+                <button class="btn btn-outline-danger" data-action="clear-all-buffer">Clear All</button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Saved At</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="bufferedTable">
+                  <tr>
+                    <td colspan="5" class="text-center text-muted py-4">Loading...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-12">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0">Retry Queue</h6>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary"
+                        data-action="filter-retry-queue"
+                        data-filter="all">All</button>
+                <button class="btn btn-outline-secondary"
+                        data-action="filter-retry-queue"
+                        data-filter="pending">Pending</button>
+                <button class="btn btn-outline-secondary"
+                        data-action="filter-retry-queue"
+                        data-filter="failed">Failed</button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Notification</th>
+                    <th>Retry</th>
+                    <th>Next Retry</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="retryQueueTable">
+                  <tr>
+                    <td colspan="6" class="text-center text-muted py-4">Loading...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-12">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0">Delivery History</h6>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary"
+                        data-action="filter-history"
+                        data-filter="all">All</button>
+                <button class="btn btn-outline-secondary"
+                        data-action="filter-history"
+                        data-filter="success">Success</button>
+                <button class="btn btn-outline-secondary"
+                        data-action="filter-history"
+                        data-filter="failed">Failed</button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Notification</th>
+                    <th>Retry</th>
+                    <th>Status</th>
+                    <th>Error</th>
+                  </tr>
+                </thead>
+                <tbody id="deliveryHistoryTable">
+                  <tr>
+                    <td colspan="5" class="text-center text-muted py-4">Loading...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="offlineModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Offline Mode Simulation</h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-check mb-2">
+            <input class="form-check-input"
+                   type="radio"
+                   name="offlineMode"
+                   id="offlineModeQueue"
+                   value="queue"
+                   checked>
+            <label class="form-check-label" for="offlineModeQueue">Queue new notifications</label>
+          </div>
+          <div class="form-check mb-2">
+            <input class="form-check-input"
+                   type="radio"
+                   name="offlineMode"
+                   id="offlineModeRetry"
+                   value="retry">
+            <label class="form-check-label" for="offlineModeRetry">Force retry mode</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="radio"
+                   name="offlineMode"
+                   id="offlineModeDrop"
+                   value="drop">
+            <label class="form-check-label" for="offlineModeDrop">Drop network requests</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button"
+                  class="btn btn-primary"
+                  data-action="apply-offline-mode">Apply</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

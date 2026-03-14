@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rich Text Editor Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Google Material Icons -->
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+
+    <!-- Optional: Editor base styles -->
+    <!-- RTE Cache Busting: Forces reload when files are modified -->
+    {% set rte_version = getRTEVersion() %}
+    <link href="/rtceditor/editor.css?v={{ rte_version }}" rel="stylesheet">
+    <script src="/rtceditor/editor.js?v={{ rte_version }}" defer></script>
+    <script src="/rtceditor/editor.debug.js?v={{ rte_version }}" defer></script>
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+
+            <!-- Header -->
+            <div class="mb-5 text-center">
+                <h1>Rich Text Editor Demo</h1>
+                <p class="text-muted">A fully custom WYSIWYG editor built with vanilla JavaScript, HTML, and CSS</p>
+            </div>
+
+            <!-- Editor Form -->
+            <form id="editorForm" class="card shadow-sm">
+                <div class="card-body">
+
+                    <!-- Title Field -->
+                    <div class="mb-3">
+                        <label for="articleTitle" class="form-label">Article Title</label>
+                        <input type="text" class="form-control" id="articleTitle" name="article_title" placeholder="Enter article title">
+                    </div>
+
+                    <!-- Rich Text Editor -->
+                    <div class="mb-3">
+                        <label class="form-label">Article Content</label>
+                        {% include 'partials/editor.twig' with {
+                            'editorId': 'articleEditor',
+                            'editorName': 'article_content',
+                            'editorClass': 'editor-demo',
+                            'initialContent': '<h1>Main Heading (H1)</h1>\n<h2>Section Heading (H2)</h2>\n<h3>Sub Heading (H3)</h3>\n\n<p>You can <strong>bold</strong>, <em>italic</em>, <u>underline</u>, <s>strike</s>, use <span style="color:red">colors</span> and <span style="background-color:yellow">backgrounds</span>.</p>\n\n<p style="text-align:center">Center aligned text</p>\n<p style="text-align:right">Right aligned text</p>\n\n<ul><li>Unordered list</li><li>Another item</li></ul>\n<ol><li>Ordered list</li><li>Second item</li></ol>\n\n<blockquote>A blockquote example</blockquote>\n\n<p>Inline code: <code>&lt;div&gt;Hello&lt;/div&gt;</code></p>\n<pre><code>console.log("Hello Editor");</code></pre>',
+                            'darkMode': false,
+                            'rtl': false
+                        } %}
+                    </div>
+
+                    <!-- Info Section -->
+                    <div class="alert alert-info d-none" id="contentInfo">
+                        <small>
+                            <span id="wordCount">0</span> words •
+                            <span id="charCount">0</span> characters
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="card-footer bg-light d-flex flex-wrap gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+                    <button type="reset" class="btn btn-secondary"><i class="fas fa-redo"></i> Reset</button>
+                    <button type="button" class="btn btn-outline-secondary" id="viewHtml"><i class="fas fa-code"></i> View HTML</button>
+                    <button type="button" class="btn btn-outline-info" id="runSmokeTest"><i class="fas fa-flask"></i> Smoke Test</button>
+                    <button type="button" class="btn btn-outline-warning" id="runValidation"><i class="fas fa-check-circle"></i> Validation</button>
+                </div>
+            </form>
+
+            <!-- Messages -->
+            <div id="successMessage" class="alert alert-success d-none mt-3"><span id="successText"></span></div>
+            <div id="errorMessage" class="alert alert-danger d-none mt-3"><span id="errorText"></span></div>
+
+            <!-- HTML Output -->
+            <div id="htmlOutput" class="card mt-4 d-none">
+                <div class="card-header d-flex justify-content-between">
+                    <strong>Generated HTML</strong>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="closeHtml">Close</button>
+                </div>
+                <div class="card-body">
+                    <pre id="htmlContent" class="bg-light p-3 rounded" style="max-height:400px;overflow:auto"></pre>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Demo Logic -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const setupEditorHandlers = (editor) => {
+        document.getElementById('viewHtml').onclick = () => {
+            document.getElementById('htmlContent').textContent = editor.getContent();
+            document.getElementById('htmlOutput').classList.remove('d-none');
+        };
+        document.getElementById('closeHtml').onclick = () => {
+            document.getElementById('htmlOutput').classList.add('d-none');
+        };
+        const updateStats = () => {
+            const text = editor.getContent().replace(/<[^>]*>/g, '');
+            document.getElementById('wordCount').textContent = text.split(/\s+/).filter(Boolean).length;
+            document.getElementById('charCount').textContent = text.length;
+            document.getElementById('contentInfo').classList.remove('d-none');
+        };
+        document.getElementById('articleEditor').addEventListener('input', updateStats);
+        updateStats();
+    };
+    if (window.editor_articleEditor) setupEditorHandlers(window.editor_articleEditor);
+    document.addEventListener('rte:ready', e => {
+        if (e.detail.editorId === 'articleEditor') setupEditorHandlers(e.detail.editor);
+    });
+});
+</script>
+
+<style>
+.editor-demo { margin: 0; }
+</style>
+
+</body>
+</html>

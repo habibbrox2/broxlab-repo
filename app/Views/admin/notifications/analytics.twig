@@ -1,0 +1,206 @@
+{% extends 'admin/layout.twig' %}
+{% block title %}Google Analytics Dashboard - FCM{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4" id="notificationsAnalyticsRoot">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-graph-up me-2"></i>
+        Notifications Analytics
+      </div>
+      <div class="admin-page-subtitle">Notification statistics</div>
+    </div>
+    <div class="row mb-4">
+      <div class="col-12">
+        <h2 class="mb-0">
+          <i class="bi bi-graph-up me-2"></i>Google Analytics Dashboard
+        </h2>
+        <small class="text-muted">Firebase Cloud Messaging and notification performance analytics</small>
+      </div>
+    </div>
+    <!-- Real-time Stats -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="admin-panel-card shadow-sm border-left-primary">
+          <div class="admin-panel-card-body">
+            <div class="text-primary font-weight-bold text-uppercase mb-1">Notifications Sent</div>
+            <div class="h3 mb-0" id="totalNotificationsSent">-</div>
+            <small class="text-muted">All-time total</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="admin-panel-card shadow-sm border-left-success">
+          <div class="admin-panel-card-body">
+            <div class="text-success font-weight-bold text-uppercase mb-1">Delivered</div>
+            <div class="h3 mb-0" id="totalDelivered">-</div>
+            <small class="text-muted">Successfully sent</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="admin-panel-card shadow-sm border-left-info">
+          <div class="admin-panel-card-body">
+            <div class="text-info font-weight-bold text-uppercase mb-1">Clicks</div>
+            <div class="h3 mb-0" id="totalClicked">-</div>
+            <small class="text-muted">Total interactions</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="admin-panel-card shadow-sm border-left-warning">
+          <div class="admin-panel-card-body">
+            <div class="text-warning font-weight-bold text-uppercase mb-1">Permission Granted</div>
+            <div class="h3 mb-0" id="totalPermissionGranted">-</div>
+            <small class="text-muted">Users granted permission</small>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Info Boxes -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="alert alert-info border-left-info" role="alert">
+          <h4 class="alert-heading">
+            <i class="bi bi-info-circle-fill me-2"></i>Google Analytics Integration
+          </h4>
+          <p class="mb-2">
+            This dashboard tracks Firebase Console and Google Analytics
+            notification events such as:
+          </p>
+          <ul class="mb-0">
+            <li>
+              <strong>fcm_notification_sent</strong> - Notification sent
+            </li>
+            <li>
+              <strong>fcm_notification_delivered</strong> - Notification delivered
+            </li>
+            <li>
+              <strong>fcm_notification_clicked</strong> - Notification clicked
+            </li>
+            <li>
+              <strong>notification_permission_changed</strong> - Permission preference changed
+            </li>
+            <li>
+              <strong>fcm_token_generated</strong> - Token generated
+            </li>
+            <li>
+              <strong>fcm_token_migrated</strong> - Token migrated
+            </li>
+            <li>
+              <strong>user_login/logout</strong> - User login/logout events
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <!-- Charts Section -->
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <div class="admin-panel-card shadow-sm">
+          <div class="admin-panel-card-header bg-primary text-white">
+            <h5 class="mb-0">Notification Flow</h5>
+          </div>
+          <div class="admin-panel-card-body">
+            <canvas id="notificationFlowChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="admin-panel-card shadow-sm">
+          <div class="admin-panel-card-header bg-primary text-white">
+            <h5 class="mb-0">Channel Breakdown</h5>
+          </div>
+          <div class="admin-panel-card-body">
+            <canvas id="channelChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- How to Access Firebase Analytics -->
+    <div class="row">
+      <div class="col-12">
+        <div class="admin-panel-card shadow-sm">
+          <div class="admin-panel-card-header bg-secondary text-white">
+            <h5 class="mb-0">
+              <i class="bi bi-link-45deg me-2"></i>Firebase Console & Analytics Setup
+            </h5>
+          </div>
+          <div class="admin-panel-card-body">
+            <p>To view Analytics data in Firebase Console, follow these steps:</p>
+            <ol>
+              <li>
+                <a href="https://console.firebase.google.com/"
+                   target="_blank"
+                   class="modern-btn btn-sm btn-primary">
+                  <i class="bi bi-box-arrow-up-right me-1"></i>Open Firebase Console
+                </a>
+              </li>
+              <li>
+                Open your project <strong>Current Project</strong>
+              </li>
+              <li>
+                Go to <strong>Analytics > Dashboard</strong>
+              </li>
+              <li>
+                Review custom events under <strong>Analytics Events</strong>
+              </li>
+            </ol>
+            <div class="alert alert-warning mt-3">
+              <strong>Note:</strong> Analytics data may take some time to appear, especially for newly generated events.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Event Examples -->
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="admin-panel-card shadow-sm">
+          <div class="admin-panel-card-header bg-info text-white">
+            <h5 class="mb-0">
+              <i class="bi bi-code me-2"></i>JavaScript Implementation
+            </h5>
+          </div>
+          <div class="admin-panel-card-body">
+            <p>Use these frontend methods to track notification analytics events:</p>
+            <div class="row">
+              <div class="col-md-6">
+                <h6>Notification Events:</h6>
+                <pre><code>// Frontend - notifications.js
+                  AnalyticsSystem.trackNotificationSent()
+                  AnalyticsSystem.trackNotificationDelivered()
+                  AnalyticsSystem.trackNotificationClicked()
+                  AnalyticsSystem.trackNotificationDismissed()
+                  AnalyticsSystem.trackNotificationRead()</code></pre>
+              </div>
+              <div class="col-md-6">
+                <h6>Token & User Events:</h6>
+                <pre><code>// Frontend - notifications.js
+                  AnalyticsSystem.trackTokenGenerated()
+                  AnalyticsSystem.trackTokenMigration()
+                  AnalyticsSystem.trackUserLogin()
+                  AnalyticsSystem.trackUserLogout()</code></pre>
+              </div>
+            </div>
+            <div class="alert alert-success mt-3">
+              <strong>Tracks:</strong>
+              <ul class="mb-0">
+                <li>Real-time notification tracking</li>
+                <li>User engagement metrics</li>
+                <li>Token management monitoring</li>
+                <li>Admin actions logging</li>
+                <li>Error tracking and debugging</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"
+          defer></script>
+{% endblock %}

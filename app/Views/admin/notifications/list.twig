@@ -1,0 +1,242 @@
+{% extends 'admin/layout.twig' %}
+{% block title %}All Notifications{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-bell me-2"></i>
+        Notifications
+      </div>
+      <div class="admin-page-subtitle">View all notifications</div>
+    </div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <a href="/admin/notifications"
+           class="modern-btn btn-sm btn-outline-secondary mb-3">
+          <i class="bi bi-arrow-left me-1"></i>Go Back
+        </a>
+        <h2 class="mb-0">
+          <i class="bi bi-list-check me-2"></i>All Notifications
+        </h2>
+      </div>
+      <a href="/admin/notifications/send"
+         class="modern-btn modern-btn-primary">
+        <i class="bi bi-send me-1"></i>Send Notification
+      </a>
+    </div>
+    <div class="admin-panel-card ">
+      <div class="admin-panel-card-body">
+        <!-- Search & Filter Form -->
+        <div class="border-bottom px-4 py-3 mb-3">
+          <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label small text-muted mb-1">Search</label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                <input type="text"
+                       name="search"
+                       value="{{ pagination.search|default("") }}"
+                       class="form-control form-control-sm"
+                       placeholder="Search by ID, title, message, type or status...">
+              </div>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small text-muted mb-1">Type</label>
+              <select name="type" class="form-select form-select-sm">
+                <option value="">All Types</option>
+                <option value="general"
+                        {% if pagination.type == 'general' %}selected{% endif %}>General</option>
+                <option value="update"
+                        {% if pagination.type == 'update' %}selected{% endif %}>Update</option>
+                <option value="broadcast"
+                        {% if pagination.type == 'broadcast' %}selected{% endif %}>Broadcast</option>
+                <option value="targeted"
+                        {% if pagination.type == 'targeted' %}selected{% endif %}>Targeted</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small text-muted mb-1">Status</label>
+              <select name="status" class="form-select form-select-sm">
+                <option value="">All Status</option>
+                <option value="draft"
+                        {% if pagination.status == 'draft' %}selected{% endif %}>Draft</option>
+                <option value="scheduled"
+                        {% if pagination.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                <option value="sent"
+                        {% if pagination.status == 'sent' %}selected{% endif %}>Sent</option>
+                <option value="failed"
+                        {% if pagination.status == 'failed' %}selected{% endif %}>Failed</option>
+                <option value="pending"
+                        {% if pagination.status == 'pending' %}selected{% endif %}>Pending</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small text-muted mb-1">Sort By</label>
+              <select name="sort" class="form-select form-select-sm">
+                <option value="created_at"
+                        {% if pagination.sort|default('created_at') == 'created_at' %}selected{% endif %}>Created Date</option>
+                <option value="updated_at"
+                        {% if pagination.sort|default('created_at') == 'updated_at' %}selected{% endif %}>Updated Date</option>
+                <option value="id"
+                        {% if pagination.sort|default('created_at') == 'id' %}selected{% endif %}>ID</option>
+                <option value="title"
+                        {% if pagination.sort|default('created_at') == 'title' %}selected{% endif %}>Title</option>
+                <option value="type"
+                        {% if pagination.sort|default('created_at') == 'type' %}selected{% endif %}>Type</option>
+                <option value="status"
+                        {% if pagination.sort|default('created_at') == 'status' %}selected{% endif %}>Status</option>
+              </select>
+            </div>
+            <div class="col-md-1">
+              <label class="form-label small text-muted mb-1">Order</label>
+              <select name="order" class="form-select form-select-sm">
+                <option value="DESC"
+                        {% if pagination.order|default('DESC') == 'DESC' %}selected{% endif %}>DESC</option>
+                <option value="ASC"
+                        {% if pagination.order|default('DESC') == 'ASC' %}selected{% endif %}>ASC</option>
+              </select>
+            </div>
+            <div class="col-md-1">
+              <label class="form-label small text-muted mb-1">Limit</label>
+              <select name="limit" class="form-select form-select-sm">
+                <option value="10"
+                        {% if pagination.per_page|default(50) == 10 %}selected{% endif %}>10 items</option>
+                <option value="20"
+                        {% if pagination.per_page|default(50) == 20 %}selected{% endif %}>20 items</option>
+                <option value="50"
+                        {% if pagination.per_page|default(50) == 50 %}selected{% endif %}>50 items</option>
+                <option value="100"
+                        {% if pagination.per_page|default(50) == 100 %}selected{% endif %}>100 items</option>
+              </select>
+            </div>
+            <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+              <a href="/admin/notifications/list" class="modern-btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x-circle me-1"></i> Reset
+              </a>
+              <button type="submit" class="modern-btn modern-btn-primary btn-sm">
+                <i class="bi bi-funnel me-1"></i> Apply
+              </button>
+            </div>
+          </form>
+        </div>
+        {% if notifications is not empty %}
+          <div class="admin-heavy-table-view">
+            <table class="table table-hover mb-0 notifications-list-table">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Title</th>
+                  <th>Type</th>
+                  <th class="notification-status-col">Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for n in notifications %}
+                  <tr>
+                    <td class="text-secondary fw-medium font-monospace">
+                      <span data-bs-toggle="tooltip" title="Notification ID">#{{ n.id }}</span>
+                    </td>
+                    <td>
+                      <strong class="text-dark d-inline-block text-truncate" style="max-width: 250px;" data-bs-toggle="tooltip" title="{{ n.title|e('html_attr') }}">
+                        {{ n.title }}
+                      </strong>
+                    </td>
+                    <td>
+                      <span class="badge bg-primary">{{ n.type }}</span>
+                    </td>
+                    <td class="notification-status-col">
+                      {% set row_status = (n.status|default('')|lower|trim) %}
+                      {% set delivery_status = (n.delivery_status|default('')|lower|trim) %}
+                      {% if row_status == 'draft' %}
+                        <span class="badge notification-status-badge bg-warning text-surface-dark">Draft</span>
+                      {% elseif row_status == 'scheduled' %}
+                        <span class="badge notification-status-badge bg-info text-surface-dark">Scheduled</span>
+                      {% elseif row_status == 'failed' or delivery_status == 'failed' %}
+                        <span class="badge notification-status-badge bg-danger">Failed</span>
+                      {% elseif row_status == 'sent' or n.sent_to_all_at %}
+                        <span class="badge notification-status-badge bg-success">Sent</span>
+                      {% else %}
+                        <span class="badge notification-status-badge bg-secondary">Pending</span>
+                      {% endif %}
+                    </td>
+                    <td>{{ n.created_at|date("d M Y H:i") }}</td>
+                    <td class="text-nowrap">
+                      <a href="/admin/notifications/view?id={{ n.id }}"
+                         class="modern-btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-eye me-1"></i>View
+                      </a>
+                      <button class="modern-btn btn-sm btn-sm"
+                              data-action="resend-notification"
+                              data-notification-id="{{ n.id }}"
+                              {% if n.status == 'draft' %}disabled{% endif %}>
+                        <i class="bi bi-arrow-clockwise me-1"></i>Resend Notification
+                      </button>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="admin-heavy-card-view">
+            {% for n in notifications %}
+              <article class="admin-heavy-card">
+                <div class="admin-heavy-card-head">
+                  <span class="admin-heavy-card-id">#{{ n.id }}</span>
+                  {% set row_status = (n.status|default('')|lower|trim) %}
+                  {% set delivery_status = (n.delivery_status|default('')|lower|trim) %}
+                  {% if row_status == 'draft' %}
+                    <span class="badge bg-warning text-surface-dark">Draft</span>
+                  {% elseif row_status == 'scheduled' %}
+                    <span class="badge bg-info text-surface-dark">Scheduled</span>
+                  {% elseif row_status == 'failed' or delivery_status == 'failed' %}
+                    <span class="badge bg-danger">Failed</span>
+                  {% elseif row_status == 'sent' or n.sent_to_all_at %}
+                    <span class="badge bg-success">Sent</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Pending</span>
+                  {% endif %}
+                </div>
+
+                <h6 class="admin-heavy-card-title mb-2 text-truncate" data-bs-toggle="tooltip" title="{{ n.title|e('html_attr') }}">
+                  {{ n.title }}
+                </h6>
+
+                <div class="admin-heavy-card-meta">
+                  <span class="badge bg-primary">{{ n.type }}</span>
+                  <span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ n.created_at|date("d M Y H:i") }}</span>
+                </div>
+
+                <div class="admin-heavy-card-actions">
+                  <a href="/admin/notifications/view?id={{ n.id }}"
+                     class="modern-btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-eye me-1"></i>View
+                  </a>
+                  <button class="modern-btn btn-sm"
+                          data-action="resend-notification"
+                          data-notification-id="{{ n.id }}"
+                          {% if n.status == 'draft' %}disabled{% endif %}>
+                    <i class="bi bi-arrow-clockwise me-1"></i>Resend
+                  </button>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="p-4 text-center text-muted">
+            <i class="bi bi-inbox  mb-3 d-block"></i>
+            No notifications found
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {# Pagination #}
+    <!-- Pagination -->
+    {% include "admin/partials/pagination.twig" %}
+  </div>
+{% endblock %}
+{% block scripts %}{% endblock %}

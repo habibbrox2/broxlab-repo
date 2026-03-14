@@ -1,0 +1,147 @@
+{% extends "layout.twig" %}
+
+{% block title %}Contact {{ app_settings.site_name|default('Us') }} - Get in Touch{% endblock %}
+
+{% set breadcrumbs = [
+  { label: 'Contact Us', url: '/contact', icon: 'envelope' }
+] %}
+
+{% block content %}
+<div class="page-contact public-static-page">
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "{{ url|default('https://example.com') }}"
+    }
+    {% for crumb in breadcrumbs %}
+    ,{
+      "@type": "ListItem",
+      "position": {{ loop.index + 1 }},
+      "name": {{ crumb.label|json_encode|raw }},
+      "item": {{ (loop.last ? canonical_url : (url ~ crumb.url))|json_encode|raw }}
+    }
+    {% endfor %}
+  ]
+}
+  </script>
+
+  <section class="hero-section public-page-hero public-hero--contact position-relative py-5 mb-4 overflow-hidden">
+    <div class="container">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+          <h1 class="display-4 fw-bold text-white mb-3">
+            <i class="bi bi-envelope me-2"></i>Get in Touch
+          </h1>
+          <p class="lead text-white-50 fs-5 mb-0">
+            Have questions? We would love to hear from you.
+          </p>
+        </div>
+        <div class="col-lg-4 text-center">
+          <div class="public-hero-icon" aria-hidden="true">
+            <i class="bi bi-chat-dots-fill"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="container py-4 py-lg-5">
+    <div class="row justify-content-center g-4">
+      <div class="col-lg-8">
+        <div class="card public-surface-card border-0 shadow-sm">
+          <div class="card-header text-white text-center">
+            <h2 class="mb-0"><i class="bi bi-envelope-fill"></i> Contact Us</h2>
+            <p class="mb-0 small">Fill out the form below and we will reply soon.</p>
+          </div>
+
+          <div class="card-body p-4">
+            {% if success is defined %}
+              <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> {{ success }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endif %}
+
+            {% if errors is defined and errors %}
+              <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> Please fix the following:
+                <ul class="mb-0 mt-2">
+                  {% for error in errors %}
+                    <li>{{ error }}</li>
+                  {% endfor %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endif %}
+
+            <form method="post" action="/contact" class="needs-validation" novalidate>
+              <div class="mb-3">
+                <label for="name" class="form-label fw-bold"><i class="bi bi-person-fill"></i> Your Name</label>
+                <input type="text"
+                       class="form-control rounded-3"
+                       id="name"
+                       name="name"
+                       value="{{ old.name|default('') }}"
+                       placeholder="John Doe"
+                       required>
+              </div>
+              <div class="mb-3">
+                <label for="email" class="form-label fw-bold"><i class="bi bi-envelope-open-fill"></i> Email</label>
+                <input type="email"
+                       class="form-control rounded-3"
+                       id="email"
+                       name="email"
+                       value="{{ old.email|default('') }}"
+                       placeholder="you@example.com"
+                       required>
+              </div>
+              <div class="mb-3">
+                <label for="subject" class="form-label fw-bold"><i class="bi bi-tag-fill"></i> Subject</label>
+                <input type="text"
+                       class="form-control rounded-3"
+                       id="subject"
+                       name="subject"
+                       value="{{ old.subject|default('') }}"
+                       placeholder="Message subject"
+                       required>
+              </div>
+              <div class="mb-3">
+                <label for="message" class="form-label fw-bold"><i class="bi bi-chat-left-text-fill"></i> Message</label>
+                <textarea class="form-control rounded-3"
+                          id="message"
+                          name="message"
+                          rows="5"
+                          placeholder="Write your message here..."
+                          required>{{ old.message|default('') }}</textarea>
+              </div>
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary rounded-3">
+                  <i class="bi bi-send-fill"></i> Send Message
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="text-center mt-4 pt-4 border-top contact-info-strip">
+          {% if app_settings.contact_phone %}
+            <p class="mb-2"><i class="bi bi-telephone-fill text-success me-2"></i> {{ app_settings.contact_phone }}</p>
+          {% endif %}
+          {% if app_settings.contact_email %}
+            <p class="mb-2"><i class="bi bi-envelope-fill text-primary me-2"></i> {{ app_settings.contact_email }}</p>
+          {% endif %}
+          {% if app_settings.contact_address %}
+            <p class="mb-0"><i class="bi bi-geo-alt-fill text-danger me-2"></i> {{ app_settings.contact_address }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

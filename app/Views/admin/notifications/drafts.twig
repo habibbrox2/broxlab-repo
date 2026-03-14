@@ -1,0 +1,105 @@
+{% extends 'admin/layout.twig' %}
+{% block title %}Draft Notifications - Admin Panel{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-bell me-2"></i>
+        Draft Notifications
+      </div>
+      <div class="admin-page-subtitle">Manage notification drafts</div>
+    </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <a href="/admin/notifications"
+           class="modern-btn btn-sm btn-outline-secondary mb-3">
+          <i class="bi bi-arrow-left me-1"></i>Go Back
+        </a>
+        <h2 class="mb-0">
+          <i class="bi bi-file-text me-2"></i>Draft Notifications
+        </h2>
+      </div>
+      <a href="/admin/notifications/send"
+         class="modern-btn modern-btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>Create New Notification
+      </a>
+    </div>
+    <div class="admin-panel-card">
+      <div class="admin-panel-card-body">
+        <div id="draftsList">
+          <div class="p-4 text-center">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading drafts...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Edit Draft Modal -->
+  <div class="modal fade" id="editDraftModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="admin-panel-card-header">
+          <h5 class="modal-title">Edit Draft Notification</h5>
+          <button type="button" class="modern-btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="admin-panel-card-body">
+          <form id="editDraftForm">
+            <input type="hidden" id="editDraftId">
+            <div class="mb-3">
+              <label class="form-label">Title</label>
+              <input type="text" class="form-control" id="editTitle" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Message</label>
+              <textarea class="form-control" id="editMessage" rows="4" required></textarea>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Type</label>
+                <select class="form-select" id="editType">
+                  <option value="general">General</option>
+                  <option value="promotion">Promotion</option>
+                  <option value="announcement">Announcement</option>
+                  <option value="update">Update</option>
+                  <option value="warning">Warning</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Recipient Type</label>
+                <select class="form-select" id="editRecipientType">
+                  <option value="all">All Recipients</option>
+                  <option value="guest">Guest Users</option>
+                  <option value="specific">Specific Users</option>
+                  <option value="role">Role</option>
+                  <option value="permission">Permission</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Action URL (Optional)</label>
+              <input type="url"
+                     class="form-control"
+                     id="editActionUrl"
+                     placeholder="https://example.com">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button"
+                  class="modern-btn modern-btn-secondary"
+                  data-bs-dismiss="modal">Cancel</button>
+          <button type="button"
+                  class="modern-btn modern-btn-primary"
+                  data-action="save-draft">
+            <i class="bi bi-save me-2"></i>Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "admin/layout.twig" %}
+{% block title %}{{ title }}{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-envelope-open me-2"></i>
+        Message Details
+      </div>
+      <div class="admin-page-subtitle">View and manage customer message</div>
+    </div>
+    <div class="admin-panel-card shadow-sm border-0 rounded-4">
+      <div class="admin-panel-card-header bg-info text-white rounded-top-4">
+        <h4 class="mb-0">
+          <i class="bi bi-envelope-open"></i> {{ header_title }}
+        </h4>
+      </div>
+      <div class="admin-panel-card-body p-4">
+        <dl class="row">
+          <dt class="col-sm-3">Name:</dt>
+          <dd class="col-sm-9">
+            {{ message.name }}
+          </dd>
+          <dt class="col-sm-3">Email / Contact:</dt>
+          <dd class="col-sm-9">
+            {{ message.email }}
+          </dd>
+          <dt class="col-sm-3">Subject:</dt>
+          <dd class="col-sm-9">
+            {{ message.subject }}
+          </dd>
+          <dt class="col-sm-3">Message:</dt>
+          <dd class="col-sm-9">
+            {{ message.message }}
+          </dd>
+          <dt class="col-sm-3">Submitted At:</dt>
+          <dd class="col-sm-9">
+            {{ message.created_at|date("Y-m-d H:i") }}
+          </dd>
+        </dl>
+      </div>
+      {% if replies is defined and replies|length > 0 %}
+      <div class="admin-panel-card-body p-4 border-top">
+        <h5>Replies</h5>
+        <ul class="list-group">
+          {% for r in replies %}
+            <li class="list-group-item">
+              <strong>{{ r.username }} ({{ r.replied_at|date("Y-m-d H:i") }}):</strong><br>
+              {{ r.reply_message }}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <div class="admin-panel-card-body p-4 border-top">
+        <form method="post" action="/admin/contact/reply/{{ message.id }}">
+          <div class="mb-3">
+            <label for="reply" class="form-label">Send Reply</label>
+            <textarea name="reply" id="reply" class="form-control" rows="4" placeholder="Type your reply here"></textarea>
+          </div>
+          <button type="submit" class="modern-btn modern-btn-primary">Send Reply</button>
+        </form>
+      </div>
+
+      <div class="admin-panel-card-footer d-flex justify-content-between">
+        <a href="/admin/contact" class="modern-btn modern-btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+        <a href="/admin/contact/delete/{{ message.id }}"
+           class="modern-btn modern-btn-primary"
+           onclick="return confirm('Delete this message?')"><i class="bi bi-trash-fill"></i> Delete</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "layout.twig" %}
+{% import '_macros/flash.twig' as flash_macros %}
+{% block title %}Confirm Your Email - {{ app_settings.site_name|default("BroxBhai") }}{% endblock %}
+{% block content %}
+  <div class="auth-page auth-page-shell">
+    <div class="auth-shell auth-shell-md">
+      <div class="auth-card auth-card--shell">
+        <div class="auth-card-header auth-shell-header text-center">
+          <div class="auth-shell-icon text-white mb-2">
+            <i class="bi bi-envelope-fill"></i>
+          </div>
+          <h2 class="auth-shell-title mb-2">Resend Verification Email</h2>
+          <p class="auth-shell-subtitle mb-0">We'll send a new verification link to your email address.</p>
+        </div>
+        <div class="auth-card-body auth-shell-body">
+            {% if error %}{{ flash_macros.render_flash({ message: error, type: 'danger' }) }}{% endif %}
+            {% if success %}{{ flash_macros.render_flash({ message: success, type: 'success' }) }}{% endif %}
+            <form method="POST" action="/resend-verification-email" novalidate>
+              <!-- CSRF Token -->
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <!-- Email Field -->
+              <div class="mb-4">
+                <label for="email" class="form-label">Email Address</label>
+                <input type="email"
+                       class="form-control form-control-lg"
+                       id="email"
+                       name="email"
+                       value="{{ old_email }}"
+                       placeholder="Enter your email address"
+                       required>
+                <div class="form-text">Enter the email address associated with your account.</div>
+                <div class="invalid-feedback">Please provide a valid email.</div>
+              </div>
+              <!-- Submit Button -->
+              <button type="submit" class="btn btn-primary w-100 mb-3 btn-lg">
+                <span id="btnText">Send Verification Email</span>
+                <span id="spinner"
+                      class="spinner-border spinner-border-sm ms-2 auth-hidden"
+                      role="status"
+                      aria-hidden="true"></span>
+              </button>
+            </form>
+            <!-- Divider -->
+            <hr class="my-4">
+            <!-- Help Links -->
+            <div class="auth-footer">
+              <p class="mb-2">
+                Already have a verification token?
+                <a href="/verify-email" class="text-primary fw-bold">Verify here</a>
+              </p>
+              <p class="mb-2">
+                Need to login? <a href="/login" class="text-primary fw-bold">Login</a>
+              </p>
+              <p class="mb-0">
+                Don't have an account? <a href="/register" class="text-primary fw-bold">Register</a>
+              </p>
+            </div>
+        </div>
+      </div>
+      <div class="auth-shell-notes">
+        <div class="alert alert-info auth-shell-note" role="alert">
+          <h6 class="alert-heading">
+            <i class="bi bi-info-circle-fill me-2"></i>What to expect
+          </h6>
+          <ol class="mb-0 ps-3">
+            <li>We'll send a verification email to your address</li>
+            <li>Check your email inbox (and spam folder)</li>
+            <li>The email will contain a verification token</li>
+            <li>Use that token to complete your email verification</li>
+            <li>After verification, you can login to your account</li>
+          </ol>
+        </div>
+        <!-- Security Note -->
+        <div class="alert alert-warning auth-shell-note" role="alert">
+          <small>
+            <strong>Security:</strong> Verification emails expire after 24 hours.
+            If your link expires, you can request a new one here.
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+  {# Inline script removed - use external JavaScript file instead #}
+{% endblock %}

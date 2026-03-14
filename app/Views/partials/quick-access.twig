@@ -1,0 +1,51 @@
+{# Quick Access Navigation - Shows feature links based on context #}
+{% if user.is_authenticated and (context_type == 'post' or context_type == 'page') %}
+<div class="alert alert-info alert-dismissible fade show mb-3" role="alert">
+    <i class="bi bi-lightbulb-fill me-2"></i>
+    <strong>Quick Access:</strong>
+    {% if context_type == 'post' %}
+        <a href="#comments-section" class="alert-link ms-2">View Comments</a> •
+        <a href="/admin/comments?post_id={{ context_id }}" class="alert-link">Manage Comments</a> •
+        <a href="/admin/media" class="alert-link">Upload Media</a>
+    {% elseif context_type == 'page' %}
+        <a href="#comments-section" class="alert-link ms-2">View Comments</a> •
+        <a href="/admin/comments?page_id={{ context_id }}" class="alert-link">Manage Comments</a> •
+        <a href="/admin/media" class="alert-link">Upload Media</a>
+    {% endif %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+{# Admin Quick Links - Shows in admin context #}
+{% if auth_user.is_authenticated and auth_user.role == 'admin' and show_admin_links %}
+<div class="card border-0 rounded-3 shadow-sm mb-4 bg-primary bg-opacity-10">
+    <div class="card-body">
+        <h6 class="card-title mb-3">
+            <i class="bi bi-lightning-charge-fill text-warning"></i> Admin Quick Links
+        </h6>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="/admin/dashboard" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-speedometer2 me-1"></i>Dashboard
+            </a>
+            <a href="/admin/applications" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-briefcase me-1"></i>Applications
+            </a>
+            <a href="/admin/media" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-image me-1"></i>Media Manager
+            </a>
+            <a href="/admin/comments" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-chat-dots-fill me-1"></i>Comments
+            </a>
+            <a href="/admin/posts" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil-fill me-1"></i>Posts
+            </a>
+            <a href="/admin/pages" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-file-earmark me-1"></i>Pages
+            </a>
+            <a href="/admin/users" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-people-fill me-1"></i>Users
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}

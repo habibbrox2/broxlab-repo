@@ -1,0 +1,68 @@
+{
+    "name": "BroxLab",
+    "version": "2.0.0",
+    "description": "Bengali-first mobile tech platform with Firebase integration",
+    "type": "module",
+    "main": "index.js",
+    "scripts": {
+        "dev": "npx npm-run-all --parallel dev:firebase:v2 dev:tailwind dev:app:dist",
+        "build": "npm run clean:build && npx npm-run-all --sequential build:firebase:v2 build:app:dist build:tailwind",
+        "build:debug": "npm run clean:build && npm-run-all --sequential build:firebase:v2:maps build:app:dist:maps build:tailwind",
+        "build:prod": "npm run clean:build && npm-run-all --sequential build:firebase:v2:prod build:app:dist build:tailwind && npm run check:assets",
+        "reset:dist": "npm run clean:build",
+        "dev:firebase:v2": "npm run clean:firebase:v2:dist && node build/esbuild-firebase.mjs --watch",
+        "build:firebase:v2": "npm run clean:firebase:v2:dist && node build/esbuild-firebase.mjs",
+        "build:firebase:v2:classic": "npm run clean:firebase:v2:dist && node build/esbuild-firebase.mjs --classic",
+        "build:firebase:v2:maps": "npm run clean:firebase:v2:dist && node build/esbuild-firebase.mjs --sourcemap=external",
+        "build:firebase:v2:prod": "npm run clean:firebase:v2:dist && node build/esbuild-firebase.mjs --minify",
+        "dev:app:dist": "node build/esbuild.config.js --target=app --watch --dev",
+        "build:app:dist": "node build/esbuild.config.js --target=app",
+        "build:app:classic": "node build/esbuild.config.js --target=app --classic",
+        "build:app:dist:maps": "node build/esbuild.config.js --target=app --sourcemap=external",
+        "dev:tailwind": "tailwindcss -c build/tailwind.config.js -i ./public_html/assets/css/tailwind-input.css -o ./public_html/assets/css/tailwind.css --watch",
+        "build:tailwind": "tailwindcss -c build/tailwind.config.js -i ./public_html/assets/css/tailwind-input.css -o ./public_html/assets/css/tailwind.css --minify",
+        "build:css": "node build/esbuild-css.mjs",
+        "build:css:watch": "node build/esbuild-css.mjs --watch",
+        "clean:firebase:v2:dist": "node -e \"require('fs').rmSync('public_html/assets/firebase/v2/dist', { recursive: true, force: true })\"",
+        "clean:build": "node -e \"require('fs').rmSync('public_html/assets/firebase/v2/dist', { recursive: true, force: true }); require('fs').rmSync('public_html/assets/ai-assistant/dist', { recursive: true, force: true }); require('fs').rmSync('public_html/assets/js/dist', { recursive: true, force: true })\"",
+        "naming:check": "node build/Scripts/check-naming-conventions.mjs",
+        "check:assets": "npm run naming:check -- --changed && npm run check:duplicates && npm run check:firebase:dist",
+        "check:scripts": "node build/Scripts/check-script-loading.mjs",
+        "check:dist:budget": "node build/Scripts/check-dist-file-budget.mjs",
+        "check:duplicates": "node build/Scripts/check-asset-duplicates.mjs",
+        "check:firebase:dist": "node build/Scripts/check-firebase-dist-chunks.mjs",
+        "serve": "python -m http.server 8000 -d public_html",
+        "firebase:providers:sync": "node scripts/firebase/activate-firebaseui-providers.mjs",
+        "lint": "eslint --config build/eslint.config.cjs \"public_html/assets/js/**/*.js\" \"public_html/assets/firebase/v2/**/*.js\" \"public_html/assets/ai-assistant/**/*.js\" \"build/Scripts/**/*.mjs\" \"build/esbuild.config.js\" \"build/esbuild-firebase.mjs\" \"build/esbuild-assistants.mjs\"",
+        "e2e:ai-system": "node scripts/e2e/ai-system-sanity.mjs",
+        "test": "echo \"No tests configured\""
+    },
+    "keywords": [
+        "firebase",
+        "fcm",
+        "notifications",
+        "auth",
+        "pwa"
+    ],
+    "author": "BroxLab Team",
+    "license": "MIT",
+    "dependencies": {
+        "@anthropic-ai/sdk": "^0.78.0",
+        "@genkit-ai/googleai": "^1.16.1",
+        "@google/generative-ai": "^0.24.1",
+        "@heyputer/puter.js": "^2.2.11",
+        "@openrouter/sdk": "^0.9.11",
+        "firebase": "^12.9.0",
+        "genkit": "^1.16.1",
+        "shelljs": "^0.10.0"
+    },
+    "devDependencies": {
+        "esbuild": "^0.27.3",
+        "eslint": "8.57.1",
+        "npm-run-all": "^4.1.5",
+        "tailwindcss": "^3.4.17"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}

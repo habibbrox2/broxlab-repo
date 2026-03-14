@@ -1,0 +1,77 @@
+* text=auto eol=lf
+
+# Windows scripts
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Unix scripts
+*.sh text eol=lf
+
+# Common text formats
+*.php text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.ts text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.twig text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.sql text eol=lf
+*.env text eol=lf
+*.xml text eol=lf
+
+# Binary files - Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.svg binary
+*.ico binary
+*.bmp binary
+*.tiff binary
+
+# Binary files - Documents
+*.pdf binary
+*.doc binary
+*.docx binary
+*.xls binary
+*.xlsx binary
+
+# Binary files - Archives
+*.zip binary
+*.gz binary
+*.tar binary
+*.rar binary
+*.7z binary
+
+# Binary files - Fonts
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+
+# Binary files - Media
+*.mp3 binary
+*.wav binary
+*.mp4 binary
+*.avi binary
+*.mov binary
+*.webm binary
+
+# Binary files - Other
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+
+# Documentation
+docs/** linguist-documentation

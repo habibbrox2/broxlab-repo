@@ -1,0 +1,116 @@
+{# templates/error.twig #}
+{% extends 'layout.twig' %}
+
+{% block title %}{% if code %}{{ code }}{% endif %} Error - {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+
+{% block content %}
+
+<style>
+  @keyframes float-icon { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
+  .error-icon-float { animation: float-icon 4s ease-in-out infinite; }
+  .error-card-hover:hover { transform: translateY(-5px); transition: transform 0.3s ease; }
+</style>
+
+{% set c = code|default(500) %}
+{% set family = ( (c is iterable) ? 5 : ( (c / 100)|round(0, 'floor') ) ) %}
+
+{# Common presets #}
+{% set presets = {
+  400: { title: 'Bad Request',           desc: 'The request cannot be processed.',             icon: 'exclamation-triangle-fill', color: 'warning' },
+  401: { title: 'Unauthorized',          desc: 'Authentication required or failed.',          icon: 'shield-lock-fill',          color: 'warning' },
+  403: { title: 'Forbidden',             desc: 'You do not have permission to view this.',     icon: 'hand-thumbs-down-fill',     color: 'warning' },
+  404: { title: 'Not Found',             desc: 'We could not find what you asked for.',        icon: 'search-heart',               color: 'info' },
+  405: { title: 'Method Not Allowed',    desc: 'This route does not accept that method.',      icon: 'signpost-2-fill',           color: 'warning' },
+  419: { title: 'Page Expired',          desc: 'The page has expired. Try again.',            icon: 'clock-history',              color: 'warning' },
+  429: { title: 'Too Many Requests',     desc: 'Rate limit exceeded. Slow down.',             icon: 'speedometer2',               color: 'warning' },
+  500: { title: 'Internal Server Error', desc: 'Something went wrong on our side.',           icon: 'server',                     color: 'danger' },
+  503: { title: 'Service Unavailable',   desc: 'The service is temporarily unavailable.',     icon: 'router-fill',                color: 'danger' }
+} %}
+
+{% set fallback = {
+  title: family == 4 ? 'Client Error' : 'Server Error',
+  desc:  family == 4 ? 'There is an issue with the request.' : 'There is an issue on the server.',
+  icon:  family == 4 ? 'exclamation-triangle-fill' : 'bug-fill',
+  color: family == 4 ? 'warning' : 'danger'
+} %}
+
+{% set meta = presets[c]|default(fallback) %}
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      {# Error Hero Section #}
+      <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4 error-card-hover">
+        <div class="card-body p-0">
+          <div class="row g-0">
+            <div class="col-md-5 bg-{{ meta.color }} bg-opacity-10 d-flex align-items-center justify-content-center p-5">
+              <div class="text-center">
+                <div class="display-1 fw-bold text-{{ meta.color }} mb-0 error-icon-float">
+                    <i class="bi bi-{{ meta.icon }}"></i>
+                </div>
+                <h2 class="h4 fw-bold text-{{ meta.color }} mt-3">HTTP {{ c }}</h2>
+              </div>
+            </div>
+            <div class="col-md-7 p-5 d-flex align-items-center">
+              <div>
+                <h1 class="fw-bold mb-3">{{ meta.title }}</h1>
+                <p class="lead text-muted mb-4">{{ message|default(meta.desc) }}</p>
+                
+                {% if details is defined and details %}
+                  <div class="alert alert-light border rounded-3 mb-4">
+                    <div class="d-flex">
+                        <i class="bi bi-info-circle-fill text-{{ meta.color }} me-2 mt-1"></i>
+                        <div>
+                            <small class="text-muted d-block fw-bold">Error Details:</small>
+                            <span class="small">{{ details }}</span>
+                        </div>
+                    </div>
+                  </div>
+                {% endif %}
+
+                <div class="d-flex flex-wrap gap-2">
+                  <a href="{{ home_url|default('/') }}" class="btn btn-primary rounded-pill px-4">
+                    <i class="bi bi-house-door-fill me-2"></i>Home
+                  </a>
+                  <a href="javascript:history.back()" class="btn btn-outline-secondary rounded-pill px-4">
+                    <i class="bi bi-arrow-left me-2"></i>Back
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# Search or Help Section for 404 #}
+      {% if c == 404 %}
+      <div class="text-center mt-5">
+        <h3 class="h5 fw-bold mb-3">Looking for something else?</h3>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <form action="/search" method="get" class="position-relative">
+                    <input type="text" name="q" class="form-control form-control-lg rounded-pill ps-5" placeholder="Search...">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                    <button type="submit" class="btn btn-primary rounded-pill position-absolute top-0 end-0 m-1">Search</button>
+                </form>
+            </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# Stack Trace for Debugging #}
+      {% if show_trace|default(false) and trace is defined and trace %}
+        <div class="card border-0 shadow-sm rounded-4 mt-5">
+            <div class="card-header bg-danger bg-opacity-10 border-0 py-3">
+                <h6 class="mb-0 text-danger fw-bold"><i class="bi bi-bug-fill me-2"></i>Stack Trace (Debug Mode)</h6>
+            </div>
+            <div class="card-body bg-dark rounded-bottom-4">
+                <pre class="text-light small mb-0 overflow-auto" style="max-height: 400px;"><code>{{ trace }}</code></pre>
+            </div>
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}

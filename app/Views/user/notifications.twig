@@ -1,0 +1,416 @@
+{% extends 'layout.twig' %}
+{% block title %}আমার নোটিফিকেশন{% endblock %}
+{% block content %}
+  <div class="container py-5">
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h2 class="mb-1 h2-accent">
+              <i class="bi bi-bell-fill me-2 inl-p-0119"></i>আমার নোটিফিকেশন
+            </h2>
+            <small class="text-muted">আপনার সকল নোটিফিকেশন এখানে পাবেন</small>
+          </div>
+          {% if unread_count > 0 %}
+            <button class="btn btn-outline-primary" onclick="markAllAsRead()">
+              <i class="bi bi-check-lg me-2"></i>সব পড়া হিসেবে চিহ্নিত করুন
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <!-- Unread Count Badge -->
+    {% if unread_count > 0 %}
+      <div class="alert alert-info mb-4 d-flex align-items-center" role="alert">
+        <i class="bi bi-info-circle me-2"></i>
+        <span>আপনার <strong>{{ unread_count }} টি অপড়া নোটিফিকেশন</strong> আছে</span>
+      </div>
+    {% endif %}
+    <!-- Notifications List -->
+    <div class="row">
+      <div class="col-lg-8">
+        {% if notifications|length > 0 %}
+          {% for notif in notifications %}
+            <div class="card shadow-sm mb-3 notification-card {% if notif.is_read == 0 %}border-start border-primary border-5{% endif %}"
+                 data-notification-id="{{ notif.id }}"
+                 style="{% if notif.is_read == 0 %}background-color: #f0f7ff;
+                        {% endif %}">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <h5 class="mb-0">{{ notif.title }}</h5>
+                      {% if notif.is_read == 0 %}
+                        <span class="badge bg-primary">
+                          <i class="bi bi-circle-fill me-1"></i>নতুন
+                        </span>
+                      {% endif %}
+                      <span class="badge bg-secondary text-capitalize">{{ notif.type }}</span>
+                    </div>
+                    <p class="mb-3 text-theme-strong">{{ notif.message }}</p>
+                    <div class="d-flex gap-2 mt-3">
+                      {% if notif.action_url %}
+                        <a href="{{ notif.action_url }}" class="btn btn-sm btn-primary">
+                          <i class="bi bi-arrow-right me-1"></i>বিস্তারিত দেখুন
+                        </a>
+                      {% endif %}
+                      {% if notif.is_read == 0 %}
+                        <button class="btn btn-sm btn-outline-secondary"
+                                onclick="markAsRead({{ notif.id }})">
+                          <i class="bi bi-check-lg me-1"></i>পড়া হিসেবে চিহ্নিত করুন
+                        </button>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="text-end ms-3">
+                    <small class="text-muted d-block">
+                      <i class="bi bi-calendar3 me-1"></i>{{ notif.created_at|date("d M Y") }}
+                    </small>
+                    <small class="text-muted d-block mt-1">
+                      <i class="bi bi-clock me-1"></i>{{ notif.created_at|date("H:i") }}
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+          <!-- Pagination -->
+          {% if total_pages > 1 %}
+            <nav class="mt-4"
+                 aria-label="নোটিফিকেশন পৃষ্ঠা নেভিগেশন">
+              <ul class="pagination justify-content-center">
+                {% if current_page > 1 %}
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page=1"
+                       aria-label="প্রথম পৃষ্ঠা">
+                      <i class="bi bi-chevron-bar-left"></i>
+                    </a>
+                  </li>
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ current_page - 1 }}"
+                       aria-label="পূর্ববর্তী">
+                      <i class="bi bi-chevron-left"></i>
+                    </a>
+                  </li>
+                {% endif %}
+                {% set start_page = max(1, current_page - 2) %}
+                {% set end_page = min(total_pages, current_page + 2) %}
+                {% if start_page > 1 %}
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                {% endif %}
+                {% for page in range(start_page, end_page + 1) %}
+                  <li class="page-item {% if page == current_page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ page }}">{{ page }}</a>
+                  </li>
+                {% endfor %}
+                {% if end_page < total_pages %}
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                {% endif %}
+                {% if current_page < total_pages %}
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ current_page + 1 }}"
+                       aria-label="পরবর্তী">
+                      <i class="bi bi-chevron-right"></i>
+                    </a>
+                  </li>
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ total_pages }}"
+                       aria-label="শেষ পৃষ্ঠা">
+                      <i class="bi bi-chevron-bar-right"></i>
+                    </a>
+                  </li>
+                {% endif %}
+              </ul>
+            </nav>
+            <div class="text-center text-muted small">
+              পৃষ্ঠা {{ current_page }} এর {{ total_pages }} (প্রতি পৃষ্ঠায় 20 টি)
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="card text-center py-5 shadow-sm">
+            <div class="card-body">
+              <i class="bi bi-inbox display-1 text-muted mb-3 d-block"></i>
+              <h5 class="text-muted">কোনো নোটিফিকেশন নেই</h5>
+              <p class="text-muted mb-0">
+                আপনার কোনো নোটিফিকেশন নেই। নতুন নোটিফিকেশনের জন্য অপেক্ষা করুন।
+              </p>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+      <!-- Sidebar -->
+      <div class="col-lg-4">
+        <!-- Permission Status Card -->
+        <div class="card shadow-sm mb-3" id="permissionCard">
+          <div class="card-header bg-warning text-surface-dark">
+            <h6 class="mb-0">
+              <i class="bi bi-shield-check me-2"></i>পুশ নোটিফিকেশন
+            </h6>
+          </div>
+          <div class="card-body small" id="permissionStatus">
+            <div class="text-center">
+              <div class="spinner-border spinner-border-sm text-warning mb-2"
+                   role="status">
+                <span class="visually-hidden">লোড হচ্ছে...</span>
+              </div>
+              <p class="text-muted mb-0">স্ট্যাটাস চেক করা হচ্ছে...</p>
+            </div>
+          </div>
+        </div>
+        <!-- Topics Preferences Card -->
+        <div class="card shadow-sm mb-3">
+          <div class="card-header bg-info text-white">
+            <h6 class="mb-0">
+              <i class="bi bi-tag me-2"></i>বিষয় পছন্দ
+            </h6>
+          </div>
+          <div class="card-body small" id="topicsContainer">
+            <div class="text-center">
+              <div class="spinner-border spinner-border-sm text-info mb-2" role="status">
+                <span class="visually-hidden">লোড হচ্ছে...</span>
+              </div>
+              <p class="text-muted mb-0">বিষয় লোড হচ্ছে...</p>
+            </div>
+          </div>
+        </div>
+        <!-- Notification Statistics -->
+        <div class="card shadow-sm mb-3">
+          <div class="card-header bg-primary text-white">
+            <h6 class="mb-0">
+              <i class="bi bi-bar-chart me-2"></i>পরিসংখ্যান
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row text-center">
+              <div class="col-6">
+                <div class="h4 text-primary mb-0">{{ unread_count }}</div>
+                <small class="text-muted">অপড়া</small>
+              </div>
+              <div class="col-6">
+                <div class="h4 text-success mb-0">{{ notifications|length }}</div>
+                <small class="text-muted">এই পৃষ্ঠায়</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Help Section -->
+        <div class="card shadow-sm">
+          <div class="card-header bg-secondary text-white">
+            <h6 class="mb-0">
+              <i class="bi bi-question-circle me-2"></i>সাহায্য
+            </h6>
+          </div>
+          <div class="card-body small">
+            <p class="mb-2">
+              <strong>নীল ডানদিক সীমানা:</strong>
+              <br>
+              <span class="text-muted">নতুন অপড়া নোটিফিকেশন</span>
+            </p>
+            <hr class="my-2">
+            <p class="mb-2">
+              <strong>নতুন ব্যাজ:</strong>
+              <br>
+              <span class="text-muted">এখনই পড়া হয়নি এমন নোটিফিকেশন</span>
+            </p>
+            <hr class="my-2">
+            <p class="mb-0">
+              <strong>টাইপ ব্যাজ:</strong>
+              <br>
+              <span class="text-muted">নোটিফিকেশনের ধরণ দেখায়</span>
+            </p>
+          </div>
+        </div>
+        <!-- Tips -->
+        <div class="alert alert-light mt-3 border">
+          <h6 class="mb-2">
+            <i class="bi bi-lightbulb me-2"></i>টিপস
+          </h6>
+          <ul class="small mb-0">
+            <li>সব নোটিফিকেশন পড়া হিসেবে চিহ্নিত করুন</li>
+            <li>বিষয় পছন্দ অনুযায়ী ফিল্টার করুন</li>
+            <li>প্রতিটি নোটিফিকেশনে বিস্তারিত বোতাম আছে</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+let allTopics = [];
+let userTopics = {};
+
+// Get CSRF token
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content || '';
+}
+
+// Load and display permission status
+async function loadPermissionStatus() {
+    try {
+        // Import the permission request module
+        const { getNotificationPermission, requestNotificationPermission } = await import('/assets/firebase/v2/dist/permission-request.js');
+
+        const permission = getNotificationPermission();
+        const statusEl = document.getElementById('permissionStatus');
+
+        let html = '';
+
+        switch (permission) {
+            case 'granted':
+                html = `
+                    <div class="alert alert-success d-flex align-items-center mb-0">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <span>পুশ নোটিফিকেশন সক্ষম</span>
+                    </div>
+                `;
+                break;
+
+            case 'denied':
+                html = `
+                    <div class="alert alert-warning d-flex align-items-center mb-0">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div>
+                            <span>পুশ নোটিফিকেশন অক্ষম</span><br>
+                            <small class="text-muted">ব্রাউজার সেটিংস পরিবর্তন করুন অথবা নোটিফিকেশন পুনরায় সক্ষম করুন</small>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'default':
+                html = `
+                    <div>
+                        <p class="mb-3 text-muted">পুশ নোটিফিকেশন এখনও সক্ষম নয়। সব আপডেট পেতে সক্ষম করুন।</p>
+                        <button class="btn btn-sm btn-primary w-100" onclick="requestPermission()">
+                            <i class="bi bi-bell me-1"></i>সক্ষম করুন
+                        </button>
+                    </div>
+                `;
+                break;
+
+            default:
+                html = `
+                    <div class="alert alert-secondary d-flex align-items-center mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <span>এই ব্রাউজারে পুশ নোটিফিকেশন সমর্থিত নয়</span>
+                    </div>
+                `;
+        }
+
+        statusEl.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading permission status:', error);
+    }
+}
+
+// Request permission
+async function requestPermission() {
+    try {
+        const { requestNotificationPermission } = await import('/assets/firebase/v2/dist/permission-request.js');
+        const result = await requestNotificationPermission();
+
+        if (result.success) {
+            showToast('✅ পুশ নোটিফিকেশন সক্ষম হয়েছে', 'success');
+            loadPermissionStatus();
+        } else {
+            showToast('❌ ' + (result.error || 'পারমিশন দেওয়া হয়নি'), 'danger');
+        }
+    } catch (error) {
+        console.error('Permission request error:', error);
+        showToast('❌ সার্ভার ত্রুটি', 'danger');
+    }
+}
+
+// Load user topic preferences
+async function loadTopicPreferences() {
+    try {
+        // Load all available topics
+        const topicsRes = await fetch('/api/topics/list');
+        const topicsData = await topicsRes.json();
+        allTopics = topicsData.topics || [];
+
+        // Load user's preferences
+        const prefsRes = await fetch('/api/user/notification-preferences', {
+            headers: { 'X-CSRF-Token': getCsrfToken() }
+        });
+        const prefsData = await prefsRes.json();
+        userTopics = prefsData.topics || {};
+
+        // Render toggles
+        const container = document.getElementById('topicsContainer');
+
+        if (allTopics.length === 0) {
+            container.innerHTML = '<p class="text-muted text-center mb-0">কোনো বিষয় পাওয়া যায়নি</p>';
+            return;
+        }
+
+        const html = allTopics.map(topic => `
+            <div class="form-check mb-2">
+                <input
+                    type="checkbox"
+                    class="form-check-input topic-toggle"
+                    id="topic_${topic.slug}"
+                    data-topic="${topic.slug}"
+                    ${userTopics[topic.slug] ? 'checked' : ''}
+                />
+                <label class="form-check-label" for="topic_${topic.slug}">
+                    <strong>${topic.name}</strong>
+                    ${topic.description ? `<br><small class="text-muted">${topic.description}</small>` : ''}
+                </label>
+            </div>
+        `).join('');
+
+        container.innerHTML = html || '<p class="text-muted text-center mb-0">কোনো বিষয় পাওয়া যায়নি</p>';
+
+        // Add event listeners
+        document.querySelectorAll('.topic-toggle').forEach(el => {
+            el.addEventListener('change', toggleTopic);
+        });
+    } catch (e) {
+        console.error('Failed to load topics:', e);
+        document.getElementById('topicsContainer').innerHTML = `
+            <div class="alert alert-danger mb-0">
+                <small>বিষয় লোড করতে ব্যর্থ: ${e.message}</small>
+            </div>
+        `;
+    }
+}
+
+// Toggle topic subscription
+async function toggleTopic(e) {
+    const topic = e.target.dataset.topic;
+    const shouldSubscribe = e.target.checked;
+    const endpoint = shouldSubscribe ? '/api/topics/subscribe' : '/api/topics/unsubscribe';
+
+    try {
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': getCsrfToken()
+            },
+            body: JSON.stringify({ topic })
+        });
+
+        if (!res.ok) {
+            e.target.checked = !shouldSubscribe; // Revert
+            showToast('❌ বিষয় আপডেট করতে ব্যর্থ', 'danger');
+        } else {
+            const action = shouldSubscribe ? 'সাবস্ক্রাইব' : 'আনসাবস্ক্রাইব';
+            showToast(`✅ ${topic} থেকে ${action} হয়েছে`, 'success');
+        }
+    } catch (err) {
+        e.target.checked = !shouldSubscribe;
+        console.error('Topic toggle error:', err);
+        showToast('❌ সার্ভার ত্রুটি', 'danger');
+    }
+}
+  </script>
+{% endblock %}

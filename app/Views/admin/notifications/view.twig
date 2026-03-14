@@ -1,0 +1,256 @@
+{% extends 'admin/layout.twig' %}
+{% block title %}Notification Details - Admin Panel{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-bell me-2"></i>
+        Notification Details
+      </div>
+      <div class="admin-page-subtitle">View notification details</div>
+    </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2>
+        <i class="bi bi-bell me-2"></i>Notification #{{ notification.id }}
+      </h2>
+      <a href="/admin/notifications/list" class="modern-btn modern-btn-white">
+        <i class="bi bi-arrow-left me-2"></i>Back to List
+      </a>
+    </div>
+    <div class="row">
+      <div class="col-lg-8">
+        <!-- Notification Details -->
+        <div class="admin-panel-card  mb-4">
+          <div class="admin-panel-card-header">
+            <h5 class="mb-0">Notification Information</h5>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <strong>Title:</strong>
+                <br>
+                <span class="h5 text-theme-strong">{{ notification.title }}</span>
+              </div>
+              <div class="col-md-6">
+                <strong>Type:</strong>
+                <br>
+                <span class="badge bg-primary">{{ notification.type }}</span>
+              </div>
+            </div>
+            <div class="mb-3">
+              <strong>Message:</strong>
+              <br>
+              <p class="bg-light p-3 ">{{ notification.message }}</p>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <strong>Created At:</strong>
+                <br>
+                {{ notification.created_at|date("d M Y H:i:s") }}
+              </div>
+              <div class="col-md-6">
+                <strong>Status:</strong>
+                <br>
+                <span class="badge {% if notification.sent_to_all_at %}bg-success{% elseif notification.status == 'draft' %}bg-warning{% else %}bg-secondary{% endif %}">
+                  {% if notification.sent_to_all_at %}
+                    Sent
+                  {% elseif notification.status == 'draft' %}
+                    Draft
+                  {% else %}
+                    Pending
+                  {% endif %}
+                </span>
+              </div>
+            </div>
+            {% if notification.action_url %}
+              <div class="mb-3">
+                <strong>Action URL:</strong>
+                <br>
+                <a href="{{ notification.action_url }}"
+                   target="_blank"
+                   class="text-break">{{ notification.action_url }}</a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Delivery Statistics -->
+        <div class="admin-panel-card  mb-4">
+          <div class="admin-panel-card-header">
+            <h5 class="mb-0">Delivery Statistics</h5>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="row text-center">
+              <div class="col-md-3 mb-3">
+                <div class="h3 text-primary">{{ statistics.total ?? 0 }}</div>
+                <small class="text-muted">Total Recipients</small>
+              </div>
+              <div class="col-md-3 mb-3">
+                <div class="h3 text-success">{{ statistics.sent ?? 0 }}</div>
+                <small class="text-muted">Delivered</small>
+              </div>
+              <div class="col-md-3 mb-3">
+                <div class="h3 text-danger">{{ statistics.failed ?? 0 }}</div>
+                <small class="text-muted">Failed</small>
+              </div>
+              <div class="col-md-3 mb-3">
+                <div class="h3 text-warning">
+                  {% if statistics.total > 0 %}
+                    {{ ((statistics.sent ?? 0) / (statistics.total ?? 1) * 100)|round(1) }}%
+                  {% else %}
+                    0%
+                  {% endif %}
+                </div>
+                <small class="text-muted">Success Rate</small>
+              </div>
+            </div>
+            <!-- Progress Bar -->
+            <div class="mt-3">
+              <div class="progress inl-a-0023">
+                {% if statistics.total > 0 %}
+                  <div class="progress-bar bg-success"
+                       role="progressbar"
+                       style="width: {{ (statistics.sent ?? 0) / (statistics.total ?? 1) * 100 }}%"
+                       aria-valuenow="{{ statistics.sent ?? 0 }}"
+                       aria-valuemin="0"
+                       aria-valuemax="{{ statistics.total ?? 0 }}">Sent: {{ statistics.sent ?? 0 }}</div>
+                  <div class="progress-bar bg-danger"
+                       role="progressbar"
+                       style="width: {{ (statistics.failed ?? 0) / (statistics.total ?? 1) * 100 }}%"
+                       aria-valuenow="{{ statistics.failed ?? 0 }}"
+                       aria-valuemin="0"
+                       aria-valuemax="{{ statistics.total ?? 0 }}">Failed: {{ statistics.failed ?? 0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Delivery Logs -->
+        <div class="admin-panel-card ">
+          <div class="admin-panel-card-header">
+            <h5 class="mb-0">
+              <i class="bi bi-list me-2"></i>Delivery Logs (Total: {{ delivery_logs|length }})
+            </h5>
+          </div>
+          <div class="admin-panel-card-body">
+            {% if delivery_logs|length > 0 %}
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th width="10%">ID</th>
+                      <th width="15%">User</th>
+                      <th width="25%">Device/Token</th>
+                      <th width="15%">Channel</th>
+                      <th width="15%">Status</th>
+                      <th width="20%">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for log in delivery_logs|slice(0, 50) %}
+                      <tr>
+                        <td>#{{ log.id }}</td>
+                        <td>
+                          {% if log.user_id %}
+                            <a href="/admin/users/edit?id={{ log.user_id }}"
+                               class="text-decoration-none">User #{{ log.user_id }}</a>
+                          {% else %}
+                            <span class="text-muted">Guest</span>
+                          {% endif %}
+                        </td>
+                        <td>
+                          <small class="text-muted text-truncate" title="{{ log.token }}">
+                            {{ log.device_id ?? (log.token|slice(0, 20) ~ '...') }}
+                          </small>
+                        </td>
+                        <td>
+                          <span class="badge bg-secondary">{{ log.channel ?? 'push' }}</span>
+                        </td>
+                        <td>
+                          <span class="badge {% if log.status == 'sent' %}bg-success{% else %}bg-danger{% endif %}">{{ log.status|upper }}</span>
+                        </td>
+                        <td>
+                          <small class="text-muted">{{ log.created_at|date("d M H:i:s") }}</small>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% if delivery_logs|length > 50 %}
+                <div class="alert alert-warning mb-0 -0">
+                  <small>
+                    <i class="bi bi-info-circle me-2"></i>
+                    Showing first 50 logs out of: {{ delivery_logs|length }}
+                  </small>
+                </div>
+              {% endif %}
+            {% else %}
+              <div class="p-4 text-center text-muted">
+                <i class="bi bi-inbox  mb-3 d-block text-muted"></i>
+                No delivery logs found
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <!-- Sidebar -->
+      <div class="col-lg-4">
+        <!-- Quick Actions -->
+        <div class="admin-panel-card  mb-3">
+          <div class="admin-panel-card-header">
+            <h6 class="mb-0">Quick Actions</h6>
+          </div>
+          <div class="admin-panel-card-body">
+            <button class="modern-btn modern-btn-primary w-100 mb-2"
+                    data-action="resend-notification">
+              <i class="bi bi-arrow-clockwise me-2"></i>Resend Notification
+            </button>
+            <button class="modern-btn modern-btn-primary w-100 mb-2"
+                    data-action="duplicate-notification">
+              <i class="bi bi-files me-2"></i>Duplicate Notification
+            </button>
+            <button class="modern-btn modern-btn-primary w-100"
+                    data-action="delete-notification">
+              <i class="bi bi-trash me-2"></i>Delete
+            </button>
+          </div>
+        </div>
+        <!-- Metadata -->
+        <div class="admin-panel-card  mb-3">
+          <div class="admin-panel-card-header">
+            <h6 class="mb-0">Metadata</h6>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="mb-2">
+              <strong>Notification ID:</strong> #{{ notification.id }}
+            </div>
+            <div class="mb-2">
+              <strong>Created By:</strong>
+              {% if notification.created_by %}
+                <a href="/admin/users/edit?id={{ notification.created_by }}"
+                   class="text-decoration-none">User #{{ notification.created_by }}</a>
+              {% else %}
+                System
+              {% endif %}
+            </div>
+            <div class="mb-2">
+              <strong>Created At:</strong>
+              <br>
+              {{ notification.created_at|date("d M Y H:i:s") }}
+            </div>
+            <div>
+              <strong>Last Updated:</strong>
+              <br>
+              {{ notification.updated_at|date("d M Y H:i:s") }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="notification-view-data"
+       data-notification-id="{{ notification.id }}"
+       class="inl-a-0006"></div>
+{% endblock %}

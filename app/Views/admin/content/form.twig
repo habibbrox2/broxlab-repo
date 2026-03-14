@@ -1,0 +1,268 @@
+{% extends "admin/layout.twig" %}
+{% block title %}
+  {{ not isCreate ? (type == 'posts' ? 'Edit Post' : 'Edit Page') : (type == 'posts' ? 'Create New Post' : 'Create New Page') }}
+{% endblock %}
+{% block stylesheets %}
+  {% set rte_version = getRTEVersion() %}
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+        rel="stylesheet">
+  <link href="/rtceditor/editor.css?v={{ rte_version }}" rel="stylesheet">
+{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="service-form-wrapper">
+    <div class="container service-form-container">
+      <!-- Header Glass Card -->
+      <div class="header-glass-card">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="header-icon-badge">
+              <i class="bi {{ not isCreate ? 'bi-pencil-square' : 'bi-plus-circle' }}"></i>
+            </div>
+            <div>
+              <h1 class="page-title">
+                {{ not isCreate ? (type == 'posts' ? 'Edit Post' : 'Edit Page') : (type == 'posts' ? 'Create New Post' : 'Create New Page') }}
+              </h1>
+              <p class="page-subtitle">
+                {{ not isCreate
+                ? (type == 'posts' ? 'Update post content and settings' : 'Update page content and settings')
+                : (type == 'posts' ? 'Create a new blog post' : 'Create a new page')
+                }}
+              </p>
+            </div>
+          </div>
+          <a href="/admin/{{ type }}" class="modern-btn modern-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Back to {{ type == 'posts' ? 'Posts' : 'Pages' }}
+          </a>
+        </div>
+      </div>
+      <!-- Main Form -->
+      <form method="post"
+            action="{{ not isCreate ? ('/admin/' ~ type ~ '/edit') : ('/admin/' ~ type ~ '/create') }}"
+            data-autosave="true">
+        {% if not isCreate %}
+          <input type="hidden" name="id" value="{{ item.id }}">
+          {% if type == 'posts' %}
+            <input type="hidden" id="post_id" value="{{ item.id }}">
+          {% else %}
+            <input type="hidden" id="page_id" value="{{ item.id }}">
+          {% endif %}
+          <input type="hidden"
+                 id="item_permalink"
+                 name="permalink"
+                 value="{{ item.slug|default("") }}">
+        {% else %}
+          {% if type == 'posts' %}
+            <input type="hidden" id="post_id" value="">
+          {% else %}
+            <input type="hidden" id="page_id" value="">
+          {% endif %}
+          <input type="hidden" id="item_permalink" name="permalink" value="">
+        {% endif %}
+        <div class="row g-4">
+          <!-- Main Content Column -->
+          <div class="col-lg-8">
+            <!-- Basic Information -->
+            <div class="admin-panel-card">
+              <div class="admin-panel-card-header">
+                <h5 class="admin-panel-card-header-title">
+                  <i class="bi bi-info-circle-fill"></i>
+                  {{ type == 'posts' ? 'Post Details' : 'Page Details' }}
+                </h5>
+              </div>
+              <div class="admin-panel-card-body">
+                <!-- Title -->
+                <div class="mb-4">
+                  <label for="title" class="modern-form-label">
+                    Title
+                    <span class="required">*</span>
+                  </label>
+                  <input type="text"
+                         class="modern-input form-control-lg"
+                         id="title"
+                         name="title"
+                         placeholder="Enter {{ type == 'posts' ? 'post' : 'page' }} title"
+                         value="{{ item.title|default("") }}">
+                  <div class="form-helper">A clear, descriptive title for your {{ type == 'posts' ? 'post' : 'page' }}</div>
+                </div>
+                <!-- SEO Slug -->
+                <div class="mb-4">
+                  <label for="seo" class="modern-form-label">
+                    URL Slug
+                    <span class="required">*</span>
+                  </label>
+                  <div class="modern-input-group">
+                    <span class="modern-input-group-text">
+                      <i class="bi bi-link-45deg"></i>
+                    </span>
+                    <input type="text"
+                           class="modern-input"
+                           id="seo"
+                           name="slug"
+                           placeholder="example-slug"
+                           value="{{ item.slug|default("") }}">
+                  </div>
+                  <div id="seo-feedback" class="form-helper"></div>
+                </div>
+                <!-- Content -->
+                <div>
+                  <label for="content" class="modern-form-label">
+                    Content
+                    <span class="required">*</span>
+                  </label>
+                  {% include 'partials/editor.twig' with {
+                  'editorId': 'content',
+                  'editorName': 'content',
+                  'editorClass': 'modern-rich-editor',
+                  'initialContent': item.content|default(''),
+                  'darkMode': false,
+                  'rtl': false
+                  } %}
+                  <div class="form-helper">Write the main content for your {{ type == 'posts' ? 'post' : 'page' }}</div>
+                </div>
+              </div>
+            </div>
+            <!-- Categories & Tags -->
+            <div class="admin-panel-card">
+              <div class="admin-panel-card-header">
+                <h5 class="admin-panel-card-header-title">
+                  <i class="bi bi-tags-fill"></i>
+                  Categories & Tags
+                </h5>
+              </div>
+              <div class="admin-panel-card-body">
+                <div class="mb-4">
+                  <label class="modern-form-label">Categories</label>
+                  {% include 'admin/partials/_categories.twig' with {
+                  'categories': categories|default([]),
+                  'selectedCategories': selectedCategories|default([])
+                  } %}
+                </div>
+                <div></div>
+              </div>
+            </div>
+          </div>
+          <!-- Sidebar Column -->
+          <div class="col-lg-4">
+            <div class="sticky-sidebar">
+              <div class="admin-panel-card">
+                <div class="admin-panel-card-header">
+                  <h5 class="admin-panel-card-header-title">
+                    <i class="bi bi-sliders"></i>
+                    {{ type == 'posts' ? 'Post Tags' : 'Page Tags' }}
+                  </h5>
+                </div>
+                <div class="admin-panel-card-body">
+                  <!-- tags -->
+                  <div class="mb-4">
+                    <label class="modern-form-label">Tags</label>
+                    {% include 'admin/partials/_tags.twig' with {
+                    'allTags': allTags|default([]),
+                    'selectedTags': selectedTags|default([])
+                    } %}
+                    <div class="form-helper">Select multiple tags or type to add new ones</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Settings Card -->
+              <div class="admin-panel-card">
+                <div class="admin-panel-card-header">
+                  <h5 class="admin-panel-card-header-title">
+                    <i class="bi bi-sliders"></i>
+                    {{ type == 'posts' ? 'Post Settings' : 'Page Settings' }}
+                  </h5>
+                </div>
+                <div class="admin-panel-card-body">
+                  <!-- Status -->
+                  <div class="mb-4">
+                    <label class="modern-form-label">
+                      Status <span class="required">*</span>
+                    </label>
+                    <select class="modern-select form-select-lg" id="status" name="status">
+                      {% set current_status = item.status|default(status|default('draft')) %}
+                      <option value="draft" {% if current_status == 'draft' %}selected{% endif %}>ðŸ“ Draft</option>
+                      <option value="published"
+                              {% if current_status == 'published' %}selected{% endif %}>âœ“ Published</option>
+                    </select>
+                  </div>
+                  {% if isCreate %}
+                    <div class="mb-4">
+                      <div class="form-check">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               id="send_push_notification"
+                               name="send_push_notification"
+                               value="1">
+                        <label class="form-check-label" for="send_push_notification">Send Push Notification to Subscribers</label>
+                      </div>
+                      <div class="form-helper">Status Published à¦¹à¦²à§‡ à¦ªà¦¾à¦ à¦¾à¦¨à§‹ à¦¹à¦¬à§‡</div>
+                    </div>
+                  {% endif %}
+                  <!-- Reader Indexing (posts only) -->
+                  {% if type == 'posts' %}
+                    <div class="mb-4">
+                      <label class="modern-form-label">
+                        <i class="bi bi-search"></i>
+                        SEO Indexing
+                      </label>
+                      <select class="modern-select" name="reader_indexing">
+                        <option value="">Default (Index & Follow)</option>
+                        <option value="noindex"
+                                {% if item.reader_indexing == 'noindex' %}selected{% endif %}>No Index</option>
+                        <option value="nofollow"
+                                {% if item.reader_indexing == 'nofollow' %}selected{% endif %}>No Follow</option>
+                      </select>
+                      <div class="form-helper">Control how search engines index this content</div>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+              <!-- Quick Actions -->
+              <div class="quick-action-card">
+                <h6 class="quick-action-title">Ready to {{ not isCreate ? 'update' : 'publish' }}?</h6>
+                <button type="submit"
+                        class="modern-btn modern-btn-white modern-btn-lg w-100 mb-3">
+                  <i class="bi bi-save"></i>
+                  {{ not isCreate ? (type == 'posts' ? 'Update Post' : 'Update Page') : (type == 'posts' ? 'Save Post' : 'Save Page') }}
+                </button>
+                <a href="/admin/{{ type }}"
+                   class="modern-btn modern-btn-secondary modern-btn-lg w-100">
+                  <i class="bi bi-x-lg"></i> Cancel
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div id="admin-content-data"
+       data-category-ids='{{ selectedCategories|default([]) |map(c=>c.id)|json_encode|e("html_attr") }}'
+       data-tag-ids='{{ selectedTags|default([]) |map(t=>t.id)|json_encode|e("html_attr") }}'
+       data-content-type="{{ type }}"
+       class="d-none"></div>
+{% endblock %}
+{% block scripts %}
+  {% set rte_version = getRTEVersion() %}
+  <script src="/rtceditor/editor.js?v={{ rte_version }}" defer></script>
+  <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.querySelector('form[data-autosave="true"]');
+            if (!form) return;
+
+            form.addEventListener('submit', function (event) {
+                const editor = window.editor_content;
+                const html = editor && typeof editor.getContent === 'function'
+                    ? editor.getContent()
+                    : (document.getElementById('content-input')?.value || '');
+                const text = String(html || '').replace(/<[^>]+>/g, '').trim();
+
+                if (!text) {
+                    event.preventDefault();
+                    alert('Content is required.');
+                }
+            });
+        }, { once: true });
+  </script>
+{% endblock %}

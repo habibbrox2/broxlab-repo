@@ -1,0 +1,181 @@
+{% extends 'layout.twig' %}
+{% block title %}FAQ - Frequently Asked Questions | {{ app_settings.site_name|default("BroxBhai") }}{% endblock %}
+{% set breadcrumbs = [{"label": "FAQ", "url": "/faq", "icon": "question"}] %}
+{% block content %}
+  {# Hero Section #}
+  <section class="hero-section position-relative py-5 mb-5 overflow-hidden inl-p-0028">
+    <div class="container">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+          <h1 class="display-4 fw-bold text-theme-strong mb-3">
+            <i class="bi bi-question-circle me-2"></i>Frequently Asked Questions
+          </h1>
+          <p class="lead text-theme-muted fs-5">Find answers to common questions about our services and platform</p>
+        </div>
+        <div class="col-lg-4 text-center">
+          <div class="hero-icon inl-p-0002">❓</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  {# Structured Data - FAQ Schema #}
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is BroxBhai?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "BroxBhai is your ultimate destination for mobile reviews, tech insights, and gadget discussions."
+      }
+    }
+  ]
+}
+  </script>
+  <div class="container py-5">
+    <div class="row">
+      <div class="col-lg-8 mx-auto">
+        <h2 class="h3 fw-bold mb-5 h2-accent">Frequently Asked Questions</h2>
+        <div class="accordion" id="faqAccordion">
+          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#faq1">What is BroxBhai?</button>
+            </h2>
+            <div id="faq1"
+                 class="accordion-collapse collapse show"
+                 data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                BroxBhai is a comprehensive platform for mobile device reviews, tech news, and gadget discussions.
+                We provide detailed reviews, comparisons, and guides to help you make informed decisions about your tech purchases.
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#faq2">How can I submit a review?</button>
+            </h2>
+            <div id="faq2"
+                 class="accordion-collapse collapse"
+                 data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                You need to create an account first, then navigate to your dashboard and click "Submit Review".
+                Make sure to provide detailed information and include photos if possible.
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#faq3">How do I report inappropriate content?</button>
+            </h2>
+            <div id="faq3"
+                 class="accordion-collapse collapse"
+                 data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                If you find any inappropriate content or spam, please use the report button on that content or
+                <a href="/contact">contact us</a> directly with details.
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#faq4">Can I edit my profile?</button>
+            </h2>
+            <div id="faq4"
+                 class="accordion-collapse collapse"
+                 data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                Yes! Once you're logged in, go to your profile settings where you can update your name, email,
+                profile picture, and other personal information.
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#faq5">How often is content updated?</button>
+            </h2>
+            <div id="faq5"
+                 class="accordion-collapse collapse"
+                 data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                We publish new reviews, news, and guides regularly. Subscribe to our newsletter to get the latest updates.
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#faq6">Is BroxBhai free to use?</button>
+            </h2>
+            <div id="faq6"
+                 class="accordion-collapse collapse"
+                 data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                Yes! BroxBhai is completely free to browse, read reviews, and participate in discussions.
+                You only need to create a free account to submit content.
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#faq7">How can I delete my account?</button>
+            </h2>
+            <div id="faq7"
+                 class="accordion-collapse collapse"
+                 data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                You can request account deletion from your account settings. Please note that this action cannot be undone.
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#faq8">Do you accept guest posts?</button>
+            </h2>
+            <div id="faq8"
+                 class="accordion-collapse collapse"
+                 data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                Yes! We welcome guest posts from experienced reviewers and tech writers.
+                Please <a href="/contact">contact us</a> with your proposal.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card border-0 bg-light mt-5 p-4 rounded-4 shadow-sm">
+          <h5 class="fw-bold mb-2">
+            <i class="bi bi-chat-left-text me-2"></i>Didn't find your answer?
+          </h5>
+          <p class="mb-0">
+            Feel free to <a href="/contact" class="btn btn-primary btn-sm">contact us</a> for any other questions.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

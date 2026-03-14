@@ -1,0 +1,277 @@
+{% extends "layout.twig" %}
+{% block title %}My Profile - {{ app_settings.site_name|default("BroxBhai") }}{% endblock %}
+{% block content %}
+  <div class="container py-5">
+    <!-- Page Header -->
+    <div class="mb-4 profile-page-header">
+      <h1 class="h2 mb-1 fw-bold profile-page-title">
+        <i class="bi bi-person-fill text-primary me-2"></i>My Profile
+      </h1>
+      <p class="text-muted mb-0 profile-page-subtitle">Manage your personal information and settings</p>
+    </div>
+    <!-- Profile Header Card -->
+    <div class="card profile-header-card border-0 shadow-sm mb-4 overflow-hidden">
+      <!-- Gradient Background Header -->
+      <div class="bg-gradient inl-p-0120"></div>
+      <div class="card-body position-relative inl-p-0121">
+        <div class="row align-items-end">
+          <div class="col-auto">
+            <!-- Profile Picture with Ring -->
+            <div class="position-relative">
+              {% if user.profile_pic %}
+                <img src="{{ user.profile_pic }}"
+                     alt="Profile Picture"
+                     class="rounded-circle border border-4 border-white shadow inl-p-0122"
+                     width="140"
+                     height="140">
+              {% else %}
+                <img src="/assets/images/default-avatar.png"
+                     alt="Default Avatar"
+                     class="rounded-circle border border-4 border-white shadow inl-p-0122"
+                     width="140"
+                     height="140">
+              {% endif %}
+              <span class="position-absolute bottom-0 end-0 p-2 bg-success rounded-circle border border-3 border-white inl-p-0123"
+                    data-bs-toggle="tooltip"
+                    title="Active"></span>
+            </div>
+          </div>
+          <div class="col">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mt-3 mt-md-0">
+              <div>
+                <h3 class="mb-1 fw-bold">{{ user.first_name ~ ' ' ~ user.last_name }}</h3>
+                <p class="text-muted mb-2">
+                  <i class="bi bi-at"></i> {{ user.username }}
+                </p>
+                <!-- User Roles Badges -->
+                {% if auth_user.roles is not empty %}
+                  <div class="d-flex flex-wrap gap-2 mb-2">
+                    {% for role in auth_user.roles %}
+                      <span class="badge rounded-pill px-3 py-2 bg-{{ role|role_color|default("secondary") }}-subtle text-{{ role|role_color|default("secondary") }} border border-{{ role|role_color|default("secondary") }}">
+                        <i class="bi bi-shield-check me-1"></i>
+                        {{ role|replace({"_": " "}) |title }}
+                      </span>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <!-- Quick Actions -->
+              <div class="d-flex gap-2">
+                <a href="/profile/edit" class="btn btn-primary btn-sm shadow-sm">
+                  <i class="bi bi-pencil-square me-1"></i> Edit Profile
+                </a>
+                <div class="dropdown">
+                  <button class="btn btn-outline-secondary btn-sm dropdown-toggle shadow-sm"
+                          type="button"
+                          data-bs-toggle="dropdown">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end shadow">
+                    <li>
+                      <a class="dropdown-item" href="/profile/password"><i class="bi bi-key me-2"></i> Change Password</a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="/user/security/2fa"><i class="bi bi-shield-lock me-2"></i> 2FA Settings</a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4">
+      <!-- Left Column -->
+      <div class="col-lg-4">
+        <!-- Contact Information -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-body p-4">
+            <h5 class="mb-4 fw-bold">
+              <i class="bi bi-person-lines-fill text-primary me-2"></i>Contact Information
+            </h5>
+            <div class="mb-3">
+              <label class="text-muted small d-block mb-1">Email Address</label>
+              <div class="d-flex align-items-center">
+                <i class="bi bi-envelope text-primary me-2"></i>
+                <span class="text-break">{{ user.email }}</span>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="text-muted small d-block mb-1">Phone Number</label>
+              <div class="d-flex align-items-center">
+                <i class="bi bi-telephone text-primary me-2"></i>
+                <span>{{ user.phone|default("Not provided") }}</span>
+              </div>
+            </div>
+            <div class="mb-0">
+              <label class="text-muted small d-block mb-1">Account Status</label>
+              <div class="d-flex align-items-center">
+                <i class="bi bi-shield-check text-success me-2"></i>
+                <span class="badge bg-success-subtle text-success px-3 py-2">{{ user.status|title }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Social Links -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-body p-4">
+            <h5 class="mb-4 fw-bold">
+              <i class="bi bi-share-fill text-primary me-2"></i>Social Profiles
+            </h5>
+            {% set social_links = [
+                          {name: 'Facebook', url: user.facebook_url, icon: 'facebook', color: '#1877f2'},
+                          {name: 'Twitter', url: user.twitter_url, icon: 'twitter-x', color: '#000000'},
+                          {name: 'Instagram', url: user.instagram_url, icon: 'instagram', color: '#e4405f'},
+                          {name: 'LinkedIn', url: user.linkedin_url, icon: 'linkedin', color: '#0a66c2'}
+                        ] %}
+            {% for social in social_links %}
+              <div class="d-flex align-items-center justify-content-between mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+                <div class="d-flex align-items-center">
+                  <div class="rounded-circle p-2 me-3"
+                       style="background-color: {{ social.color }}15">
+                    <i class="bi bi-{{ social.icon }}"
+                       style="color: {{ social.color }};
+                              font-size: 1.2rem"></i>
+                  </div>
+                  <span class="fw-medium">{{ social.name }}</span>
+                </div>
+                {% if social.url %}
+                  <a href="{{ social.url }}"
+                     target="_blank"
+                     class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                  </a>
+                {% else %}
+                  <span class="text-muted small">Not linked</span>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <!-- Right Column -->
+      <div class="col-lg-8">
+        <!-- Personal Information -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-body p-4">
+            <h5 class="mb-4 fw-bold">
+              <i class="bi bi-info-circle text-primary me-2"></i>Personal Information
+            </h5>
+            <div class="row g-4">
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="text-muted small d-block mb-1">First Name</label>
+                  <p class="mb-0 fw-medium">{{ user.first_name|default("N/A") }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="text-muted small d-block mb-1">Last Name</label>
+                  <p class="mb-0 fw-medium">{{ user.last_name|default("N/A") }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="text-muted small d-block mb-1">Gender</label>
+                  <p class="mb-0 fw-medium">{{ user.gender|default("N/A") |title }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="text-muted small d-block mb-1">Date of Birth</label>
+                  <p class="mb-0 fw-medium">{{ user.dob ? user.dob|date("F j, Y") : 'N/A' }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Address Information -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-body p-4">
+            <h5 class="mb-4 fw-bold">
+              <i class="bi bi-geo-alt text-primary me-2"></i>Address
+            </h5>
+            <div class="row g-4">
+              <div class="col-12">
+                <div class="info-item">
+                  <label class="text-muted small d-block mb-1">Street Address</label>
+                  <p class="mb-0 fw-medium">{{ user.address|default("N/A") }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="text-muted small d-block mb-1">City</label>
+                  <p class="mb-0 fw-medium">{{ user.city|default("N/A") }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="text-muted small d-block mb-1">State / Province</label>
+                  <p class="mb-0 fw-medium">{{ user.state|default("N/A") }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="text-muted small d-block mb-1">Country</label>
+                  <p class="mb-0 fw-medium">{{ user.country|default("N/A") }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="text-muted small d-block mb-1">Zip / Postal Code</label>
+                  <p class="mb-0 fw-medium">{{ user.zipcode|default("N/A") }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Login Activity -->
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-4">
+            <h5 class="mb-4 fw-bold">
+              <i class="bi bi-clock-history text-primary me-2"></i>Login Activity
+            </h5>
+            <div class="row g-4">
+              <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3">
+                  <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-calendar-check text-primary me-2"></i>
+                    <label class="text-muted small mb-0">Last Login</label>
+                  </div>
+                  <p class="mb-0 fw-medium">{{ user.last_login ? user.last_login|date("M j, Y") : 'Never' }}</p>
+                  <small class="text-muted">{{ user.last_login ? user.last_login|date("h:i A") : '' }}</small>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3">
+                  <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-router text-primary me-2"></i>
+                    <label class="text-muted small mb-0">IP Address</label>
+                  </div>
+                  <p class="mb-0 fw-medium">{{ user.login_ip|default("N/A") }}</p>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3">
+                  <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-device-ssd text-primary me-2"></i>
+                    <label class="text-muted small mb-0">Device</label>
+                  </div>
+                  <p class="mb-0 fw-medium">{{ user.login_device|default("N/A") }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+  // Initialize tooltips
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+  })
+  </script>
+{% endblock %}

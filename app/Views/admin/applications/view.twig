@@ -1,0 +1,498 @@
+{# templates/admin/applications/view.twig #}
+{% extends "admin/layout.twig" %}
+{% set skip_auto_breadcrumb = true %}
+{% block title %}Application Details - Admin{% endblock %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-file-earmark me-2"></i>
+        Application Details
+      </div>
+      <div class="admin-page-subtitle">View application information</div>
+    </div>
+    <!-- Page Header -->
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <h1 class="h3 mb-0">Application #{{ application.id }}</h1>
+        <nav aria-label="breadcrumb" class="mt-2">
+          <ol class="breadcrumb breadcrumb-sm">
+            <li class="breadcrumb-item">
+              <a href="/admin/dashboard">Admin</a>
+            </li>
+            <li class="breadcrumb-item">
+              <a href="/admin/applications">Applications</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Details</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+    <div class="row">
+      <!-- Main Content -->
+      <div class="col-md-8">
+        <!-- Application Details -->
+        <div class="admin-panel-card mb-4">
+          <div class="admin-panel-card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Application Details</h5>
+            {% set status_colors = {"pending": "warning", "processing": "info", "approved": "success", "rejected": "danger"} %}
+            <span class="badge bg-{{ status_colors[application.status] }}">{{ application.status|upper }}</span>
+          </div>
+          <div class="admin-panel-card-body">
+            <!-- Applicant Info -->
+            <div class="mb-4 pb-3 border-bottom">
+              <h6>Applicant Information</h6>
+              <div class="row">
+                <div class="col-md-6">
+                  <label class="small text-muted d-block">Name</label>
+                  <p class="mb-2">
+                    <strong>{{ applicant.username }}</strong>
+                  </p>
+                </div>
+                <div class="col-md-6">
+                  <label class="small text-muted d-block">Email</label>
+                  <p class="mb-2">
+                    <strong>{{ applicant.email }}</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
+            <!-- Service Info -->
+            <div class="mb-4 pb-3 border-bottom">
+              <h6>Service Information</h6>
+              <label class="small text-muted d-block">Service Name</label>
+              <p>
+                <strong>{{ application.service_name }}</strong>
+              </p>
+            </div>
+            <!-- Application Data -->
+            <div class="mb-4 pb-3 border-bottom">
+              <h6>Submitted Data</h6>
+              <div class="row">
+                {% for field, value in application.application_data %}
+                  <div class="col-md-6 mb-3">
+                    {% set normalized_field = field|lower %}
+                    {% set mapped_label = form_field_labels[field]|default(form_field_labels[normalized_field]|default('')) %}
+                    {% if mapped_label != '' %}
+                      {% set field_label = mapped_label %}
+                    {% else %}
+                      {% set field_label = normalized_field == '_documents' ? 'Documents' : (normalized_field == '_payment' ? 'Payment' : (field|replace({'_': ' ', '-': ' '})|title)) %}
+                    {% endif %}
+                    <label class="small text-muted d-block">{{ field_label }}</label>
+                    {% if value is iterable %}
+                      {% if normalized_field == '_payment' %}
+                        {% set pay = value %}
+                        <div class="small">
+                          <div>
+                            <strong>Transaction:</strong> {{ pay.transaction_id|default(pay.paymentID|default('N/A') ) }}
+                          </div>
+                          <div>
+                            <strong>Gateway:</strong> {{ pay.gateway|default(pay.method|default('N/A') ) }}
+                          </div>
+                          <div>
+                            <strong>Status:</strong> {{ pay.status|default("N/A") |title }}
+                          </div>
+                          <div>
+                            <strong>Amount:</strong>
+                            {% if pay.amount is defined and pay.amount is not same as('') %}
+                              {{ pay.amount }} {{ pay.currency|default("BDT") }}
+                            {% else %}
+                              N/A
+                            {% endif %}
+                          </div>
+                        </div>
+                      {% elseif normalized_field == '_documents' %}
+                        {% if value|length > 0 %}
+                          <ul class="mb-0 ps-3">
+                            {% for doc in value %}
+                              {% set doc_name = doc.name|default('Document ' ~ loop.index) %}
+                              <li>
+                                {% if doc.url|default('') %}
+                                  <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <a href="{{ doc.url }}" target="_blank" rel="noopener noreferrer">{{ doc_name }}</a>
+                                    <button type="button"
+                                            class="modern-btn modern-btn-white btn-sm js-doc-preview"
+                                            data-doc-url="{{ doc.url|e("html_attr") }}"
+                                            data-doc-name="{{ doc_name|e("html_attr") }}"
+                                            data-doc-mime="{{ doc.mime_type|default("") |e('html_attr') }}">
+                                      <i class="bi bi-eye"></i> Preview
+                                    </button>
+                                  </div>
+                                {% else %}
+                                  {{ doc_name }}
+                                {% endif %}
+                              </li>
+                            {% endfor %}
+                          </ul>
+                        {% else %}
+                          <code>N/A</code>
+                        {% endif %}
+                      {% else %}
+                        <pre class="mb-0 bg-light p-2 rounded-2 inl-a-0011">{{ value|json_encode(constant('JSON_UNESCAPED_UNICODE')) }}</pre>
+                      {% endif %}
+                    {% else %}
+                      <p class="mb-0">
+                        <code>
+                          {% if value is same as(null) or value is same as('') %}
+                            N/A
+                          {% elseif value is same as(true) %}
+                            Yes
+                          {% elseif value is same as(false) %}
+                            No
+                          {% else %}
+                            {{ value }}
+                          {% endif %}
+                        </code>
+                      </p>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+            <!-- Submission Details -->
+            <div class="mb-4 pb-3 border-bottom">
+              <h6>Submission Details</h6>
+              <div class="row">
+                <div class="col-md-6">
+                  <label class="small text-muted d-block">Submitted</label>
+                  <p class="mb-2">{{ application.created_at|date("M d, Y H:i") }}</p>
+                </div>
+                <div class="col-md-6">
+                  <label class="small text-muted d-block">IP Address</label>
+                  <p class="mb-2">
+                    <code>{{ application.ip_address }}</code>
+                  </p>
+                </div>
+              </div>
+            </div>
+            <!-- Admin Notes -->
+            {% if application.admin_notes %}
+              <div class="alert alert-light border mb-4">
+                <h6 class="mb-3">Previous Admin Notes</h6>
+                <pre class="mb-0 inl-a-0011">{{ application.admin_notes }}</pre>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Audit Log -->
+        {% if audit_log %}
+          <div class="admin-panel-card">
+            <div class="admin-panel-card-header">
+              <h6 class="mb-0">Audit Log</h6>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Date</th>
+                    <th>Action</th>
+                    <th>User</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for log in audit_log %}
+                    <tr>
+                      <td>
+                        <small>{{ log.created_at|date("M d, H:i") }}</small>
+                      </td>
+                      <td>
+                        <small><span class="badge bg-light text-surface-dark">{{ log.action_type }}</span></small>
+                      </td>
+                      <td>
+                        <small>{{ log.username ?? 'System' }}</small>
+                      </td>
+                      <td>
+                        <small>{{ log.description }}</small>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+      <!-- Sidebar -->
+      <div class="col-md-4">
+        <!-- Actions Card -->
+        <div class="admin-panel-card mb-4">
+          <div class="admin-panel-card-header">
+            <h6 class="mb-0">Actions</h6>
+          </div>
+          <div class="admin-panel-card-body">
+            {% if application.status == 'pending' or application.status == 'processing' %}
+              <button class="modern-btn modern-btn-primary btn-sm w-100 mb-2"
+                      onclick="approveApplication({{ application.id }})">
+                <i class="bi bi-check"></i> Approve
+              </button>
+              <button class="modern-btn modern-btn-secondary btn-sm w-100 mb-2"
+                      onclick="markProcessing({{ application.id }})">
+                <i class="bi bi-gear"></i> Mark Processing
+              </button>
+              <button class="modern-btn modern-btn-primary btn-sm w-100"
+                      onclick="rejectApplication({{ application.id }})">
+                <i class="bi bi-x"></i> Reject
+              </button>
+            {% elseif application.status == 'approved' %}
+              {% if not application.service_activated %}
+                <button class="modern-btn modern-btn-primary btn-sm w-100 mb-2"
+                        onclick="activateService({{ application.id }})">
+                  <i class="bi bi-power"></i> Activate Service
+                </button>
+              {% else %}
+                <div class="alert alert-success alert-sm">
+                  <i class="bi bi-check-circle"></i> Service Activated
+                </div>
+              {% endif %}
+            {% elseif application.status == 'rejected' %}
+              <button class="modern-btn modern-btn-secondary btn-sm w-100"
+                      onclick="revertStatus({{ application.id }})">
+                <i class="bi bi-arrow-counterclockwise"></i> Revert to Pending
+              </button>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Add Note Card -->
+        <div class="admin-panel-card mb-4">
+          <div class="admin-panel-card-header">
+            <h6 class="mb-0">Add Note</h6>
+          </div>
+          <div class="admin-panel-card-body">
+            <form id="noteForm">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <textarea class="form-control form-control-sm mb-3"
+                        id="noteText"
+                        name="note"
+                        rows="4"
+                        placeholder="Add internal note..."></textarea>
+              <button type="button"
+                      class="modern-btn modern-btn-primary btn-sm w-100"
+                      onclick="addNote({{ application.id }})">
+                <i class="bi bi-plus"></i> Add Note
+              </button>
+            </form>
+          </div>
+        </div>
+        <!-- Status Card -->
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header">
+            <h6 class="mb-0">Summary</h6>
+          </div>
+          <div class="admin-panel-card-body">
+            <dl class="row mb-0">
+              <dt class="col-6">Status:</dt>
+              <dd class="col-6">
+                <span class="badge bg-{{ status_colors[application.status] }}">{{ application.status|title }}</span>
+              </dd>
+              <dt class="col-6">Submitted:</dt>
+              <dd class="col-6">
+                {{ application.created_at|date("M d, Y") }}
+              </dd>
+              {% if application.approved_at %}
+                <dt class="col-6">Approved:</dt>
+                <dd class="col-6">
+                  {{ application.approved_at|date("M d, Y") }}
+                </dd>
+              {% endif %}
+              <dt class="col-6">Priority:</dt>
+              <dd class="col-6">
+                <span class="badge bg-info">{{ application.priority|title }}</span>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade"
+       id="docPreviewModal"
+       tabindex="-1"
+       aria-labelledby="docPreviewModalLabel"
+       aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="docPreviewModalLabel">Document Preview</h5>
+          <button type="button"
+                  class="modern-btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-2 p-md-3" id="docPreviewBody">
+          <div class="small text-muted">Loading preview...</div>
+        </div>
+        <div class="modal-footer">
+          <a href="#"
+             target="_blank"
+             rel="noopener noreferrer"
+             id="docPreviewOpenLink"
+             class="modern-btn modern-btn-primary">
+            <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
+          </a>
+          <button type="button"
+                  class="modern-btn modern-btn-secondary"
+                  data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Approve Modal -->
+  <div class="modal fade" id="approveModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Approve Application</h5>
+          <button type="button" class="modern-btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p>Add optional approval notes:</p>
+          <textarea class="form-control"
+                    id="approveNotes"
+                    rows="4"
+                    placeholder="Approval notes..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button"
+                  class="modern-btn modern-btn-secondary"
+                  data-bs-dismiss="modal">Cancel</button>
+          <button type="button"
+                  class="modern-btn modern-btn-primary"
+                  onclick="confirmApprove()">Approve</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Reject Modal -->
+  <div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Reject Application</h5>
+          <button type="button" class="modern-btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p>
+            <strong>Reason for rejection (required):</strong>
+          </p>
+          <textarea class="form-control"
+                    id="rejectReason"
+                    rows="4"
+                    placeholder="Please explain why this application is being rejected..."
+                    required></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button"
+                  class="modern-btn modern-btn-secondary"
+                  data-bs-dismiss="modal">Cancel</button>
+          <button type="button"
+                  class="modern-btn modern-btn-primary"
+                  onclick="confirmReject()">Reject</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Processing Modal -->
+  <div class="modal fade" id="processingModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Mark as Processing</h5>
+          <button type="button" class="modern-btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p>Add optional processing notes:</p>
+          <textarea class="form-control"
+                    id="processingNotes"
+                    rows="4"
+                    placeholder="Processing notes..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button"
+                  class="modern-btn modern-btn-secondary"
+                  data-bs-dismiss="modal">Cancel</button>
+          <button type="button"
+                  class="modern-btn modern-btn-secondary"
+                  onclick="confirmProcessing()">Mark Processing</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+(() => {
+    const modalEl = document.getElementById('docPreviewModal');
+    const titleEl = document.getElementById('docPreviewModalLabel');
+    const bodyEl = document.getElementById('docPreviewBody');
+    const openLinkEl = document.getElementById('docPreviewOpenLink');
+
+    if (!modalEl || !titleEl || !bodyEl || !openLinkEl || typeof bootstrap === 'undefined') {
+        return;
+    }
+
+    const modal = new bootstrap.Modal(modalEl);
+
+    const isImageByExt = (url) => /\.(png|jpe?g|gif|webp|bmp|svg|avif)$/i.test(url);
+    const isPdfByExt = (url) => /\.pdf$/i.test(url);
+
+    const detectType = (url, mime) => {
+        const cleanUrl = (url || '').split('#')[0].split('?')[0];
+        const mimeType = (mime || '').toLowerCase();
+
+        if (mimeType.startsWith('image/')) return 'image';
+        if (mimeType === 'application/pdf') return 'pdf';
+        if (isImageByExt(cleanUrl)) return 'image';
+        if (isPdfByExt(cleanUrl)) return 'pdf';
+        return 'other';
+    };
+
+    const renderPreview = (url, name, mime) => {
+        bodyEl.innerHTML = '';
+        titleEl.textContent = name;
+        openLinkEl.href = url;
+
+        const type = detectType(url, mime);
+
+        if (type === 'image') {
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = name;
+            img.className = 'doc-preview-img';
+            bodyEl.appendChild(img);
+            return;
+        }
+
+        if (type === 'pdf') {
+            const frame = document.createElement('iframe');
+            frame.src = url;
+            frame.className = 'doc-preview-frame';
+            frame.setAttribute('title', name);
+            bodyEl.appendChild(frame);
+            return;
+        }
+
+        bodyEl.innerHTML = [
+            '<div class="alert alert-warning mb-0">',
+            '<div class="fw-semibold mb-1">Preview is not available for this file type.</div>',
+            '<div class="small text-muted">Use "Open in New Tab" to view or download this document.</div>',
+            '</div>'
+        ].join('');
+    };
+
+    document.addEventListener('click', (event) => {
+        const trigger = event.target.closest('.js-doc-preview');
+        if (!trigger) return;
+
+        event.preventDefault();
+        const url = (trigger.getAttribute('data-doc-url') || '').trim();
+        if (!url) return;
+
+        const name = (trigger.getAttribute('data-doc-name') || 'Document Preview').trim();
+        const mime = (trigger.getAttribute('data-doc-mime') || '').trim();
+
+        renderPreview(url, name, mime);
+        modal.show();
+    });
+})();
+  </script>
+{% endblock %}

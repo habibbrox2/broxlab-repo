@@ -1,0 +1,10 @@
+<ul id="top-comments">
+  {% for comment in top_comments %}
+    <li data-id="{{ comment.id }}" class="highlight">
+      <strong>{{ comment.user_id ? user.username : comment.guest_name }}</strong>
+      <p>{{ comment.content }}</p>
+      <span>Replies: {{ comment.reply_count }}</span>
+      <span>Likes: <span class="like-count">{{ comment.likes }}</span></span>
+    </li>
+  {% endfor %}
+</ul>

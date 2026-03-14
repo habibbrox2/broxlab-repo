@@ -1,0 +1,73 @@
+{#
+  Flash Message Macro - SweetAlert2 Edition
+  Global behavior:
+  - JS-enabled clients: SweetAlert2 via window.__INITIAL_FLASH
+  - No-JS clients: <noscript> HTML fallback alert
+#}
+
+{% macro render_flash(flash_data) %}
+  {% if flash_data %}
+    {# Extract flash properties with fallbacks for different key names #}
+    {% set message = flash_data.text | default(flash_data.message | default('')) %}
+    {% set status = flash_data.status | default(flash_data.type | default('info')) %}
+    {# Normalize 'error' to 'danger' for Bootstrap compatibility #}
+    {% if status == 'error' %}{% set status = 'danger' %}{% endif %}
+    
+    {% if message %}
+      <script>
+        (function () {
+          var flashItem = {
+            text: {{ message | json_encode | raw }},
+            status: {{ status | json_encode | raw }},
+            duration: 5000
+          };
+
+          if (!Array.isArray(window.__INITIAL_FLASH_QUEUE)) {
+            window.__INITIAL_FLASH_QUEUE = [];
+          }
+
+          window.__INITIAL_FLASH_QUEUE.push(flashItem);
+
+          // Backward compatibility for older consumers.
+          if (!window.__INITIAL_FLASH) {
+            window.__INITIAL_FLASH = flashItem;
+          }
+        })();
+      </script>
+
+      <noscript>
+        <div class="alert alert-{{ status }} border-0 shadow-sm mb-4 inl-p-0131"
+             role="alert"
+             aria-live="polite"
+             aria-atomic="true"
+            >
+          <i class="bi bi-{% if status == 'success' %}check-circle-fill{% elseif status == 'danger' %}exclamation-triangle-fill{% elseif status == 'warning' %}exclamation-triangle-fill{% else %}info-circle-fill{% endif %} me-2" aria-hidden="true"></i>
+          <span>{{ message }}</span>
+        </div>
+      </noscript>
+    {% endif %}
+  {% endif %}
+{% endmacro %}
+
+{#
+  Alternative macro for simple non-JS fallback (without JavaScript)
+  Use this in templates where you want to avoid inline scripts
+#}
+{% macro render_flash_html_only(flash_data) %}
+  {% if flash_data %}
+    {% set message = flash_data.text | default(flash_data.message | default('')) %}
+    {% set status = flash_data.status | default(flash_data.type | default('info')) %}
+    {% if status == 'error' %}{% set status = 'danger' %}{% endif %}
+    
+    {% if message %}
+      <div class="alert alert-{{ status }} alert-dismissible fade show border-0 shadow-sm mb-4" 
+           role="alert" 
+           aria-live="polite" 
+           aria-atomic="true">
+        <i class="bi bi-{% if status == 'success' %}check-circle-fill{% elseif status == 'danger' %}exclamation-triangle-fill{% elseif status == 'warning' %}exclamation-triangle-fill{% else %}info-circle-fill{% endif %} me-2" aria-hidden="true"></i>
+        <span>{{ message }}</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endif %}
+  {% endif %}
+{% endmacro %}
