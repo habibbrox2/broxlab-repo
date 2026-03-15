@@ -1,0 +1,17 @@
+{# templates/partials/services-feed.twig #}
+{# Render a list of services using the shared `content-card.twig` partial #}
+{% for s in services %}
+  {# Ensure item has type 'service' for proper badges/links #}
+  {% set item = s|merge({
+    'type': 'service',
+    'rich_excerpt_html': s.rich_excerpt_html|default(s.description|default(''))
+  }) %}
+  {% include 'partials/content-card.twig' with { item: item, index: loop.index } %}
+{% else %}
+  <div class="feed-empty-state">
+    <div class="empty-state-content" role="status" aria-label="No services available">
+      <i class="bi bi-box-seam empty-icon" aria-hidden="true"></i>
+      <p class="empty-text">No services found.</p>
+    </div>
+  </div>
+{% endfor %}

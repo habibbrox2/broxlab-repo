@@ -1,0 +1,272 @@
+{% extends "layout.twig" %}
+
+{% block title %}{{ tag.name }} Tag - Related Articles & Posts | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+
+{% set breadcrumbs = [
+  { label: 'Tags', url: '/tags', icon: 'tag' },
+  { label: tag.name, icon: 'tag' }
+] %}
+
+{% block content %}
+
+{# Structured Data - Collection Page Schema #}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "{{ tag.name|json }}",
+  "description": "Browse all articles and posts tagged with {{ tag.name|json }}",
+  "url": "{{ current_url }}"
+}
+</script>
+
+{# Hero Section #}
+<section class="hero-section position-relative py-5 mb-5 overflow-hidden" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+  <div class="container">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-8">
+        <h1 class="display-4 fw-bold text-white mb-3">
+          <i class="bi bi-tag me-2"></i>{{ tag.name }}
+        </h1>
+        <p class="lead text-white-50 fs-5">
+          Browse all content tagged with "{{ tag.name }}"
+        </p>
+      </div>
+      <div class="col-lg-4 text-center">
+        <div class="hero-icon" style="font-size: 4rem;">🏷️</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="container py-5">
+
+  {# Page Header #}
+  <div class="listing-header">
+    <h2><i class="bi bi-tag text-primary me-2"></i>Tagged: {{ tag.name }}</h2>
+    <p class="text-muted">Showing {{ total_count }} items</p>
+  </div>
+
+  {# Content Grid #}
+  {% if contents is not empty %}
+    {# Filter & Sorting Options #}
+    <div class="filter-card">
+      <div class="filter-group">
+        {# Search #}
+        <div class="filter-section" style="flex: 2;">
+          <form method="get" style="display: flex; gap: 0.75rem;">
+            <input type="text" name="search" value="{{ search|default('') }}" class="search-input" placeholder="Search tagged content...">
+            <button type="submit" class="btn-search"><i class="bi bi-search"></i></button>
+          </form>
+        </div>
+
+        {# Per Page #}
+        <div class="filter-section">
+          <label>Per Page</label>
+          <form method="get">
+            <select name="per_page" class="filter-select" onchange="this.form.submit()">
+              {% for opt in available_per_page|default([6, 12, 18, 24]) %}
+              <option value="{{ opt }}" {% if per_page == opt %}selected{% endif %}>{{ opt }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        </div>
+
+        {# Sort #}
+        <div class="filter-section">
+          <label>Sort By</label>
+          <form method="get">
+            <select name="sort" class="filter-select" onchange="this.form.submit()">
+              <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Latest</option>
+              <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest</option>
+              <option value="views" {% if sort == 'views' %}selected{% endif %}>Most Views</option>
+              <option value="impressions" {% if sort == 'impressions' %}selected{% endif %}>Most Impressions</option>
+            </select>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <section aria-labelledby="tag-list">
+      <div class="listing-grid mb-5">
+        {% for content in contents %}
+          {% include 'partials/content-card.twig' with { item: {
+              images: content.images|default([]),
+              image: content.image|default(null),
+              title: content.title|default('Untitled'),
+              subtitle: content.type == 'service'
+                ? content.subtitle|default('')
+                : content.subtitle|default(content.content|default(''))|striptags|slice(0, 120) ~ '...',
+              rich_excerpt_html: content.type == 'service' ? content.content|default(content.description|default('')) : '',
+              categories: content.categories|default([]),
+              tags: content.tags|default([]),
+              created_at: content.created_at|default(''),
+              url: content.url|default(content.slug|default(content.id)),
+              id: content.id,
+              slug: content.slug|default(content.id),
+              type: content.type|default(''),
+              impressions: content.impressions|default(0),
+              views: content.views|default(0),
+              is_official: content.is_official|default(false),
+              is_premium: content.is_premium|default(false),
+            }, index: loop.index } %}
+        {% endfor %}
+      </div>
+    </section>
+
+    {# Pagination #}
+    {% if total_pages > 1 %}
+      <div class="pagination-container">
+        <div class="pagination">
+          {% if current_page > 1 %}
+            <a class="pagination-link" href="?page=1&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}" aria-label="First">
+              <i class="bi bi-chevron-double-left"></i>
+            </a>
+            <a class="pagination-link" href="?page={{ current_page - 1 }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}" aria-label="Previous">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          {% else %}
+            <span class="pagination-link disabled"><i class="bi bi-chevron-double-left"></i></span>
+            <span class="pagination-link disabled"><i class="bi bi-chevron-left"></i></span>
+          {% endif %}
+
+          {% set start = max(1, current_page - 2) %}
+          {% set end = min(total_pages, current_page + 2) %}
+
+          {% if start > 1 %}
+            <a class="pagination-link" href="?page=1&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}">1</a>
+            {% if start > 2 %}
+              <span class="pagination-link disabled">...</span>
+            {% endif %}
+          {% endif %}
+
+          {% for p in start..end %}
+            {% if p == current_page %}
+              <span class="pagination-link active">{{ p }}</span>
+            {% else %}
+              <a class="pagination-link" href="?page={{ p }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}">{{ p }}</a>
+            {% endif %}
+          {% endfor %}
+
+          {% if end < total_pages %}
+            {% if end < total_pages - 1 %}
+              <span class="pagination-link disabled">...</span>
+            {% endif %}
+            <a class="pagination-link" href="?page={{ total_pages }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}">{{ total_pages }}</a>
+          {% endif %}
+
+          {% if current_page < total_pages %}
+            <a class="pagination-link" href="?page={{ current_page + 1 }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}" aria-label="Next">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+            <a class="pagination-link" href="?page={{ total_pages }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}" aria-label="Last">
+              <i class="bi bi-chevron-double-right"></i>
+            </a>
+          {% else %}
+            <span class="pagination-link disabled"><i class="bi bi-chevron-right"></i></span>
+            <span class="pagination-link disabled"><i class="bi bi-chevron-double-right"></i></span>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+  {% else %}
+    <div class="empty-state text-center py-5">
+      <i class="bi bi-inbox" style="font-size:3rem"></i>
+      <h4 class="mt-3">No content found</h4>
+      <p class="text-muted">No posts, pages, mobiles, or services tagged with "{{ tag.name }}"</p>
+    </div>
+  {% endif %}
+
+</div>
+
+{# Related Tags + JS included inside block #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load related tags via API (graceful fallback)
+    const container = document.getElementById('relatedTags');
+    if (!container) return;
+    const tagSlug = '{{ tag.name }}'.toLowerCase().replace(/\s+/g, '-');
+    fetch(`/api/tags?exclude=${tagSlug}&limit=8`).then(r => r.ok ? r.json() : Promise.reject(r)).then(data => {
+        container.innerHTML = (data.tags || []).map(t => `<a href="/tag/${t.slug}" class="badge bg-white text-surface-dark text-decoration-none p-3 rounded-pill shadow-sm" style="border:1px solid #dee2e6">${t.name}${t.count?` <span class=\"badge bg-primary rounded-pill ms-1\">${t.count}</span>`:''}</a>`).join('') || '<span class="text-muted">No related tags found</span>';
+    }).catch(()=>{container.innerHTML = '<span class="text-muted">Could not load related tags</span>';});
+});
+</script>
+
+<script>
+    // Load related tags
+    document.addEventListener('DOMContentLoaded', function() {
+        loadRelatedTags();
+        initBackToTop();
+        
+                });
+
+    function loadRelatedTags() {
+        const tagSlug = '{{ tag.name }}'.toLowerCase().replace(/\s+/g, '-');
+        const container = document.getElementById('relatedTags');
+        
+        fetch(`/api/tags?exclude=${tagSlug}&limit=8`)
+            .then(res => {
+                if (!res.ok) throw new Error('Network response was not ok');
+                return res.json();
+            })
+            .then(data => {
+                container.setAttribute('aria-busy', 'false');
+                
+                if (data.tags && data.tags.length > 0) {
+                    container.innerHTML = data.tags
+                        .map(tag => `
+                            <a href="/tag/${tag.slug}" 
+                               class="badge bg-white text-surface-dark text-decoration-none p-3 rounded-pill shadow-sm hover-shadow transition-all"
+                               style="border: 1px solid #dee2e6;"
+                               role="listitem"
+                               aria-label="View tag: ${tag.name}">
+                                <i class="bi bi-tag-fill me-1" aria-hidden="true"></i> ${tag.name}
+                                ${tag.count ? `<span class="badge bg-primary rounded-pill ms-1">${tag.count}</span>` : ''}
+                            </a>
+                        `)
+                        .join('');
+                } else {
+                    container.innerHTML = '<span class="text-muted">No related tags found</span>';
+                }
+            })
+            .catch(err => {
+                console.error('Error loading related tags:', err);
+                container.setAttribute('aria-busy', 'false');
+                container.innerHTML = '<span class="text-muted">Could not load related tags</span>';
+            });
+    }
+
+    // Back to top functionality
+    function initBackToTop() {
+        const backToTopButton = document.getElementById('backToTop');
+        
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                backToTopButton.style.display = 'block';
+            } else {
+                backToTopButton.style.display = 'none';
+            }
+        });
+    }
+
+    function scrollToTop() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+
+    // Enhance card interactions
+    document.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.boxShadow = '0 1rem 3rem rgba(0, 0, 0, 0.175)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.boxShadow = '';
+        });
+    });
+</script>
+
+{% endblock %}

@@ -1,0 +1,358 @@
+{% extends "layout.twig" %}
+
+{% block title %}All Categories | Browse Content by Categories | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+
+{% set breadcrumbs = [
+  { label: 'Categories', url: '/categories', icon: 'folder' }
+] %}
+
+{% block content %}
+{# Structured Data - Collection Page Schema #}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "All Categories",
+  "description": "Browse all categories on {{ app_settings.site_name|default('BroxBhai') }}. Find content organized by categories.",
+  "url": "{{ current_url }}"
+}
+</script>
+
+<link rel="stylesheet" href="/assets/css/modern-listing.css">
+
+<div class="container py-5">
+
+    {# Header Section #}
+    <header class="row mb-5">
+        <div class="col-lg-8 mx-auto text-center">
+            <div class="bg-gradient rounded-4 p-5 mb-4 position-relative overflow-hidden" 
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10" aria-hidden="true">
+                    <div class="position-absolute" style="width: 350px; height: 350px; background: rgba(255,255,255,0.2); border-radius: 50%; top: -120px; right: -80px;"></div>
+                    <div class="position-absolute" style="width: 250px; height: 250px; background: rgba(255,255,255,0.1); border-radius: 50%; bottom: -80px; left: -60px;"></div>
+                </div>
+                
+                <div class="position-relative">
+                    <span class="badge bg-white text-primary px-4 py-2 rounded-pill mb-3 shadow-sm">
+                        <i class="bi bi-collection me-2" aria-hidden="true"></i>All Categories
+                    </span>
+                    <h1 class="display-4 fw-bold mb-3 text-white" id="categories-title">Browse Categories</h1>
+                    <p class="lead opacity-90 mb-4 text-white">Explore content organized by categories</p>
+                    
+                    <div class="d-inline-flex align-items-center bg-white bg-opacity-25 rounded-pill px-4 py-2">
+                        <i class="bi bi-folder2-open me-2 fs-5 text-white" aria-hidden="true"></i>
+                        <span class="fw-bold fs-5 text-white" aria-label="{{ total_categories }} categories found">{{ total_categories }}</span>
+                        <span class="ms-2 text-white">
+                            {% if total_categories == 1 %}
+                                category found
+                            {% else %}
+                                categories found
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    {# Content Grid #}
+    {% if categories|length > 0 %}
+        <!-- Filter & Sorting Options -->
+        <div class="filter-card mb-4">
+            <div class="filter-group">
+                <!-- Search -->
+                <div class="filter-section" style="flex: 2;">
+                    <form method="get" style="display: flex; gap: 0.75rem;">
+                        <input type="text" name="search" value="{{ search|default('') }}" class="search-input" placeholder="Search categories...">
+                        <button type="submit" class="btn-search"><i class="bi bi-search"></i></button>
+                    </form>
+                </div>
+                
+                <!-- Per Page -->
+                <div class="filter-section">
+                    <label>Per Page</label>
+                    <form method="get">
+                        <input type="hidden" name="search" value="{{ search|default('') }}">
+                        <input type="hidden" name="sort" value="{{ sort|default('name') }}">
+                        <select name="per_page" class="filter-select" onchange="this.form.submit()">
+                            {% for opt in [6, 12, 24, 48] %}
+                            <option value="{{ opt }}" {% if per_page == opt %}selected{% endif %}>{{ opt }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+
+                <!-- Sort -->
+                <div class="filter-section">
+                    <label>Sort By</label>
+                    <form method="get">
+                        <input type="hidden" name="search" value="{{ search|default('') }}">
+                        <input type="hidden" name="per_page" value="{{ per_page|default(12) }}">
+                        <select name="sort" class="filter-select" onchange="this.form.submit()">
+                            <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+                            <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Latest</option>
+                            <option value="count" {% if sort == 'count' %}selected{% endif %}>Most Items</option>
+                        </select>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <section aria-labelledby="categories-title">
+            <div class="listing-grid mb-5">
+                {# Centralized content card partial — keeps listing markup consistent site-wide #}
+                {% for category in categories %}
+                    {% include 'partials/content-card.twig' with { item: {
+                        title: category.name,
+                        subtitle: category.description|default('Explore items in this category'),
+                        id: category.id|default(category.slug),
+                        slug: category.slug,
+                        url: category.slug,
+                        type: 'category',
+                        created_at: category.created_at|default('now'),
+                        count: category.count|default(0),
+                        categories: [],
+                        tags: [],
+                        views: category.count|default(0),
+                        impressions: 0
+                    }, index: loop.index } %}
+                {% endfor %}
+            </div>
+        </section>
+
+        {# Pagination #}
+        {% if total_pages > 1 %}
+        <div class="pagination-container">
+            <div class="pagination">
+                {# Previous Page #}
+                {% if current_page > 1 %}
+                    <a class="pagination-link" 
+                       href="?page={{ current_page - 1 }}&per_page={{ per_page|default(12) }}&search={{ search|default('') }}&sort={{ sort|default('name') }}"
+                       aria-label="Go to previous page">
+                        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                    </a>
+                {% else %}
+                    <span class="pagination-link disabled" aria-disabled="true">
+                        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                    </span>
+                {% endif %}
+
+                {# Page Numbers #}
+                {% set startPage = current_page > 2 ? current_page - 2 : 1 %}
+                {% set endPage = current_page + 2 > total_pages ? total_pages : current_page + 2 %}
+                
+                {% if startPage > 1 %}
+                    <a class="pagination-link" 
+                        href="?page=1&per_page={{ per_page|default(12) }}&search={{ search|default('') }}&sort={{ sort|default('name') }}"
+                        aria-label="Go to page 1">
+                        1
+                    </a>
+                    {% if startPage > 2 %}
+                        <span class="pagination-link disabled" aria-hidden="true">...</span>
+                    {% endif %}
+                {% endif %}
+
+                {% for i in range(startPage, endPage) %}
+                    {% if i == current_page %}
+                        <span class="pagination-link active" aria-current="page">
+                            {{ i }}
+                        </span>
+                    {% else %}
+                        <a class="pagination-link" 
+                            href="?page={{ i }}&per_page={{ per_page|default(12) }}&search={{ search|default('') }}&sort={{ sort|default('name') }}"
+                            aria-label="Go to page {{ i }}">
+                            {{ i }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if endPage < total_pages %}
+                    {% if endPage < total_pages - 1 %}
+                        <span class="pagination-link disabled" aria-hidden="true">...</span>
+                    {% endif %}
+                    <a class="pagination-link" 
+                        href="?page={{ total_pages }}&per_page={{ per_page|default(12) }}&search={{ search|default('') }}&sort={{ sort|default('name') }}"
+                        aria-label="Go to page {{ total_pages }}">
+                        {{ total_pages }}
+                    </a>
+                {% endif %}
+
+                {# Next Page #}
+                {% if current_page < total_pages %}
+                    <a class="pagination-link" 
+                       href="?page={{ current_page + 1 }}&per_page={{ per_page|default(12) }}&search={{ search|default('') }}&sort={{ sort|default('name') }}"
+                       aria-label="Go to next page">
+                        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                    </a>
+                {% else %}
+                    <span class="pagination-link disabled" aria-disabled="true">
+                        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    {% else %}
+        {# No Content Message #}
+        <section class="text-center py-5" aria-labelledby="no-content-title">
+            <div class="bg-light rounded-4 p-5 mx-auto" style="max-width: 600px;">
+                <div class="mb-4">
+                    <i class="bi bi-inbox-fill text-muted" style="font-size: 5rem;" aria-hidden="true"></i>
+                </div>
+                <h2 id="no-content-title" class="h4 text-muted mb-3">No categories found</h2>
+                <p class="text-secondary mb-4">
+                    {% if search %}
+                        No categories match your search "{{ search }}". Try adjusting your search criteria.
+                    {% else %}
+                        There are currently no categories available.
+                    {% endif %}
+                </p>
+                <a href="/" class="btn btn-primary rounded-pill px-5 py-3 shadow-sm" aria-label="Go back to home page">
+                    <i class="bi bi-house-door-fill me-2" aria-hidden="true"></i>Back to Home
+                </a>
+            </div>
+        </section>
+    {% endif %}
+
+    {# Popular Tags Section #}
+    <aside class="row mt-5" aria-labelledby="popular-tags-title">
+        <div class="col-12">
+            <div class="card border-0 rounded-4 shadow-sm p-4 bg-gradient" 
+                 style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);">
+                <h2 id="popular-tags-title" class="h5 fw-bold mb-4">
+                    <i class="bi bi-tags-fill me-2 text-primary" aria-hidden="true"></i>Explore Popular Tags
+                </h2>
+                
+                <div id="popularTags" 
+                     class="d-flex flex-wrap gap-2"
+                     role="list"
+                     aria-live="polite"
+                     aria-busy="true">
+                    <span class="text-muted d-flex align-items-center">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Loading popular tags...
+                    </span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+
+</div>
+
+{# Styles #}
+<style>
+    /* Line clamp utility */
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Hover effects */
+    .hover-shadow-lg {
+        transition: box-shadow 0.3s ease, transform 0.3s ease;
+    }
+
+    .hover-shadow-lg:hover {
+        box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
+        transform: translateY(-5px);
+    }
+
+    /* Pagination improvements */
+    .pagination .page-link {
+        border: 1px solid #dee2e6;
+        color: #6c757d;
+        transition: all 0.3s ease;
+    }
+
+    .pagination .page-link:hover {
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+        transform: scale(1.05);
+    }
+
+    .pagination .page-item.active .page-link {
+        transform: scale(1.1);
+    }
+
+    /* Smooth transitions */
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+
+
+
+    /* Popular tags badges */
+    #popularTags a {
+        transition: all 0.3s ease;
+    }
+
+    #popularTags a:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+</style>
+
+{# JavaScript #}
+<script>
+    // Load popular tags
+    document.addEventListener('DOMContentLoaded', function() {
+        loadPopularTags();
+        initBackToTop();
+        
+                });
+
+    function loadPopularTags() {
+        const container = document.getElementById('popularTags');
+        
+        fetch('/api/tags?limit=10&sort=popular')
+            .then(res => {
+                if (!res.ok) throw new Error('Network response was not ok');
+                return res.json();
+            })
+            .then(data => {
+                container.setAttribute('aria-busy', 'false');
+                
+                if (data.tags && data.tags.length > 0) {
+                    container.innerHTML = data.tags
+                        .map(tag => `
+                            <a href="/tag/${tag.slug}" 
+                               class="badge bg-white text-surface-dark text-decoration-none p-3 rounded-pill shadow-sm"
+                               style="border: 1px solid #dee2e6;"
+                               role="listitem"
+                               aria-label="View tag: ${tag.name}">
+                                <i class="bi bi-tag-fill me-1 text-info" aria-hidden="true"></i> ${tag.name}
+                                ${tag.count ? `<span class="badge bg-primary rounded-pill ms-1">${tag.count}</span>` : ''}
+                            </a>
+                        `)
+                        .join('');
+                } else {
+                    container.innerHTML = '<span class="text-muted">No tags found</span>';
+                }
+            })
+            .catch(err => {
+                console.error('Error loading popular tags:', err);
+                container.setAttribute('aria-busy', 'false');
+                container.innerHTML = '<span class="text-muted">Could not load popular tags</span>';
+            });
+    }
+
+
+
+
+
+    // Enhance card interactions
+    document.querySelectorAll('.content-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+</script>
+
+{% endblock %}

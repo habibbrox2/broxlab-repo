@@ -1,0 +1,557 @@
+{% set editorId = editorId|default('richTextEditor') %}
+{% set editorName = editorName|default('editor_content') %}
+{% set editorClass = editorClass|default('') %}
+{% set initialContent = initialContent|default('') %}
+{% set darkMode = darkMode|default(false) %}
+{% set rtl = rtl|default(false) %}
+{% set placeholder = placeholder|default('Start typing here...') %}
+{% set minHeight = minHeight|default(120) %}
+{% set maxHeight = maxHeight|default(2000) %}
+{% set autoGrow = autoGrow|default(true) %}
+{% set uploadUrl = uploadUrl|default('/upload') %}
+{% set debugMode = debugMode|default(false) %}
+{% set disabledButtons = disabledButtons|default([]) %}
+
+<!-- Include the editor CSS and JavaScript -->
+
+
+
+
+
+
+
+<div class="rte-container view-compose {{ editorClass }} {{ darkMode ? 'rte-dark-mode' : 'rte-light-mode' }} {{ rtl ? 'rte-rtl' : 'rte-ltr' }} {{ debugMode ? 'rte-debug-mode' : '' }}" id="{{ editorId }}-wrapper" data-rtl="{{ rtl ? 'true' : 'false' }}" data-auto-grow="{{ autoGrow ? 'true' : 'false' }}" data-min-height="{{ minHeight }}" data-max-height="{{ maxHeight }}" data-upload-url="{{ uploadUrl|e('html_attr') }}" data-disabled-buttons="{{ disabledButtons|join(',')|e('html_attr') }}">
+    
+    <!-- Hidden input to store final HTML content for form submission -->
+    <input type="hidden" name="{{ editorName }}" id="{{ editorId }}-input" class="rte-hidden-input" value="{{ initialContent }}">
+    
+    <!-- Editor Area -->
+    <div class="rte-editor-wrapper">
+        <div class="rte-compose-view">
+            <div 
+                class="rte-editor" 
+                id="{{ editorId }}"
+                contenteditable="true" 
+                data-placeholder="{{ placeholder|e('html_attr') }}"
+                aria-label="Rich text editor"
+                aria-multiline="true"
+                spellcheck="true">
+                {{ initialContent|raw }}
+            </div>
+        </div>
+        
+        <!-- HTML Source View (Hidden by default) -->
+        <textarea 
+            class="rte-source-view" 
+            id="{{ editorId }}-source"
+            style="display: none;"
+            aria-label="HTML source code view">
+        </textarea>
+        
+        <!-- History View (Hidden by default) -->
+        <div class="rte-history-view" id="{{ editorId }}-history" style="display: none;">
+            <div class="rte-history-list"></div>
+        </div>
+    </div>
+    
+    <!-- Toolbar (positioned below editor) -->
+    <div class="rte-toolbar" id="{{ editorId }}-toolbar" role="toolbar" aria-label="Text formatting toolbar" aria-controls="{{ editorId }}" aria-orientation="horizontal">
+        <!-- Debug indicator (temporary) -->
+        <div class="rte-toolbar-section rte-debug">
+            <span class="rte-selection-debug" id="{{ editorId }}-selection-debug">Selection: none</span>
+        </div>
+        
+        <!-- View Toggle Section -->
+        <div class="rte-toolbar-section rte-view-toggle">
+            <button type="button" class="rte-btn rte-btn-view rte-view-compose" 
+                    title="Compose view (Ctrl+Shift+C)" 
+                    data-view="compose" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">edit</i>
+                <span class="rte-tooltip">Compose</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-view rte-view-html" 
+                    title="HTML source view (Ctrl+Shift+S)" 
+                    data-view="source" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">code</i>
+                <span class="rte-tooltip">HTML</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-view rte-view-history" 
+                    title="View history (Ctrl+Shift+H)" 
+                    data-view="history" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">history</i>
+                <span class="rte-tooltip">History</span>
+            </button>
+        </div>
+        <!-- AI Enhance Button (admin only) -->
+        {% if is_admin_user %}
+        <div class="rte-toolbar-section rte-ai-enhance">
+            <button type="button" class="rte-btn rte-btn-ai" 
+                    title="AI Enhance Content" 
+                    data-action="aiEnhance" 
+                    data-editor="{{ editorId }}">
+                🤖
+                <span class="rte-tooltip">AI Enhance</span>
+            </button>
+        </div>
+        {% endif %}
+        
+        <!-- Divider -->
+        <div class="rte-toolbar-divider"></div>
+        
+        <!-- Undo/Redo Section -->
+        <div class="rte-toolbar-section rte-undo-redo">
+            <button type="button" class="rte-btn rte-btn-undo" 
+                    title="Undo (Ctrl+Z)" 
+                    data-command="undo" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">undo</i>
+                <span class="rte-tooltip">Undo</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-redo" 
+                    title="Redo (Ctrl+Y)" 
+                    data-command="redo" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">redo</i>
+                <span class="rte-tooltip">Redo</span>
+            </button>
+        </div>
+
+        <!-- Clipboard Section -->
+        <div class="rte-toolbar-section rte-clipboard">
+            <button type="button" class="rte-btn rte-btn-copy" 
+                    title="Copy selection (Ctrl+C)" 
+                    data-action="copyClipboard" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">content_copy</i>
+                <span class="rte-tooltip">Copy</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-paste" 
+                    title="Paste clipboard (Ctrl+V)" 
+                    data-action="pasteClipboard" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">content_paste</i>
+                <span class="rte-tooltip">Paste</span>
+            </button>
+        </div>
+        
+        <!-- Divider -->
+        <div class="rte-toolbar-divider"></div>
+        
+        <!-- Text Style Section -->
+        <div class="rte-toolbar-section rte-text-style">
+            <select class="rte-select rte-font-select" 
+                    title="Font family" 
+                    data-command="fontName" 
+                    data-editor="{{ editorId }}">
+                <option value="Arial">Arial</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Times New Roman" selected>Times New Roman</option>
+                <option value="Courier New">Courier New</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Comic Sans MS">Comic Sans MS</option>
+                <option value="Open Sans">Open Sans</option>
+                <option value="Lato">Lato</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Noto Sans Bengali">নটো স্‌্যান্স বাংলা</option>
+                <option value="SolaimanLipi">সোলাইমান লিপি</option>
+            </select>
+            
+             <input list="{{ editorId }}-font-sizes"
+                   class="rte-select rte-font-size-select"
+                   title="Font size (px)"
+                   data-command="fontSize"
+                   data-editor="{{ editorId }}"
+                   type="text"
+                   inputmode="numeric"
+                   pattern="[0-9]+"
+                   value="12">
+            <datalist id="{{ editorId }}-font-sizes">
+                <option value="8">8px</option>
+                <option value="10">10px</option>
+                <option value="12">12px</option>
+                <option value="14">14px</option>
+                <option value="18">18px</option>
+                <option value="24">24px</option>
+                <option value="32">32px</option>
+            </datalist>
+            
+            <label for="{{ editorId }}-heading-select" class="visually-hidden">Heading</label>
+            <select id="{{ editorId }}-heading-select" class="rte-select rte-heading-select" title="Block format" aria-label="Block format" data-editor="{{ editorId }}">
+                <option value="p">Paragraph</option>
+                <option value="h1">Heading 1</option>
+                <option value="h2">Heading 2</option>
+                <option value="h3">Heading 3</option>
+                <option value="h4">Heading 4</option>
+                <option value="h5">Heading 5</option>
+                <option value="h6">Heading 6</option>
+            </select>
+            <button type="button" class="rte-btn rte-btn-normal" 
+                    title="Remove formatting" 
+                    data-command="removeFormat" 
+                    data-editor="{{ editorId }}" aria-label="Remove formatting">
+                <i class="rte-icon material-icons">format_clear</i>
+                <span class="rte-tooltip">Normal</span>
+            </button>
+        </div>
+        
+        <!-- Divider -->
+        <div class="rte-toolbar-divider"></div>
+        
+        <!-- Formatting Section -->
+        <div class="rte-toolbar-section rte-formatting">
+            <button type="button" class="rte-btn rte-btn-bold" 
+                    title="Bold (Ctrl+B)" 
+                    data-command="bold" 
+                    {{ 'bold' in disabledButtons ? 'disabled aria-disabled="true"' : '' }}
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">format_bold</i>
+                <span class="rte-tooltip">Bold</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-italic" 
+                    title="Italic (Ctrl+I)" 
+                    data-command="italic" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">format_italic</i>
+                <span class="rte-tooltip">Italic</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-underline" 
+                    title="Underline (Ctrl+U)" 
+                    data-command="underline" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">format_underlined</i>
+                <span class="rte-tooltip">Underline</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-strikethrough" 
+                    title="Strikethrough" 
+                    data-command="strikeThrough" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">strikethrough_s</i>
+                <span class="rte-tooltip">Strikethrough</span>
+            </button>
+            
+            <div class="rte-color-wrapper">
+                  <input type="color" 
+                      id="{{ editorId }}-text-color" 
+                      class="rte-color-input rte-text-color-input" 
+                      data-command="foreColor" 
+                      data-editor="{{ editorId }}" 
+                      value="#000000"
+                      title="Click to change text color"
+                      aria-label="Text color">
+                <button type="button" class="rte-color-label" title="Text color" aria-label="Text color picker">
+                    <i class="rte-icon material-icons">format_color_text</i>
+                </button>
+            </div>
+            
+            <div class="rte-color-wrapper">
+                  <input type="color" 
+                      id="{{ editorId }}-bg-color" 
+                      class="rte-color-input rte-bg-color-input" 
+                      data-command="backColor" 
+                      data-editor="{{ editorId }}" 
+                      value="#FFFF00"
+                      title="Click to change background color"
+                      aria-label="Background color">
+                <button type="button" class="rte-color-label" title="Background color" aria-label="Background color picker">
+                    <i class="rte-icon material-icons">format_color_fill</i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Divider -->
+        <div class="rte-toolbar-divider"></div>
+        
+        <!-- Insert Section -->
+        <div class="rte-toolbar-section rte-insert">
+            <button type="button" class="rte-btn rte-btn-link" 
+                    title="Insert/Edit Link" 
+                    data-action="insertLink" 
+                    aria-haspopup="dialog"
+                    aria-expanded="false"
+                    aria-controls="{{ editorId }}-link-modal"
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">link</i>
+                <span class="rte-tooltip">Link</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-image" 
+                    title="Insert Image" 
+                    data-action="insertImage" 
+                    aria-haspopup="dialog"
+                    aria-expanded="false"
+                    aria-controls="{{ editorId }}-image-modal"
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">image</i>
+                <span class="rte-tooltip">Image</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-video" 
+                    title="Insert Video" 
+                    data-action="insertVideo" 
+                    aria-haspopup="dialog"
+                    aria-expanded="false"
+                    aria-controls="{{ editorId }}-video-modal"
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">smart_display</i>
+                <span class="rte-tooltip">Video</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-special-char" 
+                    title="Special characters" 
+                    data-action="insertSpecialChar" 
+                    aria-haspopup="dialog"
+                    aria-expanded="false"
+                    aria-controls="{{ editorId }}-special-char-modal"
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">functions</i>
+                <span class="rte-tooltip">Char</span>
+            </button>
+        </div>
+        
+        <!-- Divider -->
+        <div class="rte-toolbar-divider"></div>
+        
+        <!-- Alignment & Indentation Section -->
+        <div class="rte-toolbar-section rte-alignment">
+            <button type="button" class="rte-btn rte-btn-align-left" 
+                    title="Left align" 
+                    data-command="justifyLeft" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">format_align_left</i>
+                <span class="rte-tooltip">Left</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-align-center" 
+                    title="Center align" 
+                    data-command="justifyCenter" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">format_align_center</i>
+                <span class="rte-tooltip">Center</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-align-right" 
+                    title="Right align" 
+                    data-command="justifyRight" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">format_align_right</i>
+                <span class="rte-tooltip">Right</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-justify" 
+                    title="Justify" 
+                    data-command="justifyFull" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">format_align_justify</i>
+                <span class="rte-tooltip">Justify</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-indent" 
+                    title="Increase indent" 
+                    data-command="indent" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">format_indent_increase</i>
+                <span class="rte-tooltip">Indent</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-outdent" 
+                    title="Decrease indent" 
+                    data-command="outdent" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">format_indent_decrease</i>
+                <span class="rte-tooltip">Outdent</span>
+            </button>
+        </div>
+        
+        <!-- Divider -->
+        <div class="rte-toolbar-divider"></div>
+        
+        <!-- Lists & Blocks Section -->
+        <div class="rte-toolbar-section rte-lists">
+            <button type="button" class="rte-btn rte-btn-ul" 
+                    title="Bulleted list" 
+                    data-command="insertUnorderedList" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">format_list_bulleted</i>
+                <span class="rte-tooltip">Bullet list</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-ol" 
+                    title="Numbered list" 
+                    data-command="insertOrderedList" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">format_list_numbered</i>
+                <span class="rte-tooltip">Number list</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-quote" 
+                    title="Quote text" 
+                    data-command="formatBlock" 
+                    data-value="blockquote" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">format_quote</i>
+                <span class="rte-tooltip">Quote</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-hr" 
+                    title="Insert horizontal rule" 
+                    data-command="insertHorizontalRule" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">horizontal_rule</i>
+                <span class="rte-tooltip">HR</span>
+            </button>
+        </div>
+        
+        <!-- Divider -->
+        <div class="rte-toolbar-divider"></div>
+        
+        <!-- Direction Section -->
+        <div class="rte-toolbar-section rte-direction">
+            <button type="button" class="rte-btn rte-btn-ltr" 
+                    title="Left-to-right layout" 
+                    data-action="setLTR" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">format_ltr</i>
+                <span class="rte-tooltip">LTR</span>
+            </button>
+            <button type="button" class="rte-btn rte-btn-rtl" 
+                    title="Right-to-left layout" 
+                    data-action="setRTL" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">format_rtl</i>
+                <span class="rte-tooltip">RTL</span>
+            </button>
+        </div>
+        
+        <!-- Divider -->
+        <div class="rte-toolbar-divider"></div>
+        
+        <!-- Other Section -->
+        <div class="rte-toolbar-section rte-other">
+            <button type="button" class="rte-btn rte-btn-clear" 
+                    title="Clear formatting" 
+                    data-action="clearFormatting" 
+                    data-editor="{{ editorId }}">
+                <i class="rte-icon material-icons">clear_all</i>
+                <span class="rte-tooltip">Clear</span>
+            </button>
+            <div class="rte-more-dropdown">
+                <button type="button" class="rte-btn rte-btn-more" 
+                        title="More options" 
+                        data-action="toggleMore" 
+                        data-editor="{{ editorId }}">
+                    <i class="rte-icon material-icons">more_vert</i>
+                    <span class="rte-tooltip">More</span>
+                </button>
+                <div class="rte-more-menu" style="display: none;">
+                    <div class="rte-more-item">Custom extensions go here</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modals -->
+    
+    <!-- Link Modal -->
+    <div class="rte-modal rte-link-modal" id="{{ editorId }}-link-modal" style="display: none;" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="{{ editorId }}-link-modal-title">
+        <div class="rte-modal-content">
+            <div class="rte-modal-header">
+                <h3 id="{{ editorId }}-link-modal-title" data-rte-modal-title tabindex="-1">Insert Link</h3>
+                <button type="button" class="rte-modal-close" data-editor="{{ editorId }}" data-modal="link" aria-label="Close link dialog">&times;</button>
+            </div>
+            <div class="rte-modal-body">
+                <input type="text" placeholder="Enter URL" class="rte-modal-input rte-link-url" value="https://">
+                <input type="text" placeholder="Link text (optional)" class="rte-modal-input rte-link-text">
+                <label class="rte-checkbox">
+                    <input type="checkbox" class="rte-link-target">
+                    <span>Open in new window</span>
+                </label>
+            </div>
+            <div class="rte-modal-footer">
+                <button type="button" class="rte-btn-cancel" data-editor="{{ editorId }}" data-modal="link">Cancel</button>
+                <button type="button" class="rte-btn-submit rte-link-submit" data-editor="{{ editorId }}">Insert Link</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Image Modal -->
+    <div class="rte-modal rte-image-modal" id="{{ editorId }}-image-modal" style="display: none;" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="{{ editorId }}-image-modal-title">
+        <div class="rte-modal-content">
+            <div class="rte-modal-header">
+                <h3 id="{{ editorId }}-image-modal-title" data-rte-modal-title tabindex="-1">Insert Image</h3>
+                <button type="button" class="rte-modal-close" data-editor="{{ editorId }}" data-modal="image" aria-label="Close image dialog">&times;</button>
+            </div>
+            <div class="rte-modal-body">
+                <div class="rte-image-tabs">
+                    <button type="button" class="rte-image-tab-btn rte-image-tab-url active" data-tab="url">URL</button>
+                    <button type="button" class="rte-image-tab-btn rte-image-tab-upload" data-tab="upload">Upload</button>
+                </div>
+                
+                <div class="rte-image-tab-content rte-image-tab-url-content">
+                    <input type="text" placeholder="Enter image URL" class="rte-modal-input rte-image-url" value="https://">
+                    <div class="rte-image-preview-container">
+                        <img class="rte-image-preview" src="" alt="Preview" style="display: none;">
+                    </div>
+                </div>
+                
+                <div class="rte-image-tab-content rte-image-tab-upload-content" style="display: none;">
+                    <div class="rte-dropzone" data-editor="{{ editorId }}">
+                        <input type="file" class="rte-file-input" accept="image/*" style="display: none;" aria-label="Upload image">
+                        <p>Drag and drop image here or click to browse</p>
+                    </div>
+                    <div class="rte-image-preview-container">
+                        <div class="rte-image-preview-area" style="display:none;">
+                            <img class="rte-image-preview" src="" alt="Preview">
+                            <div class="rte-image-preview-actions">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="{{ editorId }}-image-cancel">Cancel</button>
+                                <button type="button" class="btn btn-sm btn-primary" id="{{ editorId }}-image-insert">Insert Image</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label>Width:</label>
+                    <input type="text" placeholder="e.g., 300px or 100%" class="rte-modal-input rte-image-width">
+                </div>
+                <div>
+                    <label>Height:</label>
+                    <input type="text" placeholder="e.g., 200px or auto" class="rte-modal-input rte-image-height">
+                </div>
+                <div>
+                    <label>Alt text:</label>
+                    <input type="text" placeholder="Image description" class="rte-modal-input rte-image-alt">
+                </div>
+            </div>
+            <div class="rte-modal-footer">
+                <button type="button" class="rte-btn-cancel" data-editor="{{ editorId }}" data-modal="image">Cancel</button>
+                <button type="button" class="rte-btn-submit rte-image-submit" data-editor="{{ editorId }}">Insert Image</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Video Modal -->
+    <div class="rte-modal rte-video-modal" id="{{ editorId }}-video-modal" style="display: none;" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="{{ editorId }}-video-modal-title">
+        <div class="rte-modal-content">
+            <div class="rte-modal-header">
+                <h3 id="{{ editorId }}-video-modal-title" data-rte-modal-title tabindex="-1">Insert Video</h3>
+                <button type="button" class="rte-modal-close" data-editor="{{ editorId }}" data-modal="video" aria-label="Close video dialog">&times;</button>
+            </div>
+            <div class="rte-modal-body">
+                <input type="text" placeholder="Enter video URL (YouTube, Vimeo, etc.)" class="rte-modal-input rte-video-url" value="https://">
+                <div class="rte-video-preview-container">
+                    <div class="rte-video-preview" style="display: none;"></div>
+                </div>
+            </div>
+            <div class="rte-modal-footer">
+                <button type="button" class="rte-btn-cancel" data-editor="{{ editorId }}" data-modal="video">Cancel</button>
+                <button type="button" class="rte-btn-submit rte-video-submit" data-editor="{{ editorId }}">Insert Video</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Special Characters Modal -->
+    <div class="rte-modal rte-special-char-modal" id="{{ editorId }}-special-char-modal" style="display: none;" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="{{ editorId }}-special-char-modal-title">
+        <div class="rte-modal-content">
+            <div class="rte-modal-header">
+                <h3 id="{{ editorId }}-special-char-modal-title" data-rte-modal-title tabindex="-1">Special Characters</h3>
+                <button type="button" class="rte-modal-close" data-editor="{{ editorId }}" data-modal="specialChar" aria-label="Close special characters dialog">&times;</button>
+            </div>
+            <div class="rte-modal-body">
+                <div class="rte-special-char-grid"></div>
+            </div>
+        </div>
+    </div>
+</div>

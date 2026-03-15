@@ -1,0 +1,22 @@
+{
+  "require": {
+    "php": "^8.2 || ^8.4",
+    "twig/twig": "^3.20",
+    "twig/intl-extra": "^3.0",
+    "ezyang/htmlpurifier": "^4.17 || ^4.18 || ^4.19",
+    "vlucas/phpdotenv": "^5.6 || ^5.0",
+    "phpmailer/phpmailer": "^6.9",
+    "endroid/qr-code": "^6.0 || ^6.1",
+    "erusev/parsedown": "^1.7.4 || ^1.8",
+    "kreait/firebase-php": "^7.0 || ^8.1",
+    "mpdf/mpdf": "^8.2",
+    "guzzlehttp/guzzle": "^7.8",
+    "symfony/dom-crawler": "^6.4",
+    "symfony/css-selector": "^6.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
+    }
+  }
+}

@@ -1,0 +1,136 @@
+{% extends "admin/layout.twig" %}
+{% block title %}All Pages{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-file-earmark-text"></i>
+        Pages Management
+      </div>
+      <div class="admin-page-subtitle">Manage all static pages</div>
+    </div>
+    <div class="d-flex justify-content-end mb-4">
+      <a href="/admin/pages/create" class="modern-btn modern-btn-primary">
+        <i class="bi bi-plus-circle me-1"></i> Add New Page
+      </a>
+    </div>
+    <!-- Filter/Search Form -->
+    <div class="admin-panel-card mb-4">
+      <div class="admin-panel-card-body">
+        <form class="row" method="get" action="">
+          <div class="col-md-4">
+            <div class="input-group">
+              <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+              <input type="text"
+                     name="search"
+                     value="{{ search|default("") }}"
+                     class="form-control"
+                     placeholder="Search by title...">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <select name="sort" class="form-select">
+              <option value="latest" {% if sort == 'latest' %}selected{% endif %}>â†‘ Latest</option>
+              <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>â†“ Oldest</option>
+              <option value="views" {% if sort == 'views' %}selected{% endif %}>ðŸ‘ Most Viewed</option>
+              <option value="impressions" {% if sort == 'impressions' %}selected{% endif %}>ðŸ“Š Most Impressions</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="modern-btn modern-btn-primary w-100">
+              <i class="bi bi-funnel-fill me-1"></i> Filter
+            </button>
+          </div>
+          <div class="col-md-1">
+            <select name="limit" class="form-select form-select-sm">
+              <option value="20" selected>20</option>
+              <option value="10">10</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- Pages Table -->
+    {% if pages is not empty %}
+      <div class="admin-panel-card">
+        <div class="admin-panel-card-body">
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>
+                    <i class="bi bi-type"></i> Title
+                  </th>
+                  <th>
+                    <i class="bi bi-link-45deg"></i> Slug
+                  </th>
+                  <th>
+                    <i class="bi bi-calendar-check"></i> Status
+                  </th>
+                  <th>
+                    <i class="bi bi-bar-chart"></i> Impressions
+                    <hr>
+                    <i class="bi bi-eye"></i> Views
+                  </th>
+                  <th class="text-center">
+                    <i class="bi bi-gear"></i> Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for page in pages %}
+                  <tr>
+                    <td class="fw-bold">{{ page.id }}</td>
+                    <td>{{ page.title }}</td>
+                    <td>
+                      <code class="text-muted">{{ page.slug ?? '-' }}</code>
+                    </td>
+                    <td>
+                      {% if page.published %}
+                        <span class="badge bg-success rounded-pill"><i class="bi bi-check2"></i> Published</span>
+                      {% else %}
+                        <span class="badge bg-warning text-surface-dark rounded-pill"><i class="bi bi-pencil"></i> Draft</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <i class="bi bi-bar-chart text-info me-1"></i>{{ page.impressions }}
+                      <hr>
+                      <i class="bi bi-eye text-success me-1"></i>{{ page.views }}
+                    </td>
+                    <td class="text-center">
+                      <a href="/admin/pages/view/{{ page.slug }}"
+                         class="modern-btn btn-sm btn-info me-1"
+                         title="View">
+                        <i class="bi bi-eye-fill"></i>
+                      </a>
+                      <a href="/admin/pages/edit?id={{ page.id }}"
+                         class="modern-btn btn-sm btn-warning me-1"
+                         title="Edit">
+                        <i class="bi bi-pencil-square"></i>
+                      </a>
+                      <a href="/admin/pages/delete?id={{ page.id }}"
+                         class="modern-btn btn-sm btn-danger"
+                         title="Delete"
+                         onclick="return confirm('Are you sure?');">
+                        <i class="bi bi-trash3-fill"></i>
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination -->
+          {% include "admin/partials/pagination.twig" %}
+        {% else %}
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle me-1"></i> No pages found.
+          </div>
+        {% endif %}
+      </div>
+    {% endblock %}

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Application Receipt #{{ application.id }}</title>
+  </head>
+  <body>
+    <div class="header">
+      <h1 class="title">Service Application Receipt</h1>
+      <div class="muted">
+        Receipt No: SRV-{{ application.id }}-{{ application.created_at|date("Ymd") }} |
+        Generated At: {{ generated_at }}
+      </div>
+    </div>
+    <div class="section">
+      <h3>Application Summary</h3>
+      <div class="grid">
+        <div class="card">
+          <div class="label">Application ID</div>
+          <div class="value">#{{ application.id }}</div>
+        </div>
+        <div class="card">
+          <div class="label">Submitted At</div>
+          <div class="value">{{ application.created_at|date("d M Y, h:i A") }}</div>
+        </div>
+        <div class="card">
+          <div class="label">Service</div>
+          <div class="value">{{ service.name|default(application.service_name|default('N/A') ) }}</div>
+        </div>
+        <div class="card">
+          <div class="label">Application Status</div>
+          <div class="value">{{ application.status|default("N/A") |title }}</div>
+        </div>
+        <div class="card">
+          <div class="label">Applicant Name</div>
+          <div class="value">{{ applicant.username|default(application.user_name|default('N/A') ) }}</div>
+        </div>
+        <div class="card">
+          <div class="label">Applicant Email</div>
+          <div class="value">{{ applicant.email|default(application.user_email|default('N/A') ) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <h3>Payment Information</h3>
+      <div class="grid">
+        <div class="card">
+          <div class="label">Payment Status</div>
+          <div class="value">{{ payment.status|default("N/A") |title }}</div>
+        </div>
+        <div class="card">
+          <div class="label">Transaction ID</div>
+          <div class="value mono">{{ payment.transaction_id|default(payment.paymentID|default('N/A') ) }}</div>
+        </div>
+        <div class="card">
+          <div class="label">Gateway / Method</div>
+          <div class="value">{{ payment.gateway|default(payment.method|default('N/A') ) }}</div>
+        </div>
+        <div class="card">
+          <div class="label">Amount</div>
+          <div class="value">
+            {% if payment.amount is defined and payment.amount is not same as('') and payment.amount is not same as(null) %}
+              {{ payment.amount }} {{ payment.currency|default("BDT") }}
+            {% else %}
+              N/A
+            {% endif %}
+          </div>
+        </div>
+        {% if payment.sender_number|default('') %}
+          <div class="card">
+            <div class="label">Sender Number</div>
+            <div class="value">{{ payment.sender_number }}</div>
+          </div>
+        {% endif %}
+        {% if payment.receiver_account|default('') %}
+          <div class="card">
+            <div class="label">Receiver Account</div>
+            <div class="value">{{ payment.receiver_account }}</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {% if application.application_data is iterable %}
+      <div class="section">
+        <h3>Submitted Data</h3>
+        <div class="grid">
+          {% for key, value in application.application_data %}
+            {% set normalized_key = key|lower %}
+            {% if normalized_key != '_payment' %}
+              {% set field_label = form_field_labels[key]|default(form_field_labels[normalized_key]|default('')) %}
+              {% if field_label == '' %}
+                {% set field_label = normalized_key == '_documents' ? 'Documents' : (key|replace({'_': ' ', '-': ' '})|title) %}
+              {% endif %}
+              <div class="card {% if normalized_key == '_documents' %}full{% endif %}">
+                <div class="label">{{ field_label }}</div>
+                <div class="value">
+                  {% if value is iterable %}
+                    {% if normalized_key == '_documents' %}
+                      {% if value|length > 0 %}
+                        <ul>
+                          {% for doc in value %}
+                            <li>
+                              {{ doc.name|default('Document ' ~ loop.index) }}
+                              {% if doc.url|default('') %}({{ doc.url }}){% endif %}
+                            </li>
+                          {% endfor %}
+                        </ul>
+                      {% else %}
+                        N/A
+                      {% endif %}
+                    {% else %}
+                      <pre>{{ value|json_encode(constant('JSON_UNESCAPED_UNICODE')) }}</pre>
+                    {% endif %}
+                  {% else %}
+                    {% if value is same as(null) or value is same as('') %}
+                      N/A
+                    {% elseif value is same as(true) %}
+                      Yes
+                    {% elseif value is same as(false) %}
+                      No
+                    {% else %}
+                      {{ value }}
+                    {% endif %}
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </body>
+</html>

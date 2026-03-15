@@ -1,0 +1,903 @@
+{% extends "admin/layout.twig" %}
+{% block title %}AI SYSTEM{% endblock %}
+{% set breadcrumbs = [
+    { 'label': 'Dashboard', 'url': '/admin' },
+    { 'label': 'AI SYSTEM', 'url': '/admin/ai-system' }
+] %}
+{% block stylesheets %}
+<style>
+/* AI System Enhanced Styling */
+.provider-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    transition: transform 0.2s ease;
+}
+.provider-icon-wrapper:hover {
+    transform: scale(1.05);
+}
+.provider-icon-wrapper.openrouter { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); }
+.provider-icon-wrapper.openai { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); }
+.provider-icon-wrapper.ollama { background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); }
+.provider-icon-wrapper.anthropic { background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); }
+.provider-icon-wrapper.fireworks { background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); }
+.provider-icon-wrapper.huggingface { background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); }
+.provider-icon-wrapper.kilo { background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); }
+
+/* Status badges */
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Card hover effects */
+.ai-card {
+    transition: all 0.3s ease;
+    border: none;
+}
+.ai-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Form controls */
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+
+/* Provider toggle switch */
+.toggle-provider {
+    cursor: pointer;
+    width: 44px;
+    height: 24px;
+}
+
+/* Model select animation */
+.model-refresh-btn {
+    transition: all 0.2s ease;
+}
+.model-refresh-btn:hover {
+    transform: rotate(180deg);
+}
+
+/* API key input */
+.api-key-group {
+    position: relative;
+}
+.api-key-group .toggle-password {
+    border-left: none;
+}
+.api-key-group .form-control {
+    border-right: none;
+}
+
+/* Ollama live status */
+.ollama-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.ollama-status::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #6c757d;
+}
+.ollama-status.online::before {
+    background: #198754;
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Section headers */
+.section-header {
+    position: relative;
+    padding-left: 16px;
+}
+.section-header::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 70%;
+    background: linear-gradient(180deg, #0d6efd 0%, #0dcaf0 100%);
+    border-radius: 2px;
+}
+
+/* Action buttons */
+.action-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+.action-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Help accordion */
+.accordion-button:not(.collapsed) {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    color: #0d6efd;
+}
+.accordion-button:focus {
+    box-shadow: none;
+    border-color: rgba(13, 110, 253, 0.25);
+}
+
+@media (max-width: 991.98px) {
+    .ai-system-table thead {
+        display: none;
+    }
+    .ai-system-table tbody,
+    .ai-system-table tr,
+    .ai-system-table td {
+        display: block;
+        width: 100%;
+    }
+    .ai-system-table tr {
+        border: 1px solid #e6e8ef;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 12px;
+        background: #fff;
+    }
+    .ai-system-table td {
+        padding: 8px 0 !important;
+        border: 0 !important;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        text-align: left;
+    }
+    .ai-system-table td::before {
+        content: attr(data-label);
+        font-size: 12px;
+        font-weight: 600;
+        color: #6c757d;
+        min-width: 110px;
+    }
+    .ai-system-table .btn-group {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .ai-system-table .provider-icon {
+        margin-right: 10px;
+    }
+    .ai-system-table .font-monospace {
+        word-break: break-all;
+    }
+}
+@media (max-width: 575.98px) {
+    #aiSettingsForm .row.g-3 > [class*="col-"] {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    #aiSettingsForm .form-control,
+    #aiSettingsForm .form-select,
+    #aiSettingsForm .form-range {
+        min-height: 44px;
+        font-size: 15px;
+    }
+    #aiSettingsForm .btn {
+        min-height: 44px;
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+    #aiSettingsForm .btn-link {
+        min-height: auto;
+    }
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="admin-page-header mb-4">
+        <div class="admin-page-title">
+            <i class="bi bi-robot"></i>
+            AI SYSTEM
+        </div>
+        <div class="admin-page-subtitle">Configure AI providers and settings for content generation</div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="alertContainer"></div>
+
+    <div class="row g-4">
+        <!-- Provider Management -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-diagram-3 me-2 text-primary"></i>AI Providers
+                    </h5>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addProviderModal">
+                        <i class="bi bi-plus-lg me-1"></i>Add Custom Provider
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle ai-system-table" id="providersTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Provider</th>
+                                    <th>Endpoint</th>
+                                    <th>Status</th>
+                                    <th>Multimodal</th>
+                                    <th>Default</th>
+                                    <th>API Key</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                              <tbody>
+                                  {% for provider in providers %}
+                                  <tr data-provider-id="{{ provider.id }}" data-provider-name="{{ provider.provider_name }}">
+                                      <td data-label="Provider">
+                                          <div class="d-flex align-items-center">
+                                            <div class="provider-icon me-3">
+                                                {% if provider.provider_name == 'openrouter' %}
+                                                    <i class="bi bi-globe fs-4 text-primary"></i>
+                                                {% elseif provider.provider_name == 'openai' %}
+                                                    <i class="bi bi-cpu fs-4 text-success"></i>
+                                                {% elseif provider.provider_name == 'anthropic' %}
+                                                    <i class="bi bi-person-badge fs-4 text-warning"></i>
+                                                {% elseif provider.provider_name == 'fireworks' %}
+                                                    <i class="bi bi-fire fs-4 text-danger"></i>
+                                                {% elseif provider.provider_name == 'kilo' %}
+                                                    <i class="bi bi-cpu fs-4 text-info"></i>
+                                                {% elseif provider.provider_name == 'ollama' %}
+                                                    <i class="bi bi-house fs-4 text-secondary"></i>
+                                                {% elseif provider.provider_name == 'huggingface' %}
+                                                    <i class="bi bi-robot fs-4 text-purple" style="color: #FF9D00;"></i>
+                                                {% else %}
+                                                    <i class="bi bi-gear fs-4 text-secondary"></i>
+                                                {% endif %}
+                                            </div>
+                                              <div>
+                                                  <strong>{{ provider.display_name }}</strong>
+                                                  {% if provider.provider_name == 'ollama' %}
+                                                      <span class="badge bg-secondary ms-2" id="ollamaLiveStatus">Checking...</span>
+                                                  {% endif %}
+                                                  {% if provider.provider_name == 'openrouter' %}
+                                                      {% if settings.openrouter_key_source == 'db' %}
+                                                          <span class="badge bg-success ms-1 openrouter-key-fix" data-provider-id="{{ provider.id }}" title="Click to edit OpenRouter key. Expiry: unknown">Key (DB)</span>
+                                                    {% elseif settings.openrouter_key_source == 'env' %}
+                                                        <span class="badge bg-info text-dark ms-1 openrouter-key-fix" data-provider-id="{{ provider.id }}" title="Click to edit OpenRouter key. Expiry: unknown">Key (env)</span>
+                                                    {% else %}
+                                                        <span class="badge bg-warning text-dark ms-1 openrouter-key-fix" data-provider-id="{{ provider.id }}" title="Click to edit OpenRouter key. Expiry: unknown">No key</span>
+                                                    {% endif %}
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm ms-1 openrouter-key-test-btn" data-provider-id="{{ provider.id }}" title="Test OpenRouter key">Test key</button>
+                                                    <span class="openrouter-key-test-result ms-2"></span>
+                                                {% endif %}
+                                                <br>
+                                                <small class="text-muted">{{ provider.provider_name }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td data-label="Endpoint">
+                                        {% set endpoint = provider.api_endpoint|default(provider.config.endpoint)|default('') %}
+                                        <small class="text-muted font-monospace" style="font-size: 11px;">{{ endpoint ?: 'N/A' }}</small>
+                                        {% if provider.provider_name == 'ollama' and endpoint in ['http://127.0.0.1:11434', 'http://localhost:11434'] %}
+                                            <span class="badge bg-info text-dark ms-1">Auto-detected</span>
+                                        {% endif %}
+                                    </td>
+                                    <td data-label="Status">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input toggle-provider" 
+                                                   type="checkbox" 
+                                                   data-provider-id="{{ provider.id }}"
+                                                   {% if provider.is_active %}checked{% endif %}>
+                                            <label class="form-check-label">
+                                                <span class="badge bg-{{ provider.is_active ? 'success' : 'secondary' }}">
+                                                    {{ provider.is_active ? 'Active' : 'Inactive' }}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </td>
+                                    <td data-label="Multimodal">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input toggle-multimodal" 
+                                                   type="checkbox" 
+                                                   data-provider-id="{{ provider.id }}"
+                                                   {% if provider.supports_multimodal %}checked{% endif %}>
+                                            <label class="form-check-label">
+                                                <span class="badge bg-{{ provider.supports_multimodal ? 'success' : 'secondary' }}">
+                                                    {{ provider.supports_multimodal ? 'Yes' : 'No' }}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </td>
+                                    <td data-label="Default">
+                                        {% if provider.is_default %}
+                                            <span class="badge bg-primary">
+                                                <i class="bi bi-check-circle me-1"></i>Default
+                                            </span>
+                                        {% else %}
+                                            <button class="btn btn-outline-primary btn-sm set-default-btn" 
+                                                    data-provider-id="{{ provider.id }}"
+                                                    {% if not provider.is_active %}disabled{% endif %}>
+                                                Set as Default
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                    <td data-label="API Key">
+                                        {% if provider.has_api_key %}
+                                            <span class="text-success">
+                                                <i class="bi bi-key-fill me-1"></i>Configured
+                                            </span>
+                                        {% else %}
+                                            <span class="text-warning">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Not Set
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td data-label="Actions">
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-info" 
+                                                    data-bs-toggle="tooltip" 
+                                                    title="Test Connection"
+                                                    data-action="test-connection"
+                                                    data-provider-id="{{ provider.id }}">
+                                                <i class="bi bi-plug"></i>
+                                            </button>
+                                            {% if provider.provider_name == 'huggingface' %}
+                                            <button class="btn btn-outline-secondary"
+                                                    data-bs-toggle="tooltip"
+                                                    title="Edit Hugging Face Config"
+                                                    data-action="edit-provider"
+                                                    data-provider-id="{{ provider.id }}">
+                                                <i class="bi bi-sliders"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if provider.provider_name == 'custom' and provider.sort_order >= 90 %}
+                                            <button class="btn btn-outline-danger" 
+                                                    data-bs-toggle="tooltip" 
+                                                    title="Delete"
+                                                    data-action="delete-provider"
+                                                    data-provider-id="{{ provider.id }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- General Settings -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-sliders me-2 text-primary"></i>General Settings
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form action="/admin/ai-system/save" method="POST" id="aiSettingsForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                        <div class="row g-3 mb-2">
+                            <div class="col-12">
+                                <div class="d-flex flex-wrap gap-2 align-items-center" id="aiSettingsStatusPills">
+                                    <span class="badge bg-secondary" id="aiStatusApiKey">API Key: Checking...</span>
+                                    <span class="badge bg-secondary" id="aiStatusActive">Provider: Checking...</span>
+                                    <span class="badge bg-secondary" id="aiStatusTested">Last tested: Not tested</span>
+                                </div>
+                                <small class="text-muted">Status reflects the selected frontend provider. Public chat uses this provider/model first; then active providers fall back by sort order. Puter.js is only used if all providers fail.</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Frontend AI (Assistant)</label>
+                                <select name="frontend_provider" class="form-select" id="frontendProviderSelect">
+                                    <option value="openrouter" {% if settings.frontend_provider == 'openrouter' or not settings.frontend_provider %}selected{% endif %}>OpenRouter (Default)</option>
+                                    <option value="fireworks" {% if settings.frontend_provider == 'fireworks' %}selected{% endif %}>Fireworks AI</option>
+                                    {% for provider in providers %}
+                                        {% if provider.is_active and provider.provider_name not in ['puter', 'openrouter', 'fireworks'] %}
+                                        <option value="{{ provider.provider_name }}" 
+                                                {% if settings.frontend_provider == provider.provider_name %}selected{% endif %}>
+                                            {{ provider.display_name }}
+                                        </option>
+                                        {% endif %}
+                                    {% endfor %}
+                                  </select>
+                                  <small class="text-muted">AI for website assistant chat</small>
+                                  <small class="text-muted d-none" id="hfTipsFrontend">Hugging Face tips: add <span class="font-monospace">:fastest</span>, <span class="font-monospace">:cheapest</span>, or <span class="font-monospace">:preferred</span> to auto-pick.</small>
+                                  {% if settings.frontend_provider == 'openrouter' %}
+                                  <div class="mt-1" id="openrouterKeyStatus">
+                                    {% if settings.openrouter_key_source == 'db' %}
+                                        <span class="badge bg-success">OpenRouter key configured (DB)</span>
+                                    {% elseif settings.openrouter_key_source == 'env' %}
+                                        <span class="badge bg-info text-dark">OpenRouter key configured (env)</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">OpenRouter key missing</span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Backend AI Provider (AutoContent)</label>
+                                <select name="backend_provider" class="form-select" id="backendProviderSelect">
+                                    {% for provider in providers %}
+                                        {% if provider.is_active and provider.provider_name != 'puter' %}
+                                        <option value="{{ provider.provider_name }}" 
+                                                {% if settings.backend_provider == provider.provider_name %}selected{% endif %}>
+                                            {{ provider.display_name }}
+                                        </option>
+                                        {% endif %}
+                                    {% endfor %}
+                                  </select>
+                                  <small class="text-muted">AI for content scraping</small>
+                                  <small class="text-muted d-none" id="hfTipsBackend">Hugging Face tips: add <span class="font-monospace">:fastest</span>, <span class="font-monospace">:cheapest</span>, or <span class="font-monospace">:preferred</span> to auto-pick.</small>
+                              </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <label class="form-label fw-semibold mb-1">Frontend Model (Assistant)</label>
+                                    <button type="button" class="btn btn-link btn-sm p-0" id="frontendModelRefresh">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                                    </button>
+                                </div>
+                                <select name="frontend_model" class="form-select" id="frontendModelSelect"></select>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="frontendModelMultimodal">
+                                    <label class="form-check-label" for="frontendModelMultimodal">Multimodal (images & rich content)</label>
+                                </div>
+                                <small class="text-muted">Model used for website assistant</small>
+                                <div class="text-danger small d-none" id="frontendModelWarning">No models available for this provider.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <label class="form-label fw-semibold mb-1">Backend Model (AutoContent)</label>
+                                    <button type="button" class="btn btn-link btn-sm p-0" id="backendModelRefresh">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                                    </button>
+                                </div>
+                                <select name="backend_model" class="form-select" id="backendModelSelect"></select>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="backendModelMultimodal">
+                                    <label class="form-check-label" for="backendModelMultimodal">Multimodal (images & rich content)</label>
+                                </div>
+                                <small class="text-muted">Model used for AutoContent</small>
+                                <div class="text-danger small d-none" id="backendModelWarning">No models available for this provider.</div>
+                            </div>
+                            <div class="col-12">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="resetModelDefaults">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset models to defaults
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Max Tokens</label>
+                                <input type="number" name="max_tokens" class="form-control" 
+                                       value="{{ settings.max_tokens|default(4000) }}" 
+                                       min="100" max="128000">
+                                <small class="text-muted">Maximum tokens in AI response</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Temperature</label>
+                                <input type="range" class="form-range" name="temperature" 
+                                       min="0" max="2" step="0.1" 
+                                       value="{{ settings.temperature|default(0.7) }}" 
+                                       id="temperatureRange">
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">Precise (0)</small>
+                                    <small class="text-muted" id="temperatureValue">{{ settings.temperature|default(0.7) }}</small>
+                                    <small class="text-muted">Creative (2)</small>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Default Author</label>
+                                <input type="text" name="default_author" class="form-control" 
+                                       value="{{ settings.default_author|default('BroxBhai AI') }}">
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h6 class="fw-bold mb-3"><i class="bi bi-robot me-2"></i>AI Instructions & Prompts</h6>
+                        <p class="text-muted small mb-3">
+                            Configure separate system prompts for Admin and Public AI Assistants. These settings are stored locally in the database.
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-shield-lock me-1 text-primary"></i>Admin Assistant System Prompt
+                                </label>
+                                <textarea name="admin_system_prompt" class="form-control" rows="4" 
+                                          placeholder="You are a helpful AI assistant for the admin panel...">{{ settings.admin_system_prompt|default('You are a helpful AI assistant for BroxBhai admin panel that can help with content management, user management, analytics, and website administration tasks.') }}</textarea>
+                                <small class="text-muted">Instructions for the Admin AI Assistant (used in admin panel)</small>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-globe me-1 text-success"></i>Public Assistant System Prompt
+                                </label>
+                                <textarea name="public_system_prompt" class="form-control" rows="4" 
+                                          placeholder="You are a helpful AI assistant for website visitors...">{{ settings.public_system_prompt|default('You are a helpful AI assistant for BroxBhai website visitors. You can answer questions about the website content, services, and provide general information.') }}</textarea>
+                                <small class="text-muted">Instructions for the Public AI Assistant (used on website)</small>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Custom Skills & Instructions</label>
+                                <textarea name="custom_instructions" class="form-control" rows="6" 
+                                          placeholder="Your custom skills, instructions, or knowledge...">{{ settings.custom_instructions|default('') }}</textarea>
+                                <small class="text-muted">Add custom skills, knowledge, or special instructions for the AI</small>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h6 class="fw-bold mb-3"><i class="bi bi-toggle-on me-2"></i>Feature Toggles</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="content_enhancement_enabled" 
+                                           id="contentEnhancement" 
+                                           {% if settings.content_enhancement_enabled|default(true) %}checked{% endif %}>
+                                    <label class="form-check-label fw-semibold" for="contentEnhancement">
+                                        AI Content Enhancement
+                                    </label>
+                                    <small class="d-block text-muted">Automatically enhance scraped content using AI</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="enable_fallback" 
+                                           id="enableFallback" 
+                                           {% if settings.enable_fallback|default(true) %}checked{% endif %}>
+                                    <label class="form-check-label fw-semibold" for="enableFallback">
+                                        Enable Fallback
+                                    </label>
+                                    <small class="d-block text-muted">Use other providers if the default fails</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="auto_publish_ai_content" 
+                                           id="autoPublishAi" 
+                                           {% if settings.auto_publish_ai_content|default(false) %}checked{% endif %}>
+                                    <label class="form-check-label fw-semibold" for="autoPublishAi">
+                                        Auto-Publish AI Content
+                                    </label>
+                                    <small class="d-block text-muted">Automatically publish AI-enhanced content</small>
+                                </div>
+                            </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Image Context Retention (messages)</label>
+                            <input type="number" name="image_context_max_messages" class="form-control" 
+                                   value="{{ settings.image_context_max_messages|default(10) }}" 
+                                   min="1" max="100" step="1">
+                            <small class="text-muted">Clear stored image context after this many messages.</small>
+                        </div>
+                            {% for provider in providers %}
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">{{ provider.display_name }} API Key</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control api-key-input" 
+                                           name="api_keys[{{ provider.provider_name }}]" 
+                                           {% if provider.provider_name == 'openrouter' %}id="apiKeyOpenRouter"{% endif %}
+                                           placeholder="{% if provider.has_api_key %}{{ provider.api_key_preview }} (click to update){% else %}Enter API key{% endif %}"
+                                           autocomplete="new-password">
+                                    <button class="btn btn-outline-secondary toggle-password" type="button">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">
+                                    {% if provider.has_api_key %}
+                                    <span class="text-success">✓ Configured</span>
+                                    {% else %}
+                                    <span class="text-warning">Not configured</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mt-4 d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-outline-secondary" onclick="location.reload()">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                            </button>
+                            <button type="submit" class="btn btn-primary px-4" id="aiSettingsSaveBtn">
+                                <i class="bi bi-save-fill me-1"></i>Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Info -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-info-circle me-2 text-primary"></i>Current Configuration
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if default_provider %}
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Frontend AI (Assistant)</small>
+                        <strong>{% if settings.frontend_provider == 'openrouter' %}OpenRouter{% elseif settings.frontend_provider == 'fireworks' %}Fireworks AI{% else %}{{ settings.frontend_provider|default('OpenRouter')|upper }}{% endif %}</strong>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Backend AI (AutoContent)</small>
+                        <strong>{{ settings.backend_provider|default(default_provider.provider_name)|upper }}</strong>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Default Model</small>
+                        <strong>Frontend: {{ settings.frontend_model|default(settings.default_model|default('openrouter/auto')) }}</strong>
+                        <div><strong>Backend: {{ settings.backend_model|default(settings.default_model|default('openrouter/auto')) }}</strong></div>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Max Tokens</small>
+                        <strong>{{ settings.max_tokens|default(4000) }}</strong>
+                    </div>
+                    <div>
+                        <small class="text-muted d-block">Temperature</small>
+                        <strong>{{ settings.temperature|default(0.7) }}</strong>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        No provider configured
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Provider Status -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-check-circle me-2 text-success"></i>Provider Status
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for provider in providers %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-{{ provider.is_active ? 'check-circle-fill text-success' : 'circle text-secondary' }} me-2"></i>
+                                {{ provider.display_name }}
+                            </div>
+                            <span class="badge bg-{{ provider.has_api_key ? 'success' : 'warning' }}">
+                                {{ provider.has_api_key ? 'Ready' : 'Needs Key' }}
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Help -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-question-circle me-2 text-info"></i>Help
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="helpAccordion">
+                      <div class="accordion-item border-0">
+                          <h2 class="accordion-header">
+                              <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#help1">
+                                  How do I get an API key?
+                              </button>
+                          </h2>
+                          <div id="help1" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                              <div class="accordion-body small text-muted p-3">
+                                  <p>Visit the provider's website to sign up and get an API key:</p>
+                                  <ul class="mb-0">
+                                      <li><a href="https://openrouter.ai/keys" target="_blank">OpenRouter</a></li>
+                                      <li><a href="https://platform.openai.com/api-keys" target="_blank">OpenAI</a></li>
+                                      <li><a href="https://console.anthropic.com/" target="_blank">Anthropic</a></li>
+                                      <li><a href="https://fireworks.ai/" target="_blank">Fireworks AI</a></li>
+                                      <li><a href="https://huggingface.co/settings/inference-tokens" target="_blank">Hugging Face</a></li>
+                                  </ul>
+                              </div>
+                          </div>
+                      </div>
+                      <div class="accordion-item border-0">
+                          <h2 class="accordion-header">
+                              <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#helpOllama">
+                                  Ollama (Local) Quick Start
+                              </button>
+                          </h2>
+                          <div id="helpOllama" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                              <div class="accordion-body small text-muted p-3">
+                                  <p class="mb-2">Local Ollama does not require an API key. Use the OpenAI-compatible endpoint:</p>
+                                  <pre class="mb-0"><code>curl -X POST http://localhost:11434/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"llama3.2","messages":[{"role":"user","content":"Hello"}]}'</code></pre>
+                              </div>
+                          </div>
+                      </div>
+                        <div class="accordion-item border-0">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#help2">
+                                    What is Temperature?
+                                </button>
+                            </h2>
+                            <div id="help2" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                                <div class="accordion-body small text-muted p-3">
+                                    Temperature controls randomness. Lower values (0-0.3) produce more focused, deterministic responses. Higher values (0.7-1.0) produce more creative but less predictable outputs.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item border-0">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#help3">
+                                    API Keys Storage
+                                </button>
+                            </h2>
+                            <div id="help3" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                                <div class="accordion-body small text-muted p-3">
+                                    API keys are stored in the database and should be configured via the form above.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Provider Modal -->
+<div class="modal fade" id="addProviderModal" tabindex="-1" aria-labelledby="addProviderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="/admin/ai-system/add-provider" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addProviderModalLabel">
+                        <i class="bi bi-plus-circle me-2"></i>Add Custom Provider
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Provider Name</label>
+                        <input type="text" name="display_name" class="form-control" required
+                               placeholder="e.g., My Custom AI">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description (optional)</label>
+                        <input type="text" name="description" class="form-control"
+                               placeholder="Brief description">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">API Endpoint</label>
+                        <input type="url" name="api_endpoint" class="form-control" required
+                               placeholder="https://api.example.com/v1/chat/completions">
+                        <small class="text-muted">OpenAI-compatible endpoint</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">API Key (optional)</label>
+                        <input type="password" name="api_key" class="form-control"
+                               placeholder="Enter API key if needed">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Provider</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Provider Modal (Hugging Face Manual Config) -->
+<div class="modal fade" id="editProviderModal" tabindex="-1" aria-labelledby="editProviderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProviderModalLabel">
+                    <i class="bi bi-sliders me-2"></i>Hugging Face Manual Config
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editProviderId" value="">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">API Endpoint</label>
+                    <input type="url" class="form-control" id="editProviderEndpoint"
+                           placeholder="https://router.huggingface.co/v1/chat/completions">
+                    <small class="text-muted">OpenAI-compatible endpoint for Hugging Face.</small>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Supported Models (JSON map)</label>
+                    <textarea class="form-control font-monospace" id="editProviderModels" rows="8"
+                              placeholder='{"model/id":"Label"}'></textarea>
+                    <small class="text-muted">Format: JSON object of model_id to label.</small>
+                    <div class="text-danger small d-none" id="editProviderError">Invalid JSON.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveProviderConfig">
+                    <i class="bi bi-save me-1"></i>Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Connection Modal -->
+  <div class="modal fade" id="testConnectionModal" tabindex="-1" aria-labelledby="testConnectionModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title" id="testConnectionModalLabel">
+                      <i class="bi bi-plug me-2"></i>Test Connection
+                  </h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                  <div class="alert alert-warning d-none small mb-2" id="testConnectionWarning"></div>
+                  <div class="mb-3">
+                      <label class="form-label">Select Provider</label>
+                      <select class="form-select" id="testProviderSelect"></select>
+                  </div>
+                  <div class="mb-3">
+                      <label class="form-label">Select Model</label>
+                      <select class="form-select" id="testModelSelect">
+                          <option value="">Loading models...</option>
+                    </select>
+                </div>
+                <div id="testConnectionResult">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Testing...</span>
+                        </div>
+                        <p class="mt-2">Testing connection...</p>
+                    </div>
+                </div>
+            </div>
+              <div class="modal-footer">
+                  <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                  <button type="button" class="btn btn-primary" data-action="run-test">
+                      <i class="bi bi-plug me-1"></i>Run Test
+                  </button>
+              </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<div id="aiSystemData"
+     class="d-none"
+     data-providers='{{ providers|json_encode|e("html_attr") }}'
+     data-settings='{{ {
+        "frontend_model": settings.frontend_model|default(""),
+        "backend_model": settings.backend_model|default(""),
+        "default_model": settings.default_model|default(""),
+        "csrf_token": csrf_token
+     }|json_encode|e("html_attr") }}'></div>
+<script src="{{ base_url }}/assets/js/ai-system-admin.js"></script>
+{% endblock %}

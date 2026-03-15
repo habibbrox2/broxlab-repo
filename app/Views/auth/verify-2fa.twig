@@ -1,0 +1,93 @@
+{% extends "layout.twig" %}
+{% import '_macros/flash.twig' as flash_macros %}
+{% block title %}Two-Factor Authentication - {{ app_settings.site_name|default("BroxBhai") }}{% endblock %}
+{% block content %}
+  <div class="auth-page auth-page-shell">
+    <div class="auth-shell auth-shell-md">
+      <div class="auth-card auth-card--shell">
+        <div class="auth-card-header auth-shell-header text-center">
+          <div class="auth-shell-icon text-white mb-2">
+            <i class="bi bi-shield-fill"></i>
+          </div>
+          <h2 class="auth-shell-title mb-2">Two-Factor Authentication</h2>
+          <p class="auth-shell-subtitle mb-0">Enter the 6-digit code from your authenticator app</p>
+        </div>
+        <div class="auth-card-body auth-shell-body">
+            {% if error %}{{ flash_macros.render_flash({ message: error, type: 'danger' }) }}{% endif %}
+            <form id="verify2faForm" novalidate>
+              <!-- CSRF Token -->
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <!-- 2FA Code Field -->
+              <div class="mb-4">
+                <label for="code" class="form-label">6-Digit Code</label>
+                <input type="text"
+                       class="form-control form-control-lg text-center"
+                       id="code"
+                       name="code"
+                       placeholder="000000"
+                       maxlength="6"
+                       pattern="[0-9]{6}"
+                       required
+                       inputmode="numeric">
+                <div class="form-text">Check your authenticator app for the code</div>
+                <div class="invalid-feedback">Please enter a valid 6-digit code.</div>
+              </div>
+              <!-- Submit Button -->
+              <button type="submit"
+                      class="btn btn-primary w-100 mb-3 btn-lg"
+                      id="submitBtn">
+                <span id="btnText">Verify Code</span>
+                <span id="spinner"
+                      class="spinner-border spinner-border-sm ms-2 auth-hidden"
+                      role="status"
+                      aria-hidden="true"></span>
+              </button>
+            </form>
+            <!-- Backup Code Option -->
+            <hr class="my-4">
+            <div class="text-center">
+              <p class="mb-3 text-muted small">Don't have access to your authenticator?</p>
+              <a href="#"
+                 class="btn btn-outline-secondary w-100"
+                 id="backupCodeToggle">
+                <i class="bi bi-key-fill me-2"></i>Use Backup Code
+              </a>
+            </div>
+            <!-- Backup Code Form (Hidden) -->
+            <form id="backupCodeForm" class="mt-3 auth-hidden" novalidate>
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <div class="mb-3">
+                <label for="backup_code" class="form-label">Backup Code</label>
+                <input type="text"
+                       class="form-control"
+                       id="backup_code"
+                       name="backup_code"
+                       placeholder="Enter a backup code"
+                       required>
+                <small class="form-text text-muted">Backup codes are 8 characters long</small>
+              </div>
+              <button type="submit" class="btn btn-secondary w-100">Verify Backup Code</button>
+            </form>
+            <!-- Help -->
+            <div class="auth-footer mt-4">
+              <p class="text-muted mb-0">
+                <a href="/login" class="text-primary">Back to login</a>
+              </p>
+            </div>
+        </div>
+      </div>
+      <div class="auth-shell-notes">
+        <div class="alert alert-info auth-shell-note" role="alert">
+          <h6 class="alert-heading">
+            <i class="bi bi-info-circle-fill me-2"></i>What is 2FA?
+          </h6>
+          <p class="mb-0 small">
+            Two-Factor Authentication adds an extra layer of security to your account by requiring a code
+            from your authenticator app in addition to your password.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  {# Inline script removed - use external JavaScript file instead #}
+{% endblock %}

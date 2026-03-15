@@ -1,0 +1,14 @@
+{# Offline draft recovery partial
+   Place this partial inside your admin layout or content form container so users see a recovery option.
+   The element must be present with id `offline-draft-recover-placeholder` for the JS integration to use it.
+#}
+<div id="offline-draft-recover-placeholder" class="d-none alert alert-warning d-flex justify-content-between align-items-center inl-a-0040">
+  <div>
+    <strong>Unsynced draft available</strong>
+    <div class="inl-a-0041">Saved <span class="draft-saved-at"></span></div>
+  </div>
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-sm btn-primary restore-draft-btn">Restore</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary dismiss-draft-btn">Dismiss</button>
+  </div>
+</div>

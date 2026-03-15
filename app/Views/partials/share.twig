@@ -1,0 +1,114 @@
+{# Share This Component #}
+<div class="share-section card border-0 rounded-4 shadow-sm mb-4 bg-light p-4">
+    <h5 class="mb-3 fw-bold d-flex align-items-center">
+        <i class="bi bi-share-fill me-2 text-primary"></i> Share This
+    </h5>
+    
+    <div class="share-buttons d-flex flex-wrap gap-2">
+        {# Twitter/X Share #}
+        <a href="https://twitter.com/intent/tweet?url={{ url|default(request.url) }}&text={{ title|default('Check this out')|url_encode }}"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="btn btn-sm btn-twitter rounded-pill transition-all hover-scale"
+           title="Share on Twitter/X"
+           onclick="window.open(this.href, 'twitter-share', 'width=600,height=400'); return false;">
+            <i class="bi bi-twitter-x me-2"></i>Twitter/X
+        </a>
+
+        {# LinkedIn Share #}
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ url|default(request.url) }}"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="btn btn-sm btn-linkedin rounded-pill transition-all hover-scale"
+           title="Share on LinkedIn"
+           onclick="window.open(this.href, 'linkedin-share', 'width=600,height=400'); return false;">
+            <i class="bi bi-linkedin me-2"></i>LinkedIn
+        </a>
+
+        {# WhatsApp Share #}
+        <a href="https://wa.me/?text={{ title|default('Check this out')|url_encode }}%20{{ url|default(request.url) }}"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="btn btn-sm btn-whatsapp rounded-pill transition-all hover-scale"
+           title="Share on WhatsApp"
+           onclick="window.open(this.href, 'whatsapp-share', 'width=600,height=400'); return false;">
+            <i class="bi bi-whatsapp me-2"></i>WhatsApp
+        </a>
+
+        {# Telegram Share #}
+        <a href="https://t.me/share/url?url={{ url|default(request.url) }}&text={{ title|default('Check this out')|url_encode }}"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="btn btn-sm btn-telegram rounded-pill transition-all hover-scale"
+           title="Share on Telegram"
+           onclick="window.open(this.href, 'telegram-share', 'width=600,height=400'); return false;">
+            <i class="bi bi-telegram me-2"></i>Telegram
+        </a>
+
+        {# Email Share #}
+        <a href="mailto:?subject={{ title|default('Check this out')|url_encode }}&body={{ description|default('I thought you might like this')|url_encode }}%0D%0A{{ url|default(request.url) }}"
+           class="btn btn-sm btn-email rounded-pill transition-all hover-scale"
+           title="Share via Email">
+            <i class="bi bi-envelope-fill me-2"></i>Email
+        </a>
+
+        {# Copy Link #}
+        <button type="button" 
+                class="btn btn-sm btn-outline-secondary rounded-pill transition-all hover-scale"
+                id="copyLinkBtn"
+                title="Copy link to clipboard"
+                onclick="copyToClipboard('{{ url|default(request.url) }}')">
+            <i class="bi bi-link-45deg me-2"></i>Copy Link
+        </button>
+    </div>
+
+    <small class="text-muted d-block mt-3">
+        <i class="bi bi-info-circle-fill me-1"></i>Share this content with your friends and followers
+    </small>
+</div>
+
+<script>
+    function copyToClipboard(text) {
+        const btn = document.getElementById('copyLinkBtn');
+        
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                showShareCopySuccess(btn);
+            }).catch(function(err) {
+                fallbackShareCopy(text, btn);
+            });
+        } else {
+            fallbackShareCopy(text, btn);
+        }
+    }
+    
+    function fallbackShareCopy(text, btn) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            showShareCopySuccess(btn);
+        } catch (err) {
+            alert('Failed to copy link. Please try again.');
+        }
+        document.body.removeChild(textarea);
+    }
+    
+    function showShareCopySuccess(btn) {
+        if (!btn) return;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check2-circle me-2"></i>Copied!';
+        btn.classList.add('btn-success');
+        btn.classList.remove('btn-outline-secondary');
+        
+        setTimeout(function() {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-secondary');
+        }, 2000);
+    }
+</script>

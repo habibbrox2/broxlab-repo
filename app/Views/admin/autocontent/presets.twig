@@ -1,0 +1,850 @@
+{% extends 'admin/layout.twig' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-bookmark-star me-2"></i>Website Presets
+                </h1>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#presetModal">
+                    <i class="bi bi-plus-lg me-1"></i>Add New Preset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Presets Grid -->
+    <div class="row g-4">
+        {% for preset in presets %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ preset.name }}</h5>
+                        <code class="small">{{ preset.preset_key }}</code>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="small text-muted mb-2">List Selectors:</div>
+                    <ul class="list-unstyled small mb-3">
+                        {% if preset.selector_list_container %}<li><strong>Container:</strong> <code>{{ preset.selector_list_container }}</code></li>{% endif %}
+                        {% if preset.selector_list_item %}<li><strong>Item:</strong> <code>{{ preset.selector_list_item }}</code></li>{% endif %}
+                        {% if preset.selector_list_title %}<li><strong>Title:</strong> <code>{{ preset.selector_list_title }}</code></li>{% endif %}
+                        {% if preset.selector_list_link %}<li><strong>Link:</strong> <code>{{ preset.selector_list_link }}</code></li>{% endif %}
+                    </ul>
+                    <div class="small text-muted mb-2">Detail Selectors:</div>
+                    <ul class="list-unstyled small">
+                        {% if preset.selector_title %}<li><strong>Title:</strong> <code>{{ preset.selector_title }}</code></li>{% endif %}
+                        {% if preset.selector_content %}<li><strong>Content:</strong> <code>{{ preset.selector_content }}</code></li>{% endif %}
+                        {% if preset.selector_image %}<li><strong>Image:</strong> <code>{{ preset.selector_image }}</code></li>{% endif %}
+                    </ul>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary flex-grow-1" 
+                                onclick="editPreset({{ preset.id }})">
+                            <i class="bi bi-pencil me-1"></i>Edit
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" 
+                                onclick="previewPreset({{ preset.id }})">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" 
+                                onclick="deletePreset({{ preset.id }}, '{{ preset.name|escape('js') }}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>No presets found. Click "Add New Preset" to create one.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Live Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-eye me-2"></i>Live Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <label class="form-label">Test URL *</label>
+                        <input type="url" class="form-control" id="preview_url" required 
+                               placeholder="https://example.com/articles">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Preview Type</label>
+                        <select class="form-select" id="preview_type">
+                            <option value="list">List Page</option>
+                            <option value="detail">Detail Page</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-primary" id="btn-preview" onclick="runPreview()">
+                        <i class="bi bi-play me-1"></i>Run Preview
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary ms-2" onclick="applyToForm()">
+                        <i class="bi bi-check2-all me-1"></i>Apply to Form
+                    </button>
+                </div>
+                
+                <div id="previewLoading" class="text-center py-4 d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Fetching and parsing page...</p>
+                </div>
+                
+                <div id="previewError" class="alert alert-danger d-none"></div>
+                
+                <div id="previewResults" class="d-none">
+                    <hr>
+                    <h6>Preview Results:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <strong>Extracted Data</strong>
+                                </div>
+                                <div class="card-body" id="extractedData">
+                                    <!-- Extracted data will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <strong>Selector Matches</strong>
+                                </div>
+                                <div class="card-body" id="selectorMatches">
+                                    <!-- Selector match info will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <strong>Raw HTML Preview</strong>
+                        </div>
+                        <div class="card-body">
+                            <pre class="bg-dark text-light p-3 rounded small" style="max-height: 300px; overflow-y: auto;" id="rawHtmlPreview"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Detect and Save Modal -->
+<div class="modal fade" id="aiDetectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-magic me-2"></i>AI Detect Selectors</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Website URL *</label>
+                    <input type="url" class="form-control" id="ai_url" required 
+                           placeholder="https://example.com/articles">
+                    <div class="invalid-feedback">Please enter a valid URL</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Preset Name *</label>
+                    <input type="text" class="form-control" id="ai_preset_name" required 
+                           placeholder="e.g., Example News">
+                    <div class="invalid-feedback">Please enter a preset name</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Preset Key *</label>
+                    <input type="text" class="form-control" id="ai_preset_key" required 
+                           placeholder="e.g., examplenews" pattern="[a-z0-9-]+">
+                    <div class="invalid-feedback">Use lowercase letters, numbers, and hyphens only</div>
+                    <small class="text-muted">This will be used as the identifier for this preset</small>
+                </div>
+                
+                <div id="aiResults" class="d-none">
+                    <hr>
+                    <h6>Detected Selectors:</h6>
+                    <div class="row g-2" id="detectedSelectors">
+                        <!-- Detected selectors will be shown here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btn-detect" onclick="runAiDetect()">
+                    <i class="bi bi-magic me-1"></i>Detect Selectors
+                </button>
+                <button type="button" class="btn btn-success d-none" id="btn-save-preset" onclick="saveAiDetectedPreset()">
+                    <i class="bi bi-check-lg me-1"></i>Save Preset
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preset Form Modal -->
+<div class="modal fade" id="presetModal" tabindex="-1" aria-labelledby="presetModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="presetModalLabel">Add New Preset</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="presetForm">
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Preset Name *</label>
+                            <input type="text" class="form-control" name="name" id="preset_name" required 
+                                   placeholder="e.g., Prothom Alo" oninput="validateField(this)">
+                            <div class="invalid-feedback">Preset name is required</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Preset Key *</label>
+                            <input type="text" class="form-control" name="preset_key" id="preset_key" required 
+                                   placeholder="e.g., prothomalo" pattern="[a-z0-9-]+" oninput="validateField(this)">
+                            <div class="invalid-feedback">Use lowercase letters, numbers, and hyphens only</div>
+                            <small class="text-muted">Lowercase letters, numbers, and hyphens only</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Test URL (for AI detection)</label>
+                        <div class="input-group">
+                            <input type="url" class="form-control" id="preset_test_url" placeholder="https://example.com/article">
+                            <button type="button" class="btn btn-outline-info" onclick="aiDetectForPreset()">
+                                <i class="bi bi-magic"></i> AI Detect
+                            </button>
+                        </div>
+                        <small class="text-muted">Enter a URL and click AI Detect to automatically find selectors</small>
+                    </div>
+
+                    <hr>
+                    <h6 class="mb-3">List Page Selectors</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">List Container</label>
+                            <input type="text" class="form-control" name="selector_list_container" id="selector_list_container" placeholder=".news-list">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">List Item</label>
+                            <input type="text" class="form-control" name="selector_list_item" id="selector_list_item" placeholder=".news-item, article">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">List Title</label>
+                            <input type="text" class="form-control" name="selector_list_title" id="selector_list_title" placeholder="h3 a, .title a">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">List Link</label>
+                            <input type="text" class="form-control" name="selector_list_link" id="selector_list_link" placeholder="a, a[href]">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">List Date</label>
+                            <input type="text" class="form-control" name="selector_list_date" id="selector_list_date" placeholder="time, .date">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">List Image</label>
+                            <input type="text" class="form-control" name="selector_list_image" id="selector_list_image" placeholder="img, .thumbnail img">
+                        </div>
+                    </div>
+
+                    <hr>
+                    <h6 class="mb-3">Detail Page Selectors</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-control" name="selector_title" id="selector_title" placeholder="h1, .article-title">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Image</label>
+                            <input type="text" class="form-control" name="selector_image" id="selector_image" placeholder="meta[property='og:image'], .featured img">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Content</label>
+                            <input type="text" class="form-control" name="selector_content" id="selector_content" placeholder=".content, article">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Excerpt</label>
+                            <input type="text" class="form-control" name="selector_excerpt" id="selector_excerpt" placeholder="meta[name='description']">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Date</label>
+                            <input type="text" class="form-control" name="selector_date" id="selector_date" placeholder="time[datetime]">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Author</label>
+                            <input type="text" class="form-control" name="selector_author" id="selector_author" placeholder=".author, .byline">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Pagination</label>
+                            <input type="text" class="form-control" name="selector_pagination" id="selector_pagination" placeholder=".pagination a, .next a">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Read More</label>
+                            <input type="text" class="form-control" name="selector_read_more" id="selector_read_more" placeholder=".read-more a">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Category</label>
+                            <input type="text" class="form-control" name="selector_category" id="selector_category" placeholder=".category, .breadcrumbs">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tags</label>
+                            <input type="text" class="form-control" name="selector_tags" id="selector_tags" placeholder=".tags, .tag-list">
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="id" value="0">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save">
+                        <i class="bi bi-check-lg me-1"></i>Save Preset
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let presets = {{ presets|json_encode|raw }};
+let detectedSelectors = {};
+
+function showPresetMessage(message, status, duration) {
+    if (!message) {
+        return Promise.resolve();
+    }
+
+    if (typeof window.showMessage === 'function') {
+        return window.showMessage(message, status || 'info', duration || 4000);
+    }
+
+    return Promise.resolve();
+}
+
+function showPresetAlert(message, title, status) {
+    if (!message) {
+        return Promise.resolve();
+    }
+
+    if (typeof window.showAlert === 'function') {
+        return window.showAlert(message, title || 'Notice', status || 'info');
+    }
+
+    return Promise.resolve();
+}
+
+function confirmPresetAction(message, title, status, options) {
+    if (typeof window.showConfirm === 'function') {
+        return window.showConfirm(message, title || 'Confirm', status || 'warning', options || {});
+    }
+
+    return Promise.resolve(true);
+}
+
+// Inline validation function
+function validateField(input) {
+    if (input.checkValidity()) {
+        input.classList.remove('is-invalid');
+        input.classList.add('is-valid');
+    } else {
+        input.classList.remove('is-valid');
+        input.classList.add('is-invalid');
+    }
+}
+
+// AI Detect and Save directly
+function aiDetectAndSave() {
+    new bootstrap.Modal(document.getElementById('aiDetectModal')).show();
+}
+
+async function runAiDetect() {
+    const urlInput = document.getElementById('ai_url');
+    const nameInput = document.getElementById('ai_preset_name');
+    const keyInput = document.getElementById('ai_preset_key');
+    
+    // Validate
+    let valid = true;
+    if (!urlInput.value || !urlInput.checkValidity()) {
+        urlInput.classList.add('is-invalid');
+        valid = false;
+    }
+    if (!nameInput.value) {
+        nameInput.classList.add('is-invalid');
+        valid = false;
+    }
+    if (!keyInput.value || !keyInput.checkValidity()) {
+        keyInput.classList.add('is-invalid');
+        valid = false;
+    }
+    
+    if (!valid) return;
+    
+    const btn = document.getElementById('btn-detect');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Detecting...';
+    
+    try {
+        const formData = new FormData();
+        formData.append('url', urlInput.value);
+        
+        const response = await fetch('/admin/autocontent/api/ai-detect-selectors', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.selectors) {
+            detectedSelectors = data.selectors;
+            
+            // Show results
+            const resultsDiv = document.getElementById('aiResults');
+            const selectorsDiv = document.getElementById('detectedSelectors');
+            resultsDiv.classList.remove('d-none');
+            selectorsDiv.innerHTML = '';
+            
+            for (const [key, value] of Object.entries(data.selectors)) {
+                if (value) {
+                    selectorsDiv.innerHTML += `
+                        <div class="col-md-6">
+                            <div class="p-2 bg-light rounded">
+                                <strong>${key}:</strong>
+                                <code class="d-block text-truncate">${value}</code>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Show save button
+            document.getElementById('btn-detect').classList.add('d-none');
+            document.getElementById('btn-save-preset').classList.remove('d-none');
+        } else {
+            await showPresetAlert(data.message || 'Failed to detect selectors', 'Detection Failed', 'danger');
+        }
+    } catch (error) {
+        console.error(error);
+        await showPresetAlert('Error detecting selectors', 'Detection Failed', 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-magic me-1"></i>Detect Selectors';
+    }
+}
+
+async function saveAiDetectedPreset() {
+    const name = document.getElementById('ai_preset_name').value;
+    const key = document.getElementById('ai_preset_key').value;
+    
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('preset_key', key);
+    formData.append('selector_list_container', detectedSelectors.list_container || '');
+    formData.append('selector_list_item', detectedSelectors.list_item || '');
+    formData.append('selector_list_title', detectedSelectors.list_title || '');
+    formData.append('selector_list_link', detectedSelectors.list_link || '');
+    formData.append('selector_list_date', detectedSelectors.list_date || '');
+    formData.append('selector_list_image', detectedSelectors.list_image || '');
+    formData.append('selector_title', detectedSelectors.title || '');
+    formData.append('selector_content', detectedSelectors.content || '');
+    formData.append('selector_image', detectedSelectors.image || '');
+    formData.append('selector_excerpt', detectedSelectors.excerpt || '');
+    formData.append('selector_date', detectedSelectors.date || '');
+    formData.append('selector_author', detectedSelectors.author || '');
+    
+    try {
+        const response = await fetch('/admin/autocontent/api/save-preset', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('aiDetectModal')).hide();
+            location.reload();
+        } else {
+            await showPresetAlert(data.message || 'Failed to save preset', 'Save Failed', 'danger');
+        }
+    } catch (error) {
+        console.error(error);
+        await showPresetAlert('Error saving preset', 'Save Failed', 'danger');
+    }
+}
+
+function editPreset(id) {
+    const preset = presets.find(p => p.id === id);
+    if (!preset) return;
+
+    document.getElementById('presetModalLabel').textContent = 'Edit Preset';
+    document.querySelector('#presetForm input[name="id"]').value = preset.id;
+    document.querySelector('#presetForm input[name="name"]').value = preset.name;
+    document.querySelector('#presetForm input[name="preset_key"]').value = preset.preset_key;
+    document.querySelector('#presetForm input[name="preset_key"]').readOnly = true;
+    
+    // List selectors
+    document.querySelector('#presetForm input[name="selector_list_container"]').value = preset.selector_list_container || '';
+    document.querySelector('#presetForm input[name="selector_list_item"]').value = preset.selector_list_item || '';
+    document.querySelector('#presetForm input[name="selector_list_title"]').value = preset.selector_list_title || '';
+    document.querySelector('#presetForm input[name="selector_list_link"]').value = preset.selector_list_link || '';
+    document.querySelector('#presetForm input[name="selector_list_date"]').value = preset.selector_list_date || '';
+    document.querySelector('#presetForm input[name="selector_list_image"]').value = preset.selector_list_image || '';
+    
+    // Detail selectors
+    document.querySelector('#presetForm input[name="selector_title"]').value = preset.selector_title || '';
+    document.querySelector('#presetForm input[name="selector_content"]').value = preset.selector_content || '';
+    document.querySelector('#presetForm input[name="selector_image"]').value = preset.selector_image || '';
+    document.querySelector('#presetForm input[name="selector_excerpt"]').value = preset.selector_excerpt || '';
+    document.querySelector('#presetForm input[name="selector_date"]').value = preset.selector_date || '';
+    document.querySelector('#presetForm input[name="selector_author"]').value = preset.selector_author || '';
+    document.querySelector('#presetForm input[name="selector_pagination"]').value = preset.selector_pagination || '';
+    document.querySelector('#presetForm input[name="selector_read_more"]').value = preset.selector_read_more || '';
+    document.querySelector('#presetForm input[name="selector_category"]').value = preset.selector_category || '';
+    document.querySelector('#presetForm input[name="selector_tags"]').value = preset.selector_tags || '';
+    
+    new bootstrap.Modal(document.getElementById('presetModal')).show();
+}
+
+function deletePreset(id, name) {
+    confirmPresetAction(`Are you sure you want to delete "${name}"?`, 'Delete Preset?', 'danger', {
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel'
+    }).then(function(confirmed) {
+        if (!confirmed) {
+            return;
+        }
+
+        fetch('/admin/autocontent/api/delete-preset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'id=' + id
+        })
+        .then(r => r.json())
+        .then(async function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                await showPresetAlert(data.message || 'Failed to delete preset', 'Delete Failed', 'danger');
+            }
+        });
+    });
+}
+
+// AI Detect for preset form
+async function aiDetectForPreset() {
+    const url = document.getElementById('preset_test_url').value;
+    if (!url) {
+        await showPresetMessage('Please enter a URL first', 'warning', 4000);
+        return;
+    }
+    
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    
+    try {
+        const formData = new FormData();
+        formData.append('url', url);
+        
+        const response = await fetch('/admin/autocontent/api/ai-detect-selectors', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.selectors) {
+            // Fill in detected selectors
+            if (data.selectors.list_container) document.getElementById('selector_list_container').value = data.selectors.list_container;
+            if (data.selectors.list_item) document.getElementById('selector_list_item').value = data.selectors.list_item;
+            if (data.selectors.list_title) document.getElementById('selector_list_title').value = data.selectors.list_title;
+            if (data.selectors.list_date) document.getElementById('selector_list_date').value = data.selectors.list_date;
+            if (data.selectors.title) document.getElementById('selector_title').value = data.selectors.title;
+            if (data.selectors.content) document.getElementById('selector_content').value = data.selectors.content;
+            if (data.selectors.image) document.getElementById('selector_image').value = data.selectors.image;
+            if (data.selectors.excerpt) document.getElementById('selector_excerpt').value = data.selectors.excerpt;
+            if (data.selectors.date) document.getElementById('selector_date').value = data.selectors.date;
+            if (data.selectors.author) document.getElementById('selector_author').value = data.selectors.author;
+            
+            await showPresetAlert('Selectors detected successfully. Review and save the preset.', 'Selectors Detected', 'success');
+        } else {
+            await showPresetAlert(data.message || 'Failed to detect selectors', 'Detection Failed', 'danger');
+        }
+    } catch (error) {
+        console.error(error);
+        await showPresetAlert('Error detecting selectors', 'Detection Failed', 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-magic"></i> AI Detect';
+    }
+}
+
+document.getElementById('presetForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = document.getElementById('btn-save');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+    
+    fetch('/admin/autocontent/api/save-preset', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(async data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('presetModal')).hide();
+            location.reload();
+        } else {
+            await showPresetAlert(data.message || 'Failed to save preset', 'Save Failed', 'danger');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Save Preset';
+        }
+    })
+    .catch(async err => {
+        await showPresetAlert('Error saving preset', 'Save Failed', 'danger');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Save Preset';
+    });
+});
+
+// Reset form when modal closes
+document.getElementById('presetModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('presetForm').reset();
+    document.getElementById('presetModalLabel').textContent = 'Add New Preset';
+    document.querySelector('#presetForm input[name="id"]').value = 0;
+    document.querySelector('#presetForm input[name="preset_key"]').readOnly = false;
+    
+    // Clear validation classes
+    document.querySelectorAll('#presetForm .form-control').forEach(input => {
+        input.classList.remove('is-valid', 'is-invalid');
+    });
+});
+
+// Reset AI modal
+document.getElementById('aiDetectModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('ai_url').value = '';
+    document.getElementById('ai_preset_name').value = '';
+    document.getElementById('ai_preset_key').value = '';
+    document.getElementById('aiResults').classList.add('d-none');
+    document.getElementById('btn-detect').classList.remove('d-none');
+    document.getElementById('btn-save-preset').classList.add('d-none');
+    detectedSelectors = {};
+});
+
+// ==================== LIVE PREVIEW FUNCTIONS ====================
+let currentPreviewPreset = null;
+
+function previewPreset(id) {
+    const preset = presets.find(p => p.id === id);
+    if (!preset) return;
+    
+    currentPreviewPreset = preset;
+    document.getElementById('preview_url').value = '';
+    document.getElementById('preview_type').value = 'list';
+    document.getElementById('previewResults').classList.add('d-none');
+    document.getElementById('previewError').classList.add('d-none');
+    
+    new bootstrap.Modal(document.getElementById('previewModal')).show();
+}
+
+async function runPreview() {
+    const urlInput = document.getElementById('preview_url');
+    const url = urlInput.value.trim();
+    const previewType = document.getElementById('preview_type').value;
+    
+    if (!url || !urlInput.checkValidity()) {
+        urlInput.classList.add('is-invalid');
+        return;
+    }
+    urlInput.classList.remove('is-invalid');
+    
+    if (!currentPreviewPreset) {
+        await showPresetAlert('No preset selected', 'Preview Error', 'danger');
+        return;
+    }
+    
+    // Show loading
+    document.getElementById('previewLoading').classList.remove('d-none');
+    document.getElementById('previewResults').classList.add('d-none');
+    document.getElementById('previewError').classList.add('d-none');
+    document.getElementById('btn-preview').disabled = true;
+    
+    const selectors = previewType === 'list' ? {
+        container: currentPreviewPreset.selector_list_container,
+        item: currentPreviewPreset.selector_list_item,
+        title: currentPreviewPreset.selector_list_title,
+        link: currentPreviewPreset.selector_list_link,
+        date: currentPreviewPreset.selector_list_date,
+        image: currentPreviewPreset.selector_list_image
+    } : {
+        title: currentPreviewPreset.selector_title,
+        content: currentPreviewPreset.selector_content,
+        image: currentPreviewPreset.selector_image,
+        excerpt: currentPreviewPreset.selector_excerpt,
+        date: currentPreviewPreset.selector_date,
+        author: currentPreviewPreset.selector_author
+    };
+    
+    try {
+        const formData = new FormData();
+        formData.append('url', url);
+        formData.append('type', previewType);
+        formData.append('selectors', JSON.stringify(selectors));
+        
+        const response = await fetch('/admin/autocontent/api/preview-selectors', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        document.getElementById('previewLoading').classList.add('d-none');
+        document.getElementById('btn-preview').disabled = false;
+        
+        if (data.success) {
+            displayPreviewResults(data, previewType);
+        } else {
+            document.getElementById('previewError').textContent = data.message || 'Failed to fetch preview';
+            document.getElementById('previewError').classList.remove('d-none');
+        }
+    } catch (error) {
+        console.error(error);
+        document.getElementById('previewLoading').classList.add('d-none');
+        document.getElementById('btn-preview').disabled = false;
+        document.getElementById('previewError').textContent = 'Error fetching preview: ' + error.message;
+        document.getElementById('previewError').classList.remove('d-none');
+    }
+}
+
+function displayPreviewResults(data, previewType) {
+    const extractedDataDiv = document.getElementById('extractedData');
+    const selectorMatchesDiv = document.getElementById('selectorMatches');
+    const rawHtmlDiv = document.getElementById('rawHtmlPreview');
+    
+    // Display extracted data
+    let extractedHtml = '';
+    if (previewType === 'list') {
+        if (data.items && data.items.length > 0) {
+            extractedHtml = '<ul class="list-group list-group-flush">';
+            data.items.slice(0, 5).forEach((item, index) => {
+                extractedHtml += `<li class="list-group-item px-0">
+                    <strong>#${index + 1}</strong><br>
+                    ${item.title ? '<strong>Title:</strong> ' + escapeHtml(item.title.substring(0, 100)) + '<br>' : ''}
+                    ${item.link ? '<strong>Link:</strong> <code>' + escapeHtml(item.link.substring(0, 50)) + '</code><br>' : ''}
+                    ${item.date ? '<strong>Date:</strong> ' + escapeHtml(item.date) + '<br>' : ''}
+                    ${item.image ? '<strong>Image:</strong> <code>' + escapeHtml(item.image.substring(0, 50)) + '</code>' : ''}
+                </li>`;
+            });
+            extractedHtml += '</ul>';
+            extractedHtml += `<div class="text-muted small mt-2">Found ${data.items.length} items total</div>`;
+        } else {
+            extractedHtml = '<p class="text-muted">No items found with the specified selectors</p>';
+        }
+    } else {
+        if (data.content) {
+            extractedHtml = `${data.content.title ? '<p><strong>Title:</strong> ' + escapeHtml(data.content.title) + '</p>' : ''}`;
+            extractedHtml += `${data.content.excerpt ? '<p><strong>Excerpt:</strong> ' + escapeHtml(data.content.excerpt.substring(0, 200)) + '...</p>' : ''}`;
+            extractedHtml += `${data.content.author ? '<p><strong>Author:</strong> ' + escapeHtml(data.content.author) + '</p>' : ''}`;
+            extractedHtml += `${data.content.date ? '<p><strong>Date:</strong> ' + escapeHtml(data.content.date) + '</p>' : ''}`;
+            extractedHtml += `${data.content.image ? '<p><strong>Image:</strong> <code>' + escapeHtml(data.content.image.substring(0, 100)) + '</code></p>' : ''}`;
+            extractedHtml += `<hr><strong>Content Preview:</strong><div class="mt-2 small">${escapeHtml(data.content.content ? data.content.content.substring(0, 500) : 'No content found')}...</div>`;
+        } else {
+            extractedHtml = '<p class="text-muted">No content found with the specified selectors</p>';
+        }
+    }
+    extractedDataDiv.innerHTML = extractedHtml;
+    
+    // Display selector match info
+    let matchesHtml = '';
+    if (previewType === 'list') {
+        matchesHtml = `
+            <ul class="list-unstyled small">
+                <li class="mb-2"><strong>Container:</strong> <code>${escapeHtml(data.selectors.container || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.container ? 'success' : 'danger'}">${data.matches.container ? 'Found' : 'Not Found'}</span></li>
+                <li class="mb-2"><strong>Item:</strong> <code>${escapeHtml(data.selectors.item || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.item ? 'success' : 'danger'}">${data.matches.item ? 'Found' : 'Not Found'}</span></li>
+                <li class="mb-2"><strong>Title:</strong> <code>${escapeHtml(data.selectors.title || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.title ? 'success' : 'danger'}">${data.matches.title ? 'Found' : 'Not Found'}</span></li>
+                <li class="mb-2"><strong>Link:</strong> <code>${escapeHtml(data.selectors.link || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.link ? 'success' : 'danger'}">${data.matches.link ? 'Found' : 'Not Found'}</span></li>
+                <li class="mb-2"><strong>Date:</strong> <code>${escapeHtml(data.selectors.date || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.date ? 'success' : 'warning'}">${data.matches.date ? 'Found' : 'Optional'}</span></li>
+                <li><strong>Image:</strong> <code>${escapeHtml(data.selectors.image || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.image ? 'success' : 'warning'}">${data.matches.image ? 'Found' : 'Optional'}</span></li>
+            </ul>
+        `;
+    } else {
+        matchesHtml = `
+            <ul class="list-unstyled small">
+                <li class="mb-2"><strong>Title:</strong> <code>${escapeHtml(data.selectors.title || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.title ? 'success' : 'danger'}">${data.matches.title ? 'Found' : 'Not Found'}</span></li>
+                <li class="mb-2"><strong>Content:</strong> <code>${escapeHtml(data.selectors.content || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.content ? 'success' : 'danger'}">${data.matches.content ? 'Found' : 'Not Found'}</span></li>
+                <li class="mb-2"><strong>Image:</strong> <code>${escapeHtml(data.selectors.image || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.image ? 'success' : 'warning'}">${data.matches.image ? 'Found' : 'Optional'}</span></li>
+                <li class="mb-2"><strong>Excerpt:</strong> <code>${escapeHtml(data.selectors.excerpt || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.excerpt ? 'success' : 'warning'}">${data.matches.excerpt ? 'Found' : 'Optional'}</span></li>
+                <li class="mb-2"><strong>Date:</strong> <code>${escapeHtml(data.selectors.date || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.date ? 'success' : 'warning'}">${data.matches.date ? 'Found' : 'Optional'}</span></li>
+                <li><strong>Author:</strong> <code>${escapeHtml(data.selectors.author || 'N/A')}</code>
+                    <span class="badge bg-${data.matches.author ? 'success' : 'warning'}">${data.matches.author ? 'Found' : 'Optional'}</span></li>
+            </ul>
+        `;
+    }
+    selectorMatchesDiv.innerHTML = matchesHtml;
+    
+    // Display raw HTML
+    rawHtmlDiv.textContent = data.rawHtml || 'No HTML retrieved';
+    
+    document.getElementById('previewResults').classList.remove('d-none');
+}
+
+function applyToForm() {
+    if (!currentPreviewPreset) return;
+    
+    bootstrap.Modal.getInstance(document.getElementById('previewModal')).hide();
+    editPreset(currentPreviewPreset.id);
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}

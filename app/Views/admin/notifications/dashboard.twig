@@ -1,0 +1,339 @@
+{% extends 'admin/layout.twig' %}
+{% block title %}Notifications Dashboard{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4" id="notificationsDashboardRealtime">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div>
+        <div class="admin-page-title">
+          <i class="bi bi-bell-slash"></i> Notifications Dashboard
+        </div>
+        <p class="admin-page-subtitle">Real-time monitoring, delivery metrics and notification operations</p>
+      </div>
+    </div>
+    <!-- KPI Cards -->
+    <div class="row mb-4">
+      <div class="col-lg-3 mb-3">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-body">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <h6 class="text-muted mb-2">Sent Today</h6>
+                <h3 class="mb-0" id="sentToday">{{ stats.sent_today|default(0) }}</h3>
+                <small class="text-muted" id="sentTodayChange">+0%</small>
+              </div>
+              <i class="bi bi-send display-5 text-primary opacity-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 mb-3">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-body">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <h6 class="text-muted mb-2">Open Rate</h6>
+                <h3 class="mb-0" id="openRate">{{ stats.open_rate|default(0) }}%</h3>
+                <small class="text-muted" id="openRateChange">+0%</small>
+              </div>
+              <i class="bi bi-eye display-5 text-success opacity-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 mb-3">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-body">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <h6 class="text-muted mb-2">Scheduled Pending</h6>
+                <h3 class="mb-0" id="scheduledPending">{{ stats.scheduled_pending|default(0) }}</h3>
+                <small class="text-muted">Next run: <span id="nextScheduledTime">--</span></small>
+              </div>
+              <i class="bi bi-calendar-event display-5 text-warning opacity-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 mb-3">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-body">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <h6 class="text-muted mb-2">System Health</h6>
+                <h3 class="mb-0" id="systemHealth">OK</h3>
+                <small class="text-muted" id="systemHealthDetail">No incidents detected</small>
+              </div>
+              <i class="bi bi-heart-pulse display-5 text-danger opacity-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header">
+            <h5 class="mb-0">
+              <i class="bi bi-lightning-fill me-2"></i>Quick Actions
+            </h5>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="row g-2">
+              <div class="col-md-3">
+                <a href="/admin/notifications/send" class="btn btn-primary w-100">
+                  <i class="bi bi-send me-2"></i>Send
+                </a>
+              </div>
+              <div class="col-md-3">
+                <a href="/admin/notifications/scheduled" class="btn btn-info w-100">
+                  <i class="bi bi-calendar-event me-2"></i>Scheduled
+                </a>
+              </div>
+              <div class="col-md-3">
+                <a href="/admin/notifications/device-sync" class="btn btn-warning w-100">
+                  <i class="bi bi-phone-landscape me-2"></i>Device Sync
+                </a>
+              </div>
+              <div class="col-md-3">
+                <a href="/admin/notifications/offline-handler"
+                   class="btn btn-secondary w-100">
+                  <i class="bi bi-wifi-off me-2"></i>Offline
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Main Tabs -->
+    <div class="admin-panel-card">
+      <div class="admin-panel-card-header">
+        <ul class="nav nav-tabs border-bottom mb-0" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link active"
+                    data-bs-toggle="tab"
+                    data-bs-target="#overview"
+                    type="button">
+              <i class="bi bi-speedometer2 me-2"></i>Overview
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link"
+                    data-bs-toggle="tab"
+                    data-bs-target="#recent"
+                    type="button">
+              <i class="bi bi-clock-history me-2"></i>Recent
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link"
+                    data-bs-toggle="tab"
+                    data-bs-target="#features"
+                    type="button">
+              <i class="bi bi-star me-2"></i>Features
+            </button>
+          </li>
+        </ul>
+      </div>
+      <div class="admin-panel-card-body tab-content">
+        <!-- Overview Tab -->
+        <div class="tab-pane fade show active" id="overview">
+          <div class="row">
+            <div class="col-lg-6">
+              <h6 class="mb-3">Delivery Overview</h6>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="p-3 bg-light rounded">
+                    <small class="text-muted">Total Sent</small>
+                    <h5 class="mb-0">{{ stats.total_sent|default(0) }}</h5>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 bg-light rounded">
+                    <small class="text-muted">Delivered</small>
+                    <h5 class="mb-0 text-success">{{ stats.delivered|default(0) }}</h5>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 bg-light rounded">
+                    <small class="text-muted">Failed</small>
+                    <h5 class="mb-0 text-danger">{{ stats.failed|default(0) }}</h5>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 bg-light rounded">
+                    <small class="text-muted">Pending</small>
+                    <h5 class="mb-0 text-warning">{{ stats.pending|default(0) }}</h5>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <h6 class="mb-3">Feature Status</h6>
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <div class="p-3 bg-light rounded text-center">
+                    <i class="bi bi-calendar-event display-6 text-warning mb-2 d-block"></i>
+                    <small>Scheduler</small>
+                    <p class="mb-0">
+                      <span class="badge bg-success">Active</span>
+                    </p>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 bg-light rounded text-center">
+                    <i class="bi bi-phone-landscape display-6 text-info mb-2 d-block"></i>
+                    <small>Multi-Device</small>
+                    <p class="mb-0">
+                      <span class="badge bg-success">Active</span>
+                    </p>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 bg-light rounded text-center">
+                    <i class="bi bi-wifi-off display-6 text-secondary mb-2 d-block"></i>
+                    <small>Offline</small>
+                    <p class="mb-0">
+                      <span class="badge bg-success">Active</span>
+                    </p>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 bg-light rounded text-center">
+                    <i class="bi bi-key display-6 text-theme-strong mb-2 d-block"></i>
+                    <small>Security</small>
+                    <p class="mb-0">
+                      <span class="badge bg-success">Active</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Recent Tab -->
+        <div class="tab-pane fade" id="recent">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Message</th>
+                <th>Type</th>
+                <th>Time</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if recent_notifications|length > 0 %}
+                {% for notif in recent_notifications %}
+                  <tr>
+                    <td>#{{ notif.id }}</td>
+                    <td>
+                      <strong>{{ notif.title|truncate(30) }}</strong>
+                    </td>
+                    <td>{{ notif.message|truncate(50) }}</td>
+                    <td>
+                      <span class="badge bg-primary">{{ notif.type }}</span>
+                    </td>
+                    <td>{{ notif.created_at|date("d M Y H:i") }}</td>
+                    <td>
+                      <a href="/admin/notifications/view?id={{ notif.id }}"
+                         class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="6" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox"></i> No notifications yet
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+        <!-- Features Tab -->
+        <div class="tab-pane fade" id="features">
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <h6 class="mb-3">Core Tools</h6>
+              <div class="list-group">
+                <a href="/admin/notifications/scheduled"
+                   class="list-group-item list-group-item-action">
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-calendar-event me-3 text-warning"></i>
+                    <div>
+                      <h6 class="mb-0">Schedule Notifications</h6>
+                      <small class="text-muted">Create and manage scheduled notification campaigns</small>
+                    </div>
+                  </div>
+                </a>
+                <a href="/admin/notifications/device-sync"
+                   class="list-group-item list-group-item-action">
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-phone-landscape me-3 text-info"></i>
+                    <div>
+                      <h6 class="mb-0">Multi-Device Sync</h6>
+                      <small class="text-muted">Keep notification status consistent across devices</small>
+                    </div>
+                  </div>
+                </a>
+                <a href="/admin/notifications/offline-handler"
+                   class="list-group-item list-group-item-action">
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-wifi-off me-3 text-secondary"></i>
+                    <div>
+                      <h6 class="mb-0">Offline Manager</h6>
+                      <small class="text-muted">Handle offline queue and retry delivery</small>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <h6 class="mb-3">More Tools</h6>
+              <div class="list-group">
+                <a href="/admin/notifications/send"
+                   class="list-group-item list-group-item-action">
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-send me-3"></i>
+                    <div>
+                      <h6 class="mb-0">Send Notification</h6>
+                      <small class="text-muted">Create and send new notification campaigns</small>
+                    </div>
+                  </div>
+                </a>
+                <a href="/admin/notifications/list"
+                   class="list-group-item list-group-item-action">
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-list-check me-3"></i>
+                    <div>
+                      <h6 class="mb-0">All Notifications</h6>
+                      <small class="text-muted">View all sent notifications and delivery history</small>
+                    </div>
+                  </div>
+                </a>
+                <a href="/admin/notifications/analytics"
+                   class="list-group-item list-group-item-action">
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-graph-up me-3"></i>
+                    <div>
+                      <h6 class="mb-0">Analytics</h6>
+                      <small class="text-muted">Track notification performance and engagement metrics</small>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,1079 @@
+{% extends "layout.twig" %}
+
+{# ===== SEO Meta Tags ===== #}
+{% block title %}{{ app_settings.meta_title ?: app_settings.site_name ~ ' | Official Website' }}{% endblock %}
+{% block og_type %}website{% endblock %}
+
+{% block extra_styles %}{% endblock %}
+
+{% block content %}
+
+{# ===== JSON-LD: HomePage Schema ===== #}
+{# Helps Google understand this is the homepage and improves featured snippet chances #}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": "{{ canonical_url|default(url) }}",
+    "name": "{{ app_settings.meta_title ?: app_settings.site_name|json }}",
+    "description": "{{ app_settings.meta_description ?: 'Welcome to ' ~ app_settings.site_name|json }}",
+    "url": "{{ url|json }}",
+    "image": "{{ app_settings.site_logo ?: url ~ 'assets/images/default-logo.png'|json }}",
+    "isPartOf": {
+        "@type": "WebSite",
+        "@id": "{{ url|json }}",
+        "name": "{{ app_settings.site_name|json }}"
+    },
+    "datePublished": "{{ 'now'|date('c') }}",
+    "dateModified": "{{ 'now'|date('c') }}"
+}
+</script>
+
+{# ==================== HERO SECTION ==================== #}
+<section class="hero home-hero position-relative text-center text-white py-5 mb-5 overflow-hidden"
+        
+         aria-labelledby="hero-title">
+
+  {# Animated Background Elements #}
+  <div class="position-absolute top-0 start-0 w-100 h-100" aria-hidden="true">
+    {# Floating Shapes #}
+    <div class="floating-shape shape-1"></div>
+    <div class="floating-shape shape-2"></div>
+    <div class="floating-shape shape-3"></div>
+    <div class="floating-shape shape-4"></div>
+    <div class="floating-shape shape-5"></div>
+
+    {# Gradient Orbs #}
+    <div class="hero-orb orb-1"></div>
+    <div class="hero-orb orb-2"></div>
+    <div class="hero-orb orb-3"></div>
+
+    {# Mesh Gradient Overlay #}
+    <div class="mesh-overlay"></div>
+  </div>
+
+  <div class="container py-5 position-relative" style="z-index: 2;">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        {# Hero Badge #}
+        <div class="hero-badge mb-4">
+          <span class="badge bg-white bg-opacity-20 text-primary px-4 py-2 rounded-pill border border-white border-opacity-40 tw-backdrop-blur-sm">
+            <i class="bi bi-lightning-charge-fill me-2" aria-hidden="true"></i>
+            Explore What's New
+            <i class="bi bi-rocket-takeoff-fill ms-2" aria-hidden="true"></i>
+          </span>
+        </div>
+
+        <h1 id="hero-title" class="display-2 fw-extrabold mb-4 text-uppercase tracking-wider hero-title">
+          <span class="text-shadow-lg">
+            Latest Updates
+          </span>
+        </h1>
+
+        <p class="lead mb-5 opacity-90 fs-5 hero-subtitle">
+          Discover the future of mobile technology with our curated latest updates, insights, and exclusive services that keeps you ahead of the curve.
+        </p>
+
+        {# Action Buttons #}
+        <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center mb-4">
+          <a href="#latest-updates" class="btn btn-lg btn-light rounded-pill px-5 py-3 shadow-lg fw-bold transition-all hover-scale hero-cta-primary position-relative overflow-hidden">
+            <span class="position-relative z-index-1">
+              <i class="bi bi-rocket-takeoff-fill me-2" aria-hidden="true"></i>
+              Explore Now
+            </span>
+            <div class="btn-shine"></div>
+          </a>
+
+          <a href="/services" class="btn btn-lg btn-outline-light rounded-pill px-5 py-3 fw-bold transition-all hover-glow hero-cta-secondary">
+            <i class="bi bi-award-fill me-2" aria-hidden="true"></i>
+            Browse Services
+          </a>
+        </div>
+
+        {# Quick Stats #}
+        <div class="row justify-content-center mt-5 home-hero-stats g-3">
+          <div class="col-auto">
+            <div class="hero-stat d-flex align-items-center gap-3 text-white-50">
+              <div class="stat-icon bg-white bg-opacity-20 rounded-circle p-3">
+                <i class="bi bi-phone-fill fs-4 text-primary" aria-hidden="true"></i>
+              </div>
+              <div class="text-start">
+                <div class="fw-bold fs-4 text-white">1200+</div>
+                <div class="small opacity-75">Devices</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-auto mx-4">
+            <div class="hero-stat d-flex align-items-center gap-3 text-white-50">
+              <div class="stat-icon bg-white bg-opacity-20 rounded-circle p-3">
+                <i class="bi bi-newspaper fs-4 text-success" aria-hidden="true"></i>
+              </div>
+              <div class="text-start">
+                <div class="fw-bold fs-4 text-white">850+</div>
+                <div class="small opacity-75">Articles</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-auto">
+            <div class="hero-stat d-flex align-items-center gap-3 text-white-50">
+              <div class="stat-icon bg-white bg-opacity-20 rounded-circle p-3">
+                <i class="bi bi-award-fill fs-4 text-warning" aria-hidden="true"></i>
+              </div>
+              <div class="text-start">
+                <div class="fw-bold fs-4 text-white">150+</div>
+                <div class="small opacity-75">Services</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Scroll Indicator #}
+  <div class="scroll-indicator position-absolute bottom-0 start-50 translate-middle-x mb-4">
+    <div class="d-flex flex-column align-items-center text-white-50">
+      <span class="small mb-2">Scroll to explore</span>
+      <div class="scroll-mouse">
+        <div class="scroll-wheel"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ==================== RAMADAN COMPACT WIDGET ==================== #}
+<section class="container home-ramadan-wrap mb-5">
+  <div class="home-ramadan-card tw-home-glass-card rounded-4 shadow-sm p-4 p-lg-5"
+       data-ramadan-widget
+       data-ramadan-mode="compact"
+       data-ramadan-today="{{ 'now'|date('Y-m-d', 'Asia/Dhaka') }}">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-8">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <span class="badge rounded-pill home-ramadan-badge" data-ramadan-status>লোড হচ্ছে...</span>
+          <span class="small text-muted">বিভাগ: <strong data-ramadan-division-label>ঢাকা</strong></span>
+        </div>
+        <h2 class="h4 fw-bold mb-3" data-ramadan-countdown-title>রমজান কাউন্টডাউন লোড হচ্ছে...</h2>
+
+        <div class="home-ramadan-countdown d-flex align-items-center gap-2 mb-3">
+          <div class="count-item text-center">
+            <div class="num" data-ramadan-hours>০০</div>
+            <small>ঘণ্টা</small>
+          </div>
+          <span>:</span>
+          <div class="count-item text-center">
+            <div class="num" data-ramadan-minutes>০০</div>
+            <small>মিনিট</small>
+          </div>
+          <span>:</span>
+          <div class="count-item text-center">
+            <div class="num" data-ramadan-seconds>০০</div>
+            <small>সেকেন্ড</small>
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-3 text-muted small">
+          <span><strong>তারিখ:</strong> <span data-ramadan-date>--</span></span>
+          <span><strong>রোজা:</strong> <span data-ramadan-roja>--</span></span>
+          <span><strong>সেহরি:</strong> <span data-ramadan-today-sehri>--</span></span>
+          <span><strong>ইফতার:</strong> <span data-ramadan-today-iftar>--</span></span>
+        </div>
+      </div>
+
+      <div class="col-lg-4 text-lg-end">
+        <a href="/ramadan-2026" class="btn btn-success rounded-pill px-4 py-2 fw-semibold tw-inline-flex tw-items-center gap-2 shadow-lg tw-shadow-emerald-500/20 hover:-tw-translate-y-0.5 tw-transition">
+          পূর্ণ রমজান ক্যালেন্ডার দেখুন
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ==================== LATEST UPDATES SECTION ==================== #}
+<div class="container py-4 home-latest-section" id="latest-updates">
+    {# ==================== TOP POSTS & SERVICES SLIDER ==================== #}
+    <section class="home-top-slider mb-5" aria-labelledby="home-top-slider-title">
+      <div class="home-top-slider__head">
+        <div>
+          <h3 id="home-top-slider-title" class="home-top-slider__title mb-1">Top Posts & Services</h3>
+          <p class="home-top-slider__subtitle mb-0">Most viewed content picked from posts and services.</p>
+        </div>
+        <div class="home-top-slider__controls" aria-label="Top slider controls">
+          <button type="button" class="home-top-slider__btn" data-top-prev aria-label="Previous slide">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          <button type="button" class="home-top-slider__btn" data-top-next aria-label="Next slide">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="home-top-slider__viewport">
+        <div class="home-top-slider__track" data-top-track role="list" aria-label="Top posts and services">
+          {% for p in top_posts|default([]) %}
+            <a href="/posts/view/{{ p.slug }}" class="home-top-card is-post" role="listitem" aria-label="Top post: {{ p.title }}">
+              <div class="home-top-card__media">
+                {% if p.image %}
+                  <img src="{{ p.image }}" alt="{{ p.title }}" loading="lazy" decoding="async">
+                {% else %}
+                  <span class="home-top-card__placeholder"><i class="bi bi-newspaper"></i></span>
+                {% endif %}
+              </div>
+              <div class="home-top-card__body">
+                <span class="home-top-card__type">Post</span>
+                <h4 class="home-top-card__title">{{ p.title }}</h4>
+                <div class="home-top-card__meta">
+                  <span><i class="bi bi-eye-fill"></i> {{ p.views|default(0)|number_format }}</span>
+                  <span class="home-top-card__rating"><i class="bi bi-star-fill"></i> {{ p.rating_average|default(0)|number_format(1) }} <small>({{ p.rating_total|default(0)|number_format }})</small></span>
+                  <span><i class="bi bi-calendar3"></i> {{ p.created_at|date('d M, Y') }}</span>
+                </div>
+              </div>
+            </a>
+          {% endfor %}
+
+          {% for s in top_services|default([]) %}
+            <a href="/services/{{ s.slug }}" class="home-top-card is-service" role="listitem" aria-label="Top service: {{ s.title|default(s.name) }}">
+              <div class="home-top-card__media">
+                {% if s.image %}
+                  <img src="{{ s.image }}" alt="{{ s.title|default(s.name) }}" loading="lazy" decoding="async">
+                {% else %}
+                  <span class="home-top-card__placeholder"><i class="bi bi-award-fill"></i></span>
+                {% endif %}
+              </div>
+              <div class="home-top-card__body">
+                <span class="home-top-card__type">Service</span>
+                <h4 class="home-top-card__title">{{ s.title|default(s.name) }}</h4>
+                <div class="home-top-card__meta">
+                  <span><i class="bi bi-eye-fill"></i> {{ s.views|default(0)|number_format }}</span>
+                  <span class="home-top-card__rating"><i class="bi bi-star-fill"></i> {{ s.rating_average|default(0)|number_format(1) }} <small>({{ s.rating_total|default(0)|number_format }})</small></span>
+                  <span><i class="bi bi-calendar3"></i> {{ s.created_at|date('d M, Y') }}</span>
+                </div>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% if (top_posts|default([])|length == 0) and (top_services|default([])|length == 0) %}
+        <div class="home-top-slider__empty">Top content not available right now.</div>
+      {% endif %}
+    </section>
+
+    {# ==================== HEADER WITH TAB NAVIGATION ==================== #}
+    <div class="latest-updates-header mb-4">
+      {# Section Title #}
+      <div class="section-title-wrapper mb-3 mb-md-0">
+        <h2 class="fw-bold m-0 display-6 display-md-5">
+          <span class="text-primary border-bottom border-3 border-primary pb-2">Recent</span> Feed
+        </h2>
+      </div>
+      
+      {# Modern Tab Navigation #}
+      <nav class="modern-tab-nav" role="tablist" aria-label="Feed tabs">
+        <div class="tab-buttons-wrapper">
+          <button class="tab-btn active" 
+                  id="recent-tab" 
+                  role="tab" 
+                  aria-selected="true" 
+                  aria-controls="latest-feed"
+                  data-tab="recent">
+            <i class="bi bi-clock-history" aria-hidden="true"></i>
+            <span class="tab-label">Recent</span>
+          </button>
+          
+          <button class="tab-btn" 
+                  id="services-tab" 
+                  role="tab" 
+                  aria-selected="false" 
+                  aria-controls="services-feed"
+                  data-tab="services">
+            <i class="bi bi-briefcase" aria-hidden="true"></i>
+            <span class="tab-label">Services</span>
+          </button>
+        </div>
+        
+        {# Auto-rotate Timer #}
+        <div class="tab-timer-wrapper">
+          <small class="timer-text" id="auto-rotate-indicator">
+            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+            <span class="d-none d-sm-inline">Auto: </span>
+            <span id="rotate-timer">15</span>s
+          </small>
+        </div>
+      </nav>
+    </div>
+
+    {# ==================== CONTENT CARDS SECTION ==================== #}
+    <div id="latest-feed" class="feed-grid" role="feed" aria-label="Latest content feed">
+      {% for item in contents %}
+        {% include 'partials/content-card.twig' with { item: item, index: loop.index } %}
+      {% else %}
+        <div class="feed-empty-state">
+          <div class="empty-state-content" role="status" aria-label="No content available">
+            <i class="bi bi-box-seam empty-icon" aria-hidden="true"></i>
+            <p class="empty-text">No content available at the moment.</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    
+    {# ==================== SERVICES FEED (AJAX) ==================== #}
+    <div id="services-feed" class="feed-grid d-none" role="feed" aria-label="Services feed">
+      <!-- Populated via JavaScript -->
+    </div>
+</div>
+
+
+
+{# ==================== JAVASCRIPT ==================== #}
+<script>
+(function(){
+  const servicesTabBtn = document.getElementById('services-tab');
+  const recentTabBtn = document.getElementById('recent-tab');
+  const latestFeed = document.getElementById('latest-feed');
+  const servicesFeed = document.getElementById('services-feed');
+  const rotateTimerEl = document.getElementById('rotate-timer');
+  
+  let servicesLoaded = false;
+  let currentFeed = 'recent';
+  let autoRotateTimer = null;
+  let countdownTimer = null;
+  let countdownValue = 15;
+  let isTransitioning = false;
+
+  function setActiveTab(tabName) {
+    if (tabName === 'recent') {
+      recentTabBtn.classList.add('active');
+      servicesTabBtn.classList.remove('active');
+      recentTabBtn.setAttribute('aria-selected', 'true');
+      servicesTabBtn.setAttribute('aria-selected', 'false');
+    } else {
+      servicesTabBtn.classList.add('active');
+      recentTabBtn.classList.remove('active');
+      servicesTabBtn.setAttribute('aria-selected', 'true');
+      recentTabBtn.setAttribute('aria-selected', 'false');
+    }
+  }
+
+  async function loadServices() {
+    if (servicesLoaded) return;
+    
+    servicesFeed.innerHTML = '<div class="loading-spinner" aria-live="polite"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"><span class="visually-hidden">Loading</span></div>Loading services…</div>';
+    
+    try {
+      // Prefer server-rendered HTML partial for consistent markup (uses content-card.twig)
+      const res = await fetch('/api/services/html');
+      if (!res.ok) throw new Error('Failed to load services');
+      const html = await res.text();
+      servicesFeed.innerHTML = html || '<div class="feed-empty-state"><div class="empty-state-content">No services found.</div></div>';
+      servicesLoaded = true;
+    } catch (err) {
+      servicesFeed.innerHTML = '<div class="feed-empty-state"><div class="empty-state-content text-danger">Failed to load services.</div></div>';
+      console.error(err);
+    }
+  }
+
+  function resetCountdown() {
+    countdownValue = 15;
+    if (rotateTimerEl) rotateTimerEl.textContent = countdownValue;
+  }
+
+  function startCountdown() {
+    resetCountdown();
+    if (countdownTimer) clearInterval(countdownTimer);
+    
+    countdownTimer = setInterval(() => {
+      countdownValue--;
+      if (rotateTimerEl) rotateTimerEl.textContent = countdownValue;
+      
+      if (countdownValue <= 0) {
+        clearInterval(countdownTimer);
+        rotateFeeds();
+      }
+    }, 1000);
+  }
+
+  function stopCountdown() {
+    if (countdownTimer) clearInterval(countdownTimer);
+  }
+
+  function rotateFeeds() {
+    if (isTransitioning) return;
+    
+    if (currentFeed === 'recent') {
+      showServices();
+    } else {
+      showRecent();
+    }
+  }
+
+  function showServices() {
+    if (isTransitioning) return;
+    isTransitioning = true;
+    
+    latestFeed.classList.add('fade-out');
+    setTimeout(() => {
+      latestFeed.classList.add('d-none');
+      latestFeed.classList.remove('fade-out');
+      servicesFeed.classList.remove('d-none');
+      currentFeed = 'services';
+      setActiveTab('services');
+      loadServices();
+      startCountdown();
+      isTransitioning = false;
+    }, 600);
+  }
+
+  function showRecent() {
+    if (isTransitioning) return;
+    isTransitioning = true;
+    
+    servicesFeed.classList.add('fade-out');
+    setTimeout(() => {
+      servicesFeed.classList.add('d-none');
+      servicesFeed.classList.remove('fade-out');
+      latestFeed.classList.remove('d-none');
+      currentFeed = 'recent';
+      setActiveTab('recent');
+      startCountdown();
+      isTransitioning = false;
+    }, 600);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, function(ch){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[ch]);
+    });
+  }
+
+  // Event listeners
+  if (servicesTabBtn) {
+    servicesTabBtn.addEventListener('click', function(e){
+      e.preventDefault();
+      stopCountdown();
+      if (currentFeed !== 'services') showServices();
+    });
+  }
+
+  if (recentTabBtn) {
+    recentTabBtn.addEventListener('click', function(e){
+      e.preventDefault();
+      stopCountdown();
+      if (currentFeed !== 'recent') showRecent();
+    });
+  }
+
+  // Start auto-rotate
+  window.addEventListener('load', function() {
+    setTimeout(() => startCountdown(), 1000);
+  });
+})();
+
+(function(){
+  const sliderRoot = document.querySelector('.home-top-slider');
+  if (!sliderRoot) return;
+
+  const track = sliderRoot.querySelector('[data-top-track]');
+  const prevBtn = sliderRoot.querySelector('[data-top-prev]');
+  const nextBtn = sliderRoot.querySelector('[data-top-next]');
+  if (!track || !prevBtn || !nextBtn) return;
+
+  const getStep = () => {
+    const firstCard = track.querySelector('.home-top-card');
+    if (!firstCard) return 320;
+    const styles = window.getComputedStyle(track);
+    const gap = parseFloat(styles.columnGap || styles.gap || '0') || 0;
+    return Math.round(firstCard.getBoundingClientRect().width + gap);
+  };
+
+  const goNext = () => {
+    const maxScrollLeft = Math.max(0, track.scrollWidth - track.clientWidth);
+    if (track.scrollLeft >= maxScrollLeft - 5) {
+      track.scrollTo({ left: 0, behavior: 'smooth' });
+      return;
+    }
+    track.scrollBy({ left: getStep(), behavior: 'smooth' });
+  };
+
+  const goPrev = () => {
+    if (track.scrollLeft <= 5) {
+      track.scrollTo({ left: Math.max(0, track.scrollWidth - track.clientWidth), behavior: 'smooth' });
+      return;
+    }
+    track.scrollBy({ left: -getStep(), behavior: 'smooth' });
+  };
+
+  prevBtn.addEventListener('click', goPrev);
+  nextBtn.addEventListener('click', goNext);
+
+  let autoTimer = null;
+  const startAuto = () => {
+    if (autoTimer) clearInterval(autoTimer);
+    autoTimer = setInterval(goNext, 5000);
+  };
+  const stopAuto = () => {
+    if (autoTimer) clearInterval(autoTimer);
+    autoTimer = null;
+  };
+
+  sliderRoot.addEventListener('mouseenter', stopAuto);
+  sliderRoot.addEventListener('mouseleave', startAuto);
+  sliderRoot.addEventListener('touchstart', stopAuto, { passive: true });
+  sliderRoot.addEventListener('touchend', startAuto, { passive: true });
+
+  startAuto();
+})();
+</script>
+{# ==================== FEATURED SECTION ==================== #}
+<section class="py-5 bg-light home-featured-section" aria-labelledby="featured-title">
+  <div class="container home-feed-surface">
+    <div class="text-center mb-5">
+      <h2 id="featured-title" class="fw-bold display-5 mb-3">
+        <span class="text-primary">Featured</span> Highlights
+      </h2>
+      <p class="lead text-muted">Hand-picked content curated just for you</p>
+    </div>
+    
+    <div class="row g-4" role="region" aria-label="Featured content highlights">
+      <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm hover-shadow-lg rounded-4 overflow-hidden" role="article">
+          <div class="position-relative bg-primary bg-opacity-10 p-5 text-center">
+            <i class="bi bi-phone-fill fs-1 text-primary" aria-hidden="true"></i>
+          </div>
+          <div class="card-body">
+            <h3 class="card-title fw-bold h5">Latest Phones</h3>
+            <p class="card-text text-muted small">Explore the newest smartphones and their specifications</p>
+            <a href="/mobiles" class="btn btn-primary btn-sm rounded-pill" aria-label="Browse latest phones">
+              Browse Phones
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm hover-shadow-lg rounded-4 overflow-hidden" role="article">
+          <div class="position-relative bg-success bg-opacity-10 p-5 text-center">
+            <i class="bi bi-newspaper fs-1 text-success" aria-hidden="true"></i>
+          </div>
+          <div class="card-body">
+            <h3 class="card-title fw-bold h5">Tech News</h3>
+            <p class="card-text text-muted small">Stay updated with the latest technology news and trends</p>
+            <a href="/category/news" class="btn btn-success btn-sm rounded-pill" aria-label="Read tech news">
+              Read News
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm hover-shadow-lg rounded-4 overflow-hidden" role="article">
+          <div class="position-relative bg-warning bg-opacity-10 p-5 text-center">
+            <i class="bi bi-briefcase-fill fs-1 text-warning" aria-hidden="true"></i>
+          </div>
+          <div class="card-body">
+            <h3 class="card-title fw-bold h5">Job Opportunities</h3>
+            <p class="card-text text-muted small">Find exciting career opportunities in tech industry</p>
+            <a href="/category/chakribd" class="btn btn-warning btn-sm rounded-pill" aria-label="View job opportunities">
+              View Jobs
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ==================== SERVICES SECTION ==================== #}
+<section class="py-5 home-services-section tw-bg-slate-50/50 dark:tw-bg-slate-900/20" aria-labelledby="services-title">
+  <div class="container home-feed-surface">
+    <div class="text-center mb-5">
+      <h2 id="services-title" class="fw-bold display-5 mb-3">
+        Explore Our <span class="text-primary">Services</span>
+      </h2>
+      <p class="lead text-muted">Discover and apply for exclusive services tailored to your needs</p>
+    </div>
+    
+    <div class="row g-4 align-items-center">
+      <div class="col-lg-6">
+        <div class="card h-100 border-0 shadow-lg rounded-4 overflow-hidden services-card-left tw-transition tw-duration-300 hover:-tw-translate-y-1">
+          <div class="card-body p-5 text-white">
+            <div class="mb-4 d-inline-block bg-white bg-opacity-20 rounded-3 p-3">
+              <i class="bi bi-award-fill text-white" style="font-size: 2.5rem; display: block;"></i>
+            </div>
+            <h3 class="card-title fw-bold h4 mb-3 text-white">Professional Services</h3>
+            <p class="card-text text-white-50 mb-4">Browse our comprehensive catalog of professional services designed to help you achieve your goals. Each service is carefully curated with specific eligibility requirements and application processes.</p>
+            <ul class="list-unstyled mb-4">
+              <li class="mb-3 text-white-50"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Easy Application Process</strong></li>
+              <li class="mb-3 text-white-50"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Real-time Status Tracking</strong></li>
+              <li class="mb-3 text-white-50"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Expert Support Team</strong></li>
+              <li class="mb-3 text-white-50"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Quick Approval Process</strong></li>
+            </ul>
+            <a href="/services" class="btn btn-light btn-lg rounded-pill px-5 fw-bold" aria-label="Browse available services">
+              <i class="bi bi-arrow-right me-2"></i>Explore Services
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-lg-6">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow-lg transition-all services-card-right blue tw-transition tw-duration-300 hover:-tw-translate-y-1">
+              <div class="card-body p-4">
+                <div class="d-flex align-items-start">
+                  <div class="bg-primary bg-opacity-15 rounded-3 p-3 me-3 flex-shrink-0">
+                    <i class="bi bi-search text-primary fs-5"></i>
+                  </div>
+                  <div>
+                    <h5 class="card-title fw-bold mb-2">Browse Services</h5>
+                    <p class="card-text text-muted small mb-0">Explore all available services by category and filter by your preferences</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow-lg transition-all services-card-right green tw-transition tw-duration-300 hover:-tw-translate-y-1">
+              <div class="card-body p-4">
+                <div class="d-flex align-items-start">
+                  <div class="bg-success bg-opacity-15 rounded-3 p-3 me-3 flex-shrink-0">
+                    <i class="bi bi-clipboard-check text-success fs-5"></i>
+                  </div>
+                  <div>
+                    <h5 class="card-title fw-bold mb-2">Apply Easily</h5>
+                    <p class="card-text text-muted small mb-0">Submit applications with simple forms and instant confirmation</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow-lg transition-all services-card-right yellow tw-transition tw-duration-300 hover:-tw-translate-y-1">
+              <div class="card-body p-4">
+                <div class="d-flex align-items-start">
+                  <div class="bg-warning bg-opacity-15 rounded-3 p-3 me-3 flex-shrink-0">
+                    <i class="bi bi-clock-history text-warning fs-5"></i>
+                  </div>
+                  <div>
+                    <h5 class="card-title fw-bold mb-2">Track Status</h5>
+                    <p class="card-text text-muted small mb-0">Monitor progress with real-time status updates and notifications</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if auth_user.is_authenticated %}
+    <div class="row mt-5">
+      <div class="col-12">
+        <div class="alert alert-info border-0 rounded-4 shadow-sm" role="alert">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-info-circle-fill me-3 fs-5"></i>
+            <div>
+              <h6 class="alert-heading mb-1">Logged In User</h6>
+              <p class="mb-0 small">You can view <a href="/services/my-applications" class="alert-link fw-bold">your applications</a> and apply for new services anytime.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{# ==================== CATEGORIES SECTION ==================== #}
+<section class="py-5 home-categories-section tw-bg-gradient-to-b tw-from-slate-50/70 tw-to-transparent dark:tw-from-slate-900/20" id="categories" aria-labelledby="categories-title">
+  <div class="container home-feed-surface">
+    <div class="text-center mb-5">
+      <h2 id="categories-title" class="fw-bold display-5 mb-3">
+        Browse by <span class="text-primary">Category</span>
+      </h2>
+      <p class="lead text-muted">Explore content across different categories</p>
+    </div>
+
+    <div class="row g-3" role="region" aria-label="Content categories">
+      <div class="col-md-6 col-lg-4">
+        <a href="/category/news" class="text-decoration-none" aria-label="Browse breaking news category">
+          <div class="p-4 rounded-4 text-white hover-shadow-lg transition-all category-card news"
+               role="button"
+               tabindex="0">
+            <i class="bi bi-fire fs-2 mb-3" aria-hidden="true"></i>
+            <h3 class="fw-bold mb-2 h5">Breaking News</h3>
+            <p class="small mb-0 opacity-75">Latest updates from the tech world</p>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <a href="/category/reviews" class="text-decoration-none" aria-label="Browse reviews category">
+          <div class="p-4 rounded-4 text-white hover-shadow-lg transition-all category-card reviews"
+               role="button"
+               tabindex="0">
+            <i class="bi bi-star-fill fs-2 mb-3" aria-hidden="true"></i>
+            <h3 class="fw-bold mb-2 h5">Reviews</h3>
+            <p class="small mb-0 opacity-75">In-depth product reviews and analysis</p>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <a href="/category/tips" class="text-decoration-none" aria-label="Browse tips and tricks category">
+          <div class="p-4 rounded-4 text-white hover-shadow-lg transition-all category-card tips"
+               role="button"
+               tabindex="0">
+            <i class="bi bi-lightbulb-fill fs-2 mb-3" aria-hidden="true"></i>
+            <h3 class="fw-bold mb-2 h5">Tips & Tricks</h3>
+            <p class="small mb-0 opacity-75">Helpful tips to maximize your devices</p>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <a href="/category/tutorials" class="text-decoration-none" aria-label="Browse tutorials category">
+          <div class="p-4 rounded-4 text-white hover-shadow-lg transition-all category-card tutorials"
+               role="button"
+               tabindex="0">
+            <i class="bi bi-mortarboard-fill fs-2 mb-3" aria-hidden="true"></i>
+            <h3 class="fw-bold mb-2 h5">Tutorials</h3>
+            <p class="small mb-0 opacity-75">Step-by-step guides and tutorials</p>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <a href="/category/comparison" class="text-decoration-none" aria-label="Browse comparison category">
+          <div class="p-4 rounded-4 text-white hover-shadow-lg transition-all category-card comparison"
+               role="button"
+               tabindex="0">
+            <i class="bi bi-code-slash fs-2 mb-3" aria-hidden="true"></i>
+            <h3 class="fw-bold mb-2 h5">Comparison</h3>
+            <p class="small mb-0 opacity-75">Compare devices side by side</p>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <a href="/category/trending" class="text-decoration-none" aria-label="Browse trending category">
+          <div class="p-4 rounded-4 text-white hover-shadow-lg transition-all category-card trending"
+               role="button"
+               tabindex="0">
+            <i class="bi bi-graph-up-arrow fs-2 mb-3" aria-hidden="true"></i>
+            <h3 class="fw-bold mb-2 h5">Trending</h3>
+            <p class="small mb-0 opacity-75">What's trending in the mobile world</p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ==================== STATS SECTION ==================== #}
+<section class="py-5 bg-primary text-white position-relative overflow-hidden" aria-labelledby="stats-title">
+  <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10" aria-hidden="true">
+    <div class="position-absolute" style="width: 400px; height: 400px; background: rgba(255,255,255,0.1); border-radius: 50%; top: -100px; right: -100px;"></div>
+    <div class="position-absolute" style="width: 300px; height: 300px; background: rgba(255,255,255,0.1); border-radius: 50%; bottom: -50px; left: -50px;"></div>
+  </div>
+  
+  <div class="container position-relative">
+    <h2 id="stats-title" class="visually-hidden">Platform Statistics</h2>
+    <div class="row text-center g-4" role="region" aria-label="Platform statistics">
+      <div class="col-md-3">
+        <div class="stat-item">
+          <p class="display-4 fw-bold mb-2" aria-label="Active users">{{ stats.active_users|default('500') }}+</p>
+          <p class="mb-0 opacity-75">Active Users</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-item">
+          <p class="display-4 fw-bold mb-2" aria-label="Device specifications">{{ stats.device_specs|default('1200') }}+</p>
+          <p class="mb-0 opacity-75">Device Specs</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-item">
+          <p class="display-4 fw-bold mb-2" aria-label="Published articles">{{ stats.articles|default('850') }}+</p>
+          <p class="mb-0 opacity-75">Articles</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-item">
+          <p class="display-4 fw-bold mb-2" aria-label="Job postings">{{ stats.job_posts|default('320') }}+</p>
+          <p class="mb-0 opacity-75">Job Posts</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ==================== SHARE SECTION ==================== #}
+<section class="py-5" aria-labelledby="share-title">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="card border-0 rounded-4 shadow-sm p-5 mb-5 home-share-card">
+          <h2 id="share-title" class="fw-bold mb-4 text-center h3">
+            <i class="bi bi-share-fill me-2 text-primary" aria-hidden="true"></i>Share This Page
+          </h2>
+          
+          <div class="share-buttons d-flex flex-wrap justify-content-center gap-3 mb-4" role="group" aria-label="Share on social media">
+            {# Twitter Share #}
+            <a href="https://twitter.com/intent/tweet?url={{ url|url_encode|default('') }}&text={{ 'Check out this amazing content!'|url_encode }}" 
+               target="_blank"
+               rel="noopener noreferrer"
+               class="btn btn-sm rounded-pill shadow-sm transition-all"
+               style="background-color: #1DA1F2; color: white; padding: 0.5rem 1.2rem;"
+               aria-label="Share on Twitter/X">
+                <i class="bi bi-twitter-x me-2" aria-hidden="true"></i>Twitter/X
+            </a>
+
+            {# LinkedIn Share #}
+            <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ url|url_encode|default('') }}" 
+               target="_blank"
+               rel="noopener noreferrer"
+               class="btn btn-sm rounded-pill shadow-sm transition-all"
+               style="background-color: #0077B5; color: white; padding: 0.5rem 1.2rem;"
+               aria-label="Share on LinkedIn">
+                <i class="bi bi-linkedin me-2" aria-hidden="true"></i>LinkedIn
+            </a>
+
+            {# WhatsApp Share #}
+            <a href="https://wa.me/?text={{ 'Check out this amazing content'|url_encode }}%20{{ url|url_encode|default('') }}" 
+               target="_blank"
+               rel="noopener noreferrer"
+               class="btn btn-sm rounded-pill shadow-sm transition-all"
+               style="background-color: #25D366; color: white; padding: 0.5rem 1.2rem;"
+               aria-label="Share on WhatsApp">
+                <i class="bi bi-whatsapp me-2" aria-hidden="true"></i>WhatsApp
+            </a>
+
+            {# Email Share #}
+            <a href="mailto:?subject={{ 'Check out this amazing website'|url_encode }}&body={{ 'I found this amazing website that you might like:'|url_encode }}%0D%0A{{ url|url_encode|default('') }}" 
+               class="btn btn-sm rounded-pill shadow-sm transition-all"
+               style="background-color: #EA4335; color: white; padding: 0.5rem 1.2rem;"
+               aria-label="Share via Email">
+                <i class="bi bi-envelope-fill me-2" aria-hidden="true"></i>Email
+            </a>
+
+            {# Copy Link #}
+            <button type="button" 
+                    class="btn btn-sm btn-outline-secondary rounded-pill shadow-sm transition-all"
+                    style="padding: 0.5rem 1.2rem;"
+                    id="copyLinkBtnHome"
+                    aria-label="Copy link to clipboard"
+                    onclick="copyToClipboardHome()">
+                <i class="bi bi-link-45deg me-2" aria-hidden="true"></i>Copy Link
+            </button>
+          </div>
+          
+          <p class="text-center text-muted small">
+            <i class="bi bi-info-circle-fill me-1" aria-hidden="true"></i>Help us spread the word by sharing this page with your friends and followers
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ==================== NEWSLETTER SECTION ==================== #}
+<section class="py-5 bg-light" aria-labelledby="newsletter-title">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-7">
+        <div class="card border-0 shadow-lg rounded-4 p-5 newsletter-card home-newsletter-card text-center">
+          <div class="mb-4">
+            <span class="bg-primary bg-gradient rounded-circle p-3 mb-3 d-inline-block">
+              <i class="bi bi-envelope-paper-fill text-white fs-1" aria-hidden="true"></i>
+            </span>
+            <h2 id="newsletter-title" class="fw-bold display-6 mb-2">Get Latest Updates</h2>
+            <p class="lead text-muted">Subscribe for the latest news, reviews, and exclusive offers</p>
+          </div>
+          <form id="home-newsletter-form" class="row g-2 justify-content-center" aria-label="Newsletter subscription form">
+            <div class="col-md-10">
+              <label for="newsletter-email" class="visually-hidden">Email address</label>
+              <input type="email" 
+                     id="newsletter-email"
+                     name="email"
+                     class="form-control rounded-pill px-4 py-3 shadow-sm" 
+                     placeholder="Your email address" 
+                     aria-label="Enter your email address"
+                     required>
+            </div>
+            <div class="col-md-6">
+              <button type="submit" class="btn btn-primary rounded-pill fw-bold" aria-label="Subscribe to newsletter">
+                <i class="bi bi-send-fill me-2" aria-hidden="true"></i>Subscribe
+              </button>
+            </div>
+          </form>
+          
+          <script>
+          document.getElementById('home-newsletter-form').addEventListener('submit', async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target);
+              
+              try {
+                  const response = await fetch('/newsletter/subscribe', {
+                      method: 'POST',
+                      body: formData
+                  });
+                  const data = await response.json();
+                  
+                  if (data.success) {
+                      showMessage(data.message || 'Successfully subscribed to our newsletter', 'success');
+                      e.target.reset();
+                  } else {
+                      showMessage(data.error || 'An error occurred', 'error');
+                  }
+              } catch (err) {
+                  showMessage('Error: ' + err.message, 'error');
+              }
+          });
+          </script>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ==================== RECOMMENDED SECTION ==================== #}
+<section class="py-5 bg-gradient bg-light home-recommended-section" aria-labelledby="recommended-title">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 id="recommended-title" class="fw-bold display-5 mb-3">
+        <span class="text-primary">Recommended</span> for You
+      </h2>
+      <p class="lead text-muted">Hand-picked content just for your interests</p>
+    </div>
+    <div class="row g-4 justify-content-center" role="region" aria-label="Recommended content">
+      {% if featured_content %}
+        {% for item in featured_content|slice(0, 3) %}
+        <div class="col-md-6 col-lg-4">
+          <article class="card h-100 border-0 shadow-lg hover-shadow-lg rounded-4 overflow-hidden recommended-card" role="article" aria-label="Recommended item: {{ item.title }}">
+            {% if item.image %}
+            <div class="ratio ratio-16x9 overflow-hidden recommended-card-img">
+              <img src="{{ item.image }}" 
+                   class="object-fit-cover w-100 h-100" 
+                   alt="{{ item.title }}"
+                   loading="lazy"
+                   decoding="async">
+            </div>
+            {% endif %}
+            <div class="card-body">
+              <div class="mb-2">
+                <span class="badge bg-gradient bg-primary rounded-pill small">{{ item.category|default('Featured') }}</span>
+              </div>
+              <h3 class="card-title fw-bold line-clamp-2 h5">{{ item.title }}</h3>
+              <p class="card-text text-muted small line-clamp-2">{{ item.description|striptags|default('') }}</p>
+              <a href="{{ item.link|default('#') }}" 
+                 class="btn btn-primary btn-sm rounded-pill mt-3"
+                 aria-label="Read more about {{ item.title }}">
+                Read More
+              </a>
+            </div>
+          </article>
+        </div>
+        {% endfor %}
+      {% else %}
+        {# Fallback Categories Display #}
+        <div class="col-12">
+          <div class="row g-4 justify-content-center">
+            {% set default_categories = [
+              {name: 'News', slug: 'news', icon: 'bi bi-newspaper', gradient: '#667eea, #764ba2', description: 'Latest tech news'},
+              {name: 'Reviews', slug: 'reviews', icon: 'bi bi-star-fill', gradient: '#f093fb, #f5576c', description: 'Product reviews'},
+              {name: 'Tutorials', slug: 'tutorials', icon: 'bi bi-mortarboard-fill', gradient: '#4facfe, #00f2fe', description: 'Learn new skills'}
+            ] %}
+            
+            {% for cat in categories|default(default_categories) %}
+            <div class="col-md-6 col-lg-4">
+              <a href="/category/{{ cat.slug }}" class="text-decoration-none" aria-label="Browse {{ cat.name }} category">
+                <div class="p-4 rounded-4 text-white hover-shadow-lg transition-all category-card" 
+                     style="background: linear-gradient(135deg, {{ cat.gradient|default('#6366f1, #a855f7') }});"
+                     role="button"
+                     tabindex="0">
+                  <i class="{{ cat.icon|default('bi bi-folder-fill') }} fs-2 mb-3" aria-hidden="true"></i>
+                  <h3 class="fw-bold mb-2 h5">{{ cat.name }}</h3>
+                  <p class="small mb-0 opacity-75">{{ cat.description|default('Explore this category') }}</p>
+                </div>
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{# ==================== JAVASCRIPT ==================== #}
+<script>
+
+  // Copy to clipboard function
+  function copyToClipboardHome() {
+    const url = window.location.href;
+    const btn = document.getElementById('copyLinkBtnHome');
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url)
+        .then(function() {
+          showCopySuccess(btn);
+        })
+        .catch(function(err) {
+          console.error('Clipboard API failed:', err);
+          fallbackCopy(url, btn);
+        });
+    } else {
+      fallbackCopy(url, btn);
+    }
+  }
+  
+  function fallbackCopy(text, btn) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      showCopySuccess(btn);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      alert('Failed to copy link. Please try again.');
+    }
+    document.body.removeChild(textarea);
+  }
+  
+  function showCopySuccess(btn) {
+    if (!btn) return;
+    const originalHtml = btn.innerHTML;
+    const originalBg = btn.style.backgroundColor;
+    const originalBorder = btn.style.borderColor;
+    
+    btn.innerHTML = '<i class="bi bi-check-lg me-2" aria-hidden="true"></i>Copied!';
+    btn.style.backgroundColor = '#28a745';
+    btn.style.borderColor = '#28a745';
+    btn.style.color = '#fff';
+    btn.setAttribute('aria-label', 'Link copied to clipboard');
+    
+    setTimeout(function() {
+      btn.innerHTML = originalHtml;
+      btn.style.backgroundColor = originalBg;
+      btn.style.borderColor = originalBorder;
+      btn.style.color = '';
+      btn.setAttribute('aria-label', 'Copy link to clipboard');
+    }, 2000);
+  }
+
+    </script>
+
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="{{ asset('/assets/js/ramadan-2026.js') }}" defer></script>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "admin/layout.twig" %}
+{% block title %}Notification Delivery Logs{% endblock %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <div class="admin-page-header mb-4 d-flex justify-content-between align-items-center">
+      <div>
+        <div class="admin-page-title">
+          <i class="bi bi-journal-text"></i> Delivery Logs
+        </div>
+        <p class="admin-page-subtitle">Search and filter notification delivery logs</p>
+      </div>
+      <div class="text-end">
+        <a href="/admin/notifications" class="modern-btn btn-sm">Back</a>
+      </div>
+    </div>
+    <div class="admin-panel-card mb-3">
+      <div class="admin-panel-card-body">
+        <form id="logsFilterForm" class="row g-2 align-items-end">
+          <div class="col-md-2">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select form-select-sm">
+              <option value="all" {{ filters.status == 'all' ? 'selected' : '' }}>All
+              </option>
+              <option value="sent" {{ filters.status == 'sent' ? 'selected' : '' }}>Sent
+              </option>
+              <option value="failed" {{ filters.status == 'failed' ? 'selected' : '' }}>Failed
+              </option>
+              <option value="pending" {{ filters.status == 'pending' ? 'selected' : '' }}>Pending
+              </option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Device ID</label>
+            <input type="text"
+                   name="device_id"
+                   value="{{ filters.device_id }}"
+                   class="form-control form-control-sm">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Token / Partial</label>
+            <input type="text"
+                   name="token"
+                   value="{{ filters.token }}"
+                   class="form-control form-control-sm">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">User ID</label>
+            <input type="text"
+                   name="user_id"
+                   value="{{ filters.user_id }}"
+                   class="form-control form-control-sm">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">From</label>
+            <input type="date"
+                   name="from"
+                   value="{{ filters.from }}"
+                   class="form-control form-control-sm">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">To</label>
+            <input type="date"
+                   name="to"
+                   value="{{ filters.to }}"
+                   class="form-control form-control-sm">
+          </div>
+          <div class="col-auto">
+            <button type="submit" class="modern-btn modern-btn-primary btn-sm">Filter</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="admin-panel-card">
+      <div class="admin-panel-card-body">
+        {% if logs is empty %}
+          <div class="text-center text-muted py-5">No logs found for these filters.</div>
+        {% else %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Created</th>
+                  <th>Notification</th>
+                  <th>User ID</th>
+                  <th>Device ID</th>
+                  <th>Token</th>
+                  <th>Status</th>
+                  <th>Channel</th>
+                  <th>IP</th>
+                  <th>Response</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for l in logs %}
+                  <tr>
+                    <td>
+                      <small>{{ l.created_at }}</small>
+                    </td>
+                    <td>{{ l.notification_id }}</td>
+                    <td>{{ l.user_id ?: '-' }}</td>
+                    <td>
+                      <code>{{ l.device_id ?: '-' }}</code>
+                    </td>
+                    <td>
+                      <small>{{ l.token[:40] }}{{ l.token|length > 40 ? '...' : '' }}</small>
+                    </td>
+                    <td>
+                      <span class="badge bg-{{ l.status == 'sent' ? 'success' : (l.status=='failed' ? 'danger' : 'secondary') }}">{{ l.status }}</span>
+                    </td>
+                    <td>{{ l.channel ?: '-' }}</td>
+                    <td>{{ l.ip_address ?: '-' }}</td>
+                    <td>
+                      <small>{{ l.response|length > 120 ? l.response[:120] ~ '...' : l.response }}</small>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

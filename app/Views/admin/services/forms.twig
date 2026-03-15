@@ -1,0 +1,598 @@
+{% extends 'admin/layout.twig' %}
+{# Complete Modern Redesign - Service Form #}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block title %}{{ service ? 'Edit Service' : 'Create Service' }}{% endblock %}
+{% block stylesheets %}
+  {% set rte_version = getRTEVersion() %}
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+        rel="stylesheet">
+  <link href="/rtceditor/editor.css?v={{ rte_version }}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <div class="service-form-wrapper">
+      <div class="container service-form-container">
+        <!-- Header Glass Card -->
+        <div class="header-glass-card">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+              <div class="header-icon-badge">
+                <i class="bi bi-gear-fill"></i>
+              </div>
+              <div>
+                <h1 class="page-title">{{ service ? 'Edit Service' : 'Create New Service' }}</h1>
+                <p class="page-subtitle">
+                  {{ service ? 'Update service details and configuration' : 'Fill in the details to create a new service' }}
+                </p>
+              </div>
+            </div>
+            <a href="/admin/services" class="modern-btn modern-btn-secondary">
+              <i class="bi bi-arrow-left"></i>
+              Back to Services
+            </a>
+          </div>
+        </div>
+        <!-- Main Form -->
+        <form id="serviceForm" method="POST" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          {% if service %}
+            <input type="hidden"
+                   name="service_id"
+                   value="{{ service.id | default("") }}">
+          {% endif %}
+          <div class="row g-4">
+            <!-- Main Content Column -->
+            <div class="col-lg-8">
+              <!-- Basic Information -->
+              <div class="admin-panel-card">
+                <div class="admin-panel-card-header">
+                  <h5 class="admin-panel-card-header-title">
+                    <i class="bi bi-info-circle-fill"></i>
+                    Basic Information
+                  </h5>
+                </div>
+                <div class="admin-panel-card-body">
+                  <div class="row g-4">
+                    <div class="col-md-8">
+                      <label class="modern-form-label">
+                        Service Name
+                        <span class="required">*</span>
+                      </label>
+                      <input type="text"
+                             class="modern-input form-control-lg"
+                             name="name"
+                             value="{% if service %}{{ service.name | default("") }}{% endif %}"
+                             placeholder="Enter service name"
+                             required>
+                      <div class="form-helper">A clear, descriptive name for your service</div>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="modern-form-label">
+                        Status <span class="required">*</span>
+                      </label>
+                      <select class="modern-select form-select-lg" name="status">
+                        <option value="active"
+                                {% if service and service.status == 'active' %}selected{% endif %}>âœ“ Active</option>
+                        <option value="inactive"
+                                {% if service and service.status == 'inactive' %}selected{% endif %}>
+                          â¸ Inactive
+                        </option>
+                        <option value="archived"
+                                {% if service and service.status == 'archived' %}selected{% endif %}>
+                          ðŸ“¦ Archived
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="row g-4 mt-2">
+                    <div class="col-12">
+                      <label class="modern-form-label">
+                        URL Slug <span class="required">*</span>
+                      </label>
+                      <div class="modern-input-group">
+                        <span class="modern-input-group-text">
+                          <i class="bi bi-link-45deg"></i>
+                        </span>
+                        <input type="text"
+                               class="modern-input"
+                               name="slug"
+                               value="{% if service %}{{ service.slug | default("") }}{% endif %}"
+                               placeholder="service-url-slug"
+                               required>
+                      </div>
+                      <div id="slug-feedback" class="form-helper"></div>
+                    </div>
+                  </div>
+                  <div class="row g-4 mt-2">
+                    <div class="col-12">
+                      <label class="modern-form-label">Redirect URL (Optional)</label>
+                      <div class="modern-input-group">
+                        <span class="modern-input-group-text">
+                          <i class="bi bi-box-arrow-up-right"></i>
+                        </span>
+                        <input type="text"
+                               class="modern-input"
+                               name="redirect_url"
+                               value="{{ service.redirect_url|default("") }}"
+                               placeholder="https://example.com/service à¦…à¦¥à¦¬à¦¾ /internal-path">
+                      </div>
+                      <div class="form-helper">Set this to redirect users to another page when they open this service.</div>
+                    </div>
+                  </div>
+                  <div class="mt-4">
+                    <label class="modern-form-label">
+                      Description <span class="required">*</span>
+                    </label>
+                    {% include 'partials/editor.twig' with {
+                    'editorId': 'content',
+                    'editorName': 'description',
+                    'editorClass': 'modern-rich-editor',
+                    'initialContent': service.description|default(''),
+                    'darkMode': false,
+                    'rtl': false
+                    } %}
+                    <div class="form-helper">Describe what this service offers and its key features</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Categories & Tags -->
+              <div class="admin-panel-card">
+                <div class="admin-panel-card-header">
+                  <h5 class="admin-panel-card-header-title">
+                    <i class="bi bi-tags-fill"></i>
+                    Categories & Tags
+                  </h5>
+                </div>
+                <div class="admin-panel-card-body">
+                  <div class="mb-4">
+                    <label class="modern-form-label">Categories</label>
+                    <select multiple
+                            class="form-control blogspot-categories"
+                            id="service_categories"
+                            name="categories[]">
+                      {% if all_categories is defined and all_categories is iterable %}
+                        {% for cat in all_categories %}
+                          {% set checked = (service_category_ids is defined and (cat.id|int) in service_category_ids) %}
+                          <option value="{{ cat.id }}" {{ checked ? 'selected' : '' }}>{{ cat.name }}
+                          </option>
+                        {% endfor %}
+                      {% endif %}
+                    </select>
+                    <div class="form-helper">Select categories or type to create new ones</div>
+                  </div>
+                  <div>
+                    <label class="modern-form-label">Tags</label>
+                    <select multiple class="form-control blogspot-tags" id="tags" name="tags[]">
+                      {% if all_tags is defined and all_tags is iterable %}
+                        {% for t in all_tags %}
+                          {% set tchecked = (service_tag_ids is defined and (t.id|int) in service_tag_ids) %}
+                          <option value="{{ t.id }}" {{ tchecked ? 'selected' : '' }}>{{ t.name }}
+                          </option>
+                        {% endfor %}
+                      {% endif %}
+                    </select>
+                    <div class="form-helper">Select multiple tags or type to add new ones</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Images Gallery -->
+              <div class="admin-panel-card">
+                <div class="admin-panel-card-header">
+                  <h5 class="admin-panel-card-header-title">
+                    <i class="bi bi-images"></i>
+                    Images Gallery
+                  </h5>
+                </div>
+                <div class="admin-panel-card-body">
+                  <div id="imagesContainer" class="mb-4">
+                    {% if service.images is defined and service.images|length > 0 %}
+                      {% for image in service.images %}
+                        <div class="image-item card mb-3 border" data-image-id="{{ image.id }}">
+                          <div class="card-body">
+                            <div class="row align-items-center">
+                              <!-- Image Preview -->
+                              <div class="col-md-3">
+                                <img src="{{ image.thumbnail_path|default(image.image_path) |default('/assets/img/no-image.png') }}"
+                                     alt="{{ image.alt_text|default("Service image") }}"
+                                     class="img-fluid rounded shadow-sm">
+                              </div>
+                              <!-- Image Meta -->
+                              <div class="col-md-9">
+                                <div class="row g-2">
+                                  <!-- Alt Text -->
+                                  <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Alt Text</label>
+                                    <input type="text"
+                                           class="form-control form-control-sm"
+                                           value="{{ image.alt_text|default("") }}"
+                                           data-field="alt_text"
+                                           placeholder="Image description">
+                                  </div>
+                                  <!-- Order -->
+                                  <div class="col-md-3">
+                                    <label class="form-label small fw-semibold">Order</label>
+                                    <input type="number"
+                                           class="form-control form-control-sm"
+                                           value="{{ image.display_order|default(0) }}"
+                                           data-field="display_order"
+                                           min="0">
+                                  </div>
+                                  <!-- Featured -->
+                                  <div class="col-md-3">
+                                    <label class="form-label small fw-semibold">Featured</label>
+                                    <div class="form-check form-switch">
+                                      <input class="form-check-input"
+                                             type="radio"
+                                             name="featured_image"
+                                             value="{{ image.id }}"
+                                             {% if image.is_featured|default(false) %}checked{% endif %}>
+                                      <label class="form-check-label small">Set as featured</label>
+                                    </div>
+                                  </div>
+                                  <!-- Caption -->
+                                  <div class="col-md-9">
+                                    <label class="form-label small fw-semibold">Caption</label>
+                                    <textarea class="form-control form-control-sm"
+                                              rows="2"
+                                              data-field="caption"
+                                              placeholder="Optional caption">{{ image.caption|default('') }}</textarea>
+                                  </div>
+                                  <!-- Delete -->
+                                  <div class="col-md-3">
+                                    <label class="form-label small fw-semibold">&nbsp;</label>
+                                    <button type="button"
+                                            class="btn btn-sm btn-danger w-100"
+                                            onclick="removeImage(this)">
+                                      <i class="bi bi-trash me-1"></i>Delete
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    {% endif %}
+                  </div>
+                  <!-- Upload New Images -->
+                  <div class="modern-dropzone" id="dropZone">
+                    <input type="file"
+                           id="imageUploadInput"
+                           class="d-none"
+                           name="images[]"
+                           multiple
+                           accept="image/*">
+                    <div class="dropzone-icon">
+                      <i class="bi bi-cloud-upload"></i>
+                    </div>
+                    <h6 class="fw-bold mb-2">Drag & Drop Images Here</h6>
+                    <p class="text-muted mb-2">or click to browse</p>
+                    <small class="text-muted">Supported: JPG, PNG, GIF, WebP (Max 10MB each)</small>
+                  </div>
+                  <div id="imagePreviewContainer" class="row g-3 mt-3"></div>
+                </div>
+              </div>
+              <!-- Application Form Fields -->
+              <div class="admin-panel-card">
+                <div class="admin-panel-card-header">
+                  <h5 class="admin-panel-card-header-title">
+                    <i class="bi bi-journal-text"></i>
+                    Application Form Fields
+                  </h5>
+                </div>
+                <div class="admin-panel-card-body">
+                  <p class="text-muted mb-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Define custom fields for the service application form
+                  </p>
+                  <div id="formFieldsContainer" class="mb-3">
+                    {% if service and service.form_templates and service.form_templates|length > 0 %}
+                      {% for field in service.form_templates %}
+                        <div class="admin-panel-card mb-2 border form-field-item"
+                             data-field-id="{{ field.id }}">
+                          <div class="card-body p-3">
+                            <div class="row g-2 align-items-center">
+                              <div class="col-md-3">
+                                <input type="text"
+                                       class="form-control"
+                                       placeholder="Field Name"
+                                       value="{{ field.label }}"
+                                       data-field-label>
+                              </div>
+                              <div class="col-md-2">
+                                <select class="form-select" data-field-type>
+                                  <option value="text" {% if field.field_type == 'text' %}selected{% endif %}>Text</option>
+                                  <option value="email" {% if field.field_type == 'email' %}selected{% endif %}>Email</option>
+                                  <option value="phone" {% if field.field_type == 'phone' %}selected{% endif %}>Phone</option>
+                                  <option value="textarea"
+                                          {% if field.field_type == 'textarea' %}selected{% endif %}>Textarea</option>
+                                  <option value="select"
+                                          {% if field.field_type == 'select' %}selected{% endif %}>Select</option>
+                                  <option value="date" {% if field.field_type == 'date' %}selected{% endif %}>Date</option>
+                                </select>
+                              </div>
+                              <div class="col-md-2">
+                                <div class="form-check form-switch">
+                                  <input class="form-check-input"
+                                         type="checkbox"
+                                         data-field-required
+                                         {% if field.required == 1 or field.required == '1' %}checked{% endif %}>
+                                  <label class="form-check-label small">Required</label>
+                                </div>
+                              </div>
+                              <div class="col-md-4">
+                                <input type="text"
+                                       class="form-control"
+                                       placeholder="Placeholder text"
+                                       value="{{ field.placeholder|default("") }}"
+                                       data-field-placeholder>
+                              </div>
+                              <div class="col-md-1">
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger w-100"
+                                        onclick="removeFormField(this)">
+                                  <i class="bi bi-trash"></i>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    {% endif %}
+                  </div>
+                  <button type="button"
+                          class="modern-btn modern-btn-primary"
+                          id="addFormFieldBtn">
+                    <i class="bi bi-plus me-2"></i>Add Form Field
+                  </button>
+                </div>
+              </div>
+              <!-- Metadata -->
+              <div class="admin-panel-card">
+                <div class="admin-panel-card-header">
+                  <h5 class="admin-panel-card-header-title">
+                    <i class="bi bi-code"></i>
+                    Custom Metadata
+                  </h5>
+                </div>
+                <div class="admin-panel-card-body">
+                  <p class="text-muted mb-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Add custom key-value pairs for additional service data
+                  </p>
+                  <div id="metadataFields" class="mb-3">
+                    {% if service and service.metadata and service.metadata|length > 0 %}
+                      {% for key, value in service.metadata %}
+                        <div class="row g-2 mb-2 align-items-center">
+                          <div class="col-md-5">
+                            <input type="text"
+                                   class="form-control"
+                                   placeholder="Key"
+                                   value="{{ key }}"
+                                   data-metadata-key>
+                          </div>
+                          <div class="col-md-6">
+                            <input type="text"
+                                   class="form-control"
+                                   placeholder="Value"
+                                   value="{{ value }}"
+                                   data-metadata-value>
+                          </div>
+                          <div class="col-md-1">
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-danger w-100"
+                                    onclick="removeMetadata(this)">
+                              <i class="bi bi-x"></i>
+                            </button>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    {% endif %}
+                  </div>
+                  <button type="button"
+                          class="modern-btn modern-btn-primary"
+                          id="addMetadataBtn">
+                    <i class="bi bi-plus me-2"></i>Add Metadata
+                  </button>
+                </div>
+              </div>
+            </div>
+            <!-- Sidebar Column -->
+            <div class="col-lg-4">
+              <div class="sticky-sidebar">
+                <!-- Configuration Card -->
+                <div class="admin-panel-card">
+                  <div class="admin-panel-card-header">
+                    <h5 class="admin-panel-card-header-title">
+                      <i class="bi bi-sliders"></i>
+                      Service Configuration
+                    </h5>
+                  </div>
+                  <div class="admin-panel-card-body">
+                    <div class="modern-switch-wrapper">
+                      <input class="modern-switch-input d-none"
+                             type="checkbox"
+                             name="is_premium"
+                             id="isPremium"
+                             value="1"
+                             {% if service and service.is_premium %}checked{% endif %}>
+                      <label for="isPremium" class="modern-switch"></label>
+                      <label for="isPremium" class="modern-switch-label">
+                        <i class="bi bi-crown-fill text-warning"></i>
+                        Premium Service
+                      </label>
+                    </div>
+                    <div class="modern-switch-wrapper">
+                      <input class="modern-switch-input d-none"
+                             type="checkbox"
+                             name="requires_approval"
+                             id="requiresApproval"
+                             value="1"
+                             {% if service and service.requires_approval %}checked{% endif %}>
+                      <label for="requiresApproval" class="modern-switch"></label>
+                      <label for="requiresApproval" class="modern-switch-label">
+                        <i class="bi bi-check-circle-fill text-info"></i>
+                        Requires Admin Approval
+                      </label>
+                    </div>
+                    <div class="modern-switch-wrapper">
+                      <input class="modern-switch-input d-none"
+                             type="checkbox"
+                             name="auto_approve"
+                             id="autoApprove"
+                             value="1"
+                             {% if service and service.auto_approve %}checked{% endif %}>
+                      <label for="autoApprove" class="modern-switch"></label>
+                      <label for="autoApprove" class="modern-switch-label">
+                        <i class="bi bi-lightning-fill text-success"></i>
+                        Auto-Approve Applications
+                      </label>
+                    </div>
+                    <div class="modern-switch-wrapper">
+                      <input class="modern-switch-input d-none"
+                             type="checkbox"
+                             name="requires_documents"
+                             id="requiresDocuments"
+                             value="1"
+                             {% if service and service.requires_documents %}checked{% endif %}>
+                      <label for="requiresDocuments" class="modern-switch"></label>
+                      <label for="requiresDocuments" class="modern-switch-label">
+                        <i class="bi bi-file-earmark-text text-primary"></i>
+                        Requires Documents
+                      </label>
+                    </div>
+                    <div id="premiumPriceGroup"
+                         class="mt-3"
+                         style="{% if not (service and service.is_premium) %}display:none;
+                                {% endif %}">
+                      <label class="modern-form-label">
+                        Premium Service Price <span class="required">*</span>
+                      </label>
+                      <div class="modern-input-group">
+                        <span class="modern-input-group-text">{{ app_settings.currency_symbol|default("à§³") }}</span>
+                        <input type="number"
+                               class="modern-input"
+                               id="premiumPriceInput"
+                               name="price"
+                               min="0"
+                               step="0.01"
+                               value="{{ service.price|default("") }}"
+                               placeholder="0.00">
+                      </div>
+                      <div class="form-helper">Required when Premium Service is enabled.</div>
+                    </div>
+                    {% if not service %}
+                      <div class="modern-switch-wrapper">
+                        <input class="modern-switch-input d-none"
+                               type="checkbox"
+                               name="send_push_notification"
+                               id="sendPushNotification"
+                               value="1">
+                        <label for="sendPushNotification" class="modern-switch"></label>
+                        <label for="sendPushNotification" class="modern-switch-label">
+                          <i class="bi bi-bell-fill text-danger"></i>
+                          Send Push Notification
+                        </label>
+                      </div>
+                      <div class="form-helper">Status Active à¦¹à¦²à§‡ à¦ªà¦¾à¦ à¦¾à¦¨à§‹ à¦¹à¦¬à§‡</div>
+                    {% endif %}
+                  </div>
+                </div>
+                <!-- Icon Settings -->
+                <div class="admin-panel-card">
+                  <div class="admin-panel-card-header">
+                    <h5 class="admin-panel-card-header-title">
+                      <i class="bi bi-collection"></i>
+                      Service Icon
+                    </h5>
+                  </div>
+                  <div class="admin-panel-card-body">
+                    <label class="form-label fw-semibold">Icon Class or Upload</label>
+                    <div class="input-group">
+                      <span class="input-group-text bg-light"><i class="bi bi-collection"></i></span>
+                      <input type="text"
+                             class="form-control"
+                             name="icon"
+                             id="iconInput"
+                             value="{{ service.icon or '' }}"
+                             placeholder="bi bi-star">
+                      <button class="modern-btn modern-btn-white" type="button" id="iconUploadBtn">
+                        <i class="bi bi-upload"></i>
+                      </button>
+                    </div>
+                    <div class="form-helper">Enter an icon class (Bootstrap Icons) or upload an image</div>
+                    <div id="iconPreviewContainer" class="d-none mt-3">
+                      <div class="text-center p-3 bg-light rounded">
+                        <img id="iconPreview"
+                             src=""
+                             alt="Icon preview"
+                             class="img-fluid inl-a-0053">
+                        <button type="button"
+                                class="btn btn-sm btn-danger d-block w-100 mt-2"
+                                id="removeIconBtn">
+                          <i class="bi bi-x me-1"></i>Remove Icon
+                        </button>
+                      </div>
+                    </div>
+                    <input type="file"
+                           id="iconUploadInput"
+                           name="icon_file"
+                           accept="image/*"
+                           class="d-none">
+                  </div>
+                </div>
+                <!-- Quick Actions -->
+                <div class="quick-action-card">
+                  <h6 class="quick-action-title">Ready to save?</h6>
+                  <button type="submit"
+                          class="modern-btn modern-btn-white modern-btn-lg w-100 mb-3">
+                    <i class="bi bi-save"></i>
+                    {{ service ? 'Update Service' : 'Create Service' }}
+                  </button>
+                  <a href="/admin/services"
+                     class="modern-btn modern-btn-secondary modern-btn-lg w-100">
+                    <i class="bi bi-x-lg"></i> Cancel
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div id="service-form-data"
+       data-service-category-ids='{{ service_category_ids|default([]) |json_encode|e("html_attr") }}'
+       data-service-tag-ids='{{ service_tag_ids|default([]) |json_encode|e("html_attr") }}'
+       data-service-all-tags='{{ all_tags|default([]) |json_encode|e("html_attr") }}'
+       data-service-all-categories='{{ all_categories|default([]) |json_encode|e("html_attr") }}'
+       data-exclude-id='{{ service ? service.id : "" }}'
+       class="inl-a-0006"></div>
+{% endblock %}
+{% block scripts %}
+  {% set rte_version = getRTEVersion() %}
+  <script src="/rtceditor/editor.js?v={{ rte_version }}" defer></script>
+  <script>
+        (function () {
+            const premiumToggle = document.getElementById('isPremium');
+            const premiumPriceGroup = document.getElementById('premiumPriceGroup');
+            const premiumPriceInput = document.getElementById('premiumPriceInput');
+
+            if (!premiumToggle || !premiumPriceGroup || !premiumPriceInput) {
+                return;
+            }
+
+            const syncPremiumPriceVisibility = () => {
+                const enabled = premiumToggle.checked;
+                premiumPriceGroup.style.display = enabled ? '' : 'none';
+                premiumPriceInput.required = enabled;
+                if (!enabled) {
+                    premiumPriceInput.value = '';
+                }
+            };
+
+            premiumToggle.addEventListener('change', syncPremiumPriceVisibility);
+            syncPremiumPriceVisibility();
+        })();
+  </script>
+{% endblock %}

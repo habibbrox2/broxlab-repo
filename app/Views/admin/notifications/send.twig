@@ -1,0 +1,378 @@
+{% extends 'admin/layout.twig' %}
+{% block title %}Send Notification - Admin Panel{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block stylesheets %}{{ parent() }}{% endblock %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-bell me-2"></i>
+        Send Notification
+      </div>
+      <div class="admin-page-subtitle">Create and send notifications</div>
+    </div>
+    <div class="row mb-4">
+      <div class="col-12">
+        <a href="/admin/notifications"
+           class="modern-btn btn-sm btn-outline-secondary mb-3">
+          <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+        <h2 class="mb-0">
+          <i class="bi bi-send me-2"></i>Send Notification
+        </h2>
+        <small class="text-muted">Create and send notifications to users, in-app or via push</small>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-lg-8">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header">
+            <h5 class="mb-0">Notification Form</h5>
+          </div>
+          <div class="admin-panel-card-body">
+            <form id="notificationForm" class="needs-validation">
+              <!-- Recipient Selection -->
+              <div class="mb-3">
+                <label for="recipientType" class="form-label fw-bold">
+                  Select Recipients <span class="text-danger">*</span>
+                </label>
+                <select id="recipientType" class="form-select form-select-lg" required>
+                  <option value="">-- Select Recipient Type --</option>
+                  <option value="all" selected>All Recipients (Users + Guests)</option>
+                  <option value="guest">Only Guest Users</option>
+                  <option value="specific">Specific Users</option>
+                  <option value="role">By Role</option>
+                  <option value="permission">By Permission</option>
+                </select>
+                <small class="text-muted d-block mt-2">
+                  <i class="bi bi-info-circle"></i>
+                  <strong>All Recipients:</strong> This will send to all users and guest devices
+                </small>
+                <div id="recipientInfo"></div>
+              </div>
+              <!-- Specific User Selection -->
+              <div id="specificUserDiv" class="mb-3 inl-a-0001">
+                <label for="specificUsers" class="form-label fw-bold">Select Specific Users</label>
+                <select id="specificUsers" class="form-select" multiple size="5">
+                  <option value="">-- Loading users --</option>
+                </select>
+                <small class="text-muted d-block mt-2">
+                  <i class="bi bi-info-circle"></i> Hold Ctrl/Cmd to select multiple users
+                </small>
+              </div>
+              <!-- Role Selection -->
+              <div id="roleDiv" class="mb-3 inl-a-0001">
+                <label for="roleSelect" class="form-label fw-bold">Select Role</label>
+                <select id="roleSelect" class="form-select">
+                  <option value="">-- Select Role --</option>
+                </select>
+              </div>
+              <!-- Permission Selection -->
+              <div id="permissionDiv" class="mb-3 inl-a-0001">
+                <label for="permissionSelect" class="form-label fw-bold">Select Permission</label>
+                <select id="permissionSelect" class="form-select">
+                  <option value="">-- Select Permission --</option>
+                </select>
+              </div>
+              <!-- Recipient Preview -->
+              <div id="recipientPreview" class="mb-3 inl-a-0001">
+                <div class="recipient-preview-card">
+                  <div class="recipient-preview-meta">
+                    <span class="recipient-preview-icon"><i class="bi bi-people-fill"></i></span>
+                    <div>
+                      <div class="recipient-preview-count">
+                        Total <span id="recipientCount">0</span> recipients
+                      </div>
+                      <p class="recipient-preview-sub">This is the live count based on your current recipient filter.</p>
+                    </div>
+                  </div>
+                  <div class="recipient-preview-actions">
+                    <button type="button"
+                            class="modern-btn btn-sm btn-outline-info"
+                            id="previewBtn">
+                      <i class="bi bi-eye me-1"></i>View Details
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <!-- Notification Content -->
+              <hr class="my-4">
+              <h5 class="mb-3">Notification Content</h5>
+              <div class="mb-3">
+                <label for="notificationTemplate" class="form-label fw-bold">
+                  Notification Template (Optional)
+                </label>
+                <select id="notificationTemplate" class="form-select">
+                  <option value="">-- Manual Custom Message --</option>
+                  {% for template in notification_templates|default([]) %}
+                    <option value="{{ template.slug }}"
+                            data-template-id="{{ template.id }}"
+                            data-template-vars="{{ template.variables|json_encode|e('html_attr') }}"
+                            data-template-channels="{{ template.channels|json_encode|e('html_attr') }}">
+                      {{ template.name }} ({{ template.slug }})
+                    </option>
+                  {% endfor %}
+                </select>
+                <small class="text-muted d-block mt-1">Selecting a template auto-fills title/message and sends push in template format.</small>
+              </div>
+              <div class="mb-3" id="templateVariablesWrap" style="display:none;">
+                <label for="templateVariables" class="form-label fw-bold">
+                  Template Variables JSON (Optional)
+                </label>
+                <textarea id="templateVariables"
+                          class="form-control"
+                          rows="3"
+                          placeholder='{"SERVICE_NAME":"Birth Certificate","REASON":"Missing document"}'></textarea>
+                <div class="d-flex align-items-center justify-content-between mt-2">
+                  <small class="text-muted">Valid JSON object format only. Example: {"KEY":"Value"}</small>
+                  <button type="button"
+                          id="applyTemplatePreviewBtn"
+                          class="modern-btn btn-sm btn-outline-info">
+                    <i class="bi bi-magic me-1"></i>Apply Template
+                  </button>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="notificationTitle" class="form-label fw-bold">
+                  Title <span class="text-danger">*</span>
+                </label>
+                <input type="text"
+                       id="notificationTitle"
+                       class="form-control"
+                       placeholder="Example: New Phone Released"
+                       required
+                       maxlength="100">
+                <small class="text-muted d-block mt-1">Maximum 100 characters</small>
+              </div>
+              <div class="mb-3">
+                <label for="notificationMessage" class="form-label fw-bold">
+                  Message <span class="text-danger">*</span>
+                </label>
+                <textarea id="notificationMessage"
+                          class="form-control"
+                          rows="4"
+                          placeholder="Write your notification message here..."
+                          required
+                          maxlength="500"></textarea>
+                <small class="text-muted d-block mt-1">
+                  Maximum 500 characters | Words: <span id="wordCount">0</span>
+                </small>
+              </div>
+              <!-- Notification Type -->
+              <div class="mb-3">
+                <label for="notificationType" class="form-label fw-bold">Notification Type</label>
+                <select id="notificationType" class="form-select">
+                  <option value="general">General</option>
+                  <option value="promotion">Promotion</option>
+                  <option value="announcement">Announcement</option>
+                  <option value="update">Update</option>
+                  <option value="warning">Warning</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+              <!-- Action URL -->
+              <div class="mb-3">
+                <label for="actionUrl" class="form-label fw-bold">Action URL (Optional)</label>
+                <input type="url"
+                       id="actionUrl"
+                       class="form-control"
+                       placeholder="https://example.com/page">
+                <small class="text-muted d-block mt-1">Where users will be redirected when they click</small>
+              </div>
+              <!-- Send Options -->
+              <hr class="my-4">
+              <h5 class="mb-3">Send Options</h5>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Select Channels</label>
+                <div class="form-check">
+                  <input class="form-check-input"
+                         type="checkbox"
+                         id="channelPush"
+                         value="push"
+                         checked>
+                  <label class="form-check-label" for="channelPush">
+                    <i class="bi bi-bell"></i> Push Notification
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input"
+                         type="checkbox"
+                         id="channelInApp"
+                         value="in_app"
+                         checked>
+                  <label class="form-check-label" for="channelInApp">
+                    <i class="bi bi-inbox"></i> In-App Notification
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input"
+                         type="checkbox"
+                         id="channelEmail"
+                         value="email">
+                  <label class="form-check-label" for="channelEmail">
+                    <i class="bi bi-envelope"></i> Email Notification
+                  </label>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="scheduledTime" class="form-label fw-bold">Schedule Time (Optional)</label>
+                <input type="datetime-local"
+                       id="scheduledTime"
+                       class="form-control"
+                       placeholder="Example: 2024-12-31T23:59">
+                <small class="text-muted d-block mt-1">Leave empty to send immediately</small>
+              </div>
+              <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" id="saveDraft">
+                <label class="form-check-label" for="saveDraft">Save as draft (Don't send now)</label>
+              </div>
+              <!-- Buttons -->
+              <div class="d-flex gap-2">
+                <button type="submit"
+                        id="submitBtn"
+                        class="modern-btn modern-btn-primary btn-sm"
+                        disabled>
+                  <i class="bi bi-check me-2"></i>Send Notification
+                </button>
+                <button type="reset" class="modern-btn modern-btn-secondary btn-sm">
+                  <i class="bi bi-arrow-clockwise me-2"></i>Reset Form
+                </button>
+                <a href="/admin/notifications"
+                   class="modern-btn modern-btn-white btn-sm ms-auto">
+                  <i class="bi bi-arrow-left me-2"></i>Go Back
+                </a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <!-- Sidebar - Preview & Statistics -->
+      <div class="col-lg-4">
+        <!-- Preview Card -->
+        <div class="admin-panel-card shadow-sm mb-3" style="background: #f8f9fa;">
+          <div class="admin-panel-card-header bg-white">
+            <h6 class="mb-0"><i class="bi bi-phone me-2"></i>Live Preview</h6>
+          </div>
+          <div class="admin-panel-card-body d-flex justify-content-center align-items-center" style="min-height: 250px; background-image: radial-gradient(circle at 50% 50%, #e2e8f0 0%, #f8f9fa 100%);">
+            
+            <!-- Mobile Push Bubble -->
+            <div class="notification-preview bg-white rounded-4 shadow-sm p-3 w-100 position-relative" style="max-width: 320px; transition: all 0.2s ease;">
+              
+              <!-- Header -->
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="d-flex align-items-center gap-2">
+                  <div class="bg-primary rounded text-white d-flex align-items-center justify-content-center" style="width: 20px; height: 20px;">
+                    <i class="bi bi-bell-fill" style="font-size: 0.65rem;"></i>
+                  </div>
+                  <span class="small fw-semibold text-dark" style="font-size: 0.8rem;">App Notification</span>
+                </div>
+                <span class="small text-muted" style="font-size: 0.75rem;">now</span>
+              </div>
+              
+              <!-- Content -->
+              <h6 class="mb-1 fw-bold text-dark text-break" id="previewTitle" style="font-size: 0.95rem;">Notification Title</h6>
+              <p class="mb-0 text-secondary text-break" id="previewMessage" style="font-size: 0.85rem; line-height: 1.4;">Notification message will appear here...</p>
+              
+              <!-- Footer Meta -->
+              <div class="mt-2 pt-2 border-top">
+                  <span class="badge bg-light text-dark fw-normal border" id="previewType">Type: General</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <!-- Statistics Card -->
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header">
+            <h6 class="mb-0">Statistics</h6>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="row text-center">
+              <div class="col-6 mb-3">
+                <div class="h4 text-primary mb-1" id="totalUsers">0</div>
+                <small class="text-muted">Total Recipients</small>
+              </div>
+              <div class="col-6">
+                <div class="h4 text-success mb-1" id="guestUsers">0</div>
+                <small class="text-muted">Guests</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  <!-- Modal for Recipient Preview -->
+  <div class="modal fade" id="recipientModal" tabindex="-1">
+    <div class="modal-dialog modal-xl"
+         role="dialog"
+         aria-labelledby="recipientModalTitle"
+         aria-hidden="true">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="admin-panel-card-header">
+          <div>
+            <h5 class="modal-title mb-0" id="recipientModalTitle">
+              <i class="bi bi-people me-2"></i>Recipient List
+            </h5>
+            <small class="text-white-50">Recipient preview details</small>
+          </div>
+          <button type="button"
+                  class="modern-btn-close btn-close-white"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"></button>
+        </div>
+        <div class="admin-panel-card-body">
+          <div class="recipient-modal-summary">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-shield-check text-success"></i>
+              <small class="text-muted mb-0">Recipient data is generated from current selection.</small>
+            </div>
+            <span class="badge bg-primary-subtle text-primary">
+              <i class="bi bi-people-fill me-1"></i><span id="recipientTotalCount">0</span> Recipients
+            </span>
+          </div>
+          <div class="recipient-filter-toolbar">
+            <div class="recipient-filter-search">
+              <input type="text"
+                     id="recipientSearchInput"
+                     class="form-control"
+                     placeholder="Search by username or email">
+            </div>
+            <div class="recipient-filter-device">
+              <select id="recipientDeviceFilter" class="form-select">
+                <option value="">All Devices</option>
+                <option value="web">Web</option>
+                <option value="android">Android</option>
+                <option value="ios">iOS</option>
+                <option value="desktop">Desktop</option>
+              </select>
+            </div>
+            <div class="recipient-filter-clear">
+              <button type="button"
+                      id="recipientFilterReset"
+                      class="modern-btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Clear
+              </button>
+            </div>
+            <div class="recipient-filter-meta">
+              <span>Filtered: <strong id="recipientFilteredCount">0</strong></span>
+              <small id="recipientFilterHint">Type to narrow recipients</small>
+            </div>
+          </div>
+          <div id="recipientList">
+            <div class="text-center text-muted py-5">
+              <i class="bi bi-hourglass-split fs-1 d-block mb-3"></i>
+              <div class="fw-semibold">Loading recipient preview...</div>
+              <small>Please wait</small>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-top bg-light">
+          <button type="button"
+                  class="modern-btn modern-btn-secondary"
+                  data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

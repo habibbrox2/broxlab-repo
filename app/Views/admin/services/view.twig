@@ -1,0 +1,388 @@
+{% extends "admin/layout.twig" %}
+{# Service Detail View #}
+{% block title %}Service: {{ service.name }}{% endblock %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-file-earmark me-2"></i>
+        Service Details
+      </div>
+      <div class="admin-page-subtitle">Service information</div>
+    </div>
+    {# ─── Header Glass Card ─── #}
+    <div class="header-glass-card mb-4">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="header-icon-badge">
+            <i class="bi bi-briefcase-fill"></i>
+          </div>
+          <div>
+            <h1 class="page-title mb-1">{{ service.name }}</h1>
+            <p class="page-subtitle">Service details and management</p>
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="/services/{{ service.slug }}"
+             class="modern-btn modern-btn-secondary btn-sm"
+             target="_blank">
+            <i class="bi bi-arrow-up-right me-1"></i>Preview
+          </a>
+          <a href="/admin/services/{{ service.id }}/edit"
+             class="modern-btn modern-btn-primary btn-sm">
+            <i class="bi bi-pencil me-2"></i>Edit
+          </a>
+        </div>
+      </div>
+    </div>
+    {# ─── Main Content ─── #}
+    <div class="row g-4">
+      {# ─── Left Column ─── #}
+      <div class="col-lg-8">
+        {# ── Service Info Card ── #}
+        <div class="admin-panel-card mb-4">
+          <div class="admin-panel-card-header">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <h6 class="admin-panel-card-header-title mb-0">
+                <i class="bi bi-info-circle-fill"></i>Service Information
+              </h6>
+              <div class="d-flex align-items-center gap-2">
+                {% if service.is_premium is defined and service.is_premium == 1 %}
+                  <span class="badge bg-warning text-surface-dark">
+                    <i class="bi bi-star-fill me-1"></i>Premium
+                  </span>
+                {% endif %}
+                {% if service.status is defined and service.status %}
+                  <span class="badge {% if service.status == 'active' %}bg-success {% elseif service.status == 'inactive' %}bg-warning text-surface-dark {% elseif service.status == 'archived' %}bg-secondary {% else %}bg-light text-surface-dark {% endif %}">
+                    <i class="bi {% if service.status == 'active' %}bi-check-circle {% elseif service.status == 'inactive' %}bi-pause-circle {% elseif service.status == 'archived' %}bi-archive {% else %}bi-circle {% endif %} me-1"></i>
+                    {{ service.status|capitalize }}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="admin-panel-card-body">
+            {# ── Image Section ── #}
+            {% if service.images is defined and service.images is not empty %}
+              <div id="serviceCarousel"
+                   class="carousel slide mb-4"
+                   data-bs-ride="carousel">
+                <div class="carousel-indicators">
+                  {% for img in service.images %}
+                    <button type="button"
+                            data-bs-target="#serviceCarousel"
+                            data-bs-slide-to="{{ loop.index0 }}"
+                            class="{{ loop.first ? 'active' : '' }}"
+                            aria-current="{{ loop.first ? 'true' : 'false' }}"
+                            aria-label="Slide {{ loop.index }}"></button>
+                  {% endfor %}
+                </div>
+                <div class="carousel-inner rounded-3 overflow-hidden inl-a-0057">
+                  {% for img in service.images %}
+                    <div class="carousel-item {{ loop.first ? 'active' : '' }}">
+                      {% set img_src = img is iterable ? (img.thumbnail_path ?? img.image_path ?? img.url ?? img.path ?? '') : (img|default('')) %}
+                      {% if not img_src and service.image_urls is defined and service.image_urls|length > 0 %}
+                        {% set img_src = service.image_urls|first %}
+                      {% endif %}
+                      {% if img_src %}
+                        <img src="{{ img_src }}"
+                             class="d-block w-100 object-fit-cover"
+                             alt="{{ img is iterable ? (img.alt_text ?? service.name ~ ' — image ' ~ loop.index) : (service.name ~ ' — image ' ~ loop.index) }}"
+                             loading="lazy">
+                      {% else %}
+                        <div class="d-flex align-items-center justify-content-center w-100 inl-a-0058">
+                          <i class="bi bi-image fs-2 text-muted"></i>
+                        </div>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+                {% if service.images|length > 1 %}
+                  <button class="carousel-control-prev"
+                          type="button"
+                          data-bs-target="#serviceCarousel"
+                          data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                  </button>
+                  <button class="carousel-control-next"
+                          type="button"
+                          data-bs-target="#serviceCarousel"
+                          data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                  </button>
+                {% endif %}
+              </div>
+            {% elseif service.featured_image_url or (service.featured_image is defined and service.featured_image.image_path) %}
+              {% set feat_src = service.featured_image_url ?? (service.featured_image.thumbnail_path ?? service.featured_image.image_path ?? '') %}
+              {% if feat_src %}
+                <img src="{{ feat_src }}"
+                     class="img-fluid rounded-3 mb-4 object-fit-cover inl-a-0057"
+                     loading="lazy"
+                     alt="{{ service.featured_image.alt_text ?? service.name ~ ' — featured image' }}">
+              {% else %}
+                <div class="bg-light rounded-3 text-center py-5 mb-4 border border-dashed">
+                  <i class="bi bi-card-image fs-1 text-muted"></i>
+                  <p class="text-muted small mt-2 mb-0">No images available</p>
+                </div>
+              {% endif %}
+            {% else %}
+              <div class="bg-light rounded-3 text-center py-5 mb-4 border border-dashed">
+                <i class="bi bi-card-image fs-1 text-muted"></i>
+                <p class="text-muted small mt-2 mb-0">No images available</p>
+              </div>
+            {% endif %}
+            {# ── Slug & Categories ── #}
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <label class="text-muted small d-block mb-1">Slug</label>
+                <code class="bg-light px-2 py-1 rounded small">{{ service.slug }}</code>
+              </div>
+              <div class="col-md-6">
+                <label class="text-muted small d-block mb-1">Categories</label>
+                {% if service.categories is defined and service.categories is not empty %}
+                  {% for category in service.categories %}
+                    <span class="badge bg-primary me-1 mb-1">
+                      <i class="bi bi-folder me-1"></i>{{ category.name }}
+                    </span>
+                  {% endfor %}
+                {% else %}
+                  <span class="text-muted small fst-italic">No categories assigned</span>
+                {% endif %}
+              </div>
+            </div>
+            {# ── Description ── #}
+            <div class="mb-4">
+              <label class="text-muted small d-block mb-1">Description</label>
+              <div class="mb-0 text-theme-strong inl-a-0059">{{ service.description|raw }}</div>
+            </div>
+            {# ── Tags ── #}
+            {% if service.tags is defined and service.tags is not empty %}
+              <div class="mb-4">
+                <label class="text-muted small d-block mb-1">Tags</label>
+                {% for tag in service.tags %}
+                  <span class="badge bg-light text-surface-dark border me-1 mb-1">
+                    <i class="bi bi-tag me-1"></i>{{ tag.name }}
+                  </span>
+                {% endfor %}
+              </div>
+            {% endif %}
+            {# ── Divider ── #}
+            <hr class="my-4">
+            {# ── Settings Row ── #}
+            <div class="row">
+              <div class="col-md-6">
+                <label class="text-muted small d-block mb-1">Requires Approval</label>
+                {% if service.requires_approval %}
+                  <span class="badge bg-warning text-surface-dark"><i class="bi bi-clock me-1"></i>Yes</span>
+                {% else %}
+                  <span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i>No</span>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="text-muted small d-block mb-1">Auto-Approve</label>
+                {% if service.auto_approve %}
+                  <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Yes</span>
+                {% else %}
+                  <span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i>No</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <label class="text-muted small d-block mb-1">Service Price</label>
+                {% if service.price is defined and service.price %}
+                  <span class="badge bg-success-subtle text-success border">{{ app_settings.currency_symbol|default("$") }}{{ service.price|number_format(2, '.', ',') }}</span>
+                {% else %}
+                  <span class="text-muted small fst-italic">Not set</span>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="text-muted small d-block mb-1">Redirect URL</label>
+                {% if service.redirect_url is defined and service.redirect_url %}
+                  <a href="{{ service.redirect_url }}"
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     class="small">{{ service.redirect_url }}</a>
+                {% else %}
+                  <span class="text-muted small fst-italic">Not set</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {# ── Form Fields Card ── #}
+        {% if form_fields is defined and form_fields is not empty %}
+          <div class="admin-panel-card">
+            <div class="admin-panel-card-header d-flex justify-content-between align-items-center">
+              <h6 class="admin-panel-card-header-title mb-0">
+                <i class="bi bi-form-check me-2"></i>Application Form Fields
+              </h6>
+              <span class="badge bg-light text-surface-dark fw-600">{{ form_fields|length }}</span>
+            </div>
+            <div class="admin-panel-card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="ps-4">#</th>
+                      <th>Field Name</th>
+                      <th>Type</th>
+                      <th>Required</th>
+                      <th>Order</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for field in form_fields %}
+                      <tr>
+                        <td class="ps-4 text-muted">{{ loop.index }}</td>
+                        <td>
+                          <strong class="small">{{ field.field_label }}</strong>
+                        </td>
+                        <td>
+                          <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">{{ field.field_type }}</span>
+                        </td>
+                        <td>
+                          {% if field.is_required %}
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+                              <i class="bi bi-check me-1"></i>Required
+                            </span>
+                          {% else %}
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">Optional</span>
+                          {% endif %}
+                        </td>
+                        <td>{{ field.field_order }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+      {# ─── Right Sidebar ─── #}
+      <div class="col-lg-4">
+        {# ── Statistics Card ── #}
+        <div class="admin-panel-card mb-4">
+          <div class="admin-panel-card-header">
+            <h6 class="admin-panel-card-header-title mb-0">
+              <i class="bi bi-bar-chart-fill"></i>Statistics
+            </h6>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="stat-card text-center py-4 mb-3">
+              <small class="stat-label d-block mb-2">Total Applications</small>
+              <strong class="stat-value fs-1 text-primary">{{ service.total_applications|default(0) }}</strong>
+            </div>
+            <div class="row g-2 mb-3 text-center">
+              <div class="col-6">
+                <div class="p-2 rounded bg-light">
+                  <small class="d-block text-muted">Impressions</small>
+                  <strong>{{ service.impressions|default(0) |number_format }}</strong>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-2 rounded bg-light">
+                  <small class="d-block text-muted">Views</small>
+                  <strong>{{ service.views|default(0) |number_format }}</strong>
+                </div>
+              </div>
+            </div>
+            <a href="/admin/applications?service_id={{ service.id }}"
+               class="modern-btn modern-btn-primary w-100 btn-sm">
+              <i class="bi bi-list me-1"></i>View All
+            </a>
+          </div>
+        </div>
+        {# ── Metadata Card ── #}
+        <div class="admin-panel-card mb-4">
+          <div class="admin-panel-card-header">
+            <h6 class="admin-panel-card-header-title mb-0">
+              <i class="bi bi-clock-history"></i>Metadata
+            </h6>
+          </div>
+          <div class="admin-panel-card-body small">
+            <div class="d-flex justify-content-between py-2 border-bottom">
+              <span class="text-muted">Service ID</span>
+              <code>{{ service.id }}</code>
+            </div>
+            <div class="d-flex justify-content-between py-2 border-bottom">
+              <span class="text-muted">Created</span>
+              <span>{{ service.created_at|date("d M Y H:i") }}</span>
+            </div>
+            <div class="d-flex justify-content-between py-2">
+              <span class="text-muted">Updated</span>
+              <span>{{ service.updated_at|date("d M Y H:i") }}</span>
+            </div>
+          </div>
+        </div>
+        {# ── Quick Actions Card ── #}
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header">
+            <h6 class="admin-panel-card-header-title mb-0">
+              <i class="bi bi-lightning-fill"></i>Quick Actions
+            </h6>
+          </div>
+          <div class="admin-panel-card-body d-flex flex-column gap-2">
+            <a href="/admin/services/{{ service.id }}/edit"
+               class="modern-btn modern-btn-white btn-sm">
+              <i class="bi bi-pencil me-1"></i>Edit
+            </a>
+            <a href="/services/{{ service.slug }}"
+               class="modern-btn modern-btn-secondary btn-sm"
+               target="_blank">
+              <i class="bi bi-arrow-up-right me-1"></i>Preview
+            </a>
+            {% if service.status == 'active' %}
+              <a href="#"
+                 class="modern-btn modern-btn-secondary btn-sm"
+                 data-bs-toggle="modal"
+                 data-bs-target="#archiveModal">
+                <i class="bi bi-archive me-1"></i>Archive
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {# ─── Archive Confirmation Modal ─── #}
+    {% if service.status == 'active' %}
+      <div class="modal fade"
+           id="archiveModal"
+           tabindex="-1"
+           aria-labelledby="archiveModalLabel"
+           aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content rounded-4 border-0 shadow-lg bg-light">
+            <div class="modal-header border-bottom fw-600">
+              <h6 class="modal-title">
+                <i class="bi bi-exclamation-triangle-fill me-2 text-warning"></i>Archive Service
+              </h6>
+              <button type="button"
+                      class="modern-btn-close"
+                      data-bs-dismiss="modal"
+                      aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p class="mb-0">
+                Are you sure you want to archive <strong>{{ service.name }}</strong>? This will make the service inactive and hidden from the public listing.
+              </p>
+            </div>
+            <div class="modal-footer border-top">
+              <button type="button"
+                      class="modern-btn modern-btn-secondary btn-sm"
+                      data-bs-dismiss="modal">Cancel</button>
+              <a href="/admin/services/{{ service.id }}/archive"
+                 class="modern-btn modern-btn-primary btn-sm">
+                <i class="bi bi-archive me-1"></i>Archive
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

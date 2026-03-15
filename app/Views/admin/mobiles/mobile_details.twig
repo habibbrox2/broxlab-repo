@@ -1,0 +1,87 @@
+{% extends 'admin/layout.twig' %}
+{% block title %}{{ mobile.brand_name }} {{ mobile.model_name }}{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-phone me-2"></i>
+        Device Details
+      </div>
+      <div class="admin-page-subtitle">Mobile device information</div>
+    </div>
+    <!-- Mobile Header -->
+    <div class="admin-panel-card   mb-4">
+      <div class="admin-panel-card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">
+          <i class="bi bi-phone me-2"></i>{{ mobile.brand_name }} {{ mobile.model_name }}
+        </h4>
+        <div class="d-flex gap-2">
+          <a href="/admin/mobiles/update?id={{ mobile.id }}"
+             class="modern-btn modern-btn-primary btn-sm">
+            <i class="bi bi-pencil-square me-1"></i> Edit
+          </a>
+          <a href="/admin/mobiles/delete?id={{ mobile.id }}"
+             class="modern-btn modern-btn-primary btn-sm">
+            <i class="bi bi-trash me-1"></i> Delete
+          </a>
+          <a href="/admin/mobiles/all" class="modern-btn btn-light btn-sm">
+            <i class="bi bi-arrow-left-circle me-1"></i> Back
+          </a>
+        </div>
+      </div>
+      <div class="admin-panel-card-body">
+        <p>
+          <strong><i class="bi bi-calendar me-1"></i>Release Date:</strong> {{ mobile.release_date }}
+        </p>
+        <p>
+          <strong><i class="bi bi-toggle-on me-1"></i>Status:</strong> {{ mobile.status }}
+        </p>
+        <p>
+          <strong><i class="bi bi-currency-dollar me-1"></i>Official Price:</strong> {{ mobile.official_price | currency }}
+          <br>
+          <strong><i class="bi bi-currency-dollar me-1"></i>Unofficial Price:</strong> {{ mobile.unofficial_price | currency }}
+        </p>
+      </div>
+    </div>
+    <!-- Specifications -->
+    <div class="admin-panel-card   mb-4">
+      <div class="admin-panel-card-header">
+        <h5 class="mb-0">
+          <i class="bi bi-list me-2"></i>Specifications
+        </h5>
+      </div>
+      <div class="admin-panel-card-body">
+        <ul class="list-group list-group-flush">
+          {% for spec in specifications %}
+            <li class="list-group-item">
+              <strong>{{ spec.spec_key }}:</strong> {{ spec.spec_value }}
+            </li>
+          {% else %}
+            <li class="list-group-item text-muted text-center">No specifications available.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <!-- Images Gallery -->
+    {% if images is defined and images|length > 0 %}
+      <div class="admin-panel-card   mb-4">
+        <div class="admin-panel-card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-image-fill me-2"></i>Images
+          </h5>
+        </div>
+        <div class="admin-panel-card-body d-flex flex-wrap gap-3">
+          {% for image in images %}
+            <div class="admin-panel-card">
+              <img src="{{ image.image_url }}"
+                   alt="{{ mobile.brand_name }} {{ mobile.model_name }}"
+                   class="img-fluid ">
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
