@@ -83,9 +83,14 @@ Options -Indexes
 #<IfModule mod_headers.c>
 #    Header set Referrer-Policy "strict-origin-when-cross-origin"
 #</IfModule>
+<<<<<<< HEAD
 <FilesMatch "^(rollback|deploy_config)\.php$|^(deploy\.log|version\.json)$">
     Deny from all
 </FilesMatch>
+=======
+
+
+>>>>>>> ai-sys
 
 # ---------------- PHP version handler ----------------
 <IfModule mime_module>

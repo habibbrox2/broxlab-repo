@@ -4,13 +4,40 @@
 
 ---
 
-## AI Coding Agents / Instructions
-If you are using an AI coding agent (Copilot, Cursor, Claude, Windsurf, etc.), read:
-- `AGENTS.md`
-- `docs/AI_CONTEXT_INDEX.md`
+## 🚀 Key Features
+
+- ✅ **Content Management**: Posts, pages, categories, tags, media handling
+- ✅ **User & Role Management**: Roles, permissions, user sessions, security tools
+- ✅ **Notifications & Messaging**: Email, SMS, push notifications, Telegram integration
+- ✅ **AI & Automation**: AI conversations, knowledge base, content scraping/crawling, autotext generation
+- ✅ **Device & IoT Features**: Device sync, control commands, telemetry
+- ✅ **Analytics & Logging**: Event logging, audit trails, activity history
+- ✅ **Modular Structure**: Modular app structure (Controllers, Models, Views, Middleware, etc.)
 
 ---
 
+## 🧩 Repository Structure
+
+```
+app/            # Application source: Controllers, Models, Views, Middleware
+broxbhai/       # Build & front-end tooling (esbuild, Tailwind config, etc.)
+Config/         # Configuration helpers & 3rd party config files
+Database/       # SQL schema / table definitions
+public_html/    # Public webroot (front controller, assets)
+scripts/        # Utility scripts
+storage/        # Runtime storage (uploads, cache, logs)
+system/         # Framework/system core (if applicable)
+vendor/         # Composer dependencies
+```
+
+---
+
+## 🛠️ Prerequisites
+
+- PHP 8.0+ (or higher) with required extensions (PDO, mbstring, json, curl, openssl)
+- Composer
+- MySQL / MariaDB
+- Node.js + npm (for frontend tooling)
 ## 🚀 Key Features
 
 - ✅ **Content Management**: Posts, pages, categories, tags, media handling
