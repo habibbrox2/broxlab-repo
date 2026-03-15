@@ -8,12 +8,9 @@
 class AIProvider
 {
     private $mysqli;
-<<<<<<< HEAD
-=======
     private $lastRemoteModelsMeta = null;
 
     private const REMOTE_MODELS_CACHE_DIR = 'storage/cache/ai-models';
->>>>>>> temp_branch
 
     // Provider configurations
     private const PROVIDER_CONFIGS = [
@@ -22,36 +19,14 @@ class AIProvider
             'endpoint' => 'https://openrouter.ai/api/v1/chat/completions',
             'auth_type' => 'bearer',
             'supports_streaming' => true,
-<<<<<<< HEAD
-            'models' => [
-                'openrouter/free' => 'Auto Select (Free)',
-                'openrouter/gpt-4' => 'GPT-4 (OpenRouter)',
-                'anthropic/claude-3.5-sonnet' => 'Claude 3.5 Sonnet',
-                'anthropic/claude-3-haiku' => 'Claude 3 Haiku',
-                'openai/gpt-4o' => 'GPT-4o',
-                'openai/gpt-4o-mini' => 'GPT-4o Mini',
-                'google/gemini-2.0-flash' => 'Gemini 2.0 Flash',
-                'meta-llama/llama-3.1-8b-instruct' => 'Llama 3.1 8B'
-            ]
-=======
             'models' => []
->>>>>>> temp_branch
         ],
         'openai' => [
             'name' => 'OpenAI',
             'endpoint' => 'https://api.openai.com/v1/chat/completions',
             'auth_type' => 'bearer',
             'supports_streaming' => true,
-<<<<<<< HEAD
-            'models' => [
-                'gpt-4o' => 'GPT-4o',
-                'gpt-4o-mini' => 'GPT-4o Mini',
-                'gpt-4-turbo' => 'GPT-4 Turbo',
-                'gpt-3.5-turbo' => 'GPT-3.5 Turbo'
-            ]
-=======
             'models' => []
->>>>>>> temp_branch
         ],
         'anthropic' => [
             'name' => 'Anthropic',
@@ -59,47 +34,14 @@ class AIProvider
             'auth_type' => 'anthropic-api-key',
             'supports_streaming' => true,
             'requires_project_header' => true,
-<<<<<<< HEAD
-            'models' => [
-                'claude-sonnet-4-20250514' => 'Claude Sonnet 4',
-                'claude-3-5-sonnet-20241022' => 'Claude 3.5 Sonnet',
-                'claude-3-5-sonnet-20240620' => 'Claude 3.5 Sonnet (June)',
-                'claude-3-haiku-20240307' => 'Claude 3 Haiku'
-            ]
-=======
             'models' => []
->>>>>>> temp_branch
         ],
         'fireworks' => [
             'name' => 'Fireworks AI',
             'endpoint' => 'https://api.fireworks.ai/inference/v1/chat/completions',
             'auth_type' => 'bearer',
             'supports_streaming' => true,
-<<<<<<< HEAD
-            'models' => [
-                // Public serverless models - you must deploy any used model
-                // in your Fireworks dashboard.  The keys here include the
-                // full path that the API expects.  If you get a 404, make
-                // sure the model is deployed/visible to your account.
-                'accounts/fireworks/models/deepseek-v3p1' => 'DeepSeek v3.1 p1',
-                'accounts/fireworks/models/kimi-k2-instruct-0905' => 'Kimi K2',
-                'accounts/fireworks/models/llama-v3.1-70b-instruct' => 'Llama 3.1 70B',
-                'accounts/fireworks/models/llama-v3.1-405b-instruct' => 'Llama 3.1 405B',
-                'accounts/fireworks/models/llama-v3-70b-instruct' => 'Llama 3 70B',
-                'accounts/fireworks/models/llama-v3-8b-instruct' => 'Llama 3 8B',
-                'accounts/fireworks/models/qwen2-72b-instruct' => 'Qwen2 72B',
-                'accounts/fireworks/models/qwen2-7b-instruct' => 'Qwen2 7B',
-                'accounts/fireworks/models/mixtral-8x7b-instruct-v0.1' => 'Mixtral 8x7B',
-                'accounts/fireworks/models/phi-3.5-mini-instruct' => 'Phi-3.5 Mini',
-                'accounts/fireworks/models/gemma2-9b-instruct' => 'Gemma 2 9B',
-                'accounts/fireworks/models/deepseek-coder-v2-instruct' => 'DeepSeek Coder V2',
-                'accounts/fireworks/models/deepseek-llm-67b-chat' => 'DeepSeek LLM 67B',
-                'accounts/fireworks/models/minimax-m2.1' => 'MiniMax M2.1',
-                'accounts/fireworks/models/minimax-m2.5' => 'MiniMax M2.5'
-            ]
-=======
             'models' => []
->>>>>>> temp_branch
         ],
 
         'kilo' => [
@@ -107,26 +49,7 @@ class AIProvider
             'endpoint' => 'https://api.kilo.ai/api/gateway',
             'auth_type' => 'bearer',
             'supports_streaming' => true,
-<<<<<<< HEAD
-            'models' => [
-                // FREE MODELS (show at top)
-                'moonshotai/Kimi-K2.5' => '🚀 MoonshotAI Kimi K2.5 (Free)',
-                'minimax/MiniMax-M2.1' => '🚀 MiniMax M2.1 (Free)',
-                'zhipuai/GLM-4.7' => '🚀 Z.AI GLM 4.7 (Free)',
-                'gigapotato/Giga-Potato' => '🚀 Giga Potato (Free)',
-                'arceeai/Trinity-Large' => '🚀 Arcee Trinity Large (Free)',
-                // Premium models
-                'anthropic/claude-sonnet-4.5' => 'Claude Sonnet 4.5',
-                'anthropic/claude-3.5-sonnet' => 'Claude 3.5 Sonnet',
-                'openai/gpt-4o' => 'GPT-4o',
-                'openai/gpt-4o-mini' => 'GPT-4o Mini',
-                'meta-llama/llama-3.1-8b-instruct' => 'Llama 3.1 8B',
-                'google/gemini-1.5-flash' => 'Gemini 1.5 Flash',
-                'mistralai/mistral-7b-instruct-v0.2' => 'Mistral 7B'
-            ]
-=======
             'models' => []
->>>>>>> temp_branch
         ],
         'huggingface' => [
             'name' => 'Hugging Face',
@@ -134,22 +57,6 @@ class AIProvider
             'auth_type' => 'bearer',
             'supports_streaming' => true,
             'uses_openai_format' => true,
-<<<<<<< HEAD
-            'models' => [
-                'meta-llama/Meta-Llama-3.1-8B-Instruct' => 'Llama 3.1 8B Instruct',
-                'meta-llama/Meta-Llama-3-8B-Instruct' => 'Llama 3 8B Instruct',
-                'Qwen/Qwen2.5-7B-Instruct' => 'Qwen 2.5 7B Instruct',
-                'Qwen/Qwen2.5-14B-Instruct' => 'Qwen 2.5 14B Instruct',
-                'microsoft/Phi-3-mini-128k-instruct' => 'Phi-3 Mini 128K',
-                'google/gemma-2-2b-it' => 'Gemma 2 2B Instruct',
-                'google/gemma-2-9b-it' => 'Gemma 2 9B Instruct',
-                'mistralai/Mistral-7B-Instruct-v0.2' => 'Mistral 7B Instruct v0.2',
-                'mistralai/Mixtral-8x7B-Instruct-v0.1' => 'Mixtral 8x7B Instruct',
-                'tiiuae/Falcon3-7B-Instruct' => 'Falcon 3 7B Instruct',
-                'bigcode/starcoder2-15b' => 'StarCoder 2 15B',
-                'facebook/opt-1.3b' => 'OPT 1.3B'
-            ]
-=======
             'models' => []
         ],
         'ollama' => [
@@ -158,7 +65,6 @@ class AIProvider
             'auth_type' => 'bearer',
             'supports_streaming' => true,
             'models' => []
->>>>>>> temp_branch
         ],
         'custom' => [
             'name' => 'Custom Provider',
@@ -174,8 +80,6 @@ class AIProvider
         $this->mysqli = $mysqli;
     }
 
-<<<<<<< HEAD
-=======
     private function getRemoteModelsCacheDir(): string
     {
         $root = dirname(__DIR__, 2);
@@ -258,7 +162,6 @@ class AIProvider
         return $this->lastRemoteModelsMeta;
     }
 
->>>>>>> temp_branch
     /**
      * Get all AI providers
      */
@@ -506,11 +409,7 @@ class AIProvider
     }
 
     /**
-<<<<<<< HEAD
-     * Get AI settings
-=======
      * Get AI SYSTEM settings
->>>>>>> temp_branch
      */
     public function getSettings(): array
     {
@@ -568,11 +467,7 @@ class AIProvider
     }
 
     /**
-<<<<<<< HEAD
-     * Update AI settings
-=======
      * Update AI SYSTEM settings
->>>>>>> temp_branch
      */
     public function updateSettings(array $settings): bool
     {
@@ -664,18 +559,6 @@ class AIProvider
         if ($providerName === 'kilo') {
             $endpoint = rtrim($endpoint, '/') . '/chat/completions';
         }
-<<<<<<< HEAD
-
-        $apiKey = $this->getAPIKey($providerName);
-
-        if (empty($apiKey)) {
-            return ['success' => false, 'error' => 'API key not configured for ' . $config['name']];
-        }
-
-        // Build request based on provider
-        $requestData = $this->buildRequest($providerName, $model, $prompt, $options);
-        $headers = $this->buildHeaders($providerName, $apiKey, $requestData);
-=======
         // Ollama uses OpenAI-compatible /v1/chat/completions path (per official docs)
         if ($providerName === 'ollama') {
             $endpoint = (string)$endpoint;
@@ -701,7 +584,6 @@ class AIProvider
         $requestData = $this->buildRequest($providerName, $model, $prompt, $options);
         $headers = $this->buildHeaders($providerName, $apiKey, $requestData, (string)$endpoint);
         $this->logPayloadDebug($providerName, $model, $endpoint, $requestData);
->>>>>>> temp_branch
 
         // Make the request
         $ch = curl_init($endpoint);
@@ -711,69 +593,23 @@ class AIProvider
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, $options['timeout'] ?? 120);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
-<<<<<<< HEAD
-=======
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
->>>>>>> temp_branch
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error = curl_error($ch);
-<<<<<<< HEAD
-        curl_close($ch);
-
-        if ($error) {
-            return ['success' => false, 'error' => 'cURL error: ' . $error];
-=======
         $effectiveUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
         curl_close($ch);
 
         if ($error) {
             return ['success' => false, 'error' => 'Connection error: ' . $error, 'error_type' => 'network'];
->>>>>>> temp_branch
         }
 
         if ($httpCode !== 200) {
             // Try to parse OpenAI-style error payloads so we can show a cleaner message.
-<<<<<<< HEAD
-            $errorMessage = 'HTTP ' . $httpCode;
-            $parsed = json_decode($response, true);
-
-            if (json_last_error() === JSON_ERROR_NONE && is_array($parsed)) {
-                $errorPayload = $parsed['error'] ?? $parsed;
-
-                if (is_array($errorPayload)) {
-                    $details = [];
-                    if (!empty($errorPayload['type'])) {
-                        $details[] = $errorPayload['type'];
-                    }
-                    if (!empty($errorPayload['code'])) {
-                        $details[] = $errorPayload['code'];
-                    }
-                    if (!empty($errorPayload['message'])) {
-                        $details[] = $errorPayload['message'];
-                    }
-
-                    if (!empty($details)) {
-                        $errorMessage .= ' (' . implode(', ', $details) . ')';
-                    } else {
-                        $errorMessage .= ': ' . json_encode($errorPayload);
-                    }
-                } elseif (!empty($parsed['message'])) {
-                    $errorMessage .= ': ' . $parsed['message'];
-                } else {
-                    $errorMessage .= ': ' . $response;
-                }
-            } else {
-                $errorMessage .= ': ' . $response;
-            }
-
-            return ['success' => false, 'error' => $errorMessage];
-=======
             $errorMessage = $this->parseHttpError($providerName, $httpCode, $response);
             return ['success' => false, 'error' => $errorMessage, 'error_type' => 'http', 'http_code' => $httpCode];
->>>>>>> temp_branch
         }
 
         // Parse response
@@ -781,8 +617,6 @@ class AIProvider
     }
 
     /**
-<<<<<<< HEAD
-=======
      * Parse HTTP error into user-friendly message
      */
     private function parseHttpError(string $providerName, int $httpCode, string $response): string
@@ -834,7 +668,6 @@ class AIProvider
     }
 
     /**
->>>>>>> temp_branch
      * Get API key from environment or settings
      */
     private function getAPIKey(string $providerName): string
@@ -857,8 +690,6 @@ class AIProvider
     }
 
     /**
-<<<<<<< HEAD
-=======
      * Check whether a provider has an API key configured.
      */
     public function hasApiKey(string $providerName): bool
@@ -867,7 +698,6 @@ class AIProvider
     }
 
     /**
->>>>>>> temp_branch
      * Build request data based on provider
      * 
      * @param string $providerName Provider name
@@ -968,14 +798,6 @@ class AIProvider
         // Ensure each message has role and content
         $formattedMessages = [];
         foreach ($messages as $msg) {
-<<<<<<< HEAD
-            if (is_array($msg) && isset($msg['role']) && isset($msg['content'])) {
-                $formattedMessages[] = [
-                    'role' => $msg['role'],
-                    'content' => is_array($msg['content']) ? json_encode($msg['content']) : $msg['content']
-                ];
-            }
-=======
             if (!is_array($msg) || !isset($msg['role']) || !array_key_exists('content', $msg)) {
                 continue;
             }
@@ -987,7 +809,6 @@ class AIProvider
                 'role' => $msg['role'],
                 'content' => $content
             ];
->>>>>>> temp_branch
         }
 
         // If no valid messages, fallback to empty user message
@@ -995,13 +816,10 @@ class AIProvider
             $formattedMessages = [['role' => 'user', 'content' => '']];
         }
 
-<<<<<<< HEAD
-=======
         $normalized = $this->normalizeMessagesForProvider($providerName, $formattedMessages);
         $formattedMessages = $normalized['messages'];
         $systemPrompt = $normalized['system'] ?? '';
 
->>>>>>> temp_branch
         // Build request based on provider
         $request = [
             'model' => $model,
@@ -1011,12 +829,9 @@ class AIProvider
         ];
 
         // Provider-specific adjustments
-<<<<<<< HEAD
-=======
         if ($providerName === 'anthropic' && $systemPrompt !== '') {
             $request['system'] = $systemPrompt;
         }
->>>>>>> temp_branch
         if ($providerName === 'fireworks') {
             // Fireworks expects accounts/fireworks/models/xxx format
             if (strpos($model, 'accounts/') !== 0) {
@@ -1032,11 +847,6 @@ class AIProvider
     }
 
     /**
-<<<<<<< HEAD
-     * Build headers based on provider
-     */
-    private function buildHeaders(string $providerName, string $apiKey, array $requestData): array
-=======
      * Determine whether a provider supports rich/multimodal content.
      *
      * This is driven by:
@@ -1182,7 +992,6 @@ class AIProvider
      * Build headers based on provider
      */
     private function buildHeaders(string $providerName, string $apiKey, array $requestData, string $endpoint): array
->>>>>>> temp_branch
     {
         $headers = ['Content-Type: application/json'];
 
@@ -1194,15 +1003,12 @@ class AIProvider
             case 'google':
                 $headers[] = 'Authorization: Bearer ' . $apiKey;
                 break;
-<<<<<<< HEAD
-=======
             case 'ollama':
                 // Local Ollama does not require auth
                 if (!empty($apiKey) && !$this->isLocalOllamaEndpoint($endpoint)) {
                     $headers[] = 'Authorization: Bearer ' . $apiKey;
                 }
                 break;
->>>>>>> temp_branch
             default:
                 $headers[] = 'Authorization: Bearer ' . $apiKey;
         }
@@ -1210,8 +1016,6 @@ class AIProvider
         return $headers;
     }
 
-<<<<<<< HEAD
-=======
     private function isLocalOllamaEndpoint(string $endpoint): bool
     {
         $host = parse_url($endpoint, PHP_URL_HOST);
@@ -1261,7 +1065,6 @@ class AIProvider
         return $out;
     }
 
->>>>>>> temp_branch
     /**
      * Parse response based on provider
      */
@@ -1356,8 +1159,6 @@ class AIProvider
                 }
         }
 
-<<<<<<< HEAD
-=======
         // Best-effort recovery for unexpected but useful response shapes
         // Example: some provider responses may include a `reasoning` or `reasoning_details` block
         if (isset($data['choices'][0]['message']) && is_array($data['choices'][0]['message'])) {
@@ -1390,7 +1191,6 @@ class AIProvider
             return ['success' => true, 'content' => json_encode($msg), 'usage' => $data['usage'] ?? [], 'raw' => $data];
         }
 
->>>>>>> temp_branch
         return ['success' => false, 'error' => 'Unexpected response format', 'raw' => $data];
     }
 
@@ -1441,12 +1241,9 @@ class AIProvider
 
         $row['supported_models_select'] = $this->buildSelectSafeModelLabels($row['supported_models']);
 
-<<<<<<< HEAD
-=======
         // Determine multimodal support (can be overridden per-provider via extra_settings)
         $row['supports_multimodal'] = $this->supportsRichContent($row['provider_name'], $row);
 
->>>>>>> temp_branch
         // Check if API key is set and show masked preview
         $apiKey = $this->getAPIKey($row['provider_name']);
         $row['has_api_key'] = !empty($apiKey);
@@ -1490,57 +1287,6 @@ class AIProvider
      * @param string $providerName
      * @return array<string,string> mapping model id =&gt; display name
      */
-<<<<<<< HEAD
-    public function fetchRemoteModels(string $providerName): array
-    {
-        if ($providerName !== 'fireworks') {
-            return [];
-        }
-
-        $accountId = getenv('FIREWORKS_ACCOUNT_ID') ?: $this->getSetting('fireworks_account_id', '');
-        if (empty($accountId)) {
-            return [];
-        }
-
-        $apiKey = $this->getAPIKey('fireworks');
-        if (empty($apiKey)) {
-            return [];
-        }
-
-        $url = "https://api.fireworks.ai/v1/accounts/" . urlencode($accountId) . "/models?pageSize=200";
-
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_HTTPGET, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Authorization: Bearer ' . $apiKey,
-            'Content-Type: application/json'
-        ]);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-
-        $resp = curl_exec($ch);
-        $err = curl_error($ch);
-        $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($err || $http !== 200) {
-            return [];
-        }
-
-        $data = json_decode($resp, true);
-        if (json_last_error() !== JSON_ERROR_NONE || !isset($data['models'])) {
-            return [];
-        }
-
-        $models = [];
-        foreach ($data['models'] as $m) {
-            if (isset($m['name'])) {
-                $models[$m['name']] = $m['displayName'] ?? $m['name'];
-            }
-        }
-
-        return $models;
-=======
     public function fetchRemoteModels(string $providerName, bool $forceRefresh = false): array
     {
         $ttl = $this->getRemoteModelsCacheTtl($providerName);
@@ -1967,7 +1713,6 @@ class AIProvider
         if ($error) $payload['error'] = $error;
         if ($count !== null) $payload['count'] = $count;
         error_log('[AI Remote Models] ' . json_encode($payload));
->>>>>>> temp_branch
     }
 
     /**
@@ -1980,24 +1725,16 @@ class AIProvider
             return ['success' => false, 'error' => 'Provider not found'];
         }
 
-<<<<<<< HEAD
-        $apiKey = $this->getAPIKey($providerName);
-        if (empty($apiKey)) {
-=======
         // For Ollama (local), API key is optional - it's a local service
         $apiKey = $this->getAPIKey($providerName);
         $endpoint = $provider['api_endpoint'] ?? self::getProviderConfig($providerName)['endpoint'] ?? '';
         $isLocalOllama = $providerName === 'ollama' && $this->isLocalOllamaEndpoint((string)$endpoint);
 
         if (empty($apiKey) && !$isLocalOllama) {
->>>>>>> temp_branch
             return ['success' => false, 'error' => 'API key not configured'];
         }
 
         $config = self::getProviderConfig($providerName);
-<<<<<<< HEAD
-        $testModel = $model ?? array_key_first($config['models'] ?? ['gpt-4o-mini' => 'Test']);
-=======
         $models = $provider['supported_models'] ?? [];
         if (empty($models)) {
             $models = $config['models'] ?? [];
@@ -2024,7 +1761,6 @@ class AIProvider
                 $testModel = (string)array_key_first($models) ?? '';
             }
         }
->>>>>>> temp_branch
 
         // Simple test prompt
         $testPrompt = "Say 'OK' if you can read this.";
@@ -2042,8 +1778,6 @@ class AIProvider
 
         return $result;
     }
-<<<<<<< HEAD
-=======
 
     /**
      * Ensure model ID is correctly handled for specific providers.
@@ -2571,5 +2305,4 @@ class AIProvider
         }
         error_log('[AI Payload] ' . json_encode($meta));
     }
->>>>>>> temp_branch
 }

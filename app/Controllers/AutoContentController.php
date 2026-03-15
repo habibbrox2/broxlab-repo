@@ -1,11 +1,7 @@
 <?php
 
-<<<<<<< HEAD
-declare(strict_types=1);
-=======
 declare(strict_types = 1)
 ;
->>>>>>> temp_branch
 
 /**
  * AutoContentController.php
@@ -39,15 +35,6 @@ $router->get('/admin/autocontent', ['middleware' => ['auth', 'admin_only']], fun
         $sources_count = count($model->getActiveSources());
 
         echo $twig->render('admin/autocontent/dashboard.twig', [
-<<<<<<< HEAD
-            'title' => 'AI Auto Content Dashboard',
-            'stats' => $stats,
-            'recent_items' => $recent_items,
-            'sources_count' => $sources_count,
-            'current_page' => 'autocontent-dashboard'
-        ]);
-    } catch (Throwable $e) {
-=======
         'title' => 'AI Auto Content Dashboard',
         'stats' => $stats,
         'recent_items' => $recent_items,
@@ -56,7 +43,6 @@ $router->get('/admin/autocontent', ['middleware' => ['auth', 'admin_only']], fun
         ]);
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Dashboard Error: " . $e->getMessage());
         echo "Error loading dashboard: " . $e->getMessage();
     }
@@ -74,20 +60,12 @@ $router->get('/admin/autocontent/sources', ['middleware' => ['auth', 'admin_only
         $sources = $model->getAllSources();
 
         echo $twig->render('admin/autocontent/sources.twig', [
-<<<<<<< HEAD
-            'title' => 'AI Article Sources',
-            'sources' => $sources,
-            'current_page' => 'autocontent-sources'
-        ]);
-    } catch (Throwable $e) {
-=======
         'title' => 'AI Article Sources',
         'sources' => $sources,
         'current_page' => 'autocontent-sources'
         ]);
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Sources Error: " . $e->getMessage());
         echo "Error loading sources: " . $e->getMessage();
     }
@@ -111,20 +89,6 @@ $router->get('/admin/autocontent/sources/create', ['middleware' => ['auth', 'adm
                 $source = $old;
                 $sessionMgr->delete('autocontent_source_old');
             }
-<<<<<<< HEAD
-        } catch (Throwable $e) {
-            // ignore session errors
-        }
-
-        echo $twig->render('admin/autocontent/source_form.twig', [
-            'title' => 'Add Article Source',
-            'source' => $source,
-            'categories' => $categories,
-            'isCreate' => true,
-            'current_page' => 'autocontent-sources'
-        ]);
-    } catch (Throwable $e) {
-=======
         }
         catch (Throwable $e) {
         // ignore session errors
@@ -139,7 +103,6 @@ $router->get('/admin/autocontent/sources/create', ['middleware' => ['auth', 'adm
         ]);
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Source Create Form Error: " . $e->getMessage());
         echo "Error: " . $e->getMessage();
     }
@@ -192,14 +155,9 @@ $router->post('/admin/autocontent/sources/create', ['middleware' => ['auth', 'ad
                 $sessionMgr = getSessionManager();
                 $data['fetch_interval'] = (int)($data['fetch_interval'] / 60);
                 $sessionMgr->set('autocontent_source_old', $data);
-<<<<<<< HEAD
-            } catch (Throwable $e) {
-                // ignore session errors
-=======
             }
             catch (Throwable $e) {
             // ignore session errors
->>>>>>> temp_branch
             }
 
             showMessage('Name and URL are required', 'error');
@@ -212,23 +170,15 @@ $router->post('/admin/autocontent/sources/create', ['middleware' => ['auth', 'ad
         if ($id > 0) {
             showMessage('Source created successfully', 'success');
             logActivity("Auto Content Source Created", "autocontent", $id, ['name' => $data['name']], 'success');
-<<<<<<< HEAD
-        } else {
-=======
         }
         else {
->>>>>>> temp_branch
             showMessage('Failed to create source', 'error');
         }
 
         header('Location: /admin/autocontent/sources');
         exit;
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-=======
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Source Create Error: " . $e->getMessage());
 
         // Preserve form input on error so user doesn't lose entered values
@@ -236,14 +186,9 @@ $router->post('/admin/autocontent/sources/create', ['middleware' => ['auth', 'ad
             $sessionMgr = getSessionManager();
             $data['fetch_interval'] = (int)($data['fetch_interval'] / 60);
             $sessionMgr->set('autocontent_source_old', $data);
-<<<<<<< HEAD
-        } catch (Throwable $inner) {
-            // ignore session errors
-=======
         }
         catch (Throwable $inner) {
         // ignore session errors
->>>>>>> temp_branch
         }
 
         showMessage('Error: ' . $e->getMessage(), 'error');
@@ -283,20 +228,6 @@ $router->get('/admin/autocontent/sources/edit', ['middleware' => ['auth', 'admin
                 $source = array_merge($source, $old);
                 $sessionMgr->delete('autocontent_source_old');
             }
-<<<<<<< HEAD
-        } catch (Throwable $e) {
-            // ignore session errors
-        }
-
-        echo $twig->render('admin/autocontent/source_form.twig', [
-            'title' => 'Edit Article Source',
-            'source' => $source,
-            'categories' => $categories,
-            'isCreate' => false,
-            'current_page' => 'autocontent-sources'
-        ]);
-    } catch (Throwable $e) {
-=======
         }
         catch (Throwable $e) {
         // ignore session errors
@@ -311,7 +242,6 @@ $router->get('/admin/autocontent/sources/edit', ['middleware' => ['auth', 'admin
         ]);
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Source Edit Form Error: " . $e->getMessage());
         echo "Error: " . $e->getMessage();
     }
@@ -370,14 +300,9 @@ $router->post('/admin/autocontent/sources/edit', ['middleware' => ['auth', 'admi
                 $sessionMgr = getSessionManager();
                 $data['fetch_interval'] = (int)($data['fetch_interval'] / 60);
                 $sessionMgr->set('autocontent_source_old', $data);
-<<<<<<< HEAD
-            } catch (Throwable $e) {
-                // ignore session errors
-=======
             }
             catch (Throwable $e) {
             // ignore session errors
->>>>>>> temp_branch
             }
 
             showMessage('Name and URL are required', 'error');
@@ -390,23 +315,15 @@ $router->post('/admin/autocontent/sources/edit', ['middleware' => ['auth', 'admi
         if ($success) {
             showMessage('Source updated successfully', 'success');
             logActivity("Auto Content Source Updated", "autocontent", $id, ['name' => $data['name']], 'success');
-<<<<<<< HEAD
-        } else {
-=======
         }
         else {
->>>>>>> temp_branch
             showMessage('Failed to update source', 'error');
         }
 
         header('Location: /admin/autocontent/sources');
         exit;
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-=======
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Source Edit Error: " . $e->getMessage());
 
         // Preserve form input on error so values are not lost
@@ -414,14 +331,9 @@ $router->post('/admin/autocontent/sources/edit', ['middleware' => ['auth', 'admi
             $sessionMgr = getSessionManager();
             $data['fetch_interval'] = (int)($data['fetch_interval'] / 60);
             $sessionMgr->set('autocontent_source_old', $data);
-<<<<<<< HEAD
-        } catch (Throwable $inner) {
-            // ignore session errors
-=======
         }
         catch (Throwable $inner) {
         // ignore session errors
->>>>>>> temp_branch
         }
 
         showMessage('Error: ' . $e->getMessage(), 'error');
@@ -450,23 +362,15 @@ $router->get('/admin/autocontent/sources/delete', ['middleware' => ['auth', 'adm
         if ($success) {
             showMessage('Source deleted successfully', 'success');
             logActivity("Auto Content Source Deleted", "autocontent", $id, ['name' => $source['name'] ?? ''], 'success');
-<<<<<<< HEAD
-        } else {
-=======
         }
         else {
->>>>>>> temp_branch
             showMessage('Failed to delete source', 'error');
         }
 
         header('Location: /admin/autocontent/sources');
         exit;
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-=======
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Source Delete Error: " . $e->getMessage());
         showMessage('Error: ' . $e->getMessage(), 'error');
         header('Location: /admin/autocontent/sources');
@@ -491,12 +395,8 @@ $router->get('/admin/autocontent/sources/toggle', ['middleware' => ['auth', 'adm
 
         header('Location: /admin/autocontent/sources');
         exit;
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-=======
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Source Toggle Error: " . $e->getMessage());
         header('Location: /admin/autocontent/sources');
         exit;
@@ -527,26 +427,6 @@ $router->get('/admin/autocontent/queue', ['middleware' => ['auth', 'admin_only']
         $totalPages = ceil($total / $limit);
 
         echo $twig->render('admin/autocontent/queue.twig', [
-<<<<<<< HEAD
-            'title' => 'Article Queue',
-            'items' => $articles,
-            'sources' => $sources,
-            'status_counts' => $statusCounts,
-            'current_status' => $status,
-            'current_source' => $sourceFilter,
-            'search' => $search,
-            'current_page_num' => $page,
-            'total_pages' => $totalPages,
-            'pagination' => [
-                'page' => $page,
-                'total_pages' => $totalPages,
-                'per_page' => $limit,
-                'total' => $total
-            ],
-            'current_page' => 'autocontent-queue'
-        ]);
-    } catch (Throwable $e) {
-=======
         'title' => 'Article Queue',
         'items' => $articles,
         'sources' => $sources,
@@ -566,7 +446,6 @@ $router->get('/admin/autocontent/queue', ['middleware' => ['auth', 'admin_only']
         ]);
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Queue Error: " . $e->getMessage());
         echo "Error loading queue: " . $e->getMessage();
     }
@@ -594,20 +473,12 @@ $router->get('/admin/autocontent/queue/view', ['middleware' => ['auth', 'admin_o
         }
 
         echo $twig->render('admin/autocontent/queue_view.twig', [
-<<<<<<< HEAD
-            'title' => 'View Article',
-            'article' => $article,
-            'current_page' => 'autocontent-queue'
-        ]);
-    } catch (Throwable $e) {
-=======
         'title' => 'View Article',
         'article' => $article,
         'current_page' => 'autocontent-queue'
         ]);
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Article View Error: " . $e->getMessage());
         echo "Error: " . $e->getMessage();
     }
@@ -625,20 +496,12 @@ $router->get('/admin/autocontent/settings', ['middleware' => ['auth', 'admin_onl
         $config = $model->getSettings();
 
         echo $twig->render('admin/autocontent/settings.twig', [
-<<<<<<< HEAD
-            'title' => 'AI Auto Content Settings',
-            'config' => $config,
-            'current_page' => 'autocontent-settings'
-        ]);
-    } catch (Throwable $e) {
-=======
         'title' => 'AI Auto Content Settings',
         'config' => $config,
         'current_page' => 'autocontent-settings'
         ]);
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Settings Error: " . $e->getMessage());
         echo "Error: " . $e->getMessage();
     }
@@ -678,12 +541,8 @@ $router->post('/admin/autocontent/settings', ['middleware' => ['auth', 'admin_on
         // Don't update key if empty (keep existing)
         if (empty($settings['ai_key'])) {
             unset($settings['ai_key']);
-<<<<<<< HEAD
-        } elseif ($settings['ai_key'] === ' ') {
-=======
         }
         elseif ($settings['ai_key'] === ' ') {
->>>>>>> temp_branch
             // Clear key if single space
             $settings['ai_key'] = '';
         }
@@ -695,12 +554,8 @@ $router->post('/admin/autocontent/settings', ['middleware' => ['auth', 'admin_on
 
         header('Location: /admin/autocontent/settings');
         exit;
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-=======
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Settings Save Error: " . $e->getMessage());
         showMessage('Error: ' . $e->getMessage(), 'error');
         header('Location: /admin/autocontent/settings');
@@ -738,19 +593,6 @@ $router->get('/admin/autocontent/stats/chart', ['middleware' => ['auth', 'admin_
         }
 
         echo json_encode([
-<<<<<<< HEAD
-            'labels' => $labels,
-            'datasets' => [[
-                'label' => 'Articles Collected',
-                'data' => $data,
-                'borderColor' => '#6366f1',
-                'backgroundColor' => 'rgba(99, 102, 241, 0.1)',
-                'fill' => true,
-                'tension' => 0.4
-            ]]
-        ]);
-    } catch (Exception $e) {
-=======
         'labels' => $labels,
         'datasets' => [[
         'label' => 'Articles Collected',
@@ -763,7 +605,6 @@ $router->get('/admin/autocontent/stats/chart', ['middleware' => ['auth', 'admin_
         ]);
     }
     catch (Exception $e) {
->>>>>>> temp_branch
         http_response_code(500);
         echo json_encode(['error' => $e->getMessage()]);
     }
@@ -818,14 +659,6 @@ $router->post('/admin/autocontent/api/detect-selectors', [], function () use ($m
         $selectors = analyzeHtmlStructure($html, $url);
 
         echo json_encode([
-<<<<<<< HEAD
-            'success' => true,
-            'message' => 'Selectors detected successfully',
-            'selectors' => $selectors
-        ]);
-        exit;
-    } catch (Throwable $e) {
-=======
         'success' => true,
         'message' => 'Selectors detected successfully',
         'selectors' => $selectors
@@ -833,7 +666,6 @@ $router->post('/admin/autocontent/api/detect-selectors', [], function () use ($m
         exit;
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Detect Selectors Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         exit;
@@ -887,15 +719,6 @@ $router->post('/admin/autocontent/api/ai-detect-selectors', [], function () use 
         $selectors = detectSelectorsWithAI($html, $url);
 
         echo json_encode([
-<<<<<<< HEAD
-            'success' => true,
-            'message' => 'AI selectors detected successfully',
-            'selectors' => $selectors,
-            'method' => 'ai'
-        ]);
-        exit;
-    } catch (Throwable $e) {
-=======
         'success' => true,
         'message' => 'AI selectors detected successfully',
         'selectors' => $selectors,
@@ -904,7 +727,6 @@ $router->post('/admin/autocontent/api/ai-detect-selectors', [], function () use 
         exit;
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("AI Detect Selectors Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         exit;
@@ -920,13 +742,6 @@ function detectSelectorsWithAI(string $html, string $url): array
     $htmlSample = substr($html, 0, 30000);
 
     // Build prompt for AI
-<<<<<<< HEAD
-    $prompt = "Analyze this HTML from URL: {$url}\n\nHTML (first 30KB):\n{$htmlSample}\n\n";
-    $prompt .= 'Return a JSON object with CSS selectors for web scraping. Use these exact field names: ';
-    $prompt .= 'list_container, list_item, list_title, list_link, list_date, list_image, title, content, image, excerpt, date, author. ';
-    $prompt .= 'Use class selectors (.class) not IDs (#id) for flexibility. Prefer semantic HTML5 (article, section, time). ';
-    $prompt .= 'Look for card, item, post, article, story, news in class names.';
-=======
     $prompt = <<<PROMPT
 You are a web scraping expert. Analyze the first 30KB of HTML from URL: {$url} and identify the most accurate CSS selectors for the elements listed below.
 
@@ -961,17 +776,12 @@ RESPONSE FORMAT:
     ...
 }
 PROMPT;
->>>>>>> temp_branch
 
     // Call Puter AI API
     $apiUrl = 'https://api.puter.com/ai/chat';
 
     $postData = json_encode([
-<<<<<<< HEAD
-        'model' => 'gpt-4.1-mini',
-=======
         'model' => 'gpt-4o-mini',
->>>>>>> temp_branch
         'messages' => [
             ['role' => 'user', 'content' => $prompt]
         ]
@@ -1006,12 +816,8 @@ PROMPT;
     $content = '';
     if (isset($data['choices'][0]['message']['content'])) {
         $content = $data['choices'][0]['message']['content'];
-<<<<<<< HEAD
-    } elseif (isset($data['text'])) {
-=======
     }
     elseif (isset($data['text'])) {
->>>>>>> temp_branch
         $content = $data['text'];
     }
 
@@ -1062,12 +868,8 @@ function parseAISelectorResponse(string $response): array
                 return array_merge($default, $parsed);
             }
         }
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-=======
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Parse AI selector error: " . $e->getMessage());
     }
 
@@ -1280,12 +1082,8 @@ function analyzeHtmlStructure(string $html, string $url): array
             '//div[contains(@class, "byline")]'
         ];
         $selectors['author'] = findFirstWorkingSelector($xpath, $authorCandidates);
-<<<<<<< HEAD
-    } catch (\Exception $e) {
-=======
     }
     catch (\Exception $e) {
->>>>>>> temp_branch
         error_log("HTML Analysis Error: " . $e->getMessage());
     }
 
@@ -1306,12 +1104,8 @@ function findFirstWorkingSelector(\DOMXPath $xpath, array $candidates): string
                     return $xpathQuery;
                 }
             }
-<<<<<<< HEAD
-        } catch (\Exception $e) {
-=======
         }
         catch (\Exception $e) {
->>>>>>> temp_branch
             continue;
         }
     }
@@ -1362,11 +1156,7 @@ $router->get('/admin/autocontent/api/collect-single', ['middleware' => ['auth', 
             $duplicateChecker,
             $imageDownloader,
             $mysqli
-<<<<<<< HEAD
-        );
-=======
             );
->>>>>>> temp_branch
 
         $collected = 0;
 
@@ -1377,12 +1167,8 @@ $router->get('/admin/autocontent/api/collect-single', ['middleware' => ['auth', 
             if ($prothomResult['success']) {
                 $collected = $prothomResult['articles_saved'] ?? 0;
             }
-<<<<<<< HEAD
-        } else {
-=======
         }
         else {
->>>>>>> temp_branch
             // For other sources, use basic scraper
             $result = $scraper->scrape($source['url']);
 
@@ -1453,20 +1239,12 @@ $router->get('/admin/autocontent/api/collect-single', ['middleware' => ['auth', 
         $model->updateLastFetched($sourceId);
 
         echo json_encode([
-<<<<<<< HEAD
-            'success' => true,
-            'collected' => $collected,
-            'message' => "Collected {$collected} article(s) from {$source['name']}"
-        ]);
-    } catch (Throwable $e) {
-=======
         'success' => true,
         'collected' => $collected,
         'message' => "Collected {$collected} article(s) from {$source['name']}"
         ]);
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Collect Single API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -1507,13 +1285,8 @@ $router->get('/admin/autocontent/api/collect-multi', ['middleware' => ['auth', '
         // Check if source has selectors configured
         if (empty($source['selector_list_item']) && empty($source['selector_list_title'])) {
             echo json_encode([
-<<<<<<< HEAD
-                'success' => false,
-                'message' => 'Source needs CSS selectors configured for multi-layer scraping. Please set list item selector or list link selector in source settings.'
-=======
             'success' => false,
             'message' => 'Source needs CSS selectors configured for multi-layer scraping. Please set list item selector or list link selector in source settings.'
->>>>>>> temp_branch
             ]);
             exit;
         }
@@ -1533,21 +1306,6 @@ $router->get('/admin/autocontent/api/collect-multi', ['middleware' => ['auth', '
         }
 
         echo json_encode([
-<<<<<<< HEAD
-            'success' => $result['success'],
-            'collected' => $result['articles_collected'],
-            'message' => "Multi-layer scrape: {$result['articles_collected']} article(s) from {$source['name']}",
-            'pipeline' => [
-                'steps_completed' => $result['steps_completed'],
-                'status' => $status,
-                'total_links_found' => $status['total_links_found'],
-                'articles_collected' => $status['articles_collected']
-            ],
-            'errors' => $result['errors'],
-            'warnings' => $result['warnings']
-        ]);
-    } catch (Throwable $e) {
-=======
         'success' => $result['success'],
         'collected' => $result['articles_collected'],
         'message' => "Multi-layer scrape: {$result['articles_collected']} article(s) from {$source['name']}",
@@ -1562,7 +1320,6 @@ $router->get('/admin/autocontent/api/collect-multi', ['middleware' => ['auth', '
         ]);
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Multi-Layer Collect API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -1610,11 +1367,7 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
             $duplicateChecker,
             $imageDownloader,
             $mysqli
-<<<<<<< HEAD
-        );
-=======
             );
->>>>>>> temp_branch
 
         foreach ($sources as $source) {
             $sourceResult = [
@@ -1639,12 +1392,8 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
                         if (!empty($prothomResult['errors'])) {
                             $sourceResult['error'] = implode('; ', array_slice($prothomResult['errors'], 0, 3));
                         }
-<<<<<<< HEAD
-                    } else {
-=======
                     }
                     else {
->>>>>>> temp_branch
                         $sourceResult['status'] = 'error';
                         $sourceResult['error'] = $prothomResult['errors'][0] ?? 'Failed to scrape Prothom Alo';
                     }
@@ -1750,12 +1499,8 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
 
                 $sourceResult['status'] = 'success';
                 $sourceResults[] = $sourceResult;
-<<<<<<< HEAD
-            } catch (Exception $e) {
-=======
             }
             catch (Exception $e) {
->>>>>>> temp_branch
                 $sourceResult['status'] = 'error';
                 $sourceResult['error'] = $e->getMessage();
                 $sourceResults[] = $sourceResult;
@@ -1777,19 +1522,6 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
         }
 
         echo json_encode([
-<<<<<<< HEAD
-            'success' => $collected > 0 || empty($errors),
-            'collected' => $collected,
-            'message' => $message,
-            'source_results' => $sourceResults,
-            'debug' => [
-                'total_sources' => count($sources),
-                'errors_count' => count($errors),
-                'warnings_count' => count($warnings)
-            ]
-        ]);
-    } catch (Throwable $e) {
-=======
         'success' => $collected > 0 || empty($errors),
         'collected' => $collected,
         'message' => $message,
@@ -1802,7 +1534,6 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
         ]);
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Collect API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -1824,12 +1555,8 @@ $router->post('/admin/autocontent/api/process', ['middleware' => ['auth', 'admin
         $result = $enhancer->processBatch($limit);
 
         echo json_encode($result);
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-=======
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Process API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -1856,12 +1583,8 @@ $router->post('/admin/autocontent/api/process-single', ['middleware' => ['auth',
         $result = $enhancer->processArticle($id);
 
         echo json_encode($result);
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-=======
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Process Single API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -1910,19 +1633,12 @@ $router->post('/admin/autocontent/api/publish', ['middleware' => ['auth', 'admin
                 if ($postId > 0) {
                     $model->updateArticleStatus($article['id'], 'published');
                     $published++;
-<<<<<<< HEAD
-                } else {
-                    $model->updateArticleStatus($article['id'], 'failed');
-                }
-            } catch (Exception $e) {
-=======
                 }
                 else {
                     $model->updateArticleStatus($article['id'], 'failed');
                 }
             }
             catch (Exception $e) {
->>>>>>> temp_branch
                 error_log("Error publishing article {$article['id']}: " . $e->getMessage());
                 $model->updateArticleStatus($article['id'], 'failed');
                 continue;
@@ -1930,20 +1646,12 @@ $router->post('/admin/autocontent/api/publish', ['middleware' => ['auth', 'admin
         }
 
         echo json_encode([
-<<<<<<< HEAD
-            'success' => true,
-            'published' => $published,
-            'message' => "Published {$published} articles"
-        ]);
-    } catch (Throwable $e) {
-=======
         'success' => true,
         'published' => $published,
         'message' => "Published {$published} articles"
         ]);
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Publish API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -2004,12 +1712,8 @@ $router->post('/admin/autocontent/api/run-pipeline', ['middleware' => ['auth', '
                     }
 
                     $model->updateLastFetched((int)$source['id']);
-<<<<<<< HEAD
-                } catch (Exception $e) {
-=======
                 }
                 catch (Exception $e) {
->>>>>>> temp_branch
                     error_log("Pipeline collect error for source {$source['id']}: " . $e->getMessage());
                     continue;
                 }
@@ -2041,20 +1745,12 @@ $router->post('/admin/autocontent/api/run-pipeline', ['middleware' => ['auth', '
         }
 
         echo json_encode([
-<<<<<<< HEAD
-            'success' => true,
-            'result' => $result,
-            'message' => "Pipeline complete: {$result['collected']} collected, {$result['processed']} processed, {$result['published']} published"
-        ]);
-    } catch (Throwable $e) {
-=======
         'success' => true,
         'result' => $result,
         'message' => "Pipeline complete: {$result['collected']} collected, {$result['processed']} processed, {$result['published']} published"
         ]);
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Pipeline API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -2076,12 +1772,8 @@ $router->post('/admin/autocontent/api/retry', ['middleware' => ['auth', 'admin_o
         $result = $enhancer->retryFailed($limit);
 
         echo json_encode($result);
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-=======
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Retry API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -2119,12 +1811,8 @@ $router->post('/admin/autocontent/queue/delete', ['middleware' => ['auth', 'admi
         showMessage('Article deleted successfully', 'success');
         header('Location: /admin/autocontent/queue');
         exit;
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-=======
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Article Delete Error: " . $e->getMessage());
         if ($isAjax) {
             header('Content-Type: application/json');
@@ -2171,23 +1859,15 @@ $router->post('/admin/autocontent/queue/publish', ['middleware' => ['auth', 'adm
             $model->updateArticleStatus($id, 'published');
             showMessage('Article published successfully', 'success');
             logActivity("Auto Content Article Published", "autocontent", $id, ['title' => $article['title']], 'success');
-<<<<<<< HEAD
-        } else {
-=======
         }
         else {
->>>>>>> temp_branch
             showMessage('Failed to publish article', 'error');
         }
 
         header('Location: /admin/autocontent/queue');
         exit;
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-=======
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Article Publish Error: " . $e->getMessage());
         showMessage('Error: ' . $e->getMessage(), 'error');
         header('Location: /admin/autocontent/queue');
@@ -2242,12 +1922,8 @@ $router->post('/admin/autocontent/queue/approve', ['middleware' => ['auth', 'adm
 
         header('Location: /admin/autocontent/queue/view?id=' . $id);
         exit;
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-=======
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Article Approve Error: " . $e->getMessage());
         if ($isAjax) {
             header('Content-Type: application/json');
@@ -2307,12 +1983,8 @@ $router->post('/admin/autocontent/queue/reject', ['middleware' => ['auth', 'admi
 
         header('Location: /admin/autocontent/queue');
         exit;
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-=======
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Article Reject Error: " . $e->getMessage());
         if ($isAjax) {
             header('Content-Type: application/json');
@@ -2381,12 +2053,8 @@ $router->post('/admin/autocontent/queue/edit', ['middleware' => ['auth', 'admin_
 
         header('Location: /admin/autocontent/queue/view?id=' . $id);
         exit;
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-=======
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Article Edit Error: " . $e->getMessage());
         if ($isAjax) {
             header('Content-Type: application/json');
@@ -2428,12 +2096,8 @@ $router->post('/admin/autocontent/queue/bulk-action', ['middleware' => ['auth', 
 
         foreach ($ids as $id) {
             $id = (int)$id;
-<<<<<<< HEAD
-            if ($id <= 0) continue;
-=======
             if ($id <= 0)
                 continue;
->>>>>>> temp_branch
 
             try {
                 switch ($action) {
@@ -2469,12 +2133,8 @@ $router->post('/admin/autocontent/queue/bulk-action', ['middleware' => ['auth', 
                     default:
                         $errors[] = "Unknown action: $action";
                 }
-<<<<<<< HEAD
-            } catch (Throwable $e) {
-=======
             }
             catch (Throwable $e) {
->>>>>>> temp_branch
                 $errors[] = "Error on ID $id: " . $e->getMessage();
             }
         }
@@ -2483,12 +2143,8 @@ $router->post('/admin/autocontent/queue/bulk-action', ['middleware' => ['auth', 
             header('Content-Type: application/json');
             if ($successCount > 0) {
                 echo json_encode(['success' => true, 'message' => "Successfully processed $successCount item(s)"]);
-<<<<<<< HEAD
-            } else {
-=======
             }
             else {
->>>>>>> temp_branch
                 echo json_encode(['success' => false, 'message' => empty($errors) ? 'No items processed' : implode(', ', $errors)]);
             }
             exit;
@@ -2497,12 +2153,8 @@ $router->post('/admin/autocontent/queue/bulk-action', ['middleware' => ['auth', 
         showMessage("Processed $successCount item(s)", 'success');
         header('Location: /admin/autocontent/queue');
         exit;
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-=======
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Auto Content Bulk Action Error: " . $e->getMessage());
         if ($isAjax) {
             header('Content-Type: application/json');
@@ -2544,15 +2196,9 @@ $router->post('/admin/autocontent/api/crawl-sitemap', ['middleware' => ['auth', 
         // Validate required parameter
         if (empty($sitemapUrl)) {
             echo json_encode([
-<<<<<<< HEAD
-                'success' => false,
-                'message' => 'Sitemap URL is required. Please provide a valid sitemap index URL.',
-                'example' => 'https://www.mobiledokan.co/sitemap.xml'
-=======
             'success' => false,
             'message' => 'Sitemap URL is required. Please provide a valid sitemap index URL.',
             'example' => 'https://www.mobiledokan.co/sitemap.xml'
->>>>>>> temp_branch
             ]);
             exit;
         }
@@ -2560,13 +2206,8 @@ $router->post('/admin/autocontent/api/crawl-sitemap', ['middleware' => ['auth', 
         // Validate URL format
         if (!filter_var($sitemapUrl, FILTER_VALIDATE_URL)) {
             echo json_encode([
-<<<<<<< HEAD
-                'success' => false,
-                'message' => 'Invalid URL format'
-=======
             'success' => false,
             'message' => 'Invalid URL format'
->>>>>>> temp_branch
             ]);
             exit;
         }
@@ -2613,20 +2254,12 @@ $router->post('/admin/autocontent/api/crawl-sitemap', ['middleware' => ['auth', 
         }
 
         echo json_encode($response);
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-        error_log("Sitemap Crawler Error: " . $e->getMessage());
-        echo json_encode([
-            'success' => false,
-            'message' => 'Error: ' . $e->getMessage()
-=======
     }
     catch (Throwable $e) {
         error_log("Sitemap Crawler Error: " . $e->getMessage());
         echo json_encode([
         'success' => false,
         'message' => 'Error: ' . $e->getMessage()
->>>>>>> temp_branch
         ]);
     }
     exit;
@@ -2644,26 +2277,16 @@ $router->post('/admin/autocontent/api/test-sitemap', ['middleware' => ['auth', '
 
         if (empty($sitemapUrl)) {
             echo json_encode([
-<<<<<<< HEAD
-                'success' => false,
-                'message' => 'Sitemap URL is required'
-=======
             'success' => false,
             'message' => 'Sitemap URL is required'
->>>>>>> temp_branch
             ]);
             exit;
         }
 
         if (!filter_var($sitemapUrl, FILTER_VALIDATE_URL)) {
             echo json_encode([
-<<<<<<< HEAD
-                'success' => false,
-                'message' => 'Invalid URL format'
-=======
             'success' => false,
             'message' => 'Invalid URL format'
->>>>>>> temp_branch
             ]);
             exit;
         }
@@ -2688,26 +2311,16 @@ $router->post('/admin/autocontent/api/test-sitemap', ['middleware' => ['auth', '
 
         if ($error || empty($xml)) {
             echo json_encode([
-<<<<<<< HEAD
-                'success' => false,
-                'message' => 'Failed to fetch sitemap: ' . $error
-=======
             'success' => false,
             'message' => 'Failed to fetch sitemap: ' . $error
->>>>>>> temp_branch
             ]);
             exit;
         }
 
         if ($httpCode !== 200) {
             echo json_encode([
-<<<<<<< HEAD
-                'success' => false,
-                'message' => "HTTP Error: $httpCode"
-=======
             'success' => false,
             'message' => "HTTP Error: $httpCode"
->>>>>>> temp_branch
             ]);
             exit;
         }
@@ -2741,12 +2354,8 @@ $router->post('/admin/autocontent/api/test-sitemap', ['middleware' => ['auth', '
             }
             $result['child_sitemaps'] = $childSitemaps;
             $result['child_sitemap_count'] = count($childSitemaps);
-<<<<<<< HEAD
-        } elseif ($urlset->length > 0) {
-=======
         }
         elseif ($urlset->length > 0) {
->>>>>>> temp_branch
             // It's a regular sitemap with URLs
             $locNodes = $xpath->query('//sm:url/sm:loc');
             $urls = [];
@@ -2758,20 +2367,12 @@ $router->post('/admin/autocontent/api/test-sitemap', ['middleware' => ['auth', '
         }
 
         echo json_encode($result);
-<<<<<<< HEAD
-    } catch (Throwable $e) {
-        error_log("Test Sitemap Error: " . $e->getMessage());
-        echo json_encode([
-            'success' => false,
-            'message' => 'Error: ' . $e->getMessage()
-=======
     }
     catch (Throwable $e) {
         error_log("Test Sitemap Error: " . $e->getMessage());
         echo json_encode([
         'success' => false,
         'message' => 'Error: ' . $e->getMessage()
->>>>>>> temp_branch
         ]);
     }
     exit;
@@ -2838,12 +2439,8 @@ $router->post('/admin/autocontent/api/test-selectors', ['middleware' => ['auth',
 
         // Test each selector
         foreach ($selectors as $name => $selector) {
-<<<<<<< HEAD
-            if (empty($selector)) continue;
-=======
             if (empty($selector))
                 continue;
->>>>>>> temp_branch
 
             // Support multiple selectors (comma-separated) - try each until one works
             $selectorParts = array_map('trim', explode(',', $selector));
@@ -2876,12 +2473,8 @@ $router->post('/admin/autocontent/api/test-selectors', ['middleware' => ['auth',
                             break;
                         }
                     }
-<<<<<<< HEAD
-                } catch (Exception $e) {
-=======
                 }
                 catch (Exception $e) {
->>>>>>> temp_branch
                     continue;
                 }
             }
@@ -2892,17 +2485,6 @@ $router->post('/admin/autocontent/api/test-selectors', ['middleware' => ['auth',
         }
 
         echo json_encode([
-<<<<<<< HEAD
-            'success' => true,
-            'message' => 'Selectors tested successfully',
-            'results' => $results
-        ]);
-    } catch (Throwable $e) {
-        error_log("Test Selectors Error: " . $e->getMessage());
-        echo json_encode([
-            'success' => false,
-            'message' => 'Error: ' . $e->getMessage()
-=======
         'success' => true,
         'message' => 'Selectors tested successfully',
         'results' => $results
@@ -2913,7 +2495,6 @@ $router->post('/admin/autocontent/api/test-selectors', ['middleware' => ['auth',
         echo json_encode([
         'success' => false,
         'message' => 'Error: ' . $e->getMessage()
->>>>>>> temp_branch
         ]);
     }
     exit;
@@ -2933,16 +2514,6 @@ $router->get('/admin/autocontent/api/website-presets', ['middleware' => ['auth',
         $presets = $model->getWebsitePresets();
 
         echo json_encode([
-<<<<<<< HEAD
-            'success' => true,
-            'presets' => $presets
-        ]);
-    } catch (Throwable $e) {
-        error_log("Get Website Presets Error: " . $e->getMessage());
-        echo json_encode([
-            'success' => false,
-            'message' => 'Error: ' . $e->getMessage()
-=======
         'success' => true,
         'presets' => $presets
         ]);
@@ -2952,7 +2523,6 @@ $router->get('/admin/autocontent/api/website-presets', ['middleware' => ['auth',
         echo json_encode([
         'success' => false,
         'message' => 'Error: ' . $e->getMessage()
->>>>>>> temp_branch
         ]);
     }
     exit;
@@ -2990,13 +2560,8 @@ $router->post('/admin/autocontent/api/save-preset', ['middleware' => ['auth', 'a
 
         if (empty($data['preset_key']) || empty($data['name'])) {
             echo json_encode([
-<<<<<<< HEAD
-                'success' => false,
-                'message' => 'Preset key and name are required'
-=======
             'success' => false,
             'message' => 'Preset key and name are required'
->>>>>>> temp_branch
             ]);
             exit;
         }
@@ -3004,13 +2569,8 @@ $router->post('/admin/autocontent/api/save-preset', ['middleware' => ['auth', 'a
         // Validate preset_key format (lowercase alphanumeric with hyphens)
         if (!preg_match('/^[a-z0-9-]+$/', $data['preset_key'])) {
             echo json_encode([
-<<<<<<< HEAD
-                'success' => false,
-                'message' => 'Preset key must contain only lowercase letters, numbers, and hyphens'
-=======
             'success' => false,
             'message' => 'Preset key must contain only lowercase letters, numbers, and hyphens'
->>>>>>> temp_branch
             ]);
             exit;
         }
@@ -3019,17 +2579,6 @@ $router->post('/admin/autocontent/api/save-preset', ['middleware' => ['auth', 'a
         $id = $model->saveWebsitePreset($data);
 
         echo json_encode([
-<<<<<<< HEAD
-            'success' => true,
-            'id' => $id,
-            'message' => $data['id'] > 0 ? 'Preset updated successfully' : 'Preset created successfully'
-        ]);
-    } catch (Throwable $e) {
-        error_log("Save Website Preset Error: " . $e->getMessage());
-        echo json_encode([
-            'success' => false,
-            'message' => 'Error: ' . $e->getMessage()
-=======
         'success' => true,
         'id' => $id,
         'message' => $data['id'] > 0 ? 'Preset updated successfully' : 'Preset created successfully'
@@ -3040,7 +2589,6 @@ $router->post('/admin/autocontent/api/save-preset', ['middleware' => ['auth', 'a
         echo json_encode([
         'success' => false,
         'message' => 'Error: ' . $e->getMessage()
->>>>>>> temp_branch
         ]);
     }
     exit;
@@ -3058,13 +2606,8 @@ $router->post('/admin/autocontent/api/delete-preset', ['middleware' => ['auth', 
 
         if ($id <= 0) {
             echo json_encode([
-<<<<<<< HEAD
-                'success' => false,
-                'message' => 'Invalid preset ID'
-=======
             'success' => false,
             'message' => 'Invalid preset ID'
->>>>>>> temp_branch
             ]);
             exit;
         }
@@ -3073,16 +2616,6 @@ $router->post('/admin/autocontent/api/delete-preset', ['middleware' => ['auth', 
         $model->deleteWebsitePreset($id);
 
         echo json_encode([
-<<<<<<< HEAD
-            'success' => true,
-            'message' => 'Preset deleted successfully'
-        ]);
-    } catch (Throwable $e) {
-        error_log("Delete Website Preset Error: " . $e->getMessage());
-        echo json_encode([
-            'success' => false,
-            'message' => 'Error: ' . $e->getMessage()
-=======
         'success' => true,
         'message' => 'Preset deleted successfully'
         ]);
@@ -3092,7 +2625,6 @@ $router->post('/admin/autocontent/api/delete-preset', ['middleware' => ['auth', 
         echo json_encode([
         'success' => false,
         'message' => 'Error: ' . $e->getMessage()
->>>>>>> temp_branch
         ]);
     }
     exit;
@@ -3195,12 +2727,8 @@ $router->post('/admin/autocontent/api/preview-selectors', [], function () use ($
                 if ($itemNodes && $itemNodes->length > 0) {
                     $matches['item'] = true;
                     foreach ($itemNodes as $idx => $itemNode) {
-<<<<<<< HEAD
-                        if ($idx >= 10) break; // Limit to 10 items
-=======
                         if ($idx >= 10)
                             break; // Limit to 10 items
->>>>>>> temp_branch
 
                         $item = [];
 
@@ -3216,12 +2744,8 @@ $router->post('/admin/autocontent/api/preview-selectors', [], function () use ($
                         // Get link
                         if (!empty($linkSelector)) {
                             $linkNodes = $xpath->query($linkSelector, $itemNode);
-<<<<<<< HEAD
-                        } else {
-=======
                         }
                         else {
->>>>>>> temp_branch
                             $linkNodes = $xpath->query('.//a', $itemNode);
                         }
                         if ($linkNodes && $linkNodes->length > 0) {
@@ -3264,12 +2788,8 @@ $router->post('/admin/autocontent/api/preview-selectors', [], function () use ($
                 'items' => $items,
                 'count' => count($items)
             ];
-<<<<<<< HEAD
-        } else {
-=======
         }
         else {
->>>>>>> temp_branch
             // Detail page extraction
             $titleSelector = $selectors['title'] ?? '';
             $contentSelector = $selectors['content'] ?? '';
@@ -3354,23 +2874,6 @@ $router->post('/admin/autocontent/api/preview-selectors', [], function () use ($
         }
 
         echo json_encode([
-<<<<<<< HEAD
-            'success' => true,
-            'message' => 'Preview generated successfully',
-            'type' => $type,
-            'url' => $url,
-            'selectors' => $selectors,
-            'matches' => $matches,
-            'rawHtml' => substr($html, 0, 5000), // First 5KB of HTML for debugging
-            'items' => $result['items'] ?? null,
-            'content' => $result['content'] ?? null
-        ]);
-    } catch (Throwable $e) {
-        error_log("Preview Selectors Error: " . $e->getMessage());
-        echo json_encode([
-            'success' => false,
-            'message' => 'Error: ' . $e->getMessage()
-=======
         'success' => true,
         'message' => 'Preview generated successfully',
         'type' => $type,
@@ -3387,7 +2890,6 @@ $router->post('/admin/autocontent/api/preview-selectors', [], function () use ($
         echo json_encode([
         'success' => false,
         'message' => 'Error: ' . $e->getMessage()
->>>>>>> temp_branch
         ]);
     }
     exit;
@@ -3403,20 +2905,12 @@ $router->get('/admin/autocontent/presets', ['middleware' => ['auth', 'admin_only
         $presets = $model->getWebsitePresets();
 
         echo $twig->render('admin/autocontent/presets.twig', [
-<<<<<<< HEAD
-            'title' => 'Website Presets',
-            'presets' => $presets,
-            'current_page' => 'autocontent-presets'
-        ]);
-    } catch (Throwable $e) {
-=======
         'title' => 'Website Presets',
         'presets' => $presets,
         'current_page' => 'autocontent-presets'
         ]);
     }
     catch (Throwable $e) {
->>>>>>> temp_branch
         error_log("Website Presets Page Error: " . $e->getMessage());
         echo "Error loading presets: " . $e->getMessage();
     }

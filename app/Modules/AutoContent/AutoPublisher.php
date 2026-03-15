@@ -1,11 +1,7 @@
 <?php
 
-<<<<<<< HEAD
-declare(strict_types=1);
-=======
 declare(strict_types = 1)
 ;
->>>>>>> temp_branch
 
 namespace App\Modules\AutoContent;
 
@@ -78,26 +74,17 @@ class AutoPublisher
         $todayPublished = $this->getTodayPublishedCount();
 
         foreach ($articles as $article) {
-<<<<<<< HEAD
-            if ($count >= $maxPublish) break;
-            if ($todayPublished + $count >= $maxPublish) break;
-=======
             if ($count >= $maxPublish)
                 break;
             if ($todayPublished + $count >= $maxPublish)
                 break;
->>>>>>> temp_branch
 
             $result = $this->publishArticle($article);
             if ($result['success']) {
                 $this->published[] = $result;
                 $count++;
-<<<<<<< HEAD
-            } else {
-=======
             }
             else {
->>>>>>> temp_branch
                 $this->errors[] = $result['error'];
             }
         }
@@ -213,16 +200,6 @@ class AutoPublisher
             $contentId = $this->mysqli->insert_id;
             $stmt->close();
 
-<<<<<<< HEAD
-            // Add categories if specified
-            if (!empty($this->config['categories'])) {
-                $this->addContentCategories($contentId, $this->config['categories']);
-            }
-
-            // Add tags if specified
-            if (!empty($this->config['tags'])) {
-                $this->addContentTags($contentId, $this->config['tags']);
-=======
             // Add categories
             $categoryIds = $this->config['categories'] ?: [];
             $tagIds = $this->config['tags'] ?: [];
@@ -252,7 +229,6 @@ class AutoPublisher
 
             if (!empty($tagIds)) {
                 $this->addContentTags($contentId, array_unique($tagIds));
->>>>>>> temp_branch
             }
 
             // Update auto content article status
@@ -277,12 +253,8 @@ class AutoPublisher
                 'content_id' => $contentId,
                 'title' => $title
             ];
-<<<<<<< HEAD
-        } catch (\Exception $e) {
-=======
         }
         catch (\Exception $e) {
->>>>>>> temp_branch
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
@@ -367,8 +339,6 @@ class AutoPublisher
     }
 
     /**
-<<<<<<< HEAD
-=======
      * Get or create a category by name
      */
     private function getOrCreateCategory(string $name): ?int
@@ -433,7 +403,6 @@ class AutoPublisher
     }
 
     /**
->>>>>>> temp_branch
      * Get errors from last run
      */
     public function getErrors(): array

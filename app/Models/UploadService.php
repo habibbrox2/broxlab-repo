@@ -19,11 +19,7 @@ class UploadService
     {
         $this->mysqli = $mysqli;
         $this->userId = $userId;
-<<<<<<< HEAD
-        $this->config = require dirname(__DIR__) . '/Config/Upload.php';
-=======
         $this->config = require dirname(__DIR__, 2) . '/Config/Upload.php';
->>>>>>> temp_branch
         $this->uploadDir = $this->config['base']['upload_dir'];
         $this->tempDir = $this->config['base']['temp_dir'];
         
@@ -121,11 +117,7 @@ class UploadService
             }
 
             // Step 8: Log success
-<<<<<<< HEAD
-            $webPath = str_replace(dirname(__DIR__) . '/public_html', '', $uploadPath);
-=======
             $webPath = $this->toWebPath($uploadPath);
->>>>>>> temp_branch
             logDebug("File uploaded successfully", "FILE_UPLOAD", [
                 'filename' => $filename,
                 'category' => $category,
@@ -441,11 +433,7 @@ class UploadService
     ): ?int
     {
         try {
-<<<<<<< HEAD
-            $webPath = str_replace(dirname(__DIR__) . '/public_html', '', $filePath);
-=======
             $webPath = $this->toWebPath($filePath);
->>>>>>> temp_branch
             $size = $file['size'];
             $identity = $resolvedIdentity ?: $this->resolveFileIdentity($file);
             $mimeType = (string)($identity['mime'] ?? ($file['type'] ?? 'application/octet-stream'));
@@ -665,8 +653,6 @@ class UploadService
     {
         $this->config = array_merge($this->config, $config);
     }
-<<<<<<< HEAD
-=======
 
     private function normalizePath(string $path): string
     {
@@ -717,5 +703,4 @@ class UploadService
 
         return $filePath;
     }
->>>>>>> temp_branch
 }

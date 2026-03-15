@@ -1,11 +1,7 @@
 <?php
 
-<<<<<<< HEAD
-declare(strict_types=1);
-=======
 declare(strict_types = 1)
 ;
->>>>>>> temp_branch
 
 namespace App\Modules\Scraper;
 
@@ -23,10 +19,7 @@ class ScraperOrchestrator
     private ?EnhancedDuplicateChecker $duplicateChecker = null;
     private ?EnhancedImageDownloader $imageDownloader = null;
     private ?ContentCleanerService $contentCleaner = null;
-<<<<<<< HEAD
-=======
     private ?BrowserScraperService $browserScraper = null;
->>>>>>> temp_branch
 
     private ?\mysqli $mysqli = null;
     private array $config = [];
@@ -63,12 +56,9 @@ class ScraperOrchestrator
 
         // Initialize pagination handler
         $this->paginationHandler = new PaginationHandler($this->httpClient, $this->config['max_pages']);
-<<<<<<< HEAD
-=======
 
         // Initialize browser scraper
         $this->browserScraper = new BrowserScraperService($this->config['browser_config'] ?? []);
->>>>>>> temp_branch
     }
 
     /**
@@ -188,12 +178,8 @@ class ScraperOrchestrator
 
             if ($type === 'rss') {
                 $listResult = $this->articleScraper->scrapeRss($source['url']);
-<<<<<<< HEAD
-            } else {
-=======
             }
             else {
->>>>>>> temp_branch
                 $listResult = $this->articleScraper->scrapeList($source['url'], $selectors);
             }
 
@@ -222,41 +208,27 @@ class ScraperOrchestrator
 
                 if ($articleResult['saved']) {
                     $results['saved']++;
-<<<<<<< HEAD
-                } elseif ($articleResult['duplicate']) {
-                    $results['duplicates']++;
-                } elseif (!$articleResult['success']) {
-=======
                 }
                 elseif ($articleResult['duplicate']) {
                     $results['duplicates']++;
                 }
                 elseif (!$articleResult['success']) {
->>>>>>> temp_branch
                     $results['errors']++;
                 }
 
                 // Respect rate limits
-<<<<<<< HEAD
-                usleep(500000); // 0.5 second delay between articles
-=======
                 if ($i < $maxArticles - 1) {
                     $delay = ($source['delay'] ?? 2) * 1000000;
                     usleep($delay > 0 ? (int)$delay : 500000); // Default 0.5s if not set
                 }
->>>>>>> temp_branch
             }
 
             // Update source last fetch time
             $this->sourceManager->updateLastFetch($source['url']);
 
             return array_merge($results, ['success' => true]);
-<<<<<<< HEAD
-        } catch (\Exception $e) {
-=======
         }
         catch (\Exception $e) {
->>>>>>> temp_branch
             return array_merge($results, [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -300,11 +272,6 @@ class ScraperOrchestrator
             }
 
             // Scrape article content with custom selectors
-<<<<<<< HEAD
-            $articleData = $this->articleScraper->scrape($url, $detailSelectors);
-
-            if (!$articleData['success']) {
-=======
             $startTime = microtime(true);
 
             if (!empty($source['use_browser'])) {
@@ -318,16 +285,12 @@ class ScraperOrchestrator
 
             if (!$articleData['success']) {
                 $this->logScrape($source['id'] ?? 0, $url, 'failed', $articleData['error'], $responseTime);
->>>>>>> temp_branch
                 $result['error'] = $articleData['error'];
                 return $result;
             }
 
-<<<<<<< HEAD
-=======
             $this->logScrape($source['id'] ?? 0, $url, 'success', null, $responseTime);
 
->>>>>>> temp_branch
             // Prepare article data
             $article = $this->prepareArticleData($articleData, $source);
 
@@ -374,12 +337,8 @@ class ScraperOrchestrator
 
             $this->stats['articles_scraped']++;
             return $result;
-<<<<<<< HEAD
-        } catch (\Exception $e) {
-=======
         }
         catch (\Exception $e) {
->>>>>>> temp_branch
             $result['error'] = $e->getMessage();
             $this->stats['errors']++;
             return $result;
@@ -659,8 +618,6 @@ class ScraperOrchestrator
     {
         return $this->sourceManager->deleteSource($id);
     }
-<<<<<<< HEAD
-=======
 
     /**
      * Log scrape attempt
@@ -680,5 +637,4 @@ class ScraperOrchestrator
         $stmt->execute();
         $stmt->close();
     }
->>>>>>> temp_branch
 }

@@ -47,12 +47,7 @@ if (!function_exists('yaml_parse')) {
                 // Interpret empty value as empty string (not null)
                 if ($value === '') {
                     $result[$currentKey] = '';
-<<<<<<< HEAD
-                }
-                else {
-=======
                 } else {
->>>>>>> temp_branch
                     $result[$currentKey] = $value;
                 }
                 continue;
@@ -91,14 +86,8 @@ class PromptLoader
                 if (is_array($data)) {
                     return $data;
                 }
-<<<<<<< HEAD
-            }
-            catch (Throwable $e) {
-            // ignore
-=======
             } catch (Throwable $e) {
                 // ignore
->>>>>>> temp_branch
             }
         }
 
@@ -139,12 +128,7 @@ class PromptLoader
                     'admin_system_prompt',
                     'You are a helpful AI assistant for BroxBhai admin panel that can help with content management, user management, analytics, and website administration tasks.'
                 );
-<<<<<<< HEAD
-            }
-            else {
-=======
             } else {
->>>>>>> temp_branch
                 $prompts['system_prompt'] = $aiProvider->getSetting(
                     'public_system_prompt',
                     'You are a helpful AI assistant for BroxBhai website visitors. You can answer questions about the website content, services, and provide general information.'
@@ -168,9 +152,6 @@ class PromptLoader
         $system = trim((string)($prompts['system_prompt'] ?? ''));
 
         if ($context === 'admin' && $system) {
-<<<<<<< HEAD
-            $system .= "\n\nWhen providing answers, feel free to refer to admin URLs and tools available in the dashboard.";
-=======
             $system .= "\n\n[ADMIN COPILOT INSTRUCTIONS]";
             $system .= "\n1. Use standard Markdown for formatting.";
             $system .= "\n2. For data summaries, tables, or complex lists, use the ARTIFACT format:";
@@ -178,14 +159,11 @@ class PromptLoader
             $system .= "\n3. Be context-aware. Use the provided [USER CONTEXT] to tailor your response to the current page.";
             $system .= "\n4. Supported slash commands (admin only): /summarize, /analyze-logs.";
             $system .= "\n5. Refer to admin URLs and tools available in the dashboard when relevant.";
->>>>>>> temp_branch
         }
 
         return $system;
     }
 
-<<<<<<< HEAD
-=======
     /**
      * Fetch relevant knowledge base snippets based on a user query.
      * Returns a concatenated string (may be empty) to append to the system prompt.
@@ -260,7 +238,6 @@ class PromptLoader
         return $out;
     }
 
->>>>>>> temp_branch
     public static function parseResponseConfig(string $text): array
     {
         $result = ['config' => null, 'content' => $text];
@@ -298,14 +275,8 @@ class PromptLoader
                 if (is_array($parsed)) {
                     $config = $parsed;
                 }
-<<<<<<< HEAD
-            }
-            catch (Throwable $e) {
-            // ignore
-=======
             } catch (Throwable $e) {
                 // ignore
->>>>>>> temp_branch
             }
         }
 
@@ -324,12 +295,7 @@ class PromptLoader
                     $value = $matches[2];
                     if ($value === '') {
                         $config[$currentKey] = [];
-<<<<<<< HEAD
-                    }
-                    else {
-=======
                     } else {
->>>>>>> temp_branch
                         $config[$currentKey] = $value;
                     }
                     continue;
@@ -348,8 +314,6 @@ class PromptLoader
         $result['content'] = trim(implode("\n", array_slice($lines, $i)));
         return $result;
     }
-<<<<<<< HEAD
-=======
 
     /**
      * Load AI skills configuration
@@ -537,5 +501,4 @@ class PromptLoader
         $prompt = self::getSystemPrompt($context, $mysqli);
         return self::injectSiteSettings($prompt, $mysqli);
     }
->>>>>>> temp_branch
 }
