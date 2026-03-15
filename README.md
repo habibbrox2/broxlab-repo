@@ -4,6 +4,13 @@
 
 ---
 
+## AI Coding Agents / Instructions
+If you are using an AI coding agent (Copilot, Cursor, Claude, Windsurf, etc.), read:
+- `AGENTS.md`
+- `docs/AI_CONTEXT_INDEX.md`
+
+---
+
 ## 🚀 Key Features
 
 - ✅ **Content Management**: Posts, pages, categories, tags, media handling

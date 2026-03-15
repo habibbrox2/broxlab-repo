@@ -2,7 +2,6 @@
 /vendor/
 /node_modules/
 
-
 # Environment variables (keep example files)
 .env
 .env.*
@@ -25,15 +24,9 @@
 /public_html/uploads/
 /public_html/assets/uploads/
 
-# Build artifacts
-/build/
-**/dist/
-/\.deploy/
-
 # Database dumps/backups
 /Database/
 /*.sql
-
 
 # Secrets / service configs
 /Config/broxlab-firebase.json
@@ -43,7 +36,6 @@
 /.idea/
 .DS_Store
 Thumbs.db
-
 
 # Archives
 *.zip
@@ -56,6 +48,49 @@ Thumbs.db
 /deploy_*.ps1
 /deploy_*.sh
 /deploy_*.bat
+/deploy_*.cmd
+
+# Lock files for deployment
+/deploy_lock.json
+/deploy_ratelimit_*.json
+
+# Progress files
+/deploy_progress_*.json
+
+# Backup files created during deployment
+/backups/
+public_html/backups/
+
+# Deploy worker logs
+/deploy_worker*.log
+
+# ===========================================
+# Webhook Deployment Files
+# ===========================================
+
+# Core webhook files (TRACKED - include in git)
+!public_html/webhook/github.php      # Advanced webhook (database-based)      
+!public_html/webhook/deploy.php       # Simple webhook (config-based)
+!public_html/webhook/*.json           # Webhook settings
+
+# Sensitive files (IGNORED - DO NOT commit)
+!public_html/webhook/deploy_config.php # Contains DB passwords, secrets       
+public_html/webhook/deploy.log        # Deployment logs
+
+# Migration files
+migrations/
+# ===========================================
+# Scripts folder - Keep core scripts, ignore generated
+# ===========================================
+
+# Ignore output files but keep core scripts
+scripts/output/
+scripts/temp/
+scripts/logs/
+
+# IDE specific in scripts
+scripts/.idea/
+scripts/.vscode/
 /deploy_*.cmd
 
 # Lock files for deployment
