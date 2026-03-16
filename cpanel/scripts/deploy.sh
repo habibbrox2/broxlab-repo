@@ -2,7 +2,7 @@
 
 set -e
 
-BASE="/home/user/deploy-system"
+BASE="/home/tdhuedhn/broxlab"
 APP="$BASE/app"
 RELEASES="$APP/releases"
 SHARED="$APP/shared"

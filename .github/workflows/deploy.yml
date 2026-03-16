@@ -20,4 +20,4 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
 
           script: |
-            /home/user/deploy-system/scripts/deploy.sh
+            /home/tdhuedhn/broxlab/scripts/deploy.sh

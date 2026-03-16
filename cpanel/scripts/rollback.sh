@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BASE="/home/user/deploy-system/app"
+BASE="/home/tdhuedhn/broxlab/app"
 
 cd $BASE/releases
 

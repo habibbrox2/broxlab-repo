@@ -32,8 +32,8 @@ cpanel/
 
 1. **On cPanel Server:**
    ```bash
-   mkdir -p /home/user/deploy-system
-   cd /home/user/deploy-system
+   mkdir -p /home/tdhuedhn/broxlab
+   cd /home/tdhuedhn/broxlab
    git clone https://github.com/habibbrox2/broxlab-repo.git .
    ```
 
@@ -50,7 +50,7 @@ cpanel/
 
 4. **Setup public_html Symlink:**
    ```bash
-   ln -sfn /home/user/deploy-system/app/current/public /home/user/public_html
+   ln -sfn /home/tdhuedhn/broxlab/app/current/public /home/tdhuedhn/broxlab/public_html
    ```
 
 5. **Make Scripts Executable:**
@@ -62,7 +62,7 @@ cpanel/
 
 ### Manual Deploy
 ```bash
-cd /home/user/deploy-system
+cd /home/tdhuedhn/broxlab
 ./scripts/deploy.sh
 ```
 

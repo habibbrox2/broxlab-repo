@@ -1,7 +1,7 @@
 #!/bin/bash
 
-APP="/home/user/deploy-system/app"
-BACKUPS="/home/user/deploy-system/backups"
+APP="/home/tdhuedhn/broxlab/app"
+BACKUPS="/home/tdhuedhn/broxlab/backups"
 
 DATE=$(date +"%Y%m%d_%H%M%S")
 
