@@ -85,21 +85,20 @@
 
 
     {# ===== CRITICAL CSS PRELOAD ===== #}
-    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" as="style">
-    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" as="style">
+    <link rel="preload" href="{{ asset('/cdn/css/bootstrap.min.css') }}" as="style">
+    <link rel="preload" href="{{ asset('/cdn/css/bootstrap-icons.min.css') }}" as="style">
     <link rel="preload" href="{{ asset('/assets/css/dist/public-bundle.css') }}" as="style">
 
-    {# ===== BOOTSTRAP CSS (Critical Path) ===== #}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css" rel="stylesheet">
+    {# ===== BOOTSTRAP CSS (Critical Path) - CDN Subdomain ===== #}
+    <link href="{{ asset('/cdn/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('/cdn/css/sweetalert2.min.css') }}" rel="stylesheet">
 
     {# ===== GOOGLE FONTS (Deferred Loading) ===== #}
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'" async>
     <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
 
     {# ===== BOOTSTRAP ICONS (Deferred Loading) ===== #}
-    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" onload="this.onload=null;this.rel='stylesheet'" async>
-    <noscript><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"></noscript>
+    <link href="{{ asset('/cdn/css/bootstrap-icons.min.css') }}" rel="stylesheet">
 
     {# ===== APPLICATION STYLESHEETS (Bundled for Performance) ===== #}
     {# Use bundled CSS for better performance #}
@@ -240,7 +239,7 @@
                 {# Brand / Logo #}
                 <a class="navbar-brand brox-brand-link" href="/" title="Home">
                     {% if app_settings.site_logo is defined and app_settings.site_logo %}
-                        <img src="{{ app_settings.site_logo }}" alt="{{ app_settings.site_name }}" class="brox-brand-logo me-2">
+                        <img src="{{ app_settings.site_logo }}" alt="{{ app_settings.site_name }}" class="brox-brand-logo me-2" loading="lazy" decoding="async">
                     {% else %}
                         <div class="bg-primary rounded-3 p-2 me-2 shadow-sm brox-brand-icon">
                             <i class="bi bi-phone-fill text-white"></i> <span class="brox-brand-text">{{ app_settings.site_name }}</span>
@@ -350,9 +349,9 @@
                                    href="#" id="broxNavbarUser" role="button" 
                                    data-bs-toggle="dropdown" aria-expanded="false">
                                     {% if auth_user.profile_pic is defined and auth_user.profile_pic %}
-                                        <img src="{{ auth_user.profile_pic }}" class="rounded-circle me-2 brox-user-avatar" alt="{{ auth_user.username }}">
+                                        <img src="{{ auth_user.profile_pic }}" class="rounded-circle me-2 brox-user-avatar" alt="{{ auth_user.username }}" loading="lazy" decoding="async">
                                     {% else %}
-                                        <img src="/assets/images/default-avatar.png" class="rounded-circle me-2 brox-user-avatar" alt="User">
+                                        <img src="/assets/images/default-avatar.png" class="rounded-circle me-2 brox-user-avatar" alt="User" loading="lazy" decoding="async">
                                     {% endif %}
                                     <span class="brox-user-dropdown-username d-none d-lg-inline">{{ auth_user.username }}</span>
                                 </a>
@@ -532,7 +531,7 @@
     <script src="{{ asset('/assets/js/bootstrap-lite.js') }}" defer></script>
 
     {# ===== STEP 1.5: SweetAlert2 + Global Message Handler ===== #}
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js" defer></script>
+    <script src="{{ asset('/cdn/js/sweetalert2.all.min.js') }}" defer></script>
     <script src="{{ asset('/assets/js/dist/sweetalert2-handler.js') }}" defer></script>
 {# ===== FIREBASE v2 INITIALIZATION (PRODUCTION SAFE) ===== #}
 

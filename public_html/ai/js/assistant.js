@@ -114,15 +114,18 @@ if (!window.BroxAssistantLoaded) {
             const res = await fetch(`${CONFIG.modelsUrl}?provider=${encodeURIComponent(provider)}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            return { models: Array.isArray(data.models) ? data.models : [], source: 'remote' };
+            if (data?.models && Array.isArray(data.models) && data.models.length > 0) {
+                return { models: data.models, source: 'remote' };
+            }
+            throw new Error('No models returned');
         } catch (e) {
             console.warn('[Models] Failed to fetch model list:', e.message);
-            // Return fallback models for public assistant
+            // Return fallback models for public assistant with better names
             return {
                 models: [
-                    { id: 'anthropic/claude-3-haiku:free', name: 'Claude 3 Haiku', default: true },
-                    { id: 'google/gemini-pro-1.5:free', name: 'Gemini Pro 1.5' },
-                    { id: 'openai/gpt-4o-mini:free', name: 'GPT-4o Mini' }
+                    { id: 'claude-3-haiku', name: 'Claude 3 Haiku', default: true },
+                    { id: 'gemini-pro-1.5', name: 'Gemini Pro 1.5' },
+                    { id: 'gpt-4o-mini', name: 'GPT-4o Mini' }
                 ],
                 source: 'fallback'
             };
@@ -262,10 +265,15 @@ if (!window.BroxAssistantLoaded) {
             const data = await fetchFrontendSettings();
             this.frontendProvider = data?.provider || 'openrouter';
             this.frontendModel = data?.frontend_model || data?.model || '';
+
+            // Set initial model name immediately to show it's loading
             if (this.frontendModel) {
                 this.currentModel = this.frontendModel;
-                this.updateModelLabel();
+            } else {
+                this.currentModel = 'claude-3-haiku'; // Default fallback
             }
+            this.updateModelLabel();
+
             this.loadProviderModels(this.frontendProvider, this.frontendModel);
         }
 
@@ -455,8 +463,15 @@ if (!window.BroxAssistantLoaded) {
             const models = result?.models || [];
             if (!models.length) {
                 this.nodes.modelSel.classList.add('brox-ai-hidden');
-                this.updateModelLabel();
-                this.updateModelStatus('offline');
+                // Try to use frontend model as fallback
+                if (this.frontendModel) {
+                    this.currentModel = this.frontendModel;
+                    this.updateModelLabel();
+                    this.updateModelStatus('online');
+                } else {
+                    this.updateModelLabel();
+                    this.updateModelStatus('offline');
+                }
                 return;
             }
 
@@ -1038,12 +1053,17 @@ if (!window.BroxAssistantLoaded) {
 
         updateModelLabel() {
             if (!this.nodes.modelName) return;
+            // Show a loading indicator while model is being fetched
+            if (!this.currentModel && !this.nodes.modelSel?.selectedOptions?.length) {
+                this.nodes.modelName.textContent = 'Loading...';
+                return;
+            }
             const modelId = this.currentModel || '';
             const rawLabel = this.nodes.modelSel?.selectedOptions?.[0]?.textContent || modelId || 'AI';
             const label = this.mapModelLabel(modelId, rawLabel);
-            this.nodes.modelName.textContent = label;
+            this.nodes.modelName.textContent = label || 'AI';
             if (this.nodes.modelLabel) {
-                this.nodes.modelLabel.textContent = label;
+                this.nodes.modelLabel.textContent = label || 'AI';
             }
         }
 

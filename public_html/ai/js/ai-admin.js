@@ -752,10 +752,16 @@ if (!window.BroxAdminInstance) {
             const providerList = providerMap.providers || {};
 
             this.currentProvider = defaultProvider || 'openrouter';
+
+            // Set initial model name immediately to show it's loading
             if (this.preferredModel) {
                 this.currentModel = this.preferredModel;
-                this.updateModelLabel();
+            } else if (defaults.model) {
+                this.currentModel = defaults.model;
+            } else {
+                this.currentModel = 'claude-3-haiku'; // Default fallback
             }
+            this.updateModelLabel();
 
             if (this.nodes.providerSel) {
                 this.nodes.providerSel.innerHTML = '';
@@ -972,15 +978,27 @@ if (!window.BroxAdminInstance) {
         }
 
         updateModelLabel() {
+            // Show a loading indicator while model is being fetched
             if (!this.nodes.modelBadge && !this.nodes.modelLabel) return;
+
+            if (!this.currentModel && !this.nodes.modelSel?.selectedOptions?.length) {
+                if (this.nodes.modelBadge) {
+                    this.nodes.modelBadge.textContent = 'Loading...';
+                }
+                if (this.nodes.modelLabel) {
+                    this.nodes.modelLabel.textContent = 'Loading...';
+                }
+                return;
+            }
+
             const modelId = this.currentModel || '';
             const rawLabel = this.nodes.modelSel?.options[this.nodes.modelSel.selectedIndex]?.text || modelId || 'AI';
             const label = this.getShortModelLabel(modelId, rawLabel);
             if (this.nodes.modelBadge) {
-                this.nodes.modelBadge.textContent = label;
+                this.nodes.modelBadge.textContent = label || 'AI';
             }
             if (this.nodes.modelLabel) {
-                this.nodes.modelLabel.textContent = label;
+                this.nodes.modelLabel.textContent = label || 'AI';
             }
             // Set model as online after loading
             this.updateModelStatus('online');

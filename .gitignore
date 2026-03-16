@@ -83,21 +83,8 @@ Thumbs.db
 /backups/
 public_html/backups/
 
-# Deploy worker logs
-/deploy_worker*.log
 
-# ===========================================
-# Webhook Deployment Files
-# ===========================================
 
-# Core webhook files (TRACKED - include in git)
-!public_html/webhook/github.php      # Advanced webhook (database-based)      
-!public_html/webhook/deploy.php       # Simple webhook (config-based)
-!public_html/webhook/*.json           # Webhook settings
-
-# Sensitive files (IGNORED - DO NOT commit)
-!public_html/webhook/deploy_config.php # Contains DB passwords, secrets       
-public_html/webhook/deploy.log        # Deployment logs
 
 # Migration files
 migrations/
@@ -160,14 +147,6 @@ sys_temp_dir/deploy*               # Temp lock files
 # ─────────────────────────────────────────────────────────────────
 scripts/.deploy-config
 .deploy-config
-
-# ─────────────────────────────────────────────────────────────────
-# Webhook Core Files (TRACKED - very important!)
-# ─────────────────────────────────────────────────────────────────
-public_html/github.php
-public_html/deploy_config.php
-
-version_file.json                   # Version tracking (generated at runtime)
 
 # ─────────────────────────────────────────────────────────────────
 # Database Schema (TRACKED - required for git)
