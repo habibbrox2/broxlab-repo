@@ -3,6 +3,7 @@
 
 require_once __DIR__ . '/../Modules/AISystem/AgentClient.php';
 require_once __DIR__ . '/../Helpers/PromptLoader.php';
+require_once __DIR__ . '/../Models/AIFeedback.php';
 
 /** @var \Router $router */
 /** @var \mysqli $mysqli */
@@ -263,4 +264,28 @@ $router->post('/api/ai/test', function () use ($mysqli) {
     $result = $aiProvider->testConnection($provider, $model);
 
     echo json_encode($result);
+});
+
+// ==================== AI FEEDBACK API ====================
+$router->post('/api/ai/feedback', function () use ($mysqli) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $csrfToken = $input['csrf_token'] ?? '';
+    validateCsrfToken($csrfToken);
+
+    $conversationId = $input['conversation_id'] ?? '';
+    $messageId = $input['message_id'] ?? 0;
+    $rating = $input['rating'] ?? 0;
+    $comment = $input['comment'] ?? null;
+    $userId = AuthManager::isUserAuthenticated() ? AuthManager::getCurrentUserId() : null;
+
+    if (empty($conversationId) || !$messageId || $rating < 1 || $rating > 5) {
+        echo json_encode(['success' => false, 'error' => 'Invalid feedback data']);
+        return;
+    }
+
+    $feedbackModel = new AIFeedback($mysqli);
+    $feedbackModel->ensureTable(); // Ensure table exists
+    $success = $feedbackModel->saveFeedback($conversationId, $messageId, $rating, $comment, $userId);
+
+    echo json_encode(['success' => $success]);
 });

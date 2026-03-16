@@ -48,6 +48,14 @@
 # IDE / OS
 /.vscode/
 /.idea/
+
+# ─────────────────────────────────────────────────────────────────
+#  4. GENERATED ASSETS (do not commit - edit sources and run build)
+# ─────────────────────────────────────────────────────────────────
+/public_html/assets/**/dist/
+/public_html/assets/js/dist/
+/public_html/assets/css/dist/
+/public_html/assets/firebase/**/dist/
 .DS_Store
 Thumbs.db
 
@@ -209,7 +217,10 @@ package-lock.json
 /temp/
 #   d u m m y   c o m m i t   f o r   G i t H u b   A c t i o n s   t e s t 
  
- #   t e s t   d e p l o y m e n t  
- #   t e s t   d e p l o y m e n t  
- #   r e t r y   d e p l o y m e n t  
+ #   t e s t   d e p l o y m e n t 
+ 
+ #   t e s t   d e p l o y m e n t 
+ 
+ #   r e t r y   d e p l o y m e n t 
+ 
  

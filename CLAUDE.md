@@ -4,7 +4,7 @@ Primary context:
 - `AGENTS.md`
 - `docs/PROJECT_CONTEXT.md`
 - `docs/CODING_CONVENTIONS.md`
-- `docs/AI_CODING_GUIDE.md`
+- `docs/ai/AI_CODING_GUIDE.md`
 
 Repo realities:
 - Entry point is `public_html/index.php`.

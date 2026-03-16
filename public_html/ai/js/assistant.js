@@ -765,7 +765,7 @@ if (!window.BroxAssistantLoaded) {
         }
 
         // ── Message Rendering ─────────────────────────────────────────────────────
-        addMessage(role, content, animate = true) {
+        addMessage(role, content, animate = true, messageId = null) {
             if (!this.nodes.body) return;
             const existing = this.nodes.body.querySelector('.brox-ai-typing');
             existing?.remove();
@@ -784,6 +784,48 @@ if (!window.BroxAssistantLoaded) {
             meta.className = 'brox-ai-msg-meta';
             meta.textContent = new Date().toLocaleTimeString(this.lang === 'bn' ? 'bn-BD' : 'en-US', { hour: '2-digit', minute: '2-digit' });
             msg.appendChild(meta);
+
+            // Add feedback for assistant messages
+            if (role === 'assistant') {
+                const feedback = document.createElement('div');
+                feedback.className = 'brox-ai-feedback';
+                feedback.innerHTML = `
+                    <button class="brox-ai-feedback-btn" data-rating="1" title="Poor"><i class="bi bi-hand-thumbs-down"></i></button>
+                    <button class="brox-ai-feedback-btn" data-rating="5" title="Excellent"><i class="bi bi-hand-thumbs-up"></i></button>
+                `;
+                msg.appendChild(feedback);
+
+                // Store messageId for feedback
+                msg.dataset.messageId = messageId || 0;
+
+                // Add event listeners
+                feedback.querySelectorAll('.brox-ai-feedback-btn').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const rating = btn.dataset.rating;
+                        const msgId = msg.dataset.messageId;
+                        const convId = this.conversationId || 'guest';
+                        const csrfToken = this.csrfToken || '';
+                        try {
+                            const resp = await fetch('/api/ai/feedback', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    conversation_id: convId,
+                                    message_id: msgId,
+                                    rating: rating,
+                                    csrf_token: csrfToken
+                                })
+                            });
+                            const result = await resp.json();
+                            if (result.success) {
+                                feedback.innerHTML = '<small>ধন্যবাদ!</small>';
+                            }
+                        } catch (e) {
+                            console.error('Feedback submission failed', e);
+                        }
+                    });
+                });
+            }
 
             this.nodes.body.appendChild(msg);
             this.nodes.body.scrollTop = this.nodes.body.scrollHeight;

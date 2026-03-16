@@ -2,20 +2,19 @@
     RewriteEngine On
     RewriteBase /
 
-    # Don't rewrite if already rewritten
-    RewriteCond %{ENV:REWRITE_PROCESSED} ^1$ [OR]
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [L]
-
-    # Set flag to prevent reprocessing
-    RewriteRule ^ - [E=REWRITE_PROCESSED:1]
+    # Prevent directory listing
+    Options -Indexes
 
     # Route all requests to index.php (except existing files/dirs)
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^ index.php [QSA,L]
 </IfModule>
+
+# Security: Deny access to sensitive files
+<FilesMatch "^(rollback|deploy_config)\.php$|^(deploy\.log|version\.json)$">
+    Deny from all
+</FilesMatch>
 
 # ---------------- Cache headers for assets ----------------
 # ===== CACHE CONTROL HEADERS =====
@@ -83,14 +82,9 @@ Options -Indexes
 #<IfModule mod_headers.c>
 #    Header set Referrer-Policy "strict-origin-when-cross-origin"
 #</IfModule>
-<<<<<<< HEAD
 <FilesMatch "^(rollback|deploy_config)\.php$|^(deploy\.log|version\.json)$">
     Deny from all
 </FilesMatch>
-=======
-
-
->>>>>>> ai-sys
 
 # ---------------- PHP version handler ----------------
 <IfModule mime_module>

@@ -1,56 +1,41 @@
 # Security Policy
 
-## Supported Versions
+## Reporting Security Vulnerabilities
 
-The following versions of this project currently receive security updates.
+If you discover a security vulnerability in this project, please report it responsibly.
 
-| Version | Supported |
-| ------- | --------- |
-| 2.x     | ✅ Yes    |
-| 1.x     | ⚠️ Limited |
-| < 1.0   | ❌ No     |
+### How to Report
+- Email: [Your Security Email]
+- Create an issue on GitHub (for non-critical issues)
 
-Only the latest stable branch receives full security patches.  
-Older versions may receive critical fixes only.
+### Response Time
+We aim to respond to security reports within 48 hours.
 
----
+## Security Best Practices
+- Never commit secrets or sensitive data
+- Use environment variables for configuration
+- Regularly update dependencies
+- Follow the principle of least privilege
 
-## Reporting a Vulnerability
+## Git HEAD Reference
 
-If you discover a security vulnerability, please report it **privately**.
+In Git, `HEAD` is a special reference that points to the current commit you're working on. `remotes/origin/HEAD` is the remote repository's HEAD, which indicates the default branch (usually `main` or `master`).
 
-Do NOT open a public GitHub issue for security problems.
+### Why HEAD is used:
+- It tells Git which branch is the primary/default branch of the remote repository
+- Tools and CI/CD systems use this to know which branch to track by default
+- It helps in operations like `git clone` to checkout the correct branch
 
-### Contact
+### Can it be deleted?
+No, `HEAD` cannot be deleted as it's a fundamental part of Git's reference system. However, you can change what `remotes/origin/HEAD` points to using:
 
-Send a report to:
+```bash
+git remote set-head origin <branch-name>
+```
 
-📧 security@broxlab.online
+For example, to change it to point to `master`:
+```bash
+git remote set-head origin master
+```
 
-or open a private security advisory on GitHub.
-
-### What to Include
-
-Please include the following information:
-
-- Description of the vulnerability
-- Steps to reproduce
-- Affected version(s)
-- Possible impact
-- Proof of concept (if available)
-
-### Response Timeline
-
-| Stage | Expected Time |
-|------|---------------|
-| Initial response | within 48 hours |
-| Investigation | 3–7 days |
-| Patch release | depending on severity |
-
-### Disclosure Policy
-
-- Vulnerabilities are fixed in a **private patch branch**
-- A security release is published once the fix is ready
-- Public disclosure happens **after patch release**
-
-We appreciate responsible disclosure.
+**Note:** Changing the default branch is generally not recommended unless you're sure about the implications for your repository and any CI/CD pipelines.

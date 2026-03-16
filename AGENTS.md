@@ -5,7 +5,7 @@
 ## Must-Read Context
 - `docs/PROJECT_CONTEXT.md`
 - `docs/CODING_CONVENTIONS.md`
-- `docs/AI_CODING_GUIDE.md`
+- `docs/ai/AI_CODING_GUIDE.md`
 
 ## Architecture Truths (don’t guess)
 - Entry point: `public_html/index.php`

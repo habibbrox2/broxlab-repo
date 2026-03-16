@@ -4,7 +4,7 @@ Primary context:
 - `AGENTS.md`
 - `docs/PROJECT_CONTEXT.md`
 - `docs/CODING_CONVENTIONS.md`
-- `docs/AI_CODING_GUIDE.md`
+- `docs/ai/AI_CODING_GUIDE.md`
 
 Project realities:
 - Entry point: `public_html/index.php` (routes via `app/Controllers/*.php`).
