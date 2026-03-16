@@ -1,0 +1,660 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500&display=swap');
+
+  :root {
+    --ink: #0e0f11;
+    --ink2: #1a1c20;
+    --ink3: #252830;
+    --edge: rgba(255,255,255,0.07);
+    --edge2: rgba(255,255,255,0.12);
+    --txt: #e8e6e0;
+    --muted: #8b8880;
+    --accent: #5b7cf6;
+    --accent2: #3dd9a4;
+    --accent3: #f0923b;
+    --mono: 'DM Mono', monospace;
+    --head: 'Syne', sans-serif;
+    --body: 'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .wrap {
+    background: var(--ink);
+    color: var(--txt);
+    font-family: var(--body);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  /* HERO */
+  .hero {
+    padding: 52px 40px 44px;
+    border-bottom: 1px solid var(--edge);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: -60px;
+    width: 420px; height: 420px;
+    background: radial-gradient(ellipse, rgba(91,124,246,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent2);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hero-label::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--accent2);
+    border-radius: 50%;
+  }
+  .hero h1 {
+    font-family: var(--head);
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero-sub {
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 520px;
+    margin-bottom: 28px;
+    line-height: 1.65;
+  }
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--edge2);
+    color: var(--muted);
+    background: var(--ink2);
+  }
+  .badge.blue { border-color: rgba(91,124,246,0.4); color: #8fa8f8; background: rgba(91,124,246,0.1); }
+  .badge.green { border-color: rgba(61,217,164,0.4); color: var(--accent2); background: rgba(61,217,164,0.08); }
+  .badge.orange { border-color: rgba(240,146,59,0.4); color: var(--accent3); background: rgba(240,146,59,0.08); }
+
+  /* LAYOUT */
+  .content { padding: 0 40px; }
+
+  /* SECTION */
+  .section { padding: 40px 0; border-bottom: 1px solid var(--edge); }
+  .section:last-child { border-bottom: none; }
+
+  .sec-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .sec-title {
+    font-family: var(--head);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+  }
+
+  /* FEATURE GRID */
+  .feat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .feat-card {
+    background: var(--ink2);
+    border: 1px solid var(--edge);
+    border-radius: 10px;
+    padding: 18px 18px 16px;
+    transition: border-color 0.2s;
+    cursor: default;
+  }
+  .feat-card:hover { border-color: var(--edge2); }
+  .feat-icon {
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+  .feat-name {
+    font-family: var(--head);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .feat-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* TECH STACK */
+  .stack-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .stack-pill {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    background: var(--ink2);
+    border: 1px solid var(--edge);
+    color: var(--txt);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .stack-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* FILE TREE */
+  .tree {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--ink2);
+    border: 1px solid var(--edge);
+    border-radius: 10px;
+    padding: 20px 24px;
+    line-height: 2;
+    color: var(--muted);
+  }
+  .tree .dir { color: var(--accent); font-weight: 500; }
+  .tree .comment { color: #464a56; }
+
+  /* CODE BLOCK */
+  .codeblock {
+    background: var(--ink2);
+    border: 1px solid var(--edge);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .cb-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--edge);
+    background: var(--ink3);
+  }
+  .cb-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .cb-title { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: auto; }
+  .cb-body {
+    padding: 16px 20px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.85;
+  }
+  .cmd { color: var(--accent2); }
+  .arg { color: #c9d1d9; }
+  .comment-line { color: #464a56; }
+
+  /* STEPS */
+  .steps { display: flex; flex-direction: column; gap: 0; }
+  .step {
+    display: flex;
+    gap: 18px;
+    padding: 0 0 28px;
+    position: relative;
+  }
+  .step:last-child { padding-bottom: 0; }
+  .step-line {
+    position: absolute;
+    left: 15px; top: 32px;
+    width: 1px;
+    height: calc(100% - 32px);
+    background: var(--edge);
+  }
+  .step:last-child .step-line { display: none; }
+  .step-num {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--ink2);
+    border: 1px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .step-content { flex: 1; }
+  .step-title {
+    font-family: var(--head);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    margin-top: 4px;
+  }
+  .step-body { font-size: 12.5px; color: var(--muted); }
+
+  /* API TABLE */
+  .api-table { width: 100%; border-collapse: collapse; }
+  .api-table th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding: 0 16px 10px 0;
+    border-bottom: 1px solid var(--edge);
+  }
+  .api-table td {
+    padding: 11px 16px 11px 0;
+    border-bottom: 1px solid var(--edge);
+    font-size: 13px;
+    vertical-align: middle;
+  }
+  .api-table tr:last-child td { border-bottom: none; }
+  .method {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  .get { background: rgba(61,217,164,0.12); color: var(--accent2); border: 1px solid rgba(61,217,164,0.25); }
+  .post { background: rgba(91,124,246,0.12); color: #8fa8f8; border: 1px solid rgba(91,124,246,0.25); }
+  .endpoint { font-family: var(--mono); font-size: 12px; color: var(--txt); }
+  .ep-desc { font-size: 12px; color: var(--muted); }
+
+  /* RECENT CHANGES */
+  .changes { display: flex; flex-direction: column; gap: 10px; }
+  .change-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--ink2);
+    border: 1px solid var(--edge);
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .change-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .fix { background: rgba(240,146,59,0.12); color: var(--accent3); border: 1px solid rgba(240,146,59,0.25); }
+  .feat-tag { background: rgba(61,217,164,0.12); color: var(--accent2); border: 1px solid rgba(61,217,164,0.25); }
+
+  /* FOOTER */
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 32px 40px 0;
+    border-top: 1px solid var(--edge);
+    margin-top: 40px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .footer-links { display: flex; gap: 16px; }
+  .footer-link {
+    color: var(--muted);
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 11px;
+    transition: color 0.2s;
+  }
+  .footer-link:hover { color: var(--txt); }
+  .footer-logo {
+    font-family: var(--head);
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+
+  .divider { height: 1px; background: var(--edge); margin: 4px 0; }
+
+  .inline-code {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    background: var(--ink3);
+    border: 1px solid var(--edge);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--accent2);
+  }
+</style>
+
+<div class="wrap">
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-label">Full-Stack Web Platform · PHP 8.0+</div>
+    <h1>Brox<span>Lab</span></h1>
+    <p class="hero-sub">A comprehensive full-stack platform for content management, AI-driven automation, IoT device control, and intelligent assistant systems — with self-improvement capabilities built in.</p>
+    <div class="badges">
+      <span class="badge blue">PHP 8.0+</span>
+      <span class="badge green">MIT License</span>
+      <span class="badge orange">Build Passing</span>
+      <span class="badge blue">OpenRouter · OpenAI · Anthropic</span>
+      <span class="badge">MySQL / MariaDB</span>
+      <span class="badge">Tailwind CSS</span>
+      <span class="badge">Firebase</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- FEATURES -->
+    <div class="section">
+      <div class="sec-label">Capabilities</div>
+      <div class="sec-title">Key Features</div>
+      <div class="feat-grid">
+        <div class="feat-card">
+          <div class="feat-icon">📝</div>
+          <div class="feat-name">Content Management</div>
+          <div class="feat-desc">Posts, pages, categories, tags, and full media handling pipeline.</div>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">👥</div>
+          <div class="feat-name">User & Role System</div>
+          <div class="feat-desc">Granular roles, permissions, session management, and security tooling.</div>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">🤖</div>
+          <div class="feat-name">AI & Automation</div>
+          <div class="feat-desc">Multi-provider AI chat, knowledge base, self-improving agent system, autotext generation.</div>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">📢</div>
+          <div class="feat-name">Notifications</div>
+          <div class="feat-desc">Email, SMS, push notifications, and deep Telegram Bot integration.</div>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">📱</div>
+          <div class="feat-name">IoT & Device Sync</div>
+          <div class="feat-desc">Device control commands, telemetry collection, and real-time sync.</div>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">🔒</div>
+          <div class="feat-name">Security</div>
+          <div class="feat-desc">CSRF protection, input sanitization, secure parameterized queries throughout.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TECH STACK -->
+    <div class="section">
+      <div class="sec-label">Stack</div>
+      <div class="sec-title">Technology</div>
+      <div class="stack-row">
+        <div class="stack-pill"><span class="stack-dot" style="background:#7c8dff"></span>PHP 8.0+</div>
+        <div class="stack-pill"><span class="stack-dot" style="background:#3dd9a4"></span>MySQL / MariaDB</div>
+        <div class="stack-pill"><span class="stack-dot" style="background:#f0923b"></span>Tailwind CSS</div>
+        <div class="stack-pill"><span class="stack-dot" style="background:#f7df1e"></span>JavaScript (esbuild)</div>
+        <div class="stack-pill"><span class="stack-dot" style="background:#7c8dff"></span>Twig Templates</div>
+        <div class="stack-pill"><span class="stack-dot" style="background:#ff6d6d"></span>Firebase (Push)</div>
+        <div class="stack-pill"><span class="stack-dot" style="background:#3dd9a4"></span>Telegram Bot API</div>
+        <div class="stack-pill"><span class="stack-dot" style="background:#e0a0ff"></span>OpenRouter · OpenAI · Anthropic</div>
+      </div>
+    </div>
+
+    <!-- PROJECT STRUCTURE -->
+    <div class="section">
+      <div class="sec-label">Architecture</div>
+      <div class="sec-title">Project Structure</div>
+      <div class="tree">
+        <div><span class="dir">app/</span>                    <span class="comment"># Application core</span></div>
+        <div>&nbsp;&nbsp;├── <span class="dir">Controllers/</span>        <span class="comment"># Route handlers</span></div>
+        <div>&nbsp;&nbsp;├── <span class="dir">Models/</span>             <span class="comment"># Data models</span></div>
+        <div>&nbsp;&nbsp;├── <span class="dir">Views/</span>              <span class="comment"># Twig templates</span></div>
+        <div>&nbsp;&nbsp;├── <span class="dir">Middleware/</span>         <span class="comment"># Request middleware</span></div>
+        <div>&nbsp;&nbsp;└── <span class="dir">Modules/</span>            <span class="comment"># AI + specialized modules</span></div>
+        <div><span class="dir">public_html/</span>               <span class="comment"># Web root / entry point</span></div>
+        <div><span class="dir">Config/</span>                    <span class="comment"># DB, constants, API keys</span></div>
+        <div><span class="dir">docs/</span>                      <span class="comment"># Project + AI documentation</span></div>
+        <div><span class="dir">scripts/</span>                   <span class="comment"># CLI utility scripts</span></div>
+        <div><span class="dir">storage/</span>                   <span class="comment"># Cache, logs, tmp</span></div>
+        <div><span class="dir">system/</span>                    <span class="comment"># Framework core</span></div>
+        <div><span class="dir">vendor/</span>                    <span class="comment"># Composer dependencies</span></div>
+      </div>
+    </div>
+
+    <!-- INSTALLATION -->
+    <div class="section">
+      <div class="sec-label">Setup</div>
+      <div class="sec-title">Installation</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-line"></div>
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Clone the repository</div>
+            <div class="codeblock" style="margin-top:8px">
+              <div class="cb-header">
+                <div class="cb-dot" style="background:#ff6058"></div>
+                <div class="cb-dot" style="background:#febc2e"></div>
+                <div class="cb-dot" style="background:#28c840"></div>
+                <span class="cb-title">bash</span>
+              </div>
+              <div class="cb-body">
+                <span class="cmd">git clone</span> <span class="arg">git@github.com:habibbrox2/broxlab-repo.git broxlab</span><br>
+                <span class="cmd">cd</span> <span class="arg">broxlab</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-line"></div>
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Install dependencies</div>
+            <div class="codeblock" style="margin-top:8px">
+              <div class="cb-header">
+                <div class="cb-dot" style="background:#ff6058"></div>
+                <div class="cb-dot" style="background:#febc2e"></div>
+                <div class="cb-dot" style="background:#28c840"></div>
+                <span class="cb-title">bash</span>
+              </div>
+              <div class="cb-body">
+                <span class="comment-line"># PHP dependencies</span><br>
+                <span class="cmd">composer install</span><br><br>
+                <span class="comment-line"># Node.js dependencies</span><br>
+                <span class="cmd">npm install</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-line"></div>
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Configure database & environment</div>
+            <div class="step-body" style="margin-top:4px">Edit <span class="inline-code">Config/Db.php</span>, <span class="inline-code">Config/Constants.php</span>, and add API keys to <span class="inline-code">.env</span> — Firebase, Telegram, AI providers.</div>
+            <div class="codeblock" style="margin-top:8px">
+              <div class="cb-header">
+                <div class="cb-dot" style="background:#ff6058"></div>
+                <div class="cb-dot" style="background:#febc2e"></div>
+                <div class="cb-dot" style="background:#28c840"></div>
+                <span class="cb-title">bash</span>
+              </div>
+              <div class="cb-body">
+                <span class="cmd">mysql</span> <span class="arg">-u &lt;user&gt; -p &lt;database&gt; &lt; Database/schema.sql</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-line"></div>
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Set permissions & build assets</div>
+            <div class="codeblock" style="margin-top:8px">
+              <div class="cb-header">
+                <div class="cb-dot" style="background:#ff6058"></div>
+                <div class="cb-dot" style="background:#febc2e"></div>
+                <div class="cb-dot" style="background:#28c840"></div>
+                <span class="cb-title">bash</span>
+              </div>
+              <div class="cb-body">
+                <span class="cmd">chmod</span> <span class="arg">-R 755 storage/ public_html/uploads/</span><br>
+                <span class="cmd">npm run build</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <div class="step-title">Start local development server</div>
+            <div class="codeblock" style="margin-top:8px">
+              <div class="cb-header">
+                <div class="cb-dot" style="background:#ff6058"></div>
+                <div class="cb-dot" style="background:#febc2e"></div>
+                <div class="cb-dot" style="background:#28c840"></div>
+                <span class="cb-title">bash</span>
+              </div>
+              <div class="cb-body">
+                <span class="cmd">php</span> <span class="arg">-S localhost:8000 -t public_html</span><br><br>
+                <span class="comment-line"># Watch assets in a separate terminal</span><br>
+                <span class="cmd">npm run dev</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API REFERENCE -->
+    <div class="section">
+      <div class="sec-label">API</div>
+      <div class="sec-title">API Reference</div>
+      <table class="api-table">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="method post">POST</span></td>
+            <td class="endpoint">/api/chat</td>
+            <td class="ep-desc">Send a message to the AI assistant</td>
+          </tr>
+          <tr>
+            <td><span class="method post">POST</span></td>
+            <td class="endpoint">/api/ai/feedback</td>
+            <td class="ep-desc">Submit feedback on an AI response</td>
+          </tr>
+          <tr>
+            <td><span class="method get">GET</span></td>
+            <td class="endpoint">/api/ai/models/list</td>
+            <td class="ep-desc">List all available AI models</td>
+          </tr>
+          <tr>
+            <td><span class="method post">POST</span></td>
+            <td class="endpoint">/api/public-chat/support</td>
+            <td class="ep-desc">Public-facing support contact endpoint</td>
+          </tr>
+          <tr>
+            <td><span class="method post">POST</span></td>
+            <td class="endpoint">/api/log-activity</td>
+            <td class="ep-desc">Log user activity events</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SCRIPTS -->
+    <div class="section">
+      <div class="sec-label">Tooling</div>
+      <div class="sec-title">Available Scripts</div>
+      <div class="stack-row" style="flex-direction:column;gap:8px">
+        <div style="display:flex;gap:16px;align-items:center;padding:12px 16px;background:var(--ink2);border:1px solid var(--edge);border-radius:8px">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--accent2);min-width:260px">php scripts/quality_scan.php</span>
+          <span style="font-size:12px;color:var(--muted)">Code quality check</span>
+        </div>
+        <div style="display:flex;gap:16px;align-items:center;padding:12px 16px;background:var(--ink2);border:1px solid var(--edge);border-radius:8px">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--accent2);min-width:260px">php scripts/security_scan.php</span>
+          <span style="font-size:12px;color:var(--muted)">Security vulnerability audit</span>
+        </div>
+        <div style="display:flex;gap:16px;align-items:center;padding:12px 16px;background:var(--ink2);border:1px solid var(--edge);border-radius:8px">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--accent2);min-width:260px">php scripts/analyze_ai_feedback.php</span>
+          <span style="font-size:12px;color:var(--muted)">AI feedback analysis & improvement</span>
+        </div>
+        <div style="display:flex;gap:16px;align-items:center;padding:12px 16px;background:var(--ink2);border:1px solid var(--edge);border-radius:8px">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--accent2);min-width:260px">npm run build</span>
+          <span style="font-size:12px;color:var(--muted)">Compile frontend assets</span>
+        </div>
+        <div style="display:flex;gap:16px;align-items:center;padding:12px 16px;background:var(--ink2);border:1px solid var(--edge);border-radius:8px">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--accent2);min-width:260px">npm run lint</span>
+          <span style="font-size:12px;color:var(--muted)">JavaScript linting</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECENT CHANGES -->
+    <div class="section">
+      <div class="sec-label">Changelog</div>
+      <div class="sec-title">Recent Changes</div>
+      <div class="changes">
+        <div class="change-item">
+          <span class="change-tag fix">Fix</span>
+          <span>CSS positioning issue in admin assistant UI — panel was rendering on the left instead of the right side.</span>
+        </div>
+        <div class="change-item">
+          <span class="change-tag feat-tag">Feature</span>
+          <span>Added AI model online / offline / connecting status indicator to the assistant interface.</span>
+        </div>
+        <div class="change-item">
+          <span class="change-tag fix">Fix</span>
+          <span>Removed unnecessary delete button from the input area of the admin assistant.</span>
+        </div>
+        <div class="change-item">
+          <span class="change-tag fix">Fix</span>
+          <span>Resolved duplicate <span class="inline-code">require_once</span> statement in <span class="inline-code">AISystemChatController.php</span>.</span>
+        </div>
+        <div class="change-item">
+          <span class="change-tag feat-tag">Security</span>
+          <span>Full code review completed — SQL injection and XSS protections verified across all endpoints.</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-logo">BroxLab</div>
+    <div class="footer-links">
+      <a class="footer-link" href="https://broxlab.online">broxlab.online</a>
+      <a class="footer-link" href="https://github.com/habibbrox2/broxlab-repo">GitHub</a>
+      <span style="color:var(--edge2)">·</span>
+      <span style="font-family:var(--mono);font-size:11px">MIT License</span>
+    </div>
+  </div>
+</div>

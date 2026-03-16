@@ -49,6 +49,42 @@
                 </div>
             </div>
 
+            {# ── GDPR Privacy Consent Modal (v2026) ── #}
+            <div id="publicAssistantGdpr" class="brox-ai-gdpr-modal brox-ai-hidden">
+                <div class="brox-ai-gdpr-content">
+                    <div class="brox-ai-gdpr-header">
+                        <i class="bi bi-shield-lock"></i>
+                        <span>গোপনীয়তা নীতি</span>
+                    </div>
+                    <div class="brox-ai-gdpr-body">
+                        <p id="gdprTextBn">আমরা আপনার তথ্য সংগ্রহ করি যাতে আমরা আপনাকে ভালোভাবে সাহায্য করতে পারি। আপনার তথ্য নিরাপদ এবং গোপন থাকবে।</p>
+                        <p id="gdprTextEn" class="d-none">We collect your information to help you better. Your data will be kept secure and private.</p>
+                        <div class="brox-ai-gdpr-details">
+                            <label class="brox-ai-gdpr-checkbox">
+                                <input type="checkbox" id="gdprConsentData">
+                                <span id="gdprConsentDataLabelBn">আমার নাম এবং যোগাযোগের তথ্য সংরক্ষণ করুন</span>
+                                <span id="gdprConsentDataLabelEn" class="d-none">Store my name and contact information</span>
+                            </label>
+                            <label class="brox-ai-gdpr-checkbox">
+                                <input type="checkbox" id="gdprConsentAnalytics">
+                                <span id="gdprConsentAnalyticsLabelBn">সেবা উন্নতির জন্য ব্যবহার ডেটা বিশ্লেষণ করুন</span>
+                                <span id="gdprConsentAnalyticsLabelEn" class="d-none">Analyze usage data to improve service</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="brox-ai-gdpr-footer">
+                        <button class="brox-ai-btn-secondary" id="gdprDecline">
+                            <span id="gdprDeclineBn">পরে</span>
+                            <span id="gdprDeclineEn" class="d-none">Later</span>
+                        </button>
+                        <button class="brox-ai-btn-primary" id="gdprAccept">
+                            <span id="gdprAcceptBn">সম্মতি দিন</span>
+                            <span id="gdprAcceptEn" class="d-none">Accept</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {# ── Pre-chat Workflow (Registration) ── #}
             <div id="publicAssistantPreChat" class="brox-ai-body">
                 {# Step 1: Introduction / Name #}

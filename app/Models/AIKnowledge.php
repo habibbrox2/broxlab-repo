@@ -43,21 +43,29 @@ class AIKnowledge
                 return true;
             }
 
-            // Check if category column exists
-            $result = $this->mysqli->query("SHOW COLUMNS FROM ai_knowledge_base LIKE 'category'");
+            // Add columns in the correct order - is_active first, then priority
+            // Check and add is_active column first (if not exists)
+            $result = $this->mysqli->query("SHOW COLUMNS FROM ai_knowledge_base LIKE 'is_active'");
             if (!$result || $result->num_rows === 0) {
-                // Add missing columns
-                $this->mysqli->query("ALTER TABLE ai_knowledge_base ADD COLUMN category VARCHAR(100) DEFAULT NULL AFTER content");
+                $this->mysqli->query("ALTER TABLE ai_knowledge_base ADD COLUMN is_active TINYINT(1) DEFAULT 1 AFTER source_type");
             }
 
+            // Check and add priority column (depends on is_active)
             $result = $this->mysqli->query("SHOW COLUMNS FROM ai_knowledge_base LIKE 'priority'");
             if (!$result || $result->num_rows === 0) {
                 $this->mysqli->query("ALTER TABLE ai_knowledge_base ADD COLUMN priority INT DEFAULT 0 AFTER is_active");
             }
 
-            $result = $this->mysqli->query("SHOW COLUMNS FROM ai_knowledge_base LIKE 'is_active'");
+            // Check and add category column
+            $result = $this->mysqli->query("SHOW COLUMNS FROM ai_knowledge_base LIKE 'category'");
             if (!$result || $result->num_rows === 0) {
-                $this->mysqli->query("ALTER TABLE ai_knowledge_base ADD COLUMN is_active TINYINT(1) DEFAULT 1 AFTER source_type");
+                $this->mysqli->query("ALTER TABLE ai_knowledge_base ADD COLUMN category VARCHAR(100) DEFAULT NULL AFTER content");
+            }
+
+            // Check and add embedding column for RAG
+            $result = $this->mysqli->query("SHOW COLUMNS FROM ai_knowledge_base LIKE 'embedding'");
+            if (!$result || $result->num_rows === 0) {
+                $this->mysqli->query("ALTER TABLE ai_knowledge_base ADD COLUMN embedding JSON DEFAULT NULL");
             }
 
             return true;
@@ -183,6 +191,22 @@ class AIKnowledge
 
         $stmt = $this->mysqli->prepare("UPDATE ai_knowledge_base SET is_active = NOT is_active, updated_at = NOW() WHERE id = ?");
         $stmt->bind_param('i', $id);
+        $res = $stmt->execute();
+        $stmt->close();
+        return $res;
+    }
+
+    /**
+     * Update embedding for a knowledge item (for RAG)
+     */
+    public function updateEmbedding(int $id, string $embedding): bool
+    {
+        if (!$this->ensureTableSchema()) {
+            return false;
+        }
+
+        $stmt = $this->mysqli->prepare("UPDATE ai_knowledge_base SET embedding = ? WHERE id = ?");
+        $stmt->bind_param('si', $embedding, $id);
         $res = $stmt->execute();
         $stmt->close();
         return $res;

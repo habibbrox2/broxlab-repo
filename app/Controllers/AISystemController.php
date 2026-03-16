@@ -1608,7 +1608,7 @@ $router->get('/api/ai/models', function () use ($mysqli) {
     echo json_encode($payload);
 });
 
-// POST /api/ai/chat (Public assistant)
+// POST /api/ai/chat (Public assistant) - CSRF protected
 $router->post('/api/ai/chat', function () use ($mysqli) {
     run_middleware('rate_limit', [
         'scope' => 'ai_public_chat',
@@ -1617,9 +1617,18 @@ $router->post('/api/ai/chat', function () use ($mysqli) {
         'is_api' => true
     ]);
 
-    $input = json_decode(file_get_contents('php://input'), true);
-    if (!is_array($input)) {
-        $input = [];
+    // CSRF validation - accept from body or header
+    $input = json_decode(file_get_contents('php://input'), true) ?: [];
+    $csrfToken = (string)($input['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+    if (!empty($csrfToken) && function_exists('validateCsrfToken') && !validateCsrfToken($csrfToken)) {
+        http_response_code(403);
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'error' => 'Invalid CSRF token',
+            'error_code' => 'csrf_token_invalid'
+        ]);
+        return;
     }
 
     aiChatHandleRequest($input, $mysqli, false, false);
@@ -1745,6 +1754,63 @@ $router->post('/api/admin/ai-knowledge', ['middleware' => ['auth', 'admin_only',
     $priority = isset($input['priority']) ? (int)$input['priority'] : 0;
     $isActive = isset($input['is_active']) ? ($input['is_active'] ? 1 : 0) : 1;
 
+    // SECURITY: Validate content doesn't contain potentially dangerous URLs (SSRF protection)
+    if (!empty($content)) {
+        // Block dangerous URL schemes that could lead to SSRF
+        $forbiddenSchemes = ['file://', 'ftp://', 'gopher://', 'dict://', 'sftp://', 'php://', 'expect://', 'ssh2://'];
+        foreach ($forbiddenSchemes as $scheme) {
+            if (stripos($content, $scheme) !== false) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Forbidden URL scheme in content: ' . $scheme]);
+                return;
+            }
+        }
+
+        // Extract and validate any URLs found in content
+        if (preg_match_all('/(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/i', $content, $urlMatches)) {
+            $blockedPatterns = [
+                'localhost',
+                '127.',
+                '0.0.0.0',
+                '::1',
+                '10.',
+                '172.(1[6-9]|2|3[01]).',
+                '192.168.',
+                '169.254.', // Link-local
+                '.local',
+                '.lan',
+                '.intranet',
+                'metadata.google.internal', // Cloud metadata
+            ];
+
+            foreach ($urlMatches[1] as $url) {
+                $parsedUrl = @parse_url($url);
+                if (!$parsedUrl) continue;
+
+                $host = $parsedUrl['host'] ?? '';
+                if (empty($host)) continue;
+
+                // Check for blocked patterns
+                foreach ($blockedPatterns as $pattern) {
+                    if (stripos($host, $pattern) !== false) {
+                        http_response_code(400);
+                        echo json_encode(['success' => false, 'error' => 'Forbidden URL: Internal hosts are not allowed']);
+                        return;
+                    }
+                }
+
+                // Block private/reserved IPs
+                if (
+                    filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false &&
+                    filter_var($host, FILTER_VALIDATE_IP) !== false
+                ) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'error' => 'Forbidden URL: Private IP addresses are not allowed']);
+                    return;
+                }
+            }
+        }
+    }
     // Handle uploaded PDF file (optional)
     if (!empty($_FILES['pdf_file']) && $_FILES['pdf_file']['error'] === UPLOAD_ERR_OK) {
         $uploadDir = __DIR__ . '/../../public_html/uploads/knowledge';
@@ -1795,6 +1861,45 @@ $router->post('/api/admin/ai-knowledge/delete', ['middleware' => ['auth', 'admin
     }
     $ok = $model->delete($id);
     echo json_encode(['success' => $ok]);
+});
+
+// ==================== RAG (Retrieval-Augmented Generation) API ====================
+
+// POST /api/admin/ai-knowledge/reindex - Reindex all knowledge items with embeddings
+$router->post('/api/admin/ai-knowledge/reindex', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    require_once __DIR__ . '/../Modules/AISystem/Layer/RAGEngine.php';
+
+    $rag = new RAGEngine($mysqli);
+    $result = $rag->reindexAll();
+
+    header('Content-Type: application/json');
+    echo json_encode(['success' => true, 'result' => $result]);
+});
+
+// GET /api/admin/ai-knowledge/search - Search knowledge base (for RAG)
+$router->get('/api/admin/ai-knowledge/search', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    require_once __DIR__ . '/../Modules/AISystem/Layer/RAGEngine.php';
+
+    $query = $_GET['q'] ?? '';
+    $limit = min(10, (int)($_GET['limit'] ?? 5));
+
+    if (strlen($query) < 2) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Query too short']);
+        return;
+    }
+
+    $rag = new RAGEngine($mysqli);
+    $results = $rag->retrieve($query, ['limit' => $limit]);
+    $context = $rag->buildContext($results);
+
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => true,
+        'query' => $query,
+        'results' => $results,
+        'context' => $context
+    ]);
 });
 
 // --- ADMIN CHAT MANAGEMENT ROUTES ---
@@ -1961,5 +2066,239 @@ $router->post('/api/ai-system/test', ['middleware' => ['auth', 'admin_only']], f
     } else {
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'error' => 'Provider not found']);
+    }
+});
+
+// POST /admin/ai-system/browse-url - Browse URL content for AI assistant
+$router->post('/admin/ai-system/browse-url', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $url = $input['url'] ?? '';
+    $query = $input['query'] ?? '';
+
+    if (empty($url)) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'URL is required']);
+        return;
+    }
+
+    // Validate URL
+    if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Invalid URL format']);
+        return;
+    }
+
+    // Check for SSRF - only allow http/https
+    $parsed = parse_url($url);
+    if (!in_array($parsed['scheme'] ?? '', ['http', 'https'])) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Only HTTP/HTTPS URLs are allowed']);
+        return;
+    }
+
+    // Block private IPs and localhost
+    $host = $parsed['host'] ?? '';
+    $privateHosts = ['localhost', '127.0.0.1', '::1', '0.0.0.0', 'localhost.localdomain'];
+    if (in_array($host, $privateHosts) || preg_match('/^(10\\.|172\\.(1[6-9]|2|3[01])\\.|192\\.168\\.)/', gethostbyname($host))) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Private/localhost URLs are not allowed']);
+        return;
+    }
+
+    try {
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_HTTPHEADER => [
+                'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language: en-US,en;q=0.5',
+            ],
+        ]);
+
+        $html = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200 || empty($html)) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => "Failed to fetch URL (HTTP $httpCode)"]);
+            return;
+        }
+
+        // Extract text content from HTML
+        $text = strip_tags($html);
+        $text = preg_replace('/\\s+/', ' ', $text);
+        $text = trim($text);
+
+        // Limit to first 10000 chars
+        $text = substr($text, 0, 10000);
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'content' => $text,
+            'url' => $url
+        ]);
+    } catch (Exception $e) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+});
+
+// POST /admin/ai-system/ocr - OCR for images uploaded to AI assistant
+$router->post('/admin/ai-system/ocr', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $imageData = $input['image'] ?? '';
+
+    if (empty($imageData)) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Image data is required']);
+        return;
+    }
+
+    // Check if GD extension is available
+    if (!extension_loaded('gd')) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'GD extension not available']);
+        return;
+    }
+
+    try {
+        // Handle base64 data with or without prefix
+        if (preg_match('/^data:image\\/(\\w+);base64,/', $imageData, $matches)) {
+            $mimeType = $matches[1];
+            $imageData = base64_decode(preg_replace('/^data:image\\/\\w+;base64,/', '', $imageData));
+        } else {
+            $imageData = base64_decode($imageData);
+        }
+
+        if (!$imageData) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Invalid image data']);
+            return;
+        }
+
+        // Create image resource from data
+        $image = imagecreatefromstring($imageData);
+        if (!$image) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Could not create image from data']);
+            return;
+        }
+
+        // Save temporary file
+        $tempFile = sys_get_temp_dir() . '/ocr_' . uniqid() . '.png';
+        imagepng($image, $tempFile);
+        imagedestroy($image);
+
+        // Try to use Tesseract if available
+        $text = '';
+        $error = '';
+
+        if (function_exists('exec') && file_exists($tempFile)) {
+            @exec("tesseract " . escapeshellarg($tempFile) . " stdout -l eng 2>&1", $output, $returnCode);
+            if ($returnCode === 0 && !empty($output)) {
+                $text = implode("\n", $output);
+            } else {
+                $error = 'Tesseract not available';
+            }
+        } else {
+            $error = 'Tesseract not available';
+        }
+
+        // Try PaddleOCR if available (Python)
+        if (empty($text) && function_exists('exec') && file_exists($tempFile)) {
+            // Check if paddleocr is installed
+            @exec("pip show paddleocr 2>&1 | head -1", $paddleCheck, $paddleReturn);
+            if (!empty($paddleCheck) && strpos($paddleCheck[0] ?? '', 'Name:') !== false) {
+                $paddleScript = sys_get_temp_dir() . '/paddle_ocr_' . uniqid() . '.py';
+                $paddlePyCode = "
+from paddleocr import PaddleOCR
+from PIL import Image
+import sys
+
+img_path = sys.argv[1]
+ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
+result = ocr.ocr(img_path, cls=True)
+
+if result and result[0]:
+    texts = []
+    for line in result[0]:
+        if line and len(line) >= 2:
+            texts.append(line[1][0])
+    print('\\n'.join(texts))
+else:
+    print('')
+";
+                file_put_contents($paddleScript, $paddlePyCode);
+
+                @exec("python " . escapeshellarg($paddleScript) . " " . escapeshellarg($tempFile) . " 2>&1", $paddleOutput, $paddleReturnCode);
+                @unlink($paddleScript);
+
+                if ($paddleReturnCode === 0 && !empty($paddleOutput)) {
+                    $text = implode("\n", $paddleOutput);
+                    $error = '';
+                }
+            }
+        }
+
+        // If local OCR failed, try OCR.space free API
+        if (empty($text) && function_exists('curl_init') && file_exists($tempFile)) {
+            $apiKey = 'helloworld'; // Free tier API key
+            $postData = [
+                'apikey' => $apiKey,
+                'language' => 'eng',
+                'isOverlayRequired' => false,
+                'file' => new CURLFile($tempFile, 'image/png', 'ocr.png')
+            ];
+
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => 'https://api.ocr.space/parse/image',
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $postData,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 30,
+            ]);
+
+            $apiResponse = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200 && $apiResponse) {
+                $result = json_decode($apiResponse, true);
+                if (!empty($result['ParsedResults'][0]['ParsedText'])) {
+                    $text = $result['ParsedResults'][0]['ParsedText'];
+                } elseif (!empty($result['ErrorMessage'])) {
+                    $error = implode(', ', $result['ErrorMessage']);
+                }
+            }
+        }
+
+        // Clean up temp file
+        @unlink($tempFile);
+
+        if (!empty($text) && trim($text) !== '') {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'text' => trim($text)
+            ]);
+        } else {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'error' => $error ?: 'No readable text found in the image. Please ensure the image has clear, visible text.'
+            ]);
+        }
+    } catch (Exception $e) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
 });

@@ -191,6 +191,30 @@ if (!window.BroxAssistantLoaded) {
         }
 
         loadUserProfile() {
+            // Try encrypted storage first (v2026), fallback to plain
+            const encrypted = localStorage.getItem(CONFIG.userKey + '_enc');
+            if (encrypted) {
+                // Async decryption - return null for now, actual load happens async
+                BroxCrypto.decrypt(encrypted).then(decrypted => {
+                    if (decrypted) {
+                        try {
+                            const data = JSON.parse(decrypted);
+                            if (data && typeof data === 'object' && data.name) {
+                                this.user = data;
+                                // Update UI if needed
+                                if (this.nodes.prechat) {
+                                    this.nodes.prechat.classList.add('brox-ai-hidden');
+                                    this.nodes.body.classList.remove('brox-ai-hidden');
+                                    this.nodes.footer.classList.remove('brox-ai-hidden');
+                                    this.isChatActive = true;
+                                }
+                            }
+                        } catch (e) { }
+                    }
+                });
+            }
+
+            // Also try legacy unencrypted storage
             try {
                 const raw = localStorage.getItem(CONFIG.userKey);
                 if (!raw) return null;
@@ -203,8 +227,16 @@ if (!window.BroxAssistantLoaded) {
             }
         }
 
-        saveUserProfile(profile) {
+        async saveUserProfile(profile) {
             if (!profile || !profile.name) return;
+
+            // Save encrypted (v2026)
+            const encrypted = await BroxCrypto.encrypt(JSON.stringify(profile));
+            if (encrypted) {
+                localStorage.setItem(CONFIG.userKey + '_enc', encrypted);
+            }
+
+            // Also save legacy unencrypted for backward compatibility
             localStorage.setItem(CONFIG.userKey, JSON.stringify(profile));
         }
 
@@ -416,6 +448,56 @@ if (!window.BroxAssistantLoaded) {
         }
 
         // ── Initial Render ────────────────────────────────────────────────────────
+        // ── GDPR Consent Management (v2026) ────────────────────────────────────────────
+        initGdprConsent() {
+            const modal = document.getElementById('publicAssistantGdpr');
+            if (!modal) return;
+
+            // Check if consent was already given
+            const consentGiven = localStorage.getItem('brox.ai.gdpr_consent');
+            if (consentGiven) {
+                modal.classList.add('brox-ai-hidden');
+                this.showPreChat();
+                return;
+            }
+
+            // Show GDPR modal
+            modal.classList.remove('brox-ai-hidden');
+
+            // Bind events
+            const acceptBtn = document.getElementById('gdprAccept');
+            const declineBtn = document.getElementById('gdprDecline');
+
+            acceptBtn?.addEventListener('click', () => {
+                const dataConsent = document.getElementById('gdprConsentData')?.checked;
+                const analyticsConsent = document.getElementById('gdprConsentAnalytics')?.checked;
+
+                // Store consent
+                localStorage.setItem('brox.ai.gdpr_consent', JSON.stringify({
+                    timestamp: Date.now(),
+                    data: dataConsent,
+                    analytics: analyticsConsent
+                }));
+
+                modal.classList.add('brox-ai-hidden');
+                this.showPreChat();
+            });
+
+            declineBtn?.addEventListener('click', () => {
+                modal.classList.add('brox-ai-hidden');
+                // Close chat without proceeding
+                this.nodes.shell?.classList.add('brox-ai-hidden');
+                this.nodes.btn?.classList.remove('d-none');
+            });
+        }
+
+        showPreChat() {
+            if (!this.nodes.prechat) return;
+            this.nodes.prechat.classList.remove('brox-ai-hidden');
+            this.nodes.body?.classList.add('brox-ai-hidden');
+            this.nodes.footer?.classList.add('brox-ai-hidden');
+        }
+
         renderInitialState() {
             if (!this.nodes.prechat || !this.nodes.body || !this.nodes.footer) return;
             this.isChatActive = false;
@@ -571,6 +653,21 @@ if (!window.BroxAssistantLoaded) {
                 if (this.nodes.shell?.classList.contains('brox-ai-hidden')) {
                     this.nodes.shell.classList.remove('brox-ai-hidden');
                     this.nodes.btn.classList.add('brox-ai-active');
+
+                    // Check GDPR consent on first open
+                    const consentGiven = localStorage.getItem('brox.ai.gdpr_consent');
+                    if (!consentGiven) {
+                        this.initGdprConsent();
+                    } else if (this.user) {
+                        // User exists, show chat
+                        this.nodes.prechat?.classList.add('brox-ai-hidden');
+                        this.nodes.body?.classList.remove('brox-ai-hidden');
+                        this.nodes.footer?.classList.remove('brox-ai-hidden');
+                        this.isChatActive = true;
+                    } else {
+                        // No user, show pre-chat
+                        this.showPreChat();
+                    }
                     this.markActivity();
                 } else {
                     this.nodes.shell?.classList.add('brox-ai-hidden');
@@ -846,16 +943,54 @@ if (!window.BroxAssistantLoaded) {
             this.nodes.body.scrollTop = this.nodes.body.scrollHeight;
         }
 
+        // ── Markdown Rendering with marked.js + highlight.js (v2026) ──────────────────
         renderMarkdown(el, text) {
             if (!text) return;
+
+            // Check if marked/highlight are available, otherwise use fallback
+            if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
+                try {
+                    // Configure marked with highlight.js
+                    marked.setOptions({
+                        highlight: function (code, lang) {
+                            if (lang && hljs.getLanguage(lang)) {
+                                return hljs.highlight(code, { language: lang }).value;
+                            }
+                            return hljs.highlightAuto(code).value;
+                        },
+                        breaks: true,
+                        gfm: true
+                    });
+                    el.innerHTML = marked.parse(text);
+                    return;
+                } catch (e) {
+                    console.warn('[Markdown] marked.js failed, using fallback:', e.message);
+                }
+            }
+
+            // Fallback: Basic markdown rendering
             let html = text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
                 .replace(/`(.*?)`/g, '<code>$1</code>')
                 .replace(/\n/g, '<br>');
-            html = html.replace(/```(.*?)\n([\s\S]*?)```/g, (m, lang, code) => {
-                return `<pre><code class="language-${lang.trim()}">${code.trim()}</code></pre>`;
+
+            // Code blocks with language
+            html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (m, lang, code) => {
+                const language = lang.trim() || 'plaintext';
+                return `<pre><code class="language-${language}">${code.trim()}</code></pre>`;
             });
+
+            // Links
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+            // Lists
+            html = html.replace(/^\s*[-*]\s+/gm, '<li>');
+            html = html.replace(/(<li>.*)/g, '<ul>$1</ul>');
+
             el.innerHTML = html;
         }
 

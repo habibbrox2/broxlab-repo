@@ -510,15 +510,11 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
         logError('Firebase signin: Token verified for uid: ' . $uid);
         
         $user = $firebaseModel->getUserByUid($uid);
-        if (!$user && !$isAnonymousProvider) {
-            logError('Firebase signin: User not found in Firebase for uid: ' . $uid);
-            authErrorResponse('user_not_found', '', 'json', 401);
-        }
         if (!$user) {
             $user = [];
         }
 
-        $email = $user['email'] ?? null;
+        $email = $user['email'] ?? $result['claims']['email'] ?? null;
         if ($isAnonymousProvider && empty($email)) {
             $sanitizedUid = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$uid));
             if ($sanitizedUid === '') {
@@ -573,8 +569,8 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
         logError('Firebase signin: Creating/syncing local user for email: ' . $email);
         
         // Extract data from request (frontend may send profile fields)
-        $displayName = $input['displayName'] ?? ($user['displayName'] ?? null);
-        $photoURL = $input['photoURL'] ?? ($user['photoUrl'] ?? null);
+        $displayName = $input['displayName'] ?? ($user['displayName'] ?? $result['claims']['name'] ?? null);
+        $photoURL = $input['photoURL'] ?? ($user['photoUrl'] ?? $result['claims']['picture'] ?? null);
         $requestedUsername = sanitize_input($input['username'] ?? '');
         $requestedFirstName = sanitize_input($input['first_name'] ?? '');
         $requestedLastName = sanitize_input($input['last_name'] ?? '');
