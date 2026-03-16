@@ -1,0 +1,720 @@
+{% extends "admin/layout.twig" %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-graph-up me-2"></i>
+        Analytics Dashboard
+      </div>
+      <div class="admin-page-subtitle">System analytics and reporting</div>
+    </div>
+    <!-- Page Header -->
+    <div class="row mb-4">
+      <div class="col-12 d-flex justify-content-between align-items-center">
+        <div>
+          <h1 class="h3 mb-0">Analytics Dashboard</h1>
+          <p class="text-muted small mt-1">Real-time analytics and activity monitoring</p>
+        </div>
+        <button id="refreshBtnHeader"
+                data-action="refresh-dashboard"
+                class="modern-btn modern-btn-primary btn-sm"
+                title="Refresh dashboard data">
+          <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+        </button>
+      </div>
+    </div>
+    <!-- Alert Summary -->
+    {% if alert_summary.total_alerts > 0 %}
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="alert alert-warning" role="alert">
+            <h4 class="alert-heading">
+              <i class="bi bi-exclamation-triangle-fill"></i> Security Alerts
+            </h4>
+            <div class="row mt-3">
+              <div class="col-md-2">
+                <strong>Total:</strong>
+                <span class="badge badge-danger">{{ alert_summary.total_alerts }}</span>
+              </div>
+              {% if alert_summary.critical > 0 %}
+                <div class="col-md-2">
+                  <strong>Critical:</strong>
+                  <span class="badge badge-danger">{{ alert_summary.critical }}</span>
+                </div>
+              {% endif %}
+              {% if alert_summary.high > 0 %}
+                <div class="col-md-2">
+                  <strong>High:</strong>
+                  <span class="badge badge-warning">{{ alert_summary.high }}</span>
+                </div>
+              {% endif %}
+              {% if alert_summary.medium > 0 %}
+                <div class="col-md-2">
+                  <strong>Medium:</strong>
+                  <span class="badge badge-info">{{ alert_summary.medium }}</span>
+                </div>
+              {% endif %}
+            </div>
+            <hr class="my-3">
+            <small><a href="#recent-alerts">View recent alerts ?</a></small>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+    <!-- Daily Overview -->
+    <div class="row mb-4">
+      <div class="col-lg-3 col-md-6 mb-3">
+        <div class="admin-panel-card stats-card stats-card-visitors">
+          <div class="admin-panel-card-body">
+            <div class="stat-label">Total Visitors</div>
+            <div class="stat-value" id="totalVisitors">0</div>
+            <small class="text-muted">Last 30 days</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 mb-3">
+        <div class="admin-panel-card stats-card stats-card-posts">
+          <div class="admin-panel-card-body">
+            <div class="stat-label">Total Posts</div>
+            <div class="stat-value" id="totalPosts">0</div>
+            <small class="text-muted">Published content</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 mb-3">
+        <div class="admin-panel-card stats-card stats-card-pages">
+          <div class="admin-panel-card-body">
+            <div class="stat-label">Total Pages</div>
+            <div class="stat-value" id="totalPages">0</div>
+            <small class="text-muted">Static pages</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 mb-3">
+        <div class="admin-panel-card stats-card stats-card-users">
+          <div class="admin-panel-card-body">
+            <div class="stat-label">Total Users</div>
+            <div class="stat-value" id="totalUsers">0</div>
+            <small class="text-muted">Registered users</small>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Detailed Stats -->
+    <div class="row mb-4">
+      <div class="col-lg-3 mb-3">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header bg-light">
+            <h6 class="mb-0">
+              <i class="bi bi-file-earmark-text"></i> Page Statistics
+            </h6>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <tbody>
+                  <tr>
+                    <td>Total Impressions</td>
+                    <td class="text-right">
+                      <strong id="pageImpressions">0</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Unique Impressions</td>
+                    <td class="text-right">
+                      <strong id="pageUniqueImpressions">0</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Top Page</td>
+                    <td class="text-right small" id="topPage">N/A</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 mb-3">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header bg-light">
+            <h6 class="mb-0">
+              <i class="bi bi-bookmark-fill"></i> Post Statistics
+            </h6>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <tbody>
+                  <tr>
+                    <td>Total Impressions</td>
+                    <td class="text-right">
+                      <strong id="postImpressions">0</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Unique Impressions</td>
+                    <td class="text-right">
+                      <strong id="postUniqueImpressions">0</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Top Post</td>
+                    <td class="text-right small" id="topPost">N/A</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 mb-3">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header bg-light">
+            <h6 class="mb-0">
+              <i class="bi bi-briefcase-fill"></i> Service Statistics
+            </h6>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <tbody>
+                  <tr>
+                    <td>Total Impressions</td>
+                    <td class="text-right">
+                      <strong id="serviceImpressions">0</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Unique Impressions</td>
+                    <td class="text-right">
+                      <strong id="serviceUniqueImpressions">0</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Top Service</td>
+                    <td class="text-right small" id="topService">N/A</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 mb-3">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header bg-light">
+            <h6 class="mb-0">
+              <i class="bi bi-megaphone-fill"></i> Advertisement
+            </h6>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <tbody>
+                  <tr>
+                    <td>Total Inquiries</td>
+                    <td class="text-right">
+                      <strong id="totalInquiries">0</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Pending</td>
+                    <td class="text-right">
+                      <strong id="pendingInquiries">0</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Approved</td>
+                    <td class="text-right">
+                      <strong id="approvedInquiries">0</strong>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Recent Client Events -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header bg-light">
+            <h6 class="mb-0">
+              <i class="bi bi-broadcast"></i> Recent Client Events
+            </h6>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="table-responsive">
+              <table class="table table-sm table-striped">
+                <thead>
+                  <tr>
+                    <th>Event</th>
+                    <th>User</th>
+                    <th>Firebase UID</th>
+                    <th>Params</th>
+                    <th>IP</th>
+                    <th>When</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for e in recent_events %}
+                    <tr>
+                      <td>{{ e.event_name }}</td>
+                      <td>{{ e.user_id ?: 'guest' }}</td>
+                      <td>{{ e.firebase_uid ?: '-' }}</td>
+                      <td>
+                        <small>{{ e.event_params ?: '-' }}</small>
+                      </td>
+                      <td>{{ e.ip_address ?: '-' }}</td>
+                      <td class="small text-muted">{{ e.created_at }}</td>
+                    </tr>
+                  {% else %}
+                    <tr>
+                      <td colspan="6" class="text-muted">No recent events</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Reports Tab Section -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header bg-light">
+            <ul class="nav nav-tabs card-header-tabs" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active"
+                   id="daily-tab"
+                   data-bs-toggle="tab"
+                   data-bs-target="#daily-report"
+                   role="tab"
+                   aria-controls="daily-report"
+                   aria-selected="true">Daily Report</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link"
+                   id="weekly-tab"
+                   data-bs-toggle="tab"
+                   data-bs-target="#weekly-report"
+                   role="tab"
+                   aria-controls="weekly-report"
+                   aria-selected="false">Weekly Report</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link"
+                   id="monthly-tab"
+                   data-bs-toggle="tab"
+                   data-bs-target="#monthly-report"
+                   role="tab"
+                   aria-controls="monthly-report"
+                   aria-selected="false">Monthly Report</a>
+              </li>
+            </ul>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="tab-content">
+              <!-- Daily Report Tab -->
+              <div class="tab-pane fade show active" id="daily-report" role="tabpanel">
+                <h6 class="mb-3">Analytics for {{ today }}</h6>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <h6>Login Activity</h6>
+                    <canvas id="daily-login-chart" class="inl-a-0005"></canvas>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <h6>Visitor Trends</h6>
+                    <canvas id="daily-visitor-chart" class="inl-a-0005"></canvas>
+                  </div>
+                </div>
+              </div>
+              <!-- Weekly Report Tab -->
+              <div class="tab-pane fade" id="weekly-report" role="tabpanel">
+                <h6 class="mb-3">Weekly Analytics Summary</h6>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <h6>Daily Breakdown</h6>
+                    <canvas id="weekly-chart" class="inl-a-0005"></canvas>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <h6>Top Content</h6>
+                    <div class="table-responsive">
+                      <table class="table table-sm">
+                        <thead>
+                          <tr>
+                            <th>Page/Post</th>
+                            <th class="text-right">Views</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% if weekly_report.top_pages %}
+                            {% for page in weekly_report.top_pages|slice(0, 3) %}
+                              <tr>
+                                <td>{{ page.title|truncate(30) }}</td>
+                                <td class="text-right">{{ page.views }}</td>
+                              </tr>
+                            {% endfor %}
+                          {% endif %}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Monthly Report Tab -->
+              <div class="tab-pane fade" id="monthly-report" role="tabpanel">
+                <h6 class="mb-3">Monthly Analytics Summary</h6>
+                <div class="row">
+                  <div class="col-md-4 mb-3">
+                    <h6>Browser Distribution</h6>
+                    <canvas id="browser-chart" class="inl-a-0005"></canvas>
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <h6>OS Distribution</h6>
+                    <canvas id="os-chart" class="inl-a-0005"></canvas>
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <h6>Monthly Stats</h6>
+                    <div class="table-responsive">
+                      <table class="table table-sm">
+                        <tbody>
+                          <tr>
+                            <td>Total Visitors</td>
+                            <td class="text-right">
+                              <strong>{{ monthly_report.total_visitors.unique ?? 0 }}</strong>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>Total Logins</td>
+                            <td class="text-right">
+                              <strong>{{ monthly_report.login_stats.total ?? 0 }}</strong>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>Failed Logins</td>
+                            <td class="text-right">
+                              <strong>{{ monthly_report.login_stats.failed ?? 0 }}</strong>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Security Alerts Section -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header bg-light">
+            <h6 class="mb-0">
+              <i class="bi bi-shield-fill"></i> Security Alerts (Real-time)
+            </h6>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="alerts-container" id="securityAlerts">
+              <div class="alert alert-info">Loading security alerts...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Charts Section -->
+    <div class="row mb-4">
+      <div class="col-lg-6">
+        <div class="chart-container">
+          <div class="chart-title">Daily Activity Trend (30 days)</div>
+          <canvas id="dailyActivityChart"></canvas>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="chart-container">
+          <div class="chart-title">Login Success/Failure Rate</div>
+          <canvas id="loginSuccessChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <!-- Data Tables Section -->
+    <div class="row">
+      <div class="col-12">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header bg-light">
+            <ul class="nav nav-tabs card-header-tabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active"
+                        id="post-views-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#post-views"
+                        type="button">Post Views</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link"
+                        id="page-views-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#page-views"
+                        type="button">Page Views</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link"
+                        id="service-views-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#service-views"
+                        type="button">Service Views</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link"
+                        id="login-audit-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#login-audit"
+                        type="button">Login Audit</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link"
+                        id="oauth-audit-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#oauth-audit"
+                        type="button">OAuth Audit</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link"
+                        id="activity-logs-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#activity-logs"
+                        type="button">Activity Logs</button>
+              </li>
+            </ul>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="tab-content">
+              <!-- Post Views Tab -->
+              <div class="tab-pane fade show active" id="post-views" role="tabpanel">
+                <div class="table-responsive">
+                  <table class="table analytics-table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Post Title</th>
+                        <th>Total Views</th>
+                        <th>Unique Viewers</th>
+                        <th>Last Viewed</th>
+                      </tr>
+                    </thead>
+                    <tbody id="postViewsBody">
+                      <tr>
+                        <td colspan="4" class="text-center text-muted">Loading...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <!-- Page Views Tab -->
+              <div class="tab-pane fade" id="page-views" role="tabpanel">
+                <div class="table-responsive">
+                  <table class="table analytics-table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Page Title</th>
+                        <th>Total Views</th>
+                        <th>Unique Viewers</th>
+                        <th>Last Viewed</th>
+                      </tr>
+                    </thead>
+                    <tbody id="pageViewsBody">
+                      <tr>
+                        <td colspan="4" class="text-center text-muted">Loading...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <!-- Service Views Tab -->
+              <div class="tab-pane fade" id="service-views" role="tabpanel">
+                <div class="table-responsive">
+                  <table class="table analytics-table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Service Name</th>
+                        <th>Total Views</th>
+                        <th>Unique Viewers</th>
+                        <th>Last Viewed</th>
+                      </tr>
+                    </thead>
+                    <tbody id="serviceViewsBody">
+                      <tr>
+                        <td colspan="4" class="text-center text-muted">Loading...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <!-- Login Audit Tab -->
+              <div class="tab-pane fade" id="login-audit" role="tabpanel">
+                <div class="table-responsive">
+                  <table class="table analytics-table table-hover">
+                    <thead>
+                      <tr>
+                        <th>User ID</th>
+                        <th>Status</th>
+                        <th>IP Address</th>
+                        <th>User Agent</th>
+                        <th>Date/Time</th>
+                      </tr>
+                    </thead>
+                    <tbody id="loginAuditBody">
+                      <tr>
+                        <td colspan="5" class="text-center text-muted">Loading...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <!-- OAuth Audit Tab -->
+              <div class="tab-pane fade" id="oauth-audit" role="tabpanel">
+                <div class="table-responsive">
+                  <table class="table analytics-table table-hover">
+                    <thead>
+                      <tr>
+                        <th>User ID</th>
+                        <th>Action</th>
+                        <th>Provider</th>
+                        <th>Status</th>
+                        <th>Error</th>
+                        <th>Date/Time</th>
+                      </tr>
+                    </thead>
+                    <tbody id="oauthAuditBody">
+                      <tr>
+                        <td colspan="6" class="text-center text-muted">Loading...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <!-- Activity Logs Tab -->
+              <div class="tab-pane fade" id="activity-logs" role="tabpanel">
+                <div class="table-responsive">
+                  <table class="table analytics-table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Action</th>
+                        <th>Module</th>
+                        <th>User ID</th>
+                        <th>Status</th>
+                        <th>Date/Time</th>
+                      </tr>
+                    </thead>
+                    <tbody id="activityLogsBody">
+                      <tr>
+                        <td colspan="5" class="text-center text-muted">Loading...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Management Section -->
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header bg-light">
+            <h6 class="mb-0">
+              <i class="bi bi-gear-fill"></i> Management Tools
+            </h6>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="modern-btn-group-control d-flex gap-2 flex-wrap">
+              <button class="modern-btn btn-control btn-outline-primary"
+                      id="refreshBtnTools"
+                      data-action="refresh-dashboard">
+                <i class="bi bi-arrow-clockwise"></i> Refresh Data
+              </button>
+              <button class="modern-btn btn-control btn-outline-danger" id="clearLogsBtn">
+                <i class="bi bi-trash-fill"></i> Clear Old Logs
+              </button>
+              <button class="modern-btn btn-control btn-outline-success" id="exportBtn">
+                <i class="bi bi-download"></i> Export Data
+              </button>
+            </div>
+            <small class="d-block text-muted mt-3">
+              <i class="bi bi-info-circle-fill"></i> Clear logs: Removes records older than 90 days |
+              Export: Download audit logs in CSV or JSON format
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Export Modal -->
+  <div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Export Analytics Data</h5>
+          <button type="button" class="modern-btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Data Type</label>
+            <select class="form-select" id="exportDataType">
+              <option value="all">All Data</option>
+              <option value="login_audit">Login Audit Only</option>
+              <option value="oauth_audit">OAuth Audit Only</option>
+              <option value="activity_logs">Activity Logs Only</option>
+            </select>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <label class="form-label">Start Date</label>
+              <input type="date" class="form-control" id="exportStartDate">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">End Date</label>
+              <input type="date" class="form-control" id="exportEndDate">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button"
+                  class="modern-btn modern-btn-white"
+                  data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="modern-btn modern-btn-white" id="exportCsvBtn">
+            <i class="bi bi-file-earmark-text"></i> Export CSV
+          </button>
+          <button type="button"
+                  class="modern-btn modern-btn-primary"
+                  id="exportJsonBtn">
+            <i class="bi bi-file-earmark-code"></i> Export JSON
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Dashboard data (read by analytics-dashboard.js) -->
+  <div id="analytics-dashboard-data"
+       data-daily-stats='{{ daily_report.stats|json_encode|e("html_attr") }}'
+       data-daily-logins='{{ daily_report.logins|json_encode|e("html_attr") }}'
+       data-weekly-stats='{{ weekly_report.stats|json_encode|e("html_attr") }}'
+       data-monthly-stats='{{ monthly_report.stats|json_encode|e("html_attr") }}'
+       class="inl-a-0006"></div>
+{% endblock %}
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"
+          defer></script>
+  <script src="{{ asset('/assets/js/dist/analytics-dashboard.js') }}" defer></script>
+{% endblock %}

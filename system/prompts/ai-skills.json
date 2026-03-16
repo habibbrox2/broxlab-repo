@@ -1,0 +1,206 @@
+{
+    "version": "2.0",
+    "name": "BroxBhai AI Skills",
+    "description": "AI Skills and Capabilities Configuration for BroxBhai",
+    "updated_at": "2026-03-13",
+    "skills": [
+        {
+            "id": "general_assistant",
+            "name": "General Assistant",
+            "description": "Answer questions about BroxBhai platform, services, and general tech topics in Bengali or English",
+            "enabled": true,
+            "priority": 10,
+            "context": {
+                "prompt_file": "assistant.md",
+                "max_tokens": 1000,
+                "temperature": 0.3
+            },
+            "triggers": {
+                "keywords": [
+                    "help",
+                    "question",
+                    "how",
+                    "what",
+                    "explain",
+                    "কিভাবে",
+                    "কি",
+                    "সাহায্য"
+                ],
+                "exclude": [
+                    "admin",
+                    "code",
+                    "debug"
+                ]
+            }
+        },
+        {
+            "id": "admin_assistant",
+            "name": "Admin Assistant",
+            "description": "Help administrators with content management, user management, analytics, AI configuration, and site administration",
+            "enabled": true,
+            "priority": 20,
+            "context": {
+                "prompt_file": "admin.md",
+                "max_tokens": 1500,
+                "temperature": 0.2
+            },
+            "triggers": {
+                "keywords": [
+                    "admin",
+                    "manage",
+                    "dashboard",
+                    "settings",
+                    "config",
+                    "user",
+                    "permission",
+                    "role"
+                ],
+                "require_auth": true,
+                "require_role": ["admin", "super_admin"]
+            }
+        },
+        {
+            "id": "content_summarizer",
+            "name": "Content Summarizer",
+            "description": "Summarize articles, news, and content into concise summaries in Bengali or English",
+            "enabled": true,
+            "priority": 30,
+            "context": {
+                "prompt_file": "summarizer.md",
+                "max_tokens": 500,
+                "temperature": 0.1
+            },
+            "triggers": {
+                "keywords": [
+                    "summarize",
+                    "summary",
+                    "shorten",
+                    "brief",
+                    "সারসংক্ষেপ",
+                    "সংক্ষেপ"
+                ],
+                "input_type": "content"
+            }
+        },
+        {
+            "id": "web_scraper",
+            "name": "Web Scraper",
+            "description": "Extract structured data from HTML content — admin only",
+            "enabled": true,
+            "priority": 25,
+            "context": {
+                "prompt_file": "scraper.md",
+                "max_tokens": 2000,
+                "temperature": 0.0
+            },
+            "triggers": {
+                "keywords": [
+                    "extract",
+                    "scrape",
+                    "parse",
+                    "html"
+                ],
+                "input_type": "html",
+                "require_auth": true,
+                "require_role": ["admin", "super_admin"]
+            }
+        },
+        {
+            "id": "content_enhancer",
+            "name": "Content Enhancer",
+            "description": "Improve and enhance existing content — fix grammar, improve flow, adjust tone and style",
+            "enabled": true,
+            "priority": 15,
+            "context": {
+                "prompt_file": "enhancer.md",
+                "max_tokens": 2000,
+                "temperature": 0.4
+            },
+            "triggers": {
+                "keywords": [
+                    "improve",
+                    "enhance",
+                    "rewrite",
+                    "better",
+                    "fix",
+                    "উন্নত",
+                    "ঠিক করো"
+                ],
+                "input_type": "content",
+                "require_auth": true
+            }
+        },
+        {
+            "id": "code_helper",
+            "name": "Code Helper",
+            "description": "Provide secure coding assistance for PHP, JavaScript, HTML, CSS, and SQL",
+            "enabled": true,
+            "priority": 18,
+            "context": {
+                "prompt_file": "code-helper.md",
+                "max_tokens": 2000,
+                "temperature": 0.2
+            },
+            "triggers": {
+                "keywords": [
+                    "code",
+                    "php",
+                    "javascript",
+                    "function",
+                    "class",
+                    "debug",
+                    "sql",
+                    "query",
+                    "error",
+                    "bug"
+                ],
+                "input_type": "code",
+                "require_auth": true
+            }
+        },
+        {
+            "id": "bengali_translator",
+            "name": "Bengali Translator",
+            "description": "Translate content accurately between Bengali and English",
+            "enabled": true,
+            "priority": 12,
+            "context": {
+                "prompt_file": "translator.md",
+                "max_tokens": 1500,
+                "temperature": 0.2
+            },
+            "triggers": {
+                "keywords": [
+                    "translate",
+                    "translation",
+                    "বাংলা",
+                    "english",
+                    "অনুবাদ",
+                    "বানান"
+                ],
+                "language_detection": true
+            }
+        }
+    ],
+    "fallback_strategy": {
+        "enabled": true,
+        "default_skill": "general_assistant",
+        "fallback_order": [
+            "general_assistant",
+            "content_summarizer"
+        ]
+    },
+    "context_settings": {
+        "include_knowledge_base": true,
+        "include_recent_content": true,
+        "include_user_history": true,
+        "max_history_messages": 10,
+        "relevance_threshold": 0.6
+    },
+    "response_settings": {
+        "format": "markdown",
+        "max_length": 2000,
+        "include_suggestions": true,
+        "language_match": true
+    }
+}

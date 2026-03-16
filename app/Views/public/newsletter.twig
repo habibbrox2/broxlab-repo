@@ -1,0 +1,174 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Newsletter Subscription - Stay Updated | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+
+{% set breadcrumbs = [
+  { label: 'Newsletter', url: '/newsletter', icon: 'envelope' }
+] %}
+
+{% block content %}
+<div class="page-newsletter public-static-page">
+  <section class="hero-section public-page-hero public-hero--newsletter position-relative py-5 mb-4 overflow-hidden">
+    <div class="container">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+          <h1 class="display-4 fw-bold text-white mb-3">
+            <i class="bi bi-envelope-paper-fill me-2"></i>Stay Updated
+          </h1>
+          <p class="lead text-white-50 fs-5 mb-0">
+            Subscribe for the latest tech news, reviews, and exclusive updates.
+          </p>
+        </div>
+        <div class="col-lg-4 text-center">
+          <div class="public-hero-icon" aria-hidden="true">
+            <i class="bi bi-newspaper"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="public-hero-pattern" aria-hidden="true"></div>
+  </section>
+
+  <div class="container py-4 py-lg-5">
+    <div class="row align-items-start g-4">
+      <div class="col-lg-6">
+        <h2 class="h4 fw-bold mb-3">Never Miss an Update</h2>
+        <p class="text-muted mb-4">
+          Get new posts, important releases, and selected highlights directly in your inbox.
+        </p>
+
+        {% if success %}
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>{{ success }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endif %}
+
+        {% if error %}
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endif %}
+
+        <form id="newsletter-form" class="newsletter-form public-surface-card" method="POST" action="/newsletter/subscribe">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-3">
+            <input type="text"
+                   class="form-control form-control-lg rounded-3"
+                   name="name"
+                   placeholder="Your Name"
+                   required>
+          </div>
+          <div class="input-group mb-3">
+            <input type="email"
+                   class="form-control form-control-lg rounded-3"
+                   name="email"
+                   placeholder="your.email@example.com"
+                   required>
+            <button class="btn btn-primary btn-lg rounded-3" type="submit">
+              <i class="bi bi-send-fill me-2"></i>Subscribe
+            </button>
+          </div>
+
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="preferences" value="weekly" id="weekly">
+            <label class="form-check-label" for="weekly">
+              Send me weekly digest
+            </label>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="preferences" value="updates" id="updates">
+            <label class="form-check-label" for="updates">
+              Notify me about new updates
+            </label>
+          </div>
+
+          <small class="text-muted d-block mt-3">
+            We respect your privacy. Unsubscribe at any time.
+          </small>
+        </form>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="stats-cards">
+          <div class="card public-surface-card border-0 mb-3">
+            <div class="card-body text-center p-4">
+              <h3 class="counter mb-1" data-target="{{ stats.total_posts }}">0</h3>
+              <p class="text-muted mb-0">Published Posts</p>
+            </div>
+          </div>
+          <div class="card public-surface-card border-0 mb-3">
+            <div class="card-body text-center p-4">
+              <h3 class="counter mb-1" data-target="{{ stats.total_users }}">0</h3>
+              <p class="text-muted mb-0">Active Members</p>
+            </div>
+          </div>
+          <div class="card public-surface-card border-0 mb-3">
+            <div class="card-body text-center p-4">
+              <h3 class="counter mb-1" data-target="{{ stats.total_mobiles }}">0</h3>
+              <p class="text-muted mb-0">Mobile Devices</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('newsletter-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch('/newsletter/subscribe', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            showMessage(data.message || 'Successfully subscribed to our newsletter', 'success');
+            form.reset();
+        } else {
+            showMessage(data.error || 'An error occurred', 'error');
+        }
+    } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+    }
+});
+
+function animateCounter(element, target, duration = 2000) {
+    const start = 0;
+    const increment = target / (duration / 16);
+    let current = start;
+
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+            element.textContent = target;
+            clearInterval(timer);
+        } else {
+            element.textContent = Math.floor(current);
+        }
+    }, 16);
+}
+
+const counters = document.querySelectorAll('.counter');
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.dataset.animated) {
+            const target = parseInt(entry.target.dataset.target, 10);
+            animateCounter(entry.target, target);
+            entry.target.dataset.animated = 'true';
+            observer.unobserve(entry.target);
+        }
+    });
+});
+
+counters.forEach(counter => observer.observe(counter));
+</script>
+
+{% endblock %}

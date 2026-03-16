@@ -1,0 +1,37 @@
+{# views/partials/card.twig #}
+<div class="card h-100 shadow-sm border-0 rounded-4 hover-shadow {{ item.extra_class|default('') }}">
+    <!-- Image -->
+    {% set img_src = item.image_path|default(item.image|default(null)) %}
+    {% if img_src is iterable %}
+        {% set img_src = img_src|first %}
+        {% if img_src.url is defined %}{% set img_src = img_src.url %}{% elseif img_src.path is defined %}{% set img_src = img_src.path %}{% endif %}
+    {% endif %}
+    <img src="{{ img_src|default('/images/placeholder.png') }}"
+         alt="{{ item.title|default(item.name)|default('Item') }}"
+         class="card-img-top img-height-220"
+         loading="lazy">
+
+    <!-- Card Body -->
+    <div class="card-body d-flex flex-column">
+        <h5 class="card-title text-truncate" title="{{ item.title|default(item.name) }}">
+            {{ item.brand_name is defined ? item.brand_name ~ ' ' ~ item.model_name : item.title|default(item.name) }}
+        </h5>
+
+        {# Optional status badge (only for mobiles or items that have status) #}
+        {% if item.status is defined %}
+            <p class="mb-2">
+                <span class="badge 
+                    {{ item.status=='official' ? 'bg-success' 
+                      : item.status=='unofficial' ? 'bg-warning text-surface-dark' 
+                      : 'bg-info' }}">
+                    {{ item.status|capitalize }}
+                </span>
+            </p>
+        {% endif %}
+
+        <!-- CTA Button -->
+        <a href="{{ item.url|default('#') }}" class="btn btn-outline-primary btn-sm mt-auto">
+            <i class="bi bi-eye"></i> View Details
+        </a>
+    </div>
+</div>

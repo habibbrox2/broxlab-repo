@@ -1,0 +1,202 @@
+{% extends "admin/layout.twig" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  {# Flash Messages #}
+  {% if flash is defined and flash %}
+    <div class="alert alert-{{ flash.type }} alert-dismissible fade show" role="alert">
+      {{ flash.message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endif %}
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">📡 SIM Routing Rules</h6>
+          <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#routeModal" id="btn-add-route"
+                  onclick="resetRouteForm()">
+            + Add Rule
+          </button>
+        </div>
+        <div class="card-body px-0 pb-0">
+          <div class="table-responsive">
+            <table class="table align-items-center mb-0">
+              <thead>
+                <tr>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Label</th>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Match</th>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Action</th>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Status</th>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if routes is empty %}
+                  <tr>
+                    <td colspan="5" class="text-center text-muted py-4">No routes configured yet. Add your first rule.</td>
+                  </tr>
+                {% else %}
+                  {% for route in routes %}
+                    <tr>
+                      <td><span class="text-sm font-weight-bold">{{ route.label }}</span></td>
+                      <td>
+                        <span class="badge bg-secondary">{{ route.match_type }}</span>
+                        {% if route.match_value %}<small class="text-muted ms-1">{{ route.match_value }}</small>{% endif %}
+                      </td>
+                      <td><span class="badge bg-info">{{ route.action | replace({'_': ' '}) }}</span></td>
+                      <td>
+                        {% if route.enabled %}
+                          <span class="badge badge-sm bg-success">Enabled</span>
+                        {% else %}
+                          <span class="badge badge-sm bg-secondary">Disabled</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        <button class="btn btn-sm btn-outline-primary py-1 px-2"
+                                onclick="editRoute({{ route | json_encode }})">
+                          Edit
+                        </button>
+                        <form action="/admin/sim-routing/delete" method="POST" class="d-inline"
+                              onsubmit="return confirm('Delete this route?')">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <input type="hidden" name="id" value="{{ route.id }}">
+                          <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2">Delete</button>
+                        </form>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# Add/Edit Route Modal #}
+<div class="modal fade" id="routeModal" tabindex="-1" aria-labelledby="routeModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form action="/admin/sim-routing/save" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="id" id="route_id" value="0">
+        <div class="modal-header">
+          <h5 class="modal-title" id="routeModalLabel">SIM Routing Rule</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Label</label>
+            <input type="text" class="form-control" name="label" id="route_label" required placeholder="e.g. Forward Bank OTPs">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Match Type</label>
+            <select class="form-select" name="match_type" id="route_match_type" onchange="toggleMatchValue(this.value)">
+              <option value="any">Any SMS</option>
+              <option value="sender">Sender Number</option>
+              <option value="keyword">Keyword in Message</option>
+            </select>
+          </div>
+          <div class="mb-3" id="match_value_group" style="display:none">
+            <label class="form-label" id="match_value_label">Match Value</label>
+            <input type="text" class="form-control" name="match_value" id="route_match_value"
+                   placeholder="Sender number or keyword">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Action</label>
+            <select class="form-select" name="action" id="route_action" onchange="toggleActionFields(this.value)">
+              <option value="forward_telegram">Forward to Telegram</option>
+              <option value="reply_sms">Auto-Reply SMS</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
+          <div id="reply_fields" style="display:none">
+            <div class="mb-3">
+              <label class="form-label">Reply Device</label>
+              <select class="form-select" name="device_id" id="route_device_id">
+                <option value="">Same device</option>
+                {% for device in devices %}
+                  <option value="{{ device.id }}">{{ device.device_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">SIM Slot</label>
+              <select class="form-select" name="sim_slot" id="route_sim_slot">
+                <option value="1">SIM 1</option>
+                <option value="2">SIM 2</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Auto-Reply Message</label>
+              <textarea class="form-control" name="reply_message" id="route_reply_message" rows="3"
+                        placeholder="Message to send back..."></textarea>
+            </div>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="enabled" id="route_enabled" value="1" checked>
+            <label class="form-check-label" for="route_enabled">Enabled</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Rule</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function resetRouteForm() {
+    document.getElementById('route_id').value = '0';
+    document.getElementById('route_label').value = '';
+    document.getElementById('route_match_type').value = 'any';
+    document.getElementById('route_match_value').value = '';
+    document.getElementById('route_action').value = 'forward_telegram';
+    document.getElementById('route_device_id').value = '';
+    document.getElementById('route_sim_slot').value = '1';
+    document.getElementById('route_reply_message').value = '';
+    document.getElementById('route_enabled').checked = true;
+    toggleMatchValue('any');
+    toggleActionFields('forward_telegram');
+    document.getElementById('routeModalLabel').textContent = 'Add SIM Routing Rule';
+}
+
+function editRoute(route) {
+    document.getElementById('routeModalLabel').textContent = 'Edit SIM Routing Rule';
+    document.getElementById('route_id').value = route.id;
+    document.getElementById('route_label').value = route.label;
+    document.getElementById('route_match_type').value = route.match_type;
+    document.getElementById('route_match_value').value = route.match_value || '';
+    document.getElementById('route_action').value = route.action;
+    document.getElementById('route_device_id').value = route.device_id || '';
+    document.getElementById('route_sim_slot').value = route.sim_slot || '1';
+    document.getElementById('route_reply_message').value = route.reply_message || '';
+    document.getElementById('route_enabled').checked = parseInt(route.enabled) === 1;
+    toggleMatchValue(route.match_type);
+    toggleActionFields(route.action);
+
+    var modal = new bootstrap.Modal(document.getElementById('routeModal'));
+    modal.show();
+}
+
+function toggleMatchValue(type) {
+    var group = document.getElementById('match_value_group');
+    var label = document.getElementById('match_value_label');
+    group.style.display = (type === 'any') ? 'none' : 'block';
+    label.textContent = type === 'sender' ? 'Sender Number (partial match)' : 'Keyword (partial match)';
+}
+
+function toggleActionFields(action) {
+    var fields = document.getElementById('reply_fields');
+    fields.style.display = (action === 'reply_sms' || action === 'both') ? 'block' : 'none';
+}
+</script>
+{% endblock %}

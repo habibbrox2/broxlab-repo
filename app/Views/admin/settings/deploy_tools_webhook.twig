@@ -1,0 +1,434 @@
+{% extends "admin/layout.twig" %}
+{% block title %}GitHub Webhook - Deploy Tools{% endblock %}
+
+{% block content %}
+<style>
+  .webhook-status {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+  .webhook-status.active { background: #22c55e; }
+  .webhook-status.inactive { background: #6b7280; }
+  .copy-btn {
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover {
+    color: #007bff;
+  }
+  .guide-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+  .guide-card .card-body {
+    padding: 1.5rem;
+  }
+  .guide-card code {
+    background: rgba(255,255,255,0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.85em;
+  }
+  .guide-card ol {
+    padding-left: 1.2rem;
+  }
+  .guide-card li {
+    margin-bottom: 0.5rem;
+  }
+  .log-entry {
+    border-left: 3px solid #e5e7eb;
+    padding-left: 12px;
+    margin-bottom: 12px;
+  }
+  .log-entry.success { border-left-color: #22c55e; }
+  .log-entry.failed { border-left-color: #ef4444; }
+  .log-entry.ignored { border-left-color: #f59e0b; }
+</style>
+
+<div class="container-fluid py-4">
+  <div class="admin-page-header mb-4">
+    <div class="admin-page-title">
+      <i class="bi bi-git"></i>
+      GitHub Webhook
+    </div>
+    <div class="admin-page-subtitle">Configure automated deployments via GitHub webhooks</div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Webhook Configuration -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex align-items-center justify-content-between">
+          <strong><i class="bi bi-gear me-2"></i>Webhook Configuration</strong>
+          <span class="webhook-status {{ settings.webhook_enabled.value ? 'active' : 'inactive' }}"></span>
+        </div>
+        <div class="card-body">
+          <form id="webhookForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            
+            <!-- Enable Webhook -->
+            <div class="form-check form-switch mb-4">
+              <input class="form-check-input" type="checkbox" name="webhook_enabled" 
+                     id="webhookEnabled" {{ settings.webhook_enabled.value ? 'checked' : '' }}>
+              <label class="form-check-label" for="webhookEnabled">
+                Enable GitHub Webhook
+              </label>
+            </div>
+
+            <!-- Webhook URL -->
+            <div class="mb-3">
+              <label class="form-label">Webhook URL</label>
+              <div class="input-group">
+                <input type="text" class="form-control" value="{{ webhook_url }}" readonly id="webhookUrl">
+                <button class="btn btn-outline-secondary copy-btn" type="button" onclick="copyWebhookUrl()">
+                  <i class="bi bi-clipboard"></i>
+                </button>
+              </div>
+              <small class="text-muted">Use this URL in your GitHub repository settings</small>
+            </div>
+
+            <!-- Webhook Secret -->
+            <div class="mb-3">
+              <label class="form-label">Webhook Secret</label>
+              <div class="input-group">
+                <input type="password" class="form-control" name="webhook_secret" 
+                       value="{{ settings.webhook_secret.value }}" 
+                       placeholder="Enter secret or leave empty">
+                <button class="btn btn-outline-secondary" type="button" onclick="toggleSecret()">
+                  <i class="bi bi-eye" id="eyeIcon"></i>
+                </button>
+              </div>
+              <small class="text-muted">Secret key for signature verification (recommended)</small>
+            </div>
+
+            <div class="mb-3">
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="generateNewSecret()">
+                <i class="bi bi-arrow-repeat me-1"></i> Generate New Secret
+              </button>
+              <input type="hidden" name="generate_secret" id="generateSecret" value="0">
+            </div>
+
+            <!-- Branch -->
+            <div class="mb-3">
+              <label class="form-label">Target Branch</label>
+              <input type="text" class="form-control" name="webhook_branch" 
+                     value="{{ settings.webhook_branch.value }}" placeholder="main">
+              <small class="text-muted">Only deployments from this branch will trigger</small>
+            </div>
+
+            <!-- Events -->
+            <div class="mb-3">
+              <label class="form-label">Trigger Events</label>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="webhook_events[]" 
+                       value="push" {{ 'push' in settings.webhook_events.value ? 'checked' : '' }}>
+                <label class="form-check-label">Push</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="webhook_events[]" 
+                       value="release" {{ 'release' in settings.webhook_events.value ? 'checked' : '' }}>
+                <label class="form-check-label">Release</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="webhook_events[]" 
+                       value="workflow_run" {{ 'workflow_run' in settings.webhook_events.value ? 'checked' : '' }}>
+                <label class="form-check-label">Workflow Run</label>
+              </div>
+            </div>
+
+            <!-- Auto Deploy -->
+            <div class="form-check form-switch mb-4">
+              <input class="form-check-input" type="checkbox" name="webhook_auto_deploy" 
+                     id="webhookAutoDeploy" {{ settings.webhook_auto_deploy.value ? 'checked' : '' }}>
+              <label class="form-check-label" for="webhookAutoDeploy">
+                Auto-deploy on webhook trigger
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg me-1"></i> Save Settings
+            </button>
+            
+            <button type="button" class="btn btn-outline-success ms-2" onclick="testWebhook()">
+              <i class="bi bi-send me-1"></i> Test Webhook
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Status Info -->
+      <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header bg-white">
+          <strong><i class="bi bi-info-circle me-2"></i>Status</strong>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6">
+              <small class="text-muted d-block">Last Delivery</small>
+              <strong>{{ settings.last_webhook_delivery.value ?: 'Never' }}</strong>
+            </div>
+            <div class="col-6">
+              <small class="text-muted d-block">Last Status</small>
+              <strong class="{{ settings.last_webhook_status.value == 'triggered' ? 'text-success' : 'text-muted' }}">
+                {{ settings.last_webhook_status.value ?: 'N/A' }}
+              </strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Setup Guide -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm guide-card mb-4">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-book me-2"></i>Setup Guide</h5>
+          <hr style="border-color: rgba(255,255,255,0.3);">
+          
+          <ol>
+            <li><strong>Save your settings</strong> - Click "Save Settings" after configuring</li>
+            <li><strong>Copy the Webhook URL</strong> - Click the copy button next to the URL</li>
+            <li><strong>Go to GitHub</strong> - Navigate to your repository → Settings → Webhooks</li>
+            <li><strong>Add Webhook</strong> - Click "Add webhook"</li>
+            <li><strong>Configure:</strong>
+              <ul>
+                <li>Payload URL: <code>{{ webhook_url }}</code></li>
+                <li>Content type: <code>application/json</code></li>
+                <li>Secret: <code>{{ settings.webhook_secret.value ?: '[your-secret]' }}</code></li>
+                <li>Events: Select <code>Pushes</code> or customize as needed</li>
+              </ul>
+            </li>
+            <li><strong>Save</strong> - Click "Add webhook"</li>
+            <li><strong>Test</strong> - Click "Test Webhook" button above</li>
+          </ol>
+
+          <div class="alert alert-dark mt-3" style="background: rgba(255,255,255,0.15); border: none;">
+            <i class="bi bi-shield-check me-2"></i>
+            <strong>Security Tip:</strong> Using a webhook secret ensures that only legitimate 
+            GitHub requests trigger deployments. The signature is verified using HMAC-SHA256.
+          </div>
+          
+          <a href="/docs/GITHUB-WEBHOOK-DEPLOY.md" target="_blank" class="btn btn-light btn-sm mt-2">
+            <i class="bi bi-book me-1"></i> View Full Documentation
+          </a>
+        </div>
+      </div>
+
+      <!-- Security Information -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+          <strong><i class="bi bi-shield-lock me-2"></i>Security Features</strong>
+        </div>
+        <div class="card-body">
+          <ul class="mb-0">
+            <li><i class="bi bi-check-circle text-success me-2"></i>Signature verification (HMAC-SHA256)</li>
+            <li><i class="bi bi-check-circle text-success me-2"></i>Branch filtering</li>
+            <li><i class="bi bi-check-circle text-success me-2"></i>Event type filtering</li>
+            <li><i class="bi bi-check-circle text-success me-2"></i>IP allowlisting (configure in server)</li>
+            <li><i class="bi bi-check-circle text-success me-2"></i>Delivery logging</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Webhook Logs -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex align-items-center justify-content-between">
+          <strong><i class="bi bi-journal-text me-2"></i>Recent Webhook Deliveries</strong>
+          <button class="btn btn-sm btn-outline-secondary" onclick="refreshLogs()">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+          </button>
+        </div>
+        <div class="card-body">
+          {% if logs is empty %}
+            <div class="text-muted text-center py-4">
+              <i class="bi bi-inbox display-4"></i>
+              <p class="mb-0">No webhook deliveries yet</p>
+            </div>
+          {% else %}
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Event</th>
+                    <th>Delivery ID</th>
+                    <th>Status</th>
+                    <th>Signature</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for log in logs %}
+                    <tr>
+                      <td>{{ log.created_at }}</td>
+                      <td><span class="badge bg-info">{{ log.event_type }}</span></td>
+                      <td><code class="small">{{ log.delivery_id|slice(0, 8) }}...</code></td>
+                      <td>
+                        {% if log.deployment_triggered %}
+                          <span class="badge bg-success">Triggered</span>
+                        {% elseif log.signature_verified %}
+                          <span class="badge bg-warning text-dark">Ignored</span>
+                        {% else %}
+                          <span class="badge bg-danger">Failed</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if log.signature_verified %}
+                          <i class="bi bi-check-circle text-success"></i> Verified
+                        {% else %}
+                          <i class="bi bi-x-circle text-danger"></i> Invalid
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let secretVisible = false;
+
+// Copy webhook URL
+function copyWebhookUrl() {
+  const urlInput = document.getElementById('webhookUrl');
+  urlInput.select();
+  navigator.clipboard.writeText(urlInput.value).then(() => {
+    alert('Webhook URL copied to clipboard!');
+  });
+}
+
+// Toggle secret visibility
+function toggleSecret() {
+  const secretInput = document.querySelector('input[name="webhook_secret"]');
+  const eyeIcon = document.getElementById('eyeIcon');
+  
+  secretVisible = !secretVisible;
+  
+  if (secretVisible) {
+    secretInput.type = 'text';
+    eyeIcon.classList.remove('bi-eye');
+    eyeIcon.classList.add('bi-eye-slash');
+  } else {
+    secretInput.type = 'password';
+    eyeIcon.classList.remove('bi-eye-slash');
+    eyeIcon.classList.add('bi-eye');
+  }
+}
+
+// Generate new secret
+function generateNewSecret() {
+  if (confirm('Generate a new webhook secret? This will break any existing webhook configurations.')) {
+    document.getElementById('generateSecret').value = '1';
+    // Generate random hex string
+    const randomSecret = Array.from({length: 32}, () => 
+      Math.floor(Math.random() * 16).toString(16)
+    ).join('');
+    
+    const secretInput = document.querySelector('input[name="webhook_secret"]');
+    secretInput.value = randomSecret;
+    secretInput.type = 'text';
+    secretVisible = true;
+    
+    const eyeIcon = document.getElementById('eyeIcon');
+    eyeIcon.classList.remove('bi-eye');
+    eyeIcon.classList.add('bi-eye-slash');
+  }
+}
+
+// Save settings
+document.getElementById('webhookForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const formData = new FormData(this);
+  
+  // Get checkbox values properly
+  formData.set('webhook_enabled', document.getElementById('webhookEnabled').checked ? '1' : '0');
+  formData.set('webhook_auto_deploy', document.getElementById('webhookAutoDeploy').checked ? '1' : '0');
+  
+  // Get events as array
+  const events = [];
+  document.querySelectorAll('input[name="webhook_events[]"]:checked').forEach(cb => {
+    events.push(cb.value);
+  });
+  formData.set('webhook_events', events);
+  
+  try {
+    const response = await fetch('/admin/deploy-tools/webhook/update', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert('Settings saved successfully!');
+      // Reset generate secret flag
+      document.getElementById('generateSecret').value = '0';
+      // Reload to show updated values
+      location.reload();
+    } else {
+      alert('Error: ' + data.message);
+    }
+  } catch (err) {
+    alert('Error saving settings: ' + err.message);
+  }
+});
+
+// Test webhook
+async function testWebhook() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testing...';
+  
+  try {
+    const formData = new FormData();
+    formData.append('csrf_token', '{{ csrf_token }}');
+    
+    const response = await fetch('/admin/deploy-tools/webhook/test', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert('Webhook test successful! Check the logs below.');
+      refreshLogs();
+    } else {
+      alert('Webhook test failed: ' + (data.error || data.message));
+    }
+  } catch (err) {
+    alert('Error testing webhook: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-send me-1"></i> Test Webhook';
+  }
+}
+
+// Refresh logs
+async function refreshLogs() {
+  try {
+    const response = await fetch('/admin/deploy-tools/webhook/logs');
+    const data = await response.json();
+    
+    if (data.success) {
+      location.reload();
+    }
+  } catch (err) {
+    console.error('Error refreshing logs:', err);
+  }
+}
+</script>
+{% endblock %}

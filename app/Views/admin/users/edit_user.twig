@@ -1,0 +1,142 @@
+{% extends "admin/layout.twig" %}
+{% block title %}Edit User{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <div class="service-form-wrapper">
+      <div class="container service-form-container">
+        <!-- Header -->
+        <div class="header-glass-card mb-4">
+          <div class="d-flex align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+              <div class="header-icon-badge">
+                <i class="bi bi-pencil-square"></i>
+              </div>
+              <div>
+                <h1 class="page-title">Edit User: {{ user.username }}</h1>
+                <p class="page-subtitle">Update user information and roles</p>
+              </div>
+            </div>
+            <a href="/admin/users" class="modern-btn modern-btn-secondary">Back to Users</a>
+          </div>
+        </div>
+        <div class="row g-4">
+          <div class="col-lg-8 offset-lg-2">
+            <!-- User Form -->
+            <div class="admin-panel-card">
+              <div class="admin-panel-card-header">
+                <h5 class="admin-panel-card-header-title">
+                  <i class="bi bi-info-circle-fill"></i> User Information
+                </h5>
+              </div>
+              <div class="admin-panel-card-body">
+                <form method="post" action="/admin/users/edit">
+                  <input type="hidden" name="id" value="{{ user.id }}">
+                  <div class="mb-3">
+                    <label class="form-label">Username *</label>
+                    <input type="text"
+                           class="form-control"
+                           name="username"
+                           value="{{ user.username }}"
+                           required>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Email *</label>
+                    <input type="email"
+                           class="form-control"
+                           name="email"
+                           value="{{ user.email }}"
+                           required>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <input type="password"
+                           class="form-control"
+                           name="password"
+                           placeholder="Leave blank to keep current password">
+                    <small class="text-muted">Only fill if you want to change password</small>
+                  </div>
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">First Name</label>
+                      <input type="text"
+                             class="form-control"
+                             name="first_name"
+                             value="{{ user.first_name }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">Last Name</label>
+                      <input type="text"
+                             class="form-control"
+                             name="last_name"
+                             value="{{ user.last_name }}">
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" name="status">
+                      {% for s in ['active','inactive','pending','banned'] %}
+                        <option value="{{ s }}" {% if user.status == s %}selected{% endif %}>{{ s|capitalize }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <!-- Roles -->
+                  <div class="admin-panel-card mt-4">
+                    <div class="admin-panel-card-header">
+                      <h6 class="admin-panel-card-title mb-0">
+                        <i class="bi bi-shield-lock me-2"></i> Assign Roles
+                      </h6>
+                    </div>
+                    <div class="admin-panel-card-body">
+                      {% if roles|length > 0 %}
+                        <div class="role-checkboxes">
+                          {% for role in roles %}
+                            <div class="form-check {% if role.id in userRoleIds %}checked{% endif %}">
+                              <input class="form-check-input"
+                                     type="checkbox"
+                                     name="roles[]"
+                                     value="{{ role.id }}"
+                                     id="role_{{ role.id }}"
+                                     {% if role.id in userRoleIds %}checked{% endif %}>
+                              <label class="form-check-label" for="role_{{ role.id }}">
+                                <strong>{{ role.name|upper }}</strong>
+                                {% if role.is_super_admin %}<span class="badge bg-danger ms-2">Super Admin</span>{% endif %}
+                              </label>
+                            </div>
+                          {% endfor %}
+                        </div>
+                      {% else %}
+                        <div class="alert alert-warning mb-0">No roles available.</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <!-- Actions -->
+                  <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="modern-btn modern-btn-primary">
+                      <i class="bi bi-check-circle me-2"></i>Update User
+                    </button>
+                    <a href="/admin/users" class="modern-btn modern-btn-white">Cancel</a>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <!-- Permissions Preview -->
+            {% if userRoles|length > 0 %}
+              <div class="admin-panel-card mt-4">
+                <div class="admin-panel-card-header">
+                  <h6 class="admin-panel-card-header-title">
+                    <i class="bi bi-key-fill me-2"></i> Effective Permissions
+                  </h6>
+                </div>
+                <div class="admin-panel-card-body" id="userPermissions">
+                  <div class="text-muted">Loading permissions...</div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="user-edit-data" data-user-id="{{ user.id }}" class="inl-a-0006"></div>
+  </div>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends "layout.twig" %}
+{% block title %}Latest Phones & Mobile Devices - {{ app_settings.site_name|default("Mobile Updates") }}{% endblock %}
+{% set breadcrumbs = [{"label": "Mobiles", "url": "/mobiles", "icon": "mobile"}] %}
+{% block content %}
+  {# ================= Structured Data ================= #}
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "Latest Phones & Mobile Devices",
+  "description": "Browse the latest mobile phones and smartphone specifications",
+  "url": "{{ current_url }}"
+}
+  </script>
+  {# ================= Hero Section ================= #}
+  <section class="hero-section mobiles-list-hero position-relative py-5 mb-5 overflow-hidden inl-p-0014">
+    <div class="container">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+          <h1 class="display-4 fw-bold text-white mb-3">
+            <i class="bi bi-phone me-2"></i>Latest Mobile Phones
+          </h1>
+          <p class="lead text-white-50 fs-5">Explore the newest smartphones with detailed specifications</p>
+        </div>
+        <div class="col-lg-4 text-center">
+          <div class="inl-p-0039">📱</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="container py-5 mobiles-list-page">
+    {# ================= Header ================= #}
+    <div class="listing-header mb-4">
+      <h2>
+        <i class="bi bi-phone text-primary me-2"></i>Mobile Devices
+      </h2>
+    </div>
+    {# ================= Filter Card ================= #}
+    <div class="filter-card mb-4">
+      <div class="filter-group">
+        <div class="filter-section inl-p-0040">
+          <form method="get" class="d-flex gap-2">
+            <input type="text"
+                   name="search"
+                   value="{{ search|default("") }}"
+                   class="search-input"
+                   placeholder="Search mobiles...">
+            <button class="btn-search">
+              <i class="bi bi-search"></i>
+            </button>
+          </form>
+        </div>
+        <div class="filter-section">
+          <label>Per Page</label>
+          <form method="get">
+            <select name="per_page" class="filter-select" onchange="this.form.submit()">
+              {% for opt in available_per_page|default([6,12,18,24,36,48]) %}
+                <option value="{{ opt }}" {% if per_page == opt %}selected{% endif %}>{{ opt }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        </div>
+        <div class="filter-section">
+          <label>Sort By</label>
+          <form method="get">
+            <select name="sort" class="filter-select" onchange="this.form.submit()">
+              <option value="id" {% if sort == 'id' %}selected{% endif %}>ID</option>
+              <option value="brand_name" {% if sort == 'brand_name' %}selected{% endif %}>Brand</option>
+              <option value="model_name" {% if sort == 'model_name' %}selected{% endif %}>Model</option>
+              <option value="release_date"
+                      {% if sort == 'release_date' %}selected{% endif %}>Release Date</option>
+              <option value="created_at" {% if sort == 'created_at' %}selected{% endif %}>Created</option>
+            </select>
+          </form>
+        </div>
+      </div>
+    </div>
+    {# ================= Mobiles List ================= #}
+    {% if mobiles|length > 0 %}
+      <div class="listing-grid">
+        {% for mobile in mobiles %}
+          {% include 'partials/content-card.twig' with {
+          item: {
+          images: mobile.images|default([]),
+          image: mobile.image_path|default(mobile.thumbnail_path|default(null)),
+          title: mobile.brand_name ~ ' ' ~ mobile.model_name,
+          subtitle: mobile.subtitle|default(mobile.excerpt|default('')),
+          created_at: mobile.created_at|default(''),
+          id: mobile.id,
+          slug: mobile.slug|default(mobile.id),
+          url: mobile.id,
+          type: 'mobile',
+          is_official: mobile.is_official|default(false),
+          price: mobile.price|default(null),
+          tags: mobile.tags|default([]),
+          categories: mobile.categories|default([]),
+          release_date: mobile.release_date|default(null),
+          description: mobile.description|default(null),
+          views: mobile.views|default(0),
+          impressions: mobile.impressions|default(0)
+          },
+          index: loop.index
+          } %}
+        {% endfor %}
+      </div>
+      {# ================= Pagination ================= #}
+      {% if total_pages is defined and total_pages > 1 %}
+        <div class="pagination-container mt-5">
+          <div class="pagination">
+            {% if current_page > 1 %}
+              <a class="pagination-link"
+                 href="?page={{ current_page - 1 }}&per_page={{ per_page }}&search={{ search|default("") }}&sort={{ sort|default("id") }}">
+                <i class="bi bi-chevron-left"></i>
+              </a>
+            {% else %}
+              <span class="pagination-link disabled">
+                <i class="bi bi-chevron-left"></i>
+              </span>
+            {% endif %}
+            {% for p in 1..total_pages %}
+              {% if p == current_page %}
+                <span class="pagination-link active">{{ p }}</span>
+              {% else %}
+                <a class="pagination-link"
+                   href="?page={{ p }}&per_page={{ per_page }}&search={{ search|default("") }}&sort={{ sort|default("id") }}">
+                  {{ p }}
+                </a>
+              {% endif %}
+            {% endfor %}
+            {% if current_page < total_pages %}
+              <a class="pagination-link"
+                 href="?page={{ current_page + 1 }}&per_page={{ per_page }}&search={{ search|default("") }}&sort={{ sort|default("id") }}">
+                <i class="bi bi-chevron-right"></i>
+              </a>
+            {% else %}
+              <span class="pagination-link disabled">
+                <i class="bi bi-chevron-right"></i>
+              </span>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    {% else %}
+      {# ================= Empty State ================= #}
+      <div class="text-center py-5">
+        <i class="bi bi-phone inl-p-0041"></i>
+        <h4 class="mt-3">No Mobiles Found</h4>
+        <p class="text-muted">Try adjusting your search or filters</p>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

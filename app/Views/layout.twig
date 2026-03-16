@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+{% import '_macros/flash.twig' as flash_macros %}
+
+{# ===== HEAD SECTION (SEO & Metadata) ===== #}
+<head>
+    {# ===== CRITICAL: Page Encoding & Viewport ===== #}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    {# ===== PRIMARY SEO: Page Title ===== #}
+    <title>
+        {%- block title -%}
+            {{ app_settings.meta_title|default(app_settings.site_name ~ ' | Official Website') }}
+        {%- endblock -%}
+    </title>
+
+    {# ===== PRIMARY SEO: Meta Description & Keywords ===== #}
+    <meta name="description" content="{{ app_settings.meta_description|default('Welcome to ' ~ app_settings.site_name) }}">
+    <meta name="keywords" content="{{ app_settings.meta_keywords|default(app_settings.site_name ~ ', mobile, tech, news') }}">
+    
+    {# ===== AUTHORSHIP & ATTRIBUTION ===== #}
+    <meta name="author" content="{{ app_settings.site_name }}">
+    <meta name="creator" content="{{ app_settings.site_name }}">
+    <meta name="publisher" content="{{ app_settings.site_name }}">
+
+    {# ===== SEARCH ENGINE CRAWLING DIRECTIVES ===== #}
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+    {# ===== CANONICAL URL (Prevent Duplicate Content Issues) ===== #}
+    <link rel="canonical" href="{{ canonical_url|default(current_url) }}">
+
+    {# ===== FAVICON & BRANDING ===== #}
+    <link rel="icon" type="image/x-icon" href="{{ app_settings.favicon|default('/assets/favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ app_settings.site_logo|default('/assets/images/default-logo.png') }}">
+    <link rel="shortcut icon" href="{{ app_settings.favicon|default('/assets/favicon.ico') }}">
+    <meta name="theme-color" content="#0d6efd">
+    <meta name="msapplication-TileColor" content="#0d6efd">
+
+    {# ===== GOOGLE FONTS (Preconnect for faster loading) ===== #}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+Bengali:wght@100..900&display=swap" rel="stylesheet">
+
+    {# ===== OPEN GRAPH META TAGS (Facebook, LinkedIn, Pinterest) ===== #}
+    <meta property="og:title" content="{{ block('title')|striptags|default(app_settings.site_name) }}">
+    <meta property="og:description" content="{{ app_settings.meta_description|default('Welcome to ' ~ app_settings.site_name) }}">
+    <meta property="og:site_name" content="{{ app_settings.site_name }}">
+    <meta property="og:image" content="{{ app_settings.site_logo|default('/assets/images/default-og-image.png') }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:url" content="{{ canonical_url|default(current_url) }}">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:locale:alternate" content="bn_BD">
+
+    {# ===== TWITTER CARD META TAGS (Twitter/X) ===== #}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ block('title')|striptags|default(app_settings.site_name) }}">
+    <meta name="twitter:description" content="{{ app_settings.meta_description|default('Welcome to ' ~ app_settings.site_name) }}">
+    <meta name="twitter:image" content="{{ app_settings.site_logo|default('/assets/images/default-og-image.png') }}">
+    {% if app_settings.twitter_handle %}<meta name="twitter:creator" content="@{{ app_settings.twitter_handle }}">{% endif %}
+    {% if app_settings.twitter_site %}<meta name="twitter:site" content="@{{ app_settings.twitter_site }}">{% endif %}
+
+    {# ===== LANGUAGE & LOCALIZATION ===== #}
+    <meta name="language" content="English">
+    <link rel="alternate" hreflang="en-US" href="{{ canonical_url|default(current_url) }}">
+    <link rel="alternate" hreflang="bn-BD" href="{{ current_url }}" lang="bn">
+
+    {# ===== FIREBASE & NOTIFICATION SYSTEM META TAGS ===== #}
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    {% if auth_user.id %}<meta name="user-id" content="{{ auth_user.id }}">{% endif %}
+
+    {# ===== PERFORMANCE: DNS-Prefetch & Preconnect ===== #}
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://www.googletagmanager.com">
+    {# Firebase CDN Preconnect #}
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://fcm.googleapis.com">
+    <link rel="dns-prefetch" href="https://firebaseinstallations.googleapis.com">
+
+
+    {# ===== CRITICAL CSS PRELOAD ===== #}
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" as="style">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" as="style">
+    <link rel="preload" href="{{ asset('/assets/css/dist/public-bundle.css') }}" as="style">
+
+    {# ===== BOOTSTRAP CSS (Critical Path) ===== #}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css" rel="stylesheet">
+
+    {# ===== GOOGLE FONTS (Deferred Loading) ===== #}
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'" async>
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+
+    {# ===== BOOTSTRAP ICONS (Deferred Loading) ===== #}
+    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" onload="this.onload=null;this.rel='stylesheet'" async>
+    <noscript><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"></noscript>
+
+    {# ===== APPLICATION STYLESHEETS (Bundled for Performance) ===== #}
+    {# Use bundled CSS for better performance #}
+    <link rel="stylesheet" href="{{ asset('/assets/css/dist/public-bundle.css') }}">
+    <link rel="stylesheet" href="{{ asset('/assets/css/tailwind.css') }}">
+
+    {% block extra_head %}{% endblock %}
+
+</head>
+
+{# ===== BODY SECTION ===== #}
+<body role="application">
+
+    {# ===== JSON-LD SCHEMAS (Keep in head for SEO) ===== #}
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "@id": "{{ canonical_url|default(current_url) }}",
+        "url": "{{ canonical_url|default(current_url) }}",
+        "name": "{{ block('title')|striptags|json }}",
+        "description": "{{ app_settings.meta_description|json }}",
+        "image": {
+            "@type": "ImageObject",
+            "url": "{{ app_settings.site_logo|default('/assets/images/default-og-image.png') }}",
+            "width": 1200,
+            "height": 630
+        },
+        "datePublished": "{{ page_date_published|default('now')|date('c') }}",
+        "dateModified": "{{ page_date_modified|default('now')|date('c') }}",
+        "isPartOf": {
+            "@type": "WebSite",
+            "@id": "{{ url }}",
+            "name": "{{ app_settings.site_name|json }}",
+            "url": "{{ url }}"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "@id": "{{ url }}#organization",
+            "name": "{{ app_settings.site_name|json }}",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "{{ app_settings.site_logo|default('/assets/images/default-logo.png') }}"
+            }
+        },
+        "mainEntity": {
+            "@type": "Article",
+            "headline": "{{ block('title')|striptags|json }}"
+        },
+        "inLanguage": "en-US",
+        "potentialAction": {
+            "@type": "ReadAction",
+            "target": "{{ canonical_url|default(current_url) }}"
+        }
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "@id": "{{ url }}#organization",
+        "name": "{{ app_settings.site_name|json }}",
+        "url": "{{ url }}",
+        "sameAs": [
+            "https://twitter.com/{{ app_settings.social_twitter|default('') }}",
+            "https://www.instagram.com/{{ app_settings.social_instagram ?: '' }}",
+            "https://www.facebook.com/{{ app_settings.social_facebook ?: '' }}"
+        ],
+        "logo": {
+            "@type": "ImageObject",
+            "url": "{{ app_settings.site_logo ?: '/assets/images/default-logo.png' }}",
+            "width": 250,
+            "height": 100
+        },
+        "description": "{{ app_settings.meta_description|json }}",
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "Customer Support",
+            {% if app_settings.contact_phone %}"telephone": "{{ app_settings.contact_phone|json }}",{% endif %}
+            "email": "{{ app_settings.contact_email|default('support@example.com')|json }}"
+        }
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "{{ app_settings.site_name|json }}",
+        "url": "{{ url }}",
+        "description": "{{ app_settings.meta_description|json }}",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "{{ url }}search?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+        }
+    }
+    </script>
+
+    {% if breadcrumbs is defined and breadcrumbs|length > 0 %}
+    {% set sanitized_breadcrumbs = breadcrumbs|sanitize_breadcrumbs %}
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "{{ url|default('https://example.com') }}"
+            }
+            {% for crumb in sanitized_breadcrumbs %}
+            ,{
+                "@type": "ListItem",
+                "position": {{ loop.index + 1 }},
+                "name": "{{ crumb.label|json }}",
+                "item": "{{ loop.last ? canonical_url : crumb.url }}"
+            }
+            {% endfor %}
+        ]
+    }
+    </script>
+    {% endif %}
+
+    {# ===== ACCESSIBILITY: Skip to Main Content ===== #}
+    <a href="#main-content" class="visually-hidden-focusable" tabindex="0">Skip to main content</a>
+
+    {# ===== BROXBHAI HEADER - RESPONSIVE FIXED ===== #}
+    <header class="brox-navbar-container sticky-top shadow-sm" role="banner">
+        <div class="container">
+            <nav class="navbar navbar-expand-lg" role="navigation">
+                
+                {# Brand / Logo #}
+                <a class="navbar-brand brox-brand-link" href="/" title="Home">
+                    {% if app_settings.site_logo is defined and app_settings.site_logo %}
+                        <img src="{{ app_settings.site_logo }}" alt="{{ app_settings.site_name }}" class="brox-brand-logo me-2">
+                    {% else %}
+                        <div class="bg-primary rounded-3 p-2 me-2 shadow-sm brox-brand-icon">
+                            <i class="bi bi-phone-fill text-white"></i> <span class="brox-brand-text">{{ app_settings.site_name }}</span>
+                        </div>
+                    {% endif %}
+                </a>
+
+                {# Mobile Toggle #}
+                <button class="navbar-toggler brox-mobile-toggle" type="button" 
+                        data-bs-toggle="collapse" data-bs-target="#broxMainNav" 
+                        aria-controls="broxMainNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon brox-toggle-icon"></span>
+                </button>
+
+                {# Navigation Menu #}
+                <div class="collapse navbar-collapse brox-navbar-collapse" id="broxMainNav">
+                    {% set navCurrentPath = request.path|default(current_path|default('/')) %}
+                    {% set nav_items = (public_nav_items is iterable) ? public_nav_items : [] %}
+                    {% if nav_items is empty %}
+                        {% set nav_items = [
+                            {'label': 'Home', 'url': '/', 'icon': 'bi-house-door-fill', 'match': '/'},
+                            {'label': 'Mobiles', 'url': '/mobiles', 'icon': 'bi-phone-fill', 'match': '/mobiles'},
+                            {'label': 'Articles', 'url': '/posts', 'icon': 'bi-newspaper', 'match': '/posts'},
+                            {'label': 'Services', 'url': '/services', 'icon': 'bi-award-fill', 'match': '/services'}
+                        ] %}
+                    {% endif %}
+
+                    <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+                        {% for item in nav_items %}
+                            {% if item.enabled|default(true) %}
+                                {% set navUrl = item.url|default('/') %}
+                                {% set navMatch = item.match|default(navUrl) %}
+                                {% set isActive = navMatch == '/' ? (navCurrentPath == '/') : (navCurrentPath == navMatch or navCurrentPath starts with (navMatch ~ '/')) %}
+                                <li class="nav-item brox-nav-item">
+                                    <a class="nav-link brox-nav-link {% if isActive %}brox-active{% endif %}" href="{{ navUrl }}">
+                                        {% if item.icon|default('') %}
+                                            <i class="bi {{ item.icon }} me-2"></i>
+                                        {% endif %}
+                                        <span>{{ item.label|default('Link') }}</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {# Authenticated User Section #}
+                        {% if auth_user is defined and auth_user.is_authenticated %}
+                            
+                            {# Notification Bell #}
+                            <li class="nav-item brox-nav-item ms-lg-2 brox-notification-wrapper" data-notification-menu>
+                                {% set nav_unread_count = unread_count|default(0) %}
+                            <a class="nav-link brox-nav-link brox-notification-bell position-relative"
+                               href="#" id="broxNotificationBell" role="button" data-notification-bell
+                               aria-expanded="false">
+                                <i class="bi bi-bell-fill"></i>
+                                <span id="broxNotificationBadge" data-notification-badge class="brox-notification-badge badge rounded-pill bg-danger {% if nav_unread_count <= 0 %}d-none{% endif %}">
+                                    <span id="broxNotificationCount" data-notification-count>{{ nav_unread_count }}</span>
+                                </span>
+                            </a>
+                            <div class="brox-notification-dropdown" data-notification-dropdown aria-labelledby="broxNotificationBell">
+                                <div class="brox-notification-dropdown-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-bell-fill me-2"></i>Notifications
+                                    </h6>
+                                </div>
+                                <div>
+                                    <div id="broxNotificationsList" data-notification-list class="brox-notification-list" data-user-id="{{ auth_user.id }}">
+                                            {% if notifications is defined and notifications is iterable and notifications|length > 0 %}
+                                                {% for notif in notifications|slice(0, 10) %}
+                                                    <div class="notification-entry p-2 mb-2 rounded {% if notif.is_read is defined and notif.is_read == 0 %}bg-light border-start border-primary border-2{% endif %}"
+                                                         data-notification-id="{{ notif.id }}"
+                                                         {% if notif.action_url is defined and notif.action_url %}data-action-url="{{ notif.action_url }}"{% endif %}>
+                                                        <div class="d-flex align-items-start gap-2">
+                                                            <div class="flex-grow-1">
+                                                                <div class="fw-semibold small mb-1">{{ notif.title }}</div>
+                                                                <div class="small text-muted mb-1">{{ notif.message }}</div>
+                                                                <div class="small text-secondary">{{ notif.created_at|date("n/j/Y, g:i:s A") }}</div>
+                                                            </div>
+                                                            {% if notif.is_read is defined and notif.is_read == 0 %}
+                                                                <button type="button"
+                                                                        class="btn btn-sm btn-outline-primary"
+                                                                        data-action="mark-read"
+                                                                        data-notification-id="{{ notif.id }}">Read</button>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            {% else %}
+                                                <div class="text-center py-4 text-muted">
+                                                    <i class="bi bi-inbox fs-4"></i>
+                                                    <p class="mb-0 mt-2 small">No new notifications</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                </div>
+                                <div class="dropdown-divider brox-dropdown-divider"></div>
+                                <div>
+                                    <a class="brox-dropdown-item brox-dropdown-item text-center" href="/user/notifications">
+                                        <i class="bi bi-arrow-right me-1"></i>View all
+                                    </a>
+                                </div>
+                            </div>
+                        </li>
+
+                            {# User Dropdown #}
+                            <li class="nav-item dropdown brox-nav-item ms-lg-2">
+                                <a class="nav-link dropdown-toggle brox-nav-link brox-user-dropdown-toggle" 
+                                   href="#" id="broxNavbarUser" role="button" 
+                                   data-bs-toggle="dropdown" aria-expanded="false">
+                                    {% if auth_user.profile_pic is defined and auth_user.profile_pic %}
+                                        <img src="{{ auth_user.profile_pic }}" class="rounded-circle me-2 brox-user-avatar" alt="{{ auth_user.username }}">
+                                    {% else %}
+                                        <img src="/assets/images/default-avatar.png" class="rounded-circle me-2 brox-user-avatar" alt="User">
+                                    {% endif %}
+                                    <span class="brox-user-dropdown-username d-none d-lg-inline">{{ auth_user.username }}</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end brox-dropdown-menu" aria-labelledby="broxNavbarUser">
+                                    <li class="brox-dropdown-header">
+                                        <p class="brox-dropdown-user-name mb-1 fw-bold">{{ auth_user.username }}</p>
+                                        <span class="badge bg-primary-subtle text-primary rounded-pill">
+                                            {% if auth_user.roles is defined and auth_user.roles is not empty %}
+                                                {{ auth_user.roles|join(', ')|title }}
+                                            {% else %}
+                                                User
+                                            {% endif %}
+                                        </span>
+                                    </li>
+                                    <li><hr class="dropdown-divider brox-dropdown-divider"></li>
+                                    
+                                    {# Admin Menu #}
+                                    {% if (auth_user.is_super_admin is defined and auth_user.is_super_admin) or (auth_user.role is defined and auth_user.role == 'admin') %}
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/profile"><i class="bi bi-person-circle me-2"></i>Profile</a></li>
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/my/notifications"><i class="bi bi-bell me-2"></i>Notifications</a></li>
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/account-settings"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                                        
+                                        {% if auth_user.is_super_admin is defined and auth_user.is_super_admin %}
+                                            <li><hr class="dropdown-divider brox-dropdown-divider"></li>
+                                            <li><a class="dropdown-item brox-dropdown-item" href="/admin/roles"><i class="bi bi-shield-lock me-2"></i>Roles</a></li>
+                                            <li><a class="dropdown-item brox-dropdown-item" href="/admin/permissions"><i class="bi bi-key me-2"></i>Permissions</a></li>
+                                        {% endif %}
+                                    
+                                    {# User Menu #}
+                                    {% else %}
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/profile"><i class="bi bi-person-circle me-2"></i>Profile</a></li>
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/user/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/user/notifications"><i class="bi bi-bell me-2"></i>Notifications</a></li>
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/user/settings"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                                    {% endif %}
+                                    
+                                    <li><hr class="dropdown-divider brox-dropdown-divider"></li>
+                                    <li><a class="dropdown-item brox-dropdown-item text-danger" href="/logout" data-unified-logout><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                                </ul>
+                            </li>
+
+                        {# Guest Links #}
+                        {% else %}
+                            <li class="nav-item brox-nav-item ms-lg-1">
+                                <a class="nav-link brox-nav-link" href="/login">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                                    <span>Login</span>
+                                </a>
+                            </li>
+                            <li class="nav-item brox-nav-item">
+                                <a class="btn btn-primary btn-sm rounded-pill px-3 px-md-4 ms-lg-2" href="/register">
+                                    <i class="bi bi-person-plus-fill me-2"></i>
+                                    <span>Join Now</span>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {# Theme Toggle #}
+                        <li class="nav-item brox-nav-item ms-lg-2">
+                            <button class="brox-theme-toggle" id="broxThemeToggle" type="button" title="Toggle theme">
+                                <i class="bi bi-moon-fill"></i>
+                                <i class="bi bi-sun-fill"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    {# ===== MAIN CONTENT AREA ===== #}
+    <main id="main-content" role="main">
+
+        {# Flash Messages: SweetAlert2 queue via shared macro #}
+        {% if suppress_layout_flash is not defined or not suppress_layout_flash %}
+            {% set flash_data = flash_message|default(flash|default(null)) %}
+            {{ flash_macros.render_flash(flash_data) }}
+        {% endif %}
+
+        {# Breadcrumb Navigation #}
+        {% if breadcrumbs is defined and breadcrumbs|length > 0 %}
+        <nav aria-label="Breadcrumb" class="brox-breadcrumb-nav bg-light border-bottom py-3">
+            <div class="container">
+                <ol class="breadcrumb mb-0 small" itemscope itemtype="https://schema.org/BreadcrumbList">
+                    <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                        <a href="/" itemprop="item" title="Home">
+                            <i class="bi bi-house-door-fill me-1" aria-hidden="true"></i><span itemprop="name">Home</span>
+                        </a>
+                        <meta itemprop="position" content="1">
+                    </li>
+                    {% for crumb in breadcrumbs %}
+                        {% set position = loop.index + 1 %}
+                        {% if not loop.last %}
+                        <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                            <a href="{{ crumb.url }}" itemprop="item">
+                                {% if crumb.icon %}<i class="bi bi-{{ crumb.icon }} me-1" aria-hidden="true"></i>{% endif %}
+                                <span itemprop="name">{{ crumb.label }}</span>
+                            </a>
+                            <meta itemprop="position" content="{{ position }}">
+                        </li>
+                        {% else %}
+                        <li class="breadcrumb-item active" aria-current="page" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                            <span itemprop="item">
+                                {% if crumb.icon %}<i class="bi bi-{{ crumb.icon }} me-1" aria-hidden="true"></i>{% endif %}
+                                <span itemprop="name">{{ crumb.label }}</span>
+                            </span>
+                            <meta itemprop="url" content="{{ canonical_url }}">
+                            <meta itemprop="position" content="{{ position }}">
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                </ol>
+            </div>
+        </nav>
+        {% endif %}
+
+        {# Page Content Block #}
+        {% block content %}
+        <div class="container py-5">
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <h1>Welcome to {{ app_settings.site_name }}</h1>
+                    <p>This is the main content area. Extend this template in your pages.</p>
+                </div>
+            </div>
+        </div>
+        {% endblock %}
+
+    </main>
+
+    {# ===== FOOTER SECTION ===== #}
+    {% include 'partials/footer.twig' %}
+
+    {# ===== SCROLL TO TOP BUTTON ===== #}
+    <button id="scrollTopBtn" type="button" title="Scroll to top" aria-label="Scroll to top of page" style="position: fixed; bottom: 20px; right: 20px; z-index: 999; padding: 10px 14px; border: none; border-radius: 50%; background: var(--bs-primary); color: white; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all 0.3s ease;">
+        <i class="bi bi-arrow-up-short" aria-hidden="true" style="font-size: 1.5rem;"></i>
+    </button>
+
+
+    {# ===== NOTIFICATION PERMISSION BUTTON (For All Users) ===== #}
+    <button id="enableNotificationsBtn" title="Enable push notifications" aria-label="Enable notifications" style="position: fixed; bottom: 20px; right: 70px; z-index: 998; padding: 10px 12px; border: none; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all 0.3s ease; font-size: 14px; display: none; animation: pulse 2s infinite;">
+        🔔
+    </button>
+
+    <script>
+        (function () {
+            const initScrollTopButton = function () {
+                const scrollTopBtn = document.getElementById('scrollTopBtn');
+                if (!scrollTopBtn) return;
+
+                const toggleVisibility = function () {
+                    const currentScroll = window.pageYOffset || document.documentElement.scrollTop || 0;
+                    const shouldShow = currentScroll > 180;
+                    scrollTopBtn.style.display = shouldShow ? 'flex' : 'none';
+                    scrollTopBtn.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+                };
+
+                scrollTopBtn.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+
+                window.addEventListener('scroll', toggleVisibility, { passive: true });
+                toggleVisibility();
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initScrollTopButton, { once: true });
+            } else {
+                initScrollTopButton();
+            }
+        })();
+    </script>
+
+    {# ===== STEP 1: Load Bootstrap Lite (no CDN bundle) ===== #}
+    <script src="{{ asset('/assets/js/bootstrap-lite.js') }}" defer></script>
+
+    {# ===== STEP 1.5: SweetAlert2 + Global Message Handler ===== #}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js" defer></script>
+    <script src="{{ asset('/assets/js/dist/sweetalert2-handler.js') }}" defer></script>
+{# ===== FIREBASE v2 INITIALIZATION (PRODUCTION SAFE) ===== #}
+
+    {# Firebase config is fetched from /api/firebase-config (no inline script) #}
+
+    {# Firebase v2 init is handled in /assets/js/script.js #}
+
+    
+    {# ===== STEP 2: Load Application Core Scripts ===== #}
+    <script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}"></script>
+    <script type="module" src="{{ asset('/assets/js/dist/script.js') }}"></script>
+
+    {# ===== STEP 3: Load Feature Scripts (Non-critical) ===== #}
+    <script src="{{ asset('/assets/js/dist/datepicker.js') }}" defer></script>
+
+
+
+    {# ===== Page-Specific Scripts Block ===== #}
+    {% block extra_scripts %}{% endblock %}
+
+    {# ===== PUBLIC / ADMIN ASSISTANT UI ===== #}
+    {% set is_authenticated_user = auth_user is defined and auth_user.is_authenticated is defined and auth_user.is_authenticated %}
+    {% set auth_primary_role = (auth_user.role|default(''))|lower|trim %}
+    {% set auth_role_list = [] %}
+    {% if auth_user is defined and auth_user.roles is defined and auth_user.roles is iterable %}
+        {% for role_entry in auth_user.roles %}
+            {% set role_name = (role_entry.name is defined ? role_entry.name : role_entry)|default('')|lower|trim %}
+            {% if role_name %}
+                {% set auth_role_list = auth_role_list|merge([role_name]) %}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+    {% set is_super_admin_user = auth_user is defined and auth_user.is_super_admin is defined and auth_user.is_super_admin %}
+    {% set is_admin_user = is_super_admin_user
+        or auth_primary_role in ['admin', 'superadmin']
+        or 'admin' in auth_role_list
+        or 'superadmin' in auth_role_list %}
+    {% set is_guest_user = not is_authenticated_user %}
+    {% set is_regular_user = is_authenticated_user
+        and (
+            auth_primary_role == 'user'
+            or 'user' in auth_role_list
+            or (auth_primary_role is empty and auth_role_list is empty)
+        ) %}
+    {% set show_public_assistant = is_guest_user or is_regular_user %}
+
+        {% if show_public_assistant %}
+        {% include 'partials/ai-assistant/public.twig' %}
+    {% elseif is_admin_user %}
+        {% include 'partials/ai-assistant/admin.twig' %}
+    {% endif %}
+
+    <script src="{{ asset('/ai/js/assistant.js') }}"></script>
+
+</body>
+</html>

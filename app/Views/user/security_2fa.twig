@@ -1,0 +1,235 @@
+{% extends "layout.twig" %}
+{% block title %}Two-Factor Authentication{% endblock %}
+{% block content %}
+  <div class="container py-5">
+    <!-- Breadcrumb and Page Header -->
+    <div class="mb-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="/profile" class="text-decoration-none">Profile</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">Two-Factor Authentication</li>
+        </ol>
+      </nav>
+      <h1 class="h2 mb-1 fw-bold">
+        <i class="bi bi-lock-fill text-primary me-2"></i>দ্বি-ফ্যাক্টর প্রমাণীকরণ (2FA)
+      </h1>
+      <p class="text-muted mb-0">
+        আপনার অ্যাকাউন্ট নিরাপত্তা বাড়াতে দ্বি-ফ্যাক্টর প্রমাণীকরণ ব্যবহার করুন।
+      </p>
+    </div>
+    <div class="row">
+      <div class="col-md-8">
+        <div class="card shadow-sm">
+          <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+              <i class="bi bi-lock-fill"></i> দ্বি-ফ্যাক্টর প্রমাণীকরণ (2FA)
+            </h4>
+          </div>
+          <div class="card-body">
+            <!-- 2FA Status -->
+            <div class="alert {% if twofa_enabled %}alert-success{% else %}alert-info{% endif %}"
+                 role="alert">
+              <strong>
+                {% if twofa_enabled %}
+                  <i class="bi bi-check-circle-fill"></i> 2FA সক্ষম
+                {% else %}
+                  <i class="bi bi-x-circle-fill"></i> 2FA প্রতিবন্ধী
+                {% endif %}
+              </strong>
+              <p class="mt-2 mb-0">
+                {% if twofa_enabled %}
+                  আপনার অ্যাকাউন্ট Google Authenticator দিয়ে সুরক্ষিত রয়েছে।
+                  {% if twofa_created %}
+                    <br>
+                    <small>সেটআপ তারিখ: <strong>{{ twofa_created|date("F j, Y \\a\\t g:i A") }}</strong></small>
+                  {% endif %}
+                {% else %}
+                  আপনার অ্যাকাউন্ট অতিরিক্ত নিরাপত্তা সুরক্ষা প্রয়োজন। 2FA সক্ষম করুন।
+                {% endif %}
+              </p>
+            </div>
+            <!-- 2FA Information -->
+            <div class="row mt-4">
+              <div class="col-md-6">
+                <h5>2FA কী?</h5>
+                <p class="text-muted">
+                  দ্বি-ফ্যাক্টর প্রমাণীকরণ আপনার অ্যাকাউন্টকে অতিরিক্ত সুরক্ষা প্রদান করে। পাসওয়ার্ড ছাড়াও, আপনাকে
+                  আপনার ফোনে আসা একটি অনন্য কোড প্রদান করতে হবে।
+                </p>
+              </div>
+              <div class="col-md-6">
+                <h5>সুবিধা:</h5>
+                <ul class="text-muted">
+                  <li>অ্যাকাউন্ট নিরাপত্তা বৃদ্ধি</li>
+                  <li>হ্যাকারদের বিরুদ্ধে সুরক্ষা</li>
+                  <li>ব্যাকআপ কোড সহ জরুরি অ্যাক্সেস</li>
+                </ul>
+              </div>
+            </div>
+            <hr class="my-4">
+            <!-- Actions -->
+            <div class="row mt-4">
+              {% if not twofa_enabled %}
+                <div class="col-md-12">
+                  <a href="/user/security/2fa/setup" class="btn btn-success btn-lg w-100">
+                    <i class="bi bi-gear-fill"></i> 2FA এখਨই সেটআপ করুন
+                  </a>
+                </div>
+              {% else %}
+                <div class="col-md-6">
+                  <a href="/user/security/2fa/backup" class="btn btn-info w-100">
+                    <i class="bi bi-download"></i> ব্যাকআপ কোড দেখুন
+                  </a>
+                </div>
+                <div class="col-md-6">
+                  <button type="button"
+                          class="btn btn-danger w-100"
+                          data-bs-toggle="modal"
+                          data-bs-target="#disableTwoFAModal">
+                    <i class="bi bi-x-lg"></i> 2FA প্রতিবন্ধ করুন
+                  </button>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <!-- FAQ Section -->
+        <div class="card shadow-sm mt-4">
+          <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">
+              <i class="bi bi-question-circle-fill"></i> সাধারণ প্রশ্ন (FAQ)
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="accordion" id="faqAccordion">
+              <div class="card border-0">
+                <div class="card-header" id="headingOne">
+                  <h2 class="mb-0">
+                    <button class="btn btn-link w-100 text-start"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapseOne">
+                      কোন অ্যাপ ব্যবহার করব?
+                    </button>
+                  </h2>
+                </div>
+                <div id="collapseOne" class="collapse" data-bs-parent="#faqAccordion">
+                  <div class="card-body">
+                    আপনি যেকোনো TOTP-সামঞ্জস্যপূর্ণ অ্যাপ ব্যবহার করতে পারেন যেমন:
+                    <ul class="mt-2">
+                      <li>Google Authenticator</li>
+                      <li>Microsoft Authenticator</li>
+                      <li>Authy</li>
+                      <li>LastPass Authenticator</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div class="card border-0">
+                <div class="card-header" id="headingTwo">
+                  <h2 class="mb-0">
+                    <button class="btn btn-link w-100 text-start"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapseTwo">
+                      ফোন হারিয়ে গেলে কী করব?
+                    </button>
+                  </h2>
+                </div>
+                <div id="collapseTwo" class="collapse" data-bs-parent="#faqAccordion">
+                  <div class="card-body">
+                    আপনি সংরক্ষিত ব্যাকআপ কোডগুলি ব্যবহার করতে পারেন লগইন করতে এবং 2FA বন্ধ করতে। অগ্রিম সংরক্ষণ করুন!
+                  </div>
+                </div>
+              </div>
+              <div class="card border-0">
+                <div class="card-header" id="headingThree">
+                  <h2 class="mb-0">
+                    <button class="btn btn-link w-100 text-start"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapseThree">কোড কতক্ষণ বৈধ?</button>
+                  </h2>
+                </div>
+                <div id="collapseThree" class="collapse" data-bs-parent="#faqAccordion">
+                  <div class="card-body">
+                    প্রতিটি কোড ৩০ সেকেন্ডের জন্য বৈধ। যদি কোড কাজ না করে, পরবর্তীটি চেষ্টা করুন।
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Sidebar -->
+      <div class="col-md-4">
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">
+              <i class="bi bi-info-circle-fill"></i> গুরুত্বপূর্ণ তথ্য
+            </h5>
+          </div>
+          <div class="card-body small">
+            <p>
+              <strong>2FA নিরাপত্তা টিপস:</strong>
+            </p>
+            <ul>
+              <li>কোনো কাউকে কোড শেয়ার করবেন না</li>
+              <li>ব্যাকআপ কোড নিরাপদ জায়গায় রাখুন</li>
+              <li>ফোন সময় সঠিক রাখুন</li>
+              <li>নিয়মিত পাসওয়ার্ড পরিবর্তন করুন</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card shadow-sm">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">
+              <i class="bi bi-telephone-fill"></i> সাপোর্ট
+            </h5>
+          </div>
+          <div class="card-body small text-muted">
+            <p>
+              2FA সেটআপ করতে সমস্যা হচ্ছেন?
+              <a href="/contact">সাপোর্টের সাথে যোগাযোগ করুন</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Disable 2FA Modal -->
+  {% if twofa_enabled %}
+    <div class="modal fade" id="disableTwoFAModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <form method="POST" action="/user/security/2fa/disable">
+            <div class="modal-header">
+              <h5 class="modal-title">2FA প্রতিবন্ধী করুন</h5>
+              <button type="button"
+                      class="btn-close"
+                      data-bs-dismiss="modal"
+                      aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p>
+                <strong>সতর্কতা!</strong> আপনার অ্যাকাউন্ট আর 2FA সুরক্ষিত থাকবে না।
+              </p>
+              <div class="mb-3">
+                <label for="password">পাসওয়ার্ড নিশ্চিত করতে:</label>
+                <input type="password" class="form-control" name="password" required>
+                <small class="form-text text-muted">নিরাপত্তার জন্য আপনার পাসওয়ার্ড প্রবেশ করুন</small>
+              </div>
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">বাতিল</button>
+              <button type="submit" class="btn btn-danger">হ্যাঁ, প্রতিবন্ধী করুন</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

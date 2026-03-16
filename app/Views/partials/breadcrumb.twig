@@ -1,0 +1,98 @@
+{% set icon_map = {
+  'home':'house-door-fill',
+  'user':'person-fill',
+  'users':'people-fill',
+  'tag':'tag-fill',
+  'tags':'tags-fill',
+  'folder':'folder-fill',
+  'folder-open':'folder2-open',
+  'file':'file-earmark-fill',
+  'file-lines':'file-earmark-text-fill',
+  'edit':'pencil-square',
+  'list':'list-ul',
+  'star':'star-fill',
+  'info':'info-circle-fill',
+  'check':'check-circle-fill',
+  'exclamation':'exclamation-circle-fill',
+  'question':'question-circle-fill',
+  'lock':'lock-fill',
+  'unlock':'unlock-fill',
+  'bell':'bell-fill',
+  'cog':'gear-fill',
+  'envelope':'envelope-fill',
+  'comment':'chat-left-dots-fill',
+  'calendar':'calendar-event-fill',
+  'chart':'bar-chart-fill',
+  'eye':'eye-fill',
+  'fire':'fire',
+  'link':'link-45deg',
+  'pen':'pencil-fill',
+  'mobile':'phone-fill',
+  'newspaper':'newspaper',
+  'briefcase':'briefcase-fill',
+  'rocket':'rocket-takeoff-fill',
+  'trending-up':'graph-up-arrow',
+  'phone':'phone-fill',
+  'megaphone':'megaphone-fill',
+  'award':'award-fill',
+  'pencil-square':'pencil-square'
+} %}
+
+{% if breadcrumbs is defined and breadcrumbs|length > 0 %}
+<nav aria-label="Breadcrumb" class="brox-breadcrumb-nav bg-light border-bottom py-3">
+    <div class="container">
+        <ol class="breadcrumb mb-0 small" itemscope itemtype="https://schema.org/BreadcrumbList">
+
+            {# Home #}
+            <li class="breadcrumb-item"
+                itemprop="itemListElement"
+                itemscope
+                itemtype="https://schema.org/ListItem">
+                <a href="/" itemprop="item">
+                    <i class="bi bi-house-door-fill me-1"></i>
+                    <span itemprop="name">Home</span>
+                </a>
+                <meta itemprop="position" content="1">
+            </li>
+
+            {# Dynamic crumbs #}
+            {% for crumb in breadcrumbs %}
+                {% set position = loop.index + 1 %}
+
+                {% if not loop.last %}
+                    <li class="breadcrumb-item"
+                        itemprop="itemListElement"
+                        itemscope
+                        itemtype="https://schema.org/ListItem">
+
+                        <a href="{{ crumb.url }}" itemprop="item">
+                            {% if crumb.icon is defined %}
+                                <i class="bi bi-{{ icon_map[crumb.icon]|default(crumb.icon) }} me-1"></i>
+                            {% endif %}
+                            <span itemprop="name">{{ crumb.label }}</span>
+                        </a>
+
+                        <meta itemprop="position" content="{{ position }}">
+                    </li>
+                {% else %}
+                    <li class="breadcrumb-item active"
+                        aria-current="page"
+                        itemprop="itemListElement"
+                        itemscope
+                        itemtype="https://schema.org/ListItem">
+
+                        <span itemprop="item">
+                            {% if crumb.icon is defined %}
+                                <i class="bi bi-{{ icon_map[crumb.icon]|default(crumb.icon) }} me-1"></i>
+                            {% endif %}
+                            <span itemprop="name">{{ crumb.label }}</span>
+                        </span>
+                        <meta itemprop="url" content="{{ canonical_url }}">
+                        <meta itemprop="position" content="{{ position }}">
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ol>
+    </div>
+</nav>
+{% endif %}

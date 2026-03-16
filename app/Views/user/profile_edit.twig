@@ -1,0 +1,487 @@
+{% extends "layout.twig" %}
+{% block title %}Edit Profile{% endblock %}
+{% block content %}
+  <div class="container py-5">
+    <!-- Page Header -->
+    <div class="mb-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="/profile" class="text-decoration-none">Profile</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">Edit</li>
+        </ol>
+      </nav>
+      <h1 class="h2 mb-1 fw-bold">
+        <i class="bi bi-pencil-square text-primary me-2"></i>Edit Profile
+      </h1>
+      <p class="text-muted mb-0">Update your personal information and preferences</p>
+    </div>
+    <!-- Modern Tab Navigation -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-0">
+        <ul class="nav nav-pills nav-fill p-3 gap-2"
+            id="profileTabs"
+            role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-3"
+                    id="edit-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#edit"
+                    type="button"
+                    role="tab">
+              <i class="bi bi-pencil-square me-2"></i>
+              <span class="d-none d-md-inline">Edit Profile</span>
+              <span class="d-md-none">Profile</span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-3"
+                    id="password-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#password"
+                    type="button"
+                    role="tab">
+              <i class="bi bi-key me-2"></i>
+              <span class="d-none d-md-inline">Change Password</span>
+              <span class="d-md-none">Password</span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-3"
+                    id="security-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#security"
+                    type="button"
+                    role="tab">
+              <i class="bi bi-shield-lock me-2"></i>
+              <span class="d-none d-md-inline">Security (2FA)</span>
+              <span class="d-md-none">Security</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <!-- Tab Content -->
+    <div class="tab-content" id="profileTabContent">
+      <!-- Edit Profile Tab -->
+      <div class="tab-pane fade show active" id="edit" role="tabpanel">
+        <form method="POST"
+              action="/profile/edit"
+              enctype="multipart/form-data"
+              id="profileForm">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <!-- Profile Picture Section -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+              <h5 class="mb-4 fw-bold">
+                <i class="bi bi-person-circle text-primary me-2"></i>Profile Picture
+              </h5>
+              <div class="row align-items-center">
+                <div class="col-auto">
+                  <div class="position-relative">
+                    {% if user.profile_pic %}
+                      <img id="profilePreview"
+                           src="{{ user.profile_pic }}"
+                           alt="Profile Picture"
+                           class="rounded-circle shadow border border-3 border-light inl-p-0122"
+                           width="140"
+                           height="140">
+                    {% else %}
+                      <img id="profilePreview"
+                           src="/assets/images/default-avatar.png"
+                           alt="Default Avatar"
+                           class="rounded-circle shadow border border-3 border-light inl-p-0122"
+                           width="140"
+                           height="140">
+                    {% endif %}
+                    <label for="profile_pic"
+                           class="position-absolute bottom-0 end-0 btn btn-primary btn-sm rounded-circle p-2 inl-p-0124">
+                      <i class="bi bi-camera-fill"></i>
+                    </label>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="ms-3">
+                    <input type="file"
+                           class="form-control d-none"
+                           id="profile_pic"
+                           name="profile_pic"
+                           accept="image/*">
+                    <h6 class="mb-2">Choose a profile picture</h6>
+                    <p class="text-muted small mb-2">
+                      <i class="bi bi-info-circle me-1"></i>
+                      JPG, PNG or JPEG. Max size 2MB.
+                    </p>
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            onclick="document.getElementById('profile_pic').click()">
+                      <i class="bi bi-upload me-1"></i> Upload Photo
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Basic Information -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+              <h5 class="mb-4 fw-bold">
+                <i class="bi bi-info-circle text-primary me-2"></i>Basic Information
+              </h5>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="username" class="form-label fw-medium">
+                    Username <span class="text-danger">*</span>
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                      <i class="bi bi-at"></i>
+                    </span>
+                    <input type="text"
+                           class="form-control border-start-0"
+                           id="username"
+                           name="username"
+                           value="{{ user.username }}"
+                           required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label for="email" class="form-label fw-medium">
+                    Email Address <span class="text-danger">*</span>
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                      <i class="bi bi-envelope"></i>
+                    </span>
+                    <input type="email"
+                           class="form-control border-start-0"
+                           id="email"
+                           name="email"
+                           value="{{ user.email }}"
+                           required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label for="first_name" class="form-label fw-medium">First Name</label>
+                  <input type="text"
+                         class="form-control"
+                         id="first_name"
+                         name="first_name"
+                         value="{{ user.first_name|default("") }}"
+                         placeholder="Enter first name">
+                </div>
+                <div class="col-md-6">
+                  <label for="last_name" class="form-label fw-medium">Last Name</label>
+                  <input type="text"
+                         class="form-control"
+                         id="last_name"
+                         name="last_name"
+                         value="{{ user.last_name|default("") }}"
+                         placeholder="Enter last name">
+                </div>
+                <div class="col-md-6">
+                  <label for="gender" class="form-label fw-medium">Gender</label>
+                  <select class="form-select" id="gender" name="gender">
+                    <option value="" {% if not user.gender %}selected{% endif %}>Select Gender</option>
+                    <option value="male" {% if user.gender == 'male' %}selected{% endif %}>Male</option>
+                    <option value="female" {% if user.gender == 'female' %}selected{% endif %}>Female</option>
+                    <option value="other" {% if user.gender == 'other' %}selected{% endif %}>Other</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label for="dob" class="form-label fw-medium">Date of Birth</label>
+                  <input type="date"
+                         class="form-control"
+                         id="dob"
+                         name="dob"
+                         value="{{ user.dob ? user.dob|date("Y-m-d") : '' }}"
+                         data-format="YYYY-MM-DD"
+                         placeholder="YYYY-MM-DD">
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Contact Information -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+              <h5 class="mb-4 fw-bold">
+                <i class="bi bi-telephone text-primary me-2"></i>Contact Information
+              </h5>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="phone" class="form-label fw-medium">Phone Number</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                      <i class="bi bi-telephone"></i>
+                    </span>
+                    <input type="text"
+                           class="form-control border-start-0"
+                           id="phone"
+                           name="phone"
+                           value="{{ user.phone|default("") }}"
+                           placeholder="+1 (555) 000-0000">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label for="alternate_phone" class="form-label fw-medium">Alternate Phone</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                      <i class="bi bi-phone"></i>
+                    </span>
+                    <input type="text"
+                           class="form-control border-start-0"
+                           id="alternate_phone"
+                           name="alternate_phone"
+                           value="{{ user.alternate_phone|default("") }}"
+                           placeholder="+1 (555) 000-0000">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Address Information -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+              <h5 class="mb-4 fw-bold">
+                <i class="bi bi-geo-alt text-primary me-2"></i>Address Information
+              </h5>
+              <div class="row g-3">
+                <div class="col-12">
+                  <label for="address" class="form-label fw-medium">Street Address</label>
+                  <input type="text"
+                         class="form-control"
+                         id="address"
+                         name="address"
+                         value="{{ user.address|default("") }}"
+                         placeholder="123 Main Street">
+                </div>
+                <div class="col-md-6">
+                  <label for="city" class="form-label fw-medium">City</label>
+                  <input type="text"
+                         class="form-control"
+                         id="city"
+                         name="city"
+                         value="{{ user.city|default("") }}"
+                         placeholder="New York">
+                </div>
+                <div class="col-md-6">
+                  <label for="state" class="form-label fw-medium">State / Province</label>
+                  <input type="text"
+                         class="form-control"
+                         id="state"
+                         name="state"
+                         value="{{ user.state|default("") }}"
+                         placeholder="NY">
+                </div>
+                <div class="col-md-6">
+                  <label for="country" class="form-label fw-medium">Country</label>
+                  <input type="text"
+                         class="form-control"
+                         id="country"
+                         name="country"
+                         value="{{ user.country|default("") }}"
+                         placeholder="United States">
+                </div>
+                <div class="col-md-6">
+                  <label for="zipcode" class="form-label fw-medium">Zip / Postal Code</label>
+                  <input type="text"
+                         class="form-control"
+                         id="zipcode"
+                         name="zipcode"
+                         value="{{ user.zipcode|default("") }}"
+                         placeholder="10001">
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Social Links -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+              <h5 class="mb-4 fw-bold">
+                <i class="bi bi-share-fill text-primary me-2"></i>Social Media Profiles
+              </h5>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="facebook_url" class="form-label fw-medium">
+                    <i class="bi bi-facebook me-1"></i> Facebook
+                  </label>
+                  <input type="url"
+                         class="form-control"
+                         id="facebook_url"
+                         name="facebook_url"
+                         value="{{ user.facebook_url|default("") }}"
+                         placeholder="https://facebook.com/username">
+                </div>
+                <div class="col-md-6">
+                  <label for="twitter_url" class="form-label fw-medium">
+                    <i class="bi bi-twitter-x me-1"></i> Twitter / X
+                  </label>
+                  <input type="url"
+                         class="form-control"
+                         id="twitter_url"
+                         name="twitter_url"
+                         value="{{ user.twitter_url|default("") }}"
+                         placeholder="https://twitter.com/username">
+                </div>
+                <div class="col-md-6">
+                  <label for="instagram_url" class="form-label fw-medium">
+                    <i class="bi bi-instagram text-danger me-1"></i> Instagram
+                  </label>
+                  <input type="url"
+                         class="form-control"
+                         id="instagram_url"
+                         name="instagram_url"
+                         value="{{ user.instagram_url|default("") }}"
+                         placeholder="https://instagram.com/username">
+                </div>
+                <div class="col-md-6">
+                  <label for="linkedin_url" class="form-label fw-medium">
+                    <i class="bi bi-linkedin text-primary me-1"></i> LinkedIn
+                  </label>
+                  <input type="url"
+                         class="form-control"
+                         id="linkedin_url"
+                         name="linkedin_url"
+                         value="{{ user.linkedin_url|default("") }}"
+                         placeholder="https://linkedin.com/in/username">
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Action Buttons -->
+          <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+              <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                <div class="d-flex gap-2 flex-wrap">
+                  <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-check-circle me-2"></i>Save Changes
+                  </button>
+                  <a href="/profile" class="btn btn-outline-secondary px-4">
+                    <i class="bi bi-x-circle me-2"></i>Cancel
+                  </a>
+                </div>
+                <button type="reset"
+                        class="btn btn-outline-danger"
+                        onclick="return confirm('Are you sure you want to reset all changes?')">
+                  <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Form
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <!-- Change Password Tab -->
+      <div class="tab-pane fade" id="password" role="tabpanel">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-5 text-center">
+            <div class="mb-4">
+              <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary bg-opacity-10 mb-3 inl-p-0125">
+                <i class="bi bi-key-fill text-primary inl-p-0126"></i>
+              </div>
+              <h4 class="mb-2 fw-bold">Change Password</h4>
+              <p class="text-muted mb-4">Keep your account secure by updating your password regularly</p>
+            </div>
+            <div class="d-flex flex-column gap-2 align-items-center">
+              <a href="/profile/password" class="btn btn-primary px-5">
+                <i class="bi bi-arrow-right me-2"></i>Go to Password Settings
+              </a>
+              <p class="text-muted small mt-2 mb-0">
+                <i class="bi bi-info-circle me-1"></i>
+                We recommend using a strong, unique password
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 2FA Settings Tab -->
+      <div class="tab-pane fade" id="security" role="tabpanel">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-5 text-center">
+            <div class="mb-4">
+              <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success bg-opacity-10 mb-3 inl-p-0125">
+                <i class="bi bi-shield-lock-fill text-success inl-p-0126"></i>
+              </div>
+              <h4 class="mb-2 fw-bold">Two-Factor Authentication</h4>
+              <p class="text-muted mb-4">Add an extra layer of security to protect your account from unauthorized access</p>
+            </div>
+            <div class="row g-3 mb-4 text-start">
+              <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3 h-100">
+                  <i class="bi bi-shield-check text-success mb-2 d-block inl-p-0003"></i>
+                  <h6 class="mb-1">Enhanced Security</h6>
+                  <small class="text-muted">Protect against unauthorized access</small>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3 h-100">
+                  <i class="bi bi-phone text-primary mb-2 d-block inl-p-0003"></i>
+                  <h6 class="mb-1">Multiple Methods</h6>
+                  <small class="text-muted">SMS, email, or authenticator app</small>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3 h-100">
+                  <i class="bi bi-clock-history text-info mb-2 d-block inl-p-0003"></i>
+                  <h6 class="mb-1">Easy Setup</h6>
+                  <small class="text-muted">Configure in just a few minutes</small>
+                </div>
+              </div>
+            </div>
+            <a href="/user/security/2fa" class="btn btn-success px-5">
+              <i class="bi bi-shield-check me-2"></i>Manage 2FA Settings
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Profile Picture Live Preview Script -->
+  <script>
+  const profileInput = document.getElementById('profile_pic');
+  const profilePreview = document.getElementById('profilePreview');
+
+  profileInput.addEventListener('change', function() {
+    const file = this.files[0];
+    if (file) {
+      // Validate file size (2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('File size must be less than 2MB');
+        this.value = '';
+        return;
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('Only JPG, PNG, and JPEG files are allowed');
+        this.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        profilePreview.src = e.target.result;
+
+        // Add a subtle animation
+        profilePreview.style.opacity = '0';
+        setTimeout(() => {
+          profilePreview.style.transition = 'opacity 0.3s ease';
+          profilePreview.style.opacity = '1';
+        }, 50);
+      }
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // Form validation feedback
+  const form = document.getElementById('profileForm');
+  form.addEventListener('submit', function(e) {
+    if (!form.checkValidity()) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    form.classList.add('was-validated');
+  });
+  </script>
+{% endblock %}

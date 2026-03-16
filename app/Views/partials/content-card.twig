@@ -1,0 +1,277 @@
+<div class="feed-item">
+  <article class="content-card cc-card" role="article" aria-label="Content item: {{ item.title }}">
+
+    {# ==================== IMAGE / CAROUSEL ==================== #}
+    <div class="cc-image-section position-relative">
+
+      {% if item.images is defined and item.images|length > 0 %}
+        <div id="carousel{{ index }}" class="carousel slide" data-bs-ride="carousel" aria-label="Image gallery for {{ item.title }}">
+          {# Carousel Indicators #}
+          {% if item.images|length > 1 %}
+            <div class="carousel-indicators" role="group" aria-label="Carousel indicators">
+              {% for img in item.images %}
+                <button type="button"
+                        data-bs-target="#carousel{{ index }}"
+                        data-bs-slide-to="{{ loop.index0 }}"
+                        class="{% if loop.first %}active{% endif %}"
+                        aria-current="{% if loop.first %}true{% endif %}"
+                        aria-label="Go to slide {{ loop.index }}"></button>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          {# Carousel Images #}
+          <div class="carousel-inner">
+            {% for img in item.images %}
+              <div class="carousel-item {% if loop.first %}active{% endif %}">
+                <div class="cc-image-wrapper">
+                  <img src="{{ img }}"
+                       class="cc-image"
+                       alt="{{ item.title }} - Image {{ loop.index }}"
+                       loading="lazy"
+                       decoding="async">
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+          {# Carousel Controls #}
+          {% if item.images|length > 1 %}
+            <button class="carousel-control-prev" type="button" data-bs-target="#carousel{{ index }}" data-bs-slide="prev" aria-label="Previous image">
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carousel{{ index }}" data-bs-slide="next" aria-label="Next image">
+            </button>
+          {% endif %}
+        </div>
+
+      {% elseif item.image %}
+        {# Single image handling with better fallback #}
+        {% set image_src = item.image %}
+        {# Check if it's an array/object, not a simple string #}
+        {% if image_src.url is defined %}
+          {% set image_src = image_src.url %}
+        {% elseif image_src.path is defined %}
+          {% set image_src = image_src.path %}
+        {% elseif image_src is iterable %}
+          {% set image_src = image_src|first %}
+          {# Check nested structure #}
+          {% if image_src.url is defined %}
+            {% set image_src = image_src.url %}
+          {% elseif image_src.path is defined %}
+            {% set image_src = image_src.path %}
+          {% endif %}
+        {% endif %}
+        <div class="cc-image-wrapper">
+          <img src="{{ image_src }}" class="cc-image" alt="{{ item.title }}" loading="lazy" decoding="async">
+        </div>
+
+      {% else %}
+        {# Placeholder for no image #}
+        <div class="cc-image-placeholder">
+          <i class="bi bi-image"></i>
+        </div>
+      {% endif %}
+
+      {# ==================== BADGES ==================== #}
+      {# Top-left: Premium / Official #}
+      <div class="cc-badge-top-left">
+        {% if item.type == 'service' and item.is_premium is defined %}
+          {% if item.is_premium == 1 %}
+            <span class="cc-badge-premium" title="Premium">
+              <i class="bi bi-crown"></i>
+              <span class="cc-badge-text">Premium</span>
+            </span>
+          {% elseif item.is_premium == 0 %}
+            <span class="cc-badge-free" title="Free">
+              <i class="bi bi-star-fill"></i>
+              <span class="cc-badge-text">Free</span>
+            </span>
+          {% endif %}
+        {% elseif item.type == 'mobile' and item.is_official is defined %}
+          <span class="cc-badge-official {{ item.is_official ? 'cc-badge-official-yes' : 'cc-badge-official-no' }}">
+            <i class="bi bi-{{ item.is_official ? 'patch-check-fill' : 'patch-question' }}"></i>
+            <span class="cc-badge-text">{{ item.is_official ? 'Official' : 'Unofficial' }}</span>
+          </span>
+        {% endif %}
+      </div>
+
+      {# Top-right: Service Status #}
+      <div class="cc-badge-top-right">
+        {% if item.type == 'service' and item.status is defined %}
+          <span class="cc-badge-status cc-badge-status-{{ item.status|lower|default('') }}">
+            {% if item.status|lower == 'active' %}
+              <i class="bi bi-check-circle-fill"></i>
+            {% elseif item.status|lower == 'inactive' %}
+              <i class="bi bi-x-circle-fill"></i>
+            {% elseif item.status|lower == 'pending' %}
+              <i class="bi bi-clock-fill"></i>
+            {% endif %}
+            <span class="cc-badge-text">{{ item.status|capitalize|default('') }}</span>
+          </span>
+        {% endif %}
+      </div>
+
+      {# Bottom-left: Category/Type badge #}
+      <div class="cc-badge-bottom-left">
+        {% set icon = '' %}
+        {% set badge_text = '' %}
+        
+        {% if item.type == 'category' %}
+          {% set icon = 'bi-collection' %}
+        {% elseif item.type == 'tag' %}
+          {% set icon = 'bi-tags' %}
+        {% elseif item.type == 'page' %}
+          {% set icon = 'bi-file-earmark-text' %}
+        {% elseif item.type == 'mobile' %}
+          {% set icon = 'bi-phone-fill' %}
+        {% elseif item.type == 'service' %}
+          {% set icon = 'bi-star-fill' %}
+        {% else %}
+          {% set icon = 'bi-file-earmark-text-fill' %}
+        {% endif %}
+
+        {% if item.categories is defined and item.categories|length > 0 %}
+          {% set primary_category = item.categories|first %}
+          <span class="cc-badge-overlay" aria-label="Category: {{ primary_category.name }}" title="{{ primary_category.name }}">
+            <i class="{{ icon }}" aria-hidden="true"></i>
+            <span class="cc-badge-text">{{ primary_category.name }}</span>
+          </span>
+          {% if item.categories|length > 1 %}
+            <span class="cc-badge-overlay cc-badge-overlay-count" aria-label="{{ item.categories|length - 1 }} more categories" title="{{ item.categories|length - 1 }} more categories">
+              +{{ item.categories|length - 1 }}
+            </span>
+          {% endif %}
+        {% else %}
+          <span class="cc-badge-overlay" title="{{ item.type|capitalize|default('Content') }}">
+            <i class="{{ icon }}" aria-hidden="true"></i>
+            <span class="cc-badge-text">{{ item.type|capitalize|default('Content') }}</span>
+          </span>
+        {% endif %}
+      </div>
+
+    </div> {# End cc-image-section #}
+
+    {# ==================== CARD BODY ==================== #}
+    <div class="cc-body-section">
+      <h3 class="cc-title">{{ item.title }}</h3>
+      
+      {# Service cards keep limited rich snippet; all other types remain plain text #}
+      {% if item.type == 'service' %}
+        {% set service_rich_excerpt = item.rich_excerpt_html|default(item.description|default(item.subtitle|default('')))|trim %}
+        {% if service_rich_excerpt %}
+          <div class="cc-excerpt cc-excerpt-rich rich-content rich-content--card">
+            {{ service_rich_excerpt|raw }}
+          </div>
+        {% endif %}
+      {% elseif item.subtitle %}
+        {% set clean_subtitle = item.subtitle|striptags|trim %}
+        <p class="cc-excerpt">
+          {% if clean_subtitle|length > 150 %}
+            {{ clean_subtitle|slice(0, 150) }}...
+          {% else %}
+            {{ clean_subtitle }}
+          {% endif %}
+        </p>
+      {% elseif item.description %}
+        {% set clean_description = item.description|striptags|trim %}
+        <p class="cc-excerpt">
+          {% if clean_description|length > 150 %}
+            {{ clean_description|slice(0, 150) }}...
+          {% else %}
+            {{ clean_description }}
+          {% endif %}
+        </p>
+      {% endif %}
+
+      {# Tags / Categories #}
+      {% if item.tags is defined and item.tags|length > 0 %}
+        <div class="cc-meta-tags" role="list" aria-label="Content tags">
+          {% for tag in item.tags|slice(0, 3) %}
+            <span class="cc-meta-tag cc-tag-info" role="listitem" title="{{ tag.name }}">
+              <i class="bi bi-tag-fill"></i>{{ tag.name }}
+            </span>
+          {% endfor %}
+          {% if item.tags|length > 3 %}
+            <span class="cc-meta-tag cc-tag-muted cc-meta-tag--more" role="listitem" title="More tags">
+              +{{ item.tags|length - 3 }} more
+            </span>
+          {% endif %}
+        </div>
+      {% elseif item.categories is defined and item.categories|length > 0 %}
+        <div class="cc-meta-tags" role="list" aria-label="Content categories">
+          {% for category in item.categories|slice(0, 3) %}
+            <span class="cc-meta-tag cc-tag-muted" role="listitem" title="{{ category.name }}">
+              <i class="bi bi-folder2-open"></i>{{ category.name }}
+            </span>
+          {% endfor %}
+          {% if item.categories|length > 3 %}
+            <span class="cc-meta-tag cc-tag-muted cc-meta-tag--more" role="listitem" title="More categories">
+              +{{ item.categories|length - 3 }} more
+            </span>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      {# Action Button #}
+      <div class="cc-action">
+        {% if item.type == 'mobile' %}
+          <a href="/mobiles/view/{{ item.id }}" class="cc-btn cc-btn-mobile" aria-label="View specifications for {{ item.title }}">
+            <span>View Specs</span><i class="bi bi-arrow-right"></i>
+          </a>
+        {% elseif item.type == 'post' %}
+          <a href="/posts/view/{{ item.url }}" class="cc-btn cc-btn-post" aria-label="Read article: {{ item.title }}">
+            <span>Read Article</span><i class="bi bi-arrow-right"></i>
+          </a>
+        {% elseif item.type == 'service' %}
+          <a href="/services/{{ item.slug }}" class="cc-btn cc-btn-service" aria-label="View service: {{ item.title }}">
+            <span>View Details</span><i class="bi bi-arrow-right"></i>
+          </a>
+        {% elseif item.type == 'category' %}
+          <a href="/category/{{ item.slug|default(item.id) }}" class="cc-btn cc-btn-page" aria-label="View category: {{ item.title }}">
+            <span>View Category</span><i class="bi bi-arrow-right"></i>
+          </a>
+        {% elseif item.type == 'tag' %}
+          <a href="/tag/{{ item.slug|default(item.id) }}" class="cc-btn cc-btn-page" aria-label="View tag: {{ item.title }}">
+            <span>View Tag</span><i class="bi bi-arrow-right"></i>
+          </a>
+        {% else %}
+          <a href="/pages/view/{{ item.url }}" class="cc-btn cc-btn-page" aria-label="View page: {{ item.title }}">
+            <span>Explore Page</span><i class="bi bi-arrow-right"></i>
+          </a>
+        {% endif %}
+      </div>
+    </div> {# End cc-body-section #}
+
+    {# ==================== CARD FOOTER ==================== #}
+    <div class="cc-footer-section">
+      {# Left section: Date #}
+      {% if item.created_at is defined %}
+        <time datetime="{{ item.created_at|date('Y-m-d') }}" class="cc-date">
+          <i class="bi bi-calendar-check-fill"></i> {{ item.created_at|date("d M, Y") }}
+        </time>
+      {% endif %}
+
+      {# Middle section: Stats #}
+      {% if item.impressions is defined or item.views is defined %}
+        <div class="cc-stats">
+          {% if item.impressions is defined %}
+            <span title="Impressions"><i class="bi bi-bar-chart-line text-info"></i> {{ item.impressions|number_format }}</span>
+          {% endif %}
+          {% if item.views is defined %}
+            <span title="Views"><i class="bi bi-eye-fill text-success"></i> {{ item.views|number_format }}</span>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      {# Right section: Price or Number #}
+      {% if item.type == 'service' and item.price %}
+        <span class="cc-number inl-c-0002">
+          💰 {{ item.price }}
+        </span>
+      {% else %}
+        <div class="cc-number" aria-label="Item number {{ index }}">#{{ index }}</div>
+      {% endif %}
+    </div>
+
+  </article>
+</div>

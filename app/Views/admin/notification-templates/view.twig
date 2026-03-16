@@ -1,0 +1,234 @@
+{% extends "admin/layout.twig" %}
+{% block title %}{{ template.name }}{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css"
+        rel="stylesheet">
+  <div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        {% if template.icon %}
+          <i class="mdi mdi-{{ template.icon }}"></i>
+        {% else %}
+          <i class="mdi mdi-bell-outline"></i>
+        {% endif %}
+        {{ template.name }}
+      </div>
+      <div class="admin-page-subtitle">Template Details & Configuration</div>
+    </div>
+    <div class="row">
+      <!-- Main Content Column -->
+      <div class="col-lg-8">
+        <!-- Template Info Card -->
+        <div class="admin-panel-card mb-4">
+          <div class="admin-panel-card-header bg-light">
+            <strong><i class="mdi mdi-information-outline me-2"></i>Template Information</strong>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <small class="text-muted d-block mb-1">Slug</small>
+                <code class="bg-light p-2 rounded d-block">{{ template.slug }}</code>
+              </div>
+              <div class="col-md-6">
+                <small class="text-muted d-block mb-1">Type</small>
+                <span class="badge bg-secondary"><i class="mdi mdi-bell"></i> Notification Template</span>
+              </div>
+            </div>
+            {% if template.description %}
+              <div class="mb-3">
+                <small class="text-muted d-block mb-1">Description</small>
+                <p class="mb-0">{{ template.description }}</p>
+              </div>
+            {% endif %}
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <small class="text-muted d-block mb-1">Created</small>
+                <span><i class="mdi mdi-calendar"></i> {{ template.created_at|date("M d, Y H:i") }}</span>
+              </div>
+              <div class="col-md-6 mb-3">
+                <small class="text-muted d-block mb-1">Created By</small>
+                <span>
+                  {% if template.created_by %}
+                    System User #{{ template.created_by }}
+                  {% else %}
+                    System
+                  {% endif %}
+                </span>
+              </div>
+            </div>
+            {% if template.updated_at and template.updated_at != template.created_at %}
+              <div class="row">
+                <div class="col-md-6">
+                  <small class="text-muted d-block mb-1">Last Updated</small>
+                  <span><i class="mdi mdi-calendar-clock"></i> {{ template.updated_at|date("M d, Y H:i") }}</span>
+                </div>
+                <div class="col-md-6">
+                  <small class="text-muted d-block mb-1">Updated By</small>
+                  <span>
+                    {% if template.updated_by %}
+                      User #{{ template.updated_by }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </span>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Template Content Card -->
+        <div class="admin-panel-card mb-4">
+          <div class="admin-panel-card-header bg-light">
+            <strong><i class="mdi mdi-file-document-outline me-2"></i>Content Preview</strong>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="mb-4">
+              <small class="text-muted d-block mb-2"><strong>Title Template</strong></small>
+              <div class="alert alert-light border p-3">
+                <strong>{{ template.title }}</strong>
+              </div>
+            </div>
+            <div>
+              <small class="text-muted d-block mb-2"><strong>Message Body</strong></small>
+              <div class="alert alert-light border p-3 inl-a-0035">{{ template.body }}</div>
+            </div>
+          </div>
+        </div>
+        <!-- Configuration Card -->
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header bg-light">
+            <strong><i class="mdi mdi-cogs-outline me-2"></i>Configuration & Status</strong>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <small class="text-muted d-block mb-2"><strong>Delivery Channels</strong></small>
+                <div class="d-flex flex-wrap gap-2">
+                  {% set channels = template.channels is iterable ? template.channels : template.channels|json_decode %}
+                  {% for channel in channels %}
+                    <span class="badge bg-primary">
+                      {% if channel == 'in_app' %}
+                        <i class="mdi mdi-bell"></i> In-App
+                      {% elseif channel == 'fcm' %}
+                        <i class="mdi mdi-mobile-alert"></i> FCM Push
+                      {% elseif channel == 'email' %}
+                        <i class="mdi mdi-email"></i> Email
+                      {% elseif channel == 'sms' %}
+                        <i class="mdi mdi-message-text"></i> SMS
+                      {% else %}
+                        {{ channel }}
+                      {% endif %}
+                    </span>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <small class="text-muted d-block mb-2"><strong>Status</strong></small>
+                <div>
+                  {% if template.is_active %}
+                    <span class="badge bg-success"><i class="mdi mdi-check-circle"></i> Active</span>
+                  {% else %}
+                    <span class="badge bg-secondary"><i class="mdi mdi-circle-outline"></i> Inactive</span>
+                  {% endif %}
+                  {% if template.deleted_at %}<span class="badge bg-danger"><i class="mdi mdi-trash-can"></i> Deleted</span>{% endif %}
+                </div>
+              </div>
+            </div>
+            {% if template.icon or template.color %}
+              <hr class="my-3">
+              <div class="row">
+                {% if template.icon %}
+                  <div class="col-md-6">
+                    <small class="text-muted d-block mb-2"><strong>Icon</strong></small>
+                    <div>
+                      <i class="mdi mdi-{{ template.icon }} me-2 inl-a-0036"></i>
+                      <code>mdi-{{ template.icon }}</code>
+                    </div>
+                  </div>
+                {% endif %}
+                {% if template.color %}
+                  <div class="col-md-6">
+                    <small class="text-muted d-block mb-2"><strong>Color</strong></small>
+                    <div>
+                      <span class="badge"
+                            style="background-color: {{ template.color }};
+                                   padding: 8px 12px;
+                                   font-size: 12px">{{ template.color }}</span>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <!-- Sidebar -->
+      <div class="col-lg-4">
+        <!-- Variables Card -->
+        <div class="admin-panel-card sticky-top mb-4 inl-a-0029">
+          <div class="admin-panel-card-header bg-light">
+            <strong><i class="mdi mdi-tag-multiple me-2"></i>Template Variables</strong>
+          </div>
+          <div class="admin-panel-card-body small">
+            {% set variables = template.variables is iterable ? template.variables : template.variables|json_decode %}
+            {% if variables and variables|length > 0 %}
+              <p class="text-muted mb-3">Variables to provide when sending this notification:</p>
+              <div class="list-group list-group-sm">
+                {% for key, desc in variables %}
+                  <div class="list-group-item py-2">
+                    <code class="d-block mb-1">&#123;&#123; {{ key }} &#125;&#125;</code>
+                    {% if desc %}
+                      <small class="text-muted">{{ desc }}</small>
+                    {% else %}
+                      <small class="text-muted text-secondary">No description</small>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-muted mb-0">No variables defined for this template.</p>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Usage Example Card -->
+        <div class="admin-panel-card mb-4">
+          <div class="admin-panel-card-header bg-light">
+            <strong><i class="mdi mdi-code-braces me-2"></i>Usage Example</strong>
+          </div>
+          <div class="admin-panel-card-body p-0">
+            <pre class="mb-0 inl-a-0037"><code>&lt;?php
+              \$result = sendTemplateNotification(
+              '{{ template.slug }}',
+              \$userId,
+              [
+              {% for key in (template.variables is iterable ? template.variables : template.variables|json_decode)|keys %}
+                '{{ key }}' => 'value',
+              {% endfor %}
+              ],
+              ['in_app','fcm','email']
+              );
+              ?&gt;</code></pre>
+          </div>
+        </div>
+        <!-- Actions Card -->
+        <div class="admin-panel-card">
+          <div class="admin-panel-card-header bg-light">
+            <strong><i class="mdi mdi-tools me-2"></i>Actions</strong>
+          </div>
+          <div class="admin-panel-card-body">
+            <a href="/admin/notification-templates/{{ template.id }}/edit"
+               class="modern-btn modern-btn-primary w-100 mb-2">
+              <i class="mdi mdi-pencil me-2"></i>Edit Template
+            </a>
+            <a href="/admin/notification-templates"
+               class="modern-btn modern-btn-outline-secondary w-100">
+              <i class="mdi mdi-arrow-left me-2"></i>Back to List
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
