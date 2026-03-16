@@ -1,0 +1,9 @@
+<div class="alert alert-{{ type }} alert-dismissible show" role="alert">
+    <i class="bi bi-{{ icon }} me-2"></i>
+    {% if allow_html|default(false) %}
+        {{ message|raw }}
+    {% else %}
+        {{ message }}
+    {% endif %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>

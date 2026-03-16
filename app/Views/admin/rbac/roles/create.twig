@@ -1,0 +1,99 @@
+{% extends "admin/layout.twig" %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="service-form-wrapper">
+    <div class="container service-form-container">
+      <div class="modern-breadcrumb">
+        <a href="/admin"><i class="bi bi-house-door"></i> Dashboard</a>
+        <span class="separator">›</span>
+        <a href="/admin/roles">Roles</a>
+        <span class="separator">›</span>
+        <span class="active">Create</span>
+      </div>
+      <div class="header-glass-card mb-4">
+        <div class="d-flex align-items-center justify-content-between gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="header-icon-badge">
+              <i class="bi bi-shield-lock"></i>
+            </div>
+            <div>
+              <h1 class="page-title">Create New Role</h1>
+              <p class="page-subtitle">Define role and assign permissions</p>
+            </div>
+          </div>
+          <a href="/admin/roles" class="modern-btn modern-btn-secondary">Back to Roles</a>
+        </div>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-6 mx-auto">
+          <div class="admin-panel-card">
+            <div class="admin-panel-card-header">
+              <h5 class="admin-panel-card-header-title">
+                <i class="bi bi-info-circle-fill"></i> Role Information
+              </h5>
+            </div>
+            <div class="admin-panel-card-body">
+              <!-- original form preserved -->
+              <form method="POST" action="/admin/roles/store">
+                <div class="mb-3">
+                  <label for="name" class="form-label">Role Name *</label>
+                  <input type="text"
+                         class="form-control"
+                         id="name"
+                         name="name"
+                         placeholder="e.g., moderator"
+                         required>
+                  <small class="text-muted">Use lowercase with underscores (e.g., content_manager)</small>
+                </div>
+                <div class="mb-3">
+                  <label for="description" class="form-label">Description</label>
+                  <textarea class="form-control"
+                            id="description"
+                            name="description"
+                            rows="3"
+                            placeholder="Brief description of this role"></textarea>
+                </div>
+                <div class="card mt-4 bg-light border">
+                  <div class="card-header bg-white border-bottom">
+                    <h6 class="mb-0">Assign Permissions</h6>
+                  </div>
+                  <div class="admin-panel-card-body">
+                    {% for module, perms in permissions %}
+                      <div class="mb-3">
+                        <h6 class="text-uppercase fw-bold text-primary module-header-sm">{{ module }}</h6>
+                        <div class="permission-group">
+                          {% for perm in perms %}
+                            <div class="form-check">
+                              <input class="form-check-input"
+                                     type="checkbox"
+                                     name="permissions[]"
+                                     value="{{ perm.id }}"
+                                     id="perm_{{ perm.id }}">
+                              <label class="form-check-label" for="perm_{{ perm.id }}">
+                                <strong>{{ perm.name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ perm.description }}</small>
+                              </label>
+                            </div>
+                          {% endfor %}
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div class="mt-4 d-flex gap-2">
+                  <button type="submit" class="modern-btn modern-btn-white">
+                    <i class="bi bi-check-circle me-2"></i>Create Role
+                  </button>
+                  <a href="/admin/roles" class="modern-btn modern-btn-secondary">
+                    <i class="bi bi-x-circle me-2"></i>Cancel
+                  </a>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

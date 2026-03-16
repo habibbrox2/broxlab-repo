@@ -1,0 +1,129 @@
+{% extends "admin/layout.twig" %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-shield-check me-2"></i>
+        Role Details
+      </div>
+      <div class="admin-page-subtitle">View role details</div>
+    </div>
+    <div class="row mb-4">
+      <div class="col">
+        <h1 class="h3 mb-0">
+          <a href="/admin/roles" class="text-decoration-none text-theme-strong">
+            <i class="bi bi-shield-lock me-2"></i>Roles
+          </a>
+          <span class="text-muted">/</span>
+          <span>{{ role.name|upper }}</span>
+        </h1>
+      </div>
+      <div class="col-md-4 text-end">
+        {% if not role.is_super_admin %}
+          <a href="/admin/roles/{{ role.id }}/edit"
+             class="modern-btn modern-btn-secondary btn-sm">
+            <i class="bi bi-pencil me-2"></i>Edit
+          </a>
+          <form method="POST"
+                action="/admin/roles/{{ role.id }}/delete"
+                class="delete-btn-inline"
+                onsubmit="return confirm('Delete this role?')">
+            <button type="submit" class="modern-btn modern-btn-primary btn-sm">
+              <i class="bi bi-trash me-2"></i>Delete
+            </button>
+          </form>
+        {% endif %}
+        <a href="/admin/roles" class="modern-btn modern-btn-white btn-sm">
+          <i class="bi bi-arrow-left me-2"></i>Back
+        </a>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-lg-4">
+        <!-- Role Info Card -->
+        <div class="admin-panel-card border-0 shadow-sm mb-4">
+          <div class="admin-panel-card-header bg-light border-bottom">
+            <h5 class="mb-0">Role Information</h5>
+          </div>
+          <div class="admin-panel-card-body">
+            <div class="mb-3">
+              <label class="text-muted small">Role Name</label>
+              <p class="h5 mb-0">{{ role.name|upper }}</p>
+            </div>
+            <div class="mb-3">
+              <label class="text-muted small">Description</label>
+              <p class="mb-0">{{ role.description|default("N/A") }}</p>
+            </div>
+            <div class="mb-3">
+              <label class="text-muted small">Type</label>
+              <p class="mb-0">
+                {% if role.is_super_admin %}
+                  <span class="badge bg-danger">Super Admin</span>
+                {% else %}
+                  <span class="badge bg-secondary">Standard</span>
+                {% endif %}
+              </p>
+            </div>
+            <div class="mb-3">
+              <label class="text-muted small">Created</label>
+              <p class="mb-0 small">{{ role.created_at|date("M d, Y H:i") }}</p>
+            </div>
+            <div class="mb-0">
+              <label class="text-muted small">Updated</label>
+              <p class="mb-0 small">
+                {% if role.updated_at %}
+                  {{ role.updated_at|date("M d, Y H:i") }}
+                {% else %}
+                  Never
+                {% endif %}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-8">
+        <!-- Permissions Card -->
+        <div class="admin-panel-card border-0 shadow-sm">
+          <div class="admin-panel-card-header bg-light border-bottom">
+            <h5 class="mb-0">
+              <i class="bi bi-key me-2"></i>Permissions ({{ role.permissions|length }})
+            </h5>
+          </div>
+          <div class="admin-panel-card-body">
+            {% if role.permissions|length > 0 %}
+              <div class="permission-list">
+                {% set current_module = null %}
+                {% for perm in role.permissions %}
+                  {% if perm.module != current_module %}
+                    {% if current_module != null %}</div>{% endif %}
+                  <div class="mb-4">
+                    <h6 class="text-uppercase fw-bold text-primary mb-3 module-header-sm">
+                      <i class="bi bi-folder me-2"></i>{{ perm.module }}
+                    </h6>
+                    <div class="permission-group">
+                      {% set current_module = perm.module %}
+                    {% endif %}
+                    <div class="permission-item">
+                      <div>
+                        <strong class="text-theme-strong">{{ perm.name }}</strong>
+                        <br>
+                        <small class="text-muted">{{ perm.description }}</small>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% else %}
+              <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                No permissions assigned to this role.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

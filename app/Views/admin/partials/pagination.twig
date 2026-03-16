@@ -1,0 +1,95 @@
+{# Pagination Component #}
+{% if pagination is defined and pagination.total_pages > 1 %}
+{% set query_parts = [] %}
+{% set per_page_value = pagination.limit is defined ? pagination.limit : (pagination.per_page is defined ? pagination.per_page : null) %}
+{% if pagination.search is defined and pagination.search %}
+    {% set query_parts = query_parts|merge(['search=' ~ (pagination.search|url_encode)]) %}
+{% endif %}
+{% if pagination.sort is defined and pagination.sort %}
+    {% set query_parts = query_parts|merge(['sort=' ~ (pagination.sort|url_encode)]) %}
+{% endif %}
+{% if pagination.order is defined and pagination.order %}
+    {% set query_parts = query_parts|merge(['order=' ~ (pagination.order|url_encode)]) %}
+{% endif %}
+{% if pagination.status is defined and pagination.status %}
+    {% set query_parts = query_parts|merge(['status=' ~ (pagination.status|url_encode)]) %}
+{% endif %}
+{% if pagination.type is defined and pagination.type %}
+    {% set query_parts = query_parts|merge(['type=' ~ (pagination.type|url_encode)]) %}
+{% endif %}
+{% if per_page_value %}
+    {% set query_parts = query_parts|merge(['limit=' ~ per_page_value]) %}
+{% endif %}
+{% if pagination.extra_query is defined and pagination.extra_query is iterable %}
+    {% for key, value in pagination.extra_query %}
+        {% if value is not same as(null) and value != '' %}
+            {% set query_parts = query_parts|merge([key ~ '=' ~ (value|url_encode)]) %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
+{% set query_suffix = query_parts is not empty ? '&' ~ (query_parts|join('&')) : '' %}
+
+<div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+    <!-- Results Counter -->
+    <div class="text-muted small">
+        <i class="bi bi-info-circle"></i>
+        Showing <strong>{{ pagination.from }}</strong> to <strong>{{ pagination.to }}</strong> 
+        of <strong>{{ pagination.total }}</strong> results
+    </div>
+    
+    <!-- Pagination Controls -->
+    <nav aria-label="Page navigation">
+        <ul class="pagination pagination-sm mb-0">
+            <!-- Previous Button -->
+            <li class="page-item {% if pagination.current_page == 1 %}disabled{% endif %}">
+                <a class="page-link" href="?page=1{{ query_suffix }}" aria-label="First">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+            
+            <li class="page-item {% if pagination.current_page == 1 %}disabled{% endif %}">
+                <a class="page-link" href="?page={{ pagination.current_page - 1 }}{{ query_suffix }}" aria-label="Previous">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+
+            <!-- Page Numbers -->
+            {% set start_page = pagination.current_page - 2 %}
+            {% if start_page < 1 %}{% set start_page = 1 %}{% endif %}
+            {% set end_page = pagination.current_page + 2 %}
+            {% if end_page > pagination.total_pages %}{% set end_page = pagination.total_pages %}{% endif %}
+            
+            {% if start_page > 1 %}
+                <li class="page-item"><a class="page-link" href="?page=1{{ query_suffix }}">1</a></li>
+                {% if start_page > 2 %}<li class="page-item disabled"><span class="page-link">...</span></li>{% endif %}
+            {% endif %}
+
+            {% for page in start_page..end_page %}
+                <li class="page-item {% if page == pagination.current_page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ page }}{{ query_suffix }}">
+                        {{ page }}
+                    </a>
+                </li>
+            {% endfor %}
+
+            {% if end_page < pagination.total_pages %}
+                {% if end_page < pagination.total_pages - 1 %}<li class="page-item disabled"><span class="page-link">...</span></li>{% endif %}
+                <li class="page-item"><a class="page-link" href="?page={{ pagination.total_pages }}{{ query_suffix }}">{{ pagination.total_pages }}</a></li>
+            {% endif %}
+
+            <!-- Next Button -->
+            <li class="page-item {% if pagination.current_page == pagination.total_pages %}disabled{% endif %}">
+                <a class="page-link" href="?page={{ pagination.current_page + 1 }}{{ query_suffix }}" aria-label="Next">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+
+            <li class="page-item {% if pagination.current_page == pagination.total_pages %}disabled{% endif %}">
+                <a class="page-link" href="?page={{ pagination.total_pages }}{{ query_suffix }}" aria-label="Last">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</div>
+{% endif %}

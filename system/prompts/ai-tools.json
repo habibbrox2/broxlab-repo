@@ -1,0 +1,429 @@
+{
+    "version": "2.0",
+    "name": "BroxBhai AI Tools",
+    "description": "Tools available to BroxBhai AI System for performing actions",
+    "updated_at": "2026-03-13",
+    "tools": [
+        {
+            "id": "search_knowledge_base",
+            "name": "Search Knowledge Base",
+            "description": "Search the AI knowledge base for relevant information about BroxBhai",
+            "enabled": true,
+            "category": "information",
+            "parameters": {
+                "query": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Search query string",
+                    "max_length": 500
+                },
+                "category": {
+                    "type": "string",
+                    "required": false,
+                    "description": "Filter by category"
+                },
+                "limit": {
+                    "type": "number",
+                    "required": false,
+                    "default": 5,
+                    "min": 1,
+                    "max": 20,
+                    "description": "Maximum results to return"
+                }
+            },
+            "returns": {
+                "type": "array",
+                "description": "Array of matching knowledge base entries"
+            }
+        },
+        {
+            "id": "get_content_summary",
+            "name": "Get Content Summary",
+            "description": "Generate a concise AI summary of any content or article",
+            "enabled": true,
+            "category": "content",
+            "parameters": {
+                "content": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Content to summarize",
+                    "max_length": 10000
+                },
+                "max_words": {
+                    "type": "number",
+                    "required": false,
+                    "default": 120,
+                    "min": 30,
+                    "max": 500,
+                    "description": "Maximum words in summary"
+                },
+                "language": {
+                    "type": "string",
+                    "required": false,
+                    "options": ["bn", "en", "auto"],
+                    "default": "auto",
+                    "description": "Output language (bn/en/auto)"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "fields": {
+                    "summary": "string",
+                    "word_count": "number",
+                    "language": "string"
+                }
+            }
+        },
+        {
+            "id": "enhance_content",
+            "name": "Enhance Content",
+            "description": "Improve and enhance existing content — fix grammar, improve flow, adjust tone",
+            "enabled": true,
+            "category": "content",
+            "requires_auth": true,
+            "parameters": {
+                "content": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Content to enhance",
+                    "max_length": 10000
+                },
+                "style": {
+                    "type": "string",
+                    "required": false,
+                    "options": ["professional", "casual", "technical", "simple", "seo"],
+                    "default": "professional",
+                    "description": "Desired writing style"
+                },
+                "language": {
+                    "type": "string",
+                    "required": false,
+                    "options": ["bn", "en", "auto"],
+                    "default": "auto",
+                    "description": "Output language"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "fields": {
+                    "enhanced_content": "string",
+                    "changes_summary": "string",
+                    "style_applied": "string"
+                }
+            }
+        },
+        {
+            "id": "extract_html_data",
+            "name": "Extract HTML Data",
+            "description": "Extract structured data from HTML content — admin only, restricted to site domain",
+            "enabled": true,
+            "category": "scraping",
+            "requires_admin": true,
+            "security_note": "Only process HTML from authorized domains. Never process external URLs without explicit admin authorization.",
+            "parameters": {
+                "html": {
+                    "type": "string",
+                    "required": true,
+                    "description": "HTML content to parse",
+                    "max_length": 500000
+                },
+                "source_url": {
+                    "type": "string",
+                    "required": false,
+                    "description": "Source URL of the HTML (used to resolve relative URLs)"
+                },
+                "schema": {
+                    "type": "object",
+                    "required": false,
+                    "description": "Expected data schema to extract"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "description": "Extracted structured data as JSON"
+            }
+        },
+        {
+            "id": "translate_text",
+            "name": "Translate Text",
+            "description": "Translate text accurately between Bengali and English",
+            "enabled": true,
+            "category": "language",
+            "parameters": {
+                "text": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Text to translate",
+                    "max_length": 5000
+                },
+                "from": {
+                    "type": "string",
+                    "required": false,
+                    "options": ["auto", "bn", "en"],
+                    "default": "auto",
+                    "description": "Source language (auto-detect by default)"
+                },
+                "to": {
+                    "type": "string",
+                    "required": true,
+                    "options": ["bn", "en"],
+                    "description": "Target language"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "fields": {
+                    "translated_text": "string",
+                    "detected_language": "string",
+                    "target_language": "string"
+                }
+            }
+        },
+        {
+            "id": "generate_code",
+            "name": "Generate Code",
+            "description": "Generate secure, well-documented code snippets for common platform tasks",
+            "enabled": true,
+            "category": "development",
+            "requires_auth": true,
+            "security_note": "Never generate malicious code, hardcoded credentials, or destructive scripts.",
+            "parameters": {
+                "language": {
+                    "type": "string",
+                    "required": true,
+                    "options": ["php", "javascript", "html", "css", "sql"],
+                    "description": "Programming language"
+                },
+                "task": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Description of the code to generate",
+                    "max_length": 1000
+                },
+                "framework": {
+                    "type": "string",
+                    "required": false,
+                    "description": "Framework or library to use (e.g., vanilla, jQuery)"
+                },
+                "include_comments": {
+                    "type": "boolean",
+                    "required": false,
+                    "default": true,
+                    "description": "Whether to include inline code comments"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "fields": {
+                    "code": "string",
+                    "language": "string",
+                    "explanation": "string",
+                    "usage_example": "string"
+                }
+            }
+        },
+        {
+            "id": "send_notification",
+            "name": "Send Notification",
+            "description": "Send a notification to a user — admin only",
+            "enabled": true,
+            "requires_admin": true,
+            "category": "admin",
+            "parameters": {
+                "user_id": {
+                    "type": "number",
+                    "required": true,
+                    "description": "Target user ID"
+                },
+                "title": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Notification title",
+                    "max_length": 100
+                },
+                "message": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Notification message",
+                    "max_length": 500
+                },
+                "channel": {
+                    "type": "string",
+                    "required": false,
+                    "options": ["push", "email", "sms", "inapp", "telegram"],
+                    "default": "inapp",
+                    "description": "Delivery channel"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "fields": {
+                    "success": "boolean",
+                    "notification_id": "string",
+                    "channel": "string",
+                    "sent_at": "string"
+                }
+            }
+        },
+        {
+            "id": "get_analytics",
+            "name": "Get Analytics",
+            "description": "Retrieve platform analytics data — admin only",
+            "enabled": true,
+            "requires_admin": true,
+            "category": "admin",
+            "parameters": {
+                "metric": {
+                    "type": "string",
+                    "required": true,
+                    "options": ["pageviews", "users", "content", "notifications", "services", "all"],
+                    "description": "Metric type to retrieve"
+                },
+                "period": {
+                    "type": "string",
+                    "required": false,
+                    "options": ["today", "week", "month", "year", "all"],
+                    "default": "week",
+                    "description": "Time period"
+                },
+                "compare_previous": {
+                    "type": "boolean",
+                    "required": false,
+                    "default": false,
+                    "description": "Include comparison with previous period"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "description": "Analytics data with optional period comparison"
+            }
+        },
+        {
+            "id": "search_content",
+            "name": "Search Content",
+            "description": "Search published website content",
+            "enabled": true,
+            "category": "information",
+            "parameters": {
+                "query": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Search query",
+                    "max_length": 300
+                },
+                "category": {
+                    "type": "string",
+                    "required": false,
+                    "description": "Filter by content category"
+                },
+                "type": {
+                    "type": "string",
+                    "required": false,
+                    "options": ["post", "page", "all"],
+                    "default": "all",
+                    "description": "Content type filter"
+                },
+                "limit": {
+                    "type": "number",
+                    "required": false,
+                    "default": 10,
+                    "min": 1,
+                    "max": 50,
+                    "description": "Maximum results"
+                }
+            },
+            "returns": {
+                "type": "array",
+                "description": "Array of matching content items"
+            }
+        },
+        {
+            "id": "create_ticket",
+            "name": "Create Support Ticket",
+            "description": "Create a support ticket for user issues",
+            "enabled": true,
+            "category": "support",
+            "parameters": {
+                "subject": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Ticket subject",
+                    "max_length": 200
+                },
+                "description": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Issue description",
+                    "max_length": 2000
+                },
+                "priority": {
+                    "type": "string",
+                    "required": false,
+                    "options": ["low", "medium", "high"],
+                    "default": "medium",
+                    "description": "Ticket priority"
+                },
+                "category": {
+                    "type": "string",
+                    "required": false,
+                    "options": ["technical", "billing", "account", "content", "other"],
+                    "default": "other",
+                    "description": "Issue category"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "fields": {
+                    "ticket_id": "string",
+                    "subject": "string",
+                    "status": "string",
+                    "created_at": "string"
+                }
+            }
+        }
+    ],
+    "tool_permissions": {
+        "public": [
+            "search_knowledge_base",
+            "get_content_summary",
+            "translate_text",
+            "search_content",
+            "create_ticket"
+        ],
+        "authenticated": [
+            "search_knowledge_base",
+            "get_content_summary",
+            "enhance_content",
+            "translate_text",
+            "generate_code",
+            "search_content",
+            "create_ticket"
+        ],
+        "admin": [
+            "search_knowledge_base",
+            "get_content_summary",
+            "enhance_content",
+            "extract_html_data",
+            "translate_text",
+            "generate_code",
+            "send_notification",
+            "get_analytics",
+            "search_content",
+            "create_ticket"
+        ]
+    },
+    "rate_limits": {
+        "public": {
+            "requests_per_minute": 10,
+            "requests_per_hour": 250
+        },
+        "authenticated": {
+            "requests_per_minute": 20,
+            "requests_per_hour": 500
+        },
+        "admin": {
+            "requests_per_minute": 60,
+            "requests_per_hour": 2000
+        }
+    }
+}

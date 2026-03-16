@@ -1,0 +1,166 @@
+{% extends "admin/layout.twig" %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid mt-4">
+    <div class="row mb-4">
+      <div class="col-md-8">
+        <h1 class="h3 d-inline-block">Edit Email Template</h1>
+        <p class="text-muted">
+          {{ template.name }} <code class="bg-light">{{ template.slug }}</code>
+        </p>
+      </div>
+      <div class="col-md-4 text-end">
+        <a href="{{ admin_dir }}/email-templates"
+           class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i> Back
+        </a>
+        <button type="button"
+                class="btn btn-info"
+                id="previewBtn"
+                data-bs-toggle="modal"
+                data-bs-target="#previewModal">
+          <i class="bi bi-eye"></i> Preview Template
+        </button>
+      </div>
+    </div>
+    <form method="POST"
+          action="{{ admin_dir }}/email-templates/{{ template.id }}"
+          id="emailTemplateForm"
+          data-template-id="{{ template.id }}">
+      <div class="row">
+        <div class="col-lg-8">
+          <div class="admin-panel-card mb-4">
+            <div class="admin-panel-card-header">
+              <h5 class="mb-0">Template Content</h5>
+            </div>
+            <div class="admin-panel-card-body">
+              <div class="mb-3">
+                <label for="subject" class="form-label">Email Subject *</label>
+                <input type="text"
+                       class="form-control"
+                       id="subject"
+                       name="subject"
+                       value="{{ template.subject }}"
+                       required>
+                <small class="form-text text-muted">You can use variables like {{'{{'}}VARIABLE{{'}}'}}</small>
+              </div>
+              <div class="mb-3">
+                <label for="body" class="form-label">Email Body *</label>
+                <textarea class="form-control html-editor"
+                          id="body"
+                          name="body"
+                          rows="20"
+                          required>{{ template.body }}</textarea>
+                <small class="form-text text-muted">Supports HTML. Use {{'{{'}}VARIABLE{{'}}'}} for dynamic content.</small>
+              </div>
+              <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control"
+                          id="description"
+                          name="description"
+                          rows="3"
+                          placeholder="Template purpose and notes">{{ template.description|default('') }}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="admin-panel-card mb-4">
+            <div class="admin-panel-card-header">
+              <h5 class="mb-0">Settings</h5>
+            </div>
+            <div class="admin-panel-card-body">
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input"
+                       type="checkbox"
+                       id="is_active"
+                       name="is_active"
+                       {% if template.is_active %}checked{% endif %}>
+                <label class="form-check-label" for="is_active">Active</label>
+              </div>
+              <hr>
+              <h6 class="mb-3">Template Variables</h6>
+              {% if variables|length > 0 %}
+                <div class="list-group list-group-sm">
+                  {% for var, val in variables %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                      <code>{{'{{'}}{{ var }}{{'}}'}}</code>
+                      <small class="badge bg-secondary">Dynamic</small>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <p class="text-muted small mb-0">No variables detected in template.</p>
+              {% endif %}
+              <div class="mt-3 p-3 bg-light rounded small">
+                <strong>Usage Tips:</strong>
+                <ul class="mb-0 mt-2">
+                  <li>Add {{'{{'}}VARIABLE{{'}}'}} to your template content</li>
+                  <li>Variables are replaced with actual values when sending</li>
+                  <li>Use descriptive variable names in UPPERCASE</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="admin-panel-card">
+            <div class="admin-panel-card-header">
+              <h5 class="mb-0">Info</h5>
+            </div>
+            <div class="card-body small">
+              <div class="mb-2">
+                <strong>Created:</strong>
+                <br>
+                <small class="text-muted">{{ template.created_at|date("M d, Y H:i") }}</small>
+              </div>
+              <div class="mb-2">
+                <strong>Last Updated:</strong>
+                <br>
+                <small class="text-muted">{{ template.updated_at|date("M d, Y H:i") }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row mt-4">
+        <div class="col">
+          <a href="{{ admin_dir }}/email-templates"
+             class="btn btn-outline-secondary">
+            <i class="bi bi-x-lg"></i> Cancel
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg"></i> Save Changes
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+  <!-- Preview Modal -->
+  <div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Template Preview</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">
+              <strong>Subject:</strong>
+            </label>
+            <div class="alert alert-info" id="previewSubject">Loading...</div>
+          </div>
+          <hr>
+          <div class="mb-3">
+            <label class="form-label">
+              <strong>Email Body:</strong>
+            </label>
+            <div class="border rounded p-3 bg-light inl-a-0013" id="previewBody">Loading...</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

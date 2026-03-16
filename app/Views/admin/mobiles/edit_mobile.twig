@@ -1,0 +1,248 @@
+{% extends "admin/layout.twig" %}
+{% block title %}{{ mobile is defined ? 'Edit Mobile' : 'Insert Mobile' }}{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="container-fluid py-4">
+    <div class="admin-panel-card">
+      <div class="admin-panel-card-header d-flex align-items-center justify-content-between">
+        <h4 class="mb-0">
+          <i class="bi bi-pencil-square me-2"></i>{{ mobile is defined ? 'Edit Mobile' : 'Insert Mobile' }}
+        </h4>
+        <a href="/admin/mobiles/all" class="modern-btn modern-btn-white btn-sm"><i class="bi bi-arrow-left me-1"></i> Back to List</a>
+      </div>
+      <div class="admin-panel-card-body">
+        <form method="post"
+              action="/admin/mobiles/update/{{ mobile.id }}"
+              enctype="multipart/form-data"
+              id="mobileForm">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="mobile_id" value="{{ mobile.id }}">
+          <div class="row g-3">
+            <!-- Brand & Model -->
+            <div class="col-md-6">
+              <label class="form-label">
+                Brand <span class="text-danger">*</span>
+              </label>
+              <input type="text"
+                     name="brand_name"
+                     class="form-control"
+                     required
+                     value="{{ mobile.brand_name|default("") }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">
+                Model <span class="text-danger">*</span>
+              </label>
+              <input type="text"
+                     name="model_name"
+                     class="form-control"
+                     required
+                     value="{{ mobile.model_name|default("") }}">
+            </div>
+            <!-- Prices -->
+            <div class="col-md-6">
+              <label class="form-label">Official Price</label>
+              <div class="input-group">
+                <span class="input-group-text">?</span>
+                <input type="number"
+                       step="0.01"
+                       min="0"
+                       name="official_price"
+                       class="form-control"
+                       value="{{ mobile.official_price|default("") }}"
+                       placeholder="0.00">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Unofficial Price</label>
+              <div class="input-group">
+                <span class="input-group-text">?</span>
+                <input type="number"
+                       step="0.01"
+                       min="0"
+                       name="unofficial_price"
+                       class="form-control"
+                       value="{{ mobile.unofficial_price|default("") }}"
+                       placeholder="0.00">
+              </div>
+            </div>
+            <!-- Status & Release Date -->
+            <div class="col-md-6">
+              <label class="form-label">
+                Status <span class="text-danger">*</span>
+              </label>
+              <select name="status" class="form-select" required>
+                <option value="">-- Select Status --</option>
+                <option value="official" {{ mobile.status == 'official' ? 'selected' : '' }}>Official
+                </option>
+                <option value="unofficial"
+                        {{ mobile.status == 'unofficial' ? 'selected' : '' }}>Unofficial
+                </option>
+                <option value="both" {{ mobile.status == 'both' ? 'selected' : '' }}>Both
+                </option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">
+                Release Date <span class="text-danger">*</span>
+              </label>
+              <input type="date"
+                     name="release_date"
+                     class="form-control"
+                     required
+                     value="{{ mobile.release_date ? mobile.release_date|date("Y-m-d") : '' }}">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input"
+                       type="checkbox"
+                       id="is_official"
+                       name="is_official"
+                       value="1"
+                       {{ mobile.is_official == 1 ? 'checked' : '' }}>
+                <label class="form-check-label" for="is_official">Is Official</label>
+              </div>
+            </div>
+          </div>
+          <!-- Specifications -->
+          <h5 class="mt-4">
+            <i class="bi bi-list-check me-2"></i>Specifications
+          </h5>
+          <div id="specs-container" class="mb-3">
+            {% if mobile_specs|length > 0 %}
+              {% for spec in mobile_specs %}
+                <div class="row g-2 mb-2 spec-row align-items-center">
+                  <div class="col-md-5">
+                    <input list="spec_keys"
+                           name="specifications[key][]"
+                           class="form-control spec-input"
+                           placeholder="Select or type key"
+                           value="{{ spec.spec_key|default("") }}">
+                  </div>
+                  <div class="col-md-6">
+                    <input type="text"
+                           name="specifications[value][]"
+                           class="form-control"
+                           placeholder="Value"
+                           value="{{ spec.spec_value|default("") }}">
+                  </div>
+                  <div class="col-md-1">
+                    <button type="button"
+                            class="modern-btn modern-btn-danger btn-sm remove-spec"
+                            title="Remove">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="row g-2 mb-2 spec-row align-items-center">
+                <div class="col-md-5">
+                  <input list="spec_keys"
+                         name="specifications[key][]"
+                         class="form-control spec-input"
+                         placeholder="Select or type key">
+                </div>
+                <div class="col-md-6">
+                  <input type="text"
+                         name="specifications[value][]"
+                         class="form-control"
+                         placeholder="Value">
+                </div>
+                <div class="col-md-1">
+                  <button type="button"
+                          class="modern-btn modern-btn-danger btn-sm remove-spec"
+                          title="Remove">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+          <button type="button"
+                  class="btn btn-sm btn-outline-secondary mb-3"
+                  id="addSpecBtn">
+            <i class="bi bi-plus-lg me-1"></i> Add Specification
+          </button>
+          <!-- Tags -->
+          <h5 class="mt-4">
+            <i class="bi bi-tags me-2"></i>Tags
+          </h5>
+          <div class="mb-3">
+            <label for="tags" class="form-label">Add labels</label>
+            {% set selectedTagIds = [] %}
+            {% for st in mobile_tags|default([]) %}
+              {% if st is iterable and st.id is defined %}
+                {% set selectedTagIds = selectedTagIds|merge([st.id ~ '']) %}
+              {% elseif (st ~ '') matches '/^[0-9]+$/' %}
+                {% set selectedTagIds = selectedTagIds|merge([st ~ '']) %}
+              {% endif %}
+            {% endfor %}
+            <select multiple class="form-control blogspot-tags" id="tags" name="tags[]">
+              {% for tag in tags|default([]) %}
+                {% set tagId = tag.id ~ '' %}
+                <option value="{{ tag.id }}" {{ tagId in selectedTagIds ? 'selected' : '' }}>{{ tag.name }}
+                </option>
+              {% endfor %}
+            </select>
+            <small class="form-text text-muted mt-1">Type to search or create new tags</small>
+          </div>
+          <!-- Images -->
+          <h5 class="mt-4">
+            <i class="bi bi-image-fill me-2"></i>Images
+          </h5>
+          <div class="mb-3">
+            <label for="images-input" class="form-label">Upload New Images</label>
+            <input type="file"
+                   name="images[]"
+                   id="images-input"
+                   class="form-control"
+                   multiple
+                   accept="image/jpeg,image/png,image/webp,image/gif">
+            <small class="form-text text-muted">Accepted formats: JPG, PNG, WebP, GIF (Max 5MB each)</small>
+          </div>
+          <!-- Existing Images -->
+          {% if mobile_images|length > 0 %}<h6 class="mb-2">Existing Images</h6>{% endif %}
+          <div id="existing-images-container" class="d-flex flex-wrap gap-2 mb-3">
+            {% for img in mobile_images %}
+              <div class="position-relative image-container-100"
+                   data-id="{{ img.id }}"
+                   data-existing="true">
+                <img src="{{ img.image_url }}"
+                     class="img-thumbnail image-thumbnail-full"
+                     alt="Mobile image">
+                <button type="button"
+                        class="btn btn-sm btn-danger position-absolute top-0 end-0 remove-existing-image"
+                        data-image-id="{{ img.id }}"
+                        title="Delete image">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+                <input type="hidden"
+                       name="delete_image_ids[]"
+                       value=""
+                       data-delete-input="{{ img.id }}">
+              </div>
+            {% endfor %}
+          </div>
+          <!-- New Images Preview -->
+          <div id="new-images-preview" class="d-flex flex-wrap gap-2 mb-3"></div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="modern-btn modern-btn-success">
+              <i class="bi bi-check-circle me-1"></i> Save Changes
+            </button>
+            <a href="/admin/mobiles/view?id={{ mobile.id }}"
+               class="modern-btn modern-btn-white"><i class="bi bi-eye me-1"></i> View Mobile</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Datalist for specifications autocomplete -->
+  <datalist id="spec_keys">
+    {% for spec in specifications %}<option value="{{ spec.spec_key }}"></option>{% endfor %}
+  </datalist>
+  <div id="mobile-edit-data"
+       data-selected-tag-ids='{{ mobile_tags|map(t => t.id ~ "") |json_encode|e("html_attr") }}'
+       class="d-none"></div>
+{% endblock %}
+{% block scripts %}{% endblock %}

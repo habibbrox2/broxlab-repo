@@ -1,0 +1,1784 @@
+﻿{% extends 'layout.twig' %}
+{% block title %}{{ service.name }} - Apply for Service{% endblock %}
+{% set breadcrumbs = [
+  { 'label': 'Services', 'url': '/services', 'icon': 'briefcase' },
+  { 'label': service.name, 'icon': 'award' }
+] %}
+{% block content %}
+  <!-- Enhanced Hero Section with Animated Gradient -->
+  <div class="hero-section position-relative overflow-hidden py-5 inl-p-0056">
+    <!-- Animated Background Elements -->
+    <div class="position-absolute w-100 h-100 top-0 start-0 inl-p-0062">
+      <div class="position-absolute rounded-circle inl-p-0063"></div>
+      <div class="position-absolute rounded-circle inl-p-0064"></div>
+    </div>
+    <div class="container position-relative">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            {% if service.icon %}
+              <div class="icon-wrapper inl-p-0065">
+                <i class="{{ service.icon }} fs-1"></i>
+              </div>
+            {% endif %}
+            <div>
+              <h1 class="display-4 fw-bold mb-0 inl-p-0066">{{ service.name }}</h1>
+            </div>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            {% if service.is_premium is defined and service.is_premium == 1 %}
+              <span class="badge px-3 py-2 rounded-pill inl-p-0067">
+                <i class="bi bi-crown me-1"></i> Premium Service
+              </span>
+              {% if service.price is defined and service.price %}
+                <span class="badge bg-white text-surface-dark px-3 py-2 rounded-pill inl-p-0068">
+                  <i class="bi bi-cash-coin text-success me-1"></i>
+                  {{ app_settings.currency_symbol|default("$") }}{{ service.price|number_format(2, '.', ',') }}
+                </span>
+              {% endif %}
+            {% elseif service.is_premium is defined and service.is_premium == 0 %}
+              <span class="badge bg-success px-3 py-2 rounded-pill inl-p-0069">
+                <i class="bi bi-check me-1"></i> Free Service
+              </span>
+            {% elseif service.is_free is defined and service.is_free %}
+              <span class="badge bg-success px-3 py-2 rounded-pill inl-p-0069">
+                <i class="bi bi-check me-1"></i> Free Service
+              </span>
+            {% endif %}
+            {% if service.status == 'active' %}
+              <span class="badge bg-white text-surface-dark px-3 py-2 rounded-pill inl-p-0068">
+                <i class="bi bi-check-circle text-success me-1"></i> Active Now
+              </span>
+            {% endif %}
+            {% if service.impressions is defined %}
+              <span class="badge bg-white text-surface-dark px-3 py-2 rounded-pill inl-p-0068">
+                <i class="bi bi-bar-chart-line text-info me-1"></i> {{ service.impressions|number_format }} Impressions
+              </span>
+            {% endif %}
+            {% if service.views is defined %}
+              <span class="badge bg-white text-surface-dark px-3 py-2 rounded-pill inl-p-0068">
+                <i class="bi bi-eye-fill text-success me-1"></i> {{ service.views|number_format }} Views
+              </span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container py-5">
+    <div class="row g-4">
+      <!-- Left Column: Enhanced Images & Info -->
+      <div class="col-lg-5">
+        <!-- Enhanced Image Carousel with Modern Design -->
+        {% if service.images and service.images|length > 0 %}
+          <div id="serviceCarousel"
+               class="carousel slide mb-4 rounded-4 overflow-hidden position-relative inl-p-0070"
+               data-bs-ride="carousel">
+            <div class="carousel-inner">
+              {% for image in service.images %}
+                <div class="carousel-item {% if loop.first %}active{% endif %}">
+                  <div class="position-relative inl-p-0071">
+                    {% set img_src = image is iterable
+                      ? (image.thumbnail_path ?? image.image_path ?? image.url ?? image.path ?? '')
+                      : (image|default(''))
+                    %}
+                    {% if not img_src and service.featured_image_url %}
+                      {% set img_src = service.featured_image_url %}
+                    {% endif %}
+                    {% if img_src %}
+                      <img src="{{ img_src }}"
+                           alt="{{ image is iterable ? (image.alt_text ?? service.name) : service.name }}"
+                           class="w-100 h-100 inl-p-0072">
+                    {% else %}
+                      <div class="rounded-4 d-flex align-items-center justify-content-center w-100 h-100 inl-p-0073">
+                        <i class="bi bi-image text-muted fs-2 opacity-25"></i>
+                      </div>
+                    {% endif %}
+                    <!-- Gradient Overlay -->
+                    <div class="position-absolute w-100 h-100 top-0 start-0 inl-p-0074"></div>
+                  </div>
+                  {% if image is iterable and image.caption %}
+                    <div class="carousel-caption d-block pb-4">
+                      <p class="mb-0 fw-semibold inl-p-0075">{{ image.caption }}</p>
+                    </div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+            {% if service.images|length > 1 %}
+              <!-- Enhanced Carousel Controls -->
+              <button class="carousel-control-prev inl-p-0076"
+                      type="button"
+                      data-bs-target="#serviceCarousel"
+                      data-bs-slide="prev">
+                <div class="bg-white bg-opacity-75 rounded-circle p-3 d-flex align-items-center justify-content-center inl-p-0077">
+                  <span class="carousel-control-prev-icon inl-p-0078" aria-hidden="true"></span>
+                </div>
+                <span class="visually-hidden">Previous</span>
+              </button>
+              <button class="carousel-control-next inl-p-0076"
+                      type="button"
+                      data-bs-target="#serviceCarousel"
+                      data-bs-slide="next">
+                <div class="bg-white bg-opacity-75 rounded-circle p-3 d-flex align-items-center justify-content-center inl-p-0077">
+                  <span class="carousel-control-next-icon inl-p-0078" aria-hidden="true"></span>
+                </div>
+                <span class="visually-hidden">Next</span>
+              </button>
+              <!-- Carousel Indicators -->
+              <div class="carousel-indicators inl-p-0079">
+                {% for image in service.images %}
+                  <button type="button"
+                          data-bs-target="#serviceCarousel"
+                          data-bs-slide-to="{{ loop.index0 }}"
+                          class="inl-p-0080{% if loop.first %} active{% endif %}"
+                          aria-current="{% if loop.first %}true{% endif %}"
+                          aria-label="Slide {{ loop.index }}"></button>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        {% elseif service.featured_image_url or (service.featured_image is defined and service.featured_image.image_path) %}
+          <div class="rounded-4 overflow-hidden mb-4 position-relative inl-p-0070">
+            {% set feat_src = service.featured_image_url
+              ?? (service.featured_image.image_path ?? service.featured_image.thumbnail_path ?? '')
+            %}
+            {% if feat_src %}
+              <img src="{{ feat_src }}"
+                   alt="{{ service.featured_image.alt_text ?? service.name }}"
+                   class="w-100 inl-p-0081">
+            {% else %}
+              <div class="rounded-4 d-flex align-items-center justify-content-center mb-4 inl-p-0082">
+                <i class="bi bi-image text-muted fs-2 opacity-25"></i>
+              </div>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="rounded-4 d-flex align-items-center justify-content-center mb-4 inl-p-0083">
+            <i class="bi bi-image text-muted fs-2 opacity-25"></i>
+          </div>
+        {% endif %}
+        <!-- Enhanced Service Info Card -->
+        <div class="card border-0 rounded-4 mb-4 inl-p-0084">
+          <div class="card-body p-4">
+            <!-- Status with Icon and Color Coding -->
+            <div class="mb-4">
+              <h6 class="text-uppercase fw-bold mb-3 inl-p-0085">
+                <i class="bi bi-activity me-2"></i>Status
+              </h6>
+              {% if service.status == 'active' %}
+                <div class="d-flex align-items-center gap-2 p-3 rounded-3 inl-p-0086">
+                  <div class="rounded-circle bg-success d-flex align-items-center justify-content-center inl-p-0087">
+                    <i class="bi bi-check-circle text-white"></i>
+                  </div>
+                  <div>
+                    <div class="fw-bold text-success">Active</div>
+                    <small class="text-muted">Service is currently available</small>
+                  </div>
+                </div>
+              {% elseif service.status == 'inactive' %}
+                <div class="d-flex align-items-center gap-2 p-3 rounded-3 inl-p-0088">
+                  <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center inl-p-0087">
+                    <i class="bi bi-pause-circle text-white"></i>
+                  </div>
+                  <div>
+                    <div class="fw-bold text-warning">Inactive</div>
+                    <small class="text-muted">Service temporarily unavailable</small>
+                  </div>
+                </div>
+              {% else %}
+                <div class="d-flex align-items-center gap-2 p-3 rounded-3 inl-p-0089">
+                  <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center inl-p-0087">
+                    <i class="bi bi-archive text-white"></i>
+                  </div>
+                  <div>
+                    <div class="fw-bold text-secondary">Archived</div>
+                    <small class="text-muted">Service is no longer active</small>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+            <!-- Requirements with Modern Icons -->
+            {% if service.requires_approval or service.auto_approve or service.requires_documents %}
+              <div class="mb-4">
+                <h6 class="text-uppercase fw-bold mb-3 inl-p-0085">
+                  <i class="bi bi-clipboard2-check me-2"></i>Requirements
+                </h6>
+                <div class="d-flex flex-column gap-2">
+                  {% if service.requires_approval %}
+                    <div class="d-flex align-items-center gap-2 p-2 rounded-2 inl-p-0090">
+                      <div class="rounded-circle d-flex align-items-center justify-content-center inl-p-0091">
+                        <i class="bi bi-patch-check text-white inl-p-0092"></i>
+                      </div>
+                      <span class="small">Admin approval required</span>
+                    </div>
+                  {% endif %}
+                  {% if service.auto_approve %}
+                    <div class="d-flex align-items-center gap-2 p-2 rounded-2 inl-p-0093">
+                      <div class="rounded-circle d-flex align-items-center justify-content-center inl-p-0094">
+                        <i class="bi bi-lightning text-white inl-p-0092"></i>
+                      </div>
+                      <span class="small">Auto-approved applications</span>
+                    </div>
+                  {% endif %}
+                  {% if service.requires_documents %}
+                    <div class="d-flex align-items-center gap-2 p-2 rounded-2 inl-p-0095">
+                      <div class="rounded-circle d-flex align-items-center justify-content-center inl-p-0096">
+                        <i class="bi bi-file-earmark-pdf text-white inl-p-0092"></i>
+                      </div>
+                      <span class="small">Optional Documents</span>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
+            {% include 'partials/content-rating.twig' with { content_type: 'service', content_id: service.id } %}
+            <!-- Categories with Enhanced Styling -->
+            {% if service.categories %}
+              <div class="mb-4">
+                <h6 class="text-uppercase fw-bold mb-3 inl-p-0085">
+                  <i class="bi bi-folder me-2"></i>Categories
+                </h6>
+                <div class="d-flex flex-wrap gap-2">
+                  {% for category in service.categories %}
+                    <span class="badge px-3 py-2 rounded-pill inl-p-0097">{{ category.name }}</span>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+            <!-- Tags with Enhanced Styling -->
+            {% if service.tags %}
+              <div class="mb-4">
+                <h6 class="text-uppercase fw-bold mb-3 inl-p-0085">
+                  <i class="bi bi-tags me-2"></i>Tags
+                </h6>
+                <div class="d-flex flex-wrap gap-2">
+                  {% for tag in service.tags %}
+                    <span class="badge bg-light text-surface-dark px-3 py-2 rounded-pill inl-p-0098">#{{ tag.name }}</span>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Enhanced Quick Action Buttons -->
+        {% if is_logged_in and user_application %}
+          <div class="card border-0 rounded-4 overflow-hidden inl-p-0099">
+            <div class="card-body p-4 inl-p-0100">
+              <div class="mb-3">
+                <h6 class="fw-bold mb-2">
+                  <i class="bi bi-check-circle me-2"></i>Your Application Status
+                </h6>
+              </div>
+              <div class="mb-3">
+                {% if user_application.status == 'pending' %}
+                  <span class="badge bg-warning text-surface-dark px-3 py-2 rounded-pill inl-p-0101">
+                    <i class="bi bi-clock me-1"></i> Pending Review
+                  </span>
+                {% elseif user_application.status == 'processing' %}
+                  <span class="badge bg-info px-3 py-2 rounded-pill inl-p-0101">
+                    <i class="bi bi-arrow-repeat me-1"></i> Processing
+                  </span>
+                {% elseif user_application.status == 'approved' %}
+                  <span class="badge bg-success px-3 py-2 rounded-pill inl-p-0101">
+                    <i class="bi bi-check-circle me-1"></i> Approved
+                  </span>
+                {% elseif user_application.status == 'rejected' %}
+                  <span class="badge bg-danger px-3 py-2 rounded-pill inl-p-0101">
+                    <i class="bi bi-x-circle me-1"></i> Rejected
+                  </span>
+                {% endif %}
+              </div>
+              <a href="/services/applications/{{ user_application.id }}"
+                 class="btn btn-dark w-100 py-3 rounded-3 fw-semibold inl-p-0102">
+                <i class="bi bi-eye me-2"></i> View Application Details
+              </a>
+            </div>
+          </div>
+        {% endif %}
+        {% if can_apply %}
+          <a href="#applicationFormCard"
+             class="btn btn-primary w-100 py-3 rounded-3 fw-semibold position-relative overflow-hidden"
+             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    border: none;
+                    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+                    transition: all 0.3s ease;
+                    {% if user_application %}margin-top: 1rem;{% endif %}">
+            <span class="position-relative inl-p-0103">
+              <i class="bi bi-journal-check me-2"></i> Fill Application Form
+            </span>
+            <!-- Shine Effect -->
+            <div class="position-absolute top-0 start-0 w-100 h-100 inl-p-0104"></div>
+          </a>
+          {% if not is_logged_in %}
+            <small class="d-block mt-2 text-muted">You can apply without login. Login users can track applications in profile.</small>
+          {% endif %}
+        {% endif %}
+      </div>
+      <!-- Right Column: Enhanced Description & Form -->
+      <div class="col-lg-7">
+        <!-- Enhanced Description Card -->
+        {% if service.description %}
+          <div class="card border-0 rounded-4 mb-4 inl-p-0105">
+            <div class="card-body p-4">
+              <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="rounded-circle d-flex align-items-center justify-content-center inl-p-0106">
+                  <i class="bi bi-info-circle text-white fs-5"></i>
+                </div>
+                <h5 class="card-title fw-bold mb-0">About This Service</h5>
+              </div>
+              <div class="rich-content rich-content--service-detail">
+                {{ service.description|default("No description provided") |raw }}
+              </div>
+            </div>
+          </div>
+        {% endif %}
+        <!-- Enhanced Metadata/Details Card -->
+        {% if service.metadata and service.metadata|length > 0 %}
+          <div class="card border-0 rounded-4 mb-4 inl-p-0105">
+            <div class="card-body p-4">
+              <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="rounded-circle d-flex align-items-center justify-content-center inl-p-0106">
+                  <i class="bi bi-list text-white fs-5"></i>
+                </div>
+                <h5 class="card-title fw-bold mb-0">Service Details</h5>
+              </div>
+              <div class="row g-3">
+                {% for key, value in service.metadata %}
+                  <div class="col-md-6">
+                    <div class="p-3 rounded-3 h-100">
+                      <div class="text-uppercase fw-bold mb-2">{{ key|replace({"_": " "}) }}</div>
+                      {% if value is iterable %}
+                        <div class="text-theme-strong fw-semibold">{{ value|json_encode }}</div>
+                      {% else %}
+                        <div class="text-theme-strong fw-semibold">{{ value }}</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        {% endif %}
+        <!-- Enhanced Application Form -->
+        {% if form_fields and form_fields|length > 0 %}
+          <div id="applicationFormCard" class="card border-0 rounded-4 inl-p-0099">
+            <div class="card-body p-4">
+              <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="rounded-circle d-flex align-items-center justify-content-center inl-p-0106">
+                  <i class="bi bi-journal-text text-white fs-5"></i>
+                </div>
+                <h5 class="card-title fw-bold mb-0">Application Form</h5>
+              </div>
+              <form id="applicationForm"
+                    method="POST"
+                    action="/services/apply"
+                    enctype="multipart/form-data">
+                <input type="hidden" name="service_id" value="{{ service.id }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                {% if not is_logged_in %}
+                  <div class="p-3 p-md-4 mb-4 rounded-3 border border-primary-subtle inl-p-0107">
+                    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                      <i class="bi bi-person-vcard text-primary"></i>
+                      Guest Applicant Information
+                    </h6>
+                    <div class="row g-3">
+                      <div class="col-12">
+                        <label for="guest_applicant_name" class="form-label fw-semibold mb-1">
+                          Applicant Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text"
+                               class="form-control rounded-3 border-2"
+                               id="guest_applicant_name"
+                               name="guest_applicant_name"
+                               placeholder="Enter your full name"
+                               required>
+                      </div>
+                      <div class="col-md-6">
+                        <label for="guest_applicant_email" class="form-label fw-semibold mb-1">
+                          Email <span class="text-danger">*</span>
+                        </label>
+                        <input type="email"
+                               class="form-control rounded-3 border-2"
+                               id="guest_applicant_email"
+                               name="guest_applicant_email"
+                               placeholder="example@email.com"
+                               required>
+                      </div>
+                      <div class="col-md-6">
+                        <label for="guest_applicant_phone" class="form-label fw-semibold mb-1">
+                          Phone Number <span class="text-danger">*</span>
+                        </label>
+                        <input type="tel"
+                               class="form-control rounded-3 border-2"
+                               id="guest_applicant_phone"
+                               name="guest_applicant_phone"
+                               placeholder="01XXXXXXXXX"
+                               required>
+                      </div>
+                    </div>
+                  </div>
+                {% endif %}
+                {% for field in form_fields %}
+                  <div class="mb-4">
+                    {% set field_icon_class = field.field_type == 'email'
+                      ? 'bi bi-envelope'
+                      : (field.field_type == 'tel'
+                        ? 'bi bi-telephone'
+                        : (field.field_type == 'textarea'
+                          ? 'bi bi-text-left'
+                          : 'bi bi-pencil'))
+                    %}
+                    <label for="field_{{ field.form_field_name }}"
+                           class="form-label fw-semibold d-flex align-items-center gap-2 mb-2">
+                      <i class="{{ field_icon_class }} text-primary inl-p-0101"></i>
+                      {{ field.label }}
+                      {% if field.required %}<span class="text-danger">*</span>{% endif %}
+                    </label>
+                    {% if field.field_type == 'textarea' %}
+                      <textarea class="form-control rounded-3 border-2 inl-p-0108"
+                                id="field_{{ field.form_field_name }}"
+                                name="{{ field.form_field_name }}"
+                                {% if field.required %}required{% endif %}
+                                placeholder="{{ field.placeholder|default('') }}"
+                                rows="4"
+                                onfocus="this.style.borderColor='#667eea'; this.style.boxShadow='0 0 0 0.2rem rgba(102, 126, 234, 0.15)'"
+                                onblur="this.style.borderColor='#dee2e6'; this.style.boxShadow='none'"></textarea>
+                    {% elseif field.field_type == 'select' %}
+                      <select class="form-select rounded-3 border-2 inl-p-0108"
+                              id="field_{{ field.form_field_name }}"
+                              name="{{ field.form_field_name }}"
+                              {% if field.required %}required{% endif %}
+                              onfocus="this.style.borderColor='#667eea'; this.style.boxShadow='0 0 0 0.2rem rgba(102, 126, 234, 0.15)'"
+                              onblur="this.style.borderColor='#dee2e6'; this.style.boxShadow='none'">
+                        <option value="">Select {{ field.label|lower }}</option>
+                      </select>
+                    {% elseif field.field_type == 'checkbox' %}
+                      <div class="form-check p-3 rounded-3 inl-p-0109">
+                        <input class="form-check-input inl-p-0110"
+                               type="checkbox"
+                               id="field_{{ field.form_field_name }}"
+                               name="{{ field.form_field_name }}"
+                               {% if field.required %}required{% endif %}>
+                        <label class="form-check-label ms-2 inl-p-0111"
+                               for="field_{{ field.form_field_name }}">{{ field.label }}</label>
+                      </div>
+                    {% elseif field.field_type == 'date' %}
+                      <input type="date"
+                             class="form-control rounded-3 border-2 inl-p-0108"
+                             id="field_{{ field.form_field_name }}"
+                             name="{{ field.form_field_name }}"
+                             {% if field.required %}required{% endif %}
+                             onfocus="this.style.borderColor='#667eea'; this.style.boxShadow='0 0 0 0.2rem rgba(102, 126, 234, 0.15)'"
+                             onblur="this.style.borderColor='#dee2e6'; this.style.boxShadow='none'">
+                    {% else %}
+                      <input type="{{ field.field_type }}"
+                             class="form-control rounded-3 border-2 inl-p-0108"
+                             id="field_{{ field.form_field_name }}"
+                             name="{{ field.form_field_name }}"
+                             {% if field.required %}required{% endif %}
+                             placeholder="{{ field.placeholder|default("") }}"
+                             onfocus="this.style.borderColor='#667eea'; this.style.boxShadow='0 0 0 0.2rem rgba(102, 126, 234, 0.15)'"
+                             onblur="this.style.borderColor='#dee2e6'; this.style.boxShadow='none'">
+                    {% endif %}
+                    {% if field.validation_rules and field.validation_rules.hint %}
+                      <small class="form-text d-flex align-items-center gap-1 mt-2 inl-p-0112">
+                        <i class="bi bi-lightbulb inl-p-0092"></i>
+                        {{ field.validation_rules.hint }}
+                      </small>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+                {% if service.requires_documents %}
+                  <div class="mt-4 p-3 rounded-3 border border-danger-subtle inl-p-0113">
+                    <label class="form-label fw-semibold d-flex align-items-center gap-2">
+                      <i class="bi bi-file-earmark-arrow-up text-danger"></i>
+                      Optional Documents
+                    </label>
+                    <input type="file"
+                           class="form-control rounded-3"
+                           id="required_documents"
+                           name="required_documents[]"
+                           accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.webp"
+                           multiple>
+                    <small class="form-text text-muted mt-2 d-block">
+                      Upload supporting documents if available (PDF, Office files, or images), or submit without files.
+                    </small>
+                  </div>
+                {% endif %}
+                {% if service.is_premium %}
+                  <div class="alert alert-warning rounded-3 mt-4 mb-0">
+                    <i class="bi bi-credit-card me-2"></i>
+                    After clicking apply, payment step will open in a modal.
+                  </div>
+                  <input type="hidden"
+                         name="payment_mode"
+                         id="payment_mode_hidden"
+                         value="manual">
+                  <input type="hidden"
+                         name="payment_gateway"
+                         id="payment_gateway_hidden"
+                         value="">
+                  <input type="hidden"
+                         name="payment_sender_number"
+                         id="payment_sender_number_hidden"
+                         value="">
+                  <input type="hidden"
+                         name="payment_method"
+                         id="payment_method_hidden"
+                         value="">
+                  <input type="hidden"
+                         name="payment_transaction_id"
+                         id="payment_transaction_id_hidden"
+                         value="">
+                  <input type="hidden"
+                         name="payment_receiver_account"
+                         id="payment_receiver_account_hidden"
+                         value="">
+                  <input type="hidden"
+                         name="payment_instruction_message"
+                         id="payment_instruction_message_hidden"
+                         value="">
+                  <input type="hidden"
+                         name="payment_amount"
+                         id="payment_amount_hidden"
+                         value="">
+                  <input type="hidden"
+                         name="payment_currency"
+                         id="payment_currency_hidden"
+                         value="{{ app_settings.currency_code|default("USD") }}">
+                {% endif %}
+                <button type="submit"
+                        class="btn btn-primary w-100 py-3 rounded-3 fw-semibold mt-3 position-relative overflow-hidden inl-p-0114">
+                  <span class="position-relative inl-p-0103">
+                    <i class="bi bi-send me-2"></i> Apply Now
+                  </span>
+                </button>
+              </form>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% if service.is_premium %}
+    <div class="modal fade"
+         id="applicationModal"
+         tabindex="-1"
+         aria-labelledby="applicationModalLabel"
+         aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold" id="applicationModalLabel">
+              <i class="bi bi-credit-card text-primary me-2"></i>Payment Step
+            </h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+          </div>
+          <div class="modal-body pt-2">
+            <p class="text-muted mb-3">Application form is completed. Select payment flow and continue.</p>
+            <div class="mb-3">
+              <label class="form-label fw-semibold mb-2">Choose Payment Flow</label>
+              <div class="d-flex flex-column gap-2">
+                <label class="form-check p-3 rounded-3 border">
+                  <input class="form-check-input me-2"
+                         type="radio"
+                         name="payment_mode_step"
+                         value="manual"
+                         checked>
+                  Manual Payment Information Entry
+                </label>
+                <label class="form-check p-3 rounded-3 border">
+                  <input class="form-check-input me-2"
+                         type="radio"
+                         name="payment_mode_step"
+                         value="gateway">
+                  Pay via Gateway (bKash / Other)
+                </label>
+              </div>
+            </div>
+            <div id="manualPaymentSection"
+                 class="mt-3 manual-payment-theme"
+                 data-method="default">
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label fw-semibold manual-theme-label">
+                    Payment Method <span class="text-danger">*</span>
+                  </label>
+                  <select class="form-select rounded-3" id="payment_method_modal">
+                    <option value="">Select payment method</option>
+                    {% for method in payment_method_list|default([]) %}
+                      <option value="{{ method.key|default("") }}">{{ method.label|default(method.key|default('') ) }}</option>
+                    {% endfor %}
+                  </select>
+                  <div id="manualMethodQuickOptions" class="manual-method-grid mt-2">
+                    {% for method in payment_method_list|default([]) %}
+                      {% set method_key = method.key|default('')|lower %}
+                      {% set method_icon = 'bi-credit-card-2-front-fill' %}
+                      {% if method_key == 'bkash' %}
+                        {% set method_icon = 'bi-wallet2' %}
+                      {% elseif method_key == 'nagad' %}
+                        {% set method_icon = 'bi-phone' %}
+                      {% elseif method_key == 'rocket' %}
+                        {% set method_icon = 'bi-rocket-takeoff-fill' %}
+                      {% endif %}
+                      <button type="button"
+                              class="manual-method-option"
+                              data-method="{{ method_key }}"
+                              title="{{ method.label|default(method.key|default('')) }}">
+                        <span class="manual-method-option__logo payment-logo-wrap payment-logo-wrap--{{ method_key|default('default') }}">
+                          <img src="/assets/payments/{{ method.key|default('') }}.svg"
+                               alt="{{ method.label|default(method.key|default('')) }}"
+                               class="payment-logo-image"
+                               loading="lazy"
+                               decoding="async"
+                               onload="this.nextElementSibling.style.display='none';"
+                               onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+                          <span class="payment-logo-fallback" aria-hidden="true">
+                            <i class="bi {{ method_icon }}"></i>
+                          </span>
+                        </span>
+                        <span class="manual-method-option__label">
+                          {{ method.label|default(method.key|default('')) }}
+                        </span>
+                      </button>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div id="manualPaymentDetails" class="col-12 d-none">
+                  <div class="row g-3">
+                    <div class="col-12">
+                      <div id="manualMethodHero" class="manual-method-hero d-none">
+                        <div class="manual-method-hero__title">
+                          <i id="manualMethodIcon" class="bi bi-phone"></i>
+                          <span id="manualMethodTitle">Manual Send Money</span>
+                        </div>
+                        <p class="manual-method-hero__subtitle" id="manualMethodSubtitle">
+                          Fast and secure payment transfer
+                        </p>
+                        <div class="manual-method-steps">
+                          <div class="manual-step-row">
+                            <span class="manual-step-badge">1</span>
+                            <span id="manualStep1Text">Select a method and complete Send Money</span>
+                          </div>
+                          <div class="manual-step-row">
+                            <span class="manual-step-badge">2</span>
+                            <span>Send the payment to the receiver number below:</span>
+                          </div>
+                          <div class="manual-receiver-box">
+                            <input type="text"
+                                   id="manualReceiverNumber"
+                                   class="manual-receiver-input"
+                                   readonly
+                                   value="">
+                            <button type="button" id="manualReceiverCopyBtn" class="manual-copy-btn">
+                              <i class="bi bi-copy"></i>
+                              <span>Copy</span>
+                            </button>
+                          </div>
+                          <div class="manual-step-row">
+                            <span class="manual-step-badge">3</span>
+                            <span id="manualStep3Text">Provide TrxID and your sender number</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-12">
+                      <div id="manualPaymentInstruction" class="manual-instruction-note d-none"></div>
+                    </div>
+                    <div class="col-12">
+                      <label id="manualAmountLabel"
+                             class="form-label fw-semibold manual-theme-label">
+                        Amount (BDT) <span class="text-danger">*</span>
+                      </label>
+                      <input type="number"
+                             class="form-control rounded-3"
+                             id="payment_amount_modal"
+                             min="0.01"
+                             step="0.01"
+                             value="{{ service.price|default("") }}"
+                             placeholder="e.g. 300">
+                      {% if service.price is defined and service.price %}
+                        <small class="manual-theme-note d-block mt-1">
+                          Minimum payable amount:
+                          {{ app_settings.currency_symbol|default("$") }}{{ service.price|number_format(2, '.', ',') }}
+                        </small>
+                      {% endif %}
+                    </div>
+                    <div class="col-12">
+                      <label id="manualSenderLabel"
+                             class="form-label fw-semibold manual-theme-label">
+                        Your Sender Number <span class="text-danger">*</span>
+                      </label>
+                      <input type="text"
+                             class="form-control rounded-3"
+                             id="payment_sender_number_modal"
+                             placeholder="01XXXXXXXXXX">
+                    </div>
+                    <div class="col-12">
+                      <label id="manualTxLabel" class="form-label fw-semibold manual-theme-label">
+                        TrxID <span class="text-danger">*</span>
+                      </label>
+                      <input type="text"
+                             class="form-control rounded-3"
+                             id="payment_transaction_id_modal"
+                             placeholder="e.g. TX1234567">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="gatewayPaymentSection" class="mt-3 d-none">
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label fw-semibold">
+                    Gateway <span class="text-danger">*</span>
+                  </label>
+                  <div id="gatewayOptions" class="d-flex flex-wrap gap-2">
+                    {% for method in payment_method_list|default([]) %}
+                      {% set gateway_key = method.key|default('')|lower %}
+                      {% set gateway_icon = 'bi-wallet2' %}
+                      {% if gateway_key == 'bkash' %}
+                        {% set gateway_icon = 'bi-wallet2' %}
+                      {% elseif gateway_key == 'nagad' %}
+                        {% set gateway_icon = 'bi-phone' %}
+                      {% elseif gateway_key == 'rocket' %}
+                        {% set gateway_icon = 'bi-rocket-takeoff-fill' %}
+                      {% endif %}
+                      <button type="button"
+                              class="btn btn-outline-secondary gateway-option d-flex align-items-center gap-2"
+                              data-key="{{ method.key|default("") }}"
+                              data-label="{{ method.label|default(method.key|default('') ) }}"
+                              title="{{ method.label|default(method.key|default('') ) }}">
+                        <span class="gateway-option__logo payment-logo-wrap payment-logo-wrap--{{ gateway_key|default('default') }}">
+                          <img src="/assets/payments/{{ method.key|default("") }}.svg"
+                               alt="{{ method.label|default("") }}"
+                               class="inl-p-0115 payment-logo-image"
+                               loading="lazy"
+                               decoding="async"
+                               onload="this.nextElementSibling.style.display='none';"
+                               onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+                          <span class="payment-logo-fallback" aria-hidden="true">
+                            <i class="bi {{ gateway_icon }}"></i>
+                          </span>
+                        </span>
+                        <span class="gateway-option__label d-none d-md-inline">{{ method.label|default(method.key|default('') ) }}</span>
+                      </button>
+                    {% endfor %}
+                  </div>
+                  <input type="hidden" id="payment_gateway_selected" value="">
+                </div>
+                <!-- Hidden amount and reference: gateway flow uses service price by default -->
+                <input type="hidden"
+                       id="payment_gateway_amount_modal"
+                       value="{{ service.price|default("") }}">
+                <input type="hidden" id="payment_gateway_ref_modal" value="">
+              </div>
+              <div class="mt-2">
+                <div class="alert alert-info rounded-3 mb-0">
+                  <i class="bi bi-info-circle me-2"></i>
+                  Select a gateway by clicking its logo. The amount will default to the service price.
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary rounded-3" id="paymentSubmitBtn">
+              <i class="bi bi-check2-circle me-1"></i>Confirm & Submit
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+  <!-- Service Page Custom Styles -->
+  <style>
+    .inl-p-0056 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
+    .inl-p-0062 { pointer-events: none; opacity: 0.9; }
+    .inl-p-0063 { width: 280px; height: 280px; top: -120px; left: -80px; background: rgba(255, 255, 255, 0.18); }
+    .inl-p-0064 { width: 220px; height: 220px; right: -50px; bottom: -90px; background: rgba(255, 255, 255, 0.14); }
+    .inl-p-0065 { width: 78px; height: 78px; border-radius: 1rem; display: inline-flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.35); color: #fff; }
+    .inl-p-0066 { color: #fff; text-shadow: 0 4px 20px rgba(0, 0, 0, 0.28); }
+    .inl-p-0067 { background: rgba(255, 255, 255, 0.2); color: #fff; border: 1px solid rgba(255, 255, 255, 0.4); }
+    .inl-p-0068 { border: 1px solid rgba(0, 0, 0, 0.07); box-shadow: 0 0.2rem 0.8rem rgba(0, 0, 0, 0.08); }
+    .inl-p-0069 { box-shadow: 0 0.25rem 0.7rem rgba(25, 135, 84, 0.35); }
+    .inl-p-0070 { min-height: 320px; background: #f8f9fa; box-shadow: 0 0.6rem 1.6rem rgba(0, 0, 0, 0.12); }
+    .inl-p-0071 { height: 360px; }
+    .inl-p-0072 { object-fit: cover; }
+    .inl-p-0073 { min-height: 360px; background: #f2f4f6; }
+    .inl-p-0074 { background: linear-gradient(to top, rgba(0, 0, 0, 0.42), transparent 60%); }
+    .inl-p-0075 { text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7); }
+    .inl-p-0076 { width: 12%; }
+    .inl-p-0077 { width: 52px; height: 52px; }
+    .inl-p-0078 { filter: invert(1) brightness(0.2); }
+    .inl-p-0079 { margin-bottom: 0.75rem; }
+    .inl-p-0080 { width: 10px; height: 10px; border-radius: 999px; border: 0; background: rgba(255, 255, 255, 0.62); }
+    .carousel-indicators .inl-p-0080.active { background: #fff; opacity: 1; }
+    .inl-p-0081 { max-height: 420px; object-fit: cover; }
+    .inl-p-0082, .inl-p-0083 { min-height: 420px; background: #f2f4f6; }
+    .inl-p-0084 { box-shadow: 0 0.4rem 1.3rem rgba(0, 0, 0, 0.08); }
+    .inl-p-0085 { letter-spacing: 0.08em; color: #6c757d; font-size: 0.78rem; }
+    .inl-p-0086 { background: rgba(25, 135, 84, 0.08); border: 1px solid rgba(25, 135, 84, 0.2); }
+    .inl-p-0087 { width: 34px; height: 34px; }
+    .inl-p-0088 { background: rgba(255, 193, 7, 0.14); border: 1px solid rgba(255, 193, 7, 0.35); }
+    .inl-p-0089 { background: rgba(108, 117, 125, 0.13); border: 1px solid rgba(108, 117, 125, 0.3); }
+    .inl-p-0090 { background: rgba(25, 135, 84, 0.08); }
+    .inl-p-0091 { width: 28px; height: 28px; background: #198754; }
+    .inl-p-0092 { font-size: 0.8rem; }
+    .inl-p-0093 { background: rgba(13, 202, 240, 0.12); }
+    .inl-p-0094 { width: 28px; height: 28px; background: #0dcaf0; }
+    .inl-p-0095 { background: rgba(220, 53, 69, 0.08); }
+    .inl-p-0096 { width: 28px; height: 28px; background: #dc3545; }
+    .inl-p-0097 { background: rgba(13, 110, 253, 0.1); color: #0d6efd; border: 1px solid rgba(13, 110, 253, 0.25); }
+    .inl-p-0098 { font-weight: 500; }
+    .inl-p-0099 { box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08); }
+    .inl-p-0100 { background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%); }
+    .inl-p-0101 { font-size: 0.85rem; }
+    .inl-p-0102 { box-shadow: 0 0.45rem 1.1rem rgba(0, 0, 0, 0.15); }
+    .inl-p-0103 { z-index: 1; }
+    .inl-p-0104 { background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.38) 50%, transparent 65%); transform: translateX(-100%); transition: transform 0.6s ease; }
+    .btn:hover .inl-p-0104 { transform: translateX(100%); }
+    .inl-p-0105 { box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.08); }
+    .inl-p-0106 { width: 46px; height: 46px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .inl-p-0107 { background: #f8fbff; }
+    .inl-p-0108 { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+    .inl-p-0108:focus { border-color: #667eea; box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15); }
+    .inl-p-0109 { border: 1px solid #dee2e6; background: #f8f9fa; }
+    .inl-p-0110 { margin-top: 0.2rem; }
+    .inl-p-0111 { font-weight: 500; }
+    .inl-p-0112 { color: #6c757d; }
+    .inl-p-0113 { background: #fff8f8; }
+    .inl-p-0114 { box-shadow: 0 0.6rem 1.5rem rgba(102, 126, 234, 0.34); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; }
+    .inl-p-0115 { width: 1.15rem; height: 1.15rem; object-fit: contain; }
+    .payment-logo-wrap {
+      width: 1.85rem;
+      height: 1.85rem;
+      border-radius: 999px;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      background: #fff;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .payment-logo-image {
+      width: 1.2rem;
+      height: 1.2rem;
+      object-fit: contain;
+      display: block;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+    }
+    .payment-logo-fallback {
+      width: 1.2rem;
+      height: 1.2rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      color: #334155;
+      background: #e2e8f0;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .payment-logo-wrap--bkash .payment-logo-fallback {
+      background: linear-gradient(135deg, #e2136e 0%, #ff4f9d 100%);
+      color: #fff;
+    }
+    .payment-logo-wrap--nagad .payment-logo-fallback {
+      background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+      color: #fff;
+    }
+    .payment-logo-wrap--rocket .payment-logo-fallback {
+      background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+      color: #fff;
+    }
+    .manual-method-option__logo {
+      width: 1.85rem;
+      height: 1.85rem;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid rgba(var(--manual-accent-rgb), 0.2);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .manual-method-option__logo img {
+      width: 1.2rem;
+      height: 1.2rem;
+      object-fit: contain;
+    }
+    .gateway-option {
+      border-radius: 0.72rem;
+      min-height: 2.55rem;
+      padding: 0.45rem 0.62rem;
+      transition: all 0.22s ease;
+    }
+    .gateway-option:hover {
+      transform: translateY(-1px);
+    }
+    .gateway-option__logo {
+      width: 1.65rem;
+      height: 1.65rem;
+    }
+    .gateway-option__logo .payment-logo-image {
+      width: 1.05rem;
+      height: 1.05rem;
+    }
+    .gateway-option__logo .payment-logo-fallback {
+      width: 1.05rem;
+      height: 1.05rem;
+      font-size: 0.72rem;
+    }
+    .gateway-option__label {
+      font-weight: 600;
+      line-height: 1.1;
+    }
+    .gateway-option.active {
+      color: #fff;
+      border-color: #0d6efd;
+      background: #0d6efd;
+    }
+    .gateway-option.active .gateway-option__label {
+      color: #fff;
+    }
+    .gateway-option.active .payment-logo-wrap {
+      border-color: rgba(255, 255, 255, 0.42);
+      background: rgba(255, 255, 255, 0.16);
+    }
+    .gateway-option.active .payment-logo-fallback {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+    .manual-payment-theme {
+      --manual-accent: #4f46e5;
+      --manual-accent-rgb: 79, 70, 229;
+      --manual-bg-soft: rgba(79, 70, 229, 0.08);
+      --manual-bg-strong: rgba(79, 70, 229, 0.14);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      border: 1px solid rgba(var(--manual-accent-rgb), 0.18);
+      border-radius: 0.9rem;
+      padding: 0.95rem;
+      box-shadow: 0 0.65rem 1.4rem rgba(15, 23, 42, 0.06);
+      transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+    }
+    .manual-payment-theme[data-method='bkash'] {
+      --manual-accent: #e2136e;
+      --manual-accent-rgb: 226, 19, 110;
+      --manual-bg-soft: rgba(226, 19, 110, 0.08);
+      --manual-bg-strong: rgba(226, 19, 110, 0.16);
+    }
+    .manual-payment-theme[data-method='nagad'] {
+      --manual-accent: #f97316;
+      --manual-accent-rgb: 249, 115, 22;
+      --manual-bg-soft: rgba(249, 115, 22, 0.1);
+      --manual-bg-strong: rgba(249, 115, 22, 0.18);
+    }
+    .manual-payment-theme[data-method='rocket'] {
+      --manual-accent: #8b5cf6;
+      --manual-accent-rgb: 139, 92, 246;
+      --manual-bg-soft: rgba(139, 92, 246, 0.1);
+      --manual-bg-strong: rgba(139, 92, 246, 0.18);
+    }
+    .manual-theme-label {
+      color: #334155;
+      letter-spacing: 0.01em;
+    }
+    .manual-payment-theme .form-select,
+    .manual-payment-theme .form-control {
+      border-color: rgba(var(--manual-accent-rgb), 0.2);
+      box-shadow: none;
+      transition: border-color 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease;
+    }
+    .manual-payment-theme .form-select:focus,
+    .manual-payment-theme .form-control:focus {
+      border-color: rgba(var(--manual-accent-rgb), 0.6);
+      box-shadow: 0 0 0 0.2rem rgba(var(--manual-accent-rgb), 0.14);
+    }
+    .manual-method-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.55rem;
+    }
+    .manual-method-option {
+      border: 1px solid rgba(var(--manual-accent-rgb), 0.22);
+      background: #fff;
+      border-radius: 0.75rem;
+      padding: 0.55rem 0.62rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+      transition: all 0.22s ease;
+    }
+    .manual-method-option:hover {
+      border-color: rgba(var(--manual-accent-rgb), 0.48);
+      transform: translateY(-1px);
+      box-shadow: 0 0.45rem 0.9rem rgba(15, 23, 42, 0.08);
+    }
+    .manual-method-option:focus-visible {
+      outline: 0;
+      border-color: rgba(var(--manual-accent-rgb), 0.62);
+      box-shadow: 0 0 0 0.2rem rgba(var(--manual-accent-rgb), 0.16);
+    }
+    .manual-method-option.active {
+      background: linear-gradient(180deg, #fff 0%, var(--manual-bg-soft) 100%);
+      border-color: rgba(var(--manual-accent-rgb), 0.55);
+      box-shadow: 0 0.55rem 1rem rgba(var(--manual-accent-rgb), 0.16);
+    }
+    .manual-method-option__label {
+      color: #334155;
+      font-size: 0.82rem;
+      font-weight: 600;
+      flex: 1 1 auto;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+    .manual-method-hero {
+      border: 1px solid rgba(var(--manual-accent-rgb), 0.22);
+      background: linear-gradient(180deg, rgba(var(--manual-accent-rgb), 0.09) 0%, rgba(var(--manual-accent-rgb), 0.03) 100%);
+      border-radius: 0.85rem;
+      padding: 0.9rem;
+    }
+    .manual-method-hero__title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      color: var(--manual-accent);
+      margin-bottom: 0.3rem;
+    }
+    .manual-method-hero__title i {
+      width: 1.95rem;
+      height: 1.95rem;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid rgba(var(--manual-accent-rgb), 0.26);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+    .manual-method-hero__subtitle {
+      margin-bottom: 0.7rem;
+      color: #475569;
+      font-size: 0.86rem;
+    }
+    .manual-method-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0.48rem;
+    }
+    .manual-step-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #334155;
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+    .manual-step-badge {
+      width: 1.4rem;
+      height: 1.4rem;
+      border-radius: 999px;
+      background: var(--manual-accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .manual-receiver-box {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-left: 1.9rem;
+      padding: 0.5rem;
+      border: 1px dashed rgba(var(--manual-accent-rgb), 0.35);
+      background: #fff;
+      border-radius: 0.75rem;
+    }
+    .manual-receiver-input {
+      flex: 1;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: #0f172a;
+      font-weight: 700;
+      font-size: 0.9rem;
+      min-width: 0;
+    }
+    .manual-copy-btn {
+      border: 1px solid rgba(var(--manual-accent-rgb), 0.35);
+      background: var(--manual-bg-soft);
+      color: var(--manual-accent);
+      border-radius: 0.6rem;
+      padding: 0.35rem 0.62rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .manual-copy-btn:hover:not(:disabled) {
+      background: var(--manual-bg-strong);
+    }
+    .manual-copy-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .manual-instruction-note {
+      border: 1px solid rgba(var(--manual-accent-rgb), 0.22);
+      background: var(--manual-bg-soft);
+      border-radius: 0.75rem;
+      padding: 0.65rem 0.75rem;
+      color: #475569;
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+    .manual-theme-note {
+      color: #64748b;
+      font-size: 0.77rem;
+    }
+    @media (max-width: 767.98px) {
+      .inl-p-0071 { height: 280px; }
+      .inl-p-0073, .inl-p-0082, .inl-p-0083 { min-height: 280px; }
+      .manual-payment-theme {
+        padding: 0.75rem;
+      }
+      .manual-method-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .manual-method-option {
+        padding: 0.45rem 0.5rem;
+        gap: 0.42rem;
+      }
+      .gateway-option {
+        min-height: 2.4rem;
+        padding: 0.4rem 0.54rem;
+      }
+      .gateway-option__logo {
+        width: 1.52rem;
+        height: 1.52rem;
+      }
+      .manual-method-option__label {
+        font-size: 0.78rem;
+      }
+      .manual-method-hero {
+        padding: 0.72rem;
+      }
+      .manual-step-row {
+        font-size: 0.8rem;
+      }
+      .manual-receiver-box {
+        margin-left: 0;
+        flex-wrap: wrap;
+      }
+      .manual-receiver-input {
+        width: 100%;
+      }
+      .manual-copy-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+    @media (max-width: 420px) {
+      .manual-method-grid {
+        grid-template-columns: 1fr;
+      }
+      .manual-method-option {
+        padding: 0.44rem 0.48rem;
+        gap: 0.38rem;
+      }
+      .manual-method-option__logo {
+        width: 1.68rem;
+        height: 1.68rem;
+      }
+      .manual-method-option__logo .payment-logo-image,
+      .manual-method-option__logo .payment-logo-fallback {
+        width: 1rem;
+        height: 1rem;
+      }
+      .manual-method-option__label {
+        font-size: 0.75rem;
+        max-width: calc(100% - 2.05rem);
+      }
+    }
+    @media (max-width: 360px) {
+      .hero-section.inl-p-0056 {
+        padding-top: 2.15rem !important;
+        padding-bottom: 2.15rem !important;
+      }
+      .inl-p-0065 {
+        width: 56px;
+        height: 56px;
+        border-radius: 0.8rem;
+      }
+      .inl-p-0066 {
+        font-size: 1.45rem;
+        line-height: 1.2;
+      }
+      .hero-section .d-flex.gap-2.flex-wrap {
+        gap: 0.38rem !important;
+      }
+      .hero-section .badge {
+        font-size: 0.68rem;
+        padding: 0.32rem 0.52rem !important;
+      }
+      .container.py-5 {
+        padding-top: 1.85rem !important;
+        padding-bottom: 1.85rem !important;
+      }
+      .inl-p-0084 .card-body,
+      .inl-p-0099 .card-body,
+      .inl-p-0105 .card-body {
+        padding: 0.95rem !important;
+      }
+      .inl-p-0106 {
+        width: 40px;
+        height: 40px;
+      }
+      #applicationForm .form-label {
+        font-size: 0.84rem;
+      }
+      #applicationForm .form-control,
+      #applicationForm .form-select {
+        font-size: 0.9rem;
+        padding: 0.5rem 0.66rem;
+      }
+      #applicationForm .btn.inl-p-0114 {
+        font-size: 0.9rem;
+        padding-top: 0.72rem !important;
+        padding-bottom: 0.72rem !important;
+      }
+      #applicationModal .modal-dialog {
+        margin: 0.45rem;
+      }
+      #applicationModal .modal-content {
+        border-radius: 0.82rem !important;
+      }
+      #applicationModal .modal-body {
+        padding-left: 0.78rem;
+        padding-right: 0.78rem;
+      }
+      #applicationModal .form-check.p-3 {
+        padding: 0.62rem !important;
+      }
+      .gateway-option {
+        min-width: 2.6rem;
+        min-height: 2.6rem;
+        justify-content: center;
+      }
+      .manual-payment-theme {
+        padding: 0.65rem;
+      }
+      .manual-method-option {
+        padding: 0.4rem 0.44rem;
+        border-radius: 0.68rem;
+      }
+      .manual-method-option__label {
+        font-size: 0.72rem;
+        letter-spacing: 0.01em;
+      }
+      .manual-receiver-input {
+        font-size: 0.84rem;
+      }
+      .manual-copy-btn {
+        font-size: 0.76rem;
+      }
+    }
+  </style>
+  <script>
+{% if form_fields and form_fields|length > 0 %}
+const form = document.getElementById('applicationForm');
+const serviceNameForMessage = {{ service.name|json_encode|raw }};
+const notifyUser = (message, type = 'info', duration = 4000) => {
+    if (typeof window.showMessage === 'function') {
+        return window.showMessage(message, type, duration);
+    }
+
+    if (typeof window.showToast === 'function') {
+        return window.showToast(message, type, duration);
+    }
+
+    if (typeof window.Swal !== 'undefined' && typeof window.Swal.fire === 'function') {
+        const iconMap = {
+            success: 'success',
+            danger: 'error',
+            error: 'error',
+            warning: 'warning',
+            info: 'info'
+        };
+        return window.Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: iconMap[type] || 'info',
+            title: String(message),
+            showConfirmButton: false,
+            timer: Number(duration) > 0 ? Number(duration) : 3000
+        });
+    }
+
+    console[type === 'danger' || type === 'error' ? 'error' : 'log'](message);
+    return Promise.resolve();
+};
+
+if (form) {
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalSubmitContent = submitBtn ? submitBtn.innerHTML : '';
+
+    const submitApplication = async () => {
+        if (!submitBtn) return;
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
+
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch('/services/apply', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                submitBtn.innerHTML = '<i class="bi bi-check me-2"></i>Success!';
+                submitBtn.classList.remove('btn-primary');
+                submitBtn.classList.add('btn-success');
+                const successMessage = `Your application for ${serviceNameForMessage} was submitted successfully. Redirecting to receipt preview...`;
+                notifyUser(successMessage, 'success', 5000);
+                const redirectUrl = data.receipt_preview_url || data.redirect_url || '/services/my-applications';
+                setTimeout(() => window.location.href = redirectUrl, 2000);
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalSubmitContent;
+                notifyUser(data.message || 'Failed to submit the application.', 'danger');
+                if (Array.isArray(data.errors)) {
+                    data.errors.forEach(err => notifyUser(err, 'danger'));
+                }
+            }
+        } catch (error) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalSubmitContent;
+            notifyUser('Something went wrong. Please try again.', 'danger');
+            console.error(error);
+        }
+    };
+
+    {% if service.is_premium %}
+    const paymentModalEl = document.getElementById('applicationModal');
+    const paymentSubmitBtn = document.getElementById('paymentSubmitBtn');
+    const paymentModeRadios = document.querySelectorAll('input[name="payment_mode_step"]');
+    const manualSection = document.getElementById('manualPaymentSection');
+    const gatewaySection = document.getElementById('gatewayPaymentSection');
+
+    const paymentModeHidden = document.getElementById('payment_mode_hidden');
+    const paymentGatewayHidden = document.getElementById('payment_gateway_hidden');
+    const paymentSenderHidden = document.getElementById('payment_sender_number_hidden');
+    const paymentMethodHidden = document.getElementById('payment_method_hidden');
+    const paymentTxIdHidden = document.getElementById('payment_transaction_id_hidden');
+    const paymentReceiverHidden = document.getElementById('payment_receiver_account_hidden');
+    const paymentInstructionHidden = document.getElementById('payment_instruction_message_hidden');
+    const paymentAmountHidden = document.getElementById('payment_amount_hidden');
+    const paymentMethodModal = document.getElementById('payment_method_modal');
+    const manualMethodQuickOptions = document.getElementById('manualMethodQuickOptions');
+    const manualPaymentDetails = document.getElementById('manualPaymentDetails');
+    const instructionBox = document.getElementById('manualPaymentInstruction');
+    const manualMethodHero = document.getElementById('manualMethodHero');
+    const manualMethodIcon = document.getElementById('manualMethodIcon');
+    const manualMethodTitle = document.getElementById('manualMethodTitle');
+    const manualMethodSubtitle = document.getElementById('manualMethodSubtitle');
+    const manualStep1Text = document.getElementById('manualStep1Text');
+    const manualStep3Text = document.getElementById('manualStep3Text');
+    const manualReceiverNumber = document.getElementById('manualReceiverNumber');
+    const manualReceiverCopyBtn = document.getElementById('manualReceiverCopyBtn');
+    const manualSenderLabel = document.getElementById('manualSenderLabel');
+    const manualTxLabel = document.getElementById('manualTxLabel');
+    const senderNumberInput = document.getElementById('payment_sender_number_modal');
+    const txIdInput = document.getElementById('payment_transaction_id_modal');
+    const manualMethodConfig = {{ manual_payment_methods|default({})|json_encode|raw }};
+    const manualMethodTheme = {
+        bkash: {
+            icon: 'bi-wallet2',
+            title: 'bKash Send Money',
+            subtitle: 'Fast and secure payment transfer',
+            step1: 'Use bKash app or *247# and choose "Send Money"',
+            senderLabel: 'Your bKash number'
+        },
+        rocket: {
+            icon: 'bi-rocket-takeoff-fill',
+            title: 'Rocket Payment',
+            subtitle: 'Fast and secure payment transfer',
+            step1: 'Use Rocket app or *322# and choose "Send Money"',
+            senderLabel: 'Your Rocket number'
+        },
+        nagad: {
+            icon: 'bi-phone',
+            title: 'Nagad Send Money',
+            subtitle: 'Fast and secure payment transfer',
+            step1: 'Use Nagad app or *167# and choose "Send Money"',
+            senderLabel: 'Your Nagad number'
+        },
+        default: {
+            icon: 'bi-credit-card',
+            title: 'Manual Payment',
+            subtitle: 'Select a payment method to view instructions',
+            step1: 'Select a method and complete Send Money',
+            senderLabel: 'Your sender number'
+        }
+    };
+
+    const escapeHtml = (input) => {
+        const value = String(input ?? '');
+        return value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    };
+
+    const normalizeMethodKey = (method) => String(method || '').trim().toLowerCase();
+
+    const getMethodLabel = (methodKey) => {
+        if (!paymentMethodModal || !methodKey) return '';
+        const option = Array.from(paymentMethodModal.options || []).find((opt) =>
+            String(opt.value || '').trim().toLowerCase() === methodKey
+        );
+        return String(option?.textContent || '').trim();
+    };
+
+    const copyToClipboard = async (text) => {
+        if (!text) return false;
+        try {
+            if (navigator?.clipboard?.writeText) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            }
+        } catch (error) {
+            // fallback below
+        }
+
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return ok;
+    };
+
+    const getSelectedPaymentMode = () => {
+        return document.querySelector('input[name="payment_mode_step"]:checked')?.value || 'manual';
+    };
+
+    const setActiveManualMethodOption = (methodKey) => {
+        if (!manualMethodQuickOptions) return;
+        const normalized = normalizeMethodKey(methodKey);
+        const options = manualMethodQuickOptions.querySelectorAll('.manual-method-option');
+        options.forEach((option) => {
+            const optionMethod = normalizeMethodKey(option.getAttribute('data-method') || '');
+            option.classList.toggle('active', normalized !== '' && optionMethod === normalized);
+        });
+    };
+
+    const renderManualMethodInstruction = (methodValue) => {
+        const method = normalizeMethodKey(methodValue);
+        const hasMethod = method !== '';
+        const selectedMode = getSelectedPaymentMode();
+        const showManualDetails = selectedMode === 'manual' && hasMethod;
+        const methodLabel = hasMethod ? (getMethodLabel(method) || method.toUpperCase()) : '';
+        const baseTheme = hasMethod && manualMethodTheme[method]
+            ? manualMethodTheme[method]
+            : manualMethodTheme.default;
+        const theme = hasMethod && !manualMethodTheme[method]
+            ? {
+                ...baseTheme,
+                title: `${methodLabel} Send Money`,
+                step1: `Use ${methodLabel} app/USSD and choose "Send Money"`,
+                senderLabel: `Your ${methodLabel} number`
+            }
+            : baseTheme;
+
+        if (manualSection) {
+            manualSection.setAttribute('data-method', hasMethod && manualMethodTheme[method] ? method : 'default');
+        }
+        setActiveManualMethodOption(method);
+
+        const cfg = (manualMethodConfig && manualMethodConfig[method]) ? manualMethodConfig[method] : {};
+        const receiverNumber = (cfg.receiver_number || '').trim();
+        const adminMessage = (cfg.message || '').trim();
+
+        if (paymentReceiverHidden) paymentReceiverHidden.value = receiverNumber;
+        if (paymentInstructionHidden) paymentInstructionHidden.value = adminMessage;
+
+        if (manualPaymentDetails) {
+            manualPaymentDetails.classList.toggle('d-none', !showManualDetails);
+        }
+
+        if (manualMethodHero) {
+            manualMethodHero.classList.toggle('d-none', !showManualDetails);
+        }
+
+        if (manualMethodIcon) {
+            manualMethodIcon.className = `bi ${theme.icon || 'bi-credit-card'}`;
+        }
+        if (manualMethodTitle) manualMethodTitle.textContent = theme.title;
+        if (manualMethodSubtitle) manualMethodSubtitle.textContent = theme.subtitle;
+        if (manualStep1Text) manualStep1Text.textContent = theme.step1;
+        if (manualStep3Text) {
+            manualStep3Text.textContent = hasMethod
+                ? `Provide TrxID and your ${methodLabel} number`
+                : 'Provide TrxID and your sender number';
+        }
+        if (manualSenderLabel) {
+            manualSenderLabel.innerHTML = `${escapeHtml(theme.senderLabel)} <span class="text-danger">*</span>`;
+        }
+        if (manualTxLabel) {
+            manualTxLabel.innerHTML = 'TrxID <span class="text-danger">*</span>';
+        }
+        if (senderNumberInput) {
+            senderNumberInput.placeholder = '01XXXXXXXXXX';
+        }
+        if (txIdInput) {
+            txIdInput.placeholder = 'e.g. TX1234567';
+        }
+        if (manualReceiverNumber) {
+            manualReceiverNumber.value = receiverNumber || 'Receiver number is not configured';
+        }
+        if (manualReceiverCopyBtn) {
+            manualReceiverCopyBtn.disabled = !receiverNumber;
+        }
+
+        if (!showManualDetails) {
+            if (instructionBox) {
+                instructionBox.classList.add('d-none');
+                instructionBox.innerHTML = '';
+            }
+            return;
+        }
+
+        if (!instructionBox) return;
+
+        const notes = [];
+        if (!receiverNumber) {
+            notes.push('Receiver number for this method is not configured yet.');
+        }
+        if (adminMessage) {
+            notes.push(escapeHtml(adminMessage));
+        }
+
+        if (!notes.length) {
+            instructionBox.classList.add('d-none');
+            instructionBox.innerHTML = '';
+            return;
+        }
+
+        instructionBox.classList.remove('d-none');
+        instructionBox.innerHTML = notes.map((line) => `<div>${line}</div>`).join('');
+    };
+
+    const togglePaymentSections = () => {
+        const selectedMode = getSelectedPaymentMode();
+        if (selectedMode === 'gateway') {
+            manualSection?.classList.add('d-none');
+            gatewaySection?.classList.remove('d-none');
+        } else {
+            manualSection?.classList.remove('d-none');
+            gatewaySection?.classList.add('d-none');
+        }
+
+        renderManualMethodInstruction(paymentMethodModal?.value || '');
+    };
+
+    const syncPaymentDataToMainForm = () => {
+        const selectedMode = document.querySelector('input[name="payment_mode_step"]:checked')?.value || 'manual';
+
+        if (selectedMode === 'gateway') {
+            const gateway = document.getElementById('payment_gateway_selected')?.value?.trim() || '';
+            const amount = document.getElementById('payment_gateway_amount_modal')?.value?.trim() || '';
+            const reference = document.getElementById('payment_gateway_ref_modal')?.value?.trim() || '';
+
+            if (!gateway) return { ok: false, message: 'Please select a payment gateway' };
+            if (!amount || Number(amount) <= 0) return { ok: false, message: 'Please enter a valid payable amount' };
+
+            if (paymentModeHidden) paymentModeHidden.value = 'gateway';
+            if (paymentGatewayHidden) paymentGatewayHidden.value = gateway;
+            if (paymentSenderHidden) paymentSenderHidden.value = '';
+            if (paymentMethodHidden) paymentMethodHidden.value = gateway;
+            if (paymentTxIdHidden) paymentTxIdHidden.value = reference || 'PENDING_GATEWAY';
+            if (paymentReceiverHidden) paymentReceiverHidden.value = '';
+            if (paymentInstructionHidden) paymentInstructionHidden.value = '';
+            if (paymentAmountHidden) paymentAmountHidden.value = amount;
+
+            return { ok: true };
+        }
+
+        const senderNumber = document.getElementById('payment_sender_number_modal')?.value?.trim() || '';
+        const method = document.getElementById('payment_method_modal')?.value?.trim() || '';
+        const transactionId = document.getElementById('payment_transaction_id_modal')?.value?.trim() || '';
+        const amount = document.getElementById('payment_amount_modal')?.value?.trim() || '';
+
+        if (!method) return { ok: false, message: 'Payment method is required' };
+        if (!senderNumber) return { ok: false, message: 'Sender number is required' };
+        if (!transactionId) return { ok: false, message: 'Transaction ID is required' };
+        if (!amount || Number(amount) <= 0) return { ok: false, message: 'Please enter a valid paid amount' };
+
+        const cfg = (manualMethodConfig && manualMethodConfig[method]) ? manualMethodConfig[method] : {};
+        const receiverNumber = (cfg.receiver_number || '').trim();
+        const adminMessage = (cfg.message || '').trim();
+
+        if (paymentModeHidden) paymentModeHidden.value = 'manual';
+        if (paymentGatewayHidden) paymentGatewayHidden.value = '';
+        if (paymentSenderHidden) paymentSenderHidden.value = senderNumber;
+        if (paymentMethodHidden) paymentMethodHidden.value = method;
+        if (paymentTxIdHidden) paymentTxIdHidden.value = transactionId;
+        if (paymentReceiverHidden) paymentReceiverHidden.value = receiverNumber;
+        if (paymentInstructionHidden) paymentInstructionHidden.value = adminMessage;
+        if (paymentAmountHidden) paymentAmountHidden.value = amount;
+
+        return { ok: true };
+    };
+
+    paymentModeRadios.forEach((radio) => {
+        radio.addEventListener('change', togglePaymentSections);
+    });
+
+    if (manualReceiverCopyBtn) {
+        manualReceiverCopyBtn.addEventListener('click', async () => {
+            const numberToCopy = manualReceiverNumber?.value?.trim() || '';
+            if (!numberToCopy || numberToCopy === 'Receiver number is not configured') {
+                notifyUser('Receiver number is not configured yet.', 'danger');
+                return;
+            }
+
+            const copied = await copyToClipboard(numberToCopy);
+            if (copied) {
+                notifyUser('Receiver number copied.', 'success');
+            } else {
+                notifyUser('Could not copy number. Please copy manually.', 'danger');
+            }
+        });
+    }
+
+    // Gateway logo selection handling
+    const gatewayOptions = document.getElementById('gatewayOptions');
+    const paymentGatewaySelected = document.getElementById('payment_gateway_selected');
+    if (gatewayOptions) {
+        gatewayOptions.addEventListener('click', (ev) => {
+            const btn = ev.target.closest && ev.target.closest('.gateway-option');
+            if (!btn) return;
+            const key = String(btn.getAttribute('data-key') || '').trim();
+            if (!key) return;
+            // Toggle active class
+            Array.from(gatewayOptions.querySelectorAll('.gateway-option')).forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
+            if (paymentGatewaySelected) paymentGatewaySelected.value = key;
+            notifyUser(`Selected gateway: ${btn.getAttribute('data-label') || key}`, 'success');
+        });
+    }
+
+    if (paymentMethodModal) {
+        paymentMethodModal.addEventListener('change', (event) => {
+            renderManualMethodInstruction(event.target?.value || '');
+        });
+        renderManualMethodInstruction(paymentMethodModal.value || '');
+    }
+
+    if (manualMethodQuickOptions && paymentMethodModal) {
+        manualMethodQuickOptions.addEventListener('click', (event) => {
+            const option = event.target.closest && event.target.closest('.manual-method-option');
+            if (!option) return;
+
+            const method = normalizeMethodKey(option.getAttribute('data-method') || '');
+            if (!method) return;
+
+            const matchedSelectOption = Array.from(paymentMethodModal.options || []).find((opt) =>
+                normalizeMethodKey(opt.value || '') === method
+            );
+            const finalValue = matchedSelectOption ? String(matchedSelectOption.value || '') : method;
+            paymentMethodModal.value = finalValue;
+            renderManualMethodInstruction(finalValue);
+        });
+    }
+
+    togglePaymentSections();
+
+    if (paymentModalEl) {
+        paymentModalEl.addEventListener('shown.bs.modal', () => {
+            renderManualMethodInstruction(paymentMethodModal?.value || '');
+            togglePaymentSections();
+            // Ensure a gateway is preselected visually when opening modal
+            if (gatewaySection && gatewaySection.classList.contains('d-none') === false) {
+                const sel = document.getElementById('payment_gateway_selected');
+                const opts = document.querySelectorAll('#gatewayOptions .gateway-option');
+                if (sel && !sel.value && opts && opts.length) {
+                    opts[0].classList.add('active');
+                    sel.value = opts[0].getAttribute('data-key') || '';
+                }
+            }
+        });
+    }
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (typeof bootstrap === 'undefined' || !paymentModalEl) {
+            notifyUser('Payment step is unavailable right now. Please refresh and try again.', 'danger');
+            return;
+        }
+
+        const modal = bootstrap.Modal.getOrCreateInstance(paymentModalEl);
+        modal.show();
+    });
+
+    if (paymentSubmitBtn) {
+        paymentSubmitBtn.addEventListener('click', async () => {
+            const syncResult = syncPaymentDataToMainForm();
+            if (!syncResult.ok) {
+                notifyUser(syncResult.message || 'Payment information is invalid', 'danger');
+                return;
+            }
+
+            if (typeof bootstrap !== 'undefined' && paymentModalEl) {
+                bootstrap.Modal.getOrCreateInstance(paymentModalEl).hide();
+            }
+
+            await submitApplication();
+        });
+    }
+    {% else %}
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await submitApplication();
+    });
+    {% endif %}
+}
+{% endif %}
+
+  </script>
+{% endblock %}

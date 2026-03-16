@@ -1,0 +1,465 @@
+{% extends "admin/layout.twig" %}
+{% block title %}{{ title }}{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css"
+        rel="stylesheet">
+  <div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="mdi mdi-bell-outline"></i>{{ title }}
+      </div>
+      <div class="admin-page-subtitle">
+        {% if template %}
+          Edit and manage notification template settings
+        {% else %}
+          Create a new notification template
+        {% endif %}
+      </div>
+    </div>
+    <div class="row">
+      <!-- Form Column -->
+      <div class="col-lg-8">
+        <form id="templateForm" class="admin-panel-card">
+          <div class="admin-panel-card-header bg-light">
+          <strong><i class="mdi mdi-pencil me-2"></i>
+          {% if template %}
+            Edit
+          {% else %}
+            Create New
+          {% endif %}
+        Template</strong>
+      </div>
+      <div class="admin-panel-card-body">
+        {% if template %}<input type="hidden" name="_method" value="PUT">{% endif %}
+        <!-- Basic Information Section -->
+        <div class="mb-4">
+          <h6 class="text-uppercase fw-bold mb-3">
+            <i class="mdi mdi-information-outline me-2"></i>Basic Information
+          </h6>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">
+                Template Name <span class="text-danger">*</span>
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="name"
+                     name="name"
+                     value="{{ template.name ?? '' }}"
+                     required
+                     placeholder="e.g., Welcome Notification">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">
+                Template Slug <span class="text-danger">*</span>
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="slug"
+                     name="slug"
+                     value="{{ template.slug ?? '' }}"
+                     required
+                     placeholder="e.g., welcome_notification"
+                     pattern="[a-z0-9_]+"
+                     title="Lowercase letters, numbers, and underscores only">
+              <small class="form-text text-muted">Used in code to reference this template</small>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea class="form-control"
+                      id="description"
+                      name="description"
+                      rows="2"
+                      placeholder="What is this template used for?">{{ template.description ?? '' }}</textarea>
+          </div>
+        </div>
+        <hr>
+        <!-- Template Content Section -->
+        <div class="mb-4">
+          <h6 class="text-uppercase fw-bold mb-3">
+            <i class="mdi mdi-file-document-outline me-2"></i>Template Content
+          </h6>
+          <div class="mb-3">
+            <label class="form-label">
+              Notification Title <span class="text-danger">*</span>
+            </label>
+            <input type="text"
+                   class="form-control"
+                   id="title"
+                   name="title"
+                   value="{{ template.title ?? '' }}"
+                   required
+                   placeholder="e.g., স্বাগতম &#123;&#123; USER_NAME &#125;&#125;!"
+                   maxlength="255">
+            <small class="form-text text-muted">Supports variables like &#123;&#123; USER_NAME &#125;&#125;, &#123;&#123; APP_NAME &#125;&#125;, &#123;&#123; AMOUNT &#125;&#125;</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">
+              Message Body <span class="text-danger">*</span>
+            </label>
+            <textarea class="form-control"
+                      id="body"
+                      name="body"
+                      rows="6"
+                      required
+                      placeholder="Notification message with &#123;&#123; VARIABLES &#125;&#125;...">{{ template.body ?? '' }}</textarea>
+            <small class="form-text text-muted">Supports markdown and template variables. Use &#123;&#123; VARIABLE_NAME &#125;&#125; syntax.</small>
+          </div>
+          <!-- Live Preview -->
+          <div class="alert alert-light border">
+            <strong class="d-block mb-2"><i class="mdi mdi-eye-outline me-1"></i>Live Preview</strong>
+            <div class="row">
+              <div class="col-md-6">
+                <small class="text-muted d-block mb-1">Title</small>
+                <div id="titlePreview" class="p-2 bg-white border rounded text-truncate">(Type to preview)</div>
+              </div>
+              <div class="col-md-6">
+                <small class="text-muted d-block mb-1">Body (first 100 chars)</small>
+                <div id="bodyPreview" class="p-2 bg-white border rounded inl-a-0027">(Type to preview)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <hr>
+        <!-- Channels & Configuration -->
+        <div class="row">
+          <div class="col-md-6 mb-4">
+            <h6 class="text-uppercase fw-bold mb-3">
+              <i class="mdi mdi-send-outline me-2"></i>Delivery Channels
+            </h6>
+            <div class="form-check mb-2">
+              <input type="checkbox"
+                     class="form-check-input"
+                     id="ch_in_app"
+                     name="channels"
+                     value="in_app"
+                     {% if template and 'in_app' in (template.channels|default([])) %}checked{% endif %}>
+              <label class="form-check-label" for="ch_in_app">
+                <i class="mdi mdi-bell me-1"></i><strong>In-App Notification</strong>
+                <br>
+                <small class="text-muted">Shows in user dashboard</small>
+              </label>
+            </div>
+            <div class="form-check mb-2">
+              <input type="checkbox"
+                     class="form-check-input"
+                     id="ch_fcm"
+                     name="channels"
+                     value="fcm"
+                     {% if template and 'fcm' in (template.channels|default([])) %}checked{% endif %}>
+              <label class="form-check-label" for="ch_fcm">
+                <i class="mdi mdi-mobile me-1"></i><strong>Push Notification (FCM)</strong>
+                <br>
+                <small class="text-muted">Mobile and web browsers</small>
+              </label>
+            </div>
+            <div class="form-check mb-2">
+              <input type="checkbox"
+                     class="form-check-input"
+                     id="ch_email"
+                     name="channels"
+                     value="email"
+                     {% if template and 'email' in (template.channels|default([])) %}checked{% endif %}>
+              <label class="form-check-label" for="ch_email">
+                <i class="mdi mdi-email me-1"></i><strong>Email</strong>
+                <br>
+                <small class="text-muted">Sent via SMTP</small>
+              </label>
+            </div>
+            <div class="form-check">
+              <input type="checkbox"
+                     class="form-check-input"
+                     id="ch_sms"
+                     name="channels"
+                     value="sms"
+                     {% if template and 'sms' in (template.channels|default([])) %}checked{% endif %}>
+              <label class="form-check-label" for="ch_sms">
+                <i class="mdi mdi-message-text me-1"></i><strong>SMS</strong>
+                <br>
+                <small class="text-muted">Text messages</small>
+              </label>
+            </div>
+          </div>
+          <div class="col-md-6 mb-4">
+            <h6 class="text-uppercase fw-bold mb-3">
+              <i class="mdi mdi-tag-multiple-outline me-2"></i>Template Variables
+            </h6>
+            <div id="variablesList" class="mb-3 inl-a-0028">
+              {% if template and template.variables %}
+                {% for key, placeholder in template.variables %}
+                  <div class="input-group input-group-sm mb-2">
+                    <span class="input-group-text">&#123;&#123;</span>
+                    <input type="text"
+                           class="form-control"
+                           placeholder="Variable name"
+                           value="{{ key }}"
+                           readonly>
+                    <span class="input-group-text">&#125;&#125;</span>
+                    <input type="text"
+                           class="form-control"
+                           placeholder="Description"
+                           value="{{ placeholder }}">
+                    <button type="button"
+                            class="btn btn-outline-danger"
+                            onclick="removeVariable(this)"
+                            aria-label="Remove variable">
+                      <i class="mdi mdi-delete"></i>
+                    </button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            </div>
+            <button type="button"
+                    class="modern-btn modern-btn-outline-secondary modern-btn-sm w-100"
+                    onclick="addVariable()">
+              <i class="mdi mdi-plus me-1"></i>Add Variable
+            </button>
+          </div>
+        </div>
+        <hr>
+        <!-- Visual Settings -->
+        <div class="mb-4">
+          <h6 class="text-uppercase fw-bold mb-3">
+            <i class="mdi mdi-palette-outline me-2"></i>Visual Settings
+          </h6>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Icon Class (MDI)</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="mdi mdi-bell"></i></span>
+                <input type="text"
+                       class="form-control"
+                       id="icon"
+                       name="icon"
+                       value="{{ template.icon ?? '' }}"
+                       placeholder="e.g., bell, check-circle, star">
+              </div>
+              <small class="form-text text-muted">See <a href="https://materialdesignicons.com/" target="_blank">MDI Icons</a></small>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Color Code</label>
+              <div class="input-group">
+                <input type="color"
+                       class="form-control form-control-color"
+                       id="color"
+                       name="color"
+                       value="{{ template.color ?? '#0d6efd' }}">
+                <input type="text"
+                       class="form-control"
+                       id="colorText"
+                       value="{{ template.color ?? '#0d6efd' }}"
+                       placeholder="#0d6efd">
+              </div>
+            </div>
+          </div>
+          <div class="form-check mt-3">
+            <input type="checkbox"
+                   class="form-check-input"
+                   id="is_active"
+                   name="is_active"
+                   value="1"
+                   {% if not template or template.is_active %}checked{% endif %}>
+            <label class="form-check-label" for="is_active">
+              <strong>Active</strong> - Enable this template for use
+            </label>
+          </div>
+        </div>
+        <!-- Form Actions -->
+        <div class="d-flex gap-2 pt-3 border-top">
+          <button type="submit" class="modern-btn modern-btn-primary">
+            <i class="mdi mdi-content-save me-2"></i>
+            {% if template %}
+              Save Changes
+            {% else %}
+              Create Template
+            {% endif %}
+          </button>
+          {% if template %}
+            <button type="button"
+                    class="modern-btn modern-btn-info"
+                    onclick="testSendTemplate()">
+              <i class="mdi mdi-send-clock me-2"></i>Test Send
+            </button>
+          {% endif %}
+          <a href="/admin/notification-templates"
+             class="modern-btn modern-btn-outline-secondary ms-auto">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+  <!-- Help Sidebar -->
+  <div class="col-lg-4">
+    <div class="admin-panel-card sticky-top inl-a-0029">
+      <div class="admin-panel-card-header bg-light">
+        <strong><i class="mdi mdi-help-circle-outline me-2"></i>Help & Guide</strong>
+      </div>
+      <div class="admin-panel-card-body small">
+        <div class="mb-3">
+          <strong><i class="mdi mdi-tag me-2"></i>Variables</strong>
+          <p class="text-muted mb-2">Use double braces with uppercase variable names:</p>
+          <code class="d-block bg-light p-2 rounded mb-2">&#123;&#123; USER_NAME &#125;&#125;
+            <br>
+            &#123;&#123; EMAIL &#125;&#125;
+            <br>
+          &#123;&#123; AMOUNT &#125;&#125;</code>
+        </div>
+        <div class="mb-3">
+          <strong><i class="mdi mdi-send-outline me-2"></i>Channels</strong>
+          <ul class="list-unstyled text-muted">
+            <li>
+              📱 <strong>In-App:</strong> Dashboard notifications
+            </li>
+            <li>
+              📲 <strong>FCM:</strong> Mobile push
+            </li>
+            <li>
+              ✉️ <strong>Email:</strong> Email delivery
+            </li>
+            <li>
+              💬 <strong>SMS:</strong> Text messages
+            </li>
+          </ul>
+        </div>
+        <div class="mb-3">
+          <strong><i class="mdi mdi-palette me-2"></i>Colors</strong>
+          <p class="text-muted mb-2">Use hex color codes:</p>
+          <div class="d-flex gap-1">
+            <span title="#0d6efd" class="inl-a-0030"></span>
+            <span title="#198754" class="inl-a-0031"></span>
+            <span title="#dc3545" class="inl-a-0032"></span>
+            <span title="#ffc107" class="inl-a-0033"></span>
+          </div>
+        </div>
+        <div class="alert alert-info py-2 mb-0">
+          <small><i class="mdi mdi-lightbulb-outline me-1"></i> Use the "Test Send" feature to preview your template before publishing.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+// Color picker sync
+document.getElementById('color')?.addEventListener('change', function() {
+    document.getElementById('colorText').value = this.value;
+});
+
+document.getElementById('colorText')?.addEventListener('input', function() {
+    if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+        document.getElementById('color').value = this.value;
+    }
+});
+
+// Live preview
+function updatePreview() {
+    const title = document.getElementById('title').value;
+    const body = document.getElementById('body').value;
+    document.getElementById('titlePreview').textContent = title || '(Type to preview)';
+    document.getElementById('bodyPreview').textContent = (body.substring(0, 100)) + (body.length > 100 ? '...' : '') || '(Type to preview)';
+}
+
+document.getElementById('title')?.addEventListener('input', updatePreview);
+document.getElementById('body')?.addEventListener('input', updatePreview);
+
+// Variable management
+function addVariable() {
+    const list = document.getElementById('variablesList');
+    const html = `<div class="input-group input-group-sm mb-2">
+        <span class="input-group-text">&#123;&#123;</span>
+        <input type="text" class="form-control" placeholder="Variable name" required>
+        <span class="input-group-text">&#125;&#125;</span>
+        <input type="text" class="form-control" placeholder="Description">
+        <button type="button" class="btn btn-outline-danger" onclick="removeVariable(this)" aria-label="Remove variable">
+            <i class="mdi mdi-delete"></i>
+        </button>
+    </div>`;
+    list.insertAdjacentHTML('beforeend', html);
+}
+
+function removeVariable(btn) {
+    btn.closest('.input-group')?.remove();
+}
+
+// Form submission
+document.getElementById('templateForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const url = `/admin/notification-templates{% if template %}/{{ template.id }}{% endif %}`;
+
+    // Collect variables
+    const variables = {};
+    document.querySelectorAll('#variablesList .input-group').forEach(group => {
+        const inputs = group.querySelectorAll('input');
+        const name = inputs[1]?.value || '';
+        if (name) {
+            variables[name] = inputs[3]?.value || '';
+        }
+    });
+    formData.set('variables', JSON.stringify(variables));
+
+    // Collect channels
+    const channels = [];
+    document.querySelectorAll('input[name="channels"]:checked').forEach(cb => {
+        channels.push(cb.value);
+    });
+    formData.set('channels', JSON.stringify(channels));
+
+    try {
+        const response = await fetch(url, { method: 'POST', body: formData });
+        const data = await response.json();
+
+        if (data.success) {
+            Swal.fire('Success!', data.message, 'success').then(() => {
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    history.back();
+                }
+            });
+        } else {
+            Swal.fire('Error', data.message || 'Failed to save', 'error');
+        }
+    } catch (e) {
+        Swal.fire('Error', e.message, 'error');
+    }
+});
+
+{% if template %}
+function testSendTemplate() {
+    const { value: userId } = Swal.fire({
+        title: 'Test Send',
+        input: 'number',
+        inputLabel: 'User ID',
+        inputPlaceholder: 'Enter user ID',
+        showCancelButton: true,
+        inputAttributes: { min: 1 }
+    }).then(result => result.value);
+
+    if (!userId) return;
+
+    Swal.fire('Sending...', 'Please wait', 'info');
+
+    const formData = new FormData();
+    formData.append('user_id', userId);
+    Array.from(document.querySelectorAll('input[name="channels"]:checked')).forEach(ch => {
+        formData.append('channels[]', ch.value);
+    });
+
+    fetch('/admin/notification-templates/{{ template.id }}/test-send', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire('Sent!', `Sent to ${data.details.sent} channel(s)`, 'success');
+            } else {
+                Swal.fire('Error', data.message, 'error');
+            }
+        })
+        .catch(e => Swal.fire('Error', e.message, 'error'));
+}
+{% endif %}
+</script>
+{% endblock %}

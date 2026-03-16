@@ -1,0 +1,142 @@
+{#
+  Partials: related-section.twig
+  Optimized for prepared related items from model
+#}
+
+{% set items = items|default([]) %}
+{% set variant = variant|default('pro') %}
+
+{# DEBUG #}
+{% if items|length == 0 %}
+  <!-- DEBUG: No items passed to related-section.twig -->
+{% else %}
+  <!-- DEBUG: {{ items|length }} items in related section -->
+{% endif %}
+
+{% if items|length > 0 %}
+
+{% set section_id = id|default('related-' ~ (title|default('items')|lower|replace({' ':'-'}) ) ~ '-title') %}
+
+<section class="mb-5" aria-labelledby="{{ section_id }}">
+  <div class="related-section {{ variant }} rounded-4 overflow-hidden">
+
+    
+
+    <header class="related-header p-4 related-header-styled"
+      style="background: {{ gradient|default('linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)') }};">
+      <div class="d-flex align-items-center justify-content-between w-100">
+        <h2 id="{{ section_id }}" class="mb-0 h5 fw-bold text-light">
+          <i class="bi bi-link-45deg me-2"></i>{{ title|default('Related') }}
+        </h2>
+
+        <div class="d-flex align-items-center gap-3">
+          <span class="badge bg-light text-primary px-3 py-2 rounded-pill">
+            {{ items|length }} {{ title|default('Items') }}
+          </span>
+
+          {% if view_all_url is defined and view_all_url %}
+            <a href="{{ view_all_url }}" class="btn btn-sm btn-outline-light related-btn-light">
+              View all
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </header>
+
+    <div class="related-body p-4">
+      <div class="related-grid" role="list" aria-label="{{ title|default('Related Items') }}">
+
+        {% for it in items %}
+          {% set itemType = it.type|default(type|default('page')) %}
+
+          {% if itemType == 'post' %}
+            {% set itemUrl = '/posts/view/' ~ it.slug %}
+          {% elseif itemType == 'page' %}
+            {% set itemUrl = '/pages/view/' ~ it.slug %}
+          {% elseif itemType == 'service' %}
+            {% set itemUrl = '/services/' ~ it.slug %}
+          {% else %}
+            {% set itemUrl = it.slug %}
+          {% endif %}
+
+          {# Final image already prepared in model #}
+          {% set img = it.image|default(null) %}
+
+          <div class="related-item" role="listitem"
+              >
+
+            <article class="related-item-card">
+
+              <div class="related-item-media">
+                {% set imgs = it.images|default([]) %}
+                {% if imgs|length > 1 %}
+                  <div id="relatedCarousel-{{ loop.index0 }}-{{ it.id|default(loop.index0) }}" class="carousel slide related-carousel" data-bs-ride="carousel" aria-label="Related item images">
+                    <div class="carousel-inner">
+                      {% for s in imgs %}
+                        <div class="carousel-item {% if loop.first %}active{% endif %}">
+                          <a href="{{ itemUrl }}" class="d-block w-100">
+                            <img src="{{ s }}" alt="{{ it.title|e }}" loading="lazy" decoding="async" class="related-item-image d-block w-100 rounded-2">
+                          </a>
+                        </div>
+                      {% endfor %}
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#relatedCarousel-{{ loop.index0 }}-{{ it.id|default(loop.index0) }}" data-bs-slide="prev" aria-label="Previous image">
+                      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#relatedCarousel-{{ loop.index0 }}-{{ it.id|default(loop.index0) }}" data-bs-slide="next" aria-label="Next image">
+                      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    </button>
+                  </div>
+                {% elseif imgs|length == 1 %}
+                  <a href="{{ itemUrl }}" class="related-item-media-link d-block">
+                    <img src="{{ imgs[0] }}" alt="{{ it.title|e }}" loading="lazy" decoding="async" class="related-item-image rounded-2">
+                  </a>
+                {% elseif img %}
+                  <a href="{{ itemUrl }}" class="related-item-media-link d-block">
+                    <img src="{{ img }}" alt="{{ it.title|e }}" loading="lazy" decoding="async" class="related-item-image rounded-2">
+                  </a>
+                {% else %}
+                  <div class="related-item-media-placeholder">
+                    <i class="bi bi-image inl-c-0008"></i>
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="related-item-body">
+                <h3 class="related-item-title related-title-styled">
+                  <a href="{{ itemUrl }}" class="related-item-link">{{ it.title|default('Untitled')|e }}</a>
+                </h3>
+
+                <p class="related-item-excerpt related-excerpt-styled">
+                  {{ it.subtitle
+                     |default(it.content|striptags)
+                     |slice(0,120) ~ '…' }}
+                </p>
+
+                <div class="related-item-footer d-flex align-items-center justify-content-between mt-3">
+                  <div class="related-item-stats small related-stats-styled">
+                    <span><i class="bi bi-eye-fill me-1"></i>{{ it.views|default(0) }}</span>
+                    <span class="ms-3"><i class="bi bi-bar-chart-line me-1"></i>{{ it.impressions|default(0) }}</span>
+                  </div>
+
+                  <div class="related-item-action">
+                    {% if itemType == 'post' %}
+                      <a href="{{ itemUrl }}" class="btn btn-sm btn-outline-primary related-action-btn">Read</a>
+                    {% elseif itemType == 'page' %}
+                      <a href="{{ itemUrl }}" class="btn btn-sm btn-outline-primary related-action-btn">Explore</a>
+                    {% else %}
+                      <a href="{{ itemUrl }}" class="btn btn-sm btn-primary related-action-btn">View</a>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+            </article>
+          </div>
+        {% endfor %}
+
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}

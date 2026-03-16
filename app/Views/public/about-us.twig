@@ -1,0 +1,360 @@
+{% extends 'layout.twig' %}
+
+{% block title %}About {{ app_settings.site_name|default('BroxBhai') }} - Learn Our Story{% endblock %}
+
+{% set breadcrumbs = [
+  { label: 'About Us', url: '/about-us', icon: 'info' }
+] %}
+
+{% block content %}
+<style>
+.about-page {
+  --about-bg: #f6f8ff;
+  --about-primary: #1e3a8a;
+  --about-accent: #0284c7;
+  --about-border: #dbe4ff;
+  --about-text-soft: #4b5563;
+}
+
+.about-hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+  color: #ffffff;
+}
+
+.about-hero::before,
+.about-hero::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.about-hero::before {
+  width: 26rem;
+  height: 26rem;
+  right: -8rem;
+  top: -10rem;
+  background: rgba(56, 189, 248, 0.18);
+}
+
+.about-hero::after {
+  width: 18rem;
+  height: 18rem;
+  left: -6rem;
+  bottom: -7rem;
+  background: rgba(167, 139, 250, 0.18);
+}
+
+.about-hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.about-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.about-hero h1 {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.15;
+  margin-bottom: 1rem;
+}
+
+.about-hero p {
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.86);
+  max-width: 44rem;
+  margin-bottom: 0;
+}
+
+.about-hero-metric {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 1rem;
+  padding: 1rem 1.2rem;
+  backdrop-filter: blur(2px);
+}
+
+.about-main {
+  background: radial-gradient(circle at 10% 0%, #ffffff 0%, var(--about-bg) 58%);
+}
+
+.about-panel {
+  background: #ffffff;
+  border: 1px solid var(--about-border);
+  border-radius: 1.2rem;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
+  padding: clamp(1.25rem, 1.5vw + 0.8rem, 2rem);
+}
+
+.about-section-title {
+  color: #111827;
+  font-weight: 700;
+  margin-bottom: 0.85rem;
+}
+
+.about-body-text {
+  color: var(--about-text-soft);
+  line-height: 1.75;
+}
+
+.about-lead {
+  color: #111827;
+  font-size: 1.05rem;
+  line-height: 1.8;
+}
+
+.about-offer-list {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.9rem;
+}
+
+.about-offer-item {
+  background: #f8faff;
+  border: 1px solid #e5edff;
+  border-radius: 0.9rem;
+  padding: 0.9rem 1rem;
+}
+
+.about-stats {
+  margin-top: 1rem;
+}
+
+.about-stat-card {
+  background: #ffffff;
+  border: 1px solid var(--about-border);
+  border-radius: 0.9rem;
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 10px 20px rgba(2, 132, 199, 0.07);
+  height: 100%;
+}
+
+.about-stat-card h3 {
+  margin-bottom: 0.35rem;
+  color: var(--about-primary);
+  font-weight: 800;
+}
+
+.about-side-card {
+  background: #ffffff;
+  border: 1px solid var(--about-border);
+  border-radius: 1rem;
+  padding: 1.1rem;
+}
+
+.about-side-card + .about-side-card {
+  margin-top: 1rem;
+}
+
+.about-side-title {
+  font-size: 1rem;
+  margin-bottom: 0.55rem;
+  color: #0f172a;
+}
+
+.about-chip {
+  display: inline-block;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0c4a6e;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin: 0.22rem 0.3rem 0.22rem 0;
+}
+
+.about-contact-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 991.98px) {
+  .about-hero {
+    padding-top: 3.25rem;
+    padding-bottom: 3.25rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .about-hero-metric {
+    margin-top: 1rem;
+  }
+
+  .about-panel,
+  .about-side-card {
+    border-radius: 0.9rem;
+  }
+}
+</style>
+
+<div class="about-page page-about-us public-static-page">
+  <section class="about-hero py-5 mb-4">
+    <div class="container about-hero-content">
+      <div class="row align-items-end g-4">
+        <div class="col-lg-8">
+          <span class="about-badge">Our Story</span>
+          <h1>About {{ app_settings.site_name|default('BroxBhai') }}</h1>
+          <p>
+            Discover the story behind the platform that brings you practical mobile insights,
+            trusted reviews, and a growing community for tech conversations.
+          </p>
+        </div>
+        <div class="col-lg-4">
+          <div class="about-hero-metric">
+            <div class="small text-uppercase fw-semibold mb-1">Community Snapshot</div>
+            <div class="h4 fw-bold mb-1">{{ stats.total_users|default(0) }}+ members</div>
+            <div class="small text-white-50">Following mobile and gadget updates regularly</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="about-main py-4 py-lg-5">
+    <div class="container">
+      <div class="row g-4 align-items-start">
+        <div class="col-lg-8">
+          <article class="about-panel">
+            <h2 class="h3 about-section-title">Our Story</h2>
+            <p class="about-lead">
+              Welcome to BroxBhai, your destination for mobile reviews, tech insights, and gadget discussions.
+            </p>
+            <p class="about-body-text mb-4">
+              Founded with a passion for technology and a commitment to authentic content, BroxBhai has grown into
+              a vibrant community of tech enthusiasts, reviewers, and gadget lovers.
+            </p>
+
+            <h2 class="h4 about-section-title mt-4">Our Mission</h2>
+            <p class="about-body-text">
+              We provide unbiased reviews and practical guides for the latest mobile devices and technology products.
+              Our mission is to help readers make informed decisions with clear and reliable information.
+            </p>
+
+            <h2 class="h4 about-section-title mt-4">Our Vision</h2>
+            <p class="about-body-text">
+              To become one of the most trusted regional platforms for mobile and tech reviews where users can share
+              experiences, learn from experts, and stay updated with fast-changing trends.
+            </p>
+
+            <h2 class="h4 about-section-title mt-4">What We Offer</h2>
+            <div class="about-offer-list mb-3">
+              <div class="about-offer-item"><strong>Mobile Reviews:</strong> Detailed smartphone and tablet reviews.</div>
+              <div class="about-offer-item"><strong>Tech News:</strong> Key updates and launch coverage from the tech world.</div>
+              <div class="about-offer-item"><strong>Community Forum:</strong> Discussions with fellow tech enthusiasts.</div>
+              <div class="about-offer-item"><strong>Guides and Tutorials:</strong> Practical tips to improve device usage.</div>
+              <div class="about-offer-item"><strong>Release Alerts:</strong> Timely notifications for important updates.</div>
+            </div>
+
+            <h2 class="h4 about-section-title mt-4">By The Numbers</h2>
+            <div class="row g-3 about-stats">
+              <div class="col-sm-6 col-xl-3">
+                <div class="about-stat-card">
+                  <h3 class="counter" data-target="{{ stats.total_posts }}">0</h3>
+                  <p class="text-muted mb-0 small">Posts Published</p>
+                </div>
+              </div>
+              <div class="col-sm-6 col-xl-3">
+                <div class="about-stat-card">
+                  <h3 class="counter" data-target="{{ stats.total_users }}">0</h3>
+                  <p class="text-muted mb-0 small">Active Members</p>
+                </div>
+              </div>
+              <div class="col-sm-6 col-xl-3">
+                <div class="about-stat-card">
+                  <h3 class="counter" data-target="{{ stats.total_mobiles }}">0</h3>
+                  <p class="text-muted mb-0 small">Devices Reviewed</p>
+                </div>
+              </div>
+              <div class="col-sm-6 col-xl-3">
+                <div class="about-stat-card">
+                  <h3 class="counter" data-target="{{ stats.total_comments }}">0</h3>
+                  <p class="text-muted mb-0 small">Community Comments</p>
+                </div>
+              </div>
+            </div>
+
+            <h2 class="h4 about-section-title mt-4">Our Team</h2>
+            <p class="about-body-text mb-0">
+              BroxBhai is managed by a dedicated team of tech enthusiasts, experienced reviewers, and content creators
+              focused on quality publishing and a healthy community experience.
+            </p>
+          </article>
+        </div>
+
+        <div class="col-lg-4">
+          <aside class="about-side-card">
+            <h3 class="about-side-title">Core Focus</h3>
+            <span class="about-chip">Mobile Tech</span>
+            <span class="about-chip">Practical Reviews</span>
+            <span class="about-chip">Community Driven</span>
+          </aside>
+
+          <aside class="about-side-card">
+            <h3 class="about-side-title">Get In Touch</h3>
+            <p class="about-body-text mb-2">Have feedback or suggestions? We would love to hear from you.</p>
+            <a href="/contact" class="btn btn-primary about-contact-cta">Contact Us</a>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function formatCounterValue(value) {
+    return Math.floor(value).toLocaleString();
+}
+
+function animateCounter(element, target, duration = 1800) {
+    const start = 0;
+    const increment = target / (duration / 16);
+    let current = start;
+
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+            element.textContent = formatCounterValue(target);
+            clearInterval(timer);
+        } else {
+            element.textContent = formatCounterValue(current);
+        }
+    }, 16);
+}
+
+const counters = document.querySelectorAll('.counter');
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.dataset.animated) {
+            const target = parseInt(entry.target.dataset.target, 10);
+            if (Number.isNaN(target) || target < 0) {
+                entry.target.textContent = '0';
+                return;
+            }
+            animateCounter(entry.target, target);
+            entry.target.dataset.animated = 'true';
+            observer.unobserve(entry.target);
+        }
+    });
+});
+
+counters.forEach(counter => observer.observe(counter));
+</script>
+{% endblock %}

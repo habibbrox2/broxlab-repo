@@ -1,0 +1,227 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Advertise With {{ app_settings.site_name|default('BroxBhai') }} - Reach Tech Enthusiasts{% endblock %}
+
+{% set breadcrumbs = [
+  { label: 'Advertise', url: '/advertise', icon: 'megaphone' }
+] %}
+
+{% block content %}
+<div class="page-advertise public-static-page">
+  <section class="hero-section public-page-hero public-hero--advertise position-relative py-5 mb-4 overflow-hidden">
+    <div class="container">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+          <h1 class="display-4 fw-bold text-white mb-3">
+            <i class="bi bi-megaphone-fill me-2"></i>Advertise With Us
+          </h1>
+          <p class="lead text-white-50 fs-5 mb-0">
+            Reach thousands of tech enthusiasts and mobile lovers every day.
+          </p>
+        </div>
+        <div class="col-lg-4 text-center">
+          <div class="public-hero-icon" aria-hidden="true">
+            <i class="bi bi-graph-up-arrow"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="public-hero-pattern" aria-hidden="true"></div>
+  </section>
+
+  <div class="container py-4 py-lg-5">
+    <div class="row align-items-center mb-5 g-4">
+      <div class="col-lg-6">
+        <h2 class="h3 fw-bold mb-3">Why Advertise With Us?</h2>
+        <p class="lead text-muted mb-4">
+          Reach thousands of tech enthusiasts, mobile shoppers, and gadget lovers on
+          {{ app_settings.site_name|default('BroxBhai') }}.
+        </p>
+
+        <h3 class="h5 fw-bold mb-3">Why Choose {{ app_settings.site_name|default('BroxBhai') }}?</h3>
+        <ul class="list-unstyled advertise-check-list mb-4">
+          <li class="advertise-check-item"><strong>Large Audience:</strong> Connect with {{ stats.total_users }} active members.</li>
+          <li class="advertise-check-item"><strong>Engaged Community:</strong> Thousands of comments and discussions.</li>
+          <li class="advertise-check-item"><strong>Quality Content:</strong> {{ stats.total_posts }} published posts and reviews.</li>
+          <li class="advertise-check-item"><strong>Mobile Focused:</strong> Perfect for tech and mobile products.</li>
+          <li class="advertise-check-item"><strong>Flexible Options:</strong> Banner ads, sponsored posts, and more.</li>
+        </ul>
+
+        <a href="#inquiry-form" class="btn btn-primary btn-lg">Get Started</a>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card public-surface-card border-0 p-4 p-lg-5 h-100">
+          <h3 class="h5 fw-bold mb-4">Our Reach</h3>
+          <div class="row text-center g-3">
+            <div class="col-6">
+              <h4 class="counter mb-1" data-target="{{ stats.total_posts }}">0</h4>
+              <small class="text-muted">Articles</small>
+            </div>
+            <div class="col-6">
+              <h4 class="counter mb-1" data-target="{{ stats.total_users }}">0</h4>
+              <small class="text-muted">Members</small>
+            </div>
+            <div class="col-6">
+              <h4 class="counter mb-1" data-target="{{ stats.total_mobiles }}">0</h4>
+              <small class="text-muted">Reviews</small>
+            </div>
+            <div class="col-6">
+              <h4 class="counter mb-1" data-target="{{ stats.total_comments }}">0</h4>
+              <small class="text-muted">Discussions</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mb-5" id="inquiry-form">
+      <div class="col-lg-8 mx-auto">
+        <div class="card public-surface-card border-0">
+          <div class="card-body p-4 p-lg-5">
+            <h4 class="card-title fw-bold mb-4">Advertising Inquiry Form</h4>
+
+            {% if success %}
+              <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ success }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endif %}
+
+            {% if errors %}
+              <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <ul class="mb-0">
+                  {% for error in errors %}
+                    <li>{{ error }}</li>
+                  {% endfor %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endif %}
+
+            <form method="POST" action="/advertise">
+              <div class="mb-3">
+                <label for="name" class="form-label">Your Name *</label>
+                <input type="text"
+                       class="form-control"
+                       id="name"
+                       name="name"
+                       value="{{ old.name ?? '' }}"
+                       required>
+              </div>
+
+              <div class="mb-3">
+                <label for="email" class="form-label">Email Address *</label>
+                <input type="email"
+                       class="form-control"
+                       id="email"
+                       name="email"
+                       value="{{ old.email ?? '' }}"
+                       required>
+              </div>
+
+              <div class="mb-3">
+                <label for="company" class="form-label">Company Name *</label>
+                <input type="text"
+                       class="form-control"
+                       id="company"
+                       name="company"
+                       value="{{ old.company ?? '' }}"
+                       required>
+              </div>
+
+              <div class="mb-3">
+                <label for="budget" class="form-label">Budget Range *</label>
+                <select class="form-select" id="budget" name="budget" required>
+                  <option value="">-- Select Budget --</option>
+                  <option value="under-5k" {% if old.budget == 'under-5k' %}selected{% endif %}>Under 5,000 BDT</option>
+                  <option value="5k-10k" {% if old.budget == '5k-10k' %}selected{% endif %}>5,000 - 10,000 BDT</option>
+                  <option value="10k-25k" {% if old.budget == '10k-25k' %}selected{% endif %}>10,000 - 25,000 BDT</option>
+                  <option value="25k-50k" {% if old.budget == '25k-50k' %}selected{% endif %}>25,000 - 50,000 BDT</option>
+                  <option value="50k+" {% if old.budget == '50k+' %}selected{% endif %}>50,000+ BDT</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label for="message" class="form-label">Your Message *</label>
+                <textarea class="form-control"
+                          id="message"
+                          name="message"
+                          rows="5"
+                          required>{{ old.message ?? '' }}</textarea>
+                <small class="text-muted">Tell us about your advertising goals and interests.</small>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-lg w-100">Submit Inquiry</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mb-4 g-4">
+      <div class="col-md-6">
+        <div class="card public-surface-card border-0 h-100">
+          <div class="card-body">
+            <h5 class="fw-bold mb-3"><i class="bi bi-layout-text-window-reverse me-2"></i>Available Ad Spaces</h5>
+            <ul class="list-unstyled mb-0 advertise-list">
+              <li>Homepage Banner (Above the fold)</li>
+              <li>Sidebar Advertisement</li>
+              <li>Sponsored Articles</li>
+              <li>Category Page Banners</li>
+              <li>Newsletter Sponsorship</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card public-surface-card border-0 h-100">
+          <div class="card-body">
+            <h5 class="fw-bold mb-3"><i class="bi bi-patch-question me-2"></i>Frequently Asked Questions</h5>
+            <ul class="list-unstyled mb-0 advertise-faq-list">
+              <li><strong>Q:</strong> What targeting options are available?</li>
+              <li><strong>A:</strong> Category, tag, and audience demographic targeting.</li>
+              <li><strong>Q:</strong> Can I track performance?</li>
+              <li><strong>A:</strong> Yes, detailed analytics and reporting are available.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function animateCounter(element, target, duration = 2000) {
+    const start = 0;
+    const increment = target / (duration / 16);
+    let current = start;
+
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+            element.textContent = target;
+            clearInterval(timer);
+        } else {
+            element.textContent = Math.floor(current);
+        }
+    }, 16);
+}
+
+const counters = document.querySelectorAll('.counter');
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.dataset.animated) {
+            const target = parseInt(entry.target.dataset.target, 10);
+            animateCounter(entry.target, target);
+            entry.target.dataset.animated = 'true';
+            observer.unobserve(entry.target);
+        }
+    });
+});
+
+counters.forEach(counter => observer.observe(counter));
+</script>
+
+{% endblock %}

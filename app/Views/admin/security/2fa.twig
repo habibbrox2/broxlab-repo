@@ -1,0 +1,317 @@
+{% extends "admin/layout.twig" %}
+{% block title %}Two-Factor Authentication - Security Settings{% endblock %}
+{% block content %}
+  <input type="hidden" id="global-csrf-token" value="{{ csrf_token }}">
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="admin-page-header mb-4">
+      <div class="admin-page-title">
+        <i class="bi bi-shield-lock"></i>
+        Two-Factor Authentication
+      </div>
+      <div class="admin-page-subtitle">Secure your account with an authenticator app</div>
+    </div>
+    <div id="alert-container"></div>
+    {% if twofa_enabled %}
+      <!-- 2FA is Enabled -->
+      <div class="row">
+        <div class="col-lg-8">
+          <!-- Status Card -->
+          <div class="admin-panel-card bordered-success mb-4">
+            <div class="admin-panel-card-header">
+              <h6 class="admin-panel-card-title mb-0">
+                <i class="bi bi-check-circle"></i>
+                2FA Status
+              </h6>
+            </div>
+            <div class="admin-panel-card-body">
+              <div class="alert alert-success mb-0">
+                <i class="bi bi-check-circle me-2"></i>
+                <strong>Two-Factor Authentication is Active</strong>
+                <p class="mb-0 mt-2">Your account is protected. Every login requires a code from your authenticator app.</p>
+              </div>
+            </div>
+          </div>
+          <!-- Actions Grid -->
+          <div class="row g-3 mb-4">
+            <!-- View Backup Codes -->
+            <div class="col-md-6">
+              <div class="admin-panel-card">
+                <div class="admin-panel-card-body text-center p-4">
+                  <div class="inl-a-0048">
+                    <i class="bi bi-download"></i>
+                  </div>
+                  <h6 class="mb-2">Backup Codes</h6>
+                  <p class="text-muted small mb-3">Recovery codes for emergency access if you lose your device</p>
+                  <a href="/admin/security/2fa/backup-codes"
+                     class="modern-btn modern-btn-info btn-sm">
+                    <i class="bi bi-arrow-right me-1"></i> View Codes
+                  </a>
+                </div>
+              </div>
+            </div>
+            <!-- Disable 2FA -->
+            <div class="col-md-6">
+              <div class="admin-panel-card">
+                <div class="admin-panel-card-body text-center p-4">
+                  <div class="inl-a-0049">
+                    <i class="bi bi-x-circle"></i>
+                  </div>
+                  <h6 class="mb-2">Disable 2FA</h6>
+                  <p class="text-muted small mb-3">Remove two-factor authentication from your account</p>
+                  <button type="button"
+                          class="modern-btn modern-btn-danger btn-sm"
+                          data-bs-toggle="modal"
+                          data-bs-target="#disableTwoFAModal">
+                    <i class="bi bi-trash me-1"></i> Disable
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Information Card -->
+          <div class="admin-panel-card bordered-info">
+            <div class="admin-panel-card-header">
+              <h6 class="admin-panel-card-title mb-0">
+                <i class="bi bi-info-circle"></i>
+                About 2FA
+              </h6>
+            </div>
+            <div class="admin-panel-card-body">
+              <p class="mb-3">
+                Two-factor authentication adds an extra layer of security by requiring a second form of verification beyond your password.
+              </p>
+              <h6 class="mt-4 mb-2">How it works:</h6>
+              <ol class="small text-muted">
+                <li class="mb-2">You enter your email and password</li>
+                <li class="mb-2">Your authenticator app generates a 6-digit code</li>
+                <li class="mb-2">You enter this code to complete login</li>
+                <li>Without the code, no one can access your account</li>
+              </ol>
+              <h6 class="mt-4 mb-2">Supported Authenticator Apps:</h6>
+              <ul class="small text-muted list-unstyled">
+                <li class="mb-2">
+                  <i class="bi bi-google me-2 text-danger"></i> Google Authenticator
+                </li>
+                <li class="mb-2">
+                  <i class="bi bi-phone me-2 text-info"></i> Microsoft Authenticator
+                </li>
+                <li class="mb-2">
+                  <i class="bi bi-key me-2 text-success"></i> Authy
+                </li>
+                <li class="mb-2">
+                  <i class="bi bi-shield-check me-2 text-warning"></i> 1Password
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+          <div class="admin-panel-card">
+            <div class="admin-panel-card-header gradient">
+              <h6 class="admin-panel-card-title mb-0">
+                <i class="bi bi-shield-check"></i>
+                Security Tips
+              </h6>
+            </div>
+            <div class="admin-panel-card-body">
+              <div class="mb-3">
+                <h6 class="mb-2 text-sm font-weight-bold">?? Keep Your Device Safe</h6>
+                <p class="text-muted small">Only you should have access to your authenticator app</p>
+              </div>
+              <hr>
+              <div class="mb-3">
+                <h6 class="mb-2 text-sm font-weight-bold">?? Save Backup Codes</h6>
+                <p class="text-muted small">Store your backup codes in a secure location</p>
+              </div>
+              <hr>
+              <div class="mb-3">
+                <h6 class="mb-2 text-sm font-weight-bold">? Check Clock Sync</h6>
+                <p class="text-muted small">Ensure your device time is accurate</p>
+              </div>
+              <hr>
+              <div>
+                <h6 class="mb-2 text-sm font-weight-bold">? Never Share Codes</h6>
+                <p class="text-muted small mb-0">Never give your 6-digit codes to anyone</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <!-- 2FA is Disabled -->
+      <div class="row">
+        <div class="col-lg-8">
+          <!-- Setup Card -->
+          <div class="admin-panel-card bordered-warning mb-4">
+            <div class="admin-panel-card-header">
+              <h6 class="admin-panel-card-title mb-0">
+                <i class="bi bi-exclamation-circle"></i>
+                2FA Not Enabled
+              </h6>
+            </div>
+            <div class="admin-panel-card-body">
+              <div class="alert alert-warning mb-0">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Enhance Your Security</strong>
+                <p class="mb-0 mt-2">Enable two-factor authentication to add an extra layer of security to your account.</p>
+              </div>
+            </div>
+          </div>
+          <!-- Setup Steps -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <div class="admin-panel-card text-center">
+                <div class="admin-panel-card-body p-4">
+                  <div class="stat-card success inl-a-0050">
+                    <div class="inl-a-0051">
+                      <i class="bi bi-1-circle-fill"></i>
+                    </div>
+                    <h6>Download App</h6>
+                    <p class="text-muted small">Get an authenticator app from your phone store</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="admin-panel-card text-center">
+                <div class="admin-panel-card-body p-4">
+                  <div class="stat-card info inl-a-0052">
+                    <div class="inl-a-0048">
+                      <i class="bi bi-2-circle-fill"></i>
+                    </div>
+                    <h6>Scan QR Code</h6>
+                    <p class="text-muted small">Scan the QR code from setup wizard</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="admin-panel-card text-center">
+                <div class="admin-panel-card-body p-4">
+                  <div class="stat-card success inl-a-0050">
+                    <div class="inl-a-0051">
+                      <i class="bi bi-3-circle-fill"></i>
+                    </div>
+                    <h6>Verify Code</h6>
+                    <p class="text-muted small">Enter the 6-digit code to confirm</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Setup Button -->
+          <div class="admin-panel-card">
+            <div class="admin-panel-card-body text-center p-4">
+              <h5 class="mb-3">Ready to Secure Your Account?</h5>
+              <p class="text-muted mb-4">
+                The setup process only takes a few minutes. You'll scan a QR code with your authenticator app and verify with a code.
+              </p>
+              <a href="/admin/security/2fa/setup"
+                 class="modern-btn modern-btn-primary btn-lg">
+                <i class="bi bi-arrow-right me-2"></i> Setup 2FA Now
+              </a>
+            </div>
+          </div>
+        </div>
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+          <div class="admin-panel-card">
+            <div class="admin-panel-card-header gradient">
+              <h6 class="admin-panel-card-title mb-0">
+                <i class="bi bi-question-circle"></i>
+                Why Use 2FA?
+              </h6>
+            </div>
+            <div class="admin-panel-card-body">
+              <ul class="list-unstyled text-sm">
+                <li class="mb-3 d-flex align-items-start gap-2">
+                  <span class="text-success fw-bold">?</span>
+                  <span class="text-muted">Protects against password breaches</span>
+                </li>
+                <li class="mb-3 d-flex align-items-start gap-2">
+                  <span class="text-success fw-bold">?</span>
+                  <span class="text-muted">Prevents unauthorized access</span>
+                </li>
+                <li class="mb-3 d-flex align-items-start gap-2">
+                  <span class="text-success fw-bold">?</span>
+                  <span class="text-muted">Industry standard security</span>
+                </li>
+                <li class="mb-3 d-flex align-items-start gap-2">
+                  <span class="text-success fw-bold">?</span>
+                  <span class="text-muted">Easy backup code recovery</span>
+                </li>
+                <li class="d-flex align-items-start gap-2">
+                  <span class="text-success fw-bold">?</span>
+                  <span class="text-muted">Works offline with most apps</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="admin-panel-card mt-3">
+            <div class="admin-panel-card-header">
+              <h6 class="admin-panel-card-title mb-0">
+                <i class="bi bi-exclamation-triangle"></i>
+                Important
+              </h6>
+            </div>
+            <div class="admin-panel-card-body">
+              <p class="text-muted small mb-0">
+                After setup, you'll receive 10 backup codes. Save these in a safe location - they're your recovery option if you lose access to your authenticator app.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+  <!-- Disable 2FA Modal -->
+  <div class="modal fade"
+       id="disableTwoFAModal"
+       tabindex="-1"
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-danger">
+          <h6 class="modal-title text-white">
+            <i class="bi bi-exclamation-triangle me-2"></i> Disable 2FA
+          </h6>
+          <button type="button"
+                  class="btn-close btn-close-white"
+                  data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="disableAlert"></div>
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-circle me-2"></i>
+            <strong>Warning:</strong> Disabling 2FA will reduce your account security. You'll only need your password to log in.
+          </div>
+          <form id="disableTwoFAForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="form-group">
+              <label for="disablePassword" class="form-label">Confirm Your Password</label>
+              <input type="password"
+                     class="form-control"
+                     id="disablePassword"
+                     name="password"
+                     required
+                     placeholder="Enter your password">
+              <small class="form-text">We need your password to confirm this action</small>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button"
+                  class="modern-btn modern-btn-secondary"
+                  data-bs-dismiss="modal">Cancel</button>
+          <button type="button"
+                  class="modern-btn modern-btn-danger"
+                  id="confirmDisableTwoFABtn">
+            <i class="bi bi-trash me-1"></i> Disable 2FA
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

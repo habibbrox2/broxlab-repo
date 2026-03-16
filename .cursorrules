@@ -1,0 +1,18 @@
+# Cursor Rules — BroxBhai
+
+Always follow:
+- `AGENTS.md`
+- `docs/PROJECT_CONTEXT.md`
+- `docs/CODING_CONVENTIONS.md`
+- `docs/AI_CODING_GUIDE.md`
+
+Hard rules:
+- Don’t edit generated assets in `public_html/assets/**/dist/**` unless there is no source file.
+- Prefer adding routes in `app/Controllers/*.php` using `$router->get/post/...`.
+- Use prepared statements in Models; no raw SQL concatenation.
+- Require CSRF validation for POST/PUT/PATCH/DELETE endpoints.
+- Keep changes minimal; do not refactor unrelated code.
+
+When you change frontend source JS/CSS:
+- Run `npm run build` (or `npm run dev`) and ensure corresponding dist outputs remain consistent.
+

@@ -1,0 +1,92 @@
+{% extends "admin/layout.twig" %}
+{% set skip_auto_breadcrumb = true %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block title %}Create New Category{% endblock %}
+{% block content %}
+  <div class="service-form-wrapper">
+    <div class="container service-form-container">
+      <!-- Modern Breadcrumb -->
+      <div class="modern-breadcrumb">
+        <a href="/admin"><i class="bi bi-house-door"></i> Dashboard</a>
+        <span class="separator">›</span>
+        <a href="/admin/categories">Categories</a>
+        <span class="separator">›</span>
+        <span class="active">Create</span>
+      </div>
+      <!-- Header Glass Card -->
+      <div class="header-glass-card">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="header-icon-badge">
+              <i class="bi bi-tag"></i>
+            </div>
+            <div>
+              <h1 class="page-title">Create New Category</h1>
+              <p class="page-subtitle">Add a new category to organize your content</p>
+            </div>
+          </div>
+          <a href="/admin/categories" class="modern-btn modern-btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Categories
+          </a>
+        </div>
+      </div>
+      <!-- Main Form -->
+      <form id="categoryForm" method="post" action="/admin/categories/create">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="row g-4">
+          <div class="col-lg-8 offset-lg-2">
+            <div class="admin-panel-card">
+              <div class="admin-panel-card-header">
+                <h5 class="admin-panel-card-header-title">
+                  <i class="bi bi-info-circle-fill"></i>
+                  Category Information
+                </h5>
+              </div>
+              <div class="admin-panel-card-body">
+                <div class="mb-4">
+                  <label class="modern-form-label">
+                    Category Name
+                    <span class="required">*</span>
+                  </label>
+                  <input type="text"
+                         class="modern-input form-control-lg"
+                         name="name"
+                         placeholder="Enter category name"
+                         required>
+                  <div class="form-helper">A clear, descriptive name for your category</div>
+                </div>
+                <div class="mb-4">
+                  <label class="modern-form-label">
+                    URL Slug <span class="required">*</span>
+                  </label>
+                  <div class="modern-input-group">
+                    <span class="modern-input-group-text">
+                      <i class="bi bi-link-45deg"></i>
+                    </span>
+                    <input type="text"
+                           class="modern-input"
+                           name="slug"
+                           placeholder="category-url-slug"
+                           required>
+                  </div>
+                  <div id="slug-feedback" class="form-helper"></div>
+                </div>
+                <div class="mt-5 d-flex gap-2">
+                  <a href="/admin/categories"
+                     class="modern-btn modern-btn-secondary modern-btn-lg">
+                    <i class="bi bi-x-lg"></i> Cancel
+                  </a>
+                  <button type="submit" class="modern-btn modern-btn-white modern-btn-lg">
+                    <i class="bi bi-save"></i>
+                    Create Category
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+{% block scripts %}{% endblock %}

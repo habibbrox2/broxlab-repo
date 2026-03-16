@@ -1,0 +1,67 @@
+/* =================================================================
+   1. VARIABLES — CSS Custom Properties
+   ================================================================= */
+
+/* Font loading moved to HTML head for better performance */
+
+:root {
+  --font-base: 'Inter', 'Noto Sans Bengali', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* ── Primary Palette ── */
+  --primary-300: #a5b4fc;
+  --primary-400: #818cf8;
+  --primary-500: #6366f1;
+  --primary-600: #4f46e5;
+  --primary-color: #6366f1;
+
+  /* ── Light Mode ── */
+  --bg-light: #f8fafc;
+  --bg-light-secondary: #f1f5f9;
+  --text-light: #1e293b;
+  --text-light-secondary: #475569;
+  --border-light: #e2e8f0;
+  --card-light: #ffffff;
+
+  /* ── Dark Mode ── */
+  --dark-bg: #0f172a;
+  --dark-bg-secondary: #1e293b;
+  --text-dark: #f1f5f9;
+  --text-dark-secondary: #cbd5e1;
+  --border-dark: #334155;
+  --card-dark: #1e293b;
+
+  /* -- Theme-aware Typography -- */
+  --title-color: #0f172a;
+  --title-muted-color: #475569;
+  --card-title-color: #1e293b;
+  --card-subtitle-color: #64748b;
+
+  /* ── Semantic ── */
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --info: #0ea5e9;
+
+  /* ── Gradients ── */
+  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --success-gradient: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+
+  /* ── Transitions ── */
+  --t-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --t-base: 0.30s cubic-bezier(0.4, 0, 0.2, 1);
+  --t-slow: 0.50s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Design Tokens */
+  --radius-xs: 0.35rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-pill: 999px;
+
+  --shadow-soft: 0 2px 8px rgba(15, 23, 42, 0.08);
+  --shadow-md-soft: 0 10px 24px rgba(15, 23, 42, 0.12);
+  --shadow-lg-soft: 0 18px 36px rgba(15, 23, 42, 0.16);
+  --focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  --surface-glass: rgba(255, 255, 255, 0.72);
+}

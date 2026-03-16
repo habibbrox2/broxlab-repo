@@ -1,0 +1,31 @@
+{# Admin Breadcrumb Navigation #}
+{% if breadcrumbs is not defined or breadcrumbs|length == 0 %}
+    {# Automatically generate breadcrumbs for admin pages when not explicitly provided #}
+    {% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% endif %}
+
+{% if breadcrumbs is defined and breadcrumbs|length > 0 %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb bg-light rounded-3 px-4 py-3 shadow-sm">
+        {% for breadcrumb in breadcrumbs %}
+            {% if loop.last %}
+                <li class="breadcrumb-item active d-flex align-items-center" aria-current="page">
+                    {% if breadcrumb.icon is defined %}
+                        <i class="bi bi-{{ breadcrumb.icon }} me-2"></i>
+                    {% endif %}
+                    {{ breadcrumb.label }}
+                </li>
+            {% else %}
+                <li class="breadcrumb-item">
+                    <a href="{{ breadcrumb.url }}" class="text-decoration-none d-flex align-items-center">
+                        {% if breadcrumb.icon is defined %}
+                            <i class="bi bi-{{ breadcrumb.icon }} me-1"></i>
+                        {% endif %}
+                        {{ breadcrumb.label }}
+                    </a>
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ol>
+</nav>
+{% endif %}
