@@ -1,0 +1,25 @@
+# LangChain and Core Dependencies  
+langchain>=0.3.0  
+langchain-core>=0.3.0  
+langchain-community>=0.3.0  
+langchain-text-splitters>=0.3.0 
+
+# Embeddings & Vector Stores (lightweight CPU-only)
+sentence-transformers>=2.2.0
+chromadb>=0.4.0
+numpy>=1.24.0
+
+# PDF Processing
+pymupdf>=1.23.0
+pdfplumber>=0.10.0
+
+# Utilities
+python-dotenv>=1.0.0
+huggingface-hub>=0.19.0
+
+# NOTE: Removed heavy packages to save disk space:
+# - faiss-cpu (40+ MB) - can be added back if needed
+# - torch (1GB+) - required only for GPU acceleration
+# - torchvision (500MB+) - only for advanced vision tasks
+# - EasyOCR (large models) - optional OCR, requires significant space
+# - Pillow (minimal impact, kept if needed for image processing)

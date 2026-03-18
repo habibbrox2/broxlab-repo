@@ -1,4 +1,7 @@
-* text=auto eol=lf
+* text=auto
+*.sh text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
 
 # Windows scripts
 *.bat text eol=crlf
