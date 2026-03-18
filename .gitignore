@@ -129,6 +129,7 @@ temp/
 /rag_system/cache/
 /rag_system/data/
 /rag_system/__pycache__/
+/rag_system/**/__pycache__/
 *.pyc
 *.pyo
 *.pyd
