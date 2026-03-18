@@ -175,9 +175,23 @@ fi
 echo "$DATE" > version.txt
 cp version.txt $SHARED/version.txt
 
+# ============= DATABASE BACKUP (Optional) =============
+echo ""
+echo "Creating database backup before deployment..."
+DB_BACKUP_SCRIPT="$BASE/scripts/database-backup.sh"
+if [[ -x "$DB_BACKUP_SCRIPT" ]]; then
+    if $DB_BACKUP_SCRIPT 2>/dev/null; then
+        echo "✅ Database backup completed"
+    else
+        echo "⚠️  Database backup warning (deployment continues)"
+    fi
+else
+    echo "⚠️  Database backup script not found, skipping"
+fi
+
 # ============= PRE-SWITCH BACKUP =============
 echo ""
-echo "Creating pre-deployment backup..."
+echo "Creating pre-deployment release backup..."
 BACKUP_SCRIPT="$BASE/scripts/backup.sh"
 if [[ -x "$BACKUP_SCRIPT" ]]; then
     if $BACKUP_SCRIPT 2>/dev/null; then

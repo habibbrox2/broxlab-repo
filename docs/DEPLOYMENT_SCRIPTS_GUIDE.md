@@ -12,6 +12,8 @@ The deployment automation consists of 4 production-ready bash scripts that work 
 | `backup.sh` | Create compressed releases backup | Called by deploy.sh before symlink switch |
 | `cleanup.sh` | Remove old releases, backups, logs | Called by deploy.sh post-deployment |
 | `rollback.sh` | Emergency recovery to previous release | Manual (SSH command) |
+| `database-backup.sh` | Create database backup before deployment | Called by deploy.sh |
+| `database-restore.sh` | Restore database from backup (manual) | Manual or called by rollback.sh |
 
 ---
 
@@ -31,10 +33,11 @@ deploy.sh (Main Orchestrator)
     ├─ 6. Build assets (npm run build)
     ├─ 7. Setup Python/RAG environment (non-blocking)
     ├─ 8. Auto-increment semantic version
-    ├─ 9. Call backup.sh (safety backup before switch)
-    ├─ 10. Switch symlink (current → new release)
-    ├─ 11. Call cleanup.sh (post-deployment cleanup)
-    └─ 12. Display deployment summary
+    ├─ 9. Create database backup (database-backup.sh)
+    ├─ 10. Create release backup (backup.sh)
+    ├─ 11. Switch symlink (current → new release)
+    ├─ 12. Cleanup old releases/backups (cleanup.sh)
+    └─ 13. Display deployment summary
 ```
 
 ### Directory Structure
@@ -53,15 +56,25 @@ deploy.sh (Main Orchestrator)
 │       ├── storage/ (user uploads, cache, logs)
 │       ├── logs/ (application logs)
 │       ├── version.json (semantic version tracking)
-│       └── deployment.log (deployment history)
-├── backups/ (release snapshots)
+│       ├── deployment.log (deployment history)
+│       └── backups/
+│           ├── release/ (release backups - latest 10)
+│           │   ├── backup_20240101_120000.tar.gz
+│           │   └── ...
+│           └── database/ (database backups - latest 10)
+│               ├── database_backup_20240101_120000.sql.gz
+│               ├── latest.sql.gz (symlink to latest for easy restore)
+│               └── ...
+├── backups/ (older, standalone release backups)
 │   ├── backup_20240101_120000.tar.gz (kept - latest 1)
 │   ├── backup_20240101_110000.tar.gz (kept - latest 2)
 │   └── (older than top 10 auto-deleted)
 └── logs/ (script execution logs)
     ├── backup_20240101_120000.log
     ├── cleanup.log
-    └── rollback.log
+    ├── rollback.log
+    ├── database-backup_20240101_120000.log
+    └── database-restore_20240101_120000.log
 ```
 
 ---
@@ -218,6 +231,104 @@ ssh tdhuedhn@65.21.174.100
 
 ---
 
+## 5. database-backup.sh (Pre-Deployment Database Snapshot)
+
+**Purpose:** Creates compressed MySQL/MariaDB backup before each deployment to enable data recovery if needed.
+
+**Key Features:**
+- ✅ Automatically called by deploy.sh before release switch
+- ✅ Validates MySQL connectivity with provided credentials
+- ✅ Creates compressed SQL dump (mysqldump + gzip)
+- ✅ Extracts credentials from `.env` file automatically
+- ✅ Disk space check (requires 1GB minimum)
+- ✅ Automatic cleanup of old backups (keeps latest 10)
+- ✅ Latest backup symlink for easy restore (`latest.sql.gz`)
+- ✅ Comprehensive logging to `$LOGS/database-backup_$DATE.log`
+
+**Called by:** `deploy.sh` (automatically, before release switch)
+
+**Backup Retention:** Latest 10 database backups (older backups auto-deleted)
+
+**Backup File Location:** `/home/tdhuedhn/broxlab/app/shared/backups/database/database_backup_YYYYMMDD_HHMMSS.sql.gz`
+
+**Database Credentials:** Read from `.env` file:
+```bash
+DB_HOST=localhost
+DB_USER=broxlab_user
+DB_PASS=your_password
+DB_NAME=broxlab
+```
+
+**Error Handling:**
+- Warns if MySQL not found (skips backup)
+- Warns if disk space low (auto-cleans old backups)
+- Warns if backup creation fails, but deployment continues
+
+**Use Cases:**
+- Safety net before every deployment
+- Database recovery if new code causes data issues
+- Data point-in-time recovery
+
+---
+
+## 6. database-restore.sh (Manual Database Recovery)
+
+**Purpose:** Restores MySQL/MariaDB from compressed backups for recovery scenarios.
+
+**Key Features:**
+- ✅ Restores from any backup file or uses latest automatically
+- ✅ Creates safety backup before restore (asks for confirmation)
+- ✅ Extracts credentials from `.env` file
+- ✅ Interactive confirmation before overwriting database
+- ✅ Comprehensive logging to `$LOGS/database-restore_$DATE.log`
+- ✅ Clear instructions on success/failure
+
+**Called by:** Manual or optionally called by `rollback.sh`
+
+**Usage - Restore from Latest Backup:**
+```bash
+# SSH into server
+ssh tdhuedhn@65.21.174.100
+
+# Run restore (will use latest backup automatically)
+/home/tdhuedhn/broxlab/scripts/database-restore.sh
+```
+
+**Usage - Restore from Specific Backup:**
+```bash
+# Restore from specific backup file
+/home/tdhuedhn/broxlab/scripts/database-restore.sh /home/tdhuedhn/broxlab/app/shared/backups/database/database_backup_20240101_120000.sql.gz
+```
+
+**Usage from Rollback:**
+```bash
+# When rolling back code and asking if database should be restored too
+/home/tdhuedhn/broxlab/scripts/rollback.sh
+
+# Script will ask: "Do you want to restore database from backup as well? (yes/no):"
+```
+
+**Error Handling:**
+- Validates backup file exists and is accessible
+- Creates safety backup before restore (non-destructive pre-check)
+- Asks for confirmation before overwriting
+- Logs all operations with timestamps
+- Returns meaningful error codes
+
+**Restore Process:**
+1. Validate backup file exists
+2. Create safety backup of current database (pre-restore snapshot)
+3. Ask for confirmation
+4. Restore database from backup
+5. Log completion
+
+**Use Cases:**
+- Emergency database recovery if deployment causes issues
+- Point-in-time recovery for data incidents
+- Rolling back database changes together with code
+
+---
+
 ## Deployment Workflow
 
 ### Automatic Deployment (GitHub Actions)
@@ -293,11 +404,33 @@ cat /home/tdhuedhn/broxlab/logs/deploy_*.log
 # Latest backup log
 cat /home/tdhuedhn/broxlab/logs/backup_*.log
 
+# Latest database backup log
+tail -50 /home/tdhuedhn/broxlab/logs/database-backup_*.log
+
+# Latest database restore log (if applicable)
+tail -50 /home/tdhuedhn/broxlab/logs/database-restore_*.log
+
 # Latest cleanup log
 tail -50 /home/tdhuedhn/broxlab/logs/cleanup.log
 
 # Rollback operations log (if applicable)
 tail -50 /home/tdhuedhn/broxlab/logs/rollback.log
+```
+
+### View Database Backups
+
+```bash
+# List all database backups
+ls -lh /home/tdhuedhn/broxlab/app/shared/backups/database/
+
+# Check latest backup
+ls -lh /home/tdhuedhn/broxlab/app/shared/backups/database/latest.sql.gz
+
+# Restore from latest backup
+/home/tdhuedhn/broxlab/scripts/database-restore.sh
+
+# Restore from specific backup
+/home/tdhuedhn/broxlab/scripts/database-restore.sh /home/tdhuedhn/broxlab/app/shared/backups/database/database_backup_20240101_120000.sql.gz
 ```
 
 ### Disk Space Management

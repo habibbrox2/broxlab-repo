@@ -123,9 +123,32 @@ if [[ -f "$VERSION_FILE" ]] && command -v jq &> /dev/null; then
 fi
 
 log_info "✅ Rollback completed successfully"
+
+# Ask if user wants to restore database as well
 log_info ""
-log_info "⚠️  IMPORTANT: Please verify the application is working correctly:"
-log_info "  - Check application logs: $SHARED/logs/"
-log_info "  - Monitor error reports in real-time"
-log_info "  - If issues persist, rollback again: $0"
+log_warn "⚠️  Database Restore (Optional)"
+log_info "The code has been rolled back, but the database remains unchanged."
+read -p "Do you want to restore database from backup as well? (yes/no): " RESTORE_DB
+
+if [[ "$RESTORE_DB" == "yes" ]]; then
+    log_info "Starting database restore..."
+    DB_RESTORE_SCRIPT="$BASE/scripts/database-restore.sh"
+    
+    if [[ -x "$DB_RESTORE_SCRIPT" ]]; then
+        # Run database restore in same shell to allow for interactive prompts
+        $DB_RESTORE_SCRIPT
+        log_info "Database restore completed"
+    else
+        log_error "Database restore script not found: $DB_RESTORE_SCRIPT"
+    fi
+else
+    log_info "Database restore skipped"
+fi
+
+log_info ""
+log_info "✅ Complete rollback finished"
+log_info "⚠️  Please verify the application is working correctly:"
+log_info "  - Check critical features are working"
+log_info "  - Monitor application logs in: $SHARED/logs/"
+log_info "  - If further rollback needed: $0"
 log_info ""

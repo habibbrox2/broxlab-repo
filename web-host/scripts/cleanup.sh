@@ -73,6 +73,22 @@ else
     log_warn "Logs directory not found: $LOGS"
 fi
 
+# ============= CLEANUP OLD DATABASE BACKUPS (Keep latest 10) =============
+DB_BACKUPS="$BASE/app/shared/backups/database"
+log_info "Cleaning old database backups (keeping latest 10)..."
+if [[ -d "$DB_BACKUPS" ]]; then
+    DB_BACKUP_COUNT=$(ls $DB_BACKUPS/database_backup_*.sql.gz 2>/dev/null | wc -l || echo 0)
+    
+    if [[ $DB_BACKUP_COUNT -gt 10 ]]; then
+        DELETED=$(ls -t $DB_BACKUPS/database_backup_*.sql.gz 2>/dev/null | tail -n +11 | xargs -r rm -f 2>/dev/null && echo $((DB_BACKUP_COUNT - 10)) || echo 0)
+        log_info "✅ Deleted $DELETED old database backups (kept latest 10, had $DB_BACKUP_COUNT total)"
+    else
+        log_info "Database backups count: $DB_BACKUP_COUNT (no cleanup needed)"
+    fi
+else
+    log_warn "Database backups directory not found: $DB_BACKUPS"
+fi
+
 # ============= SHOW DISK USAGE =============
 log_info "Current disk usage:"
 echo "  Releases: $(du -sh $BASE/app/releases/ 2>/dev/null || echo 'N/A')" >> "$LOGS/cleanup.log"
