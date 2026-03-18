@@ -265,29 +265,12 @@ npm-debug.log*
 !public_html/
 
 # ───────────────────────────────────────────────────────────────────
-#  15. CPANEL SERVER FILES (Only deployment scripts go to git)
-# ─────────────────────────────────────────────────────────────────
+#  15. COMPLETE WEB-HOST REMOVAL FROM GIT
+# ───────────────────────────────────────────────────────────────────
 # web-host/ folder contains cPanel/server-specific files
-# Only commit: scripts/, .github/workflows/, docs
-# IGNORE: cPanel configs, binaries, server-specific files
-
-# cPanel configuration and setup (server-specific)
-/web-host/cpanel/
-/web-host/cPanel/
-/web-host/.htaccess
-/web-host/index.php
-/web-host/composer
-/web-host/config/
-
-# Exception: Keep these in web-host/
-!/web-host/scripts/
-!/web-host/.github/
-!/web-host/DEPLOYMENT_SCRIPTS_GUIDE.md
-!/web-host/readme.md
-!/web-host/.gitignore
-
-# Ignore these in web-host (server-specific, never push)
-/web-host/DEPLOYMENT_GUIDE.md
+# These files are now kept LOCAL ONLY and NEVER pushed to GitHub
+# To restore any file to GitHub, remove the web-host/ entry below
+/web-host/
 
 # Exception: Keep these in web-host/
 # - web-host/scripts/*.sh (deployment scripts)
