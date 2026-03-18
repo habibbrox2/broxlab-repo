@@ -126,11 +126,14 @@ temp/
 /python_env/
 
 # RAG system cache and data
-/rag_system/cache/
-/rag_system/data/
-/rag_system/__pycache__/
-/rag_system/**/__pycache__/
+/py_system/cache/
+/py_system/data/
+/py_system/__pycache__/
+/py_system/**/__pycache__/
 *.pyc
+
+# Legacy - kept for reference
+/rag_system/
 *.pyo
 *.pyd
 .Python
