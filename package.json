@@ -62,7 +62,7 @@
         "langchain": "^1.2.34",
         "qdrant-client": "^0.0.1",
         "shelljs": "^0.10.0",
-        "zod": "^4.3.6"
+        "zod": "^3.23.8"
     },
     "devDependencies": {
         "browserslist": "^4.28.1",
