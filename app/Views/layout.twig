@@ -487,8 +487,8 @@
     {% include 'partials/footer.twig' %}
 
     {# ===== SCROLL TO TOP BUTTON ===== #}
-    <button id="scrollTopBtn" type="button" title="Scroll to top" aria-label="Scroll to top of page" style="position: fixed; bottom: 20px; right: 20px; z-index: 999; padding: 10px 14px; border: none; border-radius: 50%; background: var(--bs-primary); color: white; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all 0.3s ease;">
-        <i class="bi bi-arrow-up-short" aria-hidden="true" style="font-size: 1.5rem;"></i>
+    <button id="scrollTopBtn" type="button" title="Scroll to top" aria-label="Scroll to top of page" style="position: fixed; bottom: 80px; right: 20px; z-index: 1998; width: 48px; height: 48px; border: none; border-radius: 50%; background: var(--bs-primary); color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-arrow-up-short" aria-hidden="true" style="font-size: 1.4rem;"></i>
     </button>
 
 
@@ -579,7 +579,9 @@
     {% set show_public_assistant = is_guest_user or is_regular_user %}
 
         {% if show_public_assistant %}
-        {% include 'partials/ai-assistant/public.twig' %}
+        {% set assistant_variant = 'public' %}
+{% include 'partials/ai-assistant/public.twig' %}
+{% include 'partials/ai-assistant/script.twig' %}
     {% elseif is_admin_user %}
         {% include 'partials/ai-assistant/admin.twig' %}
     {% endif %}

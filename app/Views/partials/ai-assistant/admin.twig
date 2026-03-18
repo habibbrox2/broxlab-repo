@@ -154,7 +154,81 @@
                     <small>Analyze system error logs</small>
                 </div>
             </li>
+            <li class="brox-ai-slash-item" data-cmd="/generate-report" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-file-earmark-bar-graph"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/generate-report</strong>
+                    <small>Generate analytics report</small>
+                </div>
+            </li>
+            <li class="brox-ai-slash-item" data-cmd="/check-security" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-shield-check"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/check-security</strong>
+                    <small>Run security audit</small>
+                </div>
+            </li>
+            <li class="brox-ai-slash-item" data-cmd="/fix-permissions" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-person-check"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/fix-permissions</strong>
+                    <small>Fix user permissions</small>
+                </div>
+            </li>
+            <li class="brox-ai-slash-item" data-cmd="/clear-cache" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-trash"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/clear-cache</strong>
+                    <small>Clear system cache</small>
+                </div>
+            </li>
+            <li class="brox-ai-slash-item" data-cmd="/search-kb" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-book"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/search-kb</strong>
+                    <small>Search knowledge base</small>
+                </div>
+            </li>
+            <li class="brox-ai-slash-item" data-cmd="/web-search" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-globe"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/web-search</strong>
+                    <small>Search the web</small>
+                </div>
+            </li>
+            <li class="brox-ai-slash-item" data-cmd="/optimize-db" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-hdd"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/optimize-db</strong>
+                    <small>Optimize database</small>
+                </div>
+            </li>
+            <li class="brox-ai-slash-item" data-cmd="/deploy-status" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-cloud-upload"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/deploy-status</strong>
+                    <small>Check deployment status</small>
+                </div>
+            </li>
+            <li class="brox-ai-slash-item" data-cmd="/health-check" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-heart-pulse"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/health-check</strong>
+                    <small>System health status</small>
+                </div>
+            </li>
         </ul>
+    </div>
+
+    {# Auto Suggestion Panel #}
+    <div id="adminAiSuggestionPanel" class="brox-ai-suggestion-panel brox-ai-hidden" role="listbox">
+        <div class="brox-ai-suggestion-header">
+            <span>Suggestions</span>
+            <button class="brox-ai-suggestion-close" aria-label="Close suggestions">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
+        <ul class="brox-ai-suggestion-list" id="adminAiSuggestionList"></ul>
     </div>
 
     {# Attachment Preview #}
@@ -291,11 +365,20 @@
         }
 
         btn.addEventListener('click', function (e) {
-            if (window.BroxAdminInstance) return;
             e.preventDefault();
             e.stopPropagation();
             loadCopilot(true);
         });
+        
+        // Also load copilot when clicking on attach button
+        const attachBtn = document.getElementById('adminAiAttach');
+        if (attachBtn) {
+            attachBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                loadCopilot(true);
+            });
+        }
 
         // Global keyboard shortcut handler
         document.addEventListener('keydown', function(e) {

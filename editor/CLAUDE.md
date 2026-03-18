@@ -21,4 +21,3 @@ Suggested verification:
 - `php scripts/quality_scan.php`
 - `npm run lint` (if JS changed)
 - `npm run check:assets` (if assets changed)
-

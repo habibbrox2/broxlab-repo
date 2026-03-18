@@ -1,54 +1,148 @@
 <?php
+
 namespace App\Modules\AISystem\Layer;
 
 /**
  * AI Safety Guard
- * Scans prompts or responses for unsafe content, banned keywords, and PII.
+ * Scans prompts or responses for unsafe content, banned keywords, PII, and prompt injection.
+ * 
+ * v2026 - Extended with prompt injection detection
  */
 class SafetyGuard
 {
     private $bannedKeywords = [];
     private $piiPatterns = [];
+    private $injectionPatterns = [];
     private $enableLogging = false;
     private $logFile;
 
     // Default banned keyword categories
     private $defaultBannedKeywords = [
         // Security threats
-        'hack', 'exploit', 'malware', 'virus', 'trojan', 'ransomware',
-        'phishing', 'bypass', 'injection', 'xss', 'csrf', 'ddos',
-        
+        'hack',
+        'exploit',
+        'malware',
+        'virus',
+        'trojan',
+        'ransomware',
+        'phishing',
+        'bypass',
+        'injection',
+        'xss',
+        'csrf',
+        'ddos',
+
         // Illegal activities
-        'illegal', 'fraud', 'scam', 'piracy', 'counterfeit',
-        'drugs', 'weapons', 'violence', 'terrorism', 'human trafficking',
-        
+        'illegal',
+        'fraud',
+        'scam',
+        'piracy',
+        'counterfeit',
+        'drugs',
+        'weapons',
+        'violence',
+        'terrorism',
+        'human trafficking',
+
         // Harmful content
-        'harmful', 'dangerous', 'poison', 'bomb', 'explosive',
-        'self-harm', 'suicide', 'abuse', 'harassment', 'hate',
-        
+        'harmful',
+        'dangerous',
+        'poison',
+        'bomb',
+        'explosive',
+        'self-harm',
+        'suicide',
+        'abuse',
+        'harassment',
+        'hate',
+
         // Privacy violations
-        'unauthorized', 'breach', 'leak', 'steal', 'credentials',
-        'password', 'token', 'secret', 'api key', 'private key',
-        
+        'unauthorized',
+        'breach',
+        'leak',
+        'steal',
+        'credentials',
+        'password',
+        'token',
+        'secret',
+        'api key',
+        'private key',
+
         // Spam/malicious
-        'spam', 'botnet', 'clickjacking', 'social engineering'
+        'spam',
+        'botnet',
+        'clickjacking',
+        'social engineering'
     ];
 
     // PII detection patterns
     private $defaultPiiPatterns = [
         'ssn' => '/\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b/',
         'email' => '/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/',
-        'phone' => '/\b(\+?1[-.\s]?)?\(?\d{3}\)?[-\.\s]?\d{3}[-\.\s]?\d{4}\b/',
+        'phone' => '/\b(\+?1[-\.\s]?)?\(?\d{3}\)?[-\.\s]?\d{3}[-\.\s]?\d{4}\b/',
         'credit_card' => '/\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/',
         'ip_address' => '/\b(?:\d{1,3}\.){3}\d{1,3}\b/',
         'date_of_birth' => '/\b(0[1-9]|1[0-2])[\/\-](0[1-9]|[12]\d|3[01])[\/\-](\d{2}|\d{4})\b/'
     ];
 
-    public function __construct(array $customKeywords = [], array $customPatterns = [])
+    // Prompt injection detection patterns (v2026)
+    private $defaultInjectionPatterns = [
+        // Structured delimiter injection
+        'delimiter_injection' => [
+            'pattern' => '/<\/?(system|user|assistant|system_prompt|instruction|sudo|admin)\s*[^>]*>/i',
+            'severity' => 'high',
+            'description' => 'Structured delimiter injection attempt'
+        ],
+
+        // Instruction override patterns
+        'instruction_override' => [
+            'pattern' => '/(ignore\s+(all\s+)?(previous|prior|above)\s+(instructions?|rules?|guidelines?|constraints?)|disregard\s+(all\s+)?(previous|prior|your)|forget\s+(everything|all|your)\s+(instructions?|rules?)|new\s+instructions?|you\s+(are|will\s+be)\s+(now\s+)?(a|an)\s+|instead\s+of\s+(being|doing))/i',
+            'severity' => 'critical',
+            'description' => 'Instruction override attempt'
+        ],
+
+        // Role manipulation
+        'role_manipulation' => [
+            'pattern' => '/(you\s+are\s+now|you\s+will\s+act\s+as|from\s+now\s+on|pretend\s+(to\s+be|you\s+are)|act\s+(like|as)\s+(a|an)\s+(developer|hacker|admin|system|AI|assistant)|roleplay\s+as|simulate\s+(being|a))/i',
+            'severity' => 'high',
+            'description' => 'Role manipulation attempt'
+        ],
+
+        // Context injection
+        'context_injection' => [
+            'pattern' => '/(remember\s+(that|when)|consider\s+(that|this)|note\s+(that|well)|important:|note:\s*|priority:\s*|mandatory:\s*|must\s+(consider|remember|note))/i',
+            'severity' => 'medium',
+            'description' => 'Context injection attempt'
+        ],
+
+        // Privilege escalation
+        'privilege_escalation' => [
+            'pattern' => '/(give\s+(me\s+)?(admin|root|sudo|full)\s+access|bypass\s+(security|restrictions|limitations)|disable\s+(safety|guard|filter|restriction)|override\s+(safety|security)|reveal\s+(your\s+)?(system|hidden|confidential|internal))/i',
+            'severity' => 'critical',
+            'description' => 'Privilege escalation attempt'
+        ],
+
+        // Token/param manipulation
+        'token_manipulation' => [
+            'pattern' => '/(\{[a-z_]+\}|\{\{[a-z_]+\}\}|\\[SYSTEM\\]|\\[USER\\]|__[A-Z_]+__|%7B[a-z_]+%7D)/i',
+            'severity' => 'medium',
+            'description' => 'Token/parameter manipulation attempt'
+        ],
+
+        // Base64/encoded content
+        'encoded_content' => [
+            'pattern' => '/(base64:|data:text\/|data:application\/|eval\s*\(|exec\s*\(|system\s*\(|shell_exec|passthru|popen\s*\()/i',
+            'severity' => 'critical',
+            'description' => 'Encoded or executable content attempt'
+        ]
+    ];
+
+    public function __construct(array $customKeywords = [], array $customPatterns = [], array $customInjections = [])
     {
         $this->bannedKeywords = $customKeywords ?: $this->defaultBannedKeywords;
         $this->piiPatterns = $customPatterns ?: $this->defaultPiiPatterns;
-        
+        $this->injectionPatterns = $customInjections ?: $this->defaultInjectionPatterns;
+
         // Setup logging if enabled
         $this->enableLogging = $this->getSetting('safety_logging') ?? false;
         if ($this->enableLogging) {
@@ -61,22 +155,23 @@ class SafetyGuard
     }
 
     /**
-     * Check if text contains any banned keywords
+     * Check if text contains any banned keywords, PII, or prompt injection
      * 
      * @param string $text Text to check
      * @param bool $checkPII Also check for PII
+     * @param bool $checkInjection Also check for prompt injection
      * @return array ['safe' => bool, 'issues' => array]
      */
-    public function isSafe(string $text, bool $checkPII = true): array
+    public function isSafe(string $text, bool $checkPII = true, bool $checkInjection = true): array
     {
         $issues = [];
-        
+
         // Check banned keywords
         $keywordIssues = $this->checkKeywords($text);
         if (!empty($keywordIssues)) {
             $issues['banned_keywords'] = $keywordIssues;
         }
-        
+
         // Check PII if enabled
         if ($checkPII) {
             $piiIssues = $this->checkPII($text);
@@ -84,18 +179,91 @@ class SafetyGuard
                 $issues['pii_detected'] = $piiIssues;
             }
         }
-        
+
+        // Check prompt injection (v2026)
+        if ($checkInjection) {
+            $injectionIssues = $this->checkPromptInjection($text);
+            if (!empty($injectionIssues)) {
+                $issues['prompt_injection'] = $injectionIssues;
+            }
+        }
+
         $isSafe = empty($issues);
-        
+
         // Log if enabled and issues found
         if (!$isSafe && $this->enableLogging) {
             $this->log('BLOCKED', $text, $issues);
         }
-        
+
         return [
             'safe' => $isSafe,
             'issues' => $issues
         ];
+    }
+
+    /**
+     * Check for prompt injection patterns (v2026)
+     * 
+     * @param string $text Text to check
+     * @return array List of detected injection patterns
+     */
+    public function checkPromptInjection(string $text): array
+    {
+        $detected = [];
+
+        foreach ($this->injectionPatterns as $type => $config) {
+            if (preg_match($config['pattern'], $text, $matches)) {
+                $detected[] = [
+                    'type' => $type,
+                    'severity' => $config['severity'],
+                    'description' => $config['description'],
+                    'matched' => $matches[0],
+                    'position' => strpos($text, $matches[0])
+                ];
+            }
+        }
+
+        return $detected;
+    }
+
+    /**
+     * Check if text contains any prompt injection attempts (quick boolean check)
+     * 
+     * @param string $text Text to check
+     * @return bool True if injection detected
+     */
+    public function hasPromptInjection(string $text): bool
+    {
+        return !empty($this->checkPromptInjection($text));
+    }
+
+    /**
+     * Get highest severity level from injection detection
+     * 
+     * @param string $text Text to check
+     * @return string|null Highest severity or null if no injection
+     */
+    public function getHighestInjectionSeverity(string $text): ?string
+    {
+        $injections = $this->checkPromptInjection($text);
+
+        if (empty($injections)) {
+            return null;
+        }
+
+        $severities = ['critical' => 3, 'high' => 2, 'medium' => 1];
+        $highest = null;
+        $highestLevel = 0;
+
+        foreach ($injections as $injection) {
+            $level = $severities[$injection['severity']] ?? 0;
+            if ($level > $highestLevel) {
+                $highestLevel = $level;
+                $highest = $injection['severity'];
+            }
+        }
+
+        return $highest;
     }
 
     /**
@@ -116,18 +284,18 @@ class SafetyGuard
     {
         $matches = [];
         $lowerText = strtolower($text);
-        
+
         foreach ($this->bannedKeywords as $word) {
             $lowerWord = strtolower($word);
             $pos = strpos($lowerText, $lowerWord);
-            
+
             if ($pos !== false) {
                 // Get context around the match
                 $start = max(0, $pos - 20);
                 $length = strlen($word) + 40;
                 $end = min(strlen($text), $start + $length);
                 $context = substr($text, $start, $end - $start);
-                
+
                 $matches[] = [
                     'keyword' => $word,
                     'position' => $pos,
@@ -135,7 +303,7 @@ class SafetyGuard
                 ];
             }
         }
-        
+
         return $matches;
     }
 
@@ -148,7 +316,7 @@ class SafetyGuard
     public function checkPII(string $text): array
     {
         $detected = [];
-        
+
         foreach ($this->piiPatterns as $type => $pattern) {
             if (preg_match($pattern, $text, $matches)) {
                 $detected[] = [
@@ -158,7 +326,7 @@ class SafetyGuard
                 ];
             }
         }
-        
+
         return $detected;
     }
 
@@ -172,7 +340,7 @@ class SafetyGuard
     public function sanitize(string $text, string $replacement = '[REDACTED]'): string
     {
         $sanitized = $text;
-        
+
         foreach ($this->bannedKeywords as $word) {
             // Replace case-insensitively
             $sanitized = preg_replace(
@@ -181,7 +349,29 @@ class SafetyGuard
                 $sanitized
             );
         }
-        
+
+        return $sanitized;
+    }
+
+    /**
+     * Sanitize prompt injection delimiters (v2026)
+     * 
+     * @param string $text Text to sanitize
+     * @return string Text with injection patterns neutralized
+     */
+    public function sanitizePromptInjection(string $text): string
+    {
+        $sanitized = $text;
+
+        foreach ($this->injectionPatterns as $type => $config) {
+            // Replace with neutral text
+            $sanitized = preg_replace(
+                $config['pattern'],
+                '[FILTERED ' . strtoupper($type) . ']',
+                $sanitized
+            );
+        }
+
         return $sanitized;
     }
 
@@ -194,13 +384,13 @@ class SafetyGuard
     public function redactPIIFromText(string $text): string
     {
         $redacted = $text;
-        
+
         foreach ($this->piiPatterns as $type => $pattern) {
-            $redacted = preg_replace_callback($pattern, function($matches) use ($type) {
+            $redacted = preg_replace_callback($pattern, function ($matches) use ($type) {
                 return $this->redactPII($type, $matches[0]);
             }, $redacted);
         }
-        
+
         return $redacted;
     }
 
@@ -242,14 +432,14 @@ class SafetyGuard
             'issues' => [],
             'scanned_at' => date('Y-m-d H:i:s')
         ];
-        
+
         foreach ($messages as $index => $message) {
             if (!isset($message['content'])) {
                 continue;
             }
-            
+
             $result = $this->isSafe($message['content']);
-            
+
             if (!$result['safe']) {
                 $report['safe'] = false;
                 $report['issues'][] = [
@@ -259,7 +449,7 @@ class SafetyGuard
                 ];
             }
         }
-        
+
         return $report;
     }
 
@@ -286,6 +476,18 @@ class SafetyGuard
     }
 
     /**
+     * Add custom injection pattern (v2026)
+     */
+    public function addInjectionPattern(string $type, string $pattern, string $severity = 'medium', string $description = ''): void
+    {
+        $this->injectionPatterns[$type] = [
+            'pattern' => $pattern,
+            'severity' => $severity,
+            'description' => $description ?: "Custom injection pattern: $type"
+        ];
+    }
+
+    /**
      * Get setting from environment
      */
     private function getSetting(string $key)
@@ -294,7 +496,7 @@ class SafetyGuard
         if (getenv($envKey)) {
             return getenv($envKey);
         }
-        
+
         $envFile = __DIR__ . '/../../../.env';
         if (file_exists($envFile)) {
             $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -304,7 +506,7 @@ class SafetyGuard
                 }
             }
         }
-        
+
         return null;
     }
 
@@ -316,7 +518,7 @@ class SafetyGuard
         if (!$this->logFile) {
             return;
         }
-        
+
         $entry = json_encode([
             'timestamp' => date('Y-m-d H:i:s'),
             'action' => $action,
@@ -324,7 +526,7 @@ class SafetyGuard
             'issues' => $issues,
             'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
         ], JSON_UNESCAPED_UNICODE) . "\n";
-        
+
         @file_put_contents($this->logFile, $entry, FILE_APPEND | LOCK_EX);
     }
 
@@ -337,10 +539,26 @@ class SafetyGuard
     }
 
     /**
+     * Get injection patterns count (v2026)
+     */
+    public function getInjectionPatternCount(): int
+    {
+        return count($this->injectionPatterns);
+    }
+
+    /**
      * Check if PII detection is enabled
      */
     public function hasPIIDetection(): bool
     {
         return !empty($this->piiPatterns);
+    }
+
+    /**
+     * Check if injection detection is enabled (v2026)
+     */
+    public function hasInjectionDetection(): bool
+    {
+        return !empty($this->injectionPatterns);
     }
 }

@@ -8,6 +8,66 @@ class AIChatModel
     public function __construct(mysqli $mysqli)
     {
         $this->db = $mysqli;
+        $this->ensureTableExists();
+    }
+
+    /**
+     * Ensure the ai_conversations and ai_messages tables exist with correct schema
+     */
+    private function ensureTableExists(): void
+    {
+        // Fix ai_conversations table
+        $result = $this->db->query("SHOW TABLES LIKE 'ai_conversations'");
+        if ($result->num_rows === 0) {
+            $this->db->query("
+                CREATE TABLE ai_conversations (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NULL,
+                    guest_token VARCHAR(100) NULL,
+                    ip_address VARCHAR(45) NULL,
+                    device VARCHAR(100) NULL,
+                    location VARCHAR(255) NULL,
+                    user_agent TEXT NULL,
+                    status ENUM('open', 'closed') DEFAULT 'open',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_user_id (user_id),
+                    INDEX idx_guest_token (guest_token),
+                    INDEX idx_status (status)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+        } else {
+            // Check if id column has AUTO_INCREMENT
+            $result = $this->db->query("SHOW COLUMNS FROM ai_conversations LIKE 'id'");
+            $row = $result->fetch_assoc();
+            if ($row && strpos($row['Extra'], 'auto_increment') === false) {
+                // Fix: Add AUTO_INCREMENT to id column
+                $this->db->query("ALTER TABLE ai_conversations MODIFY COLUMN id INT AUTO_INCREMENT PRIMARY KEY");
+            }
+        }
+        
+        // Fix ai_messages table
+        $result = $this->db->query("SHOW TABLES LIKE 'ai_messages'");
+        if ($result->num_rows === 0) {
+            $this->db->query("
+                CREATE TABLE ai_messages (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    conversation_id INT NOT NULL,
+                    role VARCHAR(20) NOT NULL,
+                    content LONGTEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_conversation_id (conversation_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+        } else {
+            // Check if id column has AUTO_INCREMENT
+            $result = $this->db->query("SHOW COLUMNS FROM ai_messages LIKE 'id'");
+            $row = $result->fetch_assoc();
+            if ($row && strpos($row['Extra'], 'auto_increment') === false) {
+                // Fix: Add AUTO_INCREMENT to id column
+                $this->db->query("ALTER TABLE ai_messages MODIFY COLUMN id INT AUTO_INCREMENT PRIMARY KEY");
+            }
+        }
     }
 
     /**

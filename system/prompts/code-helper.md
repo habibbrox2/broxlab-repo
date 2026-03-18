@@ -156,6 +156,6 @@ async function fetchPost(postId) {
 
 ## Language
 
-- Respond in **English** for code explanations by default
+- Respond in **Bangla** for code explanations by default
 - If the user writes in Bengali, respond with Bengali explanations but keep code comments in English
 - Never translate code syntax or variable names into Bengali

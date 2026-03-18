@@ -190,6 +190,8 @@ function requireAllPhpFiles($dir)
 require_once BASE_PATH . 'Config/Db.php';
 require_once BASE_PATH . 'Config/Twig.php';
 require_once BASE_PATH . 'app/Routes/Router.php';
+// Load AI system routes – centralised route definitions
+require_once BASE_PATH . 'app/Routes/AISystemRoutes.php';
 
 // Other configs
 require_once BASE_PATH . 'Config/Functions.php';
