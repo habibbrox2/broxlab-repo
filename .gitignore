@@ -277,9 +277,17 @@ npm-debug.log*
 /web-host/.htaccess
 /web-host/index.php
 /web-host/composer
+/web-host/config/
+
+# Exception: Keep these in web-host/
 !/web-host/scripts/
 !/web-host/.github/
 !/web-host/DEPLOYMENT_SCRIPTS_GUIDE.md
+!/web-host/readme.md
+!/web-host/.gitignore
+
+# Ignore these in web-host (server-specific, never push)
+/web-host/DEPLOYMENT_GUIDE.md
 
 # Exception: Keep these in web-host/
 # - web-host/scripts/*.sh (deployment scripts)
