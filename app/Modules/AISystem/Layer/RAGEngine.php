@@ -527,7 +527,7 @@ PYTHON;
     public function extractTextFromPDF(string $pdfPath): array
     {
         // Try Python pymupdf first (better quality)
-        $pythonScript = base_path('rag_system/pdf_processor.py');
+        $pythonScript = base_path('py_system/pdf_processor.py');
         
         if (file_exists($pythonScript)) {
             $cmd = "python \"$pythonScript\" \"$pdfPath\" 2>&1";
@@ -564,7 +564,7 @@ PYTHON;
     public function extractTextFromImage(string $imagePath): array
     {
         // Try Python pytesseract/EasyOCR first
-        $pythonScript = base_path('rag_system/image_processor.py');
+        $pythonScript = base_path('py_system/image_processor.py');
         
         if (file_exists($pythonScript)) {
             $cmd = "python \"$pythonScript\" \"" . escapeshellcmd($imagePath) . "\" 2>&1";
