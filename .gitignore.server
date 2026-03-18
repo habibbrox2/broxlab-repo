@@ -1,0 +1,66 @@
+# ═══════════════════════════════════════════════════════════════════╗
+# ║            SERVER .gitignore (For Production Releases)           ║
+# ║     This file goes in app/releases/ or app/shared/ on server     ║
+# ═══════════════════════════════════════════════════════════════════╝
+# 
+# USE: After cloning a release on the production server, copy this file
+# to prevent sensitive production data from being accidentally pushed back
+# 
+# On server:
+#   cp /home/tdhuedhn/broxlab/.gitignore.server /home/tdhuedhn/broxlab/app/releases/YYYYMMDD_HHMMSS/.gitignore
+#
+
+# ─────────────────────────────────────────────────────────────────
+#  PRODUCTION SERVER DATA (CRITICAL - Never Push)
+# ─────────────────────────────────────────────────────────────────
+
+# Environment variables with production credentials
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Production database backups
+*.sql
+*.sql.gz
+*.sql.bak
+/backups/database/
+/app/shared/backups/database/
+
+# Production logs (contain sensitive information)
+*.log
+/logs/
+/storage/logs/
+/storage/cache/
+/storage/tmp/
+
+# User uploads
+/uploads/
+/public_html/uploads/
+
+# Runtime state files
+/app/shared/version.json
+/app/shared/deployment.log
+version.txt
+
+# ─────────────────────────────────────────────────────────────────
+#  Python Virtual Environment (Production-specific)
+# ─────────────────────────────────────────────────────────────────
+# Virtual environments are created during deployment, don't push back
+/rag_env/
+/app/shared/rag_env/
+__pycache__/
+*.pyc
+*.pyo
+
+# ─────────────────────────────────────────────────────────────────
+#  Development Tools (Don't push from server)
+# ─────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+node_modules/
+vendor/
+
+# ───────────────────────────────────────────────────────────────────
+# ONLY .gitignore itself should be committed from server releases
+# ───────────────────────────────────────────────────────────────────
