@@ -175,6 +175,68 @@ fi
 echo "$DATE" > version.txt
 cp version.txt $SHARED/version.txt
 
-ln -sfn $NEW_RELEASE $CURRENT
+# ============= PRE-SWITCH BACKUP =============
+echo ""
+echo "Creating pre-deployment backup..."
+BACKUP_SCRIPT="$BASE/scripts/backup.sh"
+if [[ -x "$BACKUP_SCRIPT" ]]; then
+    if $BACKUP_SCRIPT 2>/dev/null; then
+        echo "✅ Backup completed successfully"
+    else
+        echo "⚠️  Backup failed, but continuing deployment"
+    fi
+else
+    echo "⚠️  Backup script not found, skipping backup"
+fi
 
-echo "Deployment completed"
+# ============= SWITCH SYMLINK =============
+echo ""
+echo "Switching current symlink to new release..."
+ln -sfn $NEW_RELEASE $CURRENT
+VERIFY_LINK=$(readlink $CURRENT)
+if [[ "$VERIFY_LINK" == "$NEW_RELEASE" ]]; then
+    echo "✅ Symlink switched successfully"
+else
+    echo "❌ Failed to switch symlink!"
+    exit 1
+fi
+
+# ============= POST-DEPLOYMENT CLEANUP =============
+echo ""
+echo "Running post-deployment cleanup..."
+CLEANUP_SCRIPT="$BASE/scripts/cleanup.sh"
+if [[ -x "$CLEANUP_SCRIPT" ]]; then
+    if $CLEANUP_SCRIPT 2>/dev/null; then
+        echo "✅ Cleanup completed successfully"
+    else
+        echo "⚠️  Cleanup failed (non-blocking)"
+    fi
+else
+    echo "⚠️  Cleanup script not found, skipping"
+fi
+
+# ============= DEPLOYMENT SUMMARY =============
+echo ""
+echo "╔════════════════════════════════════════════╗"
+echo "║   ✅ DEPLOYMENT COMPLETED SUCCESSFULLY     ║"
+echo "╠════════════════════════════════════════════╣"
+echo "║ Release: $(basename $NEW_RELEASE)"
+echo "║ Version: $NEW_VERSION"
+echo "║ Timestamp: $DATE"
+echo "║ Current: $CURRENT → $NEW_RELEASE"
+echo "╚════════════════════════════════════════════╝"
+echo ""
+echo "📋 Deployment Details:"
+echo "  Base Directory: $BASE"
+echo "  Release: $(basename $NEW_RELEASE)"
+echo "  Shared (persistent): $SHARED"
+echo ""
+echo "📝 Next Steps:"
+echo "  1. Monitor application: Check logs in $SHARED/logs/"
+echo "  2. Verify deployment: Visit website and test critical features"
+echo "  3. Emergency rollback: $BASE/scripts/rollback.sh"
+echo ""
+echo "📊 Disk Usage After Deployment:"
+echo "  $(du -sh $BASE/app/releases/ | awk '{print "  Releases: " $1}')"
+echo "  $(du -sh $BASE/backups/ 2>/dev/null | awk '{print "  Backups: " $1}' || echo '  Backups: N/A')"
+echo ""
