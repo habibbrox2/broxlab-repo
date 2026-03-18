@@ -1,66 +1,73 @@
-# ═══════════════════════════════════════════════════════════════════╗
-# ║            SERVER .gitignore (For Production Releases)           ║
-# ║     This file goes in app/releases/ or app/shared/ on server     ║
-# ═══════════════════════════════════════════════════════════════════╝
-# 
-# USE: After cloning a release on the production server, copy this file
-# to prevent sensitive production data from being accidentally pushed back
-# 
-# On server:
-#   cp /home/tdhuedhn/broxlab/.gitignore.server /home/tdhuedhn/broxlab/app/releases/YYYYMMDD_HHMMSS/.gitignore
-#
+# 🔐 Sensitive Data Protection Guide
 
-# ─────────────────────────────────────────────────────────────────
-#  PRODUCTION SERVER DATA (CRITICAL - Never Push)
-# ─────────────────────────────────────────────────────────────────
+## Overview
 
-# Environment variables with production credentials
-.env
-.env.*
-!.env.example
-!.env.sample
+This repository contains important instructions and code for **BroxBhai** - an enterprise-grade PHP + Node.js + Python AI-powered platform.
 
-# Production database backups
-*.sql
-*.sql.gz
-*.sql.bak
-/backups/database/
-/app/shared/backups/database/
+⚠️ **CRITICAL: This document explains what data is NEVER committed to git.**
 
-# Production logs (contain sensitive information)
-*.log
-/logs/
-/storage/logs/
-/storage/cache/
-/storage/tmp/
+---
 
-# User uploads
-/uploads/
-/public_html/uploads/
+## 🚫 What NEVER Goes to Git
 
-# Runtime state files
-/app/shared/version.json
-/app/shared/deployment.log
-version.txt
+### 1. **Secrets & Credentials** ⚠️ CRITICAL
+```
+❌ NEVER COMMIT:
+  - .env files with passwords/credentials
+  - API keys (Firebase, OpenAI, etc.)
+  - SSH private keys
+  - Database passwords
+  - Service account files
+  
+✅ DO THIS INSTEAD:
+  - Commit: .env.example (with dummy values)
+  - Keep: Actual .env only on production server
+  - Use: GitHub Secrets for CI/CD
+```
 
-# ─────────────────────────────────────────────────────────────────
-#  Python Virtual Environment (Production-specific)
-# ─────────────────────────────────────────────────────────────────
-# Virtual environments are created during deployment, don't push back
-/rag_env/
-/app/shared/rag_env/
-__pycache__/
-*.pyc
-*.pyo
+### 2. **Database Backups** ⚠️ CRITICAL
+```
+❌ NEVER COMMIT:
+  - *.sql files
+  - *.sql.gz backups
+  - Database dumps
+  - /backups/database/ folder
+```
 
-# ─────────────────────────────────────────────────────────────────
-#  Development Tools (Don't push from server)
-# ─────────────────────────────────────────────────────────────────
-.vscode/
-.idea/
-node_modules/
-vendor/
+### 3. **cPanel Server Files**
+```
+❌ NEVER COMMIT:
+  - /web-host/cpanel/ (server setup)
+  - /web-host/composer (binary)
+  - /web-host/.htaccess
+  
+✅ DO COMMIT:
+  - /web-host/scripts/ (deployment automation)
+  - /web-host/.github/ (GitHub Actions workflows)
+```
 
-# ───────────────────────────────────────────────────────────────────
-# ONLY .gitignore itself should be committed from server releases
-# ───────────────────────────────────────────────────────────────────
+### 4. **Production Data**
+```
+❌ NEVER COMMIT:
+  - /uploads/ (user files)
+  - /logs/ (application logs)
+  - /backups/ (database/release backups)
+  - .env files (database credentials)
+```
+
+---
+
+## ✅ What DOES Go to Git
+
+✅ COMMIT:
+- `/web-host/scripts/*.sh` (deployment scripts)
+- `/web-host/.github/workflows/` (CI/CD config)
+- `/web-host/DEPLOYMENT_SCRIPTS_GUIDE.md` (documentation)
+- `/app/` (PHP source code)
+- `/src/` (JavaScript sources)
+- `/docs/` (documentation)
+- `.env.example` (with placeholder values)
+
+---
+
+**Remember: When in doubt about what to commit, don't commit it! 🔒**

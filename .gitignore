@@ -265,7 +265,26 @@ npm-debug.log*
 !public_html/
 
 # ───────────────────────────────────────────────────────────────────
-#  CRITICAL REMINDERS
+#  15. CPANEL SERVER FILES (Only deployment scripts go to git)
+# ─────────────────────────────────────────────────────────────────
+# web-host/ folder contains cPanel/server-specific files
+# Only commit: scripts/, .github/workflows/, docs
+# IGNORE: cPanel configs, binaries, server-specific files
+
+# cPanel configuration and setup (server-specific)
+/web-host/cpanel/
+/web-host/cPanel/
+/web-host/.htaccess
+/web-host/index.php
+/web-host/composer
+!/web-host/scripts/
+!/web-host/.github/
+!/web-host/DEPLOYMENT_SCRIPTS_GUIDE.md
+
+# Exception: Keep these in web-host/
+# - web-host/scripts/*.sh (deployment scripts)
+# - web-host/.github/workflows/ (CI/CD)
+# - web-host/DEPLOYMENT_SCRIPTS_GUIDE.md (documentation)
 # ───────────────────────────────────────────────────────────────────
 # ⚠️  NEVER COMMIT:
 #   - .env files (use .env.example instead)
