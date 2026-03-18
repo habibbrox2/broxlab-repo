@@ -15,4 +15,3 @@ Hard rules:
 
 When you change frontend source JS/CSS:
 - Run `npm run build` (or `npm run dev`) and ensure corresponding dist outputs remain consistent.
-

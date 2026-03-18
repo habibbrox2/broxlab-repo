@@ -152,6 +152,8 @@ if (!window.BroxAssistantLoaded) {
             // User profile persists, chat history is session-only
             this.user = this.loadUserProfile();
             this.visitorToken = this.getVisitorToken();
+            this.conversationId = null;
+            this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             this.isThinking = false;
             this.currentModel = null;    // will be set after model list loads
             this.frontendProvider = 'openrouter';
@@ -187,7 +189,11 @@ if (!window.BroxAssistantLoaded) {
         }
 
         saveHistory() {
-            // No-op: session-only chat history
+            try {
+                localStorage.setItem(CONFIG.chatKey, JSON.stringify(this.history));
+            } catch (e) {
+                console.warn('[BroxAssistant] Failed to save history:', e);
+            }
         }
 
         loadUserProfile() {
@@ -201,13 +207,8 @@ if (!window.BroxAssistantLoaded) {
                             const data = JSON.parse(decrypted);
                             if (data && typeof data === 'object' && data.name) {
                                 this.user = data;
-                                // Update UI if needed
-                                if (this.nodes.prechat) {
-                                    this.nodes.prechat.classList.add('brox-ai-hidden');
-                                    this.nodes.body.classList.remove('brox-ai-hidden');
-                                    this.nodes.footer.classList.remove('brox-ai-hidden');
-                                    this.isChatActive = true;
-                                }
+                                // Show chat interface and add greeting
+                                this.showChatInterface();
                             }
                         } catch (e) { }
                     }
@@ -225,6 +226,24 @@ if (!window.BroxAssistantLoaded) {
             } catch {
                 return null;
             }
+        }
+
+        showChatInterface() {
+            if (!this.nodes.prechat || !this.nodes.body || !this.nodes.footer) return;
+            this.nodes.prechat.classList.add('brox-ai-hidden');
+            this.nodes.body.classList.remove('brox-ai-hidden');
+            this.nodes.footer.classList.remove('brox-ai-hidden');
+            this.nodes.modelBar?.classList.remove('brox-ai-hidden');
+            this.nodes.quickActions?.classList.remove('brox-ai-hidden');
+            this.isChatActive = true;
+            this.nodes.body.innerHTML = '';
+            
+            // Add greeting if no history
+            if (this.history.length === 0 && this.user) {
+                const greeting = (this.lang === 'bn' ? `হ্যালো ${this.user.name}! ` : `Hello ${this.user.name}! `) + this.t('welcome');
+                this.addMessage('assistant', greeting);
+            }
+            this.renderHistorySidebar();
         }
 
         async saveUserProfile(profile) {
@@ -271,8 +290,8 @@ if (!window.BroxAssistantLoaded) {
 
                 prechatSteps: {
                     name: document.querySelector('.brox-ai-step-name'),
-                    contact: document.querySelector('.step-contact'),
-                    topic: document.querySelector('.step-topic')
+                    contact: document.querySelector('.brox-ai-step-contact'),
+                    topic: document.querySelector('.brox-ai-step-topic')
                 },
                 prechatBtns: {
                     next1: document.getElementById('introNext1'),
@@ -502,37 +521,37 @@ if (!window.BroxAssistantLoaded) {
             if (!this.nodes.prechat || !this.nodes.body || !this.nodes.footer) return;
             this.isChatActive = false;
             this.nodes.body.innerHTML = '';
+            
             if (this.user) {
-                this.applyUserProfileToForm();
-                this.showTopicStep();
-                this.renderHistorySidebar();
-                return;
-            }
-
-            if (!this.user) {
-                this.nodes.prechat.classList.remove('brox-ai-hidden');
-                this.nodes.body.classList.add('brox-ai-hidden');
-                this.nodes.footer.classList.add('brox-ai-hidden');
-                this.nodes.modelBar?.classList.add('brox-ai-hidden');
-                this.nodes.quickActions?.classList.add('brox-ai-hidden');
-                if (this.nodes.prechatSteps.name) this.nodes.prechatSteps.name.classList.remove('brox-ai-hidden');
-                if (this.nodes.prechatSteps.contact) this.nodes.prechatSteps.contact.classList.add('brox-ai-hidden');
-                if (this.nodes.prechatSteps.topic) this.nodes.prechatSteps.topic.classList.add('brox-ai-hidden');
-            } else {
+                // User exists - show chat interface
                 this.nodes.prechat.classList.add('brox-ai-hidden');
                 this.nodes.body.classList.remove('brox-ai-hidden');
                 this.nodes.footer.classList.remove('brox-ai-hidden');
                 this.nodes.modelBar?.classList.remove('brox-ai-hidden');
                 this.nodes.quickActions?.classList.remove('brox-ai-hidden');
-                this.nodes.body.innerHTML = '';
-
+                this.isChatActive = true;
+                this.applyUserProfileToForm();
+                
+                // Add greeting if no history
                 if (this.history.length === 0) {
                     const greeting = (this.lang === 'bn' ? `হ্যালো ${this.user.name}! ` : `Hello ${this.user.name}! `) + this.t('welcome');
                     this.addMessage('assistant', greeting);
                 } else {
                     this.history.forEach(m => this.addMessage(m.role, m.content, false));
                 }
+                this.renderHistorySidebar();
+                return;
             }
+            
+            // No user - show prechat form
+            this.nodes.prechat.classList.remove('brox-ai-hidden');
+            this.nodes.body.classList.add('brox-ai-hidden');
+            this.nodes.footer.classList.add('brox-ai-hidden');
+            this.nodes.modelBar?.classList.add('brox-ai-hidden');
+            this.nodes.quickActions?.classList.add('brox-ai-hidden');
+            if (this.nodes.prechatSteps.name) this.nodes.prechatSteps.name.classList.remove('brox-ai-hidden');
+            if (this.nodes.prechatSteps.contact) this.nodes.prechatSteps.contact.classList.add('brox-ai-hidden');
+            if (this.nodes.prechatSteps.topic) this.nodes.prechatSteps.topic.classList.add('brox-ai-hidden');
             this.renderHistorySidebar();
         }
 
@@ -784,6 +803,26 @@ if (!window.BroxAssistantLoaded) {
             });
         }
 
+        // ── Status Management ─────────────────────────────────────────────────────
+        updateStatus(status, text) {
+            const statusDot = document.getElementById('publicAssistantStatusIndicator');
+            if (statusDot) {
+                statusDot.classList.remove('brox-ai-online', 'brox-ai-offline', 'brox-ai-connecting', 'brox-ai-thinking');
+                if (status === 'ready' || status === 'online') {
+                    statusDot.classList.add('brox-ai-online');
+                } else if (status === 'offline' || status === 'error') {
+                    statusDot.classList.add('brox-ai-offline');
+                } else if (status === 'thinking') {
+                    statusDot.classList.add('brox-ai-thinking');
+                } else {
+                    statusDot.classList.add('brox-ai-connecting');
+                }
+            }
+            if (this.nodes.status && text) {
+                this.nodes.status.textContent = text;
+            }
+        }
+
         startChat() {
             const name = this.nodes.prechatInputs.name?.value.trim();
             if (!name) { window.showAlert(this.t('err_name'), 'Validation Error', 'warning'); return; }
@@ -882,6 +921,12 @@ if (!window.BroxAssistantLoaded) {
             const existing = this.nodes.body.querySelector('.brox-ai-typing');
             existing?.remove();
 
+            // Check for incomplete response (e.g., ends with numbered list like "3.")
+            const isIncomplete = this.isResponseIncomplete(content);
+            if (isIncomplete) {
+                content += '\n\n⚠️ *Response was truncated. Please try again or ask a more specific question.*';
+            }
+
             const msg = document.createElement('div');
             msg.className = `brox-ai-msg brox-ai-${role}`;
 
@@ -941,6 +986,33 @@ if (!window.BroxAssistantLoaded) {
 
             this.nodes.body.appendChild(msg);
             this.nodes.body.scrollTop = this.nodes.body.scrollHeight;
+        }
+
+        // ── Check for Incomplete Response ───────────────────────────────────────────────
+        isResponseIncomplete(text) {
+            if (!text || typeof text !== 'string') return false;
+            const trimmed = text.trim();
+            
+            // Check if ends with incomplete numbered list (e.g., "3." or "3)" or "3 -")
+            if (/\d+[.)\-\s]*$/i.test(trimmed)) return true;
+            
+            // Check if ends with incomplete bullet point
+            if (/[-*•]\s*$/.test(trimmed)) return true;
+            
+            // Check if ends with incomplete sentence (no period, question mark, or exclamation)
+            const lastChar = trimmed.slice(-1);
+            if (!/[.?!]$/.test(lastChar) && trimmed.length > 50) {
+                // Only flag as incomplete if it looks like it was cut mid-sentence
+                // Check for common patterns that indicate truncation
+                if (/\s(to|and|the|a|is|are|was|were|have|has|had|will|would|could|should|may|might|must)$/i.test(trimmed)) {
+                    return true;
+                }
+            }
+            
+            // Check if response is suspiciously short for a complex query
+            if (trimmed.length < 20) return true;
+            
+            return false;
         }
 
         // ── Markdown Rendering with marked.js + highlight.js (v2026) ──────────────────
@@ -1048,6 +1120,42 @@ if (!window.BroxAssistantLoaded) {
             return div;
         }
 
+        // ── Auto Model Selection for Faster Responses ──────────────────────────────
+        async autoSelectModel() {
+            // Get last user message for analysis
+            const lastMsg = this.history.filter(m => m.role === 'user').pop();
+            if (!lastMsg?.content) return;
+            
+            const text = lastMsg.content.toLowerCase();
+            const wordCount = text.split(/\s+/).length;
+            
+            // Check if user has manually selected a model (via future UI)
+            // For now, auto-select based on query complexity
+            
+            // Simple queries → fast model, Complex queries → smart model
+            const isSimple = wordCount < 10 
+                || /^(hi|hello|hey|help|thanks|thank|what is|how are|who are|contact|email|phone|address|location|price|cost|free|buy|purchase|order|book|reserve)/i.test(text);
+            
+            const isComplex = wordCount > 50 
+                || /\b(explain|analyze|compare|write|create|generate|translate|summary|detailed|comprehensive|research|write code|programming|debug|fix|error|problem|issue)\b/i.test(text);
+            
+            // Model priorities: fast response vs quality
+            const fastModel = 'anthropic/claude-3-haiku:free';
+            const smartModel = 'anthropic/claude-3-5-sonnet-20241002:free';
+            
+            let selectedModel = fastModel;
+            if (isComplex) {
+                selectedModel = smartModel;
+            }
+            
+            // Apply auto-selected model if different from current
+            if (selectedModel && selectedModel !== this.currentModel) {
+                this.currentModel = selectedModel;
+                this.updateModelLabel();
+                console.log('[AutoModel] Selected:', selectedModel, '(complexity:', isComplex ? 'high' : 'low', ')');
+            }
+        }
+
         async getAIResponse() {
             this.isThinking = true;
             const t0 = performance.now();
@@ -1064,6 +1172,8 @@ if (!window.BroxAssistantLoaded) {
                 }
             };
             try {
+                // Auto-select best model based on query before sending
+                await this.autoSelectModel();
                 const payload = {
                     messages: this.history,
                     visitorToken: this.visitorToken,

@@ -263,26 +263,76 @@ class RAGEngine
 
     /**
      * Generate embedding for text using available AI providers
-     * Falls back to simple hash-based representation if no provider available
+     * Uses sentence-transformers via Python subprocess for actual semantic embeddings
      */
     private function generateEmbedding(string $text): ?array
     {
-        // Try to use OpenAI or other embedding providers
-        // This is a simplified version - in production, integrate with actual API
-
-        // For now, generate a simple deterministic embedding
-        // In production, replace with actual embedding API call
+        // Try to use sentence-transformers via Python
+        $embedding = $this->generateEmbeddingPython($text);
+        
+        if ($embedding !== null) {
+            return $embedding;
+        }
+        
+        // Fallback to simple embedding if Python fails
         return $this->simpleEmbedding($text);
+    }
+
+    /**
+     * Generate embeddings using Python sentence-transformers
+     * Requires: pip install sentence-transformers
+     */
+    private function generateEmbeddingPython(string $text): ?array
+    {
+        // Escape text for shell
+        $escapedText = base64_encode($text);
+        
+        // Try Python script
+        $pythonScript = <<<'PYTHON'
+import sys
+import base64
+import json
+try:
+    from sentence_transformers import SentenceTransformer
+    model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+    data = base64.b64decode(sys.argv[1]).decode('utf-8')
+    embedding = model.encode(data, normalize_embeddings=True)
+    print(json.dumps(embedding.tolist()))
+except Exception as e:
+    print(f"ERROR:{e}", file=sys.stderr)
+    sys.exit(1)
+PYTHON;
+        
+        // Save temp script
+        $scriptPath = sys_get_temp_dir() . '/rag_embed_' . uniqid() . '.py';
+        file_put_contents($scriptPath, $pythonScript);
+        
+        $cmd = "python \"$scriptPath\" " . escapeshellarg($escapedText) . " 2>&1";
+        $output = trim(shell_exec($cmd));
+        
+        // Cleanup
+        @unlink($scriptPath);
+        
+        if (strpos($output, 'ERROR:') === 0) {
+            error_log('Python embedding failed: ' . $output);
+            return null;
+        }
+        
+        $embedding = json_decode($output, true);
+        
+        return is_array($embedding) ? $embedding : null;
     }
 
     /**
      * Simple hash-based embedding for fallback
      * Not semantic but provides deterministic results
+     * NOTE: all-MiniLM-L6-v2 produces 384-dim embeddings
      */
     private function simpleEmbedding(string $text): array
     {
         $tokens = preg_split('/\s+/', strtolower($text));
-        $embedding = array_fill(0, 128, 0.0);
+        // Use 384 dimensions to match sentence-transformers/all-MiniLM-L6-v2
+        $embedding = array_fill(0, 384, 0.0);
 
         foreach ($tokens as $i => $token) {
             $hash = crc32($token);
@@ -430,5 +480,139 @@ class RAGEngine
             'indexed' => $indexed,
             'failed' => $failed
         ];
+    }
+
+    /**
+     * Process uploaded file (PDF or image) and extract text for indexing/querying
+     * @param array $file PHP file upload array ($_FILES)
+     * @return array{success: bool, text: string, error?: string}
+     */
+    public function processFile(array $file): array
+    {
+        if (empty($file) || $file['error'] !== UPLOAD_ERR_OK) {
+            return ['success' => false, 'text' => '', 'error' => 'File upload error'];
+        }
+
+        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $tempPath = $file['tmp_name'];
+
+        try {
+            switch ($extension) {
+                case 'pdf':
+                    return $this->extractTextFromPDF($tempPath);
+                case 'png':
+                case 'jpg':
+                case 'jpeg':
+                case 'gif':
+                case 'webp':
+                    return $this->extractTextFromImage($tempPath);
+                case 'txt':
+                case 'md':
+                case 'csv':
+                    $text = file_get_contents($tempPath);
+                    return ['success' => true, 'text' => $text];
+                default:
+                    return ['success' => false, 'text' => '', 'error' => "Unsupported file type: $extension"];
+            }
+        } catch (\Exception $e) {
+            return ['success' => false, 'text' => '', 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Extract text from PDF using Python or fallback to basic extraction
+     * @param string $pdfPath Path to PDF file
+     * @return array{success: bool, text: string, error?: string}
+     */
+    public function extractTextFromPDF(string $pdfPath): array
+    {
+        // Try Python pymupdf first (better quality)
+        $pythonScript = base_path('rag_system/pdf_processor.py');
+        
+        if (file_exists($pythonScript)) {
+            $cmd = "python \"$pythonScript\" \"$pdfPath\" 2>&1";
+            $output = shell_exec($cmd);
+            
+            if ($output && strlen(trim($output)) > 10) {
+                return ['success' => true, 'text' => trim($output)];
+            }
+        }
+
+        // Fallback: basic PDF text extraction using pdftotext command
+        $tempText = sys_get_temp_dir() . '/pdf_extract_' . uniqid() . '.txt';
+        $cmd = "pdftotext -layout \"" . escapeshellcmd($pdfPath) . "\" \"" . escapeshellcmd($tempText) . "\" 2>&1";
+        
+        @exec($cmd, $output, $return);
+        
+        if (file_exists($tempText)) {
+            $text = file_get_contents($tempText);
+            @unlink($tempText);
+            
+            if (!empty($text)) {
+                return ['success' => true, 'text' => $text];
+            }
+        }
+
+        return ['success' => false, 'text' => '', 'error' => 'Could not extract text from PDF'];
+    }
+
+    /**
+     * Extract text from image using OCR (Python or Tesseract)
+     * @param string $imagePath Path to image file
+     * @return array{success: bool, text: string, error?: string}
+     */
+    public function extractTextFromImage(string $imagePath): array
+    {
+        // Try Python pytesseract/EasyOCR first
+        $pythonScript = base_path('rag_system/image_processor.py');
+        
+        if (file_exists($pythonScript)) {
+            $cmd = "python \"$pythonScript\" \"" . escapeshellcmd($imagePath) . "\" 2>&1";
+            $output = shell_exec($cmd);
+            
+            if ($output && strlen(trim($output)) > 5) {
+                return ['success' => true, 'text' => trim($output)];
+            }
+        }
+
+        // Fallback: use tesseract command line
+        $tempText = sys_get_temp_dir() . '/ocr_output_' . uniqid();
+        $cmd = "tesseract \"" . escapeshellcmd($imagePath) . "\" \"" . escapeshellcmd($tempText) . "\" 2>&1";
+        
+        @exec($cmd, $output, $return);
+        
+        $txtFile = $tempText . '.txt';
+        if (file_exists($txtFile)) {
+            $text = file_get_contents($txtFile);
+            @unlink($txtFile);
+            
+            if (!empty($text)) {
+                return ['success' => true, 'text' => $text];
+            }
+        }
+
+        return ['success' => false, 'text' => '', 'error' => 'Could not extract text from image'];
+    }
+
+    /**
+     * Multimodal query - accept text, image, or PDF as query input
+     * @param string $query User query
+     * @param array|null $file Optional file (PDF/image) to include in query
+     * @return string Extracted text from file + query
+     */
+    public function prepareMultimodalQuery(string $query, ?array $file = null): string
+    {
+        $queryText = $query;
+
+        // If file provided, extract text from it and combine with query
+        if (!empty($file) && $file['error'] === UPLOAD_ERR_OK) {
+            $extracted = $this->processFile($file);
+            
+            if ($extracted['success'] && !empty($extracted['text'])) {
+                $queryText = "Query: " . $query . "\n\nDocument content:\n" . $extracted['text'];
+            }
+        }
+
+        return $queryText;
     }
 }

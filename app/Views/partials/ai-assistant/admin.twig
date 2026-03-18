@@ -189,6 +189,13 @@
                     <small>Search knowledge base</small>
                 </div>
             </li>
+            <li class="brox-ai-slash-item" data-cmd="/web-search" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-globe"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/web-search</strong>
+                    <small>Search the web</small>
+                </div>
+            </li>
             <li class="brox-ai-slash-item" data-cmd="/optimize-db" role="menuitem">
                 <div class="brox-ai-slash-icon"><i class="bi bi-hdd"></i></div>
                 <div class="brox-ai-slash-info">
@@ -358,7 +365,6 @@
         }
 
         btn.addEventListener('click', function (e) {
-            console.log('[AdminCopilot] Main button clicked');
             e.preventDefault();
             e.stopPropagation();
             loadCopilot(true);
@@ -366,39 +372,13 @@
         
         // Also load copilot when clicking on attach button
         const attachBtn = document.getElementById('adminAiAttach');
-        console.log('[AdminCopilot] Attach button found:', !!attachBtn);
         if (attachBtn) {
             attachBtn.addEventListener('click', function (e) {
-                console.log('[AdminCopilot] Attach button clicked - event fired');
                 e.preventDefault();
                 e.stopPropagation();
                 loadCopilot(true);
             });
-        } else {
-            // Try with setInterval as fallback
-            console.log('[AdminCopilot] Attach button not found, trying interval');
-            let attachAttempts = 0;
-            const attachInterval = setInterval(() => {
-                const btn = document.getElementById('adminAiAttach');
-                attachAttempts++;
-                console.log('[AdminCopilot] Attempt', attachAttempts, '- button found:', !!btn);
-                if (btn) {
-                    clearInterval(attachInterval);
-                    btn.addEventListener('click', function(e) {
-                        console.log('[AdminCopilot] Attach button clicked (delayed)');
-                        e.preventDefault();
-                        e.stopPropagation();
-                        loadCopilot(true);
-                    });
-                }
-                if (attachAttempts > 20) clearInterval(attachInterval);
-            }, 500);
         }
-            if (window.BroxAdminInstance) return;
-            e.preventDefault();
-            e.stopPropagation();
-            loadCopilot(true);
-        });
 
         // Global keyboard shortcut handler
         document.addEventListener('keydown', function(e) {

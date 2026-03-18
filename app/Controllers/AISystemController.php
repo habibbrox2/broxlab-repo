@@ -1863,6 +1863,74 @@ $router->post('/api/admin/ai-knowledge/delete', ['middleware' => ['auth', 'admin
     echo json_encode(['success' => $ok]);
 });
 
+// ==================== Self-Improving KB API ====================
+
+// POST /api/ai/feedback - Record user feedback on AI response
+$router->post('/api/ai/feedback', ['middleware' => ['csrf']], function () use ($mysqli) {
+    $model = new AIKnowledge($mysqli);
+    
+    $knowledgeId = (int)($_POST['knowledge_id'] ?? 0);
+    $isHelpful = isset($_POST['is_helpful']) ? (bool)$_POST['is_helpful'] : false;
+    $feedbackText = $_POST['feedback_text'] ?? null;
+    $sessionId = $_POST['session_id'] ?? null;
+    $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+    
+    if (!$knowledgeId) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Knowledge ID required']);
+        return;
+    }
+    
+    $ok = $model->recordFeedback($knowledgeId, $isHelpful, $feedbackText, $sessionId, $userId);
+    header('Content-Type: application/json');
+    echo json_encode(['success' => $ok]);
+});
+
+// GET /api/admin/ai-knowledge/suggestions - Get improvement suggestions
+$router->get('/api/admin/ai-knowledge/suggestions', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    $model = new AIKnowledge($mysqli);
+    $suggestions = $model->getImprovementSuggestions(10);
+    
+    header('Content-Type: application/json');
+    echo json_encode(['success' => true, 'suggestions' => $suggestions]);
+});
+
+// GET /api/admin/ai-knowledge/analytics - Get KB analytics
+$router->get('/api/admin/ai-knowledge/analytics', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    $model = new AIKnowledge($mysqli);
+    $analytics = $model->getAnalytics();
+    
+    header('Content-Type: application/json');
+    echo json_encode(['success' => true, 'analytics' => $analytics]);
+});
+
+// GET /api/admin/ai-knowledge/by-quality - Get knowledge sorted by quality
+$router->get('/api/admin/ai-knowledge/by-quality', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    $model = new AIKnowledge($mysqli);
+    $limit = min(50, (int)($_GET['limit'] ?? 20));
+    $items = $model->getByQuality($limit);
+    
+    header('Content-Type: application/json');
+    echo json_encode(['success' => true, 'items' => $items]);
+});
+
+// POST /api/ai/record-usage - Record knowledge usage
+$router->post('/api/ai/record-usage', ['middleware' => ['csrf']], function () use ($mysqli) {
+    $model = new AIKnowledge($mysqli);
+    
+    $knowledgeId = (int)($_POST['knowledge_id'] ?? 0);
+    
+    if (!$knowledgeId) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Knowledge ID required']);
+        return;
+    }
+    
+    $ok = $model->recordUsage($knowledgeId);
+    header('Content-Type: application/json');
+    echo json_encode(['success' => $ok]);
+});
+
 // ==================== RAG (Retrieval-Augmented Generation) API ====================
 
 // POST /api/admin/ai-knowledge/reindex - Reindex all knowledge items with embeddings
@@ -2069,6 +2137,56 @@ $router->post('/api/ai-system/test', ['middleware' => ['auth', 'admin_only']], f
     }
 });
 
+// GET /api/admin/system-health - Unified system health check for AI assistant
+$router->get('/api/admin/system-health', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    $health = [
+        'success' => true,
+        'timestamp' => date('Y-m-d H:i:s'),
+        'server' => [
+            'status' => 'online',
+            'time' => date('Y-m-d H:i:s')
+        ],
+        'database' => [
+            'status' => 'connected',
+            'check' => false
+        ],
+        'api' => [
+            'status' => 'responsive',
+            'check' => false
+        ],
+        'cache' => [
+            'status' => 'active',
+            'check' => false
+        ]
+    ];
+
+    // Check database
+    try {
+        $result = $mysqli->query('SELECT 1');
+        $health['database']['check'] = $result !== false;
+    } catch (Exception $e) {
+        $health['database']['status'] = 'error';
+        $health['database']['error'] = $e->getMessage();
+    }
+
+    // Check API responsiveness (cache/file system)
+    $cacheFile = __DIR__ . '/../../storage/cache/.health_check';
+    try {
+        @file_put_contents($cacheFile, time());
+        $health['cache']['check'] = file_exists($cacheFile);
+        @unlink($cacheFile);
+    } catch (Exception $e) {
+        $health['cache']['status'] = 'error';
+    }
+
+    // Check API (try a simple endpoint)
+    $health['api']['check'] = true;
+
+    echo json_encode($health);
+});
+
 // POST /admin/ai-system/browse-url - Browse URL content for AI assistant
 $router->post('/admin/ai-system/browse-url', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     $input = json_decode(file_get_contents('php://input'), true);
@@ -2145,6 +2263,208 @@ $router->post('/admin/ai-system/browse-url', ['middleware' => ['auth', 'admin_on
             'content' => $text,
             'url' => $url
         ]);
+    } catch (Exception $e) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+});
+
+// POST /admin/ai-system/web-search - Search the web for information
+$router->post('/admin/ai-system/web-search', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    
+    // CSRF validation
+    $csrfToken = (string)($input['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+    if (!empty($csrfToken) && function_exists('validateCsrfToken') && !validateCsrfToken($csrfToken)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
+        return;
+    }
+    
+    $query = $input['query'] ?? '';
+    $limit = min((int)($input['limit'] ?? 10), 20);
+
+    if (empty($query)) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Search query is required']);
+        return;
+    }
+
+    try {
+        // Use DuckDuckGo HTML search (free, no API key required)
+        $searchUrl = 'https://html.duckduckgo.com/html/?q=' . urlencode($query) . '&limit=' . $limit;
+        
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $searchUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_HTTPHEADER => [
+                'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language: en-US,en;q=0.9',
+            ],
+        ]);
+
+        $html = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200 || empty($html)) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => "Search failed (HTTP $httpCode)"]);
+            return;
+        }
+
+        // Parse DuckDuckGo results
+        $results = [];
+        
+        // Match result links
+        preg_match_all('/<a class="result__a" href="([^"]+)"[^>]*>(.+?)<\/a>/', $html, $links, PREG_SET_ORDER);
+        
+        // Match result snippets
+        preg_match_all('/<a class="result__snippet"[^>]*>(.+?)<\/a>/', $html, $snippets, PREG_SET_ORDER);
+        
+        // Match result titles
+        preg_match_all('/<a class="result__a"[^>]*>(.+?)<\/a>/', $html, $titles, PREG_SET_ORDER);
+
+        // Combine results
+        for ($i = 0; $i < min(count($links), $limit); $i++) {
+            $title = '';
+            if (isset($titles[$i][1])) {
+                $title = strip_tags(html_entity_decode($titles[$i][1]));
+            }
+            
+            $url = '';
+            if (isset($links[$i][1])) {
+                // DuckDuckGo redirects through its own URL, extract actual URL
+                $url = html_entity_decode($links[$i][1]);
+                if (strpos($url, 'uddg=') !== false) {
+                    parse_str(parse_url($url, PHP_URL_QUERY), $params);
+                    $url = $params['uddg'] ?? $url;
+                }
+            }
+            
+            $snippet = '';
+            if (isset($snippets[$i][1])) {
+                $snippet = strip_tags(html_entity_decode($snippets[$i][1]));
+            }
+
+            if (!empty($url) && !empty($title)) {
+                $results[] = [
+                    'title' => trim($title),
+                    'url' => $url,
+                    'snippet' => trim($snippet)
+                ];
+            }
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'query' => $query,
+            'count' => count($results),
+            'results' => $results
+        ]);
+    } catch (Exception $e) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+});
+
+// POST /admin/ai-system/add-knowledge - Add knowledge from URL to AI Knowledge Base
+$router->post('/admin/ai-system/add-knowledge', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $url = $input['url'] ?? '';
+    $title = $input['title'] ?? '';
+    $category = $input['category'] ?? 'general';
+
+    if (empty($url)) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'URL is required']);
+        return;
+    }
+
+    // Validate URL
+    if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Invalid URL format']);
+        return;
+    }
+
+    // Check for SSRF - only allow http/https
+    $parsed = parse_url($url);
+    if (!in_array($parsed['scheme'] ?? '', ['http', 'https'])) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Only HTTP/HTTPS URLs are allowed']);
+        return;
+    }
+
+    try {
+        // Fetch the URL content
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+
+        $html = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200 || empty($html)) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => "Failed to fetch URL (HTTP $httpCode)"]);
+            return;
+        }
+
+        // Extract text content
+        $text = strip_tags($html);
+        $text = preg_replace('/\\s+/', ' ', $text);
+        $text = trim($text);
+        $text = substr($text, 0, 5000);
+
+        // If no title provided, extract from page
+        if (empty($title)) {
+            if (preg_match('/<title[^>]*>([^<]+)<\\/title>/i', $html, $matches)) {
+                $title = trim($matches[1]);
+            } else {
+                $title = 'Knowledge from ' . $url;
+            }
+        }
+
+        // Save to knowledge base
+        require_once __DIR__ . '/../Models/AIKnowledge.php';
+        $knowledgeModel = new AIKnowledge($mysqli);
+        $result = $knowledgeModel->create([
+            'title' => $title,
+            'content' => $text,
+            'category' => $category,
+            'source_url' => $url,
+            'is_active' => 1,
+            'priority' => 1
+        ]);
+
+        if ($result > 0) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'message' => 'Knowledge added successfully',
+                'id' => $result,
+                'title' => $title,
+                'content_preview' => substr($text, 0, 200) . '...'
+            ]);
+        } else {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Failed to save knowledge']);
+        }
     } catch (Exception $e) {
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);

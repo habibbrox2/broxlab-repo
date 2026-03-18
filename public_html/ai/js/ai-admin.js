@@ -493,6 +493,7 @@ if (!window.BroxAdminInstance) {
             this.startLogMonitor();
             this.renderHistory();
             this.updateContext();
+            this.startInactivityTimer();
 
             console.log('[Admin Copilot] Initialized with', this.history.length, 'messages');
         }
@@ -1534,7 +1535,7 @@ if (!window.BroxAdminInstance) {
                 sanitized = validation.sanitized;
 
                 // Local command handling (no server call)
-                const cmdMatch = sanitized.match(/^\/(collect-data|autofill|summarize|analyze-logs|generate-report|check-security|fix-permissions|clear-cache|search-kb|optimize-db|deploy-status|health-check)\b/i);
+                const cmdMatch = sanitized.match(/^\/(collect-data|autofill|summarize|analyze-logs|generate-report|check-security|fix-permissions|clear-cache|search-kb|web-search|optimize-db|deploy-status|health-check)\b/i);
                 if (cmdMatch) {
                     const cmd = cmdMatch[1].toLowerCase();
                     this.updateStatus('loading', 'Running command...');
@@ -1566,6 +1567,9 @@ if (!window.BroxAdminInstance) {
                         case 'search-kb':
                             await this.handleSearchKB();
                             break;
+                        case 'web-search':
+                            await this.handleSearchWeb();
+                            break;
                         case 'optimize-db':
                             await this.handleOptimizeDB();
                             break;
@@ -1574,6 +1578,9 @@ if (!window.BroxAdminInstance) {
                             break;
                         case 'health-check':
                             await this.handleHealthCheck();
+                            break;
+                        case 'add-knowledge':
+                            await this.handleAddKnowledge();
                             break;
                         default:
                             this.addMessage('assistant', 'Unknown command. Type / for available commands.');
@@ -2148,8 +2155,6 @@ if (!window.BroxAdminInstance) {
         // ==================== NEW ADMIN COMMANDS ====================
 
         async handleSummarize() {
-            this.addMessage('assistant', '📝 *Summarize Current Page*\n\nAnalyzing page content...');
-
             // Get page title and content
             const pageTitle = document.title || 'Unknown Page';
             const pageUrl = window.location.href;
@@ -2166,8 +2171,6 @@ if (!window.BroxAdminInstance) {
         }
 
         async handleAnalyzeLogs() {
-            this.addMessage('assistant', '🔍 *Analyzing System Logs*\n\nFetching recent error logs...');
-
             try {
                 const res = await fetch('/api/admin/logs/errors?limit=20', { credentials: 'same-origin' });
                 const data = await res.json();
@@ -2186,8 +2189,6 @@ if (!window.BroxAdminInstance) {
         }
 
         async handleGenerateReport() {
-            this.addMessage('assistant', '📊 *Generating Analytics Report*\n\nFetching analytics data...');
-
             try {
                 const res = await fetch('/api/admin/analytics/summary', { credentials: 'same-origin' });
                 const data = await res.json();
@@ -2206,8 +2207,6 @@ if (!window.BroxAdminInstance) {
         }
 
         async handleCheckSecurity() {
-            this.addMessage('assistant', '🛡️ *Running Security Audit*\n\nChecking security settings...');
-
             const checks = [
                 { name: 'HTTPS', status: window.location.protocol === 'https:' },
                 { name: 'Auth Token', status: !!localStorage.getItem('auth_token') },
@@ -2220,8 +2219,6 @@ if (!window.BroxAdminInstance) {
         }
 
         async handleFixPermissions() {
-            this.addMessage('assistant', '👤 *Checking User Permissions*\n\nVerifying your access level...');
-
             const userRole = localStorage.getItem('user_role') || 'guest';
             const isAdmin = userRole === 'admin' || userRole === 'super_admin';
 
@@ -2230,8 +2227,6 @@ if (!window.BroxAdminInstance) {
         }
 
         async handleClearCache() {
-            this.addMessage('assistant', '🗑️ *Clearing System Cache*\n\nClearing local caches...');
-
             // Clear various caches
             const cleared = [];
             try {
@@ -2290,9 +2285,51 @@ if (!window.BroxAdminInstance) {
             this.saveHistory();
         }
 
-        async handleOptimizeDB() {
-            this.addMessage('assistant', '⚙️ *Database Optimization*\n\nThis may take a moment...');
+        async handleSearchWeb() {
+            // Extract query from command if provided (e.g., /web-search python tutorial)
+            let query = '';
+            const inputValue = this.nodes.input?.value || '';
+            const match = inputValue.match(/^\/web-search\s+(.+)$/i);
+            if (match && match[1]) {
+                query = match[1].trim();
+            }
 
+            if (!query) {
+                this.addMessage('assistant', '🌐 *Web Search*\n\nUsage: /web-search <your question>\n\nExample: /web-search latest AI news\n\nSearches the web using DuckDuckGo.');
+                this.saveHistory();
+                return;
+            }
+
+            this.addMessage('assistant', `🌐 *Searching the web for: ${query}...*`);
+
+            try {
+                const csrfToken = typeof getCsrfToken === 'function' ? getCsrfToken() : '';
+                const res = await fetch('/admin/ai-system/web-search', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ query: query, limit: 10 })
+                });
+                const data = await res.json();
+
+                if (data.success && data.results && data.results.length > 0) {
+                    const items = data.results.map((r, i) =>
+                        `${i + 1}. [${r.title}](${r.url})\n   ${r.snippet ? r.snippet.substring(0, 150) + '...' : 'No description'}`
+                    ).join('\n\n');
+                    this.addMessage('assistant', `🌐 *Web Search Results for: ${query}*\n\n${items}\n\n_Results powered by DuckDuckGo_`);
+                } else {
+                    this.addMessage('assistant', `🌐 *No results found for: ${query}*`);
+                }
+            } catch (e) {
+                this.addMessage('assistant', '❌ Failed to search the web. Please try again.');
+            }
+            this.saveHistory();
+        }
+
+        async handleOptimizeDB() {
             // Simulate optimization (actual DB ops require server-side)
             setTimeout(() => {
                 this.addMessage('assistant', '✅ **Database Optimization**\n\n• Indexes analyzed\n• Query cache cleared\n• Connection pool reset\n\n_For full optimization, use server tools._');
@@ -2301,8 +2338,6 @@ if (!window.BroxAdminInstance) {
         }
 
         async handleDeployStatus() {
-            this.addMessage('assistant', '☁️ *Checking Deployment Status*\n\nConnecting to deployment service...');
-
             try {
                 const res = await fetch('/api/admin/deploy/status', { credentials: 'same-origin' });
                 const data = await res.json();
@@ -2319,8 +2354,6 @@ if (!window.BroxAdminInstance) {
         }
 
         async handleHealthCheck() {
-            this.addMessage('assistant', '💚 *System Health Check*\n\nRunning diagnostics...');
-
             const checks = {
                 'Server': 'online',
                 'Database': 'connected',
@@ -2330,6 +2363,46 @@ if (!window.BroxAdminInstance) {
 
             const results = Object.entries(checks).map(([k, v]) => `• ${k}: ✅ ${v}`).join('\n');
             this.addMessage('assistant', `**💚 System Health**\n\n${results}\n\n_All systems operational._`);
+            this.saveHistory();
+        }
+
+        async handleAddKnowledge() {
+            // Extract URL from input
+            const inputValue = this.nodes.input?.value || '';
+            const url = this.extractUrlFromText(inputValue);
+
+            // Also check if user provided URL in command args
+            const cmdMatch = inputValue.match(/^\/add-knowledge\s+(.+)$/i);
+            const providedUrl = cmdMatch ? cmdMatch[1].trim() : url;
+
+            if (!providedUrl) {
+                this.addMessage('assistant', '📚 *Add Knowledge*\n\nPlease provide a URL to add knowledge from.\n\nUsage: `/add-knowledge https://example.com`');
+                this.saveHistory();
+                return;
+            }
+
+            this.updateStatus('loading', 'Fetching and adding knowledge...');
+
+            try {
+                const response = await fetch('/admin/ai-system/add-knowledge', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ url: providedUrl })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    this.addMessage('assistant', `✅ *Knowledge Added Successfully!*\n\n**Title:** ${data.title}\n\n**Preview:** ${data.content_preview}\n\nThis knowledge is now available for AI context.`);
+                } else {
+                    this.addMessage('assistant', `❌ Failed to add knowledge: ${data.error}`);
+                }
+            } catch (err) {
+                this.addMessage('assistant', `❌ Error: ${err.message}`);
+            }
+            this.updateStatus('ready', 'Ready');
             this.saveHistory();
         }
 
@@ -2635,9 +2708,163 @@ if (!window.BroxAdminInstance) {
             document.removeEventListener('keydown', this.keydownHandler);
         }
 
+        // ── Auto Model Selection for Faster Responses ───────────────────────────
+        async autoSelectModel() {
+            // Skip if user has manually selected a model - respect their choice
+            const userSelectedModel = this.nodes.modelSel?.value;
+            if (userSelectedModel && userSelectedModel !== this.defaultModel) {
+                return;
+            }
+
+            // Get the latest user message
+            const lastUserMsg = [...this.history].reverse().find(m => m.role === 'user');;
+            if (!lastUserMsg) return;
+
+            // Extract text from message content
+            let queryText = '';
+            if (typeof lastUserMsg.content === 'string') {
+                queryText = lastUserMsg.content;
+            } else if (Array.isArray(lastUserMsg.content)) {
+                queryText = lastUserMsg.content.find(c => c.type === 'text')?.text || '';
+            }
+
+            if (!queryText) return;
+
+            const textLength = queryText.length;
+            const wordCount = queryText.split(/\s+/).length;
+
+            // Define model tiers
+            const fastModels = [
+                'claude-3-haiku',
+                'gpt-4o-mini',
+                'gpt-3.5-turbo',
+                'gemini-1.5-flash',
+                'llama-3.1-8b',
+                'qwen-2.5-7b'
+            ];
+
+            const mediumModels = [
+                'claude-3.5-sonnet',
+                'gpt-4o',
+                'gemini-1.5-pro'
+            ];
+
+            const slowModels = [
+                'claude-3-opus',
+                'gpt-4-turbo',
+                'gemini-2.0-flash-exp'
+            ];
+
+            // Determine query complexity
+            const isSimple = textLength < 100 && wordCount < 20;
+            const isMedium = textLength >= 100 && textLength < 500 && wordCount < 100;
+            const isComplex = textLength >= 500 || wordCount >= 100;
+
+            // Check for complex tasks that need better models
+            const complexKeywords = [
+                'analyze', 'compare', 'explain', 'debug', 'write code',
+                'create', 'generate', 'build', 'implement', 'review',
+                'security', 'optimize', 'refactor', 'architecture'
+            ];
+            const hasComplexTask = complexKeywords.some(kw =>
+                queryText.toLowerCase().includes(kw)
+            );
+
+            // Select appropriate model
+            let selectedModel = null;
+
+            if (isSimple && !hasComplexTask) {
+                // Use fast model for simple queries
+                selectedModel = fastModels[0];
+            } else if (isMedium || hasComplexTask) {
+                // Use medium model for medium complexity
+                selectedModel = mediumModels[0];
+            } else if (isComplex) {
+                // Use slow model for complex queries
+                selectedModel = slowModels[0];
+            }
+
+            // Apply auto-selected model if different from current
+            if (selectedModel && selectedModel !== this.currentModel) {
+                // Check if model is available
+                const availableModels = this.cachedModels || [];
+                if (availableModels.includes(selectedModel)) {
+                    this.currentModel = selectedModel;
+                    this.updateModelLabel();
+                    console.log('[Auto Model] Selected faster model:', selectedModel);
+                }
+            }
+        }
+
+        // ── Inactivity Timer - Auto-start new conversation after 5 min ─────────────
+        startInactivityTimer() {
+            // 5 minutes = 300000 ms
+            this.inactivityTimeout = 5 * 60 * 1000;
+            this.lastActivity = Date.now();
+
+            // Check every 30 seconds
+            this._inactivityCheck = setInterval(() => {
+                const now = Date.now();
+                const inactiveTime = now - this.lastActivity;
+
+                if (inactiveTime >= this.inactivityTimeout && this.history.length > 0) {
+                    console.log('[Inactivity] 5 min inactive - saving conversation to history');
+                    this.archiveCurrentConversation();
+                }
+            }, 30000);
+
+            // Listen for user activity
+            this._activityEvents = ['click', 'keydown', 'scroll', 'mousemove'];
+            this._activityEvents.forEach(event => {
+                document.addEventListener(event, () => this.resetInactivityTimer(), { passive: true });
+            });
+
+            console.log('[Inactivity] Timer started - will archive after 5 min of inactivity');
+        }
+
+        resetInactivityTimer() {
+            this.lastActivity = Date.now();
+        }
+
+        archiveCurrentConversation() {
+            if (this.history.length === 0) return;
+
+            // Save current conversation to localStorage
+            const archived = JSON.parse(localStorage.getItem('aiAdminArchived') || '[]');
+            const conversation = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                messages: this.history.slice()
+            };
+
+            // Keep only last 10 archived conversations
+            archived.unshift(conversation);
+            if (archived.length > 10) archived.pop();
+
+            localStorage.setItem('aiAdminArchived', JSON.stringify(archived));
+
+            // Clear current history and start new conversation
+            this.history = [];
+            this.saveHistory();
+            this.renderHistory();
+            this.updateContext();
+
+            // Reset inactivity timer
+            this.lastActivity = Date.now();
+
+            this.updateStatus('ready', 'New conversation started');
+            console.log('[Inactivity] Conversation archived, new conversation started');
+        }
+
         // ── AI Response (SSE Streaming) ─────────────────────────────────────────
         async getAIResponse() {
             if (!this.nodes.body) return;
+
+            // Reset inactivity timer on user activity
+            this.resetInactivityTimer();
+
+            // Auto-select model based on query complexity for faster responses
+            await this.autoSelectModel();
 
             this.isThinking = true;
             const t0 = performance.now();

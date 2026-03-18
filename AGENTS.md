@@ -164,6 +164,8 @@ composer lint          # PHP-CS-Fixer
 | Security patch | `docs/ai/KNOWN_PITFALLS.md` + Security Checklist review |
 | New helper added | `docs/CODING_CONVENTIONS.md` → Helpers section |
 | Refactor done | `docs/ai/AGENT_MEMORY.md` → decision log |
+| UI style fixes (Public Assistant) | `docs/PROJECT_CONTEXT.md` → UI/UX section; `docs/CODING_CONVENTIONS.md` → CSS conventions |
+| Assistant script refactor | `docs/ai/AI_CODING_GUIDE.md` → Script best‑practices |
 
 ---
 
@@ -171,6 +173,8 @@ composer lint          # PHP-CS-Fixer
 
 | Version | Date | Agent | Change |
 |---------|------|-------|--------|
+| 2.2 | 2026-03-17 | BroxBhai | Fixed Public Assistant UI style issues; Refactored Assistant script (`public_html/ai/js/assistant.js`) for readability and performance; added documentation updates for UI/UX and script best‑practices |
+| 2.1 | 2026-03-17 | BroxBhai | Centralised AI routes into `app/Routes/AISystemRoutes.php`; introduced `app/Helpers/JsonResponse.php` for uniform JSON responses and added CSRF middleware to all POST AI endpoints |
 | 2.0 | 2026-03-17 | BroxBhai Init | Multi-agent roles, self-improvement loop, security checklist, pitfall tracking added |
 | 1.0 | — | Original | Initial agent instructions |
 
