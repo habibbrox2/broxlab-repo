@@ -9,6 +9,8 @@
 require_once __DIR__ . '/../Models/AIProvider.php';
 require_once __DIR__ . '/../Models/AppSettings.php';
 require_once __DIR__ . '/../Helpers/PromptLoader.php';
+require_once __DIR__ . '/../Helpers/ToolRegistry.php';
+require_once __DIR__ . '/../Helpers/ToolDefinitions.php';
 require_once __DIR__ . '/../Models/AIChatModel.php';
 require_once __DIR__ . '/../Models/AuthManager.php';
 require_once __DIR__ . '/../Models/UploadService.php';
@@ -195,14 +197,29 @@ function aiChatExtractImageReferences(array $messages): array
             }
             $image = $part['image_url'] ?? [];
             $url = $image['url'] ?? null;
+            
+            // Support multiple image input formats:
+            // 1. URL: "https://..."
+            // 2. Base64: "data:image/png;base64,..."
+            // 3. File ID: "file-id-from-upload"
             if (!$url) {
                 continue;
             }
+            
+            // Extract detail level (low, high, original, auto) - default to "high" for better analysis
+            $detail = $image['detail'] ?? 'high';
+            if (!in_array($detail, ['low', 'high', 'original', 'auto'], true)) {
+                $detail = 'high';
+            }
+            
             $refs[] = [
                 'url' => $url,
                 'name' => $image['name'] ?? null,
                 'mime' => $image['mime'] ?? null,
-                'size' => isset($image['size']) ? (int)$image['size'] : null
+                'size' => isset($image['size']) ? (int)$image['size'] : null,
+                'detail' => $detail,
+                'is_base64' => strpos($url, 'data:') === 0,
+                'is_url' => strpos($url, 'http') === 0
             ];
         }
     }
@@ -226,7 +243,10 @@ function aiChatMergeImageReferences(array $existing, array $incoming): array
             'url' => $url,
             'name' => $ref['name'] ?? null,
             'mime' => $ref['mime'] ?? null,
-            'size' => isset($ref['size']) ? (int)$ref['size'] : null
+            'size' => isset($ref['size']) ? (int)$ref['size'] : null,
+            'detail' => $ref['detail'] ?? 'high',
+            'is_base64' => $ref['is_base64'] ?? (strpos($url, 'data:') === 0),
+            'is_url' => $ref['is_url'] ?? (strpos($url, 'http') === 0)
         ];
     }
     return $merged;
@@ -267,6 +287,9 @@ function aiChatAppendImageContext(string $prompt, array $imageRefs): string
         if (!empty($img['size'])) {
             $metaParts[] = $img['size'] . ' bytes';
         }
+        if (!empty($img['detail'])) {
+            $metaParts[] = 'detail: ' . $img['detail'];
+        }
         if (!empty($metaParts)) {
             $line .= ' (' . implode(', ', $metaParts) . ')';
         }
@@ -274,6 +297,168 @@ function aiChatAppendImageContext(string $prompt, array $imageRefs): string
     }
 
     return $prompt . "\n" . implode("\n", $lines);
+}
+
+/**
+ * Build vision-compatible message content with proper image format
+ * Supports: URLs, Base64 data URLs, and file references
+ * 
+ * @param array $messages Original messages
+ * @param array $imageRefs Extracted image references
+ * @return array Messages formatted for vision models
+ */
+function aiChatBuildVisionMessages(array $messages, array $imageRefs): array
+{
+    if (empty($imageRefs)) {
+        return $messages;
+    }
+    
+    $builtMessages = [];
+    
+    foreach ($messages as $msg) {
+        if (!is_array($msg)) {
+            $builtMessages[] = $msg;
+            continue;
+        }
+        
+        $role = $msg['role'] ?? 'user';
+        $content = $msg['content'] ?? '';
+        
+        // If content is a string and there are images, convert to multimodal format
+        if (is_string($content) && !empty($imageRefs) && $role === 'user') {
+            $newContent = [];
+            
+            // Add text part
+            if (!empty(trim($content))) {
+                $newContent[] = [
+                    'type' => 'text',
+                    'text' => $content
+                ];
+            }
+            
+            // Add image parts
+            foreach ($imageRefs as $img) {
+                $imageData = [
+                    'url' => $img['url'],
+                    'detail' => $img['detail'] ?? 'high'
+                ];
+                
+                // Add name if available
+                if (!empty($img['name'])) {
+                    $imageData['name'] = $img['name'];
+                }
+                
+                $newContent[] = [
+                    'type' => 'image_url',
+                    'image_url' => $imageData
+                ];
+            }
+            
+            $builtMessages[] = [
+                'role' => $role,
+                'content' => $newContent
+            ];
+        } else {
+            // Pass through as-is (already in multimodal format)
+            $builtMessages[] = $msg;
+        }
+    }
+    
+    return $builtMessages;
+}
+
+/**
+ * Check if a model supports vision/images
+ */
+function aiChatSupportsVision(?string $model): bool
+{
+    if (empty($model)) {
+        return true; // Default to allowing
+    }
+    
+    $modelLower = strtolower($model);
+    
+    // Known vision models
+    $visionIndicators = [
+        'vision', 'gpt-4o', 'gpt-4-vision', 'gpt-4-turbo',
+        'claude-3', 'claude-3.5', 'claude-3.7',
+        'gemini', 'llama-3.2', 'qwen2-vl', 'pixtral',
+        'minimax', 'deepseek-vl'
+    ];
+    
+    foreach ($visionIndicators as $indicator) {
+        if (strpos($modelLower, $indicator) !== false) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * Encode a local image file as base64 data URL
+ * Supports: PNG, JPEG, WEBP, GIF
+ * 
+ * @param string $filePath Path to the image file
+ * @return string|null Base64 data URL or null on failure
+ */
+function aiChatEncodeImageBase64(string $filePath): ?string
+{
+    if (!file_exists($filePath) || !is_readable($filePath)) {
+        return null;
+    }
+    
+    $mimeTypes = [
+        'png' => 'image/png',
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'webp' => 'image/webp',
+        'gif' => 'image/gif'
+    ];
+    
+    $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+    $mime = $mimeTypes[$ext] ?? 'image/png';
+    
+    $data = file_get_contents($filePath);
+    if ($data === false) {
+        return null;
+    }
+    
+    $base64 = base64_encode($data);
+    return "data:{$mime};base64,{$base64}";
+}
+
+/**
+ * Download and encode a remote image as base64
+ * 
+ * @param string $url Remote image URL
+ * @return string|null Base64 data URL or null on failure
+ */
+function aiChatEncodeRemoteImage(string $url): ?string
+{
+    $context = stream_context_create([
+        'http' => [
+            'timeout' => 10,
+            'follow_location' => 1,
+            'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        ]
+    ]);
+    
+    $data = @file_get_contents($url, false, $context);
+    if ($data === false) {
+        return null;
+    }
+    
+    // Detect MIME type from content
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $finfo->buffer($data);
+    
+    if (strpos($mime, 'image/') !== 0) {
+        return null;
+    }
+    
+    $base64 = base64_encode($data);
+    return "data:{$mime};base64,{$base64}";
 }
 
 function aiChatParseSlashCommand(string $text): ?array
@@ -591,68 +776,69 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
 
     $lastUserMessage = aiChatLastUserMessage($messages);
 
-    // Admin-only slash commands routing
-    $cmd = ($isAdmin && $lastUserMessage !== '') ? aiChatParseSlashCommand($lastUserMessage) : null;
+    // Admin-only slash commands routing via ToolRegistry
+    $cmd = ($isAdmin && $lastUserMessage !== '') ? ToolRegistry::parseCommand($lastUserMessage) : null;
+    
+    // Backward compatibility: map old command names to new ones
+    $commandAliases = [
+        'diagnostics' => 'get_system_health',
+        'db-query' => 'query_database',
+        'db_query' => 'query_database',
+        'table-stats' => 'get_table_stats',
+        'table_stats' => 'get_table_stats',
+        'analyze-logs' => 'analyze_error_logs',
+        'analyze_logs' => 'analyze_error_logs',
+        'summarize' => 'summarize_text',
+        'cache-stats' => 'get_cache_stats',
+        'cache_stats' => 'get_cache_stats',
+        'user-stats' => 'get_user_stats',
+        'user_stats' => 'get_user_stats',
+        'content-stats' => 'get_content_stats',
+        'content_stats' => 'get_content_stats',
+        'help' => 'list_tools',
+    ];
+    
     if ($cmd) {
-        $supported = ['summarize', 'analyze-logs'];
-        if (!in_array($cmd['cmd'], $supported, true)) {
+        // Resolve command alias
+        $originalCmd = $cmd['cmd'];
+        $cmd['cmd'] = $commandAliases[$cmd['cmd']] ?? $cmd['cmd'];
+        
+        // Execute tool via registry
+        $toolResult = ToolRegistry::execute($cmd['cmd'], $cmd['args'], $mysqli);
+
+        if (!$toolResult['success']) {
+            $errorMsg = $toolResult['error'] ?? 'Tool execution failed';
+            $errorCode = $toolResult['error_code'] ?? 'tool_error';
+
+            // Provide helpful error for unknown tools
+            if ($errorCode === 'tool_not_found') {
+                $availableTools = array_map(fn($t) => '/'.$t['name'], ToolRegistry::listTools());
+                $errorMsg = "Unknown command: /{$originalCmd}\n\nAvailable: " . implode(', ', $availableTools);
+            }
+
             aiChatSendJson([
                 'success' => false,
-                'error' => 'Not implemented yet. Supported: /summarize, /analyze-logs',
-                'error_code' => 'unsupported_command'
+                'error' => $errorMsg,
+                'error_code' => $errorCode
             ], 400);
             return;
         }
 
-        // Command mode disables KB + image context (logs-only addon; no DOM snapshot)
+        // Command mode disables KB + image context
         $imageRefs = [];
         $hasImageContent = false;
 
-        if ($cmd['cmd'] === 'summarize') {
-            $summarizerPath = __DIR__ . '/../../system/prompts/summarizer.md';
-            $summarizerPrompt = file_exists($summarizerPath) ? (string)file_get_contents($summarizerPath) : '';
-            $target = $cmd['args'] !== ''
-                ? $cmd['args']
-                : ("[ADMIN CONTEXT]\n" . trim((string)($contextData ? json_encode($contextData, JSON_UNESCAPED_UNICODE) : '')) . "\n\n"
-                    . "[RECENT CONVERSATION]\n" . aiChatBuildRecentConversationText($messages, 10));
+        // Format tool output for AI to present to user
+        $toolOutput = json_encode($toolResult['data'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $execTime = $toolResult['execution_time_ms'] ?? 0;
+        $cached = !empty($toolResult['cached']) ? ' (cached)' : '';
+        $callId = $cmd['call_id'] ?? 'call_' . bin2hex(random_bytes(8));
 
-            $systemPrompt .= "\n\n[MODE: SUMMARIZE]\nReturn a concise summary. Follow the summarizer rules below.\n\n" . $summarizerPrompt;
-            $messages = [
-                ['role' => 'user', 'content' => $target]
-            ];
-            $lastUserMessage = $target;
-        }
-
-        if ($cmd['cmd'] === 'analyze-logs') {
-            $path = aiChatResolveErrorLogPath();
-            if (!file_exists($path)) {
-                aiChatSendJson([
-                    'success' => false,
-                    'error' => 'Log file not found: storage/logs/errors.log',
-                    'error_code' => 'log_missing'
-                ], 404);
-                return;
-            }
-            $raw = aiChatReadLastLines($path, 200);
-            $errors = aiChatSelectRecentErrors($raw, 25);
-            $errorsText = $errors ? implode("\n", $errors) : '(No recent ERROR/CRITICAL/WARNING lines found.)';
-
-            $hint = $cmd['args'] !== '' ? ("\n\n[HINT]\n" . $cmd['args']) : '';
-            $userText =
-                "[RECENT ERRORS]\n" . $errorsText . "\n\n" .
-                "[ADMIN CONTEXT]\n" . trim((string)($contextData ? json_encode($contextData, JSON_UNESCAPED_UNICODE) : '')) .
-                $hint . "\n\n" .
-                "Analyze the errors and provide:\n"
-                . "1) Most likely root cause (ranked)\n"
-                . "2) Concrete next steps\n"
-                . "3) What to check in /admin/error-logs\n";
-
-            $systemPrompt .= "\n\n[MODE: ANALYZE LOGS]\nDo not request secrets. Do not suggest destructive actions without confirmation.\n";
-            $messages = [
-                ['role' => 'user', 'content' => $userText]
-            ];
-            $lastUserMessage = $userText;
-        }
+        $systemPrompt .= "\n\n[TOOL CALL]\nTool: {$cmd['cmd']}\nCall ID: {$callId}\nExecution: {$execTime}ms{$cached}\n\nPresent these results to the user in a clear, formatted way:\n\n{$toolOutput}";
+        $messages = [
+            ['role' => 'user', 'content' => "Execute tool: /{$originalCmd} " . ($cmd['raw_args'] ?? '')]
+        ];
+        $lastUserMessage = $messages[0]['content'];
     }
 
     if ($lastUserMessage !== '') {
@@ -2135,6 +2321,126 @@ $router->post('/api/ai-system/test', ['middleware' => ['auth', 'admin_only']], f
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'error' => 'Provider not found']);
     }
+});
+
+// GET /api/admin/ai-tools - List available AI assistant tools
+$router->get('/api/admin/ai-tools', ['middleware' => ['auth', 'admin_only']], function () {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => true,
+        'tools' => ToolRegistry::listTools(),
+        'tools_for_api' => ToolRegistry::getToolsForAPI(),
+        'count' => ToolRegistry::count(),
+        'circuit_breaker' => ToolRegistry::getCircuitBreakerStatus()
+    ]);
+});
+
+// POST /api/admin/ai-tools/execute - Execute a tool directly
+$router->post('/api/admin/ai-tools/execute', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($input)) {
+        $input = [];
+    }
+
+    $toolName = $input['tool'] ?? '';
+    $args = $input['args'] ?? [];
+    $stream = !empty($input['stream']);
+
+    if (empty($toolName)) {
+        header('Content-Type: application/json');
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Tool name is required']);
+        return;
+    }
+
+    $result = ToolRegistry::execute($toolName, $args, $mysqli, [
+        'stream' => $stream,
+        'call_id' => $input['call_id'] ?? 'call_' . bin2hex(random_bytes(8))
+    ]);
+
+    header('Content-Type: application/json');
+    echo json_encode($result);
+});
+
+// POST /api/admin/ai-tools/execute-parallel - Execute multiple tools in parallel
+$router->post('/api/admin/ai-tools/execute-parallel', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($input)) {
+        $input = [];
+    }
+
+    $toolCalls = $input['tool_calls'] ?? [];
+    if (empty($toolCalls) || !is_array($toolCalls)) {
+        header('Content-Type: application/json');
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'tool_calls array is required']);
+        return;
+    }
+
+    // Normalize call IDs
+    foreach ($toolCalls as &$call) {
+        if (empty($call['call_id'])) {
+            $call['call_id'] = 'call_' . bin2hex(random_bytes(8));
+        }
+    }
+    unset($call);
+
+    $results = ToolRegistry::executeParallel($toolCalls, $mysqli, [
+        'stream' => !empty($input['stream']),
+        'timeout' => $input['timeout'] ?? 60,
+        'max_concurrent' => $input['max_concurrent'] ?? count($toolCalls)
+    ]);
+
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => true,
+        'results' => $results,
+        'tool_messages' => ToolRegistry::buildToolResultMessages($results)
+    ]);
+});
+
+// POST /api/admin/ai-tools/process-streaming - Process streaming tool calls from AI
+$router->post('/api/admin/ai-tools/process-streaming', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($input)) {
+        $input = [];
+    }
+
+    $toolCalls = $input['tool_calls'] ?? [];
+    if (empty($toolCalls) || !is_array($toolCalls)) {
+        header('Content-Type: application/json');
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'tool_calls array is required']);
+        return;
+    }
+
+    $results = ToolRegistry::processStreamingToolCalls($toolCalls, $mysqli, [
+        'stream' => !empty($input['stream'])
+    ]);
+
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => true,
+        'results' => $results,
+        'tool_messages' => ToolRegistry::buildToolResultMessages($results)
+    ]);
+});
+
+// POST /api/admin/ai-tools/reset-circuit-breaker - Reset circuit breaker for a tool
+$router->post('/api/admin/ai-tools/reset-circuit-breaker', ['middleware' => ['auth', 'admin_only', 'csrf']], function () {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $toolName = $input['tool'] ?? '';
+
+    if (empty($toolName)) {
+        ToolRegistry::resetAllCircuitBreakers();
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'message' => 'All circuit breakers reset']);
+        return;
+    }
+
+    ToolRegistry::resetCircuitBreaker($toolName);
+    header('Content-Type: application/json');
+    echo json_encode(['success' => true, 'message' => "Circuit breaker reset for '{$toolName}'"]);
 });
 
 // GET /api/admin/system-health - Unified system health check for AI assistant

@@ -23,9 +23,9 @@ class AutoContentModel
      */
     public function getAllSources(): array
     {
-        $sql = "SELECT s.*, c.name as category_name 
-                FROM autocontent_sources s 
-                LEFT JOIN categories c ON s.category_id = c.id 
+        $sql = "SELECT s.*, c.name as category_name
+                FROM autocontent_sources s
+                LEFT JOIN categories c ON s.category_id = c.id
                 ORDER BY s.id DESC";
         $result = $this->mysqli->query($sql);
 
@@ -580,11 +580,11 @@ class AutoContentModel
             $params[] = $searchParam;
         }
 
-        $sql = "SELECT a.*, s.name as source_name, s.url as source_url 
-                FROM autocontent_articles a 
-                LEFT JOIN autocontent_sources s ON a.source_id = s.id 
-                WHERE {$where} 
-                ORDER BY a.id DESC 
+        $sql = "SELECT a.*, s.name as source_name, s.url as source_url
+                FROM autocontent_articles a
+                LEFT JOIN autocontent_sources s ON a.source_id = s.id
+                WHERE {$where}
+                ORDER BY a.id DESC
                 LIMIT ? OFFSET ?";
 
         $params[] = $limit;
@@ -709,8 +709,8 @@ class AutoContentModel
     public function updateArticleContent(int $id, string $processedContent, string $aiSummary): bool
     {
         $stmt = $this->mysqli->prepare("
-            UPDATE autocontent_articles 
-            SET content = ?, ai_summary = ?, status = 'processed', updated_at = NOW() 
+            UPDATE autocontent_articles
+            SET content = ?, ai_summary = ?, status = 'processed', updated_at = NOW()
             WHERE id = ?
         ");
         $stmt->bind_param("ssi", $processedContent, $aiSummary, $id);
@@ -731,20 +731,20 @@ class AutoContentModel
 
         if ($hasSeoScore) {
             $stmt = $this->mysqli->prepare("
-                UPDATE autocontent_articles 
-                SET ai_title = ?, ai_content = ?, ai_excerpt = ?, 
-                    seo_score = ?, word_count = ?, 
-                    status = 'processed', updated_at = NOW() 
+                UPDATE autocontent_articles
+                SET ai_title = ?, ai_content = ?, ai_excerpt = ?,
+                    seo_score = ?, word_count = ?,
+                    status = 'processed', updated_at = NOW()
                 WHERE id = ?
             ");
             $stmt->bind_param("sssiii", $aiTitle, $aiContent, $aiExcerpt, $seoScore, $wordCount, $id);
         } else {
             // Fallback for older schema without seo_score
             $stmt = $this->mysqli->prepare("
-                UPDATE autocontent_articles 
-                SET ai_title = ?, ai_content = ?, ai_excerpt = ?, 
-                    word_count = ?, 
-                    status = 'processed', updated_at = NOW() 
+                UPDATE autocontent_articles
+                SET ai_title = ?, ai_content = ?, ai_excerpt = ?,
+                    word_count = ?,
+                    status = 'processed', updated_at = NOW()
                 WHERE id = ?
             ");
             $stmt->bind_param("sssii", $aiTitle, $aiContent, $aiExcerpt, $wordCount, $id);
@@ -1010,8 +1010,8 @@ class AutoContentModel
     public function saveSetting(string $key, string $value): bool
     {
         $stmt = $this->mysqli->prepare("
-            INSERT INTO autocontent_settings (setting_key, setting_value) 
-            VALUES (?, ?) 
+            INSERT INTO autocontent_settings (setting_key, setting_value)
+            VALUES (?, ?)
             ON DUPLICATE KEY UPDATE setting_value = ?
         ");
         $stmt->bind_param("sss", $key, $value, $value);
@@ -1066,10 +1066,10 @@ class AutoContentModel
     public function getRecentArticles(int $limit = 15): array
     {
         $stmt = $this->mysqli->prepare("
-            SELECT a.*, s.name as source_name 
-            FROM autocontent_articles a 
-            LEFT JOIN autocontent_sources s ON a.source_id = s.id 
-            ORDER BY a.id DESC 
+            SELECT a.*, s.name as source_name
+            FROM autocontent_articles a
+            LEFT JOIN autocontent_sources s ON a.source_id = s.id
+            ORDER BY a.id DESC
             LIMIT ?
         ");
         $stmt->bind_param("i", $limit);
@@ -1101,11 +1101,11 @@ class AutoContentModel
     public function getArticlesByStatus(string $status, int $limit = 10): array
     {
         $stmt = $this->mysqli->prepare("
-            SELECT a.*, s.name as source_name, s.url as source_url 
-            FROM autocontent_articles a 
-            LEFT JOIN autocontent_sources s ON a.source_id = s.id 
-            WHERE a.status = ? 
-            ORDER BY a.id ASC 
+            SELECT a.*, s.name as source_name, s.url as source_url
+            FROM autocontent_articles a
+            LEFT JOIN autocontent_sources s ON a.source_id = s.id
+            WHERE a.status = ?
+            ORDER BY a.id ASC
             LIMIT ?
         ");
         $stmt->bind_param("si", $status, $limit);
@@ -1137,10 +1137,10 @@ class AutoContentModel
     public function retryFailedArticles(int $limit = 10): int
     {
         $stmt = $this->mysqli->prepare("
-            UPDATE autocontent_articles 
-            SET status = 'collected', updated_at = NULL 
-            WHERE status = 'failed' 
-            ORDER BY id ASC 
+            UPDATE autocontent_articles
+            SET status = 'collected', updated_at = NULL
+            WHERE status = 'failed'
+            ORDER BY id ASC
             LIMIT ?
         ");
         $stmt->bind_param("i", $limit);
@@ -1463,9 +1463,9 @@ class AutoContentModel
         ];
 
         $stmt = $this->mysqli->prepare("
-            INSERT INTO autocontent_website_presets 
-            (preset_key, name, selector_list_container, selector_list_item, selector_list_title, 
-             selector_list_date, selector_title, selector_content, selector_image, 
+            INSERT INTO autocontent_website_presets
+            (preset_key, name, selector_list_container, selector_list_item, selector_list_title,
+             selector_list_date, selector_title, selector_content, selector_image,
              selector_excerpt, selector_date, selector_author)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");

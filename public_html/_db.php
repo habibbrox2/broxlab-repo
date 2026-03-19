@@ -1,4 +1,21 @@
 <?php
+/* ===================== AUTHENTICATION CHECK ===================== */
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Check if user is authenticated and is admin
+if (empty($_SESSION['logged_in']) || empty($_SESSION['user_id'])) {
+    http_response_code(403);
+    die('Access Denied: Authentication required. Please <a href="/">login</a> first.');
+}
+
+// Optional: Check for admin role if your system has roles
+// if (($_SESSION['role'] ?? '') !== 'admin') {
+//     http_response_code(403);
+//     die('Access Denied: Admin privileges required.');
+// }
 
 /* ===================== কনফিগারেশন / CONFIG ===================== */
 

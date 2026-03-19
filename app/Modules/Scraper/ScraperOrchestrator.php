@@ -103,6 +103,22 @@ class ScraperOrchestrator
     }
 
     /**
+     * Get active sources
+     */
+    public function getActiveSources(): array
+    {
+        return $this->sourceManager->getActiveSources();
+    }
+
+    /**
+     * Get source by ID
+     */
+    public function getSource(int $sourceId): ?array
+    {
+        return $this->sourceManager->getSourceById($sourceId);
+    }
+
+    /**
      * Scrape articles from a source
      */
     public function scrapeSource(int $sourceId, ?array $options = []): array
@@ -461,6 +477,14 @@ class ScraperOrchestrator
             'check_duplicates' => $this->config['check_duplicates'],
             'download_images' => $this->config['download_images'],
         ];
+
+        // Validate URL
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return [
+                'success' => false,
+                'error' => 'Invalid URL format',
+            ];
+        }
 
         $source = [
             'id' => null,

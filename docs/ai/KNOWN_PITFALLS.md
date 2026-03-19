@@ -121,6 +121,48 @@
 
 ---
 
+### [PIT-007] Tool Circuit Breaker Opens Unexpectedly
+- Severity: 🟡 Medium
+- Category: Logic
+- Symptom: Tool returns "circuit_open" error despite tool working fine.
+- Root Cause: Transient network errors counted as failures; 5 consecutive
+  errors open circuit. Temporary DNS or connection issues trigger this.
+- Fix: `ToolRegistry::resetCircuitBreaker('tool_name')` to manually reset.
+  Check logs for actual failure cause before resetting.
+- Avoid by: Ensure tool handlers have proper retry logic internally for
+  transient errors. Don't count network blips as tool failures.
+- Resolved: না (monitor circuit breaker status via `/api/admin/ai-tools`)
+
+---
+
+### [PIT-008] Parallel Tool Execution Fails on Windows
+- Severity: 🟡 Medium
+- Category: Compatibility
+- Symptom: `executeParallel()` falls back to sequential; no error but slower.
+- Root Cause: `pcntl_fork()` not available on Windows; system falls back
+  to sequential execution automatically.
+- Fix: No fix needed — fallback is automatic. For production, use Linux
+  server to get true parallel execution.
+- Avoid by: Document that parallel execution requires Linux. Test on
+  Linux before deploying.
+- Resolved: না (expected behavior on Windows)
+
+---
+
+### [PIT-009] Fireworks 503 During Scale-Up Blocks Request
+- Severity: 🟠 High
+- Category: Performance / UX
+- Symptom: Request hangs for minutes during Fireworks deployment scale-up.
+- Root Cause: `handleDeploymentScalingUp()` retries up to 30 times with
+  exponential backoff. Large deployments may take 5-10 minutes to scale.
+- Fix: Set `--min-replica-count 1` on Fireworks deployments for instant
+  responses. Or accept the retry behavior for cost-optimized deployments.
+- Avoid by: For production/latency-sensitive use, always set min-replica-count > 0.
+  Use scale-to-zero only for dev/testing.
+- Resolved: না (document in deployment guide)
+
+---
+
 ## Resolved Pitfalls Archive
 *(resolved হলে এখানে সরিয়ে আনো)*
 

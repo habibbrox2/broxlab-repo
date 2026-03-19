@@ -290,8 +290,75 @@ See these files for real-world examples:
 - **Controller Pattern**: [`app/Controllers/HomeController.php`](app/Controllers/HomeController.php)
 - **Model Pattern**: [`app/Models/UserModel.php`](app/Models/UserModel.php)
 - **Helper Pattern**: [`app/Helpers/EmailHelper.php`](app/Helpers/EmailHelper.php)
+- **AI Tool Pattern**: [`app/Helpers/ToolRegistry.php`](app/Helpers/ToolRegistry.php) (v3.0: parallel, streaming, circuit breaker)
+- **AI Tool Definitions**: [`app/Helpers/ToolDefinitions.php`](app/Helpers/ToolDefinitions.php) (10 registered tools)
+- **AI Provider Pattern**: [`app/Models/AIProvider.php`](app/Models/AIProvider.php) (multi-provider with autoscaling retry)
 - **Form Handling**: [`app/Controllers/HomeController.php`](app/Controllers/HomeController.php) (contact form)
 - **JSON API**: [`app/Controllers/HomeController.php`](app/Controllers/HomeController.php) (upload endpoint)
+
+---
+
+## 🤖 AI Tool System Patterns
+
+### Registering a New Tool
+```php
+ToolRegistry::register('my_tool', function(array $args, ?mysqli $mysqli) {
+    // Tool implementation
+    return ['result' => 'data'];
+}, [
+    'name' => 'My Tool',
+    'description' => 'Does something useful',
+    'namespace' => 'system',
+    'parameters' => [
+        'type' => 'object',
+        'properties' => [
+            'input' => ['type' => 'string', 'description' => 'Input data']
+        ],
+        'required' => ['input']
+    ],
+    'timeout' => 30,
+    'max_retries' => 2,
+    'retry_delay' => 1,
+    'cacheable' => true,
+    'cache_ttl' => 300
+]);
+```
+
+### Executing Tools
+```php
+// Single tool
+$result = ToolRegistry::execute('get_system_health', [], $mysqli, ['stream' => true]);
+
+// Parallel execution
+$results = ToolRegistry::executeParallel([
+    ['tool' => 'get_system_health', 'args' => [], 'call_id' => 'call_1'],
+    ['tool' => 'get_user_stats', 'args' => [], 'call_id' => 'call_2'],
+], $mysqli, ['stream' => true, 'timeout' => 60]);
+
+// Build messages for AI provider
+$messages = ToolRegistry::buildToolResultMessages($results);
+```
+
+### Error Handling
+```php
+$result = ToolRegistry::execute('my_tool', $args, $mysqli);
+
+if (!$result['success']) {
+    switch ($result['error_code']) {
+        case 'circuit_open':
+            // Tool temporarily unavailable
+            break;
+        case 'timeout':
+            // Tool exceeded timeout
+            break;
+        case 'invalid_arguments':
+            // Bad arguments
+            break;
+        default:
+            // Other error
+    }
+}
+```
 
 ---
 

@@ -517,7 +517,87 @@ class ContentModel {
 
     // ----------------- UTILITY: Categories & Tags -----------------
 
+    /**
+     * Batch get categories for multiple content items (fixes N+1 queries)
+     * @param string $contentType 'post', 'page', 'service', 'mobile'
+     * @param array $contentIds Array of content IDs
+     * @return array Keyed by content_id => array of categories
+     */
+    public function getCategoriesForContentBatch(string $contentType, array $contentIds): array {
+        if (empty($contentIds)) return [];
+        
+        $placeholders = implode(',', array_fill(0, count($contentIds), '?'));
+        $sql = "
+            SELECT cc.content_id, c.id, c.name, c.slug
+            FROM content_categories cc
+            JOIN categories c ON cc.category_id = c.id
+            WHERE cc.content_type = ? AND cc.content_id IN ($placeholders)
+            ORDER BY c.name ASC
+        ";
+        
+        $stmt = $this->mysqli->prepare($sql);
+        $types = 's' . str_repeat('i', count($contentIds));
+        $params = array_merge([$contentType], $contentIds);
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $categories = [];
+        while ($row = $result->fetch_assoc()) {
+            $categories[$row['content_id']][] = $row;
+        }
+        $stmt->close();
+        
+        // Ensure all content IDs have an entry (even if empty)
+        foreach ($contentIds as $id) {
+            if (!isset($categories[$id])) {
+                $categories[$id] = [];
+            }
+        }
+        
+        return $categories;
+    }
 
+    /**
+     * Batch get tags for multiple content items (fixes N+1 queries)
+     * @param string $contentType 'post', 'page', 'service', 'mobile'
+     * @param array $contentIds Array of content IDs
+     * @return array Keyed by content_id => array of tags
+     */
+    public function getTagsForContentBatch(string $contentType, array $contentIds): array {
+        if (empty($contentIds)) return [];
+        
+        $placeholders = implode(',', array_fill(0, count($contentIds), '?'));
+        $sql = "
+            SELECT ct.content_id, t.id, t.name, t.slug
+            FROM content_tags ct
+            JOIN tags t ON ct.tag_id = t.id
+            WHERE ct.content_type = ? AND ct.content_id IN ($placeholders)
+            ORDER BY t.name ASC
+        ";
+        
+        $stmt = $this->mysqli->prepare($sql);
+        $types = 's' . str_repeat('i', count($contentIds));
+        $params = array_merge([$contentType], $contentIds);
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $tags = [];
+        while ($row = $result->fetch_assoc()) {
+            $tags[$row['content_id']][] = $row;
+        }
+        $stmt->close();
+        
+        // Ensure all content IDs have an entry (even if empty)
+        foreach ($contentIds as $id) {
+            if (!isset($tags[$id])) {
+                $tags[$id] = [];
+            }
+        }
+        
+        return $tags;
+    }
 
     public function createCategory($name, $slug = null) {
         $slug = $slug ?: $this->slugify($name);

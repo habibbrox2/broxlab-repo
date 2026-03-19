@@ -12,7 +12,8 @@ Core rules:
 - DB: Models + prepared statements.
 - Security: CSRF for changes; sanitize input; no secrets.
 - Assets: Edit sources, build with `npm run build` (avoid `dist/`).
-- AI: Use `AIProvider` for Claude/Gemini/OpenRouter.
+- AI: Use `AIProvider` for Claude/Gemini/OpenRouter/Fireworks/Ollama/HuggingFace.
+- AI Tools: Use `ToolRegistry` for tool execution (parallel, streaming, circuit breaker).
 - Logs: `logError(...)` for errors, `logActivity(...)` for actions.
 
 General tips:

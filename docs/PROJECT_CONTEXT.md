@@ -121,14 +121,28 @@ npm run build        # Production build
 ## 🤖 AI Features
 
 AI features are handled through:
-- [`app/Models/AIProvider.php`](app/Models/AIProvider.php) - Multi-provider AI abstraction
-- [`app/Controllers/AISystemController.php`](app/Controllers/AISystemController.php) - AI endpoints
+- [`app/Models/AIProvider.php`](app/Models/AIProvider.php) - Multi-provider AI abstraction with Fireworks autoscaling retry
+- [`app/Controllers/AISystemController.php`](app/Controllers/AISystemController.php) - AI endpoints + tool execution
+- [`app/Helpers/ToolRegistry.php`](app/Helpers/ToolRegistry.php) - Tool execution system (v3.0: parallel, streaming, circuit breaker)
+- [`app/Helpers/ToolDefinitions.php`](app/Helpers/ToolDefinitions.php) - 10 registered tools (system health, DB queries, etc.)
 - [`app/Helpers/PromptLoader.php`](app/Helpers/PromptLoader.php) - Prompt management
 
 **Supported Providers:**
-- Anthropic Claude (via @anthropic-ai/sdk)
-- Google Gemini (via @google/generative-ai)
+- Anthropic Claude
+- Google Gemini
 - OpenRouter (multi-provider)
+- Fireworks AI (with autoscaling retry)
+- Ollama (local)
+- Hugging Face
+- Kilo.ai
+
+**AI Tool System (v3.0):**
+- Parallel execution via `pcntl_fork` (sequential fallback on Windows)
+- Streaming tool call support with SSE events
+- Circuit breaker pattern (5 failures → open, 60s reset)
+- Retry logic with exponential backoff per tool
+- 7 error categories for intelligent handling
+- Fireworks AI autoscaling retry (503 DEPLOYMENT_SCALING_UP)
 
 ---
 

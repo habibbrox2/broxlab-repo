@@ -272,6 +272,157 @@ php -S localhost:8000 -t public_html
 
 ---
 
+## 🤖 AI Tool System (v3.0)
+
+The AI assistant uses a centralized tool execution system with OpenAI-compatible schemas.
+
+### Architecture
+```
+ToolRegistry (app/Helpers/ToolRegistry.php)
+├── Tool Registration (OpenAI JSON Schema)
+├── Parallel Execution (pcntl_fork fallback to sequential)
+├── Streaming Support (SSE events)
+├── Circuit Breaker Pattern
+├── Retry Logic (exponential backoff)
+└── Argument Validation
+
+ToolDefinitions (app/Helpers/ToolDefinitions.php)
+├── get_system_health — System diagnostics
+├── query_database — Read-only SQL queries
+├── get_table_stats — Table statistics
+├── analyze_error_logs — Log analysis
+├── summarize_text — Extractive summarization
+├── get_cache_stats — Cache monitoring
+├── get_user_stats — User analytics
+├── get_content_stats — Content analytics
+├── list_tools — Tool discovery
+└── clear_cache — Cache management
+```
+
+### API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/admin/ai-tools` | GET | List all tools + circuit breaker status |
+| `/api/admin/ai-tools/execute` | POST | Execute single tool |
+| `/api/admin/ai-tools/execute-parallel` | POST | Execute multiple tools in parallel |
+| `/api/admin/ai-tools/process-streaming` | POST | Process streaming tool calls from AI |
+| `/api/admin/ai-tools/reset-circuit-breaker` | POST | Reset circuit breaker |
+
+### Tool Registration Example
+```php
+ToolRegistry::register('my_tool', function(array $args, ?mysqli $mysqli) {
+    // Tool implementation
+    return ['result' => 'data'];
+}, [
+    'name' => 'My Tool',
+    'description' => 'Does something useful',
+    'namespace' => 'system',
+    'parameters' => [
+        'type' => 'object',
+        'properties' => [
+            'input' => ['type' => 'string', 'description' => 'Input data']
+        ],
+        'required' => ['input']
+    ],
+    'timeout' => 30,
+    'max_retries' => 2,
+    'retry_delay' => 1,
+    'cacheable' => true,
+    'cache_ttl' => 300
+]);
+```
+
+### Parallel Execution
+```php
+$results = ToolRegistry::executeParallel([
+    ['tool' => 'get_system_health', 'args' => [], 'call_id' => 'call_1'],
+    ['tool' => 'get_user_stats', 'args' => [], 'call_id' => 'call_2'],
+    ['tool' => 'get_content_stats', 'args' => [], 'call_id' => 'call_3'],
+], $mysqli, ['stream' => true, 'timeout' => 60]);
+
+// Build messages to send back to AI provider
+$messages = ToolRegistry::buildToolResultMessages($results);
+```
+
+### Circuit Breaker
+Tools automatically open after 5 consecutive failures. Reset via:
+```php
+ToolRegistry::resetCircuitBreaker('tool_name');
+ToolRegistry::resetAllCircuitBreakers();
+```
+
+### Error Categories
+- `timeout` — Execution exceeded timeout (retryable)
+- `network_error` — Connection/network issue (retryable)
+- `validation_error` — Invalid arguments (not retryable)
+- `auth_error` — Permission denied (not retryable)
+- `not_found` — Resource not found (not retryable)
+- `circuit_open` — Circuit breaker is open
+- `resource_exhausted` — Memory/resource limit (retryable)
+- `deployment_scale_timeout` — Deployment didn't scale up in time
+
+---
+
+## 🚀 Fireworks AI Deployment Autoscaling
+
+The `AIProvider` model includes built-in retry logic for Fireworks AI deployments with autoscaling.
+
+### Scale-from-Zero Behavior
+
+When a Fireworks deployment is scaled to zero (idle), the API returns:
+```json
+{
+  "error": {
+    "message": "Deployment is currently scaled to zero and is scaling up...",
+    "code": "DEPLOYMENT_SCALING_UP",
+    "type": "error"
+  }
+}
+```
+
+### Automatic Retry with Exponential Backoff
+
+The system automatically retries with exponential backoff:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `max_retries` | 30 | Maximum retry attempts |
+| `initial_delay` | 5s | Initial wait between retries |
+| `max_delay` | 60s | Maximum wait cap |
+| `backoff_multiplier` | 1.5 | Delay multiplier per retry |
+
+### Configuration Constants (in AIProvider.php)
+```php
+private const AUTOSCALING_CONFIG = [
+    'max_retries' => 30,
+    'initial_delay_seconds' => 5,
+    'max_delay_seconds' => 60,
+    'backoff_multiplier' => 1.5,
+    'retry_on_status_codes' => [503],
+    'retry_error_codes' => ['DEPLOYMENT_SCALING_UP'],
+];
+```
+
+### Deployment Recommendations
+
+| Pattern | Config | Best For |
+|---------|--------|----------|
+| **Cost optimization** | `--min-replica-count 0 --scale-to-zero-window 1h` | Dev, testing, intermittent traffic |
+| **Performance-focused** | `--min-replica-count 2 --scale-up-window 15s` | Low latency, high traffic |
+| **Predictable traffic** | `--min-replica-count 3 --scale-down-window 30m` | Steady workloads |
+
+### Load Target Options
+- `default=0.8` — General load target (0-1)
+- `tokens_generated_per_second=150` — Tokens/sec per replica
+- `concurrent_requests=5` — Concurrent requests per replica
+
+<Tip>
+For instant responses without cold starts, set `--min-replica-count 1` or higher. Deployments with min replicas = 0 are auto-deleted after 7 days of no traffic.
+</Tip>
+
+---
+
 ## 📞 Need Help?
 
 - Check [`README.md`](README.md) for setup instructions
