@@ -129,27 +129,48 @@ fi
 
 echo "Starting Node.js AI Server"
 
-# Check if PM2 is available
+# Install PM2 if not found
+if ! command -v pm2 &> /dev/null; then
+    echo "PM2 not found. Installing PM2..."
+    npm install -g pm2
+    
+    if command -v pm2 &> /dev/null; then
+        echo "✅ PM2 installed successfully"
+    else
+        echo "⚠️ PM2 installation failed. Using nohup fallback..."
+    fi
+fi
+
+# Start AI Server with PM2 or nohup
 if command -v pm2 &> /dev/null; then
     echo "Using PM2 to start AI server..."
-    pm2 start $NEW_RELEASE/src/ai/server.js --name broxlab-ai 2>/dev/null || echo "⚠️ PM2 start failed, trying nohup..."
+    pm2 start $NEW_RELEASE/src/ai/server.js --name broxlab-ai 2>/dev/null || {
+        echo "⚠️ PM2 start failed, trying nohup..."
+        pkill -f "node.*src/ai/server.js" 2>/dev/null || true
+        cd $NEW_RELEASE
+        nohup npm run ai-server:start > $SHARED/logs/ai-server.log 2>&1 &
+    }
     pm2 save 2>/dev/null || true
 else
-    echo "PM2 not found, using nohup..."
+    echo "Using nohup to start AI server..."
     # Kill existing AI server if any
     pkill -f "node.*src/ai/server.js" 2>/dev/null || true
+    
+    # Ensure logs directory exists
+    mkdir -p $SHARED/logs
     
     # Start AI server in background
     cd $NEW_RELEASE
     nohup npm run ai-server:start > $SHARED/logs/ai-server.log 2>&1 &
-    sleep 2
-    
-    # Verify server started
-    if pgrep -f "node.*src/ai/server.js" > /dev/null; then
-        echo "✅ AI Server started successfully"
-    else
-        echo "⚠️ WARNING: AI Server may not have started properly"
-    fi
+    sleep 3
+fi
+
+# Verify server started
+sleep 2
+if pgrep -f "node.*src/ai/server.js" > /dev/null || pm2 list 2>/dev/null | grep -q broxlab-ai; then
+    echo "✅ AI Server started successfully"
+else
+    echo "⚠️ WARNING: AI Server may not have started properly"
 fi
 
 echo "Creating version file"
