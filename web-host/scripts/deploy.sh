@@ -127,6 +127,31 @@ else
     echo "⚠️  Skipping RAG system setup"
 fi
 
+echo "Starting Node.js AI Server"
+
+# Check if PM2 is available
+if command -v pm2 &> /dev/null; then
+    echo "Using PM2 to start AI server..."
+    pm2 start $NEW_RELEASE/src/ai/server.js --name broxlab-ai 2>/dev/null || echo "⚠️ PM2 start failed, trying nohup..."
+    pm2 save 2>/dev/null || true
+else
+    echo "PM2 not found, using nohup..."
+    # Kill existing AI server if any
+    pkill -f "node.*src/ai/server.js" 2>/dev/null || true
+    
+    # Start AI server in background
+    cd $NEW_RELEASE
+    nohup npm run ai-server:start > $SHARED/logs/ai-server.log 2>&1 &
+    sleep 2
+    
+    # Verify server started
+    if pgrep -f "node.*src/ai/server.js" > /dev/null; then
+        echo "✅ AI Server started successfully"
+    else
+        echo "⚠️ WARNING: AI Server may not have started properly"
+    fi
+fi
+
 echo "Creating version file"
 
 # Auto-increment version and update deployment info
