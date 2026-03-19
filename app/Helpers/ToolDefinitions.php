@@ -13,6 +13,11 @@
  * @version 3.0.0
  */
 
+// Ensure ToolRegistry is loaded before registering tools
+if (!class_exists('ToolRegistry', false)) {
+    require_once __DIR__ . '/ToolRegistry.php';
+}
+
 // 1. System Diagnostics Tool
 ToolRegistry::register('get_system_health', function(array $args, ?mysqli $mysqli) {
     $checks = [];
