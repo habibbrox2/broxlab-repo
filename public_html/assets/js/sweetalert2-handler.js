@@ -488,6 +488,24 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             padding: 1rem 1.5rem;
         }
+        
+        /* Toast position adjustments - below header */
+        .swal2-container.swal2-top-right {
+            top: 70px !important;
+            padding-top: 0 !important;
+        }
+        .swal2-container.swal2-top-start {
+            top: 70px !important;
+            padding-top: 0 !important;
+        }
+        .swal2-container.swal2-top-center {
+            top: 70px !important;
+            padding-top: 0 !important;
+        }
+        .swal2-container.swal2-top-end {
+            top: 70px !important;
+            padding-top: 0 !important;
+        }
 
         .swal2-popup.swal2-toast.swal2-popup-success {
             border-left: 4px solid #198754;
