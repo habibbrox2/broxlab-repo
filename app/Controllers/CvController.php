@@ -8,29 +8,29 @@ $cvSectionModel = new CvSectionModel($mysqli);
 $cvItemModel = new CvItemModel($mysqli);
 $cvShareModel = new CvShareModel($mysqli);
 
-// Helper function to get current user ID
-function getCurrentUserId(): ?int
-{
-    return $_SESSION['user_id'] ?? null;
-}
+// Use existing functions from Config/Functions.php:
+// - getCurrentUserId() - returns user ID
+// - json_response() - sends JSON response
+// - requireAuth() - should be available from AuthManager
 
-// Helper to send JSON response
-function jsonResponse(array $data, int $statusCode = 200): void
-{
-    http_response_code($statusCode);
-    header('Content-Type: application/json');
-    echo json_encode($data);
-    exit;
-}
-
-// Helper to require authentication
-function requireAuth(): int
-{
-    $userId = getCurrentUserId();
-    if (!$userId) {
-        jsonResponse(['error' => 'Unauthorized'], 401);
+// Helper to require authentication (if not already defined)
+if (!function_exists('requireAuth')) {
+    function requireAuth(): int
+    {
+        $userId = getCurrentUserId();
+        if (!$userId) {
+            json_response(['error' => 'Unauthorized'], 401);
+        }
+        return $userId;
     }
-    return $userId;
+}
+
+// Alias for json_response to jsonResponse for compatibility
+if (!function_exists('jsonResponse')) {
+    function jsonResponse(array $data, int $statusCode = 200): void
+    {
+        json_response($data, $statusCode);
+    }
 }
 
 // ========== CV LIST (DASHBOARD) ==========
