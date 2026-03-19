@@ -1,0 +1,127 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold">My CVs</h1>
+        <a href="/cv/new" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            <i class="bi bi-plus-lg"></i> Create New CV
+        </a>
+    </div>
+
+    {% if cvs is empty %}
+        <div class="text-center py-12">
+            <div class="text-gray-500 mb-4">
+                <i class="bi bi-file-earmark-text text-6xl"></i>
+            </div>
+            <h2 class="text-xl font-semibold mb-2">No CVs yet</h2>
+            <p class="text-gray-600 mb-4">Create your first CV to get started</p>
+            <a href="/cv/new" class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700">
+                Create Your First CV
+            </a>
+        </div>
+    {% else %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for cv in cvs %}
+                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <h2 class="text-xl font-semibold truncate">{{ cv.title }}</h2>
+                        <span class="px-2 py-1 text-xs rounded {{ cv.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                            {{ cv.is_active ? 'Active' : 'Draft' }}
+                        </span>
+                    </div>
+                    
+                    <p class="text-gray-500 text-sm mb-4">
+                        Last updated: {{ cv.updated_at|date('M d, Y') }}
+                    </p>
+
+                    <div class="flex flex-wrap gap-2">
+                        <a href="/cv/{{ cv.id }}" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                            Edit
+                        </a>
+                        <a href="/cv/{{ cv.id }}/preview" target="_blank" class="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700">
+                            Preview
+                        </a>
+                        <a href="/cv/{{ cv.id }}/export" class="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700">
+                            PDF
+                        </a>
+                        <button onclick="shareCv({{ cv.id }})" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                            Share
+                        </button>
+                        <button onclick="deleteCv({{ cv.id }})" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Share Modal -->
+<div id="shareModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 class="text-xl font-semibold mb-4">Share CV</h3>
+        <p class="text-gray-600 mb-4">Share your CV with others using this link:</p>
+        <div class="flex gap-2">
+            <input type="text" id="shareUrl" class="flex-1 border rounded px-3 py-2" readonly>
+            <button onclick="copyShareUrl()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                Copy
+            </button>
+        </div>
+        <button onclick="closeShareModal()" class="mt-4 text-gray-600 hover:text-gray-800">Close</button>
+    </div>
+</div>
+
+<script>
+function shareCv(id) {
+    fetch('/cv/' + id + '/share', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('shareUrl').value = data.url;
+            document.getElementById('shareModal').classList.remove('hidden');
+        } else {
+            alert('Failed to share CV');
+        }
+    });
+}
+
+function copyShareUrl() {
+    const input = document.getElementById('shareUrl');
+    input.select();
+    document.execCommand('copy');
+    alert('Link copied to clipboard!');
+}
+
+function closeShareModal() {
+    document.getElementById('shareModal').classList.add('hidden');
+}
+
+function deleteCv(id) {
+    if (confirm('Are you sure you want to delete this CV?')) {
+        fetch('/cv/' + id, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to delete CV');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}
