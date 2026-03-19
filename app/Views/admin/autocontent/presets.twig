@@ -8,9 +8,14 @@
                 <h1 class="h3 mb-0">
                     <i class="bi bi-bookmark-star me-2"></i>Website Presets
                 </h1>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#presetModal">
-                    <i class="bi bi-plus-lg me-1"></i>Add New Preset
-                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#quickCreateModal">
+                        <i class="bi bi-lightning-charge me-1"></i>Quick Auto-Create
+                    </button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#presetModal">
+                        <i class="bi bi-plus-lg me-1"></i>Add New Preset
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -52,7 +57,7 @@
                             <i class="bi bi-eye"></i>
                         </button>
                         <button class="btn btn-sm btn-outline-danger" 
-                                onclick="deletePreset({{ preset.id }}, '{{ preset.name|escape('js') }}')">
+                                onclick="deletePreset({{ preset.id }}, '{{ preset.name|escape('html') }}')">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
@@ -196,6 +201,71 @@
                 </button>
                 <button type="button" class="btn btn-success d-none" id="btn-save-preset" onclick="saveAiDetectedPreset()">
                     <i class="bi bi-check-lg me-1"></i>Save Preset
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Auto-Create Modal -->
+<div class="modal fade" id="quickCreateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-lightning-charge me-2"></i>Quick Auto-Create Preset</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-3">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Enter a URL and preset name. AI will automatically detect selectors and create the preset for you in one click!
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Website URL *</label>
+                    <input type="url" class="form-control" id="quick_url" required 
+                           placeholder="https://example.com/articles">
+                    <div class="invalid-feedback">Please enter a valid URL</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Preset Name *</label>
+                    <input type="text" class="form-control" id="quick_preset_name" required 
+                           placeholder="e.g., Example News" oninput="generatePresetKey(this.value, 'quick_preset_key')">
+                    <div class="invalid-feedback">Please enter a preset name</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Preset Key (auto-generated)</label>
+                    <input type="text" class="form-control" id="quick_preset_key" required 
+                           placeholder="e.g., example-news">
+                    <small class="text-muted">You can edit this if needed</small>
+                </div>
+                
+                <div id="quickResults" class="d-none">
+                    <hr>
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle me-2"></i>
+                        <strong>Preset created successfully!</strong>
+                    </div>
+                    <h6>Detected Selectors:</h6>
+                    <div class="row g-2" id="quickDetectedSelectors">
+                    </div>
+                </div>
+                
+                <div id="quickLoading" class="text-center py-4 d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Analyzing website and detecting selectors...</p>
+                </div>
+                
+                <div id="quickError" class="alert alert-danger d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" id="btn-quick-create" onclick="runQuickCreate()">
+                    <i class="bi bi-lightning-charge me-1"></i>Auto-Create Preset
+                </button>
+                <button type="button" class="btn btn-primary d-none" id="btn-quick-view" onclick="viewQuickPreset()">
+                    <i class="bi bi-eye me-1"></i>View Preset
                 </button>
             </div>
         </div>
@@ -561,6 +631,136 @@ function deletePreset(id, name) {
         });
     });
 }
+
+// Quick Auto-Create functions
+let quickCreatedPresetId = null;
+let quickCreatedSelectors = null;
+
+function generatePresetKey(name, targetId) {
+    if (!name) return;
+    const key = name.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+    document.getElementById(targetId).value = key;
+}
+
+async function runQuickCreate() {
+    const urlInput = document.getElementById('quick_url');
+    const nameInput = document.getElementById('quick_preset_name');
+    const keyInput = document.getElementById('quick_preset_key');
+    
+    // Validate
+    let valid = true;
+    if (!urlInput.value || !urlInput.checkValidity()) {
+        urlInput.classList.add('is-invalid');
+        valid = false;
+    } else {
+        urlInput.classList.remove('is-invalid');
+    }
+    if (!nameInput.value) {
+        nameInput.classList.add('is-invalid');
+        valid = false;
+    } else {
+        nameInput.classList.remove('is-invalid');
+    }
+    if (!keyInput.value || !/^[a-z0-9-]+$/.test(keyInput.value)) {
+        keyInput.classList.add('is-invalid');
+        valid = false;
+    } else {
+        keyInput.classList.remove('is-invalid');
+    }
+    
+    if (!valid) return;
+    
+    const btn = document.getElementById('btn-quick-create');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Creating...';
+    
+    // Hide previous results/errors
+    document.getElementById('quickResults').classList.add('d-none');
+    document.getElementById('quickError').classList.add('d-none');
+    document.getElementById('quickLoading').classList.remove('d-none');
+    
+    try {
+        const formData = new FormData();
+        formData.append('url', urlInput.value);
+        formData.append('preset_name', nameInput.value);
+        formData.append('preset_key', keyInput.value);
+        formData.append('create_preset', '1');
+        
+        const response = await fetch('/admin/autocontent/api/auto-detect-preset', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        document.getElementById('quickLoading').classList.add('d-none');
+        
+        if (data.success) {
+            quickCreatedPresetId = data.preset_id;
+            quickCreatedSelectors = data.selectors;
+            
+            // Show results
+            const resultsDiv = document.getElementById('quickResults');
+            const selectorsDiv = document.getElementById('quickDetectedSelectors');
+            resultsDiv.classList.remove('d-none');
+            selectorsDiv.innerHTML = '';
+            
+            for (const [key, value] of Object.entries(data.selectors)) {
+                if (value) {
+                    selectorsDiv.innerHTML += `
+                        <div class="col-md-6">
+                            <div class="p-2 bg-light rounded">
+                                <strong>${key}:</strong>
+                                <code class="d-block text-truncate">${value}</code>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Change buttons
+            btn.classList.add('d-none');
+            document.getElementById('btn-quick-view').classList.remove('d-none');
+        } else {
+            const errorDiv = document.getElementById('quickError');
+            errorDiv.textContent = data.message || 'Failed to create preset';
+            errorDiv.classList.remove('d-none');
+        }
+    } catch (error) {
+        console.error(error);
+        document.getElementById('quickLoading').classList.add('d-none');
+        const errorDiv = document.getElementById('quickError');
+        errorDiv.textContent = 'Error: ' + error.message;
+        errorDiv.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-lightning-charge me-1"></i>Auto-Create Preset';
+    }
+}
+
+function viewQuickPreset() {
+    // Close modal and reload to show the new preset
+    bootstrap.Modal.getInstance(document.getElementById('quickCreateModal')).hide();
+    location.reload();
+}
+
+// Reset quick create modal when closed
+document.getElementById('quickCreateModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('quick_url').value = '';
+    document.getElementById('quick_preset_name').value = '';
+    document.getElementById('quick_preset_key').value = '';
+    document.getElementById('quickResults').classList.add('d-none');
+    document.getElementById('quickError').classList.add('d-none');
+    document.getElementById('quickLoading').classList.add('d-none');
+    document.getElementById('btn-quick-create').classList.remove('d-none');
+    document.getElementById('btn-quick-view').classList.add('d-none');
+    quickCreatedPresetId = null;
+    quickCreatedSelectors = null;
+});
 
 // AI Detect for preset form
 async function aiDetectForPreset() {

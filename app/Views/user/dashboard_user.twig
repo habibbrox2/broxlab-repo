@@ -23,11 +23,11 @@ FILE: templates/dashboard_user.twig
       </div>
     </div>
     <div class="mb-4 d-flex flex-wrap gap-2">
+      <a href="/cv" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-file-earmark-text me-1"></i>My CVs
+      </a>
       <a href="/user/settings" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-gear me-1"></i>Settings
-      </a>
-      <a href="/user/devices" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-phone me-1"></i>My Devices
       </a>
       <a href="/logout" class="btn btn-outline-danger btn-sm">
         <i class="bi bi-box-arrow-right me-1"></i>Logout
@@ -59,6 +59,18 @@ FILE: templates/dashboard_user.twig
     {% endif %}
     {# Personal Stats #}
     <div class="row g-3 mb-4 dashboard-stats">
+      <div class="col-12 col-sm-6 col-xl-3">
+        <a href="/cv" class="text-decoration-none">
+          <div class="card border-0 shadow-sm rounded-4 h-100 card-hover">
+            <div class="card-body">
+              <div class="text-muted">
+                <i class="bi bi-file-earmark-text me-1"></i> My CVs
+              </div>
+              <div class="fs-3 fw-bold">{{ mystats.cvs|default(0) }}</div>
+            </div>
+          </div>
+        </a>
+      </div>
       <div class="col-12 col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm rounded-4 h-100">
           <div class="card-body">

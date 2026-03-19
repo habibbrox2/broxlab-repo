@@ -7,6 +7,9 @@ $cvModel = new CvModel($mysqli);
 $cvSectionModel = new CvSectionModel($mysqli);
 $cvItemModel = new CvItemModel($mysqli);
 $cvShareModel = new CvShareModel($mysqli);
+$cvVersionModel = new CvVersionModel($mysqli);
+$cvAnalyticsModel = new CvAnalyticsModel($mysqli);
+$cvRateLimitModel = new CvRateLimitModel($mysqli);
 
 // Use existing functions from Config/Functions.php:
 // - getCurrentUserId() - returns user ID
@@ -43,6 +46,37 @@ $router->get('/cv', ['middleware' => ['auth']], function () use ($twig, $cvModel
         'cvs' => $cvs,
         'page_title' => 'My CVs'
     ]);
+});
+
+// ========== CREATE NEW CV PAGE ==========
+$router->get('/cv/new', ['middleware' => ['auth']], function () use ($twig, $cvModel, $cvSectionModel) {
+    $userId = getCurrentUserId();
+    
+    $title = 'My CV';
+    $cvId = $cvModel->create($userId, $title);
+    
+    if ($cvId) {
+        // Create default sections
+        $sectionTypes = [
+            'summary' => 'Professional Summary',
+            'experience' => 'Work Experience',
+            'education' => 'Education',
+            'skills' => 'Skills',
+            'projects' => 'Projects',
+            'certifications' => 'Certifications'
+        ];
+
+        foreach ($sectionTypes as $type => $sectionTitle) {
+            $cvSectionModel->create($cvId, $type, $sectionTitle);
+        }
+        
+        logActivity("CV Created", "cv", $cvId, ['title' => $title], 'success');
+        header('Location: /cv/' . $cvId);
+    } else {
+        showMessage("Failed to create CV", "danger");
+        header('Location: /cv');
+    }
+    exit;
 });
 
 // ========== CREATE CV ==========
@@ -103,12 +137,19 @@ $router->get('/cv/{id}', ['middleware' => ['auth']], function ($id) use ($twig, 
     foreach ($sections as &$section) {
         $section['items'] = $cvItemModel->getBySectionId($section['id']);
     }
+    
+    // Get selected template from query string
+    $selectedTemplate = $_GET['template'] ?? 'modern';
+    $validTemplates = ['modern', 'minimal', 'ats', 'professional', 'creative'];
+    if (!in_array($selectedTemplate, $validTemplates)) {
+        $selectedTemplate = 'modern';
+    }
 
     echo $twig->render('cv/editor.twig', [
         'cv' => $cv,
         'sections' => $sections,
-        'templates' => ['modern', 'minimal', 'ats'],
-        'selected_template' => 'modern',
+        'templates' => $validTemplates,
+        'selected_template' => $selectedTemplate,
         'page_title' => 'Edit CV: ' . $cv['title']
     ]);
 });
@@ -495,7 +536,7 @@ $router->delete('/cv/{id}/share', ['middleware' => ['auth', 'csrf']], function (
 
 // ========== PUBLIC VIEW ==========
 
-$router->get('/cv/view/{token}', function ($token) use ($twig, $cvModel, $cvSectionModel, $cvItemModel, $cvShareModel) {
+$router->get('/cv/view/{token}', function ($token) use ($twig, $cvModel, $cvSectionModel, $cvItemModel, $cvShareModel, $cvAnalyticsModel) {
     $share = $cvShareModel->getByToken($token);
 
     if (!$share) {
@@ -507,8 +548,22 @@ $router->get('/cv/view/{token}', function ($token) use ($twig, $cvModel, $cvSect
         exit;
     }
 
-    $cv = $cvModel->getById($share['cv_id']);
-    $sections = $cvSectionModel->getByCvId($share['cv_id']);
+    $cvId = (int)$share['cv_id'];
+    $cv = $cvModel->getById($cvId);
+
+    if (!$cv) {
+        http_response_code(404);
+        echo $twig->render('error.twig', [
+            'code' => 404,
+            'message' => 'CV not found'
+        ]);
+        exit;
+    }
+
+    // Track view event
+    $cvAnalyticsModel->trackEvent($cvId, 'view', ['source' => 'shared_link']);
+
+    $sections = $cvSectionModel->getByCvId($cvId);
 
     // Get items for each section
     foreach ($sections as &$section) {
@@ -550,9 +605,24 @@ $router->post('/cv/{id}/ai/improve', ['middleware' => ['auth', 'csrf']], functio
     jsonResponse($result);
 });
 
-$router->post('/cv/{id}/ai/ats-score', ['middleware' => ['auth', 'csrf']], function ($id) use ($cvModel, $cvSectionModel, $cvItemModel, $mysqli) {
+$router->post('/cv/{id}/ai/ats-score', ['middleware' => ['auth', 'csrf']], function ($id) use ($cvModel, $cvSectionModel, $cvItemModel, $mysqli, $cvRateLimitModel) {
     $userId = requireAuth();
     $id = (int)$id;
+
+    // Check rate limit (gracefully handle if table doesn't exist)
+    try {
+        $rateLimit = $cvRateLimitModel->checkRateLimit($userId, 'ai_ats_score');
+        if (!$rateLimit['allowed']) {
+            jsonResponse([
+                'error' => 'Rate limit exceeded',
+                'remaining' => $rateLimit['remaining'],
+                'reset_at' => $rateLimit['reset_at']
+            ], 429);
+        }
+    } catch (Exception $e) {
+        // Rate limiting not available, continue without it
+        $rateLimit = ['remaining' => 999, 'reset_at' => time() + 3600];
+    }
 
     // Check ownership
     if (!$cvModel->belongsToUser($id, $userId)) {
@@ -598,5 +668,247 @@ $router->post('/cv/{id}/ai/ats-score', ['middleware' => ['auth', 'csrf']], funct
     $cvAi = new CvAiHelper($mysqli);
     $result = $cvAi->calculateAtsScore($cvData);
 
+    // Add rate limit headers
+    header('X-RateLimit-Remaining: ' . $rateLimit['remaining']);
+    header('X-RateLimit-Reset: ' . $rateLimit['reset_at']);
+
     jsonResponse($result);
+});
+
+// ========== BULK OPERATIONS ==========
+
+// Bulk delete CVs
+$router->post('/cv/bulk/delete', ['middleware' => ['auth', 'csrf']], function () use ($cvModel, $cvShareModel, $cvVersionModel) {
+    $userId = requireAuth();
+
+    $data = json_decode(file_get_contents('php://input'), true);
+    $cvIds = $data['cv_ids'] ?? [];
+
+    if (empty($cvIds)) {
+        jsonResponse(['error' => 'No CV IDs provided'], 400);
+    }
+
+    $deleted = [];
+    $failed = [];
+
+    foreach ($cvIds as $cvId) {
+        $cvId = (int)$cvId;
+
+        // Check ownership
+        if (!$cvModel->belongsToUser($cvId, $userId)) {
+            $failed[] = ['id' => $cvId, 'reason' => 'Forbidden'];
+            continue;
+        }
+
+        // Create final version before deletion
+        $cvVersionModel->createVersion($cvId, $userId);
+
+        // Delete share if exists
+        $cvShareModel->deleteByCvId($cvId);
+
+        // Delete CV
+        if ($cvModel->delete($cvId)) {
+            $deleted[] = $cvId;
+            logActivity("CV Bulk Deleted", "cv", $cvId, [], 'success');
+        } else {
+            $failed[] = ['id' => $cvId, 'reason' => 'Delete failed'];
+        }
+    }
+
+    jsonResponse([
+        'success' => true,
+        'deleted' => $deleted,
+        'failed' => $failed,
+        'total_deleted' => count($deleted),
+        'total_failed' => count($failed)
+    ]);
+});
+
+// Bulk export CVs
+$router->post('/cv/bulk/export', ['middleware' => ['auth', 'csrf']], function () use ($cvModel, $cvSectionModel, $cvItemModel, $twig) {
+    $userId = requireAuth();
+
+    $data = json_decode(file_get_contents('php://input'), true);
+    $cvIds = $data['cv_ids'] ?? [];
+    $template = $data['template'] ?? 'modern';
+
+    if (empty($cvIds)) {
+        jsonResponse(['error' => 'No CV IDs provided'], 400);
+    }
+
+    $exports = [];
+
+    foreach ($cvIds as $cvId) {
+        $cvId = (int)$cvId;
+
+        // Check ownership
+        if (!$cvModel->belongsToUser($cvId, $userId)) {
+            continue;
+        }
+
+        $cv = $cvModel->getById($cvId);
+        $sections = $cvSectionModel->getByCvId($cvId);
+
+        // Get items for each section
+        foreach ($sections as &$section) {
+            $section['items'] = $cvItemModel->getBySectionId($section['id']);
+        }
+
+        // Filter visible sections
+        $visibleSections = array_filter($sections, function ($s) {
+            return $s['is_visible'];
+        });
+
+        // Render HTML
+        $html = $twig->render('cv/templates/' . $template . '.twig', [
+            'cv' => $cv,
+            'sections' => $visibleSections
+        ]);
+
+        $exports[] = [
+            'cv_id' => $cvId,
+            'title' => $cv['title'],
+            'html' => $html
+        ];
+    }
+
+    jsonResponse([
+        'success' => true,
+        'exports' => $exports,
+        'total' => count($exports)
+    ]);
+});
+
+// ========== VERSION HISTORY ==========
+
+// Get version history
+$router->get('/cv/{id}/versions', ['middleware' => ['auth']], function ($id) use ($cvModel, $cvVersionModel) {
+    $userId = requireAuth();
+    $id = (int)$id;
+
+    // Check ownership
+    if (!$cvModel->belongsToUser($id, $userId)) {
+        jsonResponse(['error' => 'Forbidden'], 403);
+    }
+
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
+    $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
+
+    $versions = $cvVersionModel->getVersions($id, $limit, $offset);
+
+    jsonResponse([
+        'success' => true,
+        'versions' => $versions,
+        'total' => count($versions)
+    ]);
+});
+
+// Get specific version
+$router->get('/cv/{id}/versions/{version}', ['middleware' => ['auth']], function ($id, $version) use ($cvModel, $cvVersionModel) {
+    $userId = requireAuth();
+    $id = (int)$id;
+    $version = (int)$version;
+
+    // Check ownership
+    if (!$cvModel->belongsToUser($id, $userId)) {
+        jsonResponse(['error' => 'Forbidden'], 403);
+    }
+
+    $versionData = $cvVersionModel->getVersion($id, $version);
+
+    if (!$versionData) {
+        jsonResponse(['error' => 'Version not found'], 404);
+    }
+
+    jsonResponse([
+        'success' => true,
+        'version' => $versionData
+    ]);
+});
+
+// Restore version
+$router->post('/cv/{id}/versions/{version}/restore', ['middleware' => ['auth', 'csrf']], function ($id, $version) use ($cvModel, $cvVersionModel) {
+    $userId = requireAuth();
+    $id = (int)$id;
+    $version = (int)$version;
+
+    // Check ownership
+    if (!$cvModel->belongsToUser($id, $userId)) {
+        jsonResponse(['error' => 'Forbidden'], 403);
+    }
+
+    if ($cvVersionModel->restoreVersion($id, $version, $userId)) {
+        logActivity("CV Version Restored", "cv", $id, ['version' => $version], 'success');
+        jsonResponse(['success' => true, 'message' => 'Version restored']);
+    } else {
+        jsonResponse(['error' => 'Failed to restore version'], 500);
+    }
+});
+
+// Compare versions
+$router->get('/cv/{id}/versions/compare/{v1}/{v2}', ['middleware' => ['auth']], function ($id, $v1, $v2) use ($cvModel, $cvVersionModel) {
+    $userId = requireAuth();
+    $id = (int)$id;
+    $v1 = (int)$v1;
+    $v2 = (int)$v2;
+
+    // Check ownership
+    if (!$cvModel->belongsToUser($id, $userId)) {
+        jsonResponse(['error' => 'Forbidden'], 403);
+    }
+
+    $diff = $cvVersionModel->compareVersions($id, $v1, $v2);
+
+    jsonResponse([
+        'success' => true,
+        'diff' => $diff
+    ]);
+});
+
+// ========== ANALYTICS ==========
+
+// Get CV analytics
+$router->get('/cv/{id}/analytics', ['middleware' => ['auth']], function ($id) use ($cvModel, $cvAnalyticsModel) {
+    $userId = requireAuth();
+    $id = (int)$id;
+
+    // Check ownership
+    if (!$cvModel->belongsToUser($id, $userId)) {
+        jsonResponse(['error' => 'Forbidden'], 403);
+    }
+
+    $period = $_GET['period'] ?? 'month';
+
+    $analytics = $cvAnalyticsModel->getCvAnalytics($id, $period);
+
+    jsonResponse([
+        'success' => true,
+        'analytics' => $analytics
+    ]);
+});
+
+// Get user's CV summary
+$router->get('/cv/analytics/summary', ['middleware' => ['auth']], function () use ($cvAnalyticsModel) {
+    $userId = requireAuth();
+
+    $summary = $cvAnalyticsModel->getUserSummary($userId);
+
+    jsonResponse([
+        'success' => true,
+        'summary' => $summary
+    ]);
+});
+
+// ========== RATE LIMIT STATUS ==========
+
+// Get rate limit status
+$router->get('/cv/rate-limits', ['middleware' => ['auth']], function () use ($cvRateLimitModel) {
+    $userId = requireAuth();
+
+    $status = $cvRateLimitModel->getUserRateLimits($userId);
+
+    jsonResponse([
+        'success' => true,
+        'rate_limits' => $status
+    ]);
 });

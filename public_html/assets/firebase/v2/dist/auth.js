@@ -17,7 +17,7 @@ import {
   signUpWithEmail,
   syncIdTokenWithBackend,
   updateUserProfile
-} from "./chunks/chunk-7QUSVV7Z.js";
+} from "./chunks/chunk-KBCFUHO6.js";
 import "./chunks/chunk-QJ2663K6.js";
 import "./chunks/chunk-OIR3NABF.js";
 import "./chunks/chunk-UEMGXEGC.js";

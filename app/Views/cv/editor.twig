@@ -3,94 +3,718 @@
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-<div class="h-screen flex flex-col">
+<style>
+    :root {
+        --primary: #667eea;
+        --primary-dark: #5a67d8;
+        --secondary: #764ba2;
+        --success: #059669;
+        --danger: #DC2626;
+        --warning: #F59E0B;
+        --gray-50: #F9FAFB;
+        --gray-100: #F3F4F6;
+        --gray-200: #E5E7EB;
+        --gray-300: #D1D5DB;
+        --gray-400: #9CA3AF;
+        --gray-500: #6B7280;
+        --gray-600: #4B5563;
+        --gray-700: #374151;
+        --gray-800: #1F2937;
+        --gray-900: #111827;
+    }
+    
+    * {
+        box-sizing: border-box;
+    }
+    
+    .cv-editor {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        background: var(--gray-100);
+    }
+    
+    /* Header */
+    .editor-header {
+        background: white;
+        border-bottom: 1px solid var(--gray-200);
+        padding: 0.75rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        z-index: 100;
+    }
+    
+    .editor-header-left {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    
+    .btn-back {
+        color: var(--gray-500);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        transition: color 0.2s;
+    }
+    
+    .btn-back:hover {
+        color: var(--gray-700);
+    }
+    
+    .cv-title-input {
+        font-size: 1.25rem;
+        font-weight: 600;
+        border: none;
+        border-bottom: 2px solid transparent;
+        padding: 0.25rem 0;
+        background: transparent;
+        color: var(--gray-800);
+        width: 300px;
+        transition: border-color 0.2s;
+    }
+    
+    .cv-title-input:focus {
+        outline: none;
+        border-bottom-color: var(--primary);
+    }
+    
+    .editor-header-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .save-status {
+        font-size: 0.8rem;
+        color: var(--gray-400);
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .save-status.saving {
+        color: var(--warning);
+    }
+    
+    .save-status.saved {
+        color: var(--success);
+    }
+    
+    /* Template Selector */
+    .template-selector {
+        position: relative;
+    }
+    
+    .btn-template {
+        background: var(--gray-100);
+        border: 1px solid var(--gray-200);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-template:hover {
+        background: var(--gray-200);
+    }
+    
+    .template-dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 0.5rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        width: 320px;
+        display: none;
+        z-index: 1000;
+        overflow: hidden;
+    }
+    
+    .template-dropdown.show {
+        display: block;
+    }
+    
+    .template-dropdown-header {
+        padding: 1rem;
+        border-bottom: 1px solid var(--gray-200);
+    }
+    
+    .template-dropdown-header h6 {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--gray-700);
+    }
+    
+    .template-list {
+        padding: 0.5rem;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .template-option {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s;
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    .template-option:hover {
+        background: var(--gray-100);
+    }
+    
+    .template-option.active {
+        background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+    }
+    
+    .template-preview {
+        width: 40px;
+        height: 30px;
+        border-radius: 4px;
+        flex-shrink: 0;
+    }
+    
+    .template-info {
+        flex: 1;
+    }
+    
+    .template-name {
+        font-weight: 500;
+        font-size: 0.9rem;
+        color: var(--gray-800);
+    }
+    
+    .template-desc {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+    }
+    
+    /* Action Buttons */
+    .btn-action {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+    
+    .btn-pdf {
+        background: #FEE2E2;
+        color: var(--danger);
+    }
+    
+    .btn-pdf:hover {
+        background: #FECACA;
+    }
+    
+    .btn-ats {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        color: white;
+    }
+    
+    .btn-ats:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+    }
+    
+    /* Main Content */
+    .editor-main {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+    }
+    
+    /* Editor Panel */
+    .editor-panel {
+        width: 50%;
+        overflow-y: auto;
+        padding: 1.5rem;
+        background: var(--gray-50);
+        border-right: 1px solid var(--gray-200);
+    }
+    
+    .sections-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    /* Section Card */
+    .section-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        overflow: hidden;
+        transition: box-shadow 0.2s;
+    }
+    
+    .section-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        padding: 1rem 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .section-title {
+        color: white;
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .section-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .btn-section {
+        background: rgba(255,255,255,0.2);
+        border: none;
+        color: white;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+    }
+    
+    .btn-section:hover {
+        background: rgba(255,255,255,0.3);
+    }
+    
+    .btn-section.danger:hover {
+        background: rgba(220,38,38,0.5);
+    }
+    
+    .section-body {
+        padding: 1rem 1.25rem;
+    }
+    
+    /* Item */
+    .item-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .item-card {
+        border: 1px solid var(--gray-200);
+        border-radius: 8px;
+        padding: 1rem;
+        background: var(--gray-50);
+    }
+    
+    .item-fields {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .field-row {
+        display: flex;
+        gap: 0.75rem;
+    }
+    
+    .field-row .field-group {
+        flex: 1;
+    }
+    
+    .field-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--gray-500);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .field-input {
+        padding: 0.625rem 0.875rem;
+        border: 1px solid var(--gray-300);
+        border-radius: 6px;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        background: white;
+    }
+    
+    .field-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+    }
+    
+    .field-textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+    
+    .item-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 0.75rem;
+    }
+    
+    .btn-delete-item {
+        background: transparent;
+        border: none;
+        color: var(--danger);
+        font-size: 0.8rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        transition: background 0.2s;
+    }
+    
+    .btn-delete-item:hover {
+        background: #FEE2E2;
+    }
+    
+    .btn-add-item {
+        background: transparent;
+        border: none;
+        color: var(--primary);
+        font-size: 0.875rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.5rem;
+        margin-top: 0.75rem;
+        border-radius: 6px;
+        transition: background 0.2s;
+    }
+    
+    .btn-add-item:hover {
+        background: rgba(102,126,234,0.1);
+    }
+    
+    /* Add Section Button */
+    .btn-add-section {
+        width: 100%;
+        padding: 1rem;
+        background: white;
+        border: 2px dashed var(--gray-300);
+        border-radius: 12px;
+        color: var(--gray-500);
+        font-size: 0.9rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+        margin-top: 1rem;
+    }
+    
+    .btn-add-section:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: rgba(102,126,234,0.05);
+    }
+    
+    /* Preview Panel */
+    .preview-panel {
+        width: 50%;
+        overflow-y: auto;
+        padding: 1.5rem;
+        background: var(--gray-200);
+        display: flex;
+        justify-content: center;
+    }
+    
+    .preview-container {
+        background: white;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        border-radius: 4px;
+        width: 210mm;
+        min-height: 297mm;
+        padding: 20mm;
+    }
+    
+    .preview-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 200px;
+        color: var(--gray-400);
+    }
+    
+    /* Modals */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1050;
+        backdrop-filter: blur(4px);
+    }
+    
+    .modal-overlay.show {
+        display: flex;
+    }
+    
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    .modal-content h5 {
+        color: var(--gray-800);
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+    
+    .section-type-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    .section-type-btn {
+        padding: 0.75rem;
+        border: 1px solid var(--gray-300);
+        border-radius: 8px;
+        background: white;
+        color: var(--gray-700);
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: left;
+    }
+    
+    .section-type-btn:hover {
+        border-color: var(--primary);
+        background: rgba(102,126,234,0.05);
+    }
+    
+    .modal-close {
+        background: transparent;
+        border: none;
+        color: var(--gray-500);
+        cursor: pointer;
+        font-size: 0.9rem;
+        padding: 0;
+    }
+    
+    .modal-close:hover {
+        color: var(--gray-700);
+    }
+    
+    /* ATS Modal */
+    .ats-score-display {
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .ats-score-value {
+        font-size: 3rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .ats-score-label {
+        color: var(--gray-500);
+        font-size: 0.9rem;
+    }
+    
+    .ats-suggestions {
+        text-align: left;
+    }
+    
+    .ats-suggestions h6 {
+        color: var(--gray-700);
+        font-size: 0.9rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .ats-suggestion-item {
+        color: var(--gray-600);
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+        padding-left: 1rem;
+        position: relative;
+    }
+    
+    .ats-suggestion-item::before {
+        content: '•';
+        position: absolute;
+        left: 0;
+        color: var(--primary);
+    }
+    
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .editor-main {
+            flex-direction: column;
+        }
+        
+        .editor-panel,
+        .preview-panel {
+            width: 100%;
+        }
+        
+        .preview-panel {
+            display: none;
+        }
+    }
+</style>
+
+<div class="cv-editor">
     <!-- Header -->
-    <div class="bg-white shadow-sm border-b px-4 py-3 flex justify-between items-center">
-        <div class="flex items-center gap-4">
-            <a href="/cv" class="text-gray-600 hover:text-gray-800">
+    <div class="editor-header">
+        <div class="editor-header-left">
+            <a href="/cv" class="btn-back">
                 <i class="bi bi-arrow-left"></i> Back
             </a>
             <input type="text" id="cvTitle" value="{{ cv.title }}" 
-                class="text-xl font-semibold border-b-2 border-transparent focus:border-blue-500 outline-none"
+                class="cv-title-input"
                 onchange="updateCvTitle({{ cv.id }}, this.value)">
         </div>
         
-        <div class="flex items-center gap-2">
-            <span id="saveStatus" class="text-sm text-gray-500">Saved</span>
+        <div class="editor-header-right">
+            <span id="saveStatus" class="save-status">
+                <i class="bi bi-check-circle"></i> Saved
+            </span>
             
-            <select id="templateSelect" class="border rounded px-2 py-1" onchange="changeTemplate(this.value)">
-                {% for template in templates %}
-                    <option value="{{ template }}" {{ selected_template == template ? 'selected' }}>
-                        {{ template|capitalize }}
-                    </option>
-                {% endfor %}
-            </select>
+            <div class="template-selector">
+                <button class="btn-template" onclick="toggleTemplateDropdown()">
+                    <i class="bi bi-grid"></i> {{ selected_template|capitalize }}
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+                <div id="templateDropdown" class="template-dropdown">
+                    <div class="template-dropdown-header">
+                        <h6>Select Template</h6>
+                    </div>
+                    <div class="template-list">
+                        {% set template_previews = {
+                            'modern': {name: 'Modern', desc: 'Clean design with colored accents', color: '#4F46E5'},
+                            'minimal': {name: 'Minimal', desc: 'Simple and elegant', color: '#374151'},
+                            'ats': {name: 'ATS Friendly', desc: 'Optimized for resume scanners', color: '#059669'},
+                            'professional': {name: 'Professional', desc: 'Classic business style', color: '#1E40AF'}
+                        } %}
+                        {% for template in templates %}
+                            <a href="javascript:changeTemplate('{{ template }}')" 
+                               class="template-option {{ selected_template == template ? 'active' : '' }}">
+                                <div class="template-preview" style="background: {{ template_previews[template].color ?? '#6b7280' }};"></div>
+                                <div class="template-info">
+                                    <div class="template-name">{{ template_previews[template].name ?? template|capitalize }}</div>
+                                    <div class="template-desc">{{ template_previews[template].desc ?? '' }}</div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
             
-            <a href="/cv/{{ cv.id }}/export?template={{ selected_template }}" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
+            <a href="/cv/{{ cv.id }}/export?template={{ selected_template }}" class="btn-action btn-pdf">
                 <i class="bi bi-download"></i> PDF
             </a>
             
-            <button onclick="runAtsScore({{ cv.id }})" class="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700">
+            <button onclick="runAtsScore({{ cv.id }})" class="btn-action btn-ats">
                 <i class="bi bi-star"></i> ATS Score
             </button>
         </div>
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1 flex overflow-hidden">
+    <div class="editor-main">
         <!-- Editor Panel -->
-        <div class="w-1/2 overflow-y-auto border-r p-4 bg-gray-50" id="editorPanel">
-            <!-- Sections -->
-            <div id="sectionsList" class="space-y-4">
+        <div class="editor-panel">
+            <div class="sections-container">
                 {% for section in sections %}
-                    <div class="bg-white rounded-lg shadow p-4" data-section-id="{{ section.id }}">
-                        <div class="flex justify-between items-center mb-3">
-                            <h3 class="font-semibold">{{ section.title }}</h3>
-                            <div class="flex gap-2">
+                    <div class="section-card" data-section-id="{{ section.id }}">
+                        <div class="section-header">
+                            <h5 class="section-title">{{ section.title }}</h5>
+                            <div class="section-actions">
                                 <button onclick="toggleSectionVisibility({{ section.id }})" 
-                                    class="text-gray-500 hover:text-gray-700"
+                                    class="btn-section"
                                     title="{{ section.is_visible ? 'Hide' : 'Show' }}">
                                     <i class="bi bi-{{ section.is_visible ? 'eye' : 'eye-slash' }}"></i>
                                 </button>
                                 <button onclick="deleteSection({{ cv.id }}, {{ section.id }})" 
-                                    class="text-red-500 hover:text-red-700"
+                                    class="btn-section danger"
                                     title="Delete">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
                         </div>
                         
-                        <!-- Items -->
-                        <div id="items-{{ section.id }}" class="space-y-3">
-                            {% for item in section.items %}
-                                <div class="border rounded p-3" data-item-id="{{ item.id }}">
-                                    {{ _self.render_item_form(section.section_type, item) }}
-                                </div>
-                            {% endfor %}
+                        <div class="section-body">
+                            <div class="item-container">
+                                {% for item in section.items %}
+                                    <div class="item-card" data-item-id="{{ item.id }}">
+                                        {{ _self.render_item_form(section.section_type, item, cv.id) }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <button onclick="addItem({{ cv.id }}, {{ section.id }}, '{{ section.section_type }}')" 
+                                class="btn-add-item">
+                                <i class="bi bi-plus"></i> Add Item
+                            </button>
                         </div>
-                        
-                        <button onclick="addItem({{ cv.id }}, {{ section.id }}, '{{ section.section_type }}')" 
-                            class="mt-3 text-blue-600 hover:text-blue-700 text-sm">
-                            <i class="bi bi-plus"></i> Add Item
-                        </button>
                     </div>
                 {% endfor %}
             </div>
             
-            <!-- Add Section -->
-            <div class="mt-4">
-                <button onclick="showAddSectionModal()" class="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-gray-500 hover:border-gray-400 hover:text-gray-600">
-                    <i class="bi bi-plus-lg"></i> Add Section
-                </button>
-            </div>
+            <button onclick="showAddSectionModal()" class="btn-add-section">
+                <i class="bi bi-plus-lg"></i> Add Section
+            </button>
         </div>
 
         <!-- Preview Panel -->
-        <div class="w-1/2 overflow-y-auto bg-gray-100 p-4" id="previewPanel">
-            <div class="bg-white shadow-lg p-8 max-w-[210mm] mx-auto min-h-[297mm]">
+        <div class="preview-panel">
+            <div class="preview-container">
                 <div id="previewContent">
-                    <!-- Preview will be loaded here -->
-                    <p class="text-gray-500 text-center">Loading preview...</p>
+                    <div class="preview-loading">
+                        <i class="bi bi-arrow-repeat spin"></i> Loading preview...
+                    </div>
                 </div>
             </div>
         </div>
@@ -98,11 +722,11 @@
 </div>
 
 <!-- Add Section Modal -->
-<div id="addSectionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 class="text-xl font-semibold mb-4">Add Section</h3>
+<div id="addSectionModal" class="modal-overlay">
+    <div class="modal-content">
+        <h5>Add Section</h5>
         
-        <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="section-type-grid">
             {% set section_types = [
                 {type: 'summary', title: 'Professional Summary'},
                 {type: 'experience', title: 'Work Experience'},
@@ -114,86 +738,163 @@
             
             {% for st in section_types %}
                 <button onclick="addSection({{ cv.id }}, '{{ st.type }}', '{{ st.title }}')"
-                    class="border rounded p-3 hover:bg-gray-50 text-left">
-                    <div class="font-medium">{{ st.title }}</div>
+                    class="section-type-btn">
+                    {{ st.title }}
                 </button>
             {% endfor %}
         </div>
         
-        <button onclick="closeAddSectionModal()" class="text-gray-600 hover:text-gray-800">Cancel</button>
+        <button onclick="closeAddSectionModal()" class="modal-close">Cancel</button>
     </div>
 </div>
 
 <!-- ATS Score Modal -->
-<div id="atsScoreModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
-        <h3 class="text-xl font-semibold mb-4">ATS Score</h3>
+<div id="atsScoreModal" class="modal-overlay">
+    <div class="modal-content">
+        <h5>ATS Score Analysis</h5>
         <div id="atsScoreContent">
-            <p class="text-gray-500">Analyzing CV...</p>
+            <div class="preview-loading">
+                <i class="bi bi-arrow-repeat spin"></i> Analyzing CV...
+            </div>
         </div>
-        <button onclick="closeAtsScoreModal()" class="mt-4 text-gray-600 hover:text-gray-800">Close</button>
+        <button onclick="closeAtsScoreModal()" class="modal-close" style="margin-top: 1rem;">Close</button>
     </div>
 </div>
 
-{% macro render_item_form(section_type, item) %}
+{% macro render_item_form(section_type, item, cv_id) %}
     {% if section_type == 'summary' %}
-        <textarea class="w-full border rounded p-2" rows="4" 
-            onchange="updateItem({{ item.id }}, this.value)">{{ item.content.text ?? '' }}</textarea>
-    {% elseif section_type == 'experience' %}
-        <div class="space-y-2">
-            <input type="text" placeholder="Company" class="w-full border rounded p-2" 
-                value="{{ item.content.company ?? '' }}" onchange="updateItemField({{ item.id }}, 'company', this.value)">
-            <input type="text" placeholder="Position" class="w-full border rounded p-2" 
-                value="{{ item.content.position ?? '' }}" onchange="updateItemField({{ item.id }}, 'position', this.value)">
-            <div class="flex gap-2">
-                <input type="text" placeholder="Start Date" class="flex-1 border rounded p-2" 
-                    value="{{ item.content.start_date ?? '' }}" onchange="updateItemField({{ item.id }}, 'start_date', this.value)">
-                <input type="text" placeholder="End Date" class="flex-1 border rounded p-2" 
-                    value="{{ item.content.end_date ?? '' }}" onchange="updateItemField({{ item.id }}, 'end_date', this.value)">
+        <div class="item-fields">
+            <div class="field-group">
+                <label class="field-label">Summary</label>
+                <textarea class="field-input field-textarea" rows="4" 
+                    onchange="updateItem({{ cv_id }}, {{ item.id }}, this.value)">{{ item.content.text ?? '' }}</textarea>
             </div>
-            <textarea placeholder="Description" class="w-full border rounded p-2" rows="3"
-                onchange="updateItemField({{ item.id }}, 'description', this.value)">{{ item.content.description ?? '' }}</textarea>
+        </div>
+    {% elseif section_type == 'experience' %}
+        <div class="item-fields">
+            <div class="field-row">
+                <div class="field-group">
+                    <label class="field-label">Company</label>
+                    <input type="text" class="field-input" placeholder="Company Name"
+                        value="{{ item.content.company ?? '' }}" 
+                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'company', this.value)">
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Position</label>
+                    <input type="text" class="field-input" placeholder="Job Title"
+                        value="{{ item.content.position ?? '' }}" 
+                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'position', this.value)">
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="field-group">
+                    <label class="field-label">Start Date</label>
+                    <input type="text" class="field-input" placeholder="MM/YYYY"
+                        value="{{ item.content.start_date ?? '' }}" 
+                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'start_date', this.value)">
+                </div>
+                <div class="field-group">
+                    <label class="field-label">End Date</label>
+                    <input type="text" class="field-input" placeholder="MM/YYYY or Present"
+                        value="{{ item.content.end_date ?? '' }}" 
+                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'end_date', this.value)">
+                </div>
+            </div>
+            <div class="field-group">
+                <label class="field-label">Description</label>
+                <textarea class="field-input field-textarea" rows="3" placeholder="Describe your responsibilities and achievements"
+                    onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'description', this.value)">{{ item.content.description ?? '' }}</textarea>
+            </div>
         </div>
     {% elseif section_type == 'education' %}
-        <div class="space-y-2">
-            <input type="text" placeholder="Institution" class="w-full border rounded p-2" 
-                value="{{ item.content.institution ?? '' }}" onchange="updateItemField({{ item.id }}, 'institution', this.value)">
-            <input type="text" placeholder="Degree" class="w-full border rounded p-2" 
-                value="{{ item.content.degree ?? '' }}" onchange="updateItemField({{ item.id }}, 'degree', this.value)">
-            <div class="flex gap-2">
-                <input type="text" placeholder="Start Date" class="flex-1 border rounded p-2" 
-                    value="{{ item.content.start_date ?? '' }}" onchange="updateItemField({{ item.id }}, 'start_date', this.value)">
-                <input type="text" placeholder="End Date" class="flex-1 border rounded p-2" 
-                    value="{{ item.content.end_date ?? '' }}" onchange="updateItemField({{ item.id }}, 'end_date', this.value)">
+        <div class="item-fields">
+            <div class="field-row">
+                <div class="field-group">
+                    <label class="field-label">Institution</label>
+                    <input type="text" class="field-input" placeholder="University/College Name"
+                        value="{{ item.content.institution ?? '' }}" 
+                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'institution', this.value)">
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Degree</label>
+                    <input type="text" class="field-input" placeholder="Bachelor's, Master's, etc."
+                        value="{{ item.content.degree ?? '' }}" 
+                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'degree', this.value)">
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="field-group">
+                    <label class="field-label">Start Date</label>
+                    <input type="text" class="field-input" placeholder="MM/YYYY"
+                        value="{{ item.content.start_date ?? '' }}" 
+                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'start_date', this.value)">
+                </div>
+                <div class="field-group">
+                    <label class="field-label">End Date</label>
+                    <input type="text" class="field-input" placeholder="MM/YYYY"
+                        value="{{ item.content.end_date ?? '' }}" 
+                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'end_date', this.value)">
+                </div>
             </div>
         </div>
     {% elseif section_type == 'skills' %}
-        <div class="space-y-2">
-            <input type="text" placeholder="Skill Name" class="w-full border rounded p-2" 
-                value="{{ item.content.name ?? '' }}" onchange="updateItemField({{ item.id }}, 'name', this.value)">
-            <input type="text" placeholder="Proficiency (1-100)" class="w-full border rounded p-2" 
-                value="{{ item.content.proficiency ?? '' }}" onchange="updateItemField({{ item.id }}, 'proficiency', this.value)">
+        <div class="item-fields">
+            <div class="field-row">
+                <div class="field-group">
+                    <label class="field-label">Skill Name</label>
+                    <input type="text" class="field-input" placeholder="e.g., JavaScript, Project Management"
+                        value="{{ item.content.name ?? '' }}" 
+                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'name', this.value)">
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Proficiency (1-100)</label>
+                    <input type="number" class="field-input" placeholder="85" min="1" max="100"
+                        value="{{ item.content.proficiency ?? '' }}" 
+                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'proficiency', this.value)">
+                </div>
+            </div>
         </div>
     {% elseif section_type == 'projects' %}
-        <div class="space-y-2">
-            <input type="text" placeholder="Project Name" class="w-full border rounded p-2" 
-                value="{{ item.content.name ?? '' }}" onchange="updateItemField({{ item.id }}, 'name', this.value)">
-            <textarea placeholder="Description" class="w-full border rounded p-2" rows="2"
-                onchange="updateItemField({{ item.id }}, 'description', this.value)">{{ item.content.description ?? '' }}</textarea>
+        <div class="item-fields">
+            <div class="field-group">
+                <label class="field-label">Project Name</label>
+                <input type="text" class="field-input" placeholder="Project Title"
+                    value="{{ item.content.name ?? '' }}" 
+                    onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'name', this.value)">
+            </div>
+            <div class="field-group">
+                <label class="field-label">Description</label>
+                <textarea class="field-input field-textarea" rows="2" placeholder="Describe the project and your role"
+                    onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'description', this.value)">{{ item.content.description ?? '' }}</textarea>
+            </div>
         </div>
     {% elseif section_type == 'certifications' %}
-        <div class="space-y-2">
-            <input type="text" placeholder="Certification Name" class="w-full border rounded p-2" 
-                value="{{ item.content.name ?? '' }}" onchange="updateItemField({{ item.id }}, 'name', this.value)">
-            <input type="text" placeholder="Issuer" class="w-full border rounded p-2" 
-                value="{{ item.content.issuer ?? '' }}" onchange="updateItemField({{ item.id }}, 'issuer', this.value)">
-            <input type="text" placeholder="Date" class="w-full border rounded p-2" 
-                value="{{ item.content.date ?? '' }}" onchange="updateItemField({{ item.id }}, 'date', this.value)">
+        <div class="item-fields">
+            <div class="field-row">
+                <div class="field-group">
+                    <label class="field-label">Certification Name</label>
+                    <input type="text" class="field-input" placeholder="Certification Title"
+                        value="{{ item.content.name ?? '' }}" 
+                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'name', this.value)">
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Issuer</label>
+                    <input type="text" class="field-input" placeholder="Issuing Organization"
+                        value="{{ item.content.issuer ?? '' }}" 
+                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'issuer', this.value)">
+                </div>
+            </div>
+            <div class="field-group">
+                <label class="field-label">Date</label>
+                <input type="text" class="field-input" placeholder="MM/YYYY"
+                    value="{{ item.content.date ?? '' }}" 
+                    onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'date', this.value)">
+            </div>
         </div>
     {% endif %}
     
-    <div class="mt-2 flex justify-end">
-        <button onclick="deleteItem({{ item.id }})" class="text-red-500 hover:text-red-700 text-sm">
+    <div class="item-actions">
+        <button onclick="deleteItem({{ cv_id }}, {{ item.id }})" class="btn-delete-item">
             <i class="bi bi-trash"></i> Delete
         </button>
     </div>
@@ -206,17 +907,34 @@ let autoSaveTimer = null;
 
 // Auto-save functionality
 function scheduleAutoSave() {
-    document.getElementById('saveStatus').textContent = 'Unsaved changes...';
+    const status = document.getElementById('saveStatus');
+    status.innerHTML = '<i class="bi bi-clock"></i> Saving...';
+    status.className = 'save-status saving';
     
     if (autoSaveTimer) {
         clearTimeout(autoSaveTimer);
     }
     
     autoSaveTimer = setTimeout(() => {
-        // Auto-save is handled by individual field changes
-        document.getElementById('saveStatus').textContent = 'Saved';
-    }, 3000);
+        status.innerHTML = '<i class="bi bi-check-circle"></i> Saved';
+        status.className = 'save-status saved';
+    }, 1500);
 }
+
+// Template dropdown
+function toggleTemplateDropdown() {
+    const dropdown = document.getElementById('templateDropdown');
+    dropdown.classList.toggle('show');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('templateDropdown');
+    const btn = document.querySelector('.btn-template');
+    if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
+        dropdown.classList.remove('show');
+    }
+});
 
 // Update CV title
 function updateCvTitle(id, title) {
@@ -225,21 +943,28 @@ function updateCvTitle(id, title) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title })
     })
-    .then(() => document.getElementById('saveStatus').textContent = 'Saved');
+    .then(() => scheduleAutoSave());
 }
 
 // Change template
 function changeTemplate(template) {
     currentTemplate = template;
+    document.getElementById('templateDropdown').classList.remove('show');
     loadPreview();
 }
 
 // Load preview
 function loadPreview() {
+    const preview = document.getElementById('previewContent');
+    preview.innerHTML = '<div class="preview-loading"><i class="bi bi-arrow-repeat spin"></i> Loading preview...</div>';
+    
     fetch(`/cv/${currentCvId}/preview?template=${currentTemplate}`)
     .then(response => response.text())
     .then(html => {
-        document.getElementById('previewContent').innerHTML = html;
+        preview.innerHTML = html;
+    })
+    .catch(() => {
+        preview.innerHTML = '<div class="preview-loading">Failed to load preview</div>';
     });
 }
 
@@ -264,11 +989,11 @@ function deleteSection(cvId, sectionId) {
 
 // Add section modal
 function showAddSectionModal() {
-    document.getElementById('addSectionModal').classList.remove('hidden');
+    document.getElementById('addSectionModal').classList.add('show');
 }
 
 function closeAddSectionModal() {
-    document.getElementById('addSectionModal').classList.add('hidden');
+    document.getElementById('addSectionModal').classList.remove('show');
 }
 
 function addSection(cvId, sectionType, title) {
@@ -291,8 +1016,8 @@ function addItem(cvId, sectionId, sectionType) {
 }
 
 // Update item
-function updateItem(itemId, content) {
-    fetch(`/cv/${currentCvId}/sections/0/items/${itemId}`, {
+function updateItem(cvId, itemId, content) {
+    fetch(`/cv/${cvId}/sections/0/items/${itemId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: { text: content } })
@@ -303,8 +1028,8 @@ function updateItem(itemId, content) {
     });
 }
 
-function updateItemField(itemId, field, value) {
-    fetch(`/cv/${currentCvId}/sections/0/items/${itemId}`, {
+function updateItemField(cvId, itemId, field, value) {
+    fetch(`/cv/${cvId}/sections/0/items/${itemId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: { [field]: value } })
@@ -316,9 +1041,9 @@ function updateItemField(itemId, field, value) {
 }
 
 // Delete item
-function deleteItem(itemId) {
+function deleteItem(cvId, itemId) {
     if (confirm('Are you sure you want to delete this item?')) {
-        fetch(`/cv/${currentCvId}/sections/0/items/${itemId}`, {
+        fetch(`/cv/${cvId}/sections/0/items/${itemId}`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' }
         })
@@ -328,7 +1053,11 @@ function deleteItem(itemId) {
 
 // ATS Score
 function runAtsScore(cvId) {
-    document.getElementById('atsScoreModal').classList.remove('hidden');
+    const modal = document.getElementById('atsScoreModal');
+    const content = document.getElementById('atsScoreContent');
+    
+    modal.classList.add('show');
+    content.innerHTML = '<div class="preview-loading"><i class="bi bi-arrow-repeat spin"></i> Analyzing CV...</div>';
     
     fetch(`/cv/${cvId}/ai/ats-score`, {
         method: 'POST',
@@ -336,27 +1065,50 @@ function runAtsScore(cvId) {
     })
     .then(response => response.json())
     .then(data => {
-        const content = document.getElementById('atsScoreContent');
-        
         if (data.score !== undefined) {
             content.innerHTML = `
-                <div class="text-center mb-4">
-                    <div class="text-5xl font-bold text-purple-600">${data.score}/100</div>
-                    <p class="text-gray-600">ATS Score</p>
+                <div class="ats-score-display">
+                    <div class="ats-score-value">${data.score}/100</div>
+                    <div class="ats-score-label">ATS Compatibility Score</div>
                 </div>
-                <div class="space-y-2">
-                    <h4 class="font-semibold">Suggestions:</h4>
-                    ${data.suggestions ? data.suggestions.map(s => `<p class="text-gray-600">• ${s}</p>`).join('') : ''}
+                <div class="ats-suggestions">
+                    <h6>Suggestions for Improvement:</h6>
+                    ${data.suggestions ? data.suggestions.map(s => `<div class="ats-suggestion-item">${s}</div>`).join('') : '<p>No suggestions available</p>'}
                 </div>
             `;
         } else {
-            content.innerHTML = '<p class="text-red-500">Failed to analyze CV</p>';
+            content.innerHTML = '<p style="color: var(--danger);">Failed to analyze CV</p>';
         }
+    })
+    .catch(() => {
+        content.innerHTML = '<p style="color: var(--danger);">Failed to analyze CV</p>';
     });
 }
 
 function closeAtsScoreModal() {
-    document.getElementById('atsScoreModal').classList.add('hidden');
+    document.getElementById('atsScoreModal').classList.remove('show');
 }
+
+// Close modals on backdrop click
+document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('show');
+        }
+    });
+});
+
+// Add spin animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    .spin {
+        animation: spin 1s linear infinite;
+    }
+`;
+document.head.appendChild(style);
 </script>
 {% endblock %}

@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * BroxBhai AI SYSTEM - Premium 2026 Design System
  * Path: /public_html/ai/css/ai-style.css
  * Class Prefix: brox-ai-
@@ -3569,6 +3569,46 @@ body {
     border-color: var(--brox-ai-primary);
     color: var(--brox-ai-primary);
     background: var(--brox-ai-primary-soft);
+}
+
+/* --- Continue Response Button --- */
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-continue-container {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-continue-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #2563eb, #0dcaf0);
+    color: white;
+    border: none;
+    border-radius: 24px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--brox-ai-transition);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-continue-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-continue-btn:active {
+    transform: translateY(0);
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-continue-icon {
+    font-size: 1.1rem;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-continue-text {
+    font-weight: 600;
 }
 
 /* ============================================

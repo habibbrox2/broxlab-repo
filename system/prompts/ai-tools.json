@@ -39,15 +39,21 @@
         {
             "id": "get_content_summary",
             "name": "Get Content Summary",
-            "description": "Generate a concise AI summary of any content or article",
+            "description": "Generate a concise AI summary of any content or article. Can summarize provided content or fetch and summarize content from a URL (restricted to authorized domains).",
             "enabled": true,
             "category": "content",
             "parameters": {
                 "content": {
                     "type": "string",
-                    "required": true,
-                    "description": "Content to summarize",
+                    "required": false,
+                    "description": "Content to summarize (if URL is not provided)",
                     "max_length": 10000
+                },
+                "url": {
+                    "type": "string",
+                    "required": false,
+                    "description": "URL to fetch content from (only authorized domains allowed). If provided, content parameter is ignored.",
+                    "max_length": 500
                 },
                 "max_words": {
                     "type": "number",
@@ -115,7 +121,7 @@
         {
             "id": "extract_html_data",
             "name": "Extract HTML Data",
-            "description": "Extract structured data from HTML content — admin only, restricted to site domain",
+            "description": "Extract structured data from HTML content — admin only, restricted to site domain. Enhanced for news site scraping with specific article fields.",
             "enabled": true,
             "category": "scraping",
             "requires_admin": true,
@@ -135,12 +141,32 @@
                 "schema": {
                     "type": "object",
                     "required": false,
-                    "description": "Expected data schema to extract"
+                    "description": "Expected data schema to extract. For news articles, use: {title, author, published_date, category, tags, images, excerpt, content, url}",
+                    "properties": {
+                        "title": {"type": "string"},
+                        "author": {"type": "string"},
+                        "published_date": {"type": "string", "format": "date"},
+                        "modified_date": {"type": "string", "format": "date"},
+                        "category": {"type": "string"},
+                        "tags": {"type": "array", "items": {"type": "string"}},
+                        "images": {"type": "array", "items": {"type": "string", "format": "uri"}},
+                        "excerpt": {"type": "string"},
+                        "content": {"type": "string"},
+                        "url": {"type": "string", "format": "uri"},
+                        "links": {
+                            "type": "object",
+                            "properties": {
+                                "internal": {"type": "array", "items": {"type": "string", "format": "uri"}},
+                                "external": {"type": "array", "items": {"type": "string", "format": "uri"}}
+                            }
+                        },
+                        "meta": {"type": "object"}
+                    }
                 }
             },
             "returns": {
                 "type": "object",
-                "description": "Extracted structured data as JSON"
+                "description": "Extracted structured data as JSON with news article specific fields"
             }
         },
         {
@@ -378,6 +404,38 @@
                     "subject": "string",
                     "status": "string",
                     "created_at": "string"
+                }
+            }
+        },
+        {
+            "id": "ocr_extract",
+            "name": "OCR Extract Text",
+            "description": "Extract text from images using Optical Character Recognition (OCR) — admin only",
+            "enabled": true,
+            "category": "admin",
+            "requires_admin": true,
+            "security_note": "Only process images from authorized sources. Never process external images without explicit admin authorization.",
+            "parameters": {
+                "image": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Base64 encoded image data or image URL (from authorized domains only)",
+                    "max_length": 1000000
+                },
+                "language": {
+                    "type": "string",
+                    "required": false,
+                    "options": ["ben", "eng", "ben+eng"],
+                    "default": "ben+eng",
+                    "description": "Language(s) for OCR (ben=Bengali, eng=English)"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "fields": {
+                    "extracted_text": "string",
+                    "confidence": "number",
+                    "language_detected": "string"
                 }
             }
         }

@@ -14,12 +14,12 @@ class CvModel
     /**
      * Create a new CV for a user.
      */
-    public function create(int $userId, string $title = 'My CV'): ?int
+    public function create(int $userId, string $title = 'My CV', string $template = 'modern'): ?int
     {
         $stmt = $this->mysqli->prepare(
-            "INSERT INTO cvs (user_id, title, is_active) VALUES (?, ?, TRUE)"
+            "INSERT INTO cvs (user_id, title, template, is_active) VALUES (?, ?, ?, TRUE)"
         );
-        $stmt->bind_param('is', $userId, $title);
+        $stmt->bind_param('iss', $userId, $title, $template);
         
         if ($stmt->execute()) {
             return (int)$stmt->insert_id;
@@ -46,6 +46,59 @@ class CvModel
         }
         
         return $cvs;
+    }
+
+    /**
+     * Get all CVs (for admin).
+     */
+    public function getAll(int $limit = 100, int $offset = 0): array
+    {
+        $stmt = $this->mysqli->prepare(
+            "SELECT c.*, u.username, u.email, u.first_name, u.last_name 
+             FROM cvs c 
+             LEFT JOIN users u ON c.user_id = u.id 
+             ORDER BY c.updated_at DESC 
+             LIMIT ? OFFSET ?"
+        );
+        $stmt->bind_param('ii', $limit, $offset);
+        $stmt->execute();
+        
+        $result = $stmt->get_result();
+        $cvs = [];
+        while ($row = $result->fetch_assoc()) {
+            $cvs[] = $row;
+        }
+        
+        return $cvs;
+    }
+
+    /**
+     * Get CV statistics (for admin).
+     */
+    public function getStatistics(): array
+    {
+        $stats = [];
+        
+        // Total CVs
+        $result = $this->mysqli->query("SELECT COUNT(*) as total FROM cvs");
+        $stats['total'] = $result->fetch_assoc()['total'] ?? 0;
+        
+        // CVs by template
+        $result = $this->mysqli->query(
+            "SELECT template, COUNT(*) as count FROM cvs GROUP BY template"
+        );
+        $stats['by_template'] = [];
+        while ($row = $result->fetch_assoc()) {
+            $stats['by_template'][$row['template']] = $row['count'];
+        }
+        
+        // Active users with CVs
+        $result = $this->mysqli->query(
+            "SELECT COUNT(DISTINCT user_id) as users_with_cvs FROM cvs"
+        );
+        $stats['users_with_cvs'] = $result->fetch_assoc()['users_with_cvs'] ?? 0;
+        
+        return $stats;
     }
 
     /**
@@ -82,6 +135,12 @@ class CvModel
             $fields[] = 'is_active = ?';
             $params[] = $data['is_active'] ? 1 : 0;
             $types .= 'i';
+        }
+
+        if (isset($data['template'])) {
+            $fields[] = 'template = ?';
+            $params[] = $data['template'];
+            $types .= 's';
         }
 
         if (empty($fields)) {

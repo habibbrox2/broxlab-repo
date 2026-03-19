@@ -715,8 +715,8 @@ $router->post('/admin/autocontent/api/ai-detect-selectors', [], function () use 
             exit;
         }
 
-        // Use AI to detect selectors
-        $selectors = detectSelectorsWithAI($html, $url);
+        // Use AI to detect selectors (using project's AI system)
+        $selectors = detectSelectorsWithAI($html, $url, $mysqli);
 
         echo json_encode([
         'success' => true,
@@ -734,13 +734,396 @@ $router->post('/admin/autocontent/api/ai-detect-selectors', [], function () use 
 });
 
 /**
- * Use Puter AI to detect CSS selectors from HTML
+ * Auto-Detect Selectors and Create Preset from URL
+ * POST /admin/autocontent/api/auto-detect-preset
+ * This endpoint takes a URL, detects selectors using AI, and optionally creates a new preset
  */
-function detectSelectorsWithAI(string $html, string $url): array
+$router->post('/admin/autocontent/api/auto-detect-preset', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    try {
+        $url = $_POST['url'] ?? '';
+        $presetName = $_POST['preset_name'] ?? '';
+        $presetKey = $_POST['preset_key'] ?? '';
+        $createPreset = isset($_POST['create_preset']) && $_POST['create_preset'] === '1';
+
+        if (empty($url)) {
+            echo json_encode(['success' => false, 'message' => 'URL is required']);
+            exit;
+        }
+
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid URL format']);
+            exit;
+        }
+
+        // If create_preset is true, validate preset details
+        if ($createPreset) {
+            if (empty($presetName)) {
+                echo json_encode(['success' => false, 'message' => 'Preset name is required when creating a preset']);
+                exit;
+            }
+            if (empty($presetKey)) {
+                // Auto-generate preset_key from name
+                $presetKey = strtolower(preg_replace('/[^a-z0-9]+/', '-', $presetName));
+                $presetKey = trim($presetKey, '-');
+            }
+            // Validate preset_key format
+            if (!preg_match('/^[a-z0-9-]+$/', $presetKey)) {
+                echo json_encode(['success' => false, 'message' => 'Preset key must contain only lowercase letters, numbers, and hyphens']);
+                exit;
+            }
+        }
+
+        // Fetch raw HTML
+        $html = '';
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            CURLOPT_ENCODING => '',
+        ]);
+        $html = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if (empty($html) || $httpCode !== 200) {
+            echo json_encode(['success' => false, 'message' => 'Failed to fetch URL content (HTTP ' . $httpCode . ')']);
+            exit;
+        }
+
+        // Detect selectors using AI (using project's AI system)
+        $selectors = detectSelectorsWithAI($html, $url, $mysqli);
+
+        // If create_preset is true, save the preset
+        $presetId = null;
+        if ($createPreset) {
+            $model = new AutoContentModel($mysqli);
+            
+            // Check if preset_key already exists
+            $existingPreset = $model->getWebsitePresetByKey($presetKey);
+            if ($existingPreset) {
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Preset key "' . $presetKey . '" already exists. Please choose a different name or key.'
+                ]);
+                exit;
+            }
+
+            $presetData = [
+                'preset_key' => $presetKey,
+                'name' => $presetName,
+                'selector_list_container' => $selectors['list_container'] ?? '',
+                'selector_list_item' => $selectors['list_item'] ?? '',
+                'selector_list_title' => $selectors['list_title'] ?? '',
+                'selector_list_link' => $selectors['list_link'] ?? '',
+                'selector_list_date' => $selectors['list_date'] ?? '',
+                'selector_list_image' => $selectors['list_image'] ?? '',
+                'selector_title' => $selectors['title'] ?? '',
+                'selector_content' => $selectors['content'] ?? '',
+                'selector_image' => $selectors['image'] ?? '',
+                'selector_excerpt' => $selectors['excerpt'] ?? '',
+                'selector_date' => $selectors['date'] ?? '',
+                'selector_author' => $selectors['author'] ?? '',
+                'selector_pagination' => '',
+                'selector_read_more' => '',
+                'selector_category' => '',
+                'selector_tags' => ''
+            ];
+
+            $presetId = $model->saveWebsitePreset($presetData);
+        }
+
+        echo json_encode([
+            'success' => true,
+            'message' => $createPreset ? 'Preset created successfully with detected selectors' : 'Selectors detected successfully',
+            'selectors' => $selectors,
+            'preset_id' => $presetId,
+            'preset_key' => $createPreset ? $presetKey : null,
+            'preset_name' => $createPreset ? $presetName : null
+        ]);
+        exit;
+    }
+    catch (Throwable $e) {
+        error_log("Auto Detect Preset Error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        exit;
+    }
+});
+
+/**
+ * Quick Detect - Just get selectors from URL (no preset creation)
+ * POST /admin/autocontent/api/quick-detect
+ */
+$router->post('/admin/autocontent/api/quick-detect', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    try {
+        $url = $_POST['url'] ?? '';
+
+        if (empty($url)) {
+            echo json_encode(['success' => false, 'message' => 'URL is required']);
+            exit;
+        }
+
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid URL format']);
+            exit;
+        }
+
+        // Fetch raw HTML
+        $html = '';
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            CURLOPT_ENCODING => '',
+        ]);
+        $html = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if (empty($html) || $httpCode !== 200) {
+            echo json_encode(['success' => false, 'message' => 'Failed to fetch URL content (HTTP ' . $httpCode . ')']);
+            exit;
+        }
+
+        // Detect selectors using AI (using project's AI system)
+        $selectors = detectSelectorsWithAI($html, $url, $mysqli);
+
+        echo json_encode([
+            'success' => true,
+            'selectors' => $selectors,
+            'url' => $url
+        ]);
+        exit;
+    }
+    catch (Throwable $e) {
+        error_log("Quick Detect Error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        exit;
+    }
+});
+
+/**
+ * Use Multiple AI Models to detect CSS selectors from HTML
+ * Uses the project's AI system (AIProvider) for multi-model detection
+ */
+function detectSelectorsWithAI(string $html, string $url, $mysqli = null): array
 {
     // Prepare HTML sample (limit to 30KB for API efficiency)
     $htmlSample = substr($html, 0, 30000);
 
+    // Collect results from multiple models using project's AI system
+    $allResults = [];
+    
+    // Model 1: Using project's AIProvider - OpenRouter (GPT-4o-mini)
+    $openrouterResult = detectWithProjectAI($htmlSample, $url, 'openrouter', 'gpt-4o-mini');
+    if (!empty($openrouterResult)) {
+        $allResults[] = $openrouterResult;
+    }
+    
+    // Model 2: Using project's AIProvider - Anthropic (Claude)
+    $anthropicResult = detectWithProjectAI($htmlSample, $url, 'anthropic', 'claude-3-haiku-20240307');
+    if (!empty($anthropicResult)) {
+        $allResults[] = $anthropicResult;
+    }
+    
+    // Model 3: Using project's AIProvider - Fireworks (Llama)
+    $fireworksResult = detectWithProjectAI($htmlSample, $url, 'fireworks', 'llama-3.1-70b-instruct');
+    if (!empty($fireworksResult)) {
+        $allResults[] = $fireworksResult;
+    }
+    
+    // Model 4: Using project's AIProvider - Ollama (if available)
+    $ollamaResult = detectWithProjectAI($htmlSample, $url, 'ollama', 'llama3');
+    if (!empty($ollamaResult)) {
+        $allResults[] = $ollamaResult;
+    }
+    
+    // Model 5: Using project's AIProvider - Kilo (if available)
+    $kiloResult = detectWithProjectAI($htmlSample, $url, 'kilo', 'qwen2.5-72b-instruct');
+    if (!empty($kiloResult)) {
+        $allResults[] = $kiloResult;
+    }
+    
+    // If we have multiple results, merge them using voting/confidence
+    if (count($allResults) > 1) {
+        return mergeSelectorResults($allResults);
+    }
+    
+    // If only one result or none, use pattern-based detection as fallback
+    if (!empty($allResults[0])) {
+        return $allResults[0];
+    }
+    
+    // Fallback to pattern-based detection
+    return analyzeHtmlStructure($html, $url);
+}
+
+/**
+ * Detect selectors using the project's AIProvider system
+ */
+function detectWithProjectAI(string $htmlSample, string $url, string $provider, string $model): array
+{
+    global $mysqli;
+    
+    if (!$mysqli) {
+        return [];
+    }
+    
+    require_once __DIR__ . '/../Models/AIProvider.php';
+    
+    $aiProvider = new AIProvider($mysqli);
+    $settings = $aiProvider->getSettings();
+    
+    // Check if this provider is available
+    $providerKey = $provider . '_enabled';
+    if (empty($settings[$providerKey])) {
+        return [];
+    }
+    
+    $prompt = <<<PROMPT
+You are a web scraping expert. Analyze the first 30KB of HTML from URL: {$url} and identify the most accurate CSS selectors for the elements listed below.
+
+REQUIRED SELECTORS (use these exact keys in JSON):
+1. list_container: The main element wrapping all article items.
+2. list_item: The repeated element for each article in the list.
+3. list_title: The title element inside each list item.
+4. list_link: The 'a' tag linking to the full article.
+5. list_date: The date element in the list (if any).
+6. list_image: The image element (img or container) in the list.
+7. title: The main h1 heading on the article detail page.
+8. content: The main body text/wrapper for the article.
+9. image: The primary featured image on the detail page.
+10. excerpt: A summary/lead paragraph if separate from content.
+11. author: The author name element.
+12. date: The publication date on the detail page.
+
+RULES:
+- Return ONLY a valid JSON object. No preamble, no explanation.
+- Use stable class names (.class) or semantic tags (article, main, time).
+- Prefer specific selectors that are unlikely to change.
+- If a selector is a meta tag, use attribute notation like 'meta[property="og:image"]'.
+
+RESPONSE FORMAT:
+{
+    "list_container": ".news-list",
+    "list_item": "article.news-card",
+    ...
+}
+PROMPT;
+
+    try {
+        // Use AIProvider to make the API call
+        $apiKeySetting = $provider . '_api_key';
+        $apiKey = $settings[$apiKeySetting] ?? '';
+        
+        if (empty($apiKey)) {
+            return [];
+        }
+        
+        // Get provider config
+        $config = AIProvider::getProviderConfig($provider);
+        if (!$config) {
+            return [];
+        }
+        
+        $endpoint = $config['endpoint'] ?? '';
+        $authType = $config['auth_type'] ?? 'bearer';
+        
+        // Build request based on provider
+        $messages = [['role' => 'user', 'content' => $prompt]];
+        
+        if ($provider === 'anthropic') {
+            // Anthropic uses different format
+            $postData = json_encode([
+                'model' => $model,
+                'max_tokens' => 1024,
+                'messages' => $messages
+            ]);
+            $headers = [
+                'Content-Type: application/json',
+                'x-api-key: ' . $apiKey,
+                'anthropic-version: 2023-06-01'
+            ];
+        } else {
+            // OpenAI-compatible format
+            $postData = json_encode([
+                'model' => $model,
+                'messages' => $messages,
+                'temperature' => 0.2,
+                'max_tokens' => 1024
+            ]);
+            $headers = [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $apiKey
+            ];
+            
+            // Add HuggingFace specific headers
+            if ($provider === 'huggingface') {
+                $headers[] = 'HF-Inference-Provider: https://router.huggingface.co/' . $model;
+            }
+        }
+        
+        $ch = curl_init($endpoint);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $postData,
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_TIMEOUT => 60,
+            CURLOPT_CONNECTTIMEOUT => 30
+        ]);
+        
+        $response = curl_exec($ch);
+        $error = curl_error($ch);
+        curl_close($ch);
+        
+        if ($error || empty($response)) {
+            error_log("AI detection ($provider) failed: " . $error);
+            return [];
+        }
+        
+        $data = json_decode($response, true);
+        
+        // Extract content from AI response
+        $content = '';
+        if ($provider === 'anthropic') {
+            $content = $data['content'][0]['text'] ?? '';
+        } else {
+            $content = $data['choices'][0]['message']['content'] ?? '';
+        }
+        
+        if (empty($content)) {
+            return [];
+        }
+        
+        return parseAISelectorResponse($content);
+        
+    } catch (Throwable $e) {
+        error_log("AI detection ($provider) error: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Detect selectors using Puter AI (GPT-4o-mini)
+ */
+function detectWithPuterAI(string $htmlSample, string $url): array
+{
     // Build prompt for AI
     $prompt = <<<PROMPT
 You are a web scraping expert. Analyze the first 30KB of HTML from URL: {$url} and identify the most accurate CSS selectors for the elements listed below.
@@ -807,7 +1190,7 @@ PROMPT;
     if ($error || empty($response)) {
         // Fallback to pattern-based detection
         error_log("AI detection failed, falling back to pattern detection: " . $error);
-        return analyzeHtmlStructure($html, $url);
+        return analyzeHtmlStructure($htmlSample, $url);
     }
 
     $data = json_decode($response, true);
@@ -822,14 +1205,14 @@ PROMPT;
     }
 
     if (empty($content)) {
-        return analyzeHtmlStructure($html, $url);
+        return analyzeHtmlStructure($htmlSample, $url);
     }
 
     // Parse JSON from response
     $selectors = parseAISelectorResponse($content);
 
     // Validate and merge with pattern-based detection as backup
-    $patternSelectors = analyzeHtmlStructure($html, $url);
+    $patternSelectors = analyzeHtmlStructure($htmlSample, $url);
 
     foreach ($patternSelectors as $key => $value) {
         if (empty($selectors[$key]) && !empty($value)) {
@@ -838,6 +1221,191 @@ PROMPT;
     }
 
     return $selectors;
+}
+
+/**
+ * Detect selectors using Anthropic Claude API
+ */
+function detectWithClaude(string $htmlSample, string $url): array
+{
+    $apiKey = $_ENV['ANTHROPIC_API_KEY'] ?? '';
+    
+    if (empty($apiKey)) {
+        return [];
+    }
+    
+    $prompt = <<<PROMPT
+You are a web scraping expert. Analyze the first 30KB of HTML from URL: {$url} and identify the most accurate CSS selectors for the elements listed below.
+
+HTML SNIPPET:
+{$htmlSample}
+
+REQUIRED SELECTORS (return as JSON with these exact keys):
+- list_container: The main element wrapping all article items.
+- list_item: The repeated element for each article.
+- list_title: The title element inside each list item.
+- list_link: The 'a' tag linking to the full article.
+- list_date: The date element in the list.
+- list_image: The image element in the list.
+- title: The main h1 heading on article detail page.
+- content: The main body text/wrapper for the article.
+- image: The primary featured image on detail page.
+- excerpt: A summary/lead paragraph.
+- author: The author name element.
+- date: The publication date on detail page.
+
+Return ONLY valid JSON, no preamble.
+PROMPT;
+
+    $postData = json_encode([
+        'model' => 'claude-3-haiku-20240307',
+        'max_tokens' => 1024,
+        'messages' => [
+            ['role' => 'user', 'content' => $prompt]
+        ]
+    ]);
+
+    $ch = curl_init('https://api.anthropic.com/v1/messages');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $postData,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            'x-api-key: ' . $apiKey,
+            'anthropic-version: 2023-06-01'
+        ],
+        CURLOPT_TIMEOUT => 60,
+        CURLOPT_CONNECTTIMEOUT => 30
+    ]);
+
+    $response = curl_exec($ch);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    if ($error || empty($response)) {
+        return [];
+    }
+
+    $data = json_decode($response, true);
+    $content = $data['content'][0]['text'] ?? '';
+
+    if (empty($content)) {
+        return [];
+    }
+
+    return parseAISelectorResponse($content);
+}
+
+/**
+ * Detect selectors using Google Gemini API
+ */
+function detectWithGemini(string $htmlSample, string $url): array
+{
+    $apiKey = $_ENV['GEMINI_API_KEY'] ?? '';
+    
+    if (empty($apiKey)) {
+        return [];
+    }
+    
+    $prompt = <<<PROMPT
+Analyze this HTML from {$url} and find CSS selectors for web scraping.
+
+HTML:
+{$htmlSample}
+
+Return JSON with keys: list_container, list_item, list_title, list_link, list_date, list_image, title, content, image, excerpt, date, author.
+Return ONLY valid JSON.
+PROMPT;
+
+    $postData = json_encode([
+        'contents' => [
+            ['parts' => [['text' => $prompt]]]
+        ],
+        'generationConfig' => [
+            'temperature' => 0.2,
+            'maxOutputTokens' => 1024
+        ]
+    ]);
+
+    $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' . $apiKey);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $postData,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json'
+        ],
+        CURLOPT_TIMEOUT => 60,
+        CURLOPT_CONNECTTIMEOUT => 30
+    ]);
+
+    $response = curl_exec($ch);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    if ($error || empty($response)) {
+        return [];
+    }
+
+    $data = json_decode($response, true);
+    $content = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+
+    if (empty($content)) {
+        return [];
+    }
+
+    return parseAISelectorResponse($content);
+}
+
+/**
+ * Merge results from multiple AI models using voting
+ */
+function mergeSelectorResults(array $results): array
+{
+    $default = [
+        'list_container' => '',
+        'list_item' => '',
+        'list_title' => '',
+        'list_link' => '',
+        'list_date' => '',
+        'list_image' => '',
+        'title' => '',
+        'content' => '',
+        'image' => '',
+        'excerpt' => '',
+        'date' => '',
+        'author' => ''
+    ];
+
+    $selectorCounts = [];
+    
+    // Count occurrences of each selector
+    foreach ($results as $result) {
+        foreach ($result as $key => $value) {
+            if (!empty($value)) {
+                if (!isset($selectorCounts[$key])) {
+                    $selectorCounts[$key] = [];
+                }
+                if (!isset($selectorCounts[$key][$value])) {
+                    $selectorCounts[$key][$value] = 0;
+                }
+                $selectorCounts[$key][$value]++;
+            }
+        }
+    }
+
+    // Select the most common selector for each key
+    $merged = $default;
+    foreach ($selectorCounts as $key => $values) {
+        if (!empty($values)) {
+            // Get the selector with highest count
+            arsort($values);
+            $merged[$key] = array_key_first($values);
+        }
+    }
+
+    return $merged;
 }
 
 /**
