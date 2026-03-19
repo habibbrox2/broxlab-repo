@@ -12,6 +12,16 @@ class AIProvider
 
     private const REMOTE_MODELS_CACHE_DIR = 'storage/cache/ai-models';
 
+    // --- Autoscaling Configuration (Fireworks AI Deployments) ---
+    private const AUTOSCALING_CONFIG = [
+        'max_retries' => 30,
+        'initial_delay_seconds' => 5,
+        'max_delay_seconds' => 60,
+        'backoff_multiplier' => 1.5,
+        'retry_on_status_codes' => [503],
+        'retry_error_codes' => ['DEPLOYMENT_SCALING_UP'],
+    ];
+
     // Provider configurations
     private const PROVIDER_CONFIGS = [
         'openrouter' => [
@@ -606,6 +616,16 @@ class AIProvider
             return ['success' => false, 'error' => 'Connection error: ' . $error, 'error_type' => 'network'];
         }
 
+        // Handle 503 DEPLOYMENT_SCALING_UP (Fireworks AI autoscaling)
+        if ($httpCode === 503 && $providerName === 'fireworks') {
+            $scalingResult = $this->handleDeploymentScalingUp(
+                $endpoint, $headers, $requestData, $options, $response
+            );
+            if ($scalingResult !== null) {
+                return $scalingResult;
+            }
+        }
+
         if ($httpCode !== 200) {
             // Try to parse OpenAI-style error payloads so we can show a cleaner message.
             $errorMessage = $this->parseHttpError($providerName, $httpCode, $response);
@@ -614,6 +634,94 @@ class AIProvider
 
         // Parse response
         return $this->parseResponse($providerName, $response);
+    }
+
+    /**
+     * Handle DEPLOYMENT_SCALING_UP 503 errors with retry logic
+     * Implements exponential backoff for Fireworks AI scale-from-zero scenarios
+     *
+     * @see https://docs.fireworks.ai/deployments/autoscaling
+     */
+    private function handleDeploymentScalingUp(
+        string $endpoint,
+        array $headers,
+        array $requestData,
+        array $options,
+        string $response
+    ): ?array {
+        $parsed = json_decode($response, true);
+        $errorCode = $parsed['error']['code'] ?? '';
+
+        if (!in_array($errorCode, self::AUTOSCALING_CONFIG['retry_error_codes'], true)) {
+            return null; // Not a scaling error, let caller handle
+        }
+
+        logActivity('AI Deployment Scaling Up', 'fireworks', 0, [
+            'model' => $requestData['model'] ?? '',
+            'endpoint' => $endpoint
+        ], 'info');
+
+        $maxRetries = self::AUTOSCALING_CONFIG['max_retries'];
+        $delay = self::AUTOSCALING_CONFIG['initial_delay_seconds'];
+        $maxDelay = self::AUTOSCALING_CONFIG['max_delay_seconds'];
+        $multiplier = self::AUTOSCALING_CONFIG['backoff_multiplier'];
+
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            // Wait with exponential backoff
+            usleep((int)($delay * 1000000));
+
+            // Retry the request
+            $ch = curl_init($endpoint);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, $options['timeout'] ?? 120);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+            curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+
+            $retryResponse = curl_exec($ch);
+            $retryHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $retryError = curl_error($ch);
+            curl_close($ch);
+
+            if ($retryError) {
+                return ['success' => false, 'error' => 'Connection error during scale-up retry: ' . $retryError, 'error_type' => 'network'];
+            }
+
+            if ($retryHttpCode === 200) {
+                logActivity('AI Deployment Scaled Up', 'fireworks', 0, [
+                    'model' => $requestData['model'] ?? '',
+                    'attempts' => $attempt,
+                    'total_wait_seconds' => $delay * $attempt
+                ], 'success');
+                return $this->parseResponse('fireworks', $retryResponse);
+            }
+
+            // Check if still scaling up
+            if ($retryHttpCode === 503) {
+                $retryParsed = json_decode($retryResponse, true);
+                $retryErrorCode = $retryParsed['error']['code'] ?? '';
+                if (in_array($retryErrorCode, self::AUTOSCALING_CONFIG['retry_error_codes'], true)) {
+                    // Exponential backoff with cap
+                    $delay = min($delay * $multiplier, $maxDelay);
+                    continue;
+                }
+            }
+
+            // Different error occurred during retry
+            $errorMessage = $this->parseHttpError('fireworks', $retryHttpCode, $retryResponse);
+            return ['success' => false, 'error' => $errorMessage, 'error_type' => 'http', 'http_code' => $retryHttpCode];
+        }
+
+        // All retries exhausted
+        return [
+            'success' => false,
+            'error' => 'Deployment did not scale up after ' . $maxRetries . ' attempts (' . ($maxRetries * $delay) . 's). Try setting min-replica-count > 0 to avoid cold starts.',
+            'error_code' => 'deployment_scale_timeout',
+            'error_type' => 'autoscaling'
+        ];
     }
 
     /**

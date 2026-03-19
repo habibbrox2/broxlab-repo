@@ -279,6 +279,254 @@ class RAGEngine
     }
 
     /**
+     * Generate embeddings using multiple AI providers
+     * Tries each provider in order until one succeeds
+     * 
+     * @param string $text Text to embed
+     * @param string $preferredProvider Preferred provider (openai, anthropic, ollama, etc.)
+     * @return array|null Embedding vector or null if all fail
+     */
+    public function generateEmbeddingMultiProvider(string $text, string $preferredProvider = 'openai'): ?array
+    {
+        $providers = [];
+        
+        // Add preferred provider first
+        if (!empty($preferredProvider)) {
+            $providers[] = $preferredProvider;
+        }
+        
+        // Add fallback providers
+        $fallbacks = ['openai', 'anthropic', 'ollama', 'cohere', 'voyage'];
+        foreach ($fallbacks as $fb) {
+            if (!in_array($fb, $providers)) {
+                $providers[] = $fb;
+            }
+        }
+        
+        foreach ($providers as $provider) {
+            $embedding = $this->generateEmbeddingForProvider($text, $provider);
+            if ($embedding !== null) {
+                return $embedding;
+            }
+        }
+        
+        // Final fallback to simple embedding
+        return $this->simpleEmbedding($text);
+    }
+
+    /**
+     * Generate embedding for a specific provider
+     * 
+     * @param string $text Text to embed
+     * @param string $provider Provider name
+     * @return array|null Embedding or null if provider unavailable
+     */
+    private function generateEmbeddingForProvider(string $text, string $provider): ?array
+    {
+        $embeddingModel = null;
+        $apiKey = null;
+        
+        switch ($provider) {
+            case 'openai':
+                $embeddingModel = 'text-embedding-3-small';
+                $apiKey = $this->getApiKey('openai');
+                break;
+            case 'cohere':
+                $embeddingModel = 'embed-english-v3.0';
+                $apiKey = $this->getApiKey('cohere');
+                break;
+            case 'voyage':
+                $embeddingModel = 'voyage-2';
+                $apiKey = $this->getApiKey('voyage');
+                break;
+            case 'ollama':
+                return $this->generateEmbeddingOllama($text);
+            case 'anthropic':
+                // Anthropic doesn't have embedding API, skip
+                return null;
+            default:
+                return null;
+        }
+        
+        if (empty($apiKey)) {
+            return null;
+        }
+        
+        return $this->callEmbeddingAPI($provider, $embeddingModel, $apiKey, $text);
+    }
+
+    /**
+     * Get API key for a provider
+     */
+    private function getApiKey(string $provider): ?string
+    {
+        $aiProvider = new \AIProvider($this->mysqli);
+        $settings = $aiProvider->getSettings();
+        
+        $keyMap = [
+            'openai' => 'openai_api_key',
+            'anthropic' => 'anthropic_api_key', 
+            'cohere' => 'cohere_api_key',
+            'voyage' => 'voyage_api_key',
+            'ollama' => null // Ollama doesn't need API key (local)
+        ];
+        
+        $key = $keyMap[$provider] ?? null;
+        if ($key && !empty($settings[$key])) {
+            return $settings[$key];
+        }
+        
+        return null;
+    }
+
+    /**
+     * Call embedding API for a specific provider
+     */
+    private function callEmbeddingAPI(string $provider, string $model, string $apiKey, string $text): ?array
+    {
+        $endpoints = [
+            'openai' => 'https://api.openai.com/v1/embeddings',
+            'cohere' => 'https://api.cohere.ai/v1/embed',
+            'voyage' => 'https://api.voyageai.com/v1/embeddings'
+        ];
+        
+        $url = $endpoints[$provider] ?? null;
+        if (!$url) {
+            return null;
+        }
+        
+        $headers = [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json'
+        ];
+        
+        $payload = [];
+        switch ($provider) {
+            case 'openai':
+                $payload = [
+                    'model' => $model,
+                    'input' => $text
+                ];
+                break;
+            case 'cohere':
+                $payload = [
+                    'model' => $model,
+                    'texts' => [$text]
+                ];
+                break;
+            case 'voyage':
+                $payload = [
+                    'model' => $model,
+                    'input' => $text
+                ];
+                break;
+        }
+        
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode !== 200) {
+            return null;
+        }
+        
+        $data = json_decode($response, true);
+        
+        // Parse response based on provider
+        switch ($provider) {
+            case 'openai':
+                return $data['data'][0]['embedding'] ?? null;
+            case 'cohere':
+                return $data['embeddings'][0] ?? null;
+            case 'voyage':
+                return $data['data'][0]['embedding'] ?? null;
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Generate embedding using Ollama (local)
+     */
+    private function generateEmbeddingOllama(string $text): ?array
+    {
+        $aiProvider = new \AIProvider($this->mysqli);
+        $ollamaProvider = $aiProvider->getByName('ollama');
+        
+        if (!$ollamaProvider || empty($ollamaProvider['base_url'])) {
+            return null;
+        }
+        
+        $baseUrl = rtrim($ollamaProvider['base_url'], '/');
+        $url = $baseUrl . '/api/embeddings';
+        
+        // Get embedding model from settings
+        $settings = $aiProvider->getSettings();
+        $model = $settings['ollama_embedding_model'] ?? 'nomic-embed-text';
+        
+        $payload = [
+            'model' => $model,
+            'prompt' => $text
+        ];
+        
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode !== 200) {
+            return null;
+        }
+        
+        $data = json_decode($response, true);
+        return $data['embedding'] ?? null;
+    }
+
+    /**
+     * Re-index all knowledge items with embeddings from any available provider
+     * 
+     * @param string $preferredProvider Preferred provider for embeddings
+     * @return array Results with success count and errors
+     */
+    public function reindexAllWithProvider(string $preferredProvider = 'openai'): array
+    {
+        $items = $this->knowledgeModel->list(1000, 0, null, false);
+        $success = 0;
+        $errors = [];
+        
+        foreach ($items as $item) {
+            $text = $item['title'] . ' ' . $item['content'];
+            $embedding = $this->generateEmbeddingMultiProvider($text, $preferredProvider);
+            
+            if ($embedding !== null) {
+                $this->knowledgeModel->updateEmbedding($item['id'], $embedding);
+                $success++;
+            } else {
+                $errors[] = 'Failed to generate embedding for item #' . $item['id'];
+            }
+        }
+        
+        return [
+            'total' => count($items),
+            'success' => $success,
+            'errors' => $errors
+        ];
+    }
+    
+    /**
      * Generate embeddings using Python sentence-transformers
      * Requires: pip install sentence-transformers
      */

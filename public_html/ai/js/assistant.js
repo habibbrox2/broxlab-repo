@@ -25,8 +25,98 @@ if (!window.BroxAssistantLoaded) {
         proxyUrl: '/api/ai/chat',
         modelsUrl: '/api/ai/models',
         frontendSettingsUrl: '/api/ai-system/frontend',
-        puterCdn: 'https://js.puter.com/v2/'     // Puter.js CDN (fallback only)
+        puterCdn: 'https://js.puter.com/v2/',     // Puter.js CDN (fallback only)
+        cryptoKeyId: 'brox.ai.crypto_key'         // Stored encryption key identifier
     };
+
+    // ── BroxCrypto: Encryption utility using Web Crypto API (AES-GCM) ───────────────
+    const BroxCrypto = (function() {
+        // Generate or retrieve a device-specific encryption key
+        async function getKey() {
+            let keyData = localStorage.getItem(CONFIG.cryptoKeyId);
+            
+            if (keyData) {
+                // Import existing key from stored bytes
+                const keyBytes = Uint8Array.from(atob(keyData), c => c.charCodeAt(0));
+                return await crypto.subtle.importKey(
+                    'raw',
+                    keyBytes,
+                    { name: 'AES-GCM', length: 256 },
+                    true,
+                    ['encrypt', 'decrypt']
+                );
+            }
+            
+            // Generate new key if none exists
+            const key = await crypto.subtle.generateKey(
+                { name: 'AES-GCM', length: 256 },
+                true,
+                ['encrypt', 'decrypt']
+            );
+            
+            // Export and store the key bytes
+            const exported = await crypto.subtle.exportKey('raw', key);
+            const bytes = new Uint8Array(exported);
+            keyData = btoa(String.fromCharCode(...bytes));
+            localStorage.setItem(CONFIG.cryptoKeyId, keyData);
+            
+            return key;
+        }
+
+        return {
+            // Encrypt plaintext string, returns base64-encoded ciphertext
+            async encrypt(plaintext) {
+                try {
+                    if (!plaintext) return null;
+                    
+                    const key = await getKey();
+                    const iv = crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV for GCM
+                    const encoder = new TextEncoder();
+                    const data = encoder.encode(plaintext);
+                    
+                    const ciphertext = await crypto.subtle.encrypt(
+                        { name: 'AES-GCM', iv: iv },
+                        key,
+                        data
+                    );
+                    
+                    // Combine IV + ciphertext and base64 encode
+                    const combined = new Uint8Array(iv.length + ciphertext.byteLength);
+                    combined.set(iv, 0);
+                    combined.set(new Uint8Array(ciphertext), iv.length);
+                    
+                    return btoa(String.fromCharCode(...combined));
+                } catch (e) {
+                    console.warn('[BroxCrypto] Encryption failed:', e);
+                    return null;
+                }
+            },
+
+            // Decrypt base64-encoded ciphertext, returns plaintext string
+            async decrypt(encryptedBase64) {
+                try {
+                    if (!encryptedBase64) return null;
+                    
+                    const key = await getKey();
+                    const combined = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
+                    const iv = combined.slice(0, 12);
+                    const ciphertext = combined.slice(12);
+                    
+                    const decrypted = await crypto.subtle.decrypt(
+                        { name: 'AES-GCM', iv: iv },
+                        key,
+                        ciphertext
+                    );
+                    
+                    const decoder = new TextDecoder();
+                    return decoder.decode(decrypted);
+                } catch (e) {
+                    console.warn('[BroxCrypto] Decryption failed:', e);
+                    return null;
+                }
+            }
+        };
+    })();
 
     const I18N = {
         bn: {
@@ -491,12 +581,15 @@ if (!window.BroxAssistantLoaded) {
                 const dataConsent = document.getElementById('gdprConsentData')?.checked;
                 const analyticsConsent = document.getElementById('gdprConsentAnalytics')?.checked;
 
-                // Store consent
+                // Store consent locally
                 localStorage.setItem('brox.ai.gdpr_consent', JSON.stringify({
                     timestamp: Date.now(),
                     data: dataConsent,
                     analytics: analyticsConsent
                 }));
+
+                // Send consent to server for audit trail
+                this.sendGdprConsentToServer(dataConsent, analyticsConsent);
 
                 modal.classList.add('brox-ai-hidden');
                 this.showPreChat();
@@ -944,13 +1037,42 @@ if (!window.BroxAssistantLoaded) {
 
             // Add feedback for assistant messages
             if (role === 'assistant') {
+                // Create actions container for feedback + copy + timestamp
+                const actions = document.createElement('div');
+                actions.className = 'brox-ai-msg-actions';
+                
                 const feedback = document.createElement('div');
                 feedback.className = 'brox-ai-feedback';
                 feedback.innerHTML = `
                     <button class="brox-ai-feedback-btn" data-rating="1" title="Poor"><i class="bi bi-hand-thumbs-down"></i></button>
                     <button class="brox-ai-feedback-btn" data-rating="5" title="Excellent"><i class="bi bi-hand-thumbs-up"></i></button>
                 `;
-                msg.appendChild(feedback);
+                
+                // Add copy button
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'brox-ai-copy-btn';
+                copyBtn.title = this.lang === 'bn' ? 'কপি করুন' : 'Copy';
+                copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+                copyBtn.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(content);
+                        copyBtn.innerHTML = '<i class="bi bi-check2"></i>';
+                        setTimeout(() => {
+                            copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+                        }, 2000);
+                    } catch (e) {
+                        console.error('Copy failed', e);
+                    }
+                });
+                
+                // Move meta to actions container (beside feedback + copy)
+                meta.style.marginTop = '0';
+                
+                // Append all to actions container
+                actions.appendChild(feedback);
+                actions.appendChild(copyBtn);
+                actions.appendChild(meta);
+                msg.appendChild(actions);
 
                 // Store messageId for feedback
                 msg.dataset.messageId = messageId || 0;
@@ -1273,6 +1395,31 @@ if (!window.BroxAssistantLoaded) {
                 this.updateResponseMeta(msgBubble, t0);
             } catch (fallbackErr) {
                 this.addMessage('assistant', this.t('err_conn'));
+            }
+        }
+
+        // ── GDPR Consent Server Sync ───────────────────────────────────────────────
+        async sendGdprConsentToServer(dataConsent, analyticsConsent) {
+            try {
+                const csrfToken = this.csrfToken || document.querySelector('meta[name="csrf-token"]')?.content || '';
+                await fetch('/api/gdpr/consent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        visitor_token: this.visitorToken,
+                        consent: {
+                            data: dataConsent,
+                            analytics: analyticsConsent,
+                            timestamp: Date.now()
+                        }
+                    })
+                });
+            } catch (e) {
+                // Non-critical: local consent is already stored
+                console.warn('[GDPR] Failed to sync consent to server:', e);
             }
         }
 

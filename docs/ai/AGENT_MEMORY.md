@@ -40,6 +40,50 @@ context নেয়।
 
 ---
 
+### [BROX-TOOL-001] AI Tool System v3.0 — Parallel, Streaming, Circuit Breaker
+- Date: 2026-03-19
+- Agent: BroxBhai Coding Agent
+- Context: AI tool system (ToolRegistry v2.0) had sequential-only execution,
+  basic error handling, and no support for streaming tool calls or resilience
+  patterns. Needed to enhance with parallel execution, streaming support,
+  and better error handling per Fireworks AI/OpenAI best practices.
+- Decision: Rewrote ToolRegistry to v3.0 with:
+  - Parallel execution via `pcntl_fork` (sequential fallback on Windows)
+  - Streaming tool call processing (`processStreamingToolCalls()`)
+  - Circuit breaker pattern (5 failures → open, 60s reset)
+  - Retry logic with exponential backoff per tool
+  - 7 error categories for intelligent handling
+  - OpenAI-compatible `getToolsForAPI()` method
+- Alternatives Considered:
+  - Using pthreads for parallelism (rejected: not widely available)
+  - Using curl_multi for parallelism (rejected: only works for HTTP tools)
+  - No circuit breaker (rejected: would hammer failing tools indefinitely)
+- Trade-offs: pcntl_fork adds temp file overhead; sequential fallback on
+  Windows is slower but functional. Circuit breaker adds state management.
+- Follow-up needed: Monitor circuit breaker state in production; consider
+  Redis-backed state for multi-server deployments.
+
+---
+
+### [BROX-TOOL-002] Fireworks AI Autoscaling Retry Logic
+- Date: 2026-03-19
+- Agent: BroxBhai Coding Agent
+- Context: Fireworks AI deployments with scale-to-zero return 503
+  DEPLOYMENT_SCALING_UP errors. Without retry logic, users see failures
+  during cold starts.
+- Decision: Added `handleDeploymentScalingUp()` to AIProvider with
+  exponential backoff retry (30 retries, 5s→60s cap, 1.5x multiplier).
+  Logs scaling events via `logActivity()`.
+- Alternatives Considered:
+  - Client-side retry only (rejected: server-side is more reliable)
+  - Fixed delay instead of exponential (rejected: less efficient)
+  - No retry, just show error (rejected: poor UX for scale-to-zero)
+- Trade-offs: Server-side retry blocks request for up to ~30 minutes in
+  worst case. Mitigated with clear error message suggesting min-replica-count > 0.
+- Follow-up needed: Consider async/background retry for very long scale-ups.
+
+---
+
 ## Pattern Registry
 *(agents নতুন reusable pattern আবিষ্কার করলে এখানে যোগ করে)*
 

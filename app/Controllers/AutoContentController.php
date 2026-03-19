@@ -1254,9 +1254,9 @@ $router->get('/admin/autocontent/api/collect-single', ['middleware' => ['auth', 
 /**
  * Collect Articles from Single Source using Multi-Layer Scraper (5-Step Pipeline)
  * GET /admin/autocontent/api/collect-multi
- * 
+ *
  * STEP 1: Fetch LIST PAGE
- * STEP 2: Extract ARTICLE LINKS  
+ * STEP 2: Extract ARTICLE LINKS
  * STEP 3: Loop article links
  * STEP 4: Fetch ARTICLE PAGE
  * STEP 5: Extract title/content/image/date
@@ -2170,14 +2170,14 @@ $router->post('/admin/autocontent/queue/bulk-action', ['middleware' => ['auth', 
 /**
  * Sitemap Crawler - Multi-Layer Sitemap Crawling for Mobile Phones
  * POST /admin/autocontent/api/crawl-sitemap
- * 
+ *
  * This endpoint implements the full sitemap crawling pipeline:
  * 1. Parse sitemap index XML to get child sitemaps
  * 2. Parse child sitemaps to get page URLs
  * 3. Filter URLs (keep /product/, /phone/, /mobile/, /device/)
  * 4. Crawl product pages and extract phone data
  * 5. Store in database (mobiles table)
- * 
+ *
  * Parameters:
  * - sitemap_url: The main sitemap index URL (e.g., https://www.mobiledokan.co/sitemap.xml)
  * - delay: Request delay in seconds (default: 2)
@@ -2642,6 +2642,7 @@ $router->post('/admin/autocontent/api/preview-selectors', [], function () use ($
         $type = $_POST['type'] ?? 'list';
         $selectorsJson = $_POST['selectors'] ?? '{}';
         $selectors = json_decode($selectorsJson, true);
+        $showRawHtml = filter_var($_POST['show_raw_html'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         if (empty($url)) {
             echo json_encode(['success' => false, 'message' => 'URL is required']);
@@ -2700,14 +2701,14 @@ $router->post('/admin/autocontent/api/preview-selectors', [], function () use ($
             $dateSelector = $selectors['date'] ?? '';
             $imageSelector = $selectors['image'] ?? '';
 
-            // Check if selectors found matches
+            // Initialize all possible list selectors to false.
             $matches = [
-                'container' => !empty($containerSelector),
-                'item' => !empty($itemSelector),
-                'title' => !empty($titleSelector),
-                'link' => !empty($linkSelector),
-                'date' => !empty($dateSelector),
-                'image' => !empty($imageSelector)
+                'container' => false,
+                'item' => false,
+                'title' => false,
+                'link' => false,
+                'date' => false,
+                'image' => false
             ];
 
             // Find container
@@ -2798,14 +2799,14 @@ $router->post('/admin/autocontent/api/preview-selectors', [], function () use ($
             $dateSelector = $selectors['date'] ?? '';
             $authorSelector = $selectors['author'] ?? '';
 
-            // Check matches
+            // Initialize matches for relevant detail selectors to false
             $matches = [
-                'title' => !empty($titleSelector),
-                'content' => !empty($contentSelector),
-                'image' => !empty($imageSelector),
-                'excerpt' => !empty($excerptSelector),
-                'date' => !empty($dateSelector),
-                'author' => !empty($authorSelector)
+                'title' => false,
+                'content' => false,
+                'image' => false,
+                'excerpt' => false,
+                'date' => false,
+                'author' => false
             ];
 
             $content = [];
@@ -2880,9 +2881,9 @@ $router->post('/admin/autocontent/api/preview-selectors', [], function () use ($
         'url' => $url,
         'selectors' => $selectors,
         'matches' => $matches,
-        'rawHtml' => substr($html, 0, 5000), // First 5KB of HTML for debugging
         'items' => $result['items'] ?? null,
-        'content' => $result['content'] ?? null
+        'content' => $result['content'] ?? null,
+        'rawHtml' => $showRawHtml ? substr($html, 0, 5000) : null, // First 5KB of HTML for debugging, if requested
         ]);
     }
     catch (Throwable $e) {

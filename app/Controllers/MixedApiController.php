@@ -154,7 +154,22 @@ $router->group('/api', ['middleware' => ['auth', 'rate_limit']], function($route
             exit;
         }
 
-        // TODO: Send verification email with $result['verification_token']
+        // Send verification email with the verification token
+        if (!empty($result['verification_token'])) {
+            $verifyUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/verify-email?token=' . $result['verification_token'];
+            $subject = 'Verify Your Recovery Email - BroxBhai';
+            $body = "Hello,\n\nPlease verify your recovery email by clicking the link below:\n\n{$verifyUrl}\n\nThis link will expire in 24 hours.\n\nIf you did not request this, please ignore this email.\n\nBest regards,\nBroxBhai Team";
+            
+            if (class_exists('EmailHelper')) {
+                try {
+                    $emailHelper = new EmailHelper();
+                    $emailHelper->sendEmail($email, $subject, $body);
+                } catch (Throwable $e) {
+                    logError("Failed to send verification email: " . $e->getMessage());
+                }
+            }
+        }
+        
         logActivity("Recovery email added", "user", $userId, ['email' => $email], 'success');
 
         header('Content-Type: application/json; charset=utf-8');

@@ -4,6 +4,15 @@
  * Error Logging System
  * helpers\ErrorLogging.php
  * 
+ * Features:
+ * - PSR-3 compatible log levels
+ * - Structured JSON logging for log aggregators
+ * - Correlation ID for request tracing
+ * - Sensitive data sanitization
+ * - Rate limiting for repeated errors
+ * - Lazy evaluation for debug messages
+ * - Log rotation and cleanup
+ * 
  * NOTE: Log configuration constants (LOG_MAX_SIZE, LOG_MAX_AGE_DAYS, 
  * LOG_CLEANUP_PROBABILITY, ENABLE_ENHANCED_ERROR_LOG) are now defined in Config/Constants.php
 **/
@@ -25,6 +34,225 @@ if (!defined('LOG_CLEANUP_PROBABILITY')) {
 if (!defined('ENABLE_ENHANCED_ERROR_LOG')) {
     error_log("WARNING: ENABLE_ENHANCED_ERROR_LOG constant not defined. Please ensure Config/Constants.php is loaded.");
 }
+
+// PSR-3 Log Levels
+if (!defined('LOG_EMERGENCY')) define('LOG_EMERGENCY', 800);
+if (!defined('LOG_ALERT')) define('LOG_ALERT', 700);
+if (!defined('LOG_CRITICAL')) define('LOG_CRITICAL', 600);
+if (!defined('LOG_ERROR')) define('LOG_ERROR', 500);
+if (!defined('LOG_WARNING')) define('LOG_WARNING', 400);
+if (!defined('LOG_NOTICE')) define('LOG_NOTICE', 300);
+if (!defined('LOG_INFO')) define('LOG_INFO', 200);
+if (!defined('LOG_DEBUG')) define('LOG_DEBUG', 100);
+
+// Sensitive fields to sanitize
+if (!defined('LOG_SENSITIVE_FIELDS')) {
+    define('LOG_SENSITIVE_FIELDS', [
+        'password', 'token', 'api_key', 'secret', 'authorization',
+        'cookie', 'session', 'credit_card', 'ssn', 'private_key',
+        'access_token', 'refresh_token', 'bearer', 'jwt'
+    ]);
+}
+
+// Rate limiting for repeated errors
+if (!defined('LOG_RATE_LIMIT_SECONDS')) define('LOG_RATE_LIMIT_SECONDS', 60);
+if (!defined('LOG_RATE_LIMIT_MAX')) define('LOG_RATE_LIMIT_MAX', 10);
+
+// =====================================================================
+// CORRELATION ID & REQUEST TRACING
+// =====================================================================
+
+if (!function_exists('getCorrelationId')) {
+    /**
+     * Get or generate correlation ID for request tracing
+     * Used to link all log entries for a single request
+     */
+    function getCorrelationId(): string {
+        static $correlationId = null;
+        
+        if ($correlationId === null) {
+            // Check for existing correlation ID from header (distributed tracing)
+            $correlationId = $_SERVER['HTTP_X_CORRELATION_ID'] ?? 
+                            $_SERVER['HTTP_X_REQUEST_ID'] ?? 
+                            bin2hex(random_bytes(8));
+        }
+        
+        return $correlationId;
+    }
+}
+
+if (!function_exists('sanitizeSensitiveData')) {
+    /**
+     * Sanitize sensitive data from arrays/objects before logging
+     * Prevents accidental logging of passwords, tokens, etc.
+     * 
+     * @param mixed $data Data to sanitize
+     * @return mixed Sanitized data
+     */
+    function sanitizeSensitiveData($data) {
+        if (!is_array($data) && !is_object($data)) {
+            return $data;
+        }
+        
+        $sensitiveFields = LOG_SENSITIVE_FIELDS;
+        $sanitized = [];
+        
+        foreach ((array)$data as $key => $value) {
+            $lowerKey = strtolower($key);
+            $isSensitive = false;
+            
+            foreach ($sensitiveFields as $field) {
+                if (str_contains($lowerKey, $field)) {
+                    $isSensitive = true;
+                    break;
+                }
+            }
+            
+            if ($isSensitive) {
+                $sanitized[$key] = '[REDACTED]';
+            } elseif (is_array($value) || is_object($value)) {
+                $sanitized[$key] = sanitizeSensitiveData($value);
+            } else {
+                $sanitized[$key] = $value;
+            }
+        }
+        
+        return is_object($data) ? (object)$sanitized : $sanitized;
+    }
+}
+
+if (!function_exists('isRateLimited')) {
+    /**
+     * Check if an error type is rate limited (prevents log flooding)
+     * 
+     * @param string $errorKey Unique key for the error type
+     * @return bool True if rate limited (should skip logging)
+     */
+    function isRateLimited(string $errorKey): bool {
+        static $rateLimits = [];
+        
+        $now = time();
+        $windowStart = $now - LOG_RATE_LIMIT_SECONDS;
+        
+        // Clean old entries
+        foreach ($rateLimits as $key => $timestamps) {
+            $rateLimits[$key] = array_filter($timestamps, fn($t) => $t > $windowStart);
+            if (empty($rateLimits[$key])) {
+                unset($rateLimits[$key]);
+            }
+        }
+        
+        // Check current error
+        if (!isset($rateLimits[$errorKey])) {
+            $rateLimits[$errorKey] = [];
+        }
+        
+        $rateLimits[$errorKey][] = $now;
+        
+        return count($rateLimits[$errorKey]) > LOG_RATE_LIMIT_MAX;
+    }
+}
+
+if (!function_exists('writeStructuredLog')) {
+    /**
+     * Write structured JSON log entry (for log aggregators like ELK, Datadog)
+     * 
+     * @param string $level PSR-3 log level
+     * @param string $message Log message
+     * @param array $context Additional context data
+     * @param string $logType Log file type (errors, debug, etc.)
+     */
+    function writeStructuredLog(string $level, string $message, array $context = [], string $logType = 'errors'): void {
+        $entry = [
+            'timestamp' => date('c'), // ISO 8601
+            'level' => strtoupper($level),
+            'message' => $message,
+            'correlation_id' => getCorrelationId(),
+            'request' => [
+                'method' => $_SERVER['REQUEST_METHOD'] ?? 'CLI',
+                'uri' => $_SERVER['REQUEST_URI'] ?? null,
+                'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            ],
+            'context' => sanitizeSensitiveData($context),
+            'memory' => [
+                'current' => memory_get_usage(),
+                'peak' => memory_get_peak_usage(),
+            ],
+        ];
+        
+        // Add caller info
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+        $caller = $backtrace[1] ?? $backtrace[0] ?? [];
+        if (isset($caller['file'], $caller['line'])) {
+            $entry['caller'] = [
+                'file' => str_replace(defined('BASE_PATH') ? BASE_PATH : '', '', $caller['file']),
+                'line' => $caller['line'],
+                'function' => $caller['function'] ?? null,
+            ];
+        }
+        
+        $logFile = getLogFilePath($logType);
+        
+        // Check rotation
+        if (file_exists($logFile) && filesize($logFile) >= LOG_MAX_SIZE) {
+            rotateLogFile($logFile);
+        }
+        
+        @file_put_contents($logFile, json_encode($entry, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND | LOCK_EX);
+    }
+}
+
+// PSR-3 Compatible Logging Functions
+
+if (!function_exists('logEmergency')) {
+    /**
+     * Log emergency - system is unusable
+     */
+    function logEmergency(string $message, array $context = []): void {
+        writeStructuredLog('emergency', $message, $context, 'errors');
+    }
+}
+
+if (!function_exists('logAlert')) {
+    /**
+     * Log alert - action must be taken immediately
+     */
+    function logAlert(string $message, array $context = []): void {
+        writeStructuredLog('alert', $message, $context, 'errors');
+    }
+}
+
+if (!function_exists('logCritical')) {
+    /**
+     * Log critical - critical conditions
+     */
+    function logCritical(string $message, array $context = []): void {
+        writeStructuredLog('critical', $message, $context, 'errors');
+    }
+}
+
+if (!function_exists('logWarning')) {
+    /**
+     * Log warning - warning conditions
+     */
+    function logWarning(string $message, array $context = []): void {
+        writeStructuredLog('warning', $message, $context, 'errors');
+    }
+}
+
+if (!function_exists('logNotice')) {
+    /**
+     * Log notice - normal but significant condition
+     */
+    function logNotice(string $message, array $context = []): void {
+        writeStructuredLog('notice', $message, $context, 'info');
+    }
+}
+
+// =====================================================================
+// INITIALIZATION
+// =====================================================================
 
 if (!function_exists('initializeErrorLogging')) {
     /**

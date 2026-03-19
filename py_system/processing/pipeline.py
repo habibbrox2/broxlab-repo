@@ -1,2 +1,204 @@
-"""Multimodal RAG Pipeline - Text Processing"""\nfrom typing import List, Dict, Any, Optional\nfrom dataclasses import dataclass, field\nfrom langchain_core.documents import Document\nfrom langchain_text_splitters import RecursiveCharacterTextSplitter\nfrom langchain_community.embeddings import HuggingFaceEmbeddings\nfrom langchain_community.vectorstores import Chroma, FAISS\nfrom langchain_community.retrievers import BM25Retriever\nimport logging\nimport os\n\nlogger = logging.getLogger(__name__)\n\n@dataclass\nclass ProcessedChunk:\n    content: str\n    source: str\n    chunk_index: int\n    metadata: Dict[str, Any] = field(default_factory=dict)\n\nclass TextProcessor:\n    def __init__(self, chunk_size=1000, chunk_overlap=200):\n        self.splitter = RecursiveCharacterTextSplitter(\n            chunk_size=chunk_size,\n            chunk_overlap=chunk_overlap,\n            separators=["\\n\\n", "\\n", ". ", "? ", "! ", " "],\n            length_function=len,\n        )\n    \n    def process_text(self, text: str, source: str) -> List[ProcessedChunk]:\n        chunks = self.splitter.split_text(text)\n        return [\n            ProcessedChunk(\n                content=chunk,\n                source=source,\n                chunk_index=i,\n                metadata={"source": source, "chunk_index": i, "type": "text"}\n            )\n            for i, chunk in enumerate(chunks)\n        ]\n    \n    def process_documents(self, documents: List[Document]) -> List[Document]:\n        return self.splitter.split_documents(documents)\n\nclass EmbeddingManager:\n    def __init__(self, model_name="sentence-transformers/all-MiniLM-L6-v2"):\n        self.model_name = model_name\n        self.embeddings = None\n    \n    def initialize(self):\n        logger.info(f"Loading embedding model: {self.model_name}")\n        self.embeddings = HuggingFaceEmbeddings(\n            model_name=self.model_name,\n            model_kwargs={"device": "cpu"},\n            encode_kwargs={"normalize_embeddings": True}\n        )\n        logger.info("Embedding model loaded successfully")\n        return self.embeddings\n    \n    def get_embeddings(self):\n        if self.embeddings is None:\n            self.initialize()\n        return self.embeddings\n    \n    def embed_query(self, query: str):\n        return self.get_embeddings().embed_query(query)\n    \n    def embed_documents(self, documents: List[str]):\n        return self.get_embeddings().embed_documents(documents)
-\n# Vector Store Manager\nfrom pathlib import Path\n\nclass VectorStoreManager:\n    def __init__(self, embeddings, persist_directory="data/vector_store", provider="chromadb"):\n        self.embeddings = embeddings\n        self.persist_directory = persist_directory\n        self.provider = provider\n        self.vector_store = None\n        self._load_or_create_store()\n    \n    def _load_or_create_store(self):\n        persist_dir = self.persist_directory\n        if Path(persist_dir).exists() and any(Path(persist_dir).iterdir()):\n            logger.info(f"Loading existing vector store from {persist_dir}")\n            self._load_store()\n        else:\n            logger.info("Creating new vector store")\n            self._create_store()\n    \n    def _create_store(self):\n        if self.provider == "chromadb":\n            self.vector_store = Chroma(\n                collection_name="multimodal_rag",\n                embedding_function=self.embeddings,\n                persist_directory=self.persist_directory\n            )\n        elif self.provider == "faiss":\n            self.vector_store = FAISS.from_texts(["init"], self.embeddings)\n    \n    def _load_store(self):\n        if self.provider == "chromadb":\n            self.vector_store = Chroma(\n                collection_name="multimodal_rag",\n                embedding_function=self.embeddings,\n                persist_directory=self.persist_directory\n            )\n        elif self.provider == "faiss":\n            self.vector_store = FAISS.load_local(\n                self.persist_directory, \n                self.embeddings,\n                allow_dangerous_deserialization=True\n            )\n    \n    def add_documents(self, documents):\n        self.vector_store.add_documents(documents)\n        if self.provider == "chromadb":\n            self.vector_store.persist()\n        elif self.provider == "faiss":\n            self.vector_store.save_local(self.persist_directory)\n        logger.info(f"Added {len(documents)} documents")\n    \n    def as_retriever(self, search_type="similarity", k=5):\n        return self.vector_store.as_retriever(\n            search_type=search_type,\n            search_kwargs={"k": k}\n        )\n    \n    def similarity_search(self, query, k=5):\n        return self.vector_store.similarity_search(query, k=k)\n    \n    def similarity_search_with_score(self, query, k=5):\n        return self.vector_store.similarity_search_with_score(query, k=k)\n\n# Hybrid Retriever\nclass HybridRetriever:\n    def __init__(self, vector_store, documents, semantic_weight=0.7, keyword_weight=0.3):\n        self.vector_store = vector_store\n        self.documents = documents\n        self.semantic_weight = semantic_weight\n        self.keyword_weight = keyword_weight\n        self._setup_retrievers()\n    \n    def _setup_retrievers(self):\n        self.semantic_retriever = self.vector_store.as_retriever(\n            search_type="similarity", search_kwargs={"k": 5}\n        )\n        self.bm25_retriever = BM25Retriever.from_documents(self.documents, k=5)\n    \n    def get_relevant_documents(self, query):\n        semantic_results = self.semantic_retriever.get_relevant_documents(query)\n        keyword_results = self.bm25_retriever.get_relevant_documents(query)\n        \n        seen = set()\n        combined = []\n        for doc in semantic_results:\n            key = doc.page_content[:50]\n            if key not in seen:\n                seen.add(key)\n                combined.append((doc, self.semantic_weight))\n        \n        for doc in keyword_results:\n            key = doc.page_content[:50]\n            if key not in seen:\n                seen.add(key)\n                combined.append((doc, self.keyword_weight))\n        \n        combined.sort(key=lambda x: x[1], reverse=True)\n        return [doc for doc, _ in combined[:5]]\n\n# Main Pipeline Class\nclass MultimodalRAGPipeline:\n    def __init__(self):\n        self.text_processor = TextProcessor()\n        self.embedding_manager = EmbeddingManager()\n        self.vector_store_manager = None\n        self.documents = []\n    \n    def initialize(self):\n        embeddings = self.embedding_manager.initialize()\n        self.vector_store_manager = VectorStoreManager(embeddings)\n        logger.info("RAG Pipeline initialized")\n    \n    def ingest_text(self, text: str, source: str = "unknown") -> int:\n        chunks = self.text_processor.process_text(text, source)\n        documents = [\n            Document(page_content=chunk.content, metadata=chunk.metadata)\n            for chunk in chunks\n        ]\n        self.vector_store_manager.add_documents(documents)\n        self.documents.extend(documents)\n        logger.info(f"Ingested {len(chunks)} chunks from {source}")\n        return len(chunks)\n    \n    def get_retriever(self, hybrid=True):\n        if hybrid:\n            return HybridRetriever(\n                self.vector_store_manager.vector_store,\n                self.documents\n            )\n        return self.vector_store_manager.as_retriever()\n    \n    def similarity_search(self, query, k=5):\n        return self.vector_store_manager.similarity_search(query, k=k)
+"""Multimodal RAG Pipeline - Text Processing"""
+from typing import List, Dict, Any, Optional
+from dataclasses import dataclass, field
+from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma, FAISS
+from langchain_community.retrievers import BM25Retriever
+import logging
+import os
+
+logger = logging.getLogger(__name__)
+
+@dataclass
+class ProcessedChunk:
+    content: str
+    source: str
+    chunk_index: int
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+class TextProcessor:
+    def __init__(self, chunk_size=1000, chunk_overlap=200):
+        self.splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            separators=["\n\n", "\n", ". ", "? ", "! ", " "],
+            length_function=len,
+        )
+    
+    def process_text(self, text: str, source: str) -> List[ProcessedChunk]:
+        chunks = self.splitter.split_text(text)
+        return [
+            ProcessedChunk(
+                content=chunk,
+                source=source,
+                chunk_index=i,
+                metadata={"source": source, "chunk_index": i, "type": "text"}
+            )
+            for i, chunk in enumerate(chunks)
+        ]
+    
+    def process_documents(self, documents: List[Document]) -> List[Document]:
+        return self.splitter.split_documents(documents)
+
+class EmbeddingManager:
+    def __init__(self, model_name="sentence-transformers/all-MiniLM-L6-v2"):
+        self.model_name = model_name
+        self.embeddings = None
+    
+    def initialize(self):
+        logger.info(f"Loading embedding model: {self.model_name}")
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name=self.model_name,
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"normalize_embeddings": True}
+        )
+        logger.info("Embedding model loaded successfully")
+        return self.embeddings
+    
+    def get_embeddings(self):
+        if self.embeddings is None:
+            self.initialize()
+        return self.embeddings
+    
+    def embed_query(self, query: str):
+        return self.get_embeddings().embed_query(query)
+    
+    def embed_documents(self, documents: List[str]):
+        return self.get_embeddings().embed_documents(documents)
+
+# Vector Store Manager
+from pathlib import Path
+
+class VectorStoreManager:
+    def __init__(self, embeddings, persist_directory="data/vector_store", provider="chromadb"):
+        self.embeddings = embeddings
+        self.persist_directory = persist_directory
+        self.provider = provider
+        self.vector_store = None
+        self._load_or_create_store()
+    
+    def _load_or_create_store(self):
+        persist_dir = self.persist_directory
+        if Path(persist_dir).exists() and any(Path(persist_dir).iterdir()):
+            logger.info(f"Loading existing vector store from {persist_dir}")
+            self._load_store()
+        else:
+            logger.info("Creating new vector store")
+            self._create_store()
+    
+    def _create_store(self):
+        if self.provider == "chromadb":
+            self.vector_store = Chroma(
+                collection_name="multimodal_rag",
+                embedding_function=self.embeddings,
+                persist_directory=self.persist_directory
+            )
+        elif self.provider == "faiss":
+            self.vector_store = FAISS.from_texts(["init"], self.embeddings)
+    
+    def _load_store(self):
+        if self.provider == "chromadb":
+            self.vector_store = Chroma(
+                collection_name="multimodal_rag",
+                embedding_function=self.embeddings,
+                persist_directory=self.persist_directory
+            )
+        elif self.provider == "faiss":
+            self.vector_store = FAISS.load_local(
+                self.persist_directory, 
+                self.embeddings,
+                allow_dangerous_deserialization=True
+            )
+    
+    def add_documents(self, documents):
+        self.vector_store.add_documents(documents)
+        if self.provider == "chromadb":
+            self.vector_store.persist()
+        elif self.provider == "faiss":
+            self.vector_store.save_local(self.persist_directory)
+        logger.info(f"Added {len(documents)} documents")
+    
+    def as_retriever(self, search_type="similarity", k=5):
+        return self.vector_store.as_retriever(
+            search_type=search_type,
+            search_kwargs={"k": k}
+        )
+    
+    def similarity_search(self, query, k=5):
+        return self.vector_store.similarity_search(query, k=k)
+    
+    def similarity_search_with_score(self, query, k=5):
+        return self.vector_store.similarity_search_with_score(query, k=k)
+
+# Hybrid Retriever
+class HybridRetriever:
+    def __init__(self, vector_store, documents, semantic_weight=0.7, keyword_weight=0.3):
+        self.vector_store = vector_store
+        self.documents = documents
+        self.semantic_weight = semantic_weight
+        self.keyword_weight = keyword_weight
+        self._setup_retrievers()
+    
+    def _setup_retrievers(self):
+        self.semantic_retriever = self.vector_store.as_retriever(
+            search_type="similarity", search_kwargs={"k": 5}
+        )
+        self.bm25_retriever = BM25Retriever.from_documents(self.documents, k=5)
+    
+    def get_relevant_documents(self, query):
+        semantic_results = self.semantic_retriever.get_relevant_documents(query)
+        keyword_results = self.bm25_retriever.get_relevant_documents(query)
+        
+        seen = set()
+        combined = []
+        for doc in semantic_results:
+            key = doc.page_content[:50]
+            if key not in seen:
+                seen.add(key)
+                combined.append((doc, self.semantic_weight))
+        
+        for doc in keyword_results:
+            key = doc.page_content[:50]
+            if key not in seen:
+                seen.add(key)
+                combined.append((doc, self.keyword_weight))
+        
+        combined.sort(key=lambda x: x[1], reverse=True)
+        return [doc for doc, _ in combined[:5]]
+
+# Main Pipeline Class
+class MultimodalRAGPipeline:
+    def __init__(self):
+        self.text_processor = TextProcessor()
+        self.embedding_manager = EmbeddingManager()
+        self.vector_store_manager = None
+        self.documents = []
+    
+    def initialize(self):
+        embeddings = self.embedding_manager.initialize()
+        self.vector_store_manager = VectorStoreManager(embeddings)
+        logger.info("RAG Pipeline initialized")
+    
+    def ingest_text(self, text: str, source: str = "unknown") -> int:
+        chunks = self.text_processor.process_text(text, source)
+        documents = [
+            Document(page_content=chunk.content, metadata=chunk.metadata)
+            for chunk in chunks
+        ]
+        self.vector_store_manager.add_documents(documents)
+        self.documents.extend(documents)
+        logger.info(f"Ingested {len(chunks)} chunks from {source}")
+        return len(chunks)
+    
+    def get_retriever(self, hybrid=True):
+        if hybrid:
+            return HybridRetriever(
+                self.vector_store_manager.vector_store,
+                self.documents
+            )
+        return self.vector_store_manager.as_retriever()
+    
+    def similarity_search(self, query, k=5):
+        return self.vector_store_manager.similarity_search(query, k=k)

@@ -76,3 +76,184 @@ Admin Assistant‑কে নির্ভরযোগ্য, দ্রুত এ�
 - Current admin assistant features (upload, model refresh, SSE) remain enabled.
 - No API schema change is required—only stricter handling on client.
 
+---
+
+## ✅ New AI Capabilities Added (2026-03-19)
+
+### 1. Web Search Endpoint
+- **Endpoint**: `POST /api/admin/ai/websearch`
+- **Purpose**: Add real-time web data to AI model responses
+- **Features**:
+  - Supports `:online` model suffix or `web` plugin
+  - Configurable max_results, include_domains, exclude_domains
+  - Engine selection: exa, native, firecrawl, parallel
+- **Auth**: Requires auth + admin_only + CSRF
+
+### 2. PDF Input Endpoint
+- **Endpoint**: `POST /api/admin/ai/pdf`
+- **Purpose**: Process PDF documents with AI
+- **Features**:
+  - Supports URL (public PDFs) or base64 (local PDFs)
+  - PDF engine selection: pdf-text (free), mistral-ocr (best for scanned), native
+  - Returns annotations for cost optimization
+- **Auth**: Requires auth + admin_only + CSRF
+
+### 3. PDF Continue Endpoint (Skip Parsing Costs)
+- **Endpoint**: `POST /api/admin/ai/pdf/continue`
+- **Purpose**: Reuse annotations from previous requests to skip PDF parsing costs
+- **Features**:
+  - Send annotations from previous response to avoid re-parsing
+  - Reduces API costs for large documents
+- **Auth**: Requires auth + admin_only + CSRF
+
+### 4. Text-to-Speech (TTS) Endpoint
+- **Endpoint**: `POST /api/admin/ai/tts`
+- **Purpose**: Convert text to speech audio
+- **Features**:
+  - Multiple models: tts-1, tts-1-hd
+  - Multiple voices: alloy, echo, fable, onyx, nova, shimmer
+  - Multiple formats: mp3, opus, aac, flac, wav
+- **Auth**: Requires auth + admin_only + CSRF
+
+### 5. Image Generation Endpoint
+- **Endpoint**: `POST /api/admin/ai/image`
+- **Purpose**: Generate images using AI
+- **Features**:
+  - Model: gpt-image-1
+  - Quality: auto, high, medium, low
+  - Size: 1024x1024, 1024x1536, 1536x1024
+  - Multiple images: n parameter (1-10)
+- **Auth**: Requires auth + admin_only + CSRF
+
+### 6. Enhanced Image/Vision Support
+- **Endpoint**: `POST /api/admin/ai/chat` (existing, enhanced)
+- **Features**:
+  - Multi-format support: URL, Base64, data URLs
+  - Detail levels: low, high, original, auto
+  - File attachment preview in chat
+- **Auth**: Requires auth + admin_only + CSRF
+
+### 7. Helper Function Added
+- **Function**: `getOpenRouterApiKey()`
+- **Location**: `app/Routes/AISystemRoutes.php`
+- **Purpose**: Get OpenRouter API key from database settings or environment variable
+
+---
+
+## 📋 API Usage Examples
+
+### Web Search
+```json
+POST /api/admin/ai/websearch
+{
+  "query": "latest news about AI",
+  "model": "openai/gpt-4o",
+  "max_results": 5,
+  "include_domains": ["techcrunch.com", "wired.com"],
+  "engine": "exa"
+}
+```
+
+### PDF Processing
+```json
+POST /api/admin/ai/pdf
+{
+  "prompt": "Summarize this document",
+  "url": "https://example.com/document.pdf",
+  "model": "openai/gpt-4o-mini",
+  "engine": "pdf-text"
+}
+```
+
+### Image Generation
+```json
+POST /api/admin/ai/image
+{
+  "prompt": "A beautiful sunset over mountains",
+  "model": "gpt-image-1",
+  "quality": "high",
+  "size": "1024x1024",
+  "n": 1
+}
+```
+
+### Text-to-Speech
+```json
+POST /api/admin/ai/tts
+{
+  "text": "Hello, this is a test message",
+  "model": "tts-1",
+  "voice": "alloy",
+  "format": "mp3"
+}
+```
+
+---
+
+## ✅ New Admin Tools Added (2026-03-19)
+
+### 11. List Storage Files Tool
+- **Command**: `/list_storage_files`
+- **Purpose**: List files and directories in storage folder
+- **Parameters**: path, filter, limit
+
+### 12. Get App Settings Tool
+- **Command**: `/get_app_settings`
+- **Purpose**: Retrieve application settings from database
+- **Parameters**: category (general, ai, appearance, etc.)
+
+### 13. Search Knowledge Base Tool
+- **Command**: `/search_knowledge_base`
+- **Purpose**: Search the AI knowledge base for relevant information
+- **Parameters**: query, category, limit
+
+### 14. Reindex Knowledge Base Tool
+- **Command**: `/reindex_knowledge_base`
+- **Purpose**: Re-index all knowledge base items with embeddings
+- **Parameters**: provider (openai, cohere, voyage, ollama)
+
+---
+
+## ✅ Real-time Collaboration Features Added (2026-03-19)
+
+### 1. Presence Tracking
+- **Endpoint**: `GET /api/admin/ai/presence`
+- **Purpose**: See who's currently using the AI assistant
+- **Features**:
+  - Shows active users with their last activity
+  - Auto-cleans sessions older than 5 minutes
+  - Returns user ID, username, action, last active time
+
+### 2. Heartbeat
+- **Endpoint**: `POST /api/admin/ai/heartbeat`
+- **Purpose**: Keep session alive, update current action
+- **Features**:
+  - Updates user's last active timestamp
+  - Tracks current action (chatting, idle, etc.)
+
+### 3. Session Sharing
+- **Endpoint**: `POST /api/admin/ai/share`
+- **Purpose**: Generate shareable session link for collaboration
+- **Features**:
+  - Share AI session with another admin
+  - Configurable expiration (default 24 hours)
+  - Returns shareable URL with token
+
+---
+
+## ✅ RAG Enhancement - Multi-Provider Embeddings (2026-03-19)
+
+### New Methods Added to RAGEngine
+- `generateEmbeddingMultiProvider()` - Try multiple providers in order
+- `generateEmbeddingForProvider()` - Generate embedding for specific provider
+- `callEmbeddingAPI()` - Call embedding API for OpenAI, Cohere, Voyage
+- `generateEmbeddingOllama()` - Generate embedding using local Ollama
+- `reindexAllWithProvider()` - Re-index all knowledge with specified provider
+
+### Supported Providers
+1. **OpenAI** - text-embedding-3-small
+2. **Cohere** - embed-english-v3.0
+3. **Voyage** - voyage-2
+4. **Ollama** - nomic-embed-text (local)
+5. **Python** - sentence-transformers (fallback)
+

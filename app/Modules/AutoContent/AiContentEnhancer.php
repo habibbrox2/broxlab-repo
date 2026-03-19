@@ -128,7 +128,7 @@ class AiContentEnhancer
     /**
      * Enhance content using AI API (using new AIProvider system)
      */
-    private function enhanceContent(string $title, string $content, string $excerpt, string $sourceName, string $styleProfile = 'professional'): array
+    private function enhanceContent(string $title, string $content, string $excerpt, string $sourceName, string $styleProfile = 'professional', string $customInstruction = ''): array
     {
         // Get backend provider from settings (for AutoContent)
         $backendProviderName = $this->aiProvider->getSetting('backend_provider', 'kilo');
@@ -147,7 +147,7 @@ class AiContentEnhancer
         }
 
         // Build the prompt
-        $prompt = $this->buildEnhancementPrompt($title, $content, $excerpt, $sourceName, $styleProfile);
+        $prompt = $this->buildEnhancementPrompt($title, $content, $excerpt, $sourceName, $styleProfile, $customInstruction);
 
         // Get additional settings
         $maxTokens = $this->aiProvider->getSetting('max_tokens', 4000);
@@ -191,7 +191,7 @@ class AiContentEnhancer
     /**
      * Build enhancement prompt for AI with Style Profiles and Smart Truncation
      */
-    private function buildEnhancementPrompt(string $title, string $content, string $excerpt, string $sourceName, string $styleProfile = 'professional'): string
+    private function buildEnhancementPrompt(string $title, string $content, string $excerpt, string $sourceName, string $styleProfile = 'professional', string $customInstruction = ''): string
     {
         // Smart Truncation: Break at paragraph or sentence boundary
         $maxContentLength = 12000;
@@ -205,15 +205,18 @@ class AiContentEnhancer
             $content .= "\n\n[Content truncated due to length...]";
         }
 
-        $styleInstructions = [
-            'professional' => 'Maintain a professional, objective, and authoritative tone. Use clear and concise language.',
-            'viral' => 'Create a sensational, highly engaging, and "click-worthy" version. Use emotive language and strong hooks.',
-            'formal' => 'Use a sophisticated, scholarly, and very formal tone. Avoid contractions and informal phrasing.',
-            'friendly' => 'Write in a warm, conversational, and approachable manner. Like a friend explaining news to another friend.',
-            'minimal' => 'Keep it extremely brief and to the point. Focus only on the most critical facts.'
-        ];
-
-        $instruction = $styleInstructions[$styleProfile] ?? $styleInstructions['professional'];
+        if (!empty($customInstruction)) {
+            $instruction = $customInstruction;
+        } else {
+            $styleInstructions = [
+                'professional' => 'Maintain a professional, objective, and authoritative tone. Use clear and concise language.',
+                'viral' => 'Create a sensational, highly engaging, and "click-worthy" version. Use emotive language and strong hooks.',
+                'formal' => 'Use a sophisticated, scholarly, and very formal tone. Avoid contractions and informal phrasing.',
+                'friendly' => 'Write in a warm, conversational, and approachable manner. Like a friend explaining news to another friend.',
+                'minimal' => 'Keep it extremely brief and to the point. Focus only on the most critical facts.'
+            ];
+            $instruction = $styleInstructions[$styleProfile] ?? $styleInstructions['professional'];
+        }
 
         return <<<PROMPT
 You are an expert content writer and SEO specialist. Your task is to enhance and improve article content for a news/blog website.

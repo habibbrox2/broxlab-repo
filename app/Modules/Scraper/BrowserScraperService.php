@@ -48,6 +48,11 @@ class BrowserScraperService
         $this->stats['requests']++;
 
         try {
+            // Validate URL
+            if (!filter_var($url, FILTER_VALIDATE_URL)) {
+                throw new \InvalidArgumentException("Invalid URL provided: {$url}");
+            }
+
             $html = '';
             if ($this->config['method'] === 'api' && !empty($this->config['api_url'])) {
                 $html = $this->fetchViaApi($url);
@@ -165,6 +170,45 @@ class BrowserScraperService
         }
 
         return '';
+    }
+
+    /**
+     * Check if browser scraping is available
+     */
+    public function isAvailable(): bool
+    {
+        // Check if API method is configured
+        if ($this->config['method'] === 'api' && !empty($this->config['api_url'])) {
+            return true;
+        }
+
+        // Check if local script exists
+        if ($this->config['method'] === 'local') {
+            return file_exists($this->config['local_path']);
+        }
+
+        return false;
+    }
+
+    /**
+     * Get the configuration
+     */
+    public function getConfig(): array
+    {
+        return $this->config;
+    }
+
+    /**
+     * Set custom timeout
+     */
+    public function setTimeout(int $timeout): self
+    {
+        $this->config['timeout'] = $timeout;
+        $this->client = new Client([
+            'timeout' => $this->config['timeout'],
+            'verify' => false,
+        ]);
+        return $this;
     }
 
     public function getStats(): array

@@ -117,8 +117,11 @@ class AIChatModel
         $stmt->execute();
         $stmt->close();
 
-        // Update last_message_at
-        $this->db->query("UPDATE ai_conversations SET last_message_at = CURRENT_TIMESTAMP WHERE id = $conversationId");
+        // Update last_message_at (fixed: use prepared statement)
+        $stmt2 = $this->db->prepare("UPDATE ai_conversations SET last_message_at = CURRENT_TIMESTAMP WHERE id = ?");
+        $stmt2->bind_param("i", $conversationId);
+        $stmt2->execute();
+        $stmt2->close();
     }
 
     /**

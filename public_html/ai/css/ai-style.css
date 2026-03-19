@@ -76,12 +76,16 @@ body {
     max-height: 100vh !important;
     max-height: 100dvh !important;
     z-index: 99999 !important;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s;
 }
 
 /* Admin shell - positioned on RIGHT side */
 #adminAiShell {
     right: 0 !important;
     left: auto !important;
+    transform: translateX(0);
 }
 
 /* Public chat - positioned on RIGHT side */
@@ -171,28 +175,28 @@ body {
 /* --- Admin Copilot Trigger Button --- */
 #adminAiBtn.brox-ai-trigger-fab {
     position: fixed;
-    bottom: 90px;
-    right: 25px;
-    width: 60px;
-    height: 60px;
+    bottom: 80px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background: var(--brox-ai-admin-gradient);
     color: white;
     border: none;
-    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.4);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.4);
     cursor: pointer;
     z-index: 2000;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.6rem;
+    font-size: 1.4rem;
     transition: var(--brox-ai-transition);
     border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 #adminAiBtn.brox-ai-trigger-fab:hover {
-    transform: scale(1.1) rotate(5deg);
-    box-shadow: 0 15px 35px rgba(15, 23, 42, 0.5);
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.5);
     border-color: rgba(255, 255, 255, 0.4);
 }
 
@@ -332,10 +336,24 @@ body {
     opacity: 0;
     transform: translateX(100%);
     pointer-events: none;
+    visibility: hidden;
 }
 
 #adminAiShell.d-none {
     display: none;
+}
+
+/* --- Hidden File Input (must be hidden but accessible) --- */
+.brox-ai-input-file {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
 }
 
 /* --- Admin Header --- */
@@ -347,6 +365,18 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+}
+
+/* --- Admin Theme Specific Header Styles --- */
+#adminAiShell .brox-ai-header.admin-theme {
+    background: linear-gradient(135deg, var(--brox-ai-admin-gradient));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+#adminAiShell .brox-ai-header.admin-theme .brox-ai-header-title {
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
+    background: none;
 }
 
 :where(#adminAiShell, #publicAssistantChat) .brox-ai-header-info {
@@ -601,7 +631,8 @@ body {
     position: relative;
     animation: brox-ai-slide-up 0.3s ease-out;
     display: flex;
-    gap: 10px;
+    flex-direction: column;
+    gap: 4px;
 }
 
 @keyframes brox-ai-slide-up {
@@ -681,6 +712,66 @@ body {
     display: flex;
     align-items: center;
     gap: 4px;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-msg-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    padding-left: 4px;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-feedback {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-feedback-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-feedback-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-feedback-btn[data-rating="5"]:hover {
+    color: #22c55e;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-feedback-btn[data-rating="1"]:hover {
+    color: #ef4444;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-copy-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-copy-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
 }
 
 :where(#adminAiShell, #publicAssistantChat) .brox-ai-meta-sep {
@@ -1421,6 +1512,9 @@ body {
     z-index: 2001;
     transition: all 0.3s ease;
     font-family: 'Inter', 'Noto Sans Bengali', system-ui, sans-serif;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
 }
 
 #publicAssistantChat.brox-ai-grok-shell.brox-ai-hidden,
@@ -3073,6 +3167,8 @@ body {
     font-size: 0.9rem;
     line-height: 1.5;
     position: relative;
+    display: flex;
+    flex-direction: column;
 }
 
 #publicAssistantChat .brox-ai-msg.brox-ai-user {
@@ -3113,6 +3209,57 @@ body {
     font-size: 0.6rem;
     color: rgba(0, 0, 0, 0.4);
     margin-top: 4px;
+}
+
+#publicAssistantChat .brox-ai-msg-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    width: 100%;
+}
+
+#publicAssistantChat .brox-ai-msg.brox-ai-assistant .brox-ai-msg-actions {
+    justify-content: flex-start;
+}
+
+#publicAssistantChat .brox-ai-msg.brox-ai-user .brox-ai-msg-actions {
+    justify-content: flex-end;
+}
+
+#publicAssistantChat .brox-ai-feedback {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+#publicAssistantChat .brox-ai-feedback-btn,
+#publicAssistantChat .brox-ai-copy-btn {
+    background: transparent;
+    border: none;
+    color: rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+    padding: 3px 5px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#publicAssistantChat .brox-ai-feedback-btn:hover,
+#publicAssistantChat .brox-ai-copy-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: rgba(0, 0, 0, 0.7);
+}
+
+#publicAssistantChat .brox-ai-feedback-btn[data-rating="5"]:hover {
+    color: #16a34a;
+}
+
+#publicAssistantChat .brox-ai-feedback-btn[data-rating="1"]:hover {
+    color: #dc2626;
 }
 
 /* Typing indicator public */
@@ -3318,6 +3465,34 @@ body {
 }
 
 #adminAiShell .brox-ai-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* --- Custom Scrollbar (alternative class used in HTML) --- */
+#adminAiShell .custom-scrollbar,
+#adminAiShell .brox-ai-body.custom-scrollbar {
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+#adminAiShell .custom-scrollbar::-webkit-scrollbar,
+#adminAiShell .brox-ai-body.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+#adminAiShell .custom-scrollbar::-webkit-scrollbar-track,
+#adminAiShell .brox-ai-body.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#adminAiShell .custom-scrollbar::-webkit-scrollbar-thumb,
+#adminAiShell .brox-ai-body.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+#adminAiShell .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+#adminAiShell .brox-ai-body.custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
 }
 
