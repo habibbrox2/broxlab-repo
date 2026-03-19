@@ -13,6 +13,38 @@ import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
 (function () {
     'use strict';
 
+    // ============ REDIRECT URL HANDLING ============
+    // Check for stored redirect URL from session timeout
+    function handleStoredRedirectUrl() {
+        const STORAGE_KEY = 'login_redirect_url';
+        const form = document.querySelector('#loginForm');
+        if (!form) return;
+
+        // Check if there's a stored URL from previous session
+        const storedUrl = sessionStorage.getItem(STORAGE_KEY);
+        const currentRedirect = form.dataset.redirectUrl;
+
+        // If no redirect set in template, use stored URL
+        if (!currentRedirect && storedUrl) {
+            form.dataset.redirectUrl = storedUrl;
+        }
+
+        // Also check URL query param
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnUrl = urlParams.get('return_url') || urlParams.get('redirect');
+        if (returnUrl && !currentRedirect) {
+            form.dataset.redirectUrl = returnUrl;
+        }
+
+        // Clear stored URL after use
+        sessionStorage.removeItem(STORAGE_KEY);
+    }
+
+    // Store current URL for redirect after login (for session timeout scenarios)
+    window.storeLoginRedirectUrl = function(url) {
+        sessionStorage.setItem('login_redirect_url', url || window.location.href);
+    };
+
     // ============ SELECTORS ============
     const SELECTORS = {
         // Form elements
@@ -304,6 +336,8 @@ import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
 
     // ============ INITIALIZATION ============
     function init() {
+        // Handle stored redirect URL from session timeout
+        handleStoredRedirectUrl();
         cacheElements();
 
         if (!elements.form) {

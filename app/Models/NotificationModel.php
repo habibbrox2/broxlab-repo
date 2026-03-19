@@ -2359,6 +2359,33 @@ class NotificationModel {
             return [];
         }
     }
+    
+    /**
+     * Check if a device exists for a user (for new device detection)
+     * 
+     * @param int $userId
+     * @param string $deviceId
+     * @return array|false Device token row or false if not found
+     */
+    public function getDeviceTokenByDeviceId($userId, $deviceId) {
+        try {
+            $userId = (int)$userId;
+            if ($userId <= 0 || empty($deviceId)) return false;
+
+            $stmt = $this->mysqli->prepare(
+                "SELECT id, device_id, token, device_type, device_name FROM fcm_tokens 
+                 WHERE user_id = ? AND device_id = ? LIMIT 1"
+            );
+            $stmt->bind_param('is', $userId, $deviceId);
+            $stmt->execute();
+            $result = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            return $result ?: false;
+        } catch (Exception $e) {
+            logError("getDeviceTokenByDeviceId Error: " . $e->getMessage());
+            return false;
+        }
+    }
 
     /**
      * Record a token failure (increment failure_count, update last_invalidated_at)

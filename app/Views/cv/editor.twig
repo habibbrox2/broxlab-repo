@@ -1,0 +1,362 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="h-screen flex flex-col">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <a href="/cv" class="text-gray-600 hover:text-gray-800">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+            <input type="text" id="cvTitle" value="{{ cv.title }}" 
+                class="text-xl font-semibold border-b-2 border-transparent focus:border-blue-500 outline-none"
+                onchange="updateCvTitle({{ cv.id }}, this.value)">
+        </div>
+        
+        <div class="flex items-center gap-2">
+            <span id="saveStatus" class="text-sm text-gray-500">Saved</span>
+            
+            <select id="templateSelect" class="border rounded px-2 py-1" onchange="changeTemplate(this.value)">
+                {% for template in templates %}
+                    <option value="{{ template }}" {{ selected_template == template ? 'selected' }}>
+                        {{ template|capitalize }}
+                    </option>
+                {% endfor %}
+            </select>
+            
+            <a href="/cv/{{ cv.id }}/export?template={{ selected_template }}" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
+                <i class="bi bi-download"></i> PDF
+            </a>
+            
+            <button onclick="runAtsScore({{ cv.id }})" class="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700">
+                <i class="bi bi-star"></i> ATS Score
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Editor Panel -->
+        <div class="w-1/2 overflow-y-auto border-r p-4 bg-gray-50" id="editorPanel">
+            <!-- Sections -->
+            <div id="sectionsList" class="space-y-4">
+                {% for section in sections %}
+                    <div class="bg-white rounded-lg shadow p-4" data-section-id="{{ section.id }}">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-semibold">{{ section.title }}</h3>
+                            <div class="flex gap-2">
+                                <button onclick="toggleSectionVisibility({{ section.id }})" 
+                                    class="text-gray-500 hover:text-gray-700"
+                                    title="{{ section.is_visible ? 'Hide' : 'Show' }}">
+                                    <i class="bi bi-{{ section.is_visible ? 'eye' : 'eye-slash' }}"></i>
+                                </button>
+                                <button onclick="deleteSection({{ cv.id }}, {{ section.id }})" 
+                                    class="text-red-500 hover:text-red-700"
+                                    title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Items -->
+                        <div id="items-{{ section.id }}" class="space-y-3">
+                            {% for item in section.items %}
+                                <div class="border rounded p-3" data-item-id="{{ item.id }}">
+                                    {{ _self.render_item_form(section.section_type, item) }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <button onclick="addItem({{ cv.id }}, {{ section.id }}, '{{ section.section_type }}')" 
+                            class="mt-3 text-blue-600 hover:text-blue-700 text-sm">
+                            <i class="bi bi-plus"></i> Add Item
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Add Section -->
+            <div class="mt-4">
+                <button onclick="showAddSectionModal()" class="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-gray-500 hover:border-gray-400 hover:text-gray-600">
+                    <i class="bi bi-plus-lg"></i> Add Section
+                </button>
+            </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="w-1/2 overflow-y-auto bg-gray-100 p-4" id="previewPanel">
+            <div class="bg-white shadow-lg p-8 max-w-[210mm] mx-auto min-h-[297mm]">
+                <div id="previewContent">
+                    <!-- Preview will be loaded here -->
+                    <p class="text-gray-500 text-center">Loading preview...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Section Modal -->
+<div id="addSectionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 class="text-xl font-semibold mb-4">Add Section</h3>
+        
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            {% set section_types = [
+                {type: 'summary', title: 'Professional Summary'},
+                {type: 'experience', title: 'Work Experience'},
+                {type: 'education', title: 'Education'},
+                {type: 'skills', title: 'Skills'},
+                {type: 'projects', title: 'Projects'},
+                {type: 'certifications', title: 'Certifications'}
+            ] %}
+            
+            {% for st in section_types %}
+                <button onclick="addSection({{ cv.id }}, '{{ st.type }}', '{{ st.title }}')"
+                    class="border rounded p-3 hover:bg-gray-50 text-left">
+                    <div class="font-medium">{{ st.title }}</div>
+                </button>
+            {% endfor %}
+        </div>
+        
+        <button onclick="closeAddSectionModal()" class="text-gray-600 hover:text-gray-800">Cancel</button>
+    </div>
+</div>
+
+<!-- ATS Score Modal -->
+<div id="atsScoreModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+        <h3 class="text-xl font-semibold mb-4">ATS Score</h3>
+        <div id="atsScoreContent">
+            <p class="text-gray-500">Analyzing CV...</p>
+        </div>
+        <button onclick="closeAtsScoreModal()" class="mt-4 text-gray-600 hover:text-gray-800">Close</button>
+    </div>
+</div>
+
+{% macro render_item_form(section_type, item) %}
+    {% if section_type == 'summary' %}
+        <textarea class="w-full border rounded p-2" rows="4" 
+            onchange="updateItem({{ item.id }}, this.value)">{{ item.content.text ?? '' }}</textarea>
+    {% elseif section_type == 'experience' %}
+        <div class="space-y-2">
+            <input type="text" placeholder="Company" class="w-full border rounded p-2" 
+                value="{{ item.content.company ?? '' }}" onchange="updateItemField({{ item.id }}, 'company', this.value)">
+            <input type="text" placeholder="Position" class="w-full border rounded p-2" 
+                value="{{ item.content.position ?? '' }}" onchange="updateItemField({{ item.id }}, 'position', this.value)">
+            <div class="flex gap-2">
+                <input type="text" placeholder="Start Date" class="flex-1 border rounded p-2" 
+                    value="{{ item.content.start_date ?? '' }}" onchange="updateItemField({{ item.id }}, 'start_date', this.value)">
+                <input type="text" placeholder="End Date" class="flex-1 border rounded p-2" 
+                    value="{{ item.content.end_date ?? '' }}" onchange="updateItemField({{ item.id }}, 'end_date', this.value)">
+            </div>
+            <textarea placeholder="Description" class="w-full border rounded p-2" rows="3"
+                onchange="updateItemField({{ item.id }}, 'description', this.value)">{{ item.content.description ?? '' }}</textarea>
+        </div>
+    {% elseif section_type == 'education' %}
+        <div class="space-y-2">
+            <input type="text" placeholder="Institution" class="w-full border rounded p-2" 
+                value="{{ item.content.institution ?? '' }}" onchange="updateItemField({{ item.id }}, 'institution', this.value)">
+            <input type="text" placeholder="Degree" class="w-full border rounded p-2" 
+                value="{{ item.content.degree ?? '' }}" onchange="updateItemField({{ item.id }}, 'degree', this.value)">
+            <div class="flex gap-2">
+                <input type="text" placeholder="Start Date" class="flex-1 border rounded p-2" 
+                    value="{{ item.content.start_date ?? '' }}" onchange="updateItemField({{ item.id }}, 'start_date', this.value)">
+                <input type="text" placeholder="End Date" class="flex-1 border rounded p-2" 
+                    value="{{ item.content.end_date ?? '' }}" onchange="updateItemField({{ item.id }}, 'end_date', this.value)">
+            </div>
+        </div>
+    {% elseif section_type == 'skills' %}
+        <div class="space-y-2">
+            <input type="text" placeholder="Skill Name" class="w-full border rounded p-2" 
+                value="{{ item.content.name ?? '' }}" onchange="updateItemField({{ item.id }}, 'name', this.value)">
+            <input type="text" placeholder="Proficiency (1-100)" class="w-full border rounded p-2" 
+                value="{{ item.content.proficiency ?? '' }}" onchange="updateItemField({{ item.id }}, 'proficiency', this.value)">
+        </div>
+    {% elseif section_type == 'projects' %}
+        <div class="space-y-2">
+            <input type="text" placeholder="Project Name" class="w-full border rounded p-2" 
+                value="{{ item.content.name ?? '' }}" onchange="updateItemField({{ item.id }}, 'name', this.value)">
+            <textarea placeholder="Description" class="w-full border rounded p-2" rows="2"
+                onchange="updateItemField({{ item.id }}, 'description', this.value)">{{ item.content.description ?? '' }}</textarea>
+        </div>
+    {% elseif section_type == 'certifications' %}
+        <div class="space-y-2">
+            <input type="text" placeholder="Certification Name" class="w-full border rounded p-2" 
+                value="{{ item.content.name ?? '' }}" onchange="updateItemField({{ item.id }}, 'name', this.value)">
+            <input type="text" placeholder="Issuer" class="w-full border rounded p-2" 
+                value="{{ item.content.issuer ?? '' }}" onchange="updateItemField({{ item.id }}, 'issuer', this.value)">
+            <input type="text" placeholder="Date" class="w-full border rounded p-2" 
+                value="{{ item.content.date ?? '' }}" onchange="updateItemField({{ item.id }}, 'date', this.value)">
+        </div>
+    {% endif %}
+    
+    <div class="mt-2 flex justify-end">
+        <button onclick="deleteItem({{ item.id }})" class="text-red-500 hover:text-red-700 text-sm">
+            <i class="bi bi-trash"></i> Delete
+        </button>
+    </div>
+{% endmacro %}
+
+<script>
+let currentCvId = {{ cv.id }};
+let currentTemplate = '{{ selected_template }}';
+let autoSaveTimer = null;
+
+// Auto-save functionality
+function scheduleAutoSave() {
+    document.getElementById('saveStatus').textContent = 'Unsaved changes...';
+    
+    if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+    }
+    
+    autoSaveTimer = setTimeout(() => {
+        // Auto-save is handled by individual field changes
+        document.getElementById('saveStatus').textContent = 'Saved';
+    }, 3000);
+}
+
+// Update CV title
+function updateCvTitle(id, title) {
+    fetch('/cv/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title })
+    })
+    .then(() => document.getElementById('saveStatus').textContent = 'Saved');
+}
+
+// Change template
+function changeTemplate(template) {
+    currentTemplate = template;
+    loadPreview();
+}
+
+// Load preview
+function loadPreview() {
+    fetch(`/cv/${currentCvId}/preview?template=${currentTemplate}`)
+    .then(response => response.text())
+    .then(html => {
+        document.getElementById('previewContent').innerHTML = html;
+    });
+}
+
+// Initial load
+loadPreview();
+
+// Section visibility
+function toggleSectionVisibility(sectionId) {
+    // Implementation for toggling section visibility
+}
+
+// Delete section
+function deleteSection(cvId, sectionId) {
+    if (confirm('Are you sure you want to delete this section?')) {
+        fetch(`/cv/${cvId}/sections/${sectionId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(() => location.reload());
+    }
+}
+
+// Add section modal
+function showAddSectionModal() {
+    document.getElementById('addSectionModal').classList.remove('hidden');
+}
+
+function closeAddSectionModal() {
+    document.getElementById('addSectionModal').classList.add('hidden');
+}
+
+function addSection(cvId, sectionType, title) {
+    fetch(`/cv/${cvId}/sections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ section_type: sectionType, title })
+    })
+    .then(() => location.reload());
+}
+
+// Add item
+function addItem(cvId, sectionId, sectionType) {
+    fetch(`/cv/${cvId}/sections/${sectionId}/items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_type: sectionType, content: {} })
+    })
+    .then(() => location.reload());
+}
+
+// Update item
+function updateItem(itemId, content) {
+    fetch(`/cv/${currentCvId}/sections/0/items/${itemId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: { text: content } })
+    })
+    .then(() => {
+        scheduleAutoSave();
+        loadPreview();
+    });
+}
+
+function updateItemField(itemId, field, value) {
+    fetch(`/cv/${currentCvId}/sections/0/items/${itemId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: { [field]: value } })
+    })
+    .then(() => {
+        scheduleAutoSave();
+        loadPreview();
+    });
+}
+
+// Delete item
+function deleteItem(itemId) {
+    if (confirm('Are you sure you want to delete this item?')) {
+        fetch(`/cv/${currentCvId}/sections/0/items/${itemId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(() => location.reload());
+    }
+}
+
+// ATS Score
+function runAtsScore(cvId) {
+    document.getElementById('atsScoreModal').classList.remove('hidden');
+    
+    fetch(`/cv/${cvId}/ai/ats-score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const content = document.getElementById('atsScoreContent');
+        
+        if (data.score !== undefined) {
+            content.innerHTML = `
+                <div class="text-center mb-4">
+                    <div class="text-5xl font-bold text-purple-600">${data.score}/100</div>
+                    <p class="text-gray-600">ATS Score</p>
+                </div>
+                <div class="space-y-2">
+                    <h4 class="font-semibold">Suggestions:</h4>
+                    ${data.suggestions ? data.suggestions.map(s => `<p class="text-gray-600">• ${s}</p>`).join('') : ''}
+                </div>
+            `;
+        } else {
+            content.innerHTML = '<p class="text-red-500">Failed to analyze CV</p>';
+        }
+    });
+}
+
+function closeAtsScoreModal() {
+    document.getElementById('atsScoreModal').classList.add('hidden');
+}
+</script>
+{% endblock %}

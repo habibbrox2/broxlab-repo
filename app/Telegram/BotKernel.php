@@ -74,11 +74,22 @@ class BotKernel
     private function handleMessage(array $message, array $update): void
     {
         $chatId = (string)($message['chat']['id'] ?? '');
-        if (!$chatId)
+        if ($chatId === '') {
             return;
+        }
+
+        // Sanitize chatId (must be numeric or valid Telegram chat ID)
+        if (!preg_match('/^-?\d+$/', $chatId)) {
+            logError('Telegram: Invalid chat_id format', 'WARNING', ['chat_id' => $chatId]);
+            return;
+        }
 
         // Check for active session state
         $session = new TelegramSessionManager($this->mysqli);
+
+        // Clean expired sessions (older than 30 minutes)
+        $session->cleanExpired(30);
+
         $state = $session->getState($chatId);
 
         // Handle Documents (PDFs)
@@ -88,14 +99,46 @@ class BotKernel
         }
 
         $text = $message['text'] ?? '';
-        if ($state && strpos($text, '/') !== 0) {
+
+        // Sanitize input text
+        $text = $this->sanitizeInput($text);
+
+        // Validate text length
+        if (mb_strlen($text) > 4096) {
+            $text = mb_substr($text, 0, 4096);
+        }
+
+        if ($state !== null && strpos($text, '/') !== 0) {
             $this->handleSessionState($state, $text, $chatId, $update, $session);
             return;
         }
 
         if (strpos($text, '/') === 0) {
+            // Validate command format
+            if (!preg_match('/^\/[a-zA-Z0-9_]+/', $text)) {
+                $telegram = new TelegramService((new \AppSettings($this->mysqli))->get('telegram_bot_token', ''));
+                $telegram->sendMessage($chatId, "⚠️ Invalid command format. Use /start to see available commands.");
+                return;
+            }
             $this->commandRegistry->execute($text, $update);
         }
+    }
+
+    /**
+     * Sanitize user input to prevent injection attacks
+     */
+    private function sanitizeInput(string $text): string
+    {
+        // Remove null bytes
+        $text = str_replace("\0", '', $text);
+
+        // Remove control characters (except newlines and tabs)
+        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $text);
+
+        // Normalize whitespace
+        $text = trim($text);
+
+        return $text;
     }
 
     private function handlePdfUpload(array $document, string $chatId, TelegramSessionManager $session): void
@@ -129,11 +172,12 @@ class BotKernel
 
     private function handleSessionState(string $state, string $text, string $chatId, array $update, TelegramSessionManager $session): void
     {
-        $telegram = new TelegramService((new \AppSettings($this->mysqli))->get('telegram_bot_token', ''));
+        $botToken = (new \AppSettings($this->mysqli))->get('telegram_bot_token', '');
+        $telegram = new TelegramService($botToken);
 
         switch ($state) {
             case 'sms_waiting_recipient':
-                // Validate recipient (basic)
+                // Validate recipient (international format)
                 if (!preg_match('/^\+?[0-9]{10,15}$/', $text)) {
                     $telegram->sendMessage($chatId, "⚠️ Invalid phone number format. Please try again (e.g., +8801700000000):");
                     return;
@@ -141,20 +185,23 @@ class BotKernel
 
                 $session->setState($chatId, 'sms_waiting_device', ['recipient' => $text]);
 
-                // Fetch online devices
-                $devices = $this->mysqli->query("SELECT id, device_name FROM devices WHERE status = 'online'");
+                // Fetch online devices with prepared statement
+                $stmt = $this->mysqli->prepare("SELECT id, device_name FROM devices WHERE status = 'online' ORDER BY device_name ASC LIMIT 20");
+                $stmt->execute();
+                $devices = $stmt->get_result();
                 $builder = new InlineKeyboardBuilder();
 
                 if ($devices->num_rows > 0) {
                     while ($device = $devices->fetch_assoc()) {
-                        $builder->addButton($device['device_name'], "sms_device_" . $device['id'])->nextRow();
+                        $deviceName = htmlspecialchars($device['device_name'], ENT_QUOTES, 'UTF-8');
+                        $builder->addButton($deviceName, "sms_device_" . (int)$device['id'])->nextRow();
                     }
                     $telegram->sendMessage($chatId, "📤 *Step 2/3: Select Device*\nChoose an online device to send from:", $builder->build());
-                }
-                else {
+                } else {
                     $telegram->sendMessage($chatId, "❌ No online devices available. Use /start to try again later.");
                     $session->clear($chatId);
                 }
+                $stmt->close();
                 break;
 
             case 'sms_waiting_message':
@@ -162,51 +209,111 @@ class BotKernel
                 $recipient = $data['recipient'] ?? '';
                 $deviceId = (int)($data['device_id'] ?? 0);
 
+                // Validate SMS message length
+                if (mb_strlen($text) > 1600) {
+                    $telegram->sendMessage($chatId, "⚠️ Message too long (max 1600 chars). Please shorten your message:");
+                    return;
+                }
+
                 try {
                     $smsService = new \App\Modules\SmsGateway\SmsService($this->mysqli);
                     $success = $smsService->sendSms($recipient, $text, $deviceId);
 
                     if ($success) {
-                        $telegram->sendMessage($chatId, "✅ *SMS Sent!*\nTo: $recipient\nDevice: $deviceId\nMessage: $text");
-                    }
-                    else {
+                        $safeRecipient = htmlspecialchars($recipient, ENT_QUOTES, 'UTF-8');
+                        $safeMessage = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+                        $telegram->sendMessage($chatId, "✅ *SMS Sent!*\nTo: {$safeRecipient}\nDevice: {$deviceId}\nMessage: {$safeMessage}");
+                    } else {
                         $telegram->sendMessage($chatId, "❌ *Failed to send SMS.* Check device status.");
                     }
-                }
-                catch (Exception $e) {
-                    $telegram->sendMessage($chatId, "❌ *Error:* " . $e->getMessage());
+                } catch (\Exception $e) {
+                    logError('Telegram SMS send failed: ' . $e->getMessage(), 'ERROR', [
+                        'chat_id' => $chatId,
+                        'recipient' => $recipient,
+                        'device_id' => $deviceId,
+                    ]);
+                    $telegram->sendMessage($chatId, "❌ *Error sending SMS.* Please try again later.");
                 }
 
                 $session->clear($chatId);
                 break;
 
             case 'scraper_waiting_url':
+                // Validate URL format
+                if (!filter_var($text, FILTER_VALIDATE_URL)) {
+                    $telegram->sendMessage($chatId, "⚠️ Invalid URL format. Please provide a valid URL (e.g., https://example.com):");
+                    return;
+                }
+
+                // Only allow HTTP/HTTPS
+                $parsed = parse_url($text);
+                if (!in_array($parsed['scheme'] ?? '', ['http', 'https'], true)) {
+                    $telegram->sendMessage($chatId, "⚠️ Only HTTP and HTTPS URLs are allowed.");
+                    return;
+                }
+
+                // Block private/internal IPs
+                $host = $parsed['host'] ?? '';
+                if (in_array($host, ['localhost', '127.0.0.1', '::1'], true) ||
+                    preg_match('/^(10\.|172\.(1[6-9]|2|3[01])\.|192\.168\.)/', $host)) {
+                    $telegram->sendMessage($chatId, "⚠️ Private/internal URLs are not allowed.");
+                    return;
+                }
+
+                $telegram->sendTyping($chatId);
                 $telegram->sendMessage($chatId, "🕷 *Scraping...* Please wait.");
 
-                $scraper = new ScraperService();
-                $result  = $scraper->scrape($text);
+                try {
+                    $scraper = new ScraperService();
+                    $result = $scraper->scrape($text);
 
-                if (isset($result['error'])) {
-                    $telegram->sendMessage($chatId, "❌ *Scraping Failed:* " . $result['error']);
-                } else {
-                    $response  = "🕷 *Scraper Results*\n\n";
-                    $response .= "🔗 *URL:* " . $result['url'] . "\n";
-                    $response .= "📝 *Title:* " . $result['title'] . "\n";
-                    $response .= "📄 *Description:* " . mb_substr($result['description'], 0, 300) . "\n";
-                    if (!empty($result['image'])) {
-                        $response .= "🖼 *Image:* " . $result['image'] . "\n";
-                    }
-                    if (!empty($result['links'])) {
-                        $response .= "\n🔗 *Top Links:*\n";
-                        foreach ($result['links'] as $i => $link) {
-                            $response .= ($i + 1) . ". " . $link . "\n";
+                    if (isset($result['error'])) {
+                        $safeError = htmlspecialchars($result['error'], ENT_QUOTES, 'UTF-8');
+                        $telegram->sendMessage($chatId, "❌ *Scraping Failed:* {$safeError}");
+                    } else {
+                        $safeUrl = htmlspecialchars($result['url'] ?? '', ENT_QUOTES, 'UTF-8');
+                        $safeTitle = htmlspecialchars($result['title'] ?? '', ENT_QUOTES, 'UTF-8');
+                        $safeDesc = htmlspecialchars(mb_substr($result['description'] ?? '', 0, 300), ENT_QUOTES, 'UTF-8');
+
+                        $response = "🕷 *Scraper Results*\n\n";
+                        $response .= "🔗 *URL:* {$safeUrl}\n";
+                        $response .= "📝 *Title:* {$safeTitle}\n";
+                        $response .= "📄 *Description:* {$safeDesc}\n";
+
+                        if (!empty($result['image'])) {
+                            $safeImage = htmlspecialchars($result['image'], ENT_QUOTES, 'UTF-8');
+                            $response .= "🖼 *Image:* {$safeImage}\n";
                         }
+
+                        if (!empty($result['links']) && is_array($result['links'])) {
+                            $response .= "\n🔗 *Top Links:*\n";
+                            foreach (array_slice($result['links'], 0, 5) as $i => $link) {
+                                $safeLink = htmlspecialchars($link, ENT_QUOTES, 'UTF-8');
+                                $response .= ($i + 1) . ". {$safeLink}\n";
+                            }
+                        }
+
+                        $response .= "\n📅 _" . date('Y-m-d H:i:s') . "_";
+                        $telegram->sendMessage($chatId, $response);
                     }
-                    $response .= "\n📅 _" . $result['timestamp'] . "_";
-                    $telegram->sendMessage($chatId, $response);
+                } catch (\Exception $e) {
+                    logError('Telegram scraper failed: ' . $e->getMessage(), 'ERROR', [
+                        'chat_id' => $chatId,
+                        'url' => $text,
+                    ]);
+                    $telegram->sendMessage($chatId, "❌ *Scraping failed.* Please try again later.");
                 }
 
                 $session->clear($chatId);
+                break;
+
+            default:
+                logError('Telegram: Unknown session state', 'WARNING', [
+                    'chat_id' => $chatId,
+                    'state' => $state,
+                ]);
+                $session->clear($chatId);
+                $telegram->sendMessage($chatId, "⚠️ Session expired. Use /start to begin again.");
                 break;
         }
     }
