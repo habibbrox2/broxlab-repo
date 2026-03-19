@@ -445,6 +445,11 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
         $_SESSION['post_login_redirect'] = $requestedRedirect;
     }
 
+    // Get device info for new device detection (will be used after user is authenticated)
+    $loginDeviceId = $input['device_id'] ?? null;
+    $loginBrowserInfo = $input['browser'] ?? '';
+    $isNewDevice = false;
+
     if (!$securityManager->isFirebaseOAuthEnabled()) {
         logError('Firebase signin blocked: enable_firebase_oauth is disabled');
         authErrorResponse('oauth_provider_disabled', '', 'json', 403);
@@ -651,6 +656,40 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
         
         // 3. Log to activity log
         logActivity('Firebase sign-in succeeded', 'auth', (int)$localUserId, ['provider' => $provider, 'firebase_uid' => $uid], 'info');
+        
+        // 4. Check for new device and send notification
+        if ($loginDeviceId) {
+            $notificationModel = new NotificationModel($mysqli);
+            // Check if device exists for this user in fcm_tokens
+            $existingToken = $notificationModel->getDeviceTokenByDeviceId((int)$localUserId, $loginDeviceId);
+            $isNewDevice = empty($existingToken);
+            
+            if ($isNewDevice) {
+                // New device detected - send notification
+                $browserName = 'Unknown Browser';
+                if (stripos($loginBrowserInfo, 'Firefox') !== false) $browserName = 'Firefox';
+                elseif (stripos($loginBrowserInfo, 'Chrome') !== false) $browserName = 'Chrome';
+                elseif (stripos($loginBrowserInfo, 'Safari') !== false) $browserName = 'Safari';
+                elseif (stripos($loginBrowserInfo, 'Edge') !== false) $browserName = 'Edge';
+                
+                $notifId = $notificationModel->create(
+                    (int)$localUserId,
+                    'নতুন ডিভাইসে লগইন',
+                    "আপনার অ্যাকাউন্টে একটি নতুন ডিভাইস ($browserName) থেকে লগইন করা হয়েছে।",
+                    'security',
+                    [
+                        'user_id' => (int)$localUserId,
+                        'channels' => ['push', 'in_app', 'email'],
+                        'is_new_device' => true,
+                        'device_id' => $loginDeviceId
+                    ]
+                );
+                if ($notifId) {
+                    $notificationModel->logDelivery($notifId, (int)$localUserId, 'sent', null, $_SERVER['REMOTE_ADDR'] ?? 'unknown', 'system', 'new_device_login');
+                }
+                logActivity('New device login notification sent', 'auth', (int)$localUserId, ['device_id' => $loginDeviceId, 'browser' => $browserName], 'info');
+            }
+        }
         
         $redirectUrl = '/user/dashboard';
         if ($userModel->isSuperAdmin((int)$localUserId) || $userModel->hasRole((int)$localUserId, 'admin')) {

@@ -75,6 +75,14 @@ export async function performUnifiedLogout(options = {}) {
     try {
         const target = resolveLogoutTarget(options, options.triggerEl || null);
         setGuestDeviceCookie();
+        
+        // Store current URL for redirect after login
+        const currentUrl = window.location.href;
+        // Don't store if already on login page or logout page
+        if (!currentUrl.includes('/login') && !currentUrl.includes('/logout')) {
+            sessionStorage.setItem('login_redirect_url', currentUrl);
+        }
+        
         await tryFirebaseSignOut(options.timeoutMs);
         window.location.href = target || '/logout';
         return true;

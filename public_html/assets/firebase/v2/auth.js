@@ -46,13 +46,38 @@ async function _syncFcmTokenAfterBackend(backendResult) {
   }
 }
 
+// Get or create device ID for new device detection
+function getDeviceId() {
+  try {
+    let deviceId = localStorage.getItem('__fcm_device_id');
+    if (!deviceId) {
+      deviceId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('__fcm_device_id', deviceId);
+    }
+    return deviceId;
+  } catch (e) {
+    return null;
+  }
+}
+
 export async function syncIdTokenWithBackend(user, options = {}) {
   if (!user) return { success: false, error: 'missing_user' };
   const provider = normalizeProvider(options.provider);
   const endpoint = options.endpoint || '/api/firebase/signin';
+  const deviceId = getDeviceId();
 
   try {
     const idToken = await user.getIdToken(true);
+    const requestBody = { idToken, provider };
+    
+    // Add device info for new device detection
+    if (deviceId) {
+      requestBody.device_id = deviceId;
+    }
+    
+    // Get browser info for new device notification
+    requestBody.browser = navigator.userAgent;
+    
     const { ok, status, data, error } = await fetchWithTimeout(endpoint, {
       method: 'POST',
       credentials: 'same-origin',
@@ -60,7 +85,7 @@ export async function syncIdTokenWithBackend(user, options = {}) {
         'Content-Type': 'application/json',
         'X-Requested-With': 'XMLHttpRequest'
       },
-      body: JSON.stringify({ idToken, provider })
+      body: JSON.stringify(requestBody)
     });
 
     const payload = (data && typeof data === 'object') ? data : {};

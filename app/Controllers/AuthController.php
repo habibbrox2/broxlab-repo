@@ -280,19 +280,52 @@ $router->post('/login', ['middleware' => ['guest_only']], function () use ($auth
     $guestDeviceId = sanitize_input($_COOKIE['guest_device_id'] ?? '');
     $notificationModel->migrateGuestTokensToUser($result['user_id'], $guestDeviceId);
 
-    // Send login notification
-    $notifId = $notificationModel->create(
-        (int)$result['user_id'],
-        'নতুন লগইন',
-        'আপনার অ্যাকাউন্টে সফলভাবে লগইন হয়েছে।',
-        'update',
-        [
-            'user_id' => (int)$result['user_id'],
-            'channels' => ['push', 'in_app', 'email']
-        ]
-    );
+    // Send login notification (check for new device)
+    $loginDeviceId = $_COOKIE['guest_device_id'] ?? null;
+    $loginBrowserInfo = $_SERVER['HTTP_USER_AGENT'] ?? '';
+    $isNewDevice = false;
+    
+    // Check if this is a new device
+    if ($loginDeviceId) {
+        $existingDevice = $notificationModel->getDeviceTokenByDeviceId((int)$result['user_id'], $loginDeviceId);
+        $isNewDevice = empty($existingDevice);
+    }
+    
+    if ($isNewDevice && $loginDeviceId) {
+        // New device detected - send new device notification
+        $browserName = 'Unknown Browser';
+        if (stripos($loginBrowserInfo, 'Firefox') !== false) $browserName = 'Firefox';
+        elseif (stripos($loginBrowserInfo, 'Chrome') !== false) $browserName = 'Chrome';
+        elseif (stripos($loginBrowserInfo, 'Safari') !== false) $browserName = 'Safari';
+        elseif (stripos($loginBrowserInfo, 'Edge') !== false) $browserName = 'Edge';
+        
+        $notifId = $notificationModel->create(
+            (int)$result['user_id'],
+            'নতুন ডিভাইসে লগইন',
+            "আপনার অ্যাকাউন্টে একটি নতুন ডিভাইস ($browserName) থেকে লগইন করা হয়েছে।",
+            'security',
+            [
+                'user_id' => (int)$result['user_id'],
+                'channels' => ['push', 'in_app', 'email'],
+                'is_new_device' => true,
+                'device_id' => $loginDeviceId
+            ]
+        );
+    } else {
+        // Regular login notification
+        $notifId = $notificationModel->create(
+            (int)$result['user_id'],
+            'নতুন লগইন',
+            'আপনার অ্যাকাউন্টে সফলভাবে লগইন হয়েছে।',
+            'update',
+            [
+                'user_id' => (int)$result['user_id'],
+                'channels' => ['push', 'in_app', 'email']
+            ]
+        );
+    }
     if ($notifId) {
-        $notificationModel->logDelivery($notifId, (int)$result['user_id'], 'sent', null, $_SERVER['REMOTE_ADDR'] ?? 'unknown', 'system', 'login');
+        $notificationModel->logDelivery($notifId, (int)$result['user_id'], 'sent', null, $_SERVER['REMOTE_ADDR'] ?? 'unknown', 'system', $isNewDevice ? 'new_device_login' : 'login');
     }
 
     // Handle remember me
