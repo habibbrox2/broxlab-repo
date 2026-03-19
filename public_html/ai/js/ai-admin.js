@@ -1752,11 +1752,63 @@ if (!window.BroxAdminInstance) {
 
             msg.appendChild(contentDiv);
 
-            // Meta
+            // Meta & Feedback
             const meta = document.createElement('div');
             meta.className = 'brox-ai-msg-meta';
             meta.textContent = new Date().toLocaleTimeString();
-            msg.appendChild(meta);
+            
+            // Add feedback buttons for assistant messages
+            if (role === 'assistant') {
+                const feedback = document.createElement('div');
+                feedback.className = 'brox-ai-feedback';
+                feedback.innerHTML = `
+                    <button class="brox-ai-feedback-btn" data-rating="1" title="Poor"><i class="bi bi-hand-thumbs-down"></i></button>
+                    <button class="brox-ai-feedback-btn" data-rating="5" title="Excellent"><i class="bi bi-hand-thumbs-up"></i></button>
+                `;
+                
+                // Add feedback event listeners
+                feedback.querySelectorAll('.brox-ai-feedback-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const rating = btn.dataset.rating;
+                        const msgIndex = msg.dataset.msgIndex || msgIndex;
+                        
+                        // Visual feedback
+                        feedback.innerHTML = '<small>✓</small>';
+                        
+                        // Send feedback to backend
+                        try {
+                            const csrfToken = document.querySelector('[name="csrf_token"]')?.value || '';
+                            await fetch('/api/ai/feedback', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    message_id: msgIndex,
+                                    rating: rating,
+                                    csrf_token: csrfToken
+                                })
+                            });
+                        } catch (err) {
+                            console.log('Feedback submitted (offline mode)');
+                        }
+                    });
+                });
+                
+                // Create actions container
+                const actions = document.createElement('div');
+                actions.className = 'brox-ai-msg-actions';
+                actions.style.display = 'flex';
+                actions.style.gap = '8px';
+                actions.style.alignItems = 'center';
+                actions.style.marginTop = '4px';
+                
+                meta.style.marginTop = '0';
+                actions.appendChild(feedback);
+                actions.appendChild(meta);
+                msg.appendChild(actions);
+            } else {
+                msg.appendChild(meta);
+            }
 
             if (msgIndex !== null && msgIndex !== undefined) {
                 msg.dataset.msgIndex = String(msgIndex);
