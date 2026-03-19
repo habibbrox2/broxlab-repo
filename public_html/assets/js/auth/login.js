@@ -288,8 +288,16 @@ import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
             },
             onError: (error) => {
                 clearOAuthLoadingState();
-                console.error('Auth error:', error);
-                // Status already shown by handler
+                // Suppress non-critical Firebase/X-Frame-Options errors
+                const errorMsg = error?.message || '';
+                const isPopupClosed = errorMsg.includes('popup-closed-by-user');
+                const isIframeBlocked = errorMsg.includes('X-Frame-Options') || 
+                    errorMsg.includes('auth/iframe');
+                
+                if (!isIframeBlocked) {
+                    console.error('Auth error:', error);
+                }
+                // Status already shown by handler - popup-closed shows 'Sign-in cancelled'
             }
         });
     }
