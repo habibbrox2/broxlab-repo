@@ -67,4 +67,29 @@ class TelegramSessionManager
         $stmt->bind_param("s", $chatId);
         $stmt->execute();
     }
+
+    /**
+     * Clean expired sessions older than specified minutes.
+     * 
+     * @param int $minutes Session expiration time in minutes
+     */
+    public function cleanExpired(int $minutes = 30): void
+    {
+        $stmt = $this->mysqli->prepare(
+            "DELETE FROM telegram_sessions WHERE updated_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)"
+        );
+        $stmt->bind_param("i", $minutes);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    /**
+     * Get active session count for monitoring.
+     */
+    public function getActiveCount(): int
+    {
+        $result = $this->mysqli->query("SELECT COUNT(*) as cnt FROM telegram_sessions");
+        $row = $result->fetch_assoc();
+        return (int)($row['cnt'] ?? 0);
+    }
 }

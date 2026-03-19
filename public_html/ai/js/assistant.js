@@ -1329,6 +1329,7 @@ if (!window.BroxAssistantLoaded) {
                 let fullReply = '';
                 const reader = resp.body.getReader();
                 const decoder = new TextDecoder('utf-8');
+                let isComplete = true;
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
@@ -1336,7 +1337,10 @@ if (!window.BroxAssistantLoaded) {
                     for (const line of lines) {
                         if (!line.startsWith('data: ')) continue;
                         const raw = line.slice(6).trim();
-                        if (raw === '[DONE]') break;
+                        if (raw === '[DONE]') {
+                            isComplete = true;
+                            break;
+                        }
                         try {
                             const obj = JSON.parse(raw);
                             if (obj.content) {
@@ -1345,6 +1349,10 @@ if (!window.BroxAssistantLoaded) {
                                 this.renderMarkdown(msgBubble, fullReply);
                                 this.nodes.body.scrollTop = this.nodes.body.scrollHeight;
                             }
+                            // Check for finish_reason indicating incomplete response
+                            if (obj.finish_reason && obj.finish_reason !== 'stop') {
+                                isComplete = false;
+                            }
                         } catch (e) { }
                     }
                 }
@@ -1352,7 +1360,16 @@ if (!window.BroxAssistantLoaded) {
                 this.isThinking = false;
                 this.updateLangUI();
                 this.updateAgenticStatus(null);
+                
+                // Check if response is incomplete and offer continue option
                 if (fullReply) {
+                    const isIncomplete = !isComplete || this.isResponseIncomplete(fullReply);
+                    if (isIncomplete) {
+                        this.addMessage('assistant', fullReply);
+                        this.addContinueButton();
+                    } else {
+                        this.addMessage('assistant', fullReply);
+                    }
                     this.history.push({ role: 'assistant', content: fullReply, timestamp: new Date().toISOString() });
                     this.saveHistory();
                     this.renderQuickActions();
@@ -1368,6 +1385,50 @@ if (!window.BroxAssistantLoaded) {
                 this.updateModelStatus('offline');
                 this.addMessage('assistant', this.t('err_conn'));
             }
+        }
+
+        addContinueButton() {
+            if (!this.nodes.body) return;
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'brox-ai-continue-container';
+            buttonContainer.innerHTML = `
+                <button class="brox-ai-continue-btn" id="brox-ai-continue-btn">
+                    <span class="brox-ai-continue-icon">➡️</span>
+                    <span class="brox-ai-continue-text">${this.lang === 'bn' ? 'উত্তর চালিয়ে যান' : 'Continue Response'}</span>
+                </button>
+            `;
+            this.nodes.body.appendChild(buttonContainer);
+            
+            const continueBtn = document.getElementById('brox-ai-continue-btn');
+            if (continueBtn) {
+                continueBtn.onclick = () => this.continueResponse();
+            }
+        }
+
+        async continueResponse() {
+            const lastAssistantMsg = this.history.filter(m => m.role === 'assistant').pop();
+            if (!lastAssistantMsg) return;
+
+            // Extract last 50 tokens from the response
+            const lastTokens = this.extractLastTokens(lastAssistantMsg.content, 50);
+            const continuePrompt = `continue from: "${lastTokens}"`;
+
+            // Add user message indicating continuation
+            this.history.push({ role: 'user', content: continuePrompt, timestamp: new Date().toISOString() });
+            this.saveHistory();
+            this.renderHistorySidebar();
+            this.renderQuickActions();
+            this.markActivity();
+
+            // Get AI response for continuation
+            await this.getAIResponse();
+        }
+
+        extractLastTokens(text, count) {
+            if (!text) return '';
+            const words = text.split(/\s+/);
+            const lastWords = words.slice(-count);
+            return lastWords.join(' ');
         }
 
         async puterFallback() {

@@ -162,7 +162,6 @@ class HomeModel
 
         // Debug: log what types we got
         $types = array_count_values(array_column($rows, 'type'));
-        error_log("getUnifiedContent result types: " . json_encode($types));
 
         foreach ($rows as &$row) {
             $images = [];

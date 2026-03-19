@@ -298,6 +298,66 @@ $router->get('/admin/contact/delete/{id}', ['middleware' => ['auth', 'admin_only
     }
 });
 
+/**
+ * CV Management - Admin list all CVs
+ * GET /admin/cvs
+ */
+$router->get('/admin/cvs', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    try {
+        $cvModel = new CvModel($mysqli);
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $limit = 20;
+        $offset = ($page - 1) * $limit;
+        
+        $cvs = $cvModel->getAll($limit, $offset);
+        $stats = $cvModel->getStatistics();
+        
+        echo $twig->render('admin/cvs/list.twig', [
+            'cvs' => $cvs,
+            'stats' => $stats,
+            'page' => $page,
+            'limit' => $limit,
+            'page_title' => 'CV Management'
+        ]);
+        
+    } catch (Throwable $e) {
+        logError("Admin CV List Error: " . $e->getMessage(), "ERROR",
+            ['file' => $e->getFile(), 'line' => $e->getLine()]);
+        showMessage("Failed to load CVs", "danger");
+        header("Location: /admin/dashboard");
+        exit;
+    }
+});
+
+/**
+ * CV Template Management - Admin manage templates
+ * GET /admin/cv-templates
+ */
+$router->get('/admin/cv-templates', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    // Get available templates from the templates folder
+    $templateDir = __DIR__ . '/../Views/cv/templates';
+    $templates = [];
+    
+    if (is_dir($templateDir)) {
+        $files = scandir($templateDir);
+        foreach ($files as $file) {
+            if (pathinfo($file, PATHINFO_EXTENSION) === 'twig') {
+                $name = pathinfo($file, PATHINFO_FILENAME);
+                $templates[$name] = [
+                    'name' => ucfirst($name),
+                    'file' => $file,
+                    'path' => '/cv/templates/' . $file
+                ];
+            }
+        }
+    }
+    
+    echo $twig->render('admin/cv-templates/list.twig', [
+        'templates' => $templates,
+        'page_title' => 'CV Template Management'
+    ]);
+});
+
 
 
 
@@ -318,6 +378,7 @@ $router->get('/user/dashboard', ['middleware' => ['auth', 'user_dashboard_only']
         
         $userModel = new UserModel($mysqli);
         $mobileModel = new MobileModel($mysqli);
+        $cvModel = new CvModel($mysqli);
         
         // Get user profile information
         $userProfile = $userModel->getUserById($userId);
@@ -328,6 +389,7 @@ $router->get('/user/dashboard', ['middleware' => ['auth', 'user_dashboard_only']
             'pending' => $mobileModel->getUserMobilesCountByStatus($userId, 'pending'),
             'approved' => $mobileModel->getUserMobilesCountByStatus($userId, 'approved'),
             'rejected' => $mobileModel->getUserMobilesCountByStatus($userId, 'rejected'),
+            'cvs' => count($cvModel->getByUserId($userId)),
         ];
         
         // Get user's recent mobiles/applications

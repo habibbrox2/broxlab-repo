@@ -75,6 +75,82 @@ $router->post('/api/telegram/webhook', function () use ($mysqli) {
     exit;
 });
 
+// Health check endpoint for Telegram bot
+$router->get('/api/telegram/health', function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    $health = [
+        'status' => 'ok',
+        'timestamp' => date('Y-m-d H:i:s'),
+        'checks' => []
+    ];
+
+    // Check database connection
+    try {
+        $result = $mysqli->query('SELECT 1');
+        $health['checks']['database'] = $result !== false ? 'ok' : 'error';
+    } catch (Throwable $e) {
+        $health['checks']['database'] = 'error: ' . $e->getMessage();
+        $health['status'] = 'degraded';
+    }
+
+    // Check Telegram sessions table
+    try {
+        $result = $mysqli->query("SELECT COUNT(*) as cnt FROM telegram_sessions");
+        $row = $result->fetch_assoc();
+        $health['checks']['sessions'] = 'ok';
+        $health['checks']['active_sessions'] = (int)($row['cnt'] ?? 0);
+    } catch (Throwable $e) {
+        $health['checks']['sessions'] = 'error: ' . $e->getMessage();
+        $health['status'] = 'degraded';
+    }
+
+    // Check rate limit table
+    try {
+        $result = $mysqli->query("SELECT COUNT(*) as cnt FROM telegram_rate_limit WHERE expires_at > " . time());
+        $row = $result->fetch_assoc();
+        $health['checks']['rate_limit'] = 'ok';
+        $health['checks']['active_rate_limits'] = (int)($row['cnt'] ?? 0);
+    } catch (Throwable $e) {
+        $health['checks']['rate_limit'] = 'error: ' . $e->getMessage();
+        $health['status'] = 'degraded';
+    }
+
+    // Check bot token configuration
+    $settings = new \AppSettings($mysqli);
+    $botToken = $settings->get('telegram_bot_token', '');
+    $health['checks']['bot_configured'] = !empty($botToken) ? 'ok' : 'not_configured';
+
+    // Check webhook URL
+    $webhookSecret = $settings->get('telegram_webhook_secret', '');
+    $health['checks']['webhook_secret'] = !empty($webhookSecret) ? 'configured' : 'not_configured';
+
+    // Feature flags
+    require_once BASE_PATH . 'app/FeatureFlags/FeatureManager.php';
+    $featureManager = \App\FeatureFlags\FeatureManager::getInstance($mysqli);
+    $health['checks']['feature_telegram_panel'] = $featureManager->isEnabled('telegram_panel') ? 'enabled' : 'disabled';
+    $health['checks']['feature_sms_gateway'] = $featureManager->isEnabled('sms_gateway') ? 'enabled' : 'disabled';
+    $health['checks']['feature_remote_device'] = $featureManager->isEnabled('remote_device') ? 'enabled' : 'disabled';
+
+    // Determine overall status
+    $hasError = false;
+    foreach ($health['checks'] as $key => $value) {
+        if (is_string($value) && strpos($value, 'error') === 0) {
+            $hasError = true;
+            break;
+        }
+    }
+
+    if ($hasError) {
+        $health['status'] = 'degraded';
+        http_response_code(503);
+    } else {
+        http_response_code(200);
+    }
+
+    echo json_encode($health);
+});
+
 $router->post('/api/sms/incoming', function () use ($mysqli) {
     bootstrapTelegramSystemDependencies();
 

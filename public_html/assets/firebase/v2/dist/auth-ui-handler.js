@@ -7,7 +7,7 @@ import {
   signOutUser,
   signUpWithEmail,
   syncIdTokenWithBackend
-} from "./chunks/chunk-7QUSVV7Z.js";
+} from "./chunks/chunk-KBCFUHO6.js";
 import "./chunks/chunk-QJ2663K6.js";
 import {
   account_conflict_handler_default

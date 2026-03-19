@@ -33,6 +33,9 @@ $userModel = null;
 $authManager = null;
 $securityManager = null;
 
+// Make database connection available
+global $mysqli;
+
 try {
     $firebaseModel = new \Firebase\FirebaseModel(require __DIR__ . '/../../Config/Firebase.php');
     $notificationModel = new NotificationModel($mysqli);

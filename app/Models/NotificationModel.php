@@ -2,8 +2,18 @@
 class NotificationModel {
     private $mysqli;
 
-    public function __construct($mysqli) {
-        $this->mysqli = $mysqli;
+    public function __construct($mysqli = null) {
+        if ($mysqli === null) {
+            global $mysqli;
+            $this->mysqli = $mysqli ?? null;
+        } else {
+            $this->mysqli = $mysqli;
+        }
+        
+        // Log if mysqli is still null after all attempts
+        if ($this->mysqli === null) {
+            logError('NotificationModel: Failed to initialize mysqli connection');
+        }
     }
 
     private function safeScalar($sql, $default = 0) {
@@ -2369,6 +2379,12 @@ class NotificationModel {
      */
     public function getDeviceTokenByDeviceId($userId, $deviceId) {
         try {
+            // Check if mysqli is initialized
+            if (!$this->mysqli) {
+                logError('NotificationModel mysqli not initialized');
+                return false;
+            }
+            
             $userId = (int)$userId;
             if ($userId <= 0 || empty($deviceId)) return false;
 
