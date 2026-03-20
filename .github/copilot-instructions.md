@@ -1,16 +1,16 @@
-# GitHub Copilot Instructions — BroxBhai
+# GitHub Copilot Instructions - BroxBhai (Token Saver)
 
-Follow `AGENTS.md` first.
+Read first:
+- `AGENTS.md`
+- `docs/ai/AI_QUICK_CONTEXT.md`
 
-Key constraints:
-- Don’t edit generated assets: `public_html/assets/**/dist/**` (edit sources and run `npm run build`).
-- Register routes in `app/Controllers/*.php` using `$router->get/post/...` (bootstrapped by `public_html/index.php`).
-- Use Models + prepared statements for DB access; avoid raw SQL concatenation.
-- Enforce CSRF validation for state-changing endpoints.
-- No secrets in code; never commit `.env`.
+Hard rules:
+- Search first (`rg`), then make minimal diffs.
+- Use Models + prepared statements; avoid `SELECT *`.
+- Enforce CSRF for state-changing endpoints.
+- Do not edit generated assets in `public_html/assets/**/dist/**`.
+- No secrets: never commit `.env` or paste real tokens/keys.
 
-Preferred checks:
+Verification:
+- `php -l path/to/file.php`
 - `php scripts/quality_scan.php`
-- `php scripts/security_scan.php`
-- `npm run lint` (when JS changes)
-

@@ -29,6 +29,7 @@ class AIChatModel
                     location VARCHAR(255) NULL,
                     user_agent TEXT NULL,
                     status ENUM('open', 'closed') DEFAULT 'open',
+                    last_message_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     INDEX idx_user_id (user_id),
@@ -43,6 +44,12 @@ class AIChatModel
             if ($row && strpos($row['Extra'], 'auto_increment') === false) {
                 // Fix: Add AUTO_INCREMENT to id column
                 $this->db->query("ALTER TABLE ai_conversations MODIFY COLUMN id INT AUTO_INCREMENT PRIMARY KEY");
+            }
+
+            // Ensure last_message_at exists (required by addMessage() + listConversations())
+            $result = $this->db->query("SHOW COLUMNS FROM ai_conversations LIKE 'last_message_at'");
+            if ($result && $result->num_rows === 0) {
+                $this->db->query("ALTER TABLE ai_conversations ADD COLUMN last_message_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP AFTER status");
             }
         }
         
@@ -110,11 +117,12 @@ class AIChatModel
     /**
      * Add a message to a conversation
      */
-    public function addMessage(int $conversationId, string $role, string $content)
+    public function addMessage(int $conversationId, string $role, string $content): int
     {
         $stmt = $this->db->prepare("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, ?, ?)");
         $stmt->bind_param("iss", $conversationId, $role, $content);
         $stmt->execute();
+        $messageId = (int)$stmt->insert_id;
         $stmt->close();
 
         // Update last_message_at (fixed: use prepared statement)
@@ -122,6 +130,8 @@ class AIChatModel
         $stmt2->bind_param("i", $conversationId);
         $stmt2->execute();
         $stmt2->close();
+
+        return $messageId;
     }
 
     /**

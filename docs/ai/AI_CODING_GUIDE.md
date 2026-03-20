@@ -4,6 +4,19 @@ This guide helps AI coding agents (Copilot, Kilo Code, etc.) work efficiently wi
 
 ---
 
+## Token-Saver Default Context
+
+Default read order (keep editor token cost low):
+1) `AGENTS.md`
+2) `docs/ai/AI_QUICK_CONTEXT.md`
+
+Open this guide only when you need deeper implementation detail.
+
+Cleanup:
+- After implementing a temporary plan in `docs/plans/` (including audit plans), delete that plan file to avoid stale context. Preserve long-term decisions in `docs/PROJECT_CONTEXT.md` or `docs/ai/AGENT_MEMORY.md`.
+
+---
+
 ## 🚀 Quick Start
 
 **Tech Stack:**
@@ -123,6 +136,11 @@ if (!validateCsrfToken($csrfToken)) {
     return;
 }
 ```
+
+### AI Assistant Streaming (SSE) Meta
+- `POST /api/ai/chat` requires CSRF (`csrf_token` in JSON body or `X-CSRF-Token` header).
+- SSE responses may start with a meta event: `{"meta":{"conversation_id":...,"message_id":...}}` before any `{"content":...}` chunks.
+- Frontend feedback should use these IDs (not client-side indexes) when calling `POST /api/ai/feedback`.
 
 ### JSON API Response
 ```php

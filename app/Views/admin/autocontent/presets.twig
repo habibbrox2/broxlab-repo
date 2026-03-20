@@ -412,6 +412,33 @@
 let presets = {{ presets|json_encode|raw }};
 let detectedSelectors = {};
 
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content
+        || document.querySelector('input[name="csrf_token"]')?.value
+        || '';
+}
+
+async function fetchJson(url, options = {}) {
+    const headers = {
+        Accept: 'application/json',
+        ...(options.headers || {})
+    };
+
+    const response = await fetch(url, {
+        credentials: 'same-origin',
+        ...options,
+        headers
+    });
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+        // Likely a redirect to login / CSRF error page returning HTML
+        throw new Error(`Server returned non-JSON response (HTTP ${response.status}). Please refresh and try again.`);
+    }
+
+    return await response.json();
+}
+
 function showPresetMessage(message, status, duration) {
     if (!message) {
         return Promise.resolve();
@@ -539,6 +566,7 @@ async function saveAiDetectedPreset() {
     const key = document.getElementById('ai_preset_key').value;
     
     const formData = new FormData();
+    formData.append('csrf_token', getCsrfToken());
     formData.append('name', name);
     formData.append('preset_key', key);
     formData.append('selector_list_container', detectedSelectors.list_container || '');
@@ -555,12 +583,10 @@ async function saveAiDetectedPreset() {
     formData.append('selector_author', detectedSelectors.author || '');
     
     try {
-        const response = await fetch('/admin/autocontent/api/save-preset', {
+        const data = await fetchJson('/admin/autocontent/api/save-preset', {
             method: 'POST',
             body: formData
         });
-        
-        const data = await response.json();
         
         if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('aiDetectModal')).hide();
@@ -616,18 +642,20 @@ function deletePreset(id, name) {
             return;
         }
 
-        fetch('/admin/autocontent/api/delete-preset', {
+        fetchJson('/admin/autocontent/api/delete-preset', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'id=' + id
+            body: 'id=' + encodeURIComponent(id) + '&csrf_token=' + encodeURIComponent(getCsrfToken())
         })
-        .then(r => r.json())
         .then(async function(data) {
             if (data.success) {
                 location.reload();
             } else {
                 await showPresetAlert(data.message || 'Failed to delete preset', 'Delete Failed', 'danger');
             }
+        })
+        .catch(async function(err) {
+            await showPresetAlert(err.message || 'Error deleting preset', 'Delete Failed', 'danger');
         });
     });
 }
@@ -685,17 +713,16 @@ async function runQuickCreate() {
     
     try {
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('url', urlInput.value);
         formData.append('preset_name', nameInput.value);
         formData.append('preset_key', keyInput.value);
         formData.append('create_preset', '1');
         
-        const response = await fetch('/admin/autocontent/api/auto-detect-preset', {
+        const data = await fetchJson('/admin/autocontent/api/auto-detect-preset', {
             method: 'POST',
             body: formData
         });
-        
-        const data = await response.json();
         
         document.getElementById('quickLoading').classList.add('d-none');
         
@@ -776,14 +803,13 @@ async function aiDetectForPreset() {
     
     try {
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('url', url);
         
-        const response = await fetch('/admin/autocontent/api/ai-detect-selectors', {
+        const data = await fetchJson('/admin/autocontent/api/ai-detect-selectors', {
             method: 'POST',
             body: formData
         });
-        
-        const data = await response.json();
         
         if (data.success && data.selectors) {
             // Fill in detected selectors
@@ -815,15 +841,15 @@ document.getElementById('presetForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
+    formData.append('csrf_token', getCsrfToken());
     const submitBtn = document.getElementById('btn-save');
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
     
-    fetch('/admin/autocontent/api/save-preset', {
+    fetchJson('/admin/autocontent/api/save-preset', {
         method: 'POST',
         body: formData
     })
-    .then(r => r.json())
     .then(async data => {
         if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('presetModal')).hide();
@@ -921,16 +947,15 @@ async function runPreview() {
     
     try {
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('url', url);
         formData.append('type', previewType);
         formData.append('selectors', JSON.stringify(selectors));
         
-        const response = await fetch('/admin/autocontent/api/preview-selectors', {
+        const data = await fetchJson('/admin/autocontent/api/preview-selectors', {
             method: 'POST',
             body: formData
         });
-        
-        const data = await response.json();
         
         document.getElementById('previewLoading').classList.add('d-none');
         document.getElementById('btn-preview').disabled = false;

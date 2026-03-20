@@ -48,6 +48,8 @@ Quick reference for understanding the BroxBhai project structure and dependencie
 
 ## 📁 Directory Structure
 
+Note: When adding a new feature that introduces a new major folder/module (or changes where code lives), update this section to match the repo.
+
 ```
 broxbhai/
 ├── app/
@@ -201,6 +203,15 @@ Template location: `app/Views/`
 - Database config: `Config/Db.php`
 - App settings: `AppSettings` model (stored in database)
 - Constants: `Config/Constants.php`
+
+---
+
+## Decision Log
+
+### [2026-03-20] Centralize assistant chat APIs + feedback IDs
+- Centralized assistant/coplay API routes in `app/Routes/AISystemRoutes.php` to avoid route override collisions during `app/Controllers/*.php` loading.
+- Enforced CSRF required for public assistant chat (`POST /api/ai/chat`).
+- Added SSE meta (`conversation_id`, `message_id`) so UI feedback can reference real DB message IDs instead of client-side indexes.
 
 ---
 

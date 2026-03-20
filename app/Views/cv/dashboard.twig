@@ -24,6 +24,11 @@
         font-weight: 700;
         text-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+
+    /* Hide legacy/mojibake headings if present */
+    .cv-header h1:not(.cv-header-title) {
+        display: none;
+    }
     
     .btn-create-cv {
         background: white;
@@ -273,6 +278,11 @@
         font-size: 1.25rem;
         margin-bottom: 0.5rem;
     }
+
+    /* Hide legacy/mojibake headings if present */
+    .share-modal h5:not(.share-modal-title) {
+        display: none;
+    }
     
     .share-modal p {
         color: #6B7280;
@@ -363,10 +373,17 @@
 
 <div class="cv-dashboard">
     <div class="cv-header">
+        <h1 class="cv-header-title">&#128196; My CVs</h1>
         <h1>📄 My CVs</h1>
-        <a href="/cv/new" class="btn-create-cv">
-            <i class="bi bi-plus-lg"></i> Create New CV
-        </a>
+        <!--
+        <h1>📄 My CVs</h1>
+        -->
+        <form method="POST" action="/cv" style="margin: 0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token|default('') }}">
+            <button type="submit" class="btn-create-cv">
+                <i class="bi bi-plus-lg"></i> Create New CV
+            </button>
+        </form>
     </div>
 
     {% if cvs is empty %}
@@ -376,9 +393,12 @@
             </div>
             <h2>No CVs yet</h2>
             <p>Create your first CV to get started with building your professional profile</p>
-            <a href="/cv/new" class="btn-create-first">
-                Create Your First CV
-            </a>
+            <form method="POST" action="/cv" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token|default('') }}">
+                <button type="submit" class="btn-create-first">
+                    Create Your First CV
+                </button>
+            </form>
         </div>
     {% else %}
         <div class="cv-grid">
@@ -424,6 +444,7 @@
 <!-- Share Modal -->
 <div id="shareModal" class="share-modal">
     <div class="share-modal-content">
+        <h5 class="share-modal-title">&#128279; Share CV</h5>
         <h5>🔗 Share CV</h5>
         <p>Share your CV with others using this link:</p>
         <div class="share-input-group">
@@ -443,11 +464,14 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const getCsrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
+
     window.shareCv = function(id) {
         fetch('/cv/' + id + '/share', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': getCsrfToken()
             }
         })
         .then(response => response.json())
@@ -478,7 +502,8 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch('/cv/' + id, {
                 method: 'DELETE',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': getCsrfToken()
                 }
             })
             .then(response => response.json())

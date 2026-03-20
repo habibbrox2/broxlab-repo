@@ -624,7 +624,7 @@
             
             <div class="template-selector">
                 <button class="btn-template" onclick="toggleTemplateDropdown()">
-                    <i class="bi bi-grid"></i> {{ selected_template|capitalize }}
+                    <i class="bi bi-grid"></i> <span id="currentTemplateLabel">{{ selected_template|capitalize }}</span>
                     <i class="bi bi-chevron-down"></i>
                 </button>
                 <div id="templateDropdown" class="template-dropdown">
@@ -652,7 +652,7 @@
                 </div>
             </div>
             
-            <a href="/cv/{{ cv.id }}/export?template={{ selected_template }}" class="btn-action btn-pdf">
+            <a id="pdfExportLink" href="/cv/{{ cv.id }}/export?template={{ selected_template }}" class="btn-action btn-pdf">
                 <i class="bi bi-download"></i> PDF
             </a>
             
@@ -668,12 +668,13 @@
         <div class="editor-panel">
             <div class="sections-container">
                 {% for section in sections %}
-                    <div class="section-card" data-section-id="{{ section.id }}">
+                    <div class="section-card" data-section-id="{{ section.id }}" data-is-visible="{{ section.is_visible ? 1 : 0 }}">
                         <div class="section-header">
                             <h5 class="section-title">{{ section.title }}</h5>
                             <div class="section-actions">
                                 <button onclick="toggleSectionVisibility({{ section.id }})" 
                                     class="btn-section"
+                                    data-action="toggle-visibility"
                                     title="{{ section.is_visible ? 'Hide' : 'Show' }}">
                                     <i class="bi bi-{{ section.is_visible ? 'eye' : 'eye-slash' }}"></i>
                                 </button>
@@ -689,7 +690,7 @@
                             <div class="item-container">
                                 {% for item in section.items %}
                                     <div class="item-card" data-item-id="{{ item.id }}">
-                                        {{ _self.render_item_form(section.section_type, item, cv.id) }}
+                                        {{ _self.render_item_form(section.section_type, item, cv.id, section.id) }}
                                     </div>
                                 {% endfor %}
                             </div>
@@ -761,13 +762,13 @@
     </div>
 </div>
 
-{% macro render_item_form(section_type, item, cv_id) %}
+{% macro render_item_form(section_type, item, cv_id, section_id) %}
     {% if section_type == 'summary' %}
         <div class="item-fields">
             <div class="field-group">
                 <label class="field-label">Summary</label>
                 <textarea class="field-input field-textarea" rows="4" 
-                    onchange="updateItem({{ cv_id }}, {{ item.id }}, this.value)">{{ item.content.text ?? '' }}</textarea>
+                    onchange="updateItem({{ cv_id }}, {{ section_id }}, {{ item.id }}, this.value)">{{ item.content.text ?? '' }}</textarea>
             </div>
         </div>
     {% elseif section_type == 'experience' %}
@@ -775,15 +776,15 @@
             <div class="field-row">
                 <div class="field-group">
                     <label class="field-label">Company</label>
-                    <input type="text" class="field-input" placeholder="Company Name"
+                        <input type="text" class="field-input" placeholder="Company Name"
                         value="{{ item.content.company ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'company', this.value)">
+                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'company', this.value)">
                 </div>
                 <div class="field-group">
                     <label class="field-label">Position</label>
                     <input type="text" class="field-input" placeholder="Job Title"
                         value="{{ item.content.position ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'position', this.value)">
+                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'position', this.value)">
                 </div>
             </div>
             <div class="field-row">
@@ -791,19 +792,19 @@
                     <label class="field-label">Start Date</label>
                     <input type="text" class="field-input" placeholder="MM/YYYY"
                         value="{{ item.content.start_date ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'start_date', this.value)">
+                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'start_date', this.value)">
                 </div>
                 <div class="field-group">
                     <label class="field-label">End Date</label>
                     <input type="text" class="field-input" placeholder="MM/YYYY or Present"
                         value="{{ item.content.end_date ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'end_date', this.value)">
+                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'end_date', this.value)">
                 </div>
             </div>
             <div class="field-group">
                 <label class="field-label">Description</label>
                 <textarea class="field-input field-textarea" rows="3" placeholder="Describe your responsibilities and achievements"
-                    onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'description', this.value)">{{ item.content.description ?? '' }}</textarea>
+                    onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'description', this.value)">{{ item.content.description ?? '' }}</textarea>
             </div>
         </div>
     {% elseif section_type == 'education' %}
@@ -813,13 +814,13 @@
                     <label class="field-label">Institution</label>
                     <input type="text" class="field-input" placeholder="University/College Name"
                         value="{{ item.content.institution ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'institution', this.value)">
+                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'institution', this.value)">
                 </div>
                 <div class="field-group">
                     <label class="field-label">Degree</label>
                     <input type="text" class="field-input" placeholder="Bachelor's, Master's, etc."
                         value="{{ item.content.degree ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'degree', this.value)">
+                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'degree', this.value)">
                 </div>
             </div>
             <div class="field-row">
@@ -827,13 +828,13 @@
                     <label class="field-label">Start Date</label>
                     <input type="text" class="field-input" placeholder="MM/YYYY"
                         value="{{ item.content.start_date ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'start_date', this.value)">
+                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'start_date', this.value)">
                 </div>
                 <div class="field-group">
                     <label class="field-label">End Date</label>
                     <input type="text" class="field-input" placeholder="MM/YYYY"
                         value="{{ item.content.end_date ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'end_date', this.value)">
+                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'end_date', this.value)">
                 </div>
             </div>
         </div>
@@ -844,13 +845,13 @@
                     <label class="field-label">Skill Name</label>
                     <input type="text" class="field-input" placeholder="e.g., JavaScript, Project Management"
                         value="{{ item.content.name ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'name', this.value)">
+                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'name', this.value)">
                 </div>
                 <div class="field-group">
                     <label class="field-label">Proficiency (1-100)</label>
                     <input type="number" class="field-input" placeholder="85" min="1" max="100"
                         value="{{ item.content.proficiency ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'proficiency', this.value)">
+                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'proficiency', this.value)">
                 </div>
             </div>
         </div>
@@ -860,12 +861,12 @@
                 <label class="field-label">Project Name</label>
                 <input type="text" class="field-input" placeholder="Project Title"
                     value="{{ item.content.name ?? '' }}" 
-                    onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'name', this.value)">
+                    onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'name', this.value)">
             </div>
             <div class="field-group">
                 <label class="field-label">Description</label>
                 <textarea class="field-input field-textarea" rows="2" placeholder="Describe the project and your role"
-                    onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'description', this.value)">{{ item.content.description ?? '' }}</textarea>
+                    onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'description', this.value)">{{ item.content.description ?? '' }}</textarea>
             </div>
         </div>
     {% elseif section_type == 'certifications' %}
@@ -875,26 +876,26 @@
                     <label class="field-label">Certification Name</label>
                     <input type="text" class="field-input" placeholder="Certification Title"
                         value="{{ item.content.name ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'name', this.value)">
+                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'name', this.value)">
                 </div>
                 <div class="field-group">
                     <label class="field-label">Issuer</label>
                     <input type="text" class="field-input" placeholder="Issuing Organization"
                         value="{{ item.content.issuer ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'issuer', this.value)">
+                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'issuer', this.value)">
                 </div>
             </div>
             <div class="field-group">
                 <label class="field-label">Date</label>
                 <input type="text" class="field-input" placeholder="MM/YYYY"
                     value="{{ item.content.date ?? '' }}" 
-                    onchange="updateItemField({{ cv_id }}, {{ item.id }}, 'date', this.value)">
+                    onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'date', this.value)">
             </div>
         </div>
     {% endif %}
     
     <div class="item-actions">
-        <button onclick="deleteItem({{ cv_id }}, {{ item.id }})" class="btn-delete-item">
+        <button onclick="deleteItem({{ cv_id }}, {{ section_id }}, {{ item.id }})" class="btn-delete-item">
             <i class="bi bi-trash"></i> Delete
         </button>
     </div>
@@ -904,6 +905,11 @@
 let currentCvId = {{ cv.id }};
 let currentTemplate = '{{ selected_template }}';
 let autoSaveTimer = null;
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+const jsonHeaders = () => ({
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': csrfToken
+});
 
 // Auto-save functionality
 function scheduleAutoSave() {
@@ -936,11 +942,21 @@ document.addEventListener('click', function(e) {
     }
 });
 
+function setTemplateUi(template) {
+    const label = document.getElementById('currentTemplateLabel');
+    if (label) label.textContent = String(template || '').charAt(0).toUpperCase() + String(template || '').slice(1);
+
+    const pdfLink = document.getElementById('pdfExportLink');
+    if (pdfLink) {
+        pdfLink.href = `/cv/${currentCvId}/export?template=${encodeURIComponent(template)}`;
+    }
+}
+
 // Update CV title
 function updateCvTitle(id, title) {
     fetch('/cv/' + id, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: jsonHeaders(),
         body: JSON.stringify({ title })
     })
     .then(() => scheduleAutoSave());
@@ -949,8 +965,16 @@ function updateCvTitle(id, title) {
 // Change template
 function changeTemplate(template) {
     currentTemplate = template;
+    setTemplateUi(template);
     document.getElementById('templateDropdown').classList.remove('show');
-    loadPreview();
+
+    fetch('/cv/' + currentCvId, {
+        method: 'PUT',
+        headers: jsonHeaders(),
+        body: JSON.stringify({ template })
+    })
+    .then(() => scheduleAutoSave())
+    .finally(() => loadPreview());
 }
 
 // Load preview
@@ -969,11 +993,38 @@ function loadPreview() {
 }
 
 // Initial load
+setTemplateUi(currentTemplate);
 loadPreview();
 
 // Section visibility
 function toggleSectionVisibility(sectionId) {
-    // Implementation for toggling section visibility
+    const sectionCard = document.querySelector(`.section-card[data-section-id="${sectionId}"]`);
+    if (!sectionCard) return;
+
+    const current = String(sectionCard.dataset.isVisible || '1') === '1';
+    const next = current ? 0 : 1;
+
+    fetch(`/cv/${currentCvId}/sections/${sectionId}`, {
+        method: 'PUT',
+        headers: jsonHeaders(),
+        body: JSON.stringify({ is_visible: next })
+    })
+    .then(() => {
+        sectionCard.dataset.isVisible = String(next);
+
+        const btn = sectionCard.querySelector('button[data-action="toggle-visibility"]');
+        const icon = btn ? btn.querySelector('i') : null;
+
+        if (btn) {
+            btn.title = next ? 'Hide' : 'Show';
+        }
+        if (icon) {
+            icon.className = `bi bi-${next ? 'eye' : 'eye-slash'}`;
+        }
+
+        scheduleAutoSave();
+        loadPreview();
+    });
 }
 
 // Delete section
@@ -981,7 +1032,7 @@ function deleteSection(cvId, sectionId) {
     if (confirm('Are you sure you want to delete this section?')) {
         fetch(`/cv/${cvId}/sections/${sectionId}`, {
             method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' }
+            headers: jsonHeaders()
         })
         .then(() => location.reload());
     }
@@ -999,7 +1050,7 @@ function closeAddSectionModal() {
 function addSection(cvId, sectionType, title) {
     fetch(`/cv/${cvId}/sections`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: jsonHeaders(),
         body: JSON.stringify({ section_type: sectionType, title })
     })
     .then(() => location.reload());
@@ -1009,17 +1060,17 @@ function addSection(cvId, sectionType, title) {
 function addItem(cvId, sectionId, sectionType) {
     fetch(`/cv/${cvId}/sections/${sectionId}/items`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: jsonHeaders(),
         body: JSON.stringify({ item_type: sectionType, content: {} })
     })
     .then(() => location.reload());
 }
 
 // Update item
-function updateItem(cvId, itemId, content) {
-    fetch(`/cv/${cvId}/sections/0/items/${itemId}`, {
+function updateItem(cvId, sectionId, itemId, content) {
+    fetch(`/cv/${cvId}/sections/${sectionId}/items/${itemId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: jsonHeaders(),
         body: JSON.stringify({ content: { text: content } })
     })
     .then(() => {
@@ -1028,10 +1079,10 @@ function updateItem(cvId, itemId, content) {
     });
 }
 
-function updateItemField(cvId, itemId, field, value) {
-    fetch(`/cv/${cvId}/sections/0/items/${itemId}`, {
+function updateItemField(cvId, sectionId, itemId, field, value) {
+    fetch(`/cv/${cvId}/sections/${sectionId}/items/${itemId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: jsonHeaders(),
         body: JSON.stringify({ content: { [field]: value } })
     })
     .then(() => {
@@ -1041,11 +1092,11 @@ function updateItemField(cvId, itemId, field, value) {
 }
 
 // Delete item
-function deleteItem(cvId, itemId) {
+function deleteItem(cvId, sectionId, itemId) {
     if (confirm('Are you sure you want to delete this item?')) {
-        fetch(`/cv/${cvId}/sections/0/items/${itemId}`, {
+        fetch(`/cv/${cvId}/sections/${sectionId}/items/${itemId}`, {
             method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' }
+            headers: jsonHeaders()
         })
         .then(() => location.reload());
     }
@@ -1061,7 +1112,7 @@ function runAtsScore(cvId) {
     
     fetch(`/cv/${cvId}/ai/ats-score`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: jsonHeaders()
     })
     .then(response => response.json())
     .then(data => {

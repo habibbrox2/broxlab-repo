@@ -1,17 +1,14 @@
-# Cursor Rules — BroxBhai
+Read: `AGENTS.md`, then `docs/ai/AI_QUICK_CONTEXT.md`.
 
-Always follow:
-- `AGENTS.md`
-- `docs/PROJECT_CONTEXT.md`
-- `docs/CODING_CONVENTIONS.md`
-- `docs/AI_CODING_GUIDE.md`
+Rules:
+- Search first (`rg`), open only relevant files, then make minimal diffs.
+- Do not paste large files; cite `path:line`.
+- Use Models + prepared statements; avoid `SELECT *`.
+- CSRF required on all state-changing requests.
+- Never edit generated assets: `public_html/assets/**/dist/**`.
+- No secrets: never commit `.env` or paste real tokens/keys.
 
-Hard rules:
-- Don’t edit generated assets in `public_html/assets/**/dist/**` unless there is no source file.
-- Prefer adding routes in `app/Controllers/*.php` using `$router->get/post/...`.
-- Use prepared statements in Models; no raw SQL concatenation.
-- Require CSRF validation for POST/PUT/PATCH/DELETE endpoints.
-- Keep changes minimal; do not refactor unrelated code.
+Verify:
+- `php -l path/to/file.php`
+- `php scripts/quality_scan.php`
 
-When you change frontend source JS/CSS:
-- Run `npm run build` (or `npm run dev`) and ensure corresponding dist outputs remain consistent.

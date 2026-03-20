@@ -190,7 +190,6 @@ if (!window.BroxAssistantLoaded) {
             s.src = CONFIG.puterCdn;
             s.async = true;
             s.onload = () => {
-                console.log('[Puter] SDK loaded from CDN');
                 resolve(window.puter);
             };
             s.onerror = () => reject(new Error('Puter.js could not be loaded from CDN'));
@@ -1214,7 +1213,72 @@ if (!window.BroxAssistantLoaded) {
             const meta = document.createElement('div');
             meta.className = 'brox-ai-msg-meta';
             meta.textContent = new Date().toLocaleTimeString(this.lang === 'bn' ? 'bn-BD' : 'en-US', { hour: '2-digit', minute: '2-digit' });
-            msg.appendChild(meta);
+
+            // Keep UX consistent with addMessage(): add feedback + copy actions for assistant bubbles
+            if (role === 'assistant') {
+                const actions = document.createElement('div');
+                actions.className = 'brox-ai-msg-actions';
+
+                const feedback = document.createElement('div');
+                feedback.className = 'brox-ai-feedback';
+                feedback.innerHTML = `
+                    <button class="brox-ai-feedback-btn" data-rating="1" title="Poor"><i class="bi bi-hand-thumbs-down"></i></button>
+                    <button class="brox-ai-feedback-btn" data-rating="5" title="Excellent"><i class="bi bi-hand-thumbs-up"></i></button>
+                `;
+
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'brox-ai-copy-btn';
+                copyBtn.title = this.lang === 'bn' ? 'কপি করুন' : 'Copy';
+                copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+                copyBtn.addEventListener('click', async () => {
+                    try {
+                        const textToCopy = body.innerText || body.textContent || '';
+                        await navigator.clipboard.writeText(textToCopy);
+                        copyBtn.innerHTML = '<i class="bi bi-check2"></i>';
+                        setTimeout(() => {
+                            copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+                        }, 2000);
+                    } catch (e) {
+                        console.error('Copy failed', e);
+                    }
+                });
+
+                meta.style.marginTop = '0';
+                actions.appendChild(feedback);
+                actions.appendChild(copyBtn);
+                actions.appendChild(meta);
+                msg.appendChild(actions);
+                // messageId is injected from SSE meta (see sendMessage stream parser)
+                feedback.querySelectorAll('.brox-ai-feedback-btn').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const rating = btn.dataset.rating;
+                        const msgId = msg.dataset.messageId || '';
+                        const convId = this.conversationId || '';
+                        const csrfToken = this.csrfToken || '';
+                        if (!convId || !msgId) return;
+                        try {
+                            const resp = await fetch('/api/ai/feedback', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    conversation_id: convId,
+                                    message_id: msgId,
+                                    rating: rating,
+                                    csrf_token: csrfToken
+                                })
+                            });
+                            const result = await resp.json();
+                            if (result.success) {
+                                feedback.innerHTML = '<small>ধন্যবাদ!</small>';
+                            }
+                        } catch (e) {
+                            console.error('Feedback submission failed', e);
+                        }
+                    });
+                });
+            } else {
+                msg.appendChild(meta);
+            }
             this.nodes.body.appendChild(msg);
             this.nodes.body.scrollTop = this.nodes.body.scrollHeight;
             return body;
@@ -1274,7 +1338,6 @@ if (!window.BroxAssistantLoaded) {
             if (selectedModel && selectedModel !== this.currentModel) {
                 this.currentModel = selectedModel;
                 this.updateModelLabel();
-                console.log('[AutoModel] Selected:', selectedModel, '(complexity:', isComplex ? 'high' : 'low', ')');
             }
         }
 
@@ -1285,14 +1348,38 @@ if (!window.BroxAssistantLoaded) {
             this.updateModelStatus('connecting');
             this.updateAgenticStatus('Thinking', 'নলেজ বেস চেক করছি...');
             this.markActivity();
-            const typingEl = this.showTyping();
-            let typingRemoved = false;
-            const removeTyping = () => {
-                if (typingEl && !typingRemoved) {
-                    typingEl.remove();
-                    typingRemoved = true;
-                }
+            // Create assistant message bubble immediately and show "thinking" inside it
+            const msgBubble = this.createEmptyMessage('assistant');
+            const msgWrapper = msgBubble?.parentElement;
+
+            const showThinkingInBubble = () => {
+                if (!msgBubble || !msgWrapper) return;
+                msgWrapper.classList.add('brox-ai-thinking-msg');
+                msgBubble.innerHTML = `
+                    <div class="brox-ai-thinking-wrap" aria-live="polite" aria-busy="true">
+                        <div class="brox-ai-thinking-label">
+                            <span class="brox-ai-thinking-text">${this.t('thinking')}</span>
+                            <span class="brox-ai-thinking-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                        </div>
+                        <div class="brox-ai-thinking-skeleton" aria-hidden="true">
+                            <span class="brox-ai-skel-line skel-1"></span>
+                            <span class="brox-ai-skel-line skel-2"></span>
+                            <span class="brox-ai-skel-line skel-3"></span>
+                        </div>
+                    </div>
+                `;
             };
+
+            let thinkingCleared = false;
+            const clearThinking = () => {
+                if (!msgBubble || !msgWrapper) return;
+                if (thinkingCleared) return;
+                thinkingCleared = true;
+                msgWrapper.classList.remove('brox-ai-thinking-msg');
+                msgBubble.innerHTML = '';
+            };
+
+            showThinkingInBubble();
             try {
                 // Auto-select best model based on query before sending
                 await this.autoSelectModel();
@@ -1300,7 +1387,8 @@ if (!window.BroxAssistantLoaded) {
                     messages: this.history,
                     visitorToken: this.visitorToken,
                     context: this.user,
-                    stream: true
+                    stream: true,
+                    csrf_token: this.csrfToken || ''
                 };
                 if (this.currentModel) payload.model = this.currentModel;
                 const resp = await fetch(CONFIG.proxyUrl, {
@@ -1311,21 +1399,26 @@ if (!window.BroxAssistantLoaded) {
                 this.updateAgenticStatus('Agentic', 'উত্তর জেনারেট করছি...');
                 if (!resp.ok) {
                     this.updateAgenticStatus(null);
-                    removeTyping();
+                    clearThinking();
                     let errData = null;
                     try {
-                        errData = await resp.json();
+                        const ct = (resp.headers.get('content-type') || '').toLowerCase();
+                        if (ct.includes('application/json')) {
+                            errData = await resp.json();
+                        } else {
+                            errData = { error: (await resp.text()) || null };
+                        }
                     } catch (e) { }
                     const code = errData?.error_code || '';
                     if (code === 'no_providers' || code === 'providers_failed') {
+                        msgWrapper?.remove();
                         return await this.puterFallback();
                     }
                     const msg = errData?.error || this.t('err_conn');
                     this.updateModelStatus('offline');
-                    this.addMessage('assistant', msg);
+                    if (msgBubble) this.renderMarkdown(msgBubble, msg);
                     return;
                 }
-                const msgBubble = this.createEmptyMessage('assistant');
                 let fullReply = '';
                 const reader = resp.body.getReader();
                 const decoder = new TextDecoder('utf-8');
@@ -1343,8 +1436,18 @@ if (!window.BroxAssistantLoaded) {
                         }
                         try {
                             const obj = JSON.parse(raw);
+                            if (obj && obj.meta) {
+                                const meta = obj.meta || {};
+                                if (meta.conversation_id) {
+                                    this.conversationId = String(meta.conversation_id);
+                                }
+                                if (meta.message_id && msgWrapper) {
+                                    msgWrapper.dataset.messageId = String(meta.message_id);
+                                }
+                                continue;
+                            }
                             if (obj.content) {
-                                removeTyping();
+                                clearThinking();
                                 fullReply += obj.content;
                                 this.renderMarkdown(msgBubble, fullReply);
                                 this.nodes.body.scrollTop = this.nodes.body.scrollHeight;
@@ -1356,7 +1459,7 @@ if (!window.BroxAssistantLoaded) {
                         } catch (e) { }
                     }
                 }
-                removeTyping();
+                clearThinking();
                 this.isThinking = false;
                 this.updateLangUI();
                 this.updateAgenticStatus(null);
@@ -1364,12 +1467,7 @@ if (!window.BroxAssistantLoaded) {
                 // Check if response is incomplete and offer continue option
                 if (fullReply) {
                     const isIncomplete = !isComplete || this.isResponseIncomplete(fullReply);
-                    if (isIncomplete) {
-                        this.addMessage('assistant', fullReply);
-                        this.addContinueButton();
-                    } else {
-                        this.addMessage('assistant', fullReply);
-                    }
+                    if (isIncomplete) this.addContinueButton();
                     this.history.push({ role: 'assistant', content: fullReply, timestamp: new Date().toISOString() });
                     this.saveHistory();
                     this.renderQuickActions();
@@ -1381,9 +1479,9 @@ if (!window.BroxAssistantLoaded) {
                 this.isThinking = false;
                 this.updateLangUI();
                 this.updateAgenticStatus(null);
-                removeTyping();
+                clearThinking();
                 this.updateModelStatus('offline');
-                this.addMessage('assistant', this.t('err_conn'));
+                if (msgBubble) this.renderMarkdown(msgBubble, this.t('err_conn'));
             }
         }
 
@@ -1434,15 +1532,49 @@ if (!window.BroxAssistantLoaded) {
         async puterFallback() {
             this.addMessage('assistant', this.t('fallback'));
             this.updateModelStatus('offline', 'Fallback (Puter)');
+            let msgBubble = null;
+            let msgWrapper = null;
+            let clearThinking = () => {};
             try {
                 const puter = await loadPuter();
                 const lastMsg = this.history.filter(m => m.role === 'user').pop();
                 if (!lastMsg) return;
-                const msgBubble = this.createEmptyMessage('assistant');
+                msgBubble = this.createEmptyMessage('assistant');
+                msgWrapper = msgBubble?.parentElement;
                 const t0 = performance.now();
                 let reply = '';
+                let thinkingCleared = false;
+
+                const showThinkingInBubble = () => {
+                    if (!msgBubble || !msgWrapper) return;
+                    msgWrapper.classList.add('brox-ai-thinking-msg');
+                    msgBubble.innerHTML = `
+                        <div class="brox-ai-thinking-wrap" aria-live="polite" aria-busy="true">
+                            <div class="brox-ai-thinking-label">
+                                <span class="brox-ai-thinking-text">${this.t('thinking')}</span>
+                                <span class="brox-ai-thinking-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                            </div>
+                            <div class="brox-ai-thinking-skeleton" aria-hidden="true">
+                                <span class="brox-ai-skel-line skel-1"></span>
+                                <span class="brox-ai-skel-line skel-2"></span>
+                                <span class="brox-ai-skel-line skel-3"></span>
+                            </div>
+                        </div>
+                    `;
+                };
+
+                clearThinking = () => {
+                    if (!msgBubble || !msgWrapper) return;
+                    if (thinkingCleared) return;
+                    thinkingCleared = true;
+                    msgWrapper.classList.remove('brox-ai-thinking-msg');
+                    msgBubble.innerHTML = '';
+                };
+
+                showThinkingInBubble();
                 const stream = await puter.ai.chat(lastMsg.content, { stream: true });
                 for await (const chunk of stream) {
+                    clearThinking();
                     reply += chunk?.text || '';
                     this.renderMarkdown(msgBubble, reply);
                     this.nodes.body.scrollTop = this.nodes.body.scrollHeight;
@@ -1455,7 +1587,13 @@ if (!window.BroxAssistantLoaded) {
                 }
                 this.updateResponseMeta(msgBubble, t0);
             } catch (fallbackErr) {
-                this.addMessage('assistant', this.t('err_conn'));
+                try { clearThinking(); } catch (e) {}
+                if (msgWrapper) msgWrapper.classList.remove('brox-ai-thinking-msg');
+                if (msgBubble) {
+                    this.renderMarkdown(msgBubble, this.t('err_conn'));
+                } else {
+                    this.addMessage('assistant', this.t('err_conn'));
+                }
             }
         }
 

@@ -1,16 +1,19 @@
-# Windsurf AI Instructions — BroxBhai
+# Windsurf AI Instructions - BroxBhai (Token Saver)
 
-Primary context:
+Read first:
 - `AGENTS.md`
-- `docs/PROJECT_CONTEXT.md`
-- `docs/CODING_CONVENTIONS.md`
-- `docs/ai/AI_CODING_GUIDE.md`
+- `docs/ai/AI_QUICK_CONTEXT.md`
 
-Repo truths:
-- Routing: Register in `app/Controllers/*.php` using `$router->get/post/...`.
-- Views: Twig in `app/Views/`; use macros from `_macros/`.
-- Generated files: Edit sources (e.g., `public_html/assets/css/src/`) and build with `npm run build`.
-- Security: CSRF mandatory; no secrets in code (use `.env`).
+Hard rules:
+- Search first (`rg`), open only relevant files, then make minimal diffs.
+- State-changing requests must validate CSRF.
+- DB access goes in Models with prepared statements.
+- Do not edit generated assets in `public_html/assets/**/dist/**`.
+- No secrets: never commit `.env` or paste real tokens/keys.
 
-Windsurf-specific guidance:
-- For collaborative ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​  ​ 
+Verification:
+- `php -l path/to/file.php`
+- `php scripts/quality_scan.php`
+- `npm run lint` (if JS changed)
+- `npm run check:assets` (if assets changed)
+
