@@ -6,7 +6,7 @@
     "main": "index.js",
     "scripts": {
         "dev": "npx npm-run-all --parallel dev:firebase:v2 dev:tailwind dev:app:dist",
-        "build": "npm run clean:build && npx npm-run-all --sequential build:firebase:v2 build:app:dist build:tailwind",
+        "build": "npm run clean:build && npx npm-run-all --sequential build:firebase:v2 build:app:dist build:tailwind build:css",
         "build:debug": "npm run clean:build && npm-run-all --sequential build:firebase:v2:maps build:app:dist:maps build:tailwind",
         "build:prod": "npm run clean:build && npm-run-all --sequential build:firebase:v2:prod build:app:dist build:tailwind && npm run check:assets",
         "reset:dist": "npm run clean:build",
