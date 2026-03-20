@@ -54,7 +54,10 @@ class CvSectionModel
     public function getByCvId(int $cvId): array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cv_sections WHERE cv_id = ? ORDER BY `order` ASC"
+            "SELECT id, cv_id, section_type, title, `order`, is_visible, created_at, updated_at
+             FROM cv_sections
+             WHERE cv_id = ?
+             ORDER BY `order` ASC"
         );
         $stmt->bind_param('i', $cvId);
         $stmt->execute();
@@ -74,7 +77,10 @@ class CvSectionModel
     public function getById(int $id): ?array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cv_sections WHERE id = ? LIMIT 1"
+            "SELECT id, cv_id, section_type, title, `order`, is_visible, created_at, updated_at
+             FROM cv_sections
+             WHERE id = ?
+             LIMIT 1"
         );
         $stmt->bind_param('i', $id);
         $stmt->execute();

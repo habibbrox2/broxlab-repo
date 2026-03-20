@@ -122,11 +122,12 @@ if (!window.BroxAdminInstance) {
 
     function normalizeApiResponse(data) {
         if (!data || typeof data !== 'object') return { success: false, error: 'Invalid server response' };
+        const content = (typeof data.content === 'string') ? data.content : null;
         return {
             success: Boolean(data.success),
             error: data.error || data.message || null,
             error_code: data.error_code || data.code || null,
-            payload: data.data ?? data,
+            payload: content ?? (data.data ?? data),
             raw: data
         };
     }
@@ -169,14 +170,10 @@ if (!window.BroxAdminInstance) {
         }
 
         init() {
-            console.log('[FileHandler] init called');
-            console.log('[FileHandler] adminAiFileInput exists:', !!document.getElementById('adminAiFileInput'));
-
             if (!this.input) {
                 // Try to find the input after a short delay
                 setTimeout(() => {
                     this.input = document.getElementById('adminAiFileInput');
-                    console.log('[FileHandler] Delayed init, input found:', !!this.input);
                     if (this.input) {
                         this.input.addEventListener('change', (e) => this.handleFiles(e.target.files));
                     }
@@ -317,7 +314,7 @@ if (!window.BroxAdminInstance) {
             this.currentXhr = xhr;
             xhr.open('POST', ADMIN_CONFIG.uploadUrl);
             xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-            xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken || '');
+            xhr.setRequestHeader('X-CSRF-Token', csrfToken || '');
 
             xhr.upload.onprogress = (e) => {
                 if (!e.lengthComputable || !this.progressBar) return;
@@ -394,7 +391,6 @@ if (!window.BroxAdminInstance) {
             s.src = ADMIN_CONFIG.puterCdn;
             s.async = true;
             s.onload = () => {
-                console.log('[Admin Puter] SDK loaded');
                 resolve(window.puter);
             };
             s.onerror = () => reject(new Error('Puter.js CDN load failed'));
@@ -476,6 +472,7 @@ if (!window.BroxAdminInstance) {
             this.history = this.loadHistory();
             this.isThinking = false;
             this.csrfToken = csrfToken;
+            this.conversationId = null;
             this.currentModel = null;
             this.currentProvider = 'openrouter';
             this.preferredModel = '';
@@ -494,8 +491,6 @@ if (!window.BroxAdminInstance) {
             this.renderHistory();
             this.updateContext();
             this.startInactivityTimer();
-
-            console.log('[Admin Copilot] Initialized with', this.history.length, 'messages');
         }
 
         ensureProvidersBootstrapped() {
@@ -589,14 +584,10 @@ if (!window.BroxAdminInstance) {
             // Get mic button directly from DOM - more reliable than cached reference
             const micBtn = document.getElementById('adminAiMic');
 
-            console.log('[Voice] initVoiceInput called, button found:', !!micBtn);
-
             if (!micBtn) {
                 console.error('[Voice] Mic button not found in DOM');
                 return;
             }
-
-            console.log('[Voice] Mic button:', micBtn);
 
             // Check browser support
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -607,8 +598,6 @@ if (!window.BroxAdminInstance) {
                 micBtn.style.cursor = 'not-allowed';
                 return;
             }
-
-            console.log('[Voice] SpeechRecognition supported, creating instance...');
 
             try {
                 const recognition = new SpeechRecognition();
@@ -623,7 +612,6 @@ if (!window.BroxAdminInstance) {
                 const self = this;
 
                 recognition.onstart = function () {
-                    console.log('[Voice] Recording started');
                     self.isRecording = true;
                     micBtn.classList.add('recording');
                     micBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
@@ -631,7 +619,6 @@ if (!window.BroxAdminInstance) {
                 };
 
                 recognition.onresult = function (event) {
-                    console.log('[Voice] Result received');
                     let finalTranscript = '';
                     let interimTranscript = '';
 
@@ -679,7 +666,6 @@ if (!window.BroxAdminInstance) {
                 };
 
                 recognition.onend = function () {
-                    console.log('[Voice] Recording ended');
                     self.isRecording = false;
                     micBtn.classList.remove('recording');
                     micBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
@@ -690,13 +676,10 @@ if (!window.BroxAdminInstance) {
                 micBtn.onclick = function (e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('[Voice] Mic clicked, isRecording:', self.isRecording);
 
                     if (self.isRecording) {
-                        console.log('[Voice] Stopping recognition...');
                         recognition.stop();
                     } else {
-                        console.log('[Voice] Starting recognition...');
                         try {
                             recognition.start();
                         } catch (err) {
@@ -707,8 +690,6 @@ if (!window.BroxAdminInstance) {
                         }
                     }
                 };
-
-                console.log('[Voice] Voice input initialized successfully');
             } catch (e) {
                 console.error('[Voice] Initialization error:', e);
             }
@@ -861,7 +842,6 @@ if (!window.BroxAdminInstance) {
                 statusLabel = `Ready (${src}${ttlLabel})`;
             }
             this.updateStatus('ready', statusLabel);
-            console.log('[Admin Models] Loaded', models.length, 'for', provider);
 
             // Track selection changes (idempotent)
             this._modelChangeHandler = () => {
@@ -869,7 +849,6 @@ if (!window.BroxAdminInstance) {
                 if (newModel && newModel !== this.currentModel) {
                     this.currentModel = newModel;
                     this.updateModelLabel();
-                    console.log('[Admin Models] Selected:', this.currentModel);
                 }
             };
             this.nodes.modelSel.addEventListener('change', this._modelChangeHandler);
@@ -980,8 +959,6 @@ if (!window.BroxAdminInstance) {
             this.updateStatus('ready', 'Ready (Offline)');
             // Set model as offline when using fallback
             this.updateModelStatus('offline');
-            console.log('[Admin Models] Using fallback models');
-
             // Track selection changes (idempotent)
             this._modelChangeHandler = () => {
                 const newModel = this.nodes.modelSel.value;
@@ -1105,6 +1082,14 @@ if (!window.BroxAdminInstance) {
             // Toggle sidebar
             this.nodes.btn.onclick = () => this.toggleSidebar();
 
+            // Global keyboard shortcut: Ctrl+Alt+A
+            document.addEventListener('keydown', (e) => {
+                if (!e.ctrlKey || !e.altKey) return;
+                if (e.key !== 'a' && e.key !== 'A') return;
+                e.preventDefault();
+                this.toggleSidebar();
+            });
+
             // Toggle history sidebar
             if (this.nodes.historyToggle) {
                 this.nodes.historyToggle.onclick = () => this.toggleHistorySidebar();
@@ -1133,9 +1118,7 @@ if (!window.BroxAdminInstance) {
                 this.nodes.attach.onclick = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('[Attach] Button clicked, fileHandler:', !!this.fileHandler);
                     if (this.fileHandler?.input) {
-                        console.log('[Attach] Clicking file input');
                         this.fileHandler.input.click();
                     } else {
                         console.error('[Attach] fileHandler.input not found');
@@ -1437,7 +1420,6 @@ if (!window.BroxAdminInstance) {
                 // non-critical
             });
 
-            console.log('[Admin Copilot] Chat cleared');
         }
 
         renderHistory() {
@@ -1771,25 +1753,25 @@ if (!window.BroxAdminInstance) {
                     btn.addEventListener('click', async (e) => {
                         e.stopPropagation();
                         const rating = btn.dataset.rating;
-                        const msgIndex = msg.dataset.msgIndex || msgIndex;
-                        
-                        // Visual feedback
-                        feedback.innerHTML = '<small>✓</small>';
-                        
-                        // Send feedback to backend
+                        const conversationId = this.conversationId || '';
+                        const messageId = msg.dataset.messageId || '';
+                        const csrfToken = getCsrfToken() || '';
+                        if (!conversationId || !messageId) return;
+
                         try {
-                            const csrfToken = document.querySelector('[name="csrf_token"]')?.value || '';
                             await fetch('/api/ai/feedback', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
-                                    message_id: msgIndex,
+                                    conversation_id: conversationId,
+                                    message_id: messageId,
                                     rating: rating,
                                     csrf_token: csrfToken
                                 })
                             });
+                            feedback.innerHTML = '<small>✓</small>';
                         } catch (err) {
-                            console.log('Feedback submitted (offline mode)');
+                            // ignore
                         }
                     });
                 });
@@ -2440,7 +2422,7 @@ if (!window.BroxAdminInstance) {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
+                        'X-CSRF-Token': csrfToken
                     },
                     body: JSON.stringify({ url: providedUrl })
                 });
@@ -2843,7 +2825,6 @@ if (!window.BroxAdminInstance) {
                 if (availableModels.includes(selectedModel)) {
                     this.currentModel = selectedModel;
                     this.updateModelLabel();
-                    console.log('[Auto Model] Selected faster model:', selectedModel);
                 }
             }
         }
@@ -2860,7 +2841,6 @@ if (!window.BroxAdminInstance) {
                 const inactiveTime = now - this.lastActivity;
 
                 if (inactiveTime >= this.inactivityTimeout && this.history.length > 0) {
-                    console.log('[Inactivity] 5 min inactive - saving conversation to history');
                     this.archiveCurrentConversation();
                 }
             }, 30000);
@@ -2871,7 +2851,6 @@ if (!window.BroxAdminInstance) {
                 document.addEventListener(event, () => this.resetInactivityTimer(), { passive: true });
             });
 
-            console.log('[Inactivity] Timer started - will archive after 5 min of inactivity');
         }
 
         resetInactivityTimer() {
@@ -2905,7 +2884,6 @@ if (!window.BroxAdminInstance) {
             this.lastActivity = Date.now();
 
             this.updateStatus('ready', 'New conversation started');
-            console.log('[Inactivity] Conversation archived, new conversation started');
         }
 
         // ── AI Response (SSE Streaming) ─────────────────────────────────────────
@@ -2932,15 +2910,46 @@ if (!window.BroxAdminInstance) {
                 messages: this.history,
                 isAdmin: true,
                 context: ctx,
-                stream: true
+                stream: true,
+                csrf_token: getCsrfToken() || ''
             };
             if (this.currentProvider) payload.provider = this.currentProvider;
             if (this.currentModel) payload.model = this.currentModel;
 
             const msgIndex = this.history.length;
             const msgBubble = this.createEmptyMessage('assistant', msgIndex);
+            const msgWrapper = msgBubble?.parentElement;
             let fullReply = '';
             let lastError = null;
+
+            let thinkingCleared = false;
+            const showThinkingInBubble = () => {
+                if (!msgBubble || !msgWrapper) return;
+                msgWrapper.classList.add('brox-ai-thinking-msg');
+                msgBubble.innerHTML = `
+                    <div class="brox-ai-thinking-wrap" aria-live="polite" aria-busy="true">
+                        <div class="brox-ai-thinking-label">
+                            <span class="brox-ai-thinking-text">Copilot is thinking...</span>
+                            <span class="brox-ai-thinking-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                        </div>
+                        <div class="brox-ai-thinking-skeleton" aria-hidden="true">
+                            <span class="brox-ai-skel-line skel-1"></span>
+                            <span class="brox-ai-skel-line skel-2"></span>
+                            <span class="brox-ai-skel-line skel-3"></span>
+                        </div>
+                    </div>
+                `;
+            };
+
+            const clearThinking = () => {
+                if (!msgBubble || !msgWrapper) return;
+                if (thinkingCleared) return;
+                thinkingCleared = true;
+                msgWrapper.classList.remove('brox-ai-thinking-msg');
+                msgBubble.innerHTML = '';
+            };
+
+            showThinkingInBubble();
 
             const maxRetries = 2;
             const baseDelay = 1000;
@@ -2950,7 +2959,7 @@ if (!window.BroxAdminInstance) {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
+                        'X-CSRF-Token': getCsrfToken() || ''
                     },
                     body: JSON.stringify(payload)
                 });
@@ -2968,8 +2977,14 @@ if (!window.BroxAdminInstance) {
                     if (!norm.success) {
                         throw new Error(norm.error || 'AI error');
                     }
+                    if (json && json.conversation_id) {
+                        this.conversationId = String(json.conversation_id);
+                    }
+                    if (json && json.message_id && msgBubble?.parentElement) {
+                        msgBubble.parentElement.dataset.messageId = String(json.message_id);
+                    }
                     fullReply = typeof norm.payload === 'string' ? norm.payload : JSON.stringify(norm.payload);
-                    msgBubble.innerHTML = '';
+                    clearThinking();
                     this.renderWithArtifacts(msgBubble, fullReply, false);
                     return;
                 }
@@ -3008,9 +3023,20 @@ if (!window.BroxAdminInstance) {
                             throw new Error(obj.error);
                         }
 
+                        if (obj && obj.meta) {
+                            const meta = obj.meta || {};
+                            if (meta.conversation_id) {
+                                this.conversationId = String(meta.conversation_id);
+                            }
+                            if (meta.message_id && msgBubble?.parentElement) {
+                                msgBubble.parentElement.dataset.messageId = String(meta.message_id);
+                            }
+                            continue;
+                        }
+
                         if (obj.content) {
+                            clearThinking();
                             fullReply += obj.content;
-                            msgBubble.innerHTML = '';
                             this.renderWithArtifacts(msgBubble, fullReply, false);
                             this.scrollToBottom();
                         }
@@ -3046,6 +3072,7 @@ if (!window.BroxAdminInstance) {
             if (!fullReply) {
                 const msg = lastError ? lastError.message || 'AI error. Please try again.' : 'Received an empty response from the AI.';
                 if (!msgBubble.textContent.trim()) {
+                    clearThinking();
                     msgBubble.innerHTML = `<em>${this.escapeHtml(msg)}</em>`;
                 }
                 if (lastError) {
@@ -3090,7 +3117,54 @@ if (!window.BroxAdminInstance) {
             const meta = document.createElement('div');
             meta.className = 'brox-ai-msg-meta';
             meta.textContent = this.formatMetaTime();
-            msg.appendChild(meta);
+
+            if (role === 'assistant') {
+                const feedback = document.createElement('div');
+                feedback.className = 'brox-ai-feedback';
+                feedback.innerHTML = `
+                    <button class="brox-ai-feedback-btn" data-rating="1" title="Poor"><i class="bi bi-hand-thumbs-down"></i></button>
+                    <button class="brox-ai-feedback-btn" data-rating="5" title="Excellent"><i class="bi bi-hand-thumbs-up"></i></button>
+                `;
+
+                feedback.querySelectorAll('.brox-ai-feedback-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const rating = btn.dataset.rating;
+                        const conversationId = this.conversationId || '';
+                        const messageId = msg.dataset.messageId || '';
+                        const csrf = getCsrfToken() || '';
+                        if (!conversationId || !messageId) return;
+                        try {
+                            await fetch('/api/ai/feedback', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    conversation_id: conversationId,
+                                    message_id: messageId,
+                                    rating: rating,
+                                    csrf_token: csrf
+                                })
+                            });
+                            feedback.innerHTML = '<small>✓</small>';
+                        } catch {
+                            // ignore
+                        }
+                    });
+                });
+
+                const actions = document.createElement('div');
+                actions.className = 'brox-ai-msg-actions';
+                actions.style.display = 'flex';
+                actions.style.gap = '8px';
+                actions.style.alignItems = 'center';
+                actions.style.marginTop = '4px';
+                meta.style.marginTop = '0';
+                actions.appendChild(feedback);
+                actions.appendChild(meta);
+                msg.appendChild(actions);
+            } else {
+                msg.appendChild(meta);
+            }
 
             this.nodes.body.appendChild(msg);
             this.scrollToBottom();
@@ -3115,7 +3189,6 @@ if (!window.BroxAdminInstance) {
                 this.updateStatus('error', 'Fallback disabled');
                 return;
             }
-            console.log('[Fallback] Using Puter AI (Admin)');
             this.updateStatus('fallback', 'Using fallback AI');
 
             this.addMessage('assistant', '⚠️ Primary AI unavailable. Switching to Puter AI...');
@@ -3243,8 +3316,6 @@ if (!window.BroxAdminInstance) {
         // Expose helpers for Twig inline onclick calls
         window.testConnection = (id, model) => window.broxAdmin.testConnection(id, model);
         window.deleteProvider = (id) => window.broxAdmin.apiCall('/api/ai-system/delete-provider', { id });
-
-        console.log('[Admin Copilot] Ready');
     }
 
     if (document.readyState === 'loading') {

@@ -36,7 +36,10 @@ class CvShareModel
     public function getByToken(string $token): ?array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cv_shares WHERE token = ? LIMIT 1"
+            "SELECT id, cv_id, token, expires_at, created_at, updated_at
+             FROM cv_shares
+             WHERE token = ?
+             LIMIT 1"
         );
         $stmt->bind_param('s', $token);
         $stmt->execute();
@@ -65,13 +68,30 @@ class CvShareModel
     public function getByCvId(int $cvId): ?array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cv_shares WHERE cv_id = ? LIMIT 1"
+            "SELECT id, cv_id, token, expires_at, created_at, updated_at
+             FROM cv_shares
+             WHERE cv_id = ?
+             ORDER BY id DESC
+             LIMIT 1"
         );
         $stmt->bind_param('i', $cvId);
         $stmt->execute();
 
         $result = $stmt->get_result();
-        return $result->fetch_assoc() ?: null;
+        $share = $result->fetch_assoc();
+
+        // Check if expired
+        if ($share && $share['expires_at']) {
+            $expiresAt = new DateTime($share['expires_at']);
+            $now = new DateTime();
+
+            if ($expiresAt < $now) {
+                $this->delete((int)$share['id']);
+                return null;
+            }
+        }
+
+        return $share ?: null;
     }
 
     /**

@@ -1,25 +1,22 @@
 # AI Context Index (BroxBhai)
 
-এই ডক/ফাইলগুলা AI coding agent-এর জন্য "must-read context" হিসেবে কাজ করবে।
+Default (token-saver) read order:
+1) `AGENTS.md`
+2) `docs/ai/AI_QUICK_CONTEXT.md`
 
-## Top-level instructions
-- `AGENTS.md` (repo-wide guardrails + commands)
+Open only if needed:
+- `docs/ai/DEV_REFERENCE_LINKS.md` (external docs links)
+- `docs/PROJECT_CONTEXT.md` (business + integrations)
+- `docs/CODING_CONVENTIONS.md` (style + naming + patterns)
+- `docs/ai/AI_CODING_GUIDE.md` (AI workflows + helpers)
+- `docs/ROUTING_AND_MIDDLEWARE.md` (routing + middleware details)
+- `docs/GENERATED_ASSETS_AND_BUILD.md` (source vs generated)
+- `docs/ai/SYSTEM_SUMMARY.md` (AI tool system overview)
+- `docs/ai/KNOWN_PITFALLS.md` (gotchas)
+- `docs/ai/AGENT_MEMORY.md` (decision log + migrated history)
 
-## Project context
-- `docs/PROJECT_CONTEXT.md` (stack + directories + integrations)
-- `docs/CODING_CONVENTIONS.md` (naming + patterns + do/don't)
-- `docs/ai/AI_CODING_GUIDE.md` (common workflows + helpers + pitfalls)
-
-## Additional deep-dive context
-- `docs/LOCAL_DEV_AND_COMMANDS.md` (setup/run/build/lint/scripts)
-- `docs/ROUTING_AND_MIDDLEWARE.md` (how routing + middleware actually work)
-- `docs/GENERATED_ASSETS_AND_BUILD.md` (what's source vs generated)
-- `docs/ai/SYSTEM_SUMMARY.md` (AI tool system v3.0 + autoscaling overview)
-- `docs/ai/AGENT_MEMORY.md` (decision log + pattern registry)
-- `docs/ai/KNOWN_PITFALLS.md` (pitfalls + gotchas to avoid)
-
-## Agent-specific entrypoints
-- Cursor: `.cursorrules`
-- Claude Code: `CLAUDE.md`
-- Windsurf: `.windsurfrules`
+Editor entrypoints:
+- Cursor: `editor/.cursorrules`, `editor/CURSOR.md`
+- Windsurf: `editor/.windsurfrules`, `editor/WINDSURF.md`
+- Claude Code: `editor/CLAUDE.md`
 - GitHub Copilot: `.github/copilot-instructions.md`

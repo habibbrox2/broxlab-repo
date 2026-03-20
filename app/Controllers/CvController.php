@@ -36,6 +36,91 @@ if (!function_exists('jsonResponse')) {
     }
 }
 
+// ========== CV HELPERS ==========
+
+if (!function_exists('cvGetTemplateAllowlist')) {
+    /**
+     * Build a template allowlist from `app/Views/cv/templates/*.twig`.
+     * Returns template slugs (e.g. modern, minimal).
+     */
+    function cvGetTemplateAllowlist(): array
+    {
+        $dir = __DIR__ . '/../Views/cv/templates';
+        $files = glob($dir . '/*.twig') ?: [];
+        $templates = [];
+
+        foreach ($files as $file) {
+            $name = basename($file, '.twig');
+            if ($name === '' || $name[0] === '_') {
+                continue;
+            }
+            $templates[] = $name;
+        }
+
+        $templates = array_values(array_unique($templates));
+        sort($templates);
+        return $templates;
+    }
+}
+
+if (!function_exists('cvResolveTemplate')) {
+    function cvResolveTemplate(?string $requested, ?string $cvTemplate, array $allowlist, string $default = 'modern'): string
+    {
+        $requested = is_string($requested) ? trim($requested) : '';
+        $cvTemplate = is_string($cvTemplate) ? trim($cvTemplate) : '';
+
+        if ($requested !== '' && in_array($requested, $allowlist, true)) {
+            return $requested;
+        }
+
+        if ($cvTemplate !== '' && in_array($cvTemplate, $allowlist, true)) {
+            return $cvTemplate;
+        }
+
+        return in_array($default, $allowlist, true) ? $default : ($allowlist[0] ?? $default);
+    }
+}
+
+if (!function_exists('cvDefaultSectionTypes')) {
+    function cvDefaultSectionTypes(): array
+    {
+        return [
+            'summary' => 'Professional Summary',
+            'experience' => 'Work Experience',
+            'education' => 'Education',
+            'skills' => 'Skills',
+            'projects' => 'Projects',
+            'certifications' => 'Certifications'
+        ];
+    }
+}
+
+if (!function_exists('cvMergeContent')) {
+    /**
+     * Merge incoming content into base content.
+     * - Arrays merge recursively.
+     * - Null means "unset the key" (to allow clearing fields).
+     */
+    function cvMergeContent(array $base, array $incoming): array
+    {
+        foreach ($incoming as $key => $value) {
+            if ($value === null) {
+                unset($base[$key]);
+                continue;
+            }
+
+            if (is_array($value) && isset($base[$key]) && is_array($base[$key])) {
+                $base[$key] = cvMergeContent($base[$key], $value);
+                continue;
+            }
+
+            $base[$key] = $value;
+        }
+
+        return $base;
+    }
+}
+
 // ========== CV LIST (DASHBOARD) ==========
 
 $router->get('/cv', ['middleware' => ['auth']], function () use ($twig, $cvModel) {
@@ -49,39 +134,15 @@ $router->get('/cv', ['middleware' => ['auth']], function () use ($twig, $cvModel
 });
 
 // ========== CREATE NEW CV PAGE ==========
-$router->get('/cv/new', ['middleware' => ['auth']], function () use ($twig, $cvModel, $cvSectionModel) {
-    $userId = getCurrentUserId();
-    
-    $title = 'My CV';
-    $cvId = $cvModel->create($userId, $title);
-    
-    if ($cvId) {
-        // Create default sections
-        $sectionTypes = [
-            'summary' => 'Professional Summary',
-            'experience' => 'Work Experience',
-            'education' => 'Education',
-            'skills' => 'Skills',
-            'projects' => 'Projects',
-            'certifications' => 'Certifications'
-        ];
-
-        foreach ($sectionTypes as $type => $sectionTitle) {
-            $cvSectionModel->create($cvId, $type, $sectionTitle);
-        }
-        
-        logActivity("CV Created", "cv", $cvId, ['title' => $title], 'success');
-        header('Location: /cv/' . $cvId);
-    } else {
-        showMessage("Failed to create CV", "danger");
-        header('Location: /cv');
-    }
-    exit;
+$router->get('/cv/new', ['middleware' => ['auth']], function () use ($twig) {
+    echo $twig->render('cv/new.twig', [
+        'page_title' => 'Create CV'
+    ]);
 });
 
 // ========== CREATE CV ==========
 
-$router->post('/cv', ['middleware' => ['auth', 'csrf']], function () use ($cvModel) {
+$router->post('/cv', ['middleware' => ['auth', 'csrf']], function () use ($cvModel, $cvSectionModel) {
     $userId = requireAuth();
 
     $title = sanitize_input($_POST['title'] ?? 'My CV');
@@ -90,18 +151,10 @@ $router->post('/cv', ['middleware' => ['auth', 'csrf']], function () use ($cvMod
 
     if ($cvId) {
         // Create default sections
-        $sectionTypes = [
-            'summary' => 'Professional Summary',
-            'experience' => 'Work Experience',
-            'education' => 'Education',
-            'skills' => 'Skills',
-            'projects' => 'Projects',
-            'certifications' => 'Certifications'
-        ];
+        $sectionTypes = cvDefaultSectionTypes();
 
-        foreach ($sectionTypes as $type => $title) {
-            $cvSectionModel = new CvSectionModel($GLOBALS['mysqli']);
-            $cvSectionModel->create($cvId, $type, $title);
+        foreach ($sectionTypes as $type => $sectionTitle) {
+            $cvSectionModel->create($cvId, $type, $sectionTitle);
         }
 
         logActivity("CV Created", "cv", $cvId, ['title' => $title], 'success');
@@ -138,17 +191,13 @@ $router->get('/cv/{id}', ['middleware' => ['auth']], function ($id) use ($twig, 
         $section['items'] = $cvItemModel->getBySectionId($section['id']);
     }
     
-    // Get selected template from query string
-    $selectedTemplate = $_GET['template'] ?? 'modern';
-    $validTemplates = ['modern', 'minimal', 'ats', 'professional', 'creative'];
-    if (!in_array($selectedTemplate, $validTemplates)) {
-        $selectedTemplate = 'modern';
-    }
+    $templates = cvGetTemplateAllowlist();
+    $selectedTemplate = cvResolveTemplate($_GET['template'] ?? null, $cv['template'] ?? null, $templates, 'modern');
 
     echo $twig->render('cv/editor.twig', [
         'cv' => $cv,
         'sections' => $sections,
-        'templates' => $validTemplates,
+        'templates' => $templates,
         'selected_template' => $selectedTemplate,
         'page_title' => 'Edit CV: ' . $cv['title']
     ]);
@@ -166,6 +215,18 @@ $router->put('/cv/{id}', ['middleware' => ['auth', 'csrf']], function ($id) use 
     }
 
     $data = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($data)) {
+        $data = [];
+    }
+
+    if (isset($data['title'])) {
+        $data['title'] = sanitize_input((string)$data['title']);
+    }
+
+    if (isset($data['template'])) {
+        $templates = cvGetTemplateAllowlist();
+        $data['template'] = cvResolveTemplate((string)$data['template'], null, $templates, 'modern');
+    }
 
     if ($cvModel->update($id, $data)) {
         logActivity("CV Updated", "cv", $id, $data, 'success');
@@ -177,13 +238,21 @@ $router->put('/cv/{id}', ['middleware' => ['auth', 'csrf']], function ($id) use 
 
 // ========== DELETE CV ==========
 
-$router->delete('/cv/{id}', ['middleware' => ['auth', 'csrf']], function ($id) use ($cvModel, $cvShareModel) {
+$router->delete('/cv/{id}', ['middleware' => ['auth', 'csrf']], function ($id) use ($cvModel, $cvShareModel, $cvVersionModel) {
     $userId = requireAuth();
     $id = (int)$id;
 
     // Check ownership
     if (!$cvModel->belongsToUser($id, $userId)) {
         jsonResponse(['error' => 'Forbidden'], 403);
+    }
+
+    // Create a final version snapshot (best effort)
+    try {
+        $cvVersionModel->createVersion($id, $userId);
+        $cvVersionModel->pruneVersions($id, 10);
+    } catch (Throwable $e) {
+        // Ignore versioning failures to avoid blocking delete
     }
 
     // Delete share if exists
@@ -345,6 +414,13 @@ $router->put('/cv/{cv_id}/sections/{section_id}/items/{item_id}', ['middleware' 
 
     $data = json_decode(file_get_contents('php://input'), true);
 
+    // Merge content to avoid partial overwrites (null unsets keys)
+    if (isset($data['content']) && is_array($data['content'])) {
+        $existing = $cvItemModel->getById($item_id);
+        $existingContent = is_array($existing['content'] ?? null) ? $existing['content'] : [];
+        $data['content'] = cvMergeContent($existingContent, $data['content']);
+    }
+
     if ($cvItemModel->update($item_id, $data)) {
         jsonResponse(['success' => true]);
     } else {
@@ -431,7 +507,8 @@ $router->get('/cv/{id}/preview', ['middleware' => ['auth']], function ($id) use 
         return $s['is_visible'];
     });
 
-    $template = $_GET['template'] ?? 'modern';
+    $templates = cvGetTemplateAllowlist();
+    $template = cvResolveTemplate($_GET['template'] ?? null, $cv['template'] ?? null, $templates, 'modern');
 
     echo $twig->render('cv/templates/' . $template . '.twig', [
         'cv' => $cv,
@@ -441,7 +518,7 @@ $router->get('/cv/{id}/preview', ['middleware' => ['auth']], function ($id) use 
 
 // ========== EXPORT PDF ==========
 
-$router->get('/cv/{id}/export', ['middleware' => ['auth']], function ($id) use ($twig, $cvModel, $cvSectionModel, $cvItemModel) {
+$router->get('/cv/{id}/export', ['middleware' => ['auth']], function ($id) use ($twig, $cvModel, $cvSectionModel, $cvItemModel, $cvAnalyticsModel) {
     $userId = requireAuth();
     $id = (int)$id;
 
@@ -465,7 +542,15 @@ $router->get('/cv/{id}/export', ['middleware' => ['auth']], function ($id) use (
         return $s['is_visible'];
     });
 
-    $template = $_GET['template'] ?? 'modern';
+    $templates = cvGetTemplateAllowlist();
+    $template = cvResolveTemplate($_GET['template'] ?? null, $cv['template'] ?? null, $templates, 'modern');
+
+    // Track download event (best effort)
+    try {
+        $cvAnalyticsModel->trackEvent($id, 'download', ['source' => 'export', 'template' => $template]);
+    } catch (Throwable $e) {
+        // Ignore analytics failures
+    }
 
     // Render HTML
     $html = $twig->render('cv/templates/' . $template . '.twig', [
@@ -482,7 +567,7 @@ $router->get('/cv/{id}/export', ['middleware' => ['auth']], function ($id) use (
 
 // ========== SHARE CV ==========
 
-$router->post('/cv/{id}/share', ['middleware' => ['auth', 'csrf']], function ($id) use ($cvModel, $cvShareModel) {
+$router->post('/cv/{id}/share', ['middleware' => ['auth', 'csrf']], function ($id) use ($cvModel, $cvShareModel, $cvAnalyticsModel) {
     $userId = requireAuth();
     $id = (int)$id;
 
@@ -495,6 +580,12 @@ $router->post('/cv/{id}/share', ['middleware' => ['auth', 'csrf']], function ($i
     $existingShare = $cvShareModel->getByCvId($id);
 
     if ($existingShare) {
+        try {
+            $cvAnalyticsModel->trackEvent($id, 'share', ['source' => 'share_link', 'existing' => true]);
+        } catch (Throwable $e) {
+            // Ignore analytics failures
+        }
+
         jsonResponse([
             'success' => true,
             'token' => $existingShare['token'],
@@ -506,6 +597,13 @@ $router->post('/cv/{id}/share', ['middleware' => ['auth', 'csrf']], function ($i
 
     if ($token) {
         logActivity("CV Shared", "cv", $id, [], 'success');
+
+        try {
+            $cvAnalyticsModel->trackEvent($id, 'share', ['source' => 'share_link', 'existing' => false]);
+        } catch (Throwable $e) {
+            // Ignore analytics failures
+        }
+
         jsonResponse([
             'success' => true,
             'token' => $token,
@@ -575,7 +673,10 @@ $router->get('/cv/view/{token}', function ($token) use ($twig, $cvModel, $cvSect
         return $s['is_visible'];
     });
 
-    echo $twig->render('cv/templates/modern.twig', [
+    $templates = cvGetTemplateAllowlist();
+    $template = cvResolveTemplate($_GET['template'] ?? null, $cv['template'] ?? null, $templates, 'modern');
+
+    echo $twig->render('cv/templates/' . $template . '.twig', [
         'cv' => $cv,
         'sections' => $visibleSections,
         'is_public' => true
@@ -700,8 +801,12 @@ $router->post('/cv/bulk/delete', ['middleware' => ['auth', 'csrf']], function ()
             continue;
         }
 
-        // Create final version before deletion
-        $cvVersionModel->createVersion($cvId, $userId);
+        // Create final version before deletion (best effort)
+        try {
+            $cvVersionModel->createVersion($cvId, $userId);
+            $cvVersionModel->pruneVersions($cvId, 10);
+        } catch (Throwable $e) {
+        }
 
         // Delete share if exists
         $cvShareModel->deleteByCvId($cvId);
@@ -737,6 +842,8 @@ $router->post('/cv/bulk/export', ['middleware' => ['auth', 'csrf']], function ()
     }
 
     $exports = [];
+    $templates = cvGetTemplateAllowlist();
+    $template = cvResolveTemplate($template, null, $templates, 'modern');
 
     foreach ($cvIds as $cvId) {
         $cvId = (int)$cvId;

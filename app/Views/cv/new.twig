@@ -1,0 +1,29 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ page_title|default('Create CV') }}{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 720px;">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h3 class="mb-2">Create a new CV</h3>
+            <p class="text-muted mb-4">Choose a title (optional). Default sections will be created automatically.</p>
+
+            <form method="POST" action="/cv">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token|default('') }}">
+
+                <div class="mb-3">
+                    <label for="cvTitle" class="form-label">CV Title</label>
+                    <input id="cvTitle" name="title" type="text" class="form-control" placeholder="My CV">
+                </div>
+
+                <div class="d-flex gap-2">
+                    <a href="/cv" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Create CV</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

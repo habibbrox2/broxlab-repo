@@ -1,23 +1,20 @@
-# Claude Code Instructions — BroxBhai
+# Claude Code Instructions - BroxBhai (Token Saver)
 
-Primary context:
+Read first:
 - `AGENTS.md`
-- `docs/PROJECT_CONTEXT.md`
-- `docs/CODING_CONVENTIONS.md`
-- `docs/ai/AI_CODING_GUIDE.md`
+- `docs/ai/AI_QUICK_CONTEXT.md`
 
-Repo realities:
-- Entry point is `public_html/index.php`.
-- Routes are registered in `app/Controllers/*.php` using `$router->get/post/...`.
-- Generated assets live in `public_html/assets/**/dist/**` — edit sources, then run `npm run build`.
+Hard rules:
+- Search first (`rg`), open only relevant files, then make minimal diffs.
+- Use Models + prepared statements; avoid `SELECT *`.
+- Enforce CSRF for state-changing requests (`validateCsrfToken(...)` / middleware pattern).
+- Never edit generated assets in `public_html/assets/**/dist/**` (edit sources, then `npm run build`).
+- No secrets: never commit `.env` or paste real tokens/keys.
+- Prefer Twig templates for output; avoid raw HTML echo in controllers.
 
-Safety:
-- Enforce CSRF validation for state-changing routes.
-- Use Models + prepared statements for DB.
-- Don’t add secrets; `.env` must never be committed.
-
-Suggested verification:
-- `php -l <changed.php>` (syntax)
+Verification:
+- `php -l path/to/file.php`
 - `php scripts/quality_scan.php`
 - `npm run lint` (if JS changed)
 - `npm run check:assets` (if assets changed)
+

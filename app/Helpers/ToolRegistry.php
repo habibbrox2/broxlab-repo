@@ -986,11 +986,20 @@ class ToolRegistry
             return null;
         }
 
-        // Support /tool:arg1 arg2=value format
+        $cmd = null;
+        $argsRaw = '';
+
+        // Support "/tool:..." format
         if (preg_match('/^\/([a-z][a-z0-9_]*)(?::(.+))?$/', $text, $m)) {
             $cmd = strtolower($m[1]);
             $argsRaw = trim((string)($m[2] ?? ''));
+        } elseif (preg_match('/^\/([a-z][a-z0-9_]*)(?:\s+(.+))?$/s', $text, $m)) {
+            // Support "/tool ..." format (space-separated), e.g. "/summarize https://example.com"
+            $cmd = strtolower($m[1]);
+            $argsRaw = trim((string)($m[2] ?? ''));
+        }
 
+        if ($cmd !== null) {
             // Parse arguments - support key=value pairs and positional args
             $args = [];
             if ($argsRaw !== '') {

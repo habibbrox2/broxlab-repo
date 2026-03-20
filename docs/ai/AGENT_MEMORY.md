@@ -105,3 +105,29 @@ context নেয়।
 | Raw `mysqli_query()` | Model + prepared statements | SQL injection risk |
 | `$_SESSION` direct access | `AuthManager` methods | inconsistent state |
 | Inline CSS in Twig | Tailwind utility classes | unmaintainable |
+
+---
+
+### [BROX-DOCS-001] Token-saver AI instruction baseline
+- Date: 2026-03-20
+- Agent: BroxBhai Coding Agent
+- Context: Editor agents (Cursor/Windsurf/Claude/Copilot) were ingesting large, noisy instruction files (mojibake, emojis, long references) which increased token cost and reduced consistency.
+- Decision: Introduced `docs/ai/AI_QUICK_CONTEXT.md` and rewrote `AGENTS.md`, `SKILL.md`, and `editor/*` rules to be short, repo-specific, and pointer-first (default context <= 2 files).
+- Alternatives Considered: Shrinking every existing long doc (rejected: higher churn; humans still benefit from deep-dive docs).
+- Trade-offs: Some details moved out of default view; mitigated by clear pointers in `docs/ai/AI_CONTEXT_INDEX.md`.
+- Follow-up needed: No (refresh when architecture changes).
+
+---
+
+## Historical AGENTS.md Changelog (migrated)
+These entries were removed from `AGENTS.md` to keep default editor context small.
+
+| Version | Date | Agent | Change |
+|---------|------|-------|--------|
+| 2.0.2 | 2026-03-20 | BroxBhai | Fixed presets Quick Create JSON parse error by adding CSRF token + safe `fetchJson()` handling in `app/Views/admin/autocontent/presets.twig`. |
+| 2.0.1 | 2026-03-20 | BroxBhai | Fixed admin Copilot not opening (removed duplicate Twig click handler; ensured admin variant loads `partials/ai-assistant/script.twig` on public layout; added Ctrl+Alt+A shortcut in `public_html/ai/js/ai-admin.js`). |
+| 3.0 | 2026-03-19 | BroxBhai | Enhanced AI Tool System: added parallel execution (pcntl_fork), streaming tool calls (SSE), circuit breaker pattern, retry logic with exponential backoff, improved error categorization; new API endpoints for tool execution. |
+| 2.2 | 2026-03-17 | BroxBhai | Fixed Public Assistant UI style issues; refactored assistant script (`public_html/ai/js/assistant.js`) for readability and performance; added documentation updates for UI/UX and script best-practices. |
+| 2.1 | 2026-03-17 | BroxBhai | Centralised AI routes into `app/Routes/AISystemRoutes.php`; introduced `app/Helpers/JsonResponse.php` for uniform JSON responses and added CSRF middleware to all POST AI endpoints. |
+| 2.0 | 2026-03-17 | BroxBhai Init | Multi-agent roles, self-improvement loop, security checklist, pitfall tracking added. |
+| 1.0 | — | Original | Initial agent instructions. |

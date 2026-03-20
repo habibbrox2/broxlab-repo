@@ -163,8 +163,85 @@
 
 ---
 
+### [PIT-013] Duplicate Route Registration Overrides Earlier Routes
+- Severity: 🟠 High
+- Category: Logic / UX
+- Symptom: Same endpoint (e.g. `POST /api/ai/feedback`) different behavior depending on load order; frontend suddenly breaks (JSON parse errors / wrong response shape).
+- Root Cause: `public_html/index.php` loads `app/Routes/*.php` early, then later `require_once` loads every `app/Controllers/*.php`. If both register the same method+path, the later registration wins (route collision).
+- Fix: Centralize shared `/api/*` routes in `app/Routes/AISystemRoutes.php` and remove/guard overlapping controller registrations (use a constant guard like `BROX_AI_API_ROUTES_HANDLED`).
+- Avoid by: Before adding a new `/api/*` route, search for existing registrations across `app/Routes/` + `app/Controllers/`.
+- Resolved: হ্যাঁ (2026-03-20)
+
+---
+
+### [PIT-014] Chat Feedback Breaks Without Server Message IDs
+- Severity: 🟠 High
+- Category: UX / Logic
+- Symptom: Thumbs up/down appears to work but backend rejects (`Invalid feedback data`) or stores unusable rows; using client-side indexes (`0,1,2...`) doesn’t match DB `ai_messages.id`.
+- Root Cause: Feedback endpoint expects real `conversation_id` + DB `message_id`, but UI used local indexes and/or didn’t receive IDs from chat stream.
+- Fix: Send SSE meta first: `{"meta":{"conversation_id":...,"message_id":...}}` and set dataset IDs in the UI. Then post to `POST /api/ai/feedback` with those values.
+- Avoid by: Never assume “message index” equals DB id; always use server-provided IDs.
+- Resolved: হ্যাঁ (2026-03-20)
+
+---
+
 ## Resolved Pitfalls Archive
 *(resolved হলে এখানে সরিয়ে আনো)*
+
+### [PIT-010] Admin Copilot Button Click Toggles Twice (Doesn’t Open)
+- Severity: ðŸŸ  High
+- Category: UX / Logic
+- Symptom: Admin panel-এ Copilot FAB click করলে কিছুই হয় না (open হয় না / সাথে সাথে close হয়ে যায়)।
+- Root Cause: একই button-এ ২টা handler ছিল — Twig inline script `toggleSidebar()` কল করত, আবার `ai-admin.js`-ও `btn.onclick` দিয়ে `toggleSidebar()` call করত → single click এ double-toggle।
+- Fix: Twig inline loader/shortcut script সরিয়ে দিয়ে keyboard shortcut + toggle logic `public_html/ai/js/ai-admin.js`-এ রাখো।
+- Avoid by: UI toggle/shortcut logic এক জায়গায় রাখো (JS file), Twig inline click-handler দিয়ে already-bound button-এ toggle করো না।
+- Resolved: à¦¹à§à¦¯à¦¾à¦ (2026-03-20)
+
+---
+
+### [PIT-011] Public Layout Shows Admin Copilot UI but Doesn’t Load Admin Script
+- Severity: ðŸŸ¡ Medium
+- Category: UX / Logic
+- Symptom: Public route-এ (e.g. `/`) admin user login থাকলেও Copilot button/UI দেখা যায়, কিন্তু click করলে open হয় না।
+- Root Cause: `app/Views/layout.twig`-এ admin branch-এ `partials/ai-assistant/admin.twig` include ছিল, কিন্তু `assistant_variant='admin'` set করে `partials/ai-assistant/script.twig` include করা ছিল না → `ai-admin.js` load হয়নি।
+- Fix: `app/Views/layout.twig`-এ admin branch-এ `assistant_variant = 'admin'` set করে `partials/ai-assistant/script.twig` include করো।
+- Avoid by: Assistant UI include করলে corresponding script loader (`partials/ai-assistant/script.twig`) একই branch-এ রাখো (public/admin দুটোতেই)।
+- Resolved: à¦¹à§à¦¯à¦¾à¦ (2026-03-20)
+
+---
+
+### [PIT-012] AJAX JSON Parse Error (Unexpected token '<') on CSRF-Protected Endpoint
+- Severity: ðŸŸ  High
+- Category: UX / Logic / Security
+- Symptom: Console error: `Unexpected token '<', "<!DOCTYPE "... is not valid JSON` (AJAX expects JSON কিন্তু server HTML ফিরিয়ে দেয়)।
+- Root Cause: CSRF middleware থাকা endpoint-এ JS fetch থেকে `csrf_token` পাঠানো হয়নি → middleware error/redirect HTML page return করে, তারপর `response.json()` parse fail করে।
+- Fix: POST `FormData`/urlencoded body-এ `csrf_token` append করো (meta `csrf-token` থেকে); এবং JSON parse করার আগে `content-type` check করো।
+- Avoid by: Shared `fetchJson()` helper ব্যবহার করো যা `Accept: application/json` সেট করে + non-JSON response হলে friendly error দেয়।
+- Resolved: à¦¹à§à¦¯à¦¾à¦ (2026-03-20)
+
+---
+
+### [PIT-013] Public Assistant Thinking UI Not Shown Inside Assistant Bubble (and Duplicate Stream Messages)
+- Severity: ðŸŸ¡ Medium
+- Category: UX / Logic
+- Symptom: Thinking state-এ `.brox-ai-msg.brox-ai-assistant` empty থাকে / thinking আলাদা element-এ দেখায়; stream শেষে একই reply দুইবার দেখা যায়।
+- Root Cause: `getAIResponse()` thinking indicator হিসেবে আলাদা `.brox-ai-typing` div ব্যবহার করত, পরে `createEmptyMessage()` দিয়ে stream bubble বানাত, আবার শেষে `addMessage()` দিয়ে একই reply duplicate করত।
+- Fix: `getAIResponse()` শুরুতেই একবার assistant bubble তৈরি করে সেই bubble-এর ভিতর thinking skeleton render করো; প্রথম content আসলেই clear করে একই bubble-এ stream render করো; শেষে আর `addMessage()` দিয়ে duplicate message বানিও না।
+- Avoid by: Streaming UI-তে “one message per assistant response” invariant বজায় রাখো; placeholder/typing indicator সবসময় target bubble-এর ভেতরে রাখো।
+- Resolved: à¦¹à§à¦¯à¦¾à¦ (2026-03-20)
+
+---
+
+### [PIT-014] Mojibake (à¦…à¦¿) Bengali Text Shows in UI
+- Severity: ðŸŸ¡ Medium
+- Category: UX / Content
+- Symptom: UI text-এ `à¦¹à§à¦¯à¦¾à¦` টাইপের ভাঙা বাংলা দেখা যায়।
+- Root Cause: Source file-এ বাংলা string ভুল encoding/incorrect copy-paste হয়ে “mojibake” আকারে committed ছিল (UTF-8 bytes ভুলভাবে decode হয়ে literal `à¦...` characters হয়ে যায়)।
+- Fix: Affected strings-গুলোকে সঠিক বাংলা UTF-8 text দিয়ে replace করো (JS/Twig), এবং editor-এ UTF-8 encoding নিশ্চিত করো।
+- Avoid by: UI-facing বাংলা string যোগ করার পর browser + IDE-এ verify করো; repo files UTF-8 (without lossy conversions) হিসেবে রাখো।
+- Resolved: à¦¹à§à¦¯à¦¾à¦ (2026-03-20)
+
+---
 
 | ID | Title | Resolved Date | Fix Summary |
 |----|-------|---------------|-------------|

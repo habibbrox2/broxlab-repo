@@ -583,10 +583,10 @@
 {% include 'partials/ai-assistant/public.twig' %}
 {% include 'partials/ai-assistant/script.twig' %}
     {% elseif is_admin_user %}
-        {% include 'partials/ai-assistant/admin.twig' %}
+        {% set assistant_variant = 'admin' %}
+{% include 'partials/ai-assistant/admin.twig' %}
+{% include 'partials/ai-assistant/script.twig' %}
     {% endif %}
-
-    <script src="{{ asset('/ai/js/assistant.js') }}"></script>
 
 </body>
 </html>

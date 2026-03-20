@@ -681,6 +681,80 @@ body {
     border-bottom-left-radius: 4px;
 }
 
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-msg.brox-ai-assistant.brox-ai-thinking-msg {
+    position: relative;
+    overflow: hidden;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-msg.brox-ai-assistant.brox-ai-thinking-msg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        110deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.08) 25%,
+        rgba(255, 255, 255, 0.14) 50%,
+        rgba(255, 255, 255, 0.08) 75%,
+        transparent 100%
+    );
+    transform: translateX(-120%);
+    animation: brox-ai-shimmer 1.4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes brox-ai-shimmer {
+    0% {
+        transform: translateX(-120%);
+    }
+    100% {
+        transform: translateX(120%);
+    }
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-thinking-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-thinking-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-thinking-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-skel-line {
+    display: block;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    animation: brox-ai-pulse 1.4s ease-in-out infinite;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-skel-line.skel-1 {
+    width: 72%;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-skel-line.skel-2 {
+    width: 92%;
+    animation-delay: 0.15s;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-skel-line.skel-3 {
+    width: 58%;
+    animation-delay: 0.3s;
+}
+
 :where(#adminAiShell, #publicAssistantChat) .brox-ai-msg-avatar {
     width: 28px;
     height: 28px;

@@ -254,6 +254,204 @@ ToolRegistry::register('analyze_error_logs', function(array $args, ?mysqli $mysq
 ToolRegistry::register('summarize_text', function(array $args, ?mysqli $mysqli) {
     $input = $args['input'] ?? '';
     if (empty($input)) throw new InvalidArgumentException('Text content is required for summarization');
+    $input = trim((string)$input);
+
+    $isUrl = function (string $value): bool {
+        if ($value === '') return false;
+        if (!filter_var($value, FILTER_VALIDATE_URL)) return false;
+        $parts = @parse_url($value);
+        if (!$parts || empty($parts['scheme']) || empty($parts['host'])) return false;
+        $scheme = strtolower((string)$parts['scheme']);
+        return $scheme === 'http' || $scheme === 'https';
+    };
+
+    $fetchUrlAsText = function (string $url): array {
+        $parts = @parse_url($url);
+        if (!$parts || empty($parts['host'])) {
+            throw new InvalidArgumentException('Invalid URL');
+        }
+
+        $scheme = strtolower((string)($parts['scheme'] ?? ''));
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            throw new InvalidArgumentException('Only http/https URLs are allowed');
+        }
+
+        $host = strtolower((string)$parts['host']);
+        $port = isset($parts['port']) ? (int)$parts['port'] : null;
+        if ($port !== null && !in_array($port, [80, 443], true)) {
+            throw new InvalidArgumentException('Only standard ports 80/443 are allowed');
+        }
+
+        $blockedHosts = [
+            'localhost',
+            '127.0.0.1',
+            '0.0.0.0',
+            '::1',
+            '169.254.169.254',
+            'metadata.google.internal',
+        ];
+        foreach ($blockedHosts as $blocked) {
+            if ($host === $blocked || str_ends_with($host, '.' . $blocked)) {
+                throw new InvalidArgumentException('Blocked host');
+            }
+        }
+        if (str_ends_with($host, '.local') || str_ends_with($host, '.lan') || str_contains($host, '.intranet')) {
+            throw new InvalidArgumentException('Blocked host');
+        }
+
+        // SSRF protection: block private/reserved IPs (best-effort)
+        $ips = [];
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            $ips = [$host];
+        } else {
+            $resolved = @gethostbynamel($host);
+            if (is_array($resolved)) {
+                $ips = $resolved;
+            }
+        }
+        foreach ($ips as $ip) {
+            if (
+                filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false
+                && filter_var($ip, FILTER_VALIDATE_IP) !== false
+            ) {
+                throw new InvalidArgumentException('Blocked IP address');
+            }
+        }
+
+        // Fetch with Guzzle when available, otherwise fallback to file_get_contents
+        $html = '';
+        $contentType = '';
+        $finalUrl = $url;
+
+        if (class_exists(\GuzzleHttp\Client::class)) {
+            $client = new \GuzzleHttp\Client([
+                'timeout' => 10,
+                'connect_timeout' => 5,
+                'allow_redirects' => ['max' => 3, 'strict' => true, 'referer' => true],
+                'http_errors' => false,
+                'headers' => [
+                    'User-Agent' => 'BroxBhaiBot/1.0 (+https://broxbhai.local)',
+                    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,text/plain;q=0.8,*/*;q=0.1',
+                ],
+            ]);
+            $resp = $client->get($url);
+            $status = (int)$resp->getStatusCode();
+            if ($status < 200 || $status >= 300) {
+                throw new RuntimeException("HTTP {$status}");
+            }
+            $contentType = strtolower((string)$resp->getHeaderLine('content-type'));
+            $html = (string)$resp->getBody();
+            $finalUrl = (string)$resp->getHeaderLine('x-final-url') ?: $url;
+        } else {
+            $ctx = stream_context_create([
+                'http' => [
+                    'timeout' => 10,
+                    'follow_location' => 1,
+                    'max_redirects' => 3,
+                    'header' => "User-Agent: BroxBhaiBot/1.0\r\nAccept: text/html, text/plain\r\n",
+                ]
+            ]);
+            $html = @file_get_contents($url, false, $ctx);
+            if ($html === false) {
+                throw new RuntimeException('Failed to fetch URL');
+            }
+            $contentType = '';
+            if (isset($http_response_header) && is_array($http_response_header)) {
+                foreach ($http_response_header as $h) {
+                    if (stripos($h, 'content-type:') === 0) {
+                        $contentType = strtolower(trim(substr($h, 13)));
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Size guard (1MB)
+        if (strlen($html) > 1024 * 1024) {
+            $html = substr($html, 0, 1024 * 1024);
+        }
+
+        $title = null;
+        $text = $html;
+        $isHtml = ($contentType === '' || str_contains($contentType, 'text/html') || str_contains($contentType, 'application/xhtml+xml'));
+        if ($isHtml) {
+            $prev = libxml_use_internal_errors(true);
+            $dom = new \DOMDocument();
+            $loaded = @$dom->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
+            if ($loaded) {
+                $nodes = $dom->getElementsByTagName('title');
+                if ($nodes && $nodes->length > 0) {
+                    $title = trim((string)$nodes->item(0)->textContent);
+                }
+                $xpath = new \DOMXPath($dom);
+                foreach ($xpath->query('//script|//style|//noscript|//svg') as $node) {
+                    $node->parentNode?->removeChild($node);
+                }
+                $text = (string)$dom->textContent;
+            }
+            libxml_clear_errors();
+            libxml_use_internal_errors($prev);
+        }
+
+        $text = preg_replace('/\s+/u', ' ', trim((string)$text));
+        if ($text === '') {
+            throw new RuntimeException('No readable text found on page');
+        }
+
+        // Keep tool output bounded
+        $maxChars = 20000;
+        if (function_exists('mb_strlen') && mb_strlen($text, 'UTF-8') > $maxChars) {
+            $text = mb_substr($text, 0, $maxChars, 'UTF-8');
+        } elseif (strlen($text) > $maxChars) {
+            $text = substr($text, 0, $maxChars);
+        }
+
+        return [
+            'url' => $url,
+            'final_url' => $finalUrl,
+            'title' => $title,
+            'content_type' => $contentType,
+            'text' => $text,
+        ];
+    };
+
+    if ($isUrl($input)) {
+        $page = $fetchUrlAsText($input);
+        $textToSummarize = $page['text'] ?? '';
+
+        // Reuse the same extractive summarizer logic below
+        $sentences = preg_split('/(?<=[.!?])\s+/', $textToSummarize, -1, PREG_SPLIT_NO_EMPTY);
+        if (count($sentences) <= 3) {
+            $summary = $textToSummarize;
+        } else {
+            $scored = [];
+            foreach ($sentences as $i => $s) {
+                $score = 0;
+                if ($i === 0 || $i === count($sentences) - 1) $score += 3;
+                $len = strlen($s);
+                if ($len > 50 && $len < 200) $score += 2;
+                if (preg_match('/\d+/', $s)) $score += 1;
+                if (preg_match('/important|key|main|critical|significant|result/i', $s)) $score += 1;
+                $scored[$i] = $score;
+            }
+            arsort($scored);
+            $top = array_slice(array_keys($scored), 0, min(5, count($sentences)));
+            sort($top);
+            $summary = implode(' ', array_map(fn($idx) => $sentences[$idx], $top));
+        }
+
+        return [
+            'type' => 'url',
+            'url' => $page['url'] ?? $input,
+            'final_url' => $page['final_url'] ?? $input,
+            'title' => $page['title'] ?? null,
+            'summary' => $summary,
+            'original_length' => strlen($textToSummarize),
+            'summary_length' => strlen($summary),
+            'compression' => (strlen($textToSummarize) > 0) ? round((strlen($summary) / strlen($textToSummarize)) * 100) . '%' : null,
+            'excerpt' => substr($textToSummarize, 0, 400),
+        ];
+    }
     
     $sentences = preg_split('/(?<=[.!?])\s+/', $input, -1, PREG_SPLIT_NO_EMPTY);
     if (count($sentences) <= 3) {
@@ -288,14 +486,14 @@ ToolRegistry::register('summarize_text', function(array $args, ?mysqli $mysqli) 
     ];
 }, [
     'name' => 'Summarize Text',
-    'description' => 'Generate a concise summary of provided text using extractive summarization. Preserves the most important sentences based on position and content. Use this when asked to summarize long text, logs, or reports.',
+    'description' => 'Generate a concise summary of provided text OR a public URL (http/https). For URLs, fetches the page, extracts readable text, and returns an extractive summary with metadata. Use this when asked to summarize long text, logs, reports, or a web page link.',
     'namespace' => 'content',
     'parameters' => [
         'type' => 'object',
         'properties' => [
             'input' => [
                 'type' => 'string',
-                'description' => 'The text content to summarize. Can be any text including logs, reports, or documentation.'
+                'description' => 'Text content OR a URL (http/https) to summarize.'
             ]
         ],
         'required' => ['input'],

@@ -22,7 +22,7 @@ function aiChatSendJson(array $payload, int $status = 200): void
     echo json_encode($payload, JSON_UNESCAPED_UNICODE);
 }
 
-function aiChatStreamContent(string $content): void
+function aiChatStreamContent(string $content, array $meta = []): void
 {
     header('Content-Type: text/event-stream');
     header('Cache-Control: no-cache');
@@ -33,6 +33,12 @@ function aiChatStreamContent(string $content): void
         @ob_end_flush();
     }
     @ob_implicit_flush(true);
+
+    if (!empty($meta)) {
+        echo 'data: ' . json_encode(['meta' => $meta], JSON_UNESCAPED_UNICODE) . "\n\n";
+        @ob_flush();
+        flush();
+    }
 
     $chunkSize = 200;
     if (function_exists('mb_strlen')) {
@@ -920,6 +926,8 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
 
     $startTime = microtime(true);
     $convId = null;
+    $userMessageId = null;
+    $assistantMessageId = null;
     if (!$isAdmin) {
         $visitorToken = $input['visitorToken'] ?? null;
         if ($visitorToken) {
@@ -938,7 +946,26 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
 
             $convId = $chatModel->getOrCreateConversation(null, $visitorToken, $ipAddress, $device, $location, $userAgent);
             if ($convId && $lastUserMessage !== '') {
-                $chatModel->addMessage($convId, 'user', $lastUserMessage);
+                $userMessageId = $chatModel->addMessage($convId, 'user', $lastUserMessage);
+            }
+        }
+    } else {
+        $userId = AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null);
+        if ($userId) {
+            $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
+            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+            $device = 'Desktop';
+            if (preg_match('/Mobile|Android|iPhone|iPad/i', $userAgent ?? '')) {
+                $device = 'Mobile';
+                if (preg_match('/iPad/i', $userAgent ?? '')) {
+                    $device = 'Tablet';
+                }
+            }
+            $location = 'Unknown';
+
+            $convId = $chatModel->getOrCreateConversation((int)$userId, null, $ipAddress, $device, $location, $userAgent);
+            if ($convId && $lastUserMessage !== '') {
+                $userMessageId = $chatModel->addMessage($convId, 'user', $lastUserMessage);
             }
         }
     }
@@ -1055,7 +1082,7 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     if ($convId && !empty($response['success'])) {
         $aiText = $response['content'] ?? '';
         if ($aiText !== '') {
-            $chatModel->addMessage($convId, 'assistant', $aiText);
+            $assistantMessageId = $chatModel->addMessage((int)$convId, 'assistant', $aiText);
         }
     }
 
@@ -1082,7 +1109,11 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
             ], $status);
             return;
         }
-        aiChatStreamContent($response['content'] ?? '');
+        aiChatStreamContent($response['content'] ?? '', [
+            'conversation_id' => $convId,
+            'message_id' => $assistantMessageId,
+            'user_message_id' => $userMessageId
+        ]);
         return;
     }
 
@@ -1090,6 +1121,8 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         aiChatSendJson([
             'success' => true,
             'content' => $response['content'] ?? '',
+            'conversation_id' => $convId,
+            'message_id' => $assistantMessageId,
             'usage' => $response['usage'] ?? []
         ]);
         return;
@@ -1157,6 +1190,8 @@ $router->get('/admin/ai-system', ['middleware' => ['auth', 'admin_only']], funct
 });
 
 // ==================== GET /api/ai-system/frontend ====================
+// NOTE: API routes are centralized in app/Routes/AISystemRoutes.php.
+if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
 $router->get('/api/ai-system/frontend', function () use ($mysqli) {
     $aiProvider = new AIProvider($mysqli);
     $settings = $aiProvider->getSettings();
@@ -1243,6 +1278,7 @@ $router->get('/api/ai-system/admin-defaults', ['middleware' => ['auth', 'admin_o
         'default_model' => $settings['default_model'] ?? ''
     ]);
 });
+}
 
 // ==================== POST /admin/ai-system/save ====================
 $router->post('/admin/ai-system/save', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
@@ -1571,13 +1607,15 @@ $router->get('/api/ai/settings', function () use ($mysqli) {
     echo json_encode($settings);
 });
 
-// POST /api/ai/test
+// POST /api/ai/test (centralized in app/Routes/AISystemRoutes.php)
+if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
 $router->post('/api/ai/test', function () use ($mysqli) {
     $aiProvider = new AIProvider($mysqli);
     $result = $aiProvider->testConnection($_POST['provider'] ?? '', $_POST['model'] ?? null);
     header('Content-Type: application/json');
     echo json_encode($result);
 });
+}
 
 // GET /api/ai/ollama/status - Check Ollama server status
 $router->get('/api/ai/ollama/status', function () use ($mysqli) {
@@ -1624,7 +1662,8 @@ $router->get('/api/ai/current-provider', function () use ($mysqli) {
     ]);
 });
 
-// GET /api/ai/default-provider (Admin only)
+// GET /api/ai/default-provider (Admin only) (centralized in app/Routes/AISystemRoutes.php)
+if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
 $router->get('/api/ai/default-provider', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     $aiProvider = new AIProvider($mysqli);
     $settings = $aiProvider->getSettings();
@@ -1641,8 +1680,10 @@ $router->get('/api/ai/default-provider', ['middleware' => ['auth', 'admin_only']
         'provider' => $provider
     ]);
 });
+}
 
-// GET /api/ai/models?provider=fireworks
+// GET /api/ai/models?provider=fireworks (centralized in app/Routes/AISystemRoutes.php)
+if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
 $router->get('/api/ai/models', function () use ($mysqli) {
     $providerName = $_GET['provider'] ?? '';
     $scope = $_GET['scope'] ?? '';
@@ -1698,12 +1739,12 @@ $router->get('/api/ai/models', function () use ($mysqli) {
             ];
         }
 
-        echo json_encode([
-            'success' => true,
-            'providers' => $providers,
-            'provider_meta' => $providerMeta
-        ]);
-        return;
+    echo json_encode([
+        'success' => true,
+        'providers' => $providers,
+        'provider_meta' => $providerMeta
+    ]);
+    return;
     }
 
     $provider = $aiProvider->getByName($providerName);
@@ -1793,8 +1834,10 @@ $router->get('/api/ai/models', function () use ($mysqli) {
 
     echo json_encode($payload);
 });
+}
 
-// POST /api/ai/chat (Public assistant) - CSRF protected
+// POST /api/ai/chat (Public assistant) - centralized in app/Routes/AISystemRoutes.php
+if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
 $router->post('/api/ai/chat', function () use ($mysqli) {
     run_middleware('rate_limit', [
         'scope' => 'ai_public_chat',
@@ -1903,6 +1946,7 @@ $router->post('/api/ai-system/chat', ['middleware' => ['auth', 'admin_only', 'cs
 
     aiChatHandleRequest($input, $mysqli, true, true);
 });
+}
 
 // ==================== Knowledge Base Management (Admin) ====================
 require_once __DIR__ . '/../Models/AIKnowledge.php';
@@ -2050,27 +2094,8 @@ $router->post('/api/admin/ai-knowledge/delete', ['middleware' => ['auth', 'admin
 });
 
 // ==================== Self-Improving KB API ====================
-
-// POST /api/ai/feedback - Record user feedback on AI response
-$router->post('/api/ai/feedback', ['middleware' => ['csrf']], function () use ($mysqli) {
-    $model = new AIKnowledge($mysqli);
-    
-    $knowledgeId = (int)($_POST['knowledge_id'] ?? 0);
-    $isHelpful = isset($_POST['is_helpful']) ? (bool)$_POST['is_helpful'] : false;
-    $feedbackText = $_POST['feedback_text'] ?? null;
-    $sessionId = $_POST['session_id'] ?? null;
-    $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
-    
-    if (!$knowledgeId) {
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'error' => 'Knowledge ID required']);
-        return;
-    }
-    
-    $ok = $model->recordFeedback($knowledgeId, $isHelpful, $feedbackText, $sessionId, $userId);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => $ok]);
-});
+// NOTE: KB feedback endpoint moved to app/Routes/AISystemRoutes.php as:
+// POST /api/ai/knowledge/feedback
 
 // GET /api/admin/ai-knowledge/suggestions - Get improvement suggestions
 $router->get('/api/admin/ai-knowledge/suggestions', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
