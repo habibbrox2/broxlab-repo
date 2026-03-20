@@ -186,6 +186,15 @@
 ---
 
 ## Resolved Pitfalls Archive
+
+### [PIT-015] “Cannot declare class … already in use” on production releases
+- Severity: ðŸ”´ Critical
+- Category: Build / Runtime
+- Symptom: Admin/API endpoints return HTTP 500 with `Cannot declare class AIProvider, because the name is already in use`.
+- Root Cause: `require_once` paths differ between symlinked `current/` vs real `releases/<timestamp>/` paths, so PHP treats them as different includes and loads the same file twice.
+- Fix: Normalize includes for shared files with `require_once (realpath($path) ?: $path);` (applied to all `AIProvider.php` include sites).
+- Avoid by: Use a single canonical root constant for includes or always `realpath(...)` for shared manual includes (especially under release/symlink deploys).
+- Resolved: à¦¹à§à¦¯à¦¾à¦ (2026-03-21)
 *(resolved হলে এখানে সরিয়ে আনো)*
 
 ### [PIT-010] Admin Copilot Button Click Toggles Twice (Doesn’t Open)

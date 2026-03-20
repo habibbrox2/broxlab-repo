@@ -121,7 +121,8 @@ class PromptLoader
 
         // 3) fallback to DB setting if still empty or missing system_prompt
         if ((!isset($prompts['system_prompt']) || trim((string)$prompts['system_prompt']) === '') && $mysqli) {
-            require_once __DIR__ . '/../Models/AIProvider.php';
+            $aiProviderPath = realpath(__DIR__ . '/../Models/AIProvider.php');
+            require_once $aiProviderPath ?: (__DIR__ . '/../Models/AIProvider.php');
             $aiProvider = new AIProvider($mysqli);
             if ($context === 'admin') {
                 $prompts['system_prompt'] = $aiProvider->getSetting(

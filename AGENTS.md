@@ -1,5 +1,5 @@
 # BroxBhai - AI Agent Guardrails (Repo Root)
-# Version: 2.0.7 | Auto-updated by agent loop
+# Version: 2.0.8 | Auto-updated by agent loop
 
 Default read order (keep token cost low):
 1) `AGENTS.md`
@@ -35,8 +35,8 @@ Self-improvement loop (only after non-trivial work):
 ## Changelog (latest 5)
 | Version | Date | Agent | Change |
 |---------|------|-------|--------|
+| 2.0.8 | 2026-03-21 | BroxBhai | AutoContent production hardening: fixed AIProvider redeclare 500, enforced CSRF on admin APIs, improved pipeline robustness, added schema health warning. |
 | 2.0.7 | 2026-03-20 | BroxBhai | Removed unused duplicate agent instruction files to reduce repo noise and editor context size. |
 | 2.0.6 | 2026-03-20 | BroxBhai | Token-cost optimization: added `docs/ai/AI_QUICK_CONTEXT.md`, minimized editor rules + `SKILL.md`, migrated older AGENTS changelog to `docs/ai/AGENT_MEMORY.md`. |
 | 2.0.5 | 2026-03-20 | BroxBhai | Centralized assistant/coplay API routes in `app/Routes/AISystemRoutes.php`, enforced CSRF for public chat, added SSE meta IDs for feedback, removed duplicate assistant script include, stripped production console logs. |
 | 2.0.4 | 2026-03-20 | BroxBhai | Fixed mojibake Bengali UI text (replaced broken strings with proper UTF-8 Bengali in assistant + admin templates). |
-| 2.0.3 | 2026-03-20 | BroxBhai | Improved public assistant thinking UI (thinking shows inside `.brox-ai-msg.brox-ai-assistant` with animation; removed duplicate streamed assistant message). |

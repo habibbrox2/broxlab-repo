@@ -84,8 +84,19 @@ context নেয়।
 
 ---
 
-## Pattern Registry
+## Decision Log (append-only)
+
+### [BROX-AUTOCONTENT-001] AutoContent production hardening (fatal fix + CSRF + schema guardrails)
+- Date: 2026-03-21
+- Agent: BroxBhai Coding Agent
+- Context: Production AutoContent endpoints were returning HTTP 500 due to a fatal redeclaration of `AIProvider`, and several AutoContent admin API endpoints lacked CSRF protection.
+- Decision: Normalized `AIProvider.php` includes using `require_once (realpath($path) ?: $path);`, fixed AutoContent AI enhancer compatibility with the legacy article schema, enforced CSRF on AutoContent admin APIs, and added a dashboard schema health warning.
+- Alternatives Considered: Namespacing `AIProvider` and moving all includes to Composer autoload (rejected for now: higher churn/risk across the existing codebase).
+- Trade-offs: Keeps `AIProvider` as a global class; relies on consistent include patterns to avoid duplicates.
+- Follow-up needed: Optional — introduce a canonical app root constant for includes, and/or migrate `AIProvider` to a namespaced PSR-4 class.
 *(agents নতুন reusable pattern আবিষ্কার করলে এখানে যোগ করে)*
+
+## Pattern Registry
 
 | Pattern | Location | Notes |
 |---------|----------|-------|

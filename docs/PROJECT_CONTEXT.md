@@ -213,6 +213,12 @@ Template location: `app/Views/`
 - Enforced CSRF required for public assistant chat (`POST /api/ai/chat`).
 - Added SSE meta (`conversation_id`, `message_id`) so UI feedback can reference real DB message IDs instead of client-side indexes.
 
+### [2026-03-21] AutoContent production hardening (CSRF + schema + fatal fix)
+- Fixed production 500 caused by `AIProvider` being included twice under symlinked release paths by normalizing `require_once` to `realpath(...)` in all AIProvider include sites.
+- Corrected AutoContent AI processing to be schema-tolerant (supports legacy `title/content/excerpt` fields; avoids calling non-existent metadata methods; avoids updating missing optional columns).
+- Enforced CSRF on AutoContent admin API endpoints and aligned collect endpoints to POST-only usage.
+- Added a schema health warning block to the AutoContent dashboard to surface missing tables/columns/auto-increment early.
+
 ---
 
 ## 📄 License
