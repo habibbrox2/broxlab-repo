@@ -5,6 +5,12 @@
  * Manages AI providers and settings for the application
  */
 
+// Defensive guard: some production deployments may accidentally include this file twice
+// via different absolute paths (e.g. symlinked release directories). Avoid a fatal redeclare.
+if (class_exists('AIProvider', false)) {
+    return;
+}
+
 class AIProvider
 {
     private $mysqli;
