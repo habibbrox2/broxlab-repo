@@ -6,7 +6,8 @@ require_once __DIR__ . '/EnhancedCache.php';
 require_once __DIR__ . '/RateLimiter.php';
 require_once __DIR__ . '/UnifiedCache.php';
 require_once __DIR__ . '/FreeApiOptimizer.php';
-require_once __DIR__ . '/../../Models/AIProvider.php';
+$aiProviderPath = realpath(__DIR__ . '/../../Models/AIProvider.php');
+require_once $aiProviderPath ?: (__DIR__ . '/../../Models/AIProvider.php');
 // ModelRouter provides automatic provider/model selection based on message complexity
 require_once __DIR__ . '/Layer/ModelRouter.php';
 

@@ -30,6 +30,7 @@ $autoContentModel->ensureTablesExist();
 $router->get('/admin/autocontent', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
     try {
         $model = new AutoContentModel($mysqli);
+        $schemaHealth = $model->getSchemaHealth();
         $stats = $model->getStats();
         $recent_items = $model->getRecentArticles();
         $sources_count = count($model->getActiveSources());
@@ -39,6 +40,7 @@ $router->get('/admin/autocontent', ['middleware' => ['auth', 'admin_only']], fun
         'stats' => $stats,
         'recent_items' => $recent_items,
         'sources_count' => $sources_count,
+        'schema_health' => $schemaHealth,
         'current_page' => 'autocontent-dashboard'
         ]);
     }
@@ -617,7 +619,7 @@ $router->get('/admin/autocontent/stats/chart', ['middleware' => ['auth', 'admin_
  * Detect CSS Selectors using AI
  * POST /admin/autocontent/api/detect-selectors
  */
-$router->post('/admin/autocontent/api/detect-selectors', [], function () use ($mysqli) {
+$router->post('/admin/autocontent/api/detect-selectors', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     try {
@@ -676,7 +678,7 @@ $router->post('/admin/autocontent/api/detect-selectors', [], function () use ($m
  * AI-Powered Detect CSS Selectors using Puter AI
  * POST /admin/autocontent/api/ai-detect-selectors
  */
-$router->post('/admin/autocontent/api/ai-detect-selectors', [], function () use ($mysqli) {
+$router->post('/admin/autocontent/api/ai-detect-selectors', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     try {
@@ -861,7 +863,7 @@ $router->post('/admin/autocontent/api/auto-detect-preset', ['middleware' => ['au
  * Quick Detect - Just get selectors from URL (no preset creation)
  * POST /admin/autocontent/api/quick-detect
  */
-$router->post('/admin/autocontent/api/quick-detect', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->post('/admin/autocontent/api/quick-detect', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     try {
@@ -984,7 +986,8 @@ function detectWithProjectAI(string $htmlSample, string $url, string $provider, 
         return [];
     }
     
-    require_once __DIR__ . '/../Models/AIProvider.php';
+    $aiProviderPath = realpath(__DIR__ . '/../Models/AIProvider.php');
+    require_once $aiProviderPath ?: (__DIR__ . '/../Models/AIProvider.php');
     
     $aiProvider = new AIProvider($mysqli);
     $settings = $aiProvider->getSettings();
@@ -1682,13 +1685,13 @@ function findFirstWorkingSelector(\DOMXPath $xpath, array $candidates): string
 
 /**
  * Collect Articles from Single Source (Scrape)
- * GET /admin/autocontent/api/collect-single
+ * POST /admin/autocontent/api/collect-single
  */
-$router->get('/admin/autocontent/api/collect-single', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->post('/admin/autocontent/api/collect-single', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     try {
-        $sourceId = (int)($_GET['source_id'] ?? 0);
+        $sourceId = (int)($_POST['source_id'] ?? 0);
 
         if ($sourceId <= 0) {
             echo json_encode(['success' => false, 'message' => 'Invalid source ID']);
@@ -1821,7 +1824,7 @@ $router->get('/admin/autocontent/api/collect-single', ['middleware' => ['auth', 
 
 /**
  * Collect Articles from Single Source using Multi-Layer Scraper (5-Step Pipeline)
- * GET /admin/autocontent/api/collect-multi
+ * POST /admin/autocontent/api/collect-multi
  *
  * STEP 1: Fetch LIST PAGE
  * STEP 2: Extract ARTICLE LINKS
@@ -1829,62 +1832,114 @@ $router->get('/admin/autocontent/api/collect-single', ['middleware' => ['auth', 
  * STEP 4: Fetch ARTICLE PAGE
  * STEP 5: Extract title/content/image/date
  */
-$router->get('/admin/autocontent/api/collect-multi', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->post('/admin/autocontent/api/collect-multi', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     try {
-        $sourceId = (int)($_GET['source_id'] ?? 0);
-        $delay = (int)($_GET['delay'] ?? 2);
-        $maxArticles = (int)($_GET['max'] ?? 10);
-
-        if ($sourceId <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Invalid source ID']);
-            exit;
-        }
-
         $model = new AutoContentModel($mysqli);
-        $source = $model->getSourceById($sourceId);
 
-        if (!$source) {
-            echo json_encode(['success' => false, 'message' => 'Source not found']);
+        $sourceId = (int)($_POST['source_id'] ?? 0);
+        $delay = (int)($_POST['delay'] ?? 2);
+        $maxArticles = (int)($_POST['max'] ?? 10);
+
+        $sources = [];
+        if ($sourceId > 0) {
+            $source = $model->getSourceById($sourceId);
+            if (!$source) {
+                echo json_encode(['success' => false, 'message' => 'Source not found']);
+                exit;
+            }
+            $sources = [$source];
+        } else {
+            // Dashboard button runs multi-layer scraping across multiple active sources.
+            $settings = $model->getSettings();
+            $maxSourcesPerRun = (int)($settings['max_sources_per_run'] ?? 5);
+            $sources = array_slice($model->getActiveSources(), 0, max(1, $maxSourcesPerRun));
+        }
+
+        if (empty($sources)) {
+            echo json_encode(['success' => false, 'message' => 'No active sources found']);
             exit;
         }
 
-        // Check if source has selectors configured
-        if (empty($source['selector_list_item']) && empty($source['selector_list_title'])) {
-            echo json_encode([
-            'success' => false,
-            'message' => 'Source needs CSS selectors configured for multi-layer scraping. Please set list item selector or list link selector in source settings.'
-            ]);
-            exit;
+        $totalCollected = 0;
+        $totalLinksFound = 0;
+        $stepsCompleted = 0;
+        $errors = [];
+        $warnings = [];
+        $sourceResults = [];
+
+        foreach ($sources as $source) {
+            $sourceResult = [
+                'source_id' => (int)($source['id'] ?? 0),
+                'source_name' => $source['name'] ?? 'Unknown',
+                'success' => false,
+                'articles_collected' => 0,
+                'errors' => [],
+                'warnings' => [],
+            ];
+
+            // Check if source has selectors configured
+            if (empty($source['selector_list_item']) && empty($source['selector_list_title'])) {
+                $sourceResult['warnings'][] = 'Missing CSS selectors (list item/title)';
+                $warnings[] = ($sourceResult['source_name'] . ': Missing CSS selectors (list item/title)');
+                $sourceResults[] = $sourceResult;
+                continue;
+            }
+
+            // Use the MultiLayerScraperService
+            $scraper = new MultiLayerScraperService($mysqli);
+            $scraper->setRequestDelay($delay)
+                ->setMaxArticles($maxArticles)
+                ->setDebug(true);
+
+            $result = $scraper->runPipeline($source);
+            $status = $scraper->getPipelineStatus();
+
+            $sourceResult['success'] = (bool)($result['success'] ?? false);
+            $sourceResult['articles_collected'] = (int)($result['articles_collected'] ?? 0);
+            $sourceResult['errors'] = $result['errors'] ?? [];
+            $sourceResult['warnings'] = $result['warnings'] ?? [];
+
+            $totalCollected += $sourceResult['articles_collected'];
+            $totalLinksFound += (int)($status['total_links_found'] ?? 0);
+            $stepsCompleted = max($stepsCompleted, (int)($result['steps_completed'] ?? 0));
+
+            foreach ($sourceResult['errors'] as $e) {
+                $errors[] = $sourceResult['source_name'] . ': ' . $e;
+            }
+            foreach ($sourceResult['warnings'] as $w) {
+                $warnings[] = $sourceResult['source_name'] . ': ' . $w;
+            }
+
+            // Update last fetched time if we actually collected anything
+            if ($sourceResult['articles_collected'] > 0 && !empty($source['id'])) {
+                $model->updateLastFetched((int)$source['id']);
+            }
+
+            $sourceResults[] = $sourceResult;
         }
 
-        // Use the MultiLayerScraperService
-        $scraper = new MultiLayerScraperService($mysqli);
-        $scraper->setRequestDelay($delay)
-            ->setMaxArticles($maxArticles)
-            ->setDebug(true);
-
-        $result = $scraper->runPipeline($source);
-        $status = $scraper->getPipelineStatus();
-
-        // Update last fetched time
-        if ($result['articles_collected'] > 0) {
-            $model->updateLastFetched($sourceId);
-        }
+        $message = $sourceId > 0
+            ? ("Multi-layer scrape: {$totalCollected} article(s) from " . ($sources[0]['name'] ?? 'source'))
+            : ("Multi-layer scrape: {$totalCollected} article(s) from " . count($sources) . " source(s)");
 
         echo json_encode([
-        'success' => $result['success'],
-        'collected' => $result['articles_collected'],
-        'message' => "Multi-layer scrape: {$result['articles_collected']} article(s) from {$source['name']}",
+        'success' => $totalCollected > 0 || empty($errors),
+        'collected' => $totalCollected,
+        'message' => $message,
         'pipeline' => [
-        'steps_completed' => $result['steps_completed'],
-        'status' => $status,
-        'total_links_found' => $status['total_links_found'],
-        'articles_collected' => $status['articles_collected']
+        'steps_completed' => $stepsCompleted,
+        'status' => [
+            'total_links_found' => $totalLinksFound,
+            'articles_collected' => $totalCollected,
         ],
-        'errors' => $result['errors'],
-        'warnings' => $result['warnings']
+        'total_links_found' => $totalLinksFound,
+        'articles_collected' => $totalCollected
+        ],
+        'errors' => $errors,
+        'warnings' => $warnings,
+        'source_results' => $sourceResults
         ]);
     }
     catch (Throwable $e) {
@@ -1898,7 +1953,7 @@ $router->get('/admin/autocontent/api/collect-multi', ['middleware' => ['auth', '
  * Collect Articles (Scrape)
  * POST /admin/autocontent/api/collect
  */
-$router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     try {
@@ -2068,7 +2123,7 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
                 $sourceResult['status'] = 'success';
                 $sourceResults[] = $sourceResult;
             }
-            catch (Exception $e) {
+            catch (Throwable $e) {
                 $sourceResult['status'] = 'error';
                 $sourceResult['error'] = $e->getMessage();
                 $sourceResults[] = $sourceResult;
@@ -2112,7 +2167,7 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
  * Process Articles with AI
  * POST /admin/autocontent/api/process
  */
-$router->post('/admin/autocontent/api/process', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->post('/admin/autocontent/api/process', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     try {
@@ -2135,7 +2190,7 @@ $router->post('/admin/autocontent/api/process', ['middleware' => ['auth', 'admin
  * Process Single Article with AI
  * POST /admin/autocontent/api/process-single
  */
-$router->post('/admin/autocontent/api/process-single', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->post('/admin/autocontent/api/process-single', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     try {
@@ -2163,7 +2218,7 @@ $router->post('/admin/autocontent/api/process-single', ['middleware' => ['auth',
  * Publish Articles
  * POST /admin/autocontent/api/publish
  */
-$router->post('/admin/autocontent/api/publish', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->post('/admin/autocontent/api/publish', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     try {
@@ -2206,7 +2261,7 @@ $router->post('/admin/autocontent/api/publish', ['middleware' => ['auth', 'admin
                     $model->updateArticleStatus($article['id'], 'failed');
                 }
             }
-            catch (Exception $e) {
+            catch (Throwable $e) {
                 error_log("Error publishing article {$article['id']}: " . $e->getMessage());
                 $model->updateArticleStatus($article['id'], 'failed');
                 continue;
@@ -2230,11 +2285,20 @@ $router->post('/admin/autocontent/api/publish', ['middleware' => ['auth', 'admin
  * Run Full Pipeline
  * POST /admin/autocontent/api/run-pipeline
  */
-$router->post('/admin/autocontent/api/run-pipeline', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->post('/admin/autocontent/api/run-pipeline', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     try {
         $model = new AutoContentModel($mysqli);
+        $settings = $model->getSettings();
+
+        // Fail fast if DB schema looks broken (common cause: `autocontent_articles.id` not AUTO_INCREMENT)
+        $tableStatus = $mysqli->query("SHOW TABLE STATUS LIKE 'autocontent_articles'");
+        if ($tableStatus && ($row = $tableStatus->fetch_assoc())) {
+            if (empty($row['Auto_increment'])) {
+                throw new RuntimeException("DB schema issue: autocontent_articles.id must be AUTO_INCREMENT. Please run the latest migration/schema update.");
+            }
+        }
 
         $result = [
             'collected' => 0,
@@ -2243,19 +2307,17 @@ $router->post('/admin/autocontent/api/run-pipeline', ['middleware' => ['auth', '
         ];
 
         // Step 1: Collect
-        $settings = $model->getSettings();
         $sources = $model->getActiveSources();
 
         if (!empty($sources)) {
             require_once __DIR__ . '/../Modules/Scraper/ScraperService.php';
             $scraper = new ScraperService();
-            $maxPerSource = (int)($settings['max_articles_per_source'] ?? 10);
 
             foreach ($sources as $source) {
                 try {
                     $scrapeResult = $scraper->scrape($source['url']);
 
-                    if (!isset($scrapeResult['error']) && !empty($scrapeResult['title'])) {
+                    if (!isset($scrapeResult['error']) && !empty($scrapeResult['title']) && $scrapeResult['title'] !== '(No title found)') {
                         if (!$model->articleUrlExists($scrapeResult['url'], (int)$source['id'])) {
                             // Ensure UTF-8 encoding for Bengali/Unicode characters
                             $title = mb_convert_encoding($scrapeResult['title'], 'UTF-8', 'UTF-8');
@@ -2281,7 +2343,7 @@ $router->post('/admin/autocontent/api/run-pipeline', ['middleware' => ['auth', '
 
                     $model->updateLastFetched((int)$source['id']);
                 }
-                catch (Exception $e) {
+                catch (Throwable $e) {
                     error_log("Pipeline collect error for source {$source['id']}: " . $e->getMessage());
                     continue;
                 }
@@ -2290,25 +2352,44 @@ $router->post('/admin/autocontent/api/run-pipeline', ['middleware' => ['auth', '
 
         // Step 2: Process with AI
         $enhancer = new \App\Modules\AutoContent\AiContentEnhancer($mysqli);
-        $processResult = $enhancer->processBatch(5);
-        $result['processed'] = $processResult['processed'];
+        $processLimit = isset($_POST['process_limit']) ? (int)$_POST['process_limit'] : (int)($settings['process_batch'] ?? 5);
+        $processLimit = max(1, min(25, $processLimit));
+        $processResult = $enhancer->processBatch($processLimit);
+        $result['processed'] = (int)($processResult['processed'] ?? 0);
 
         // Step 3: Publish
-        $processedArticles = $model->getArticlesByStatus('processed', 10);
+        $publishLimit = isset($_POST['publish_limit']) ? (int)$_POST['publish_limit'] : 10;
+        $publishLimit = max(1, min(50, $publishLimit));
+        $processedArticles = $model->getArticlesByStatus('processed', $publishLimit);
         $contentModel = new ContentModel($mysqli);
 
         foreach ($processedArticles as $article) {
-            $postId = $contentModel->createPost(
-                $article['title'],
-                $article['content'],
-                1,
-                $article['excerpt'] ?? '',
-                $article['image_url'] ?? ''
-            );
+            try {
+                // Use AI enhanced content if available, otherwise use original
+                $title = !empty($article['ai_title']) ? $article['ai_title'] : ($article['title'] ?? 'Untitled');
+                $content = !empty($article['ai_content']) ? $article['ai_content'] : ($article['content'] ?? '');
 
-            if ($postId > 0) {
-                $model->updateArticleStatus($article['id'], 'published');
-                $result['published']++;
+                $slug = sanitize_input(slugify($title));
+                $postId = $contentModel->createPost(
+                    $title,
+                    $content,
+                    'AI Bot', // author
+                    $slug,
+                    1, // published
+                    1 // reader_indexing
+                );
+
+                if ($postId > 0) {
+                    $model->updateArticleStatus($article['id'], 'published');
+                    $result['published']++;
+                }
+                else {
+                    $model->updateArticleStatus($article['id'], 'failed');
+                }
+            }
+            catch (Throwable $e) {
+                error_log("Error publishing article {$article['id']}: " . $e->getMessage());
+                $model->updateArticleStatus($article['id'], 'failed');
             }
         }
 
@@ -2329,7 +2410,7 @@ $router->post('/admin/autocontent/api/run-pipeline', ['middleware' => ['auth', '
  * Retry Failed Articles
  * POST /admin/autocontent/api/retry
  */
-$router->post('/admin/autocontent/api/retry', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->post('/admin/autocontent/api/retry', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     try {
@@ -2752,7 +2833,7 @@ $router->post('/admin/autocontent/queue/bulk-action', ['middleware' => ['auth', 
  * - max_pages: Maximum number of pages to crawl (default: 50)
  * - debug: Enable debug logging (default: false)
  */
-$router->post('/admin/autocontent/api/crawl-sitemap', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->post('/admin/autocontent/api/crawl-sitemap', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     try {
@@ -2837,7 +2918,7 @@ $router->post('/admin/autocontent/api/crawl-sitemap', ['middleware' => ['auth', 
  * Test Sitemap URL - Quick validation endpoint
  * POST /admin/autocontent/api/test-sitemap
  */
-$router->post('/admin/autocontent/api/test-sitemap', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->post('/admin/autocontent/api/test-sitemap', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     try {
@@ -2950,7 +3031,7 @@ $router->post('/admin/autocontent/api/test-sitemap', ['middleware' => ['auth', '
  * Test CSS Selectors - Preview what selectors find
  * POST /admin/autocontent/api/test-selectors
  */
-$router->post('/admin/autocontent/api/test-selectors', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->post('/admin/autocontent/api/test-selectors', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     try {
@@ -3202,7 +3283,7 @@ $router->post('/admin/autocontent/api/delete-preset', ['middleware' => ['auth', 
  * Live Preview Selectors - Test selectors on a URL
  * POST /admin/autocontent/api/preview-selectors
  */
-$router->post('/admin/autocontent/api/preview-selectors', [], function () use ($mysqli) {
+$router->post('/admin/autocontent/api/preview-selectors', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     try {

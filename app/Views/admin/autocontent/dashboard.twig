@@ -114,6 +114,18 @@
   </div>
 </div>
 
+{% if schema_health is defined and not schema_health.ok %}
+  <div class="alert alert-danger border-0 shadow-sm mb-4">
+    <div class="fw-semibold mb-1">AutoContent schema/config problem detected</div>
+    <div class="small text-muted mb-2">Fix these before running Collect/Process/Publish, otherwise you may see 500 errors or missing data.</div>
+    <ul class="mb-0 small">
+      {% for issue in schema_health.issues %}
+        <li>{{ issue }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
 {# Pipeline Overview #}
 <div class="card mb-4 border-0 shadow-sm">
   <div class="card-body py-3">

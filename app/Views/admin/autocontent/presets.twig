@@ -515,10 +515,16 @@ async function runAiDetect() {
     
     try {
         const formData = new FormData();
+        const csrfToken = getCsrfToken();
+        formData.append('csrf_token', csrfToken);
         formData.append('url', urlInput.value);
         
         const response = await fetch('/admin/autocontent/api/ai-detect-selectors', {
             method: 'POST',
+            headers: {
+                'X-CSRF-Token': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
             body: formData
         });
         

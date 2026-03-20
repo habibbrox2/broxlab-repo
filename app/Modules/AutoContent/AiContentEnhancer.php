@@ -2,9 +2,8 @@
 
 namespace App\Modules\AutoContent;
 
-require_once __DIR__ . '/../../Models/AIProvider.php';
-
-use App\Models\AIProvider;
+$aiProviderPath = realpath(__DIR__ . '/../../Models/AIProvider.php');
+require_once $aiProviderPath ?: (__DIR__ . '/../../Models/AIProvider.php');
 
 /**
  * AI Content Enhancer Service
@@ -23,7 +22,7 @@ class AiContentEnhancer
         $this->mysqli = $mysqli;
         $this->model = new \AutoContentModel($mysqli);
         $this->settings = $this->model->getSettings();
-        $this->aiProvider = new AIProvider($mysqli);
+        $this->aiProvider = new \AIProvider($mysqli);
     }
 
     /**
@@ -55,9 +54,10 @@ class AiContentEnhancer
 
         try {
             // Get original content
-            $originalTitle = $article['original_title'] ?? '';
-            $originalContent = $article['original_content'] ?? '';
-            $originalExcerpt = $article['original_excerpt'] ?? '';
+            // Support both legacy fields (title/content/excerpt) and newer original_* fields.
+            $originalTitle = $article['original_title'] ?? ($article['title'] ?? '');
+            $originalContent = $article['original_content'] ?? ($article['content'] ?? '');
+            $originalExcerpt = $article['original_excerpt'] ?? ($article['excerpt'] ?? '');
             $sourceId = $article['source_id'];
 
             // Get source info for context
@@ -95,16 +95,6 @@ class AiContentEnhancer
                 $wordCount
             );
 
-            // Save suggested categories and tags if any
-            if (!empty($metadata['categories'])) {
-                // We'll store this in metadata field for now or log it
-                $this->model->saveArticleMetadata($articleId, [
-                    'suggested_categories' => $metadata['categories'],
-                    'suggested_tags' => $metadata['tags'] ?? [],
-                    'style_profile' => $styleProfile
-                ]);
-            }
-
             // Update status to processed
             $this->model->updateArticleStatus($articleId, 'processed');
 
@@ -116,8 +106,8 @@ class AiContentEnhancer
                 'suggested_categories' => $metadata['categories'] ?? []
             ];
         }
-        catch (\Exception $e) {
-            $this->model->updateArticleStatus($articleId, 'failed', $e->getMessage());
+        catch (\Throwable $e) {
+            $this->model->updateArticleStatus($articleId, 'failed');
             return [
                 'success' => false,
                 'message' => $e->getMessage()

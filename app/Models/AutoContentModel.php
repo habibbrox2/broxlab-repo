@@ -725,11 +725,21 @@ class AutoContentModel
      */
     public function updateArticleWithAi(int $id, string $aiTitle, string $aiContent, string $aiExcerpt, int $seoScore, int $wordCount): bool
     {
-        // First check if seo_score column exists
-        $result = $this->mysqli->query("SHOW COLUMNS FROM autocontent_articles LIKE 'seo_score'");
-        $hasSeoScore = $result && $result->num_rows > 0;
+        // Schema drift protection: some deployments may not have all optional columns.
+        $hasSeoScore = false;
+        $hasWordCount = false;
 
-        if ($hasSeoScore) {
+        $seoRes = $this->mysqli->query("SHOW COLUMNS FROM autocontent_articles LIKE 'seo_score'");
+        if ($seoRes && $seoRes->num_rows > 0) {
+            $hasSeoScore = true;
+        }
+
+        $wcRes = $this->mysqli->query("SHOW COLUMNS FROM autocontent_articles LIKE 'word_count'");
+        if ($wcRes && $wcRes->num_rows > 0) {
+            $hasWordCount = true;
+        }
+
+        if ($hasSeoScore && $hasWordCount) {
             $stmt = $this->mysqli->prepare("
                 UPDATE autocontent_articles
                 SET ai_title = ?, ai_content = ?, ai_excerpt = ?,
@@ -738,8 +748,18 @@ class AutoContentModel
                 WHERE id = ?
             ");
             $stmt->bind_param("sssiii", $aiTitle, $aiContent, $aiExcerpt, $seoScore, $wordCount, $id);
-        } else {
-            // Fallback for older schema without seo_score
+        }
+        elseif ($hasSeoScore) {
+            $stmt = $this->mysqli->prepare("
+                UPDATE autocontent_articles
+                SET ai_title = ?, ai_content = ?, ai_excerpt = ?,
+                    seo_score = ?,
+                    status = 'processed', updated_at = NOW()
+                WHERE id = ?
+            ");
+            $stmt->bind_param("sssii", $aiTitle, $aiContent, $aiExcerpt, $seoScore, $id);
+        }
+        elseif ($hasWordCount) {
             $stmt = $this->mysqli->prepare("
                 UPDATE autocontent_articles
                 SET ai_title = ?, ai_content = ?, ai_excerpt = ?,
@@ -748,6 +768,15 @@ class AutoContentModel
                 WHERE id = ?
             ");
             $stmt->bind_param("sssii", $aiTitle, $aiContent, $aiExcerpt, $wordCount, $id);
+        }
+        else {
+            $stmt = $this->mysqli->prepare("
+                UPDATE autocontent_articles
+                SET ai_title = ?, ai_content = ?, ai_excerpt = ?,
+                    status = 'processed', updated_at = NOW()
+                WHERE id = ?
+            ");
+            $stmt->bind_param("sssi", $aiTitle, $aiContent, $aiExcerpt, $id);
         }
 
         $success = $stmt->execute();
@@ -1354,6 +1383,57 @@ class AutoContentModel
         }
 
         return true;
+    }
+
+    /**
+     * Quick schema health check for common production issues.
+     *
+     * @return array{ok: bool, issues: list<string>}
+     */
+    public function getSchemaHealth(): array
+    {
+        $issues = [];
+
+        // Tables present?
+        $tables = ['autocontent_sources', 'autocontent_articles', 'autocontent_settings'];
+        foreach ($tables as $table) {
+            $res = $this->mysqli->query("SHOW TABLES LIKE '{$table}'");
+            if (!$res || $res->num_rows === 0) {
+                $issues[] = "Missing table: {$table}";
+            }
+        }
+
+        // AUTO_INCREMENT sanity (prevents: Field 'id' doesn't have a default value)
+        $status = $this->mysqli->query("SHOW TABLE STATUS LIKE 'autocontent_articles'");
+        if ($status && ($row = $status->fetch_assoc())) {
+            if (empty($row['Auto_increment'])) {
+                $issues[] = "Schema issue: autocontent_articles.id must be AUTO_INCREMENT";
+            }
+        }
+
+        // Required columns
+        $res = $this->mysqli->query("SHOW COLUMNS FROM autocontent_articles");
+        if ($res) {
+            $cols = [];
+            while ($row = $res->fetch_assoc()) {
+                $cols[$row['Field']] = true;
+            }
+
+            foreach (['id', 'source_id', 'url', 'status', 'created_at'] as $required) {
+                if (empty($cols[$required])) {
+                    $issues[] = "Missing column: autocontent_articles.{$required}";
+                }
+            }
+
+            // At least one content source column must exist for AI processing.
+            if (empty($cols['content']) && empty($cols['original_content'])) {
+                $issues[] = "Missing column: autocontent_articles.content (or original_content)";
+            }
+        } else {
+            $issues[] = "Could not inspect autocontent_articles columns";
+        }
+
+        return ['ok' => empty($issues), 'issues' => $issues];
     }
 
     /**

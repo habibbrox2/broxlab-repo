@@ -114,11 +114,15 @@ async function collectFromSource(sourceId, sourceName) {
       await window.MessageHandler.showLoading('Fetching articles from ' + sourceName, 'Collecting...');
     }
 
-    const response = await fetch('/admin/autocontent/api/collect-single?source_id=' + sourceId, {
-      method: 'GET',
+    const csrfToken = document.querySelector('meta[name=\"csrf-token\"]')?.getAttribute('content') || '';
+    const response = await fetch('/admin/autocontent/api/collect-single?ajax=1', {
+      method: 'POST',
       headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-      }
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-Token': csrfToken
+      },
+      body: `csrf_token=${encodeURIComponent(csrfToken)}&source_id=${encodeURIComponent(sourceId)}`
     });
     const data = await response.json();
 
@@ -170,11 +174,15 @@ async function multiLayerScrape(sourceId, sourceName) {
       await window.MessageHandler.showLoading('Running 5-step pipeline on ' + sourceName, 'Scraping in Progress...');
     }
 
-    const response = await fetch('/admin/autocontent/api/collect-multi?source_id=' + sourceId, {
-      method: 'GET',
+    const csrfToken = document.querySelector('meta[name=\"csrf-token\"]')?.getAttribute('content') || '';
+    const response = await fetch('/admin/autocontent/api/collect-multi?ajax=1', {
+      method: 'POST',
       headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-      }
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-Token': csrfToken
+      },
+      body: `csrf_token=${encodeURIComponent(csrfToken)}&source_id=${encodeURIComponent(sourceId)}`
     });
     const data = await response.json();
 
@@ -184,14 +192,17 @@ async function multiLayerScrape(sourceId, sourceName) {
 
     if (data.success) {
       var message = data.message || 'Articles scraped successfully!';
-      if (data.debug) {
+      if (data.pipeline) {
         message += '\n\nResults:';
-        message += '\n- Links Found: ' + (data.debug.links_found || 0);
-        message += '\n- Articles Processed: ' + (data.debug.articles_processed || 0);
-        message += '\n- Articles Queued: ' + (data.debug.articles_queued || 0);
-        if (data.debug.errors && data.debug.errors.length > 0) {
-          message += '\n- Errors: ' + data.debug.errors.length;
-        }
+        message += '\n- Links Found: ' + (data.pipeline.total_links_found || 0);
+        message += '\n- Articles Collected: ' + (data.pipeline.articles_collected || 0);
+        message += '\n- Steps Completed: ' + (data.pipeline.steps_completed || 0) + '/5';
+      }
+      if (data.errors && data.errors.length > 0) {
+        message += '\n- Errors: ' + data.errors.length;
+      }
+      if (data.warnings && data.warnings.length > 0) {
+        message += '\n- Warnings: ' + data.warnings.length;
       }
 
       if (typeof window.showAlert === 'function') {

@@ -6,7 +6,8 @@
  * All database operations are handled by AIProvider model.
  */
 
-require_once __DIR__ . '/../Models/AIProvider.php';
+$aiProviderPath = realpath(__DIR__ . '/../Models/AIProvider.php');
+require_once $aiProviderPath ?: (__DIR__ . '/../Models/AIProvider.php');
 require_once __DIR__ . '/../Models/AppSettings.php';
 require_once __DIR__ . '/../Helpers/PromptLoader.php';
 require_once __DIR__ . '/../Helpers/ToolRegistry.php';

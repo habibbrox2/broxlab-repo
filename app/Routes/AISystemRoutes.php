@@ -11,7 +11,8 @@ require_once __DIR__ . '/../Models/ContactModel.php';
 require_once __DIR__ . '/../Models/AppSettings.php';
 require_once __DIR__ . '/../Models/EmailTemplate.php';
 require_once __DIR__ . '/../Helpers/FirebaseHelper.php';
-require_once __DIR__ . '/../Models/AIProvider.php';
+$aiProviderPath = realpath(__DIR__ . '/../Models/AIProvider.php');
+require_once $aiProviderPath ?: (__DIR__ . '/../Models/AIProvider.php');
 
 // Centralize AI assistant/coplay endpoints here. We still reuse shared handler functions
 // (aiChatHandleRequest, aiChatSendJson, aiChatStreamContent, ...) from AISystemController,
