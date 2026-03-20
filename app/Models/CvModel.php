@@ -34,10 +34,7 @@ class CvModel
     public function getByUserId(int $userId): array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT id, user_id, title, template, is_active, view_count, download_count, last_viewed_at, created_at, updated_at
-             FROM cvs
-             WHERE user_id = ?
-             ORDER BY updated_at DESC"
+            "SELECT * FROM cvs WHERE user_id = ? ORDER BY updated_at DESC"
         );
         $stmt->bind_param('i', $userId);
         $stmt->execute();
@@ -57,24 +54,10 @@ class CvModel
     public function getAll(int $limit = 100, int $offset = 0): array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT
-                c.id,
-                c.user_id,
-                c.title,
-                c.template,
-                c.is_active,
-                c.view_count,
-                c.download_count,
-                c.last_viewed_at,
-                c.created_at,
-                c.updated_at,
-                u.username,
-                u.email,
-                u.first_name,
-                u.last_name
-             FROM cvs c
-             LEFT JOIN users u ON c.user_id = u.id
-             ORDER BY c.updated_at DESC
+            "SELECT c.*, u.username, u.email, u.first_name, u.last_name 
+             FROM cvs c 
+             LEFT JOIN users u ON c.user_id = u.id 
+             ORDER BY c.updated_at DESC 
              LIMIT ? OFFSET ?"
         );
         $stmt->bind_param('ii', $limit, $offset);
@@ -97,24 +80,22 @@ class CvModel
         $stats = [];
         
         // Total CVs
-        $stmt = $this->mysqli->prepare("SELECT COUNT(*) as total FROM cvs");
-        $stmt->execute();
-        $result = $stmt->get_result();
+        $result = $this->mysqli->query("SELECT COUNT(*) as total FROM cvs");
         $stats['total'] = $result->fetch_assoc()['total'] ?? 0;
         
         // CVs by template
-        $stmt = $this->mysqli->prepare("SELECT template, COUNT(*) as count FROM cvs GROUP BY template");
-        $stmt->execute();
-        $result = $stmt->get_result();
+        $result = $this->mysqli->query(
+            "SELECT template, COUNT(*) as count FROM cvs GROUP BY template"
+        );
         $stats['by_template'] = [];
         while ($row = $result->fetch_assoc()) {
             $stats['by_template'][$row['template']] = $row['count'];
         }
         
         // Active users with CVs
-        $stmt = $this->mysqli->prepare("SELECT COUNT(DISTINCT user_id) as users_with_cvs FROM cvs");
-        $stmt->execute();
-        $result = $stmt->get_result();
+        $result = $this->mysqli->query(
+            "SELECT COUNT(DISTINCT user_id) as users_with_cvs FROM cvs"
+        );
         $stats['users_with_cvs'] = $result->fetch_assoc()['users_with_cvs'] ?? 0;
         
         return $stats;
@@ -126,10 +107,7 @@ class CvModel
     public function getById(int $id): ?array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT id, user_id, title, template, is_active, view_count, download_count, last_viewed_at, created_at, updated_at
-             FROM cvs
-             WHERE id = ?
-             LIMIT 1"
+            "SELECT * FROM cvs WHERE id = ? LIMIT 1"
         );
         $stmt->bind_param('i', $id);
         $stmt->execute();

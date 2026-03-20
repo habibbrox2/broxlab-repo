@@ -55,10 +55,7 @@ class CvItemModel
     public function getBySectionId(int $sectionId): array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT id, section_id, item_type, content_json, `order`, created_at, updated_at
-             FROM cv_items
-             WHERE section_id = ?
-             ORDER BY `order` ASC"
+            "SELECT * FROM cv_items WHERE section_id = ? ORDER BY `order` ASC"
         );
         $stmt->bind_param('i', $sectionId);
         $stmt->execute();
@@ -80,10 +77,7 @@ class CvItemModel
     public function getById(int $id): ?array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT id, section_id, item_type, content_json, `order`, created_at, updated_at
-             FROM cv_items
-             WHERE id = ?
-             LIMIT 1"
+            "SELECT * FROM cv_items WHERE id = ? LIMIT 1"
         );
         $stmt->bind_param('i', $id);
         $stmt->execute();

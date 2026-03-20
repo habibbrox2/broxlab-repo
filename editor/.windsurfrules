@@ -1,15 +1,13 @@
-Read: `AGENTS.md`, then `docs/ai/AI_QUICK_CONTEXT.md`.
+# Windsurf Rules — BroxBhai
+
+Read first: `AGENTS.md`, then `docs/PROJECT_CONTEXT.md`, `docs/CODING_CONVENTIONS.md`, `docs/AI_CODING_GUIDE.md`.
 
 Do:
-- Search first (`rg`), then make minimal diffs.
-- Keep controllers thin; DB access in Models (prepared statements).
-- Enforce CSRF for state-changing endpoints.
+- Edit source files (not `public_html/assets/**/dist/**`), then build.
+- Keep controllers thin, move DB logic to Models.
+- Use Twig templates for rendering; avoid embedding complex PHP in views.
+- Add CSRF + auth checks consistently.
 
-Do not:
-- Edit `public_html/assets/**/dist/**` directly.
-- Commit secrets or paste real tokens/keys.
-
-Verify:
-- `php -l path/to/file.php`
-- `php scripts/quality_scan.php`
-
+Don’t:
+- Commit secrets or paste real tokens/keys into code.
+- Introduce new frameworks or large refactors without request.

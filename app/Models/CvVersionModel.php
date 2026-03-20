@@ -53,21 +53,14 @@ class CvVersionModel
     private function collectCvData(int $cvId): array
     {
         // Get CV info
-        $stmt = $this->mysqli->prepare(
-            "SELECT id, user_id, title, template, is_active, view_count, download_count, last_viewed_at, created_at, updated_at
-             FROM cvs
-             WHERE id = ?"
-        );
+        $stmt = $this->mysqli->prepare("SELECT * FROM cvs WHERE id = ?");
         $stmt->bind_param('i', $cvId);
         $stmt->execute();
         $cv = $stmt->get_result()->fetch_assoc();
 
         // Get sections
         $stmt = $this->mysqli->prepare(
-            "SELECT id, cv_id, section_type, title, `order`, is_visible, created_at, updated_at
-             FROM cv_sections
-             WHERE cv_id = ?
-             ORDER BY `order`"
+            "SELECT * FROM cv_sections WHERE cv_id = ? ORDER BY `order`"
         );
         $stmt->bind_param('i', $cvId);
         $stmt->execute();
@@ -76,10 +69,7 @@ class CvVersionModel
         while ($row = $result->fetch_assoc()) {
             // Get items for each section
             $stmt2 = $this->mysqli->prepare(
-                "SELECT id, section_id, item_type, content_json, `order`, created_at, updated_at
-                 FROM cv_items
-                 WHERE section_id = ?
-                 ORDER BY `order`"
+                "SELECT * FROM cv_items WHERE section_id = ? ORDER BY `order`"
             );
             $stmt2->bind_param('i', $row['id']);
             $stmt2->execute();
@@ -107,22 +97,14 @@ class CvVersionModel
     public function getVersions(int $cvId, int $limit = 20, int $offset = 0): array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT
-                v.id,
-                v.cv_id,
-                v.version_number,
-                v.created_by,
-                v.created_at,
-                u.username,
-                u.first_name,
-                u.last_name
-             FROM cv_versions v
-             LEFT JOIN users u ON v.created_by = u.id
-             WHERE v.cv_id = ?
-             ORDER BY v.version_number DESC
+            "SELECT v.*, u.username, u.first_name, u.last_name 
+             FROM cv_versions v 
+             LEFT JOIN users u ON v.created_by = u.id 
+             WHERE v.cv_id = ? 
+             ORDER BY v.version_number DESC 
              LIMIT ? OFFSET ?"
         );
-        $stmt->bind_param('iii', $cvId, $limit, $offset);
+        $stmt->bind_param('i', $cvId, $limit, $offset);
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -140,9 +122,7 @@ class CvVersionModel
     public function getVersion(int $cvId, int $versionNumber): ?array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT id, cv_id, version_number, data_json, created_by, created_at
-             FROM cv_versions
-             WHERE cv_id = ? AND version_number = ?"
+            "SELECT * FROM cv_versions WHERE cv_id = ? AND version_number = ?"
         );
         $stmt->bind_param('ii', $cvId, $versionNumber);
         $stmt->execute();
