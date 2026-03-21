@@ -1,171 +1,176 @@
-# Multi-Source Web Scraper
+# bdnews24 Multi-Agent Web Scraping System
 
-A production-grade, distributed, self-healing, multi-agent web scraping system for extracting structured data from dynamic news websites.
+Bangladesh er shreshtho news site bdnews24 (bangla.bdnews24.com) theke news scrape, validate, repair ebong store korar jonno design kora production-grade multi-agent web scraping system.
 
-## Features
+## System Architecture
 
-- **Multi-Source Support**: Works with multiple news sources (bdnews24, Prothom Alo, etc.)
-- **Self-Healing**: Automatically repairs selectors when DOM changes
-- **Learning System**: Tracks selector performance and optimizes over time
-- **Concurrent Processing**: Parallel article fetching (configurable)
-- **Validation**: Content validation with min length/paragraph requirements
-- **Notifications**: Event system for new articles
+PHP Layer (Scheduling & Storage)
+  - Scheduler Agent
+  - Storage Agent  
+  - Notification Agent
 
-## Architecture
+Node.js Layer (Scraping & Processing)
+  - Ticker Scraper (get links)
+  - Article Scraper (extract data)
+  - Validation Agent (clean & validate)
+  - Diff Detector (find new vs existing)
+  - Self-Healing Selector (repair selectors)
+  - Learning Agent (track performance)
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ PHP Layer (Scheduling & Storage)                              │
-│ scripts/bdnews24-scheduler.php                               │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Node.js Layer (Scraping & Processing)                        │
-│ src/scraper/                                                 │
-│   ├── agents/           # TickerScraper, ArticleScraper, etc │
-│   ├── services/        # DatabaseService                     │
-│   └── utils/           # HttpClient, HtmlParser, Logger      │
-└─────────────────────────────────────────────────────────────┘
-```
+## Agents
+
+| Agent | File | Description |
+|-------|------|-------------|
+| TickerScraper | agents/TickerScraper.js | Homepage theke link extract kore |
+| ArticleScraper | agents/ArticleScraper.js | Article page theke data extract kore |
+| ValidationAgent | agents/ValidationAgent.js | Data validate ebong clean kore |
+| DiffDetector | agents/DiffDetector.js | New old link identify kore |
+| SelfHealingAgent | agents/SelfHealingAgent.js | Selector vangle self-healing |
+| LearningAgent | agents/LearningAgent.js | Successful selectors lerne |
+| NotificationAgent | agents/NotificationAgent.js | New article notification |
 
 ## Installation
 
+### 1. Install Node.js dependencies
 ```bash
-# Install dependencies
-npm install mysql2
-
-# Or update existing
-npm update
+npm install
 ```
 
-## Configuration
-
-### Environment Variables
-
-```bash
-# Database
-export DB_HOST=localhost
-export DB_USER=root
-export DB_PASSWORD=your_password
-export DB_NAME=broxbhai
-
-# Source (optional, default: bdnews24)
-export SCRAPER_SOURCE=bdnews24
-
-# Logging (optional)
-export LOG_LEVEL=info
-
-# AI Self-healing (optional)
-export AI_ENABLED=false
-export AI_PROVIDER=claude
-```
-
-### Source Configuration
-
-Edit [`config.js`](config.js) to add or modify sources:
-
-```javascript
-sources: {
-    bdnews24: {
-        name: 'BD News 24',
-        baseUrl: 'https://bangla.bdnews24.com/',
-        selectors: { /* ... */ }
-    },
-    // Add more sources here
-}
+### 2. Database Configuration
+Create .env file:
+```env
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_password   # alternatively: DB_PASS=your_password
+DB_NAME=broxbhai
+SCRAPER_SOURCE=bdnews24
+LOG_LEVEL=info
+AI_ENABLED=false
 ```
 
 ## Usage
 
-### Command Line
-
+### Run Once
 ```bash
-# Run once
-node src/scraper/index.js --source=bdnews24
-
-# Run continuously (every 20 seconds)
-node src/scraper/index.js --source=bdnews24 --continuous
-
-# Custom interval (30 seconds)
-node src/scraper/index.js --source=bdnews24 --continuous --interval=30
-
-# Limit cycles
-node src/scraper/index.js --source=bdnews24 --cycles=10
+node src/scraper/index.js
 ```
 
-### PHP Scheduler (for Cron)
-
+### AutoContent mode (recommended)
+If you pass a preset key (e.g. `--source=ittefaq`), the scraper will create/resolve an `autocontent_sources` row (by `website_preset_key`) and insert into `autocontent_articles`.
 ```bash
-# Run once
+node src/scraper/index.js --source=ittefaq --max=5
+```
+
+### Run Continuous
+```bash
+node src/scraper/index.js --continuous --interval=20
+```
+
+### Run Specific Cycles
+```bash
+node src/scraper/index.js --continuous --interval=20 --cycles=10
+```
+
+### PHP Scheduler diye chalano
+
+#### One time:
+```bash
 php scripts/bdnews24-scheduler.php
-
-# Run continuously
-php scripts/bdnews24-scheduler.php --continuous
-
-# Custom source
-php scripts/bdnews24-scheduler.php --source=prothomalo
 ```
 
-### Cron Setup
-
+#### Continuous:
 ```bash
-# Run every minute
-* * * * * php /path/to/scripts/bdnews24-scheduler.php >> /var/log/scraper.log 2>&1
-
-# Or use the continuous mode (runs in background)
-* * * * * pgrep -f "bdnews24-scheduler" || php /path/to/scripts/bdnews24-scheduler.php --continuous
+php scripts/bdnews24-scheduler.php --continuous --interval=30
 ```
 
-## Agent Components
+### Cron Job Setup
+```bash
+* * * * * php /path/to/scripts/bdnews24-scheduler.php >> /var/log/scraper.log 2>&1
+```
 
-| Agent | Purpose |
-|-------|---------|
-| TickerScraper | Fetches homepage, extracts news links |
-| ArticleScraper | Extracts article data (title, content, author) |
-| ValidationAgent | Cleans content, validates length/paragraphs |
-| DiffDetector | Identifies new vs existing articles |
-| SelfHealingAgent | Repairs selectors when DOM changes |
-| LearningAgent | Tracks selector performance |
-| NotificationAgent | Emits events for new articles |
+## Command Options
 
-## Database Tables
+### Node.js Options
 
-### news_articles
-Stores scraped articles with unique index on `link`.
+| Option | Default | Description |
+|--------|---------|-------------|
+| --source | bdnews24 | Source to scrape |
+| --continuous | false | Run continuously |
+| --interval | 20000 | Interval in milliseconds |
+| --cycles | 0 | Max cycles (0=infinite) |
 
-### selector_performance
-Tracks selector success rates for the learning system.
+### PHP Scheduler Options
 
-## Output Format
+| Option | Default | Description |
+|--------|---------|-------------|
+| --continuous | false | Run continuously |
+| --interval | 20 | Interval in seconds |
+| --cycles | 0 | Max cycles |
+| --source | bdnews24 | Source to scrape |
+| --help | false | Show help |
+
+## Output Example
 
 ```json
 {
-    "timestamp": "2026-03-19T17:30:00Z",
-    "target": "bangla.bdnews24.com",
-    "new_articles": [
-        {
-            "title": "Article Title",
-            "subtitle": "Subtitle",
-            "author": "Author Name",
-            "published_at": "2026-03-19T10:00:00Z",
-            "image": "https://...",
-            "content": "Article content..."
-        }
-    ],
-    "processed": 10,
-    "status": "success"
+  "success": true,
+  "new_articles": [
+    {
+      "title": "Shironam",
+      "subtitle": "Uposhironam",
+      "author": "Lekok",
+      "published_at": "2026-03-20T18:30:00Z",
+      "image": "https://...",
+      "content": "Article content...",
+      "link": "https://bangla.bdnews24.com/news/..."
+    }
+  ],
+  "processed": 10,
+  "saved": 5,
+  "status": "success"
 }
 ```
 
-## Selector System
+## System Features
 
-Selectors are configured per-source in `config.js`. The system tries:
-1. Primary selector
-2. Fallback selectors
-3. Heuristic extraction (find best content node)
-4. AI repair (if enabled)
+- **Self-Healing Selectors** - Auto repair broken selectors
+- **Learning System** - Remember successful selectors
+- **Validation** - Min 200 chars, 3 paragraphs
+- **Rate Limit Respect** - User-Agent rotation
+- **Concurrency** - Max 5 parallel requests
 
-## License
+## Troubleshooting
 
-MIT
+### Database connection failed
+```bash
+mysql -u root -p -e "SHOW DATABASES;"
+```
+
+### No articles found
+- Site structure may have changed
+- Set LOG_LEVEL=debug for debugging
+
+## File Structure
+
+```
+src/scraper/
+├── index.js                  # Main entry point
+├── config.js                 # Configuration
+├── agents/
+│   ├── TickerScraper.js
+│   ├── ArticleScraper.js
+│   ├── ValidationAgent.js
+│   ├── DiffDetector.js
+│   ├── SelfHealingAgent.js
+│   ├── LearningAgent.js
+│   └── NotificationAgent.js
+├── services/
+│   └── DatabaseService.js
+└── utils/
+    ├── HttpClient.js
+    ├── HtmlParser.js
+    └── Logger.js
+
+scripts/
+└── bdnews24-scheduler.php
+```

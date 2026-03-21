@@ -37,10 +37,11 @@ echo "[" . date('Y-m-d H:i:s') . "] Starting auto-publish\n";
 $publisherConfig = [
     'auto_publish' => true,
     'publish_status' => $settings['publish_status'] ?? 'published',
+    'publish_batch' => (int)($settings['publish_batch'] ?? 10),
     'max_daily_publish' => (int)($settings['max_daily_publish'] ?? 10),
     'publish_time_start' => $settings['publish_time_start'] ?? '06:00',
     'publish_time_end' => $settings['publish_time_end'] ?? '23:00',
-    'default_author' => 1,
+    'default_author' => 'AI Bot',
     'telegram' => $config['telegram'],
 ];
 

@@ -7,6 +7,7 @@ namespace App\Modules\AutoContent;
 
 use mysqli;
 use App\Modules\AutoContent\TelegramNotifier;
+use ContentModel;
 
 /**
  * AutoPublisher.php
@@ -19,6 +20,7 @@ class AutoPublisher
     private array $errors = [];
     private array $published = [];
     private ?TelegramNotifier $telegram = null;
+    private ?ContentModel $contentModel = null;
 
     public function __construct(mysqli $mysqli, array $config = [])
     {
@@ -26,13 +28,14 @@ class AutoPublisher
         $this->config = array_merge([
             'auto_publish' => false,
             'publish_status' => 'published',
+            'publish_batch' => 10,
             'max_daily_publish' => 10,
             'publish_time_start' => '06:00',
             'publish_time_end' => '23:00',
             'categories' => [],
             'tags' => [],
-            'default_author' => 1,
-            'default_status' => 'publish',
+            'default_author' => 'AI Bot',
+            'default_reader_indexing' => 1,
             'telegram' => [
                 'enabled' => false,
                 'post_on_publish' => false,
@@ -41,6 +44,10 @@ class AutoPublisher
         ], $config);
 
         $this->telegram = new TelegramNotifier($this->config['telegram']);
+
+        require_once __DIR__ . '/../../Helpers/PurifierHelper.php';
+        require_once __DIR__ . '/../../Models/ContentModel.php';
+        $this->contentModel = new ContentModel($this->mysqli);
     }
 
     /**
@@ -62,11 +69,12 @@ class AutoPublisher
             return ['success' => false, 'errors' => $this->errors];
         }
 
-        // Get approved articles to publish
-        $articles = $this->getApprovedArticles();
+        // Get publishable articles (processed or approved)
+        $publishBatch = max(1, (int)($this->config['publish_batch'] ?? 10));
+        $articles = $this->getPublishableArticles($publishBatch);
 
         if (empty($articles)) {
-            return ['success' => true, 'message' => 'No approved articles to publish', 'published' => []];
+            return ['success' => true, 'message' => 'No processed articles to publish', 'published' => []];
         }
 
         $count = 0;
@@ -74,10 +82,15 @@ class AutoPublisher
         $todayPublished = $this->getTodayPublishedCount();
 
         foreach ($articles as $article) {
-            if ($count >= $maxPublish)
+            if ($count >= $publishBatch) {
                 break;
-            if ($todayPublished + $count >= $maxPublish)
+            }
+            if ($count >= $maxPublish) {
                 break;
+            }
+            if ($todayPublished + $count >= $maxPublish) {
+                break;
+            }
 
             $result = $this->publishArticle($article);
             if ($result['success']) {
@@ -106,20 +119,38 @@ class AutoPublisher
         $start = $this->config['publish_time_start'];
         $end = $this->config['publish_time_end'];
 
-        return ($now >= $start && $now <= $end);
+        // Handle windows that cross midnight (e.g., 22:00 -> 06:00)
+        if ($start <= $end) {
+            return ($now >= $start && $now <= $end);
+        }
+        return ($now >= $start || $now <= $end);
     }
 
     /**
-     * Get approved articles pending publication
+     * Get publishable articles pending publication.
+     * We intentionally allow publishing without manual approval:
+     * status IN ('processed', 'approved')
      */
-    private function getApprovedArticles(): array
+    private function getPublishableArticles(int $limit = 50): array
     {
-        $sql = "SELECT * FROM autocontent_articles 
-                WHERE status = 'approved' 
-                ORDER BY id ASC 
-                LIMIT 50";
+        $limit = max(1, min(200, $limit));
 
-        $result = $this->mysqli->query($sql);
+        $columns = $this->getTableColumns('autocontent_articles');
+        $select = $this->buildArticleSelectList($columns);
+
+        $sql = "SELECT {$select}
+                FROM autocontent_articles
+                WHERE status IN ('processed', 'approved')
+                ORDER BY id ASC
+                LIMIT ?";
+
+        $stmt = $this->mysqli->prepare($sql);
+        if (!$stmt) {
+            return [];
+        }
+        $stmt->bind_param("i", $limit);
+        $stmt->execute();
+        $result = $stmt->get_result();
 
         $articles = [];
         if ($result) {
@@ -127,6 +158,7 @@ class AutoPublisher
                 $articles[] = $row;
             }
         }
+        $stmt->close();
 
         return $articles;
     }
@@ -157,9 +189,9 @@ class AutoPublisher
         try {
             // Get article details
             $articleId = (int)$article['id'];
-            $title = $article['ai_title'] ?: $article['original_title'];
-            $content = $article['ai_content'] ?: $article['original_content'];
-            $excerpt = $article['excerpt'] ?: substr(strip_tags($content), 0, 200);
+            $title = (string)($article['ai_title'] ?? $article['title'] ?? $article['original_title'] ?? 'Untitled');
+            $rawContent = (string)($article['ai_content'] ?? $article['content'] ?? $article['original_content'] ?? '');
+            $excerpt = (string)($article['ai_excerpt'] ?? $article['excerpt'] ?? '');
             $imageUrl = $article['image_url'] ?? '';
             $sourceId = $article['source_id'];
 
@@ -176,29 +208,36 @@ class AutoPublisher
             }
             $stmt->close();
 
-            // Check if content table exists and has required columns
-            $this->ensureContentTable();
+            // Sanitize HTML
+            $purifier = function_exists('getPurifier') ? getPurifier() : null;
+            $content = $purifier ? $purifier->purify($rawContent) : $rawContent;
 
-            // Generate slug
-            $slug = $this->generateSlug($title);
-
-            // Insert into content table
-            $insertSql = "INSERT INTO content (title, slug, content, excerpt, image_url, author_id, status, created_at, updated_at, source_name, source_url)
-                          VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?)";
-
-            $status = $this->config['publish_status'] ?? 'published';
-            $authorId = $this->config['default_author'] ?? 1;
-
-            $stmt = $this->mysqli->prepare($insertSql);
-            $stmt->bind_param("sssssisss", $title, $slug, $content, $excerpt, $imageUrl, $authorId, $status, $sourceName, $sourceUrl);
-
-            if (!$stmt->execute()) {
-                $stmt->close();
-                return ['success' => false, 'error' => 'Failed to insert into content table: ' . $this->mysqli->error];
+            if ($excerpt === '') {
+                $excerpt = mb_substr(trim(strip_tags($content)), 0, 200);
             }
 
-            $contentId = $this->mysqli->insert_id;
-            $stmt->close();
+            // Generate unique slug (posts table)
+            $slug = $this->contentModel ? $this->contentModel->generateUniquePermalink($title) : ('post-' . uniqid());
+
+            // Determine published flag
+            $publishStatus = (string)($this->config['publish_status'] ?? 'published');
+            $published = $publishStatus === 'published' ? 1 : 0;
+            $readerIndexing = (int)($this->config['default_reader_indexing'] ?? 1);
+
+            $author = $this->resolveAuthorName($this->config['default_author'] ?? 'AI Bot');
+
+            $postId = $this->contentModel ? $this->contentModel->createPost(
+                $title,
+                $content,
+                $author,
+                $slug,
+                $published,
+                $readerIndexing
+            ) : 0;
+
+            if (!$postId) {
+                return ['success' => false, 'error' => 'Failed to create post'];
+            }
 
             // Add categories
             $categoryIds = $this->config['categories'] ?: [];
@@ -223,26 +262,29 @@ class AutoPublisher
                 }
             }
 
-            if (!empty($categoryIds)) {
-                $this->addContentCategories($contentId, array_unique($categoryIds));
+            if (!empty($categoryIds) && $this->contentModel) {
+                $this->contentModel->attachCategoriesToContent('post', (int)$postId, array_values(array_unique($categoryIds)));
             }
 
-            if (!empty($tagIds)) {
-                $this->addContentTags($contentId, array_unique($tagIds));
+            if (!empty($tagIds) && $this->contentModel) {
+                $this->contentModel->attachTagsToContent('post', (int)$postId, array_values(array_unique($tagIds)));
             }
 
             // Update auto content article status
-            $updateSql = "UPDATE autocontent_articles SET status = 'published', updated_at = NOW() WHERE id = ?";
+            $newStatus = $published === 1 ? 'published' : 'approved';
+            $updateSql = "UPDATE autocontent_articles SET status = ?, updated_at = NOW() WHERE id = ?";
             $stmt = $this->mysqli->prepare($updateSql);
-            $stmt->bind_param("i", $articleId);
-            $stmt->execute();
-            $stmt->close();
+            if ($stmt) {
+                $stmt->bind_param("si", $newStatus, $articleId);
+                $stmt->execute();
+                $stmt->close();
+            }
 
             if ($this->telegram && $this->telegram->isEnabled() && ($this->config['telegram']['post_on_publish'] ?? false)) {
                 $this->telegram->sendArticle([
                     'title' => $title,
                     'excerpt' => $excerpt,
-                    'url' => $article['original_url'] ?? '',
+                    'url' => $article['url'] ?? ($article['original_url'] ?? ''),
                     'source' => $sourceName,
                 ], $this->config['telegram']['template'] ?? "*{title}*\n{url}");
             }
@@ -250,7 +292,7 @@ class AutoPublisher
             return [
                 'success' => true,
                 'article_id' => $articleId,
-                'content_id' => $contentId,
+                'post_id' => $postId,
                 'title' => $title
             ];
         }
@@ -259,83 +301,69 @@ class AutoPublisher
         }
     }
 
-    /**
-     * Ensure content table has required structure
-     */
-    private function ensureContentTable(): void
+    private function getTableColumns(string $table): array
     {
-        // Check if source_name column exists
-        $result = $this->mysqli->query("SHOW COLUMNS FROM content LIKE 'source_name'");
-        if ($result && $result->num_rows === 0) {
-            $this->mysqli->query("ALTER TABLE content ADD COLUMN source_name VARCHAR(255) DEFAULT '' AFTER updated_at");
-            $this->mysqli->query("ALTER TABLE content ADD COLUMN source_url VARCHAR(500) DEFAULT '' AFTER source_name");
-        }
-    }
-
-    /**
-     * Generate URL-safe slug
-     */
-    private function generateSlug(string $title): string
-    {
-        // Convert to lowercase
-        $slug = strtolower($title);
-
-        // Remove non-alphanumeric characters
-        $slug = preg_replace('/[^a-z0-9\s-]/', '', $slug);
-
-        // Replace spaces with hyphens
-        $slug = preg_replace('/\s+/', '-', $slug);
-
-        // Remove multiple hyphens
-        $slug = preg_replace('/-+/', '-', $slug);
-
-        // Trim hyphens
-        $slug = trim($slug, '-');
-
-        // Add unique suffix if exists
-        $checkSql = "SELECT COUNT(*) as count FROM content WHERE slug = ?";
-        $stmt = $this->mysqli->prepare($checkSql);
-        $stmt->bind_param("s", $slug);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        if ($result) {
-            $row = $result->fetch_assoc();
-            if ($row && (int)$row['count'] > 0) {
-                $slug = $slug . '-' . time();
+        $cols = [];
+        $res = $this->mysqli->query("SHOW COLUMNS FROM {$table}");
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $cols[$row['Field']] = true;
             }
         }
-        $stmt->close();
-
-        return $slug;
+        return $cols;
     }
 
-    /**
-     * Add categories to content
-     */
-    private function addContentCategories(int $contentId, array $categoryIds): void
+    private function buildArticleSelectList(array $columns): string
     {
-        foreach ($categoryIds as $catId) {
-            $sql = "INSERT IGNORE INTO content_categories (content_id, category_id) VALUES (?, ?)";
-            $stmt = $this->mysqli->prepare($sql);
-            $stmt->bind_param("ii", $contentId, $catId);
-            $stmt->execute();
-            $stmt->close();
+        $required = ['id', 'source_id', 'url', 'title', 'content', 'excerpt', 'author', 'image_url', 'published_at', 'status'];
+        $optional = ['ai_title', 'ai_content', 'ai_excerpt', 'metadata', 'original_url', 'original_title', 'original_content'];
+
+        $list = [];
+        foreach ($required as $col) {
+            if (!empty($columns[$col])) {
+                $list[] = $col;
+            }
         }
+        foreach ($optional as $col) {
+            if (!empty($columns[$col])) {
+                $list[] = $col;
+            }
+        }
+
+        // Always include id at minimum.
+        if (empty($list)) {
+            return 'id';
+        }
+
+        return implode(', ', $list);
     }
 
-    /**
-     * Add tags to content
-     */
-    private function addContentTags(int $contentId, array $tagIds): void
+    private function resolveAuthorName($author): string
     {
-        foreach ($tagIds as $tagId) {
-            $sql = "INSERT IGNORE INTO content_tags (content_id, tag_id) VALUES (?, ?)";
-            $stmt = $this->mysqli->prepare($sql);
-            $stmt->bind_param("ii", $contentId, $tagId);
-            $stmt->execute();
-            $stmt->close();
+        if (is_string($author) && trim($author) !== '') {
+            return trim($author);
         }
+
+        if (is_numeric($author)) {
+            $userId = (int)$author;
+            try {
+                $stmt = $this->mysqli->prepare("SELECT username FROM users WHERE id = ? LIMIT 1");
+                if ($stmt) {
+                    $stmt->bind_param("i", $userId);
+                    $stmt->execute();
+                    $res = $stmt->get_result();
+                    if ($res && ($row = $res->fetch_assoc())) {
+                        $stmt->close();
+                        return (string)($row['username'] ?? 'AI Bot');
+                    }
+                    $stmt->close();
+                }
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
+        return 'AI Bot';
     }
 
     /**

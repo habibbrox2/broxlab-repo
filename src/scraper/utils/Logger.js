@@ -3,18 +3,39 @@
  * Centralized logging for the scraper system
  */
 
-import CONFIG from '../config.js';
+import fs from 'fs';
+
+// Lazy import to avoid circular dependency
+let CONFIG = null;
+
+const getConfig = () => {
+    if (!CONFIG) {
+        CONFIG = {
+            logging: {
+                level: process.env.LOG_LEVEL || 'info',
+                file: process.env.LOG_FILE || null
+            }
+        };
+    }
+    return CONFIG;
+};
 
 class Logger {
     constructor() {
-        this.level = CONFIG.logging.level;
-        this.file = CONFIG.logging.file;
         this.levels = {
             debug: 0,
             info: 1,
             warn: 2,
             error: 3
         };
+    }
+
+    get level() {
+        return getConfig().logging.level;
+    }
+
+    get file() {
+        return getConfig().logging.file;
     }
 
     _shouldLog(level) {
@@ -34,9 +55,11 @@ class Logger {
 
     _writeToFile(message) {
         if (this.file) {
-            // Simple file append - in production use proper logging library
-            const fs = require('fs');
-            fs.appendFileSync(this.file, message + '\n');
+            try {
+                fs.appendFileSync(this.file, message + '\n');
+            } catch (e) {
+                // Ignore file write errors
+            }
         }
     }
 

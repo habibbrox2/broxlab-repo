@@ -74,12 +74,34 @@ class TickerScraper {
 
         // Try primary selector first
         const primarySelector = tickerSelectors.primary;
+        const titleSelector = tickerSelectors.title || null;
+        const nestedLinkSelector = tickerSelectors.link || 'a';
 
         try {
             $dom(primarySelector).each((i, el) => {
                 const $el = $dom(el);
-                let href = $el.attr('href');
-                let title = $el.text().trim();
+                const $linkEl =
+                    ($el.is('a') && ($el.attr('href') || $el.text().trim()))
+                        ? $el
+                        : $el.find(nestedLinkSelector).first();
+
+                let href = $linkEl.attr('href');
+                let title = '';
+
+                if (titleSelector) {
+                    try {
+                        title = ($el.find(titleSelector).first().text() || '').trim();
+                        if (!title && $linkEl && $linkEl.length > 0) {
+                            title = ($linkEl.find(titleSelector).first().text() || '').trim();
+                        }
+                    } catch (e) {
+                        // ignore invalid title selector
+                    }
+                }
+
+                if (!title) {
+                    title = ($linkEl.text() || $el.text()).trim();
+                }
 
                 // Skip empty or invalid links
                 if (!href || href.startsWith('#') || href.startsWith('javascript:')) {
@@ -121,8 +143,28 @@ class TickerScraper {
                 try {
                     $dom(selector).each((i, el) => {
                         const $el = $dom(el);
-                        let href = $el.attr('href');
-                        let title = $el.text().trim();
+                        const $linkEl =
+                            ($el.is('a') && ($el.attr('href') || $el.text().trim()))
+                                ? $el
+                                : $el.find(nestedLinkSelector).first();
+
+                        let href = $linkEl.attr('href');
+                        let title = '';
+
+                        if (titleSelector) {
+                            try {
+                                title = ($el.find(titleSelector).first().text() || '').trim();
+                                if (!title && $linkEl && $linkEl.length > 0) {
+                                    title = ($linkEl.find(titleSelector).first().text() || '').trim();
+                                }
+                            } catch (e) {
+                                // ignore invalid title selector
+                            }
+                        }
+
+                        if (!title) {
+                            title = ($linkEl.text() || $el.text()).trim();
+                        }
 
                         if (!href || href.startsWith('#') || href.startsWith('javascript:')) {
                             return;
@@ -205,10 +247,18 @@ class TickerScraper {
             }
         }
 
-        // If base URL matches, include it
+        // If host matches the source host (or its subdomains), include it
         const baseUrl = this.sourceConfig?.baseUrl || CONFIG.sources.bdnews24.baseUrl;
-        if (href.includes(new URL(baseUrl).hostname)) {
-            return true;
+        try {
+            const baseHost = new URL(baseUrl).hostname.toLowerCase();
+            const baseDomain = baseHost.replace(/^www\./, '');
+            const hrefHost = new URL(href).hostname.toLowerCase();
+
+            if (hrefHost === baseHost) return true;
+            if (hrefHost === baseDomain) return true;
+            if (hrefHost.endsWith('.' + baseDomain)) return true;
+        } catch (e) {
+            // Ignore URL parse failures and fall through to false.
         }
 
         return false;

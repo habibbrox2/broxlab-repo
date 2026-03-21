@@ -4,6 +4,7 @@
  */
 
 import CONFIG from './config.js';
+import EnvLoader from './utils/EnvLoader.js';
 import Logger from './utils/Logger.js';
 import TickerScraper from './agents/TickerScraper.js';
 import ArticleScraper from './agents/ArticleScraper.js';
@@ -11,10 +12,15 @@ import ValidationAgent from './agents/ValidationAgent.js';
 import DiffDetector from './agents/DiffDetector.js';
 import DatabaseService from './services/DatabaseService.js';
 
+// Ensure environment variables are available when running via PHP proc_open/cron.
+EnvLoader.load();
+
 class ScraperOrchestrator {
     constructor(options = {}) {
+        this.sourceId = options.sourceId ? Number(options.sourceId) : null;
         this.sourceKey = options.source || CONFIG.source.defaultSource;
         this.concurrency = options.concurrency || CONFIG.concurrency.maxParallelFetches;
+        this.maxArticles = Number.isFinite(Number(options.max)) ? Number(options.max) : 10;
 
         // Initialize agents
         this.tickerScraper = new TickerScraper(this.sourceKey);
@@ -27,6 +33,7 @@ class ScraperOrchestrator {
             cycles: 0,
             articlesFound: 0,
             articlesSaved: 0,
+            articlesDuplicates: 0,
             articlesFailed: 0,
             startTime: null
         };
@@ -36,14 +43,85 @@ class ScraperOrchestrator {
      * Initialize the orchestrator
      */
     async initialize() {
-        Logger.info('Initializing ScraperOrchestrator', { source: this.sourceKey });
+        Logger.info('Initializing ScraperOrchestrator', { source: this.sourceKey, sourceId: this.sourceId });
 
         // Initialize database
-        const dbConnected = await this.db.initialize();
+        const dbConnected = await this.db.initialize({ preferAutoContent: !!this.sourceId });
+
+        if (this.sourceId && !dbConnected) {
+            throw new Error('db_connect_failed');
+        }
 
         if (dbConnected) {
-            // Initialize diff detector with existing links
-            await this.diffDetector.initializeFromDb(this.db);
+            // If a preset key is provided (e.g. --source=ittefaq) try to resolve the matching AutoContent source.
+            // This allows CLI runs to insert into autocontent_articles without passing --sourceId explicitly.
+            if (!this.sourceId && this.sourceKey) {
+                let resolved = await this.db.getAutoContentSourceByPresetKey(this.sourceKey);
+
+                if (!resolved) {
+                    const presetConfig = this.tickerScraper.getSourceConfig?.() || CONFIG.sources[this.sourceKey] || null;
+                    const homepageUrl = presetConfig?.homepageUrl || '';
+                    const presetName = presetConfig?.name || this.sourceKey;
+
+                    resolved = await this.db.ensureAutoContentSourceForPreset({
+                        presetKey: this.sourceKey,
+                        name: presetName,
+                        url: homepageUrl
+                    });
+                }
+
+                if (resolved?.id) {
+                    this.sourceId = Number(resolved.id);
+                    Logger.info('AutoContent source ready for preset key', {
+                        presetKey: this.sourceKey,
+                        sourceId: this.sourceId
+                    });
+                }
+            }
+
+            if (this.sourceId) {
+                const source = await this.db.getAutoContentSourceById(this.sourceId);
+                if (!source) {
+                    Logger.error('AutoContent source not found', { sourceId: this.sourceId });
+                    throw new Error('autocontent_source_not_found');
+                }
+
+                const presetKey = (source.website_preset_key || '').trim();
+                if (presetKey) {
+                    this.sourceKey = presetKey;
+                }
+
+                const base = new URL(source.url);
+                const overrideConfig = {
+                    name: source.name || presetKey || this.sourceKey,
+                    baseUrl: `${base.protocol}//${base.host}/`,
+                    homepageUrl: source.url
+                };
+
+                // Ensure agents target this preset/source
+                this.tickerScraper.sourceKey = this.sourceKey;
+                this.articleScraper.sourceKey = this.sourceKey;
+
+                // Load selectors from DB presets (if available)
+                await this.tickerScraper.initialize();
+                await this.articleScraper.initialize();
+
+                // Override homepage/base URLs from autocontent_sources
+                this.tickerScraper.sourceConfig = { ...(this.tickerScraper.sourceConfig || {}), ...overrideConfig };
+                this.articleScraper.sourceConfig = { ...(this.articleScraper.sourceConfig || {}), ...overrideConfig };
+
+                const existingUrls = await this.db.getExistingUrlsBySource(this.sourceId);
+                await this.diffDetector.initialize(existingUrls);
+            } else {
+                // Legacy mode: initialize diff detector with existing links
+                await this.diffDetector.initializeFromDb(this.db);
+                await this.tickerScraper.initialize();
+                await this.articleScraper.initialize();
+            }
+        } else {
+            // Still allow scraping without DB (no diff init)
+            await this.tickerScraper.initialize();
+            await this.articleScraper.initialize();
         }
 
         this.stats.startTime = new Date();
@@ -82,40 +160,81 @@ class ScraperOrchestrator {
         // Step 2: Find new links
         const newLinks = this.diffDetector.findNewLinks(tickerItems);
 
-        if (newLinks.length === 0) {
+        const limitedLinks = (this.maxArticles && this.maxArticles > 0)
+            ? newLinks.slice(0, this.maxArticles)
+            : newLinks;
+
+        if (limitedLinks.length === 0) {
             Logger.info('No new articles found');
             return {
                 success: true,
                 status: 'no_new_articles',
+                source_id: this.sourceId || null,
+                processed: 0,
+                saved: 0,
+                duplicates: 0,
+                failed: 0,
+                errors: [],
                 newArticles: []
             };
         }
 
-        Logger.info(`Found ${newLinks.length} new articles to process`);
+        Logger.info(`Found ${limitedLinks.length} new articles to process`);
 
         // Step 3: Process new articles (with concurrency limit)
-        const newArticles = await this.processArticles(newLinks);
+        const newArticles = await this.processArticles(limitedLinks);
 
         // Step 4: Save valid articles
         const savedArticles = [];
+        const errors = [];
+
+        if (!this.db?.connected) {
+            const valid = newArticles.filter(a => a.isValid).map(a => a.data);
+            Logger.warn('Database not connected; skipping inserts', { valid: valid.length });
+            return {
+                success: true,
+                status: valid.length > 0 ? 'scraped_no_db' : 'no_valid_articles',
+                source_id: this.sourceId || null,
+                processed: limitedLinks.length,
+                saved: 0,
+                duplicates: 0,
+                failed: limitedLinks.length - valid.length,
+                errors: ['db_not_connected'],
+                newArticles: valid
+            };
+        }
 
         for (const article of newArticles) {
             if (article.isValid) {
-                const result = await this.db.insertArticle(article.data);
+                let result = null;
+
+                if (this.sourceId) {
+                    result = await this.db.insertAutoContentArticle(this.sourceId, article.data);
+                } else {
+                    result = await this.db.insertArticle(article.data);
+                }
 
                 if (result.success) {
                     savedArticles.push(article.data);
                     this.stats.articlesSaved++;
                 } else {
-                    this.stats.articlesFailed++;
+                    if (result.error === 'duplicate') {
+                        this.stats.articlesDuplicates++;
+                    } else {
+                        this.stats.articlesFailed++;
+                        errors.push(result.error || 'save_failed');
+                    }
                 }
             } else {
                 this.stats.articlesFailed++;
+                if (article.errors?.length) {
+                    errors.push(article.errors.join('; '));
+                }
             }
         }
 
         Logger.info(`=== Cycle ${this.stats.cycles} Complete ===`, {
-            new: newLinks.length,
+            new: limitedLinks.length,
             valid: newArticles.filter(a => a.isValid).length,
             saved: savedArticles.length
         });
@@ -123,9 +242,13 @@ class ScraperOrchestrator {
         return {
             success: true,
             status: savedArticles.length > 0 ? 'success' : 'no_valid_articles',
-            newArticles: savedArticles,
-            processed: newLinks.length,
-            stats: this.stats
+            source_id: this.sourceId || null,
+            processed: limitedLinks.length,
+            saved: savedArticles.length,
+            duplicates: this.stats.articlesDuplicates,
+            failed: this.stats.articlesFailed,
+            errors,
+            newArticles: savedArticles
         };
     }
 
@@ -249,11 +372,20 @@ export default ScraperOrchestrator;
 // CLI execution
 async function main() {
     const args = process.argv.slice(2);
+    const timeoutMs = parseInt(args.find(a => a.startsWith('--timeoutMs='))?.split('=')[1]);
+
+    if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
+        CONFIG.http.timeout = timeoutMs;
+    }
+
     const options = {
         source: args.find(a => a.startsWith('--source='))?.split('=')[1] || CONFIG.source.defaultSource,
+        sourceId: parseInt(args.find(a => a.startsWith('--sourceId='))?.split('=')[1]),
         continuous: args.includes('--continuous'),
         interval: parseInt(args.find(a => a.startsWith('--interval='))?.split('=')[1]) || 20000,
-        cycles: parseInt(args.find(a => a.startsWith('--cycles='))?.split('=')[1]) || 0
+        cycles: parseInt(args.find(a => a.startsWith('--cycles='))?.split('=')[1]) || 0,
+        concurrency: parseInt(args.find(a => a.startsWith('--concurrency='))?.split('=')[1]) || undefined,
+        max: parseInt(args.find(a => a.startsWith('--max='))?.split('=')[1]) || 10
     };
 
     Logger.info('Starting bdnews24 scraper', options);
@@ -267,7 +399,8 @@ async function main() {
             await orchestrator.runContinuous(options.interval, options.cycles);
         } else {
             const result = await orchestrator.runCycle();
-            console.log(JSON.stringify(result, null, 2));
+            // Provide stable, machine-readable output for PHP runner.
+            console.log(JSON.stringify(result));
         }
 
         await orchestrator.cleanup();
@@ -279,7 +412,4 @@ async function main() {
     }
 }
 
-// Run if executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-    main();
-}
+main();

@@ -12,6 +12,7 @@ $dotenv->load();
 
 require_once __DIR__ . '/../Config/Db.php';
 require_once __DIR__ . '/../app/Models/AutoContentModel.php';
+require_once __DIR__ . '/../app/Modules/Scraper/NodeScraperRunner.php';
 
 use App\Modules\Scraper\ScraperService;
 use App\Modules\Scraper\EnhancedScraperService;
@@ -49,6 +50,9 @@ $imageDownloader = new ImageDownloaderService();
 
 $maxPerSource = (int)($settings['max_articles_per_source'] ?? 10);
 
+// Node runner for AutoContent-compatible sources
+$nodeRunner = new \App\Modules\Scraper\NodeScraperRunner();
+
 // Initialize Telegram if enabled
 $telegramEnabled = !empty($config['telegram']['enabled']) && $config['telegram']['post_on_collect'];
 $telegram = null;
@@ -68,6 +72,25 @@ foreach ($sources as $source) {
     echo "Processing source: {$source['name']}\n";
 
     try {
+        // Prefer Node.js scraper when website_preset_key is configured
+        $presetKey = trim((string)($source['website_preset_key'] ?? ''));
+        if ($presetKey !== '' && !empty($source['id'])) {
+            $node = $nodeRunner->runForSourceId((int)$source['id'], $maxPerSource, 180);
+
+            if (($node['success'] ?? false) && !empty($node['data']) && is_array($node['data'])) {
+                $data = $node['data'];
+                $saved = (int)($data['saved'] ?? 0);
+                $dupes = (int)($data['duplicates'] ?? 0);
+                $collected += $saved;
+                $duplicates += $dupes;
+                $model->updateLastFetched((int)$source['id']);
+                continue;
+            }
+
+            $errors[] = "Source {$source['name']}: Node scraper failed (" . ($node['error'] ?? 'node_scraper_failed') . ")";
+            // Fall back to PHP scraping below (best-effort)
+        }
+
         // Use specialized scraper for known sites
         if (stripos($source['url'] ?? '', 'prothomalo.com') !== false) {
             require_once __DIR__ . '/../app/Modules/Scraper/ProthomAloScraperService.php';

@@ -20,6 +20,54 @@
         </div>
     </div>
 
+    {% if static_presets is defined and static_presets|length > 0 %}
+    <!-- Built-in (Node) Presets -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Built-in (Node) Presets</strong>
+                        <span class="text-muted small ms-2">These come from `src/scraper/config.js`</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for sp in static_presets %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="border rounded p-3 h-100">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="me-2">
+                                        <div class="fw-semibold">{{ sp.name }}</div>
+                                        <div class="small text-muted mt-1">
+                                            <code>{{ sp.preset_key }}</code>
+                                        </div>
+                                        {% if sp.homepageUrl %}
+                                        <div class="small text-muted mt-1 text-break">{{ sp.homepageUrl }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" onclick="copyStaticPresetKey('{{ sp.preset_key|escape('js') }}')">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-primary" type="button" onclick="openCreatePresetFromStatic('{{ sp.preset_key|escape('js') }}')">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="text-muted small mt-3">
+                        Tip: Use the preset key in <code>Admin → AutoContent → Sources → website_preset_key</code>.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Presets Grid -->
     <div class="row g-4">
         {% for preset in presets %}
@@ -410,6 +458,97 @@
 
 <script>
 let presets = {{ presets|json_encode|raw }};
+let staticPresets = {{ static_presets|default([])|json_encode|raw }};
+
+function showToast(title, message, variant = 'info') {
+    try {
+        let container = document.getElementById('toastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '1080';
+            document.body.appendChild(container);
+        }
+
+        const bgClass = variant === 'success'
+            ? 'text-bg-success'
+            : (variant === 'warning' ? 'text-bg-warning' : (variant === 'danger' ? 'text-bg-danger' : 'text-bg-secondary'));
+
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast align-items-center ${bgClass}`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+        toastEl.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong class="me-2">${String(title || '')}</strong>${String(message || '')}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+
+        container.appendChild(toastEl);
+        const toast = new bootstrap.Toast(toastEl, { delay: 2000 });
+        toast.show();
+
+        toastEl.addEventListener('hidden.bs.toast', () => {
+            toastEl.remove();
+        });
+    } catch (e) {
+        console.log(title, message);
+    }
+}
+
+function copyStaticPresetKey(key) {
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(String(key || '')).then(() => {
+                showToast('Copied preset key', String(key || ''), 'success');
+            }).catch(() => {
+                showToast('Copy failed', 'Please copy manually', 'warning');
+            });
+            return;
+        }
+    } catch (e) {
+        // ignore
+    }
+    showToast('Copy not supported', 'Please copy manually', 'warning');
+}
+
+function openCreatePresetFromStatic(key) {
+    const sp = (staticPresets || []).find(p => String(p.preset_key) === String(key));
+    const modal = new bootstrap.Modal(document.getElementById('presetModal'));
+
+    // Reset form first
+    document.getElementById('presetForm').reset();
+    document.querySelector('#presetForm input[name="preset_key"]').readOnly = false;
+
+    if (sp) {
+        document.getElementById('preset_name').value = sp.name || key;
+        document.getElementById('preset_key').value = sp.preset_key || key;
+
+        // Best-effort mapping from Node selectors to DB preset fields
+        const ticker = sp.selectors?.ticker || {};
+        const article = sp.selectors?.article || {};
+
+        document.getElementById('selector_list_item').value = ticker.primary || '';
+        document.getElementById('selector_list_title').value = ticker.title || '';
+        document.getElementById('selector_list_link').value = ticker.link || 'a';
+
+        document.getElementById('selector_title').value = article.title?.primary || '';
+        document.getElementById('selector_content').value = article.content?.primary || '';
+        document.getElementById('selector_image').value = article.image?.primary || '';
+        document.getElementById('selector_excerpt').value = article.subtitle?.primary || '';
+        document.getElementById('selector_date').value = article.published?.primary || '';
+        document.getElementById('selector_author').value = article.author?.primary || '';
+    } else {
+        document.getElementById('preset_key').value = key;
+    }
+
+    modal.show();
+}
 let detectedSelectors = {};
 
 function getCsrfToken() {
@@ -607,7 +746,7 @@ async function saveAiDetectedPreset() {
 }
 
 function editPreset(id) {
-    const preset = presets.find(p => p.id === id);
+    const preset = presets.find(p => String(p.id) === String(id));
     if (!preset) return;
 
     document.getElementById('presetModalLabel').textContent = 'Edit Preset';
@@ -672,11 +811,18 @@ let quickCreatedSelectors = null;
 
 function generatePresetKey(name, targetId) {
     if (!name) return;
-    const key = name.toLowerCase()
+    let key = name.toLowerCase()
         .replace(/[^a-z0-9\s-]/g, '')
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
         .trim();
+
+    key = key.replace(/^-+|-+$/g, '');
+
+    if (!key) {
+        key = 'preset-' + Date.now().toString(36);
+    }
+
     document.getElementById(targetId).value = key;
 }
 
@@ -822,7 +968,9 @@ async function aiDetectForPreset() {
             if (data.selectors.list_container) document.getElementById('selector_list_container').value = data.selectors.list_container;
             if (data.selectors.list_item) document.getElementById('selector_list_item').value = data.selectors.list_item;
             if (data.selectors.list_title) document.getElementById('selector_list_title').value = data.selectors.list_title;
+            if (data.selectors.list_link) document.getElementById('selector_list_link').value = data.selectors.list_link;
             if (data.selectors.list_date) document.getElementById('selector_list_date').value = data.selectors.list_date;
+            if (data.selectors.list_image) document.getElementById('selector_list_image').value = data.selectors.list_image;
             if (data.selectors.title) document.getElementById('selector_title').value = data.selectors.title;
             if (data.selectors.content) document.getElementById('selector_content').value = data.selectors.content;
             if (data.selectors.image) document.getElementById('selector_image').value = data.selectors.image;
@@ -901,7 +1049,7 @@ document.getElementById('aiDetectModal').addEventListener('hidden.bs.modal', fun
 let currentPreviewPreset = null;
 
 function previewPreset(id) {
-    const preset = presets.find(p => p.id === id);
+    const preset = presets.find(p => String(p.id) === String(id));
     if (!preset) return;
     
     currentPreviewPreset = preset;

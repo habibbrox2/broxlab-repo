@@ -139,12 +139,26 @@ class ArticleScraper {
             dateStr = HtmlParser.extractText($dom, selectorConfig.fallback);
         }
 
-        // Try to parse datetime attribute
-        if (!dateStr) {
-            const datetimeEl = $dom(selectorConfig.primary).first();
-            const datetime = datetimeEl.attr('datetime');
-            if (datetime) {
-                return this.parseDate(datetime);
+        // Prefer attribute values when available (more reliable than displayed text)
+        const selectorList = [];
+        if (selectorConfig.primary) {
+            selectorList.push(...(Array.isArray(selectorConfig.primary) ? selectorConfig.primary : [selectorConfig.primary]));
+        }
+        if (selectorConfig.fallback) {
+            selectorList.push(...(Array.isArray(selectorConfig.fallback) ? selectorConfig.fallback : [selectorConfig.fallback]));
+        }
+
+        const attrCandidates = ['datetime', 'content', 'data-published', 'data-modified', 'data-updated'];
+        for (const selector of selectorList) {
+            if (!selector) continue;
+            const el = $dom(selector).first();
+            if (!el || el.length === 0) continue;
+
+            for (const attrName of attrCandidates) {
+                const value = el.attr(attrName);
+                if (!value) continue;
+                const parsed = this.parseDate(value);
+                if (parsed) return parsed;
             }
         }
 
@@ -158,8 +172,102 @@ class ArticleScraper {
         if (!dateStr) return null;
 
         try {
+            const bnToAsciiDigits = (value) => {
+                if (!value) return '';
+                const map = {
+                    '০': '0',
+                    '১': '1',
+                    '২': '2',
+                    '৩': '3',
+                    '৪': '4',
+                    '৫': '5',
+                    '৬': '6',
+                    '৭': '7',
+                    '৮': '8',
+                    '৯': '9'
+                };
+                return String(value).replace(/[০-৯]/g, (d) => map[d] ?? d);
+            };
+
+            const monthNumberMap = {
+                // Bengali
+                'জানুয়ারি': 1,
+                'ফেব্রুয়ারি': 2,
+                'মার্চ': 3,
+                'এপ্রিল': 4,
+                'মে': 5,
+                'জুন': 6,
+                'জুলাই': 7,
+                'আগস্ট': 8,
+                'সেপ্টেম্বর': 9,
+                'অক্টোবর': 10,
+                'নভেম্বর': 11,
+                'ডিসেম্বর': 12,
+                // English (lowercase)
+                'january': 1,
+                'february': 2,
+                'march': 3,
+                'april': 4,
+                'may': 5,
+                'june': 6,
+                'july': 7,
+                'august': 8,
+                'september': 9,
+                'october': 10,
+                'november': 11,
+                'december': 12
+            };
+
+            const bengaliMonthsUnicode = {
+                'জানুয়ারি': 'January',
+                'ফেব্রুয়ারি': 'February',
+                'মার্চ': 'March',
+                'এপ্রিল': 'April',
+                'মে': 'May',
+                'জুন': 'June',
+                'জুলাই': 'July',
+                'আগস্ট': 'August',
+                'সেপ্টেম্বর': 'September',
+                'অক্টোবর': 'October',
+                'নভেম্বর': 'November',
+                'ডিসেম্বর': 'December'
+            };
+
+            const normalizeInput = (value) => {
+                let s = String(value);
+                s = s.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+                s = s.replace(
+                    /^(প্রকাশিতঃ|প্রকাশিত|প্রকাশ:|প্রকাশ|আপডেটঃ|আপডেট|Updated:|Updated|Published:|Published)\s*/i,
+                    ''
+                );
+                return bnToAsciiDigits(s);
+            };
+
+            const normalizedInput = normalizeInput(dateStr);
+
+            // Samakal patterns: "২০ মার্চ ২০২৬ | ২৩:১৫" (Bangladesh local time)
+            const dtMatch = normalizedInput.match(
+                /(\d{1,2})\s+([^\s|,]+)\s+(\d{4})\s*(?:\||,)?\s*(\d{1,2})[:：]\s*(\d{2})/
+            );
+
+            if (dtMatch) {
+                const day = parseInt(dtMatch[1], 10);
+                const monthName = String(dtMatch[2] || '').trim();
+                const year = parseInt(dtMatch[3], 10);
+                const hour = parseInt(dtMatch[4], 10);
+                const minute = parseInt(dtMatch[5], 10);
+
+                const monthKey = monthName.toLowerCase();
+                const month = monthNumberMap[monthName] ?? monthNumberMap[monthKey] ?? null;
+
+                if (month && year >= 1970 && day >= 1 && day <= 31 && hour <= 23 && minute <= 59) {
+                    const pad2 = (n) => String(n).padStart(2, '0');
+                    return `${year}-${pad2(month)}-${pad2(day)}T${pad2(hour)}:${pad2(minute)}:00+06:00`;
+                }
+            }
+
             // Try direct parse
-            let date = new Date(dateStr);
+            let date = new Date(normalizedInput);
 
             // If invalid, try common Bengali/English formats
             if (isNaN(date.getTime())) {
@@ -179,9 +287,13 @@ class ArticleScraper {
                     'ডিসেম্বর': 'December'
                 };
 
-                let normalized = dateStr;
+                let normalized = normalizedInput;
                 for (const [bn, en] of Object.entries(bengaliMonths)) {
                     normalized = normalized.replace(bn, en);
+                }
+
+                for (const [bn, en] of Object.entries(bengaliMonthsUnicode)) {
+                    normalized = normalized.replace(new RegExp(bn, 'g'), en);
                 }
 
                 date = new Date(normalized);
@@ -216,6 +328,14 @@ class ArticleScraper {
 
         if (!imageUrl && selectorConfig.fallback) {
             imageUrl = HtmlParser.extractAttribute($dom, selectorConfig.fallback, 'data-src');
+        }
+
+        // Try <meta content="..."> (og:image, etc.)
+        if (!imageUrl) {
+            imageUrl = HtmlParser.extractAttribute($dom, selectorConfig.primary, 'content');
+        }
+        if (!imageUrl && selectorConfig.fallback) {
+            imageUrl = HtmlParser.extractAttribute($dom, selectorConfig.fallback, 'content');
         }
 
         // Normalize URL

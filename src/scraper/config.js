@@ -5,15 +5,15 @@
  * Can load selectors from website_presets table
  */
 
-import DatabaseService from './services/DatabaseService.js';
-
 const CONFIG = {
     // Cache for dynamically loaded presets
     _presetCache: new Map(),
     // Default source configuration
     source: {
         // Can be overridden by command line or environment
-        defaultSource: process.env.SCRAPER_SOURCE || 'bdnews24'
+        get defaultSource() {
+            return process.env.SCRAPER_SOURCE || 'bdnews24';
+        }
     },
 
     // Source-specific selectors
@@ -56,6 +56,87 @@ const CONFIG = {
                 }
             }
         },
+        samakal: {
+            name: 'Samakal',
+            baseUrl: 'https://samakal.com/',
+            homepageUrl: 'https://samakal.com/latest/news',
+            selectors: {
+                ticker: {
+                    // List page anchors: <div id="data-wrapper"> ... <div class="CatListNews"><a href="...">...</a>
+                    primary: '#data-wrapper .CatListNews > a',
+                    title: '.CatListhead h3',
+                    link: 'a',
+                    fallback: ['#data-wrapper a[href*="samakal.com"]', 'a[href*="samakal.com"]']
+                },
+                article: {
+                    title: {
+                        primary: '.dheading h1',
+                        fallback: ['h1', 'meta[property="og:title"]', 'title']
+                    },
+                    subtitle: {
+                        primary: '.dheading .DsubHead',
+                        fallback: ['.dheading h2', 'meta[name="description"]', 'meta[property="og:description"]']
+                    },
+                    author: {
+                        primary: '.writter p',
+                        fallback: ['.author', '.byline', '[rel="author"]']
+                    },
+                    published: {
+                        primary: '.dateAndTime p',
+                        fallback: ['time[datetime]', 'meta[property="article:published_time"]']
+                    },
+                    image: {
+                        primary: '.DNewsImg img',
+                        fallback: ['meta[property="og:image"]', 'article img', 'img']
+                    },
+                    content: {
+                        primary: '#contentDetails p',
+                        fallback: ['#contentDetails', 'article p', '.content p', '.dNewsDesc p']
+                    }
+                }
+            }
+        },
+        ittefaq: {
+            name: 'The Daily Ittefaq',
+            baseUrl: 'https://www.ittefaq.com.bd/',
+            homepageUrl: 'https://www.ittefaq.com.bd/latest-news',
+            selectors: {
+                ticker: {
+                    // Latest list page cards: <div class="each"> ... <h2 class="title"><a class="link_overlay" href="//www.ittefaq.com.bd/...">Title</a>
+                    primary: '.contents_listing .each h2.title a.link_overlay[href]',
+                    link: 'a',
+                    fallback: ['.contents_listing a.link_overlay[href]', 'a[href*="ittefaq.com.bd/"]']
+                },
+                article: {
+                    title: {
+                        primary: 'h1[itemprop="headline"].title, h1[itemprop="headline"], h1.title',
+                        fallback: ['h1', 'meta[property="og:title"]', 'title']
+                    },
+                    subtitle: {
+                        primary: 'meta[name="description"]',
+                        fallback: ['meta[property="og:description"]']
+                    },
+                    author: {
+                        primary: '.additional_info_container .author .name, [itemprop="author"] .name, .author .name',
+                        fallback: ['[itemprop="author"]', '.byline', '[rel="author"]']
+                    },
+                    published: {
+                        // <span class="tts_time" itemprop="datePublished" content="2026-03-21T10:18:32+06:00">প্রকাশ : ...</span>
+                        primary: 'span.tts_time[itemprop="datePublished"], [itemprop="datePublished"]',
+                        fallback: ['time[datetime]', 'meta[property="article:published_time"]', 'meta[itemprop="datePublished"]']
+                    },
+                    image: {
+                        // Prefer structured meta first; fallback to hero image
+                        primary: 'meta[itemprop="image"][content*="/uploads/"], meta[property="og:image"][content*="/uploads/"], .featured_image img',
+                        fallback: ['.featured_image img', 'article img', 'img']
+                    },
+                    content: {
+                        primary: 'div[itemprop="articleBody"] p',
+                        fallback: ['.jw_article_body p', 'article p', '.content_detail_content_inner p']
+                    }
+                }
+            }
+        },
         prothomalo: {
             name: 'Prothom Alo',
             baseUrl: 'https://www.prothomalo.com/',
@@ -89,6 +170,47 @@ const CONFIG = {
                     content: {
                         primary: '[itemprop="articleBody"] p',
                         fallback: ['.article-content p', 'article p', '.content p']
+                    }
+                }
+            }
+        },
+        prothomalo_latest: {
+            name: 'Prothom Alo (Latest)',
+            baseUrl: 'https://www.prothomalo.com/',
+            homepageUrl: 'https://www.prothomalo.com/collection/latest',
+            selectors: {
+                ticker: {
+                    // The latest collection page contains multiple card types; `a.title-link` is consistent.
+                    primary: 'h3.headline-title a.title-link[href]',
+                    title: 'span.tilte-no-link-parent',
+                    link: 'a',
+                    fallback: ['a.title-link[href*="prothomalo.com"]', 'a[href*="prothomalo.com"]']
+                },
+                article: {
+                    title: {
+                        primary: '.story-title-info h1, h1[data-title-0]',
+                        fallback: ['h1[itemprop="headline"]', 'h1', 'meta[property="og:title"]', 'title']
+                    },
+                    subtitle: {
+                        primary: 'meta[name="description"]',
+                        fallback: ['meta[property="og:description"]']
+                    },
+                    author: {
+                        primary: '.author-location, [itemprop="author"], .author-name',
+                        fallback: ['.byline', '[rel="author"]']
+                    },
+                    published: {
+                        primary: 'time[datetime]',
+                        fallback: ['meta[property="article:published_time"]', 'time', '.published-time', '.published-at']
+                    },
+                    image: {
+                        primary: '.story-page-hero img, figure img',
+                        fallback: ['meta[property="og:image"]', '[itemprop="image"] img', 'img']
+                    },
+                    content: {
+                        // Works for nagorik.prothomalo.com and many prothomalo story pages.
+                        primary: '.story-element-text p',
+                        fallback: ['[itemprop="articleBody"] p', 'article p', '.story-content p', '.content p']
                     }
                 }
             }
@@ -140,17 +262,17 @@ const CONFIG = {
     },
 
     // Helper functions
-    getSourceConfig: async function(sourceKey) {
+    getSourceConfig: async function (sourceKey) {
         // First check static sources
         if (this.sources[sourceKey]) {
             return this.sources[sourceKey];
         }
-        
+
         // Try to load from database presets
         try {
             const db = await import('./services/DatabaseService.js');
             const dbService = db.default;
-            
+
             if (dbService.isConnected()) {
                 const preset = await dbService.fetchWebsitePreset(sourceKey);
                 if (preset) {
@@ -162,32 +284,32 @@ const CONFIG = {
         } catch (e) {
             // Database not available, use defaults
         }
-        
+
         return this.sources[this.source.defaultSource];
     },
 
-    getSelectors: function(sourceKey) {
+    getSelectors: function (sourceKey) {
         // Check static sources first
         if (this.sources[sourceKey]?.selectors) {
             return this.sources[sourceKey].selectors;
         }
-        
+
         // Check cache
         if (this._presetCache.has(sourceKey)) {
             return this._presetCache.get(sourceKey).selectors;
         }
-        
+
         return this.defaultSelectors;
     },
 
     // Get all available sources (static + from database)
-    getAvailableSources: async function() {
+    getAvailableSources: async function () {
         const sources = Object.keys(this.sources);
-        
+
         try {
             const db = await import('./services/DatabaseService.js');
             const dbService = db.default;
-            
+
             if (dbService.isConnected()) {
                 const presets = await dbService.fetchAllPresets();
                 for (const preset of presets) {
@@ -199,7 +321,7 @@ const CONFIG = {
         } catch (e) {
             // Ignore
         }
-        
+
         return sources;
     },
 
@@ -231,24 +353,43 @@ const CONFIG = {
 
     // Database settings (for direct MySQL connection)
     database: {
-        host: process.env.DB_HOST || 'localhost',
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || '',
-        database: process.env.DB_NAME || 'broxbhai',
-        port: process.env.DB_PORT || 3306
+        get host() {
+            return process.env.DB_HOST || process.env.MYSQL_HOST || 'localhost';
+        },
+        get user() {
+            return process.env.DB_USER || process.env.DB_USERNAME || process.env.MYSQL_USER || '';
+        },
+        get password() {
+            return process.env.DB_PASSWORD || process.env.DB_PASS || process.env.MYSQL_PASSWORD || '';
+        },
+        get database() {
+            return process.env.DB_NAME || process.env.DB_DATABASE || process.env.MYSQL_DATABASE || '';
+        },
+        get port() {
+            const port = parseInt(process.env.DB_PORT || process.env.MYSQL_PORT || '3306', 10);
+            return Number.isFinite(port) ? port : 3306;
+        }
     },
 
     // AI settings for self-healing
     ai: {
-        enabled: process.env.AI_ENABLED === 'true',
-        provider: process.env.AI_PROVIDER || 'claude',
+        get enabled() {
+            return process.env.AI_ENABLED === 'true';
+        },
+        get provider() {
+            return process.env.AI_PROVIDER || 'claude';
+        },
         maxHtmlSize: 20480 // 20KB
     },
 
     // Logging
     logging: {
-        level: process.env.LOG_LEVEL || 'info', // debug, info, warn, error
-        file: process.env.LOG_FILE || null
+        get level() {
+            return process.env.LOG_LEVEL || 'info'; // debug, info, warn, error
+        },
+        get file() {
+            return process.env.LOG_FILE || null;
+        }
     }
 };
 

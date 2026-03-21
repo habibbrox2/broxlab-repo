@@ -127,8 +127,25 @@ class HtmlParser {
             const content = $dom(contentSelector);
 
             if (content.length > 0) {
+                const getCleanText = (el) => {
+                    const $el = $dom(el).clone();
+                    $el.find('script,style,noscript,iframe').remove();
+                    return $el.text().trim();
+                };
+
+                // If selector matches <p> elements directly, extract those.
+                if (content.first().is('p')) {
+                    content.each((i, el) => {
+                        const text = getCleanText(el);
+                        if (text && text.length > 20) {
+                            paragraphs.push(text);
+                        }
+                    });
+                    return paragraphs;
+                }
+
                 content.find('p').each((i, el) => {
-                    const text = $dom(el).text().trim();
+                    const text = getCleanText(el);
                     if (text && text.length > 20) { // Filter out short snippets
                         paragraphs.push(text);
                     }
@@ -137,7 +154,7 @@ class HtmlParser {
                 // If no paragraphs found directly, try all p in the container
                 if (paragraphs.length === 0) {
                     content.children('p').each((i, el) => {
-                        const text = $dom(el).text().trim();
+                        const text = getCleanText(el);
                         if (text && text.length > 20) {
                             paragraphs.push(text);
                         }

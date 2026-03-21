@@ -1456,7 +1456,9 @@ function analyzeHtmlStructure(string $html, string $url): array
         'list_container' => '',
         'list_item' => '',
         'list_title' => '',
+        'list_link' => '',
         'list_date' => '',
+        'list_image' => '',
         'title' => '',
         'content' => '',
         'image' => '',
@@ -1475,7 +1477,9 @@ function analyzeHtmlStructure(string $html, string $url): array
         $selectors['list_container'] = 'body'; // The whole page contains articles
         $selectors['list_item'] = '.wide-story-card, .news_with_item';
         $selectors['list_title'] = 'h3.headline-title a.title-link';
+        $selectors['list_link'] = 'h3.headline-title a.title-link';
         $selectors['list_date'] = 'time.published-at, time.published-time';
+        $selectors['list_image'] = 'img';
 
         // Article page selectors for Prothom Alo
         $selectors['title'] = 'h1.IiRps, h1[data-title-0]';
@@ -1493,7 +1497,9 @@ function analyzeHtmlStructure(string $html, string $url): array
         $selectors['list_container'] = '#data-wrapper';
         $selectors['list_item'] = '.SubCat-wrapper, .col-md-3';
         $selectors['list_title'] = 'h5 a, .SubcatList-detail h5 a';
+        $selectors['list_link'] = 'h5 a, .SubcatList-detail h5 a';
         $selectors['list_date'] = '.publish-time, span.publish-time';
+        $selectors['list_image'] = 'img';
 
         // Article page selectors for BD News 24
         $selectors['title'] = '.details-title h1, h1';
@@ -1684,6 +1690,227 @@ function findFirstWorkingSelector(\DOMXPath $xpath, array $candidates): string
 }
 
 /**
+ * Basic CSS selector to XPath converter (supports common selectors used in presets).
+ * If a selector already looks like XPath, it is returned unchanged.
+ */
+function selectorToXPath(string $selector, bool $relative = false): string
+{
+    $selector = trim((string)$selector);
+    if ($selector === '') {
+        return '';
+    }
+
+    // Already XPath?
+    if (preg_match('/^(\\/\\/|\\/|\\.\\/\\/|\\.\\/)/', $selector)) {
+        return $selector;
+    }
+
+    return cssToXPath($selector, $relative);
+}
+
+/**
+ * Safe attribute getter for DOM nodes (supports DOMElement and DOMAttr).
+ * Returns empty string if attribute not available.
+ */
+function domNodeGetAttr(\DOMNode $node, string $attrName): string
+{
+    if ($node instanceof \DOMElement) {
+        return (string)$node->getAttribute($attrName);
+    }
+
+    if ($node instanceof \DOMAttr) {
+        if (strcasecmp((string)$node->name, (string)$attrName) === 0) {
+            return (string)$node->value;
+        }
+        return '';
+    }
+
+    return '';
+}
+
+/**
+ * Safe text getter for DOM nodes (supports DOMAttr).
+ */
+function domNodeGetText(\DOMNode $node): string
+{
+    if ($node instanceof \DOMAttr) {
+        return (string)$node->value;
+    }
+
+    return trim((string)($node->textContent ?? $node->nodeValue ?? ''));
+}
+
+function xpathLiteral(string $value): string
+{
+    if (strpos($value, '"') === false) {
+        return '"' . $value . '"';
+    }
+    if (strpos($value, "'") === false) {
+        return "'" . $value . "'";
+    }
+
+    // Contains both quotes; build concat("a", '"', "b", "'", "c")
+    $parts = preg_split('/(["\'])/', $value, -1, PREG_SPLIT_DELIM_CAPTURE);
+    $out = [];
+    foreach ($parts as $part) {
+        if ($part === '') continue;
+        if ($part === '"') {
+            $out[] = "'\"'";
+        } elseif ($part === "'") {
+            $out[] = "\"'\"";
+        } else {
+            $out[] = '"' . $part . '"';
+        }
+    }
+    return 'concat(' . implode(',', $out) . ')';
+}
+
+function cssToXPath(string $css, bool $relative = false): string
+{
+    $css = trim($css);
+    if ($css === '') {
+        return '';
+    }
+
+    // Drop simple pseudo-classes (best-effort)
+    $css = preg_replace('/:(first-child|last-child|nth-child\\([^\\)]*\\)|first-of-type|last-of-type)\\b/i', '', $css);
+
+    // Split by combinators while respecting attribute brackets/quotes.
+    $tokens = [];
+    $buffer = '';
+    $inAttr = false;
+    $quote = '';
+    $len = strlen($css);
+
+    for ($i = 0; $i < $len; $i++) {
+        $ch = $css[$i];
+
+        if ($inAttr) {
+            $buffer .= $ch;
+            if ($quote !== '') {
+                if ($ch === $quote) {
+                    $quote = '';
+                }
+            } else {
+                if ($ch === '"' || $ch === "'") {
+                    $quote = $ch;
+                } elseif ($ch === ']') {
+                    $inAttr = false;
+                }
+            }
+            continue;
+        }
+
+        if ($ch === '[') {
+            $inAttr = true;
+            $buffer .= $ch;
+            continue;
+        }
+
+        if ($ch === '>') {
+            if (trim($buffer) !== '') {
+                $tokens[] = ['type' => 'selector', 'value' => trim($buffer)];
+            }
+            $tokens[] = ['type' => 'combinator', 'value' => '>'];
+            $buffer = '';
+            continue;
+        }
+
+        if (ctype_space($ch)) {
+            if (trim($buffer) !== '') {
+                $tokens[] = ['type' => 'selector', 'value' => trim($buffer)];
+                $buffer = '';
+            }
+            // Collapse consecutive whitespace into one descendant combinator.
+            if (empty($tokens) || end($tokens)['type'] !== 'combinator') {
+                $tokens[] = ['type' => 'combinator', 'value' => ' '];
+            }
+            continue;
+        }
+
+        $buffer .= $ch;
+    }
+
+    if (trim($buffer) !== '') {
+        $tokens[] = ['type' => 'selector', 'value' => trim($buffer)];
+    }
+
+    // Build XPath
+    $xpath = $relative ? './/' : '//';
+    $needsAxis = true;
+    foreach ($tokens as $token) {
+        if ($token['type'] === 'combinator') {
+            $xpath .= ($token['value'] === '>') ? '/' : '//';
+            $needsAxis = false;
+            continue;
+        }
+
+        $segment = cssSimpleSelectorToXPathSegment($token['value']);
+        if ($needsAxis) {
+            $xpath .= $segment;
+            $needsAxis = false;
+        } else {
+            $xpath .= $segment;
+        }
+    }
+
+    return $xpath;
+}
+
+function cssSimpleSelectorToXPathSegment(string $simple): string
+{
+    $simple = trim($simple);
+    if ($simple === '') {
+        return '*';
+    }
+
+    // Remove any remaining pseudo-classes
+    $simple = preg_replace('/:[a-zA-Z0-9_-]+(\\([^\\)]*\\))?/', '', $simple);
+
+    $tag = '*';
+    $conditions = [];
+
+    if (preg_match('/^([a-zA-Z][a-zA-Z0-9_-]*)/', $simple, $m)) {
+        $tag = $m[1];
+        $simple = substr($simple, strlen($m[1]));
+    }
+
+    // ID
+    if (preg_match('/#([a-zA-Z0-9_-]+)/', $simple, $m)) {
+        $conditions[] = '@id=' . xpathLiteral($m[1]);
+    }
+
+    // Classes (multiple)
+    if (preg_match_all('/\\.([a-zA-Z0-9_-]+)/', $simple, $m)) {
+        foreach ($m[1] as $className) {
+            $conditions[] = "contains(concat(' ', normalize-space(@class), ' '), ' " . $className . " ')";
+        }
+    }
+
+    // Attributes
+    if (preg_match_all('/\\[([^\\]]+)\\]/', $simple, $m)) {
+        foreach ($m[1] as $attrExpr) {
+            $attrExpr = trim($attrExpr);
+            if ($attrExpr === '') continue;
+
+            if (preg_match('/^([a-zA-Z0-9_:-]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s]+))$/', $attrExpr, $am)) {
+                $attr = $am[1];
+                $val = $am[2] !== '' ? $am[2] : ($am[3] !== '' ? $am[3] : $am[4]);
+                $conditions[] = '@' . $attr . '=' . xpathLiteral($val);
+            } elseif (preg_match('/^([a-zA-Z0-9_:-]+)$/', $attrExpr, $am)) {
+                $conditions[] = '@' . $am[1];
+            }
+        }
+    }
+
+    if (empty($conditions)) {
+        return $tag;
+    }
+
+    return $tag . '[' . implode(' and ', $conditions) . ']';
+}
+
+/**
  * Collect Articles from Single Source (Scrape)
  * POST /admin/autocontent/api/collect-single
  */
@@ -1708,6 +1935,34 @@ $router->post('/admin/autocontent/api/collect-single', ['middleware' => ['auth',
 
         $settings = $model->getSettings();
         $maxPerSource = (int)($settings['max_articles_per_source'] ?? 10);
+
+        // Prefer Node.js scraper when website_preset_key is configured
+        $presetKey = trim((string)($source['website_preset_key'] ?? ''));
+        $nodeWarning = null;
+        if ($presetKey !== '') {
+            require_once __DIR__ . '/../Modules/Scraper/NodeScraperRunner.php';
+            $runner = new \App\Modules\Scraper\NodeScraperRunner();
+            $node = $runner->runForSourceId($sourceId, $maxPerSource, 120);
+
+            if (($node['success'] ?? false) && !empty($node['data']) && is_array($node['data'])) {
+                $data = $node['data'];
+                $saved = (int)($data['saved'] ?? 0);
+                if ($saved > 0) {
+                    $model->updateLastFetched($sourceId);
+                }
+
+                echo json_encode([
+                    'success' => true,
+                    'engine' => 'node',
+                    'collected' => $saved,
+                    'message' => "Node scraper collected {$saved} article(s) from {$source['name']}",
+                    'node' => $data
+                ]);
+                exit;
+            }
+
+            $nodeWarning = $node['error'] ?? 'node_scraper_failed';
+        }
 
         require_once __DIR__ . '/../Modules/Scraper/ScraperService.php';
         require_once __DIR__ . '/../Modules/Scraper/ProthomAloScraperService.php';
@@ -1812,7 +2067,8 @@ $router->post('/admin/autocontent/api/collect-single', ['middleware' => ['auth',
         echo json_encode([
         'success' => true,
         'collected' => $collected,
-        'message' => "Collected {$collected} article(s) from {$source['name']}"
+        'message' => "Collected {$collected} article(s) from {$source['name']}",
+        'warning' => $nodeWarning
         ]);
     }
     catch (Throwable $e) {
@@ -1878,6 +2134,41 @@ $router->post('/admin/autocontent/api/collect-multi', ['middleware' => ['auth', 
                 'errors' => [],
                 'warnings' => [],
             ];
+
+            // Prefer Node.js scraper when website_preset_key is configured
+            $presetKey = trim((string)($source['website_preset_key'] ?? ''));
+            if ($presetKey !== '' && !empty($source['id'])) {
+                require_once __DIR__ . '/../Modules/Scraper/NodeScraperRunner.php';
+                $runner = new \App\Modules\Scraper\NodeScraperRunner();
+                $node = $runner->runForSourceId((int)$source['id'], $maxArticles, 180);
+
+                if (($node['success'] ?? false) && !empty($node['data']) && is_array($node['data'])) {
+                    $data = $node['data'];
+                    $saved = (int)($data['saved'] ?? 0);
+                    $processed = (int)($data['processed'] ?? 0);
+
+                    $sourceResult['success'] = true;
+                    $sourceResult['articles_collected'] = $saved;
+                    $sourceResult['warnings'] = [];
+                    $sourceResult['errors'] = [];
+
+                    $totalCollected += $saved;
+                    $totalLinksFound += $processed;
+                    $stepsCompleted = max($stepsCompleted, 1);
+
+                    if ($saved > 0) {
+                        $model->updateLastFetched((int)$source['id']);
+                    }
+
+                    $sourceResults[] = $sourceResult;
+                    continue;
+                }
+
+                $nodeError = $node['error'] ?? 'node_scraper_failed';
+                $sourceResult['warnings'][] = 'Node scraper failed, falling back to PHP pipeline';
+                $sourceResult['errors'][] = $nodeError;
+                $warnings[] = $sourceResult['source_name'] . ': Node scraper failed (' . $nodeError . ')';
+            }
 
             // Check if source has selectors configured
             if (empty($source['selector_list_item']) && empty($source['selector_list_title'])) {
@@ -2003,6 +2294,32 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
             ];
 
             try {
+                // Prefer Node.js scraper when website_preset_key is configured
+                $presetKey = trim((string)($source['website_preset_key'] ?? ''));
+                if ($presetKey !== '' && !empty($source['id'])) {
+                    require_once __DIR__ . '/../Modules/Scraper/NodeScraperRunner.php';
+                    $runner = new \App\Modules\Scraper\NodeScraperRunner();
+                    $node = $runner->runForSourceId((int)$source['id'], $maxPerSource, 180);
+
+                    if (($node['success'] ?? false) && !empty($node['data']) && is_array($node['data'])) {
+                        $data = $node['data'];
+                        $saved = (int)($data['saved'] ?? 0);
+                        $collected += $saved;
+                        $sourceResult['articles_collected'] = $saved;
+                        $sourceResult['status'] = 'success';
+                        $sourceResults[] = $sourceResult;
+
+                        if ($saved > 0) {
+                            $model->updateLastFetched((int)$source['id']);
+                        }
+                        continue;
+                    }
+
+                    $sourceResult['status'] = 'warning';
+                    $sourceResult['error'] = 'Node scraper failed: ' . ($node['error'] ?? 'node_scraper_failed');
+                    // Fall back to PHP scraping below (best-effort) without duplicating source_results
+                }
+
                 // Check if it's Prothom Alo
                 if (stripos($source['url'] ?? '', 'prothomalo.com') !== false) {
                     // Use specialized Prothom Alo scraper (it handles saving internally)
@@ -2012,6 +2329,7 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
                         $collected += $prothomResult['articles_saved'] ?? 0;
                         $sourceResult['articles_collected'] = $prothomResult['articles_saved'] ?? 0;
                         $sourceResult['status'] = 'success';
+                        $sourceResult['error'] = null;
                         if (!empty($prothomResult['errors'])) {
                             $sourceResult['error'] = implode('; ', array_slice($prothomResult['errors'], 0, 3));
                         }
@@ -2121,6 +2439,7 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
                 }
 
                 $sourceResult['status'] = 'success';
+                $sourceResult['error'] = null;
                 $sourceResults[] = $sourceResult;
             }
             catch (Throwable $e) {
@@ -2362,20 +2681,25 @@ $router->post('/admin/autocontent/api/run-pipeline', ['middleware' => ['auth', '
         $publishLimit = max(1, min(50, $publishLimit));
         $processedArticles = $model->getArticlesByStatus('processed', $publishLimit);
         $contentModel = new ContentModel($mysqli);
+        require_once __DIR__ . '/../Helpers/PurifierHelper.php';
+        $purifier = function_exists('getPurifier') ? getPurifier() : null;
+        $publishStatus = $settings['publish_status'] ?? 'published';
+        $publishedFlag = $publishStatus === 'published' ? 1 : 0;
 
         foreach ($processedArticles as $article) {
             try {
                 // Use AI enhanced content if available, otherwise use original
                 $title = !empty($article['ai_title']) ? $article['ai_title'] : ($article['title'] ?? 'Untitled');
-                $content = !empty($article['ai_content']) ? $article['ai_content'] : ($article['content'] ?? '');
+                $contentRaw = !empty($article['ai_content']) ? $article['ai_content'] : ($article['content'] ?? '');
+                $content = $purifier ? $purifier->purify($contentRaw) : $contentRaw;
 
-                $slug = sanitize_input(slugify($title));
+                $slug = $contentModel->generateUniquePermalink($title);
                 $postId = $contentModel->createPost(
                     $title,
                     $content,
                     'AI Bot', // author
                     $slug,
-                    1, // published
+                    $publishedFlag, // published
                     1 // reader_indexing
                 );
 
@@ -3097,23 +3421,28 @@ $router->post('/admin/autocontent/api/test-selectors', ['middleware' => ['auth',
 
             foreach ($selectorParts as $singleSelector) {
                 try {
-                    $nodes = $xpath->query($singleSelector);
+                    $nodes = $xpath->query(selectorToXPath($singleSelector, false));
                     if ($nodes && $nodes->length > 0) {
                         $values = [];
                         foreach ($nodes as $node) {
-                            $val = trim($node->nodeValue ?? $node->textContent ?? '');
+                            $val = domNodeGetText($node);
                             if (!empty($val)) {
                                 $values[] = $val;
                             }
-                            // Also try to get src attribute for images
-                            if ($node->hasAttribute('src')) {
-                                $values[] = $node->getAttribute('src');
-                            }
-                            if ($node->hasAttribute('href')) {
-                                $values[] = $node->getAttribute('href');
-                            }
-                            if ($node->hasAttribute('content')) {
-                                $values[] = $node->getAttribute('content');
+
+                            // Also try common attributes when node is an element or an attribute node.
+                            if ($node instanceof \DOMElement) {
+                                if ($node->hasAttribute('src')) {
+                                    $values[] = $node->getAttribute('src');
+                                }
+                                if ($node->hasAttribute('href')) {
+                                    $values[] = $node->getAttribute('href');
+                                }
+                                if ($node->hasAttribute('content')) {
+                                    $values[] = $node->getAttribute('content');
+                                }
+                            } elseif ($node instanceof \DOMAttr) {
+                                $values[] = (string)$node->value;
                             }
                         }
                         if (!empty($values)) {
@@ -3225,7 +3554,37 @@ $router->post('/admin/autocontent/api/save-preset', ['middleware' => ['auth', 'a
         }
 
         $model = new AutoContentModel($mysqli);
+
+        // Enforce unique preset_key (DB unique constraint otherwise fails silently in UI)
+        $checkStmt = $mysqli->prepare('SELECT id FROM autocontent_website_presets WHERE preset_key = ? LIMIT 1');
+        if ($checkStmt) {
+            $checkStmt->bind_param('s', $data['preset_key']);
+            $checkStmt->execute();
+            $checkResult = $checkStmt->get_result();
+            $existingId = null;
+            if ($checkResult && $checkResult->num_rows > 0) {
+                $row = $checkResult->fetch_assoc();
+                $existingId = isset($row['id']) ? (int)$row['id'] : null;
+            }
+            $checkStmt->close();
+
+            if ($existingId !== null && $existingId !== (int)$data['id']) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Preset key "' . $data['preset_key'] . '" already exists'
+                ]);
+                exit;
+            }
+        }
+
         $id = $model->saveWebsitePreset($data);
+        if ((int)$id <= 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to save preset'
+            ]);
+            exit;
+        }
 
         echo json_encode([
         'success' => true,
@@ -3262,7 +3621,14 @@ $router->post('/admin/autocontent/api/delete-preset', ['middleware' => ['auth', 
         }
 
         $model = new AutoContentModel($mysqli);
-        $model->deleteWebsitePreset($id);
+        $success = $model->deleteWebsitePreset($id);
+        if (!$success) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to delete preset'
+            ]);
+            exit;
+        }
 
         echo json_encode([
         'success' => true,
@@ -3363,7 +3729,7 @@ $router->post('/admin/autocontent/api/preview-selectors', ['middleware' => ['aut
             // Find container
             $container = null;
             if (!empty($containerSelector)) {
-                $containers = $xpath->query($containerSelector);
+                $containers = $xpath->query(selectorToXPath($containerSelector, false));
                 if ($containers && $containers->length > 0) {
                     $container = $containers->item(0);
                     $matches['container'] = true;
@@ -3373,7 +3739,7 @@ $router->post('/admin/autocontent/api/preview-selectors', ['middleware' => ['aut
             // Find items
             $items = [];
             if ($container && !empty($itemSelector)) {
-                $itemNodes = $xpath->query($itemSelector, $container);
+                $itemNodes = $xpath->query(selectorToXPath($itemSelector, true), $container);
                 if ($itemNodes && $itemNodes->length > 0) {
                     $matches['item'] = true;
                     foreach ($itemNodes as $idx => $itemNode) {
@@ -3384,7 +3750,7 @@ $router->post('/admin/autocontent/api/preview-selectors', ['middleware' => ['aut
 
                         // Get title
                         if (!empty($titleSelector)) {
-                            $titleNodes = $xpath->query($titleSelector, $itemNode);
+                            $titleNodes = $xpath->query(selectorToXPath($titleSelector, true), $itemNode);
                             if ($titleNodes && $titleNodes->length > 0) {
                                 $item['title'] = trim($titleNodes->item(0)->nodeValue ?? '');
                                 $matches['title'] = true;
@@ -3393,13 +3759,17 @@ $router->post('/admin/autocontent/api/preview-selectors', ['middleware' => ['aut
 
                         // Get link
                         if (!empty($linkSelector)) {
-                            $linkNodes = $xpath->query($linkSelector, $itemNode);
+                            $linkNodes = $xpath->query(selectorToXPath($linkSelector, true), $itemNode);
                         }
                         else {
                             $linkNodes = $xpath->query('.//a', $itemNode);
                         }
                         if ($linkNodes && $linkNodes->length > 0) {
-                            $link = $linkNodes->item(0)->getAttribute('href');
+                            $linkNode = $linkNodes->item(0);
+                            $link = domNodeGetAttr($linkNode, 'href');
+                            if ($link === '') {
+                                $link = domNodeGetText($linkNode);
+                            }
                             // Make absolute URL if needed
                             if (!empty($link) && strpos($link, 'http') !== 0) {
                                 $parsedUrl = parse_url($url);
@@ -3412,7 +3782,7 @@ $router->post('/admin/autocontent/api/preview-selectors', ['middleware' => ['aut
 
                         // Get date
                         if (!empty($dateSelector)) {
-                            $dateNodes = $xpath->query($dateSelector, $itemNode);
+                            $dateNodes = $xpath->query(selectorToXPath($dateSelector, true), $itemNode);
                             if ($dateNodes && $dateNodes->length > 0) {
                                 $item['date'] = trim($dateNodes->item(0)->nodeValue ?? '');
                                 $matches['date'] = true;
@@ -3421,10 +3791,10 @@ $router->post('/admin/autocontent/api/preview-selectors', ['middleware' => ['aut
 
                         // Get image
                         if (!empty($imageSelector)) {
-                            $imageNodes = $xpath->query($imageSelector, $itemNode);
+                            $imageNodes = $xpath->query(selectorToXPath($imageSelector, true), $itemNode);
                             if ($imageNodes && $imageNodes->length > 0) {
                                 $img = $imageNodes->item(0);
-                                $item['image'] = $img->getAttribute('src') ?: ($img->getAttribute('data-src') ?: '');
+                                $item['image'] = domNodeGetAttr($img, 'src') ?: (domNodeGetAttr($img, 'data-src') ?: domNodeGetText($img));
                                 $matches['image'] = true;
                             }
                         }
@@ -3462,7 +3832,7 @@ $router->post('/admin/autocontent/api/preview-selectors', ['middleware' => ['aut
 
             // Get title
             if (!empty($titleSelector)) {
-                $titleNodes = $xpath->query($titleSelector);
+                $titleNodes = $xpath->query(selectorToXPath($titleSelector, false));
                 if ($titleNodes && $titleNodes->length > 0) {
                     $content['title'] = trim($titleNodes->item(0)->nodeValue ?? '');
                     $matches['title'] = true;
@@ -3471,7 +3841,7 @@ $router->post('/admin/autocontent/api/preview-selectors', ['middleware' => ['aut
 
             // Get content
             if (!empty($contentSelector)) {
-                $contentNodes = $xpath->query($contentSelector);
+                $contentNodes = $xpath->query(selectorToXPath($contentSelector, false));
                 if ($contentNodes && $contentNodes->length > 0) {
                     $contentNode = $contentNodes->item(0);
                     // Get text content only (strip HTML)
@@ -3482,36 +3852,39 @@ $router->post('/admin/autocontent/api/preview-selectors', ['middleware' => ['aut
 
             // Get image
             if (!empty($imageSelector)) {
-                $imageNodes = $xpath->query($imageSelector);
+                $imageNodes = $xpath->query(selectorToXPath($imageSelector, false));
                 if ($imageNodes && $imageNodes->length > 0) {
                     $img = $imageNodes->item(0);
-                    $content['image'] = $img->getAttribute('content') ?: ($img->getAttribute('src') ?: ($img->getAttribute('data-src') ?: ''));
+                    $content['image'] = domNodeGetAttr($img, 'content')
+                        ?: (domNodeGetAttr($img, 'src') ?: (domNodeGetAttr($img, 'data-src') ?: domNodeGetText($img)));
                     $matches['image'] = true;
                 }
             }
 
             // Get excerpt
             if (!empty($excerptSelector)) {
-                $excerptNodes = $xpath->query($excerptSelector);
+                $excerptNodes = $xpath->query(selectorToXPath($excerptSelector, false));
                 if ($excerptNodes && $excerptNodes->length > 0) {
-                    $content['excerpt'] = trim($excerptNodes->item(0)->nodeValue ?? $excerptNodes->item(0)->getAttribute('content'));
+                    $excerptNode = $excerptNodes->item(0);
+                    $content['excerpt'] = trim(domNodeGetText($excerptNode) ?: domNodeGetAttr($excerptNode, 'content'));
                     $matches['excerpt'] = true;
                 }
             }
 
             // Get date
             if (!empty($dateSelector)) {
-                $dateNodes = $xpath->query($dateSelector);
+                $dateNodes = $xpath->query(selectorToXPath($dateSelector, false));
                 if ($dateNodes && $dateNodes->length > 0) {
                     $dateNode = $dateNodes->item(0);
-                    $content['date'] = $dateNode->getAttribute('datetime') ?: trim($dateNode->nodeValue ?? '');
+                    $content['date'] = domNodeGetAttr($dateNode, 'datetime')
+                        ?: (domNodeGetAttr($dateNode, 'content') ?: domNodeGetText($dateNode));
                     $matches['date'] = true;
                 }
             }
 
             // Get author
             if (!empty($authorSelector)) {
-                $authorNodes = $xpath->query($authorSelector);
+                $authorNodes = $xpath->query(selectorToXPath($authorSelector, false));
                 if ($authorNodes && $authorNodes->length > 0) {
                     $content['author'] = trim($authorNodes->item(0)->nodeValue ?? '');
                     $matches['author'] = true;
@@ -3554,9 +3927,52 @@ $router->get('/admin/autocontent/presets', ['middleware' => ['auth', 'admin_only
         $model = new AutoContentModel($mysqli);
         $presets = $model->getWebsitePresets();
 
+        // Built-in Node scraper presets (static presets from src/scraper/config.js)
+        $staticPresets = [];
+        try {
+            $repoRoot = dirname(__DIR__, 3);
+            $scriptPath = $repoRoot . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'scraper' . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'list_static_presets.js';
+
+            if (is_file($scriptPath)) {
+                $nodePath = getenv('NODE_PATH') ?: 'node';
+                $cmd = escapeshellcmd($nodePath) . ' ' . escapeshellarg($scriptPath);
+
+                $descriptors = [
+                    0 => ['pipe', 'r'],
+                    1 => ['pipe', 'w'],
+                    2 => ['pipe', 'w'],
+                ];
+
+                $process = proc_open($cmd, $descriptors, $pipes, $repoRoot);
+                if (is_resource($process)) {
+                    fclose($pipes[0]);
+                    $stdout = (string)stream_get_contents($pipes[1]);
+                    $stderr = (string)stream_get_contents($pipes[2]);
+                    fclose($pipes[1]);
+                    fclose($pipes[2]);
+                    $exitCode = proc_close($process);
+
+                    if ($exitCode === 0) {
+                        $json = trim($stdout);
+                        // Strip UTF-8 BOM if present (Windows)
+                        $json = preg_replace('/^\xEF\xBB\xBF/', '', $json);
+                        $decoded = json_decode($json, true);
+                        if (is_array($decoded)) {
+                            $staticPresets = $decoded;
+                        }
+                    } else {
+                        error_log("Static presets script failed: exit={$exitCode} stderr=" . substr($stderr, 0, 500));
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            error_log("Static presets load failed: " . $e->getMessage());
+        }
+
         echo $twig->render('admin/autocontent/presets.twig', [
         'title' => 'Website Presets',
         'presets' => $presets,
+        'static_presets' => $staticPresets,
         'current_page' => 'autocontent-presets'
         ]);
     }
