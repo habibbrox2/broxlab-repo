@@ -1,3 +1,6 @@
+# LiteParse - Fast HTML/Markdown Parser for LLM/RAG
+liteparse>=0.1.0
+
 # LangChain and Core Dependencies  
 langchain>=1.2.35
 langchain-core>=1.1.33

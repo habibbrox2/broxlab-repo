@@ -27,7 +27,11 @@ class HttpClient {
     /**
      * Create axios instance with defaults
      */
-    _createInstance() {
+    _createInstance(options = {}) {
+        const maxRedirects = Number.isFinite(Number(options.maxRedirects))
+            ? Number(options.maxRedirects)
+            : 0;
+
         return axios.create({
             timeout: CONFIG.http.timeout,
             headers: {
@@ -38,7 +42,8 @@ class HttpClient {
                 'Connection': 'keep-alive',
                 'Cache-Control': 'no-cache'
             },
-            maxRedirects: 5,
+            // We handle redirects manually so we can detect redirect loops cleanly.
+            maxRedirects,
             validateStatus: (status) => status < 500 // Don't throw on 4xx
         });
     }
@@ -54,6 +59,9 @@ class HttpClient {
      * Check if error is retryable
      */
     _isRetryableError(error) {
+        if (String(error?.message || '').includes('redirect_loop')) {
+            return false;
+        }
         if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
             return true;
         }
@@ -65,6 +73,19 @@ class HttpClient {
         return true; // Network errors are retryable
     }
 
+    _resolveRedirect(fromUrl, location) {
+        if (!location) return null;
+        try {
+            if (location.startsWith('//')) {
+                const proto = new URL(fromUrl).protocol || 'https:';
+                return proto + location;
+            }
+            return new URL(location, fromUrl).href;
+        } catch (e) {
+            return null;
+        }
+    }
+
     /**
      * Make HTTP request with retry logic
      */
@@ -73,17 +94,49 @@ class HttpClient {
         const retryDelay = options.retryDelay ?? CONFIG.http.retryDelay;
 
         let lastError = null;
+        let attemptsMade = 0;
 
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
             try {
+                attemptsMade = attempt + 1;
                 Logger.debug(`Fetching: ${url}`, { attempt: attempt + 1 });
 
-                const response = await this._createInstance().get(url, {
-                    ...options,
-                    // Don't pass these options to axios
-                    maxRetries: undefined,
-                    retryDelay: undefined
-                });
+                const client = this._createInstance({ maxRedirects: 0 });
+
+                const visited = new Set();
+                let currentUrl = url;
+                let response = null;
+
+                for (let redirectHop = 0; redirectHop < 10; redirectHop++) {
+                    visited.add(currentUrl);
+
+                    response = await client.get(currentUrl, {
+                        ...options,
+                        // Don't pass these options to axios
+                        maxRetries: undefined,
+                        retryDelay: undefined
+                    });
+
+                    // Manual redirect handling (3xx)
+                    if (response.status >= 300 && response.status < 400) {
+                        const location = response.headers?.location || '';
+                        const nextUrl = this._resolveRedirect(currentUrl, location);
+                        if (!nextUrl) {
+                            throw new Error(`HTTP ${response.status}: redirect_missing_location`);
+                        }
+                        if (nextUrl === currentUrl || visited.has(nextUrl)) {
+                            throw new Error('redirect_loop');
+                        }
+                        currentUrl = nextUrl;
+                        continue;
+                    }
+
+                    break;
+                }
+
+                if (!response) {
+                    throw new Error('no_response');
+                }
 
                 // Check for client errors (4xx except 429)
                 if (response.status >= 400 && response.status < 500 && response.status !== 429) {
@@ -124,7 +177,7 @@ class HttpClient {
             }
         }
 
-        Logger.error(`Failed to fetch after ${maxRetries + 1} attempts: ${url}`, {
+        Logger.error(`Failed to fetch after ${attemptsMade} attempts: ${url}`, {
             error: lastError?.message
         });
 

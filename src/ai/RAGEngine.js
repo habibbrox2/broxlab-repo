@@ -11,6 +11,7 @@ import { QdrantClient } from '@qdrant/client';
 import { RAG_CONFIG, FEATURE_FLAGS } from './config.js';
 import aiRouter from './AIRouter.js';
 import logger from './utils/Logger.js';
+import LiteParse from '../scraper/utils/LiteParse.js';
 
 class RAGEngine {
     constructor(options = {}) {
@@ -280,6 +281,89 @@ class RAGEngine {
         }
 
         return chunks;
+    }
+
+    /**
+     * Process HTML content using LiteParse
+     * Extracts content, converts to Markdown, and chunks for RAG
+     */
+    async processHTMLContent(html, url, options = {}) {
+        try {
+            // Use LiteParse to extract and process content
+            const result = await LiteParse.parseURL(url, html);
+            
+            // Convert chunks to RAG format
+            const chunks = result.chunks.map((text, index) => ({
+                text,
+                metadata: {
+                    index,
+                    url,
+                    title: result.title,
+                    description: result.description,
+                },
+            }));
+            
+            logger.info('Processed HTML content with LiteParse', {
+                url,
+                chunks: chunks.length,
+                wordCount: result.wordCount,
+            });
+            
+            return {
+                content: result.content,
+                markdown: result.markdown,
+                chunks,
+                metadata: {
+                    url,
+                    title: result.title,
+                    description: result.description,
+                    wordCount: result.wordCount,
+                    chunkCount: chunks.length,
+                },
+            };
+        } catch (error) {
+            logger.error('Failed to process HTML content', { 
+                error: error.message, 
+                url 
+            });
+            throw error;
+        }
+    }
+
+    /**
+     * Process markdown content for RAG
+     */
+    async processMarkdownContent(markdown, url, options = {}) {
+        try {
+            // Parse markdown to HTML
+            const html = LiteParse.parseMarkdown(markdown);
+            
+            // Extract content
+            const content = LiteParse.extractContent(html);
+            
+            // Chunk for RAG
+            const chunks = LiteParse.chunkText(content).map((text, index) => ({
+                text,
+                metadata: { index, url },
+            }));
+            
+            return {
+                content,
+                markdown,
+                chunks,
+                metadata: {
+                    url,
+                    wordCount: content.split(/\s+/).length,
+                    chunkCount: chunks.length,
+                },
+            };
+        } catch (error) {
+            logger.error('Failed to process markdown content', { 
+                error: error.message, 
+                url 
+            });
+            throw error;
+        }
     }
 
     /**
