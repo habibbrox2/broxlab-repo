@@ -469,7 +469,7 @@ export function initAccountSettingsOAuth(options = {}) {
 
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-    const waitForFirebaseIdToken = async (authMod, timeoutMs = 10000) => {
+    const _waitForFirebaseIdToken = async (authMod, timeoutMs = 10000) => {
         const getCurrentUserFn = authMod?.getCurrentUser || authMod?.default?.getCurrentUser;
         const getIdTokenFn = authMod?.getIdToken || authMod?.default?.getIdToken;
         const startedAt = Date.now();

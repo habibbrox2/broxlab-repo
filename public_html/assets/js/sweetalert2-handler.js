@@ -114,7 +114,7 @@
             closeButtonAriaLabel: 'Close',
             timer: duration > 0 ? duration : undefined,
             timerProgressBar: duration > 0,
-            didOpen: async (toast) => {
+            didOpen: async (_toast) => {
                 // Announce to screen readers
                 if (MessageConfig.announceToasts) {
                     announceToScreenReader(`${status}: ${message}`);
@@ -161,7 +161,7 @@
             allowOutsideClick: false,
             allowEscapeKey: MessageConfig.closeOnEscape,
             position: 'center',  // Center position
-            didOpen: async (modal) => {
+            didOpen: async (_modal) => {
                 if (MessageConfig.announceToasts) {
                     announceToScreenReader(`Alert: ${title}. ${message}`);
                 }
@@ -204,7 +204,7 @@
             allowOutsideClick: false,
             allowEscapeKey: MessageConfig.closeOnEscape,
             position: 'center',  // Center position
-            didOpen: async (modal) => {
+            didOpen: async (_modal) => {
                 if (MessageConfig.announceToasts) {
                     announceToScreenReader(`Confirmation required: ${title}. ${message}`);
                 }

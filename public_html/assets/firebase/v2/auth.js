@@ -78,7 +78,7 @@ export async function syncIdTokenWithBackend(user, options = {}) {
     // Get browser info for new device notification
     requestBody.browser = navigator.userAgent;
     
-    const { ok, status, data, error } = await fetchWithTimeout(endpoint, {
+    const { ok, status, data, error: _error } = await fetchWithTimeout(endpoint, {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -195,7 +195,7 @@ export async function signInWithGithub(options = {}) {
   }
 }
 
-export async function signInWithRedirectProvider(providerName, options = {}) {
+export async function signInWithRedirectProvider(providerName, _options = {}) {
   const auth = await _ensureAuth();
   const normalized = String(providerName || '').toLowerCase();
   let provider = null;

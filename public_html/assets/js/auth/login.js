@@ -301,7 +301,7 @@ import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
     function setupAuthCallbacks() {
         AuthUIHandler.setAllCallbacks({
             onStatus: showStatus,
-            onSuccess: (result) => {
+            onSuccess: (_result) => {
                 clearOAuthLoadingState();
                 clearStatus();
                 showStatus('Login successful! Redirecting...', 'success');
@@ -313,7 +313,7 @@ import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
                     }, 500);
                 }
             },
-            onConflict: (conflict, provider, user) => {
+            onConflict: (_conflict, _provider, _user) => {
                 clearOAuthLoadingState();
                 showStatus(`This email is linked to another account. Please use that provider to sign in.`, 'warning');
                 // Could open modal to resolve conflict
@@ -322,7 +322,7 @@ import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
                 clearOAuthLoadingState();
                 // Suppress non-critical Firebase/X-Frame-Options errors
                 const errorMsg = error?.message || '';
-                const isPopupClosed = errorMsg.includes('popup-closed-by-user');
+                const _isPopupClosed = errorMsg.includes('popup-closed-by-user');
                 const isIframeBlocked = errorMsg.includes('X-Frame-Options') || 
                     errorMsg.includes('auth/iframe');
                 

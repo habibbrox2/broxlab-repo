@@ -19,6 +19,7 @@ use App\Modules\Scraper\EnhancedScraperService;
 use App\Modules\Scraper\ContentCleanerService;
 use App\Modules\Scraper\DuplicateCheckerService;
 use App\Modules\Scraper\ImageDownloaderService;
+use App\Modules\Scraper\ProthomAloScraperService;
 use App\Modules\AutoContent\TelegramNotifier;
 
 $config = require __DIR__ . '/../Config/AutoContent.php';
@@ -93,7 +94,6 @@ foreach ($sources as $source) {
 
         // Use specialized scraper for known sites
         if (stripos($source['url'] ?? '', 'prothomalo.com') !== false) {
-            require_once __DIR__ . '/../app/Modules/Scraper/ProthomAloScraperService.php';
             $prothomScraper = new ProthomAloScraperService(
                 $enhancedScraper,
                 $contentCleaner,

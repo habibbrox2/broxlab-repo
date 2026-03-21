@@ -3,6 +3,39 @@
     var allItems = [];
     var showInactive = false;
 
+    function toBool(v) {
+        if (v === true || v === 1) return true;
+        if (v === false || v === 0 || v === null || v === undefined) return false;
+        var s = String(v).trim().toLowerCase();
+        return s === '1' || s === 'true' || s === 'yes' || s === 'y' || s === 'on';
+    }
+
+    function normalizeItem(item) {
+        if (!item || typeof item !== 'object') return item;
+        var normalized = Object.assign({}, item);
+        normalized.id = typeof normalized.id === 'number' ? normalized.id : (parseInt(normalized.id, 10) || normalized.id);
+        normalized.is_active = toBool(normalized.is_active);
+        normalized.priority = typeof normalized.priority === 'number' ? normalized.priority : (parseInt(normalized.priority, 10) || 0);
+        return normalized;
+    }
+
+    function loadShowInactive() {
+        try {
+            var v = localStorage.getItem('kb_show_inactive');
+            return v === '1' || v === 'true';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function saveShowInactive(value) {
+        try {
+            localStorage.setItem('kb_show_inactive', value ? '1' : '0');
+        } catch (e) {
+            // ignore storage errors
+        }
+    }
+
     function showAlert(msg, type) {
         type = type || 'success';
         var el = document.getElementById('alertContainer');
@@ -129,7 +162,7 @@
         // Filter by active status
         if (!showInactive) {
             filtered = filtered.filter(function (item) {
-                return item.is_active != 0 && item.is_active != false;
+                return !!item.is_active;
             });
         }
 
@@ -159,7 +192,8 @@
 
     async function fetchList() {
         try {
-            var res = await fetch(apiList + '?limit=100', { credentials: 'same-origin' });
+            var url = apiList + '?limit=100' + (showInactive ? '&include_inactive=1' : '');
+            var res = await fetch(url, { credentials: 'same-origin' });
             if (!res.ok) {
                 // If not OK, check if it's a redirect (login required)
                 if (res.status === 401 || res.status === 403 || res.redirected) {
@@ -174,7 +208,7 @@
                 throw new Error('Not JSON response');
             }
             var data = await res.json();
-            allItems = data.items || [];
+            allItems = (data.items || []).map(normalizeItem);
             filterItems();
         } catch (e) {
             console.error('Failed to fetch knowledge base:', e);
@@ -192,13 +226,14 @@
             var data = await res.json();
             if (!data.success) { showAlert('Failed to load item', 'danger'); return; }
             var it = data.item;
+            it = normalizeItem(it);
             document.getElementById('kb_id').value = it.id;
             document.getElementById('kb_title').value = it.title || '';
             document.getElementById('kb_content').value = it.content || '';
             document.getElementById('kb_source_type').value = it.source_type || 'text';
             document.getElementById('kb_category').value = it.category || '';
             document.getElementById('kb_priority').value = it.priority || 0;
-            document.getElementById('kb_is_active').checked = it.is_active != 0 && it.is_active != false;
+            document.getElementById('kb_is_active').checked = !!it.is_active;
             var modal = new bootstrap.Modal(document.getElementById('kbModal'));
             modal.show();
         } catch (e) {
@@ -208,10 +243,11 @@
     };
 
     window.kbToggle = async function (id) {
-        var item = allItems.find(function (i) { return i.id === id; });
+        var idNum = typeof id === 'number' ? id : (parseInt(id, 10) || id);
+        var item = allItems.find(function (i) { return i.id === idNum; });
         if (!item) return;
 
-        var newStatus = !(item.is_active != 0 && item.is_active != false);
+        var newStatus = !item.is_active;
         var form = new FormData();
         form.append('id', id);
         form.append('is_active', newStatus ? 1 : 0);
@@ -289,14 +325,19 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        fetchList();
-
         // Search and filter handlers
         var searchInput = document.getElementById('kbSearch');
         var filterCategory = document.getElementById('kbFilterCategory');
         var filterSelect = document.getElementById('kbFilterType');
         var showInactiveToggle = document.getElementById('kbShowInactive');
         var refreshBtn = document.getElementById('btnRefresh');
+
+        showInactive = loadShowInactive();
+        if (showInactiveToggle) {
+            showInactiveToggle.checked = !!showInactive;
+        }
+
+        fetchList();
 
         if (searchInput) {
             searchInput.addEventListener('input', filterItems);
@@ -310,7 +351,8 @@
         if (showInactiveToggle) {
             showInactiveToggle.addEventListener('change', function () {
                 showInactive = this.checked;
-                filterItems();
+                saveShowInactive(showInactive);
+                fetchList();
             });
         }
         if (refreshBtn) {

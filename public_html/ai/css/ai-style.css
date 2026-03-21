@@ -484,10 +484,28 @@ body {
     animation: brox-ai-pulse 1s infinite;
 }
 
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-status-indicator.brox-ai-searching {
+    background: #6366f1;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.95);
+    animation: brox-ai-pulse 0.9s ease-in-out infinite;
+}
+
 :where(#adminAiShell, #publicAssistantChat) .brox-ai-status-indicator.brox-ai-loading {
     background: var(--brox-ai-primary);
     box-shadow: 0 0 8px var(--brox-ai-primary);
     animation: brox-ai-pulse 0.5s infinite;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-status-indicator.brox-ai-calling {
+    background: #22c55e;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.9);
+    animation: brox-ai-pulse 0.65s ease-in-out infinite;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-status-indicator.brox-ai-analyzing {
+    background: #f59e0b;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.85);
+    animation: brox-ai-pulse 0.8s ease-in-out infinite;
 }
 
 :where(#adminAiShell, #publicAssistantChat) .brox-ai-status-indicator.brox-ai-error {
@@ -716,6 +734,113 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-progress-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    width: fit-content;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-progress-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 30% 30%, rgba(56, 189, 248, 0.55), rgba(14, 165, 233, 0.08));
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: rgba(255, 255, 255, 0.92);
+    position: relative;
+    overflow: hidden;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-progress-icon > i {
+    position: relative;
+    z-index: 1;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-progress-icon::after {
+    content: '';
+    position: absolute;
+    inset: -40%;
+    background: conic-gradient(from 180deg, rgba(56, 189, 248, 0), rgba(56, 189, 248, 0.35), rgba(56, 189, 248, 0));
+    animation: brox-ai-orbit 1.6s linear infinite;
+    z-index: 0;
+}
+
+@keyframes brox-ai-orbit {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-progress-sub {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.62);
+    line-height: 1.2;
+    margin-top: -2px;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-progress-bar {
+    position: relative;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-progress-bar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-70%);
+    background: linear-gradient(90deg,
+        rgba(56, 189, 248, 0) 0%,
+        rgba(56, 189, 248, 0.55) 35%,
+        rgba(167, 139, 250, 0.55) 65%,
+        rgba(56, 189, 248, 0) 100%
+    );
+    animation: brox-ai-progress-sweep 1.25s ease-in-out infinite;
+}
+
+@keyframes brox-ai-progress-sweep {
+    0% { transform: translateX(-70%); }
+    100% { transform: translateX(70%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :where(#adminAiShell, #publicAssistantChat) .brox-ai-msg.brox-ai-assistant.brox-ai-thinking-msg::before,
+    :where(#adminAiShell, #publicAssistantChat) .brox-ai-progress-icon::after,
+    :where(#adminAiShell, #publicAssistantChat) .brox-ai-progress-bar::before,
+    :where(#adminAiShell, #publicAssistantChat) .brox-ai-skel-line,
+    :where(#adminAiShell, #publicAssistantChat) .brox-ai-thinking-dots span {
+        animation: none !important;
+    }
+}
+
+/* Stage themes (thinking/searching/calling/analyzing) */
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-thinking-wrap[data-stage="searching"] .brox-ai-progress-icon {
+    background: radial-gradient(circle at 30% 30%, rgba(99, 102, 241, 0.55), rgba(99, 102, 241, 0.10));
+    border-color: rgba(99, 102, 241, 0.40);
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-thinking-wrap[data-stage="calling"] .brox-ai-progress-icon {
+    background: radial-gradient(circle at 30% 30%, rgba(34, 197, 94, 0.45), rgba(34, 197, 94, 0.08));
+    border-color: rgba(34, 197, 94, 0.35);
+}
+
+:where(#adminAiShell, #publicAssistantChat) .brox-ai-thinking-wrap[data-stage="analyzing"] .brox-ai-progress-icon {
+    background: radial-gradient(circle at 30% 30%, rgba(245, 158, 11, 0.55), rgba(245, 158, 11, 0.10));
+    border-color: rgba(245, 158, 11, 0.42);
 }
 
 :where(#adminAiShell, #publicAssistantChat) .brox-ai-thinking-label {

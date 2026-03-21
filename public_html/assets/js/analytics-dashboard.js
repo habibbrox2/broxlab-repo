@@ -961,7 +961,7 @@
         }
 
         // Get data from template (injected by controller)
-        const dailyStats = window.dashboardData?.daily_stats || [];
+        const _dailyStats = window.dashboardData?.daily_stats || [];
         const dailyLogins = window.dashboardData?.daily_logins || [];
 
         // Calculate totals from login data
@@ -1084,7 +1084,7 @@
         }
 
         // Get monthly data from template
-        const monthlyStats = window.dashboardData?.monthly_stats || [];
+        const _monthlyStats = window.dashboardData?.monthly_stats || [];
 
         // Browser Distribution Chart
         const browserCtx = getChartCanvas('browser-chart');

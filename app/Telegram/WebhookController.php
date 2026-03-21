@@ -294,6 +294,3 @@ class WebhookController
         $stmt->close();
     }
 }
-
-</final_file_content>
-</write_to_file>

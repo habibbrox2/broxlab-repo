@@ -1,6 +1,5 @@
 // v2/offline-handler.js
 // Minimal offline notification queue and sync helper for v2 modules.
-import { DebugUtils } from './debug.js';
 import { fetchWithTimeout } from '../../js/shared/fetch-utils.js';
 
 const OFFLINE_QUEUE_KEY = 'v2_offline_notifications';

@@ -371,6 +371,8 @@ class DatabaseService {
             const excerpt =
                 (article.excerpt && String(article.excerpt).trim() !== '')
                     ? String(article.excerpt)
+                    : (article.subtitle && String(article.subtitle).trim() !== '')
+                        ? String(article.subtitle)
                     : (article.content ? String(article.content).slice(0, 200) : '');
 
             const [result] = await this.pool.execute(
@@ -397,6 +399,143 @@ class DatabaseService {
             Logger.error('Failed to insert autocontent article', { sourceId, error: error.message });
             return { success: false, error: error.message };
         }
+    }
+
+    /**
+     * Find a mobile by brand + model (direct mobiles pipeline).
+     * Uses explicit columns only (no SELECT *).
+     */
+    async findMobileIdByBrandModel(brandName, modelName) {
+        const brand = String(brandName || '').trim();
+        const model = String(modelName || '').trim();
+        if (!brand || !model) return 0;
+
+        try {
+            const [rows] = await this.pool.execute(
+                'SELECT id FROM mobiles WHERE brand_name = ? AND model_name = ? LIMIT 1',
+                [brand, model]
+            );
+            if (!rows || rows.length === 0) return 0;
+            return Number(rows[0].id) || 0;
+        } catch (error) {
+            Logger.error('Failed to find mobile by brand/model', { brand, model, error: error.message });
+            return 0;
+        }
+    }
+
+    /**
+     * Insert a mobile record into `mobiles` table.
+     */
+    async insertMobileRecord(mobile) {
+        try {
+            const brand = String(mobile.brand_name || '').trim();
+            const model = String(mobile.model_name || '').trim();
+            const status = (mobile.status === 'official' || mobile.status === 'unofficial' || mobile.status === 'both')
+                ? mobile.status
+                : 'unofficial';
+            const releaseDate = String(mobile.release_date || '').trim();
+
+            const isOfficial = Number(mobile.is_official) ? 1 : 0;
+            const officialPrice = Number(mobile.official_price || 0) || 0;
+            const unofficialPrice = Number(mobile.unofficial_price || 0) || 0;
+
+            const [result] = await this.pool.execute(
+                `INSERT INTO mobiles (brand_name, model_name, is_official, official_price, unofficial_price, status, release_date)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [brand, model, isOfficial, officialPrice, unofficialPrice, status, releaseDate]
+            );
+
+            return { success: true, id: Number(result.insertId) || 0 };
+        } catch (error) {
+            if (error.code === 'ER_DUP_ENTRY') {
+                return { success: false, error: 'duplicate' };
+            }
+            Logger.error('Failed to insert mobile record', { error: error.message });
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Insert mobile specs if missing (default: do not overwrite existing specs).
+     */
+    async upsertMobileSpecs(mobileId, specsMap, options = {}) {
+        const id = Number(mobileId) || 0;
+        if (!id) return { success: false, error: 'missing_mobile_id' };
+
+        const overwrite = !!options.overwrite;
+        const map = specsMap && typeof specsMap === 'object' ? specsMap : {};
+        const keys = Object.keys(map);
+
+        if (keys.length === 0) return { success: true, inserted: 0, skipped: 0 };
+
+        try {
+            if (!overwrite) {
+                const [rows] = await this.pool.execute(
+                    'SELECT COUNT(*) AS cnt FROM mobile_specs WHERE mobile_id = ?',
+                    [id]
+                );
+                const cnt = Number(rows?.[0]?.cnt) || 0;
+                if (cnt > 0) {
+                    return { success: true, inserted: 0, skipped: keys.length };
+                }
+            } else {
+                await this.pool.execute('DELETE FROM mobile_specs WHERE mobile_id = ?', [id]);
+            }
+
+            const limitedKeys = keys.slice(0, 80);
+            const placeholders = limitedKeys.map(() => '(?, ?, ?)').join(', ');
+            const params = [];
+            for (const k of limitedKeys) {
+                params.push(id, String(k).slice(0, 255), String(map[k] ?? '').slice(0, 65000));
+            }
+
+            await this.pool.execute(
+                `INSERT INTO mobile_specs (mobile_id, spec_key, spec_value) VALUES ${placeholders}`,
+                params
+            );
+
+            return { success: true, inserted: limitedKeys.length, skipped: 0 };
+        } catch (error) {
+            Logger.error('Failed to upsert mobile specs', { mobileId: id, error: error.message });
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Insert mobile images if not already present.
+     */
+    async insertMobileImages(mobileId, imageUrls = []) {
+        const id = Number(mobileId) || 0;
+        if (!id) return { success: false, error: 'missing_mobile_id' };
+
+        const urls = Array.isArray(imageUrls) ? imageUrls : [];
+        let inserted = 0;
+        let skipped = 0;
+
+        for (const rawUrl of urls) {
+            const url = String(rawUrl || '').trim();
+            if (!url) continue;
+            try {
+                const [rows] = await this.pool.execute(
+                    'SELECT id FROM mobile_images WHERE mobile_id = ? AND image_url = ? LIMIT 1',
+                    [id, url]
+                );
+                if (rows && rows.length > 0) {
+                    skipped++;
+                    continue;
+                }
+
+                await this.pool.execute(
+                    'INSERT INTO mobile_images (mobile_id, image_url) VALUES (?, ?)',
+                    [id, url]
+                );
+                inserted++;
+            } catch (error) {
+                Logger.debug('Failed to insert mobile image', { mobileId: id, url, error: error.message });
+            }
+        }
+
+        return { success: true, inserted, skipped };
     }
 
     /**

@@ -1042,7 +1042,7 @@ document.addEventListener('click', function (event) {
         const isClickOnToggler = navbarToggler.contains(event.target);
 
         if (!isClickInsideNav && !isClickOnToggler && navbarCollapse.classList.contains('show')) {
-            const bsCollapse = new bootstrap.Collapse(navbarCollapse, {
+            new bootstrap.Collapse(navbarCollapse, {
                 toggle: true
             });
         }

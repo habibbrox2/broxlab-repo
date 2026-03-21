@@ -130,7 +130,7 @@ class ThemeManager {
     /**
      * Update favicon based on theme
      */
-    updateFavicon(theme) {
+    updateFavicon(_theme) {
         const favicon = document.querySelector('link[rel="icon"]');
         if (!favicon) return;
 

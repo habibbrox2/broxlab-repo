@@ -387,12 +387,12 @@ import { checkPasswordRequirements, getPasswordStrength, validateConfirmation, P
     function setupAuthCallbacks() {
         AuthUIHandler.setAllCallbacks({
             onStatus: showStatus,
-            onSuccess: (result) => {
+            onSuccess: (_result) => {
                 clearOAuthLoadingState();
                 clearStatus();
                 showStatus('Registration successful! Redirecting...', 'success');
             },
-            onConflict: (conflict, provider, user) => {
+            onConflict: (_conflict, _provider, _user) => {
                 clearOAuthLoadingState();
                 showStatus(`This email is already registered. Please sign in instead.`, 'warning');
             },
@@ -400,7 +400,7 @@ import { checkPasswordRequirements, getPasswordStrength, validateConfirmation, P
                 clearOAuthLoadingState();
                 // Suppress non-critical Firebase/X-Frame-Options errors
                 const errorMsg = error?.message || '';
-                const isPopupClosed = errorMsg.includes('popup-closed-by-user');
+                const _isPopupClosed = errorMsg.includes('popup-closed-by-user');
                 const isIframeBlocked = errorMsg.includes('X-Frame-Options') || 
                     errorMsg.includes('auth/iframe');
                 

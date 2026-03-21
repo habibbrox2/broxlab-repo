@@ -384,6 +384,105 @@
   <script src="{{ asset('/assets/js/dist/admin.js') }}" defer></script>
   <script src="{{ asset('/assets/js/dist/activity.js') }}" defer></script>
 
+  {# Listing tables: select-all checkbox + row selection wiring #}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const adminMain = document.querySelector('main.admin-main');
+      if (!adminMain) return;
+
+      const ensureSelectAllHeader = function (table) {
+        if (!table || !(table instanceof HTMLElement)) return null;
+
+        const hasRowCheckbox = table.querySelector('tbody input[type="checkbox"].item-checkbox');
+        const existingSelectAll = table.querySelector('thead input#select-all-checkbox.table-select-checkbox');
+
+        // If table already has selection column, keep as-is.
+        if (existingSelectAll || hasRowCheckbox) {
+          return existingSelectAll || table.querySelector('thead input.table-select-checkbox');
+        }
+
+        const theadRow = table.querySelector('thead tr');
+        if (!theadRow) return null;
+
+        // Only auto-inject for "listing-like" tables.
+        const thTexts = Array.from(theadRow.querySelectorAll('th')).map(th => (th.textContent || '').trim().toLowerCase());
+        const isListing = thTexts.includes('actions') || thTexts.includes('action') || table.classList.contains('table-hover');
+        if (!isListing) return null;
+
+        const th = document.createElement('th');
+        th.style.width = '40px';
+        th.className = 'text-center';
+        th.innerHTML = '<input type="checkbox" id="select-all-checkbox" class="form-check-input table-select-checkbox">';
+        theadRow.insertBefore(th, theadRow.firstChild);
+
+        // Add disabled row checkboxes (no reliable id/value on generic tables).
+        table.querySelectorAll('tbody tr').forEach(function (tr) {
+          const cells = tr.querySelectorAll('td');
+          if (cells.length === 1 && cells[0] && cells[0].hasAttribute('colspan')) {
+            return;
+          }
+
+          let rowId = (tr.getAttribute('data-id') || tr.getAttribute('data-row-id') || '').trim();
+          if (!rowId) {
+            const firstCell = tr.querySelector('td');
+            const txt = firstCell ? (firstCell.textContent || '').trim() : '';
+            const m = txt.match(/(\d{1,12})/);
+            rowId = m ? m[1] : '';
+          }
+
+          const td = document.createElement('td');
+          td.className = 'text-center';
+          if (rowId) {
+            td.innerHTML = '<input type="checkbox" class="form-check-input table-select-checkbox item-checkbox" value="' + rowId.replace(/\"/g, '&quot;') + '">';
+          } else {
+            td.innerHTML = '<input type="checkbox" class="form-check-input table-select-checkbox item-checkbox" disabled>';
+          }
+          tr.insertBefore(td, tr.firstChild);
+        });
+
+        return th.querySelector('input#select-all-checkbox');
+      };
+
+      const wireTableSelection = function (table) {
+        const selectAll = table.querySelector('thead input#select-all-checkbox.table-select-checkbox');
+        const items = Array.from(table.querySelectorAll('tbody input[type=\"checkbox\"].item-checkbox'));
+        if (!selectAll || items.length === 0) return;
+
+        if (selectAll.dataset.skipGlobalSelectAll === '1') return;
+        if (selectAll.dataset.selectAllWired === '1') return;
+        selectAll.dataset.selectAllWired = '1';
+
+        const updateHeader = function () {
+          const enabledItems = items.filter(cb => !cb.disabled);
+          const total = enabledItems.length;
+          const checked = enabledItems.filter(cb => cb.checked).length;
+
+          selectAll.indeterminate = total > 0 && checked > 0 && checked < total;
+          selectAll.checked = total > 0 && checked === total;
+        };
+
+        selectAll.addEventListener('change', function () {
+          const enabledItems = items.filter(cb => !cb.disabled);
+          enabledItems.forEach(function (cb) {
+            cb.checked = !!selectAll.checked;
+          });
+          updateHeader();
+        });
+
+        items.forEach(function (cb) {
+          cb.addEventListener('change', updateHeader);
+        });
+
+        updateHeader();
+      };
+
+      adminMain.querySelectorAll('table').forEach(function (table) {
+        ensureSelectAllHeader(table);
+        wireTableSelection(table);
+      });
+    });
+  </script>
+
   {% block scripts %}{% endblock %}
 
   {# Admin Assistant UI #}

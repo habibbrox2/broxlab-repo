@@ -8,6 +8,7 @@ import EnvLoader from './utils/EnvLoader.js';
 import Logger from './utils/Logger.js';
 import TickerScraper from './agents/TickerScraper.js';
 import ArticleScraper from './agents/ArticleScraper.js';
+import MobileDeviceScraper from './agents/MobileDeviceScraper.js';
 import ValidationAgent from './agents/ValidationAgent.js';
 import DiffDetector from './agents/DiffDetector.js';
 import DatabaseService from './services/DatabaseService.js';
@@ -19,12 +20,14 @@ class ScraperOrchestrator {
     constructor(options = {}) {
         this.sourceId = options.sourceId ? Number(options.sourceId) : null;
         this.sourceKey = options.source || CONFIG.source.defaultSource;
+        this.pipeline = CONFIG.sources?.[this.sourceKey]?.pipeline || 'articles';
         this.concurrency = options.concurrency || CONFIG.concurrency.maxParallelFetches;
         this.maxArticles = Number.isFinite(Number(options.max)) ? Number(options.max) : 10;
 
         // Initialize agents
         this.tickerScraper = new TickerScraper(this.sourceKey);
         this.articleScraper = new ArticleScraper(this.sourceKey);
+        this.mobileScraper = new MobileDeviceScraper();
         this.diffDetector = new DiffDetector();
         this.db = DatabaseService;
 
@@ -53,6 +56,21 @@ class ScraperOrchestrator {
         }
 
         if (dbConnected) {
+            // Mobiles-direct pipeline does not use autocontent_sources or article tables.
+            if (this.pipeline === 'mobiles_direct') {
+                await this.diffDetector.initialize([]);
+                await this.tickerScraper.initialize();
+                await this.articleScraper.initialize();
+
+                this.stats.startTime = new Date();
+
+                Logger.info('ScraperOrchestrator initialized (mobiles_direct)', {
+                    source: this.sourceKey
+                });
+
+                return true;
+            }
+
             // If a preset key is provided (e.g. --source=ittefaq) try to resolve the matching AutoContent source.
             // This allows CLI runs to insert into autocontent_articles without passing --sourceId explicitly.
             if (!this.sourceId && this.sourceKey) {
@@ -90,6 +108,7 @@ class ScraperOrchestrator {
                 if (presetKey) {
                     this.sourceKey = presetKey;
                 }
+                this.pipeline = CONFIG.sources?.[this.sourceKey]?.pipeline || this.pipeline || 'articles';
 
                 const base = new URL(source.url);
                 const overrideConfig = {
@@ -121,6 +140,7 @@ class ScraperOrchestrator {
         } else {
             // Still allow scraping without DB (no diff init)
             await this.tickerScraper.initialize();
+            await this.diffDetector.initialize([]);
             await this.articleScraper.initialize();
         }
 
@@ -180,6 +200,76 @@ class ScraperOrchestrator {
         }
 
         Logger.info(`Found ${limitedLinks.length} new articles to process`);
+
+        // Mobiles-direct pipeline: scrape spec pages and insert into mobiles tables.
+        if (this.pipeline === 'mobiles_direct') {
+            const mobileResults = await this.processMobiles(limitedLinks);
+
+            if (!this.db?.connected) {
+                Logger.warn('Database not connected; skipping mobile inserts', { processed: mobileResults.length });
+                return {
+                    success: true,
+                    status: 'scraped_mobiles_no_db',
+                    processed: limitedLinks.length,
+                    inserted: 0,
+                    duplicates: 0,
+                    failed: mobileResults.filter(r => !r.success).length,
+                    errors: ['db_not_connected'],
+                    items: mobileResults.filter(r => r.success).map(r => r.data)
+                };
+            }
+
+            let inserted = 0;
+            let duplicates = 0;
+            let failed = 0;
+            const errors = [];
+            const items = [];
+
+            for (const r of mobileResults) {
+                if (!r.success || !r.data) {
+                    failed++;
+                    if (r.error) errors.push(r.error);
+                    continue;
+                }
+
+                const existingId = await this.db.findMobileIdByBrandModel(r.data.brand_name, r.data.model_name);
+                if (existingId) {
+                    duplicates++;
+                    continue;
+                }
+
+                const ins = await this.db.insertMobileRecord(r.data);
+                if (!ins.success || !ins.id) {
+                    failed++;
+                    errors.push(ins.error || 'insert_failed');
+                    continue;
+                }
+
+                await this.db.upsertMobileSpecs(ins.id, r.data.specifications || {}, { overwrite: false });
+                if (r.data.image_url) {
+                    await this.db.insertMobileImages(ins.id, [r.data.image_url]);
+                }
+
+                inserted++;
+                items.push({
+                    id: ins.id,
+                    brand_name: r.data.brand_name,
+                    model_name: r.data.model_name,
+                    release_date: r.data.release_date
+                });
+            }
+
+            return {
+                success: true,
+                status: inserted > 0 ? 'success' : 'no_new_mobiles',
+                processed: limitedLinks.length,
+                inserted,
+                duplicates,
+                failed,
+                errors,
+                items
+            };
+        }
 
         // Step 3: Process new articles (with concurrency limit)
         const newArticles = await this.processArticles(limitedLinks);
@@ -313,6 +403,40 @@ class ScraperOrchestrator {
                 error: error.message,
                 data: null
             };
+        }
+    }
+
+    /**
+     * Process device pages with concurrency limit (mobiles_direct pipeline)
+     */
+    async processMobiles(links) {
+        const results = [];
+
+        for (let i = 0; i < links.length; i += this.concurrency) {
+            const batch = links.slice(i, i + this.concurrency);
+            const batchResults = await Promise.all(batch.map(link => this.processMobile(link)));
+            results.push(...batchResults);
+        }
+
+        return results;
+    }
+
+    /**
+     * Process a single device spec page (mobiles_direct pipeline)
+     */
+    async processMobile(link) {
+        try {
+            const scrapeResult = await this.mobileScraper.scrapeDevice(link.link);
+
+            if (!scrapeResult.success) {
+                Logger.warn('Failed to scrape device', { url: link.link, error: scrapeResult.error });
+                return { success: false, error: scrapeResult.error, data: scrapeResult.data || null };
+            }
+
+            return { success: true, data: scrapeResult.data };
+        } catch (error) {
+            Logger.error('Error processing device', { url: link.link, error: error.message });
+            return { success: false, error: error.message, data: null };
         }
     }
 

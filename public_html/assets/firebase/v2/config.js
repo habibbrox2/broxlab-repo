@@ -146,13 +146,13 @@ function safeParseJSON(raw) {
 function validateFirebaseConfig(cfg) {
   if (!cfg || typeof cfg !== 'object') return null;
   // Basic required fields
-  const { apiKey, projectId, appId } = cfg;
+  const { apiKey, projectId, appId: _appId } = cfg;
   if (!apiKey || !projectId) return null;
   return cfg;
 }
 
 // Merge notification config with defaults
-function mergeNotificationConfig(fetched = {}) {
+function _mergeNotificationConfig(fetched = {}) {
   const defaults = DEFAULT_NOTIFICATION_CONFIG;
   // Shallow merge with fetched config (fetched overrides defaults)
   const merged = { ...defaults, ...fetched };
@@ -194,7 +194,7 @@ export async function loadFirebaseConfig(timeout = 5000) {
 
     // 2) Network fetch from /api/firebase-config with timeout
     try {
-      const { ok, status, data } = await fetchWithTimeout('/api/firebase-config', {
+      const { ok, status: _status, data } = await fetchWithTimeout('/api/firebase-config', {
         method: 'GET',
         credentials: 'same-origin',
         cache: 'no-store',

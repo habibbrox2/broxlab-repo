@@ -293,7 +293,7 @@
     }
 
     // HuggingFace tips toggle
-    function updateHfTips(providerName) {
+    function updateHfTips(_providerName) {
         const hfTipsFrontend = document.getElementById('hfTipsFrontend');
         const hfTipsBackend = document.getElementById('hfTipsBackend');
         const frontendProviderSelect = document.getElementById('frontendProviderSelect');
@@ -793,7 +793,7 @@
         var model = modelSelect ? modelSelect.value : '';
         var resultDiv = document.getElementById('testConnectionResult');
         var btn = document.querySelector('#testConnectionModal .btn-primary');
-        var warningDiv = document.getElementById('testConnectionWarning');
+        var _warningDiv = document.getElementById('testConnectionWarning');
         var csrfToken = document.querySelector('input[name="csrf_token"]');
 
         if (!model) {

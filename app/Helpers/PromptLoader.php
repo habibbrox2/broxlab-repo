@@ -160,6 +160,7 @@ class PromptLoader
             $system .= "\n3. Be context-aware. Use the provided [USER CONTEXT] to tailor your response to the current page.";
             $system .= "\n4. Supported slash commands (admin only): /summarize, /analyze-logs.";
             $system .= "\n5. Refer to admin URLs and tools available in the dashboard when relevant.";
+            $system .= "\n6. Do NOT reply with overly short messages. When the user asks a question, give a complete, thorough response with the necessary details and actionable steps.";
         }
 
         return $system;

@@ -331,16 +331,22 @@ class ArticleScraper {
             return s;
         };
 
-        const s = normalize(inputRaw);
+        let s = normalize(inputRaw);
+        // Normalize real Bengali digits (\u09E6-\u09EF) so (\d+) regexes work for UTF-8 Bangla strings.
+        s = s.replace(/[\u09E6-\u09EF]/g, (ch) => String(ch.charCodeAt(0) - 0x09E6));
 
         // Relative times (best-effort): "৭ মিনিট আগে", "25 minutes ago"
         {
             const relBn = s.match(/(\d+)\s*(মিনিট|ঘণ্টা|ঘন্টা|দিন)\s*আগে/i);
+            const relBnUnicode = s.match(/(\d+)\s*(\u09ae\u09bf\u09a8\u09bf\u099f|\u0998\u09a3\u09cd\u099f\u09be|\u0998\u09a8\u09cd\u099f\u09be|\u09a6\u09bf\u09a8)\s*\u0986\u0997\u09c7/i);
             const relEn = s.match(/(\d+)\s*(minute|hour|day)s?\s*ago/i);
-            const rel = relBn || relEn;
+            const rel = relBnUnicode || relBn || relEn;
             if (rel) {
                 const n = parseInt(rel[1], 10);
-                const unit = String(rel[2] || '').toLowerCase();
+                let unit = String(rel[2] || '').toLowerCase();
+                if (unit === '\u09ae\u09bf\u09a8\u09bf\u099f') unit = 'minute';
+                if (unit === '\u0998\u09a3\u09cd\u099f\u09be' || unit === '\u0998\u09a8\u09cd\u099f\u09be') unit = 'hour';
+                if (unit === '\u09a6\u09bf\u09a8') unit = 'day';
                 if (Number.isFinite(n) && n >= 0) {
                     const ms =
                         unit.includes('day') || unit.includes('দিন')
@@ -349,6 +355,55 @@ class ArticleScraper {
                                 ? n * 60 * 60 * 1000
                                 : n * 60 * 1000;
                     return new Date(Date.now() - ms).toISOString();
+                }
+            }
+        }
+
+        // The Daily Star (Bangla) absolute timestamp:
+        // Example: "২১ মার্চ ২০২৬, ১২:৩৫ পূর্বাহ্ন"
+        {
+            const abs = s.match(
+                /(\d{1,2})\s+([^\s,|]+)\s+(\d{4})\s*,?\s*(\d{1,2})\s*[:ï¼š]\s*(\d{2})\s*(\u09aa\u09c2\u09b0\u09cd\u09ac\u09be\u09b9\u09cd\u09a8|\u09aa\u09c2\u09b0\u09cd\u09ac\u09be\u09b9\u09cd\u09a3|\u0985\u09aa\u09b0\u09be\u09b9\u09cd\u09a8|\u0985\u09aa\u09b0\u09be\u09b9\u09cd\u09a3)/i
+            );
+
+            if (abs) {
+                const day = parseInt(abs[1], 10);
+                const monthName = String(abs[2] || '').trim();
+                const year = parseInt(abs[3], 10);
+                let hour = parseInt(abs[4], 10);
+                const minute = parseInt(abs[5], 10);
+                const meridiem = String(abs[6] || '').trim();
+
+                const monthMapBn = {
+                    '\u099c\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b0\u09bf': 1,
+                    '\u09ab\u09c7\u09ac\u09cd\u09b0\u09c1\u09af\u09bc\u09be\u09b0\u09bf': 2,
+                    '\u09ae\u09be\u09b0\u09cd\u099a': 3,
+                    '\u098f\u09aa\u09cd\u09b0\u09bf\u09b2': 4,
+                    '\u09ae\u09c7': 5,
+                    '\u099c\u09c1\u09a8': 6,
+                    '\u099c\u09c1\u09b2\u09be\u0987': 7,
+                    '\u0986\u0997\u09b8\u09cd\u099f': 8,
+                    '\u09b8\u09c7\u09aa\u09cd\u099f\u09c7\u09ae\u09cd\u09ac\u09b0': 9,
+                    '\u0985\u0995\u09cd\u099f\u09cb\u09ac\u09b0': 10,
+                    '\u09a8\u09ad\u09c7\u09ae\u09cd\u09ac\u09b0': 11,
+                    '\u09a1\u09bf\u09b8\u09c7\u09ae\u09cd\u09ac\u09b0': 12
+                };
+
+                const month = monthMapBn[monthName] || null;
+
+                if (month && year >= 1970 && day >= 1 && day <= 31 && minute >= 0 && minute <= 59) {
+                    const isAm = meridiem === '\u09aa\u09c2\u09b0\u09cd\u09ac\u09be\u09b9\u09cd\u09a8' || meridiem === '\u09aa\u09c2\u09b0\u09cd\u09ac\u09be\u09b9\u09cd\u09a3';
+                    const isPm = meridiem === '\u0985\u09aa\u09b0\u09be\u09b9\u09cd\u09a8' || meridiem === '\u0985\u09aa\u09b0\u09be\u09b9\u09cd\u09a3';
+
+                    if ((isAm || isPm) && hour >= 1 && hour <= 12) {
+                        if (isPm && hour < 12) hour += 12;
+                        if (isAm && hour === 12) hour = 0;
+                    }
+
+                    if (hour >= 0 && hour <= 23) {
+                        const pad2 = (n) => String(n).padStart(2, '0');
+                        return `${year}-${pad2(month)}-${pad2(day)}T${pad2(hour)}:${pad2(minute)}:00+06:00`;
+                    }
                 }
             }
         }

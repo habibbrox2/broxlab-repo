@@ -405,6 +405,145 @@ $router->get('/admin/autocontent/sources/toggle', ['middleware' => ['auth', 'adm
     }
 });
 
+/**
+ * Bulk Action on Sources
+ * POST /admin/autocontent/sources/bulk-action
+ *
+ * Supported actions: activate, deactivate, delete
+ */
+$router->post('/admin/autocontent/sources/bulk-action', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    $isAjax = (($_GET['ajax'] ?? '') === '1') || (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest');
+
+    try {
+        $action = strtolower(trim((string)($_POST['action'] ?? '')));
+        $idsRaw = $_POST['ids'] ?? [];
+
+        $ids = [];
+        if (is_array($idsRaw)) {
+            $ids = $idsRaw;
+        }
+        elseif (is_string($idsRaw)) {
+            $ids = preg_split('/\s*,\s*/', $idsRaw, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        }
+
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn($v) => $v > 0)));
+        if (count($ids) === 0) {
+            if ($isAjax) {
+                json_response(['success' => false, 'message' => 'No sources selected'], 400);
+                exit;
+            }
+            showMessage('No sources selected', 'error');
+            header('Location: /admin/autocontent/sources');
+            exit;
+        }
+
+        if (!in_array($action, ['activate', 'deactivate', 'delete'], true)) {
+            if ($isAjax) {
+                json_response(['success' => false, 'message' => 'Invalid action'], 400);
+                exit;
+            }
+            showMessage('Invalid action', 'error');
+            header('Location: /admin/autocontent/sources');
+            exit;
+        }
+
+        // Safety: cap batch size to avoid accidental mass deletes.
+        $ids = array_slice($ids, 0, 200);
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $types = str_repeat('i', count($ids));
+
+        $mysqli->begin_transaction();
+
+        if ($action === 'activate' || $action === 'deactivate') {
+            $active = $action === 'activate' ? 1 : 0;
+            $sql = "UPDATE autocontent_sources SET is_active = ? WHERE id IN ($placeholders)";
+            $stmt = $mysqli->prepare($sql);
+            if ($stmt === false) {
+                throw new RuntimeException('prepare_failed: ' . $mysqli->error);
+            }
+
+            $bindTypes = 'i' . $types;
+            $params = array_merge([$active], $ids);
+            $stmt->bind_param($bindTypes, ...$params);
+            $ok = $stmt->execute();
+            $affected = $stmt->affected_rows;
+            $stmt->close();
+
+            if (!$ok) {
+                throw new RuntimeException('execute_failed');
+            }
+
+            $mysqli->commit();
+
+            $msg = $active ? 'Sources activated' : 'Sources deactivated';
+            if ($isAjax) {
+                json_response(['success' => true, 'message' => $msg, 'affected' => $affected], 200);
+                exit;
+            }
+
+            showMessage($msg, 'success');
+            header('Location: /admin/autocontent/sources');
+            exit;
+        }
+
+        // delete
+        $stmtA = $mysqli->prepare("DELETE FROM autocontent_articles WHERE source_id IN ($placeholders)");
+        if ($stmtA === false) {
+            throw new RuntimeException('prepare_failed: ' . $mysqli->error);
+        }
+        $stmtA->bind_param($types, ...$ids);
+        $okA = $stmtA->execute();
+        $stmtA->close();
+        if (!$okA) {
+            throw new RuntimeException('delete_articles_failed');
+        }
+
+        $stmtS = $mysqli->prepare("DELETE FROM autocontent_sources WHERE id IN ($placeholders)");
+        if ($stmtS === false) {
+            throw new RuntimeException('prepare_failed: ' . $mysqli->error);
+        }
+        $stmtS->bind_param($types, ...$ids);
+        $okS = $stmtS->execute();
+        $affected = $stmtS->affected_rows;
+        $stmtS->close();
+        if (!$okS) {
+            throw new RuntimeException('delete_sources_failed');
+        }
+
+        $mysqli->commit();
+
+        if ($isAjax) {
+            json_response(['success' => true, 'message' => 'Sources deleted', 'affected' => $affected], 200);
+            exit;
+        }
+
+        showMessage('Sources deleted', 'success');
+        header('Location: /admin/autocontent/sources');
+        exit;
+    }
+    catch (Throwable $e) {
+        try {
+            if ($mysqli instanceof mysqli) {
+                $mysqli->rollback();
+            }
+        } catch (Throwable $inner) {
+            // ignore rollback errors
+        }
+
+        error_log("Auto Content Sources Bulk Action Error: " . $e->getMessage());
+
+        if ($isAjax) {
+            json_response(['success' => false, 'message' => 'Bulk action failed'], 500);
+            exit;
+        }
+
+        showMessage('Bulk action failed', 'error');
+        header('Location: /admin/autocontent/sources');
+        exit;
+    }
+});
+
 // ================== ARTICLE QUEUE ==================
 
 /**
@@ -476,6 +615,8 @@ $router->get('/admin/autocontent/queue/view', ['middleware' => ['auth', 'admin_o
 
         echo $twig->render('admin/autocontent/queue_view.twig', [
         'title' => 'View Article',
+        // Template expects `item`. Keep `article` for backward compatibility.
+        'item' => $article,
         'article' => $article,
         'current_page' => 'autocontent-queue'
         ]);

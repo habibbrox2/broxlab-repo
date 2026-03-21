@@ -29,9 +29,14 @@ class HtmlParser {
             try {
                 const element = $dom(selector);
                 if (element.length > 0) {
-                    const text = element.first().text().trim();
-                    if (text) {
-                        return text;
+                    const first = element.first();
+                    const text = first.text().trim();
+                    if (text) return text;
+
+                    // Meta tags often store content in attributes (e.g. description, og:title)
+                    if (String(first.get(0)?.tagName || '').toLowerCase() === 'meta') {
+                        const content = (first.attr('content') || '').trim();
+                        if (content) return content;
                     }
                 }
             } catch (e) {

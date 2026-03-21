@@ -16,6 +16,9 @@
       <table class="table table-hover mb-0">
         <thead class="table-light">
           <tr>
+            <th width="40" class="text-center">
+              <input type="checkbox" id="select-all-checkbox" class="form-check-input table-select-checkbox">
+            </th>
             <th>#</th>
             <th>Name</th>
             <th>URL</th>
@@ -30,6 +33,9 @@
         <tbody>
           {% for source in sources %}
           <tr>
+            <td class="text-center">
+              <input type="checkbox" class="form-check-input table-select-checkbox item-checkbox" value="{{ source.id }}">
+            </td>
             <td>{{ source.id }}</td>
             <td class="fw-semibold">{{ source.name }}</td>
             <td class="text-truncate small" style="max-width: 200px;" title="{{ source.url }}">
@@ -77,7 +83,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="9" class="text-center text-muted py-4">
+            <td colspan="10" class="text-center text-muted py-4">
               <i class="bi bi-rss fs-3 d-block mb-2"></i>
               No sources configured yet. Click "Add Source" to get started.
             </td>
@@ -88,10 +94,161 @@
     </div>
   </div>
 </div>
+
+{# Bulk Action Bar #}
+<div id="sources-bulk-bar" class="sources-bulk-bar" aria-hidden="true">
+  <div class="sources-bulk-count" id="sources-selected-count">0</div>
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-success btn-sm rounded-pill px-3" data-action="activate">
+      <i class="bi bi-toggle-on me-1"></i>Activate
+    </button>
+    <button type="button" class="btn btn-outline-dark btn-sm rounded-pill px-3" data-action="deactivate">
+      <i class="bi bi-toggle-off me-1"></i>Deactivate
+    </button>
+    <button type="button" class="btn btn-danger btn-sm rounded-pill px-3" data-action="delete">
+      <i class="bi bi-trash me-1"></i>Delete
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+  .sources-bulk-bar {
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120%);
+    background: rgba(0,0,0,0.92);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 999px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.22);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 1060;
+    transition: transform 0.2s ease;
+  }
+  .sources-bulk-bar.active {
+    transform: translateX(-50%) translateY(0);
+  }
+  .sources-bulk-count {
+    font-weight: 700;
+    background: var(--bs-primary);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+  }
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
+function getCsrfToken() {
+  var meta = document.querySelector('meta[name="csrf-token"]');
+  return meta ? (meta.getAttribute('content') || '') : '';
+}
+
+function getSelectedSourceIds() {
+  return Array.from(document.querySelectorAll('.item-checkbox:checked'))
+    .map(cb => parseInt(cb.value, 10))
+    .filter(n => Number.isFinite(n) && n > 0);
+}
+
+function updateSourcesBulkBar() {
+  const bar = document.getElementById('sources-bulk-bar');
+  const countEl = document.getElementById('sources-selected-count');
+  if (!bar || !countEl) return;
+
+  const count = document.querySelectorAll('.item-checkbox:checked').length;
+  countEl.textContent = String(count);
+  bar.classList.toggle('active', count > 0);
+  bar.setAttribute('aria-hidden', count > 0 ? 'false' : 'true');
+}
+
+async function doSourcesBulkAction(action) {
+  const ids = getSelectedSourceIds();
+  if (ids.length === 0) {
+    if (typeof window.showAlert === 'function') {
+      await window.showAlert('Please select at least one source.', 'Nothing selected', 'warning');
+    }
+    return;
+  }
+
+  const actionLabel = action.charAt(0).toUpperCase() + action.slice(1);
+  const confirmText = action === 'delete'
+    ? 'This will delete the selected sources and all their queued articles. This cannot be undone.'
+    : 'Apply "' + actionLabel + '" to selected sources?';
+
+  const confirmed = typeof window.showConfirm === 'function'
+    ? await window.showConfirm(confirmText, actionLabel + ' sources?', action === 'delete' ? 'danger' : 'info', {
+        confirmButtonText: actionLabel,
+        cancelButtonText: 'Cancel'
+      })
+    : true;
+
+  if (!confirmed) return;
+
+  try {
+    const csrfToken = getCsrfToken();
+    const body = new URLSearchParams();
+    body.set('csrf_token', csrfToken);
+    body.set('action', action);
+    ids.forEach(id => body.append('ids[]', String(id)));
+
+    const res = await fetch('/admin/autocontent/sources/bulk-action?ajax=1', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-Token': csrfToken
+      },
+      body: body.toString()
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      if (typeof window.showAlert === 'function') {
+        await window.showAlert(data.message || 'Done', 'Success', 'success');
+      }
+      window.location.reload();
+      return;
+    }
+
+    if (typeof window.showAlert === 'function') {
+      await window.showAlert(data.message || 'Bulk action failed', 'Error', 'danger');
+    }
+  } catch (e) {
+    if (typeof window.showAlert === 'function') {
+      await window.showAlert('Connection failed', 'Network Error', 'danger');
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('select-all-checkbox');
+  if (selectAll) {
+    selectAll.addEventListener('change', updateSourcesBulkBar);
+  }
+
+  document.querySelectorAll('.item-checkbox').forEach(function(cb) {
+    cb.addEventListener('change', updateSourcesBulkBar);
+  });
+  updateSourcesBulkBar();
+
+  document.querySelectorAll('#sources-bulk-bar [data-action]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      const action = btn.getAttribute('data-action') || '';
+      doSourcesBulkAction(action);
+    });
+  });
+});
+
 async function collectFromSource(sourceId, sourceName) {
   var confirmed = typeof window.showConfirm === 'function'
     ? await window.showConfirm(

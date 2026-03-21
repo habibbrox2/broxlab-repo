@@ -1,4 +1,4 @@
-import { appendAssistant, appendMessage, animateBody, attachAssistantTools, buildStaticReplyMatcher, parseResponseConfig, typeMessage } from '../../core/render.js';
+import { appendAssistant, appendMessage, animateBody as _animateBody, attachAssistantTools as _attachAssistantTools, buildStaticReplyMatcher, parseResponseConfig, typeMessage } from '../../core/render.js';
 import { createHistoryStore } from '../../core/storage.js';
 import { createLanguageState } from '../../core/i18n.js';
 import { ensurePuterReady, getPuterClient, extractResponseText } from '../../core/puter.js';
@@ -35,7 +35,7 @@ const USER_INFO_KEY = 'brox.publicAssistant.userInfo.v2';
 const MAX_STORED_MESSAGES = 40;
 const INACTIVITY_LIMIT_MS = 30 * 60 * 1000;
 const ASSISTANT_SITE_URL = 'https://broxlab.online';
-const TOPIC_KEYS = ['general', 'support', 'billing', 'feedback'];
+const _TOPIC_KEYS = ['general', 'support', 'billing', 'feedback'];
 
 const DEFAULT_PREFS = {
   provider: 'puter-js',
@@ -236,7 +236,7 @@ async function callOpenRouterAI(messages, options = {}) {
 }
 
 // Parse suggestions from response text
-function parseSuggestionsFromText(text) {
+function _parseSuggestionsFromText(text) {
   const match = text.match(/\[SUGGESTION:\s*(.*?)\]/);
   if (match) {
     const suggestions = match[1].split(',').map(s => s.trim());
@@ -493,7 +493,7 @@ function buildSystemPrompt() {
   ].filter(Boolean).join('\n');
 }
 
-function buildMessages(userText) {
+function _buildMessages(userText) {
   return [
     { role: 'system', content: buildSystemPrompt() },
     ...chatHistory.map((r) => ({ role: r.role, content: r.text })),

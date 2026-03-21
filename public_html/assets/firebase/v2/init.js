@@ -3,7 +3,7 @@
 // Prefetches config non-blockingly on page load
 // Exports: initFirebase, getters for app/modules/config, notification config access
 
-import { loadFirebaseConfig, getNotificationConfig, getFullConfig, prefetchAllConfigs } from './config.js';
+import { loadFirebaseConfig, prefetchAllConfigs } from './config.js';
 import { DebugUtils } from './debug.js';
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
@@ -45,7 +45,7 @@ async function resolveMessagingSupport() {
 // This starts the config fetch as soon as this module loads
 if (typeof window !== 'undefined') {
   // Schedule non-blocking prefetch (doesn't wait for fetch)
-  Promise.resolve().then(() => prefetchAllConfigs()).catch((err) => {
+  Promise.resolve().then(() => prefetchAllConfigs()).catch((_err) => {
     // Silent fail on prefetch - will retry during init. Only log if debug enabled
     DebugUtils.moduleWarn('init', 'Config prefetch failed, will retry during initialization');
   });

@@ -160,7 +160,7 @@ async function postTokenSyncWithRetry(sendUrl, payload, maxRetries = DEFAULT_SYN
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const { ok, status, error } = await fetchWithTimeout(sendUrl, {
+      const { ok, status, error: _error } = await fetchWithTimeout(sendUrl, {
         method: 'POST',
         credentials: 'same-origin',
         headers: {
@@ -452,8 +452,8 @@ export async function obtainAndSendFCMToken(opts = {}) {
 // Unsubscribe / mute helpers
 export async function unsubscribeFCMToken(token) {
   try {
-    const { ok } = await fetchWithTimeout('/api/unsubscribe-fcm', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fcm_token: token }) });
-    if (res.ok) {
+    const { ok, status: _status } = await fetchWithTimeout('/api/unsubscribe-fcm', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fcm_token: token }) });
+    if (ok) {
       try {
         localStorage.removeItem(TOKEN_STORAGE_KEY);
         localStorage.removeItem(TOKEN_LAST_SYNC_KEY);
@@ -461,7 +461,7 @@ export async function unsubscribeFCMToken(token) {
       DebugUtils.moduleLog('messaging', 'Token unsubscribed on server');
       return true;
     }
-    DebugUtils.moduleWarn('messaging', 'unsubscribeFCMToken failed:', res.status);
+    DebugUtils.moduleWarn('messaging', 'unsubscribeFCMToken failed:', _status);
     return false;
   } catch (e) {
     DebugUtils.moduleError('messaging', 'unsubscribeFCMToken error:', e);
@@ -475,7 +475,7 @@ export async function subscribeToTopic(topic, token = null) {
     const body = { topic };
     if (token) body.token = token;
     const { ok } = await fetchWithTimeout('/api/topics/subscribe', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    return res.ok;
+    return ok;
   } catch (e) { DebugUtils.moduleWarn('messaging', 'subscribeToTopic failed', e); return false; }
 }
 
@@ -484,7 +484,7 @@ export async function unsubscribeFromTopic(topic, token = null) {
     const body = { topic };
     if (token) body.token = token;
     const { ok } = await fetchWithTimeout('/api/topics/unsubscribe', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    return res.ok;
+    return ok;
   } catch (e) { DebugUtils.moduleWarn('messaging', 'unsubscribeFromTopic failed', e); return false; }
 }
 
@@ -516,7 +516,7 @@ export function showForegroundNotification(payload) {
   const title = notification.title || 'নোটিফিকেশন';
   const body = notification.body || '';
   const icon = notification.icon || '/assets/logo/icon-192x192.png';
-  const badge = notification.badge || '/assets/logo/badge.png';
+  const _badge = notification.badge || '/assets/logo/badge.png';
 
   DebugUtils.moduleLog('messaging', 'Displaying foreground notification:', title);
 
@@ -549,7 +549,7 @@ export function showForegroundNotification(payload) {
   // Initialize Bootstrap toast
   if (window.bootstrap?.Toast) {
     const toastElement = document.getElementById(toastId);
-    const bsToast = new window.bootstrap.Toast(toastElement, {
+    new window.bootstrap.Toast(toastElement, {
       autohide: true,
       delay: 5000
     });

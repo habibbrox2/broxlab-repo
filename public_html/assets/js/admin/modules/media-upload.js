@@ -1,6 +1,6 @@
 const byIdDefault = (id) => document.getElementById(id);
 
-import { validateFile, ALLOWED_TYPES } from '../../shared/form-validators.js';
+import { validateFile } from '../../shared/form-validators.js';
 
 export function initMediaUpload(options = {}) {
     const byId = options.byId || byIdDefault;
@@ -16,11 +16,9 @@ export function initMediaUpload(options = {}) {
     const uploadStatus = byId('uploadStatus');
     const fileInfo = byId('fileInfo');
     const submitBtn = byId('submitBtn');
-    const alertContainer = byId('alertContainer');
+    const _alertContainer = byId('alertContainer');
 
-    const maxFileSize = parseInt(form.dataset.maxFileSize || '52428800', 10);
-
-    // maxFileSize remains local
+    const _maxFileSize = parseInt(form.dataset.maxFileSize || '52428800', 10);
 
 
     if (fileInput) {

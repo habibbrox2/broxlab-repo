@@ -1956,9 +1956,17 @@ require_once __DIR__ . '/../Models/AIKnowledge.php';
 $router->get('/api/admin/ai-knowledge', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     $model = new AIKnowledge($mysqli);
     $page = max(1, (int)($_GET['page'] ?? 1));
-    $limit = 50;
+    $limit = (int)($_GET['limit'] ?? 50);
+    if ($limit <= 0) $limit = 50;
+    if ($limit > 200) $limit = 200;
     $offset = ($page - 1) * $limit;
-    $rows = $model->list($limit, $offset);
+
+    // By default only active KB items are returned.
+    // Pass `include_inactive=1` (or `active_only=0`) to return all items.
+    $includeInactive = (string)($_GET['include_inactive'] ?? '') === '1';
+    $activeOnly = (string)($_GET['active_only'] ?? '') === '0' ? false : !$includeInactive;
+
+    $rows = $model->list($limit, $offset, null, $activeOnly);
     header('Content-Type: application/json');
     echo json_encode(['success' => true, 'items' => $rows]);
 });

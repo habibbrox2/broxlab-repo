@@ -187,11 +187,44 @@ class MobileModel {
 
     public function deleteMobile($id) {
 
-        $this->mysqli->prepare("DELETE FROM mobile_specs WHERE mobile_id = ?")->bind_param("i", $id)->execute();
+        $mobileId = (int)$id;
+        if ($mobileId <= 0) {
+            return false;
+        }
 
-        $this->mysqli->prepare("DELETE FROM mobile_images WHERE mobile_id = ?")->bind_param("i", $id)->execute();
+        $this->mysqli->begin_transaction();
 
-        $this->mysqli->prepare("DELETE FROM mobiles WHERE id = ?")->bind_param("i", $id)->execute();
+        try {
+            $queries = [
+                'DELETE FROM mobile_specs WHERE mobile_id = ?',
+                'DELETE FROM mobile_images WHERE mobile_id = ?',
+                'DELETE FROM mobiles WHERE id = ?',
+            ];
+
+            foreach ($queries as $sql) {
+                $stmt = $this->mysqli->prepare($sql);
+                if ($stmt === false) {
+                    throw new \RuntimeException('prepare_failed: ' . $this->mysqli->error);
+                }
+
+                $stmt->bind_param("i", $mobileId);
+
+                if (!$stmt->execute()) {
+                    $err = $stmt->error ?: 'execute_failed';
+                    $stmt->close();
+                    throw new \RuntimeException($err);
+                }
+
+                $stmt->close();
+            }
+
+            $this->mysqli->commit();
+            return true;
+        } catch (\Throwable $e) {
+            $this->mysqli->rollback();
+            error_log('MobileModel::deleteMobile failed: ' . $e->getMessage());
+            return false;
+        }
 
     }
 

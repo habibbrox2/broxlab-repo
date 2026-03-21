@@ -1352,15 +1352,59 @@ if (!window.BroxAssistantLoaded) {
             const msgBubble = this.createEmptyMessage('assistant');
             const msgWrapper = msgBubble?.parentElement;
 
+            let stageTimer = null;
+            const stageMeta = this.lang === 'bn'
+                ? {
+                    thinking: { label: 'Thinking', sub: 'উত্তর সাজাচ্ছি...', icon: 'bi-stars' },
+                    searching: { label: 'Searching', sub: 'প্রাসঙ্গিক তথ্য খুঁজছি...', icon: 'bi-search' },
+                    calling: { label: 'Calling', sub: 'টুল/সিস্টেম কল চলছে...', icon: 'bi-gear' },
+                    writing: { label: 'Writing', sub: 'সম্পূর্ণ উত্তর লিখছি...', icon: 'bi-pencil-square' }
+                }
+                : {
+                    thinking: { label: 'Thinking', sub: 'Working on your request...', icon: 'bi-stars' },
+                    searching: { label: 'Searching', sub: 'Looking up relevant context...', icon: 'bi-search' },
+                    calling: { label: 'Calling', sub: 'Running tools/actions...', icon: 'bi-gear' },
+                    writing: { label: 'Writing', sub: 'Composing the final answer...', icon: 'bi-pencil-square' }
+                };
+
+            const detectInitialStage = () => {
+                try {
+                    for (let i = this.history.length - 1; i >= 0; i--) {
+                        const m = this.history[i];
+                        if (m?.role !== 'user') continue;
+                        const c = m.content;
+                        if (typeof c === 'string' && /https?:\/\//i.test(c)) return 'searching';
+                        break;
+                    }
+                } catch { }
+                return 'thinking';
+            };
+
+            const setStage = (wrap, stageKey) => {
+                if (!wrap) return;
+                const meta = stageMeta[stageKey] || stageMeta.thinking;
+                wrap.dataset.stage = stageKey;
+                const icon = wrap.querySelector('[data-brox-ai-stage-icon]');
+                const label = wrap.querySelector('[data-brox-ai-stage-label]');
+                const sub = wrap.querySelector('[data-brox-ai-stage-sub]');
+                if (icon) icon.className = `bi ${meta.icon}`;
+                if (label) label.textContent = meta.label;
+                if (sub) sub.textContent = meta.sub;
+                try { this.updateAgenticStatus(meta.label, meta.sub); } catch { }
+            };
+
             const showThinkingInBubble = () => {
                 if (!msgBubble || !msgWrapper) return;
                 msgWrapper.classList.add('brox-ai-thinking-msg');
                 msgBubble.innerHTML = `
                     <div class="brox-ai-thinking-wrap" aria-live="polite" aria-busy="true">
-                        <div class="brox-ai-thinking-label">
-                            <span class="brox-ai-thinking-text">${this.t('thinking')}</span>
+                        <div class="brox-ai-progress-pill" role="status">
+                            <span class="brox-ai-progress-icon" aria-hidden="true"><i data-brox-ai-stage-icon class="bi bi-stars"></i></span>
+                            <span class="brox-ai-thinking-text" data-brox-ai-stage-label>${this.t('thinking')}</span>
                             <span class="brox-ai-thinking-dots" aria-hidden="true"><span></span><span></span><span></span></span>
                         </div>
+                        <div class="brox-ai-progress-sub" data-brox-ai-stage-sub></div>
+                        <div class="brox-ai-progress-bar" aria-hidden="true"></div>
                         <div class="brox-ai-thinking-skeleton" aria-hidden="true">
                             <span class="brox-ai-skel-line skel-1"></span>
                             <span class="brox-ai-skel-line skel-2"></span>
@@ -1368,6 +1412,25 @@ if (!window.BroxAssistantLoaded) {
                         </div>
                     </div>
                 `;
+
+                const wrap = msgBubble.querySelector('.brox-ai-thinking-wrap');
+                const initial = detectInitialStage();
+                setStage(wrap, initial);
+
+                const sequence = initial === 'searching'
+                    ? ['searching', 'calling', 'writing']
+                    : ['thinking', 'searching', 'calling', 'writing'];
+                let idx = 0;
+
+                if (stageTimer) {
+                    try { clearInterval(stageTimer); } catch { }
+                    stageTimer = null;
+                }
+                stageTimer = setInterval(() => {
+                    if (thinkingCleared) return;
+                    idx = (idx + 1) % sequence.length;
+                    setStage(wrap, sequence[idx]);
+                }, 2200);
             };
 
             let thinkingCleared = false;
@@ -1375,6 +1438,10 @@ if (!window.BroxAssistantLoaded) {
                 if (!msgBubble || !msgWrapper) return;
                 if (thinkingCleared) return;
                 thinkingCleared = true;
+                if (stageTimer) {
+                    try { clearInterval(stageTimer); } catch { }
+                    stageTimer = null;
+                }
                 msgWrapper.classList.remove('brox-ai-thinking-msg');
                 msgBubble.innerHTML = '';
             };
@@ -1544,16 +1611,43 @@ if (!window.BroxAssistantLoaded) {
                 const t0 = performance.now();
                 let reply = '';
                 let thinkingCleared = false;
+                let stageTimer = null;
+
+                const stageMeta = this.lang === 'bn'
+                    ? {
+                        thinking: { label: 'Thinking', sub: 'উত্তর সাজাচ্ছি...', icon: 'bi-stars' },
+                        writing: { label: 'Writing', sub: 'সম্পূর্ণ উত্তর লিখছি...', icon: 'bi-pencil-square' }
+                    }
+                    : {
+                        thinking: { label: 'Thinking', sub: 'Working on your request...', icon: 'bi-stars' },
+                        writing: { label: 'Writing', sub: 'Composing the final answer...', icon: 'bi-pencil-square' }
+                    };
+
+                const setStage = (wrap, stageKey) => {
+                    if (!wrap) return;
+                    const meta = stageMeta[stageKey] || stageMeta.thinking;
+                    wrap.dataset.stage = stageKey;
+                    const icon = wrap.querySelector('[data-brox-ai-stage-icon]');
+                    const label = wrap.querySelector('[data-brox-ai-stage-label]');
+                    const sub = wrap.querySelector('[data-brox-ai-stage-sub]');
+                    if (icon) icon.className = `bi ${meta.icon}`;
+                    if (label) label.textContent = meta.label;
+                    if (sub) sub.textContent = meta.sub;
+                    try { this.updateAgenticStatus(meta.label, meta.sub); } catch { }
+                };
 
                 const showThinkingInBubble = () => {
                     if (!msgBubble || !msgWrapper) return;
                     msgWrapper.classList.add('brox-ai-thinking-msg');
                     msgBubble.innerHTML = `
                         <div class="brox-ai-thinking-wrap" aria-live="polite" aria-busy="true">
-                            <div class="brox-ai-thinking-label">
-                                <span class="brox-ai-thinking-text">${this.t('thinking')}</span>
+                            <div class="brox-ai-progress-pill" role="status">
+                                <span class="brox-ai-progress-icon" aria-hidden="true"><i data-brox-ai-stage-icon class="bi bi-stars"></i></span>
+                                <span class="brox-ai-thinking-text" data-brox-ai-stage-label>${this.t('thinking')}</span>
                                 <span class="brox-ai-thinking-dots" aria-hidden="true"><span></span><span></span><span></span></span>
                             </div>
+                            <div class="brox-ai-progress-sub" data-brox-ai-stage-sub></div>
+                            <div class="brox-ai-progress-bar" aria-hidden="true"></div>
                             <div class="brox-ai-thinking-skeleton" aria-hidden="true">
                                 <span class="brox-ai-skel-line skel-1"></span>
                                 <span class="brox-ai-skel-line skel-2"></span>
@@ -1561,12 +1655,28 @@ if (!window.BroxAssistantLoaded) {
                             </div>
                         </div>
                     `;
+
+                    const wrap = msgBubble.querySelector('.brox-ai-thinking-wrap');
+                    setStage(wrap, 'thinking');
+
+                    if (stageTimer) {
+                        try { clearInterval(stageTimer); } catch { }
+                        stageTimer = null;
+                    }
+                    stageTimer = setInterval(() => {
+                        if (thinkingCleared) return;
+                        setStage(wrap, 'writing');
+                    }, 2400);
                 };
 
                 clearThinking = () => {
                     if (!msgBubble || !msgWrapper) return;
                     if (thinkingCleared) return;
                     thinkingCleared = true;
+                    if (stageTimer) {
+                        try { clearInterval(stageTimer); } catch { }
+                        stageTimer = null;
+                    }
                     msgWrapper.classList.remove('brox-ai-thinking-msg');
                     msgBubble.innerHTML = '';
                 };

@@ -12,14 +12,14 @@ import { DebugUtils } from './debug.js';
 import AccountConflictHandler from './account-conflict-handler.js';
 
 // ============ CONSTANTS ============
-const STATUS_TYPES = {
+const _STATUS_TYPES = {
     SUCCESS: 'success',
     DANGER: 'danger',
     WARNING: 'warning',
     INFO: 'info'
 };
 
-const ERROR_CODES = {
+const _ERROR_CODES = {
     POPUP_CLOSED: 'popup-closed-by-user',
     UNSUPPORTED_OPERATION: 'operation-not-supported-in-this-environment',
     NETWORK_REQUEST_FAILED: 'network-request-failed',
@@ -31,7 +31,7 @@ const ERROR_CODES = {
 // ============ PRIVATE STATE ============
 let _isProcessing = false;
 let _statusCallback = null;
-import { normalizeProvider, getErrorMessage, isPopupClosedError, getCsrfToken, escapeHtml } from './firebase-utils.js';
+import { normalizeProvider, getErrorMessage, isPopupClosedError, getCsrfToken as _getCsrfToken, escapeHtml as _escapeHtml } from './firebase-utils.js';
 
 let _successCallback = null;
 let _conflictCallback = null;
@@ -79,7 +79,7 @@ async function _syncWithBackend(user, provider, endpoint = '/api/firebase/signin
     }
 
     try {
-        const idToken = await user.getIdToken(true);
+        const _idToken = await user.getIdToken(true);
         const res = await Auth.syncIdTokenWithBackend(user, { provider, endpoint });
 
         if (!res.success) {

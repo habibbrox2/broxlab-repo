@@ -254,6 +254,128 @@ const CONFIG = {
                     }
                 }
             }
+        },
+        thedailystar_today: {
+            name: "The Daily Star (Bangla) - Today's News",
+            pipeline: 'autocontent_articles',
+            baseUrl: 'https://bangla.thedailystar.net/',
+            homepageUrl: 'https://bangla.thedailystar.net/todays-news',
+            selectors: {
+                ticker: {
+                    primary: '.view-today-s-news .views-row h3.card-title a[href]',
+                    fallback: ['.view-today-s-news .views-row a[href*=\"/news/\"]']
+                },
+                article: {
+                    title: {
+                        primary: '.node-content h1',
+                        fallback: ['h1', 'meta[property=\"og:title\"]', 'title']
+                    },
+                    subtitle: {
+                        primary: 'meta[name=\"description\"]',
+                        fallback: ['meta[property=\"og:description\"]']
+                    },
+                    author: {
+                        primary: '.block-author-info-block .font-medium',
+                        fallback: ['.block-author-info-block span']
+                    },
+                    published: {
+                        primary: '.block-article-meta-block span.text-gray-600',
+                        fallback: ['.block-article-meta-block span']
+                    },
+                    image: {
+                        primary: '.block-news-featured-image img',
+                        fallback: ['meta[property=\"og:image\"]']
+                    },
+                    content: {
+                        primary: '.block-field-blocknodenewsbody .text-formatted',
+                        fallback: ['article', 'main']
+                    }
+                }
+            }
+        },
+        gsmarena_news: {
+            name: 'GSMArena News',
+            pipeline: 'autocontent_articles',
+            baseUrl: 'https://www.gsmarena.com/',
+            homepageUrl: 'https://www.gsmarena.com/',
+            selectors: {
+                ticker: {
+                    primary: '.news-column-index .news-item > a[href]',
+                    title: 'h3',
+                    link: 'a',
+                    fallback: ['.news-column-index .news-item a[href]']
+                },
+                article: {
+                    title: {
+                        primary: 'h1.article-info-name',
+                        fallback: ['meta[property="og:title"]', 'title', 'h1']
+                    },
+                    subtitle: {
+                        primary: 'meta[name="description"]',
+                        fallback: ['meta[property="og:description"]']
+                    },
+                    author: {
+                        primary: '.article-tags .reviewer a',
+                        fallback: ['.reviewer a', 'a[href*="author.php3"]']
+                    },
+                    published: {
+                        primary: '.article-tags .dtreviewed',
+                        fallback: ['meta[property="article:published_time"]', 'time[datetime]']
+                    },
+                    image: {
+                        primary: 'meta[property="og:image"]',
+                        fallback: ['.center-stage-background', 'img.center-stage-background']
+                    },
+                    content: {
+                        primary: '#review-body p:not(.image-row):not(.article-source)',
+                        fallback: ['#review-body p', 'article p']
+                    }
+                }
+            }
+        },
+        gsmarena_devices: {
+            name: 'GSMArena Latest Devices',
+            pipeline: 'mobiles_direct',
+            baseUrl: 'https://www.gsmarena.com/',
+            homepageUrl: 'https://www.gsmarena.com/',
+            selectors: {
+                ticker: {
+                    primary: '.module.module-phones.module-latest a.module-phones-link[href]',
+                    fallback: ['a.module-phones-link[href]']
+                },
+                article: {
+                    title: { primary: 'h1.specs-phone-name-title[data-spec="modelname"]', fallback: ['h1', 'meta[property="og:title"]', 'title'] },
+                    subtitle: { primary: 'meta[name="description"]', fallback: ['meta[property="og:description"]'] },
+                    author: { primary: '', fallback: [] },
+                    published: { primary: '', fallback: [] },
+                    image: { primary: '.specs-photo-main img', fallback: ['meta[property="og:image"]'] },
+                    content: { primary: '#specs-list', fallback: ['#specs-list table'] }
+                }
+            }
+        },
+        gsmarena_bd_devices: {
+            name: 'GSMArena BD Devices',
+            pipeline: 'mobiles_direct',
+            baseUrl: 'https://www.gsmarena.com.bd/',
+            homepageUrl: 'https://www.gsmarena.com.bd/',
+            selectors: {
+                ticker: {
+                    // Latest devices grid items
+                    // Note: `.product-thumb` contains two direct anchors (device + "View Details"). Exclude `.vdetails`.
+                    primary: '.area .product-thumb > a[href][title]:not(.vdetails)',
+                    title: '.mobile_name',
+                    link: 'a',
+                    fallback: ['.product-thumb > a[href][title]:not(.vdetails)']
+                },
+                article: {
+                    title: { primary: 'h1.ptitle', fallback: ['h1', 'meta[property="og:title"]', 'title'] },
+                    subtitle: { primary: 'meta[name="description"]', fallback: ['meta[property="og:description"]'] },
+                    author: { primary: '', fallback: [] },
+                    published: { primary: '', fallback: [] },
+                    image: { primary: 'img.img-responsive', fallback: ['meta[property="og:image"]'] },
+                    content: { primary: 'table.table_specs', fallback: ['.table_specs'] }
+                }
+            }
         }
     },
 
