@@ -312,6 +312,155 @@ class ArticleScraper {
     /**
      * Extract image URL using configured selectors
      */
+    // Override `parseDate` with a UTF-8-safe implementation that supports Bangla digits/months.
+    // The earlier implementation may contain mojibake depending on file encoding.
+    parseDate(dateStr) {
+        const inputRaw = String(dateStr || '').trim();
+        if (!inputRaw) return null;
+
+        const bnDigitsToAscii = (value) =>
+            String(value).replace(/[০-৯]/g, d => String('০১২৩৪৫৬৭৮৯'.indexOf(d)));
+
+        const normalize = (value) => {
+            let s = bnDigitsToAscii(String(value || ''));
+            s = s.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+            s = s.replace(
+                /^(প্রকাশ\s*[:：]?\s*|আপডেট\s*[:：]?\s*|Updated\s*[:：]?\s*|Published\s*[:：]?\s*)/i,
+                ''
+            );
+            return s;
+        };
+
+        const s = normalize(inputRaw);
+
+        // Relative times (best-effort): "৭ মিনিট আগে", "25 minutes ago"
+        {
+            const relBn = s.match(/(\d+)\s*(মিনিট|ঘণ্টা|ঘন্টা|দিন)\s*আগে/i);
+            const relEn = s.match(/(\d+)\s*(minute|hour|day)s?\s*ago/i);
+            const rel = relBn || relEn;
+            if (rel) {
+                const n = parseInt(rel[1], 10);
+                const unit = String(rel[2] || '').toLowerCase();
+                if (Number.isFinite(n) && n >= 0) {
+                    const ms =
+                        unit.includes('day') || unit.includes('দিন')
+                            ? n * 24 * 60 * 60 * 1000
+                            : unit.includes('hour') || unit.includes('ঘণ্টা') || unit.includes('ঘন্টা')
+                                ? n * 60 * 60 * 1000
+                                : n * 60 * 1000;
+                    return new Date(Date.now() - ms).toISOString();
+                }
+            }
+        }
+
+        // Month mapping (Bangla + English)
+        const monthMap = {
+            // Bangla variants
+            'জানুয়ারি': 1,
+            'জানুয়ারি': 1,
+            'ফেব্রুয়ারি': 2,
+            'ফেব্রুয়ারি': 2,
+            'মার্চ': 3,
+            'এপ্রিল': 4,
+            'মে': 5,
+            'জুন': 6,
+            'জুলাই': 7,
+            'আগস্ট': 8,
+            'আগষ্ট': 8,
+            'সেপ্টেম্বর': 9,
+            'অক্টোবর': 10,
+            'নভেম্বর': 11,
+            'ডিসেম্বর': 12,
+
+            // English
+            january: 1,
+            february: 2,
+            march: 3,
+            april: 4,
+            may: 5,
+            june: 6,
+            july: 7,
+            august: 8,
+            september: 9,
+            october: 10,
+            november: 11,
+            december: 12
+        };
+
+        const pad2 = (n) => String(n).padStart(2, '0');
+
+        // Examples:
+        // - "২১ মার্চ ২০২৬, ১১:৫৮ এএম" (Jugantor)
+        // - "২১ মার্চ ২০২৬, ১০:১৮" (Ittefaq)
+        // - "20 March 2026 | 23:15"
+        const m = s.match(
+            /(\d{1,2})\s+([^\s,|]+)\s+(\d{4})\s*(?:,|\|)?\s*(\d{1,2})\s*[:：]\s*(\d{2})(?:\s*([a-z]{2}|এএম|পিএম|am|pm))?/i
+        );
+        if (m) {
+            const day = parseInt(m[1], 10);
+            const monthNameRaw = String(m[2] || '').trim();
+            const year = parseInt(m[3], 10);
+            let hour = parseInt(m[4], 10);
+            const minute = parseInt(m[5], 10);
+            const meridiemRaw = String(m[6] || '').trim().toLowerCase();
+
+            const monthKeyEn = monthNameRaw.toLowerCase();
+            const month = monthMap[monthNameRaw] ?? monthMap[monthKeyEn] ?? null;
+
+            if (month && year >= 1970 && day >= 1 && day <= 31 && minute >= 0 && minute <= 59) {
+                let meridiem = meridiemRaw;
+                if (meridiem === 'এএম') meridiem = 'am';
+                if (meridiem === 'পিএম') meridiem = 'pm';
+
+                if ((meridiem === 'am' || meridiem === 'pm') && hour >= 1 && hour <= 12) {
+                    if (meridiem === 'pm' && hour < 12) hour += 12;
+                    if (meridiem === 'am' && hour === 12) hour = 0;
+                }
+
+                if (hour >= 0 && hour <= 23) {
+                    return `${year}-${pad2(month)}-${pad2(day)}T${pad2(hour)}:${pad2(minute)}:00+06:00`;
+                }
+            }
+        }
+
+        // If already ISO-ish, Date can parse.
+        const dt = new Date(s);
+        if (!Number.isNaN(dt.getTime())) {
+            return dt.toISOString();
+        }
+
+        // Last resort: replace Bangla month names with English and re-parse.
+        let normalized = s;
+        const bnMonthToEn = {
+            'জানুয়ারি': 'January',
+            'জানুয়ারি': 'January',
+            'ফেব্রুয়ারি': 'February',
+            'ফেব্রুয়ারি': 'February',
+            'মার্চ': 'March',
+            'এপ্রিল': 'April',
+            'মে': 'May',
+            'জুন': 'June',
+            'জুলাই': 'July',
+            'আগস্ট': 'August',
+            'আগষ্ট': 'August',
+            'সেপ্টেম্বর': 'September',
+            'অক্টোবর': 'October',
+            'নভেম্বর': 'November',
+            'ডিসেম্বর': 'December'
+        };
+
+        for (const [bn, en] of Object.entries(bnMonthToEn)) {
+            normalized = normalized.replace(new RegExp(bn, 'g'), en);
+        }
+
+        const dt2 = new Date(normalized);
+        if (!Number.isNaN(dt2.getTime())) {
+            return dt2.toISOString();
+        }
+
+        return null;
+    }
+
     extractImage($dom) {
         const selectorConfig = this.selectors?.article?.image || CONFIG.defaultSelectors.article.image;
 

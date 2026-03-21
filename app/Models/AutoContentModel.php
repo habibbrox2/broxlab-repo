@@ -16,6 +16,37 @@ class AutoContentModel
         $this->mysqli = $mysqli;
     }
 
+    /**
+     * Bind params safely (supports dynamic param lists).
+     * mysqli requires parameters to be passed by reference; argument unpacking can break this.
+     *
+     * @param mysqli_stmt $stmt
+     * @param string $types
+     * @param array $params
+     */
+    private function bindParams(mysqli_stmt $stmt, string $types, array $params): void
+    {
+        if ($types === '') {
+            throw new InvalidArgumentException('bindParams: empty type string');
+        }
+
+        if (strlen($types) !== count($params)) {
+            throw new InvalidArgumentException(
+                'bindParams: type string length (' . strlen($types) . ') does not match param count (' . count($params) . ')'
+            );
+        }
+
+        $bind = [$types];
+        foreach ($params as $i => $v) {
+            $bind[] = &$params[$i];
+        }
+
+        $ok = call_user_func_array([$stmt, 'bind_param'], $bind);
+        if ($ok !== true) {
+            throw new RuntimeException('bindParams: bind_param failed');
+        }
+    }
+
     // ================== SOURCE MANAGEMENT ==================
 
     /**
@@ -202,17 +233,17 @@ class AutoContentModel
 
         $sql = "INSERT INTO autocontent_sources (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
 
-        $stmt = $this->mysqli->prepare($sql);
-        if (!$stmt) {
-            throw new Exception("Prepare failed: " . $this->mysqli->error);
-        }
-
-        $stmt->bind_param($types, ...$values);
-        $stmt->execute();
-        $insertId = $stmt->insert_id;
-        $stmt->close();
-
-        return (int)$insertId;
+        $stmt = $this->mysqli->prepare($sql); 
+        if (!$stmt) { 
+            throw new Exception("Prepare failed: " . $this->mysqli->error); 
+        } 
+ 
+        $this->bindParams($stmt, $types, $values); 
+        $stmt->execute(); 
+        $insertId = $stmt->insert_id; 
+        $stmt->close(); 
+ 
+        return (int)$insertId; 
     }
 
     /**
@@ -345,17 +376,17 @@ class AutoContentModel
 
         $sql = "UPDATE autocontent_sources SET " . implode(', ', $setParts) . " WHERE id = ?";
 
-        $stmt = $this->mysqli->prepare($sql);
-        if (!$stmt) {
-            throw new Exception("Prepare failed: " . $this->mysqli->error);
-        }
-
-        $stmt->bind_param($types, ...$values);
-        $success = $stmt->execute();
-        $stmt->close();
-
-        return $success;
-    }
+        $stmt = $this->mysqli->prepare($sql); 
+        if (!$stmt) { 
+            throw new Exception("Prepare failed: " . $this->mysqli->error); 
+        } 
+ 
+        $this->bindParams($stmt, $types, $values); 
+        $success = $stmt->execute(); 
+        $stmt->close(); 
+ 
+        return $success; 
+    } 
 
     /**
      * Ensure selector columns exist in the database
@@ -587,16 +618,27 @@ class AutoContentModel
                 ORDER BY a.id DESC
                 LIMIT ? OFFSET ?";
 
-        $params[] = $limit;
-        $params[] = $offset;
-        $stmt = $this->mysqli->prepare($sql);
+        $params[] = $limit; 
+        $params[] = $offset; 
+        $stmt = $this->mysqli->prepare($sql); 
+ 
+        // Build type string (match params precisely)
+        $types = '';
+        if (!empty($status)) {
+            $types .= 's';
+        }
+        if (!empty($sourceFilter)) {
+            $types .= 'i';
+        }
+        if (!empty($search)) {
+            $types .= 'sss';
+        }
+        $types .= 'ii';
 
-        // Build type string
-        $types = str_repeat('s', count($params) - 2) . 'ii';
-        $stmt->bind_param($types, ...$params);
-
-        $stmt->execute();
-        $result = $stmt->get_result();
+        $this->bindParams($stmt, $types, $params); 
+ 
+        $stmt->execute(); 
+        $result = $stmt->get_result(); 
 
         $articles = [];
         if ($result && $result->num_rows > 0) {
@@ -1629,7 +1671,7 @@ class AutoContentModel
                 WHERE id = ?
             ");
             $stmt->bind_param(
-                'sssssssssssssssssi',
+                'ssssssssssssssssssi',
                 $data['name'],
                 $data['preset_key'],
                 $data['selector_list_container'],

@@ -248,7 +248,7 @@ if (!window.BroxAdminInstance) {
                     this.thumb.style.display = 'none';
                 }
             }
-            this.preview.classList.remove('brox-ai-hidden');
+            this.preview.classList.remove('brox-ai-hidden', 'd-none');
         }
 
         formatFileSize(bytes) {
@@ -269,7 +269,7 @@ if (!window.BroxAdminInstance) {
                 this.thumb.innerHTML = '';
                 this.thumb.style.display = 'none';
             }
-            this.preview?.classList.add('d-none');
+            this.preview?.classList.add('brox-ai-hidden');
         }
 
         getFiles() {
@@ -484,6 +484,10 @@ if (!window.BroxAdminInstance) {
             this._providersBootstrapPromise = null;
             this._bgModelsRefresh = null;
             this._bgModelsRefreshToken = 0;
+            this.suppressOutsideClose = false; // Prevent sidebar auto-close (e.g., during file picker)
+            this._filePickerTimer = null;
+            this._micPermission = 'unknown';
+            this._micAccessPromise = null;
 
             this.initUI();
             this.bindEvents();
@@ -577,6 +581,29 @@ if (!window.BroxAdminInstance) {
 
             // Initialize file handler
             this.fileHandler = new FileAttachmentHandler();
+            this.bindFilePickerGuards();
+        }
+
+        bindFilePickerGuards() {
+            const input = this.fileHandler?.input;
+            if (!input) return;
+
+            const resetGuard = (delay = 400) => {
+                if (this._filePickerTimer) clearTimeout(this._filePickerTimer);
+                this._filePickerTimer = setTimeout(() => {
+                    this.suppressOutsideClose = false;
+                }, delay);
+            };
+
+            const armGuard = () => {
+                this.suppressOutsideClose = true;
+                resetGuard(1200);
+            };
+
+            input.addEventListener('click', () => armGuard());
+            input.addEventListener('focus', () => armGuard());
+            input.addEventListener('change', () => resetGuard(200));
+            input.addEventListener('blur', () => resetGuard(300));
         }
 
         // ── Voice Input (Speech Recognition) ───────────────────────────────────────
@@ -611,10 +638,47 @@ if (!window.BroxAdminInstance) {
                 // Use self reference to avoid 'this' binding issues
                 const self = this;
 
+                if (!window.isSecureContext) {
+                    micBtn.title = 'Voice input requires a secure (HTTPS) page';
+                    micBtn.style.opacity = '0.6';
+                    micBtn.style.cursor = 'not-allowed';
+                    return;
+                }
+
+                const canProbeMic = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+                const ensureMicAccess = async () => {
+                    if (!canProbeMic) return true; // Some browsers prompt via SpeechRecognition only
+                    if (self._micPermission === 'granted') return true;
+                    if (self._micAccessPromise) return self._micAccessPromise;
+
+                    self._micAccessPromise = navigator.mediaDevices.getUserMedia({ audio: true })
+                        .then(() => {
+                            self._micPermission = 'granted';
+                            return true;
+                        })
+                        .catch((err) => {
+                            self._micPermission = 'denied';
+                            self.updateStatus('error', 'Microphone blocked');
+                            const msg = err?.message || 'Please allow microphone access to use voice input.';
+                            if (window.showAlert) {
+                                window.showAlert(msg, 'Microphone blocked', 'warning');
+                            } else {
+                                alert(msg);
+                            }
+                            return false;
+                        })
+                        .finally(() => {
+                            self._micAccessPromise = null;
+                        });
+
+                    return self._micAccessPromise;
+                };
+
                 recognition.onstart = function () {
                     self.isRecording = true;
                     micBtn.classList.add('recording');
                     micBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
+                    micBtn.setAttribute('aria-pressed', 'true');
                     self.updateStatus('recording', 'Listening...');
                 };
 
@@ -657,11 +721,12 @@ if (!window.BroxAdminInstance) {
                     self.isRecording = false;
                     micBtn.classList.remove('recording');
                     micBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
+                    micBtn.removeAttribute('aria-pressed');
                     self.updateStatus('ready', 'Ready');
 
                     if (event.error === 'not-allowed') {
                         self.updateStatus('error', 'Microphone access denied');
-                        alert('Please allow microphone access to use voice input.');
+                        ensureMicAccess();
                     }
                 };
 
@@ -669,11 +734,12 @@ if (!window.BroxAdminInstance) {
                     self.isRecording = false;
                     micBtn.classList.remove('recording');
                     micBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
+                    micBtn.removeAttribute('aria-pressed');
                     self.updateStatus('ready', 'Ready');
                 };
 
                 // Direct onclick handler - most reliable
-                micBtn.onclick = function (e) {
+                micBtn.onclick = async function (e) {
                     e.preventDefault();
                     e.stopPropagation();
 
@@ -681,6 +747,8 @@ if (!window.BroxAdminInstance) {
                         recognition.stop();
                     } else {
                         try {
+                            const permitted = await ensureMicAccess();
+                            if (!permitted) return;
                             recognition.start();
                         } catch (err) {
                             console.error('[Voice] Start error:', err);
@@ -1118,8 +1186,14 @@ if (!window.BroxAdminInstance) {
                 this.nodes.attach.onclick = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    this.suppressOutsideClose = true;
                     if (this.fileHandler?.input) {
                         this.fileHandler.input.click();
+                        // Ensure the guard resets even if user cancels the picker
+                        if (this._filePickerTimer) clearTimeout(this._filePickerTimer);
+                        this._filePickerTimer = setTimeout(() => {
+                            this.suppressOutsideClose = false;
+                        }, 1500);
                     } else {
                         console.error('[Attach] fileHandler.input not found');
                     }
@@ -1277,9 +1351,15 @@ if (!window.BroxAdminInstance) {
 
             // Click outside to close sidebar
             document.addEventListener('pointerdown', (e) => {
+                if (this.suppressOutsideClose) return;
                 if (!this.nodes.shell || !this.nodes.btn) return;
                 if (this.nodes.shell.classList.contains('brox-ai-hidden')) return;
                 const path = e.composedPath ? e.composedPath() : [];
+                if (this.fileHandler?.input) {
+                    if (path.includes(this.fileHandler.input) || this.fileHandler.input.contains(e.target)) {
+                        return;
+                    }
+                }
                 const clickedInside = path.includes(this.nodes.shell) || path.includes(this.nodes.btn)
                     || this.nodes.shell.contains(e.target) || this.nodes.btn.contains(e.target);
                 if (clickedInside) return;

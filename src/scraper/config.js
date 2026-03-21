@@ -137,6 +137,46 @@ const CONFIG = {
                 }
             }
         },
+        jugantor: {
+            name: 'Jugantor',
+            baseUrl: 'https://www.jugantor.com/',
+            homepageUrl: 'https://www.jugantor.com/latest',
+            selectors: {
+                ticker: {
+                    // Latest list page cards: .loadMoreCategoryNewsDesktop .media ... <h4 class="title10">..</h4> + <a class="linkOverlay" href="..."></a>
+                    primary: '.loadMoreCategoryNewsDesktop .media.positionRelative',
+                    title: 'h4.title10',
+                    link: 'a.linkOverlay',
+                    fallback: ['a.linkOverlay[href*="jugantor.com/"]', 'a[href*="jugantor.com/"]']
+                },
+                article: {
+                    title: {
+                        primary: 'h1.desktopDetailHeadline strong, h1.desktopDetailHeadline',
+                        fallback: ['h1', 'meta[property="og:title"]', 'title']
+                    },
+                    subtitle: {
+                        primary: 'meta[name="description"]',
+                        fallback: ['meta[property="og:description"]']
+                    },
+                    author: {
+                        primary: 'p.desktopDetailReporter',
+                        fallback: ['.desktopDetailReporter', '.reporter', '.author', '[rel="author"]']
+                    },
+                    published: {
+                        primary: 'p.desktopDetailPTime',
+                        fallback: ['time[datetime]', 'meta[property="article:published_time"]', '.desktopDetailPTime']
+                    },
+                    image: {
+                        primary: '.desktopDetailPhoto img',
+                        fallback: ['meta[property="og:image"]', 'meta[itemprop="image"]', 'article img', 'img']
+                    },
+                    content: {
+                        primary: '.desktopDetailBody p',
+                        fallback: ['.desktopDetailBody', 'article p', '.content p']
+                    }
+                }
+            }
+        },
         prothomalo: {
             name: 'Prothom Alo',
             baseUrl: 'https://www.prothomalo.com/',
