@@ -675,6 +675,7 @@ if (!window.BroxAdminInstance) {
                         })
                         .catch(() => { /* ignore */ });
                 }
+
                 const ensureMicAccess = async () => {
                     if (!canProbeMic) return true; // Some browsers prompt via SpeechRecognition only
                     if (self._micPermission === 'granted') return true;
@@ -692,17 +693,17 @@ if (!window.BroxAdminInstance) {
 
                     self._micAccessPromise = navigator.mediaDevices.getUserMedia({ audio: true })
                         .then((stream) => {
-                            try { stream.getTracks().forEach(t => t.stop()); } catch { }
+                            try { stream.getTracks().forEach((t) => t.stop()); } catch { }
                             self._micPermission = 'granted';
                             return true;
                         })
                         .catch((err) => {
                             self._micPermission = 'denied';
                             self.updateStatus('error', 'Microphone blocked');
-                            const msg = err?.message || 'Please allow microphone access to use voice input.';
                             setMicBlockedUi('Microphone permission blocked. Allow it in site settings to use voice input.');
+                            const msg = err?.message || 'Please allow microphone access to use voice input.';
                             if (window.showAlert) {
-                                window.showAlert(msg + '\n\nTip: If you see “blocked”, allow microphone permission in browser site settings and reload.', 'Microphone blocked', 'warning');
+                                window.showAlert(msg, 'Microphone blocked', 'warning');
                             } else {
                                 alert(msg);
                             }
@@ -1144,21 +1145,8 @@ if (!window.BroxAdminInstance) {
 
         // ── Status Management ──────────────────────────────────────────────────
         updateStatus(status, text) {
-            const statusClassMap = {
-                thinking: 'brox-ai-thinking',
-                searching: 'brox-ai-searching',
-                calling: 'brox-ai-calling',
-                analyzing: 'brox-ai-analyzing',
-                writing: 'brox-ai-thinking',
-                loading: 'brox-ai-loading',
-                receiving: 'brox-ai-loading',
-                warning: 'brox-ai-thinking',
-                error: 'brox-ai-error'
-            };
-
             if (this.nodes.statusDot) {
-                const mapped = statusClassMap[status] || (String(status || '').startsWith('brox-ai-') ? String(status) : '');
-                this.nodes.statusDot.className = 'brox-ai-status-indicator' + (mapped ? (' ' + mapped) : '');
+                this.nodes.statusDot.className = 'brox-ai-status-indicator ' + status;
             }
             if (this.nodes.statusText) {
                 this.nodes.statusText.textContent = text;
@@ -1306,51 +1294,6 @@ if (!window.BroxAdminInstance) {
             if (this.nodes.input) {
                 this.nodes.input.addEventListener('keydown', (e) => {
                     if (e.isComposing) return;
-
-                    const slashMenuOpen = !!(this.nodes.slashMenu
-                        && !this.nodes.slashMenu.classList.contains('brox-ai-hidden'));
-
-                    if (slashMenuOpen) {
-                        const items = Array.from(this.nodes.slashMenu.querySelectorAll('.brox-ai-slash-item'))
-                            .filter((it) => !it.classList.contains('d-none'));
-
-                        if (e.key === 'Escape') {
-                            e.preventDefault();
-                            this.nodes.slashMenu.classList.add('brox-ai-hidden');
-                            items.forEach((it) => it.classList.remove('active'));
-                            return;
-                        }
-
-                        if (!items.length) return;
-
-                        let idx = items.findIndex((it) => it.classList.contains('active'));
-                        if (idx < 0) idx = 0;
-
-                        if (e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            idx = (idx + 1) % items.length;
-                        } else if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            idx = (idx - 1 + items.length) % items.length;
-                        } else if (e.key === 'Enter' || e.key === 'Tab') {
-                            e.preventDefault();
-                            const cmd = items[idx]?.dataset?.cmd;
-                            if (cmd) {
-                                this.nodes.input.value = cmd + ' ';
-                                this.nodes.input.focus();
-                                this.nodes.slashMenu.classList.add('brox-ai-hidden');
-                                items.forEach((it) => it.classList.remove('active'));
-                            }
-                            return;
-                        } else {
-                            return;
-                        }
-
-                        items.forEach((it) => it.classList.remove('active'));
-                        items[idx].classList.add('active');
-                        return;
-                    }
-
                     if (e.key === 'Escape') {
                         if (this.nodes.slashMenu && !this.nodes.slashMenu.classList.contains('brox-ai-hidden')) {
                             this.nodes.slashMenu.classList.add('brox-ai-hidden');
@@ -1379,34 +1322,8 @@ if (!window.BroxAdminInstance) {
                     // Slash command overlay
                     const val = e.target.value;
                     if (this.nodes.slashMenu) {
-                        const trimmed = (val || '').replace(/^\s+/, '');
-                        const show = trimmed.startsWith('/');
-                        const items = Array.from(this.nodes.slashMenu.querySelectorAll('.brox-ai-slash-item'));
-
-                        if (!show) {
-                            this.nodes.slashMenu.classList.add('brox-ai-hidden');
-                            items.forEach((it) => {
-                                it.classList.remove('active');
-                                it.classList.remove('d-none');
-                            });
-                            return;
-                        }
-
-                        const query = trimmed.slice(1).split(/\s+/)[0].toLowerCase();
-                        let anyVisible = false;
-                        items.forEach((it) => {
-                            const cmdRaw = String(it.dataset?.cmd || '').replace(/^\//, '').toLowerCase();
-                            const match = !query || cmdRaw.startsWith(query);
-                            it.classList.toggle('d-none', !match);
-                            it.classList.remove('active');
-                            if (match) anyVisible = true;
-                        });
-
-                        this.nodes.slashMenu.classList.toggle('brox-ai-hidden', !anyVisible);
-                        if (anyVisible) {
-                            const first = items.find((it) => !it.classList.contains('d-none'));
-                            if (first) first.classList.add('active');
-                        }
+                        const show = val.trim().startsWith('/');
+                        this.nodes.slashMenu.classList.toggle('brox-ai-hidden', !show);
                     }
                 });
 
@@ -1417,6 +1334,37 @@ if (!window.BroxAdminInstance) {
 
             // Slash menu
             this.bindSlashMenu();
+
+            if (this.nodes.input) {
+                this.nodes.input.addEventListener('keydown', (e) => {
+                    if (this.nodes.slashMenu?.classList.contains('brox-ai-hidden')) return;
+                    const items = Array.from(this.nodes.slashMenu.querySelectorAll('.brox-ai-slash-item'));
+                    if (!items.length) return;
+                    let idx = items.findIndex((it) => it.classList.contains('active'));
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        idx = (idx + 1) % items.length;
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        idx = (idx - 1 + items.length) % items.length;
+                    } else if (e.key === 'Enter') {
+                        if (idx >= 0) {
+                            e.preventDefault();
+                            const cmd = items[idx].dataset.cmd;
+                            if (cmd) {
+                                this.nodes.input.value = cmd + ' ';
+                                this.nodes.input.focus();
+                                this.nodes.slashMenu.classList.add('brox-ai-hidden');
+                            }
+                        }
+                        return;
+                    } else {
+                        return;
+                    }
+                    items.forEach((it) => it.classList.remove('active'));
+                    items[idx].classList.add('active');
+                });
+            }
 
             // Welcome commands
             document.addEventListener('click', (e) => {
@@ -1432,8 +1380,6 @@ if (!window.BroxAdminInstance) {
             document.addEventListener('click', (e) => {
                 if (!this.nodes.input?.contains(e.target) && !this.nodes.slashMenu?.contains(e.target)) {
                     this.nodes.slashMenu?.classList.add('brox-ai-hidden');
-                    const items = Array.from(this.nodes.slashMenu?.querySelectorAll('.brox-ai-slash-item') || []);
-                    items.forEach((it) => it.classList.remove('active'));
                 }
             });
 
@@ -1525,9 +1471,7 @@ if (!window.BroxAdminInstance) {
                 const item = e.target.closest('.brox-ai-slash-item');
                 if (item && this.nodes.input) {
                     this.nodes.input.value = item.dataset.cmd + ' ';
-                    this.nodes.slashMenu.classList.add('brox-ai-hidden');
-                    const items = Array.from(this.nodes.slashMenu.querySelectorAll('.brox-ai-slash-item'));
-                    items.forEach((it) => it.classList.remove('active'));
+                    this.nodes.slashMenu.classList.add('d-none');
                     this.resizeInput();
                     this.nodes.input.focus();
                 }
@@ -1824,7 +1768,7 @@ if (!window.BroxAdminInstance) {
 
             // Clear input
             this.nodes.input.value = '';
-            this.nodes.slashMenu?.classList.add('brox-ai-hidden');
+            this.nodes.slashMenu?.classList.add('d-none');
             if (this.nodes.charCount) {
                 this.nodes.charCount.textContent = `0/${ADMIN_CONFIG.maxInputLength}`;
             }
@@ -2223,202 +2167,6 @@ if (!window.BroxAdminInstance) {
             return match ? match[0] : null;
         }
 
-        collectFormSchema(form) {
-            if (!form) return [];
-            const elements = Array.from(form.querySelectorAll('input, textarea, select'))
-                .filter((el) => el.offsetParent !== null)
-                .filter((el) => !el.closest('.brox-ai-copilot-sidebar'));
-
-            const schema = [];
-            elements.forEach((el) => {
-                const key = el.name || el.id;
-                if (!key) return;
-
-                const tag = el.tagName.toLowerCase();
-                const type = tag === 'input' ? ((el.getAttribute('type') || 'text').toLowerCase()) : tag;
-                if (type === 'hidden' || type === 'password' || type === 'file' || type === 'submit' || type === 'button') return;
-                if (String(key).toLowerCase().includes('csrf')) return;
-
-                let label = (el.getAttribute('aria-label') || '').trim();
-                if (!label && el.id) {
-                    try {
-                        label = (form.querySelector(`label[for="${CSS.escape(el.id)}"]`)?.innerText || '').trim();
-                    } catch { }
-                }
-                if (!label) {
-                    label = (el.closest('label')?.innerText || '').trim();
-                }
-                if (!label) {
-                    label = (el.getAttribute('placeholder') || '').trim();
-                }
-
-                const field = {
-                    key: String(key),
-                    label: label || null,
-                    type: type,
-                    placeholder: (el.getAttribute('placeholder') || '').trim() || null
-                };
-
-                if (tag === 'select') {
-                    const options = Array.from(el.querySelectorAll('option'))
-                        .map((o) => (o.textContent || '').trim())
-                        .filter(Boolean)
-                        .slice(0, 60);
-                    if (options.length) field.options = options;
-                }
-
-                schema.push(field);
-            });
-
-            return schema.slice(0, 80);
-        }
-
-        applyAutoFillMapping(form, payload) {
-            const keys = Object.keys(payload || {});
-            let filled = 0;
-            const missing = [];
-
-            const dispatch = (el) => {
-                try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch { }
-                try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch { }
-            };
-
-            keys.forEach((key) => {
-                const safeKey = String(key);
-                if (!safeKey) return;
-
-                const selector = `input[name="${safeKey}"], textarea[name="${safeKey}"], select[name="${safeKey}"], input[id="${safeKey}"], textarea[id="${safeKey}"], select[id="${safeKey}"]`;
-                const elt = form.querySelector(selector);
-                if (!elt) {
-                    missing.push(safeKey);
-                    return;
-                }
-
-                const val = payload[key];
-                const tag = elt.tagName.toUpperCase();
-                if (tag === 'INPUT') {
-                    const type = (elt.getAttribute('type') || '').toLowerCase();
-                    if (type === 'checkbox') {
-                        elt.checked = Boolean(val);
-                        dispatch(elt);
-                        filled++;
-                        return;
-                    }
-                    if (type === 'radio') {
-                        const group = form.querySelectorAll(`input[type="radio"][name="${safeKey}"]`);
-                        let matched = false;
-                        group.forEach((radio) => {
-                            if (String(radio.value) === String(val)) {
-                                radio.checked = true;
-                                dispatch(radio);
-                                matched = true;
-                            }
-                        });
-                        if (matched) filled++; else missing.push(safeKey);
-                        return;
-                    }
-                    elt.value = (val === null || val === undefined) ? '' : String(val);
-                    dispatch(elt);
-                    filled++;
-                    return;
-                }
-
-                if (tag === 'TEXTAREA') {
-                    elt.value = (val === null || val === undefined) ? '' : String(val);
-                    dispatch(elt);
-                    filled++;
-                    return;
-                }
-
-                if (tag === 'SELECT') {
-                    const desired = (val === null || val === undefined) ? '' : String(val);
-                    const optionByValue = Array.from(elt.options || []).find((o) => String(o.value) === desired);
-                    if (optionByValue) {
-                        elt.value = desired;
-                        dispatch(elt);
-                        filled++;
-                        return;
-                    }
-                    const optionByText = Array.from(elt.options || []).find((o) => (o.textContent || '').trim().toLowerCase() === desired.trim().toLowerCase());
-                    if (optionByText) {
-                        elt.value = optionByText.value;
-                        dispatch(elt);
-                        filled++;
-                        return;
-                    }
-                    missing.push(safeKey);
-                }
-            });
-
-            return { filled, missing };
-        }
-
-        async callAdminAIOnce(messageContent) {
-            await refreshCsrfToken();
-            const csrf = typeof getCsrfToken === 'function' ? (getCsrfToken() || '') : '';
-            const ctx = this.getCurrentContext();
-
-            const payload = {
-                messages: [{ role: 'user', content: messageContent }],
-                isAdmin: true,
-                context: ctx,
-                stream: false,
-                csrf_token: csrf
-            };
-            if (this.currentProvider) payload.provider = this.currentProvider;
-            if (this.currentModel) payload.model = this.currentModel;
-
-            const resp = await fetch(ADMIN_CONFIG.proxyUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': csrf
-                },
-                body: JSON.stringify(payload),
-                credentials: 'same-origin'
-            });
-
-            const raw = await resp.text();
-            const normalized = normalizeApiResponse(safeParseJSON(raw));
-            if (!resp.ok || !normalized.success) {
-                const msg = normalized.error || `AI request failed (${resp.status})`;
-                throw new Error(msg);
-            }
-            return String(normalized.payload || '');
-        }
-
-        async callAdminPdfOnce(prompt, base64Data) {
-            await refreshCsrfToken();
-            const csrf = typeof getCsrfToken === 'function' ? (getCsrfToken() || '') : '';
-            const model = (this.currentProvider === 'openrouter' && this.currentModel)
-                ? this.currentModel
-                : 'openai/gpt-4o-mini';
-
-            const resp = await fetch('/api/admin/ai/pdf', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': csrf
-                },
-                body: JSON.stringify({
-                    prompt,
-                    base64: base64Data,
-                    model,
-                    csrf_token: csrf
-                }),
-                credentials: 'same-origin'
-            });
-
-            const raw = await resp.text();
-            const data = safeParseJSON(raw) || {};
-            if (!resp.ok || !data.success) {
-                const msg = data.error || `PDF processing failed (${resp.status})`;
-                throw new Error(msg);
-            }
-
-            return String(data.response || '');
-        }
-
         isProviderMultimodal(provider) {
             return Boolean(this.providerMeta?.[provider]?.supports_multimodal);
         }
@@ -2500,113 +2248,62 @@ if (!window.BroxAdminInstance) {
         }
 
         async handleAutoFill() {
+            const raw = this.getLastAssistantContent();
+            const payload = this.extractJsonFromText(typeof raw === 'string' ? raw : (Array.isArray(raw) ? JSON.stringify(raw) : ''));
+            if (!payload || typeof payload !== 'object') {
+                this.addMessage('assistant', 'Could not find structured JSON in the last assistant response to auto-fill the form.');
+                return;
+            }
+
             const form = this.findPrimaryForm();
             if (!form) {
                 this.addMessage('assistant', 'No visible form found on this page to auto-fill.');
                 return;
             }
 
-            const attachment = this.fileHandler?.getAttachment();
-            const hasAttachment = !!attachment?.file;
-            const url = this.extractUrlFromText(this.nodes.input?.value || '');
+            const keys = Object.keys(payload);
+            let filled = 0;
+            let missing = [];
 
-            let payload = null;
-
-            // If user provides an image/PDF/URL, extract + map fields for this page and prefill immediately.
-            if (hasAttachment || url) {
-                if (this.fileHandler?.isUploading()) {
-                    this.addMessage('assistant', 'Attachment is still uploading. Please wait a moment and run `/autofill` again.');
+            keys.forEach((key) => {
+                const selector = `input[name="${key}"], textarea[name="${key}"], select[name="${key}"], input[id="${key}"], textarea[id="${key}"], select[id="${key}"]`;
+                const elt = form.querySelector(selector);
+                if (!elt) {
+                    missing.push(key);
                     return;
                 }
 
-                // Ensure multimodal provider for images
-                if (hasAttachment && attachment?.isImage) {
-                    await this.ensureMultimodalProviderForInput(true);
-                }
-
-                const schema = this.collectFormSchema(form);
-                if (!schema.length) {
-                    this.addMessage('assistant', 'Form found, but no fillable fields were detected.');
-                    return;
-                }
-
-                const intro = [
-                    'You are filling an admin web form from the provided source.',
-                    'Return ONLY a valid JSON object.',
-                    'Keys MUST be one of the provided field keys.',
-                    'If unsure about a field, omit it (do not guess).',
-                    'Use true/false for checkboxes.'
-                ].join('\n');
-
-                const prompt = [
-                    intro,
-                    url ? `Source URL: ${url}` : null,
-                    `Form fields (JSON):\n${JSON.stringify(schema, null, 2)}`
-                ].filter(Boolean).join('\n\n');
-
-                try {
-                    const mime = (attachment?.file?.type || attachment?.uploaded?.mime || '').toLowerCase();
-                    const name = (attachment?.file?.name || '').toLowerCase();
-                    const isPdf = hasAttachment && (mime.includes('pdf') || name.endsWith('.pdf'));
-
-                    if (isPdf) {
-                        const dataUrl = await new Promise((resolve, reject) => {
-                            const reader = new FileReader();
-                            reader.onload = () => resolve(String(reader.result || ''));
-                            reader.onerror = () => reject(new Error('Failed to read PDF file'));
-                            reader.readAsDataURL(attachment.file);
-                        });
-                        const base64 = String(dataUrl).split(',')[1] || '';
-                        const reply = await this.callAdminPdfOnce(prompt, base64);
-                        payload = this.extractJsonFromText(reply);
-                    } else if (hasAttachment && attachment?.isImage) {
-                        if (!attachment.uploaded?.url) {
-                            this.addMessage('assistant', 'Image upload is not ready yet. Please wait and try `/autofill` again.');
-                            return;
-                        }
-                        const messageContent = [
-                            { type: 'text', text: prompt },
-                            {
-                                type: 'image_url',
-                                image_url: {
-                                    url: attachment.uploaded.url,
-                                    name: attachment.uploaded.name || attachment.file.name,
-                                    mime: attachment.uploaded.mime || attachment.file.type,
-                                    size: attachment.uploaded.size || attachment.file.size
-                                }
-                            }
-                        ];
-                        const reply = await this.callAdminAIOnce(messageContent);
-                        payload = this.extractJsonFromText(reply);
-                    } else if (url) {
-                        const reply = await this.callAdminAIOnce([{ type: 'text', text: prompt }]);
-                        payload = this.extractJsonFromText(reply);
-                    } else {
-                        this.addMessage('assistant', 'Unsupported attachment type for autofill. Please use an image or a PDF.');
+                const val = payload[key];
+                if (elt.tagName === 'INPUT') {
+                    const type = (elt.getAttribute('type') || '').toLowerCase();
+                    if (type === 'checkbox') {
+                        elt.checked = Boolean(val);
+                        filled++;
                         return;
                     }
-                } catch (e) {
-                    this.addMessage('assistant', `âŒ Auto-fill extraction failed: ${this.escapeHtml(e.message || 'Unknown error')}`);
-                    return;
+                    if (type === 'radio') {
+                        const group = form.querySelectorAll(`input[type="radio"][name="${key}"]`);
+                        let matched = false;
+                        group.forEach((radio) => {
+                            if (String(radio.value) === String(val)) {
+                                radio.checked = true;
+                                matched = true;
+                            }
+                        });
+                        if (matched) filled++;
+                        else missing.push(key);
+                        return;
+                    }
                 }
-            } else {
-                // Fallback to previous behavior: parse JSON from last assistant response.
-                const raw = this.getLastAssistantContent();
-                payload = this.extractJsonFromText(typeof raw === 'string' ? raw : (Array.isArray(raw) ? JSON.stringify(raw) : ''));
-            }
 
-            if (!payload || typeof payload !== 'object') {
-                this.addMessage('assistant', 'Could not produce structured JSON to auto-fill the form. Try attaching an image/PDF and run `/autofill` again.');
-                return;
-            }
-
-            const { filled, missing } = this.applyAutoFillMapping(form, payload);
+                elt.value = String(val);
+                filled++;
+            });
 
             let summary = `Auto-fill completed: ${filled} field(s) updated.`;
             if (missing.length) {
                 summary += ` Missing fields: ${missing.join(', ')}.`;
             }
-
             this.addMessage('assistant', summary);
             this.history.push({ role: 'assistant', content: summary });
             this.saveHistory();
@@ -3349,62 +3046,15 @@ if (!window.BroxAdminInstance) {
             let lastError = null;
 
             let thinkingCleared = false;
-            let stageTimer = null;
-
-            const stageMeta = {
-                thinking: { label: 'Thinking', sub: 'Understanding your request...', icon: 'bi-stars' },
-                searching: { label: 'Searching', sub: 'Looking up relevant context...', icon: 'bi-search' },
-                calling: { label: 'Calling tools', sub: 'Running actions securely...', icon: 'bi-gear' },
-                analyzing: { label: 'Analyzing', sub: 'Extracting details from your file...', icon: 'bi-camera' },
-                writing: { label: 'Writing', sub: 'Composing the response...', icon: 'bi-pencil-square' }
-            };
-
-            const detectInitialStage = () => {
-                try {
-                    for (let i = this.history.length - 1; i >= 0; i--) {
-                        const m = this.history[i];
-                        if (m?.role !== 'user') continue;
-                        const c = m.content;
-                        if (Array.isArray(c)) {
-                            const hasImage = c.some(p => p?.type === 'image_url');
-                            if (hasImage) return 'analyzing';
-                            const txt = c.map(p => (p?.type === 'text' ? String(p.text || '') : '')).join(' ');
-                            if (/https?:\/\//i.test(txt)) return 'searching';
-                            return 'thinking';
-                        }
-                        if (typeof c === 'string') {
-                            if (/https?:\/\//i.test(c)) return 'searching';
-                        }
-                        break;
-                    }
-                } catch { }
-                return 'thinking';
-            };
-
-            const setStage = (wrap, stageKey) => {
-                if (!wrap) return;
-                const meta = stageMeta[stageKey] || stageMeta.thinking;
-                wrap.dataset.stage = stageKey;
-                const icon = wrap.querySelector('[data-brox-ai-stage-icon]');
-                const label = wrap.querySelector('[data-brox-ai-stage-label]');
-                const sub = wrap.querySelector('[data-brox-ai-stage-sub]');
-                if (icon) icon.className = `bi ${meta.icon}`;
-                if (label) label.textContent = meta.label;
-                if (sub) sub.textContent = meta.sub;
-            };
-
             const showThinkingInBubble = () => {
                 if (!msgBubble || !msgWrapper) return;
                 msgWrapper.classList.add('brox-ai-thinking-msg');
                 msgBubble.innerHTML = `
                     <div class="brox-ai-thinking-wrap" aria-live="polite" aria-busy="true">
-                        <div class="brox-ai-progress-pill" role="status">
-                            <span class="brox-ai-progress-icon" aria-hidden="true"><i data-brox-ai-stage-icon class="bi bi-stars"></i></span>
-                            <span class="brox-ai-thinking-text" data-brox-ai-stage-label>Thinking</span>
+                        <div class="brox-ai-thinking-label">
+                            <span class="brox-ai-thinking-text">Copilot is thinking...</span>
                             <span class="brox-ai-thinking-dots" aria-hidden="true"><span></span><span></span><span></span></span>
                         </div>
-                        <div class="brox-ai-progress-sub" data-brox-ai-stage-sub>Understanding your request...</div>
-                        <div class="brox-ai-progress-bar" aria-hidden="true"></div>
                         <div class="brox-ai-thinking-skeleton" aria-hidden="true">
                             <span class="brox-ai-skel-line skel-1"></span>
                             <span class="brox-ai-skel-line skel-2"></span>
@@ -3412,40 +3062,12 @@ if (!window.BroxAdminInstance) {
                         </div>
                     </div>
                 `;
-
-                const wrap = msgBubble.querySelector('.brox-ai-thinking-wrap');
-                const initial = detectInitialStage();
-                setStage(wrap, initial);
-                this.updateStatus(initial, stageMeta[initial]?.label || 'Thinking...');
-
-                const sequence = initial === 'analyzing'
-                    ? ['analyzing', 'searching', 'calling', 'writing']
-                    : initial === 'searching'
-                        ? ['searching', 'calling', 'writing']
-                        : ['thinking', 'searching', 'calling', 'writing'];
-
-                let idx = 0;
-                if (stageTimer) {
-                    try { clearInterval(stageTimer); } catch { }
-                    stageTimer = null;
-                }
-                stageTimer = setInterval(() => {
-                    if (thinkingCleared) return;
-                    idx = (idx + 1) % sequence.length;
-                    const stageKey = sequence[idx];
-                    setStage(wrap, stageKey);
-                    this.updateStatus(stageKey, stageMeta[stageKey]?.label || 'Working...');
-                }, 2200);
             };
 
             const clearThinking = () => {
                 if (!msgBubble || !msgWrapper) return;
                 if (thinkingCleared) return;
                 thinkingCleared = true;
-                if (stageTimer) {
-                    try { clearInterval(stageTimer); } catch { }
-                    stageTimer = null;
-                }
                 msgWrapper.classList.remove('brox-ai-thinking-msg');
                 msgBubble.innerHTML = '';
             };

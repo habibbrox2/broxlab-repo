@@ -323,6 +323,8 @@ class ArticleScraper {
 
         const normalize = (value) => {
             let s = bnDigitsToAscii(String(value || ''));
+            // Ensure real Bengali digits are converted even if encoding is clean UTF-8.
+            s = s.replace(/[\u09E6-\u09EF]/g, (ch) => String(ch.charCodeAt(0) - 0x09E6));
             s = s.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
             s = s.replace(
                 /^(প্রকাশ\s*[:：]?\s*|আপডেট\s*[:：]?\s*|Updated\s*[:：]?\s*|Published\s*[:：]?\s*)/i,
@@ -331,22 +333,16 @@ class ArticleScraper {
             return s;
         };
 
-        let s = normalize(inputRaw);
-        // Normalize real Bengali digits (\u09E6-\u09EF) so (\d+) regexes work for UTF-8 Bangla strings.
-        s = s.replace(/[\u09E6-\u09EF]/g, (ch) => String(ch.charCodeAt(0) - 0x09E6));
+        const s = normalize(inputRaw);
 
         // Relative times (best-effort): "৭ মিনিট আগে", "25 minutes ago"
         {
             const relBn = s.match(/(\d+)\s*(মিনিট|ঘণ্টা|ঘন্টা|দিন)\s*আগে/i);
-            const relBnUnicode = s.match(/(\d+)\s*(\u09ae\u09bf\u09a8\u09bf\u099f|\u0998\u09a3\u09cd\u099f\u09be|\u0998\u09a8\u09cd\u099f\u09be|\u09a6\u09bf\u09a8)\s*\u0986\u0997\u09c7/i);
             const relEn = s.match(/(\d+)\s*(minute|hour|day)s?\s*ago/i);
-            const rel = relBnUnicode || relBn || relEn;
+            const rel = relBn || relEn;
             if (rel) {
                 const n = parseInt(rel[1], 10);
-                let unit = String(rel[2] || '').toLowerCase();
-                if (unit === '\u09ae\u09bf\u09a8\u09bf\u099f') unit = 'minute';
-                if (unit === '\u0998\u09a3\u09cd\u099f\u09be' || unit === '\u0998\u09a8\u09cd\u099f\u09be') unit = 'hour';
-                if (unit === '\u09a6\u09bf\u09a8') unit = 'day';
+                const unit = String(rel[2] || '').toLowerCase();
                 if (Number.isFinite(n) && n >= 0) {
                     const ms =
                         unit.includes('day') || unit.includes('দিন')
@@ -363,7 +359,7 @@ class ArticleScraper {
         // Example: "২১ মার্চ ২০২৬, ১২:৩৫ পূর্বাহ্ন"
         {
             const abs = s.match(
-                /(\d{1,2})\s+([^\s,|]+)\s+(\d{4})\s*,?\s*(\d{1,2})\s*[:ï¼š]\s*(\d{2})\s*(\u09aa\u09c2\u09b0\u09cd\u09ac\u09be\u09b9\u09cd\u09a8|\u09aa\u09c2\u09b0\u09cd\u09ac\u09be\u09b9\u09cd\u09a3|\u0985\u09aa\u09b0\u09be\u09b9\u09cd\u09a8|\u0985\u09aa\u09b0\u09be\u09b9\u09cd\u09a3)/i
+                /(\d{1,2})\s+([^\s,|]+)\s+(\d{4})\s*,?\s*(\d{1,2})\s*[:\uFF1A]\s*(\d{2})\s*(\u09aa\u09c2\u09b0\u09cd\u09ac\u09be\u09b9\u09cd\u09a8|\u09aa\u09c2\u09b0\u09cd\u09ac\u09be\u09b9\u09cd\u09a3|\u0985\u09aa\u09b0\u09be\u09b9\u09cd\u09a8|\u0985\u09aa\u09b0\u09be\u09b9\u09cd\u09a3)/i
             );
 
             if (abs) {
@@ -401,8 +397,8 @@ class ArticleScraper {
                     }
 
                     if (hour >= 0 && hour <= 23) {
-                        const pad2 = (n) => String(n).padStart(2, '0');
-                        return `${year}-${pad2(month)}-${pad2(day)}T${pad2(hour)}:${pad2(minute)}:00+06:00`;
+                        const pad2Local = (n) => String(n).padStart(2, '0');
+                        return `${year}-${pad2Local(month)}-${pad2Local(day)}T${pad2Local(hour)}:${pad2Local(minute)}:00+06:00`;
                     }
                 }
             }
