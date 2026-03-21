@@ -288,6 +288,91 @@ body.admin-sidebar-open {
     padding: 0;
 }
 
+/* Desktop sidebar column resizer */
+@media (min-width: 992px) {
+    .admin-shell-row {
+        flex-wrap: nowrap;
+        align-items: stretch;
+    }
+
+    .admin-column-resizer {
+        flex: 0 0 10px;
+        max-width: 10px;
+        cursor: col-resize;
+        user-select: none;
+        touch-action: none;
+        position: relative;
+        z-index: 20;
+        justify-content: center;
+        align-items: center;
+        background: transparent;
+    }
+
+    .admin-column-resizer::before {
+        content: '';
+        width: 2px;
+        height: 56px;
+        border-radius: 999px;
+        background: rgba(100, 116, 139, 0.28);
+        transition: background-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .admin-column-resizer::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -140%);
+        font-size: 0.72rem;
+        line-height: 1.2;
+        white-space: nowrap;
+        padding: 0.28rem 0.5rem;
+        border-radius: 0.45rem;
+        color: #e2e8f0;
+        background: rgba(15, 23, 42, 0.92);
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.22);
+        pointer-events: none;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.18s ease, visibility 0.18s ease, transform 0.18s ease;
+    }
+
+    .admin-column-resizer:hover::before,
+    .admin-shell-row.is-resizing .admin-column-resizer::before {
+        background: rgba(79, 70, 229, 0.7);
+        transform: scaleY(1.08);
+    }
+
+    .admin-column-resizer:hover::after,
+    .admin-column-resizer:focus-visible::after {
+        opacity: 1;
+        visibility: visible;
+        transform: translate(-50%, -150%);
+    }
+
+    .admin-shell-row.is-resizing,
+    .admin-shell-row.is-resizing * {
+        cursor: col-resize !important;
+        user-select: none !important;
+    }
+
+    body.admin-sidebar-mini .admin-column-resizer {
+        display: flex !important;
+        opacity: 0.55;
+    }
+
+    body.admin-sidebar-mini.admin-sidebar-mini-expanded .admin-column-resizer {
+        opacity: 0.25;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .admin-column-resizer {
+        display: none !important;
+    }
+}
+
 /* Mini sidebar — desktop only */
 @media (min-width: 992px) {
 

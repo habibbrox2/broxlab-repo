@@ -151,6 +151,28 @@ function aiChatNormalizeMessages($messages, int $maxMessages, int $maxChars, ?st
                         $artifact['size'] = (int)$image['size'];
                     }
                     $parts[] = ['type' => 'image_url', 'image_url' => $artifact];
+                    continue;
+                }
+                if ($type === 'file') {
+                    $file = $part['file'] ?? [];
+                    if (!is_array($file)) {
+                        continue;
+                    }
+                    $fileData = $file['file_data'] ?? $file['fileData'] ?? '';
+                    $fileId = $file['file_id'] ?? $file['fileId'] ?? '';
+                    $filename = $file['filename'] ?? $file['name'] ?? '';
+                    if (!is_string($filename) || trim($filename) === '') {
+                        $filename = 'attachment';
+                    }
+                    $artifact = ['filename' => trim($filename)];
+                    if (is_string($fileData) && trim($fileData) !== '') {
+                        $artifact['file_data'] = trim($fileData);
+                    } elseif (is_string($fileId) && trim($fileId) !== '') {
+                        $artifact['file_id'] = trim($fileId);
+                    } else {
+                        continue;
+                    }
+                    $parts[] = ['type' => 'file', 'file' => $artifact];
                 }
             }
             if (empty($parts)) {
@@ -166,7 +188,16 @@ function aiChatNormalizeMessages($messages, int $maxMessages, int $maxChars, ?st
             $error = 'Message too long';
             return [];
         }
-        $out[] = ['role' => $role, 'content' => $normalizedContent];
+        $normalized = ['role' => $role, 'content' => $normalizedContent];
+        if (
+            $role === 'assistant' &&
+            isset($msg['annotations']) &&
+            is_array($msg['annotations']) &&
+            !empty($msg['annotations'])
+        ) {
+            $normalized['annotations'] = $msg['annotations'];
+        }
+        $out[] = $normalized;
     }
 
     if (empty($out)) {
@@ -688,6 +719,76 @@ function aiSystemResolveModel(AIProvider $aiProvider, string $providerName, stri
 
     return (string)array_key_first($models);
 }
+function aiChatNormalizeAdvancedOptions(array $inputOptions): array
+{
+    $normalized = [];
+    $intKeys = ['n', 'max_tokens', 'max_completion_tokens', 'top_logprobs', 'seed'];
+    foreach ($intKeys as $key) {
+        if (array_key_exists($key, $inputOptions)) {
+            $value = (int)$inputOptions[$key];
+            if ($value > 0) {
+                $normalized[$key] = $value;
+            }
+        }
+    }
+
+    $floatKeys = ['temperature', 'top_p', 'presence_penalty', 'frequency_penalty'];
+    foreach ($floatKeys as $key) {
+        if (array_key_exists($key, $inputOptions) && is_numeric($inputOptions[$key])) {
+            $normalized[$key] = (float)$inputOptions[$key];
+        }
+    }
+
+    $boolKeys = ['store', 'logprobs', 'parallel_tool_calls'];
+    foreach ($boolKeys as $key) {
+        if (array_key_exists($key, $inputOptions)) {
+            $normalized[$key] = (bool)$inputOptions[$key];
+        }
+    }
+
+    $stringKeys = [
+        'tool_choice',
+        'reasoning_effort',
+        'prompt_cache_key',
+        'prompt_cache_retention',
+        'safety_identifier',
+        'service_tier',
+        'user',
+        'verbosity'
+    ];
+    foreach ($stringKeys as $key) {
+        if (array_key_exists($key, $inputOptions) && is_string($inputOptions[$key])) {
+            $value = trim($inputOptions[$key]);
+            if ($value !== '') {
+                $normalized[$key] = $value;
+            }
+        }
+    }
+
+    $arrayKeys = ['plugins', 'tools', 'stop', 'modalities'];
+    foreach ($arrayKeys as $key) {
+        if (array_key_exists($key, $inputOptions) && is_array($inputOptions[$key])) {
+            $normalized[$key] = $inputOptions[$key];
+        }
+    }
+
+    $objectKeys = [
+        'response_format',
+        'web_search_options',
+        'metadata',
+        'stream_options',
+        'audio',
+        'prediction',
+        'logit_bias'
+    ];
+    foreach ($objectKeys as $key) {
+        if (array_key_exists($key, $inputOptions) && is_array($inputOptions[$key])) {
+            $normalized[$key] = $inputOptions[$key];
+        }
+    }
+
+    return $normalized;
+}
 function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $allowOverrides): void
 {
     $aiProvider = new AIProvider($mysqli);
@@ -918,6 +1019,23 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     if ($allowOverrides && isset($input['options']) && is_array($input['options'])) {
         $options = $input['options'];
     }
+    if ($allowOverrides) {
+        $topLevelOptionKeys = [
+            'plugins', 'response_format', 'reasoning_effort', 'tool_choice',
+            'tools', 'web_search_options', 'modalities', 'audio',
+            'parallel_tool_calls', 'stream_options', 'metadata', 'store',
+            'n', 'logprobs', 'top_logprobs', 'top_p', 'presence_penalty',
+            'frequency_penalty', 'seed', 'max_completion_tokens', 'stop',
+            'service_tier', 'prompt_cache_key', 'prompt_cache_retention',
+            'safety_identifier', 'prediction', 'logit_bias', 'user', 'verbosity'
+        ];
+        foreach ($topLevelOptionKeys as $key) {
+            if (array_key_exists($key, $input) && !array_key_exists($key, $options)) {
+                $options[$key] = $input[$key];
+            }
+        }
+    }
+    $options = aiChatNormalizeAdvancedOptions($options);
     $options['max_tokens'] = isset($options['max_tokens'])
         ? (int)$options['max_tokens']
         : (int)($settings['max_tokens'] ?? 4000);
@@ -1113,7 +1231,8 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         aiChatStreamContent($response['content'] ?? '', [
             'conversation_id' => $convId,
             'message_id' => $assistantMessageId,
-            'user_message_id' => $userMessageId
+            'user_message_id' => $userMessageId,
+            'annotations' => $response['annotations'] ?? null
         ]);
         return;
     }
@@ -1124,7 +1243,8 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
             'content' => $response['content'] ?? '',
             'conversation_id' => $convId,
             'message_id' => $assistantMessageId,
-            'usage' => $response['usage'] ?? []
+            'usage' => $response['usage'] ?? [],
+            'annotations' => $response['annotations'] ?? null
         ]);
         return;
     }

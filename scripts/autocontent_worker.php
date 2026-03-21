@@ -14,6 +14,18 @@ require_once __DIR__ . '/../app/Models/AutoContentModel.php';
 
 $config = require __DIR__ . '/../Config/AutoContent.php';
 
+$model = new AutoContentModel($mysqli);
+$model->ensureTablesExist();
+$settings = $model->getSettings();
+
+// Respect AutoContent enable flags
+$enabled = ($settings['autocontent_enabled'] ?? '0') === '1';
+$autoCollect = ($settings['auto_collect'] ?? '0') === '1';
+if (!$enabled || !$autoCollect) {
+    echo "[" . date('Y-m-d H:i:s') . "] Auto-collect is disabled\n";
+    exit(0);
+}
+
 $proxies = [];
 if (($config['proxies']['enabled'] ?? false) && !empty($config['proxies']['list'])) {
     $proxies = $config['proxies']['list'];

@@ -7,12 +7,14 @@ import CONFIG from '../config.js';
 import HttpClient from '../utils/HttpClient.js';
 import HtmlParser from '../utils/HtmlParser.js';
 import Logger from '../utils/Logger.js';
+import DatabaseService from '../services/DatabaseService.js';
 
 class TickerScraper {
     constructor(sourceKey = null) {
         this.sourceKey = sourceKey || CONFIG.source.defaultSource;
         this.selectors = CONFIG.getSelectors(this.sourceKey);
         this.sourceConfig = CONFIG.sources[this.sourceKey] || null;
+        this.sourceId = null;
     }
 
     /**
@@ -38,14 +40,37 @@ class TickerScraper {
 
         Logger.info(`Fetching homepage: ${url}`, { source: this.sourceKey });
 
+        const startedAt = Date.now();
         const result = await HttpClient.fetchHtml(url);
+        const elapsedMs = Date.now() - startedAt;
 
         if (!result.success) {
             Logger.error('Failed to fetch homepage', {
                 url,
                 error: result.error
             });
+            if (this.sourceId && DatabaseService?.connected) {
+                await DatabaseService.insertAutoContentScrapeLog(this.sourceId, {
+                    url,
+                    status: result.error === 'waf_challenge' ? 'waf_challenge' : 'list_fetch_failed',
+                    httpStatus: result.status || null,
+                    responseTimeMs: elapsedMs,
+                    errorMessage: result.error || 'fetch_failed',
+                    contentLength: 0
+                });
+            }
             return { success: false, error: result.error, items: [] };
+        }
+ 
+        if (this.sourceId && DatabaseService?.connected) {
+            await DatabaseService.insertAutoContentScrapeLog(this.sourceId, {
+                url,
+                status: 'list_fetch_success',
+                httpStatus: result.status || 200,
+                responseTimeMs: result.elapsed_ms || elapsedMs,
+                errorMessage: null,
+                contentLength: String(result.html || '').length
+            });
         }
 
         const $ = HtmlParser.parse(result.html);
@@ -114,6 +139,8 @@ class TickerScraper {
                 } else if (!href.startsWith('http')) {
                     href = new URL(href, this.sourceConfig?.baseUrl || CONFIG.sources.bdnews24.baseUrl).href;
                 }
+ 
+                href = this.canonicalizeUrl(href);
 
                 // Skip if already seen
                 if (seenLinks.has(href)) {
@@ -204,6 +231,18 @@ class TickerScraper {
 
         return links;
     }
+ 
+    canonicalizeUrl(href) {
+        try {
+            const u = new URL(String(href));
+            u.hash = '';
+            const tracking = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', 'ref', 'source'];
+            tracking.forEach(p => u.searchParams.delete(p));
+            return u.toString();
+        } catch (e) {
+            return href;
+        }
+    }
 
     /**
      * Check if URL is likely an article link
@@ -229,6 +268,50 @@ class TickerScraper {
             if (pattern.test(href)) {
                 return false;
             }
+        }
+ 
+        // Per-source URL rules from config (optional)
+        const rules = this.sourceConfig?.urlRules || null;
+        if (rules?.exclude && Array.isArray(rules.exclude)) {
+            for (const rx of rules.exclude) {
+                try {
+                    if (rx && rx.test && rx.test(href)) {
+                        return false;
+                    }
+                } catch (e) {
+                    // ignore invalid regex
+                }
+            }
+        }
+        if (rules?.include && Array.isArray(rules.include) && rules.include.length > 0) {
+            let ok = false;
+            for (const rx of rules.include) {
+                try {
+                    if (rx && rx.test && rx.test(href)) {
+                        ok = true;
+                        break;
+                    }
+                } catch (e) {
+                    // ignore invalid regex
+                }
+            }
+            if (!ok) return false;
+        }
+ 
+        // Common utility paths to exclude (prevents nav/footer collection)
+        try {
+            const p = new URL(href).pathname.toLowerCase();
+            const commonExcludes = [
+                '/rss', '/sitemap', '/privacy', '/terms', '/contact', '/about', '/login', '/signup', '/register', '/account',
+            ];
+            if (commonExcludes.some(seg => p === seg || p.startsWith(seg + '/'))) {
+                return false;
+            }
+            if (p.includes('tipus')) {
+                return false;
+            }
+        } catch (e) {
+            // ignore
         }
 
         // Include patterns (news/article paths)

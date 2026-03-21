@@ -839,6 +839,7 @@ class AIProvider
                 'input' => $prompt
             ];
 
+            $request = $this->applyAdvancedRequestOptions($request, $options);
             if ($options['stream'] ?? false) {
                 $request['stream'] = true;
             }
@@ -863,6 +864,7 @@ class AIProvider
                 'max_tokens' => (int)$maxTokens
             ];
 
+            $request = $this->applyAdvancedRequestOptions($request, $options);
             if ($options['stream'] ?? false) {
                 $request['stream'] = true;
             }
@@ -879,6 +881,7 @@ class AIProvider
             'max_tokens' => (int)$maxTokens
         ];
 
+        $request = $this->applyAdvancedRequestOptions($request, $options);
         if ($options['stream'] ?? false) {
             $request['stream'] = true;
         }
@@ -919,10 +922,19 @@ class AIProvider
             if ($content === '' || $content === null) {
                 continue;
             }
-            $formattedMessages[] = [
+            $message = [
                 'role' => $msg['role'],
                 'content' => $content
             ];
+            if (
+                ($msg['role'] ?? '') === 'assistant' &&
+                isset($msg['annotations']) &&
+                is_array($msg['annotations']) &&
+                !empty($msg['annotations'])
+            ) {
+                $message['annotations'] = $msg['annotations'];
+            }
+            $formattedMessages[] = $message;
         }
 
         // If no valid messages, fallback to empty user message
@@ -941,6 +953,7 @@ class AIProvider
             'temperature' => (float)$temperature,
             'max_tokens' => (int)$maxTokens
         ];
+        $request = $this->applyAdvancedRequestOptions($request, $options);
 
         // Provider-specific adjustments
         if ($providerName === 'anthropic' && $systemPrompt !== '') {
@@ -955,6 +968,64 @@ class AIProvider
 
         if ($options['stream'] ?? false) {
             $request['stream'] = true;
+        }
+
+        return $request;
+    }
+
+    private function applyAdvancedRequestOptions(array $request, array $options): array
+    {
+        $passThroughKeys = [
+            'plugins',
+            'response_format',
+            'reasoning_effort',
+            'tool_choice',
+            'tools',
+            'web_search_options',
+            'modalities',
+            'audio',
+            'parallel_tool_calls',
+            'stream_options',
+            'metadata',
+            'store',
+            'n',
+            'logprobs',
+            'top_logprobs',
+            'top_p',
+            'presence_penalty',
+            'frequency_penalty',
+            'seed',
+            'max_completion_tokens',
+            'stop',
+            'service_tier',
+            'prompt_cache_key',
+            'prompt_cache_retention',
+            'safety_identifier',
+            'prediction',
+            'logit_bias',
+            'user',
+            'verbosity'
+        ];
+
+        foreach ($passThroughKeys as $key) {
+            if (!array_key_exists($key, $options)) {
+                continue;
+            }
+            $value = $options[$key];
+            if (is_string($value)) {
+                $value = trim($value);
+                if ($value === '') {
+                    continue;
+                }
+            }
+            if ($value === null) {
+                continue;
+            }
+            $request[$key] = $value;
+        }
+
+        if (isset($request['max_completion_tokens']) && !isset($options['max_tokens'])) {
+            unset($request['max_tokens']);
         }
 
         return $request;
@@ -1063,6 +1134,26 @@ class AIProvider
                     $artifact['size'] = (int)$image['size'];
                 }
                 $parts[] = ['type' => 'image_url', 'image_url' => $artifact];
+            } elseif ($type === 'file') {
+                $file = $part['file'] ?? [];
+                if (!is_array($file)) {
+                    continue;
+                }
+                $fileData = $file['file_data'] ?? $file['fileData'] ?? '';
+                $fileId = $file['file_id'] ?? $file['fileId'] ?? '';
+                $filename = $file['filename'] ?? $file['name'] ?? 'attachment';
+                if (!is_string($filename) || trim($filename) === '') {
+                    $filename = 'attachment';
+                }
+                $artifact = ['filename' => trim($filename)];
+                if (is_string($fileData) && trim($fileData) !== '') {
+                    $artifact['file_data'] = trim($fileData);
+                } elseif (is_string($fileId) && trim($fileId) !== '') {
+                    $artifact['file_id'] = trim($fileId);
+                } else {
+                    continue;
+                }
+                $parts[] = ['type' => 'file', 'file' => $artifact];
             }
         }
 
@@ -1097,6 +1188,13 @@ class AIProvider
                     $line .= ' (' . implode(', ', $meta) . ')';
                 }
                 $lines[] = $line;
+            } elseif ($part['type'] === 'file') {
+                $file = $part['file'] ?? [];
+                $filename = $file['filename'] ?? 'attachment';
+                if (!is_string($filename) || trim($filename) === '') {
+                    $filename = 'attachment';
+                }
+                $lines[] = 'File: ' . trim($filename);
             }
         }
         return trim(implode("\n", array_filter($lines, fn($l) => $l !== '')));
@@ -1238,10 +1336,12 @@ class AIProvider
             }
             // Standard chat completions response format (choices array)
             if (isset($data['choices'][0]['message']['content'])) {
+                $annotations = $data['choices'][0]['message']['annotations'] ?? null;
                 return [
                     'success' => true,
                     'content' => $data['choices'][0]['message']['content'],
-                    'usage' => $data['usage'] ?? []
+                    'usage' => $data['usage'] ?? [],
+                    'annotations' => is_array($annotations) ? $annotations : null
                 ];
             }
             return ['success' => false, 'error' => 'Unexpected Fireworks response format', 'raw' => $data];
@@ -1265,10 +1365,12 @@ class AIProvider
                 break;
             default:
                 if (isset($data['choices'][0]['message']['content'])) {
+                    $annotations = $data['choices'][0]['message']['annotations'] ?? null;
                     return [
                         'success' => true,
                         'content' => $data['choices'][0]['message']['content'],
-                        'usage' => $data['usage'] ?? []
+                        'usage' => $data['usage'] ?? [],
+                        'annotations' => is_array($annotations) ? $annotations : null
                     ];
                 }
         }

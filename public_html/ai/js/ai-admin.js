@@ -35,6 +35,7 @@
 // ── Configuration ─────────────────────────────────────────────────────────────
 const ADMIN_CONFIG = {
     chatKey: 'brox.admin.history',
+    optionsKey: 'brox.admin.request.options',
     proxyUrl: '/api/admin/ai/chat',
     logUrl: '/api/admin/logs/errors',
     modelsUrl: '/api/ai/models',  // Fixed: was /api/ai-system/models
@@ -470,9 +471,12 @@ if (!window.BroxAdminInstance) {
     class BroxAdminCopilot {
         constructor() {
             this.history = this.loadHistory();
+            this.advancedOptions = this.loadAdvancedOptions();
             this.isThinking = false;
             this.csrfToken = csrfToken;
             this.conversationId = null;
+            this.pendingAutoFill = false;
+            this.autoFillRetryUsed = false;
             this.currentModel = null;
             this.currentProvider = 'openrouter';
             this.preferredModel = '';
@@ -527,9 +531,85 @@ if (!window.BroxAdminInstance) {
                 const trimmed = this.history.slice(-ADMIN_CONFIG.maxHistory);
                 sessionStorage.setItem(ADMIN_CONFIG.chatKey, JSON.stringify(trimmed));
                 this.updateSaveIndicator();
+                this.renderHistorySidebar();
             } catch (e) {
                 console.warn('[Admin Copilot] Failed to save history:', e);
             }
+        }
+
+        loadAdvancedOptions() {
+            const defaults = {
+                webPlugin: false,
+                webMaxResults: 3,
+                responseHealing: false,
+                pdfPlugin: false,
+                pdfEngine: 'pdf-text',
+                reasoningEffort: '',
+                responseFormat: 'text',
+                rawJson: ''
+            };
+            try {
+                const stored = localStorage.getItem(ADMIN_CONFIG.optionsKey);
+                if (!stored) return defaults;
+                const parsed = JSON.parse(stored);
+                if (!parsed || typeof parsed !== 'object') return defaults;
+                return { ...defaults, ...parsed };
+            } catch {
+                return defaults;
+            }
+        }
+
+        saveAdvancedOptions() {
+            try {
+                localStorage.setItem(ADMIN_CONFIG.optionsKey, JSON.stringify(this.advancedOptions || {}));
+            } catch {
+                // ignore storage failures
+            }
+        }
+
+        buildRequestOptions() {
+            const options = {};
+            const advanced = this.advancedOptions || {};
+            const plugins = [];
+            if (advanced.webPlugin) {
+                const maxResults = Number(advanced.webMaxResults) || 3;
+                plugins.push({
+                    id: 'web',
+                    max_results: Math.min(Math.max(maxResults, 1), 10)
+                });
+            }
+            if (advanced.responseHealing) {
+                plugins.push({ id: 'response-healing' });
+            }
+            if (advanced.pdfPlugin) {
+                plugins.push({
+                    id: 'file-parser',
+                    pdf: {
+                        engine: advanced.pdfEngine || 'pdf-text'
+                    }
+                });
+            }
+            if (plugins.length) {
+                options.plugins = plugins;
+            }
+
+            if (advanced.reasoningEffort) {
+                options.reasoning_effort = advanced.reasoningEffort;
+            }
+            if (advanced.responseFormat && advanced.responseFormat !== 'text') {
+                options.response_format = { type: advanced.responseFormat };
+            }
+
+            if (advanced.rawJson && typeof advanced.rawJson === 'string') {
+                const parsed = safeParseJSON(advanced.rawJson.trim());
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    Object.assign(options, parsed);
+                } else if (advanced.rawJson.trim() !== '') {
+                    this.updateStatus('warning', 'Advanced JSON is invalid; ignoring custom options.');
+                }
+            }
+
+            return options;
         }
 
         updateSaveIndicator() {
@@ -560,7 +640,11 @@ if (!window.BroxAdminInstance) {
                 send: document.getElementById('adminAiSend'),
                 attach: document.getElementById('adminAiAttach'),
                 clear: document.getElementById('adminAiClear'),
+                clearHistory: document.getElementById('adminAiClearHistory'),
                 close: document.getElementById('adminAiClose'),
+                collectDataBtn: document.getElementById('adminAiCollectData'),
+                autoFillBtn: document.getElementById('adminAiAutoFill'),
+                summarizeBtn: document.getElementById('adminAiQuickSummarize'),
                 slashMenu: document.getElementById('adminAiSlashMenu'),
                 suggestionPanel: document.getElementById('adminAiSuggestionPanel'),
                 suggestionList: document.getElementById('adminAiSuggestionList'),
@@ -574,14 +658,24 @@ if (!window.BroxAdminInstance) {
                 statusText: document.getElementById('adminAiStatusText'),
                 historySidebar: document.getElementById('adminAiSidebar'),
                 historyList: document.getElementById('adminAiHistory'),
+                historyEmpty: document.querySelector('#brox-ai-history-tab .brox-ai-history-empty'),
                 historyToggle: document.getElementById('adminAiHistoryToggle'),
                 historySidebarClose: document.getElementById('adminAiSidebarClose'),
-                mic: document.getElementById('adminAiMic')
+                mic: document.getElementById('adminAiMic'),
+                webPluginToggle: document.getElementById('adminAiWebPluginToggle'),
+                webPluginMaxResults: document.getElementById('adminAiWebMaxResults'),
+                responseHealingToggle: document.getElementById('adminAiResponseHealingToggle'),
+                pdfPluginToggle: document.getElementById('adminAiPdfPluginToggle'),
+                pdfEngineSel: document.getElementById('adminAiPdfEngine'),
+                reasoningEffortSel: document.getElementById('adminAiReasoningEffort'),
+                responseFormatSel: document.getElementById('adminAiResponseFormat'),
+                advancedRawJson: document.getElementById('adminAiAdvancedOptionsJson')
             };
 
             // Initialize file handler
             this.fileHandler = new FileAttachmentHandler();
             this.bindFilePickerGuards();
+            this.syncAdvancedOptionsUI();
         }
 
         bindFilePickerGuards() {
@@ -604,6 +698,36 @@ if (!window.BroxAdminInstance) {
             input.addEventListener('focus', () => armGuard());
             input.addEventListener('change', () => resetGuard(200));
             input.addEventListener('blur', () => resetGuard(300));
+        }
+
+        syncAdvancedOptionsUI() {
+            const options = this.advancedOptions || {};
+            if (this.nodes.webPluginToggle) {
+                this.nodes.webPluginToggle.classList.toggle('active', !!options.webPlugin);
+            }
+            if (this.nodes.webPluginMaxResults) {
+                this.nodes.webPluginMaxResults.value = String(options.webMaxResults || 3);
+                this.nodes.webPluginMaxResults.disabled = !options.webPlugin;
+            }
+            if (this.nodes.responseHealingToggle) {
+                this.nodes.responseHealingToggle.classList.toggle('active', !!options.responseHealing);
+            }
+            if (this.nodes.pdfPluginToggle) {
+                this.nodes.pdfPluginToggle.classList.toggle('active', !!options.pdfPlugin);
+            }
+            if (this.nodes.pdfEngineSel) {
+                this.nodes.pdfEngineSel.value = options.pdfEngine || 'pdf-text';
+                this.nodes.pdfEngineSel.disabled = !options.pdfPlugin;
+            }
+            if (this.nodes.reasoningEffortSel) {
+                this.nodes.reasoningEffortSel.value = options.reasoningEffort || '';
+            }
+            if (this.nodes.responseFormatSel) {
+                this.nodes.responseFormatSel.value = options.responseFormat || 'text';
+            }
+            if (this.nodes.advancedRawJson) {
+                this.nodes.advancedRawJson.value = options.rawJson || '';
+            }
         }
 
         // ── Voice Input (Speech Recognition) ───────────────────────────────────────
@@ -1250,6 +1374,63 @@ if (!window.BroxAdminInstance) {
             if (this.nodes.clear) {
                 this.nodes.clear.onclick = () => this.clearChat();
             }
+            if (this.nodes.clearHistory) {
+                this.nodes.clearHistory.onclick = () => this.clearChat();
+            }
+
+            if (this.nodes.webPluginToggle) {
+                this.nodes.webPluginToggle.onclick = () => {
+                    this.advancedOptions.webPlugin = !this.advancedOptions.webPlugin;
+                    this.syncAdvancedOptionsUI();
+                    this.saveAdvancedOptions();
+                };
+            }
+            if (this.nodes.webPluginMaxResults) {
+                this.nodes.webPluginMaxResults.onchange = () => {
+                    const raw = Number(this.nodes.webPluginMaxResults.value) || 3;
+                    this.advancedOptions.webMaxResults = Math.min(Math.max(raw, 1), 10);
+                    this.nodes.webPluginMaxResults.value = String(this.advancedOptions.webMaxResults);
+                    this.saveAdvancedOptions();
+                };
+            }
+            if (this.nodes.responseHealingToggle) {
+                this.nodes.responseHealingToggle.onclick = () => {
+                    this.advancedOptions.responseHealing = !this.advancedOptions.responseHealing;
+                    this.syncAdvancedOptionsUI();
+                    this.saveAdvancedOptions();
+                };
+            }
+            if (this.nodes.pdfPluginToggle) {
+                this.nodes.pdfPluginToggle.onclick = () => {
+                    this.advancedOptions.pdfPlugin = !this.advancedOptions.pdfPlugin;
+                    this.syncAdvancedOptionsUI();
+                    this.saveAdvancedOptions();
+                };
+            }
+            if (this.nodes.pdfEngineSel) {
+                this.nodes.pdfEngineSel.onchange = () => {
+                    this.advancedOptions.pdfEngine = this.nodes.pdfEngineSel.value || 'pdf-text';
+                    this.saveAdvancedOptions();
+                };
+            }
+            if (this.nodes.reasoningEffortSel) {
+                this.nodes.reasoningEffortSel.onchange = () => {
+                    this.advancedOptions.reasoningEffort = this.nodes.reasoningEffortSel.value || '';
+                    this.saveAdvancedOptions();
+                };
+            }
+            if (this.nodes.responseFormatSel) {
+                this.nodes.responseFormatSel.onchange = () => {
+                    this.advancedOptions.responseFormat = this.nodes.responseFormatSel.value || 'text';
+                    this.saveAdvancedOptions();
+                };
+            }
+            if (this.nodes.advancedRawJson) {
+                this.nodes.advancedRawJson.addEventListener('blur', () => {
+                    this.advancedOptions.rawJson = this.nodes.advancedRawJson.value || '';
+                    this.saveAdvancedOptions();
+                });
+            }
 
             // Collect page form data
             if (this.nodes.collectDataBtn) {
@@ -1259,6 +1440,11 @@ if (!window.BroxAdminInstance) {
             // Auto-fill form from assistant output
             if (this.nodes.autoFillBtn) {
                 this.nodes.autoFillBtn.onclick = () => this.handleAutoFill();
+            }
+
+            // Summarize current page
+            if (this.nodes.summarizeBtn) {
+                this.nodes.summarizeBtn.onclick = () => this.handleSummarize();
             }
 
             // Refresh models
@@ -1533,6 +1719,7 @@ if (!window.BroxAdminInstance) {
                 this.nodes.body.innerHTML = '';
                 this.nodes.welcome?.classList.remove('d-none');
             }
+            this.renderHistorySidebar();
 
             // Clear any stored image context on the server for this user session
             fetch('/api/ai/clear-image-context', {
@@ -1572,12 +1759,10 @@ if (!window.BroxAdminInstance) {
             this.nodes.historyList.innerHTML = '';
 
             if (this.history.length === 0) {
-                const empty = document.createElement('div');
-                empty.className = 'text-center p-4 text-muted small';
-                empty.textContent = 'No history yet';
-                this.nodes.historyList.appendChild(empty);
+                this.nodes.historyEmpty?.classList.remove('d-none');
                 return;
             }
+            this.nodes.historyEmpty?.classList.add('d-none');
 
             this.history.slice().reverse().forEach((msg, idxFromEnd) => {
                 const idx = this.history.length - 1 - idxFromEnd;
@@ -1608,6 +1793,22 @@ if (!window.BroxAdminInstance) {
         }
 
         // ── Message Handling ───────────────────────────────────────────────────
+        fileToDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result || ''));
+                reader.onerror = () => reject(new Error('Failed to read attachment'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        isPdfAttachment(file, uploaded = null) {
+            if (!file) return false;
+            const mime = (uploaded?.mime || file.type || '').toLowerCase();
+            const name = (uploaded?.name || file.name || '').toLowerCase();
+            return mime.includes('application/pdf') || name.endsWith('.pdf');
+        }
+
         async handleSend() {
             const rawText = this.nodes.input?.value || '';
             const text = rawText.trim();
@@ -1640,9 +1841,10 @@ if (!window.BroxAdminInstance) {
                 sanitized = validation.sanitized;
 
                 // Local command handling (no server call)
-                const cmdMatch = sanitized.match(/^\/(collect-data|autofill|summarize|analyze-logs|generate-report|check-security|fix-permissions|clear-cache|search-kb|web-search|optimize-db|deploy-status|health-check)\b/i);
+                const cmdMatch = sanitized.match(/^\/(collect-data|auto-?fill|summarize|analyze-logs|generate-report|check-security|fix-permissions|clear-cache|search-kb|web-search|optimize-db|deploy-status|health-check)\b/i);
                 if (cmdMatch) {
-                    const cmd = cmdMatch[1].toLowerCase();
+                    const cmdRaw = cmdMatch[1].toLowerCase();
+                    const cmd = cmdRaw === 'auto-fill' ? 'autofill' : cmdRaw;
                     this.updateStatus('loading', 'Running command...');
                     switch (cmd) {
                         case 'collect-data':
@@ -1762,8 +1964,29 @@ if (!window.BroxAdminInstance) {
                     }
                 });
             } else if (hasAttachment && attachment?.file) {
-                const note = `Attachment: ${attachment.file.name} (not supported for AI analysis)`;
-                messageContent = sanitized ? `${sanitized}\n\n${note}` : note;
+                this.updateStatus('loading', 'Encoding file...');
+                try {
+                    const dataUrl = await this.fileToDataUrl(attachment.file);
+                    const mime = attachment.file.type || 'application/octet-stream';
+                    messageContent = [];
+                    if (sanitized) {
+                        messageContent.push({ type: 'text', text: sanitized });
+                    }
+                    messageContent.push({
+                        type: 'file',
+                        file: {
+                            filename: attachment.file.name || 'attachment',
+                            file_data: dataUrl,
+                            mime,
+                            size: attachment.file.size || 0
+                        }
+                    });
+                    this.updateStatus('ready', 'Ready');
+                } catch (err) {
+                    const note = `Attachment: ${attachment.file.name} (could not be encoded)`;
+                    messageContent = sanitized ? `${sanitized}\n\n${note}` : note;
+                    this.updateStatus('warning', 'Attachment encode failed');
+                }
             }
 
             // Clear input
@@ -1788,17 +2011,210 @@ if (!window.BroxAdminInstance) {
             await this.getAIResponse();
         }
 
+        getMessagePlainText(content) {
+            if (typeof content === 'string') return content;
+            if (Array.isArray(content)) {
+                return content
+                    .map((part) => {
+                        if (!part || typeof part !== 'object') return '';
+                        if (part.type === 'text') return part.text || '';
+                        if (part.type === 'image_url') return part.image_url?.name || '';
+                        if (part.type === 'file') return part.file?.filename || 'attachment';
+                        return '';
+                    })
+                    .filter(Boolean)
+                    .join('\n');
+            }
+            return '';
+        }
+
+        async copyTextToClipboard(text) {
+            const normalized = String(text || '').trim();
+            if (!normalized) return false;
+            try {
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                    await navigator.clipboard.writeText(normalized);
+                    return true;
+                }
+            } catch {
+                // fallback
+            }
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = normalized;
+                ta.setAttribute('readonly', 'readonly');
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                ta.style.pointerEvents = 'none';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                const ok = document.execCommand('copy');
+                document.body.removeChild(ta);
+                return !!ok;
+            } catch {
+                return false;
+            }
+        }
+
+        attachLongPressCopy(contentEl, getText) {
+            if (!contentEl || typeof getText !== 'function') return;
+            let timer = null;
+            let longPressTriggered = false;
+
+            const clearTimer = () => {
+                if (timer) {
+                    clearTimeout(timer);
+                    timer = null;
+                }
+            };
+
+            const startPress = () => {
+                clearTimer();
+                longPressTriggered = false;
+                timer = setTimeout(async () => {
+                    const copied = await this.copyTextToClipboard(getText());
+                    if (copied) {
+                        longPressTriggered = true;
+                        this.updateStatus('ready', 'Copied response');
+                    }
+                }, 600);
+            };
+
+            const endPress = () => clearTimer();
+
+            contentEl.addEventListener('pointerdown', startPress);
+            contentEl.addEventListener('pointerup', endPress);
+            contentEl.addEventListener('pointerleave', endPress);
+            contentEl.addEventListener('pointercancel', endPress);
+            contentEl.addEventListener('contextmenu', (e) => {
+                if (longPressTriggered) e.preventDefault();
+            });
+        }
+
+        async submitAssistantFeedback({ msgEl, rating, reason = '' }) {
+            const conversationId = this.conversationId || '';
+            const messageId = msgEl?.dataset?.messageId || '';
+            const csrf = getCsrfToken() || '';
+            if (!conversationId || !messageId) return false;
+            try {
+                await fetch('/api/ai/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        conversation_id: conversationId,
+                        message_id: messageId,
+                        rating: String(rating),
+                        reason: reason,
+                        csrf_token: csrf
+                    })
+                });
+                return true;
+            } catch {
+                return false;
+            }
+        }
+
+        isLatestAssistantMessage(msgIndex) {
+            if (!Number.isInteger(msgIndex)) return false;
+            for (let i = this.history.length - 1; i >= 0; i--) {
+                if (this.history[i]?.role === 'assistant') {
+                    return i === msgIndex;
+                }
+            }
+            return false;
+        }
+
+        async regenerateAssistantMessage(msgIndex) {
+            if (this.isThinking) return;
+            if (!this.isLatestAssistantMessage(msgIndex)) {
+                this.addMessage('assistant', 'Regenerate works for the latest assistant response only.');
+                return;
+            }
+            if (msgIndex < 0 || msgIndex >= this.history.length || this.history[msgIndex]?.role !== 'assistant') return;
+
+            this.history.splice(msgIndex, 1);
+            this.saveHistory();
+
+            if (this.nodes.body) {
+                const target = this.nodes.body.querySelector(`.brox-ai-msg[data-msg-index="${msgIndex}"]`);
+                target?.remove();
+            }
+            await this.getAIResponse();
+        }
+
+        createAssistantActions({ msgEl, contentEl, metaEl, msgIndex = null }) {
+            const feedback = document.createElement('div');
+            feedback.className = 'brox-ai-feedback';
+            feedback.innerHTML = `
+                <button class="brox-ai-feedback-btn" data-rating="1" title="Poor"><i class="bi bi-hand-thumbs-down"></i></button>
+                <button class="brox-ai-feedback-btn" data-rating="5" title="Excellent"><i class="bi bi-hand-thumbs-up"></i></button>
+                <button class="brox-ai-copy-btn brox-ai-msg-tool-btn" data-action="copy" title="Copy"><i class="bi bi-clipboard"></i></button>
+                <button class="brox-ai-copy-btn brox-ai-msg-tool-btn" data-action="regenerate" title="Regenerate"><i class="bi bi-arrow-clockwise"></i></button>
+                <button class="brox-ai-copy-btn brox-ai-msg-tool-btn" data-action="report" title="Report"><i class="bi bi-flag"></i></button>
+            `;
+
+            feedback.querySelectorAll('.brox-ai-feedback-btn[data-rating]').forEach((btn) => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const ok = await this.submitAssistantFeedback({
+                        msgEl,
+                        rating: btn.dataset.rating || '0',
+                        reason: ''
+                    });
+                    if (ok) btn.classList.add('brox-ai-feedback-sent');
+                });
+            });
+
+            const copyBtn = feedback.querySelector('[data-action="copy"]');
+            copyBtn?.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const copied = await this.copyTextToClipboard(contentEl?.innerText || '');
+                if (copied) this.updateStatus('ready', 'Copied response');
+            });
+
+            const regenBtn = feedback.querySelector('[data-action="regenerate"]');
+            regenBtn?.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const idx = Number.isInteger(msgIndex) ? msgIndex : Number.parseInt(msgEl?.dataset?.msgIndex || '-1', 10);
+                await this.regenerateAssistantMessage(idx);
+            });
+
+            const reportBtn = feedback.querySelector('[data-action="report"]');
+            reportBtn?.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const ok = await this.submitAssistantFeedback({
+                    msgEl,
+                    rating: '1',
+                    reason: 'reported'
+                });
+                if (ok) {
+                    reportBtn.classList.add('brox-ai-feedback-sent');
+                    this.updateStatus('ready', 'Reported response');
+                }
+            });
+
+            const actions = document.createElement('div');
+            actions.className = 'brox-ai-msg-actions';
+            actions.style.display = 'flex';
+            actions.style.gap = '8px';
+            actions.style.alignItems = 'center';
+            actions.style.marginTop = '4px';
+            metaEl.style.marginTop = '0';
+            actions.appendChild(feedback);
+            actions.appendChild(metaEl);
+            return actions;
+        }
+
         addMessage(role, content, animate = true, msgIndex = null) {
             if (!this.nodes.body) return;
 
-            // Remove welcome message if exists
             this.nodes.welcome?.classList.add('d-none');
 
             const msg = document.createElement('div');
             msg.className = `brox-ai-msg brox-ai-${role}`;
             msg.setAttribute('data-role', role);
 
-            // Avatar
             const avatar = document.createElement('div');
             avatar.className = 'brox-ai-msg-avatar';
             avatar.innerHTML = role === 'user'
@@ -1806,7 +2222,6 @@ if (!window.BroxAdminInstance) {
                 : '<i class="bi bi-stars"></i>';
             msg.appendChild(avatar);
 
-            // Content
             const contentDiv = document.createElement('div');
             contentDiv.className = 'brox-ai-msg-content';
 
@@ -1830,24 +2245,35 @@ if (!window.BroxAdminInstance) {
                         img.addEventListener('click', () => this.showImageLightbox(part.image_url.url, part.image_url.name || 'Image'));
                         imgWrap.appendChild(img);
 
-                        const meta = document.createElement('div');
-                        meta.className = 'brox-ai-msg-image-meta';
+                        const metaText = document.createElement('div');
+                        metaText.className = 'brox-ai-msg-image-meta';
                         const parts = [];
                         if (part.image_url.name) parts.push(part.image_url.name);
                         if (part.image_url.size) parts.push(this.formatFileSize(part.image_url.size));
                         if (part.image_url.mime) parts.push(part.image_url.mime);
                         if (parts.length) {
-                            meta.textContent = parts.join(' • ');
-                            imgWrap.appendChild(meta);
+                            metaText.textContent = parts.join(' � ');
+                            imgWrap.appendChild(metaText);
                         }
 
                         contentDiv.appendChild(imgWrap);
+                    }
+                    if (part.type === 'file' && part.file) {
+                        const fileWrap = document.createElement('div');
+                        fileWrap.className = 'brox-ai-msg-file-wrap';
+                        const fileBits = [];
+                        if (part.file.filename) fileBits.push(part.file.filename);
+                        if (part.file.mime) fileBits.push(part.file.mime);
+                        if (part.file.size) fileBits.push(this.formatFileSize(part.file.size));
+                        const icon = part.file.mime === 'application/pdf' ? 'bi-file-earmark-pdf' : 'bi-file-earmark';
+                        fileWrap.innerHTML = `<i class="bi ${icon}"></i> <span>${this.escapeHtml(fileBits.join(' • ') || 'File attachment')}</span>`;
+                        contentDiv.appendChild(fileWrap);
                     }
                     if (idx < content.length - 1) {
                         contentDiv.appendChild(document.createElement('br'));
                     }
                 });
-            } else if (typeof content === 'string' && content.includes('```artifact')) {
+            } else if (typeof content === 'string' && content.toLowerCase().includes('artifact') && content.includes(String.fromCharCode(96).repeat(3))) {
                 this.renderWithArtifacts(contentDiv, content, animate && role === 'assistant');
             } else if (animate && role === 'assistant' && typeof content === 'string') {
                 this.typeEffect(contentDiv, content);
@@ -1856,60 +2282,21 @@ if (!window.BroxAdminInstance) {
             }
 
             msg.appendChild(contentDiv);
+            if (role === 'assistant') {
+                this.attachLongPressCopy(contentDiv, () => contentDiv.innerText || this.getMessagePlainText(content));
+            }
 
-            // Meta & Feedback
             const meta = document.createElement('div');
             meta.className = 'brox-ai-msg-meta';
             meta.textContent = new Date().toLocaleTimeString();
-            
-            // Add feedback buttons for assistant messages
-            if (role === 'assistant') {
-                const feedback = document.createElement('div');
-                feedback.className = 'brox-ai-feedback';
-                feedback.innerHTML = `
-                    <button class="brox-ai-feedback-btn" data-rating="1" title="Poor"><i class="bi bi-hand-thumbs-down"></i></button>
-                    <button class="brox-ai-feedback-btn" data-rating="5" title="Excellent"><i class="bi bi-hand-thumbs-up"></i></button>
-                `;
-                
-                // Add feedback event listeners
-                feedback.querySelectorAll('.brox-ai-feedback-btn').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        const rating = btn.dataset.rating;
-                        const conversationId = this.conversationId || '';
-                        const messageId = msg.dataset.messageId || '';
-                        const csrfToken = getCsrfToken() || '';
-                        if (!conversationId || !messageId) return;
 
-                        try {
-                            await fetch('/api/ai/feedback', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    conversation_id: conversationId,
-                                    message_id: messageId,
-                                    rating: rating,
-                                    csrf_token: csrfToken
-                                })
-                            });
-                            feedback.innerHTML = '<small>✓</small>';
-                        } catch (err) {
-                            // ignore
-                        }
-                    });
+            if (role === 'assistant') {
+                const actions = this.createAssistantActions({
+                    msgEl: msg,
+                    contentEl: contentDiv,
+                    metaEl: meta,
+                    msgIndex: Number.isInteger(msgIndex) ? msgIndex : null
                 });
-                
-                // Create actions container
-                const actions = document.createElement('div');
-                actions.className = 'brox-ai-msg-actions';
-                actions.style.display = 'flex';
-                actions.style.gap = '8px';
-                actions.style.alignItems = 'center';
-                actions.style.marginTop = '4px';
-                
-                meta.style.marginTop = '0';
-                actions.appendChild(feedback);
-                actions.appendChild(meta);
                 msg.appendChild(actions);
             } else {
                 msg.appendChild(meta);
@@ -1922,6 +2309,8 @@ if (!window.BroxAdminInstance) {
             this.scrollToBottom();
             this.pruneDomMessages();
         }
+
+
 
         formatMetaTime() {
             return new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
@@ -1984,7 +2373,7 @@ if (!window.BroxAdminInstance) {
         }
 
         renderWithArtifacts(container, content, animate) {
-            const parts = content.split(/```artifact([\s\S]*?)```/);
+            const parts = content.split(/```artifact([\s\S]*?)```/i);
             parts.forEach((part, i) => {
                 if (i % 2 === 1) {
                     try {
@@ -2003,6 +2392,286 @@ if (!window.BroxAdminInstance) {
                     container.appendChild(span);
                 }
             });
+        }
+
+        normalizeAutoFillPayload(payload) {
+            if (!payload || typeof payload !== 'object') return null;
+
+            let out = null;
+
+            if (Array.isArray(payload)) {
+                const mapped = {};
+                payload.forEach((field) => {
+                    if (!field || typeof field !== 'object') return;
+                    const name = field.name || field.key || field.field || field.id || field.label;
+                    const value = field.value ?? field.val ?? field.content ?? field.text ?? field.answer ?? '';
+                    if (!name) return;
+                    mapped[String(name)] = value;
+                });
+                if (Object.keys(mapped).length) out = mapped;
+            }
+
+            if (Array.isArray(payload.fields)) {
+                const mapped = {};
+                payload.fields.forEach((field) => {
+                    if (!field || typeof field !== 'object') return;
+                    const name = field.name || field.key || field.field || field.id;
+                    const value = field.value ?? field.val ?? field.content ?? field.text ?? '';
+                    if (!name) return;
+                    mapped[String(name)] = value;
+                });
+                if (Object.keys(mapped).length) out = mapped;
+            }
+
+            if (!out && payload.content && typeof payload.content === 'object' && !Array.isArray(payload.content)) {
+                out = { ...payload.content };
+            }
+
+            if (!out && payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data)) {
+                out = { ...payload.data };
+            }
+
+            if (!out && !Array.isArray(payload)) {
+                out = { ...payload };
+            }
+
+            if (out.body !== undefined && out.content === undefined) out.content = out.body;
+            if (out.html !== undefined && out.content === undefined) out.content = out.html;
+            if (out.permalink !== undefined && out.slug === undefined) out.slug = out.permalink;
+
+            const metadataKeys = new Set([
+                'type', 'fields', 'headers', 'rows', 'notes', 'note', 'message', 'status',
+                'source', 'meta', 'metadata', 'debug', 'explanation', 'reasoning'
+            ]);
+
+            const filtered = {};
+            Object.entries(out).forEach(([key, value]) => {
+                if (!key) return;
+                if (metadataKeys.has(String(key).toLowerCase())) return;
+                if (value === undefined || value === null) return;
+                if (typeof value === 'object' && !Array.isArray(value)) return;
+                filtered[key] = value;
+            });
+
+            return Object.keys(filtered).length ? filtered : null;
+        }
+
+        extractJsonCandidates(text) {
+            if (!text || typeof text !== 'string') return [];
+
+            const candidates = [];
+            const pushCandidate = (source, chunk, start) => {
+                const candidateText = String(chunk || '').trim();
+                if (!candidateText) return;
+                candidates.push({
+                    source,
+                    text: candidateText,
+                    start: Number.isFinite(start) ? start : text.indexOf(candidateText)
+                });
+            };
+
+            const artifactRegex = /```artifact\s*([\s\S]*?)```/ig;
+            let match = null;
+            while ((match = artifactRegex.exec(text)) !== null) {
+                pushCandidate('artifact', match[1], match.index);
+            }
+
+            const jsonFenceRegex = /```json\s*([\s\S]*?)```/ig;
+            while ((match = jsonFenceRegex.exec(text)) !== null) {
+                pushCandidate('json_fence', match[1], match.index);
+            }
+
+            const anyFenceRegex = /```(?:[a-zA-Z0-9_-]+)?\s*([\s\S]*?)```/ig;
+            while ((match = anyFenceRegex.exec(text)) !== null) {
+                pushCandidate('generic_fence', match[1], match.index);
+            }
+
+            const balanced = this.extractBalancedJsonObjects(text);
+            balanced.forEach((item) => pushCandidate('balanced_object', item.text, item.start));
+
+            return candidates;
+        }
+
+        extractBalancedJsonObjects(text) {
+            if (!text || typeof text !== 'string') return [];
+            const chunks = [];
+            const stack = [];
+            let inString = false;
+            let escapeNext = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i];
+
+                if (escapeNext) {
+                    escapeNext = false;
+                    continue;
+                }
+
+                if (ch === '\\' && inString) {
+                    escapeNext = true;
+                    continue;
+                }
+
+                if (ch === '"') {
+                    inString = !inString;
+                    continue;
+                }
+
+                if (inString) continue;
+
+                if (ch === '{') {
+                    stack.push(i);
+                    continue;
+                }
+
+                if (ch === '}' && stack.length) {
+                    const start = stack.pop();
+                    if (stack.length === 0 && start !== undefined) {
+                        chunks.push({
+                            start,
+                            text: text.slice(start, i + 1)
+                        });
+                    }
+                }
+            }
+
+            return chunks;
+        }
+
+        getAutoFillKeyScore(payload) {
+            if (!payload || typeof payload !== 'object') return 0;
+            const formLikeKeys = ['title', 'slug', 'content', 'permalink', 'excerpt', 'author', 'status'];
+            const keys = Object.keys(payload);
+            const lowerKeys = keys.map((key) => String(key).toLowerCase());
+            const formHits = formLikeKeys.reduce((count, key) => count + (lowerKeys.includes(key) ? 1 : 0), 0);
+            const scalarKeys = keys.reduce((count, key) => {
+                const value = payload[key];
+                return (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || Array.isArray(value))
+                    ? count + 1
+                    : count;
+            }, 0);
+            return (formHits * 100) + scalarKeys;
+        }
+
+        extractBestJsonFromText(text) {
+            const candidates = this.extractJsonCandidates(text);
+            const valid = [];
+
+            candidates.forEach((candidate, idx) => {
+                try {
+                    const parsed = JSON.parse(candidate.text);
+                    const normalized = this.normalizeAutoFillPayload(parsed);
+                    if (!normalized || typeof normalized !== 'object' || !Object.keys(normalized).length) return;
+                    valid.push({
+                        candidateIndex: idx,
+                        source: candidate.source,
+                        start: candidate.start,
+                        parsed,
+                        normalized,
+                        score: this.getAutoFillKeyScore(normalized)
+                    });
+                } catch {
+                    // skip invalid candidate
+                }
+            });
+
+            let selected = null;
+            valid.forEach((item) => {
+                if (!selected) {
+                    selected = item;
+                    return;
+                }
+                if (item.score > selected.score) {
+                    selected = item;
+                    return;
+                }
+                if (item.score === selected.score && item.candidateIndex > selected.candidateIndex) {
+                    selected = item;
+                }
+            });
+
+            return {
+                payload: selected ? selected.normalized : null,
+                debug: {
+                    candidates: candidates.length,
+                    valid: valid.length,
+                    selectedIndex: selected ? selected.candidateIndex : -1,
+                    selectedSource: selected ? selected.source : null,
+                    selectedScore: selected ? selected.score : 0
+                }
+            };
+        }
+
+        applyAutoFillPayload(payload, form) {
+            if (!payload || typeof payload !== 'object') return { filled: 0, missing: [] };
+            if (!form) return { filled: 0, missing: Object.keys(payload) };
+
+            const keys = Object.keys(payload);
+            let filled = 0;
+            const missing = [];
+
+            const dispatchFieldEvents = (el) => {
+                try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch { }
+                try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch { }
+            };
+
+            keys.forEach((key) => {
+                const val = payload[key];
+
+                if (key === 'content' && window.editor_content && typeof window.editor_content.setContent === 'function') {
+                    window.editor_content.setContent(String(val ?? ''));
+                    filled++;
+                    return;
+                }
+
+                const rteHidden = form.querySelector(`input[type="hidden"][name="${key}"][id$="-input"]`);
+                if (rteHidden) {
+                    const editorId = rteHidden.id.replace(/-input$/, '');
+                    const globalVar = `editor_${editorId}`;
+                    if (window[globalVar] && typeof window[globalVar].setContent === 'function') {
+                        window[globalVar].setContent(String(val ?? ''));
+                        filled++;
+                        return;
+                    }
+                }
+
+                const selector = `input[name="${key}"], textarea[name="${key}"], select[name="${key}"], input[id="${key}"], textarea[id="${key}"], select[id="${key}"]`;
+                const elt = form.querySelector(selector);
+                if (!elt) {
+                    missing.push(key);
+                    return;
+                }
+
+                if (elt.tagName === 'INPUT') {
+                    const type = (elt.getAttribute('type') || '').toLowerCase();
+                    if (type === 'checkbox') {
+                        elt.checked = Boolean(val);
+                        dispatchFieldEvents(elt);
+                        filled++;
+                        return;
+                    }
+                    if (type === 'radio') {
+                        const group = form.querySelectorAll(`input[type="radio"][name="${key}"]`);
+                        let matched = false;
+                        group.forEach((radio) => {
+                            if (String(radio.value) === String(val)) {
+                                radio.checked = true;
+                                dispatchFieldEvents(radio);
+                                matched = true;
+                            }
+                        });
+                        if (matched) filled++;
+                        else missing.push(key);
+                        return;
+                    }
+                }
+
+                elt.value = String(val ?? '');
+                dispatchFieldEvents(elt);
+                filled++;
+            });
+
+            return { filled, missing };
         }
 
         createArtifactElement(data) {
@@ -2136,29 +2805,8 @@ if (!window.BroxAdminInstance) {
         }
 
         extractJsonFromText(text) {
-            if (!text || typeof text !== 'string') return null;
-
-            // Prefer explicit code fences
-            const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-            if (fenceMatch && fenceMatch[1]) {
-                try {
-                    return JSON.parse(fenceMatch[1].trim());
-                } catch {
-                    // fallthrough
-                }
-            }
-
-            // Fallback: try to parse first JSON object found
-            const braceMatch = text.match(/\{[\s\S]*\}/);
-            if (braceMatch) {
-                try {
-                    return JSON.parse(braceMatch[0]);
-                } catch {
-                    // ignore
-                }
-            }
-
-            return null;
+            const result = this.extractBestJsonFromText(text);
+            return result.payload;
         }
 
         extractUrlFromText(text) {
@@ -2194,31 +2842,135 @@ if (!window.BroxAdminInstance) {
             this.updateStatus('ready', 'Ready (multimodal provider selected)');
         }
 
+        // Helper to convert blob to base64
+        blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
         async handleCollectData() {
             const url = this.extractUrlFromText(this.nodes.input?.value || '');
             const attachment = this.fileHandler?.getAttachment();
             const hasAttachment = !!attachment?.file;
 
-            // If user provided a URL or an attachment, ask the AI to scan it for form values
-            if (hasAttachment || url) {
-                const intro = 'Please analyze the following input and return a JSON object mapping form field names to values. Only return valid JSON.';
-                const promptParts = [intro];
-                if (url) {
-                    promptParts.push(`Source URL: ${url}`);
-                }
-                const messageContent = [{ type: 'text', text: promptParts.join('\n\n') }];
+            // If user provided an attachment (image), use OCR to extract text first
+            if (hasAttachment && attachment?.isImage) {
+                this.updateStatus('loading', 'Extracting text via OCR...');
+                this.addMessage('user', '📄 Extract form data from image');
 
-                if (hasAttachment && attachment.uploaded?.url) {
-                    messageContent.push({
-                        type: 'image_url',
-                        image_url: {
-                            url: attachment.uploaded.url,
-                            name: attachment.uploaded.name || attachment.file.name,
-                            mime: attachment.uploaded.mime || attachment.file.type,
-                            size: attachment.uploaded.size || attachment.file.size
-                        }
+                try {
+                    // Get base64 of uploaded image
+                    let imageData;
+                    if (attachment.uploaded?.url) {
+                        const imgResponse = await fetch(attachment.uploaded.url);
+                        const blob = await imgResponse.blob();
+                        imageData = await this.blobToBase64(blob);
+                    } else if (attachment.file) {
+                        imageData = await this.blobToBase64(attachment.file);
+                    }
+
+                    if (!imageData) {
+                        throw new Error('Could not read image data');
+                    }
+
+                    // Call OCR endpoint
+                    const ocrResponse = await fetch('/admin/ai-system/ocr', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: imageData })
                     });
+                    const ocrResult = await ocrResponse.json();
+
+                    if (!ocrResult.success || !ocrResult.text) {
+                        this.addMessage('assistant', `❌ OCR failed: ${ocrResult.error || 'No text found in image'}`);
+                        this.updateStatus('ready', 'Ready');
+                        return;
+                    }
+
+                    const extractedText = ocrResult.text;
+                    this.addMessage('assistant', `📝 *Extracted Text:*\n\n${extractedText.substring(0, 500)}${extractedText.length > 500 ? '...' : ''}\n\n_Analyzing to extract form fields..._`);
+
+                    // Now send extracted text to AI to parse into JSON
+                    const parsePrompt = `Extract form field names and values from the following OCR text. Return ONLY a valid JSON object mapping field names to values. Example: {"name": "John", "email": "john@example.com"}.\n\nOCR Text:\n${extractedText}`;
+
+                    this.history.push({ role: 'user', content: 'Extract form data from image' });
+                    this.history.push({ role: 'assistant', content: extractedText });
+                    this.history.push({ role: 'user', content: parsePrompt });
+                    this.saveHistory();
+
+                    await this.getAIResponse();
+                    this.updateStatus('ready', 'Ready');
+                    return;
+                } catch (err) {
+                    this.addMessage('assistant', `❌ Error: ${err.message}`);
+                    this.updateStatus('error', 'Error');
+                    return;
                 }
+            }
+
+            // If user provided a non-image attachment (e.g., PDF), ask the AI to extract structured data
+            if (hasAttachment && !attachment?.isImage) {
+                const form = this.findPrimaryForm();
+                const fieldNames = form
+                    ? Array.from(form.querySelectorAll('input[name], textarea[name], select[name]'))
+                        .map((el) => el.getAttribute('name'))
+                        .filter(Boolean)
+                        .filter((name, idx, arr) => arr.indexOf(name) === idx)
+                    : [];
+
+                const intro = fieldNames.length
+                    ? `Extract values and return ONLY valid JSON that maps these form field names to values: ${fieldNames.join(', ')}. Use HTML string for rich text fields like "content".`
+                    : 'Extract form field names and values from the attached document. Return ONLY a valid JSON object mapping field names to values. Use HTML string for rich text fields like "content".';
+
+                try {
+                    this.updateStatus('loading', 'Encoding file...');
+                    const dataUrl = await this.fileToDataUrl(attachment.file);
+                    const mime = attachment.file.type || 'application/pdf';
+                    const messageContent = [
+                        { type: 'text', text: `${intro}\n\nDocument: ${attachment.file.name || 'attachment'}` },
+                        {
+                            type: 'file',
+                            file: {
+                                filename: attachment.file.name || 'document.pdf',
+                                file_data: dataUrl,
+                                mime,
+                                size: attachment.file.size || 0
+                            }
+                        }
+                    ];
+
+                    this.addMessage('user', messageContent);
+                    this.history.push({ role: 'user', content: messageContent });
+                    this.saveHistory();
+                    this.updateStatus('ready', 'Ready');
+
+                    await this.getAIResponse();
+                } catch (err) {
+                    this.addMessage('assistant', `❌ Error: ${err.message}`);
+                    this.updateStatus('error', 'Error');
+                }
+                return;
+            }
+
+            // If user provided a URL (not image), ask the AI to scan it for form values
+            if (url) {
+                const form = this.findPrimaryForm();
+                const fieldNames = form
+                    ? Array.from(form.querySelectorAll('input[name], textarea[name], select[name]'))
+                        .map((el) => el.getAttribute('name'))
+                        .filter(Boolean)
+                        .filter((name, idx, arr) => arr.indexOf(name) === idx)
+                    : [];
+
+                const intro = fieldNames.length
+                    ? `Analyze the URL and return ONLY valid JSON that maps these form field names to values: ${fieldNames.join(', ')}. Use HTML string for rich text fields like "content".`
+                    : 'Please analyze the following URL and return ONLY a valid JSON object mapping form field names to values. Use HTML string for rich text fields like "content".';
+
+                const messageContent = `${intro}\n\nSource URL: ${url}`;
 
                 this.addMessage('user', messageContent);
                 this.history.push({ role: 'user', content: messageContent });
@@ -2248,9 +3000,62 @@ if (!window.BroxAdminInstance) {
         }
 
         async handleAutoFill() {
+            const url = this.extractUrlFromText(this.nodes.input?.value || '');
+            const attachment = this.fileHandler?.getAttachment();
+            const hasAttachment = !!attachment?.file;
+            this.autoFillRetryUsed = false;
+
+            // If a URL is provided with the command, first ask the AI to extract structured data from that URL,
+            // then apply the results automatically when the response arrives.
+            if (url || hasAttachment) {
+                this.pendingAutoFill = true;
+                await this.handleCollectData();
+                return;
+            }
+
+            await this.applyAutoFillFromLastAssistant();
+        }
+
+        async applyAutoFillFromLastAssistant() {
             const raw = this.getLastAssistantContent();
-            const payload = this.extractJsonFromText(typeof raw === 'string' ? raw : (Array.isArray(raw) ? JSON.stringify(raw) : ''));
+            const rawText = this.getMessagePlainText(raw || '');
+            const extraction = this.extractBestJsonFromText(rawText);
+            const payload = extraction.payload;
+
+            if (typeof console !== 'undefined' && typeof console.debug === 'function') {
+                console.debug('[AdminCopilot][AutoFillParser]', extraction.debug);
+            }
+
             if (!payload || typeof payload !== 'object') {
+                const attachment = this.fileHandler?.getAttachment();
+                const hasAttachment = !!attachment?.file;
+                const url = this.extractUrlFromText(this.nodes.input?.value || '');
+
+                if (!this.autoFillRetryUsed && !hasAttachment && !url && rawText) {
+                    this.autoFillRetryUsed = true;
+                    const form = this.findPrimaryForm();
+                    const fieldNames = form
+                        ? Array.from(form.querySelectorAll('input[name], textarea[name], select[name]'))
+                            .map((el) => el.getAttribute('name'))
+                            .filter(Boolean)
+                            .filter((name, idx, arr) => arr.indexOf(name) === idx)
+                        : [];
+
+                    const intro = fieldNames.length
+                        ? `Return ONLY valid JSON that maps these form field names to values: ${fieldNames.join(', ')}. Use HTML string for rich text fields like "content".`
+                        : 'Return ONLY a valid JSON object mapping form field names to values. Use HTML string for rich text fields like "content".';
+
+                    const sourceText = rawText.length > 4000 ? `${rawText.slice(0, 4000)}...` : rawText;
+                    const prompt = `${intro}\n\nSource text:\n${sourceText}`;
+
+                    this.addMessage('user', prompt);
+                    this.history.push({ role: 'user', content: prompt });
+                    this.saveHistory();
+
+                    await this.getAIResponse();
+                    return;
+                }
+
                 this.addMessage('assistant', 'Could not find structured JSON in the last assistant response to auto-fill the form.');
                 return;
             }
@@ -2261,44 +3066,7 @@ if (!window.BroxAdminInstance) {
                 return;
             }
 
-            const keys = Object.keys(payload);
-            let filled = 0;
-            let missing = [];
-
-            keys.forEach((key) => {
-                const selector = `input[name="${key}"], textarea[name="${key}"], select[name="${key}"], input[id="${key}"], textarea[id="${key}"], select[id="${key}"]`;
-                const elt = form.querySelector(selector);
-                if (!elt) {
-                    missing.push(key);
-                    return;
-                }
-
-                const val = payload[key];
-                if (elt.tagName === 'INPUT') {
-                    const type = (elt.getAttribute('type') || '').toLowerCase();
-                    if (type === 'checkbox') {
-                        elt.checked = Boolean(val);
-                        filled++;
-                        return;
-                    }
-                    if (type === 'radio') {
-                        const group = form.querySelectorAll(`input[type="radio"][name="${key}"]`);
-                        let matched = false;
-                        group.forEach((radio) => {
-                            if (String(radio.value) === String(val)) {
-                                radio.checked = true;
-                                matched = true;
-                            }
-                        });
-                        if (matched) filled++;
-                        else missing.push(key);
-                        return;
-                    }
-                }
-
-                elt.value = String(val);
-                filled++;
-            });
+            const { filled, missing } = this.applyAutoFillPayload(payload, form);
 
             let summary = `Auto-fill completed: ${filled} field(s) updated.`;
             if (missing.length) {
@@ -3036,6 +3804,27 @@ if (!window.BroxAdminInstance) {
                 stream: true,
                 csrf_token: getCsrfToken() || ''
             };
+            const requestOptions = this.buildRequestOptions();
+            const lastUser = [...this.history].reverse().find((m) => m.role === 'user');
+            const hasPdfAttachment = Array.isArray(lastUser?.content)
+                && lastUser.content.some((part) => part?.type === 'file' && this.isPdfAttachment(
+                    { name: part?.file?.filename || '', type: part?.file?.mime || '' },
+                    part?.file || null
+                ));
+            if (hasPdfAttachment) {
+                const plugins = Array.isArray(requestOptions.plugins) ? [...requestOptions.plugins] : [];
+                const hasFileParser = plugins.some((plugin) => plugin && plugin.id === 'file-parser');
+                if (!hasFileParser) {
+                    plugins.push({
+                        id: 'file-parser',
+                        pdf: { engine: 'pdf-text' }
+                    });
+                }
+                requestOptions.plugins = plugins;
+            }
+            if (Object.keys(requestOptions).length > 0) {
+                payload.options = requestOptions;
+            }
             if (this.currentProvider) payload.provider = this.currentProvider;
             if (this.currentModel) payload.model = this.currentModel;
 
@@ -3043,6 +3832,7 @@ if (!window.BroxAdminInstance) {
             const msgBubble = this.createEmptyMessage('assistant', msgIndex);
             const msgWrapper = msgBubble?.parentElement;
             let fullReply = '';
+            let responseAnnotations = null;
             let lastError = null;
 
             let thinkingCleared = false;
@@ -3106,6 +3896,9 @@ if (!window.BroxAdminInstance) {
                     if (json && json.message_id && msgBubble?.parentElement) {
                         msgBubble.parentElement.dataset.messageId = String(json.message_id);
                     }
+                    if (Array.isArray(json?.annotations)) {
+                        responseAnnotations = json.annotations;
+                    }
                     fullReply = typeof norm.payload === 'string' ? norm.payload : JSON.stringify(norm.payload);
                     clearThinking();
                     this.renderWithArtifacts(msgBubble, fullReply, false);
@@ -3153,6 +3946,9 @@ if (!window.BroxAdminInstance) {
                             }
                             if (meta.message_id && msgBubble?.parentElement) {
                                 msgBubble.parentElement.dataset.messageId = String(meta.message_id);
+                            }
+                            if (Array.isArray(meta.annotations)) {
+                                responseAnnotations = meta.annotations;
                             }
                             continue;
                         }
@@ -3203,8 +3999,21 @@ if (!window.BroxAdminInstance) {
                     this.addMessage('assistant', `❌ ${msg}`);
                 }
             } else {
-                this.history.push({ role: 'assistant', content: fullReply });
+                const assistantMessage = { role: 'assistant', content: fullReply };
+                if (Array.isArray(responseAnnotations) && responseAnnotations.length) {
+                    assistantMessage.annotations = responseAnnotations;
+                }
+                this.history.push(assistantMessage);
                 this.saveHistory();
+
+                if (this.pendingAutoFill) {
+                    this.pendingAutoFill = false;
+                    try {
+                        await this.applyAutoFillFromLastAssistant();
+                    } catch {
+                        // ignore autofill failures
+                    }
+                }
             }
 
             this.updateResponseMeta(msgBubble, t0);
@@ -3236,54 +4045,21 @@ if (!window.BroxAdminInstance) {
             const body = document.createElement('div');
             body.className = 'brox-ai-msg-content';
             msg.appendChild(body);
+            if (role === 'assistant') {
+                this.attachLongPressCopy(body, () => body.innerText || '');
+            }
 
             const meta = document.createElement('div');
             meta.className = 'brox-ai-msg-meta';
             meta.textContent = this.formatMetaTime();
 
             if (role === 'assistant') {
-                const feedback = document.createElement('div');
-                feedback.className = 'brox-ai-feedback';
-                feedback.innerHTML = `
-                    <button class="brox-ai-feedback-btn" data-rating="1" title="Poor"><i class="bi bi-hand-thumbs-down"></i></button>
-                    <button class="brox-ai-feedback-btn" data-rating="5" title="Excellent"><i class="bi bi-hand-thumbs-up"></i></button>
-                `;
-
-                feedback.querySelectorAll('.brox-ai-feedback-btn').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        const rating = btn.dataset.rating;
-                        const conversationId = this.conversationId || '';
-                        const messageId = msg.dataset.messageId || '';
-                        const csrf = getCsrfToken() || '';
-                        if (!conversationId || !messageId) return;
-                        try {
-                            await fetch('/api/ai/feedback', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    conversation_id: conversationId,
-                                    message_id: messageId,
-                                    rating: rating,
-                                    csrf_token: csrf
-                                })
-                            });
-                            feedback.innerHTML = '<small>✓</small>';
-                        } catch {
-                            // ignore
-                        }
-                    });
+                const actions = this.createAssistantActions({
+                    msgEl: msg,
+                    contentEl: body,
+                    metaEl: meta,
+                    msgIndex: Number.isInteger(msgIndex) ? msgIndex : null
                 });
-
-                const actions = document.createElement('div');
-                actions.className = 'brox-ai-msg-actions';
-                actions.style.display = 'flex';
-                actions.style.gap = '8px';
-                actions.style.alignItems = 'center';
-                actions.style.marginTop = '4px';
-                meta.style.marginTop = '0';
-                actions.appendChild(feedback);
-                actions.appendChild(meta);
                 msg.appendChild(actions);
             } else {
                 msg.appendChild(meta);
@@ -3294,6 +4070,8 @@ if (!window.BroxAdminInstance) {
             this.pruneDomMessages();
             return body;
         }
+
+
 
         pruneDomMessages() {
             if (!this.nodes.body) return;

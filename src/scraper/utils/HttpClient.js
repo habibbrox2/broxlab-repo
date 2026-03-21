@@ -62,6 +62,9 @@ class HttpClient {
         if (String(error?.message || '').includes('redirect_loop')) {
             return false;
         }
+        if (String(error?.message || '').includes('waf_challenge')) {
+            return false;
+        }
         if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
             return true;
         }
@@ -71,6 +74,20 @@ class HttpClient {
             return status === 429 || status === 502 || status === 503 || status === 504;
         }
         return true; // Network errors are retryable
+    }
+ 
+    _isWafChallengeBody(body) {
+        const s = String(body || '').toLowerCase();
+        if (!s) return false;
+        if (s.includes('just a moment') && s.includes('cloudflare')) return true;
+        const markers = [
+            'cf-chl-',
+            'challenge-platform',
+            'turnstile',
+            'checking your browser',
+            'ddos protection'
+        ];
+        return markers.some(m => s.includes(m));
     }
 
     _resolveRedirect(fromUrl, location) {
@@ -106,6 +123,7 @@ class HttpClient {
                 const visited = new Set();
                 let currentUrl = url;
                 let response = null;
+                const startedAt = Date.now();
 
                 for (let redirectHop = 0; redirectHop < 10; redirectHop++) {
                     visited.add(currentUrl);
@@ -137,6 +155,11 @@ class HttpClient {
                 if (!response) {
                     throw new Error('no_response');
                 }
+ 
+                // Some WAFs return HTTP 200 with a challenge page.
+                if (response.status === 200 && this._isWafChallengeBody(response.data)) {
+                    throw new Error('waf_challenge');
+                }
 
                 // Check for client errors (4xx except 429)
                 if (response.status >= 400 && response.status < 500 && response.status !== 429) {
@@ -152,7 +175,8 @@ class HttpClient {
                     success: true,
                     data: response.data,
                     status: response.status,
-                    headers: response.headers
+                    headers: response.headers,
+                    elapsed_ms: Date.now() - startedAt
                 };
 
             } catch (error) {
@@ -184,7 +208,8 @@ class HttpClient {
         return {
             success: false,
             error: lastError?.message || 'Unknown error',
-            status: lastError?.response?.status || 0
+            status: lastError?.response?.status || 0,
+            elapsed_ms: 0
         };
     }
 
@@ -198,13 +223,16 @@ class HttpClient {
             return {
                 success: true,
                 html: result.data,
-                status: result.status
+                status: result.status,
+                elapsed_ms: result.elapsed_ms || 0
             };
         }
 
         return {
             success: false,
-            error: result.error
+            error: result.error,
+            status: result.status || 0,
+            elapsed_ms: result.elapsed_ms || 0
         };
     }
 

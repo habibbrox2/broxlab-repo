@@ -38,7 +38,13 @@
         "test": "echo \"No tests configured\"",
         "ai-server": "node src/ai/server.js",
         "ai-server:dev": "node --watch src/ai/server.js",
-        "ai-server:start": "NODE_ENV=production node src/ai/server.js"
+        "ai-server:start": "NODE_ENV=production node src/ai/server.js",
+        "rag:start": "node src/index.js",
+        "rag:serve": "node src/index.js",
+        "rag:process": "node src/index.js --process",
+        "rag:search": "node src/index.js --search",
+        "rag:init": "node src/index.js --init",
+        "all:start": "node src/all.js"
     },
     "keywords": [
         "firebase",
@@ -77,7 +83,17 @@
         "mysql2": "^3.20.0",
         "qdrant-client": "^0.0.1",
         "shelljs": "^0.10.0",
-        "zod": "^3.23.8"
+        "zod": "^3.23.8",
+        "pdf-parse": "^2.4.5",
+        "pdf-lib": "^1.17.1",
+        "pdfjs-dist": "^4.9.155",
+        "tesseract.js": "^5.1.1",
+        "sharp": "^0.33.5",
+        "@xenova/transformers": "^2.17.2",
+        "multer": "^1.4.5-lts.1",
+        "uuid": "^11.0.5",
+        "winston": "^3.17.0",
+        "fs-extra": "^11.2.0"
     },
     "devDependencies": {
         "browserslist": "^4.28.1",

@@ -1,0 +1,104 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}Scrape Logs{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-bold mb-1"><i class="bi bi-journal-text me-2"></i>Scrape Logs</h4>
+    <div class="text-muted small">Read-only request/parse diagnostics for AutoContent scraping.</div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="/admin/autocontent" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Dashboard</a>
+    <a href="/admin/autocontent/crawl-queue" class="btn btn-outline-dark btn-sm"><i class="bi bi-list-ul me-1"></i>Crawl Queue</a>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label small text-muted fw-semibold">Source</label>
+        <select class="form-select" name="source_id">
+          <option value="">All</option>
+          {% for s in sources %}
+            <option value="{{ s.id }}" {% if filters.source_id and filters.source_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted fw-semibold">Status</label>
+        <select class="form-select" name="status">
+          <option value="">All</option>
+          {% for st in ['success','failed','skipped','waf_blocked','waf_challenge','cloudflare_blocked','list_fetch_success','list_fetch_failed','article_fetch_success','article_fetch_failed'] %}
+            <option value="{{ st }}" {% if filters.status and filters.status == st %}selected{% endif %}>{{ st }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small text-muted fw-semibold">Search</label>
+        <input class="form-control" name="q" value="{{ filters.q ?? '' }}" placeholder="URL or error text">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted fw-semibold">Limit</label>
+        <input type="number" class="form-control" name="limit" min="10" max="200" value="{{ limit }}">
+      </div>
+      <div class="col-md-1 d-grid">
+        <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="text-muted small">Time</th>
+            <th class="text-muted small">Source</th>
+            <th class="text-muted small">Status</th>
+            <th class="text-muted small">HTTP</th>
+            <th class="text-muted small">ms</th>
+            <th class="text-muted small">Len</th>
+            <th class="text-muted small">URL</th>
+            <th class="text-muted small">Error</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in logs %}
+            <tr>
+              <td class="small text-nowrap">{{ row.created_at }}</td>
+              <td class="small text-nowrap">{{ row.source_name ?? ('#' ~ row.source_id) }}</td>
+              <td class="small text-nowrap"><code>{{ row.status }}</code></td>
+              <td class="small text-nowrap">{{ row.http_status ?? '' }}</td>
+              <td class="small text-nowrap">{{ row.response_time ? (row.response_time * 1000)|round : '' }}</td>
+              <td class="small text-nowrap">{{ row.content_length ?? '' }}</td>
+              <td class="small text-break"><a href="{{ row.url }}" target="_blank" rel="noopener">{{ row.url }}</a></td>
+              <td class="small text-break text-muted">{{ row.error_message ?? '' }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="8" class="p-4 text-center text-muted">No logs found.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% set totalPages = (total / limit)|round(0, 'ceil') %}
+{% if totalPages > 1 %}
+  <nav class="mt-3">
+    <ul class="pagination pagination-sm mb-0">
+      {% for p in 1..totalPages %}
+        <li class="page-item {{ p == page ? 'active' : '' }}">
+          <a class="page-link" href="/admin/autocontent/logs?page={{ p }}&limit={{ limit }}&source_id={{ (filters.source_id ?? '')|url_encode }}&status={{ (filters.status ?? '')|url_encode }}&q={{ (filters.q ?? '')|url_encode }}">{{ p }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  </nav>
+{% endif %}
+{% endblock %}

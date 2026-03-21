@@ -21,7 +21,15 @@ $config = require __DIR__ . '/../Config/AutoContent.php';
 global $mysqli;
 
 $model = new AutoContentModel($mysqli);
+$model->ensureTablesExist();
 $settings = $model->getSettings();
+
+// Respect enable flags
+$enabled = ($settings['autocontent_enabled'] ?? '0') === '1';
+if (!$enabled) {
+    echo "[" . date('Y-m-d H:i:s') . "] AutoContent is disabled\n";
+    exit(0);
+}
 
 // Check if auto-publish is enabled
 $autoPublish = ($settings['auto_publish'] ?? '0') === '1';

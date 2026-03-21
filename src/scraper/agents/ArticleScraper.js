@@ -7,12 +7,14 @@ import CONFIG from '../config.js';
 import HttpClient from '../utils/HttpClient.js';
 import HtmlParser from '../utils/HtmlParser.js';
 import Logger from '../utils/Logger.js';
+import DatabaseService from '../services/DatabaseService.js';
 
 class ArticleScraper {
     constructor(sourceKey = null) {
         this.sourceKey = sourceKey || CONFIG.source.defaultSource;
         this.selectors = CONFIG.getSelectors(this.sourceKey);
         this.sourceConfig = CONFIG.sources[this.sourceKey] || null;
+        this.sourceId = null;
     }
 
     /**
@@ -36,15 +38,38 @@ class ArticleScraper {
     async scrapeArticle(url) {
         Logger.info(`Scraping article: ${url}`, { source: this.sourceKey });
 
+        const startedAt = Date.now();
         const result = await HttpClient.fetchHtml(url);
+        const elapsedMs = Date.now() - startedAt;
 
         if (!result.success) {
             Logger.error('Failed to fetch article', { url, error: result.error });
+            if (this.sourceId && DatabaseService?.connected) {
+                await DatabaseService.insertAutoContentScrapeLog(this.sourceId, {
+                    url,
+                    status: result.error === 'waf_challenge' ? 'waf_challenge' : 'article_fetch_failed',
+                    httpStatus: result.status || null,
+                    responseTimeMs: result.elapsed_ms || elapsedMs,
+                    errorMessage: result.error || 'fetch_failed',
+                    contentLength: 0
+                });
+            }
             return {
                 success: false,
                 error: result.error,
                 data: null
             };
+        }
+ 
+        if (this.sourceId && DatabaseService?.connected) {
+            await DatabaseService.insertAutoContentScrapeLog(this.sourceId, {
+                url,
+                status: 'article_fetch_success',
+                httpStatus: result.status || 200,
+                responseTimeMs: result.elapsed_ms || elapsedMs,
+                errorMessage: null,
+                contentLength: String(result.html || '').length
+            });
         }
 
         const $ = HtmlParser.parse(result.html);

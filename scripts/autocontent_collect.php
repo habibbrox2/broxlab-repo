@@ -12,15 +12,8 @@ $dotenv->load();
 
 require_once __DIR__ . '/../Config/Db.php';
 require_once __DIR__ . '/../app/Models/AutoContentModel.php';
-require_once __DIR__ . '/../app/Modules/Scraper/NodeScraperRunner.php';
 
-use App\Modules\Scraper\ScraperService;
-use App\Modules\Scraper\EnhancedScraperService;
-use App\Modules\Scraper\ContentCleanerService;
-use App\Modules\Scraper\DuplicateCheckerService;
-use App\Modules\Scraper\ImageDownloaderService;
-use App\Modules\Scraper\ProthomAloScraperService;
-use App\Modules\AutoContent\TelegramNotifier;
+use App\Modules\AutoContent\CronWorker;
 
 $config = require __DIR__ . '/../Config/AutoContent.php';
 
@@ -28,119 +21,38 @@ $config = require __DIR__ . '/../Config/AutoContent.php';
 global $mysqli;
 
 $model = new AutoContentModel($mysqli);
+$model->ensureTablesExist();
 $settings = $model->getSettings();
 
-// Get active sources
-$sources = $model->getActiveSources();
+// Respect AutoContent enable flags
+$enabled = ($settings['autocontent_enabled'] ?? '0') === '1';
+$autoCollect = ($settings['auto_collect'] ?? '0') === '1';
 
-if (empty($sources)) {
-    echo "[" . date('Y-m-d H:i:s') . "] No active sources found\n";
+if (!$enabled || !$autoCollect) {
+    echo "[" . date('Y-m-d H:i:s') . "] Auto-collect is disabled\n";
     exit(0);
 }
 
-$collected = 0;
-$duplicates = 0;
-$errors = [];
+echo "[" . date('Y-m-d H:i:s') . "] Starting collect\n";
 
-// Initialize services
-$scraper = new ScraperService();
-$enhancedScraper = new EnhancedScraperService();
-$contentCleaner = new ContentCleanerService();
-$duplicateChecker = new DuplicateCheckerService($mysqli);
-$imageDownloader = new ImageDownloaderService();
-
-$maxPerSource = (int)($settings['max_articles_per_source'] ?? 10);
-
-// Node runner for AutoContent-compatible sources
-$nodeRunner = new \App\Modules\Scraper\NodeScraperRunner();
-
-// Initialize Telegram if enabled
-$telegramEnabled = !empty($config['telegram']['enabled']) && $config['telegram']['post_on_collect'];
-$telegram = null;
-if ($telegramEnabled) {
-    $telegram = new TelegramNotifier($config['telegram']);
+$proxies = [];
+if (($config['proxies']['enabled'] ?? false) && !empty($config['proxies']['list'])) {
+    $proxies = $config['proxies']['list'];
 }
 
-foreach ($sources as $source) {
-    // Check if source should be fetched based on interval
-    $interval = (int)($source['fetch_interval'] ?? 3600);
-    $lastFetched = strtotime($source['last_fetched_at'] ?? '1970-01-01');
+$worker = new CronWorker($mysqli, [
+    'max_articles_per_source' => (int)($config['cron']['max_articles_per_source'] ?? ($settings['max_articles_per_source'] ?? 10)),
+    'max_sources_per_run' => (int)($config['cron']['max_sources_per_run'] ?? 20),
+    'proxies' => $proxies,
+    'dedup_similarity' => $config['dedup']['similarity'] ?? 0.8,
+    'telegram' => $config['telegram'],
+]);
 
-    if (time() - $lastFetched < $interval) {
-        continue;
-    }
+$result = $worker->run();
 
-    echo "Processing source: {$source['name']}\n";
-
-    try {
-        // Prefer Node.js scraper when website_preset_key is configured
-        $presetKey = trim((string)($source['website_preset_key'] ?? ''));
-        if ($presetKey !== '' && !empty($source['id'])) {
-            $node = $nodeRunner->runForSourceId((int)$source['id'], $maxPerSource, 180);
-
-            if (($node['success'] ?? false) && !empty($node['data']) && is_array($node['data'])) {
-                $data = $node['data'];
-                $saved = (int)($data['saved'] ?? 0);
-                $dupes = (int)($data['duplicates'] ?? 0);
-                $collected += $saved;
-                $duplicates += $dupes;
-                $model->updateLastFetched((int)$source['id']);
-                continue;
-            }
-
-            $errors[] = "Source {$source['name']}: Node scraper failed (" . ($node['error'] ?? 'node_scraper_failed') . ")";
-            // Fall back to PHP scraping below (best-effort)
-        }
-
-        // Use specialized scraper for known sites
-        if (stripos($source['url'] ?? '', 'prothomalo.com') !== false) {
-            $prothomScraper = new ProthomAloScraperService(
-                $enhancedScraper,
-                $contentCleaner,
-                $duplicateChecker,
-                $imageDownloader,
-                $mysqli
-            );
-            $result = $prothomScraper->scrapeHomepage($source['url']);
-
-            if ($result['success']) {
-                $collected += $result['articles_saved'];
-                $duplicates += $result['duplicates_found'];
-            }
-        } else {
-            // General scraping
-            $result = $scraper->scrape($source['url']);
-
-            if (!isset($result['error']) && !empty($result['title'])) {
-                // Check for duplicates
-                if (!$duplicateChecker->urlExists($result['url'])) {
-                    $articleData = [
-                        'source_id' => $source['id'],
-                        'title' => $result['title'],
-                        'url' => $result['url'],
-                        'content' => $result['description'] ?? '',
-                        'excerpt' => substr($result['description'] ?? '', 0, 200),
-                        'image_url' => $result['image'] ?? '',
-                        'author' => '',
-                        'published_at' => date('Y-m-d H:i:s'),
-                        'status' => 'collected'
-                    ];
-
-                    $model->createArticle($articleData);
-                    $collected++;
-                } else {
-                    $duplicates++;
-                }
-            }
-        }
-
-        // Update last fetched time
-        $model->updateLastFetched((int)$source['id']);
-    } catch (Exception $e) {
-        $errors[] = "Source {$source['name']}: " . $e->getMessage();
-        error_log("Auto Content Collect Error: " . $e->getMessage());
-    }
-}
+$collected = (int)($result['articles_created'] ?? 0);
+$duplicates = (int)($result['duplicates_skipped'] ?? 0);
+$errors = is_array($result['errors'] ?? null) ? $result['errors'] : [];
 
 $output = sprintf(
     "[%s] collected=%d duplicates=%d errors=%d\n",

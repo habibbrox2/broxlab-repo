@@ -10,10 +10,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const sidebar = document.querySelector('.sidebar');
     const sidebarToggles = document.querySelectorAll('.sidebar-toggle');
     const sidebarMiniToggle = document.querySelector('.sidebar-mini-toggle');
+    const adminShellRow = document.querySelector('.admin-shell-row');
+    const adminMain = document.querySelector('.admin-main');
+    const sidebarResizer = document.getElementById('adminColumnResizer');
     const MINI_STORAGE_KEY = 'admin.sidebar.mini';
+    const SIDEBAR_WIDTH_KEY = 'admin.sidebar.width';
     const MINI_EXPANDED_CLASS = 'admin-sidebar-mini-expanded';
     const MOBILE_OPEN_CLASS = 'admin-sidebar-open';
     const DESKTOP_WIDTH = 992;
+    const DEFAULT_SIDEBAR_WIDTH = 280;
+    const MIN_SIDEBAR_WIDTH = 220;
+    const MAX_SIDEBAR_WIDTH = 520;
 
     // Create overlay element
     const overlay = document.createElement('div');
@@ -137,11 +144,54 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         };
 
+        const clampSidebarWidth = (width, rowWidth = 0) => {
+            const maxByRow = rowWidth > 0 ? Math.max(MIN_SIDEBAR_WIDTH, rowWidth - 360) : MAX_SIDEBAR_WIDTH;
+            const hardMax = Math.min(MAX_SIDEBAR_WIDTH, maxByRow);
+            return Math.min(hardMax, Math.max(MIN_SIDEBAR_WIDTH, Math.round(width)));
+        };
+
+        const readSidebarWidth = () => {
+            try {
+                const value = Number.parseInt(localStorage.getItem(SIDEBAR_WIDTH_KEY) || '', 10);
+                return Number.isFinite(value) ? value : DEFAULT_SIDEBAR_WIDTH;
+            } catch (err) {
+                return DEFAULT_SIDEBAR_WIDTH;
+            }
+        };
+
+        const writeSidebarWidth = (width) => {
+            try {
+                localStorage.setItem(SIDEBAR_WIDTH_KEY, String(width));
+            } catch (err) {
+                // Silent fail if storage is unavailable
+            }
+        };
+
+        const resetSidebarWidth = () => {
+            sidebar.style.flex = '';
+            sidebar.style.maxWidth = '';
+            if (adminMain) {
+                adminMain.style.flex = '';
+                adminMain.style.maxWidth = '';
+            }
+        };
+
+        const applySidebarWidth = (width) => {
+            if (!adminShellRow || !adminMain) return;
+            const rowRect = adminShellRow.getBoundingClientRect();
+            const clamped = clampSidebarWidth(width, rowRect.width);
+            sidebar.style.flex = `0 0 ${clamped}px`;
+            sidebar.style.maxWidth = `${clamped}px`;
+            adminMain.style.flex = `1 1 calc(100% - ${clamped}px)`;
+            adminMain.style.maxWidth = `calc(100% - ${clamped}px)`;
+        };
+
         const applyMiniSidebarState = (forceState = null) => {
             if (window.innerWidth < 992) {
                 document.body.classList.remove('admin-sidebar-mini');
                 document.body.classList.remove(MINI_EXPANDED_CLASS);
                 document.body.classList.remove(MOBILE_OPEN_CLASS);
+                resetSidebarWidth();
                 if (sidebarMiniToggle) {
                     sidebarMiniToggle.setAttribute('aria-expanded', 'false');
                 }
@@ -153,6 +203,9 @@ document.addEventListener('DOMContentLoaded', function () {
             document.body.classList.toggle('admin-sidebar-mini', shouldEnable);
             if (!shouldEnable) {
                 document.body.classList.remove(MINI_EXPANDED_CLASS);
+                applySidebarWidth(readSidebarWidth());
+            } else {
+                resetSidebarWidth();
             }
             if (sidebarMiniToggle) {
                 sidebarMiniToggle.setAttribute('aria-pressed', shouldEnable ? 'true' : 'false');
@@ -180,9 +233,108 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.body.classList.toggle('admin-sidebar-mini', nextState);
                 document.body.classList.remove(MINI_EXPANDED_CLASS);
                 writeMiniState(nextState);
+                if (nextState) {
+                    resetSidebarWidth();
+                } else {
+                    applySidebarWidth(readSidebarWidth());
+                }
                 sidebarMiniToggle.setAttribute('aria-pressed', nextState ? 'true' : 'false');
                 sidebarMiniToggle.setAttribute('aria-expanded', 'false');
             });
+        }
+
+        if (sidebarResizer && adminShellRow && adminMain) {
+            let isResizing = false;
+            let pointerId = null;
+            let liveWidth = readSidebarWidth();
+
+            const updateResizerVisibility = () => {
+                const show = window.innerWidth >= DESKTOP_WIDTH;
+                sidebarResizer.classList.toggle('d-none', !show);
+                sidebarResizer.classList.toggle('d-lg-flex', show);
+                sidebarResizer.classList.toggle('is-mini', isMiniMode());
+            };
+
+            const ensureMiniDisabledForResize = () => {
+                if (!isMiniMode()) return;
+                document.body.classList.remove('admin-sidebar-mini');
+                document.body.classList.remove(MINI_EXPANDED_CLASS);
+                writeMiniState(false);
+                applySidebarWidth(readSidebarWidth());
+                updateResizerVisibility();
+            };
+
+            const startResize = (event) => {
+                if (window.innerWidth < DESKTOP_WIDTH) return;
+                if (isMiniMode()) {
+                    ensureMiniDisabledForResize();
+                }
+                isResizing = true;
+                pointerId = event.pointerId;
+                adminShellRow.classList.add('is-resizing');
+                try {
+                    sidebarResizer.setPointerCapture(pointerId);
+                } catch (err) {
+                    // ignore capture errors
+                }
+                event.preventDefault();
+            };
+
+            const moveResize = (event) => {
+                if (!isResizing) return;
+                const rowRect = adminShellRow.getBoundingClientRect();
+                const next = clampSidebarWidth(event.clientX - rowRect.left, rowRect.width);
+                liveWidth = next;
+                applySidebarWidth(next);
+            };
+
+            const endResize = () => {
+                if (!isResizing) return;
+                isResizing = false;
+                adminShellRow.classList.remove('is-resizing');
+                if (window.innerWidth >= DESKTOP_WIDTH && !isMiniMode()) {
+                    writeSidebarWidth(liveWidth);
+                }
+                if (pointerId !== null) {
+                    try {
+                        sidebarResizer.releasePointerCapture(pointerId);
+                    } catch (err) {
+                        // ignore release errors
+                    }
+                }
+                pointerId = null;
+            };
+
+            sidebarResizer.addEventListener('pointerdown', startResize);
+            window.addEventListener('pointermove', moveResize);
+            window.addEventListener('pointerup', endResize);
+            window.addEventListener('pointercancel', endResize);
+            sidebarResizer.addEventListener('dblclick', () => {
+                if (window.innerWidth < DESKTOP_WIDTH) return;
+                if (isMiniMode()) {
+                    ensureMiniDisabledForResize();
+                }
+                liveWidth = DEFAULT_SIDEBAR_WIDTH;
+                writeSidebarWidth(liveWidth);
+                applySidebarWidth(liveWidth);
+            });
+            sidebarResizer.addEventListener('keydown', (event) => {
+                if (window.innerWidth < DESKTOP_WIDTH) return;
+                if (isMiniMode()) {
+                    ensureMiniDisabledForResize();
+                }
+                if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                event.preventDefault();
+                const delta = event.key === 'ArrowLeft' ? -16 : 16;
+                const rowRect = adminShellRow.getBoundingClientRect();
+                liveWidth = clampSidebarWidth((liveWidth || readSidebarWidth()) + delta, rowRect.width);
+                writeSidebarWidth(liveWidth);
+                applySidebarWidth(liveWidth);
+            });
+
+            updateResizerVisibility();
+            applySidebarWidth(readSidebarWidth());
+            window.addEventListener('resize', updateResizerVisibility);
         }
 
         // Desktop mini-sidebar behavior:
@@ -271,6 +423,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 closeSidebar();
             }
             applyMiniSidebarState();
+            if (!isMiniMode() && window.innerWidth >= DESKTOP_WIDTH) {
+                applySidebarWidth(readSidebarWidth());
+            }
             syncMobileSidebarState();
         });
 

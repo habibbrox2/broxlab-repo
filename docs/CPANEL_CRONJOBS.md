@@ -1,5 +1,21 @@
 # cPanel WebHost এ Cron Job সেটআপ (BroxLab / BroxBhai)
 
+## খুব গুরুত্বপূর্ণ (Invalid crontab / “bad command” এড়াতে)
+
+`docs/CPANEL_CRONJOBS.md` ফাইলটা **ডকুমেন্টেশন**—এটা কখনোই `crontab docs/CPANEL_CRONJOBS.md` দিয়ে install করবেন না।
+
+`"-":3: bad command` / `Invalid crontab file, can't install.` সাধারণত এই কারণে হয়:
+- আপনি Markdown টেক্সট (যেমন `-` bullet, `---`, ```bash code fence, heading) সহ কোনো ফাইলকে `crontab` হিসেবে install দিয়েছেন
+- cPanel Cron Jobs UI-র **Command** বক্সে পুরো cron line (`*/15 * * * * ...`) পেস্ট করেছেন
+
+সমাধান:
+- **cPanel UI হলে:** Schedule আলাদা করে সেট করবেন, **Command বক্সে শুধু command অংশ** দিবেন (cron schedule `*/15 * * * *` এখানে দিবেন না)
+- **SSH/Server crontab হলে:** crontab ফাইলে **শুধু cron লাইন** থাকবে (এক লাইনে schedule + command)
+
+Windows থেকে কপি-পেস্ট করলে line ending (CRLF) সমস্যা করতে পারে। চেষ্টা করুন **LF** রাখতে:
+- VS Code: status bar এ “CRLF” → “LF”
+- অথবা server এ: `dos2unix cron_jobs.txt` (যদি available থাকে)
+
 এই ডকুমেন্টে cPanel (shared web hosting) এ Cron Job সেট করে `scripts/` এর CLI PHP worker গুলো চালানোর নিয়ম দেখানো হলো—বিশেষ করে AutoContent pipeline (collect → process → publish → retry)।
 
 > নোট: cPanel সার্ভারে path/`php` বাইনারি location হোস্টভেদে আলাদা হয়। নিচের কমান্ডে `YOUR_USER` এবং `YOUR_APP_PATH` ঠিক করে বসাবেন।
@@ -17,8 +33,13 @@
    - `/usr/bin/php`
    - অথবা শুধু `php` (যদি PATH এ available থাকে)
 
+3. **Node path** (Scraper চালাতে): অনেক host এ থাকে:
+   - `/usr/local/bin/node`
+   - `/usr/bin/node`
+   - অথবা শুধু `node`
+
 **কীভাবে বের করবেন**
-- **SSH থাকলে:** `which php` রান করুন।
+- **SSH থাকলে:** `which php`, `php -v`, `which node`, `node -v`
 - **SSH না থাকলে:** cPanel → **Software** → **Select PHP Version** / **MultiPHP Manager** থেকে PHP version দেখুন, অথবা হোস্ট সাপোর্টে জিজ্ঞেস করুন “PHP CLI binary path”.
 
 ---
@@ -29,7 +50,7 @@
 2. **Advanced** → **Cron Jobs**  
 3. “Add New Cron Job” সেকশনে:
    - Schedule (minute/hour/day/month/weekday) সেট করুন  
-   - Command বসান  
+   - Command বসান (**শুধু command অংশ**; `*/15 * * * *` এখানে দিবেন না)  
    - চাইলে Cron output email সেট করুন (Debug এর জন্য ভালো; পরে log redirect করে email বন্ধ রাখুন)
 
 ---
@@ -47,7 +68,50 @@
 
 `YOUR_APP_PATH` উদাহরণ: `/home/YOUR_USER/broxlab`
 
+#### A1) cPanel UI (Recommended) — “Command” field only (schedule UI থেকে সেট করবেন)
+
+Example paths:
+- Current release: `/home/tdhuedhn/broxlab/app/current`
+- Shared logs: `/home/tdhuedhn/broxlab/app/shared/storage/logs`
+
+Command (collect):
 ```bash
+/usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/autocontent_collect.php >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_autocontent.log 2>&1
+```
+
+Command (process):
+```bash
+/usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/autocontent_process.php >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_autocontent.log 2>&1
+```
+
+Command (publish):
+```bash
+/usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/autocontent_publish.php >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_autocontent.log 2>&1
+```
+
+Command (retry):
+```bash
+/usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/autocontent_retry.php >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_autocontent.log 2>&1
+```
+
+Recommended schedules:
+- collect: `*/15 * * * *`
+- process: `*/10 * * * *`
+- publish: `*/5 * * * *`
+- retry: `*/30 * * * *`
+
+#### A2) Linux crontab (SSH) — full cron lines (schedule + command)
+
+```cron
+*/15 * * * * /usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/autocontent_collect.php >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_autocontent.log 2>&1
+*/10 * * * * /usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/autocontent_process.php >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_autocontent.log 2>&1
+*/5  * * * * /usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/autocontent_publish.php >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_autocontent.log 2>&1
+*/30 * * * * /usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/autocontent_retry.php >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_autocontent.log 2>&1
+```
+
+#### Template (placeholders)
+
+```cron
 */15 * * * * /usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/autocontent_collect.php >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/cron_autocontent.log 2>&1
 */10 * * * * /usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/autocontent_process.php >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/cron_autocontent.log 2>&1
 */5  * * * * /usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/autocontent_publish.php >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/cron_autocontent.log 2>&1
@@ -86,7 +150,42 @@
 
 ### Recommended cron (shared hosting friendly)
 
+#### cPanel UI (Command field only) — schedule UI থেকে সেট করবেন
+
+Example paths:
+- Current release: `/home/tdhuedhn/broxlab/app/current`
+- Shared logs: `/home/tdhuedhn/broxlab/app/shared/storage/logs`
+
+Commands (paste into “Command” field):
 ```bash
+/usr/local/bin/node /home/tdhuedhn/broxlab/app/current/src/scraper/index.js --source=gsmarena_news --max=10 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_gsmarena_news.log 2>&1
+```
+```bash
+/usr/local/bin/node /home/tdhuedhn/broxlab/app/current/src/scraper/index.js --source=gsmarena_devices --max=10 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_gsmarena_devices.log 2>&1
+```
+```bash
+/usr/local/bin/node /home/tdhuedhn/broxlab/app/current/src/scraper/index.js --source=gsmarena_bd_devices --max=10 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_gsmarena_bd_devices.log 2>&1
+```
+```bash
+/usr/local/bin/node /home/tdhuedhn/broxlab/app/current/src/scraper/index.js --source=thedailystar_today --max=10 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_thedailystar_today.log 2>&1
+```
+
+Recommended schedules (Assumption):
+- `gsmarena_news`: `*/15 * * * *`
+- `thedailystar_today`: `*/15 * * * *`
+- `gsmarena_devices`: `0 * * * *`
+- `gsmarena_bd_devices`: `30 * * * *`
+
+#### Linux crontab (SSH) — full cron lines (schedule + command)
+```cron
+*/15 * * * * /usr/local/bin/node /home/tdhuedhn/broxlab/app/current/src/scraper/index.js --source=gsmarena_news --max=10 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_gsmarena_news.log 2>&1
+0 * * * * /usr/local/bin/node /home/tdhuedhn/broxlab/app/current/src/scraper/index.js --source=gsmarena_devices --max=10 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_gsmarena_devices.log 2>&1
+30 * * * * /usr/local/bin/node /home/tdhuedhn/broxlab/app/current/src/scraper/index.js --source=gsmarena_bd_devices --max=10 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_gsmarena_bd_devices.log 2>&1
+*/15 * * * * /usr/local/bin/node /home/tdhuedhn/broxlab/app/current/src/scraper/index.js --source=thedailystar_today --max=10 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_thedailystar_today.log 2>&1
+```
+
+#### Template (placeholders)
+```cron
 */15 * * * * /usr/local/bin/node /home/YOUR_USER/YOUR_APP_PATH/src/scraper/index.js --source=gsmarena_news --max=10 >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/cron_gsmarena_news.log 2>&1
 0 * * * * /usr/local/bin/node /home/YOUR_USER/YOUR_APP_PATH/src/scraper/index.js --source=gsmarena_devices --max=10 >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/cron_gsmarena_devices.log 2>&1
 30 * * * * /usr/local/bin/node /home/YOUR_USER/YOUR_APP_PATH/src/scraper/index.js --source=gsmarena_bd_devices --max=10 >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/cron_gsmarena_bd_devices.log 2>&1

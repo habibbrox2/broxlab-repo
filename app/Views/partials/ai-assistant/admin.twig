@@ -58,6 +58,64 @@
                                 <span class="brox-ai-toggle-slider"></span>
                             </button>
                         </div>
+                        <div class="brox-ai-setting-item">
+                            <label class="brox-ai-setting-label">Web Plugin</label>
+                            <div class="brox-ai-setting-inline">
+                                <select id="adminAiWebMaxResults" class="brox-ai-setting-select" title="Web max results">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="5">5</option>
+                                    <option value="10">10</option>
+                                </select>
+                                <button class="brox-ai-toggle-switch" id="adminAiWebPluginToggle" title="Enable web plugin">
+                                    <span class="brox-ai-toggle-slider"></span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="brox-ai-setting-item">
+                            <label class="brox-ai-setting-label">Response Healing</label>
+                            <button class="brox-ai-toggle-switch" id="adminAiResponseHealingToggle" title="Auto-fix malformed JSON">
+                                <span class="brox-ai-toggle-slider"></span>
+                            </button>
+                        </div>
+                        <div class="brox-ai-setting-item">
+                            <label class="brox-ai-setting-label">PDF Parser</label>
+                            <div class="brox-ai-setting-inline">
+                                <select id="adminAiPdfEngine" class="brox-ai-setting-select" title="PDF parser engine">
+                                    <option value="pdf-text">pdf-text</option>
+                                    <option value="mistral-ocr">mistral-ocr</option>
+                                    <option value="native">native</option>
+                                </select>
+                                <button class="brox-ai-toggle-switch" id="adminAiPdfPluginToggle" title="Enable PDF parser plugin">
+                                    <span class="brox-ai-toggle-slider"></span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="brox-ai-setting-item">
+                            <label class="brox-ai-setting-label">Reasoning Effort</label>
+                            <select id="adminAiReasoningEffort" class="brox-ai-setting-select" title="Model reasoning effort">
+                                <option value="">Default</option>
+                                <option value="none">none</option>
+                                <option value="minimal">minimal</option>
+                                <option value="low">low</option>
+                                <option value="medium">medium</option>
+                                <option value="high">high</option>
+                                <option value="xhigh">xhigh</option>
+                            </select>
+                        </div>
+                        <div class="brox-ai-setting-item">
+                            <label class="brox-ai-setting-label">Response Format</label>
+                            <select id="adminAiResponseFormat" class="brox-ai-setting-select" title="Response format">
+                                <option value="text">text</option>
+                                <option value="json_object">json_object</option>
+                                <option value="json_schema">json_schema</option>
+                            </select>
+                        </div>
+                        <div class="brox-ai-setting-item brox-ai-setting-item-block">
+                            <label class="brox-ai-setting-label" for="adminAiAdvancedOptionsJson">Advanced Request JSON</label>
+                            <textarea id="adminAiAdvancedOptionsJson" class="brox-ai-setting-json" rows="4" placeholder='{"tools":[...],"tool_choice":"auto","metadata":{"source":"admin"}}'></textarea>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -244,6 +302,22 @@
         </div>
         <button class="brox-ai-attachment-remove" id="adminAiRemoveAttachment" aria-label="Remove attachment">
             <i class="bi bi-x"></i>
+        </button>
+    </div>
+
+    {# Quick Actions #}
+    <div class="brox-ai-quick-actions" id="adminAiQuickActions" aria-label="Quick actions">
+        <button type="button" class="brox-ai-action-chip" id="adminAiCollectData" title="Collect visible form fields">
+            <i class="bi bi-clipboard-data"></i> Collect
+        </button>
+        <button type="button" class="brox-ai-action-chip" id="adminAiAutoFill" title="Auto-fill form (uses URL in input if present)">
+            <i class="bi bi-magic"></i> Auto-fill
+        </button>
+        <button type="button" class="brox-ai-action-chip" id="adminAiQuickSummarize" title="Summarize current page">
+            <i class="bi bi-body-text"></i> Summarize
+        </button>
+        <button type="button" class="brox-ai-action-chip" id="adminAiClear" title="Clear chat history">
+            <i class="bi bi-trash3"></i> Clear
         </button>
     </div>
 

@@ -293,16 +293,28 @@ const CONFIG = {
                 }
             }
         },
-        gsmarena_news: {
-            name: 'GSMArena News',
-            pipeline: 'autocontent_articles',
-            baseUrl: 'https://www.gsmarena.com/',
-            homepageUrl: 'https://www.gsmarena.com/',
-            selectors: {
-                ticker: {
-                    primary: '.news-column-index .news-item > a[href]',
-                    title: 'h3',
-                    link: 'a',
+        gsmarena_news: { 
+            name: 'GSMArena News', 
+            pipeline: 'autocontent_articles', 
+            baseUrl: 'https://www.gsmarena.com/', 
+            homepageUrl: 'https://www.gsmarena.com/', 
+            urlRules: { 
+                exclude: [ 
+                    /sub_confirmation/i, 
+                    /\/tipus\.php3/i, 
+                    /\/rss/i, 
+                    /\/compare\.php3/i, 
+                    /\/makers\.php3/i, 
+                    /\/glossary\.php3/i, 
+                    /\/privacy/i, 
+                    /\/contact/i 
+                ] 
+            }, 
+            selectors: { 
+                ticker: { 
+                    primary: '.news-column-index .news-item > a[href]', 
+                    title: 'h3', 
+                    link: 'a', 
                     fallback: ['.news-column-index .news-item a[href]']
                 },
                 article: {
@@ -333,16 +345,25 @@ const CONFIG = {
                 }
             }
         },
-        gsmarena_devices: {
-            name: 'GSMArena Latest Devices',
-            pipeline: 'mobiles_direct',
-            baseUrl: 'https://www.gsmarena.com/',
-            homepageUrl: 'https://www.gsmarena.com/',
-            selectors: {
-                ticker: {
-                    primary: '.module.module-phones.module-latest a.module-phones-link[href]',
-                    fallback: ['a.module-phones-link[href]']
-                },
+        gsmarena_devices: { 
+            name: 'GSMArena Latest Devices', 
+            pipeline: 'mobiles_direct', 
+            baseUrl: 'https://www.gsmarena.com/', 
+            homepageUrl: 'https://www.gsmarena.com/', 
+            urlRules: { 
+                exclude: [ 
+                    /sub_confirmation/i, 
+                    /\/tipus\.php3/i, 
+                    /\/rss/i, 
+                    /\/privacy/i, 
+                    /\/contact/i 
+                ] 
+            }, 
+            selectors: { 
+                ticker: { 
+                    primary: '.module.module-phones.module-latest a.module-phones-link[href]', 
+                    fallback: ['a.module-phones-link[href]'] 
+                }, 
                 article: {
                     title: { primary: 'h1.specs-phone-name-title[data-spec="modelname"]', fallback: ['h1', 'meta[property="og:title"]', 'title'] },
                     subtitle: { primary: 'meta[name="description"]', fallback: ['meta[property="og:description"]'] },
@@ -353,13 +374,19 @@ const CONFIG = {
                 }
             }
         },
-        gsmarena_bd_devices: {
-            name: 'GSMArena BD Devices',
-            pipeline: 'mobiles_direct',
-            baseUrl: 'https://www.gsmarena.com.bd/',
-            homepageUrl: 'https://www.gsmarena.com.bd/',
-            selectors: {
-                ticker: {
+        gsmarena_bd_devices: { 
+            name: 'GSMArena BD Devices', 
+            pipeline: 'mobiles_direct', 
+            baseUrl: 'https://www.gsmarena.com.bd/', 
+            homepageUrl: 'https://www.gsmarena.com.bd/', 
+            urlRules: { 
+                exclude: [ 
+                    /\/privacy/i, 
+                    /\/contact/i 
+                ] 
+            }, 
+            selectors: { 
+                ticker: { 
                     // Latest devices grid items
                     // Note: `.product-thumb` contains two direct anchors (device + "View Details"). Exclude `.vdetails`.
                     primary: '.area .product-thumb > a[href][title]:not(.vdetails)',

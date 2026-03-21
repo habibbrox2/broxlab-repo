@@ -21,10 +21,24 @@ $config = require __DIR__ . '/../Config/AutoContent.php';
 global $mysqli;
 
 $model = new AutoContentModel($mysqli);
+$model->ensureTablesExist();
 $settings = $model->getSettings();
 
 // Get retry batch size
-$batchSize = (int)($settings['max_retry_attempts'] ?? 5);
+$batchSize = (int)($settings['retry_batch'] ?? ($settings['process_batch'] ?? 5));
+if ($batchSize < 1) {
+    $fallback = 5;
+    echo "[" . date('Y-m-d H:i:s') . "] WARNING: retry_batch/process_batch is {$batchSize}; using {$fallback}\n";
+    $batchSize = $fallback;
+}
+
+// Respect enable flags
+$enabled = ($settings['autocontent_enabled'] ?? '0') === '1';
+$autoProcess = ($settings['auto_process'] ?? '0') === '1';
+if (!$enabled || !$autoProcess) {
+    echo "[" . date('Y-m-d H:i:s') . "] Auto-retry is disabled\n";
+    exit(0);
+}
 
 echo "[" . date('Y-m-d H:i:s') . "] Starting retry processing (batch: {$batchSize})\n";
 
@@ -33,12 +47,18 @@ $enhancer = new AiContentEnhancer($mysqli);
 
 // Retry failed articles
 $result = $enhancer->retryFailed($batchSize);
+$msg = (string)($result['message'] ?? '');
+$msg = trim(str_replace(["\r", "\n"], ' ', $msg));
+if (strlen($msg) > 200) {
+    $msg = substr($msg, 0, 200) . '...';
+}
 
 $output = sprintf(
-    "[%s] retried=%d failed=%d\n",
+    "[%s] retried=%d failed=%d%s\n",
     date('Y-m-d H:i:s'),
     $result['processed'] ?? 0,
-    $result['failed'] ?? 0
+    $result['failed'] ?? 0,
+    $msg !== '' ? " message=\"{$msg}\"" : ''
 );
 
 echo $output;

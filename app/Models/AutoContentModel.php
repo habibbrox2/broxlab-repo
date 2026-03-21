@@ -1050,18 +1050,24 @@ class AutoContentModel
         $aiKeySet = !empty($settings['ai_key']);
 
         // Set defaults
-        $defaults = [
-            'ai_endpoint' => '',
-            'ai_model' => 'gpt-4o-mini',
-            'ai_key' => '',
-            'ai_key_set' => $aiKeySet,
-            'autocontent_enabled' => '0',
-            'auto_collect' => '0',
-            'auto_process' => '0',
-            'auto_publish' => '0',
-            'max_articles_per_source' => '10',
-            'publish_status' => 'published'
-        ];
+        $defaults = [ 
+            'ai_endpoint' => '', 
+            'ai_model' => 'gpt-4o-mini', 
+            'ai_key' => '', 
+            'ai_key_set' => $aiKeySet, 
+            'autocontent_enabled' => '0', 
+            'auto_collect' => '0', 
+            'auto_process' => '0', 
+            'auto_publish' => '0', 
+            'max_articles_per_source' => '10', 
+            'process_batch' => '5', 
+            'publish_batch' => '10', 
+            'max_retry_attempts' => '5', 
+            'max_daily_publish' => '10', 
+            'publish_time_start' => '06:00', 
+            'publish_time_end' => '23:00', 
+            'publish_status' => 'published' 
+        ]; 
 
         foreach ($defaults as $key => $value) {
             if (!isset($settings[$key])) {
@@ -1243,13 +1249,13 @@ class AutoContentModel
     /**
      * Ensure database tables exist
      */
-    public function ensureTablesExist(): bool
-    {
-        // First ensure the type column has all required ENUM values
-        $this->ensureTypeColumnEnum();
-
-        // Also ensure content_type column has all required ENUM values
-        $this->ensureContentTypeEnum();
+    public function ensureTablesExist(): bool 
+    { 
+        // First ensure the type column has all required ENUM values 
+        $this->ensureTypeColumnEnum(); 
+ 
+        // Also ensure content_type column has all required ENUM values 
+        $this->ensureContentTypeEnum(); 
 
         // Create sources table
         $this->mysqli->query("
@@ -1390,12 +1396,12 @@ class AutoContentModel
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         ");
 
-        // Create website presets table
-        $this->mysqli->query("
-            CREATE TABLE IF NOT EXISTS autocontent_website_presets (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                preset_key VARCHAR(50) NOT NULL UNIQUE,
-                name VARCHAR(255) NOT NULL,
+        // Create website presets table 
+        $this->mysqli->query(" 
+            CREATE TABLE IF NOT EXISTS autocontent_website_presets ( 
+                id INT AUTO_INCREMENT PRIMARY KEY, 
+                preset_key VARCHAR(50) NOT NULL UNIQUE, 
+                name VARCHAR(255) NOT NULL, 
                 selector_list_container TEXT,
                 selector_list_item TEXT,
                 selector_list_title TEXT,
@@ -1415,12 +1421,110 @@ class AutoContentModel
                 is_active TINYINT(1) DEFAULT 1,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        ");
-
-        // Insert default presets if table is empty
-        $result = $this->mysqli->query("SELECT COUNT(*) as cnt FROM autocontent_website_presets");
-        if ($result && $result->fetch_assoc()['cnt'] == 0) {
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 
+        "); 
+ 
+        // Ensure a unique index exists for preset_key (some older schemas may miss it). 
+        try { 
+            $idx = $this->mysqli->query("SHOW INDEX FROM autocontent_website_presets WHERE Column_name = 'preset_key' AND Non_unique = 0"); 
+            $hasUnique = $idx && $idx->num_rows > 0; 
+            if ($idx) { 
+                $idx->free(); 
+            } 
+            if (!$hasUnique) { 
+                // Best-effort: only add if no duplicate preset_key rows exist. 
+                $dupRes = $this->mysqli->query("SELECT preset_key, COUNT(*) AS c FROM autocontent_website_presets GROUP BY preset_key HAVING c > 1 LIMIT 1"); 
+                $hasDup = $dupRes && $dupRes->num_rows > 0; 
+                if ($dupRes) { 
+                    $dupRes->free(); 
+                } 
+                if (!$hasDup) { 
+                    $this->mysqli->query("ALTER TABLE autocontent_website_presets ADD UNIQUE KEY uk_preset_key (preset_key)"); 
+                } else { 
+                    error_log('AutoContent schema warning: autocontent_website_presets has duplicate preset_key values; cannot add unique index'); 
+                } 
+            } 
+        } catch (Throwable $e) { 
+            // ignore index inspection errors 
+        } 
+ 
+        // Observability: scrape logs 
+        $this->mysqli->query(" 
+            CREATE TABLE IF NOT EXISTS autocontent_scrape_logs ( 
+                id INT AUTO_INCREMENT PRIMARY KEY, 
+                source_id INT DEFAULT NULL, 
+                url VARCHAR(2048) NOT NULL, 
+                status VARCHAR(32) DEFAULT 'pending', 
+                http_status INT DEFAULT NULL, 
+                response_time DECIMAL(10,3) DEFAULT 0.000, 
+                error_message TEXT DEFAULT NULL, 
+                content_length INT DEFAULT 0, 
+                retry_count INT DEFAULT 0, 
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, 
+                INDEX idx_source_created (source_id, created_at), 
+                INDEX idx_status_created (status, created_at) 
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
+        "); 
+ 
+        // Audit/debug: crawl queue (not used as the main queue) 
+        $this->mysqli->query("  
+            CREATE TABLE IF NOT EXISTS autocontent_crawl_queue (  
+                id INT AUTO_INCREMENT PRIMARY KEY, 
+                source_id INT NOT NULL, 
+                url VARCHAR(2048) NOT NULL, 
+                url_hash VARCHAR(64) DEFAULT '', 
+                status ENUM('pending','processing','completed','failed') DEFAULT 'pending', 
+                depth INT DEFAULT 0, 
+                retry_count INT DEFAULT 0, 
+                error_message TEXT DEFAULT NULL, 
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, 
+                updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, 
+                UNIQUE KEY uk_source_url_hash (source_id, url_hash), 
+                INDEX idx_source_status (source_id, status), 
+                INDEX idx_created (created_at) 
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci 
+        ");  
+ 
+        // Ensure unique key exists for crawl queue (required for UPSERT). Best-effort only. 
+        try { 
+            $idx = $this->mysqli->query("SHOW INDEX FROM autocontent_crawl_queue WHERE Key_name = 'uk_source_url_hash'"); 
+            $hasUk = $idx && $idx->num_rows > 0; 
+            if ($idx) { 
+                $idx->free(); 
+            } 
+            if (!$hasUk) { 
+                // Fill missing hashes so the unique index can be created safely. 
+                $this->mysqli->query("UPDATE autocontent_crawl_queue SET url_hash = SHA2(url, 256) WHERE (url_hash = '' OR url_hash IS NULL)"); 
+                $this->mysqli->query("ALTER TABLE autocontent_crawl_queue ADD UNIQUE KEY uk_source_url_hash (source_id, url_hash)"); 
+            } 
+        } catch (Throwable $e) { 
+            // ignore 
+        } 
+ 
+        // Deprecated/unused queue (kept for compatibility/inspection only)  
+        $this->mysqli->query("  
+            CREATE TABLE IF NOT EXISTS autocontent_scrape_queue ( 
+                id INT AUTO_INCREMENT PRIMARY KEY, 
+                source_id INT NOT NULL, 
+                url VARCHAR(2048) NOT NULL, 
+                priority INT DEFAULT 5, 
+                status VARCHAR(20) DEFAULT 'pending', 
+                attempts INT DEFAULT 0, 
+                max_attempts INT DEFAULT 3, 
+                last_attempt DATETIME DEFAULT NULL, 
+                next_attempt DATETIME DEFAULT NULL, 
+                error_message TEXT DEFAULT NULL, 
+                result_data LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL, 
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP, 
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, 
+                completed_at DATETIME DEFAULT NULL, 
+                INDEX idx_source_status (source_id, status) 
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
+        "); 
+ 
+        // Insert default presets if table is empty 
+        $result = $this->mysqli->query("SELECT COUNT(*) as cnt FROM autocontent_website_presets"); 
+        if ($result && $result->fetch_assoc()['cnt'] == 0) { 
             $this->insertDefaultPresets();
         }
 
@@ -1432,22 +1536,42 @@ class AutoContentModel
      *
      * @return array{ok: bool, issues: list<string>}
      */
-    public function getSchemaHealth(): array
-    {
-        $issues = [];
-
-        // Tables present?
-        $tables = ['autocontent_sources', 'autocontent_articles', 'autocontent_settings'];
-        foreach ($tables as $table) {
-            $res = $this->mysqli->query("SHOW TABLES LIKE '{$table}'");
-            if (!$res || $res->num_rows === 0) {
-                $issues[] = "Missing table: {$table}";
-            }
-        }
-
-        // AUTO_INCREMENT sanity (prevents: Field 'id' doesn't have a default value)
-        $status = $this->mysqli->query("SHOW TABLE STATUS LIKE 'autocontent_articles'");
-        if ($status && ($row = $status->fetch_assoc())) {
+    public function getSchemaHealth(): array 
+    { 
+        $issues = []; 
+ 
+        // Tables present? 
+        $tables = [ 
+            'autocontent_sources', 
+            'autocontent_articles', 
+            'autocontent_settings', 
+            'autocontent_website_presets', 
+            'autocontent_scrape_logs', 
+            'autocontent_crawl_queue', 
+        ]; 
+        foreach ($tables as $table) { 
+            $res = $this->mysqli->query("SHOW TABLES LIKE '{$table}'"); 
+            if (!$res || $res->num_rows === 0) { 
+                $issues[] = "Missing table: {$table}"; 
+            } 
+        } 
+ 
+        // Website presets unique key present? 
+        try { 
+            $idx = $this->mysqli->query("SHOW INDEX FROM autocontent_website_presets WHERE Column_name = 'preset_key' AND Non_unique = 0"); 
+            if (!$idx || $idx->num_rows === 0) { 
+                $issues[] = "Schema issue: autocontent_website_presets.preset_key should be UNIQUE"; 
+            } 
+            if ($idx) { 
+                $idx->free(); 
+            } 
+        } catch (Throwable $e) { 
+            // ignore 
+        } 
+ 
+        // AUTO_INCREMENT sanity (prevents: Field 'id' doesn't have a default value) 
+        $status = $this->mysqli->query("SHOW TABLE STATUS LIKE 'autocontent_articles'"); 
+        if ($status && ($row = $status->fetch_assoc())) { 
             if (empty($row['Auto_increment'])) {
                 $issues[] = "Schema issue: autocontent_articles.id must be AUTO_INCREMENT";
             }
@@ -1475,8 +1599,265 @@ class AutoContentModel
             $issues[] = "Could not inspect autocontent_articles columns";
         }
 
-        return ['ok' => empty($issues), 'issues' => $issues];
-    }
+        return ['ok' => empty($issues), 'issues' => $issues]; 
+    } 
+ 
+    // ================== OBSERVABILITY ================== 
+ 
+    /** 
+     * Insert a scrape log row (best-effort; never throws). 
+     */ 
+    public function insertScrapeLog(?int $sourceId, string $url, string $status, ?int $httpStatus = null, float $responseTime = 0.0, ?string $errorMessage = null, int $contentLength = 0, int $retryCount = 0): void  
+    {  
+        $stmt = null; 
+        try {  
+            $this->ensureTablesExist();  
+  
+            $stmt = $this->mysqli->prepare("  
+                INSERT INTO autocontent_scrape_logs  
+                    (source_id, url, status, http_status, response_time, error_message, content_length, retry_count)  
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)  
+            ");  
+            if (!$stmt) {  
+                return;  
+            }  
+  
+            // Bind_param can be finicky with null for integer types on some hosts; use 0 as "unknown". 
+            $sid = $sourceId === null ? 0 : (int)$sourceId;  
+            $http = $httpStatus === null ? 0 : (int)$httpStatus;  
+            $rt = (float)$responseTime;  
+            $err = $errorMessage;  
+            $len = (int)$contentLength;  
+            $rc = (int)$retryCount;  
+ 
+            $this->bindParams($stmt, 'issidsii', [ 
+                $sid, 
+                $url, 
+                $status, 
+                $http, 
+                $rt, 
+                $err, 
+                $len, 
+                $rc 
+            ]); 
+            $stmt->execute(); 
+        } catch (Throwable $e) {  
+            // ignore  
+        } finally { 
+            try { 
+                if ($stmt instanceof mysqli_stmt) { 
+                    $stmt->close(); 
+                } 
+            } catch (Throwable $e) { 
+                // ignore 
+            } 
+        }  
+    }  
+ 
+    /** 
+     * Insert/Upsert crawl queue entry (audit/debug only). 
+     */ 
+    public function upsertCrawlQueue(int $sourceId, string $url, string $status = 'pending', int $depth = 0, int $retryCount = 0, ?string $errorMessage = null): void 
+    { 
+        try { 
+            $this->ensureTablesExist(); 
+            $url = trim($url); 
+            if ($url === '') { 
+                return; 
+            } 
+            $hash = hash('sha256', $url); 
+            $stmt = $this->mysqli->prepare(" 
+                INSERT INTO autocontent_crawl_queue (source_id, url, url_hash, status, depth, retry_count, error_message, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW()) 
+                ON DUPLICATE KEY UPDATE 
+                    status = VALUES(status), 
+                    depth = VALUES(depth), 
+                    retry_count = VALUES(retry_count), 
+                    error_message = VALUES(error_message), 
+                    updated_at = NOW() 
+            "); 
+            if (!$stmt) { 
+                return; 
+            } 
+            $this->bindParams($stmt, 'isssiis', [ 
+                $sourceId, 
+                $url, 
+                $hash, 
+                $status, 
+                $depth, 
+                $retryCount, 
+                $errorMessage 
+            ]); 
+            $stmt->execute(); 
+            $stmt->close(); 
+        } catch (Throwable $e) { 
+            // ignore 
+        } 
+    } 
+ 
+    /** 
+     * Fetch scrape logs for admin UI. 
+     * 
+     * @return array{items: list<array<string,mixed>>, total: int} 
+     */ 
+    public function getScrapeLogs(array $filters, int $page = 1, int $limit = 50): array 
+    { 
+        $this->ensureTablesExist(); 
+        $page = max(1, $page); 
+        $limit = max(1, min(200, $limit)); 
+        $offset = ($page - 1) * $limit; 
+ 
+        $where = '1=1'; 
+        $params = []; 
+        $types = ''; 
+ 
+        if (!empty($filters['source_id'])) { 
+            $where .= ' AND l.source_id = ?'; 
+            $params[] = (int)$filters['source_id']; 
+            $types .= 'i'; 
+        } 
+        if (!empty($filters['status'])) { 
+            $where .= ' AND l.status = ?'; 
+            $params[] = (string)$filters['status']; 
+            $types .= 's'; 
+        } 
+        if (!empty($filters['q'])) { 
+            $where .= ' AND (l.url LIKE ? OR l.error_message LIKE ?)'; 
+            $q = '%' . (string)$filters['q'] . '%'; 
+            $params[] = $q; 
+            $params[] = $q; 
+            $types .= 'ss'; 
+        } 
+ 
+        $countSql = "SELECT COUNT(*) AS c FROM autocontent_scrape_logs l WHERE {$where}"; 
+        $total = 0; 
+        $countStmt = $this->mysqli->prepare($countSql); 
+        if ($countStmt) { 
+            if ($types !== '') { 
+                $this->bindParams($countStmt, $types, $params); 
+            } 
+            $countStmt->execute(); 
+            $res = $countStmt->get_result(); 
+            if ($res && ($row = $res->fetch_assoc())) { 
+                $total = (int)($row['c'] ?? 0); 
+                $res->free(); 
+            } 
+            $countStmt->close(); 
+        } 
+ 
+        $sql = " 
+            SELECT l.id, l.source_id, s.name AS source_name, l.url, l.status, l.http_status, l.response_time, 
+                   l.content_length, l.retry_count, l.error_message, l.created_at 
+            FROM autocontent_scrape_logs l 
+            LEFT JOIN autocontent_sources s ON s.id = l.source_id 
+            WHERE {$where} 
+            ORDER BY l.id DESC 
+            LIMIT ? OFFSET ? 
+        "; 
+ 
+        $stmt = $this->mysqli->prepare($sql); 
+        $items = []; 
+        if ($stmt) { 
+            $p2 = $params; 
+            $t2 = $types . 'ii'; 
+            $p2[] = $limit; 
+            $p2[] = $offset; 
+            $this->bindParams($stmt, $t2, $p2); 
+            $stmt->execute(); 
+            $res = $stmt->get_result(); 
+            if ($res) { 
+                while ($row = $res->fetch_assoc()) { 
+                    $items[] = $row; 
+                } 
+                $res->free(); 
+            } 
+            $stmt->close(); 
+        } 
+ 
+        return ['items' => $items, 'total' => $total]; 
+    } 
+ 
+    /** 
+     * Fetch crawl queue entries for admin UI. 
+     * 
+     * @return array{items: list<array<string,mixed>>, total: int} 
+     */ 
+    public function getCrawlQueue(array $filters, int $page = 1, int $limit = 50): array 
+    { 
+        $this->ensureTablesExist(); 
+        $page = max(1, $page); 
+        $limit = max(1, min(200, $limit)); 
+        $offset = ($page - 1) * $limit; 
+ 
+        $where = '1=1'; 
+        $params = []; 
+        $types = ''; 
+ 
+        if (!empty($filters['source_id'])) { 
+            $where .= ' AND q.source_id = ?'; 
+            $params[] = (int)$filters['source_id']; 
+            $types .= 'i'; 
+        } 
+        if (!empty($filters['status'])) { 
+            $where .= ' AND q.status = ?'; 
+            $params[] = (string)$filters['status']; 
+            $types .= 's'; 
+        } 
+        if (!empty($filters['q'])) { 
+            $where .= ' AND (q.url LIKE ? OR q.error_message LIKE ?)'; 
+            $q = '%' . (string)$filters['q'] . '%'; 
+            $params[] = $q; 
+            $params[] = $q; 
+            $types .= 'ss'; 
+        } 
+ 
+        $countSql = "SELECT COUNT(*) AS c FROM autocontent_crawl_queue q WHERE {$where}"; 
+        $total = 0; 
+        $countStmt = $this->mysqli->prepare($countSql); 
+        if ($countStmt) { 
+            if ($types !== '') { 
+                $this->bindParams($countStmt, $types, $params); 
+            } 
+            $countStmt->execute(); 
+            $res = $countStmt->get_result(); 
+            if ($res && ($row = $res->fetch_assoc())) { 
+                $total = (int)($row['c'] ?? 0); 
+                $res->free(); 
+            } 
+            $countStmt->close(); 
+        } 
+ 
+        $sql = " 
+            SELECT q.id, q.source_id, s.name AS source_name, q.url, q.status, q.depth, q.retry_count, 
+                   q.error_message, q.created_at, q.updated_at 
+            FROM autocontent_crawl_queue q 
+            LEFT JOIN autocontent_sources s ON s.id = q.source_id 
+            WHERE {$where} 
+            ORDER BY q.id DESC 
+            LIMIT ? OFFSET ? 
+        "; 
+ 
+        $stmt = $this->mysqli->prepare($sql); 
+        $items = []; 
+        if ($stmt) { 
+            $p2 = $params; 
+            $t2 = $types . 'ii'; 
+            $p2[] = $limit; 
+            $p2[] = $offset; 
+            $this->bindParams($stmt, $t2, $p2); 
+            $stmt->execute(); 
+            $res = $stmt->get_result(); 
+            if ($res) { 
+                while ($row = $res->fetch_assoc()) { 
+                    $items[] = $row; 
+                } 
+                $res->free(); 
+            } 
+            $stmt->close(); 
+        } 
+ 
+        return ['items' => $items, 'total' => $total]; 
+    } 
 
     /**
      * Insert default website presets

@@ -293,10 +293,10 @@
     }
   }
 
-  // Apply preset - load from database
-  function applyPreset() {
-    var presetKey = document.getElementById('website_preset').value;
-    var presetKeyInput = document.getElementById('website_preset_key');
+  // Apply preset - load from database 
+  function applyPreset() { 
+    var presetKey = document.getElementById('website_preset').value; 
+    var presetKeyInput = document.getElementById('website_preset_key'); 
 
     // Clear selection (manual selectors) when no preset is chosen
     if (!presetKey) {
@@ -307,11 +307,11 @@
       return;
     }
 
-    var preset = presetsFromDB[presetKey];
-    if (!preset) {
-      showPageMessage('Preset not found in database.', 'warning', 5000);
-      return;
-    }
+    var preset = presetsFromDB[presetKey]; 
+    if (!preset) { 
+      showPageMessage('Preset not found in database.', 'warning', 5000); 
+      return; 
+    } 
 
     // Map preset selectors to form fields (if present)
     var selectorFields = [
@@ -324,25 +324,108 @@
       'selector_image'
     ];
 
-    selectorFields.forEach(function (field) {
-      if (preset[field] !== undefined) {
-        var el = document.getElementById(field);
-        if (el) {
-          el.value = preset[field] || '';
-        }
-      }
-    });
-
-    // Remember selected preset (for potential future extensions)
-    if (presetKeyInput) {
-      presetKeyInput.value = presetKey;
-    }
+    var needsConfirm = false; 
+    selectorFields.forEach(function (field) { 
+      if (preset[field] === undefined) { 
+        return; 
+      } 
+ 
+      var presetVal = String(preset[field] || '').trim(); 
+      if (!presetVal) { 
+        // Do not overwrite non-empty user input with empty preset fields. 
+        return; 
+      } 
+ 
+      var el = document.getElementById(field); 
+      if (!el) { 
+        return; 
+      } 
+ 
+      var current = String(el.value || '').trim(); 
+      if (current && current !== presetVal) { 
+        needsConfirm = true; 
+      } 
+    }); 
+ 
+    if (needsConfirm) { 
+      var ok = confirm('Some selector fields already have values. Overwrite them with the selected preset?'); 
+      if (!ok) { 
+        showPageMessage('Preset not applied (kept existing selector values).', 'info', 4000); 
+        return; 
+      } 
+    } 
+ 
+    selectorFields.forEach(function (field) { 
+      if (preset[field] === undefined) { 
+        return; 
+      } 
+      var presetVal = String(preset[field] || '').trim(); 
+      if (!presetVal) { 
+        return; 
+      } 
+      var el = document.getElementById(field); 
+      if (el) { 
+        el.value = presetVal; 
+      } 
+    }); 
+ 
+    // Remember selected preset (for potential future extensions) 
+    if (presetKeyInput) { 
+      presetKeyInput.value = presetKey; 
+    } 
 
     showPageMessage('Applied "' + preset.name + '" preset.', 'success', 5000);
-  }
-
-  // Client-side form validation + convert fetch_interval from minutes to seconds before submit
-  (function () {
+  } 
+ 
+  // Auto-detect preset from URL host (best-effort) 
+  (function () { 
+    var urlInput = document.getElementById('url'); 
+    var presetSelect = document.getElementById('website_preset'); 
+    if (!urlInput || !presetSelect) { 
+      return; 
+    } 
+ 
+    function detectPresetKeyFromUrl(u) { 
+      try { 
+        var parsed = new URL(u); 
+        var host = (parsed.hostname || '').toLowerCase().replace(/^www\\./, ''); 
+        if (!host) { 
+          return ''; 
+        } 
+ 
+        // Try exact match by common site key (e.g. samakal.com -> samakal) 
+        var parts = host.split('.'); 
+        var candidate = parts.length >= 2 ? parts[parts.length - 2] : host; 
+        candidate = String(candidate || '').trim(); 
+        if (!candidate) { 
+          return ''; 
+        } 
+ 
+        // Only accept if the option exists. 
+        var opt = Array.from(presetSelect.options || []).find(function (o) { 
+          return String(o.value) === String(candidate); 
+        }); 
+        return opt ? candidate : ''; 
+      } catch (e) { 
+        return ''; 
+      } 
+    } 
+ 
+    urlInput.addEventListener('blur', function () { 
+      var currentPreset = String(presetSelect.value || '').trim(); 
+      if (currentPreset) { 
+        return; 
+      } 
+      var candidate = detectPresetKeyFromUrl(urlInput.value || ''); 
+      if (candidate) { 
+        presetSelect.value = candidate; 
+        applyPreset(); 
+      } 
+    }); 
+  })(); 
+ 
+  // Client-side form validation + convert fetch_interval from minutes to seconds before submit 
+  (function () { 
     var form = document.querySelector('form');
     var nameInput = document.getElementById('name');
     var urlInput = document.getElementById('url');
@@ -445,12 +528,24 @@
       intervalInput.addEventListener('blur', validateInterval);
     }
 
-    if (form) {
-      form.addEventListener('submit', function (e) {
-        var validation = validateForm();
-
-        if (!validation.isValid) {
-          e.preventDefault();
+    if (form) { 
+      form.addEventListener('submit', function (e) { 
+        var validation = validateForm(); 
+ 
+        // Data-quality guard: scrape sources require a preset key (Node pipeline). 
+        var typeEl = document.getElementById('type'); 
+        var presetKeyEl = document.getElementById('website_preset_key'); 
+        var isScrape = typeEl && String(typeEl.value || '') === 'scrape'; 
+        var presetKey = presetKeyEl ? String(presetKeyEl.value || '').trim() : ''; 
+        if (isScrape && !presetKey) { 
+          e.preventDefault(); 
+          showPageMessage('For Source Type = Web Scraping, Website Preset is required (select a preset so website_preset_key is set).', 'danger', 6000); 
+          document.getElementById('website_preset')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+          return; 
+        } 
+ 
+        if (!validation.isValid) { 
+          e.preventDefault(); 
 
           if (typeof window.showValidationErrors === 'function') {
             window.showValidationErrors(validation.errors);

@@ -6,6 +6,7 @@
 import mysql from 'mysql2/promise';
 import CONFIG from '../config.js';
 import Logger from '../utils/Logger.js';
+import crypto from 'crypto';
 
 class DatabaseService {
     constructor() {
@@ -254,8 +255,8 @@ class DatabaseService {
     /**
      * Ensure required tables exist
      */
-    async ensureTables(options = {}) {
-        const preferAutoContent = !!options.preferAutoContent;
+    async ensureTables(options = {}) { 
+        const preferAutoContent = !!options.preferAutoContent; 
 
         // Always ensure legacy tables exist (for bdnews24-scheduler etc.)
         await this.pool.execute(`
@@ -280,16 +281,52 @@ class DatabaseService {
         `);
         this.articleTable = 'news_articles';
 
-        if (preferAutoContent) {
-            try {
-                await this.pool.execute('SELECT 1 FROM autocontent_articles LIMIT 1');
-                this.articleTable = 'autocontent_articles';
-                Logger.info('AutoContent mode: using autocontent_articles table');
-            } catch (e) {
-                Logger.warn('AutoContent mode requested, but autocontent_articles not available; falling back to news_articles');
-                this.articleTable = 'news_articles';
-            }
-        }
+        if (preferAutoContent) { 
+            try { 
+                await this.pool.execute('SELECT 1 FROM autocontent_articles LIMIT 1'); 
+                this.articleTable = 'autocontent_articles'; 
+                Logger.info('AutoContent mode: using autocontent_articles table'); 
+ 
+                // Best-effort: ensure observability/audit tables exist in AutoContent mode.
+                await this.pool.execute(` 
+                    CREATE TABLE IF NOT EXISTS autocontent_scrape_logs ( 
+                        id INT AUTO_INCREMENT PRIMARY KEY, 
+                        source_id INT DEFAULT NULL, 
+                        url VARCHAR(2048) NOT NULL, 
+                        status VARCHAR(32) DEFAULT 'pending', 
+                        http_status INT DEFAULT NULL, 
+                        response_time DECIMAL(10,3) DEFAULT 0.000, 
+                        error_message TEXT DEFAULT NULL, 
+                        content_length INT DEFAULT 0, 
+                        retry_count INT DEFAULT 0, 
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP, 
+                        INDEX idx_source_created (source_id, created_at), 
+                        INDEX idx_status_created (status, created_at) 
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
+                `); 
+ 
+                await this.pool.execute(` 
+                    CREATE TABLE IF NOT EXISTS autocontent_crawl_queue ( 
+                        id INT AUTO_INCREMENT PRIMARY KEY, 
+                        source_id INT NOT NULL, 
+                        url VARCHAR(2048) NOT NULL, 
+                        url_hash VARCHAR(64) DEFAULT '', 
+                        status ENUM('pending','processing','completed','failed') DEFAULT 'pending', 
+                        depth INT DEFAULT 0, 
+                        retry_count INT DEFAULT 0, 
+                        error_message TEXT DEFAULT NULL, 
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP, 
+                        updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, 
+                        UNIQUE KEY uk_source_url_hash (source_id, url_hash), 
+                        INDEX idx_source_status (source_id, status), 
+                        INDEX idx_created (created_at) 
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci 
+                `); 
+            } catch (e) { 
+                Logger.warn('AutoContent mode requested, but autocontent_articles not available; falling back to news_articles'); 
+                this.articleTable = 'news_articles'; 
+            } 
+        } 
 
         // Create selector_performance table
         await this.pool.execute(`
@@ -366,7 +403,7 @@ class DatabaseService {
     /**
      * Insert an AutoContent article row (autocontent_articles).
      */
-    async insertAutoContentArticle(sourceId, article) {
+    async insertAutoContentArticle(sourceId, article) { 
         try {
             const excerpt =
                 (article.excerpt && String(article.excerpt).trim() !== '')
@@ -399,6 +436,68 @@ class DatabaseService {
             Logger.error('Failed to insert autocontent article', { sourceId, error: error.message });
             return { success: false, error: error.message };
         }
+    } 
+ 
+    async insertAutoContentScrapeLog(sourceId, { url, status, httpStatus = null, responseTimeMs = 0, errorMessage = null, contentLength = 0, retryCount = 0 } = {}) { 
+        try { 
+            const sid = Number(sourceId) || 0; 
+            if (!sid || !url) return false; 
+ 
+            await this.pool.execute( 
+                `INSERT INTO autocontent_scrape_logs 
+                 (source_id, url, status, http_status, response_time, error_message, content_length, retry_count, created_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`, 
+                [ 
+                    sid, 
+                    String(url), 
+                    String(status || 'pending'), 
+                    httpStatus !== null ? Number(httpStatus) : null, 
+                    Number.isFinite(Number(responseTimeMs)) ? (Number(responseTimeMs) / 1000) : 0, 
+                    errorMessage ? String(errorMessage) : null, 
+                    Number(contentLength) || 0, 
+                    Number(retryCount) || 0 
+                ] 
+            ); 
+            return true; 
+        } catch (error) { 
+            Logger.debug('Failed to insert autocontent_scrape_logs', { error: error.message }); 
+            return false; 
+        } 
+    } 
+ 
+    async upsertAutoContentCrawlQueue(sourceId, { url, status = 'pending', depth = 0, retryCount = 0, errorMessage = null } = {}) { 
+        try { 
+            const sid = Number(sourceId) || 0; 
+            if (!sid || !url) return false; 
+ 
+            const u = String(url); 
+            const urlHash = crypto.createHash('sha256').update(u).digest('hex'); 
+ 
+            await this.pool.execute( 
+                `INSERT INTO autocontent_crawl_queue 
+                 (source_id, url, url_hash, status, depth, retry_count, error_message, created_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, NOW()) 
+                 ON DUPLICATE KEY UPDATE 
+                    status = VALUES(status), 
+                    depth = VALUES(depth), 
+                    retry_count = VALUES(retry_count), 
+                    error_message = VALUES(error_message), 
+                    updated_at = NOW()`, 
+                [ 
+                    sid, 
+                    u, 
+                    urlHash, 
+                    String(status || 'pending'), 
+                    Number(depth) || 0, 
+                    Number(retryCount) || 0, 
+                    errorMessage ? String(errorMessage) : null 
+                ] 
+            ); 
+            return true; 
+        } catch (error) { 
+            Logger.debug('Failed to upsert autocontent_crawl_queue', { error: error.message }); 
+            return false; 
+        } 
     }
 
     /**

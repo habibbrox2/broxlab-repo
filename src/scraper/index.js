@@ -117,13 +117,15 @@ class ScraperOrchestrator {
                     homepageUrl: source.url
                 };
 
-                // Ensure agents target this preset/source
-                this.tickerScraper.sourceKey = this.sourceKey;
-                this.articleScraper.sourceKey = this.sourceKey;
-
-                // Load selectors from DB presets (if available)
-                await this.tickerScraper.initialize();
-                await this.articleScraper.initialize();
+                // Ensure agents target this preset/source 
+                this.tickerScraper.sourceKey = this.sourceKey; 
+                this.articleScraper.sourceKey = this.sourceKey; 
+                this.tickerScraper.sourceId = this.sourceId; 
+                this.articleScraper.sourceId = this.sourceId; 
+ 
+                // Load selectors from DB presets (if available) 
+                await this.tickerScraper.initialize(); 
+                await this.articleScraper.initialize(); 
 
                 // Override homepage/base URLs from autocontent_sources
                 this.tickerScraper.sourceConfig = { ...(this.tickerScraper.sourceConfig || {}), ...overrideConfig };
@@ -199,10 +201,19 @@ class ScraperOrchestrator {
             };
         }
 
-        Logger.info(`Found ${limitedLinks.length} new articles to process`);
-
-        // Mobiles-direct pipeline: scrape spec pages and insert into mobiles tables.
-        if (this.pipeline === 'mobiles_direct') {
+        Logger.info(`Found ${limitedLinks.length} new articles to process`); 
+ 
+        // Audit/debug: record discovered links (not the main queue). 
+        if (this.sourceId && this.db?.connected && typeof this.db.upsertAutoContentCrawlQueue === 'function') { 
+            for (const link of limitedLinks) { 
+                if (link?.link) { 
+                    await this.db.upsertAutoContentCrawlQueue(this.sourceId, { url: link.link, status: 'pending', depth: 0 }); 
+                } 
+            } 
+        } 
+ 
+        // Mobiles-direct pipeline: scrape spec pages and insert into mobiles tables. 
+        if (this.pipeline === 'mobiles_direct') { 
             const mobileResults = await this.processMobiles(limitedLinks);
 
             if (!this.db?.connected) {

@@ -13,6 +13,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { z } from 'zod';
 import { aiRouter } from './AIRouter.js';
 import { RAGEngine } from './RAGEngine.js';
 import { knowledgeBase } from './services/KnowledgeBase.js';
@@ -21,25 +22,86 @@ import { selfHealingKB } from './services/SelfHealingKnowledgeBase.js';
 import Logger from './utils/Logger.js';
 
 const app = express();
-const PORT = process.env.AI_PORT || 3001;
+const PORT = Number.parseInt(process.env.AI_PORT || '3001', 10);
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:8000')
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean);
+const RATE_LIMIT_WINDOW_MS = Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS || String(15 * 60 * 1000), 10);
+const RATE_LIMIT_MAX = Number.parseInt(process.env.RATE_LIMIT_MAX || '100', 10);
+const BODY_LIMIT = process.env.AI_BODY_LIMIT || '10mb';
+
+const parseBody = (schema, req, res) => {
+    const parsed = schema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+        res.status(400).json({ error: 'Invalid request', details: parsed.error.flatten() });
+        return null;
+    }
+    return parsed.data;
+};
+
+const coerceBoolean = (value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+        const lowered = value.toLowerCase();
+        if (['true', '1', 'yes', 'on'].includes(lowered)) return true;
+        if (['false', '0', 'no', 'off'].includes(lowered)) return false;
+    }
+    return value;
+};
+
+const cvImproveSchema = z.object({
+    text: z.string().min(1),
+    type: z.string().optional()
+});
+const cvSchema = z.object({
+    cv: z.any()
+});
+const jobDescSchema = z.object({
+    job_description: z.string().min(1)
+});
+const cvJobSchema = z.object({
+    cv: z.any(),
+    job_description: z.string().min(1)
+});
+const textSchema = z.object({
+    text: z.string().min(1)
+});
+const kbAddSchema = z.object({
+    title: z.string().min(1),
+    content: z.string().min(1),
+    category: z.string().optional(),
+    tags: z.any().optional()
+});
+const aiChatSchema = z.object({
+    messages: z.array(z.any()).min(1),
+    provider: z.string().optional(),
+    system: z.any().optional()
+});
+const aiRagSchema = z.object({
+    question: z.string().min(1),
+    provider: z.string().optional(),
+    useKnowledgeBase: z.preprocess(coerceBoolean, z.boolean().optional())
+});
 
 // Security middleware
 app.use(helmet());
 app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:8000'],
+    origin: ALLOWED_ORIGINS.length ? ALLOWED_ORIGINS : ['http://localhost:3000', 'http://localhost:8000'],
     credentials: true
 }));
 
 // Rate limiting
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.RATE_LIMIT_MAX || 100,
+    windowMs: RATE_LIMIT_WINDOW_MS,
+    max: RATE_LIMIT_MAX,
     message: { error: 'Too many requests, please try again later.' }
 });
 app.use('/api/', limiter);
 
 // Body parsing
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: BODY_LIMIT }));
 app.use(express.urlencoded({ extended: true }));
 
 // Request logging
@@ -69,13 +131,9 @@ app.get('/health', (req, res) => {
  */
 app.post('/api/cv/improve', async (req, res) => {
     try {
-        const { text, type = 'bullet' } = req.body;
-
-        if (!text) {
-            return res.status(400).json({ error: 'Text is required' });
-        }
-
-        const result = await cvEnhancer.improveText(text, type);
+        const parsed = parseBody(cvImproveSchema, req, res);
+        if (!parsed) return;
+        const result = await cvEnhancer.improveText(parsed.text, parsed.type || 'bullet');
 
         res.json({
             success: true,
@@ -93,13 +151,9 @@ app.post('/api/cv/improve', async (req, res) => {
  */
 app.post('/api/cv/ats-score', async (req, res) => {
     try {
-        const { cv } = req.body;
-
-        if (!cv) {
-            return res.status(400).json({ error: 'CV data is required' });
-        }
-
-        const result = await cvEnhancer.calculateAtsScore(cv);
+        const parsed = parseBody(cvSchema, req, res);
+        if (!parsed) return;
+        const result = await cvEnhancer.calculateAtsScore(parsed.cv);
 
         res.json({
             success: true,
@@ -117,13 +171,9 @@ app.post('/api/cv/ats-score', async (req, res) => {
  */
 app.post('/api/cv/keywords', async (req, res) => {
     try {
-        const { job_description } = req.body;
-
-        if (!job_description) {
-            return res.status(400).json({ error: 'Job description is required' });
-        }
-
-        const result = await cvEnhancer.extractKeywords(job_description);
+        const parsed = parseBody(jobDescSchema, req, res);
+        if (!parsed) return;
+        const result = await cvEnhancer.extractKeywords(parsed.job_description);
 
         res.json({
             success: true,
@@ -141,13 +191,9 @@ app.post('/api/cv/keywords', async (req, res) => {
  */
 app.post('/api/cv/match', async (req, res) => {
     try {
-        const { cv, job_description } = req.body;
-
-        if (!cv || !job_description) {
-            return res.status(400).json({ error: 'CV and job description are required' });
-        }
-
-        const result = await cvEnhancer.matchToJob(cv, job_description);
+        const parsed = parseBody(cvJobSchema, req, res);
+        if (!parsed) return;
+        const result = await cvEnhancer.matchToJob(parsed.cv, parsed.job_description);
 
         res.json({
             success: true,
@@ -165,13 +211,9 @@ app.post('/api/cv/match', async (req, res) => {
  */
 app.post('/api/cv/cover-letter', async (req, res) => {
     try {
-        const { cv, job_description } = req.body;
-
-        if (!cv || !job_description) {
-            return res.status(400).json({ error: 'CV and job description are required' });
-        }
-
-        const result = await cvEnhancer.generateCoverLetter(cv, job_description);
+        const parsed = parseBody(cvJobSchema, req, res);
+        if (!parsed) return;
+        const result = await cvEnhancer.generateCoverLetter(parsed.cv, parsed.job_description);
 
         res.json({
             success: true,
@@ -189,13 +231,9 @@ app.post('/api/cv/cover-letter', async (req, res) => {
  */
 app.post('/api/cv/parse', async (req, res) => {
     try {
-        const { text } = req.body;
-
-        if (!text) {
-            return res.status(400).json({ error: 'CV text is required' });
-        }
-
-        const result = await cvEnhancer.parseCvText(text);
+        const parsed = parseBody(textSchema, req, res);
+        if (!parsed) return;
+        const result = await cvEnhancer.parseCvText(parsed.text);
 
         res.json({
             success: true,
@@ -213,13 +251,9 @@ app.post('/api/cv/parse', async (req, res) => {
  */
 app.post('/api/cv/improve-all', async (req, res) => {
     try {
-        const { cv } = req.body;
-
-        if (!cv) {
-            return res.status(400).json({ error: 'CV data is required' });
-        }
-
-        const result = await cvEnhancer.improveEntireCv(cv);
+        const parsed = parseBody(cvSchema, req, res);
+        if (!parsed) return;
+        const result = await cvEnhancer.improveEntireCv(parsed.cv);
 
         res.json({
             success: true,
@@ -263,13 +297,9 @@ app.get('/api/kb/search', async (req, res) => {
  */
 app.post('/api/kb/add', async (req, res) => {
     try {
-        const { title, content, category, tags } = req.body;
-
-        if (!title || !content) {
-            return res.status(400).json({ error: 'Title and content are required' });
-        }
-
-        const result = await knowledgeBase.add({ title, content, category, tags });
+        const parsed = parseBody(kbAddSchema, req, res);
+        if (!parsed) return;
+        const result = await knowledgeBase.add(parsed);
 
         res.json({
             success: true,
@@ -325,13 +355,13 @@ app.get('/api/kb/suggest', async (req, res) => {
  */
 app.post('/api/ai/chat', async (req, res) => {
     try {
-        const { messages, provider = 'auto', system } = req.body;
-
-        if (!messages || !Array.isArray(messages)) {
-            return res.status(400).json({ error: 'Messages array is required' });
-        }
-
-        const response = await aiRouter.chat({ messages, provider, system });
+        const parsed = parseBody(aiChatSchema, req, res);
+        if (!parsed) return;
+        const response = await aiRouter.chat({
+            messages: parsed.messages,
+            provider: parsed.provider || 'auto',
+            system: parsed.system
+        });
 
         res.json({
             success: true,
@@ -349,14 +379,10 @@ app.post('/api/ai/chat', async (req, res) => {
  */
 app.post('/api/ai/rag', async (req, res) => {
     try {
-        const { question, provider = 'auto', useKnowledgeBase = true } = req.body;
-
-        if (!question) {
-            return res.status(400).json({ error: 'Question is required' });
-        }
-
-        const rag = new RAGEngine({ useKnowledgeBase });
-        const result = await rag.ask(question, provider);
+        const parsed = parseBody(aiRagSchema, req, res);
+        if (!parsed) return;
+        const rag = new RAGEngine({ useKnowledgeBase: parsed.useKnowledgeBase !== false });
+        const result = await rag.ask(parsed.question, parsed.provider || 'auto');
 
         res.json({
             success: true,
@@ -380,12 +406,21 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     Logger.info(`🚀 AI Service running on port ${PORT}`);
     Logger.info(`   Health: http://localhost:${PORT}/health`);
     Logger.info(`   CV API: http://localhost:${PORT}/api/cv/*`);
     Logger.info(`   KB API: http://localhost:${PORT}/api/kb/*`);
     Logger.info(`   AI API: http://localhost:${PORT}/api/ai/*`);
 });
+
+const shutdown = (signal) => {
+    Logger.info('Shutting down AI server', { signal });
+    server.close(() => {
+        process.exit(0);
+    });
+};
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 export default app;

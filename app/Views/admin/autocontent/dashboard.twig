@@ -105,14 +105,44 @@
     <button type="button" id="btn-retry-failed" class="btn btn-outline-warning btn-sm">
       <i class="bi bi-arrow-repeat me-1"></i>Retry Failed
     </button>
-    <button type="button" id="btn-run-pipeline" class="btn btn-primary btn-sm">
-      <i class="bi bi-play-fill me-1"></i>Run Pipeline
-    </button>
-    <a href="/admin/autocontent/settings" class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-gear me-1"></i>Settings
-    </a>
+    <button type="button" id="btn-run-pipeline" class="btn btn-primary btn-sm"> 
+      <i class="bi bi-play-fill me-1"></i>Run Pipeline 
+    </button> 
+    <a href="/admin/autocontent/logs" class="btn btn-outline-dark btn-sm"> 
+      <i class="bi bi-journal-text me-1"></i>Scrape Logs 
+    </a> 
+    <a href="/admin/autocontent/crawl-queue" class="btn btn-outline-dark btn-sm"> 
+      <i class="bi bi-list-ul me-1"></i>Crawl Queue 
+    </a> 
+    <a href="/admin/autocontent/settings" class="btn btn-outline-secondary btn-sm"> 
+      <i class="bi bi-gear me-1"></i>Settings 
+    </a> 
+  </div> 
+</div> 
+
+{% if blocked_sources is defined and blocked_sources|length > 0 %}
+  <div class="alert alert-warning border-0 shadow-sm mb-4">
+    <div class="fw-semibold mb-1">Some sources look WAF/Cloudflare-blocked</div>
+    <div class="small text-muted mb-2">These will be skipped/paused to protect data quality.</div>
+    <ul class="mb-0 small">
+      {% for b in blocked_sources %}
+        <li>{{ b.name ?? ('Source #' ~ b.source_id) }} — {{ b.cnt }} hits, last: {{ b.last_at }}</li>
+      {% endfor %}
+    </ul>
   </div>
-</div>
+{% endif %}
+
+{% if cron_tail is defined and cron_tail|length > 0 %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <div class="fw-semibold"><i class="bi bi-terminal me-2"></i>Cron Tail</div>
+      <a class="small text-decoration-none" href="/admin/autocontent/settings">worker log path in settings/config</a>
+    </div>
+    <div class="card-body">
+      <pre class="small mb-0" style="max-height: 260px; overflow:auto;">{{ cron_tail|join('\n') }}</pre>
+    </div>
+  </div>
+{% endif %}
 
 {% if schema_health is defined and not schema_health.ok %}
   <div class="alert alert-danger border-0 shadow-sm mb-4">
