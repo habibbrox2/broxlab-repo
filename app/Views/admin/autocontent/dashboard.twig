@@ -114,6 +114,9 @@
     <a href="/admin/autocontent/crawl-queue" class="btn btn-outline-dark btn-sm"> 
       <i class="bi bi-list-ul me-1"></i>Crawl Queue 
     </a> 
+    <a href="/admin/autocontent/retry-queue" class="btn btn-outline-warning btn-sm"> 
+      <i class="bi bi-arrow-repeat me-1"></i>Retry Queue 
+    </a> 
     <a href="/admin/autocontent/settings" class="btn btn-outline-secondary btn-sm"> 
       <i class="bi bi-gear me-1"></i>Settings 
     </a> 
@@ -317,6 +320,52 @@
   </div>
 </div>
 
+{# Retry Queue & Browser Status #}
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-arrow-repeat me-2"></i>Retry Queue</h6>
+        <a href="/admin/autocontent/retry-queue" class="btn btn-sm btn-outline-warning">Open</a>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-4 text-center">
+            <div class="fw-bold fs-4 text-warning">{{ retry_summary.pending ?? 0 }}</div>
+            <div class="small text-muted">Pending</div>
+          </div>
+          <div class="col-4 text-center">
+            <div class="fw-bold fs-4 text-danger">{{ retry_summary.failed ?? 0 }}</div>
+            <div class="small text-muted">Failed</div>
+          </div>
+          <div class="col-4 text-center">
+            <div class="fw-bold fs-6">{{ retry_summary.next_attempt ?? '—' }}</div>
+            <div class="small text-muted">Next Attempt</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-browser-chrome me-2"></i>Browser Runtime</h6>
+      </div>
+      <div class="card-body">
+        {% if browser_status.available %}
+          <div class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>{{ browser_status.message }}</div>
+        {% else %}
+          <div class="text-danger fw-semibold"><i class="bi bi-x-circle me-1"></i>{{ browser_status.message }}</div>
+          <div class="small text-muted">Install Puppeteer on the server to enable WAF bypass.</div>
+        {% endif %}
+        {% if browser_status.details %}
+          <div class="small text-muted mt-2">{{ browser_status.details }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
 {# Recent Queue Items #}
 <div class="card border-0 shadow-sm">
   <div class="card-header bg-white d-flex justify-content-between align-items-center">
@@ -475,6 +524,14 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       await showResultMessage(messageText, !!result.success);
+      if (result.warning) {
+        const warnText = String(result.warning || 'API down; used legacy scraper.');
+        if (typeof window.showAlert === 'function') {
+          await window.showAlert(warnText, 'Warning', 'warning');
+        } else if (typeof window.showMessage === 'function') {
+          await window.showMessage(warnText, 'warning', 5000);
+        }
+      }
 
       if (result.success) window.location.reload();
 
@@ -530,6 +587,14 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       await showResultMessage(messageText, !!result.success);
+      if (result.warnings && result.warnings.length > 0) {
+        const warnText = result.warnings.slice(0, 5).join('\n• ');
+        if (typeof window.showAlert === 'function') {
+          await window.showAlert('• ' + warnText, 'Warnings', 'warning');
+        } else if (typeof window.showMessage === 'function') {
+          await window.showMessage('Warnings:\n• ' + warnText, 'warning', 6000);
+        }
+      }
 
       if (result.success) window.location.reload();
 

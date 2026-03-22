@@ -7,43 +7,83 @@
  * - Document chunking
  */
 
-import { QdrantClient } from '@qdrant/client';
 import { RAG_CONFIG, FEATURE_FLAGS } from './config.js';
 import aiRouter from './AIRouter.js';
 import logger from './utils/Logger.js';
 import LiteParse from '../scraper/utils/LiteParse.js';
 
+let QdrantClientCtor = null;
+
+async function loadQdrantClient() {
+    if (QdrantClientCtor) return QdrantClientCtor;
+
+    const candidates = ['@qdrant/client', 'qdrant-client'];
+    let lastError = null;
+
+    for (const pkg of candidates) {
+        try {
+            const mod = await import(pkg);
+            QdrantClientCtor = mod.QdrantClient || mod.default?.QdrantClient || mod.default || null;
+            if (QdrantClientCtor) return QdrantClientCtor;
+        } catch (error) {
+            lastError = error;
+        }
+    }
+
+    throw lastError || new Error('Qdrant client not available');
+}
+
 class RAGEngine {
     constructor(options = {}) {
         this.qdrant = null;
+        this.qdrantInitPromise = null;
+        this.qdrantInitError = null;
         this.collectionName = options.collectionName || RAG_CONFIG.qdrant.collectionName;
         this.embeddingModel = options.embeddingModel || RAG_CONFIG.embedding.model;
         this.embeddingProvider = options.embeddingProvider || RAG_CONFIG.embedding.provider;
         this.maxResults = options.maxResults || RAG_CONFIG.retrieval.maxResults;
         this.minScore = options.minScore || RAG_CONFIG.retrieval.minScore;
 
-        this.initializeQdrant();
+        this.qdrantInitPromise = this.initializeQdrant();
     }
 
     /**
      * Initialize Qdrant client
      */
-    initializeQdrant() {
+    async initializeQdrant() {
         if (!FEATURE_FLAGS.ENABLE_RAG) {
             logger.info('RAG is disabled');
             return;
         }
 
         try {
+            const QdrantClient = await loadQdrantClient();
             this.qdrant = new QdrantClient({
                 url: RAG_CONFIG.qdrant.url,
                 apiKey: RAG_CONFIG.qdrant.apiKey || undefined,
             });
             logger.info('Initialized Qdrant client');
         } catch (error) {
+            this.qdrantInitError = error;
             logger.warn('Failed to initialize Qdrant', { error: error.message });
             this.qdrant = null;
         }
+    }
+
+    async ensureQdrant() {
+        if (!FEATURE_FLAGS.ENABLE_RAG) {
+            throw new Error('RAG is disabled');
+        }
+        if (this.qdrant) return this.qdrant;
+        if (!this.qdrantInitPromise) {
+            this.qdrantInitPromise = this.initializeQdrant();
+        }
+        await this.qdrantInitPromise;
+        if (!this.qdrant) {
+            const message = this.qdrantInitError?.message || 'Qdrant not initialized';
+            throw new Error(message);
+        }
+        return this.qdrant;
     }
 
     /**
@@ -63,9 +103,7 @@ class RAGEngine {
      * Search for relevant documents
      */
     async search(query, options = {}) {
-        if (!this.qdrant) {
-            throw new Error('Qdrant not initialized');
-        }
+        const qdrant = await this.ensureQdrant();
 
         const limit = options.limit || this.maxResults;
 
@@ -73,7 +111,7 @@ class RAGEngine {
         const queryEmbedding = await this.generateEmbedding(query);
 
         // Search Qdrant
-        const results = await this.qdrant.search(this.collectionName, {
+        const results = await qdrant.search(this.collectionName, {
             vector: queryEmbedding,
             limit,
             score_threshold: this.minScore,
@@ -94,9 +132,7 @@ class RAGEngine {
      * Add documents to vector store
      */
     async addDocuments(documents, options = {}) {
-        if (!this.qdrant) {
-            throw new Error('Qdrant not initialized');
-        }
+        const qdrant = await this.ensureQdrant();
 
         const points = [];
 
@@ -130,7 +166,7 @@ class RAGEngine {
         }
 
         // Upsert to Qdrant
-        await this.qdrant.upsert(this.collectionName, {
+        await qdrant.upsert(this.collectionName, {
             points,
         });
 
@@ -146,11 +182,9 @@ class RAGEngine {
      * Delete documents from vector store
      */
     async deleteDocuments(ids) {
-        if (!this.qdrant) {
-            throw new Error('Qdrant not initialized');
-        }
+        const qdrant = await this.ensureQdrant();
 
-        await this.qdrant.delete(this.collectionName, {
+        await qdrant.delete(this.collectionName, {
             points: ids,
         });
 
@@ -370,12 +404,9 @@ class RAGEngine {
      * Get collection info
      */
     async getCollectionInfo() {
-        if (!this.qdrant) {
-            return null;
-        }
-
         try {
-            return await this.qdrant.getCollection(this.collectionName);
+            const qdrant = await this.ensureQdrant();
+            return await qdrant.getCollection(this.collectionName);
         } catch (error) {
             logger.warn('Failed to get collection info', { error: error.message });
             return null;
@@ -388,3 +419,4 @@ const ragEngine = new RAGEngine();
 
 export default ragEngine;
 export { RAGEngine };
+export const defaultRAGEngine = ragEngine;

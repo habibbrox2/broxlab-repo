@@ -20,8 +20,8 @@ import { knowledgeBase } from './services/KnowledgeBase.js';
 import { cvEnhancer } from './services/CVEnhancer.js';
 import { selfHealingKB } from './services/SelfHealingKnowledgeBase.js';
 import Logger from './utils/Logger.js';
+import { pathToFileURL } from 'url';
 
-const app = express();
 const PORT = Number.parseInt(process.env.AI_PORT || '3001', 10);
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:8000')
     .split(',')
@@ -85,43 +85,85 @@ const aiRagSchema = z.object({
     useKnowledgeBase: z.preprocess(coerceBoolean, z.boolean().optional())
 });
 
-// Security middleware
-app.use(helmet());
-app.use(cors({
-    origin: ALLOWED_ORIGINS.length ? ALLOWED_ORIGINS : ['http://localhost:3000', 'http://localhost:8000'],
-    credentials: true
-}));
+export function createAiRouter(app, options = {}) {
+    const resolvedApp = app || express();
+    const {
+        includeHealth = true,
+        includeNotFound = true,
+        includeErrorHandler = true,
+        includeMiddleware = true,
+        allowedOrigins = ALLOWED_ORIGINS,
+        bodyLimit = BODY_LIMIT,
+        rateLimitWindowMs = RATE_LIMIT_WINDOW_MS,
+        rateLimitMax = RATE_LIMIT_MAX
+    } = options;
 
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: RATE_LIMIT_WINDOW_MS,
-    max: RATE_LIMIT_MAX,
-    message: { error: 'Too many requests, please try again later.' }
-});
-app.use('/api/', limiter);
+    if (includeMiddleware) {
+        const normalizedOrigins = Array.isArray(allowedOrigins)
+            ? allowedOrigins.map(item => String(item).trim()).filter(Boolean)
+            : String(allowedOrigins || '')
+                .split(',')
+                .map(item => item.trim())
+                .filter(Boolean);
+        const corsOrigins = normalizedOrigins.length
+            ? normalizedOrigins
+            : ['http://localhost:3000', 'http://localhost:8000'];
+        const corsOptions = corsOrigins.length === 1 && corsOrigins[0] === '*'
+            ? { origin: '*' }
+            : { origin: corsOrigins, credentials: true };
 
-// Body parsing
-app.use(express.json({ limit: BODY_LIMIT }));
-app.use(express.urlencoded({ extended: true }));
+        resolvedApp.use(helmet());
+        resolvedApp.use(cors(corsOptions));
 
-// Request logging
-app.use((req, res, next) => {
-    Logger.info(`${req.method} ${req.path}`, {
-        ip: req.ip,
-        userAgent: req.get('user-agent')
-    });
-    next();
-});
+        const limiter = rateLimit({
+            windowMs: rateLimitWindowMs,
+            max: rateLimitMax,
+            message: { error: 'Too many requests, please try again later.' }
+        });
+        resolvedApp.use('/api/', limiter);
 
-// Health check
-app.get('/health', (req, res) => {
-    res.json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        version: '2.0.0'
-    });
-});
+        resolvedApp.use(express.json({ limit: bodyLimit }));
+        resolvedApp.use(express.urlencoded({ extended: true }));
+
+        resolvedApp.use((req, res, next) => {
+            Logger.info(`${req.method} ${req.path}`, {
+                ip: req.ip,
+                userAgent: req.get('user-agent')
+            });
+            next();
+        });
+    }
+
+    if (includeHealth) {
+        resolvedApp.get('/health', (req, res) => {
+            res.json({
+                status: 'healthy',
+                timestamp: new Date().toISOString(),
+                uptime: process.uptime(),
+                version: '2.0.0'
+            });
+        });
+    }
+
+    registerAiRoutes(resolvedApp);
+
+    if (includeErrorHandler) {
+        resolvedApp.use((err, req, res, next) => {
+            Logger.error('Unhandled error', { error: err.message, stack: err.stack });
+            res.status(500).json({ error: 'Internal server error' });
+        });
+    }
+
+    if (includeNotFound) {
+        resolvedApp.use((req, res) => {
+            res.status(404).json({ error: 'Not found' });
+        });
+    }
+
+    return resolvedApp;
+}
+
+function registerAiRoutes(app) {
 
 // ========== CV ENHANCEMENT ROUTES ==========
 
@@ -394,33 +436,35 @@ app.post('/api/ai/rag', async (req, res) => {
     }
 });
 
-// ========== ERROR HANDLING ==========
+}
 
-app.use((err, req, res, next) => {
-    Logger.error('Unhandled error', { error: err.message, stack: err.stack });
-    res.status(500).json({ error: 'Internal server error' });
+const app = express();
+createAiRouter(app, {
+    includeHealth: true,
+    includeNotFound: true,
+    includeErrorHandler: true,
+    includeMiddleware: true
 });
 
-app.use((req, res) => {
-    res.status(404).json({ error: 'Not found' });
-});
-
-// Start server
-const server = app.listen(PORT, () => {
-    Logger.info(`🚀 AI Service running on port ${PORT}`);
-    Logger.info(`   Health: http://localhost:${PORT}/health`);
-    Logger.info(`   CV API: http://localhost:${PORT}/api/cv/*`);
-    Logger.info(`   KB API: http://localhost:${PORT}/api/kb/*`);
-    Logger.info(`   AI API: http://localhost:${PORT}/api/ai/*`);
-});
-
-const shutdown = (signal) => {
-    Logger.info('Shutting down AI server', { signal });
-    server.close(() => {
-        process.exit(0);
+const entryHref = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
+if (import.meta.url === entryHref) {
+    const server = app.listen(PORT, () => {
+        Logger.info(`🚀 AI Service running on port ${PORT}`);
+        Logger.info(`   Health: http://localhost:${PORT}/health`);
+        Logger.info(`   CV API: http://localhost:${PORT}/api/cv/*`);
+        Logger.info(`   KB API: http://localhost:${PORT}/api/kb/*`);
+        Logger.info(`   AI API: http://localhost:${PORT}/api/ai/*`);
     });
-};
-process.on('SIGINT', () => shutdown('SIGINT'));
-process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+    const shutdown = (signal) => {
+        Logger.info('Shutting down AI server', { signal });
+        server.close(() => {
+            process.exit(0);
+        });
+    };
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+}
 
 export default app;
+

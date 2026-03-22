@@ -335,4 +335,5 @@ class KnowledgeBase {
 const knowledgeBase = new KnowledgeBase();
 
 export default knowledgeBase;
-export { KnowledgeBase };
+export { KnowledgeBase, knowledgeBase };
+export const defaultKnowledgeBase = knowledgeBase;

@@ -5,6 +5,15 @@
  * Can load selectors from website_presets table
  */
 
+import EnvLoader from './utils/EnvLoader.js';
+
+const parseList = (value) => {
+    return String(value || '')
+        .split(',')
+        .map(v => v.trim())
+        .filter(Boolean)
+};
+
 const CONFIG = {
     // Cache for dynamically loaded presets
     _presetCache: new Map(),
@@ -293,28 +302,28 @@ const CONFIG = {
                 }
             }
         },
-        gsmarena_news: { 
-            name: 'GSMArena News', 
-            pipeline: 'autocontent_articles', 
-            baseUrl: 'https://www.gsmarena.com/', 
-            homepageUrl: 'https://www.gsmarena.com/', 
-            urlRules: { 
-                exclude: [ 
-                    /sub_confirmation/i, 
-                    /\/tipus\.php3/i, 
-                    /\/rss/i, 
-                    /\/compare\.php3/i, 
-                    /\/makers\.php3/i, 
-                    /\/glossary\.php3/i, 
-                    /\/privacy/i, 
-                    /\/contact/i 
-                ] 
-            }, 
-            selectors: { 
-                ticker: { 
-                    primary: '.news-column-index .news-item > a[href]', 
-                    title: 'h3', 
-                    link: 'a', 
+        gsmarena_news: {
+            name: 'GSMArena News',
+            pipeline: 'autocontent_articles',
+            baseUrl: 'https://www.gsmarena.com/',
+            homepageUrl: 'https://www.gsmarena.com/',
+            urlRules: {
+                exclude: [
+                    /sub_confirmation/i,
+                    /\/tipus\.php3/i,
+                    /\/rss/i,
+                    /\/compare\.php3/i,
+                    /\/makers\.php3/i,
+                    /\/glossary\.php3/i,
+                    /\/privacy/i,
+                    /\/contact/i
+                ]
+            },
+            selectors: {
+                ticker: {
+                    primary: '.news-column-index .news-item > a[href]',
+                    title: 'h3',
+                    link: 'a',
                     fallback: ['.news-column-index .news-item a[href]']
                 },
                 article: {
@@ -345,25 +354,25 @@ const CONFIG = {
                 }
             }
         },
-        gsmarena_devices: { 
-            name: 'GSMArena Latest Devices', 
-            pipeline: 'mobiles_direct', 
-            baseUrl: 'https://www.gsmarena.com/', 
-            homepageUrl: 'https://www.gsmarena.com/', 
-            urlRules: { 
-                exclude: [ 
-                    /sub_confirmation/i, 
-                    /\/tipus\.php3/i, 
-                    /\/rss/i, 
-                    /\/privacy/i, 
-                    /\/contact/i 
-                ] 
-            }, 
-            selectors: { 
-                ticker: { 
-                    primary: '.module.module-phones.module-latest a.module-phones-link[href]', 
-                    fallback: ['a.module-phones-link[href]'] 
-                }, 
+        gsmarena_devices: {
+            name: 'GSMArena Latest Devices',
+            pipeline: 'mobiles_direct',
+            baseUrl: 'https://www.gsmarena.com/',
+            homepageUrl: 'https://www.gsmarena.com/',
+            urlRules: {
+                exclude: [
+                    /sub_confirmation/i,
+                    /\/tipus\.php3/i,
+                    /\/rss/i,
+                    /\/privacy/i,
+                    /\/contact/i
+                ]
+            },
+            selectors: {
+                ticker: {
+                    primary: '.module.module-phones.module-latest a.module-phones-link[href]',
+                    fallback: ['a.module-phones-link[href]']
+                },
                 article: {
                     title: { primary: 'h1.specs-phone-name-title[data-spec="modelname"]', fallback: ['h1', 'meta[property="og:title"]', 'title'] },
                     subtitle: { primary: 'meta[name="description"]', fallback: ['meta[property="og:description"]'] },
@@ -374,19 +383,19 @@ const CONFIG = {
                 }
             }
         },
-        gsmarena_bd_devices: { 
-            name: 'GSMArena BD Devices', 
-            pipeline: 'mobiles_direct', 
-            baseUrl: 'https://www.gsmarena.com.bd/', 
-            homepageUrl: 'https://www.gsmarena.com.bd/', 
-            urlRules: { 
-                exclude: [ 
-                    /\/privacy/i, 
-                    /\/contact/i 
-                ] 
-            }, 
-            selectors: { 
-                ticker: { 
+        gsmarena_bd_devices: {
+            name: 'GSMArena BD Devices',
+            pipeline: 'mobiles_direct',
+            baseUrl: 'https://www.gsmarena.com.bd/',
+            homepageUrl: 'https://www.gsmarena.com.bd/',
+            urlRules: {
+                exclude: [
+                    /\/privacy/i,
+                    /\/contact/i
+                ]
+            },
+            selectors: {
+                ticker: {
                     // Latest devices grid items
                     // Note: `.product-thumb` contains two direct anchors (device + "View Details"). Exclude `.vdetails`.
                     primary: '.area .product-thumb > a[href][title]:not(.vdetails)',
@@ -528,6 +537,16 @@ const CONFIG = {
         ]
     },
 
+    proxy: {
+        get list() {
+            return parseList(process.env.SCRAPER_PROXIES || process.env.PROXY_LIST || '');
+        }
+    },
+
+    browser: {
+        timeout: 30000
+    },
+
     // Validation rules
     validation: {
         minContentLength: 200,
@@ -582,4 +601,63 @@ const CONFIG = {
     }
 };
 
+/**
+ * Configuration Validation
+ */
+function validateConfig() {
+    // Load environment variables before validation
+    EnvLoader.load();
+
+    const errors = [];
+
+    // Check database configuration
+    const dbConfig = {
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME
+    };
+
+    if (!dbConfig.host) errors.push('DB_HOST environment variable is required');
+    if (!dbConfig.user) errors.push('DB_USER environment variable is required');
+    if (!dbConfig.database) errors.push('DB_NAME environment variable is required');
+
+    // Validate numeric values
+    const port = parseInt(process.env.DB_PORT || '3306');
+    if (isNaN(port) || port < 1 || port > 65535) {
+        errors.push('DB_PORT must be a valid port number (1-65535)');
+    }
+
+    // Validate concurrency settings
+    const maxParallel = parseInt(process.env.MAX_PARALLEL_FETCHES || '5');
+    if (isNaN(maxParallel) || maxParallel < 1) {
+        errors.push('MAX_PARALLEL_FETCHES must be a positive integer');
+    }
+
+    // HTTP timeout
+    const timeout = parseInt(process.env.HTTP_TIMEOUT || '30000');
+    if (isNaN(timeout) || timeout < 1000) {
+        errors.push('HTTP_TIMEOUT must be >= 1000ms');
+    }
+
+    if (errors.length > 0) {
+        const message = `Configuration validation failed:\n${errors.join('\n')}`;
+        throw new Error(message);
+    }
+
+    return true;
+}
+
+// Add validation method to CONFIG
+CONFIG._validated = false;
+
+export function validateOnStartup() {
+    if (!CONFIG._validated) {
+        validateConfig();
+        CONFIG._validated = true;
+    }
+}
+
+export { validateConfig };
 export default CONFIG;

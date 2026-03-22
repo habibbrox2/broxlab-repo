@@ -27,7 +27,7 @@ class BrowserScraperService
     public function __construct(array $config = [])
     {
         $this->config = $config + [
-            'method' => 'api', // 'api' or 'local'
+            'method' => 'local', // 'api' or 'local'
             'api_url' => '', // Browserless or custom API URL
             'api_key' => '',
             'local_path' => dirname(__DIR__, 3) . '/scripts/browser_scraper.js',
@@ -45,10 +45,40 @@ class BrowserScraperService
      */
     public function scrape(string $url, array $selectors = []): array
     {
+        try {
+            // Validate URL
+            if (!filter_var($url, FILTER_VALIDATE_URL)) {
+                throw new \InvalidArgumentException("Invalid URL provided: {$url}");
+            }
+
+            $htmlResult = $this->fetchHtml($url);
+            if (!$htmlResult['success']) {
+                throw new \Exception($htmlResult['error'] ?? 'Failed to fetch HTML via browser scraper.');
+            }
+
+            $this->stats['success']++;
+            return $this->parseHtml($htmlResult['html'], $url, $selectors);
+
+        }
+        catch (\Exception $e) {
+            $this->stats['failures']++;
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Fetch raw HTML via browser runtime.
+     *
+     * @return array{success: bool, html?: string, error?: string}
+     */
+    public function fetchHtml(string $url): array
+    {
         $this->stats['requests']++;
 
         try {
-            // Validate URL
             if (!filter_var($url, FILTER_VALIDATE_URL)) {
                 throw new \InvalidArgumentException("Invalid URL provided: {$url}");
             }
@@ -56,20 +86,20 @@ class BrowserScraperService
             $html = '';
             if ($this->config['method'] === 'api' && !empty($this->config['api_url'])) {
                 $html = $this->fetchViaApi($url);
-            }
-            else {
+            } else {
                 $html = $this->fetchViaLocal($url);
             }
 
-            if (empty($html)) {
+            if (trim($html) === '') {
                 throw new \Exception("Failed to fetch HTML via browser scraper.");
             }
 
             $this->stats['success']++;
-            return $this->parseHtml($html, $url, $selectors);
-
-        }
-        catch (\Exception $e) {
+            return [
+                'success' => true,
+                'html' => $html,
+            ];
+        } catch (\Exception $e) {
             $this->stats['failures']++;
             return [
                 'success' => false,
@@ -188,6 +218,114 @@ class BrowserScraperService
         }
 
         return false;
+    }
+
+    /**
+     * Check browser runtime (Puppeteer) availability with a lightweight probe.
+     *
+     * @return array{available: bool, method: string, message: string, details?: string}
+     */
+    public function checkRuntimeStatus(): array
+    {
+        $method = (string)($this->config['method'] ?? 'local');
+
+        if ($method === 'api') {
+            if (!empty($this->config['api_url'])) {
+                return [
+                    'available' => true,
+                    'method' => 'api',
+                    'message' => 'Browser API configured',
+                    'details' => (string)$this->config['api_url'],
+                ];
+            }
+
+            return [
+                'available' => false,
+                'method' => 'api',
+                'message' => 'Browser API not configured',
+            ];
+        }
+
+        $scriptPath = (string)($this->config['local_path'] ?? '');
+        if ($scriptPath === '' || !file_exists($scriptPath)) {
+            return [
+                'available' => false,
+                'method' => 'local',
+                'message' => 'Local browser scraper script missing',
+                'details' => $scriptPath,
+            ];
+        }
+
+        $node = getenv('NODE_PATH') ?: 'node';
+        $probe = "import('puppeteer').then(()=>process.exit(0)).catch((e)=>{console.error(e&&e.message?e.message:'missing');process.exit(2);})";
+        $cmd = escapeshellcmd($node) . ' -e ' . escapeshellarg($probe);
+
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $process = proc_open($cmd, $descriptors, $pipes);
+        if (!is_resource($process)) {
+            return [
+                'available' => false,
+                'method' => 'local',
+                'message' => 'Failed to start node runtime',
+            ];
+        }
+
+        fclose($pipes[0]);
+        stream_set_blocking($pipes[1], false);
+        stream_set_blocking($pipes[2], false);
+        $stdout = '';
+        $stderr = '';
+        $start = time();
+        $exitCode = 0;
+        $timeoutSec = 6;
+
+        while (true) {
+            $stdout .= (string)stream_get_contents($pipes[1]);
+            $stderr .= (string)stream_get_contents($pipes[2]);
+
+            $status = proc_get_status($process);
+            if (!($status['running'] ?? false)) {
+                $exitCode = (int)($status['exitcode'] ?? 0);
+                break;
+            }
+
+            if ((time() - $start) > $timeoutSec) {
+                proc_terminate($process);
+                $exitCode = -1;
+                $stderr .= "\nTimeout after {$timeoutSec}s";
+                break;
+            }
+
+            usleep(100000);
+        }
+
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_close($process);
+
+        if ($exitCode === 0) {
+            return [
+                'available' => true,
+                'method' => 'local',
+                'message' => 'Puppeteer runtime detected',
+            ];
+        }
+
+        $details = trim($stderr ?: $stdout);
+        if ($details === '') {
+            $details = 'Puppeteer not available';
+        }
+
+        return [
+            'available' => false,
+            'method' => 'local',
+            'message' => 'Puppeteer unavailable',
+            'details' => $details,
+        ];
     }
 
     /**

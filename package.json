@@ -31,7 +31,7 @@
         "check:dist:budget": "node build/Scripts/check-dist-file-budget.mjs",
         "check:duplicates": "node build/Scripts/check-asset-duplicates.mjs",
         "check:firebase:dist": "node build/Scripts/check-firebase-dist-chunks.mjs",
-        "serve": "python -m http.server 8000 -d public_html",
+        "serve": "http-server public_html -p 8000",
         "firebase:providers:sync": "node scripts/firebase/activate-firebaseui-providers.mjs",
         "lint": "eslint --no-error-on-unmatched-pattern --config build/eslint.config.cjs \"public_html/assets/js/**/*.js\" \"public_html/assets/firebase/v2/**/*.js\" \"public_html/assets/ai-assistant/**/*.js\" \"build/Scripts/**/*.mjs\" \"build/esbuild.config.js\" \"build/esbuild-firebase.mjs\" \"build/esbuild-assistants.mjs\"",
         "e2e:ai-system": "node scripts/e2e/ai-system-sanity.mjs",
@@ -44,7 +44,7 @@
         "rag:process": "node src/index.js --process",
         "rag:search": "node src/index.js --search",
         "rag:init": "node src/index.js --init",
-        "all:start": "node src/all.js"
+        "all:start": "node src/server.js"
     },
     "keywords": [
         "firebase",
@@ -94,6 +94,10 @@
         "uuid": "^11.0.5",
         "winston": "^3.17.0",
         "fs-extra": "^11.2.0"
+        ,
+        "puppeteer": "^24.40.0",
+        "puppeteer-extra": "^3.3.6",
+        "puppeteer-extra-plugin-stealth": "^2.11.2"
     },
     "devDependencies": {
         "browserslist": "^4.28.1",
@@ -101,7 +105,8 @@
         "esbuild": "^0.27.3",
         "eslint": "8.57.1",
         "npm-run-all": "^4.1.5",
-        "tailwindcss": "^3.4.17"
+        "tailwindcss": "^3.4.17",
+        "http-server": "^14.1.1"
     },
     "engines": {
         "node": ">=20.0.0"

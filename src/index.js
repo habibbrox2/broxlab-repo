@@ -14,7 +14,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import multer from 'multer';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import fs from 'fs';
 import { z } from 'zod';
 
@@ -67,6 +67,142 @@ const parseBody = (schema, req, res) => {
     }
     return parsed.data;
 };
+
+export function attachRoutes(app, ragSystem, options = {}) {
+    const resolvedApp = app || express();
+    const {
+        includeHealth = true,
+        includeNotFound = true,
+        includeErrorHandler = true,
+        includeMiddleware = true,
+        corsOrigins,
+        bodyLimit,
+        rateLimitWindowMs,
+        rateLimitMax
+    } = options;
+
+    const resolvedBodyLimit = bodyLimit || SERVER_CONFIG.RAG_BODY_LIMIT;
+    const envCorsOrigins = (process.env.RAG_CORS_ORIGINS || '')
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
+    const allowOrigins = (corsOrigins && corsOrigins.length)
+        ? corsOrigins
+        : (envCorsOrigins.length ? envCorsOrigins : DEFAULT_CORS_ORIGINS);
+    const corsOptions = allowOrigins.length === 1 && allowOrigins[0] === '*'
+        ? { origin: '*' }
+        : { origin: allowOrigins, credentials: true };
+
+    if (includeMiddleware) {
+        const limiter = rateLimit({
+            windowMs: rateLimitWindowMs || SERVER_CONFIG.RAG_RATE_LIMIT_WINDOW_MS,
+            max: rateLimitMax || SERVER_CONFIG.RAG_RATE_LIMIT_MAX,
+            standardHeaders: true,
+            legacyHeaders: false
+        });
+
+        resolvedApp.use(helmet());
+        resolvedApp.use(cors(corsOptions));
+        resolvedApp.use('/api/', limiter);
+        resolvedApp.use(express.json({ limit: resolvedBodyLimit }));
+        resolvedApp.use(express.urlencoded({ extended: true, limit: resolvedBodyLimit }));
+    }
+
+    // Ensure uploads dir
+    if (!fs.existsSync('uploads')) {
+        fs.mkdirSync('uploads', { recursive: true });
+    }
+    resolvedApp.use('/uploads', express.static('uploads'));
+
+    if (includeHealth) {
+        resolvedApp.get('/health', (req, res) => {
+            res.json({ status: 'ok', timestamp: new Date().toISOString(), pipeline: !!ragSystem?.pipeline });
+        });
+    }
+
+    resolvedApp.post('/api/process/pdf', upload.single('file'), async (req, res) => {
+        try {
+            const parsed = parseBody(processFileSchema, req, res);
+            if (!parsed) return;
+            const pdfPath = req.body.filePath || req.file?.path;
+            if (!pdfPath) return res.status(400).json({ error: 'filePath required' });
+            const result = await ragSystem.processPdf(pdfPath, parsed);
+            res.json({ success: true, ...result });
+        } catch (e) {
+            ragSystem?.logger?.error?.('PDF processing failed', { error: e.message });
+            res.status(500).json({ error: e.message });
+        }
+    });
+
+    resolvedApp.post('/api/process/image', upload.single('file'), async (req, res) => {
+        try {
+            const parsed = parseBody(processFileSchema, req, res);
+            if (!parsed) return;
+            const imgPath = req.body.filePath || req.file?.path;
+            if (!imgPath) return res.status(400).json({ error: 'filePath required' });
+            const result = await ragSystem.processImage(imgPath, parsed);
+            res.json({ success: true, ...result });
+        } catch (e) {
+            ragSystem?.logger?.error?.('Image processing failed', { error: e.message });
+            res.status(500).json({ error: e.message });
+        }
+    });
+
+    resolvedApp.post('/api/rag/ingest', async (req, res) => {
+        try {
+            const parsed = parseBody(ingestSchema, req, res);
+            if (!parsed) return;
+            if (!ragSystem.pipeline) await ragSystem.initializePipeline();
+            const chunks = await ragSystem.pipeline.ingestText(parsed.text, parsed.source || 'api');
+            res.json({ success: true, chunksCreated: chunks });
+        } catch (e) {
+            ragSystem?.logger?.error?.('RAG ingest failed', { error: e.message });
+            res.status(500).json({ error: e.message });
+        }
+    });
+
+    resolvedApp.post('/api/search', async (req, res) => {
+        try {
+            const parsed = parseBody(searchSchema, req, res);
+            if (!parsed) return;
+            if (!ragSystem.pipeline) await ragSystem.initializePipeline();
+            const results = await ragSystem.search(parsed.query, parsed.k || 5);
+            res.json({ success: true, query: parsed.query, count: results.length, results });
+        } catch (e) {
+            ragSystem?.logger?.error?.('RAG search failed', { error: e.message });
+            res.status(500).json({ error: e.message });
+        }
+    });
+
+    resolvedApp.get('/api/search', async (req, res) => {
+        try {
+            const q = String(req.query.q || '').trim();
+            const k = Number.parseInt(req.query.k || '5', 10);
+            if (!q) return res.status(400).json({ error: 'q required' });
+            if (!ragSystem.pipeline) await ragSystem.initializePipeline();
+            const results = await ragSystem.search(q, Number.isFinite(k) ? k : 5);
+            res.json({ success: true, query: q, count: results.length, results });
+        } catch (e) {
+            ragSystem?.logger?.error?.('RAG search failed', { error: e.message });
+            res.status(500).json({ error: e.message });
+        }
+    });
+
+    if (includeErrorHandler) {
+        resolvedApp.use((err, req, res, next) => {
+            ragSystem?.logger?.error?.('Server error', { error: err.message });
+            res.status(500).json({ error: 'Internal error' });
+        });
+    }
+
+    if (includeNotFound) {
+        resolvedApp.use((req, res) => {
+            res.status(404).json({ error: 'Not found' });
+        });
+    }
+
+    return resolvedApp;
+}
 
 // Get directory paths
 const __filename = fileURLToPath(import.meta.url);
@@ -308,115 +444,11 @@ class MultimodalRAGSystem {
     async serve(port = 3000) {
         const app = express();
         const resolvedPort = Number.isFinite(Number(port)) ? Number(port) : SERVER_CONFIG.RAG_PORT;
-        const corsOrigins = (process.env.RAG_CORS_ORIGINS || '')
-            .split(',')
-            .map(item => item.trim())
-            .filter(Boolean);
-        const allowOrigins = corsOrigins.length ? corsOrigins : DEFAULT_CORS_ORIGINS;
-        const corsOptions = allowOrigins.length === 1 && allowOrigins[0] === '*'
-            ? { origin: '*' }
-            : { origin: allowOrigins, credentials: true };
-        const limiter = rateLimit({
-            windowMs: SERVER_CONFIG.RAG_RATE_LIMIT_WINDOW_MS,
-            max: SERVER_CONFIG.RAG_RATE_LIMIT_MAX,
-            standardHeaders: true,
-            legacyHeaders: false
-        });
-        
-        // Middleware
-        app.use(helmet());
-        app.use(cors(corsOptions));
-        app.use('/api/', limiter);
-        app.use(express.json({ limit: SERVER_CONFIG.RAG_BODY_LIMIT }));
-        app.use(express.urlencoded({ extended: true, limit: SERVER_CONFIG.RAG_BODY_LIMIT }));
-        
-        // Ensure uploads dir
-        if (!fs.existsSync('uploads')) {
-            fs.mkdirSync('uploads', { recursive: true });
-        }
-        app.use('/uploads', express.static('uploads'));
-        
-        // Routes
-        app.get('/health', (req, res) => {
-            res.json({ status: 'ok', timestamp: new Date().toISOString(), pipeline: !!this.pipeline });
-        });
-        
-        app.post('/api/process/pdf', upload.single('file'), async (req, res) => {
-            try {
-                const parsed = parseBody(processFileSchema, req, res);
-                if (!parsed) return;
-                const pdfPath = req.body.filePath || req.file?.path;
-                if (!pdfPath) return res.status(400).json({ error: 'filePath required' });
-                const result = await this.processPdf(pdfPath, parsed);
-                res.json({ success: true, ...result });
-            } catch (e) {
-                this.logger.error('PDF processing failed', { error: e.message });
-                res.status(500).json({ error: e.message });
-            }
-        });
-        
-        app.post('/api/process/image', upload.single('file'), async (req, res) => {
-            try {
-                const parsed = parseBody(processFileSchema, req, res);
-                if (!parsed) return;
-                const imgPath = req.body.filePath || req.file?.path;
-                if (!imgPath) return res.status(400).json({ error: 'filePath required' });
-                const result = await this.processImage(imgPath, parsed);
-                res.json({ success: true, ...result });
-            } catch (e) {
-                this.logger.error('Image processing failed', { error: e.message });
-                res.status(500).json({ error: e.message });
-            }
-        });
-        
-        app.post('/api/rag/ingest', async (req, res) => {
-            try {
-                const parsed = parseBody(ingestSchema, req, res);
-                if (!parsed) return;
-                if (!this.pipeline) await this.initializePipeline();
-                const chunks = await this.pipeline.ingestText(parsed.text, parsed.source || 'api');
-                res.json({ success: true, chunksCreated: chunks });
-            } catch (e) {
-                this.logger.error('RAG ingest failed', { error: e.message });
-                res.status(500).json({ error: e.message });
-            }
-        });
-        
-        app.post('/api/search', async (req, res) => {
-            try {
-                const parsed = parseBody(searchSchema, req, res);
-                if (!parsed) return;
-                if (!this.pipeline) await this.initializePipeline();
-                const results = await this.search(parsed.query, parsed.k || 5);
-                res.json({ success: true, query: parsed.query, count: results.length, results });
-            } catch (e) {
-                this.logger.error('RAG search failed', { error: e.message });
-                res.status(500).json({ error: e.message });
-            }
-        });
-        
-        app.get('/api/search', async (req, res) => {
-            try {
-                const q = String(req.query.q || '').trim();
-                const k = Number.parseInt(req.query.k || '5', 10);
-                if (!q) return res.status(400).json({ error: 'q required' });
-                if (!this.pipeline) await this.initializePipeline();
-                const results = await this.search(q, Number.isFinite(k) ? k : 5);
-                res.json({ success: true, query: q, count: results.length, results });
-            } catch (e) {
-                this.logger.error('RAG search failed', { error: e.message });
-                res.status(500).json({ error: e.message });
-            }
-        });
-        
-        // Error handler
-        app.use((err, req, res, next) => {
-            this.logger.error('Server error', { error: err.message });
-            res.status(500).json({ error: 'Internal error' });
-        });
-        
-        app.use((req, res) => {
-            res.status(404).json({ error: 'Not found' });
+        attachRoutes(app, this, {
+            includeHealth: true,
+            includeNotFound: true,
+            includeErrorHandler: true,
+            includeMiddleware: true
         });
         
         // Start server
@@ -540,7 +572,8 @@ API Endpoints:
     return server;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const entryHref = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
+if (import.meta.url === entryHref) {
     main().catch(err => {
         console.error('Error:', err.message);
         process.exit(1);

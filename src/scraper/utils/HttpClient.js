@@ -6,12 +6,16 @@
 import axios from 'axios';
 import CONFIG from '../config.js';
 import Logger from './Logger.js';
+import URLValidator from './URLValidator.js';
+import BrowserAgent from './BrowserAgent.js';
 
 class HttpClient {
     constructor() {
         this.userAgents = CONFIG.http.userAgents;
         this.currentUAIndex = 0;
         this.requestCount = 0;
+        this.proxyList = CONFIG.proxy.list;
+        this.proxyIndex = 0;
     }
 
     /**
@@ -44,7 +48,8 @@ class HttpClient {
             },
             // We handle redirects manually so we can detect redirect loops cleanly.
             maxRedirects,
-            validateStatus: (status) => status < 500 // Don't throw on 4xx
+            validateStatus: (status) => status < 500, // Don't throw on 4xx
+            proxy: options.proxy ?? false
         });
     }
 
@@ -75,7 +80,7 @@ class HttpClient {
         }
         return true; // Network errors are retryable
     }
- 
+
     _isWafChallengeBody(body) {
         const s = String(body || '').toLowerCase();
         if (!s) return false;
@@ -103,22 +108,65 @@ class HttpClient {
         }
     }
 
+    _getNextProxy() {
+        if (!this.proxyList || this.proxyList.length === 0) {
+            return null;
+        }
+        const proxy = this.proxyList[this.proxyIndex % this.proxyList.length];
+        this.proxyIndex = (this.proxyIndex + 1) % this.proxyList.length;
+        return proxy || null;
+    }
+
+    _buildProxyConfig(proxyUrl) {
+        if (!proxyUrl) return null;
+        try {
+            const parsed = new URL(proxyUrl);
+            const config = {
+                protocol: parsed.protocol.replace(':', ''),
+                host: parsed.hostname,
+                port: Number(parsed.port || 80)
+            };
+            if (parsed.username || parsed.password) {
+                config.auth = {
+                    username: decodeURIComponent(parsed.username),
+                    password: decodeURIComponent(parsed.password)
+                };
+            }
+            return config;
+        } catch (e) {
+            Logger.warn('Invalid proxy url', { proxyUrl });
+            return null;
+        }
+    }
+
     /**
      * Make HTTP request with retry logic
      */
     async fetch(url, options = {}) {
+        // Validate URL for SSRF protection
+        const validation = URLValidator.validate(url);
+        if (!validation.valid) {
+            const error = new Error(validation.error);
+            error.code = 'SSRF_BLOCKED';
+            Logger.error('SSRF protection: URL blocked', { url, reason: validation.error });
+            throw error;
+        }
+
         const maxRetries = options.maxRetries ?? CONFIG.http.maxRetries;
         const retryDelay = options.retryDelay ?? CONFIG.http.retryDelay;
 
         let lastError = null;
         let attemptsMade = 0;
+        let useProxy = false;
 
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
             try {
                 attemptsMade = attempt + 1;
                 Logger.debug(`Fetching: ${url}`, { attempt: attempt + 1 });
 
-                const client = this._createInstance({ maxRedirects: 0 });
+                const proxyUrl = useProxy ? this._getNextProxy() : null;
+                const proxyConfig = useProxy ? this._buildProxyConfig(proxyUrl) : null;
+                const client = this._createInstance({ maxRedirects: 0, proxy: proxyConfig ?? false });
 
                 const visited = new Set();
                 let currentUrl = url;
@@ -155,15 +203,28 @@ class HttpClient {
                 if (!response) {
                     throw new Error('no_response');
                 }
- 
-                // Some WAFs return HTTP 200 with a challenge page.
-                if (response.status === 200 && this._isWafChallengeBody(response.data)) {
-                    throw new Error('waf_challenge');
+
+                // Some WAFs return HTTP 200/403 with a challenge page.
+                if (this._isWafChallengeBody(response.data) || [403, 503].includes(response.status)) {
+                    return {
+                        success: false,
+                        error: 'waf_challenge',
+                        waf_detected: true,
+                        status: response.status,
+                        headers: response.headers,
+                        elapsed_ms: Date.now() - startedAt
+                    };
                 }
 
                 // Check for client errors (4xx except 429)
                 if (response.status >= 400 && response.status < 500 && response.status !== 429) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                if (response.status === 429) {
+                    const err = new Error('HTTP 429');
+                    err.response = response;
+                    throw err;
                 }
 
                 Logger.scraping(url, 'success', {
@@ -182,6 +243,10 @@ class HttpClient {
             } catch (error) {
                 lastError = error;
                 const isRetryable = this._isRetryableError(error);
+                const status = error?.response?.status || 0;
+                if ((status === 429 || status >= 500) && this.proxyList.length > 0) {
+                    useProxy = true;
+                }
 
                 Logger.warn(`Request failed: ${url}`, {
                     attempt: attempt + 1,
@@ -225,6 +290,30 @@ class HttpClient {
                 html: result.data,
                 status: result.status,
                 elapsed_ms: result.elapsed_ms || 0
+            };
+        }
+
+        if (result.waf_detected) {
+            const browser = await BrowserAgent.fetchHtml(url, {
+                userAgent: this._getUserAgent()
+            });
+            if (browser.success) {
+                return {
+                    success: true,
+                    html: browser.html,
+                    status: 200,
+                    elapsed_ms: result.elapsed_ms || 0,
+                    via_browser: true
+                };
+            }
+            return {
+                success: false,
+                error: browser.error === 'puppeteer_unavailable'
+                    ? 'WAF detected but Puppeteer unavailable. Please install Puppeteer/browser runtime.'
+                    : (browser.error || result.error),
+                status: result.status || 0,
+                elapsed_ms: result.elapsed_ms || 0,
+                waf_detected: true
             };
         }
 

@@ -4,11 +4,14 @@
  */
 
 import Logger from '../utils/Logger.js';
+import crypto from 'crypto';
+import DatabaseService from '../services/DatabaseService.js';
 
 class DiffDetector {
     constructor() {
         this.existingLinks = new Set();
         this.db = null;
+        this.sourceId = null;
     }
 
     /**
@@ -121,6 +124,88 @@ class DiffDetector {
      */
     reset() {
         this.existingLinks.clear();
+    }
+
+    /**
+     * Initialize with database support for persistent URL tracking
+     */
+    async initializeWithDb(dbService, sourceId = null) {
+        this.db = dbService;
+        this.sourceId = sourceId;
+
+        if (!this.db || !this.db.connected) {
+            Logger.warn('DiffDetector: Database not available, using in-memory tracking only');
+            return;
+        }
+
+        try {
+            // Load persisted URLs from database
+            const result = await this.db.pool.query(
+                'SELECT canonical_url FROM scraper_seen_urls WHERE source_id = ? OR source_id IS NULL',
+                [this.sourceId]
+            );
+
+            if (result && Array.isArray(result[0])) {
+                for (const row of result[0]) {
+                    this.existingLinks.add(this.normalizeLink(row.canonical_url));
+                }
+            }
+
+            Logger.info(`DiffDetector initialized with persistent URLs`, {
+                sourceId: this.sourceId,
+                count: this.existingLinks.size
+            });
+        } catch (error) {
+            Logger.warn('Failed to load persisted URLs', { error: error.message });
+        }
+    }
+
+    /**
+     * Add URL to persistent storage
+     */
+    async addUrlToPersistentStorage(url) {
+        if (!this.db || !this.db.connected) return;
+
+        try {
+            const canonicalUrl = this.normalizeLink(url);
+            const urlHash = crypto.createHash('sha256').update(canonicalUrl).digest('hex');
+
+            await this.db.pool.query(
+                `INSERT INTO scraper_seen_urls (url_hash, canonical_url, source_id, ttl_days)
+                 VALUES (?, ?, ?, 30)
+                 ON DUPLICATE KEY UPDATE last_seen = NOW()`,
+                [urlHash, canonicalUrl, this.sourceId || null]
+            );
+        } catch (error) {
+            Logger.warn('Failed to persist URL to database', { url, error: error.message });
+        }
+    }
+
+    /**
+     * Find new links and persist them to database
+     */
+    async findNewLinksWithPersistence(links) {
+        const newLinks = [];
+
+        for (const item of links) {
+            const normalizedLink = this.normalizeLink(item.link);
+
+            if (!this.existingLinks.has(normalizedLink)) {
+                newLinks.push({
+                    ...item,
+                    link: normalizedLink
+                });
+
+                // Add to in-memory cache
+                this.existingLinks.add(normalizedLink);
+
+                // Persist to database
+                await this.addUrlToPersistentStorage(normalizedLink);
+            }
+        }
+
+        Logger.info(`Found ${newLinks.length} new links (persisted to DB)`, { sourceId: this.sourceId });
+        return newLinks;
     }
 }
 

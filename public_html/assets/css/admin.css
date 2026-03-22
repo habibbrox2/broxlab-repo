@@ -4569,3 +4569,163 @@ textarea.font-monospace {
     background: #334155;
     border-color: rgba(148, 163, 184, 0.55);
 }
+
+/* AutoContent Queue View */
+.autocontent-queue-view {
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.12);
+    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.autocontent-queue-view .editor-glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-soft);
+    height: 100%;
+    min-height: 0;
+    transition: all 0.3s ease;
+}
+
+.autocontent-queue-view .editor-glass-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+}
+
+.autocontent-queue-view .compare-container {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 2rem;
+    height: auto;
+    min-height: 0;
+}
+
+@media (max-width: 1200px) {
+    .autocontent-queue-view .compare-container {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: 0;
+    }
+}
+
+.autocontent-queue-view .scroll-pane {
+    overflow-y: auto;
+    padding: 1.5rem;
+    height: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.autocontent-queue-view .scroll-pane::-webkit-scrollbar {
+    width: 6px;
+}
+
+.autocontent-queue-view .scroll-pane::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.autocontent-queue-view .scroll-pane::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.autocontent-queue-view .sticky-actions {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.95));
+    backdrop-filter: blur(8px);
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    margin: 0 -1.5rem -1.5rem -1.5rem;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.autocontent-queue-view .seo-floating-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.1rem;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+    transition: transform 0.3s ease;
+}
+
+.autocontent-queue-view .seo-floating-badge:hover {
+    transform: scale(1.1);
+}
+
+.autocontent-queue-view .content-preview-raw {
+    font-size: 0.95rem;
+    color: #475569;
+    line-height: 1.8;
+}
+
+.autocontent-queue-view .content-preview-raw img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin: 1rem 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.autocontent-queue-view .content-preview-raw p {
+    margin-bottom: 1rem;
+}
+
+.autocontent-queue-view .panel-header {
+    background: linear-gradient(to right, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+    border-radius: 16px 16px 0 0;
+    padding: 1rem 1.5rem;
+    margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+}
+
+.autocontent-queue-view .panel-header h6 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.autocontent-queue-view .form-control-lg {
+    font-size: 1.1rem;
+    padding: 0.875rem 1rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.autocontent-queue-view .form-control-lg:focus {
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.autocontent-queue-view .form-control {
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.autocontent-queue-view .form-control:focus {
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.autocontent-queue-view .badge-seo {
+    padding: 0.5rem 0.85rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.8rem;
+}

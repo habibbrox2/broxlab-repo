@@ -200,7 +200,55 @@ class HttpClientService
             $response = $this->client->get($url, [
                 'headers' => $headers,
                 'proxy' => $proxyConfig,
+                'http_errors' => false,
             ]);
+
+            $status = $response->getStatusCode();
+            $body = (string)$response->getBody();
+            $responseHeaders = $response->getHeaders();
+
+            if (WafDetector::detect($body, $status, $responseHeaders)) {
+                $domain = parse_url($url, PHP_URL_HOST);
+                $this->delayManager->recordFailure($domain);
+                $this->proxyManager->markFailure();
+                return [
+                    'success' => false,
+                    'error' => 'waf_detected',
+                    'status' => $status,
+                    'body' => $body,
+                    'headers' => $responseHeaders,
+                    'url' => (string)$response->getHeaderLine('X-Guzzle-Redirect-Uri') ?: $url,
+                    'waf_detected' => true,
+                ];
+            }
+
+            if (in_array($status, $this->config['retry_on_status'], true) && $this->proxyManager->isEnabled()) {
+                $retryProxy = $this->getProxyConfig(null, true);
+                if (!empty($retryProxy) && $retryProxy !== $proxyConfig) {
+                    $response = $this->client->get($url, [
+                        'headers' => $headers,
+                        'proxy' => $retryProxy,
+                        'http_errors' => false,
+                    ]);
+                    $status = $response->getStatusCode();
+                    $body = (string)$response->getBody();
+                    $responseHeaders = $response->getHeaders();
+                }
+            }
+
+            if ($status >= 400) {
+                $domain = parse_url($url, PHP_URL_HOST);
+                $this->delayManager->recordFailure($domain);
+                $this->proxyManager->markFailure();
+                return [
+                    'success' => false,
+                    'error' => 'HTTP ' . $status,
+                    'status' => $status,
+                    'body' => $body,
+                    'headers' => $responseHeaders,
+                    'url' => (string)$response->getHeaderLine('X-Guzzle-Redirect-Uri') ?: $url,
+                ];
+            }
 
             $domain = parse_url($url, PHP_URL_HOST);
             $this->delayManager->recordSuccess($domain);
@@ -208,9 +256,9 @@ class HttpClientService
 
             return [
                 'success' => true,
-                'status' => $response->getStatusCode(),
-                'body' => (string)$response->getBody(),
-                'headers' => $response->getHeaders(),
+                'status' => $status,
+                'body' => $body,
+                'headers' => $responseHeaders,
                 'url' => (string)$response->getHeaderLine('X-Guzzle-Redirect-Uri') ?: $url,
                 'response_time' => 0, // Could track this with more instrumentation
             ];
@@ -248,13 +296,28 @@ class HttpClientService
                 'headers' => $headers,
                 'form_params' => $data,
                 'proxy' => $proxyConfig,
+                'http_errors' => false,
             ]);
+
+            $status = $response->getStatusCode();
+            $body = (string)$response->getBody();
+            $responseHeaders = $response->getHeaders();
+
+            if ($status >= 400) {
+                return [
+                    'success' => false,
+                    'error' => 'HTTP ' . $status,
+                    'status' => $status,
+                    'body' => $body,
+                    'headers' => $responseHeaders,
+                ];
+            }
 
             return [
                 'success' => true,
-                'status' => $response->getStatusCode(),
-                'body' => (string)$response->getBody(),
-                'headers' => $response->getHeaders(),
+                'status' => $status,
+                'body' => $body,
+                'headers' => $responseHeaders,
             ];
         } catch (RequestException $e) {
             return $this->handleError($e, $url);
@@ -290,7 +353,7 @@ class HttpClientService
     /**
      * Get proxy configuration
      */
-    private function getProxyConfig($forcedProxy = null): ?string
+    private function getProxyConfig($forcedProxy = null, bool $forceRotation = false): ?string
     {
         // If reverse proxy is configured, use it
         if ($this->reverseProxyUrl !== null) {
@@ -305,7 +368,7 @@ class HttpClientService
             return $forcedProxy;
         }
 
-        if (!$this->config['proxy_rotation']) {
+        if (!$forceRotation && !$this->config['proxy_rotation']) {
             return null;
         }
 

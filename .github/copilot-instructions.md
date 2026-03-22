@@ -1,16 +1,15 @@
 # GitHub Copilot Instructions - BroxBhai (Token Saver)
 
-Read first:
-- `AGENTS.md`
-- `docs/ai/AI_QUICK_CONTEXT.md`
+**→ Read first:** [`AGENTS.md`](../AGENTS.md) + [`docs/ai/AI_QUICK_CONTEXT.md`](../docs/ai/AI_QUICK_CONTEXT.md)
 
-Hard rules:
-- Search first (`rg`), then make minimal diffs.
-- Use Models + prepared statements; avoid `SELECT *`.
-- Enforce CSRF for state-changing endpoints.
-- Do not edit generated assets in `public_html/assets/**/dist/**`.
-- No secrets: never commit `.env` or paste real tokens/keys.
+**→ Shared Rules:** See [`editor/.rules-base.md`](../editor/.rules-base.md) for hard rules (no duplication here).
 
-Verification:
-- `php -l path/to/file.php`
-- `php scripts/quality_scan.php`
+## Copilot-Specific Notes
+- **In-editor chat:** Use Copilot's chat for quick clarifications before committing to edits
+- **Inline suggestions:** Trust Copilot's pattern matching for boilerplate, but verify logic
+
+## Quick Verification
+```bash
+php -l path/to/file.php
+php scripts/quality_scan.php
+```

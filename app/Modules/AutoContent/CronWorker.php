@@ -6,9 +6,9 @@ namespace App\Modules\AutoContent;
 
 use App\Modules\Scraper\DuplicateCheckerService;
 use App\Modules\Scraper\EnhancedScraperService;
+use App\Modules\Scraper\HttpClientService;
 use App\Modules\Scraper\NodeScraperRunner;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
+use App\Modules\Scraper\BrowserScraperService;
 use mysqli;
 use Symfony\Component\DomCrawler\Crawler;
 use Throwable;
@@ -25,6 +25,8 @@ class CronWorker
     private \AutoContentModel $model;
     private array $config;
     private NodeScraperRunner $nodeRunner;
+    private HttpClientService $httpClient;
+    private BrowserScraperService $browserScraper;
 
     public function __construct(mysqli $mysqli, array $config = [])
     {
@@ -32,6 +34,8 @@ class CronWorker
         $defaults = [
             'max_articles_per_source' => 10,
             'max_sources_per_run' => 20,
+            'max_retry_per_run' => 20,
+            'retry_delay_minutes' => 10,
             'proxies' => [],
             'dedup_similarity' => 0.8,
             'telegram' => [
@@ -51,6 +55,13 @@ class CronWorker
         $this->model = new \AutoContentModel($mysqli);
         $this->model->ensureTablesExist();
         $this->nodeRunner = new NodeScraperRunner();
+        $this->httpClient = new HttpClientService([
+            'timeout' => 20,
+            'proxy' => [
+                'proxies' => $this->config['proxies'],
+            ],
+        ]);
+        $this->browserScraper = new BrowserScraperService();
     }
 
     /**
@@ -63,7 +74,15 @@ class CronWorker
             'articles_created' => 0,
             'duplicates_skipped' => 0,
             'errors' => [],
+            'retry_processed' => 0,
+            'retry_success' => 0,
+            'retry_failed' => 0,
         ];
+
+        $retrySummary = $this->processRetryQueue((int)$this->config['max_retry_per_run']);
+        $summary['retry_processed'] = $retrySummary['processed'];
+        $summary['retry_success'] = $retrySummary['success'];
+        $summary['retry_failed'] = $retrySummary['failed'];
 
         $sources = $this->model->getActiveSources();
         $sources = array_slice($sources, 0, (int)$this->config['max_sources_per_run']);
@@ -84,6 +103,51 @@ class CronWorker
         }
 
         return $summary;
+    }
+
+    private function processRetryQueue(int $limit): array
+    {
+        $items = $this->model->getPendingScrapeQueue($limit);
+        $processed = 0;
+        $success = 0;
+        $failed = 0;
+
+        foreach ($items as $item) {
+            $processed++;
+            $queueId = (int)($item['id'] ?? 0);
+            $sourceId = (int)($item['source_id'] ?? 0);
+            $url = (string)($item['url'] ?? '');
+            $attempts = (int)($item['attempts'] ?? 0) + 1;
+            $maxAttempts = (int)($item['max_attempts'] ?? 3);
+
+            $this->model->markScrapeQueueProcessing($queueId);
+
+            $source = $sourceId > 0 ? $this->model->getSourceById($sourceId) : null;
+            if (!$source) {
+                $this->model->markScrapeQueueFailed($queueId, 'source_not_found', true, null);
+                $failed++;
+                continue;
+            }
+
+            $ok = $this->ingestArticle($source, ['url' => $url], true);
+            if ($ok) {
+                $this->model->markScrapeQueueSuccess($queueId, null);
+                $success++;
+                continue;
+            }
+
+            $isFinal = $attempts >= $maxAttempts;
+            $delayMinutes = max(5, (int)($this->config['retry_delay_minutes'] ?? 10));
+            $nextAttempt = $isFinal ? null : date('Y-m-d H:i:s', time() + ($delayMinutes * $attempts * 60));
+            $this->model->markScrapeQueueFailed($queueId, 'retry_failed', $isFinal, $nextAttempt);
+            $failed++;
+        }
+
+        return [
+            'processed' => $processed,
+            'success' => $success,
+            'failed' => $failed,
+        ];
     }
 
     private function shouldFetch(array $source): bool
@@ -187,7 +251,7 @@ class CronWorker
         return ['created' => $created, 'duplicates' => $duplicates];
     }
 
-    private function ingestArticle(array $source, array $item): bool 
+    private function ingestArticle(array $source, array $item, bool $fromQueue = false): bool 
     { 
         $url = (string)($item['url'] ?? ''); 
         $sid = (int)($source['id'] ?? 0); 
@@ -196,6 +260,9 @@ class CronWorker
         $elapsed = microtime(true) - $start; 
         if (!($scraped['success'] ?? false)) { 
             $this->model->insertScrapeLog($sid > 0 ? $sid : null, $url, 'article_fetch_failed', null, (float)$elapsed, (string)($scraped['error'] ?? 'scrape_failed')); 
+            if (!$fromQueue && $sid > 0) {
+                $this->model->enqueueScrapeQueue($sid, $url, (string)($scraped['error_code'] ?? $scraped['error'] ?? 'scrape_failed'));
+            }
             return false; 
         } 
  
@@ -421,28 +488,19 @@ class CronWorker
 
     private function fetchHtml(string $url): ?string
     {
-        $client = new Client([
-            'timeout' => 20,
-            'headers' => [
-                'User-Agent' => 'Mozilla/5.0 (compatible; BroxBhaiBot/1.0)',
-            ],
-        ]);
-
-        $options = [];
-        if (!empty($this->config['proxies'])) {
-            $proxy = $this->config['proxies'][array_rand($this->config['proxies'])];
-            if (!empty($proxy)) {
-                $options['proxy'] = $proxy;
+        $response = $this->httpClient->get($url, ['delay' => false]);
+        if (!($response['success'] ?? false)) {
+            if (($response['waf_detected'] ?? false) && $this->browserScraper->isAvailable()) {
+                $browser = $this->browserScraper->fetchHtml($url);
+                if ($browser['success'] ?? false) {
+                    return (string)($browser['html'] ?? '');
+                }
             }
-        }
-
-        try {
-            $response = $client->get($url, $options);
-            return (string)$response->getBody();
-        } catch (GuzzleException $e) {
-            error_log("fetchHtml failed for {$url}: " . $e->getMessage());
+            error_log("fetchHtml failed for {$url}: " . ($response['error'] ?? 'fetch_failed'));
             return null;
         }
+
+        return (string)($response['body'] ?? '');
     }
 
     private function resolveUrl(string $href, string $base): string 

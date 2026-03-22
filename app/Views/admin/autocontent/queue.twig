@@ -169,15 +169,36 @@
   }
 </style>
 
+{# Content Type Tabs #}
+<ul class="nav nav-pills mb-2 flex-wrap gap-1">
+  <li class="nav-item">
+    <a class="nav-link {{ current_content_type == '' ? 'active' : '' }} btn-sm"
+       href="/admin/autocontent/queue{% if current_status %}?status={{ current_status }}{% endif %}{% if search %}{% if current_status %}&{% else %}?{% endif %}search={{ search }}{% endif %}">
+      All
+    </a>
+  </li>
+  {% for ct in ['articles', 'pages', 'mobiles', 'services'] %}
+    <li class="nav-item">
+      <a class="nav-link {{ current_content_type == ct ? 'active' : '' }} btn-sm"
+         href="/admin/autocontent/queue?content_type={{ ct }}{% if current_status %}&status={{ current_status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+        {{ ct|capitalize }}
+      </a>
+    </li>
+  {% endfor %}
+</ul>
+
 {# Status Filter Tabs #}
 <ul class="nav nav-pills mb-3 flex-wrap gap-1">
   <li class="nav-item">
-    <a class="nav-link {{ current_status == '' ? 'active' : '' }} btn-sm" href="/admin/autocontent/queue">All</a>
+    <a class="nav-link {{ current_status == '' ? 'active' : '' }} btn-sm"
+       href="/admin/autocontent/queue{% if current_content_type %}?content_type={{ current_content_type }}{% endif %}{% if search %}{% if current_content_type %}&{% else %}?{% endif %}search={{ search }}{% endif %}">
+      All
+    </a>
   </li>
   {% for status_key in ['collected', 'processing', 'processed', 'approved', 'published', 'rejected', 'failed'] %}
     <li class="nav-item">
       <a class="nav-link {{ current_status == status_key ? 'active' : '' }} btn-sm"
-         href="/admin/autocontent/queue?status={{ status_key }}">
+         href="/admin/autocontent/queue?status={{ status_key }}{% if current_content_type %}&content_type={{ current_content_type }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
         {{ status_key|capitalize }}
       </a>
     </li>
@@ -187,10 +208,11 @@
 {# Search #}
 <form method="GET" action="/admin/autocontent/queue" class="mb-3">
   {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+  {% if current_content_type %}<input type="hidden" name="content_type" value="{{ current_content_type }}">{% endif %}
   <div class="input-group input-group-sm" style="max-width: 400px;">
     <input type="text" class="form-control" name="search" value="{{ search }}" placeholder="Search by title...">
     <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
-    {% if search %}<a href="/admin/autocontent/queue{% if current_status %}?status={{ current_status }}{% endif %}" class="btn btn-outline-danger"><i class="bi bi-x"></i></a>{% endif %}
+    {% if search %}<a href="/admin/autocontent/queue{% if current_status or current_content_type %}?{% endif %}{% if current_status %}status={{ current_status }}{% endif %}{% if current_content_type %}{% if current_status %}&{% endif %}content_type={{ current_content_type }}{% endif %}" class="btn btn-outline-danger"><i class="bi bi-x"></i></a>{% endif %}
   </div>
 </form>
 
@@ -206,8 +228,10 @@
             </th>
             <th width="50">ID</th>
             <th>Article Information</th>
+            <th width="120">Author</th>
             <th>Source</th>
             <th>Pipeline Status</th>
+            <th width="110">Type</th>
             <th width="70">SEO</th>
             <th width="70">Words</th>
             <th>Created</th>
@@ -223,13 +247,24 @@
             <td class="text-muted small">#{{ item.id }}</td>
             <td>
               <a href="/admin/autocontent/queue/view?id={{ item.id }}" class="text-decoration-none fw-bold text-dark d-block">
-                {{ item.ai_title ?? item.original_title ?? 'Untitled' }}
+                {{ item.display_title ?? 'Untitled' }}
               </a>
-              {% if item.original_author %}
-                <small class="text-primary d-block mb-1" style="font-size: 0.7rem;"><i class="bi bi-person me-1"></i>{{ item.original_author }}</small>
+              {% if item.url %}
+                <small class="text-muted text-truncate d-block" style="max-width: 400px; font-size: 0.75rem;">
+                  <i class="bi bi-link-45deg me-1"></i>{{ item.url }}
+                </small>
               {% endif %}
               {% if item.source_url %}
-                <small class="text-muted text-truncate d-block" style="max-width: 400px; font-size: 0.75rem;">{{ item.source_url }}</small>
+                <small class="text-muted text-truncate d-block" style="max-width: 400px; font-size: 0.75rem;">
+                  <i class="bi bi-globe2 me-1"></i>{{ item.source_url }}
+                </small>
+              {% endif %}
+            </td>
+            <td>
+              {% if item.display_author %}
+                <span class="small text-dark"><i class="bi bi-person me-1"></i>{{ item.display_author }}</span>
+              {% else %}
+                <span class="text-muted small">—</span>
               {% endif %}
             </td>
             <td><span class="badge bg-light text-dark border">{{ item.source_name ?? '-' }}</span></td>
@@ -246,6 +281,9 @@
                 {{ item.status|capitalize }}
               </span>
             </td>
+            <td>
+              <span class="badge bg-secondary bg-opacity-10 text-secondary">{{ item.content_type ? item.content_type|capitalize : '-' }}</span>
+            </td>
             <td class="text-center">
               {% if item.seo_score is defined and item.seo_score > 0 %}
                 <div class="small fw-bold {% if item.seo_score >= 70 %}text-success{% elseif item.seo_score >= 40 %}text-warning{% else %}text-danger{% endif %}">
@@ -260,6 +298,9 @@
                 <a href="/admin/autocontent/queue/view?id={{ item.id }}" class="btn btn-outline-primary" title="Full Editor">
                   <i class="bi bi-pencil-square"></i>
                 </a>
+                <button type="button" class="btn btn-outline-secondary" title="Details" data-bs-toggle="collapse" data-bs-target="#details-{{ item.id }}">
+                  <i class="bi bi-info-circle"></i>
+                </button>
                 {% if item.status in ['processed', 'failed'] %}
                   <button type="button" class="btn btn-outline-success" title="Quick Approve" onclick="approveQueueItem({{ item.id }})">
                     <i class="bi bi-check-lg"></i>
@@ -271,9 +312,58 @@
               </div>
             </td>
           </tr>
+          <tr class="collapse bg-light" id="details-{{ item.id }}">
+            <td colspan="11">
+              <div class="p-3">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="small text-muted mb-1">Original Content</div>
+                    <div class="border rounded p-2 bg-white" style="max-height: 240px; overflow:auto;">
+                      {% if item.display_original_content_clean %}
+                        {{ item.display_original_content_clean|raw }}
+                      {% else %}
+                        <span class="text-muted">—</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="small text-muted mb-1">AI Content</div>
+                    <div class="border rounded p-2 bg-white" style="max-height: 240px; overflow:auto;">
+                      {% if item.display_ai_content_clean %}
+                        {{ item.display_ai_content_clean|raw }}
+                      {% else %}
+                        <span class="text-muted">—</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="small text-muted mb-1">Details</div>
+                    <div class="row g-2 small">
+                      <div class="col-md-3"><strong>ID:</strong> #{{ item.id }}</div>
+                      <div class="col-md-3"><strong>Status:</strong> {{ item.status|default('-') }}</div>
+                      <div class="col-md-3"><strong>SEO:</strong> {{ item.seo_score|default('-') }}</div>
+                      <div class="col-md-3"><strong>Words:</strong> {{ item.word_count|default('-') }}</div>
+                      <div class="col-md-6"><strong>Title:</strong> {{ item.display_title|default('-') }}</div>
+                      <div class="col-md-6"><strong>AI Title:</strong> {{ item.ai_title|default('-') }}</div>
+                      <div class="col-md-4"><strong>AI Slug:</strong> {{ item.ai_slug|default('-') }}</div>
+                      <div class="col-md-4"><strong>AI Category:</strong> {{ item.ai_category|default('-') }}</div>
+                      <div class="col-md-4"><strong>AI Tags:</strong> {{ item.ai_tags|default('-') }}</div>
+                      <div class="col-md-4"><strong>Published:</strong> {{ item.published_at ? item.published_at|date('M d, H:i') : '-' }}</div>
+                      <div class="col-md-4"><strong>Created:</strong> {{ item.created_at ? item.created_at|date('M d, H:i') : '-' }}</div>
+                      <div class="col-md-4"><strong>Updated:</strong> {{ item.updated_at ? item.updated_at|date('M d, H:i') : '-' }}</div>
+                      <div class="col-md-6"><strong>Image:</strong> {{ item.image_url|default('-') }}</div>
+                      <div class="col-md-6"><strong>Hashes:</strong> {{ item.content_hash|default('-') }} {{ item.simhash ? ' / ' ~ item.simhash : '' }}</div>
+                      <div class="col-md-6"><strong>AI Summary:</strong> {{ item.ai_summary|default('-') }}</div>
+                      <div class="col-md-6"><strong>AI Excerpt:</strong> {{ item.ai_excerpt|default('-') }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
           {% else %}
           <tr>
-            <td colspan="8" class="text-center text-muted py-4">
+            <td colspan="11" class="text-center text-muted py-4">
               <i class="bi bi-inbox fs-1 d-block mb-3 opacity-25"></i>
               <h5 class="text-muted mb-2">No articles found</h5>
               <p class="text-muted small mb-0">
@@ -298,7 +388,7 @@
       <ul class="pagination pagination-sm justify-content-center mb-0">
         {% for p in 1..pagination.total_pages %}
           <li class="page-item {{ pagination.page == p ? 'active' : '' }}">
-            <a class="page-link" href="/admin/autocontent/queue?page={{ p }}{% if current_status %}&status={{ current_status }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+            <a class="page-link" href="/admin/autocontent/queue?page={{ p }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_content_type %}&content_type={{ current_content_type }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
               {{ p }}
             </a>
           </li>

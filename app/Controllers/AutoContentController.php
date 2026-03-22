@@ -16,6 +16,7 @@ use App\Modules\Scraper\DuplicateCheckerService;
 use App\Modules\Scraper\ImageDownloaderService;
 use App\Modules\Scraper\MultiLayerScraperService;
 use App\Modules\Scraper\SitemapCrawlerService;
+use App\Modules\Scraper\BrowserScraperService;
 
 // Ensure database tables exist
 $autoContentModel = new AutoContentModel($mysqli);
@@ -34,6 +35,8 @@ $router->get('/admin/autocontent', ['middleware' => ['auth', 'admin_only']], fun
         $stats = $model->getStats();
         $recent_items = $model->getRecentArticles();
         $sources_count = count($model->getActiveSources());
+        $retry_summary = $model->getScrapeQueueSummary();
+        $browser_status = (new BrowserScraperService())->checkRuntimeStatus();
  
         // Tail cron log for quick health visibility (best-effort).
         $cronTail = [];
@@ -88,6 +91,8 @@ $router->get('/admin/autocontent', ['middleware' => ['auth', 'admin_only']], fun
         'schema_health' => $schemaHealth,
         'cron_tail' => $cronTail,
         'blocked_sources' => $blockedSources,
+        'retry_summary' => $retry_summary,
+        'browser_status' => $browser_status,
         'current_page' => 'autocontent-dashboard'
         ]);
     }
@@ -162,6 +167,41 @@ $router->get('/admin/autocontent/crawl-queue', ['middleware' => ['auth', 'admin_
     } catch (Throwable $e) {
         error_log("Auto Content Crawl Queue Page Error: " . $e->getMessage());
         echo "Error loading crawl queue: " . $e->getMessage();
+    }
+});
+
+/**
+ * Retry Queue (admin monitoring)
+ * GET /admin/autocontent/retry-queue
+ */
+$router->get('/admin/autocontent/retry-queue', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    try {
+        $model = new AutoContentModel($mysqli);
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $limit = max(10, min(200, (int)($_GET['limit'] ?? 50)));
+        $filters = [
+            'source_id' => (int)($_GET['source_id'] ?? 0) ?: null,
+            'status' => trim((string)($_GET['status'] ?? '')),
+            'q' => trim((string)($_GET['q'] ?? '')),
+        ];
+
+        $rows = $model->getScrapeQueue($filters, $page, $limit);
+        $sources = $model->getAllSources();
+
+        echo $twig->render('admin/autocontent/retry_queue.twig', [
+            'title' => 'Retry Queue',
+            'items' => $rows['items'] ?? [],
+            'total' => $rows['total'] ?? 0,
+            'page' => $page,
+            'limit' => $limit,
+            'filters' => $filters,
+            'sources' => $sources,
+            'csrf_token' => generateCsrfToken(),
+            'current_page' => 'autocontent-retry-queue'
+        ]);
+    } catch (Throwable $e) {
+        error_log("Auto Content Retry Queue Page Error: " . $e->getMessage());
+        echo "Error loading retry queue: " . $e->getMessage();
     }
 });
 
@@ -706,11 +746,46 @@ $router->get('/admin/autocontent/queue', ['middleware' => ['auth', 'admin_only']
         $status = $_GET['status'] ?? '';
         $sourceFilter = $_GET['source'] ?? '';
         $search = $_GET['search'] ?? '';
+        $contentType = trim((string)($_GET['content_type'] ?? ''));
+        $allowedContentTypes = ['articles', 'pages', 'mobiles', 'services'];
+        if ($contentType !== '' && !in_array($contentType, $allowedContentTypes, true)) {
+            $contentType = '';
+        }
 
         $model = new AutoContentModel($mysqli);
-        $articles = $model->getArticles($page, $limit, $status, $sourceFilter, $search);
+        $articles = $model->getArticles($page, $limit, $status, $sourceFilter, $search, $contentType);
         $sources = $model->getAllSources();
         $statusCounts = $model->getArticleCountByStatus();
+
+        $purifier = function_exists('getPurifier') ? getPurifier() : null;
+        $firstNonEmpty = function (...$values) {
+            foreach ($values as $value) {
+                if (is_string($value)) {
+                    $trimmed = trim($value);
+                    if ($trimmed !== '') {
+                        return $trimmed;
+                    }
+                } elseif (!empty($value)) {
+                    return $value;
+                }
+            }
+            return '';
+        };
+
+        foreach ($articles as &$item) {
+            $item['display_title'] = $firstNonEmpty($item['ai_title'] ?? '', $item['original_title'] ?? '', $item['title'] ?? '');
+            $item['display_excerpt'] = $firstNonEmpty($item['ai_excerpt'] ?? '', $item['original_excerpt'] ?? '', $item['excerpt'] ?? '');
+            $item['display_author'] = $firstNonEmpty($item['original_author'] ?? '', $item['author'] ?? '');
+            $item['display_content'] = $firstNonEmpty($item['ai_content'] ?? '', $item['original_content'] ?? '', $item['content'] ?? '');
+            $item['display_original_content'] = $firstNonEmpty($item['original_content'] ?? '', $item['content'] ?? '');
+            $item['display_ai_content'] = $item['ai_content'] ?? '';
+            $item['content_type'] = $item['source_content_type'] ?? ($item['content_type'] ?? '');
+
+            $item['display_content_clean'] = $purifier ? $purifier->purify((string)$item['display_content']) : (string)$item['display_content'];
+            $item['display_original_content_clean'] = $purifier ? $purifier->purify((string)$item['display_original_content']) : (string)$item['display_original_content'];
+            $item['display_ai_content_clean'] = $purifier ? $purifier->purify((string)$item['display_ai_content']) : (string)$item['display_ai_content'];
+        }
+        unset($item);
 
         // Calculate pagination
         $total = $statusCounts['total'];
@@ -724,6 +799,7 @@ $router->get('/admin/autocontent/queue', ['middleware' => ['auth', 'admin_only']
         'current_status' => $status,
         'current_source' => $sourceFilter,
         'search' => $search,
+        'current_content_type' => $contentType,
         'current_page_num' => $page,
         'total_pages' => $totalPages,
         'pagination' => [
@@ -762,6 +838,50 @@ $router->get('/admin/autocontent/queue/view', ['middleware' => ['auth', 'admin_o
             exit;
         }
 
+        $purifier = function_exists('getPurifier') ? getPurifier() : null;
+        $firstNonEmpty = function (...$values) {
+            foreach ($values as $value) {
+                if (is_string($value)) {
+                    $trimmed = trim($value);
+                    if ($trimmed !== '') {
+                        return $trimmed;
+                    }
+                } elseif (!empty($value)) {
+                    return $value;
+                }
+            }
+            return '';
+        };
+
+        $article['content_type'] = $article['source_content_type'] ?? ($article['content_type'] ?? '');
+        $article['display_title'] = $firstNonEmpty($article['ai_title'] ?? '', $article['original_title'] ?? '', $article['title'] ?? '');
+        $article['display_excerpt'] = $firstNonEmpty($article['ai_excerpt'] ?? '', $article['original_excerpt'] ?? '', $article['excerpt'] ?? '');
+        $article['display_author'] = $firstNonEmpty($article['original_author'] ?? '', $article['author'] ?? '');
+        $article['display_original_content'] = $firstNonEmpty($article['original_content'] ?? '', $article['content'] ?? '');
+        $article['display_ai_content'] = $article['ai_content'] ?? '';
+        $article['display_content'] = $firstNonEmpty($article['display_ai_content'], $article['display_original_content']);
+
+        $article['display_content_clean'] = $purifier ? $purifier->purify((string)$article['display_content']) : (string)$article['display_content'];
+        $article['display_original_content_clean'] = $purifier ? $purifier->purify((string)$article['display_original_content']) : (string)$article['display_original_content'];
+        $article['display_ai_content_clean'] = $purifier ? $purifier->purify((string)$article['display_ai_content']) : (string)$article['display_ai_content'];
+
+        $article['prefill_ai_title'] = $article['ai_title'] ?? '';
+        if (trim((string)$article['prefill_ai_title']) === '') {
+            $article['prefill_ai_title'] = $article['display_title'] ?? '';
+        }
+        $article['prefill_ai_content'] = $article['ai_content'] ?? '';
+        if (trim((string)$article['prefill_ai_content']) === '') {
+            $article['prefill_ai_content'] = $article['display_content'] ?? '';
+        }
+        $article['prefill_ai_excerpt'] = $article['ai_excerpt'] ?? '';
+        if (trim((string)$article['prefill_ai_excerpt']) === '') {
+            $article['prefill_ai_excerpt'] = $article['display_excerpt'] ?? '';
+        }
+        $article['prefill_ai_meta_description'] = $article['ai_meta_description'] ?? '';
+        if (trim((string)$article['prefill_ai_meta_description']) === '') {
+            $article['prefill_ai_meta_description'] = $article['display_excerpt'] ?? '';
+        }
+
         echo $twig->render('admin/autocontent/queue_view.twig', [
         'title' => 'View Article',
         // Template expects `item`. Keep `article` for backward compatibility.
@@ -786,10 +906,35 @@ $router->get('/admin/autocontent/settings', ['middleware' => ['auth', 'admin_onl
     try {
         $model = new AutoContentModel($mysqli);
         $config = $model->getSettings();
+        $aiProvider = null;
+        $aiSummary = [
+            'backend_provider' => 'Unknown',
+            'backend_model' => '',
+            'default_model' => ''
+        ];
+        $browser_status = (new BrowserScraperService())->checkRuntimeStatus();
+        try {
+            $aiProviderPath = realpath(__DIR__ . '/../Models/AIProvider.php');
+            require_once $aiProviderPath ?: (__DIR__ . '/../Models/AIProvider.php');
+            $aiProvider = new AIProvider($mysqli);
+            $aiSettings = $aiProvider->getSettings();
+            $backendProvider = (string)($aiSettings['backend_provider'] ?? ($aiSettings['default_provider'] ?? ''));
+            $backendModel = (string)($aiSettings['backend_model'] ?? '');
+            $defaultModel = (string)($aiSettings['default_model'] ?? '');
+            if ($backendProvider !== '') {
+                $aiSummary['backend_provider'] = $backendProvider;
+            }
+            $aiSummary['backend_model'] = $backendModel;
+            $aiSummary['default_model'] = $defaultModel;
+        } catch (Throwable $inner) {
+            // ignore
+        }
 
         echo $twig->render('admin/autocontent/settings.twig', [
         'title' => 'AI Auto Content Settings',
         'config' => $config,
+        'ai_summary' => $aiSummary,
+        'browser_status' => $browser_status,
         'current_page' => 'autocontent-settings'
         ]);
     }
@@ -819,9 +964,6 @@ $router->post('/admin/autocontent/settings', ['middleware' => ['auth', 'admin_on
         }; 
  
         $settings = [ 
-            'ai_endpoint' => $_POST['ai_endpoint'] ?? '', 
-            'ai_model' => $_POST['ai_model'] ?? 'gpt-4o-mini', 
-            'ai_key' => $_POST['ai_key'] ?? '', 
             'autocontent_enabled' => isset($_POST['autocontent_enabled']) ? '1' : '0', 
             'auto_collect' => isset($_POST['auto_collect']) ? '1' : '0', 
             'auto_process' => isset($_POST['auto_process']) ? '1' : '0', 
@@ -833,22 +975,14 @@ $router->post('/admin/autocontent/settings', ['middleware' => ['auth', 'admin_on
             'max_daily_publish' => $clampInt($_POST['max_daily_publish'] ?? '10', 1, 200, 10), 
             'publish_time_start' => $_POST['publish_time_start'] ?? '06:00', 
             'publish_time_end' => $_POST['publish_time_end'] ?? '23:00', 
-            'publish_status' => $_POST['publish_status'] ?? 'published' 
+            'publish_status' => $_POST['publish_status'] ?? 'published',
+            'min_word_count' => $clampInt($_POST['min_word_count'] ?? '100', 100, 10000, 100),
+            'min_seo_score' => $clampInt($_POST['min_seo_score'] ?? '0', 0, 100, 0),
+            'default_author' => trim((string)($_POST['default_author'] ?? 'AI Bot')),
+            'target_language' => trim((string)($_POST['target_language'] ?? 'Bengali')),
+            'telegram_enabled' => isset($_POST['telegram_enabled']) ? '1' : '0',
+            'system_prompt' => (string)($_POST['system_prompt'] ?? '')
         ]; 
-
-        // Handle custom model
-        if (isset($_POST['ai_model_custom']) && !empty($_POST['ai_model_custom'])) {
-            $settings['ai_model'] = $_POST['ai_model_custom'];
-        }
-
-        // Don't update key if empty (keep existing)
-        if (empty($settings['ai_key'])) {
-            unset($settings['ai_key']);
-        }
-        elseif ($settings['ai_key'] === ' ') {
-            // Clear key if single space
-            $settings['ai_key'] = '';
-        }
 
         $model->saveSettings($settings);
 
@@ -2263,6 +2397,15 @@ $router->post('/admin/autocontent/api/collect-single', ['middleware' => ['auth',
             }
 
             $nodeWarning = $node['error'] ?? 'node_scraper_failed';
+
+            echo json_encode([
+                'success' => false,
+                'engine' => 'node',
+                'collected' => 0,
+                'message' => "Node scraper failed for {$source['name']}. Try Multi-Layer Scrape.",
+                'warning' => $nodeWarning
+            ]);
+            exit;
         }
 
         require_once __DIR__ . '/../Modules/Scraper/ScraperService.php';
@@ -2286,6 +2429,7 @@ $router->post('/admin/autocontent/api/collect-single', ['middleware' => ['auth',
             );
 
         $collected = 0;
+        $fallbackWarning = null;
 
         // Check if it's Prothom Alo
         if (stripos($source['url'] ?? '', 'prothomalo.com') !== false) {
@@ -2302,6 +2446,9 @@ $router->post('/admin/autocontent/api/collect-single', ['middleware' => ['auth',
             if (!isset($result) || !is_array($result) || isset($result['error'])) {
                 echo json_encode(['success' => false, 'message' => $result['error'] ?? 'Failed to scrape']);
                 exit;
+            }
+            if (!empty($result['warning'])) {
+                $fallbackWarning = (string)$result['warning'];
             }
 
             $title = trim($result['title'] ?? '');
@@ -2337,6 +2484,9 @@ $router->post('/admin/autocontent/api/collect-single', ['middleware' => ['auth',
                         if (isset($linkResult['error'])) {
                             continue;
                         }
+                        if (!empty($linkResult['warning'])) {
+                            $fallbackWarning = (string)$linkResult['warning'];
+                        }
 
                         $linkTitle = trim($linkResult['title'] ?? '');
                         if (empty($linkTitle) || $linkTitle === '(No title found)') {
@@ -2369,7 +2519,7 @@ $router->post('/admin/autocontent/api/collect-single', ['middleware' => ['auth',
         'success' => true,
         'collected' => $collected,
         'message' => "Collected {$collected} article(s) from {$source['name']}",
-        'warning' => $nodeWarning
+        'warning' => $fallbackWarning ?? $nodeWarning
         ]);
     }
     catch (Throwable $e) {
@@ -2515,7 +2665,6 @@ $router->post('/admin/autocontent/api/collect-multi', ['middleware' => ['auth', 
         $message = $sourceId > 0
             ? ("Multi-layer scrape: {$totalCollected} article(s) from " . ($sources[0]['name'] ?? 'source'))
             : ("Multi-layer scrape: {$totalCollected} article(s) from " . count($sources) . " source(s)");
-
         echo json_encode([
         'success' => $totalCollected > 0 || empty($errors),
         'collected' => $totalCollected,
@@ -2664,6 +2813,11 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
                     continue;
                 }
 
+                if (!empty($result['warning']) && $sourceResult['status'] !== 'error') {
+                    $sourceResult['status'] = 'warning';
+                    $sourceResult['error'] = $result['warning'];
+                }
+
                 // Validate title exists and is not empty or placeholder
                 $title = trim($result['title'] ?? '');
                 if (empty($title) || $title === '(No title found)' || $title === '(No description found)') {
@@ -2714,6 +2868,10 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
                             if (isset($linkResult['error'])) {
                                 continue;
                             }
+                            if (!empty($linkResult['warning']) && $sourceResult['status'] !== 'error') {
+                                $sourceResult['status'] = 'warning';
+                                $sourceResult['error'] = $linkResult['warning'];
+                            }
 
                             $linkTitle = trim($linkResult['title'] ?? '');
                             if (empty($linkTitle) || $linkTitle === '(No title found)') {
@@ -2739,8 +2897,10 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
                     }
                 }
 
-                $sourceResult['status'] = 'success';
-                $sourceResult['error'] = null;
+                if ($sourceResult['status'] !== 'warning') {
+                    $sourceResult['status'] = 'success';
+                    $sourceResult['error'] = null;
+                }
                 $sourceResults[] = $sourceResult;
             }
             catch (Throwable $e) {
@@ -3052,6 +3212,249 @@ $router->post('/admin/autocontent/api/retry', ['middleware' => ['auth', 'admin_o
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
     exit;
+});
+
+/**
+ * Retry Queue: Retry Now (immediate scrape)
+ * POST /admin/autocontent/retry-queue/retry
+ */
+$router->post('/admin/autocontent/retry-queue/retry', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    $isAjax = isset($_GET['ajax']) || isset($_SERVER['HTTP_X_REQUESTED_WITH']);
+
+    try {
+        $ids = $_POST['ids'] ?? [];
+        if (is_string($ids)) {
+            $ids = array_filter(array_map('intval', explode(',', $ids)));
+        }
+        if (!is_array($ids) || empty($ids)) {
+            $msg = 'No queue items selected';
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => $msg]);
+                exit;
+            }
+            showMessage($msg, 'warning');
+            header('Location: /admin/autocontent/retry-queue');
+            exit;
+        }
+
+        $model = new AutoContentModel($mysqli);
+        $items = $model->getScrapeQueueByIds($ids);
+        $scraperApi = new \App\Modules\Scraper\ScraperApiClient();
+        $enhancedFallback = new EnhancedScraperService();
+
+        $created = 0;
+        $failed = 0;
+        $errors = [];
+        $delayMinutes = 10;
+
+        foreach ($items as $item) {
+            $queueId = (int)($item['id'] ?? 0);
+            $sourceId = (int)($item['source_id'] ?? 0);
+            $url = (string)($item['url'] ?? '');
+            $attempts = (int)($item['attempts'] ?? 0) + 1;
+            $maxAttempts = (int)($item['max_attempts'] ?? 3);
+
+            if ($queueId <= 0 || $sourceId <= 0 || $url === '') {
+                $model->markScrapeQueueFailed($queueId, 'invalid_queue_row', true, null);
+                $failed++;
+                continue;
+            }
+
+            $model->markScrapeQueueProcessing($queueId);
+            $source = $model->getSourceById($sourceId);
+            if (!$source) {
+                $model->markScrapeQueueFailed($queueId, 'source_not_found', true, null);
+                $failed++;
+                continue;
+            }
+
+            $scraped = $scraperApi->fetchScrape($url, [], 30);
+            $usedFallback = false;
+            if (!($scraped['success'] ?? false)) {
+                $code = (string)($scraped['error_code'] ?? $scraped['error'] ?? '');
+                if (in_array($code, ['api_unreachable', 'timeout', 'invalid_response', 'curl_unavailable'], true)) {
+                    $legacy = $enhancedFallback->scrape($url);
+                    if (($legacy['success'] ?? false) || isset($legacy['title'])) {
+                        $scraped = [
+                            'success' => true,
+                            'title' => $legacy['title'] ?? '',
+                            'content' => $legacy['content'] ?? '',
+                            'description' => $legacy['description'] ?? '',
+                            'author' => $legacy['author'] ?? '',
+                            'image' => $legacy['image'] ?? ($legacy['featured_image'] ?? ''),
+                            'date' => $legacy['date'] ?? null
+                        ];
+                        $usedFallback = true;
+                    }
+                }
+            }
+
+            if (!($scraped['success'] ?? false)) {
+                $errorMsg = (string)($scraped['error'] ?? 'scrape_failed');
+                $isFinal = $attempts >= $maxAttempts;
+                $nextAttempt = $isFinal ? null : date('Y-m-d H:i:s', time() + ($delayMinutes * $attempts * 60));
+                $model->markScrapeQueueFailed($queueId, $errorMsg, $isFinal, $nextAttempt);
+                $errors[] = $url . ': ' . $errorMsg;
+                $failed++;
+                continue;
+            }
+
+            $data = [
+                'source_id' => $sourceId,
+                'url' => $url,
+                'original_title' => (string)($scraped['title'] ?? ''),
+                'original_content' => (string)($scraped['content'] ?? ''),
+                'original_excerpt' => (string)($scraped['description'] ?? ''),
+                'original_author' => (string)($scraped['author'] ?? ''),
+                'featured_image' => (string)($scraped['image'] ?? ($scraped['featured_image'] ?? '')),
+                'published_at' => $scraped['date'] ?? date('Y-m-d H:i:s'),
+                'status' => 'collected',
+            ];
+
+            $articleId = $model->createArticle($data);
+            if ($articleId > 0) {
+                $model->markScrapeQueueSuccess($queueId, json_encode(['article_id' => $articleId, 'url' => $url]));
+                if ($usedFallback) {
+                    $errors[] = $url . ': API down; used legacy scraper.';
+                }
+                $created++;
+                continue;
+            }
+
+            $isFinal = $attempts >= $maxAttempts;
+            $nextAttempt = $isFinal ? null : date('Y-m-d H:i:s', time() + ($delayMinutes * $attempts * 60));
+            $model->markScrapeQueueFailed($queueId, 'db_insert_failed', $isFinal, $nextAttempt);
+            $failed++;
+        }
+
+        $msg = "Retry complete. Success: {$created}, Failed: {$failed}.";
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => $failed === 0,
+                'message' => $msg,
+                'created' => $created,
+                'failed' => $failed,
+                'errors' => $errors
+            ]);
+            exit;
+        }
+
+        showMessage($msg, $failed === 0 ? 'success' : 'warning');
+        header('Location: /admin/autocontent/retry-queue');
+        exit;
+    } catch (Throwable $e) {
+        error_log("Retry Queue Retry Error: " . $e->getMessage());
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            exit;
+        }
+        showMessage('Error: ' . $e->getMessage(), 'error');
+        header('Location: /admin/autocontent/retry-queue');
+        exit;
+    }
+});
+
+/**
+ * Retry Queue: Mark Failed
+ * POST /admin/autocontent/retry-queue/mark-failed
+ */
+$router->post('/admin/autocontent/retry-queue/mark-failed', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    $isAjax = isset($_GET['ajax']) || isset($_SERVER['HTTP_X_REQUESTED_WITH']);
+
+    try {
+        $ids = $_POST['ids'] ?? [];
+        if (is_string($ids)) {
+            $ids = array_filter(array_map('intval', explode(',', $ids)));
+        }
+        if (!is_array($ids) || empty($ids)) {
+            $msg = 'No queue items selected';
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => $msg]);
+                exit;
+            }
+            showMessage($msg, 'warning');
+            header('Location: /admin/autocontent/retry-queue');
+            exit;
+        }
+
+        $model = new AutoContentModel($mysqli);
+        $count = $model->markScrapeQueueFailedByIds($ids, 'manual_fail');
+
+        $msg = "Marked {$count} item(s) as failed.";
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => $msg, 'count' => $count]);
+            exit;
+        }
+
+        showMessage($msg, 'success');
+        header('Location: /admin/autocontent/retry-queue');
+        exit;
+    } catch (Throwable $e) {
+        error_log("Retry Queue Mark Failed Error: " . $e->getMessage());
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            exit;
+        }
+        showMessage('Error: ' . $e->getMessage(), 'error');
+        header('Location: /admin/autocontent/retry-queue');
+        exit;
+    }
+});
+
+/**
+ * Retry Queue: Clear
+ * POST /admin/autocontent/retry-queue/clear
+ */
+$router->post('/admin/autocontent/retry-queue/clear', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    $isAjax = isset($_GET['ajax']) || isset($_SERVER['HTTP_X_REQUESTED_WITH']);
+
+    try {
+        $ids = $_POST['ids'] ?? [];
+        if (is_string($ids)) {
+            $ids = array_filter(array_map('intval', explode(',', $ids)));
+        }
+        if (!is_array($ids) || empty($ids)) {
+            $msg = 'No queue items selected';
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => $msg]);
+                exit;
+            }
+            showMessage($msg, 'warning');
+            header('Location: /admin/autocontent/retry-queue');
+            exit;
+        }
+
+        $model = new AutoContentModel($mysqli);
+        $count = $model->deleteScrapeQueueByIds($ids);
+
+        $msg = "Cleared {$count} item(s) from retry queue.";
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => $msg, 'count' => $count]);
+            exit;
+        }
+
+        showMessage($msg, 'success');
+        header('Location: /admin/autocontent/retry-queue');
+        exit;
+    } catch (Throwable $e) {
+        error_log("Retry Queue Clear Error: " . $e->getMessage());
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            exit;
+        }
+        showMessage('Error: ' . $e->getMessage(), 'error');
+        header('Location: /admin/autocontent/retry-queue');
+        exit;
+    }
 });
 
 /**

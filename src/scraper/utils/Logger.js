@@ -4,6 +4,8 @@
  */
 
 import fs from 'fs';
+import path from 'path';
+import { promises as fsPromises } from 'fs';
 
 // Lazy import to avoid circular dependency
 let CONFIG = null;
@@ -38,6 +40,10 @@ class Logger {
         return getConfig().logging.file;
     }
 
+    get jsonOnly() {
+        return process.env.SCRAPER_JSON_ONLY === '1';
+    }
+
     _shouldLog(level) {
         return this.levels[level] >= this.levels[this.level];
     }
@@ -57,6 +63,14 @@ class Logger {
         if (this.file) {
             try {
                 fs.appendFileSync(this.file, message + '\n');
+
+                // Check rotation asynchronously (fire and forget)
+                // Only check every 100 writes to avoid excessive stat calls
+                if (Math.random() < 0.01) {
+                    this._rotateLogIfNeeded().catch(() => {
+                        // Silently ignore rotation errors
+                    });
+                }
             } catch (e) {
                 // Ignore file write errors
             }
@@ -66,7 +80,11 @@ class Logger {
     debug(message, data = null) {
         if (this._shouldLog('debug')) {
             const formatted = this._formatMessage('debug', message, data);
-            console.log(formatted);
+            if (this.jsonOnly) {
+                console.error(formatted);
+            } else {
+                console.log(formatted);
+            }
             this._writeToFile(formatted);
         }
     }
@@ -74,7 +92,11 @@ class Logger {
     info(message, data = null) {
         if (this._shouldLog('info')) {
             const formatted = this._formatMessage('info', message, data);
-            console.log(formatted);
+            if (this.jsonOnly) {
+                console.error(formatted);
+            } else {
+                console.log(formatted);
+            }
             this._writeToFile(formatted);
         }
     }
@@ -82,7 +104,11 @@ class Logger {
     warn(message, data = null) {
         if (this._shouldLog('warn')) {
             const formatted = this._formatMessage('warn', message, data);
-            console.warn(formatted);
+            if (this.jsonOnly) {
+                console.error(formatted);
+            } else {
+                console.warn(formatted);
+            }
             this._writeToFile(formatted);
         }
     }
@@ -103,6 +129,53 @@ class Logger {
     // Convenience method for article processing
     article(title, status, details = null) {
         this.info(`Article: ${title?.substring(0, 50)}...`, { status, ...details });
+    }
+
+    /**
+     * Check and rotate log file if needed
+     * Rotates on daily basis or when file exceeds 10MB
+     */
+    async _rotateLogIfNeeded() {
+        if (!this.file) return;
+
+        try {
+            const stats = fs.statSync(this.file);
+            const maxSize = 10 * 1024 * 1024; // 10 MB
+            const now = new Date();
+            const logDir = path.dirname(this.file);
+            const logExt = path.extname(this.file);
+            const logBase = path.basename(this.file, logExt);
+
+            // Check size
+            if (stats.size > maxSize) {
+                const timestamp = now.toISOString().split('T')[0];
+                const rotatedName = `${logBase}-${timestamp}-${Date.now()}${logExt}`;
+                const rotatedPath = path.join(logDir, rotatedName);
+
+                await fsPromises.rename(this.file, rotatedPath);
+                console.log(`[${now.toISOString()}] Log rotated due to size: ${rotatedPath}`);
+            }
+
+            // Cleanup old logs (older than 7 days)
+            try {
+                const files = await fsPromises.readdir(logDir);
+                const sevenDaysAgo = now.getTime() - (7 * 24 * 60 * 60 * 1000);
+
+                for (const file of files) {
+                    if (file.startsWith(logBase)) {
+                        const filePath = path.join(logDir, file);
+                        const fileStats = await fsPromises.stat(filePath);
+                        if (fileStats.mtime.getTime() < sevenDaysAgo) {
+                            await fsPromises.unlink(filePath);
+                        }
+                    }
+                }
+            } catch (e) {
+                // Silently fail cleanup
+            }
+        } catch (error) {
+            // Silently fail to avoid infinite loops
+        }
     }
 }
 

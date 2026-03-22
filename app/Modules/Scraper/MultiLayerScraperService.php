@@ -19,6 +19,9 @@ use App\Models\AutoContentModel;
 use Exception;
 use DOMDocument;
 use DOMXPath;
+require_once __DIR__ . '/ScraperApiClient.php';
+
+use App\Modules\Scraper\ScraperApiClient;
 
 class MultiLayerScraperService
 {
@@ -143,34 +146,15 @@ class MultiLayerScraperService
     {
         $this->log("Fetching list page: $url");
 
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 5,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            CURLOPT_ENCODING => '',
-        ]);
-
-        $html = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
-
-        if ($error) {
-            throw new Exception("cURL Error: $error");
-        }
-
-        if ($httpCode !== 200) {
-            throw new Exception("HTTP Error: $httpCode");
-        }
+        $client = new ScraperApiClient();
+        $html = $client->fetchHtml($url, 30);
 
         if (empty($html)) {
-            throw new Exception('Empty response from server');
+            $html = $this->fetchHtmlLegacy($url, 30, 5);
+            if (empty($html)) {
+                throw new Exception('Empty response from server');
+            }
+            $this->pipelineStatus['warnings'][] = 'API down; used legacy scraper.';
         }
 
         $this->log("Fetched " . strlen($html) . " bytes");
@@ -336,13 +320,29 @@ class MultiLayerScraperService
     {
         $this->log("Fetching article: $url");
 
+        $client = new ScraperApiClient();
+        $html = $client->fetchHtml($url, 25);
+
+        if (empty($html)) {
+            $html = $this->fetchHtmlLegacy($url, 25, 3);
+            if (empty($html)) {
+                throw new Exception("HTTP fetch failed");
+            }
+            $this->pipelineStatus['warnings'][] = 'API down; used legacy scraper.';
+        }
+
+        return $html;
+    }
+
+    private function fetchHtmlLegacy(string $url, int $timeout, int $maxRedirects): string
+    {
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 3,
-            CURLOPT_TIMEOUT => 25,
+            CURLOPT_MAXREDIRS => $maxRedirects,
+            CURLOPT_TIMEOUT => $timeout,
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -350,15 +350,14 @@ class MultiLayerScraperService
         ]);
 
         $html = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error = curl_error($ch);
         curl_close($ch);
 
-        if ($error || $httpCode !== 200) {
-            throw new Exception("HTTP $httpCode - $error");
+        if ($error || empty($html)) {
+            return '';
         }
 
-        return $html;
+        return (string)$html;
     }
 
     /**

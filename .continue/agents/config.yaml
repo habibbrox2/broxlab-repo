@@ -1,0 +1,34 @@
+name: OpenRouter Free Models Config
+version: 1.0.0
+schema: v1
+
+models:
+  # Primary: Free Models Router - Automatically selects best free model
+  - name: Free Models Router
+    provider: openai
+    model: openrouter/free
+    apiBase: https://openrouter.ai/api/v1
+    apiKey: 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
+
+  # Specific free models as fallbacks
+  - name: DeepSeek R1 Free
+    provider: openai
+    model: deepseek/deepseek-r1:free
+    apiBase: https://openrouter.ai/api/v1
+    apiKey: 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
+
+  - name: Llama 3.2 3B Free
+    provider: openai
+    model: meta-llama/llama-3.2-3b-instruct:free
+    apiBase: https://openrouter.ai/api/v1
+    apiKey: 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
+
+  - name: Qwen 2.5 Coder Free
+    provider: openai
+    model: qwen/qwen-2.5-coder-32b-instruct:free
+    apiBase: https://openrouter.ai/api/v1
+    apiKey: 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
+
+# MCP Servers
+mcpServers:
+  - uses: anthropic/memory-mcp

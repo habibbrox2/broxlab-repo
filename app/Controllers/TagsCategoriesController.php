@@ -263,7 +263,7 @@ $router->get('/tags', function () use ($twig, $model) {
     }
     $total_pages = ceil($total / $per_page);
 
-    echo $twig->render('tag-list.twig', [
+    echo $twig->render('public/tag-list.twig', [
     'tags' => $tags,
     'total_tags' => $total,
     'current_page' => $page,
@@ -296,7 +296,7 @@ $router->get('/tag/{slug}', function ($slug) use ($twig, $model) {
 
     if (!$tag) {
         http_response_code(404);
-        echo $twig->render('error.twig', [
+        echo $twig->render('public/error.twig', [
         'code' => 404,
         'title' => 'Tag Not Found',
         'message' => 'Tag not found'
@@ -331,7 +331,7 @@ $router->get('/tag/{slug}', function ($slug) use ($twig, $model) {
                     }
                 }
 
-                echo $twig->render('tag-archive.twig', [
+                echo $twig->render('public/tag-archive.twig', [
                 'tag' => $tag,
                 'contents' => $contents,
                 'total_count' => $total,
@@ -391,7 +391,7 @@ $router->get('/category/{slug}', function ($slug) use ($twig, $model) {
 
     if (!$category) {
         http_response_code(404);
-        echo $twig->render('error.twig', [
+        echo $twig->render('public/error.twig', [
         'code' => 404,
         'title' => 'Category Not Found',
         'message' => 'Category not found'

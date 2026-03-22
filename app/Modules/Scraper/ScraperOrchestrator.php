@@ -51,14 +51,14 @@ class ScraperOrchestrator
         // Initialize source manager
         $this->sourceManager = new SourceConfigManager($this->config['source_config'] ?? []);
 
+        // Initialize browser scraper
+        $this->browserScraper = new BrowserScraperService($this->config['browser_config'] ?? []);
+
         // Initialize article scraper
-        $this->articleScraper = new ArticleScraper($this->httpClient, $this->sourceManager);
+        $this->articleScraper = new ArticleScraper($this->httpClient, $this->sourceManager, $this->browserScraper);
 
         // Initialize pagination handler
         $this->paginationHandler = new PaginationHandler($this->httpClient, $this->config['max_pages']);
-
-        // Initialize browser scraper
-        $this->browserScraper = new BrowserScraperService($this->config['browser_config'] ?? []);
     }
 
     /**

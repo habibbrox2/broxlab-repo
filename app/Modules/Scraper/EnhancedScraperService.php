@@ -20,6 +20,8 @@ class EnhancedScraperService
     private int $timeout;
     private int $maxRedirects;
     private array $proxies;
+    private int $proxyIndex = 0;
+    private ?BrowserScraperService $browserScraper = null;
 
     // CSS selectors for common content extraction
     private const SELECTORS = [
@@ -128,6 +130,7 @@ class EnhancedScraperService
         $this->timeout = $config['timeout'] ?? 30;
         $this->maxRedirects = $config['max_redirects'] ?? 5;
         $this->proxies = array_values($config['proxies'] ?? []);
+        $this->browserScraper = new BrowserScraperService($config['browser_config'] ?? []);
 
         $this->client = new Client([
             'timeout' => $this->timeout,
@@ -153,17 +156,93 @@ class EnhancedScraperService
     /**
      * Execute GET request with optional proxy rotation
      */
-    private function get(string $url)
+    private function get(string $url, ?string $proxy = null)
     {
         $options = [];
-        if (!empty($this->proxies)) {
-            $proxy = $this->proxies[array_rand($this->proxies)];
+        if (!empty($proxy)) {
+            $options['proxy'] = $proxy;
+        }
+
+        $options['http_errors'] = false;
+
+        return $this->client->get($url, $options);
+    }
+
+    private function getProxy(bool $rotate = false): ?string
+    {
+        if (empty($this->proxies)) {
+            return null;
+        }
+
+        if ($rotate) {
+            $this->proxyIndex = ($this->proxyIndex + 1) % count($this->proxies);
+        }
+
+        $proxy = $this->proxies[$this->proxyIndex] ?? null;
+        if (is_array($proxy)) {
+            $proxy = $proxy['url'] ?? $proxy['proxy'] ?? '';
+        }
+
+        $proxy = is_string($proxy) ? trim($proxy) : '';
+        return $proxy !== '' ? $proxy : null;
+    }
+
+    private function fetchHtmlSmart(string $url): array
+    {
+        $proxy = null;
+        $response = $this->get($url, $proxy);
+        $status = $response->getStatusCode();
+        $html = (string)$response->getBody();
+        $headers = $response->getHeaders();
+
+        if (WafDetector::detect($html, $status, $headers)) {
+            if ($this->browserScraper && $this->browserScraper->isAvailable()) {
+                $browser = $this->browserScraper->fetchHtml($url);
+                if ($browser['success'] ?? false) {
+                    return [
+                        'success' => true,
+                        'html' => (string)($browser['html'] ?? ''),
+                        'status' => 200,
+                        'final_url' => $url,
+                        'via_browser' => true,
+                    ];
+                }
+            }
+
+            return [
+                'success' => false,
+                'error' => 'WAF detected but Puppeteer unavailable. Please install Puppeteer/browser runtime.',
+                'error_code' => 'waf_browser_unavailable',
+                'status' => $status,
+                'waf_detected' => true,
+            ];
+        }
+
+        if (in_array($status, [429, 500, 502, 503, 504], true) && !empty($this->proxies)) {
+            $proxy = $this->getProxy(true);
             if (!empty($proxy)) {
-                $options['proxy'] = $proxy;
+                $response = $this->get($url, $proxy);
+                $status = $response->getStatusCode();
+                $html = (string)$response->getBody();
+                $headers = $response->getHeaders();
             }
         }
 
-        return $this->client->get($url, $options);
+        if ($status >= 400) {
+            return [
+                'success' => false,
+                'error' => 'HTTP ' . $status,
+                'error_code' => $status === 429 ? 'http_429' : 'http_' . $status,
+                'status' => $status,
+            ];
+        }
+
+        return [
+            'success' => true,
+            'html' => $html,
+            'status' => $status,
+            'final_url' => $url,
+        ];
     }
 
     /**
@@ -174,19 +253,23 @@ class EnhancedScraperService
         $url = trim($url);
 
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
-            return ['error' => 'Invalid URL provided'];
+            return ['success' => false, 'error' => 'Invalid URL provided', 'error_code' => 'invalid_url'];
         }
 
         try {
-            $response = $this->get($url);
-            $html = (string)$response->getBody();
-            $finalUrl = $url; // Use original URL as final URL
+            $payload = $this->fetchHtmlSmart($url);
+            if (!($payload['success'] ?? false)) {
+                return $payload;
+            }
 
-            return $this->parseHtml($html, $finalUrl);
+            $finalUrl = $payload['final_url'] ?? $url;
+            return $this->parseHtml((string)($payload['html'] ?? ''), $finalUrl) + [
+                'status' => (int)($payload['status'] ?? 0),
+            ];
         } catch (RequestException $e) {
-            return ['error' => 'Failed to fetch URL: ' . $e->getMessage()];
+            return ['success' => false, 'error' => 'Failed to fetch URL: ' . $e->getMessage(), 'error_code' => 'request_failed'];
         } catch (\Exception $e) {
-            return ['error' => 'Scraping error: ' . $e->getMessage()];
+            return ['success' => false, 'error' => 'Scraping error: ' . $e->getMessage(), 'error_code' => 'scrape_failed'];
         }
     }
 
@@ -300,6 +383,7 @@ class EnhancedScraperService
         $images = $this->extractImages($crawler, $baseUrl);
 
         return [
+            'success' => true,
             'url' => $baseUrl,
             'title' => $title,
             'description' => trim($description),
@@ -352,9 +436,17 @@ class EnhancedScraperService
     public function scrapeProthomAloList(string $url): array
     {
         try {
-            $response = $this->get($url);
-            $html = (string)$response->getBody();
-            $finalUrl = $url;
+            $payload = $this->fetchHtmlSmart($url);
+            if (!($payload['success'] ?? false)) {
+                return [
+                    'success' => false,
+                    'error' => $payload['error'] ?? 'Failed to fetch list',
+                    'articles' => [],
+                    'count' => 0
+                ];
+            }
+            $html = (string)($payload['html'] ?? '');
+            $finalUrl = $payload['final_url'] ?? $url;
 
             $crawler = new Crawler($html, $finalUrl);
 
@@ -410,9 +502,16 @@ class EnhancedScraperService
     public function scrapeProthomAloArticle(string $url): array
     {
         try {
-            $response = $this->get($url);
-            $html = (string)$response->getBody();
-            $finalUrl = $url;
+            $payload = $this->fetchHtmlSmart($url);
+            if (!($payload['success'] ?? false)) {
+                return [
+                    'success' => false,
+                    'error' => $payload['error'] ?? 'Failed to fetch article',
+                    'url' => $url
+                ];
+            }
+            $html = (string)($payload['html'] ?? '');
+            $finalUrl = $payload['final_url'] ?? $url;
 
             $crawler = new Crawler($html, $finalUrl);
 
@@ -503,9 +602,14 @@ class EnhancedScraperService
         }
         
         try {
-            $response = $this->get($url);
-            $html = (string)$response->getBody();
-            $finalUrl = $url;
+            $payload = $this->fetchHtmlSmart($listUrl);
+            if (!($payload['success'] ?? false)) {
+                $result['errors'][] = 'Failed to fetch list HTML: ' . ($payload['error'] ?? 'Unknown error');
+                return $result;
+            }
+
+            $html = (string)($payload['html'] ?? '');
+            $finalUrl = $payload['final_url'] ?? $listUrl;
 
             $crawler = new Crawler($html, $finalUrl);
 
@@ -622,9 +726,17 @@ class EnhancedScraperService
     public function scrapeBdnewsList(string $url): array
     {
         try {
-            $response = $this->get($url);
-            $html = (string)$response->getBody();
-            $finalUrl = $url;
+            $payload = $this->fetchHtmlSmart($url);
+            if (!($payload['success'] ?? false)) {
+                return [
+                    'success' => false,
+                    'error' => $payload['error'] ?? 'Failed to fetch list',
+                    'articles' => [],
+                    'count' => 0
+                ];
+            }
+            $html = (string)($payload['html'] ?? '');
+            $finalUrl = $payload['final_url'] ?? $url;
 
             $crawler = new Crawler($html, $finalUrl);
 
@@ -741,9 +853,16 @@ class EnhancedScraperService
     public function scrapeBdnewsArticle(string $url): array
     {
         try {
-            $response = $this->get($url);
-            $html = (string)$response->getBody();
-            $finalUrl = $url;
+            $payload = $this->fetchHtmlSmart($url);
+            if (!($payload['success'] ?? false)) {
+                return [
+                    'success' => false,
+                    'error' => $payload['error'] ?? 'Failed to fetch article',
+                    'url' => $url
+                ];
+            }
+            $html = (string)($payload['html'] ?? '');
+            $finalUrl = $payload['final_url'] ?? $url;
 
             $crawler = new Crawler($html, $finalUrl);
 

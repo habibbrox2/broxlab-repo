@@ -1,9 +1,12 @@
 # BroxBhai - AI Agent Guardrails (Repo Root)
-# Version: 2.0.9 | Auto-updated by agent loop
+# Version: 2.1.0 | Auto-updated by agent loop
 
 Default read order (keep token cost low):
 1) `AGENTS.md`
 2) `docs/ai/AI_QUICK_CONTEXT.md`
+
+Consolidated standards (read when implementing):
+- `docs/CODING_STANDARDS.md` — Single source for security, DB, and code rules
 
 Self-improvement loop (only after non-trivial work):
 - `docs/ai/SELF_IMPROVEMENT_LOOP.md`
@@ -16,11 +19,11 @@ Self-improvement loop (only after non-trivial work):
 - Helpers: `app/Helpers/*` (reuse before creating new helpers)
 
 ## Hard rules (security + correctness)
-- CSRF: validate on all state-changing requests (`validateCsrfToken(...)`) / follow existing CSRF middleware.
-- Auth/roles: follow `AuthManager` patterns.
-- SQL: prepared statements only; avoid `SELECT *` (explicit columns).
-- No secrets: never commit `.env` or paste real keys/tokens.
-- Sanitization: rich HTML must go through `PurifierHelper::purify(...)`.
+→ **See [`docs/CODING_STANDARDS.md`](docs/CODING_STANDARDS.md)** for detailed standards on:
+- CSRF validation, input sanitization, secrets management
+- Prepared statements, explicit columns (`SELECT id, name, ...` not `SELECT *`)
+- Error handling, logging, JSON response format
+- Generated assets, code organization, naming conventions
 
 ## Generated assets (do not edit directly)
 - Do not edit: `public_html/assets/**/dist/**`
@@ -32,9 +35,10 @@ Self-improvement loop (only after non-trivial work):
 - JS lint (if JS changed): `npm run lint`
 - Asset check (if assets changed): `npm run check:assets`
 
-## Changelog (latest 5)
+## Changelog (latest 6)
 | Version | Date | Agent | Change |
 |---------|------|-------|--------|
+| 2.1.0 | 2026-03-22 | BroxBhai | Context consolidation: created `docs/CODING_STANDARDS.md` (single source for security/DB/code rules), created `editor/.rules-base.md` (shared foundation for all editor instructions), simplified editor files to reference shared rules (reduced duplication). |
 | 2.0.9 | 2026-03-21 | BroxBhai | Added defensive guard in `AIProvider.php` to prevent fatal redeclare if included twice under release symlinks. |
 | 2.0.8 | 2026-03-21 | BroxBhai | AutoContent production hardening: fixed AIProvider redeclare 500, enforced CSRF on admin APIs, improved pipeline robustness, added schema health warning. |
 | 2.0.7 | 2026-03-20 | BroxBhai | Removed unused duplicate agent instruction files to reduce repo noise and editor context size. |

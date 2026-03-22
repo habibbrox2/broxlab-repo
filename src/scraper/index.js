@@ -3,15 +3,18 @@
  * Coordinates all agents to scrape, validate, and store articles
  */
 
-import CONFIG from './config.js';
+import CONFIG, { validateOnStartup } from './config.js';
 import EnvLoader from './utils/EnvLoader.js';
 import Logger from './utils/Logger.js';
+import ErrorHandler from './utils/ErrorHandler.js';
+import URLValidator from './utils/URLValidator.js';
 import TickerScraper from './agents/TickerScraper.js';
 import ArticleScraper from './agents/ArticleScraper.js';
 import MobileDeviceScraper from './agents/MobileDeviceScraper.js';
 import ValidationAgent from './agents/ValidationAgent.js';
 import DiffDetector from './agents/DiffDetector.js';
 import DatabaseService from './services/DatabaseService.js';
+import { pathToFileURL } from 'url';
 
 // Ensure environment variables are available when running via PHP proc_open/cron.
 EnvLoader.load();
@@ -118,14 +121,14 @@ class ScraperOrchestrator {
                 };
 
                 // Ensure agents target this preset/source 
-                this.tickerScraper.sourceKey = this.sourceKey; 
-                this.articleScraper.sourceKey = this.sourceKey; 
-                this.tickerScraper.sourceId = this.sourceId; 
-                this.articleScraper.sourceId = this.sourceId; 
- 
+                this.tickerScraper.sourceKey = this.sourceKey;
+                this.articleScraper.sourceKey = this.sourceKey;
+                this.tickerScraper.sourceId = this.sourceId;
+                this.articleScraper.sourceId = this.sourceId;
+
                 // Load selectors from DB presets (if available) 
-                await this.tickerScraper.initialize(); 
-                await this.articleScraper.initialize(); 
+                await this.tickerScraper.initialize();
+                await this.articleScraper.initialize();
 
                 // Override homepage/base URLs from autocontent_sources
                 this.tickerScraper.sourceConfig = { ...(this.tickerScraper.sourceConfig || {}), ...overrideConfig };
@@ -201,19 +204,19 @@ class ScraperOrchestrator {
             };
         }
 
-        Logger.info(`Found ${limitedLinks.length} new articles to process`); 
- 
+        Logger.info(`Found ${limitedLinks.length} new articles to process`);
+
         // Audit/debug: record discovered links (not the main queue). 
-        if (this.sourceId && this.db?.connected && typeof this.db.upsertAutoContentCrawlQueue === 'function') { 
-            for (const link of limitedLinks) { 
-                if (link?.link) { 
-                    await this.db.upsertAutoContentCrawlQueue(this.sourceId, { url: link.link, status: 'pending', depth: 0 }); 
-                } 
-            } 
-        } 
- 
+        if (this.sourceId && this.db?.connected && typeof this.db.upsertAutoContentCrawlQueue === 'function') {
+            for (const link of limitedLinks) {
+                if (link?.link) {
+                    await this.db.upsertAutoContentCrawlQueue(this.sourceId, { url: link.link, status: 'pending', depth: 0 });
+                }
+            }
+        }
+
         // Mobiles-direct pipeline: scrape spec pages and insert into mobiles tables. 
-        if (this.pipeline === 'mobiles_direct') { 
+        if (this.pipeline === 'mobiles_direct') {
             const mobileResults = await this.processMobiles(limitedLinks);
 
             if (!this.db?.connected) {
@@ -505,46 +508,129 @@ class ScraperOrchestrator {
 export default ScraperOrchestrator;
 
 // CLI execution
-async function main() {
-    const args = process.argv.slice(2);
-    const timeoutMs = parseInt(args.find(a => a.startsWith('--timeoutMs='))?.split('=')[1]);
 
-    if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
-        CONFIG.http.timeout = timeoutMs;
+/**
+ * Validate command-line arguments
+ */
+function validateArguments(options) {
+    const errors = [];
+
+    // Validate numeric arguments
+    if (options.max !== undefined && (Number.isNaN(options.max) || options.max < 0)) {
+        errors.push('--max must be a non-negative integer');
     }
 
-    const options = {
-        source: args.find(a => a.startsWith('--source='))?.split('=')[1] || CONFIG.source.defaultSource,
-        sourceId: parseInt(args.find(a => a.startsWith('--sourceId='))?.split('=')[1]),
-        continuous: args.includes('--continuous'),
-        interval: parseInt(args.find(a => a.startsWith('--interval='))?.split('=')[1]) || 20000,
-        cycles: parseInt(args.find(a => a.startsWith('--cycles='))?.split('=')[1]) || 0,
-        concurrency: parseInt(args.find(a => a.startsWith('--concurrency='))?.split('=')[1]) || undefined,
-        max: parseInt(args.find(a => a.startsWith('--max='))?.split('=')[1]) || 10
-    };
+    if (options.interval !== undefined && (Number.isNaN(options.interval) || options.interval <= 0)) {
+        errors.push('--interval must be a positive integer > 0');
+    }
 
-    Logger.info('Starting bdnews24 scraper', options);
+    if (options.concurrency !== undefined && (Number.isNaN(options.concurrency) || options.concurrency <= 0)) {
+        errors.push('--concurrency must be a positive integer > 0');
+    }
 
-    const orchestrator = new ScraperOrchestrator(options);
+    if (options.cycles !== undefined && (Number.isNaN(options.cycles) || options.cycles < 0)) {
+        errors.push('--cycles must be a non-negative integer');
+    }
+
+    // Validate string arguments
+    if (options.source && typeof options.source !== 'string') {
+        errors.push('--source must be a string');
+    }
+
+    if (errors.length > 0) {
+        Logger.error('Invalid arguments', { errors });
+        throw new Error(`Argument validation failed: ${errors.join('; ')}`);
+    }
+
+    return true;
+}
+
+async function main() {
+    const args = process.argv.slice(2);
+    const requestId = ErrorHandler.createRequestId();
 
     try {
-        await orchestrator.initialize();
+        // Validate configuration on startup
+        validateOnStartup();
 
-        if (options.continuous) {
-            await orchestrator.runContinuous(options.interval, options.cycles);
-        } else {
-            const result = await orchestrator.runCycle();
-            // Provide stable, machine-readable output for PHP runner.
-            console.log(JSON.stringify(result));
+        const timeoutMs = parseInt(args.find(a => a.startsWith('--timeoutMs='))?.split('=')[1]);
+
+        if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
+            CONFIG.http.timeout = timeoutMs;
         }
 
-        await orchestrator.cleanup();
+        const options = {
+            source: args.find(a => a.startsWith('--source='))?.split('=')[1] || CONFIG.source.defaultSource,
+            sourceId: parseInt(args.find(a => a.startsWith('--sourceId='))?.split('=')[1]),
+            continuous: args.includes('--continuous'),
+            interval: parseInt(args.find(a => a.startsWith('--interval='))?.split('=')[1]) || 20000,
+            cycles: parseInt(args.find(a => a.startsWith('--cycles='))?.split('=')[1]) || 0,
+            concurrency: parseInt(args.find(a => a.startsWith('--concurrency='))?.split('=')[1]) || undefined,
+            max: parseInt(args.find(a => a.startsWith('--max='))?.split('=')[1]) || 10
+        };
 
-        process.exit(0);
+        // Validate arguments
+        validateArguments(options);
+
+        Logger.info('Starting bdnews24 scraper', { ...options, requestId });
+
+        const orchestrator = new ScraperOrchestrator(options);
+
+        // Setup graceful shutdown handlers
+        let isShuttingDown = false;
+        const shutdownTimeout = 30000; // 30 seconds
+
+        async function gracefulShutdown(signal) {
+            if (isShuttingDown) return;
+            isShuttingDown = true;
+
+            Logger.info(`Received ${signal}, shutting down gracefully...`, { requestId });
+
+            // Set timeout for forced shutdown
+            const forceShutdownTimer = setTimeout(() => {
+                Logger.error('Forced shutdown due to timeout', { requestId });
+                process.exit(1);
+            }, shutdownTimeout);
+
+            try {
+                await orchestrator.cleanup();
+                clearTimeout(forceShutdownTimer);
+                Logger.info('Graceful shutdown complete', { requestId });
+                process.exit(0);
+            } catch (error) {
+                clearTimeout(forceShutdownTimer);
+                ErrorHandler.log('Error during graceful shutdown', { error, agent: 'orchestrator', requestId });
+                process.exit(1);
+            }
+        }
+
+        process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+        process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+        try {
+            await orchestrator.initialize();
+
+            if (options.continuous) {
+                await orchestrator.runContinuous(options.interval, options.cycles);
+            } else {
+                const result = await orchestrator.runCycle();
+                // Provide stable, machine-readable output for PHP runner.
+                console.log(JSON.stringify(result));
+            }
+
+            await orchestrator.cleanup();
+            process.exit(0);
+        } catch (error) {
+            ErrorHandler.log('Fatal error', { error, agent: 'orchestrator', requestId });
+            process.exit(1);
+        }
     } catch (error) {
-        Logger.error('Fatal error', { error: error.message, stack: error.stack });
+        ErrorHandler.log('Fatal error in main', { error, agent: 'main', requestId });
         process.exit(1);
     }
 }
 
-main();
+const entryHref = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
+if (import.meta.url === entryHref) {
+    main();
+}

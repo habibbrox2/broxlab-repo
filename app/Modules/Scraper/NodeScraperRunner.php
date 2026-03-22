@@ -47,7 +47,19 @@ class NodeScraperRunner
             2 => ['pipe', 'w'],
         ];
 
-        $process = proc_open($cmd, $descriptors, $pipes, $repoRoot);
+        $env = array_merge($_ENV, $_SERVER);
+        $env['LOG_LEVEL'] = $env['LOG_LEVEL'] ?? 'error';
+        $env['SCRAPER_JSON_ONLY'] = $env['SCRAPER_JSON_ONLY'] ?? '1';
+        $env['DB_HOST'] = $env['DB_HOST'] ?? getenv('DB_HOST') ?: '';
+        $env['DB_USER'] = $env['DB_USER'] ?? getenv('DB_USER') ?: '';
+        $env['DB_PASS'] = $env['DB_PASS'] ?? getenv('DB_PASS') ?: '';
+        $env['DB_NAME'] = $env['DB_NAME'] ?? getenv('DB_NAME') ?: '';
+        $env['MYSQL_HOST'] = $env['MYSQL_HOST'] ?? $env['DB_HOST'];
+        $env['MYSQL_USER'] = $env['MYSQL_USER'] ?? $env['DB_USER'];
+        $env['MYSQL_PASSWORD'] = $env['MYSQL_PASSWORD'] ?? $env['DB_PASS'];
+        $env['MYSQL_DATABASE'] = $env['MYSQL_DATABASE'] ?? $env['DB_NAME'];
+
+        $process = proc_open($cmd, $descriptors, $pipes, $repoRoot, $env);
         if (!is_resource($process)) {
             return ['success' => false, 'error' => 'proc_open_failed'];
         }
@@ -85,11 +97,7 @@ class NodeScraperRunner
         fclose($pipes[2]);
         proc_close($process);
 
-        $trimmed = trim($stdout);
-        $data = null;
-        if ($trimmed !== '') {
-            $data = json_decode($trimmed, true);
-        }
+        $data = $this->parseJsonFromStdout($stdout);
 
         if ($exitCode !== 0) {
             return [
@@ -119,5 +127,39 @@ class NodeScraperRunner
             'stderr' => $stderr,
         ];
     }
-}
 
+    private function parseJsonFromStdout(string $stdout): ?array
+    {
+        $trimmed = trim($stdout);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        $data = json_decode($trimmed, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
+            return $data;
+        }
+
+        $lines = preg_split('/\r?\n/', $trimmed);
+        for ($i = count($lines) - 1; $i >= 0; $i--) {
+            $line = trim((string)$lines[$i]);
+            if ($line === '') {
+                continue;
+            }
+            $candidate = json_decode($line, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($candidate)) {
+                return $candidate;
+            }
+        }
+
+        $pos = strrpos($trimmed, '{');
+        if ($pos !== false) {
+            $candidate = json_decode(substr($trimmed, $pos), true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+}

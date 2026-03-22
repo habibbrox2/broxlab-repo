@@ -14,14 +14,17 @@ class ArticleScraper
     private HttpClientService $httpClient;
     private HtmlParserService $parser;
     private SourceConfigManager $sourceManager;
+    private ?BrowserScraperService $browserScraper;
 
     public function __construct(
         HttpClientService $httpClient,
-        ?SourceConfigManager $sourceManager = null
+        ?SourceConfigManager $sourceManager = null,
+        ?BrowserScraperService $browserScraper = null
     ) {
         $this->httpClient = $httpClient;
         $this->sourceManager = $sourceManager ?? new SourceConfigManager();
         $this->parser = new HtmlParserService();
+        $this->browserScraper = $browserScraper;
     }
 
     /**
@@ -34,17 +37,38 @@ class ArticleScraper
         
         // Fetch the page
         $response = $this->httpClient->get($url);
-        
-        if (!$response['success']) {
-            return [
-                'success' => false,
-                'error' => $response['error'],
-                'url' => $url,
-            ];
-        }
 
-        // Parse HTML
-        $this->parser->loadHtml($response['body'], $url);
+        if (!$response['success']) {
+            if (($response['waf_detected'] ?? false) && $this->browserScraper && $this->browserScraper->isAvailable()) {
+                $browserResult = $this->browserScraper->fetchHtml($url);
+                if ($browserResult['success']) {
+                    $this->parser->loadHtml($browserResult['html'], $url);
+                } else {
+                    return [
+                        'success' => false,
+                        'error' => $browserResult['error'] ?? $response['error'],
+                        'url' => $url,
+                        'waf_detected' => true,
+                    ];
+                }
+            } elseif ($response['error'] === 'waf_detected') {
+                return [
+                    'success' => false,
+                    'error' => 'WAF detected but Puppeteer unavailable. Please install Puppeteer/browser runtime.',
+                    'url' => $url,
+                    'waf_detected' => true,
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'error' => $response['error'],
+                    'url' => $url,
+                ];
+            }
+        } else {
+            // Parse HTML
+            $this->parser->loadHtml($response['body'], $url);
+        }
         
         // Extract article data
         $article = $this->extractArticleData($url, $selectors);
@@ -188,18 +212,41 @@ class ArticleScraper
         
         // Fetch the page
         $response = $this->httpClient->get($url);
-        
-        if (!$response['success']) {
-            return [
-                'success' => false,
-                'error' => $response['error'],
-                'url' => $url,
-                'articles' => [],
-            ];
-        }
 
-        // Parse HTML
-        $this->parser->loadHtml($response['body'], $url);
+        if (!$response['success']) {
+            if (($response['waf_detected'] ?? false) && $this->browserScraper && $this->browserScraper->isAvailable()) {
+                $browserResult = $this->browserScraper->fetchHtml($url);
+                if ($browserResult['success']) {
+                    $this->parser->loadHtml($browserResult['html'], $url);
+                } else {
+                    return [
+                        'success' => false,
+                        'error' => $browserResult['error'] ?? $response['error'],
+                        'url' => $url,
+                        'articles' => [],
+                        'waf_detected' => true,
+                    ];
+                }
+            } elseif ($response['error'] === 'waf_detected') {
+                return [
+                    'success' => false,
+                    'error' => 'WAF detected but Puppeteer unavailable. Please install Puppeteer/browser runtime.',
+                    'url' => $url,
+                    'articles' => [],
+                    'waf_detected' => true,
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'error' => $response['error'],
+                    'url' => $url,
+                    'articles' => [],
+                ];
+            }
+        } else {
+            // Parse HTML
+            $this->parser->loadHtml($response['body'], $url);
+        }
         
         // Extract list container and items
         $containerSelector = $selectors['list_container'] ?? '';

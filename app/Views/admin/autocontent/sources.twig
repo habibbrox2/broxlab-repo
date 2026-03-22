@@ -291,6 +291,9 @@ async function collectFromSource(sourceId, sourceName) {
       if (typeof window.showAlert === 'function') {
         await window.showAlert(data.message || 'Articles collected successfully', 'Success', 'success');
       }
+      if (data.warning && typeof window.showAlert === 'function') {
+        await window.showAlert(String(data.warning), 'Warning', 'warning');
+      }
       window.location.reload();
       return;
     }
@@ -364,6 +367,9 @@ async function multiLayerScrape(sourceId, sourceName) {
 
       if (typeof window.showAlert === 'function') {
         await window.showAlert(message, 'Success', 'success');
+      }
+      if (data.warnings && data.warnings.length > 0 && typeof window.showAlert === 'function') {
+        await window.showAlert('• ' + data.warnings.slice(0, 5).join('\n• '), 'Warnings', 'warning');
       }
       window.location.reload();
       return;

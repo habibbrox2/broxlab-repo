@@ -586,12 +586,13 @@ class AutoContentModel
     /**
      * Get all articles with filters
      */
-    public function getArticles(int $page = 1, int $limit = 20, string $status = '', string $sourceFilter = '', string $search = ''): array
+    public function getArticles(int $page = 1, int $limit = 20, string $status = '', string $sourceFilter = '', string $search = '', string $contentType = ''): array
     {
         $offset = ($page - 1) * $limit;
 
         $where = "1=1";
         $params = [];
+        $articleColumns = $this->getArticleColumnNames();
 
         if (!empty($status)) {
             $where .= " AND a.status = ?";
@@ -603,15 +604,40 @@ class AutoContentModel
             $params[] = (int)$sourceFilter;
         }
 
-        if (!empty($search)) {
-            $where .= " AND (a.title LIKE ? OR a.original_title LIKE ? OR a.ai_title LIKE ?)";
-            $searchParam = "%{$search}%";
-            $params[] = $searchParam;
-            $params[] = $searchParam;
-            $params[] = $searchParam;
+        if (!empty($contentType)) {
+            $where .= " AND s.content_type = ?";
+            $params[] = $contentType;
         }
 
-        $sql = "SELECT a.*, s.name as source_name, s.url as source_url
+        if (!empty($search)) {
+            $searchCols = [];
+            if (in_array('title', $articleColumns, true)) {
+                $searchCols[] = 'a.title';
+            }
+            if (in_array('original_title', $articleColumns, true)) {
+                $searchCols[] = 'a.original_title';
+            }
+            if (in_array('ai_title', $articleColumns, true)) {
+                $searchCols[] = 'a.ai_title';
+            }
+
+            if (!empty($searchCols)) {
+                $searchWheres = [];
+                $searchParam = "%{$search}%";
+                foreach ($searchCols as $col) {
+                    $searchWheres[] = "{$col} LIKE ?";
+                    $params[] = $searchParam;
+                }
+                $where .= " AND (" . implode(' OR ', $searchWheres) . ")";
+            }
+        }
+
+        $selectColumns = $this->getArticleSelectColumns();
+        $selectColumns[] = "s.name as source_name";
+        $selectColumns[] = "s.url as source_url";
+        $selectColumns[] = "s.content_type as source_content_type";
+
+        $sql = "SELECT " . implode(', ', $selectColumns) . "
                 FROM autocontent_articles a
                 LEFT JOIN autocontent_sources s ON a.source_id = s.id
                 WHERE {$where}
@@ -630,8 +656,23 @@ class AutoContentModel
         if (!empty($sourceFilter)) {
             $types .= 'i';
         }
+        if (!empty($contentType)) {
+            $types .= 's';
+        }
         if (!empty($search)) {
-            $types .= 'sss';
+            $searchCols = [];
+            if (in_array('title', $articleColumns, true)) {
+                $searchCols[] = 'title';
+            }
+            if (in_array('original_title', $articleColumns, true)) {
+                $searchCols[] = 'original_title';
+            }
+            if (in_array('ai_title', $articleColumns, true)) {
+                $searchCols[] = 'ai_title';
+            }
+            if (!empty($searchCols)) {
+                $types .= str_repeat('s', count($searchCols));
+            }
         }
         $types .= 'ii';
 
@@ -664,7 +705,16 @@ class AutoContentModel
      */
     public function getArticleById(int $id): ?array
     {
-        $stmt = $this->mysqli->prepare("SELECT a.*, s.name as source_name FROM autocontent_articles a LEFT JOIN autocontent_sources s ON a.source_id = s.id WHERE a.id = ?");
+        $selectColumns = $this->getArticleSelectColumns();
+        $selectColumns[] = "s.name as source_name";
+        $selectColumns[] = "s.url as source_url";
+        $selectColumns[] = "s.content_type as source_content_type";
+
+        $sql = "SELECT " . implode(', ', $selectColumns) . "
+                FROM autocontent_articles a
+                LEFT JOIN autocontent_sources s ON a.source_id = s.id
+                WHERE a.id = ?";
+        $stmt = $this->mysqli->prepare($sql);
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -1066,7 +1116,13 @@ class AutoContentModel
             'max_daily_publish' => '10', 
             'publish_time_start' => '06:00', 
             'publish_time_end' => '23:00', 
-            'publish_status' => 'published' 
+            'publish_status' => 'published',
+            'min_word_count' => '100',
+            'min_seo_score' => '0',
+            'default_author' => 'AI Bot',
+            'target_language' => 'Bengali',
+            'telegram_enabled' => '0',
+            'system_prompt' => ''
         ]; 
 
         foreach ($defaults as $key => $value) {
@@ -1079,6 +1135,63 @@ class AutoContentModel
         $settings['ai_key_set'] = $aiKeySet;
 
         return $settings;
+    }
+
+    /**
+     * Build explicit select columns for autocontent_articles (no SELECT *)
+     */
+    private function getArticleSelectColumns(): array
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $columns = [];
+        $names = $this->getArticleColumnNames();
+        foreach ($names as $field) {
+            $columns[] = "a.`{$field}`";
+        }
+
+        if (empty($columns)) {
+            $fallback = [
+                'id', 'source_id', 'url', 'title', 'content', 'excerpt', 'author', 'image_url',
+                'published_at', 'status', 'ai_title', 'ai_content', 'ai_summary', 'ai_excerpt',
+                'seo_score', 'original_content', 'created_at', 'updated_at'
+            ];
+            foreach ($fallback as $field) {
+                $columns[] = "a.`{$field}`";
+            }
+        }
+
+        $cached = $columns;
+        return $cached;
+    }
+
+    /**
+     * Get column names for autocontent_articles (cached)
+     */
+    private function getArticleColumnNames(): array
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $columns = [];
+        $result = $this->mysqli->query("SHOW COLUMNS FROM autocontent_articles");
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $field = $row['Field'] ?? '';
+                if ($field !== '') {
+                    $columns[] = $field;
+                }
+            }
+            $result->free();
+        }
+
+        $cached = $columns;
+        return $cached;
     }
 
     /**
@@ -1694,6 +1807,362 @@ class AutoContentModel
             // ignore 
         } 
     } 
+
+    /**
+     * Enqueue a URL into the scrape retry queue.
+     */
+    public function enqueueScrapeQueue(int $sourceId, string $url, ?string $errorMessage = null, int $priority = 5, int $maxAttempts = 3): void
+    {
+        try {
+            $this->ensureTablesExist();
+            $url = trim($url);
+            if ($sourceId <= 0 || $url === '') {
+                return;
+            }
+
+            $stmt = $this->mysqli->prepare("
+                SELECT id FROM autocontent_scrape_queue
+                WHERE source_id = ? AND url = ? AND status IN ('pending','processing')
+                LIMIT 1
+            ");
+            if ($stmt) {
+                $this->bindParams($stmt, 'is', [$sourceId, $url]);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                if ($res && $res->num_rows > 0) {
+                    $stmt->close();
+                    return;
+                }
+                $stmt->close();
+            }
+
+            $stmt = $this->mysqli->prepare("
+                INSERT INTO autocontent_scrape_queue (source_id, url, priority, status, attempts, max_attempts, next_attempt, error_message, created_at, updated_at)
+                VALUES (?, ?, ?, 'pending', 0, ?, NOW(), ?, NOW(), NOW())
+            ");
+            if (!$stmt) {
+                return;
+            }
+
+            $this->bindParams($stmt, 'isiis', [
+                $sourceId,
+                $url,
+                $priority,
+                $maxAttempts,
+                $errorMessage
+            ]);
+            $stmt->execute();
+            $stmt->close();
+        } catch (Throwable $e) {
+            // ignore
+        }
+    }
+
+    /**
+     * Fetch pending scrape queue entries.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function getPendingScrapeQueue(int $limit = 20): array
+    {
+        $this->ensureTablesExist();
+        $limit = max(1, min(200, $limit));
+        $stmt = $this->mysqli->prepare("
+            SELECT id, source_id, url, priority, status, attempts, max_attempts, next_attempt
+            FROM autocontent_scrape_queue
+            WHERE status = 'pending'
+              AND (next_attempt IS NULL OR next_attempt <= NOW())
+              AND attempts < max_attempts
+            ORDER BY priority DESC, created_at ASC
+            LIMIT ?
+        ");
+        if (!$stmt) {
+            return [];
+        }
+        $this->bindParams($stmt, 'i', [$limit]);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $rows = [];
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $rows[] = $row;
+            }
+            $result->free();
+        }
+        $stmt->close();
+        return $rows;
+    }
+
+    public function markScrapeQueueProcessing(int $id): void
+    {
+        if ($id <= 0) {
+            return;
+        }
+        $stmt = $this->mysqli->prepare("
+            UPDATE autocontent_scrape_queue
+            SET status = 'processing', attempts = attempts + 1, last_attempt = NOW(), updated_at = NOW()
+            WHERE id = ?
+            LIMIT 1
+        ");
+        if (!$stmt) {
+            return;
+        }
+        $this->bindParams($stmt, 'i', [$id]);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    public function markScrapeQueueSuccess(int $id, ?string $resultData = null): void
+    {
+        if ($id <= 0) {
+            return;
+        }
+        $stmt = $this->mysqli->prepare("
+            UPDATE autocontent_scrape_queue
+            SET status = 'completed',
+                result_data = ?,
+                completed_at = NOW(),
+                updated_at = NOW()
+            WHERE id = ?
+            LIMIT 1
+        ");
+        if (!$stmt) {
+            return;
+        }
+        $this->bindParams($stmt, 'si', [$resultData, $id]);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    public function markScrapeQueueFailed(int $id, string $errorMessage, bool $final, ?string $nextAttempt): void
+    {
+        if ($id <= 0) {
+            return;
+        }
+        $status = $final ? 'failed' : 'pending';
+        $stmt = $this->mysqli->prepare("
+            UPDATE autocontent_scrape_queue
+            SET status = ?,
+                error_message = ?,
+                next_attempt = ?,
+                updated_at = NOW(),
+                completed_at = CASE WHEN ? = 'failed' THEN NOW() ELSE completed_at END
+            WHERE id = ?
+            LIMIT 1
+        ");
+        if (!$stmt) {
+            return;
+        }
+        $this->bindParams($stmt, 'ssssi', [$status, $errorMessage, $nextAttempt, $status, $id]);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    /**
+     * Fetch scrape queue entries for admin UI.
+     *
+     * @return array{items: list<array<string,mixed>>, total: int}
+     */
+    public function getScrapeQueue(array $filters, int $page = 1, int $limit = 50): array
+    {
+        $this->ensureTablesExist();
+        $page = max(1, $page);
+        $limit = max(1, min(200, $limit));
+        $offset = ($page - 1) * $limit;
+
+        $where = '1=1';
+        $params = [];
+        $types = '';
+
+        if (!empty($filters['source_id'])) {
+            $where .= ' AND q.source_id = ?';
+            $params[] = (int)$filters['source_id'];
+            $types .= 'i';
+        }
+        if (!empty($filters['status'])) {
+            $where .= ' AND q.status = ?';
+            $params[] = (string)$filters['status'];
+            $types .= 's';
+        }
+        if (!empty($filters['q'])) {
+            $where .= ' AND (q.url LIKE ? OR q.error_message LIKE ?)';
+            $q = '%' . (string)$filters['q'] . '%';
+            $params[] = $q;
+            $params[] = $q;
+            $types .= 'ss';
+        }
+
+        $countSql = "SELECT COUNT(*) AS c FROM autocontent_scrape_queue q WHERE {$where}";
+        $total = 0;
+        $countStmt = $this->mysqli->prepare($countSql);
+        if ($countStmt) {
+            if ($types !== '') {
+                $this->bindParams($countStmt, $types, $params);
+            }
+            $countStmt->execute();
+            $res = $countStmt->get_result();
+            if ($res && ($row = $res->fetch_assoc())) {
+                $total = (int)($row['c'] ?? 0);
+                $res->free();
+            }
+            $countStmt->close();
+        }
+
+        $sql = "
+            SELECT q.id, q.source_id, s.name AS source_name, q.url, q.status, q.attempts, q.max_attempts,
+                   q.next_attempt, q.last_attempt, q.error_message, q.created_at, q.updated_at
+            FROM autocontent_scrape_queue q
+            LEFT JOIN autocontent_sources s ON s.id = q.source_id
+            WHERE {$where}
+            ORDER BY q.id DESC
+            LIMIT ? OFFSET ?
+        ";
+
+        $stmt = $this->mysqli->prepare($sql);
+        $items = [];
+        if ($stmt) {
+            $p2 = $params;
+            $t2 = $types . 'ii';
+            $p2[] = $limit;
+            $p2[] = $offset;
+            $this->bindParams($stmt, $t2, $p2);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($res) {
+                while ($row = $res->fetch_assoc()) {
+                    $items[] = $row;
+                }
+                $res->free();
+            }
+            $stmt->close();
+        }
+
+        return ['items' => $items, 'total' => $total];
+    }
+
+    /**
+     * Scrape queue summary (counts and next attempt).
+     *
+     * @return array{pending: int, failed: int, next_attempt: ?string}
+     */
+    public function getScrapeQueueSummary(): array
+    {
+        $this->ensureTablesExist();
+        $pending = 0;
+        $failed = 0;
+        $nextAttempt = null;
+
+        $stmt = $this->mysqli->prepare("
+            SELECT
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
+                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failed,
+                MIN(CASE WHEN status = 'pending' THEN next_attempt END) AS next_attempt
+            FROM autocontent_scrape_queue
+        ");
+        if ($stmt) {
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($res && ($row = $res->fetch_assoc())) {
+                $pending = (int)($row['pending'] ?? 0);
+                $failed = (int)($row['failed'] ?? 0);
+                $nextAttempt = $row['next_attempt'] ?? null;
+                $res->free();
+            }
+            $stmt->close();
+        }
+
+        return [
+            'pending' => $pending,
+            'failed' => $failed,
+            'next_attempt' => $nextAttempt,
+        ];
+    }
+
+    /**
+     * Fetch queue items by IDs.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function getScrapeQueueByIds(array $ids): array
+    {
+        $this->ensureTablesExist();
+        $ids = array_values(array_filter(array_map('intval', $ids), fn($v) => $v > 0));
+        if (empty($ids)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "
+            SELECT id, source_id, url, status, attempts, max_attempts, next_attempt, last_attempt
+            FROM autocontent_scrape_queue
+            WHERE id IN ({$placeholders})
+        ";
+        $stmt = $this->mysqli->prepare($sql);
+        if (!$stmt) {
+            return [];
+        }
+        $types = str_repeat('i', count($ids));
+        $this->bindParams($stmt, $types, $ids);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $items = [];
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $items[] = $row;
+            }
+            $res->free();
+        }
+        $stmt->close();
+        return $items;
+    }
+
+    public function markScrapeQueueFailedByIds(array $ids, string $errorMessage = 'manual_fail'): int
+    {
+        $ids = array_values(array_filter(array_map('intval', $ids), fn($v) => $v > 0));
+        if (empty($ids)) {
+            return 0;
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "
+            UPDATE autocontent_scrape_queue
+            SET status = 'failed',
+                error_message = ?,
+                completed_at = NOW(),
+                updated_at = NOW()
+            WHERE id IN ({$placeholders})
+        ";
+        $stmt = $this->mysqli->prepare($sql);
+        if (!$stmt) {
+            return 0;
+        }
+        $types = 's' . str_repeat('i', count($ids));
+        $params = array_merge([$errorMessage], $ids);
+        $this->bindParams($stmt, $types, $params);
+        $stmt->execute();
+        $affected = $stmt->affected_rows;
+        $stmt->close();
+        return (int)$affected;
+    }
+
+    public function deleteScrapeQueueByIds(array $ids): int
+    {
+        $ids = array_values(array_filter(array_map('intval', $ids), fn($v) => $v > 0));
+        if (empty($ids)) {
+            return 0;
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "DELETE FROM autocontent_scrape_queue WHERE id IN ({$placeholders})";
+        $stmt = $this->mysqli->prepare($sql);
+        if (!$stmt) {
+            return 0;
+        }
+        $types = str_repeat('i', count($ids));
+        $this->bindParams($stmt, $types, $ids);
+        $stmt->execute();
+        $affected = $stmt->affected_rows;
+        $stmt->close();
+        return (int)$affected;
+    }
  
     /** 
      * Fetch scrape logs for admin UI. 

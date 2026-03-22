@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Scraper;
 
+require_once __DIR__ . '/ScraperApiClient.php';
+
+use App\Modules\Scraper\ScraperApiClient;
+
 /**
  * ScraperService.php
  * Module for scraping basic metadata (Title, Description, Links) from a public URL.
@@ -25,16 +29,34 @@ class ScraperService
             return ['error' => 'Invalid URL. Please provide a valid URL (e.g. https://example.com).'];
         }
 
-        $html = $this->fetchHtml($url);
+        $apiClient = new ScraperApiClient();
+        $apiResult = $apiClient->fetchScrape($url, [], self::DEFAULT_TIMEOUT);
 
-        if ($html === null) {
-            return ['error' => 'Failed to fetch URL. Check that the URL is publicly accessible.'];
+        if (!($apiResult['success'] ?? false)) {
+            $code = (string)($apiResult['error_code'] ?? $apiResult['error'] ?? '');
+            if (in_array($code, ['api_unreachable', 'timeout', 'invalid_response', 'curl_unavailable'], true)) {
+                $html = $this->fetchHtml($url);
+                if ($html === null) {
+                    return ['error' => 'Failed to fetch URL. Check that the URL is publicly accessible.'];
+                }
+
+                $data = $this->parseHtml($html, $url);
+                $data['timestamp'] = date('Y-m-d H:i:s');
+                $data['warning'] = 'API down; used legacy scraper.';
+                return $data;
+            }
+
+            return ['error' => $apiResult['error'] ?? 'Failed to fetch URL.'];
         }
 
-        $data = $this->parseHtml($html, $url);
-        $data['timestamp'] = date('Y-m-d H:i:s');
-
-        return $data;
+        return [
+            'url' => (string)($apiResult['url'] ?? $url),
+            'title' => (string)($apiResult['title'] ?? '(No title found)'),
+            'description' => (string)($apiResult['description'] ?? '(No description found)'),
+            'image' => (string)($apiResult['image'] ?? ''),
+            'links' => is_array($apiResult['links'] ?? null) ? $apiResult['links'] : [],
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
     }
 
     private function fetchHtml(string $url): ?string

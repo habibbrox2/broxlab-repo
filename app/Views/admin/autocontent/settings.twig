@@ -6,7 +6,7 @@
 <div class="mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div>
         <h4 class="fw-bold mb-1"><i class="bi bi-robot me-2 text-primary"></i>AI Auto Content Engine Settings</h4>
-        <p class="text-muted small mb-0">Configure Puter AI content generation, publishing rules, and pipeline behavior.</p>
+        <p class="text-muted small mb-0">Configure publishing rules, pipeline behavior, and use the global AI SYSTEM configuration.</p>
     </div>
     <a href="/admin/autocontent" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
@@ -17,62 +17,58 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <div class="row g-4">
 
-        {# -- Puter AI Config ----------------------------------------------- #}
+                {# -- AI System Summary -------------------------------------------- #}
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-cpu me-2"></i>Puter AI Configuration</h6>
+                    <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-cpu me-2"></i>AI SYSTEM Configuration</h6>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info py-2 small border-0 mb-3">
                         <i class="bi bi-info-circle-fill me-1"></i>
-                        <strong>Puter AI</strong> is free and requires no API key for basic usage.
-                        Leave the endpoint blank to use the default Puter endpoint.
-                        Optionally set a <a href="https://puter.com" target="_blank">Puter token</a> for higher rate limits.
+                        AutoContent uses the global <strong>AI SYSTEM</strong> settings for backend provider and model.
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small text-muted">AI Endpoint <span class="text-muted fw-normal">(leave blank for Puter default)</span></label>
-                        <input type="url" name="ai_endpoint" class="form-control font-monospace small"
-                               value="{{ config.ai_endpoint }}"
-                               placeholder="https://api.puter.com/puterai/openai/v1/chat/completions">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small text-muted">Model Name</label>
-                        <select name="ai_model" class="form-select">
-                            {% set models = [
-                                'gpt-4o-mini',
-                                'gpt-4o',
-                                'claude-3-5-sonnet',
-                                'claude-3-haiku',
-                                'gemini-2.0-flash',
-                                'gemini-1.5-pro',
-                                'meta-llama/llama-3.1-8b-instruct',
-                                'mistralai/mistral-7b-instruct'
-                            ] %}
-                            {% for m in models %}
-                                <option value="{{ m }}" {% if config.ai_model == m %}selected{% endif %}>{{ m }}</option>
-                            {% endfor %}
-                            <option value="custom" {% if config.ai_model not in models %}selected{% endif %}>Custom�</option>
-                        </select>
-                        <input type="text" name="ai_model_custom" id="ai_model_custom" class="form-control mt-2 font-monospace small {% if config.ai_model in models %}d-none{% endif %}"
-                               value="{% if config.ai_model not in models %}{{ config.ai_model }}{% endif %}"
-                               placeholder="Enter custom model name">
-                    </div>
-
-                    <div class="mb-0">
-                        <label class="form-label fw-semibold small text-muted">
-                            Puter Token / API Key
-                            {% if config.ai_key_set %}<span class="badge bg-success ms-1">Set ?</span>{% endif %}
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-key-fill"></i></span>
-                            <input type="password" name="ai_key" class="form-control border-start-0"
-                                   placeholder="{% if config.ai_key_set %}???????????? (already set � leave blank to keep){% else %}Optional: Enter Puter token for higher limits{% endif %}">
+                    <div class="row g-3 small">
+                        <div class="col-6">
+                            <div class="text-muted">Backend Provider</div>
+                            <div class="fw-semibold">{{ ai_summary.backend_provider|default('Unknown')|upper }}</div>
                         </div>
-                        <div class="form-text">Leave blank to keep existing key. Clear by entering a single space.</div>
+                        <div class="col-6">
+                            <div class="text-muted">Backend Model</div>
+                            <div class="fw-semibold">{{ ai_summary.backend_model ? ai_summary.backend_model : (ai_summary.default_model|default('')) }}</div>
+                        </div>
                     </div>
+                    <div class="mt-3">
+                        <a href="/admin/ai-system" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-gear me-1"></i>Open AI SYSTEM Settings
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# -- Browser Runtime Status ---------------------------------------- #}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-browser-chrome me-2"></i>Browser Runtime Status</h6>
+                </div>
+                <div class="card-body">
+                    {% if browser_status.available %}
+                        <div class="alert alert-success py-2 small border-0 mb-2">
+                            <i class="bi bi-check-circle-fill me-1"></i>
+                            {{ browser_status.message }}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-danger py-2 small border-0 mb-2">
+                            <i class="bi bi-x-circle-fill me-1"></i>
+                            {{ browser_status.message }}
+                        </div>
+                        <div class="small text-muted mb-2">Install Puppeteer on the server to enable WAF bypass.</div>
+                    {% endif %}
+                    {% if browser_status.details %}
+                        <div class="small text-muted">{{ browser_status.details }}</div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -245,27 +241,6 @@
 
 {% block scripts %}
 <script>
-// Custom model input toggle
-document.querySelector('[name="ai_model"]').addEventListener('change', function() {
-    const customInput = document.getElementById('ai_model_custom');
-    if (this.value === 'custom') {
-        customInput.classList.remove('d-none');
-        customInput.required = true;
-    } else {
-        customInput.classList.add('d-none');
-        customInput.required = false;
-    }
-});
-
-// Override ai_model with custom value on submit
-document.querySelector('form').addEventListener('submit', function() {
-    const select = this.querySelector('[name="ai_model"]');
-    const custom = document.getElementById('ai_model_custom');
-    if (select.value === 'custom' && custom.value.trim()) {
-        select.value = custom.value.trim();
-    }
-});
-
 // Reset prompt button
 document.getElementById('resetPromptBtn').addEventListener('click', async function() {
     const result = typeof window.showConfirm === 'function'
@@ -289,3 +264,4 @@ document.getElementById('resetPromptBtn').addEventListener('click', async functi
 });
 </script>
 {% endblock %}
+

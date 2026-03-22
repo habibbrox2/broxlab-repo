@@ -354,4 +354,5 @@ class AIRouter {
 const aiRouter = new AIRouter();
 
 export default aiRouter;
-export { AIRouter };
+export { AIRouter, aiRouter };
+export const defaultAIRouter = aiRouter;

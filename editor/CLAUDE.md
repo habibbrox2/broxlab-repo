@@ -1,20 +1,18 @@
 # Claude Code Instructions - BroxBhai (Token Saver)
 
-Read first:
-- `AGENTS.md`
-- `docs/ai/AI_QUICK_CONTEXT.md`
+**→ Read first:** [`AGENTS.md`](../AGENTS.md) + [`docs/ai/AI_QUICK_CONTEXT.md`](../docs/ai/AI_QUICK_CONTEXT.md)
 
-Hard rules:
-- Search first (`rg`), open only relevant files, then make minimal diffs.
-- Use Models + prepared statements; avoid `SELECT *`.
-- Enforce CSRF for state-changing requests (`validateCsrfToken(...)` / middleware pattern).
-- Never edit generated assets in `public_html/assets/**/dist/**` (edit sources, then `npm run build`).
-- No secrets: never commit `.env` or paste real tokens/keys.
-- Prefer Twig templates for output; avoid raw HTML echo in controllers.
+**→ Shared Rules:** See [`editor/.rules-base.md`](.rules-base.md) for hard rules (no duplication here).
 
-Verification:
-- `php -l path/to/file.php`
-- `php scripts/quality_scan.php`
-- `npm run lint` (if JS changed)
-- `npm run check:assets` (if assets changed)
+## Claude-Specific Notes
+- Use `@` and search commands efficiently (Claude supports project context)
+- Prefer semantic understanding over keyword matching when exploring large files
+
+## Quick Verification
+```bash
+php -l path/to/file.php
+php scripts/quality_scan.php
+npm run lint                 # if JS changed
+npm run check:assets         # if assets changed
+```
 
