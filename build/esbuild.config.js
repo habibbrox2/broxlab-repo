@@ -99,9 +99,7 @@ async function buildFirebase() {
         `${FIREBASE_SOURCE_ROOT}/notification-system.js`,
         `${FIREBASE_SOURCE_ROOT}/offline-handler.js`,
         `${FIREBASE_SOURCE_ROOT}/permission-request.js`,
-        `${FIREBASE_SOURCE_ROOT}/scheduled-notifications.js`,
-        `${FIREBASE_SOURCE_ROOT}/admin-assistant.js`,
-        `${FIREBASE_SOURCE_ROOT}/public-assistant.js`
+        `${FIREBASE_SOURCE_ROOT}/scheduled-notifications.js`
     ];
 
     const cfg = {
@@ -250,4 +248,3 @@ if (isDirectInvocation()) {
         process.exit(1);
     });
 }
-
