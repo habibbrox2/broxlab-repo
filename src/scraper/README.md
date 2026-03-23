@@ -61,6 +61,16 @@ If you pass a preset key (e.g. `--source=ittefaq`), the scraper will create/reso
 node src/scraper/index.js --source=ittefaq --max=5
 ```
 
+### AutoContent by Source ID
+If you already know the `autocontent_sources.id`, you can run:
+```bash
+node src/scraper/index.js --sourceId=31 --max=5
+```
+
+### AutoContent Settings Honored (Essential)
+Node scraper will honor these `autocontent_sources` fields when available:
+`use_browser`, `max_pages`, `delay`, `proxy_enabled`, `proxy_config`, and custom selectors.
+
 ### Run Continuous
 ```bash
 node src/scraper/index.js --continuous --interval=20
@@ -95,9 +105,11 @@ php scripts/bdnews24-scheduler.php --continuous --interval=30
 | Option | Default | Description |
 |--------|---------|-------------|
 | --source | bdnews24 | Source to scrape |
+| --sourceId | (none) | AutoContent source ID |
 | --continuous | false | Run continuously |
 | --interval | 20000 | Interval in milliseconds |
 | --cycles | 0 | Max cycles (0=infinite) |
+| --max | 10 | Max articles per cycle |
 
 ### PHP Scheduler Options
 
@@ -138,6 +150,8 @@ php scripts/bdnews24-scheduler.php --continuous --interval=30
 - **Validation** - Min 200 chars, 3 paragraphs
 - **Rate Limit Respect** - User-Agent rotation
 - **Concurrency** - Max 5 parallel requests
+- **AutoContent First** - Uses `autocontent_sources` settings where available
+- **WAF/JS Fallback** - HTTP fail হলে Direct API (Puppeteer) fallback (if configured)
 
 ## Troubleshooting
 
@@ -149,6 +163,14 @@ mysql -u root -p -e "SHOW DATABASES;"
 ### No articles found
 - Site structure may have changed
 - Set LOG_LEVEL=debug for debugging
+
+### WAF/JS Blocks
+If HTTP fetch fails (WAF/JS), scraper can fallback to Direct API:
+Set `.env`:
+```env
+SCRAPER_DIRECT_API_URL=http://127.0.0.1:7020
+SCRAPER_API_KEY=
+```
 
 ## File Structure
 

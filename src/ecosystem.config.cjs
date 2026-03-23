@@ -10,6 +10,15 @@ module.exports = {
       autorestart: true
     },
     {
+      name: 'scraper-direct-api',
+      script: 'src/api/direct-scraper.js',
+      env: {
+        NODE_ENV: 'production'
+      },
+      max_memory_restart: '512M',
+      autorestart: true
+    },
+    {
       name: 'scraper-worker',
       script: 'src/workers/scrape-worker.js',
       instances: 'max',

@@ -161,10 +161,21 @@ class HttpClient {
         }
 
         const maxRetries = options.maxRetries ?? RETRY_CONFIG.maxRetries;
+        const proxyEnabled = options.proxyEnabled !== false;
+        const forcedProxyUrl = String(options.proxyUrl || '').trim();
+        const proxyListOverride = Array.isArray(options.proxyList) ? options.proxyList : null;
+        const overrideProxyIndex = { value: 0 };
+
+        const getProxyFromOverride = () => {
+            if (!proxyListOverride || proxyListOverride.length === 0) return null;
+            const proxy = proxyListOverride[overrideProxyIndex.value % proxyListOverride.length];
+            overrideProxyIndex.value = (overrideProxyIndex.value + 1) % proxyListOverride.length;
+            return proxy || null;
+        };
 
         let lastError = null;
         let attemptsMade = 0;
-        let useProxy = false;
+        let useProxy = proxyEnabled && (forcedProxyUrl !== '' || (proxyListOverride && proxyListOverride.length > 0));
         let delayMs = RETRY_CONFIG.initialDelayMs;
 
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -172,7 +183,9 @@ class HttpClient {
                 attemptsMade = attempt + 1;
                 Logger.debug(`Fetching: ${url}`, { attempt: attempt + 1 });
 
-                const proxyUrl = useProxy ? this._getNextProxy() : null;
+                const proxyUrl = useProxy
+                    ? (forcedProxyUrl || (proxyListOverride ? getProxyFromOverride() : this._getNextProxy()))
+                    : null;
                 const proxyConfig = useProxy ? this._buildProxyConfig(proxyUrl) : null;
                 const client = this._createInstance({ maxRedirects: 0, proxy: proxyConfig ?? false });
 
@@ -254,8 +267,10 @@ class HttpClient {
                 lastError = error;
                 const isRetryable = this._isRetryableError(error);
                 const status = error?.response?.status || 0;
-                if ((status === 429 || status >= 500) && this.proxyList.length > 0) {
-                    useProxy = true;
+                if (proxyEnabled && (status === 429 || status >= 500)) {
+                    if (forcedProxyUrl !== '' || (proxyListOverride && proxyListOverride.length > 0) || this.proxyList.length > 0) {
+                        useProxy = true;
+                    }
                 }
 
                 Logger.warn(`Request failed: ${url}`, {
@@ -291,8 +306,50 @@ class HttpClient {
     /**
      * Fetch HTML content
      */
-    async fetchHtml(url) {
-        const result = await this.fetch(url);
+    async fetchHtml(url, options = {}) {
+        const useBrowser = options.useBrowser === true;
+        const directApiUrl = String(process.env.SCRAPER_DIRECT_API_URL || '').trim();
+
+        if (useBrowser) {
+            const direct = directApiUrl
+                ? await this.fetchViaDirectApi(url, {
+                    timeoutMs: options.browserlessTimeoutMs || options.timeout || CONFIG.browser.timeout,
+                    proxyMode: options.proxyEnabled === false ? 'off' : 'auto'
+                })
+                : null;
+            if (direct?.success) {
+                return direct;
+            }
+
+            const browser = await BrowserAgent.fetchHtml(url, {
+                userAgent: this._getUserAgent(),
+                proxy: options.proxyUrl || null,
+                browserlessUrl: options.browserlessUrl,
+                browserlessToken: options.browserlessToken,
+                browserlessWaitMs: options.browserlessWaitMs,
+                browserlessTimeoutMs: options.browserlessTimeoutMs,
+                browserlessUseProxy: options.proxyEnabled === false ? false : undefined
+            });
+
+            if (browser.success) {
+                return {
+                    success: true,
+                    html: browser.html,
+                    status: 200,
+                    elapsed_ms: 0,
+                    via_browser: true
+                };
+            }
+
+            return {
+                success: false,
+                error: browser.error || 'browser_fetch_failed',
+                status: 0,
+                elapsed_ms: 0
+            };
+        }
+
+        const result = await this.fetch(url, options);
 
         if (result.success) {
             return {
@@ -304,10 +361,25 @@ class HttpClient {
         }
 
         if (result.waf_detected) {
+            if (directApiUrl) {
+                const direct = await this.fetchViaDirectApi(url, {
+                    timeoutMs: options.browserlessTimeoutMs || options.timeout || CONFIG.browser.timeout,
+                    proxyMode: options.proxyEnabled === false ? 'off' : 'auto'
+                });
+                if (direct.success) {
+                    return direct;
+                }
+            }
+
             const browser = await BrowserAgent.fetchHtml(url, {
                 userAgent: this._getUserAgent(),
-                proxy: result.proxy_used || null,
-                clearanceTimeoutMs: CONFIG.browser.clearanceTimeoutMs
+                proxy: options.proxyEnabled === false ? null : (result.proxy_used || null),
+                clearanceTimeoutMs: CONFIG.browser.clearanceTimeoutMs,
+                browserlessUrl: options.browserlessUrl,
+                browserlessToken: options.browserlessToken,
+                browserlessWaitMs: options.browserlessWaitMs,
+                browserlessTimeoutMs: options.browserlessTimeoutMs,
+                browserlessUseProxy: options.proxyEnabled === false ? false : undefined
             });
             if (browser.success) {
                 return {
@@ -335,6 +407,57 @@ class HttpClient {
             status: result.status || 0,
             elapsed_ms: result.elapsed_ms || 0
         };
+    }
+
+    async fetchViaDirectApi(url, options = {}) {
+        const baseUrl = String(process.env.SCRAPER_DIRECT_API_URL || process.env.APP_URL || '').trim();
+        if (!baseUrl) {
+            return { success: false, error: 'direct_api_unconfigured' };
+        }
+
+        const endpoint = baseUrl.replace(/\/+$/, '') + '/scrape';
+        const apiKey = String(process.env.SCRAPER_API_KEY || '').trim();
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        if (apiKey) {
+            headers['X-Api-Key'] = apiKey;
+        }
+
+        try {
+            const resp = await axios.post(endpoint, {
+                url,
+                waitForMs: Number(options.timeoutMs || 30000),
+                proxyMode: options.proxyMode || 'auto'
+            }, {
+                timeout: Number(options.timeoutMs || 30000),
+                headers
+            });
+
+            if (resp?.data?.success && resp.data.html) {
+                return {
+                    success: true,
+                    html: resp.data.html,
+                    status: resp.data.status || 200,
+                    elapsed_ms: resp.data.elapsed_ms || 0,
+                    via_direct_api: true
+                };
+            }
+
+            return {
+                success: false,
+                error: resp?.data?.error || 'direct_api_failed',
+                status: resp?.data?.status || 0,
+                elapsed_ms: resp?.data?.elapsed_ms || 0
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error?.message || 'direct_api_unreachable',
+                status: 0,
+                elapsed_ms: 0
+            };
+        }
     }
 
     /**

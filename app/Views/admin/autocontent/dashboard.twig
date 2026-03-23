@@ -356,7 +356,7 @@
           <div class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>{{ browser_status.message }}</div>
         {% else %}
           <div class="text-danger fw-semibold"><i class="bi bi-x-circle me-1"></i>{{ browser_status.message }}</div>
-          <div class="small text-muted">Install Puppeteer on the server to enable WAF bypass.</div>
+          <div class="small text-muted">Install Node.js (>=20) and Puppeteer on the server to enable WAF bypass.</div>
         {% endif %}
         {% if browser_status.details %}
           <div class="small text-muted mt-2">{{ browser_status.details }}</div>

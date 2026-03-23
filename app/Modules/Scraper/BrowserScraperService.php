@@ -26,13 +26,33 @@ class BrowserScraperService
 
     public function __construct(array $config = [])
     {
+        $envBrowserlessUrl = (string)(getenv('BROWSERLESS_URL') ?: '');
+        $envBrowserlessToken = (string)(getenv('BROWSERLESS_TOKEN') ?: '');
+        $envBrowserlessTimeout = (string)(getenv('BROWSERLESS_TIMEOUT_MS') ?: '');
+        $envBrowserlessWait = (string)(getenv('BROWSERLESS_WAIT_MS') ?: '');
+
         $this->config = $config + [
             'method' => 'local', // 'api' or 'local'
             'api_url' => '', // Browserless or custom API URL
             'api_key' => '',
             'local_path' => dirname(__DIR__, 3) . '/scripts/browser_scraper.js',
             'timeout' => 30,
+            'wait_ms' => 2000,
         ];
+
+        if ($envBrowserlessUrl !== '') {
+            $this->config['method'] = 'api';
+            $this->config['api_url'] = $envBrowserlessUrl;
+            if ($envBrowserlessToken !== '') {
+                $this->config['api_key'] = $envBrowserlessToken;
+            }
+        }
+        if ($envBrowserlessTimeout !== '') {
+            $this->config['timeout'] = (int)$envBrowserlessTimeout / 1000;
+        }
+        if ($envBrowserlessWait !== '') {
+            $this->config['wait_ms'] = (int)$envBrowserlessWait;
+        }
 
         $this->client = new Client([
             'timeout' => $this->config['timeout'],
@@ -118,10 +138,11 @@ class BrowserScraperService
             $apiUrl .= (str_contains($apiUrl, '?') ? '&' : '?') . 'token=' . $this->config['api_key'];
         }
 
+        $waitMs = (int)($this->config['wait_ms'] ?? 2000);
         $response = $this->client->post($apiUrl, [
             'json' => [
                 'url' => $url,
-                'waitFor' => 2000, // Default wait for 2 seconds
+                'waitFor' => $waitMs,
                 'gotoOptions' => ['waitUntil' => 'networkidle2']
             ]
         ]);
@@ -256,9 +277,18 @@ class BrowserScraperService
             ];
         }
 
-        $node = getenv('NODE_PATH') ?: 'node';
+        $node = $this->resolveNodeBinary();
+        if ($node === null || $node === '') {
+            return [
+                'available' => false,
+                'method' => 'local',
+                'message' => 'Node.js runtime not found',
+                'details' => 'Install Node.js (>=20) and run npm install to add Puppeteer.',
+            ];
+        }
+
         $probe = "import('puppeteer').then(()=>process.exit(0)).catch((e)=>{console.error(e&&e.message?e.message:'missing');process.exit(2);})";
-        $cmd = escapeshellcmd($node) . ' -e ' . escapeshellarg($probe);
+        $cmd = escapeshellarg($node) . ' -e ' . escapeshellarg($probe);
 
         $descriptors = [
             0 => ['pipe', 'r'],
@@ -326,6 +356,31 @@ class BrowserScraperService
             'message' => 'Puppeteer unavailable',
             'details' => $details,
         ];
+    }
+
+    /**
+     * Resolve the Node.js binary path.
+     */
+    private function resolveNodeBinary(): ?string
+    {
+        $envBinary = getenv('NODE_BINARY');
+        if ($envBinary !== false && $envBinary !== '') {
+            return $envBinary;
+        }
+
+        $envPath = getenv('NODE_PATH');
+        if ($envPath !== false && $envPath !== '') {
+            return $envPath;
+        }
+
+        $cmd = (PHP_OS_FAMILY === 'Windows') ? 'where node' : 'command -v node';
+        $result = trim((string)@shell_exec($cmd . ' 2>&1'));
+        if ($result === '') {
+            return null;
+        }
+
+        $firstLine = strtok($result, "\r\n");
+        return $firstLine !== false ? $firstLine : null;
     }
 
     /**
