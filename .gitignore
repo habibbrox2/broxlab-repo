@@ -156,6 +156,8 @@ Thumbs.db
 .c9/
 *.sublime-workspace
 .history/
+.github/
+.continue/
 
 # ─────────────────────────────────────────────────────────────────
 #  9. GENERATED ASSETS (Edit sources, run build - don't commit dist)
