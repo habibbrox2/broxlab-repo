@@ -24,7 +24,7 @@
   }
 }
   </script>
-  <div class="container my-4 mb-5">
+  <div class="container my-4 mb-5 mobile-view-page">
     <!-- Mobile Header Card -->
     <div class="card shadow-lg mb-4 border-0 rounded-4 overflow-hidden">
       <div class="bg-gradient bg-primary text-white p-4 text-center">
@@ -184,7 +184,7 @@
   </div>
   {# ==================== RELATED MOBILES SECTION ==================== #}
   {% if related_mobiles is defined and related_mobiles|length > 0 %}
-    <section class="py-5 bg-light">
+    <section class="py-5 bg-light related-mobiles-section">
       <div class="container">
         <div class="text-center mb-5">
           <div class="d-flex align-items-center justify-content-center mb-4">
@@ -254,7 +254,6 @@
       </div>
     </section>
   {% endif %}
-  <link rel="stylesheet" href="/assets/css/mobile.css">
   <script>
 document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".ripple").forEach(btn => {
