@@ -5,10 +5,54 @@
 
 import CONFIG from '../config.js';
 import Logger from '../utils/Logger.js';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 
 class ValidationAgent {
     constructor() {
         this.config = CONFIG.validation;
+    }
+
+    /**
+     * Validate CSS selector for security and syntax
+     */
+    validateCSSSelector(selector) {
+        if (!selector || typeof selector !== 'string') {
+            return { valid: false, reason: 'Not a string' };
+        }
+
+        selector = selector.trim();
+
+        if (selector.length === 0) {
+            return { valid: false, reason: 'Empty selector' };
+        }
+
+        // Check for injection patterns
+        const injectionPatterns = [
+            /^[<>]/,                      // HTML tags
+            /javascript:/i,                // Script injection
+            /[{}]/,                        // Brace abuse
+            /\$\{/,                        // Template injection
+            /`/,                           // Backtick injection
+            /onclick|onerror|onload/i,    // Event handlers
+        ];
+
+        for (const pattern of injectionPatterns) {
+            if (pattern.test(selector)) {
+                return { valid: false, reason: 'Injection pattern detected' };
+            }
+        }
+
+        // Try parsing with cheerio to validate
+        try {
+            const cheerio = require('cheerio');
+            const test = cheerio.load('<div id="test"></div>');
+            test(selector); // Will throw if invalid
+            return { valid: true, reason: 'Valid selector' };
+        } catch (error) {
+            return { valid: false, reason: `Parse error: ${error.message}` };
+        }
     }
 
     /**

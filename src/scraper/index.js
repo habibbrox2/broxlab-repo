@@ -26,6 +26,8 @@ class ScraperOrchestrator {
         this.pipeline = CONFIG.sources?.[this.sourceKey]?.pipeline || 'articles';
         this.concurrency = options.concurrency || CONFIG.concurrency.maxParallelFetches;
         this.maxArticles = Number.isFinite(Number(options.max)) ? Number(options.max) : 10;
+        this.deviceUrl = options.deviceUrl ? String(options.deviceUrl).trim() : '';
+        this.forceInsert = !!options.forceInsert;
 
         // Initialize agents
         this.tickerScraper = new TickerScraper(this.sourceKey);
@@ -167,6 +169,40 @@ class ScraperOrchestrator {
 
         Logger.info(`=== Starting Cycle ${this.stats.cycles} ===`);
 
+        // Mobiles-direct pipeline with a specific device URL (bypass ticker list).
+        if (this.pipeline === 'mobiles_direct' && this.deviceUrl) {
+            const singleLink = [{ link: this.deviceUrl, title: '', source: this.sourceKey }];
+            const mobileResults = await this.processMobiles(singleLink);
+
+            if (!this.db?.connected) {
+                Logger.warn('Database not connected; skipping mobile inserts', { processed: mobileResults.length });
+                return {
+                    success: true,
+                    status: 'scraped_mobiles_no_db',
+                    processed: singleLink.length,
+                    inserted: 0,
+                    duplicates: 0,
+                    updated: 0,
+                    failed: mobileResults.filter(r => !r.success).length,
+                    errors: ['db_not_connected'],
+                    items: mobileResults.filter(r => r.success).map(r => r.data)
+                };
+            }
+
+            const summary = await this.persistMobiles(mobileResults);
+            return {
+                success: true,
+                status: (summary.inserted + summary.updated) > 0 ? 'success' : 'no_new_mobiles',
+                processed: singleLink.length,
+                inserted: summary.inserted,
+                duplicates: summary.duplicates,
+                updated: summary.updated,
+                failed: summary.failed,
+                errors: summary.errors,
+                items: summary.items
+            };
+        }
+
         // Step 1: Fetch ticker items
         const tickerResult = await this.tickerScraper.fetchTickerItems();
 
@@ -227,61 +263,25 @@ class ScraperOrchestrator {
                     processed: limitedLinks.length,
                     inserted: 0,
                     duplicates: 0,
+                    updated: 0,
                     failed: mobileResults.filter(r => !r.success).length,
                     errors: ['db_not_connected'],
                     items: mobileResults.filter(r => r.success).map(r => r.data)
                 };
             }
 
-            let inserted = 0;
-            let duplicates = 0;
-            let failed = 0;
-            const errors = [];
-            const items = [];
-
-            for (const r of mobileResults) {
-                if (!r.success || !r.data) {
-                    failed++;
-                    if (r.error) errors.push(r.error);
-                    continue;
-                }
-
-                const existingId = await this.db.findMobileIdByBrandModel(r.data.brand_name, r.data.model_name);
-                if (existingId) {
-                    duplicates++;
-                    continue;
-                }
-
-                const ins = await this.db.insertMobileRecord(r.data);
-                if (!ins.success || !ins.id) {
-                    failed++;
-                    errors.push(ins.error || 'insert_failed');
-                    continue;
-                }
-
-                await this.db.upsertMobileSpecs(ins.id, r.data.specifications || {}, { overwrite: false });
-                if (r.data.image_url) {
-                    await this.db.insertMobileImages(ins.id, [r.data.image_url]);
-                }
-
-                inserted++;
-                items.push({
-                    id: ins.id,
-                    brand_name: r.data.brand_name,
-                    model_name: r.data.model_name,
-                    release_date: r.data.release_date
-                });
-            }
+            const summary = await this.persistMobiles(mobileResults);
 
             return {
                 success: true,
-                status: inserted > 0 ? 'success' : 'no_new_mobiles',
+                status: (summary.inserted + summary.updated) > 0 ? 'success' : 'no_new_mobiles',
                 processed: limitedLinks.length,
-                inserted,
-                duplicates,
-                failed,
-                errors,
-                items
+                inserted: summary.inserted,
+                duplicates: summary.duplicates,
+                updated: summary.updated,
+                failed: summary.failed,
+                errors: summary.errors,
+                items: summary.items
             };
         }
 
@@ -503,6 +503,86 @@ class ScraperOrchestrator {
         await this.db.close();
         Logger.info('ScraperOrchestrator cleanup complete');
     }
+
+    async persistMobiles(mobileResults) {
+        let inserted = 0;
+        let duplicates = 0;
+        let updated = 0;
+        let failed = 0;
+        const errors = [];
+        const items = [];
+
+        for (const r of mobileResults) {
+            if (!r.success || !r.data) {
+                failed++;
+                if (r.error) errors.push(r.error);
+                continue;
+            }
+
+            const existingId = await this.db.findMobileIdByBrandModel(r.data.brand_name, r.data.model_name);
+            if (existingId) {
+                if (this.forceInsert) {
+                    const upd = await this.db.updateMobileRecord(existingId, r.data);
+                    if (!upd.success) {
+                        failed++;
+                        errors.push(upd.error || 'update_failed');
+                        continue;
+                    }
+
+                    await this.db.upsertMobileSpecs(existingId, r.data.specifications || {}, { overwrite: true });
+                    const images = this.collectMobileImages(r.data);
+                    if (images.length) {
+                        await this.db.insertMobileImages(existingId, images);
+                    }
+
+                    updated++;
+                    items.push({
+                        id: existingId,
+                        brand_name: r.data.brand_name,
+                        model_name: r.data.model_name,
+                        release_date: r.data.release_date
+                    });
+                } else {
+                    duplicates++;
+                }
+                continue;
+            }
+
+            const ins = await this.db.insertMobileRecord(r.data);
+            if (!ins.success || !ins.id) {
+                failed++;
+                errors.push(ins.error || 'insert_failed');
+                continue;
+            }
+
+            await this.db.upsertMobileSpecs(ins.id, r.data.specifications || {}, { overwrite: false });
+            const images = this.collectMobileImages(r.data);
+            if (images.length) {
+                await this.db.insertMobileImages(ins.id, images);
+            }
+
+            inserted++;
+            items.push({
+                id: ins.id,
+                brand_name: r.data.brand_name,
+                model_name: r.data.model_name,
+                release_date: r.data.release_date
+            });
+        }
+
+        return { inserted, duplicates, updated, failed, errors, items };
+    }
+
+    collectMobileImages(data) {
+        const list = [];
+        if (data?.image_url) list.push(String(data.image_url));
+        if (Array.isArray(data?.image_urls)) {
+            for (const url of data.image_urls) {
+                if (url) list.push(String(url));
+            }
+        }
+        return Array.from(new Set(list.map(v => v.trim()).filter(Boolean)));
+    }
 }
 
 export default ScraperOrchestrator;
@@ -566,7 +646,9 @@ async function main() {
             interval: parseInt(args.find(a => a.startsWith('--interval='))?.split('=')[1]) || 20000,
             cycles: parseInt(args.find(a => a.startsWith('--cycles='))?.split('=')[1]) || 0,
             concurrency: parseInt(args.find(a => a.startsWith('--concurrency='))?.split('=')[1]) || undefined,
-            max: parseInt(args.find(a => a.startsWith('--max='))?.split('=')[1]) || 10
+            max: parseInt(args.find(a => a.startsWith('--max='))?.split('=')[1]) || 10,
+            deviceUrl: args.find(a => a.startsWith('--deviceUrl='))?.split('=')[1] || '',
+            forceInsert: args.includes('--forceInsert')
         };
 
         // Validate arguments

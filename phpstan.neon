@@ -1,0 +1,11 @@
+parameters:
+    level: 8
+    paths:
+        - app
+        - src
+    ignoreErrors:
+        # Redis extension methods - provided at runtime but not in type stubs
+        - '#Call to undefined method Redis::(incr|expire|get|del|keys)#'
+        # Built-in PHP functions - recognized at runtime, may warn during analysis
+        - '#Call to undefined function (max|min|time|header|http_response_code|json_encode|date|preg_match)#'
+    treatPhpDocTypesAsCertain: false

@@ -111,6 +111,42 @@ class AutoPublisher
     }
 
     /**
+     * Publish a single processed/approved article by ID.
+     */
+    public function publishById(int $articleId): array
+    {
+        $this->errors = [];
+        $this->published = [];
+
+        if (!$this->config['auto_publish']) {
+            return ['success' => false, 'error' => 'Auto-publish is disabled'];
+        }
+
+        if (!$this->isWithinTimeWindow()) {
+            return ['success' => false, 'error' => 'Outside allowed publishing time window'];
+        }
+
+        $article = $this->fetchArticleById($articleId);
+        if (!$article) {
+            return ['success' => false, 'error' => 'Article not found or not publishable'];
+        }
+
+        $result = $this->publishArticle($article);
+        if (!empty($result['success'])) {
+            $this->published[] = $result;
+        } else {
+            $this->errors[] = $result['error'] ?? 'publish_failed';
+        }
+
+        return [
+            'success' => !empty($this->published),
+            'published_count' => count($this->published),
+            'published' => $this->published,
+            'errors' => $this->errors
+        ];
+    }
+
+    /**
      * Check if current time is within allowed window
      */
     private function isWithinTimeWindow(): bool
@@ -161,6 +197,35 @@ class AutoPublisher
         $stmt->close();
 
         return $articles;
+    }
+
+    private function fetchArticleById(int $articleId): ?array
+    {
+        if ($articleId <= 0) return null;
+
+        $columns = $this->getTableColumns('autocontent_articles');
+        $select = $this->buildArticleSelectList($columns);
+
+        $sql = "SELECT {$select}
+                FROM autocontent_articles
+                WHERE id = ? AND status IN ('processed', 'approved')
+                LIMIT 1";
+
+        $stmt = $this->mysqli->prepare($sql);
+        if (!$stmt) {
+            return null;
+        }
+        $stmt->bind_param("i", $articleId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $article = null;
+        if ($result && $row = $result->fetch_assoc()) {
+            $article = $row;
+        }
+        $stmt->close();
+
+        return $article;
     }
 
     /**
@@ -243,6 +308,13 @@ class AutoPublisher
             $categoryIds = $this->config['categories'] ?: [];
             $tagIds = $this->config['tags'] ?: [];
 
+            // Pending taxonomy from scrape stage
+            require_once __DIR__ . '/../../Models/AutoContentModel.php';
+            $autoContentModel = new \AutoContentModel($this->mysqli);
+            $pending = $autoContentModel->getPendingTaxonomy($articleId);
+            $pendingCategoryNames = $this->normalizeTaxonomyList($pending['categories'] ?? []);
+            $pendingTagNames = $this->normalizeTaxonomyList($pending['tags'] ?? []);
+
             // Use AI suggested metadata if available
             if (!empty($article['metadata'])) {
                 $metadata = json_decode($article['metadata'], true);
@@ -262,12 +334,34 @@ class AutoPublisher
                 }
             }
 
+            // Apply pending selector taxonomy
+            if (!empty($pendingCategoryNames)) {
+                foreach ($pendingCategoryNames as $catName) {
+                    $catId = $this->getOrCreateCategory($catName);
+                    if ($catId) {
+                        $categoryIds[] = $catId;
+                    }
+                }
+            }
+            if (!empty($pendingTagNames)) {
+                foreach ($pendingTagNames as $tagName) {
+                    $tagId = $this->getOrCreateTag($tagName);
+                    if ($tagId) {
+                        $tagIds[] = $tagId;
+                    }
+                }
+            }
+
             if (!empty($categoryIds) && $this->contentModel) {
                 $this->contentModel->attachCategoriesToContent('post', (int)$postId, array_values(array_unique($categoryIds)));
             }
 
             if (!empty($tagIds) && $this->contentModel) {
                 $this->contentModel->attachTagsToContent('post', (int)$postId, array_values(array_unique($tagIds)));
+            }
+
+            if (!empty($pending['id'])) {
+                $autoContentModel->markTaxonomyApplied((int)$pending['id'], (int)$postId);
             }
 
             // Update auto content article status
@@ -299,6 +393,24 @@ class AutoPublisher
         catch (\Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    private function normalizeTaxonomyList($value): array
+    {
+        $items = [];
+        if (is_array($value)) {
+            $items = $value;
+        } else {
+            $items = preg_split('/[,\n;]+/', (string)$value);
+        }
+        $clean = [];
+        foreach ($items as $item) {
+            $v = trim((string)$item);
+            if ($v !== '') {
+                $clean[] = $v;
+            }
+        }
+        return array_values(array_unique($clean));
     }
 
     private function getTableColumns(string $table): array

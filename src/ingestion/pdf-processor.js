@@ -23,24 +23,17 @@ let HAS_PDFJS = false;
 
 try {
     const pdfParseModule = await import('pdf-parse');
-    pdfParse = pdfParseModule?.default ?? pdfParseModule;
+    pdfParse = pdfParseModule?.PDFParse || pdfParseModule?.default?.PDFParse || null;
     HAS_PDFPARSE = typeof pdfParse === 'function';
     if (!HAS_PDFPARSE) {
-        logger.warn('pdf-parse loaded but no callable export found');
+        logger.warn('pdf-parse loaded but no PDFParse class export found');
     }
 } catch (e) {
     logger.warn('pdf-parse not available', { error: e.message });
 }
 
 try {
-    pdfLib = await import('pdf-lib');
-    HAS_PDFLIB = true;
-} catch (e) {
-    logger.warn('pdf-lib not available', { error: e.message });
-}
-
-try {
-    pdfjsLib = await import('pdfjs-dist');
+    pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
     HAS_PDFJS = true;
 } catch (e) {
     logger.warn('pdfjs-dist not available', { error: e.message });
@@ -90,8 +83,17 @@ class PDFProcessor {
      */
     async _extractPdfParse(pdfPath) {
         const dataBuffer = fs.readFileSync(pdfPath);
-        const data = await pdfParse(dataBuffer);
-        return data.text;
+        const parser = new pdfParse({ data: dataBuffer });
+        try {
+            const textResult = await parser.getText();
+            return textResult?.text || '';
+        } finally {
+            try {
+                await parser.destroy();
+            } catch (e) {
+                // ignore cleanup errors
+            }
+        }
     }
 
     /**
@@ -125,6 +127,16 @@ class PDFProcessor {
      * @returns {Promise<string>} Extracted text
      */
     async _extractPdfLib(pdfPath) {
+        if (!HAS_PDFLIB) {
+            try {
+                pdfLib = await import('pdf-lib');
+                HAS_PDFLIB = true;
+            } catch (e) {
+                logger.warn('pdf-lib not available', { error: e.message });
+                throw e;
+            }
+        }
+
         const pdfBytes = fs.readFileSync(pdfPath);
         const pdfDocument = await pdfLib.PDFDocument.load(pdfBytes);
         const pages = pdfDocument.getPages();
@@ -172,14 +184,27 @@ class PDFProcessor {
             }
         } else if (HAS_PDFPARSE) {
             const dataBuffer = fs.readFileSync(pdfPath);
-            const data = await pdfParse(dataBuffer);
-            const pageTexts = data.text.split(/--- Page \d+ ---/);
-
-            for (let i = 1; i < pageTexts.length; i++) {
-                pages.push({
-                    page_num: i,
-                    text: pageTexts[i].trim()
-                });
+            const parser = new pdfParse({ data: dataBuffer });
+            try {
+                const textResult = await parser.getText();
+                const parsedPages = Array.isArray(textResult?.pages) ? textResult.pages : [];
+                if (parsedPages.length > 0) {
+                    for (const page of parsedPages) {
+                        pages.push({
+                            page_num: page.num || pages.length + 1,
+                            text: String(page.text || '').trim()
+                        });
+                    }
+                } else {
+                    const text = textResult?.text || '';
+                    pages.push({ page_num: 1, text });
+                }
+            } finally {
+                try {
+                    await parser.destroy();
+                } catch (e) {
+                    // ignore cleanup errors
+                }
             }
         } else {
             // Fallback to single extraction

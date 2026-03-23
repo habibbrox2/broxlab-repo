@@ -544,7 +544,11 @@ const CONFIG = {
     },
 
     browser: {
-        timeout: 30000
+        timeout: 30000,
+        clearanceTimeoutMs: 60000,
+        headless: 'new',
+        userDataDir: process.env.SCRAPER_PUPPETEER_PROFILE || null,
+        useStealth: true
     },
 
     // Validation rules

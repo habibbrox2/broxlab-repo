@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types = 1)
-;
+declare(strict_types=1);
 
 /**
  * AutoContentController.php
@@ -37,7 +36,7 @@ $router->get('/admin/autocontent', ['middleware' => ['auth', 'admin_only']], fun
         $sources_count = count($model->getActiveSources());
         $retry_summary = $model->getScrapeQueueSummary();
         $browser_status = (new BrowserScraperService())->checkRuntimeStatus();
- 
+
         // Tail cron log for quick health visibility (best-effort).
         $cronTail = [];
         try {
@@ -54,7 +53,7 @@ $router->get('/admin/autocontent', ['middleware' => ['auth', 'admin_only']], fun
         } catch (Throwable $e) {
             // ignore
         }
- 
+
         // Recently WAF-blocked sources (best-effort).
         $blockedSources = [];
         try {
@@ -84,21 +83,25 @@ $router->get('/admin/autocontent', ['middleware' => ['auth', 'admin_only']], fun
         }
 
         echo $twig->render('admin/autocontent/dashboard.twig', [
-        'title' => 'AI Auto Content Dashboard',
-        'stats' => $stats,
-        'recent_items' => $recent_items,
-        'sources_count' => $sources_count,
-        'schema_health' => $schemaHealth,
-        'cron_tail' => $cronTail,
-        'blocked_sources' => $blockedSources,
-        'retry_summary' => $retry_summary,
-        'browser_status' => $browser_status,
-        'current_page' => 'autocontent-dashboard'
+            'title' => 'AI Auto Content Dashboard',
+            'stats' => $stats,
+            'recent_items' => $recent_items,
+            'sources_count' => $sources_count,
+            'schema_health' => $schemaHealth,
+            'cron_tail' => $cronTail,
+            'blocked_sources' => $blockedSources,
+            'retry_summary' => $retry_summary,
+            'browser_status' => $browser_status,
+            'current_page' => 'autocontent-dashboard'
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Dashboard Error: " . $e->getMessage());
-        echo "Error loading dashboard: " . $e->getMessage();
+
+        // Sanitize error message for client
+        $clientMessage = 'An error occurred loading the dashboard';
+        $errorCode = substr(md5($e->getMessage()), 0, 8);
+
+        echo "Error loading dashboard: {$clientMessage} (Error ID: {$errorCode})";
     }
 });
 
@@ -132,7 +135,12 @@ $router->get('/admin/autocontent/logs', ['middleware' => ['auth', 'admin_only']]
         ]);
     } catch (Throwable $e) {
         error_log("Auto Content Logs Page Error: " . $e->getMessage());
-        echo "Error loading logs: " . $e->getMessage();
+
+        // Sanitize error message for client
+        $clientMessage = 'An error occurred loading the logs';
+        $errorCode = substr(md5($e->getMessage()), 0, 8);
+
+        echo "Error loading logs: {$clientMessage} (Error ID: {$errorCode})";
     }
 });
 
@@ -166,7 +174,12 @@ $router->get('/admin/autocontent/crawl-queue', ['middleware' => ['auth', 'admin_
         ]);
     } catch (Throwable $e) {
         error_log("Auto Content Crawl Queue Page Error: " . $e->getMessage());
-        echo "Error loading crawl queue: " . $e->getMessage();
+
+        // Sanitize error message for client
+        $clientMessage = 'An error occurred loading the crawl queue';
+        $errorCode = substr(md5($e->getMessage()), 0, 8);
+
+        echo "Error loading crawl queue: {$clientMessage} (Error ID: {$errorCode})";
     }
 });
 
@@ -201,7 +214,12 @@ $router->get('/admin/autocontent/retry-queue', ['middleware' => ['auth', 'admin_
         ]);
     } catch (Throwable $e) {
         error_log("Auto Content Retry Queue Page Error: " . $e->getMessage());
-        echo "Error loading retry queue: " . $e->getMessage();
+
+        // Sanitize error message for client
+        $clientMessage = 'An error occurred loading the retry queue';
+        $errorCode = substr(md5($e->getMessage()), 0, 8);
+
+        echo "Error loading retry queue: {$clientMessage} (Error ID: {$errorCode})";
     }
 });
 
@@ -217,14 +235,18 @@ $router->get('/admin/autocontent/sources', ['middleware' => ['auth', 'admin_only
         $sources = $model->getAllSources();
 
         echo $twig->render('admin/autocontent/sources.twig', [
-        'title' => 'AI Article Sources',
-        'sources' => $sources,
-        'current_page' => 'autocontent-sources'
+            'title' => 'AI Article Sources',
+            'sources' => $sources,
+            'current_page' => 'autocontent-sources'
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Sources Error: " . $e->getMessage());
-        echo "Error loading sources: " . $e->getMessage();
+
+        // Sanitize error message for client
+        $clientMessage = 'An error occurred loading sources';
+        $errorCode = substr(md5($e->getMessage()), 0, 8);
+
+        echo "Error loading sources: {$clientMessage} (Error ID: {$errorCode})";
     }
 });
 
@@ -246,20 +268,18 @@ $router->get('/admin/autocontent/sources/create', ['middleware' => ['auth', 'adm
                 $source = $old;
                 $sessionMgr->delete('autocontent_source_old');
             }
-        }
-        catch (Throwable $e) {
-        // ignore session errors
+        } catch (Throwable $e) {
+            // ignore session errors
         }
 
         echo $twig->render('admin/autocontent/source_form.twig', [
-        'title' => 'Add Article Source',
-        'source' => $source,
-        'categories' => $categories,
-        'isCreate' => true,
-        'current_page' => 'autocontent-sources'
+            'title' => 'Add Article Source',
+            'source' => $source,
+            'categories' => $categories,
+            'isCreate' => true,
+            'current_page' => 'autocontent-sources'
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Source Create Form Error: " . $e->getMessage());
         echo "Error: " . $e->getMessage();
     }
@@ -307,52 +327,48 @@ $router->post('/admin/autocontent/sources/create', ['middleware' => ['auth', 'ad
             'is_active' => isset($_POST['is_active']) ? 1 : 0
         ];
 
-        if (empty($data['name']) || empty($data['url'])) { 
+        if (empty($data['name']) || empty($data['url'])) {
             // Preserve form input so the user doesn't lose their work on validation errors
             try {
                 $sessionMgr = getSessionManager();
                 $data['fetch_interval'] = (int)($data['fetch_interval'] / 60);
                 $sessionMgr->set('autocontent_source_old', $data);
-            }
-            catch (Throwable $e) {
-            // ignore session errors
+            } catch (Throwable $e) {
+                // ignore session errors
             }
 
             showMessage('Name and URL are required', 'error');
             header('Location: /admin/autocontent/sources/create');
-            exit; 
-        } 
- 
+            exit;
+        }
+
         // For data quality: scrape sources must be backed by a preset (Node scraper pipeline). 
-        if (($data['type'] ?? '') === 'scrape' && trim((string)($data['website_preset_key'] ?? '')) === '') { 
-            try { 
-                $sessionMgr = getSessionManager(); 
-                $data['fetch_interval'] = (int)($data['fetch_interval'] / 60); 
-                $sessionMgr->set('autocontent_source_old', $data); 
-            } 
-            catch (Throwable $e) { 
-            // ignore session errors 
-            } 
- 
-            showMessage('For Source Type = Web Scraping, Website Preset is required (website_preset_key).', 'error'); 
-            header('Location: /admin/autocontent/sources/create'); 
-            exit; 
-        } 
- 
-        $id = $model->createSource($data); 
+        if (($data['type'] ?? '') === 'scrape' && trim((string)($data['website_preset_key'] ?? '')) === '') {
+            try {
+                $sessionMgr = getSessionManager();
+                $data['fetch_interval'] = (int)($data['fetch_interval'] / 60);
+                $sessionMgr->set('autocontent_source_old', $data);
+            } catch (Throwable $e) {
+                // ignore session errors 
+            }
+
+            showMessage('For Source Type = Web Scraping, Website Preset is required (website_preset_key).', 'error');
+            header('Location: /admin/autocontent/sources/create');
+            exit;
+        }
+
+        $id = $model->createSource($data);
 
         if ($id > 0) {
             showMessage('Source created successfully', 'success');
             logActivity("Auto Content Source Created", "autocontent", $id, ['name' => $data['name']], 'success');
-        }
-        else {
+        } else {
             showMessage('Failed to create source', 'error');
         }
 
         header('Location: /admin/autocontent/sources');
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Source Create Error: " . $e->getMessage());
 
         // Preserve form input on error so user doesn't lose entered values
@@ -360,12 +376,14 @@ $router->post('/admin/autocontent/sources/create', ['middleware' => ['auth', 'ad
             $sessionMgr = getSessionManager();
             $data['fetch_interval'] = (int)($data['fetch_interval'] / 60);
             $sessionMgr->set('autocontent_source_old', $data);
-        }
-        catch (Throwable $inner) {
-        // ignore session errors
+        } catch (Throwable $inner) {
+            // ignore session errors
         }
 
-        showMessage('Error: ' . $e->getMessage(), 'error');
+        // Sanitize error message for client
+        $clientMessage = 'An error occurred while creating the source';
+        $errorCode = substr(md5($e->getMessage()), 0, 8);
+        showMessage("{$clientMessage} (Error ID: {$errorCode})", 'error');
         header('Location: /admin/autocontent/sources/create');
         exit;
     }
@@ -402,20 +420,18 @@ $router->get('/admin/autocontent/sources/edit', ['middleware' => ['auth', 'admin
                 $source = array_merge($source, $old);
                 $sessionMgr->delete('autocontent_source_old');
             }
-        }
-        catch (Throwable $e) {
-        // ignore session errors
+        } catch (Throwable $e) {
+            // ignore session errors
         }
 
         echo $twig->render('admin/autocontent/source_form.twig', [
-        'title' => 'Edit Article Source',
-        'source' => $source,
-        'categories' => $categories,
-        'isCreate' => false,
-        'current_page' => 'autocontent-sources'
+            'title' => 'Edit Article Source',
+            'source' => $source,
+            'categories' => $categories,
+            'isCreate' => false,
+            'current_page' => 'autocontent-sources'
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Source Edit Form Error: " . $e->getMessage());
         echo "Error: " . $e->getMessage();
     }
@@ -469,52 +485,48 @@ $router->post('/admin/autocontent/sources/edit', ['middleware' => ['auth', 'admi
             'is_active' => isset($_POST['is_active']) ? 1 : 0
         ];
 
-        if (empty($data['name']) || empty($data['url'])) { 
+        if (empty($data['name']) || empty($data['url'])) {
             // Preserve form input so the user doesn't lose their work on validation errors
             try {
                 $sessionMgr = getSessionManager();
                 $data['fetch_interval'] = (int)($data['fetch_interval'] / 60);
                 $sessionMgr->set('autocontent_source_old', $data);
-            }
-            catch (Throwable $e) {
-            // ignore session errors
+            } catch (Throwable $e) {
+                // ignore session errors
             }
 
             showMessage('Name and URL are required', 'error');
             header('Location: /admin/autocontent/sources/edit?id=' . $id);
-            exit; 
-        } 
- 
+            exit;
+        }
+
         // For data quality: scrape sources must be backed by a preset (Node scraper pipeline). 
-        if (($data['type'] ?? '') === 'scrape' && trim((string)($data['website_preset_key'] ?? '')) === '') { 
-            try { 
-                $sessionMgr = getSessionManager(); 
-                $data['fetch_interval'] = (int)($data['fetch_interval'] / 60); 
-                $sessionMgr->set('autocontent_source_old', $data); 
-            } 
-            catch (Throwable $e) { 
-            // ignore session errors 
-            } 
- 
-            showMessage('For Source Type = Web Scraping, Website Preset is required (website_preset_key).', 'error'); 
-            header('Location: /admin/autocontent/sources/edit?id=' . $id); 
-            exit; 
-        } 
- 
-        $success = $model->updateSource($id, $data); 
+        if (($data['type'] ?? '') === 'scrape' && trim((string)($data['website_preset_key'] ?? '')) === '') {
+            try {
+                $sessionMgr = getSessionManager();
+                $data['fetch_interval'] = (int)($data['fetch_interval'] / 60);
+                $sessionMgr->set('autocontent_source_old', $data);
+            } catch (Throwable $e) {
+                // ignore session errors 
+            }
+
+            showMessage('For Source Type = Web Scraping, Website Preset is required (website_preset_key).', 'error');
+            header('Location: /admin/autocontent/sources/edit?id=' . $id);
+            exit;
+        }
+
+        $success = $model->updateSource($id, $data);
 
         if ($success) {
             showMessage('Source updated successfully', 'success');
             logActivity("Auto Content Source Updated", "autocontent", $id, ['name' => $data['name']], 'success');
-        }
-        else {
+        } else {
             showMessage('Failed to update source', 'error');
         }
 
         header('Location: /admin/autocontent/sources');
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Source Edit Error: " . $e->getMessage());
 
         // Preserve form input on error so values are not lost
@@ -522,9 +534,8 @@ $router->post('/admin/autocontent/sources/edit', ['middleware' => ['auth', 'admi
             $sessionMgr = getSessionManager();
             $data['fetch_interval'] = (int)($data['fetch_interval'] / 60);
             $sessionMgr->set('autocontent_source_old', $data);
-        }
-        catch (Throwable $inner) {
-        // ignore session errors
+        } catch (Throwable $inner) {
+            // ignore session errors
         }
 
         showMessage('Error: ' . $e->getMessage(), 'error');
@@ -553,15 +564,13 @@ $router->get('/admin/autocontent/sources/delete', ['middleware' => ['auth', 'adm
         if ($success) {
             showMessage('Source deleted successfully', 'success');
             logActivity("Auto Content Source Deleted", "autocontent", $id, ['name' => $source['name'] ?? ''], 'success');
-        }
-        else {
+        } else {
             showMessage('Failed to delete source', 'error');
         }
 
         header('Location: /admin/autocontent/sources');
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Source Delete Error: " . $e->getMessage());
         showMessage('Error: ' . $e->getMessage(), 'error');
         header('Location: /admin/autocontent/sources');
@@ -586,8 +595,7 @@ $router->get('/admin/autocontent/sources/toggle', ['middleware' => ['auth', 'adm
 
         header('Location: /admin/autocontent/sources');
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Source Toggle Error: " . $e->getMessage());
         header('Location: /admin/autocontent/sources');
         exit;
@@ -610,8 +618,7 @@ $router->post('/admin/autocontent/sources/bulk-action', ['middleware' => ['auth'
         $ids = [];
         if (is_array($idsRaw)) {
             $ids = $idsRaw;
-        }
-        elseif (is_string($idsRaw)) {
+        } elseif (is_string($idsRaw)) {
             $ids = preg_split('/\s*,\s*/', $idsRaw, -1, PREG_SPLIT_NO_EMPTY) ?: [];
         }
 
@@ -710,8 +717,7 @@ $router->post('/admin/autocontent/sources/bulk-action', ['middleware' => ['auth'
         showMessage('Sources deleted', 'success');
         header('Location: /admin/autocontent/sources');
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         try {
             if ($mysqli instanceof mysqli) {
                 $mysqli->rollback();
@@ -792,26 +798,25 @@ $router->get('/admin/autocontent/queue', ['middleware' => ['auth', 'admin_only']
         $totalPages = ceil($total / $limit);
 
         echo $twig->render('admin/autocontent/queue.twig', [
-        'title' => 'Article Queue',
-        'items' => $articles,
-        'sources' => $sources,
-        'status_counts' => $statusCounts,
-        'current_status' => $status,
-        'current_source' => $sourceFilter,
-        'search' => $search,
-        'current_content_type' => $contentType,
-        'current_page_num' => $page,
-        'total_pages' => $totalPages,
-        'pagination' => [
-        'page' => $page,
-        'total_pages' => $totalPages,
-        'per_page' => $limit,
-        'total' => $total
-        ],
-        'current_page' => 'autocontent-queue'
+            'title' => 'Article Queue',
+            'items' => $articles,
+            'sources' => $sources,
+            'status_counts' => $statusCounts,
+            'current_status' => $status,
+            'current_source' => $sourceFilter,
+            'search' => $search,
+            'current_content_type' => $contentType,
+            'current_page_num' => $page,
+            'total_pages' => $totalPages,
+            'pagination' => [
+                'page' => $page,
+                'total_pages' => $totalPages,
+                'per_page' => $limit,
+                'total' => $total
+            ],
+            'current_page' => 'autocontent-queue'
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Queue Error: " . $e->getMessage());
         echo "Error loading queue: " . $e->getMessage();
     }
@@ -883,14 +888,13 @@ $router->get('/admin/autocontent/queue/view', ['middleware' => ['auth', 'admin_o
         }
 
         echo $twig->render('admin/autocontent/queue_view.twig', [
-        'title' => 'View Article',
-        // Template expects `item`. Keep `article` for backward compatibility.
-        'item' => $article,
-        'article' => $article,
-        'current_page' => 'autocontent-queue'
+            'title' => 'View Article',
+            // Template expects `item`. Keep `article` for backward compatibility.
+            'item' => $article,
+            'article' => $article,
+            'current_page' => 'autocontent-queue'
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Article View Error: " . $e->getMessage());
         echo "Error: " . $e->getMessage();
     }
@@ -931,14 +935,13 @@ $router->get('/admin/autocontent/settings', ['middleware' => ['auth', 'admin_onl
         }
 
         echo $twig->render('admin/autocontent/settings.twig', [
-        'title' => 'AI Auto Content Settings',
-        'config' => $config,
-        'ai_summary' => $aiSummary,
-        'browser_status' => $browser_status,
-        'current_page' => 'autocontent-settings'
+            'title' => 'AI Auto Content Settings',
+            'config' => $config,
+            'ai_summary' => $aiSummary,
+            'browser_status' => $browser_status,
+            'current_page' => 'autocontent-settings'
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Settings Error: " . $e->getMessage());
         echo "Error: " . $e->getMessage();
     }
@@ -948,33 +951,33 @@ $router->get('/admin/autocontent/settings', ['middleware' => ['auth', 'admin_onl
  * Settings Handler
  * POST /admin/autocontent/settings
  */
-$router->post('/admin/autocontent/settings', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) { 
-    try { 
-        $model = new AutoContentModel($mysqli); 
- 
-        $clampInt = function ($value, int $min, int $max, int $fallback): string { 
-            $n = is_numeric($value) ? (int)$value : $fallback; 
-            if ($n < $min) { 
-                $n = $min; 
-            } 
-            if ($n > $max) { 
-                $n = $max; 
-            } 
-            return (string)$n; 
-        }; 
- 
-        $settings = [ 
-            'autocontent_enabled' => isset($_POST['autocontent_enabled']) ? '1' : '0', 
-            'auto_collect' => isset($_POST['auto_collect']) ? '1' : '0', 
-            'auto_process' => isset($_POST['auto_process']) ? '1' : '0', 
-            'auto_publish' => isset($_POST['auto_publish']) ? '1' : '0', 
-            'max_articles_per_source' => $clampInt($_POST['max_articles_per_source'] ?? '10', 1, 50, 10), 
-            'process_batch' => $clampInt($_POST['process_batch'] ?? '5', 1, 20, 5), 
-            'publish_batch' => $clampInt($_POST['publish_batch'] ?? '10', 1, 20, 10), 
-            'max_retry_attempts' => $clampInt($_POST['max_retry_attempts'] ?? '5', 1, 10, 5), 
-            'max_daily_publish' => $clampInt($_POST['max_daily_publish'] ?? '10', 1, 200, 10), 
-            'publish_time_start' => $_POST['publish_time_start'] ?? '06:00', 
-            'publish_time_end' => $_POST['publish_time_end'] ?? '23:00', 
+$router->post('/admin/autocontent/settings', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    try {
+        $model = new AutoContentModel($mysqli);
+
+        $clampInt = function ($value, int $min, int $max, int $fallback): string {
+            $n = is_numeric($value) ? (int)$value : $fallback;
+            if ($n < $min) {
+                $n = $min;
+            }
+            if ($n > $max) {
+                $n = $max;
+            }
+            return (string)$n;
+        };
+
+        $settings = [
+            'autocontent_enabled' => isset($_POST['autocontent_enabled']) ? '1' : '0',
+            'auto_collect' => isset($_POST['auto_collect']) ? '1' : '0',
+            'auto_process' => isset($_POST['auto_process']) ? '1' : '0',
+            'auto_publish' => isset($_POST['auto_publish']) ? '1' : '0',
+            'max_articles_per_source' => $clampInt($_POST['max_articles_per_source'] ?? '10', 1, 50, 10),
+            'process_batch' => $clampInt($_POST['process_batch'] ?? '5', 1, 20, 5),
+            'publish_batch' => $clampInt($_POST['publish_batch'] ?? '10', 1, 20, 10),
+            'max_retry_attempts' => $clampInt($_POST['max_retry_attempts'] ?? '5', 1, 10, 5),
+            'max_daily_publish' => $clampInt($_POST['max_daily_publish'] ?? '10', 1, 200, 10),
+            'publish_time_start' => $_POST['publish_time_start'] ?? '06:00',
+            'publish_time_end' => $_POST['publish_time_end'] ?? '23:00',
             'publish_status' => $_POST['publish_status'] ?? 'published',
             'min_word_count' => $clampInt($_POST['min_word_count'] ?? '100', 100, 10000, 100),
             'min_seo_score' => $clampInt($_POST['min_seo_score'] ?? '0', 0, 100, 0),
@@ -982,7 +985,7 @@ $router->post('/admin/autocontent/settings', ['middleware' => ['auth', 'admin_on
             'target_language' => trim((string)($_POST['target_language'] ?? 'Bengali')),
             'telegram_enabled' => isset($_POST['telegram_enabled']) ? '1' : '0',
             'system_prompt' => (string)($_POST['system_prompt'] ?? '')
-        ]; 
+        ];
 
         $model->saveSettings($settings);
 
@@ -991,8 +994,7 @@ $router->post('/admin/autocontent/settings', ['middleware' => ['auth', 'admin_on
 
         header('Location: /admin/autocontent/settings');
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Settings Save Error: " . $e->getMessage());
         showMessage('Error: ' . $e->getMessage(), 'error');
         header('Location: /admin/autocontent/settings');
@@ -1030,18 +1032,17 @@ $router->get('/admin/autocontent/stats/chart', ['middleware' => ['auth', 'admin_
         }
 
         echo json_encode([
-        'labels' => $labels,
-        'datasets' => [[
-        'label' => 'Articles Collected',
-        'data' => $data,
-        'borderColor' => '#6366f1',
-        'backgroundColor' => 'rgba(99, 102, 241, 0.1)',
-        'fill' => true,
-        'tension' => 0.4
-        ]]
+            'labels' => $labels,
+            'datasets' => [[
+                'label' => 'Articles Collected',
+                'data' => $data,
+                'borderColor' => '#6366f1',
+                'backgroundColor' => 'rgba(99, 102, 241, 0.1)',
+                'fill' => true,
+                'tension' => 0.4
+            ]]
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['error' => $e->getMessage()]);
     }
@@ -1096,13 +1097,12 @@ $router->post('/admin/autocontent/api/detect-selectors', ['middleware' => ['auth
         $selectors = analyzeHtmlStructure($html, $url);
 
         echo json_encode([
-        'success' => true,
-        'message' => 'Selectors detected successfully',
-        'selectors' => $selectors
+            'success' => true,
+            'message' => 'Selectors detected successfully',
+            'selectors' => $selectors
         ]);
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Detect Selectors Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         exit;
@@ -1156,14 +1156,13 @@ $router->post('/admin/autocontent/api/ai-detect-selectors', ['middleware' => ['a
         $selectors = detectSelectorsWithAI($html, $url, $mysqli);
 
         echo json_encode([
-        'success' => true,
-        'message' => 'AI selectors detected successfully',
-        'selectors' => $selectors,
-        'method' => 'ai'
+            'success' => true,
+            'message' => 'AI selectors detected successfully',
+            'selectors' => $selectors,
+            'method' => 'ai'
         ]);
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("AI Detect Selectors Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         exit;
@@ -1242,12 +1241,12 @@ $router->post('/admin/autocontent/api/auto-detect-preset', ['middleware' => ['au
         $presetId = null;
         if ($createPreset) {
             $model = new AutoContentModel($mysqli);
-            
+
             // Check if preset_key already exists
             $existingPreset = $model->getWebsitePresetByKey($presetKey);
             if ($existingPreset) {
                 echo json_encode([
-                    'success' => false, 
+                    'success' => false,
                     'message' => 'Preset key "' . $presetKey . '" already exists. Please choose a different name or key.'
                 ]);
                 exit;
@@ -1286,8 +1285,7 @@ $router->post('/admin/autocontent/api/auto-detect-preset', ['middleware' => ['au
             'preset_name' => $createPreset ? $presetName : null
         ]);
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Detect Preset Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         exit;
@@ -1346,8 +1344,7 @@ $router->post('/admin/autocontent/api/quick-detect', ['middleware' => ['auth', '
             'url' => $url
         ]);
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Quick Detect Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         exit;
@@ -1365,47 +1362,47 @@ function detectSelectorsWithAI(string $html, string $url, $mysqli = null): array
 
     // Collect results from multiple models using project's AI system
     $allResults = [];
-    
+
     // Model 1: Using project's AIProvider - OpenRouter (GPT-4o-mini)
     $openrouterResult = detectWithProjectAI($htmlSample, $url, 'openrouter', 'gpt-4o-mini');
     if (!empty($openrouterResult)) {
         $allResults[] = $openrouterResult;
     }
-    
+
     // Model 2: Using project's AIProvider - Anthropic (Claude)
     $anthropicResult = detectWithProjectAI($htmlSample, $url, 'anthropic', 'claude-3-haiku-20240307');
     if (!empty($anthropicResult)) {
         $allResults[] = $anthropicResult;
     }
-    
+
     // Model 3: Using project's AIProvider - Fireworks (Llama)
     $fireworksResult = detectWithProjectAI($htmlSample, $url, 'fireworks', 'llama-3.1-70b-instruct');
     if (!empty($fireworksResult)) {
         $allResults[] = $fireworksResult;
     }
-    
+
     // Model 4: Using project's AIProvider - Ollama (if available)
     $ollamaResult = detectWithProjectAI($htmlSample, $url, 'ollama', 'llama3');
     if (!empty($ollamaResult)) {
         $allResults[] = $ollamaResult;
     }
-    
+
     // Model 5: Using project's AIProvider - Kilo (if available)
     $kiloResult = detectWithProjectAI($htmlSample, $url, 'kilo', 'qwen2.5-72b-instruct');
     if (!empty($kiloResult)) {
         $allResults[] = $kiloResult;
     }
-    
+
     // If we have multiple results, merge them using voting/confidence
     if (count($allResults) > 1) {
         return mergeSelectorResults($allResults);
     }
-    
+
     // If only one result or none, use pattern-based detection as fallback
     if (!empty($allResults[0])) {
         return $allResults[0];
     }
-    
+
     // Fallback to pattern-based detection
     return analyzeHtmlStructure($html, $url);
 }
@@ -1416,23 +1413,23 @@ function detectSelectorsWithAI(string $html, string $url, $mysqli = null): array
 function detectWithProjectAI(string $htmlSample, string $url, string $provider, string $model): array
 {
     global $mysqli;
-    
+
     if (!$mysqli) {
         return [];
     }
-    
+
     $aiProviderPath = realpath(__DIR__ . '/../Models/AIProvider.php');
     require_once $aiProviderPath ?: (__DIR__ . '/../Models/AIProvider.php');
-    
+
     $aiProvider = new AIProvider($mysqli);
     $settings = $aiProvider->getSettings();
-    
+
     // Check if this provider is available
     $providerKey = $provider . '_enabled';
     if (empty($settings[$providerKey])) {
         return [];
     }
-    
+
     $prompt = <<<PROMPT
 You are a web scraping expert. Analyze the first 30KB of HTML from URL: {$url} and identify the most accurate CSS selectors for the elements listed below.
 
@@ -1468,23 +1465,23 @@ PROMPT;
         // Use AIProvider to make the API call
         $apiKeySetting = $provider . '_api_key';
         $apiKey = $settings[$apiKeySetting] ?? '';
-        
+
         if (empty($apiKey)) {
             return [];
         }
-        
+
         // Get provider config
         $config = AIProvider::getProviderConfig($provider);
         if (!$config) {
             return [];
         }
-        
+
         $endpoint = $config['endpoint'] ?? '';
         $authType = $config['auth_type'] ?? 'bearer';
-        
+
         // Build request based on provider
         $messages = [['role' => 'user', 'content' => $prompt]];
-        
+
         if ($provider === 'anthropic') {
             // Anthropic uses different format
             $postData = json_encode([
@@ -1509,13 +1506,13 @@ PROMPT;
                 'Content-Type: application/json',
                 'Authorization: Bearer ' . $apiKey
             ];
-            
+
             // Add HuggingFace specific headers
             if ($provider === 'huggingface') {
                 $headers[] = 'HF-Inference-Provider: https://router.huggingface.co/' . $model;
             }
         }
-        
+
         $ch = curl_init($endpoint);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -1525,18 +1522,18 @@ PROMPT;
             CURLOPT_TIMEOUT => 60,
             CURLOPT_CONNECTTIMEOUT => 30
         ]);
-        
+
         $response = curl_exec($ch);
         $error = curl_error($ch);
         curl_close($ch);
-        
+
         if ($error || empty($response)) {
             error_log("AI detection ($provider) failed: " . $error);
             return [];
         }
-        
+
         $data = json_decode($response, true);
-        
+
         // Extract content from AI response
         $content = '';
         if ($provider === 'anthropic') {
@@ -1544,13 +1541,12 @@ PROMPT;
         } else {
             $content = $data['choices'][0]['message']['content'] ?? '';
         }
-        
+
         if (empty($content)) {
             return [];
         }
-        
+
         return parseAISelectorResponse($content);
-        
     } catch (Throwable $e) {
         error_log("AI detection ($provider) error: " . $e->getMessage());
         return [];
@@ -1560,106 +1556,10 @@ PROMPT;
 /**
  * Detect selectors using Puter AI (GPT-4o-mini)
  */
-function detectWithPuterAI(string $htmlSample, string $url): array
-{
-    // Build prompt for AI
-    $prompt = <<<PROMPT
-You are a web scraping expert. Analyze the first 30KB of HTML from URL: {$url} and identify the most accurate CSS selectors for the elements listed below.
-
-HTML SNIPPET:
-{$htmlSample}
-
-REQUIRED SELECTORS (use these exact keys in JSON):
-1. list_container: The main element wrapping all article items.
-2. list_item: The repeated element for each article in the list.
-3. list_title: The title element inside each list item.
-4. list_link: The 'a' tag linking to the full article.
-5. list_date: The date element in the list (if any).
-6. list_image: The image element (img or container) in the list.
-7. title: The main h1 heading on the article detail page.
-8. content: The main body text/wrapper for the article.
-9. image: The primary featured image on the detail page.
-10. excerpt: A summary/lead paragraph if separate from content.
-11. author: The author name element.
-12. date: The publication date on the detail page.
-
-RULES:
-- Return ONLY a valid JSON object. No preamble, no explanation.
-- Use stable class names (.class) or semantic tags (article, main, time).
-- Prefer specific selectors that are unlikely to change.
-- If a selector is a meta tag, use attribute notation like 'meta[property="og:image"]'.
-- Ensure the selectors are relative to the parent where applicable (e.g. list_title should be relative to list_item).
-
-RESPONSE FORMAT:
-{
-    "list_container": ".news-list",
-    "list_item": "article.news-card",
-    ...
-}
-PROMPT;
-
-    // Call Puter AI API
-    $apiUrl = 'https://api.puter.com/ai/chat';
-
-    $postData = json_encode([
-        'model' => 'gpt-4o-mini',
-        'messages' => [
-            ['role' => 'user', 'content' => $prompt]
-        ]
-    ]);
-
-    $ch = curl_init($apiUrl);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => $postData,
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'Accept: application/json'
-        ],
-        CURLOPT_TIMEOUT => 60,
-        CURLOPT_CONNECTTIMEOUT => 30
-    ]);
-
-    $response = curl_exec($ch);
-    $error = curl_error($ch);
-    curl_close($ch);
-
-    if ($error || empty($response)) {
-        // Fallback to pattern-based detection
-        error_log("AI detection failed, falling back to pattern detection: " . $error);
-        return analyzeHtmlStructure($htmlSample, $url);
-    }
-
-    $data = json_decode($response, true);
-
-    // Extract content from AI response
-    $content = '';
-    if (isset($data['choices'][0]['message']['content'])) {
-        $content = $data['choices'][0]['message']['content'];
-    }
-    elseif (isset($data['text'])) {
-        $content = $data['text'];
-    }
-
-    if (empty($content)) {
-        return analyzeHtmlStructure($htmlSample, $url);
-    }
-
-    // Parse JSON from response
-    $selectors = parseAISelectorResponse($content);
-
-    // Validate and merge with pattern-based detection as backup
-    $patternSelectors = analyzeHtmlStructure($htmlSample, $url);
-
-    foreach ($patternSelectors as $key => $value) {
-        if (empty($selectors[$key]) && !empty($value)) {
-            $selectors[$key] = $value;
-        }
-    }
-
-    return $selectors;
-}
+// REMOVED: detectWithPuterAI() - Function removed for security:
+// - Called unauthenticated external API without credentials
+// - No rate limiting or error recovery
+// - Replaced with detectWithProjectAI() which uses verified AIProvider system
 
 /**
  * Detect selectors using Anthropic Claude API
@@ -1667,11 +1567,11 @@ PROMPT;
 function detectWithClaude(string $htmlSample, string $url): array
 {
     $apiKey = $_ENV['ANTHROPIC_API_KEY'] ?? '';
-    
+
     if (empty($apiKey)) {
         return [];
     }
-    
+
     $prompt = <<<PROMPT
 You are a web scraping expert. Analyze the first 30KB of HTML from URL: {$url} and identify the most accurate CSS selectors for the elements listed below.
 
@@ -1741,11 +1641,11 @@ PROMPT;
 function detectWithGemini(string $htmlSample, string $url): array
 {
     $apiKey = $_ENV['GEMINI_API_KEY'] ?? '';
-    
+
     if (empty($apiKey)) {
         return [];
     }
-    
+
     $prompt = <<<PROMPT
 Analyze this HTML from {$url} and find CSS selectors for web scraping.
 
@@ -1817,7 +1717,7 @@ function mergeSelectorResults(array $results): array
     ];
 
     $selectorCounts = [];
-    
+
     // Count occurrences of each selector
     foreach ($results as $result) {
         foreach ($result as $key => $value) {
@@ -1874,8 +1774,7 @@ function parseAISelectorResponse(string $response): array
                 return array_merge($default, $parsed);
             }
         }
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Parse AI selector error: " . $e->getMessage());
     }
 
@@ -2094,8 +1993,7 @@ function analyzeHtmlStructure(string $html, string $url): array
             '//div[contains(@class, "byline")]'
         ];
         $selectors['author'] = findFirstWorkingSelector($xpath, $authorCandidates);
-    }
-    catch (\Exception $e) {
+    } catch (\Exception $e) {
         error_log("HTML Analysis Error: " . $e->getMessage());
     }
 
@@ -2116,8 +2014,7 @@ function findFirstWorkingSelector(\DOMXPath $xpath, array $candidates): string
                     return $xpathQuery;
                 }
             }
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             continue;
         }
     }
@@ -2209,6 +2106,18 @@ function cssToXPath(string $css, bool $relative = false): string
 
     // Drop simple pseudo-classes (best-effort)
     $css = preg_replace('/:(first-child|last-child|nth-child\\([^\\)]*\\)|first-of-type|last-of-type)\\b/i', '', $css);
+
+    $selectorParts = splitCssSelectorList($css);
+    if (count($selectorParts) > 1) {
+        $xpaths = [];
+        foreach ($selectorParts as $part) {
+            $xp = cssToXPath($part, $relative);
+            if ($xp !== '') {
+                $xpaths[] = $xp;
+            }
+        }
+        return implode(' | ', $xpaths);
+    }
 
     // Split by combinators while respecting attribute brackets/quotes.
     $tokens = [];
@@ -2328,10 +2237,24 @@ function cssSimpleSelectorToXPathSegment(string $simple): string
             $attrExpr = trim($attrExpr);
             if ($attrExpr === '') continue;
 
-            if (preg_match('/^([a-zA-Z0-9_:-]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s]+))$/', $attrExpr, $am)) {
+            if (preg_match('/^([a-zA-Z0-9_:-]+)\s*([~\\^\\$\\*\\|]?=)\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s]+))$/', $attrExpr, $am)) {
                 $attr = $am[1];
-                $val = $am[2] !== '' ? $am[2] : ($am[3] !== '' ? $am[3] : $am[4]);
-                $conditions[] = '@' . $attr . '=' . xpathLiteral($val);
+                $op = $am[2];
+                $val = $am[3] !== '' ? $am[3] : ($am[4] !== '' ? $am[4] : $am[5]);
+
+                if ($op === '=') {
+                    $conditions[] = '@' . $attr . '=' . xpathLiteral($val);
+                } elseif ($op === '^=') {
+                    $conditions[] = 'starts-with(@' . $attr . ', ' . xpathLiteral($val) . ')';
+                } elseif ($op === '$=') {
+                    $conditions[] = "substring(@{$attr}, string-length(@{$attr}) - string-length(" . xpathLiteral($val) . ") + 1) = " . xpathLiteral($val);
+                } elseif ($op === '*=') {
+                    $conditions[] = 'contains(@' . $attr . ', ' . xpathLiteral($val) . ')';
+                } elseif ($op === '~=') {
+                    $conditions[] = "contains(concat(' ', normalize-space(@{$attr}), ' '), " . xpathLiteral(' ' . $val . ' ') . ')';
+                } elseif ($op === '|=') {
+                    $conditions[] = '@' . $attr . '=' . xpathLiteral($val) . ' or starts-with(@' . $attr . ", " . xpathLiteral($val . '-') . ')';
+                }
             } elseif (preg_match('/^([a-zA-Z0-9_:-]+)$/', $attrExpr, $am)) {
                 $conditions[] = '@' . $am[1];
             }
@@ -2345,12 +2268,65 @@ function cssSimpleSelectorToXPathSegment(string $simple): string
     return $tag . '[' . implode(' and ', $conditions) . ']';
 }
 
+function splitCssSelectorList(string $css): array
+{
+    $parts = [];
+    $buffer = '';
+    $inAttr = false;
+    $quote = '';
+    $len = strlen($css);
+
+    for ($i = 0; $i < $len; $i++) {
+        $ch = $css[$i];
+
+        if ($inAttr) {
+            $buffer .= $ch;
+            if ($quote !== '') {
+                if ($ch === $quote) {
+                    $quote = '';
+                }
+            } else {
+                if ($ch === '"' || $ch === "'") {
+                    $quote = $ch;
+                } elseif ($ch === ']') {
+                    $inAttr = false;
+                }
+            }
+            continue;
+        }
+
+        if ($ch === '[') {
+            $inAttr = true;
+            $buffer .= $ch;
+            continue;
+        }
+
+        if ($ch === ',') {
+            $part = trim($buffer);
+            if ($part !== '') {
+                $parts[] = $part;
+            }
+            $buffer = '';
+            continue;
+        }
+
+        $buffer .= $ch;
+    }
+
+    $part = trim($buffer);
+    if ($part !== '') {
+        $parts[] = $part;
+    }
+
+    return $parts;
+}
+
 /**
  * Collect Articles from Single Source (Scrape)
  * POST /admin/autocontent/api/collect-single
  */
 $router->post('/admin/autocontent/api/collect-single', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=utf-8');
 
     try {
         $sourceId = (int)($_POST['source_id'] ?? 0);
@@ -2426,7 +2402,7 @@ $router->post('/admin/autocontent/api/collect-single', ['middleware' => ['auth',
             $duplicateChecker,
             $imageDownloader,
             $mysqli
-            );
+        );
 
         $collected = 0;
         $fallbackWarning = null;
@@ -2438,8 +2414,7 @@ $router->post('/admin/autocontent/api/collect-single', ['middleware' => ['auth',
             if ($prothomResult['success']) {
                 $collected = $prothomResult['articles_saved'] ?? 0;
             }
-        }
-        else {
+        } else {
             // For other sources, use basic scraper
             $result = $scraper->scrape($source['url']);
 
@@ -2516,13 +2491,12 @@ $router->post('/admin/autocontent/api/collect-single', ['middleware' => ['auth',
         $model->updateLastFetched($sourceId);
 
         echo json_encode([
-        'success' => true,
-        'collected' => $collected,
-        'message' => "Collected {$collected} article(s) from {$source['name']}",
-        'warning' => $fallbackWarning ?? $nodeWarning
+            'success' => true,
+            'collected' => $collected,
+            'message' => "Collected {$collected} article(s) from {$source['name']}",
+            'warning' => $fallbackWarning ?? $nodeWarning
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Collect Single API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -2540,11 +2514,11 @@ $router->post('/admin/autocontent/api/collect-single', ['middleware' => ['auth',
  * STEP 5: Extract title/content/image/date
  */
 $router->post('/admin/autocontent/api/collect-multi', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=utf-8');
 
     try {
         $model = new AutoContentModel($mysqli);
-
+        // Validate input types
         $sourceId = (int)($_POST['source_id'] ?? 0);
         $delay = (int)($_POST['delay'] ?? 2);
         $maxArticles = (int)($_POST['max'] ?? 10);
@@ -2666,24 +2640,23 @@ $router->post('/admin/autocontent/api/collect-multi', ['middleware' => ['auth', 
             ? ("Multi-layer scrape: {$totalCollected} article(s) from " . ($sources[0]['name'] ?? 'source'))
             : ("Multi-layer scrape: {$totalCollected} article(s) from " . count($sources) . " source(s)");
         echo json_encode([
-        'success' => $totalCollected > 0 || empty($errors),
-        'collected' => $totalCollected,
-        'message' => $message,
-        'pipeline' => [
-        'steps_completed' => $stepsCompleted,
-        'status' => [
-            'total_links_found' => $totalLinksFound,
-            'articles_collected' => $totalCollected,
-        ],
-        'total_links_found' => $totalLinksFound,
-        'articles_collected' => $totalCollected
-        ],
-        'errors' => $errors,
-        'warnings' => $warnings,
-        'source_results' => $sourceResults
+            'success' => $totalCollected > 0 || empty($errors),
+            'collected' => $totalCollected,
+            'message' => $message,
+            'pipeline' => [
+                'steps_completed' => $stepsCompleted,
+                'status' => [
+                    'total_links_found' => $totalLinksFound,
+                    'articles_collected' => $totalCollected,
+                ],
+                'total_links_found' => $totalLinksFound,
+                'articles_collected' => $totalCollected
+            ],
+            'errors' => $errors,
+            'warnings' => $warnings,
+            'source_results' => $sourceResults
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Multi-Layer Collect API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -2731,7 +2704,7 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
             $duplicateChecker,
             $imageDownloader,
             $mysqli
-            );
+        );
 
         foreach ($sources as $source) {
             $sourceResult = [
@@ -2783,8 +2756,7 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
                         if (!empty($prothomResult['errors'])) {
                             $sourceResult['error'] = implode('; ', array_slice($prothomResult['errors'], 0, 3));
                         }
-                    }
-                    else {
+                    } else {
                         $sourceResult['status'] = 'error';
                         $sourceResult['error'] = $prothomResult['errors'][0] ?? 'Failed to scrape Prothom Alo';
                     }
@@ -2902,8 +2874,7 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
                     $sourceResult['error'] = null;
                 }
                 $sourceResults[] = $sourceResult;
-            }
-            catch (Throwable $e) {
+            } catch (Throwable $e) {
                 $sourceResult['status'] = 'error';
                 $sourceResult['error'] = $e->getMessage();
                 $sourceResults[] = $sourceResult;
@@ -2925,18 +2896,17 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
         }
 
         echo json_encode([
-        'success' => $collected > 0 || empty($errors),
-        'collected' => $collected,
-        'message' => $message,
-        'source_results' => $sourceResults,
-        'debug' => [
-        'total_sources' => count($sources),
-        'errors_count' => count($errors),
-        'warnings_count' => count($warnings)
-        ]
+            'success' => $collected > 0 || empty($errors),
+            'collected' => $collected,
+            'message' => $message,
+            'source_results' => $sourceResults,
+            'debug' => [
+                'total_sources' => count($sources),
+                'errors_count' => count($errors),
+                'warnings_count' => count($warnings)
+            ]
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Collect API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -2958,8 +2928,7 @@ $router->post('/admin/autocontent/api/process', ['middleware' => ['auth', 'admin
         $result = $enhancer->processBatch($limit);
 
         echo json_encode($result);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Process API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -2986,8 +2955,7 @@ $router->post('/admin/autocontent/api/process-single', ['middleware' => ['auth',
         $result = $enhancer->processArticle($id);
 
         echo json_encode($result);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Process Single API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -3036,12 +3004,10 @@ $router->post('/admin/autocontent/api/publish', ['middleware' => ['auth', 'admin
                 if ($postId > 0) {
                     $model->updateArticleStatus($article['id'], 'published');
                     $published++;
-                }
-                else {
+                } else {
                     $model->updateArticleStatus($article['id'], 'failed');
                 }
-            }
-            catch (Throwable $e) {
+            } catch (Throwable $e) {
                 error_log("Error publishing article {$article['id']}: " . $e->getMessage());
                 $model->updateArticleStatus($article['id'], 'failed');
                 continue;
@@ -3049,12 +3015,11 @@ $router->post('/admin/autocontent/api/publish', ['middleware' => ['auth', 'admin
         }
 
         echo json_encode([
-        'success' => true,
-        'published' => $published,
-        'message' => "Published {$published} articles"
+            'success' => true,
+            'published' => $published,
+            'message' => "Published {$published} articles"
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Publish API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -3122,8 +3087,7 @@ $router->post('/admin/autocontent/api/run-pipeline', ['middleware' => ['auth', '
                     }
 
                     $model->updateLastFetched((int)$source['id']);
-                }
-                catch (Throwable $e) {
+                } catch (Throwable $e) {
                     error_log("Pipeline collect error for source {$source['id']}: " . $e->getMessage());
                     continue;
                 }
@@ -3167,24 +3131,21 @@ $router->post('/admin/autocontent/api/run-pipeline', ['middleware' => ['auth', '
                 if ($postId > 0) {
                     $model->updateArticleStatus($article['id'], 'published');
                     $result['published']++;
-                }
-                else {
+                } else {
                     $model->updateArticleStatus($article['id'], 'failed');
                 }
-            }
-            catch (Throwable $e) {
+            } catch (Throwable $e) {
                 error_log("Error publishing article {$article['id']}: " . $e->getMessage());
                 $model->updateArticleStatus($article['id'], 'failed');
             }
         }
 
         echo json_encode([
-        'success' => true,
-        'result' => $result,
-        'message' => "Pipeline complete: {$result['collected']} collected, {$result['processed']} processed, {$result['published']} published"
+            'success' => true,
+            'result' => $result,
+            'message' => "Pipeline complete: {$result['collected']} collected, {$result['processed']} processed, {$result['published']} published"
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Pipeline API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -3206,8 +3167,7 @@ $router->post('/admin/autocontent/api/retry', ['middleware' => ['auth', 'admin_o
         $result = $enhancer->retryFailed($limit);
 
         echo json_encode($result);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Retry API Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
@@ -3488,8 +3448,7 @@ $router->post('/admin/autocontent/queue/delete', ['middleware' => ['auth', 'admi
         showMessage('Article deleted successfully', 'success');
         header('Location: /admin/autocontent/queue');
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Article Delete Error: " . $e->getMessage());
         if ($isAjax) {
             header('Content-Type: application/json');
@@ -3536,15 +3495,13 @@ $router->post('/admin/autocontent/queue/publish', ['middleware' => ['auth', 'adm
             $model->updateArticleStatus($id, 'published');
             showMessage('Article published successfully', 'success');
             logActivity("Auto Content Article Published", "autocontent", $id, ['title' => $article['title']], 'success');
-        }
-        else {
+        } else {
             showMessage('Failed to publish article', 'error');
         }
 
         header('Location: /admin/autocontent/queue');
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Article Publish Error: " . $e->getMessage());
         showMessage('Error: ' . $e->getMessage(), 'error');
         header('Location: /admin/autocontent/queue');
@@ -3599,8 +3556,7 @@ $router->post('/admin/autocontent/queue/approve', ['middleware' => ['auth', 'adm
 
         header('Location: /admin/autocontent/queue/view?id=' . $id);
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Article Approve Error: " . $e->getMessage());
         if ($isAjax) {
             header('Content-Type: application/json');
@@ -3660,8 +3616,7 @@ $router->post('/admin/autocontent/queue/reject', ['middleware' => ['auth', 'admi
 
         header('Location: /admin/autocontent/queue');
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Article Reject Error: " . $e->getMessage());
         if ($isAjax) {
             header('Content-Type: application/json');
@@ -3730,8 +3685,7 @@ $router->post('/admin/autocontent/queue/edit', ['middleware' => ['auth', 'admin_
 
         header('Location: /admin/autocontent/queue/view?id=' . $id);
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Article Edit Error: " . $e->getMessage());
         if ($isAjax) {
             header('Content-Type: application/json');
@@ -3810,8 +3764,7 @@ $router->post('/admin/autocontent/queue/bulk-action', ['middleware' => ['auth', 
                     default:
                         $errors[] = "Unknown action: $action";
                 }
-            }
-            catch (Throwable $e) {
+            } catch (Throwable $e) {
                 $errors[] = "Error on ID $id: " . $e->getMessage();
             }
         }
@@ -3820,8 +3773,7 @@ $router->post('/admin/autocontent/queue/bulk-action', ['middleware' => ['auth', 
             header('Content-Type: application/json');
             if ($successCount > 0) {
                 echo json_encode(['success' => true, 'message' => "Successfully processed $successCount item(s)"]);
-            }
-            else {
+            } else {
                 echo json_encode(['success' => false, 'message' => empty($errors) ? 'No items processed' : implode(', ', $errors)]);
             }
             exit;
@@ -3830,8 +3782,7 @@ $router->post('/admin/autocontent/queue/bulk-action', ['middleware' => ['auth', 
         showMessage("Processed $successCount item(s)", 'success');
         header('Location: /admin/autocontent/queue');
         exit;
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Auto Content Bulk Action Error: " . $e->getMessage());
         if ($isAjax) {
             header('Content-Type: application/json');
@@ -3862,20 +3813,20 @@ $router->post('/admin/autocontent/queue/bulk-action', ['middleware' => ['auth', 
  * - debug: Enable debug logging (default: false)
  */
 $router->post('/admin/autocontent/api/crawl-sitemap', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=utf-8');
 
     try {
-        $sitemapUrl = $_POST['sitemap_url'] ?? '';
-        $delay = (int)($_POST['delay'] ?? 2);
-        $maxPages = (int)($_POST['max_pages'] ?? 50);
+        $sitemapUrl = trim((string)($_POST['sitemap_url'] ?? ''));
+        $delay = max(1, min(10, (int)($_POST['delay'] ?? 2)));
+        $maxPages = max(1, min(500, (int)($_POST['max_pages'] ?? 50)));
         $debug = isset($_POST['debug']) && $_POST['debug'] !== 'false';
 
         // Validate required parameter
         if (empty($sitemapUrl)) {
             echo json_encode([
-            'success' => false,
-            'message' => 'Sitemap URL is required. Please provide a valid sitemap index URL.',
-            'example' => 'https://www.mobiledokan.co/sitemap.xml'
+                'success' => false,
+                'message' => 'Sitemap URL is required. Please provide a valid sitemap index URL.',
+                'example' => 'https://www.mobiledokan.co/sitemap.xml'
             ]);
             exit;
         }
@@ -3883,8 +3834,8 @@ $router->post('/admin/autocontent/api/crawl-sitemap', ['middleware' => ['auth', 
         // Validate URL format
         if (!filter_var($sitemapUrl, FILTER_VALIDATE_URL)) {
             echo json_encode([
-            'success' => false,
-            'message' => 'Invalid URL format'
+                'success' => false,
+                'message' => 'Invalid URL format'
             ]);
             exit;
         }
@@ -3931,12 +3882,11 @@ $router->post('/admin/autocontent/api/crawl-sitemap', ['middleware' => ['auth', 
         }
 
         echo json_encode($response);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Sitemap Crawler Error: " . $e->getMessage());
         echo json_encode([
-        'success' => false,
-        'message' => 'Error: ' . $e->getMessage()
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
         ]);
     }
     exit;
@@ -3954,16 +3904,16 @@ $router->post('/admin/autocontent/api/test-sitemap', ['middleware' => ['auth', '
 
         if (empty($sitemapUrl)) {
             echo json_encode([
-            'success' => false,
-            'message' => 'Sitemap URL is required'
+                'success' => false,
+                'message' => 'Sitemap URL is required'
             ]);
             exit;
         }
 
         if (!filter_var($sitemapUrl, FILTER_VALIDATE_URL)) {
             echo json_encode([
-            'success' => false,
-            'message' => 'Invalid URL format'
+                'success' => false,
+                'message' => 'Invalid URL format'
             ]);
             exit;
         }
@@ -3988,16 +3938,16 @@ $router->post('/admin/autocontent/api/test-sitemap', ['middleware' => ['auth', '
 
         if ($error || empty($xml)) {
             echo json_encode([
-            'success' => false,
-            'message' => 'Failed to fetch sitemap: ' . $error
+                'success' => false,
+                'message' => 'Failed to fetch sitemap: ' . $error
             ]);
             exit;
         }
 
         if ($httpCode !== 200) {
             echo json_encode([
-            'success' => false,
-            'message' => "HTTP Error: $httpCode"
+                'success' => false,
+                'message' => "HTTP Error: $httpCode"
             ]);
             exit;
         }
@@ -4031,8 +3981,7 @@ $router->post('/admin/autocontent/api/test-sitemap', ['middleware' => ['auth', '
             }
             $result['child_sitemaps'] = $childSitemaps;
             $result['child_sitemap_count'] = count($childSitemaps);
-        }
-        elseif ($urlset->length > 0) {
+        } elseif ($urlset->length > 0) {
             // It's a regular sitemap with URLs
             $locNodes = $xpath->query('//sm:url/sm:loc');
             $urls = [];
@@ -4044,12 +3993,11 @@ $router->post('/admin/autocontent/api/test-sitemap', ['middleware' => ['auth', '
         }
 
         echo json_encode($result);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Test Sitemap Error: " . $e->getMessage());
         echo json_encode([
-        'success' => false,
-        'message' => 'Error: ' . $e->getMessage()
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
         ]);
     }
     exit;
@@ -4060,11 +4008,11 @@ $router->post('/admin/autocontent/api/test-sitemap', ['middleware' => ['auth', '
  * POST /admin/autocontent/api/test-selectors
  */
 $router->post('/admin/autocontent/api/test-selectors', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=utf-8');
 
     try {
-        $url = $_POST['url'] ?? '';
-        $selectorsJson = $_POST['selectors'] ?? '{}';
+        $url = trim((string)($_POST['url'] ?? ''));
+        $selectorsJson = trim((string)($_POST['selectors'] ?? '{}'));
         $selectors = json_decode($selectorsJson, true);
 
         if (empty($url)) {
@@ -4155,8 +4103,7 @@ $router->post('/admin/autocontent/api/test-selectors', ['middleware' => ['auth',
                             break;
                         }
                     }
-                }
-                catch (Exception $e) {
+                } catch (Exception $e) {
                     continue;
                 }
             }
@@ -4167,16 +4114,15 @@ $router->post('/admin/autocontent/api/test-selectors', ['middleware' => ['auth',
         }
 
         echo json_encode([
-        'success' => true,
-        'message' => 'Selectors tested successfully',
-        'results' => $results
+            'success' => true,
+            'message' => 'Selectors tested successfully',
+            'results' => $results
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Test Selectors Error: " . $e->getMessage());
         echo json_encode([
-        'success' => false,
-        'message' => 'Error: ' . $e->getMessage()
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
         ]);
     }
     exit;
@@ -4185,86 +4131,85 @@ $router->post('/admin/autocontent/api/test-selectors', ['middleware' => ['auth',
 /** 
  * Get Website Presets - Load presets from database 
  * GET /admin/autocontent/api/website-presets 
- */ 
-$router->get('/admin/autocontent/api/website-presets', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) { 
-    header('Content-Type: application/json'); 
- 
-    try { 
-        $model = new AutoContentModel($mysqli); 
+ */
+$router->get('/admin/autocontent/api/website-presets', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    try {
+        $model = new AutoContentModel($mysqli);
         // Ensure tables exist before fetching presets (creates table and default presets if needed) 
-        $model->ensureTablesExist(); 
-        $presets = $model->getWebsitePresets(); 
- 
-        echo json_encode([ 
-        'success' => true, 
-        'presets' => $presets 
-        ]); 
-    } 
-    catch (Throwable $e) { 
-        error_log("Get Website Presets Error: " . $e->getMessage()); 
-        echo json_encode([ 
-        'success' => false, 
-        'message' => 'Error: ' . $e->getMessage() 
-        ]); 
-    } 
-    exit; 
-}); 
- 
+        $model->ensureTablesExist();
+        $presets = $model->getWebsitePresets();
+
+        echo json_encode([
+            'success' => true,
+            'presets' => $presets
+        ]);
+    } catch (Throwable $e) {
+        error_log("Get Website Presets Error: " . $e->getMessage());
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
+        ]);
+    }
+    exit;
+});
+
 /** 
  * Sync Static (Node) Presets -> DB presets (upsert by preset_key) 
  * POST /admin/autocontent/api/sync-static-presets 
- */ 
-$router->post('/admin/autocontent/api/sync-static-presets', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) { 
-    header('Content-Type: application/json'); 
- 
-    try { 
-        $model = new AutoContentModel($mysqli); 
-        $model->ensureTablesExist(); 
- 
-        $repoRoot = dirname(__DIR__, 2); 
-        $scriptPath = $repoRoot . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'scraper' . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'list_static_presets.js'; 
- 
-        if (!is_file($scriptPath)) { 
-            echo json_encode(['success' => false, 'message' => 'Static presets script not found']); 
-            exit; 
-        } 
- 
-        $nodePath = getenv('NODE_PATH') ?: 'node'; 
-        $cmd = escapeshellcmd($nodePath) . ' ' . escapeshellarg($scriptPath); 
- 
-        $descriptors = [ 
-            0 => ['pipe', 'r'], 
-            1 => ['pipe', 'w'], 
-            2 => ['pipe', 'w'], 
-        ]; 
- 
-        $process = proc_open($cmd, $descriptors, $pipes, $repoRoot); 
-        if (!is_resource($process)) { 
-            echo json_encode(['success' => false, 'message' => 'Failed to run Node script']); 
-            exit; 
-        } 
- 
-        fclose($pipes[0]); 
-        $stdout = (string)stream_get_contents($pipes[1]); 
-        $stderr = (string)stream_get_contents($pipes[2]); 
-        fclose($pipes[1]); 
-        fclose($pipes[2]); 
-        $exitCode = proc_close($process); 
- 
-        if ($exitCode !== 0) { 
-            error_log("Sync static presets failed: exit={$exitCode} stderr=" . substr($stderr, 0, 500)); 
-            echo json_encode(['success' => false, 'message' => 'Node script failed', 'details' => substr($stderr, 0, 500)]); 
-            exit; 
-        } 
- 
-        $json = trim($stdout); 
-        $json = preg_replace('/^\\xEF\\xBB\\xBF/', '', $json); 
-        $presets = json_decode($json, true); 
-        if (!is_array($presets)) { 
-            echo json_encode(['success' => false, 'message' => 'Invalid JSON output from Node script']); 
-            exit; 
-        } 
- 
+ */
+$router->post('/admin/autocontent/api/sync-static-presets', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    try {
+        $model = new AutoContentModel($mysqli);
+        $model->ensureTablesExist();
+
+        $repoRoot = dirname(__DIR__, 2);
+        $scriptPath = $repoRoot . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'scraper' . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'list_static_presets.js';
+
+        if (!is_file($scriptPath)) {
+            echo json_encode(['success' => false, 'message' => 'Static presets script not found']);
+            exit;
+        }
+
+        $nodePath = getenv('NODE_PATH') ?: 'node';
+        $cmd = escapeshellcmd($nodePath) . ' ' . escapeshellarg($scriptPath);
+
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+
+        $process = proc_open($cmd, $descriptors, $pipes, $repoRoot);
+        if (!is_resource($process)) {
+            echo json_encode(['success' => false, 'message' => 'Failed to run Node script']);
+            exit;
+        }
+
+        fclose($pipes[0]);
+        $stdout = (string)stream_get_contents($pipes[1]);
+        $stderr = (string)stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $exitCode = proc_close($process);
+
+        if ($exitCode !== 0) {
+            error_log("Sync static presets failed: exit={$exitCode} stderr=" . substr($stderr, 0, 500));
+            echo json_encode(['success' => false, 'message' => 'Node script failed', 'details' => substr($stderr, 0, 500)]);
+            exit;
+        }
+
+        $json = trim($stdout);
+        $json = preg_replace('/^\\xEF\\xBB\\xBF/', '', $json);
+        $presets = json_decode($json, true);
+        if (!is_array($presets)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid JSON output from Node script']);
+            exit;
+        }
+
         $stmt = $mysqli->prepare(" 
             INSERT INTO autocontent_website_presets 
                 (preset_key, name, selector_list_container, selector_list_item, selector_list_title, selector_list_link, selector_list_date, selector_list_image, 
@@ -4291,94 +4236,94 @@ $router->post('/admin/autocontent/api/sync-static-presets', ['middleware' => ['a
                 selector_tags = VALUES(selector_tags), 
                 is_active = 1, 
                 updated_at = NOW() 
-        "); 
- 
-        if (!$stmt) { 
-            echo json_encode(['success' => false, 'message' => 'Failed to prepare DB statement']); 
-            exit; 
-        } 
- 
-        $synced = 0; 
-        $errors = []; 
- 
-        foreach ($presets as $p) { 
-            $key = trim((string)($p['preset_key'] ?? '')); 
-            if ($key === '') { 
-                continue; 
-            } 
-            $name = trim((string)($p['name'] ?? $key)); 
- 
-            $selectors = is_array($p['selectors'] ?? null) ? $p['selectors'] : []; 
-            $ticker = is_array($selectors['ticker'] ?? null) ? $selectors['ticker'] : []; 
-            $article = is_array($selectors['article'] ?? null) ? $selectors['article'] : []; 
- 
-            $listContainer = ''; 
-            $listItem = (string)($ticker['primary'] ?? ''); 
-            $listTitle = (string)($ticker['title'] ?? ''); 
-            $listLink = (string)($ticker['link'] ?? 'a'); 
-            if ($listLink === '') { 
-                $listLink = 'a'; 
-            } 
- 
-            $selTitle = is_array($article['title'] ?? null) ? (string)($article['title']['primary'] ?? '') : ''; 
-            $selContent = is_array($article['content'] ?? null) ? (string)($article['content']['primary'] ?? '') : ''; 
-            $selImage = is_array($article['image'] ?? null) ? (string)($article['image']['primary'] ?? '') : ''; 
-            $selExcerpt = is_array($article['subtitle'] ?? null) ? (string)($article['subtitle']['primary'] ?? '') : ''; 
-            $selDate = is_array($article['published'] ?? null) ? (string)($article['published']['primary'] ?? '') : ''; 
-            $selAuthor = is_array($article['author'] ?? null) ? (string)($article['author']['primary'] ?? '') : ''; 
- 
-            $empty = ''; 
-            try { 
-                $stmt->bind_param( 
-                    'ssssssssssssssssss', 
-                    $key, 
-                    $name, 
-                    $listContainer, 
-                    $listItem, 
-                    $listTitle, 
-                    $listLink, 
-                    $empty, 
-                    $empty, 
-                    $selTitle, 
-                    $selContent, 
-                    $selImage, 
-                    $selExcerpt, 
-                    $selDate, 
-                    $selAuthor, 
-                    $empty, 
-                    $empty, 
-                    $empty, 
-                    $empty 
-                ); 
-                $ok = $stmt->execute(); 
-                if ($ok) { 
-                    $synced++; 
-                } else { 
-                    $errors[] = "Failed to upsert preset: {$key}"; 
-                } 
-            } catch (Throwable $e) { 
-                $errors[] = "Preset {$key}: " . $e->getMessage(); 
-            } 
-        } 
-        $stmt->close(); 
- 
-        echo json_encode([ 
-            'success' => true, 
-            'synced' => $synced, 
-            'errors' => $errors, 
-            'message' => "Synced {$synced} presets" 
-        ]); 
-    } catch (Throwable $e) { 
-        error_log("Sync Static Presets Error: " . $e->getMessage()); 
-        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]); 
-    } 
-    exit; 
-}); 
- 
+        ");
+
+        if (!$stmt) {
+            echo json_encode(['success' => false, 'message' => 'Failed to prepare DB statement']);
+            exit;
+        }
+
+        $synced = 0;
+        $errors = [];
+
+        foreach ($presets as $p) {
+            $key = trim((string)($p['preset_key'] ?? ''));
+            if ($key === '') {
+                continue;
+            }
+            $name = trim((string)($p['name'] ?? $key));
+
+            $selectors = is_array($p['selectors'] ?? null) ? $p['selectors'] : [];
+            $ticker = is_array($selectors['ticker'] ?? null) ? $selectors['ticker'] : [];
+            $article = is_array($selectors['article'] ?? null) ? $selectors['article'] : [];
+
+            $listContainer = '';
+            $listItem = (string)($ticker['primary'] ?? '');
+            $listTitle = (string)($ticker['title'] ?? '');
+            $listLink = (string)($ticker['link'] ?? 'a');
+            if ($listLink === '') {
+                $listLink = 'a';
+            }
+
+            $selTitle = is_array($article['title'] ?? null) ? (string)($article['title']['primary'] ?? '') : '';
+            $selContent = is_array($article['content'] ?? null) ? (string)($article['content']['primary'] ?? '') : '';
+            $selImage = is_array($article['image'] ?? null) ? (string)($article['image']['primary'] ?? '') : '';
+            $selExcerpt = is_array($article['subtitle'] ?? null) ? (string)($article['subtitle']['primary'] ?? '') : '';
+            $selDate = is_array($article['published'] ?? null) ? (string)($article['published']['primary'] ?? '') : '';
+            $selAuthor = is_array($article['author'] ?? null) ? (string)($article['author']['primary'] ?? '') : '';
+
+            $empty = '';
+            try {
+                $stmt->bind_param(
+                    'ssssssssssssssssss',
+                    $key,
+                    $name,
+                    $listContainer,
+                    $listItem,
+                    $listTitle,
+                    $listLink,
+                    $empty,
+                    $empty,
+                    $selTitle,
+                    $selContent,
+                    $selImage,
+                    $selExcerpt,
+                    $selDate,
+                    $selAuthor,
+                    $empty,
+                    $empty,
+                    $empty,
+                    $empty
+                );
+                $ok = $stmt->execute();
+                if ($ok) {
+                    $synced++;
+                } else {
+                    $errors[] = "Failed to upsert preset: {$key}";
+                }
+            } catch (Throwable $e) {
+                $errors[] = "Preset {$key}: " . $e->getMessage();
+            }
+        }
+        $stmt->close();
+
+        echo json_encode([
+            'success' => true,
+            'synced' => $synced,
+            'errors' => $errors,
+            'message' => "Synced {$synced} presets"
+        ]);
+    } catch (Throwable $e) {
+        error_log("Sync Static Presets Error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+    exit;
+});
+
 /** 
  * Save Website Preset - Add/Update preset 
  * POST /admin/autocontent/api/save-preset 
- */ 
+ */
 $router->post('/admin/autocontent/api/save-preset', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
@@ -4407,8 +4352,8 @@ $router->post('/admin/autocontent/api/save-preset', ['middleware' => ['auth', 'a
 
         if (empty($data['preset_key']) || empty($data['name'])) {
             echo json_encode([
-            'success' => false,
-            'message' => 'Preset key and name are required'
+                'success' => false,
+                'message' => 'Preset key and name are required'
             ]);
             exit;
         }
@@ -4416,8 +4361,8 @@ $router->post('/admin/autocontent/api/save-preset', ['middleware' => ['auth', 'a
         // Validate preset_key format (lowercase alphanumeric with hyphens)
         if (!preg_match('/^[a-z0-9-]+$/', $data['preset_key'])) {
             echo json_encode([
-            'success' => false,
-            'message' => 'Preset key must contain only lowercase letters, numbers, and hyphens'
+                'success' => false,
+                'message' => 'Preset key must contain only lowercase letters, numbers, and hyphens'
             ]);
             exit;
         }
@@ -4456,16 +4401,15 @@ $router->post('/admin/autocontent/api/save-preset', ['middleware' => ['auth', 'a
         }
 
         echo json_encode([
-        'success' => true,
-        'id' => $id,
-        'message' => $data['id'] > 0 ? 'Preset updated successfully' : 'Preset created successfully'
+            'success' => true,
+            'id' => $id,
+            'message' => $data['id'] > 0 ? 'Preset updated successfully' : 'Preset created successfully'
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Save Website Preset Error: " . $e->getMessage());
         echo json_encode([
-        'success' => false,
-        'message' => 'Error: ' . $e->getMessage()
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
         ]);
     }
     exit;
@@ -4483,8 +4427,8 @@ $router->post('/admin/autocontent/api/delete-preset', ['middleware' => ['auth', 
 
         if ($id <= 0) {
             echo json_encode([
-            'success' => false,
-            'message' => 'Invalid preset ID'
+                'success' => false,
+                'message' => 'Invalid preset ID'
             ]);
             exit;
         }
@@ -4500,15 +4444,14 @@ $router->post('/admin/autocontent/api/delete-preset', ['middleware' => ['auth', 
         }
 
         echo json_encode([
-        'success' => true,
-        'message' => 'Preset deleted successfully'
+            'success' => true,
+            'message' => 'Preset deleted successfully'
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Delete Website Preset Error: " . $e->getMessage());
         echo json_encode([
-        'success' => false,
-        'message' => 'Error: ' . $e->getMessage()
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
         ]);
     }
     exit;
@@ -4518,141 +4461,141 @@ $router->post('/admin/autocontent/api/delete-preset', ['middleware' => ['auth', 
  * Live Preview Selectors - Test selectors on a URL
  * POST /admin/autocontent/api/preview-selectors
  */
-$router->post('/admin/autocontent/api/preview-selectors', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) { 
-    header('Content-Type: application/json'); 
- 
-    try { 
-        $url = $_POST['url'] ?? ''; 
-        $type = $_POST['type'] ?? 'list'; 
-        $selectorsJson = $_POST['selectors'] ?? '{}'; 
-        $selectors = json_decode($selectorsJson, true); 
-        if (!is_array($selectors)) { 
-            $selectors = []; 
-        } 
-        $showRawHtml = filter_var($_POST['show_raw_html'] ?? false, FILTER_VALIDATE_BOOLEAN); 
- 
-        if (empty($url)) { 
-            echo json_encode(['success' => false, 'message' => 'URL is required']); 
-            exit; 
+$router->post('/admin/autocontent/api/preview-selectors', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    try {
+        $url = $_POST['url'] ?? '';
+        $type = $_POST['type'] ?? 'list';
+        $selectorsJson = $_POST['selectors'] ?? '{}';
+        $selectors = json_decode($selectorsJson, true);
+        if (!is_array($selectors)) {
+            $selectors = [];
+        }
+        $showRawHtml = filter_var($_POST['show_raw_html'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        if (empty($url)) {
+            echo json_encode(['success' => false, 'message' => 'URL is required']);
+            exit;
         }
 
-        if (!filter_var($url, FILTER_VALIDATE_URL)) { 
-            echo json_encode(['success' => false, 'message' => 'Invalid URL format']); 
-            exit; 
-        } 
- 
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid URL format']);
+            exit;
+        }
+
         // SSRF protection: only allow http/https and block localhost/private ranges 
-        $parsed = parse_url($url); 
-        if (!in_array($parsed['scheme'] ?? '', ['http', 'https'], true)) { 
-            echo json_encode(['success' => false, 'message' => 'Only HTTP/HTTPS URLs are allowed']); 
-            exit; 
-        } 
-        $host = (string)($parsed['host'] ?? ''); 
-        $privateHosts = ['localhost', '127.0.0.1', '::1', '0.0.0.0', 'localhost.localdomain']; 
-        $resolvedIp = $host !== '' ? gethostbyname($host) : ''; 
-        $referer = (($parsed['scheme'] ?? 'https') ?: 'https') . '://' . $host . '/'; 
-        if ($host === '' || in_array($host, $privateHosts, true) || preg_match('/^(10\\.|172\\.(1[6-9]|2\\d|3[01])\\.|192\\.168\\.|169\\.254\\.)/', $resolvedIp)) { 
-            echo json_encode(['success' => false, 'message' => 'Private/localhost URLs are not allowed']); 
-            exit; 
-        } 
- 
+        $parsed = parse_url($url);
+        if (!in_array($parsed['scheme'] ?? '', ['http', 'https'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Only HTTP/HTTPS URLs are allowed']);
+            exit;
+        }
+        $host = (string)($parsed['host'] ?? '');
+        $privateHosts = ['localhost', '127.0.0.1', '::1', '0.0.0.0', 'localhost.localdomain'];
+        $resolvedIp = $host !== '' ? gethostbyname($host) : '';
+        $referer = (($parsed['scheme'] ?? 'https') ?: 'https') . '://' . $host . '/';
+        if ($host === '' || in_array($host, $privateHosts, true) || preg_match('/^(10\\.|172\\.(1[6-9]|2\\d|3[01])\\.|192\\.168\\.|169\\.254\\.)/', $resolvedIp)) {
+            echo json_encode(['success' => false, 'message' => 'Private/localhost URLs are not allowed']);
+            exit;
+        }
+
         // Fetch the page 
-        $responseHeaders = []; 
-        $requestHeaders = [ 
-            'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 
-            'Accept-Language: en-US,en;q=0.9,bn;q=0.8', 
-            'Cache-Control: max-age=0', 
-            'Pragma: no-cache', 
-            'Connection: keep-alive', 
-            'Upgrade-Insecure-Requests: 1', 
-        ]; 
-        $ch = curl_init(); 
-        curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($ch, $headerLine) use (&$responseHeaders) { 
-            $len = strlen($headerLine); 
-            $line = trim($headerLine); 
-            if ($line === '' || stripos($line, 'HTTP/') === 0) { 
-                return $len; 
-            } 
-            $parts = explode(':', $line, 2); 
-            if (count($parts) !== 2) { 
-                return $len; 
-            } 
-            $name = strtolower(trim($parts[0])); 
-            $value = trim($parts[1]); 
-            if ($name === '') { 
-                return $len; 
-            } 
-            if (isset($responseHeaders[$name]) && $responseHeaders[$name] !== '') { 
-                $responseHeaders[$name] .= ', ' . $value; 
-            } else { 
-                $responseHeaders[$name] = $value; 
-            } 
-            return $len; 
-        }); 
-        curl_setopt_array($ch, [ 
-            CURLOPT_URL => $url, 
-            CURLOPT_RETURNTRANSFER => true, 
-            CURLOPT_FOLLOWLOCATION => true, 
-            CURLOPT_AUTOREFERER => true, 
-            CURLOPT_MAXREDIRS => 5, 
-            CURLOPT_TIMEOUT => 30, 
-            CURLOPT_CONNECTTIMEOUT => 10, 
-            CURLOPT_SSL_VERIFYPEER => true, 
-            CURLOPT_SSL_VERIFYHOST => 2, 
-            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 
-            CURLOPT_HTTPHEADER => $requestHeaders, 
-            CURLOPT_REFERER => $referer, 
-            CURLOPT_ENCODING => '', 
+        $responseHeaders = [];
+        $requestHeaders = [
+            'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language: en-US,en;q=0.9,bn;q=0.8',
+            'Cache-Control: max-age=0',
+            'Pragma: no-cache',
+            'Connection: keep-alive',
+            'Upgrade-Insecure-Requests: 1',
+        ];
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($ch, $headerLine) use (&$responseHeaders) {
+            $len = strlen($headerLine);
+            $line = trim($headerLine);
+            if ($line === '' || stripos($line, 'HTTP/') === 0) {
+                return $len;
+            }
+            $parts = explode(':', $line, 2);
+            if (count($parts) !== 2) {
+                return $len;
+            }
+            $name = strtolower(trim($parts[0]));
+            $value = trim($parts[1]);
+            if ($name === '') {
+                return $len;
+            }
+            if (isset($responseHeaders[$name]) && $responseHeaders[$name] !== '') {
+                $responseHeaders[$name] .= ', ' . $value;
+            } else {
+                $responseHeaders[$name] = $value;
+            }
+            return $len;
+        });
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_AUTOREFERER => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            CURLOPT_HTTPHEADER => $requestHeaders,
+            CURLOPT_REFERER => $referer,
+            CURLOPT_ENCODING => '',
             CURLOPT_COOKIEFILE => '', // enable in-memory cookie engine (some WAFs require it) 
-        ]); 
-        if (defined('CURL_HTTP_VERSION_2TLS')) { 
-            curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2TLS); 
-        } 
-        $html = curl_exec($ch); 
-        $info = curl_getinfo($ch); 
-        $httpCode = (int)($info['http_code'] ?? 0); 
-        $effectiveUrl = (string)($info['url'] ?? $url); 
-        $contentType = (string)($info['content_type'] ?? ''); 
-        $error = curl_error($ch); 
-        curl_close($ch); 
- 
-        $headerSubsetKeys = ['server', 'content-type', 'location', 'cf-ray', 'cf-cache-status', 'cf-mitigated', 'x-cache', 'via']; 
-        $upstreamHeaders = []; 
-        foreach ($headerSubsetKeys as $k) { 
-            if (isset($responseHeaders[$k])) { 
-                $upstreamHeaders[$k] = $responseHeaders[$k]; 
-            } 
-        } 
-        $diagnostics = [ 
-            'http_code' => $httpCode, 
-            'effective_url' => $effectiveUrl, 
-            'content_type' => $contentType, 
-            'headers' => $upstreamHeaders, 
-        ]; 
- 
-        if ($error || $html === false || $html === null || $html === '') { 
-            error_log('Preview Selectors Fetch Error: url=' . $url . ' error=' . ($error ?: 'Empty response') . ' http=' . $httpCode . ' effective=' . $effectiveUrl . ' headers=' . json_encode($upstreamHeaders)); 
-            echo json_encode([ 
-                'success' => false, 
-                'message' => 'Failed to fetch URL: ' . ($error ?: 'Empty response'), 
-                'details' => $diagnostics, 
-            ]); 
-            exit; 
-        } 
- 
-        if ($httpCode !== 200) { 
-            error_log('Preview Selectors HTTP Error: url=' . $url . ' http=' . $httpCode . ' effective=' . $effectiveUrl . ' headers=' . json_encode($upstreamHeaders)); 
-            echo json_encode([ 
-                'success' => false, 
-                'message' => "HTTP Error: $httpCode", 
-                'details' => $diagnostics, 
-                'rawHtml' => $showRawHtml ? substr((string)$html, 0, 5000) : null, 
-            ]); 
-            exit; 
-        } 
- 
+        ]);
+        if (defined('CURL_HTTP_VERSION_2TLS')) {
+            curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2TLS);
+        }
+        $html = curl_exec($ch);
+        $info = curl_getinfo($ch);
+        $httpCode = (int)($info['http_code'] ?? 0);
+        $effectiveUrl = (string)($info['url'] ?? $url);
+        $contentType = (string)($info['content_type'] ?? '');
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        $headerSubsetKeys = ['server', 'content-type', 'location', 'cf-ray', 'cf-cache-status', 'cf-mitigated', 'x-cache', 'via'];
+        $upstreamHeaders = [];
+        foreach ($headerSubsetKeys as $k) {
+            if (isset($responseHeaders[$k])) {
+                $upstreamHeaders[$k] = $responseHeaders[$k];
+            }
+        }
+        $diagnostics = [
+            'http_code' => $httpCode,
+            'effective_url' => $effectiveUrl,
+            'content_type' => $contentType,
+            'headers' => $upstreamHeaders,
+        ];
+
+        if ($error || $html === false || $html === null || $html === '') {
+            error_log('Preview Selectors Fetch Error: url=' . $url . ' error=' . ($error ?: 'Empty response') . ' http=' . $httpCode . ' effective=' . $effectiveUrl . ' headers=' . json_encode($upstreamHeaders));
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to fetch URL: ' . ($error ?: 'Empty response'),
+                'details' => $diagnostics,
+            ]);
+            exit;
+        }
+
+        if ($httpCode !== 200) {
+            error_log('Preview Selectors HTTP Error: url=' . $url . ' http=' . $httpCode . ' effective=' . $effectiveUrl . ' headers=' . json_encode($upstreamHeaders));
+            echo json_encode([
+                'success' => false,
+                'message' => "HTTP Error: $httpCode",
+                'details' => $diagnostics,
+                'rawHtml' => $showRawHtml ? substr((string)$html, 0, 5000) : null,
+            ]);
+            exit;
+        }
+
         // Parse HTML 
-        libxml_use_internal_errors(true); 
+        libxml_use_internal_errors(true);
         $dom = new \DOMDocument();
         $dom->loadHTML('<?xml encoding="utf-8">' . $html);
         libxml_clear_errors();
@@ -4714,8 +4657,7 @@ $router->post('/admin/autocontent/api/preview-selectors', ['middleware' => ['aut
                         // Get link
                         if (!empty($linkSelector)) {
                             $linkNodes = $xpath->query(selectorToXPath($linkSelector, true), $itemNode);
-                        }
-                        else {
+                        } else {
                             $linkNodes = $xpath->query('.//a', $itemNode);
                         }
                         if ($linkNodes && $linkNodes->length > 0) {
@@ -4762,8 +4704,7 @@ $router->post('/admin/autocontent/api/preview-selectors', ['middleware' => ['aut
                 'items' => $items,
                 'count' => count($items)
             ];
-        }
-        else {
+        } else {
             // Detail page extraction
             $titleSelector = $selectors['title'] ?? '';
             $contentSelector = $selectors['content'] ?? '';
@@ -4851,22 +4792,21 @@ $router->post('/admin/autocontent/api/preview-selectors', ['middleware' => ['aut
         }
 
         echo json_encode([
-        'success' => true,
-        'message' => 'Preview generated successfully',
-        'type' => $type,
-        'url' => $url,
-        'selectors' => $selectors,
-        'matches' => $matches,
-        'items' => $result['items'] ?? null,
-        'content' => $result['content'] ?? null,
-        'rawHtml' => $showRawHtml ? substr($html, 0, 5000) : null, // First 5KB of HTML for debugging, if requested
+            'success' => true,
+            'message' => 'Preview generated successfully',
+            'type' => $type,
+            'url' => $url,
+            'selectors' => $selectors,
+            'matches' => $matches,
+            'items' => $result['items'] ?? null,
+            'content' => $result['content'] ?? null,
+            'rawHtml' => $showRawHtml ? substr($html, 0, 5000) : null, // First 5KB of HTML for debugging, if requested
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Preview Selectors Error: " . $e->getMessage());
         echo json_encode([
-        'success' => false,
-        'message' => 'Error: ' . $e->getMessage()
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
         ]);
     }
     exit;
@@ -4924,13 +4864,12 @@ $router->get('/admin/autocontent/presets', ['middleware' => ['auth', 'admin_only
         }
 
         echo $twig->render('admin/autocontent/presets.twig', [
-        'title' => 'Website Presets',
-        'presets' => $presets,
-        'static_presets' => $staticPresets,
-        'current_page' => 'autocontent-presets'
+            'title' => 'Website Presets',
+            'presets' => $presets,
+            'static_presets' => $staticPresets,
+            'current_page' => 'autocontent-presets'
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         error_log("Website Presets Page Error: " . $e->getMessage());
         echo "Error loading presets: " . $e->getMessage();
     }

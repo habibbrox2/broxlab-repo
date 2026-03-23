@@ -265,6 +265,7 @@ class EnhancedScraperService
             $finalUrl = $payload['final_url'] ?? $url;
             return $this->parseHtml((string)($payload['html'] ?? ''), $finalUrl) + [
                 'status' => (int)($payload['status'] ?? 0),
+                'raw_html' => (string)($payload['html'] ?? ''),
             ];
         } catch (RequestException $e) {
             return ['success' => false, 'error' => 'Failed to fetch URL: ' . $e->getMessage(), 'error_code' => 'request_failed'];

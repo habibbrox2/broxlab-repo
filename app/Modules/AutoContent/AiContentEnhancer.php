@@ -4,6 +4,7 @@ namespace App\Modules\AutoContent;
 
 $aiProviderPath = realpath(__DIR__ . '/../../Models/AIProvider.php');
 require_once $aiProviderPath ?: (__DIR__ . '/../../Models/AIProvider.php');
+require_once __DIR__ . '/AutoPublisher.php';
 
 /**
  * AI Content Enhancer Service
@@ -95,15 +96,46 @@ class AiContentEnhancer
                 $wordCount
             );
 
+            // Store suggested metadata
+            $this->model->updateArticleMetadata($articleId, [
+                'suggested_categories' => $metadata['categories'] ?? [],
+                'suggested_tags' => $metadata['tags'] ?? []
+            ]);
+
             // Update status to processed
             $this->model->updateArticleStatus($articleId, 'processed');
+
+            $autoPublishResult = null;
+            $autoPublishEnabled = $this->aiProvider->getSetting('auto_publish_ai_content', false);
+            if ($autoPublishEnabled) {
+                $settings = $this->model->getSettings();
+                $publisherConfig = [
+                    'auto_publish' => true,
+                    'publish_status' => $settings['publish_status'] ?? 'published',
+                    'publish_batch' => 1,
+                    'max_daily_publish' => (int)($settings['max_daily_publish'] ?? 10),
+                    'publish_time_start' => $settings['publish_time_start'] ?? '06:00',
+                    'publish_time_end' => $settings['publish_time_end'] ?? '23:00',
+                    'default_author' => $settings['default_author'] ?? 'AI Bot',
+                    'telegram' => [
+                        'enabled' => (($settings['telegram_enabled'] ?? '0') === '1'),
+                        'post_on_publish' => (($settings['telegram_post_on_publish'] ?? '0') === '1'),
+                        'template' => $settings['telegram_template'] ?? "*{title}*\n{url}"
+                    ]
+                ];
+
+                $publisher = new AutoPublisher($this->mysqli, $publisherConfig);
+                $autoPublishResult = $publisher->publishById($articleId);
+            }
 
             return [
                 'success' => true,
                 'message' => 'Article processed successfully',
                 'seo_score' => $seoScore,
                 'word_count' => $wordCount,
-                'suggested_categories' => $metadata['categories'] ?? []
+                'suggested_categories' => $metadata['categories'] ?? [],
+                'auto_publish' => $autoPublishEnabled ? ($autoPublishResult['success'] ?? false) : false,
+                'auto_publish_result' => $autoPublishResult
             ];
         }
         catch (\Throwable $e) {

@@ -783,6 +783,99 @@ class AutoContentModel
     }
 
     /**
+     * Update article metadata JSON (e.g., suggested categories/tags)
+     */
+    public function updateArticleMetadata(int $id, array $metadata): bool
+    {
+        $json = json_encode($metadata, JSON_UNESCAPED_SLASHES);
+        $stmt = $this->mysqli->prepare("UPDATE autocontent_articles SET metadata = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->bind_param("si", $json, $id);
+        $success = $stmt->execute();
+        $stmt->close();
+        return $success;
+    }
+
+    /**
+     * Insert pending taxonomy for an autocontent article
+     */
+    public function insertPendingTaxonomy(int $articleId, int $sourceId, array $categories, array $tags, string $origin = 'selector'): bool
+    {
+        if ($articleId <= 0) {
+            return false;
+        }
+
+        $categoriesJson = json_encode(array_values($categories), JSON_UNESCAPED_SLASHES);
+        $tagsJson = json_encode(array_values($tags), JSON_UNESCAPED_SLASHES);
+
+        $stmt = $this->mysqli->prepare("
+            INSERT INTO autocontent_article_taxonomy
+                (article_id, source_id, categories_json, tags_json, origin, created_at)
+            VALUES (?, ?, ?, ?, ?, NOW())
+        ");
+        $stmt->bind_param("iisss", $articleId, $sourceId, $categoriesJson, $tagsJson, $origin);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return $ok;
+    }
+
+    /**
+     * Get pending taxonomy for an autocontent article
+     */
+    public function getPendingTaxonomy(int $articleId): array
+    {
+        $stmt = $this->mysqli->prepare("
+            SELECT id, categories_json, tags_json, origin
+            FROM autocontent_article_taxonomy
+            WHERE article_id = ? AND applied_at IS NULL
+            ORDER BY id DESC
+            LIMIT 1
+        ");
+        $stmt->bind_param("i", $articleId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result && $result->num_rows > 0 ? $result->fetch_assoc() : null;
+        $stmt->close();
+
+        if (!$row) {
+            return [
+                'id' => null,
+                'categories' => [],
+                'tags' => [],
+                'origin' => null,
+            ];
+        }
+
+        $categories = json_decode((string)($row['categories_json'] ?? '[]'), true);
+        $tags = json_decode((string)($row['tags_json'] ?? '[]'), true);
+
+        return [
+            'id' => (int)$row['id'],
+            'categories' => is_array($categories) ? $categories : [],
+            'tags' => is_array($tags) ? $tags : [],
+            'origin' => $row['origin'] ?? null,
+        ];
+    }
+
+    /**
+     * Mark pending taxonomy applied
+     */
+    public function markTaxonomyApplied(int $taxonomyId, int $postId): bool
+    {
+        if ($taxonomyId <= 0) {
+            return false;
+        }
+        $stmt = $this->mysqli->prepare("
+            UPDATE autocontent_article_taxonomy
+            SET applied_at = NOW(), post_id = ?
+            WHERE id = ?
+        ");
+        $stmt->bind_param("ii", $postId, $taxonomyId);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return $ok;
+    }
+
+    /**
      * Update article status
      */
     public function updateArticleStatus(int $id, string $status): bool
@@ -1491,6 +1584,7 @@ class AutoContentModel
                 published_at DATETIME,
                 status ENUM('collected', 'processing', 'processed', 'published', 'failed') DEFAULT 'collected',
                 ai_summary TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+                metadata LONGTEXT DEFAULT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
                 INDEX idx_source (source_id),
@@ -1499,6 +1593,12 @@ class AutoContentModel
                 UNIQUE KEY unique_source_url (source_id, url(255))
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
+
+        // Add metadata column if missing
+        $result = $this->mysqli->query("SHOW COLUMNS FROM autocontent_articles LIKE 'metadata'");
+        if (!$result || $result->num_rows === 0) {
+            $this->mysqli->query("ALTER TABLE autocontent_articles ADD COLUMN metadata LONGTEXT DEFAULT NULL");
+        }
 
         // Create settings table
         $this->mysqli->query("
@@ -1615,7 +1715,7 @@ class AutoContentModel
         } 
  
         // Deprecated/unused queue (kept for compatibility/inspection only)  
-        $this->mysqli->query("  
+        $this->mysqli->query("
             CREATE TABLE IF NOT EXISTS autocontent_scrape_queue ( 
                 id INT AUTO_INCREMENT PRIMARY KEY, 
                 source_id INT NOT NULL, 
@@ -1875,6 +1975,22 @@ class AutoContentModel
               AND attempts < max_attempts
             ORDER BY priority DESC, created_at ASC
             LIMIT ?
+        ");
+
+        $this->mysqli->query("
+            CREATE TABLE IF NOT EXISTS autocontent_article_taxonomy (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                article_id INT NOT NULL,
+                source_id INT DEFAULT NULL,
+                categories_json LONGTEXT DEFAULT NULL,
+                tags_json LONGTEXT DEFAULT NULL,
+                origin VARCHAR(20) DEFAULT 'selector',
+                post_id INT DEFAULT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                applied_at DATETIME DEFAULT NULL,
+                KEY idx_article_id (article_id),
+                KEY idx_source_id (source_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         ");
         if (!$stmt) {
             return [];

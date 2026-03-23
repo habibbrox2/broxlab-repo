@@ -276,6 +276,8 @@ class CronWorker
             return false; 
         } 
  
+        $taxonomy = $this->extractTaxonomyFromHtml((string)($scraped['raw_html'] ?? ''), $source);
+
         $data = [ 
             'source_id' => (int)$source['id'], 
             'url' => $url, 
@@ -300,6 +302,15 @@ class CronWorker
         }
 
         if ($id > 0) { 
+            if (!empty($taxonomy['categories']) || !empty($taxonomy['tags'])) {
+                $this->model->insertPendingTaxonomy(
+                    $id,
+                    (int)($source['id'] ?? 0),
+                    $taxonomy['categories'],
+                    $taxonomy['tags'],
+                    'selector'
+                );
+            }
             $this->model->insertScrapeLog($sid > 0 ? $sid : null, $url, 'article_fetch_success', 200, (float)$elapsed, null, strlen((string)($data['original_content'] ?? ''))); 
             return true; 
         } 
@@ -307,6 +318,72 @@ class CronWorker
         $this->model->insertScrapeLog($sid > 0 ? $sid : null, $url, 'failed', null, (float)$elapsed, 'db_insert_failed'); 
         return false; 
     } 
+
+    private function extractTaxonomyFromHtml(string $html, array $source): array
+    {
+        $categories = [];
+        $tags = [];
+        $categorySelector = trim((string)($source['selector_category'] ?? ''));
+        $tagSelector = trim((string)($source['selector_tags'] ?? ''));
+
+        if ($html === '' || ($categorySelector === '' && $tagSelector === '')) {
+            return ['categories' => [], 'tags' => []];
+        }
+
+        try {
+            $crawler = new Crawler($html, $source['url'] ?? null);
+
+            if ($categorySelector !== '') {
+                $nodes = $crawler->filter($categorySelector);
+                if ($nodes->count() > 0) {
+                    $text = trim($nodes->first()->text(''));
+                    if ($text !== '') {
+                        $categories = $this->normalizeTaxonomyList($text);
+                    }
+                }
+            }
+
+            if ($tagSelector !== '') {
+                $nodes = $crawler->filter($tagSelector);
+                if ($nodes->count() > 0) {
+                    $collected = [];
+                    foreach ($nodes as $node) {
+                        $nodeCrawler = new Crawler($node);
+                        $val = trim($nodeCrawler->text(''));
+                        if ($val !== '') {
+                            $collected[] = $val;
+                        }
+                    }
+                    $tags = $this->normalizeTaxonomyList($collected);
+                }
+            }
+        } catch (Throwable $e) {
+            return ['categories' => [], 'tags' => []];
+        }
+
+        return [
+            'categories' => $categories,
+            'tags' => $tags
+        ];
+    }
+
+    private function normalizeTaxonomyList($value): array
+    {
+        $items = [];
+        if (is_array($value)) {
+            $items = $value;
+        } else {
+            $items = preg_split('/[,\n;]+/', (string)$value);
+        }
+        $clean = [];
+        foreach ($items as $item) {
+            $v = trim((string)$item);
+            if ($v !== '') {
+                $clean[] = $v;
+            }
+        }
+        return array_values(array_unique($clean));
+    }
 
     private function collectFromRss(array $source, int $limit): array
     {

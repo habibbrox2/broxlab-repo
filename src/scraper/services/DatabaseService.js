@@ -8,11 +8,32 @@ import CONFIG from '../config.js';
 import Logger from '../utils/Logger.js';
 import crypto from 'crypto';
 
+const CONNECTION_TIMEOUT_MS = 30000; // 30 seconds
+const QUERY_TIMEOUT_MS = 60000; // 60 seconds
+
 class DatabaseService {
     constructor() {
         this.pool = null;
         this.connected = false;
         this.articleTable = 'news_articles';
+    }
+
+    /**
+     * Timeout wrapper for database operations
+     */
+    async withTimeout(promise, timeoutMs = QUERY_TIMEOUT_MS) {
+        let timeoutId;
+        const timeoutPromise = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => {
+                reject(new Error(`Operation timeout after ${timeoutMs}ms`));
+            }, timeoutMs);
+        });
+
+        try {
+            return await Promise.race([promise, timeoutPromise]);
+        } finally {
+            clearTimeout(timeoutId);
+        }
     }
 
     /**
@@ -31,15 +52,18 @@ class DatabaseService {
                 queueLimit: 0
             });
 
-            // Test connection
-            const connection = await this.pool.getConnection();
+            // Test connection with timeout
+            const connection = await this.withTimeout(this.pool.getConnection(), CONNECTION_TIMEOUT_MS);
             connection.release();
 
             this.connected = true;
             Logger.info('Database connection established');
 
-            // Ensure tables exist
-            await this.ensureTables({ preferAutoContent: !!options.preferAutoContent });
+            // Ensure tables exist with timeout
+            await this.withTimeout(
+                this.ensureTables({ preferAutoContent: !!options.preferAutoContent }),
+                CONNECTION_TIMEOUT_MS
+            );
 
             return true;
         } catch (error) {
@@ -91,13 +115,16 @@ class DatabaseService {
         if (!key) return null;
 
         try {
-            const [rows] = await this.pool.execute(
-                `SELECT id, name, url, website_preset_key, is_active
-                 FROM autocontent_sources
-                 WHERE website_preset_key = ? AND is_active = 1
-                 ORDER BY id DESC
-                 LIMIT 1`,
-                [key]
+            const [rows] = await this.withTimeout(
+                this.pool.execute(
+                    `SELECT id, name, url, website_preset_key, is_active
+                     FROM autocontent_sources
+                     WHERE website_preset_key = ? AND is_active = 1
+                     ORDER BY id DESC
+                     LIMIT 1`,
+                    [key]
+                ),
+                15000 // 15 second timeout for this operation
             );
 
             if (rows.length === 0) {
@@ -181,7 +208,7 @@ class DatabaseService {
                 `SELECT preset_key, name,
                         selector_list_container, selector_list_item, selector_list_title, selector_list_link,
                         selector_title, selector_content, selector_image, selector_excerpt,
-                        selector_date, selector_author
+                        selector_date, selector_author, selector_category, selector_tags
                  FROM autocontent_website_presets
                  WHERE preset_key = ? AND is_active = 1
                  LIMIT 1`,
@@ -213,6 +240,14 @@ class DatabaseService {
                             },
                             author: {
                                 primary: preset.selector_author,
+                                fallback: []
+                            },
+                            category: {
+                                primary: preset.selector_category,
+                                fallback: []
+                            },
+                            tags: {
+                                primary: preset.selector_tags,
                                 fallback: []
                             },
                             published: {
@@ -403,66 +438,125 @@ class DatabaseService {
     /**
      * Insert an AutoContent article row (autocontent_articles).
      */
-    async insertAutoContentArticle(sourceId, article) { 
+    async insertAutoContentArticle(sourceId, article) {
+        if (!sourceId || sourceId <= 0) {
+            throw new Error('Invalid sourceId');
+        }
+
         try {
             const excerpt =
                 (article.excerpt && String(article.excerpt).trim() !== '')
                     ? String(article.excerpt)
                     : (article.subtitle && String(article.subtitle).trim() !== '')
                         ? String(article.subtitle)
-                    : (article.content ? String(article.content).slice(0, 200) : '');
+                        : (article.content ? String(article.content).slice(0, 200) : '');
 
-            const [result] = await this.pool.execute(
-                `INSERT INTO autocontent_articles
-                 (source_id, url, title, content, excerpt, author, image_url, published_at, status, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'collected', NOW())`,
-                [
-                    sourceId,
-                    article.link || article.url,
-                    article.title || '',
-                    article.content || '',
-                    excerpt,
-                    article.author || '',
-                    article.image || article.image_url || '',
-                    article.published_at ? new Date(article.published_at) : null
-                ]
+            const [result] = await this.withTimeout(
+                this.pool.execute(
+                    `INSERT IGNORE INTO autocontent_articles
+                     (source_id, url, title, content, excerpt, author, image_url, published_at, status, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'collected', NOW())`,
+                    [
+                        sourceId,
+                        article.link || article.url,
+                        article.title || '',
+                        article.content || '',
+                        excerpt,
+                        article.author || '',
+                        article.image || article.image_url || '',
+                        article.published_at ? new Date(article.published_at) : null
+                    ]
+                ),
+                10000 // 10 second timeout for DB insert
             );
 
-            return { success: true, id: result.insertId };
+            // INSERT IGNORE returns 0 rows affected if duplicate
+            if (result.affectedRows === 0) {
+                Logger.debug('Article already exists (race condition handled)', {
+                    url: article.link || article.url,
+                    sourceId
+                });
+                return { success: false, error: 'duplicate' };
+            }
+
+            const insertId = result.insertId;
+            const categoryList = this.normalizeList(article.category || '');
+            const tagList = this.normalizeList(article.tags || '');
+            if (categoryList.length > 0 || tagList.length > 0) {
+                await this.insertAutoContentTaxonomy(insertId, sourceId, categoryList, tagList, 'selector');
+            }
+
+            return { success: true, id: insertId };
         } catch (error) {
+            // Additional safety check for duplicate entry errors
             if (error.code === 'ER_DUP_ENTRY') {
+                Logger.debug('Duplicate article detected', { url: article.link || article.url });
                 return { success: false, error: 'duplicate' };
             }
             Logger.error('Failed to insert autocontent article', { sourceId, error: error.message });
             return { success: false, error: error.message };
         }
     } 
+
+    async insertAutoContentTaxonomy(articleId, sourceId, categories = [], tags = [], origin = 'selector') {
+        if (!articleId || articleId <= 0) return false;
+        try {
+            const categoriesJson = JSON.stringify(categories || []);
+            const tagsJson = JSON.stringify(tags || []);
+            await this.pool.execute(
+                `INSERT INTO autocontent_article_taxonomy
+                 (article_id, source_id, categories_json, tags_json, origin, created_at)
+                 VALUES (?, ?, ?, ?, ?, NOW())`,
+                [articleId, sourceId || null, categoriesJson, tagsJson, origin]
+            );
+            return true;
+        } catch (error) {
+            Logger.debug('Failed to insert autocontent_article_taxonomy', { articleId, error: error.message });
+            return false;
+        }
+    }
+
+    normalizeList(value) {
+        if (Array.isArray(value)) {
+            return Array.from(new Set(value.map(v => String(v || '').trim()).filter(Boolean)));
+        }
+        const parts = String(value || '').split(/[,;\n]+/).map(v => v.trim()).filter(Boolean);
+        return Array.from(new Set(parts));
+    }
  
-    async insertAutoContentScrapeLog(sourceId, { url, status, httpStatus = null, responseTimeMs = 0, errorMessage = null, contentLength = 0, retryCount = 0 } = {}) { 
-        try { 
-            const sid = Number(sourceId) || 0; 
-            if (!sid || !url) return false; 
- 
-            await this.pool.execute( 
-                `INSERT INTO autocontent_scrape_logs 
-                 (source_id, url, status, http_status, response_time, error_message, content_length, retry_count, created_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`, 
-                [ 
-                    sid, 
-                    String(url), 
-                    String(status || 'pending'), 
-                    httpStatus !== null ? Number(httpStatus) : null, 
-                    Number.isFinite(Number(responseTimeMs)) ? (Number(responseTimeMs) / 1000) : 0, 
-                    errorMessage ? String(errorMessage) : null, 
-                    Number(contentLength) || 0, 
-                    Number(retryCount) || 0 
-                ] 
-            ); 
-            return true; 
-        } catch (error) { 
-            Logger.debug('Failed to insert autocontent_scrape_logs', { error: error.message }); 
-            return false; 
-        } 
+    async insertAutoContentScrapeLog(sourceId, { url, status, httpStatus = null, responseTimeMs = 0, errorMessage = null, contentLength = 0, retryCount = 0 } = {}) {
+        if (!sourceId || sourceId <= 0) {
+            Logger.warn('insertAutoContentScrapeLog: Invalid sourceId', { sourceId });
+            return false; // Don't insert without valid sourceId
+        }
+
+        try {
+            const sid = Number(sourceId);
+            if (!url) return false;
+
+            await this.withTimeout(
+                this.pool.execute(
+                    `INSERT INTO autocontent_scrape_logs
+                     (source_id, url, status, http_status, response_time, error_message, content_length, retry_count, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+                    [
+                        sid,
+                        String(url),
+                        String(status || 'pending'),
+                        httpStatus !== null ? Number(httpStatus) : null,
+                        Number.isFinite(Number(responseTimeMs)) ? (Number(responseTimeMs) / 1000) : 0,
+                        errorMessage ? String(errorMessage) : null,
+                        Number(contentLength) || 0,
+                        Number(retryCount) || 0
+                    ]
+                ),
+                5000 // 5 second timeout for log insert
+            );
+            return true;
+        } catch (error) {
+            Logger.debug('Failed to insert autocontent_scrape_logs', { error: error.message });
+            return false;
+        }
     } 
  
     async upsertAutoContentCrawlQueue(sourceId, { url, status = 'pending', depth = 0, retryCount = 0, errorMessage = null } = {}) { 
@@ -550,6 +644,40 @@ class DatabaseService {
                 return { success: false, error: 'duplicate' };
             }
             Logger.error('Failed to insert mobile record', { error: error.message });
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Update a mobile record (mobiles pipeline).
+     */
+    async updateMobileRecord(mobileId, mobile) {
+        const id = Number(mobileId) || 0;
+        if (!id) return { success: false, error: 'missing_mobile_id' };
+
+        try {
+            const brand = String(mobile.brand_name || '').trim();
+            const model = String(mobile.model_name || '').trim();
+            const status = (mobile.status === 'official' || mobile.status === 'unofficial' || mobile.status === 'both')
+                ? mobile.status
+                : 'unofficial';
+            const releaseDate = String(mobile.release_date || '').trim();
+
+            const isOfficial = Number(mobile.is_official) ? 1 : 0;
+            const officialPrice = Number(mobile.official_price || 0) || 0;
+            const unofficialPrice = Number(mobile.unofficial_price || 0) || 0;
+
+            await this.pool.execute(
+                `UPDATE mobiles
+                 SET brand_name = ?, model_name = ?, is_official = ?, official_price = ?, unofficial_price = ?, status = ?, release_date = ?
+                 WHERE id = ?
+                 LIMIT 1`,
+                [brand, model, isOfficial, officialPrice, unofficialPrice, status, releaseDate, id]
+            );
+
+            return { success: true, id };
+        } catch (error) {
+            Logger.error('Failed to update mobile record', { mobileId: id, error: error.message });
             return { success: false, error: error.message };
         }
     }

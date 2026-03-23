@@ -91,6 +91,8 @@ class ArticleScraper {
             published_at: this.extractPublishedDate($),
             image: this.extractImage($),
             content: this.extractContent($),
+            category: this.extractCategory($),
+            tags: this.extractTags($),
             link: url
         };
 
@@ -150,6 +152,57 @@ class ArticleScraper {
         }
 
         return this.cleanText(author);
+    }
+
+    /**
+     * Extract category using configured selectors
+     */
+    extractCategory($dom) {
+        const selectorConfig = this.selectors?.article?.category;
+        if (!selectorConfig || !selectorConfig.primary) {
+            return '';
+        }
+
+        let category = HtmlParser.extractText($dom, selectorConfig.primary);
+
+        if (!category && selectorConfig.fallback) {
+            category = HtmlParser.extractText($dom, selectorConfig.fallback);
+        }
+
+        return this.cleanText(category);
+    }
+
+    /**
+     * Extract tags using configured selectors
+     */
+    extractTags($dom) {
+        const selectorConfig = this.selectors?.article?.tags;
+        if (!selectorConfig || !selectorConfig.primary) {
+            return [];
+        }
+
+        let tags = HtmlParser.extractAll($dom, selectorConfig.primary);
+        if ((!tags || tags.length === 0) && selectorConfig.fallback) {
+            for (const sel of selectorConfig.fallback) {
+                tags = HtmlParser.extractAll($dom, sel);
+                if (tags && tags.length > 0) break;
+            }
+        }
+
+        if ((!tags || tags.length === 0) && selectorConfig.primary) {
+            const single = HtmlParser.extractText($dom, selectorConfig.primary);
+            if (single) {
+                tags = single.split(/[,;\n]+/);
+            }
+        }
+
+        return this.normalizeTags(tags || []);
+    }
+
+    normalizeTags(list) {
+        const items = Array.isArray(list) ? list : String(list || '').split(/[,;\n]+/);
+        const cleaned = items.map((t) => String(t || '').trim()).filter(Boolean);
+        return Array.from(new Set(cleaned));
     }
 
     /**

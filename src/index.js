@@ -373,7 +373,7 @@ class MultimodalRAGSystem {
         const files = fs.readdirSync(directory);
 
         for (const file of files) {
-            const ext = require('path').extname(file).toLowerCase();
+            const ext = path.extname(file).toLowerCase();
             if (extensions.includes(ext)) {
                 try {
                     const result = await this.processFile(

@@ -9,6 +9,15 @@ import Logger from './Logger.js';
 import URLValidator from './URLValidator.js';
 import BrowserAgent from './BrowserAgent.js';
 
+const RETRY_CONFIG = {
+    maxRetries: 3,
+    initialDelayMs: 1000,
+    maxDelayMs: 10000,
+    backoffMultiplier: 2,
+    retryableStatuses: [408, 429, 500, 502, 503, 504],
+    retryableErrors: ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT']
+};
+
 class HttpClient {
     constructor() {
         this.userAgents = CONFIG.http.userAgents;
@@ -70,13 +79,12 @@ class HttpClient {
         if (String(error?.message || '').includes('waf_challenge')) {
             return false;
         }
-        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+        if (RETRY_CONFIG.retryableErrors.includes(error.code)) {
             return true;
         }
         if (error.response) {
             const status = error.response.status;
-            // Retry on 429 (Too Many Requests), 502, 503, 504
-            return status === 429 || status === 502 || status === 503 || status === 504;
+            return RETRY_CONFIG.retryableStatuses.includes(status);
         }
         return true; // Network errors are retryable
     }
@@ -152,12 +160,12 @@ class HttpClient {
             throw error;
         }
 
-        const maxRetries = options.maxRetries ?? CONFIG.http.maxRetries;
-        const retryDelay = options.retryDelay ?? CONFIG.http.retryDelay;
+        const maxRetries = options.maxRetries ?? RETRY_CONFIG.maxRetries;
 
         let lastError = null;
         let attemptsMade = 0;
         let useProxy = false;
+        let delayMs = RETRY_CONFIG.initialDelayMs;
 
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
             try {
@@ -212,7 +220,8 @@ class HttpClient {
                         waf_detected: true,
                         status: response.status,
                         headers: response.headers,
-                        elapsed_ms: Date.now() - startedAt
+                        elapsed_ms: Date.now() - startedAt,
+                        proxy_used: proxyUrl || null
                     };
                 }
 
@@ -237,7 +246,8 @@ class HttpClient {
                     data: response.data,
                     status: response.status,
                     headers: response.headers,
-                    elapsed_ms: Date.now() - startedAt
+                    elapsed_ms: Date.now() - startedAt,
+                    proxy_used: proxyUrl || null
                 };
 
             } catch (error) {
@@ -254,14 +264,14 @@ class HttpClient {
                     retryable: isRetryable
                 });
 
-                if (isRetryable && attempt < maxRetries) {
-                    // Exponential backoff
-                    const delay = retryDelay * Math.pow(2, attempt);
-                    Logger.info(`Retrying in ${delay}ms...`);
-                    await this._sleep(delay);
-                } else if (!isRetryable) {
-                    // Non-retryable error, break immediately
+                // Exit early if error is not retryable
+                if (!isRetryable) {
                     break;
+                }
+
+                if (attempt < maxRetries) {
+                    await this._sleep(delayMs);
+                    delayMs = Math.min(delayMs * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelayMs);
                 }
             }
         }
@@ -295,7 +305,9 @@ class HttpClient {
 
         if (result.waf_detected) {
             const browser = await BrowserAgent.fetchHtml(url, {
-                userAgent: this._getUserAgent()
+                userAgent: this._getUserAgent(),
+                proxy: result.proxy_used || null,
+                clearanceTimeoutMs: CONFIG.browser.clearanceTimeoutMs
             });
             if (browser.success) {
                 return {

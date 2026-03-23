@@ -372,7 +372,9 @@ class MultiLayerScraperService
             'image_url' => '',
             'author' => '',
             'published_at' => '',
-            'url' => $url
+            'url' => $url,
+            'category' => '',
+            'tags' => []
         ];
 
         $titleSelector = $source['selector_title'] ?? 'h1';
@@ -381,6 +383,8 @@ class MultiLayerScraperService
         $excerptSelector = $source['selector_excerpt'] ?? '';
         $dateSelector = $source['selector_date'] ?? '';
         $authorSelector = $source['selector_author'] ?? '';
+        $categorySelector = $source['selector_category'] ?? '';
+        $tagsSelector = $source['selector_tags'] ?? '';
 
         try {
             $dom = new DOMDocument();
@@ -482,6 +486,29 @@ class MultiLayerScraperService
             if (empty($data['published_at'])) {
                 $data['published_at'] = date('Y-m-d H:i:s');
             }
+
+            // Extract Category
+            if (!empty($categorySelector)) {
+                $catNodes = $xpath->query($this->cssToXPath($categorySelector));
+                if ($catNodes && $catNodes->length > 0) {
+                    $data['category'] = trim($catNodes->item(0)->textContent ?? '');
+                }
+            }
+
+            // Extract Tags
+            if (!empty($tagsSelector)) {
+                $tagNodes = $xpath->query($this->cssToXPath($tagsSelector));
+                if ($tagNodes && $tagNodes->length > 0) {
+                    $tagValues = [];
+                    foreach ($tagNodes as $node) {
+                        $val = trim($node->textContent ?? '');
+                        if ($val !== '') {
+                            $tagValues[] = $val;
+                        }
+                    }
+                    $data['tags'] = $this->normalizeTaxonomyList($tagValues);
+                }
+            }
         } catch (Exception $e) {
             $this->log("Error extracting content: " . $e->getMessage());
         }
@@ -510,22 +537,290 @@ class MultiLayerScraperService
         ];
 
         $id = $model->createArticle($data);
+        if ($id > 0) {
+            $categories = [];
+            if (!empty($articleData['category'])) {
+                $categories = $this->normalizeTaxonomyList($articleData['category']);
+            }
+            $tags = is_array($articleData['tags'] ?? null) ? $articleData['tags'] : [];
+            if (!empty($categories) || !empty($tags)) {
+                $model->insertPendingTaxonomy($id, (int)$source['id'], $categories, $tags, 'selector');
+            }
+        }
         return $id > 0;
     }
 
     private function cssToXPath(string $css): string
     {
-        $xpath = $css;
-        $xpath = preg_replace('/\.([^:\[\]]+)/', "[@class~='$1']", $xpath);
-        $xpath = preg_replace('/#([^:\[\]]+)/', "[@id='$1']", $xpath);
-        $xpath = preg_replace('/:first-child/', '[1]', $xpath);
-        $xpath = preg_replace('/:last-child/', '[last()]', $xpath);
+        $css = trim($css);
+        if ($css === '') {
+            return '';
+        }
 
-        if (strpos($xpath, '//') !== 0 && strpos($xpath, '/') !== 0) {
-            $xpath = '//' . $xpath;
+        // Already XPath?
+        if (preg_match('/^(\\/\\/|\\/|\\.\\/\\/|\\.\\/)/', $css)) {
+            return $css;
+        }
+
+        $selectorParts = $this->splitCssSelectorList($css);
+        if (count($selectorParts) > 1) {
+            $xpaths = [];
+            foreach ($selectorParts as $part) {
+                $xp = $this->cssToXPath($part);
+                if ($xp !== '') {
+                    $xpaths[] = $xp;
+                }
+            }
+            return implode(' | ', $xpaths);
+        }
+
+        // Drop common pseudo-classes (best-effort)
+        $css = preg_replace('/:(first-child|last-child|nth-child\\([^\\)]*\\)|first-of-type|last-of-type)\\b/i', '', $css);
+
+        // Split by combinators while respecting attribute brackets/quotes.
+        $tokens = [];
+        $buffer = '';
+        $inAttr = false;
+        $quote = '';
+        $len = strlen($css);
+
+        for ($i = 0; $i < $len; $i++) {
+            $ch = $css[$i];
+
+            if ($inAttr) {
+                $buffer .= $ch;
+                if ($quote !== '') {
+                    if ($ch === $quote) {
+                        $quote = '';
+                    }
+                } else {
+                    if ($ch === '"' || $ch === "'") {
+                        $quote = $ch;
+                    } elseif ($ch === ']') {
+                        $inAttr = false;
+                    }
+                }
+                continue;
+            }
+
+            if ($ch === '[') {
+                $inAttr = true;
+                $buffer .= $ch;
+                continue;
+            }
+
+            if ($ch === '>') {
+                if (trim($buffer) !== '') {
+                    $tokens[] = ['type' => 'selector', 'value' => trim($buffer)];
+                }
+                $tokens[] = ['type' => 'combinator', 'value' => '>'];
+                $buffer = '';
+                continue;
+            }
+
+            if (ctype_space($ch)) {
+                if (trim($buffer) !== '') {
+                    $tokens[] = ['type' => 'selector', 'value' => trim($buffer)];
+                    $buffer = '';
+                }
+                if (empty($tokens) || end($tokens)['type'] !== 'combinator') {
+                    $tokens[] = ['type' => 'combinator', 'value' => ' '];
+                }
+                continue;
+            }
+
+            $buffer .= $ch;
+        }
+
+        if (trim($buffer) !== '') {
+            $tokens[] = ['type' => 'selector', 'value' => trim($buffer)];
+        }
+
+        $xpath = '//';
+        $needsAxis = true;
+        foreach ($tokens as $token) {
+            if ($token['type'] === 'combinator') {
+                $xpath .= ($token['value'] === '>') ? '/' : '//';
+                $needsAxis = false;
+                continue;
+            }
+
+            $segment = $this->cssSimpleSelectorToXPathSegment($token['value']);
+            if ($needsAxis) {
+                $xpath .= $segment;
+                $needsAxis = false;
+            } else {
+                $xpath .= $segment;
+            }
         }
 
         return $xpath;
+    }
+
+    private function splitCssSelectorList(string $css): array
+    {
+        $parts = [];
+        $buffer = '';
+        $inAttr = false;
+        $quote = '';
+        $len = strlen($css);
+
+        for ($i = 0; $i < $len; $i++) {
+            $ch = $css[$i];
+
+            if ($inAttr) {
+                $buffer .= $ch;
+                if ($quote !== '') {
+                    if ($ch === $quote) {
+                        $quote = '';
+                    }
+                } else {
+                    if ($ch === '"' || $ch === "'") {
+                        $quote = $ch;
+                    } elseif ($ch === ']') {
+                        $inAttr = false;
+                    }
+                }
+                continue;
+            }
+
+            if ($ch === '[') {
+                $inAttr = true;
+                $buffer .= $ch;
+                continue;
+            }
+
+            if ($ch === ',') {
+                $part = trim($buffer);
+                if ($part !== '') {
+                    $parts[] = $part;
+                }
+                $buffer = '';
+                continue;
+            }
+
+            $buffer .= $ch;
+        }
+
+        $part = trim($buffer);
+        if ($part !== '') {
+            $parts[] = $part;
+        }
+
+        return $parts;
+    }
+
+    private function cssSimpleSelectorToXPathSegment(string $simple): string
+    {
+        $simple = trim($simple);
+        if ($simple === '') {
+            return '*';
+        }
+
+        // Remove any remaining pseudo-classes
+        $simple = preg_replace('/:[a-zA-Z0-9_-]+(\\([^\\)]*\\))?/', '', $simple);
+
+        $tag = '*';
+        $conditions = [];
+
+        if (preg_match('/^([a-zA-Z][a-zA-Z0-9_-]*)/', $simple, $m)) {
+            $tag = $m[1];
+            $simple = substr($simple, strlen($m[1]));
+        }
+
+        // ID
+        if (preg_match('/#([a-zA-Z0-9_-]+)/', $simple, $m)) {
+            $conditions[] = '@id=' . $this->xpathLiteral($m[1]);
+        }
+
+        // Classes (multiple)
+        if (preg_match_all('/\\.([a-zA-Z0-9_-]+)/', $simple, $m)) {
+            foreach ($m[1] as $className) {
+                $conditions[] = "contains(concat(' ', normalize-space(@class), ' '), ' " . $className . " ')";
+            }
+        }
+
+        // Attributes
+        if (preg_match_all('/\\[([^\\]]+)\\]/', $simple, $m)) {
+            foreach ($m[1] as $attrExpr) {
+                $attrExpr = trim($attrExpr);
+                if ($attrExpr === '') {
+                    continue;
+                }
+
+                if (preg_match('/^([a-zA-Z0-9_:-]+)\\s*([~\\^\\$\\*\\|]?=)\\s*(?:\"([^\"]*)\"|\'([^\']*)\'|([^\\s]+))$/', $attrExpr, $am)) {
+                    $attr = $am[1];
+                    $op = $am[2];
+                    $val = $am[3] !== '' ? $am[3] : ($am[4] !== '' ? $am[4] : $am[5]);
+
+                    if ($op === '=') {
+                        $conditions[] = '@' . $attr . '=' . $this->xpathLiteral($val);
+                    } elseif ($op === '^=') {
+                        $conditions[] = 'starts-with(@' . $attr . ', ' . $this->xpathLiteral($val) . ')';
+                    } elseif ($op === '$=') {
+                        $conditions[] = "substring(@{$attr}, string-length(@{$attr}) - string-length(" . $this->xpathLiteral($val) . ") + 1) = " . $this->xpathLiteral($val);
+                    } elseif ($op === '*=') {
+                        $conditions[] = 'contains(@' . $attr . ', ' . $this->xpathLiteral($val) . ')';
+                    } elseif ($op === '~=') {
+                        $conditions[] = "contains(concat(' ', normalize-space(@{$attr}), ' '), " . $this->xpathLiteral(' ' . $val . ' ') . ')';
+                    } elseif ($op === '|=') {
+                        $conditions[] = '@' . $attr . '=' . $this->xpathLiteral($val) . ' or starts-with(@' . $attr . ", " . $this->xpathLiteral($val . '-') . ')';
+                    }
+                } elseif (preg_match('/^([a-zA-Z0-9_:-]+)$/', $attrExpr, $am)) {
+                    $conditions[] = '@' . $am[1];
+                }
+            }
+        }
+
+        if (empty($conditions)) {
+            return $tag;
+        }
+
+        return $tag . '[' . implode(' and ', $conditions) . ']';
+    }
+
+    private function xpathLiteral(string $value): string
+    {
+        if (strpos($value, '"') === false) {
+            return '"' . $value . '"';
+        }
+        if (strpos($value, "'") === false) {
+            return "'" . $value . "'";
+        }
+
+        $parts = preg_split('/(["\'])/', $value, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $out = [];
+        foreach ($parts as $part) {
+            if ($part === '') {
+                continue;
+            }
+            if ($part === '"') {
+                $out[] = "'\"'";
+            } elseif ($part === "'") {
+                $out[] = "\"'\"";
+            } else {
+                $out[] = '"' . $part . '"';
+            }
+        }
+        return 'concat(' . implode(',', $out) . ')';
+    }
+
+    private function normalizeTaxonomyList($value): array
+    {
+        $items = [];
+        if (is_array($value)) {
+            $items = $value;
+        } else {
+            $items = preg_split('/[,\n;]+/', (string)$value);
+        }
+        $clean = [];
+        foreach ($items as $item) {
+            $v = trim((string)$item);
+            if ($v !== '') {
+                $clean[] = $v;
+            }
+        }
+        return array_values(array_unique($clean));
     }
 
     private function makeAbsoluteUrl(string $url, string $baseUrl): string

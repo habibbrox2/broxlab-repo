@@ -55,11 +55,17 @@ class MobileDeviceScraper {
     parseGsmaComDevice($dom, sourceUrl) {
         const fullName = this.extractFullName($dom);
         const { brand_name, model_name } = this.splitBrandModel(fullName);
-        const image_url = this.extractImageUrl($dom);
+        const image_urls = this.extractImageUrls($dom);
+        const image_url = image_urls[0] || '';
 
         const sections = this.extractSpecsSections($dom);
         const release_date = this.extractReleaseDate($dom, sections);
         const status = this.extractStatus($dom, sections);
+        const priceText = String(sections?.Misc?.Price || '').trim();
+        const parsedPrice = this.parsePriceToNumber(priceText) || 0;
+        const is_official = status === 'official' ? 1 : 0;
+        const official_price = is_official ? parsedPrice : 0;
+        const unofficial_price = !is_official ? parsedPrice : 0;
 
         const specs = this.buildSimplifiedSpecs(sections, sourceUrl);
 
@@ -69,18 +75,20 @@ class MobileDeviceScraper {
             brand_name,
             model_name,
             image_url,
+            image_urls,
             release_date,
             status,
-            official_price: 0,
-            unofficial_price: 0,
-            is_official: status === 'official' ? 1 : 0,
+            official_price,
+            unofficial_price,
+            is_official,
             specifications: specs
         };
     }
 
     parseGsmaBdDevice($dom, sourceUrl) {
         const fullName = this.extractBdFullName($dom);
-        const image_url = this.extractBdImageUrl($dom);
+        const image_urls = this.extractBdImageUrls($dom);
+        const image_url = image_urls[0] || '';
 
         const general = this.extractBdGeneralTable($dom);
         const sections = this.extractBdSpecsSections($dom);
@@ -108,6 +116,7 @@ class MobileDeviceScraper {
             brand_name: String(brand_name || '').trim(),
             model_name: String(model_name || '').trim(),
             image_url,
+            image_urls,
             release_date,
             status,
             official_price,
@@ -149,21 +158,36 @@ class MobileDeviceScraper {
         return out || full;
     }
 
-    extractImageUrl($dom) {
-        let src = ($dom('.specs-photo-main img').first().attr('src') || '').trim();
-        if (!src) src = ($dom('meta[property="og:image"]').first().attr('content') || '').trim();
-        if (!src) return '';
-        if (src.startsWith('//')) return 'https:' + src;
-        return src;
+    extractImageUrls($dom) {
+        const urls = [];
+        const push = (val) => {
+            const s = String(val || '').trim();
+            if (!s) return;
+            urls.push(s.startsWith('//') ? `https:${s}` : s);
+        };
+
+        push($dom('.specs-photo-main img').first().attr('src'));
+        $dom('.specs-photo-main img').each((_, img) => push($dom(img).attr('src')));
+        $dom('meta[property="og:image"]').each((_, el) => push($dom(el).attr('content')));
+        $dom('meta[name="twitter:image"]').each((_, el) => push($dom(el).attr('content')));
+
+        return Array.from(new Set(urls.map(u => u.trim()).filter(Boolean)));
     }
 
-    extractBdImageUrl($dom) {
-        let src = ($dom('a[href*="/pictures/"] img.img-responsive').first().attr('src') || '').trim();
-        if (!src) src = ($dom('.col-md-9 .row img.img-responsive').first().attr('src') || '').trim();
-        if (!src) src = ($dom('meta[property="og:image"]').first().attr('content') || '').trim();
-        if (!src) return '';
-        if (src.startsWith('//')) return 'https:' + src;
-        return src;
+    extractBdImageUrls($dom) {
+        const urls = [];
+        const push = (val) => {
+            const s = String(val || '').trim();
+            if (!s) return;
+            urls.push(s.startsWith('//') ? `https:${s}` : s);
+        };
+
+        $dom('a[href*="/pictures/"] img.img-responsive').each((_, img) => push($dom(img).attr('src')));
+        $dom('.col-md-9 .row img.img-responsive').each((_, img) => push($dom(img).attr('src')));
+        $dom('meta[property="og:image"]').each((_, el) => push($dom(el).attr('content')));
+        $dom('meta[name="twitter:image"]').each((_, el) => push($dom(el).attr('content')));
+
+        return Array.from(new Set(urls.map(u => u.trim()).filter(Boolean)));
     }
 
     extractSpecsSections($dom) {
@@ -304,11 +328,24 @@ class MobileDeviceScraper {
     parseBdPriceToNumber(raw) {
         const s = String(raw || '').trim();
         if (!s) return 0;
-        const m = s.match(/(\d[\d,]*)(\.\d+)?/);
+        const normalized = s.replace(/৳/g, ' ').replace(/tk|taka|bdt/gi, ' ');
+        const m = normalized.match(/(\d[\d,]*)(\.\d+)?/);
         if (!m) return 0;
         const num = Number(String(m[0]).replace(/,/g, ''));
         if (!Number.isFinite(num) || num <= 0) return 0;
         // Store as integer BDT.
+        return Math.round(num);
+    }
+
+    parsePriceToNumber(raw) {
+        const s = String(raw || '').trim();
+        if (!s) return 0;
+        if (!/(৳|bdt|tk|taka)/i.test(s)) return 0;
+        const normalized = s.replace(/৳/g, ' ').replace(/tk|taka|bdt/gi, ' ');
+        const m = normalized.match(/(\d[\d,]*)(\.\d+)?/);
+        if (!m) return 0;
+        const num = Number(String(m[0]).replace(/,/g, ''));
+        if (!Number.isFinite(num) || num <= 0) return 0;
         return Math.round(num);
     }
 
@@ -385,6 +422,15 @@ class MobileDeviceScraper {
 
         const join = (parts) => parts.filter(Boolean).join(' ');
 
+        const network = join([
+            get('Network', 'Technology') ? `Technology: ${get('Network', 'Technology')}.` : '',
+            get('Network', '2G bands') ? `2G: ${get('Network', '2G bands')}.` : '',
+            get('Network', '3G bands') ? `3G: ${get('Network', '3G bands')}.` : '',
+            get('Network', '4G bands') ? `4G: ${get('Network', '4G bands')}.` : '',
+            get('Network', '5G bands') ? `5G: ${get('Network', '5G bands')}.` : '',
+            get('Network', 'Speed') ? `Speed: ${get('Network', 'Speed')}.` : ''
+        ]);
+
         const body = join([
             get('Body', 'Dimensions') ? `Dimensions: ${get('Body', 'Dimensions')}.` : '',
             get('Body', 'Weight') ? `Weight: ${get('Body', 'Weight')}.` : '',
@@ -444,8 +490,14 @@ class MobileDeviceScraper {
             get('Comms', 'Radio') ? `Radio: ${get('Comms', 'Radio')}.` : ''
         ]);
 
+        const sound = join([
+            get('Sound', 'Loudspeaker') ? `Loudspeaker: ${get('Sound', 'Loudspeaker')}.` : '',
+            get('Sound', '3.5mm jack') ? `3.5mm Jack: ${get('Sound', '3.5mm jack')}.` : ''
+        ]);
+
+        const sensors = get('Features', 'Sensors') ? `Sensors: ${get('Features', 'Sensors')}.` : '';
+
         const misc = join([
-            get('Features', 'Sensors') ? `Sensors: ${get('Features', 'Sensors')}.` : '',
             get('Misc', 'Colors') ? `Colors: ${get('Misc', 'Colors')}.` : '',
             get('Misc', 'Models') ? `Models: ${get('Misc', 'Models')}.` : '',
             get('Misc', 'Price') ? `Price: ${get('Misc', 'Price')}.` : '',
@@ -455,6 +507,7 @@ class MobileDeviceScraper {
         ]);
 
         const out = {};
+        if (network) out['Network'] = network;
         if (body) out['Body'] = body;
         if (display) out['Display'] = display;
         if (chipset) out['Chipset'] = chipset;
@@ -465,6 +518,8 @@ class MobileDeviceScraper {
         if (videoCapture) out['Video capture'] = videoCapture;
         if (battery) out['Battery'] = battery;
         if (connectivity) out['Connectivity'] = connectivity;
+        if (sound) out['Sound'] = sound;
+        if (sensors) out['Sensors'] = sensors;
         if (misc) out['Misc'] = misc;
 
         return out;
@@ -477,6 +532,15 @@ class MobileDeviceScraper {
         const clean = (s) => String(s || '').replace(/\s+/g, ' ').trim();
         const get = (section, label) => clean(sections?.[section]?.[label]);
         const join = (parts) => parts.filter(Boolean).join(' ');
+
+        const network = join([
+            get('Network', 'Network Type') ? `Network: ${get('Network', 'Network Type')}.` : '',
+            get('Network', 'Network 2g Band') ? `2G: ${get('Network', 'Network 2g Band')}.` : '',
+            get('Network', 'Network 3g Band') ? `3G: ${get('Network', 'Network 3g Band')}.` : '',
+            get('Network', 'Network 4g Band') ? `4G: ${get('Network', 'Network 4g Band')}.` : '',
+            get('Network', 'Network 5g Band') ? `5G: ${get('Network', 'Network 5g Band')}.` : '',
+            get('Network', 'Speed') ? `Speed: ${get('Network', 'Speed')}.` : ''
+        ]);
 
         const body = join([
             general?.Category ? `Category: ${clean(general.Category)}.` : '',
@@ -544,6 +608,11 @@ class MobileDeviceScraper {
             get('Connectivity', 'Fm Radio') ? `Radio: ${get('Connectivity', 'Fm Radio')}.` : ''
         ]);
 
+        const sound = join([
+            get('Sound', 'Speaker') ? `Speaker: ${get('Sound', 'Speaker')}.` : '',
+            get('Sound', 'Headphone') ? `Headphone: ${get('Sound', 'Headphone')}.` : ''
+        ]);
+
         const misc = join([
             general?.Brand ? `Brand: ${clean(general.Brand)}.` : '',
             general?.Model ? `Model: ${clean(general.Model)}.` : '',
@@ -558,6 +627,7 @@ class MobileDeviceScraper {
         ]);
 
         const out = {};
+        if (network) out['Network'] = network;
         if (body) out['Body'] = body;
         if (display) out['Display'] = display;
         if (chipset) out['Chipset'] = chipset;
@@ -568,6 +638,7 @@ class MobileDeviceScraper {
         if (videoCapture) out['Video capture'] = videoCapture;
         if (battery) out['Battery'] = battery;
         if (connectivity) out['Connectivity'] = connectivity;
+        if (sound) out['Sound'] = sound;
         if (misc) out['Misc'] = misc;
         return out;
     }
