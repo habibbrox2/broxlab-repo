@@ -8,9 +8,13 @@ class ScraperApiClient
 {
     private string $baseUrl;
     private int $defaultTimeoutSec = 30;
+    private string $apiKey;
+    private string $mode;
 
     public function __construct(?string $baseUrl = null)
     {
+        $this->mode = strtolower((string)(getenv('SCRAPER_API_MODE') ?: 'queue'));
+        $this->apiKey = (string)(getenv('SCRAPER_API_KEY') ?: '');
         $this->baseUrl = rtrim($baseUrl ?: $this->resolveBaseUrl(), '/');
     }
 
@@ -55,6 +59,14 @@ class ScraperApiClient
 
     public function fetchScrape(string $url, array $options = [], int $timeoutSec = 30): array
     {
+        if ($this->mode === 'direct') {
+            return $this->request('POST', '/scrape', [
+                'url' => $url,
+                'waitForMs' => ($timeoutSec * 1000),
+                'proxyMode' => $options['proxyMode'] ?? 'auto'
+            ]);
+        }
+
         $submit = $this->submit($url, $options);
         if (!($submit['success'] ?? false) || empty($submit['jobId'])) {
             return [
@@ -91,6 +103,9 @@ class ScraperApiClient
         if (function_exists('curl_init')) {
             $ch = curl_init($url);
             $headers = ['Content-Type: application/json'];
+            if ($this->apiKey !== '') {
+                $headers[] = 'X-Api-Key: ' . $this->apiKey;
+            }
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_TIMEOUT, $this->defaultTimeoutSec);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
@@ -119,6 +134,11 @@ class ScraperApiClient
 
     private function resolveBaseUrl(): string
     {
+        $directUrl = getenv('SCRAPER_DIRECT_API_URL') ?: getenv('APP_URL');
+        if ($this->mode === 'direct' && $directUrl) {
+            return (string)$directUrl;
+        }
+
         $envUrl = getenv('SCRAPER_API_URL');
         if ($envUrl) {
             return (string)$envUrl;

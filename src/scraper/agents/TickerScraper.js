@@ -15,6 +15,13 @@ class TickerScraper {
         this.selectors = CONFIG.getSelectors(this.sourceKey);
         this.sourceConfig = CONFIG.sources[this.sourceKey] || null;
         this.sourceId = null;
+        this.fetchOptions = {
+            useBrowser: false,
+            proxyEnabled: false,
+            proxyList: [],
+            proxyUrl: ''
+        };
+        this.proxyIndex = 0;
     }
 
     /**
@@ -41,7 +48,7 @@ class TickerScraper {
         Logger.info(`Fetching homepage: ${url}`, { source: this.sourceKey });
 
         const startedAt = Date.now();
-        const result = await HttpClient.fetchHtml(url);
+        const result = await HttpClient.fetchHtml(url, this.buildFetchOptions());
         const elapsedMs = Date.now() - startedAt;
 
         if (!result.success) {
@@ -383,6 +390,31 @@ class TickerScraper {
      */
     getSourceConfig() {
         return this.sourceConfig;
+    }
+
+    setFetchOptions(options = {}) {
+        this.fetchOptions = {
+            ...this.fetchOptions,
+            ...options
+        };
+    }
+
+    buildFetchOptions() {
+        const options = { ...this.fetchOptions };
+        if (options.proxyEnabled && Array.isArray(options.proxyList) && options.proxyList.length > 0) {
+            options.proxyUrl = this.getNextProxy();
+        } else {
+            options.proxyUrl = '';
+        }
+        return options;
+    }
+
+    getNextProxy() {
+        const list = this.fetchOptions.proxyList || [];
+        if (!Array.isArray(list) || list.length === 0) return '';
+        const proxy = list[this.proxyIndex % list.length];
+        this.proxyIndex = (this.proxyIndex + 1) % list.length;
+        return proxy || '';
     }
 }
 

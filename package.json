@@ -39,6 +39,8 @@
         "ai-server": "node src/ai/server.js",
         "ai-server:dev": "node --watch src/ai/server.js",
         "ai-server:start": "NODE_ENV=production node src/ai/server.js",
+        "scraper-api:direct": "node src/api/direct-scraper.js",
+        "scrape:test": "node scripts/test-scrape-api.js",
         "rag:start": "node src/index.js",
         "rag:serve": "node src/index.js",
         "rag:process": "node src/index.js --process",

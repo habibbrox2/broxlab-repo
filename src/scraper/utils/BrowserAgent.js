@@ -1,8 +1,10 @@
 import puppeteer from 'puppeteer';
 import puppeteerExtra from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import axios from 'axios';
 import CONFIG from '../config.js';
 import Logger from './Logger.js';
+import ProxyManager from '../../proxy/ProxyManager.js';
 import fs from 'fs-extra';
 import path from 'path';
 
@@ -18,6 +20,34 @@ class BrowserAgent {
         const userDataDir = options.userDataDir ?? CONFIG.browser.userDataDir ?? undefined;
         const proxy = options.proxy || null;
         const userAgent = options.userAgent || null;
+
+        const browserless = this.getBrowserlessConfig(options);
+        if (browserless.url) {
+            const browserlessProxy = proxy || (browserless.useProxy ? ProxyManager.getProxy() : null);
+            let remoteResult = await this.fetchViaBrowserless(url, browserless, {
+                timeout,
+                userAgent,
+                proxy: browserlessProxy
+            });
+            if (!remoteResult.success && browserlessProxy) {
+                ProxyManager.markFailure(browserlessProxy);
+                remoteResult = await this.fetchViaBrowserless(url, browserless, {
+                    timeout,
+                    userAgent,
+                    proxy: null
+                });
+            }
+            if (remoteResult.success) {
+                if (browserlessProxy) {
+                    ProxyManager.markSuccess(browserlessProxy, 0);
+                }
+                return remoteResult;
+            }
+            Logger.warn('Browserless fetch failed, falling back to Puppeteer', {
+                url,
+                error: remoteResult.error
+            });
+        }
 
         const args = [
             '--no-sandbox',
@@ -81,6 +111,72 @@ class BrowserAgent {
                     // ignore close errors
                 }
             }
+        }
+    }
+
+    getBrowserlessConfig(options = {}) {
+        const url = String(options.browserlessUrl || process.env.BROWSERLESS_URL || '').trim();
+        const token = String(options.browserlessToken || process.env.BROWSERLESS_TOKEN || '').trim();
+        const waitMs = Number(options.browserlessWaitMs || process.env.BROWSERLESS_WAIT_MS || 2000);
+        const timeoutMs = Number(options.browserlessTimeoutMs || process.env.BROWSERLESS_TIMEOUT_MS || 30000);
+        const useProxyRaw = String(options.browserlessUseProxy || process.env.BROWSERLESS_USE_PROXY || '');
+        const useProxy = useProxyRaw !== ''
+            ? ['1', 'true', 'yes'].includes(useProxyRaw.toLowerCase())
+            : false;
+
+        return {
+            url,
+            token,
+            waitMs: Number.isFinite(waitMs) ? waitMs : 2000,
+            timeoutMs: Number.isFinite(timeoutMs) ? timeoutMs : 30000,
+            useProxy
+        };
+    }
+
+    buildBrowserlessUrl(baseUrl, token) {
+        if (!baseUrl) return '';
+        if (!token) return baseUrl;
+        const joiner = baseUrl.includes('?') ? '&' : '?';
+        return `${baseUrl}${joiner}token=${encodeURIComponent(token)}`;
+    }
+
+    async fetchViaBrowserless(targetUrl, browserless, options = {}) {
+        const apiUrl = this.buildBrowserlessUrl(browserless.url, browserless.token);
+        if (!apiUrl) {
+            return { success: false, error: 'browserless_url_missing' };
+        }
+
+        const payload = {
+            url: targetUrl,
+            waitFor: browserless.waitMs,
+            gotoOptions: { waitUntil: 'networkidle2' }
+        };
+        if (options.userAgent) {
+            payload.userAgent = options.userAgent;
+        }
+        if (options.proxy) {
+            payload.proxy = options.proxy;
+        }
+        const headers = {};
+        if (options.userAgent) {
+            headers['User-Agent'] = options.userAgent;
+        }
+
+        try {
+            const response = await axios.post(apiUrl, payload, {
+                timeout: browserless.timeoutMs || options.timeout || 30000,
+                headers
+            });
+
+            const html = typeof response.data === 'string' ? response.data : '';
+            if (!html) {
+                return { success: false, error: 'browserless_empty_response' };
+            }
+
+            return { success: true, html };
+        } catch (error) {
+            const message = error?.message || 'browserless_request_failed';
+            return { success: false, error: message };
         }
     }
 

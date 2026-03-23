@@ -88,7 +88,13 @@ class DatabaseService {
     async getAutoContentSourceById(sourceId) {
         try {
             const [rows] = await this.pool.execute(
-                `SELECT id, name, url, website_preset_key, is_active
+                `SELECT id, name, url, website_preset_key, is_active,
+                        use_browser, max_pages, delay, scrape_depth,
+                        proxy_enabled, proxy_provider, proxy_config,
+                        selector_list_container, selector_list_item, selector_list_title,
+                        selector_list_link, selector_list_url, selector_list_date, selector_list_image,
+                        selector_title, selector_content, selector_image, selector_excerpt,
+                        selector_date, selector_author
                  FROM autocontent_sources
                  WHERE id = ?
                  LIMIT 1`,
@@ -102,6 +108,19 @@ class DatabaseService {
             return rows[0];
         } catch (error) {
             Logger.error('Failed to load AutoContent source', { sourceId, error: error.message });
+            // Fallback for older schemas without optional columns.
+            try {
+                const [rows] = await this.pool.execute(
+                    `SELECT id, name, url, website_preset_key, is_active
+                     FROM autocontent_sources
+                     WHERE id = ?
+                     LIMIT 1`,
+                    [sourceId]
+                );
+                return rows.length > 0 ? rows[0] : null;
+            } catch (inner) {
+                Logger.error('Fallback source query failed', { sourceId, error: inner.message });
+            }
             return null;
         }
     }
@@ -117,7 +136,13 @@ class DatabaseService {
         try {
             const [rows] = await this.withTimeout(
                 this.pool.execute(
-                    `SELECT id, name, url, website_preset_key, is_active
+                    `SELECT id, name, url, website_preset_key, is_active,
+                            use_browser, max_pages, delay, scrape_depth,
+                            proxy_enabled, proxy_provider, proxy_config,
+                            selector_list_container, selector_list_item, selector_list_title,
+                            selector_list_link, selector_list_url, selector_list_date, selector_list_image,
+                            selector_title, selector_content, selector_image, selector_excerpt,
+                            selector_date, selector_author
                      FROM autocontent_sources
                      WHERE website_preset_key = ? AND is_active = 1
                      ORDER BY id DESC
@@ -134,6 +159,23 @@ class DatabaseService {
             return rows[0];
         } catch (error) {
             Logger.error('Failed to resolve AutoContent source by preset key', { presetKey: key, error: error.message });
+            // Fallback for older schemas without optional columns.
+            try {
+                const [rows] = await this.withTimeout(
+                    this.pool.execute(
+                        `SELECT id, name, url, website_preset_key, is_active
+                         FROM autocontent_sources
+                         WHERE website_preset_key = ? AND is_active = 1
+                         ORDER BY id DESC
+                         LIMIT 1`,
+                        [key]
+                    ),
+                    15000
+                );
+                return rows.length > 0 ? rows[0] : null;
+            } catch (inner) {
+                Logger.error('Fallback preset query failed', { presetKey: key, error: inner.message });
+            }
             return null;
         }
     }

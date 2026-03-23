@@ -26,8 +26,10 @@ class ScraperOrchestrator {
         this.pipeline = CONFIG.sources?.[this.sourceKey]?.pipeline || 'articles';
         this.concurrency = options.concurrency || CONFIG.concurrency.maxParallelFetches;
         this.maxArticles = Number.isFinite(Number(options.max)) ? Number(options.max) : 10;
+        this.maxProvided = !!options.maxProvided;
         this.deviceUrl = options.deviceUrl ? String(options.deviceUrl).trim() : '';
         this.forceInsert = !!options.forceInsert;
+        this.requestDelayMs = 0;
 
         // Initialize agents
         this.tickerScraper = new TickerScraper(this.sourceKey);
@@ -135,6 +137,8 @@ class ScraperOrchestrator {
                 // Override homepage/base URLs from autocontent_sources
                 this.tickerScraper.sourceConfig = { ...(this.tickerScraper.sourceConfig || {}), ...overrideConfig };
                 this.articleScraper.sourceConfig = { ...(this.articleScraper.sourceConfig || {}), ...overrideConfig };
+
+                this.applySourceSettings(source);
 
                 const existingUrls = await this.db.getExistingUrlsBySource(this.sourceId);
                 await this.diffDetector.initialize(existingUrls);
@@ -369,6 +373,10 @@ class ScraperOrchestrator {
                 batch.map(link => this.processArticle(link))
             );
             results.push(...batchResults);
+
+            if (this.requestDelayMs > 0 && (i + this.concurrency) < links.length) {
+                await this.sleep(this.requestDelayMs);
+            }
         }
 
         return results;
@@ -430,6 +438,10 @@ class ScraperOrchestrator {
             const batch = links.slice(i, i + this.concurrency);
             const batchResults = await Promise.all(batch.map(link => this.processMobile(link)));
             results.push(...batchResults);
+
+            if (this.requestDelayMs > 0 && (i + this.concurrency) < links.length) {
+                await this.sleep(this.requestDelayMs);
+            }
         }
 
         return results;
@@ -583,6 +595,158 @@ class ScraperOrchestrator {
         }
         return Array.from(new Set(list.map(v => v.trim()).filter(Boolean)));
     }
+
+    applySourceSettings(source) {
+        const useBrowser = Number(source?.use_browser) === 1;
+        const proxyEnabled = Number(source?.proxy_enabled) === 1;
+        let proxyList = this.parseProxyConfig(source?.proxy_config);
+        if (proxyEnabled && proxyList.length === 0 && Array.isArray(CONFIG.proxy.list)) {
+            proxyList = CONFIG.proxy.list;
+        }
+        const delaySec = Number(source?.delay || 0);
+        const maxPages = Number(source?.max_pages || 0);
+
+        if (!this.maxProvided && Number.isFinite(maxPages) && maxPages > 0) {
+            this.maxArticles = maxPages;
+        }
+
+        if (Number.isFinite(delaySec) && delaySec > 0) {
+            this.requestDelayMs = Math.min(Math.max(delaySec * 1000, 200), 120000);
+        }
+
+        const fetchOptions = {
+            useBrowser,
+            proxyEnabled,
+            proxyList: proxyEnabled && proxyList.length > 0 ? proxyList : []
+        };
+
+        this.applySourceSelectors(source);
+        this.tickerScraper.setFetchOptions(fetchOptions);
+        this.articleScraper.setFetchOptions(fetchOptions);
+    }
+
+    applySourceSelectors(source) {
+        const hasSelector = (value) => String(value || '').trim() !== '';
+
+        const listItem = source?.selector_list_item;
+        const listContainer = source?.selector_list_container;
+        const listTitle = source?.selector_list_title;
+        const listLink = source?.selector_list_link || source?.selector_list_url;
+        const listDate = source?.selector_list_date;
+        const listImage = source?.selector_list_image;
+
+        const articleTitle = source?.selector_title;
+        const articleContent = source?.selector_content;
+        const articleImage = source?.selector_image;
+        const articleExcerpt = source?.selector_excerpt;
+        const articleDate = source?.selector_date;
+        const articleAuthor = source?.selector_author;
+
+        const tickerOverride = {};
+        if (hasSelector(listItem) || hasSelector(listContainer)) {
+            tickerOverride.primary = hasSelector(listItem) ? String(listItem) : String(listContainer);
+        }
+        if (hasSelector(listTitle)) {
+            tickerOverride.title = String(listTitle);
+        }
+        if (hasSelector(listLink)) {
+            tickerOverride.link = String(listLink);
+        }
+        if (hasSelector(listDate)) {
+            tickerOverride.date = String(listDate);
+        }
+        if (hasSelector(listImage)) {
+            tickerOverride.image = String(listImage);
+        }
+
+        const articleOverride = {};
+        if (hasSelector(articleTitle)) {
+            articleOverride.title = { primary: String(articleTitle), fallback: [] };
+        }
+        if (hasSelector(articleContent)) {
+            articleOverride.content = { primary: String(articleContent), fallback: [] };
+        }
+        if (hasSelector(articleImage)) {
+            articleOverride.image = { primary: String(articleImage), fallback: [] };
+        }
+        if (hasSelector(articleExcerpt)) {
+            articleOverride.subtitle = { primary: String(articleExcerpt), fallback: [] };
+        }
+        if (hasSelector(articleDate)) {
+            articleOverride.published = { primary: String(articleDate), fallback: [] };
+        }
+        if (hasSelector(articleAuthor)) {
+            articleOverride.author = { primary: String(articleAuthor), fallback: [] };
+        }
+
+        if (Object.keys(tickerOverride).length > 0) {
+            this.tickerScraper.selectors = {
+                ...(this.tickerScraper.selectors || {}),
+                ticker: {
+                    ...(this.tickerScraper.selectors?.ticker || {}),
+                    ...tickerOverride
+                }
+            };
+        }
+
+        if (Object.keys(articleOverride).length > 0) {
+            this.articleScraper.selectors = {
+                ...(this.articleScraper.selectors || {}),
+                article: {
+                    ...(this.articleScraper.selectors?.article || {}),
+                    ...articleOverride
+                }
+            };
+        }
+    }
+
+    parseProxyConfig(raw) {
+        if (!raw) return [];
+        const text = String(raw || '').trim();
+        if (!text) return [];
+
+        try {
+            const parsed = JSON.parse(text);
+            if (Array.isArray(parsed)) {
+                return parsed
+                    .map(item => {
+                        if (typeof item === 'string') return item;
+                        if (item && typeof item === 'object') {
+                            return item.url || item.proxy || '';
+                        }
+                        return '';
+                    })
+                    .map(v => String(v || '').trim())
+                    .filter(Boolean);
+            }
+            if (parsed && typeof parsed === 'object') {
+                const list = parsed.list || parsed.proxies || parsed.items;
+                if (Array.isArray(list)) {
+                    return list
+                        .map(item => {
+                            if (typeof item === 'string') return item;
+                            if (item && typeof item === 'object') {
+                                return item.url || item.proxy || '';
+                            }
+                            return '';
+                        })
+                        .map(v => String(v || '').trim())
+                        .filter(Boolean);
+                }
+            }
+        } catch (e) {
+            // Not JSON, try CSV/line-separated.
+        }
+
+        return text
+            .split(/[\r\n,]+/)
+            .map(v => v.trim())
+            .filter(Boolean);
+    }
+
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
 }
 
 export default ScraperOrchestrator;
@@ -639,6 +803,7 @@ async function main() {
             CONFIG.http.timeout = timeoutMs;
         }
 
+        const maxProvided = args.some(a => a.startsWith('--max='));
         const options = {
             source: args.find(a => a.startsWith('--source='))?.split('=')[1] || CONFIG.source.defaultSource,
             sourceId: parseInt(args.find(a => a.startsWith('--sourceId='))?.split('=')[1]),
@@ -648,7 +813,8 @@ async function main() {
             concurrency: parseInt(args.find(a => a.startsWith('--concurrency='))?.split('=')[1]) || undefined,
             max: parseInt(args.find(a => a.startsWith('--max='))?.split('=')[1]) || 10,
             deviceUrl: args.find(a => a.startsWith('--deviceUrl='))?.split('=')[1] || '',
-            forceInsert: args.includes('--forceInsert')
+            forceInsert: args.includes('--forceInsert'),
+            maxProvided
         };
 
         // Validate arguments
