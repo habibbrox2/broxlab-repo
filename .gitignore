@@ -5,6 +5,7 @@
 # IMPORTANT: This file protects sensitive server data from being pushed to git
 # Includes: secrets, database backups, user data, logs, cache, uploads
 # ═══════════════════════════════════════════════════════════════════╝
+# Test commit for deploy action
 
 # ─────────────────────────────────────────────────────────────────
 #  1. DEPENDENCIES (Generated, not committed)
