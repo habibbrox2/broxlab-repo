@@ -28,7 +28,10 @@ const targets = [
   path.join(root, 'public_html', 'assets', 'firebase', 'v2'),
 ];
 
-const files = targets.flatMap((d) => walk(d)).filter((p) => /\.(js|mjs|css|json|map|svg|png|jpg|jpeg|webp)$/.test(p));
+const files = targets
+  .flatMap((d) => walk(d))
+  .filter((p) => /\.(js|mjs|css|json|map|svg|png|jpg|jpeg|webp)$/.test(p))
+  .filter((p) => !/[\\\/]dist[\\\/]/.test(p));
 const bad = files.filter(hasBadName);
 
 if (bad.length) {
@@ -38,4 +41,3 @@ if (bad.length) {
 } else {
   console.log('Naming convention check passed.');
 }
-

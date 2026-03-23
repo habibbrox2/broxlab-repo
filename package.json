@@ -25,13 +25,13 @@
         "build:css:watch": "node build/esbuild-css.mjs --watch",
         "clean:firebase:v2:dist": "node -e \"require('fs').rmSync('public_html/assets/firebase/v2/dist', { recursive: true, force: true })\"",
         "clean:build": "node -e \"require('fs').rmSync('public_html/assets/firebase/v2/dist', { recursive: true, force: true }); require('fs').rmSync('public_html/assets/ai-assistant/dist', { recursive: true, force: true }); require('fs').rmSync('public_html/assets/js/dist', { recursive: true, force: true })\"",
-        "naming:check": "node build/check-naming-conventions.mjs",
+        "naming:check": "node build/Scripts/check-naming-conventions.mjs",
         "check:assets": "npm run naming:check -- --changed && npm run check:duplicates && npm run check:firebase:dist",
         "check:scripts": "node build/Scripts/check-script-loading.mjs",
         "check:dist:budget": "node build/Scripts/check-dist-file-budget.mjs",
         "check:duplicates": "node build/Scripts/check-asset-duplicates.mjs",
         "check:firebase:dist": "node build/Scripts/check-firebase-dist-chunks.mjs",
-        "serve": "http-server public_html -p 8000",
+        "serve": "serve public_html -l 8000",
         "firebase:providers:sync": "node scripts/firebase/activate-firebaseui-providers.mjs",
         "lint": "eslint --no-error-on-unmatched-pattern --config build/eslint.config.cjs \"public_html/assets/js/**/*.js\" \"public_html/assets/firebase/v2/**/*.js\" \"public_html/assets/ai-assistant/**/*.js\" \"build/Scripts/**/*.mjs\" \"build/esbuild.config.js\" \"build/esbuild-firebase.mjs\" \"build/esbuild-assistants.mjs\"",
         "e2e:ai-system": "node scripts/e2e/ai-system-sanity.mjs",
@@ -59,30 +59,24 @@
         "@anthropic-ai/sdk": "^0.80.0",
         "@google/generative-ai": "^0.24.1",
         "cors": "^2.8.5",
-        "domhandler": "^5.0.3",
         "domutils": "^3.2.0",
         "express": "^4.21.0",
         "express-rate-limit": "^7.0.0",
         "he": "^1.2.0",
         "helmet": "^7.1.0",
         "htmlparser2": "^11.0.0",
-        "linkedom": "^0.16.11",
         "marked": "^15.0.0",
         "turndown": "^7.2.0",
         "@heyputer/puter.js": "^2.2.11",
-        "@langchain/community": "^1.1.24",
-        "@langchain/openai": "^1.3.0",
-        "@openrouter/sdk": "^0.9.11",
+        "openai": "^4.0.0",
         "axios": "^1.13.6",
         "bootstrap-icons": "^1.13.1",
         "bullmq": "^5.71.0",
         "cheerio": "^1.2.0",
         "firebase": "^12.9.0",
         "ioredis": "^5.10.0",
-        "langchain": "^1.2.34",
         "mysql2": "^3.20.0",
         "qdrant-client": "^0.0.1",
-        "shelljs": "^0.10.0",
         "zod": "^3.23.8",
         "pdf-parse": "^2.4.5",
         "pdf-lib": "^1.17.1",
@@ -90,7 +84,7 @@
         "tesseract.js": "^5.1.1",
         "sharp": "^0.33.5",
         "@xenova/transformers": "^2.17.2",
-        "multer": ">=2.1.1",
+        "multer": "^2.1.1",
         "uuid": "^11.0.5",
         "winston": "^3.17.0",
         "fs-extra": "^11.2.0"
@@ -100,13 +94,12 @@
         "puppeteer-extra-plugin-stealth": "^2.11.2"
     },
     "devDependencies": {
-        "browserslist": "^4.28.1",
-        "caniuse-lite": "latest",
         "esbuild": "^0.27.3",
-        "eslint": "8.57.1",
+        "eslint": "^9.0.0",
+        "globals": "^15.14.0",
         "npm-run-all": "^4.1.5",
         "tailwindcss": "^3.4.17",
-        "http-server": "^14.1.1"
+        "serve": "^14.2.0"
     },
     "engines": {
         "node": ">=20.0.0"
@@ -117,5 +110,9 @@
         "Firefox ESR",
         "not dead",
         "not IE 11"
-    ]
+    ],
+    "overrides": {
+        "@langchain/core": "^1.1.33",
+        "sharp": "^0.33.5"
+    }
 }
