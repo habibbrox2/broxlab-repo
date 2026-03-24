@@ -2,9 +2,9 @@ import { Queue, QueueEvents } from 'bullmq';
 import redis from './redis.js';
 
 export const QUEUE_NAMES = {
-    JOB: 'scrape:job',
-    RETRY: 'scrape:retry',
-    FAILED: 'scrape:failed'
+    JOB: 'scrape-job',
+    RETRY: 'scrape-retry',
+    FAILED: 'scrape-failed'
 };
 
 export const scrapeQueue = new Queue(QUEUE_NAMES.JOB, {
