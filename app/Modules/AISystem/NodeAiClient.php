@@ -11,9 +11,9 @@ class NodeAiClient
 
     public function __construct(array $options = [])
     {
-        $sharedBaseUrl = $options['baseUrl'] ?? (getenv('NODEJS_SERVER_URL') ?: '');
-        $aiBaseUrl = $options['aiBaseUrl'] ?? (getenv('NODEJS_AI_SERVER_URL') ?: '');
-        $ragBaseUrl = $options['ragBaseUrl'] ?? (getenv('NODEJS_RAG_SERVER_URL') ?: '');
+        $sharedBaseUrl = $options['baseUrl'] ?? (getenv('NODEJS_SERVER_URL') ?: getenv('APP_URL') ?: '');
+        $aiBaseUrl = $options['aiBaseUrl'] ?? (getenv('NODEJS_AI_SERVER_URL') ?: getenv('APP_URL') ?: '');
+        $ragBaseUrl = $options['ragBaseUrl'] ?? (getenv('NODEJS_RAG_SERVER_URL') ?: getenv('APP_URL') ?: '');
 
         $this->aiBaseUrl = rtrim(
             (string)($aiBaseUrl ?: ($sharedBaseUrl ?: 'http://localhost:3001')),

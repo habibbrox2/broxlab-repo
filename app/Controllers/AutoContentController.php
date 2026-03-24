@@ -106,6 +106,61 @@ $router->get('/admin/autocontent', ['middleware' => ['auth', 'admin_only']], fun
 });
 
 /**
+ * GET /admin/autocontent/health
+ * Admin-only JSON health check for dashboard.
+ */
+$router->get('/admin/autocontent/health', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    $dbOk = false;
+    try {
+        $dbOk = $mysqli->ping();
+    } catch (Throwable $e) {
+        $dbOk = false;
+    }
+
+    $checkUrl = function (string $url): array {
+        $url = trim($url);
+        if ($url === '') {
+            return ['status' => 'not_configured'];
+        }
+        $healthUrl = rtrim($url, '/') . '/health';
+        if (!function_exists('curl_init')) {
+            return ['status' => 'curl_unavailable'];
+        }
+        $ch = curl_init($healthUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+        $body = curl_exec($ch);
+        $err = curl_error($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($body === false || $err) {
+            return ['status' => 'unreachable', 'error' => $err ?: 'request_failed'];
+        }
+        $decoded = json_decode((string)$body, true);
+        if ($code >= 200 && $code < 300 && is_array($decoded)) {
+            return ['status' => 'ok'];
+        }
+        return ['status' => 'bad_response', 'http' => $code];
+    };
+
+    $directUrl = getenv('SCRAPER_DIRECT_API_URL') ?: getenv('APP_URL') ?: '';
+    $queueUrl = getenv('SCRAPER_API_URL') ?: '';
+
+    $payload = [
+        'success' => true,
+        'db' => $dbOk ? 'ok' : 'down',
+        'direct_api' => $checkUrl((string)$directUrl),
+        'queue_api' => $checkUrl((string)$queueUrl),
+        'timestamp' => date('c')
+    ];
+
+    header('Content-Type: application/json');
+    echo json_encode($payload);
+});
+
+/**
  * Scrape Logs (read-only)
  * GET /admin/autocontent/logs
  */

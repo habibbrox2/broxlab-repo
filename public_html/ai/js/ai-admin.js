@@ -499,6 +499,101 @@ if (!window.BroxAdminInstance) {
             this.renderHistory();
             this.updateContext();
             this.startInactivityTimer();
+            this.initResizer();
+        }
+
+        // ── Resizer for AI Chat Panel ─────────────────────────────────────────────
+        initResizer() {
+            const shell = this.nodes?.shell;
+            if (!shell) return;
+
+            const resizer = shell.querySelector('[data-resizer="width"]');
+            if (!resizer) {
+                // Create resizer if not exists in HTML
+                const newResizer = document.createElement('div');
+                newResizer.className = 'admin-assistant-chat-resizer';
+                newResizer.setAttribute('data-resizer', 'width');
+                newResizer.setAttribute('aria-hidden', 'true');
+                shell.insertBefore(newResizer, shell.firstChild);
+            }
+
+            this._resizerState = {
+                isResizing: false,
+                startX: 0,
+                startWidth: 0,
+                minWidth: 320,
+                maxWidth: 800,
+                storageKey: 'brox.admin.ai-shell.width'
+            };
+
+            const state = this._resizerState;
+
+            // Load saved width
+            try {
+                const saved = localStorage.getItem(state.storageKey);
+                if (saved) {
+                    const width = parseInt(saved, 10);
+                    if (!isNaN(width) && width >= state.minWidth && width <= state.maxWidth) {
+                        shell.style.width = width + 'px';
+                    }
+                }
+            } catch (e) { /* ignore */ }
+
+            const onPointerDown = (e) => {
+                if (window.innerWidth < 576) return; // Disable on mobile
+                state.isResizing = true;
+                state.startX = e.clientX;
+                state.startWidth = shell.offsetWidth;
+                shell.setPointerCapture(e.pointerId);
+                shell.classList.add('is-resizing');
+                document.body.style.cursor = 'ew-resize';
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+            };
+
+            const onPointerMove = (e) => {
+                if (!state.isResizing) return;
+                const delta = e.clientX - state.startX;
+                let newWidth = state.startWidth + delta;
+                newWidth = Math.max(state.minWidth, Math.min(state.maxWidth, newWidth));
+                shell.style.width = newWidth + 'px';
+            };
+
+            const onPointerUp = (e) => {
+                if (!state.isResizing) return;
+                state.isResizing = false;
+                shell.classList.remove('is-resizing');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                try {
+                    shell.releasePointerCapture(e.pointerId);
+                } catch (err) { /* ignore */ }
+
+                // Save width to localStorage
+                const currentWidth = shell.offsetWidth;
+                try {
+                    localStorage.setItem(state.storageKey, String(currentWidth));
+                } catch (err) { /* ignore */ }
+            };
+
+            const onDblClick = () => {
+                if (window.innerWidth < 576) return;
+                shell.style.width = '';
+                try {
+                    localStorage.removeItem(state.storageKey);
+                } catch (err) { /* ignore */ }
+            };
+
+            // Use existing or new resizer
+            const finalResizer = shell.querySelector('[data-resizer="width"]');
+            if (finalResizer) {
+                finalResizer.addEventListener('pointerdown', onPointerDown);
+                finalResizer.addEventListener('dblclick', onDblClick);
+            }
+
+            shell.addEventListener('pointermove', onPointerMove);
+            shell.addEventListener('pointerup', onPointerUp);
+            shell.addEventListener('pointercancel', onPointerUp);
         }
 
         ensureProvidersBootstrapped() {

@@ -298,6 +298,50 @@ body {
     transform: scale(1);
 }
 
+/* --- Admin Copilot Resizer --- */
+.admin-assistant-chat-resizer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: ew-resize;
+    background: transparent;
+    z-index: 100;
+    transition: background 0.2s ease;
+}
+
+.admin-assistant-chat-resizer::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.admin-assistant-chat-resizer:hover::before,
+.admin-assistant-chat-resizer:active::before {
+    background: var(--brox-ai-primary);
+    height: 60px;
+    box-shadow: 0 0 8px var(--brox-ai-primary);
+}
+
+.admin-assistant-chat-resizer:active {
+    background: rgba(37, 99, 235, 0.1);
+}
+
+/* Hide resizer on mobile */
+@media (max-width: 991.98px) {
+    .admin-assistant-chat-resizer {
+        display: none;
+    }
+}
+
 /* --- Admin Copilot Sidebar --- */
 #adminAiShell {
     position: fixed;

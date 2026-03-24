@@ -35,6 +35,10 @@
   border-color: var(--primary-color);
   box-shadow: 0 12px 24px rgba(99,102,241,0.15);
 }
+.cc-card:focus-within {
+  outline: 2px solid var(--primary-400);
+  outline-offset: 2px;
+}
 
 /* ── Image Section ── */
 .cc-image-section {
@@ -680,9 +684,16 @@
   background: var(--card-light); border: 1px solid var(--border-light);
   border-left: 4px solid transparent;
   box-shadow: 0 10px 22px rgba(15,23,42,0.08);
-  transition: transform 0.28s ease, box-shadow 0.28s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.home-services-section .services-card-right:hover { transform: translateY(-6px); box-shadow: 0 16px 30px rgba(15,23,42,0.14); }
+.home-services-section .services-card-right:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 30px rgba(15,23,42,0.14);
+}
+.home-services-section .services-card-right:focus-within {
+  outline: 2px solid var(--primary-400);
+  outline-offset: 2px;
+}
 .home-services-section .services-card-right.blue   { border-left-color: #2563eb; }
 .home-services-section .services-card-right.green  { border-left-color: #10b981; }
 .home-services-section .services-card-right.yellow { border-left-color: #f59e0b; }
@@ -698,12 +709,25 @@
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.24);
   box-shadow: 0 12px 24px rgba(15,23,42,0.14);
-  transition: all 0.28s ease;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.home-categories-section .category-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 20px 36px rgba(15,23,42,0.22);
+}
+.home-categories-section .category-card:focus-within {
+  outline: 3px solid rgba(255,255,255,0.5);
+  outline-offset: 2px;
 }
 .home-categories-section .category-card::before {
   content: ""; position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(15,23,42,0.04) 0%, rgba(15,23,42,0.42) 100%);
   pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.home-categories-section .category-card:hover::before {
+  opacity: 0.85;
+}
 }
 .home-categories-section .category-card > * { position: relative; z-index: 1; }
 .home-categories-section .category-card:hover { transform: translateY(-7px) scale(1.01); box-shadow: 0 20px 34px rgba(15,23,42,0.2); }

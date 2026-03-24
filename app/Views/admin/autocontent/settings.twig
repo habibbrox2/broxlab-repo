@@ -64,7 +64,7 @@
                             <i class="bi bi-x-circle-fill me-1"></i>
                             {{ browser_status.message }}
                         </div>
-                        <div class="small text-muted mb-2">Install Node.js (>=20) and Puppeteer on the server to enable WAF bypass.</div>
+                        <div class="small text-muted mb-2">Shared hosting uses HTTP-only scraping; WAF/JS pages may require PHP fallback.</div>
                     {% endif %}
                     {% if browser_status.details %}
                         <div class="small text-muted">{{ browser_status.details }}</div>

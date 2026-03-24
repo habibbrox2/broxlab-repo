@@ -18,6 +18,14 @@ app.use(rateLimit({
     max: Number(process.env.SCRAPER_RATE_LIMIT || 60)
 }));
 
+app.get('/health', (req, res) => {
+    return res.json({
+        success: true,
+        service: 'scraper-queue-api',
+        timestamp: new Date().toISOString()
+    });
+});
+
 app.post('/scrape', async (req, res) => {
     try {
         const url = String(req.body?.url || '');

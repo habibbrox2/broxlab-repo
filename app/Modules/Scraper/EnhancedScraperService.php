@@ -195,7 +195,10 @@ class EnhancedScraperService
         $html = (string)$response->getBody();
         $headers = $response->getHeaders();
 
-        if (WafDetector::detect($html, $status, $headers)) {
+        // Use advanced WAF detection
+        $wafDetection = AdvancedWafDetector::detectAdvanced($html, $status, $headers);
+
+        if ($wafDetection['is_waf']) {
             if ($this->browserScraper && $this->browserScraper->isAvailable()) {
                 $browser = $this->browserScraper->fetchHtml($url);
                 if ($browser['success'] ?? false) {
@@ -211,7 +214,7 @@ class EnhancedScraperService
 
             return [
                 'success' => false,
-                'error' => 'WAF detected but Puppeteer unavailable. Please install Puppeteer/browser runtime.',
+                'error' => 'WAF detected. Shared hosting uses HTTP-only scraping; try PHP fallback.',
                 'error_code' => 'waf_browser_unavailable',
                 'status' => $status,
                 'waf_detected' => true,
@@ -601,7 +604,7 @@ class EnhancedScraperService
             $result['errors'][] = 'Failed to scrape list: ' . ($listData['error'] ?? 'Unknown error');
             return $result;
         }
-        
+
         try {
             $payload = $this->fetchHtmlSmart($listUrl);
             if (!($payload['success'] ?? false)) {
@@ -630,7 +633,7 @@ class EnhancedScraperService
                 if ($items->count() > 0) {
                     $items->each(function ($node) use (&$articles, $finalUrl) {
                         $nodeCrawler = new Crawler($node);
-                        
+
                         // Try to find the article link
                         $linkNode = $nodeCrawler->filter('a');
                         if ($linkNode->count() === 0) {
@@ -652,7 +655,7 @@ class EnhancedScraperService
                         if ($titleNode->count() > 0) {
                             $title = trim($titleNode->first()->text());
                         }
-                        
+
                         // Try SubcatList-detail h5 if not found
                         if (empty($title)) {
                             $titleNode = $nodeCrawler->filter('.SubcatList-detail h5');
@@ -697,7 +700,7 @@ class EnhancedScraperService
                             'category' => $category
                         ];
                     });
-                    
+
                     if (!empty($articles)) {
                         $itemsFound = true;
                         break;
@@ -757,7 +760,7 @@ class EnhancedScraperService
                 if ($items->count() > 0) {
                     $items->each(function ($node) use (&$articles, $finalUrl) {
                         $nodeCrawler = new Crawler($node);
-                        
+
                         // Try to find the article link
                         $linkNode = $nodeCrawler->filter('a');
                         if ($linkNode->count() === 0) {
@@ -779,7 +782,7 @@ class EnhancedScraperService
                         if ($titleNode->count() > 0) {
                             $title = trim($titleNode->first()->text());
                         }
-                        
+
                         // Try SubcatList-detail h5 if not found
                         if (empty($title)) {
                             $titleNode = $nodeCrawler->filter('.SubcatList-detail h5');
@@ -824,7 +827,7 @@ class EnhancedScraperService
                             'category' => $category
                         ];
                     });
-                    
+
                     if (!empty($articles)) {
                         $itemsFound = true;
                         break;

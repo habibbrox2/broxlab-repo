@@ -15,7 +15,7 @@ class KnowledgeBase {
     constructor(options = {}) {
         this.phpBridge = options.phpBridge;
         this.useQdrant = options.useQdrant ?? true;
-        this.qdrantUrl = options.qdrantUrl || process.env.QDRANT_URL || 'http://localhost:6333';
+        this.qdrantUrl = options.qdrantUrl || process.env.QDRANT_URL || process.env.APP_URL || 'http://localhost:6333';
         this.qdrantApiKey = options.qdrantApiKey || process.env.QDRANT_API_KEY || '';
         this.collectionName = options.collectionName || 'ai_knowledge_base';
     }

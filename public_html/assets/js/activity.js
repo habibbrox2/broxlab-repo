@@ -32,7 +32,7 @@
         queueProcessorId: null,
         fullTrackingTimerId: null,
         ajaxTrackingInstalled: false
-    }; 
+    };
 
     function runWhenReady(fn) {
         if (document.readyState === 'loading') {
@@ -147,7 +147,7 @@
         if (!obj || typeof obj !== 'object') return '{}';
         try {
             return Object.keys(obj).length ? JSON.stringify(obj) : '{}';
-        } catch (_error) {
+        } catch (error) {
             return '{}';
         }
     }
@@ -183,7 +183,7 @@
             });
             xhr.onerror = onError;
             xhr.send(formData);
-        } catch (_error) {
+        } catch (error) {
             onError();
         }
     }
@@ -290,7 +290,7 @@
                     response_size: jsonText.length,
                     response_text: jsonText.slice(0, 500)
                 };
-            } catch (_error) {
+            } catch (error) {
                 return {
                     response_size: 0,
                     response_text: '[json]'

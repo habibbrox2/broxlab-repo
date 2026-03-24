@@ -108,7 +108,7 @@
   function safeLocalStorageGet(key) {
     try {
       return window.localStorage.getItem(key);
-    } catch (_error) {
+    } catch (error) {
       return null;
     }
   }
@@ -116,7 +116,7 @@
   function safeLocalStorageSet(key, value) {
     try {
       window.localStorage.setItem(key, value);
-    } catch (_error) {
+    } catch (error) {
       // Ignore storage failures.
     }
   }

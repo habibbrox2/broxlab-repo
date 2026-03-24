@@ -35,7 +35,7 @@ export const FEATURE_FLAGS = {
     ENABLE_FALLBACK: process.env.ENABLE_FALLBACK !== 'false',
 
     // ========== NEW FEATURES ==========
-    
+
     // Enable CV Enhancement (Node.js AI)
     CV_ENHANCEMENT_ENABLED: process.env.CV_ENHANCEMENT_ENABLED === 'true',
 
@@ -55,7 +55,7 @@ export const FEATURE_FLAGS = {
     USE_NODEJS_AI_SERVER: process.env.USE_NODEJS_AI_SERVER === 'true',
 
     // Node.js AI server URL (for PHP to call)
-    NODEJS_AI_SERVER_URL: process.env.NODEJS_AI_SERVER_URL || 'http://localhost:3001',
+    NODEJS_AI_SERVER_URL: process.env.NODEJS_AI_SERVER_URL || process.env.APP_URL || 'http://localhost:3001',
 };
 
 // =============================================================================
@@ -196,7 +196,7 @@ export const PHP_BACKEND = {
 export const RAG_CONFIG = {
     // Vector store (qdrant)
     qdrant: {
-        url: process.env.QDRANT_URL || 'http://localhost:6333',
+        url: process.env.QDRANT_URL || process.env.APP_URL || 'http://localhost:6333',
         apiKey: process.env.QDRANT_API_KEY || '',
         collectionName: process.env.QDRANT_COLLECTION || 'broxlab_knowledge',
     },
