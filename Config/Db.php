@@ -68,39 +68,60 @@ if (!$dbName || !$dbUser) {
 }
 
 // ---------------------------------------------------------------------------
-// Database connection with enhanced error logging
+// Database connection with enhanced error logging and retry logic
 // ---------------------------------------------------------------------------
 // Configure mysqli to throw exceptions instead of warnings
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-try {
-    $mysqli = new mysqli($dbHost, $dbUser, $dbPass, $dbName);
-    $mysqli->set_charset($dbCharset);
+$maxAttempts = 3;
+$attempt = 0;
+$connected = false;
+$lastException = null;
 
-    // Log successful connection in development mode
-    if ($IS_DEV && function_exists('logDebug')) {
-        logDebug('Database connection successful', [
-            'host' => $dbHost,
-            'database' => $dbName,
-            'charset' => $dbCharset
-        ]);
+while ($attempt < $maxAttempts && !$connected) {
+    $attempt++;
+    try {
+        $mysqli = new mysqli($dbHost, $dbUser, $dbPass, $dbName);
+        $mysqli->set_charset($dbCharset);
+        $connected = true;
+
+        // Log successful connection in development mode
+        if ($IS_DEV && function_exists('logDebug')) {
+            logDebug('Database connection successful', [
+                'host' => $dbHost,
+                'database' => $dbName,
+                'charset' => $dbCharset,
+                'attempt' => $attempt
+            ]);
+        }
+        break;
+    } catch (mysqli_sql_exception $e) {
+        $lastException = $e;
+        if ($attempt < $maxAttempts) {
+            // Wait before retrying (2 seconds)
+            sleep(2);
+            continue;
+        }
     }
-} catch (mysqli_sql_exception $e) {
+}
+
+if (!$connected) {
     // Log the detailed database connection error
     $errorDetails = [
-        'error_code' => $e->getCode(),
-        'error_message' => $e->getMessage(),
+        'error_code' => $lastException->getCode(),
+        'error_message' => $lastException->getMessage(),
         'host' => $dbHost,
         'database' => $dbName,
         'user' => $dbUser,
-        'timestamp' => date('Y-m-d H:i:s')
+        'timestamp' => date('Y-m-d H:i:s'),
+        'attempts' => $attempt
     ];
 
     // Log to error log file
     if (function_exists('logError')) {
         logError('Database connection failed', 'CRITICAL', [
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
+            'file' => $lastException->getFile(),
+            'line' => $lastException->getLine(),
             'data' => $errorDetails
         ]);
     } else {
@@ -110,14 +131,10 @@ try {
 
     // Show generic error message (no database details exposed)
     if ($IS_DEV) {
-        die('Database connection failed. Check error logs for details.');
+        die('Database connection failed after ' . $attempt . ' attempts. Check error logs for details.');
     } else {
         die('Unable to connect to database. Please try again later.');
     }
-} catch (Throwable $e) {
-    // Catch any other unexpected errors
-    error_log('[DB CONNECTION ERROR] ' . $e->getMessage());
-    die($IS_DEV ? 'Database connection error. Check logs.' : 'Database connection failed.');
 }
 
 // ---------------------------------------------------------------------------

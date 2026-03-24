@@ -336,7 +336,7 @@ class CronWorker
             if ($categorySelector !== '') {
                 $nodes = $crawler->filter($categorySelector);
                 if ($nodes->count() > 0) {
-                    $text = trim($nodes->first()->text(''));
+                    $text = trim((string)($nodes->first()->text('') ?? ''));
                     if ($text !== '') {
                         $categories = $this->normalizeTaxonomyList($text);
                     }
@@ -349,7 +349,7 @@ class CronWorker
                     $collected = [];
                     foreach ($nodes as $node) {
                         $nodeCrawler = new Crawler($node);
-                        $val = trim($nodeCrawler->text(''));
+                        $val = trim((string)($nodeCrawler->text('') ?? ''));
                         if ($val !== '') {
                             $collected[] = $val;
                         }
@@ -471,7 +471,7 @@ class CronWorker
             }
 
             $items[] = [
-                'title' => trim($linkNode->first()->text('')),
+                'title' => trim((string)($linkNode->first()->text('') ?? '')),
                 'url' => $this->resolveUrl($href, $source['url']),
                 'excerpt' => $this->extractOptionalText($nodeCrawler, $source['selector_excerpt'] ?? ''),
                 'published_at' => $this->extractOptionalText($nodeCrawler, $source['selector_date'] ?? ''),
@@ -555,7 +555,7 @@ class CronWorker
         try {
             $node = $crawler->filter($selector);
             if ($node->count() > 0) {
-                return trim($node->first()->text(''));
+                return trim((string)($node->first()->text('') ?? ''));
             }
         } catch (Throwable $e) {
             // ignore selector errors

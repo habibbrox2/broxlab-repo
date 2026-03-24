@@ -77,7 +77,7 @@ class ContentNormalizer
     private function normalizeTitle(string $title): string
     {
         // Trim whitespace
-        $title = trim($title);
+        $title = trim((string)($title ?? ''));
 
         // Remove extra spaces
         $title = preg_replace('/\s+/', ' ', $title);
@@ -184,7 +184,7 @@ class ContentNormalizer
         $content = preg_replace('/\s+/', ' ', $content);
         $content = preg_replace('/>\s+</', '><', $content);
 
-        return trim($content);
+        return trim((string)($content ?? ''));
     }
 
     /**
@@ -220,8 +220,8 @@ class ContentNormalizer
     {
         // Use existing excerpt if valid
         if (!empty($existingExcerpt)) {
-            $excerpt = strip_tags($existingExcerpt);
-            $excerpt = trim($excerpt);
+            $excerpt = strip_tags((string)($existingExcerpt ?? ''));
+            $excerpt = trim((string)($excerpt ?? ''));
             if (strlen($excerpt) > 50) {
                 return substr($excerpt, 0, 200);
             }
@@ -331,7 +331,7 @@ class ContentNormalizer
         $issues = [];
 
         // Check title
-        $title = trim($article['title'] ?? '');
+        $title = trim((string)($article['title'] ?? ''));
         if (empty($title)) {
             $issues[] = 'Title is empty';
         } elseif (strlen($title) < 10) {
@@ -352,8 +352,8 @@ class ContentNormalizer
             }
 
             // Check for meaningful content (not just HTML tags)
-            $plainText = strip_tags($content);
-            if (strlen(trim($plainText)) < 50) {
+            $plainText = strip_tags((string)($content ?? ''));
+            if (strlen(trim((string)($plainText ?? ''))) < 50) {
                 $issues[] = 'Content appears to be mostly empty or just HTML';
             }
         }
