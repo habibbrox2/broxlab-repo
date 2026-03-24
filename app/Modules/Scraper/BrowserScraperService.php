@@ -12,7 +12,7 @@ use Symfony\Component\DomCrawler\Crawler;
 /**
  * BrowserScraperService.php
  * Handles scraping for JavaScript-rendered websites.
- * Supports calling a local Node.js script or a remote Browserless API.
+ * Disabled on shared hosting (HTTP-only mode).
  */
 class BrowserScraperService
 {
@@ -26,33 +26,14 @@ class BrowserScraperService
 
     public function __construct(array $config = [])
     {
-        $envBrowserlessUrl = (string)(getenv('BROWSERLESS_URL') ?: '');
-        $envBrowserlessToken = (string)(getenv('BROWSERLESS_TOKEN') ?: '');
-        $envBrowserlessTimeout = (string)(getenv('BROWSERLESS_TIMEOUT_MS') ?: '');
-        $envBrowserlessWait = (string)(getenv('BROWSERLESS_WAIT_MS') ?: '');
-
         $this->config = $config + [
             'method' => 'local', // 'api' or 'local'
-            'api_url' => '', // Browserless or custom API URL
+            'api_url' => '',
             'api_key' => '',
             'local_path' => dirname(__DIR__, 3) . '/scripts/browser_scraper.js',
             'timeout' => 30,
             'wait_ms' => 2000,
         ];
-
-        if ($envBrowserlessUrl !== '') {
-            $this->config['method'] = 'api';
-            $this->config['api_url'] = $envBrowserlessUrl;
-            if ($envBrowserlessToken !== '') {
-                $this->config['api_key'] = $envBrowserlessToken;
-            }
-        }
-        if ($envBrowserlessTimeout !== '') {
-            $this->config['timeout'] = (int)$envBrowserlessTimeout / 1000;
-        }
-        if ($envBrowserlessWait !== '') {
-            $this->config['wait_ms'] = (int)$envBrowserlessWait;
-        }
 
         $this->client = new Client([
             'timeout' => $this->config['timeout'],
@@ -129,7 +110,7 @@ class BrowserScraperService
     }
 
     /**
-     * Fetch HTML via an external API (e.g., Browserless).
+     * Fetch HTML via an external API.
      */
     private function fetchViaApi(string $url): string
     {
@@ -155,23 +136,7 @@ class BrowserScraperService
      */
     private function fetchViaLocal(string $url): string
     {
-        $nodePath = 'node'; // Assume node is in PATH
-        $scriptPath = $this->config['local_path'];
-
-        if (!file_exists($scriptPath)) {
-            // Force create a basic script if it doesn't exist? 
-            // Better to log an error and suggest installation.
-            throw new \Exception("Local browser scraper script not found at {$scriptPath}");
-        }
-
-        $command = sprintf('%s %s %s', escapeshellarg($nodePath), escapeshellarg($scriptPath), escapeshellarg($url));
-        $output = shell_exec($command);
-
-        if ($output === null) {
-            throw new \Exception("Local Node.js execution failed.");
-        }
-
-        return $output;
+        throw new \Exception("Local browser scraping disabled on shared hosting.");
     }
 
     /**
@@ -267,94 +232,10 @@ class BrowserScraperService
             ];
         }
 
-        $scriptPath = (string)($this->config['local_path'] ?? '');
-        if ($scriptPath === '' || !file_exists($scriptPath)) {
-            return [
-                'available' => false,
-                'method' => 'local',
-                'message' => 'Local browser scraper script missing',
-                'details' => $scriptPath,
-            ];
-        }
-
-        $node = $this->resolveNodeBinary();
-        if ($node === null || $node === '') {
-            return [
-                'available' => false,
-                'method' => 'local',
-                'message' => 'Node.js runtime not found',
-                'details' => 'Install Node.js (>=20) and run npm install to add Puppeteer.',
-            ];
-        }
-
-        $probe = "import('puppeteer').then(()=>process.exit(0)).catch((e)=>{console.error(e&&e.message?e.message:'missing');process.exit(2);})";
-        $cmd = escapeshellarg($node) . ' -e ' . escapeshellarg($probe);
-
-        $descriptors = [
-            0 => ['pipe', 'r'],
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
-        ];
-        $process = proc_open($cmd, $descriptors, $pipes);
-        if (!is_resource($process)) {
-            return [
-                'available' => false,
-                'method' => 'local',
-                'message' => 'Failed to start node runtime',
-            ];
-        }
-
-        fclose($pipes[0]);
-        stream_set_blocking($pipes[1], false);
-        stream_set_blocking($pipes[2], false);
-        $stdout = '';
-        $stderr = '';
-        $start = time();
-        $exitCode = 0;
-        $timeoutSec = 6;
-
-        while (true) {
-            $stdout .= (string)stream_get_contents($pipes[1]);
-            $stderr .= (string)stream_get_contents($pipes[2]);
-
-            $status = proc_get_status($process);
-            if (!($status['running'] ?? false)) {
-                $exitCode = (int)($status['exitcode'] ?? 0);
-                break;
-            }
-
-            if ((time() - $start) > $timeoutSec) {
-                proc_terminate($process);
-                $exitCode = -1;
-                $stderr .= "\nTimeout after {$timeoutSec}s";
-                break;
-            }
-
-            usleep(100000);
-        }
-
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-        proc_close($process);
-
-        if ($exitCode === 0) {
-            return [
-                'available' => true,
-                'method' => 'local',
-                'message' => 'Puppeteer runtime detected',
-            ];
-        }
-
-        $details = trim($stderr ?: $stdout);
-        if ($details === '') {
-            $details = 'Puppeteer not available';
-        }
-
         return [
             'available' => false,
             'method' => 'local',
-            'message' => 'Puppeteer unavailable',
-            'details' => $details,
+            'message' => 'Local browser scraping disabled on shared hosting',
         ];
     }
 

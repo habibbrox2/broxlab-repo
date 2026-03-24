@@ -17,6 +17,12 @@ Node.js Layer (Scraping & Processing)
   - Self-Healing Selector (repair selectors)
   - Learning Agent (track performance)
 
+## Shared Hosting Mode
+This scraper is fully compatible with cPanel shared hosting:
+- Uses **axios** for HTTP requests
+- Uses **cheerio** for HTML parsing
+- **No Puppeteer / Chromium required**
+
 ## Agents
 
 | Agent | File | Description |
@@ -70,6 +76,13 @@ node src/scraper/index.js --sourceId=31 --max=5
 ### AutoContent Settings Honored (Essential)
 Node scraper will honor these `autocontent_sources` fields when available:
 `use_browser`, `max_pages`, `delay`, `proxy_enabled`, `proxy_config`, and custom selectors.
+
+### cPanel Mode (No Puppeteer)
+If Puppeteer/Chromium is unavailable on shared hosting, disable browser usage:
+```env
+SCRAPER_DISABLE_BROWSER=true
+```
+This forces HTTP-only scraping and lets PHP fallback handle JS-heavy sites.
 
 ### Run Continuous
 ```bash
@@ -151,7 +164,7 @@ php scripts/bdnews24-scheduler.php --continuous --interval=30
 - **Rate Limit Respect** - User-Agent rotation
 - **Concurrency** - Max 5 parallel requests
 - **AutoContent First** - Uses `autocontent_sources` settings where available
-- **WAF/JS Fallback** - HTTP fail হলে Direct API (Puppeteer) fallback (if configured)
+- **HTTP-Only** - WAF/JS হলে graceful error; PHP fallback ব্যবহার করুন
 
 ## Troubleshooting
 
@@ -165,12 +178,7 @@ mysql -u root -p -e "SHOW DATABASES;"
 - Set LOG_LEVEL=debug for debugging
 
 ### WAF/JS Blocks
-If HTTP fetch fails (WAF/JS), scraper can fallback to Direct API:
-Set `.env`:
-```env
-SCRAPER_DIRECT_API_URL=http://127.0.0.1:7020
-SCRAPER_API_KEY=
-```
+Shared hosting‑এ Puppeteer নেই, তাই WAF/JS ব্লক হলে PHP fallback ব্যবহার করুন।
 
 ## File Structure
 

@@ -35,32 +35,80 @@ const CONFIG = {
             selectors: {
                 ticker: {
                     primary: '.news-scroll-content a',
-                    fallback: ['.news-scroll a', 'a[href*="bangla.bdnews24.com"]']
+                    fallback: [
+                        '.news-scroll a',
+                        '.top-news a',
+                        '.lead-news a',
+                        'article a[href*="bdnews24.com"]',
+                        'a[href*="bangla.bdnews24.com"]'
+                    ]
                 },
                 article: {
                     title: {
                         primary: '.details-title h1',
-                        fallback: ['h1', '.article-title h1', '.title h1']
+                        fallback: [
+                            'meta[property="og:title"]',
+                            'h1',
+                            '.article-title h1',
+                            '.title h1',
+                            'title',
+                            '.post-title',
+                            '.entry-title'
+                        ]
                     },
                     subtitle: {
                         primary: '.details-title h2',
-                        fallback: ['h2.subtitle', '.article-subtitle h2']
+                        fallback: [
+                            'h2.subtitle',
+                            '.article-subtitle h2',
+                            'meta[name="description"]',
+                            '.post-excerpt',
+                            '.excerpt'
+                        ]
                     },
                     author: {
                         primary: '.author',
-                        fallback: ['.author-name', '.byline', '[rel="author"]']
+                        fallback: [
+                            '.author-name',
+                            '.byline',
+                            '[rel="author"]',
+                            'meta[name="author"]',
+                            '.post-author',
+                            '.entry-author'
+                        ]
                     },
                     published: {
                         primary: '.pub-up span',
-                        fallback: ['.published-date', '.pub-date', 'time[datetime]']
+                        fallback: [
+                            'time[datetime]',
+                            '.published-date',
+                            '.pub-date',
+                            'meta[property="article:published_time"]',
+                            '.post-date',
+                            '.entry-date'
+                        ]
                     },
                     image: {
                         primary: '.details-img img',
-                        fallback: ['article img', '.featured-image img', '.main-image img']
+                        fallback: [
+                            'article img',
+                            '.featured-image img',
+                            '.main-image img',
+                            'meta[property="og:image"]',
+                            '.post-thumbnail img',
+                            '.featured-image img'
+                        ]
                     },
                     content: {
                         primary: '#contentDetails p',
-                        fallback: ['.details-brief p', 'article p', '.article-body p', '.content p']
+                        fallback: [
+                            '.details-brief p',
+                            'article p',
+                            '.article-body p',
+                            '.content p',
+                            '.post-content p',
+                            '.entry-content p'
+                        ]
                     }
                 }
             }
@@ -75,24 +123,24 @@ const CONFIG = {
                     primary: '#data-wrapper .CatListNews > a',
                     title: '.CatListhead h3',
                     link: 'a',
-                    fallback: ['#data-wrapper a[href*="samakal.com"]', 'a[href*="samakal.com"]']
+                    fallback: ['#data-wrapper a[href*="samakal.com"]', '.CatListNews a[href*="samakal.com"]', 'a[href*="samakal.com"]']
                 },
                 article: {
                     title: {
                         primary: '.dheading h1',
-                        fallback: ['h1', 'meta[property="og:title"]', 'title']
+                        fallback: ['meta[property="og:title"]', 'h1', 'title']
                     },
                     subtitle: {
                         primary: '.dheading .DsubHead',
-                        fallback: ['.dheading h2', 'meta[name="description"]', 'meta[property="og:description"]']
+                        fallback: ['meta[name="description"]', 'meta[property="og:description"]', '.dheading h2']
                     },
                     author: {
                         primary: '.writter p',
-                        fallback: ['.author', '.byline', '[rel="author"]']
+                        fallback: ['.author', '.byline', '[rel="author"]', 'meta[name="author"]']
                     },
                     published: {
                         primary: '.dateAndTime p',
-                        fallback: ['time[datetime]', 'meta[property="article:published_time"]']
+                        fallback: ['time[datetime]', 'meta[property="article:published_time"]', '.dateAndTime time']
                     },
                     image: {
                         primary: '.DNewsImg img',
@@ -100,7 +148,7 @@ const CONFIG = {
                     },
                     content: {
                         primary: '#contentDetails p',
-                        fallback: ['#contentDetails', 'article p', '.content p', '.dNewsDesc p']
+                        fallback: ['#contentDetails', 'article p', '.content p', '.dNewsDesc p', 'main p']
                     }
                 }
             }
@@ -114,12 +162,12 @@ const CONFIG = {
                     // Latest list page cards: <div class="each"> ... <h2 class="title"><a class="link_overlay" href="//www.ittefaq.com.bd/...">Title</a>
                     primary: '.contents_listing .each h2.title a.link_overlay[href]',
                     link: 'a',
-                    fallback: ['.contents_listing a.link_overlay[href]', 'a[href*="ittefaq.com.bd/"]']
+                    fallback: ['.contents_listing a.link_overlay[href]', '.title a[href*="ittefaq.com.bd"]', 'a[href*="ittefaq.com.bd/"]']
                 },
                 article: {
                     title: {
                         primary: 'h1[itemprop="headline"].title, h1[itemprop="headline"], h1.title',
-                        fallback: ['h1', 'meta[property="og:title"]', 'title']
+                        fallback: ['meta[property="og:title"]', 'h1', 'title']
                     },
                     subtitle: {
                         primary: 'meta[name="description"]',
@@ -127,21 +175,21 @@ const CONFIG = {
                     },
                     author: {
                         primary: '.additional_info_container .author .name, [itemprop="author"] .name, .author .name',
-                        fallback: ['[itemprop="author"]', '.byline', '[rel="author"]']
+                        fallback: ['[itemprop="author"]', '.byline', '[rel="author"]', 'meta[name="author"]']
                     },
                     published: {
                         // <span class="tts_time" itemprop="datePublished" content="2026-03-21T10:18:32+06:00">প্রকাশ : ...</span>
                         primary: 'span.tts_time[itemprop="datePublished"], [itemprop="datePublished"]',
-                        fallback: ['time[datetime]', 'meta[property="article:published_time"]', 'meta[itemprop="datePublished"]']
+                        fallback: ['time[datetime]', 'meta[property="article:published_time"]', 'meta[itemprop="datePublished"]', '.tts_time']
                     },
                     image: {
                         // Prefer structured meta first; fallback to hero image
                         primary: 'meta[itemprop="image"][content*="/uploads/"], meta[property="og:image"][content*="/uploads/"], .featured_image img',
-                        fallback: ['.featured_image img', 'article img', 'img']
+                        fallback: ['meta[property="og:image"]', '.featured_image img', 'article img', 'img']
                     },
                     content: {
                         primary: 'div[itemprop="articleBody"] p',
-                        fallback: ['.jw_article_body p', 'article p', '.content_detail_content_inner p']
+                        fallback: ['.jw_article_body p', 'article p', '.content_detail_content_inner p', 'main p']
                     }
                 }
             }
@@ -156,12 +204,12 @@ const CONFIG = {
                     primary: '.loadMoreCategoryNewsDesktop .media.positionRelative',
                     title: 'h4.title10',
                     link: 'a.linkOverlay',
-                    fallback: ['a.linkOverlay[href*="jugantor.com/"]', 'a[href*="jugantor.com/"]']
+                    fallback: ['a.linkOverlay[href*="jugantor.com/"]', '.loadMoreCategoryNewsDesktop a[href*="jugantor.com/"]', 'a[href*="jugantor.com/"]']
                 },
                 article: {
                     title: {
                         primary: 'h1.desktopDetailHeadline strong, h1.desktopDetailHeadline',
-                        fallback: ['h1', 'meta[property="og:title"]', 'title']
+                        fallback: ['meta[property="og:title"]', 'h1', 'title']
                     },
                     subtitle: {
                         primary: 'meta[name="description"]',
@@ -169,7 +217,7 @@ const CONFIG = {
                     },
                     author: {
                         primary: 'p.desktopDetailReporter',
-                        fallback: ['.desktopDetailReporter', '.reporter', '.author', '[rel="author"]']
+                        fallback: ['.desktopDetailReporter', '.reporter', '.author', '[rel="author"]', 'meta[name="author"]']
                     },
                     published: {
                         primary: 'p.desktopDetailPTime',
@@ -181,7 +229,7 @@ const CONFIG = {
                     },
                     content: {
                         primary: '.desktopDetailBody p',
-                        fallback: ['.desktopDetailBody', 'article p', '.content p']
+                        fallback: ['.desktopDetailBody', 'article p', '.content p', 'main p']
                     }
                 }
             }
@@ -233,12 +281,12 @@ const CONFIG = {
                     primary: 'h3.headline-title a.title-link[href]',
                     title: 'span.tilte-no-link-parent',
                     link: 'a',
-                    fallback: ['a.title-link[href*="prothomalo.com"]', 'a[href*="prothomalo.com"]']
+                    fallback: ['a.title-link[href*="prothomalo.com"]', '.story-card a[href*="prothomalo.com"]', 'a[href*="prothomalo.com"]']
                 },
                 article: {
                     title: {
                         primary: '.story-title-info h1, h1[data-title-0]',
-                        fallback: ['h1[itemprop="headline"]', 'h1', 'meta[property="og:title"]', 'title']
+                        fallback: ['meta[property="og:title"]', 'h1[itemprop="headline"]', 'h1', 'title']
                     },
                     subtitle: {
                         primary: 'meta[name="description"]',
@@ -246,7 +294,7 @@ const CONFIG = {
                     },
                     author: {
                         primary: '.author-location, [itemprop="author"], .author-name',
-                        fallback: ['.byline', '[rel="author"]']
+                        fallback: ['.byline', '[rel="author"]', 'meta[name="author"]']
                     },
                     published: {
                         primary: 'time[datetime]',
@@ -259,7 +307,7 @@ const CONFIG = {
                     content: {
                         // Works for nagorik.prothomalo.com and many prothomalo story pages.
                         primary: '.story-element-text p',
-                        fallback: ['[itemprop="articleBody"] p', 'article p', '.story-content p', '.content p']
+                        fallback: ['[itemprop="articleBody"] p', 'article p', '.story-content p', '.content p', 'main p']
                     }
                 }
             }
@@ -541,6 +589,20 @@ const CONFIG = {
         get list() {
             return parseList(process.env.SCRAPER_PROXIES || process.env.PROXY_LIST || '');
         }
+    },
+
+    // Scraper behavior configuration
+    scraper: {
+        sharedHostingMode: process.env.SHARED_HOSTING === 'true' || process.env.HOSTING_TYPE === 'shared',
+        useAdvancedMode: process.env.SCRAPER_ADVANCED_MODE !== 'false' && !(process.env.SHARED_HOSTING === 'true' || process.env.HOSTING_TYPE === 'shared'),
+        maxConcurrent: parseInt(process.env.SCRAPER_MAX_CONCURRENT || '3'),
+        enableBrowser: (process.env.SCRAPER_ENABLE_BROWSER || 'false').toLowerCase() === 'true' && !(process.env.SHARED_HOSTING === 'true' || process.env.HOSTING_TYPE === 'shared'),
+        enableValidation: process.env.SCRAPER_ENABLE_VALIDATION !== 'false',
+        enableWafDetection: process.env.SCRAPER_ENABLE_WAF_DETECTION !== 'false',
+        allowlistEnforce: process.env.SCRAPER_ALLOWLIST_ENFORCE !== 'false',
+        robotsEnforce: process.env.SCRAPER_ROBOTS_ENFORCE !== 'false',
+        robotsCacheTtlMs: parseInt(process.env.SCRAPER_ROBOTS_CACHE_TTL || '3600000', 10),
+        domainMinDelayMs: parseInt(process.env.SCRAPER_DOMAIN_MIN_DELAY_MS || '0', 10)
     },
 
     browser: {

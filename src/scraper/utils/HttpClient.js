@@ -7,7 +7,9 @@ import axios from 'axios';
 import CONFIG from '../config.js';
 import Logger from './Logger.js';
 import URLValidator from './URLValidator.js';
-import BrowserAgent from './BrowserAgent.js';
+import AllowlistPolicy from './AllowlistPolicy.js';
+import RobotsPolicy from './RobotsPolicy.js';
+import AdvancedBrowserScraper from './AdvancedBrowserScraper.js';
 
 const RETRY_CONFIG = {
     maxRetries: 3,
@@ -25,6 +27,13 @@ class HttpClient {
         this.requestCount = 0;
         this.proxyList = CONFIG.proxy.list;
         this.proxyIndex = 0;
+        this.domainLastRequestAt = new Map();
+        this.browserScraper = null;
+
+        // WAF challenge handling
+        this.wafChallengeCount = 0;
+        this.wafCooldownMs = Number(process.env.SCRAPER_WAF_COOLDOWN_MS || 180000);
+        this.wafLockUntil = 0;
     }
 
     /**
@@ -45,10 +54,12 @@ class HttpClient {
             ? Number(options.maxRedirects)
             : 0;
 
+        const userAgent = options.userAgent || this._getUserAgent();
+
         return axios.create({
             timeout: CONFIG.http.timeout,
             headers: {
-                'User-Agent': this._getUserAgent(),
+                'User-Agent': userAgent,
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.9,bn;q=0.8',
                 'Accept-Encoding': 'gzip, deflate, br',
@@ -103,6 +114,83 @@ class HttpClient {
         return markers.some(m => s.includes(m));
     }
 
+    /**
+     * Check for blocking (empty HTML or CAPTCHA)
+     */
+    _isBlocked(body, status) {
+        const s = String(body || '').toLowerCase();
+        const len = s.length;
+
+        // Check for empty or minimal content
+        if (len < 100) {
+            Logger.debug('Blocking detected: empty or minimal content', { length: len });
+            return true;
+        }
+
+        // Check for CAPTCHA keywords
+        const captchaMarkers = [
+            'captcha',
+            'recaptcha',
+            'google-recaptcha',
+            'verify you are human',
+            'security check',
+            'access denied',
+            'blocked',
+            'suspended',
+            'rate limit exceeded',
+            'too many requests'
+        ];
+
+        if (captchaMarkers.some(m => s.includes(m))) {
+            Logger.debug('Blocking detected: CAPTCHA or security check');
+            return true;
+        }
+
+        return false;
+    }
+
+    async _enforceDomainDelay(url) {
+        const minDelayMs = Number(CONFIG.scraper?.domainMinDelayMs || 0);
+        if (!Number.isFinite(minDelayMs) || minDelayMs <= 0) return;
+
+        let host = '';
+        try {
+            host = new URL(url).hostname;
+        } catch {
+            return;
+        }
+
+        const last = this.domainLastRequestAt.get(host) || 0;
+        const elapsed = Date.now() - last;
+        if (elapsed < minDelayMs) {
+            await this._sleep(minDelayMs - elapsed);
+        }
+        this.domainLastRequestAt.set(host, Date.now());
+    }
+
+    async _getBrowserScraper() {
+        if (!CONFIG.scraper?.enableBrowser) return null;
+        if (this.browserScraper && this.browserScraper.isAvailable()) return this.browserScraper;
+
+        try {
+            if (!this.browserScraper) {
+                this.browserScraper = new AdvancedBrowserScraper({
+                    maxPages: Math.min(CONFIG.scraper?.maxConcurrent || 3, 3),
+                    headless: true
+                });
+            }
+
+            if (!this.browserScraper.isAvailable()) {
+                await this.browserScraper.initialize();
+            }
+
+            return this.browserScraper.isAvailable() ? this.browserScraper : null;
+        } catch (error) {
+            Logger.warn('Browser scraper unavailable', { error: error.message });
+            return null;
+        }
+    }
+
     _resolveRedirect(fromUrl, location) {
         if (!location) return null;
         try {
@@ -123,6 +211,26 @@ class HttpClient {
         const proxy = this.proxyList[this.proxyIndex % this.proxyList.length];
         this.proxyIndex = (this.proxyIndex + 1) % this.proxyList.length;
         return proxy || null;
+    }
+
+    setProxyList(newProxyList) {
+        if (!Array.isArray(newProxyList)) {
+            throw new Error('Proxy list must be an array');
+        }
+
+        this.proxyList = newProxyList.filter(Boolean);
+        this.proxyIndex = 0;
+        Logger.info('Proxy list updated', { count: this.proxyList.length });
+    }
+
+    getProxyList() {
+        return Array.from(this.proxyList);
+    }
+
+    clearWafState() {
+        this.wafChallengeCount = 0;
+        this.wafLockUntil = 0;
+        Logger.info('WAF state cleared');
     }
 
     _buildProxyConfig(proxyUrl) {
@@ -160,6 +268,29 @@ class HttpClient {
             throw error;
         }
 
+        const userAgent = options.userAgent || this._getUserAgent();
+        options.userAgent = userAgent;
+
+        const allowlistCheck = AllowlistPolicy.check(url, options.allowlistHosts || null);
+        if (!allowlistCheck.allowed) {
+            return {
+                success: false,
+                error: allowlistCheck.reason === 'allowlist_blocked' ? 'allowlist_blocked' : allowlistCheck.reason,
+                status: 0,
+                elapsed_ms: 0
+            };
+        }
+
+        const robotsCheck = await RobotsPolicy.isAllowed(url, userAgent);
+        if (!robotsCheck.allowed) {
+            return {
+                success: false,
+                error: 'robots_disallow',
+                status: 0,
+                elapsed_ms: 0
+            };
+        }
+
         const maxRetries = options.maxRetries ?? RETRY_CONFIG.maxRetries;
         const proxyEnabled = options.proxyEnabled !== false;
         const forcedProxyUrl = String(options.proxyUrl || '').trim();
@@ -177,17 +308,31 @@ class HttpClient {
         let attemptsMade = 0;
         let useProxy = proxyEnabled && (forcedProxyUrl !== '' || (proxyListOverride && proxyListOverride.length > 0));
         let delayMs = RETRY_CONFIG.initialDelayMs;
+        const minDelay = Number(process.env.SCRAPER_MIN_DELAY_MS || 100);
+        const maxDelay = Number(process.env.SCRAPER_MAX_DELAY_MS || 500);
+
+        // If WAF is in cooldown, wait before trying again
+        if (Date.now() < this.wafLockUntil) {
+            const waitMs = this.wafLockUntil - Date.now();
+            Logger.warn('WAF cooldown active, waiting', { waitMs });
+            await this._sleep(waitMs);
+        }
 
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
             try {
                 attemptsMade = attempt + 1;
                 Logger.debug(`Fetching: ${url}`, { attempt: attempt + 1 });
 
+                if (minDelay > 0 && maxDelay >= minDelay) {
+                    const jitter = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+                    await this._sleep(jitter);
+                }
+
                 const proxyUrl = useProxy
                     ? (forcedProxyUrl || (proxyListOverride ? getProxyFromOverride() : this._getNextProxy()))
                     : null;
                 const proxyConfig = useProxy ? this._buildProxyConfig(proxyUrl) : null;
-                const client = this._createInstance({ maxRedirects: 0, proxy: proxyConfig ?? false });
+                const client = this._createInstance({ maxRedirects: 0, proxy: proxyConfig ?? false, userAgent });
 
                 const visited = new Set();
                 let currentUrl = url;
@@ -196,6 +341,8 @@ class HttpClient {
 
                 for (let redirectHop = 0; redirectHop < 10; redirectHop++) {
                     visited.add(currentUrl);
+
+                    await this._enforceDomainDelay(currentUrl);
 
                     response = await client.get(currentUrl, {
                         ...options,
@@ -225,8 +372,49 @@ class HttpClient {
                     throw new Error('no_response');
                 }
 
+                // Check for blocking (empty HTML, CAPTCHA, etc.)
+                if (this._isBlocked(response.data, response.status)) {
+                    Logger.warn('Blocking detected', {
+                        url: currentUrl,
+                        status: response.status,
+                        contentLength: response.data?.length || 0,
+                        attempt: attempt + 1
+                    });
+
+                    if (attempt < maxRetries) {
+                        await this._sleep(delayMs);
+                        delayMs = Math.min(delayMs * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelayMs);
+                        continue;
+                    }
+
+                    return {
+                        success: false,
+                        error: 'blocked',
+                        blocked: true,
+                        status: response.status,
+                        elapsed_ms: Date.now() - startedAt,
+                        proxy_used: proxyUrl || null
+                    };
+                }
+
                 // Some WAFs return HTTP 200/403 with a challenge page.
                 if (this._isWafChallengeBody(response.data) || [403, 503].includes(response.status)) {
+                    this.wafChallengeCount++;
+                    this.wafLockUntil = Date.now() + this.wafCooldownMs * Math.min(this.wafChallengeCount, 5);
+
+                    Logger.warn('WAF challenge detected', {
+                        url: currentUrl,
+                        status: response.status,
+                        attempt: attempt + 1,
+                        wafChallengeCount: this.wafChallengeCount,
+                        nextReadyInMs: this.wafLockUntil - Date.now()
+                    });
+
+                    if (attempt < maxRetries) {
+                        await this._sleep(Math.min(this.wafCooldownMs, 5000));
+                        continue;
+                    }
+
                     return {
                         success: false,
                         error: 'waf_challenge',
@@ -307,48 +495,6 @@ class HttpClient {
      * Fetch HTML content
      */
     async fetchHtml(url, options = {}) {
-        const useBrowser = options.useBrowser === true;
-        const directApiUrl = String(process.env.SCRAPER_DIRECT_API_URL || '').trim();
-
-        if (useBrowser) {
-            const direct = directApiUrl
-                ? await this.fetchViaDirectApi(url, {
-                    timeoutMs: options.browserlessTimeoutMs || options.timeout || CONFIG.browser.timeout,
-                    proxyMode: options.proxyEnabled === false ? 'off' : 'auto'
-                })
-                : null;
-            if (direct?.success) {
-                return direct;
-            }
-
-            const browser = await BrowserAgent.fetchHtml(url, {
-                userAgent: this._getUserAgent(),
-                proxy: options.proxyUrl || null,
-                browserlessUrl: options.browserlessUrl,
-                browserlessToken: options.browserlessToken,
-                browserlessWaitMs: options.browserlessWaitMs,
-                browserlessTimeoutMs: options.browserlessTimeoutMs,
-                browserlessUseProxy: options.proxyEnabled === false ? false : undefined
-            });
-
-            if (browser.success) {
-                return {
-                    success: true,
-                    html: browser.html,
-                    status: 200,
-                    elapsed_ms: 0,
-                    via_browser: true
-                };
-            }
-
-            return {
-                success: false,
-                error: browser.error || 'browser_fetch_failed',
-                status: 0,
-                elapsed_ms: 0
-            };
-        }
-
         const result = await this.fetch(url, options);
 
         if (result.success) {
@@ -360,104 +506,31 @@ class HttpClient {
             };
         }
 
-        if (result.waf_detected) {
-            if (directApiUrl) {
-                const direct = await this.fetchViaDirectApi(url, {
-                    timeoutMs: options.browserlessTimeoutMs || options.timeout || CONFIG.browser.timeout,
-                    proxyMode: options.proxyEnabled === false ? 'off' : 'auto'
+        const shouldFallback = options.useBrowser && ['blocked', 'waf_challenge', 'http_fetch_failed'].includes(String(result.error || ''));
+        if (shouldFallback) {
+            const browser = await this._getBrowserScraper();
+            if (browser) {
+                const browserResult = await browser.fetchHtml(url, {
+                    timeout: options.timeout || CONFIG.browser?.timeout || 30000
                 });
-                if (direct.success) {
-                    return direct;
+                if (browserResult?.success) {
+                    return {
+                        success: true,
+                        html: browserResult.html,
+                        status: 200,
+                        elapsed_ms: browserResult.elapsed_ms || 0,
+                        browser_fallback_used: true
+                    };
                 }
             }
-
-            const browser = await BrowserAgent.fetchHtml(url, {
-                userAgent: this._getUserAgent(),
-                proxy: options.proxyEnabled === false ? null : (result.proxy_used || null),
-                clearanceTimeoutMs: CONFIG.browser.clearanceTimeoutMs,
-                browserlessUrl: options.browserlessUrl,
-                browserlessToken: options.browserlessToken,
-                browserlessWaitMs: options.browserlessWaitMs,
-                browserlessTimeoutMs: options.browserlessTimeoutMs,
-                browserlessUseProxy: options.proxyEnabled === false ? false : undefined
-            });
-            if (browser.success) {
-                return {
-                    success: true,
-                    html: browser.html,
-                    status: 200,
-                    elapsed_ms: result.elapsed_ms || 0,
-                    via_browser: true
-                };
-            }
-            return {
-                success: false,
-                error: browser.error === 'puppeteer_unavailable'
-                    ? 'WAF detected but Puppeteer unavailable. Please install Puppeteer/browser runtime.'
-                    : (browser.error || result.error),
-                status: result.status || 0,
-                elapsed_ms: result.elapsed_ms || 0,
-                waf_detected: true
-            };
         }
 
         return {
             success: false,
-            error: result.error,
+            error: result.error || 'http_fetch_failed',
             status: result.status || 0,
             elapsed_ms: result.elapsed_ms || 0
         };
-    }
-
-    async fetchViaDirectApi(url, options = {}) {
-        const baseUrl = String(process.env.SCRAPER_DIRECT_API_URL || process.env.APP_URL || '').trim();
-        if (!baseUrl) {
-            return { success: false, error: 'direct_api_unconfigured' };
-        }
-
-        const endpoint = baseUrl.replace(/\/+$/, '') + '/scrape';
-        const apiKey = String(process.env.SCRAPER_API_KEY || '').trim();
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        if (apiKey) {
-            headers['X-Api-Key'] = apiKey;
-        }
-
-        try {
-            const resp = await axios.post(endpoint, {
-                url,
-                waitForMs: Number(options.timeoutMs || 30000),
-                proxyMode: options.proxyMode || 'auto'
-            }, {
-                timeout: Number(options.timeoutMs || 30000),
-                headers
-            });
-
-            if (resp?.data?.success && resp.data.html) {
-                return {
-                    success: true,
-                    html: resp.data.html,
-                    status: resp.data.status || 200,
-                    elapsed_ms: resp.data.elapsed_ms || 0,
-                    via_direct_api: true
-                };
-            }
-
-            return {
-                success: false,
-                error: resp?.data?.error || 'direct_api_failed',
-                status: resp?.data?.status || 0,
-                elapsed_ms: resp?.data?.elapsed_ms || 0
-            };
-        } catch (error) {
-            return {
-                success: false,
-                error: error?.message || 'direct_api_unreachable',
-                status: 0,
-                elapsed_ms: 0
-            };
-        }
     }
 
     /**

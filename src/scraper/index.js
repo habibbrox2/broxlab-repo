@@ -31,12 +31,35 @@ class ScraperOrchestrator {
         this.forceInsert = !!options.forceInsert;
         this.requestDelayMs = 0;
 
+        this.environment = this.detectEnvironment();
+        this.sharedHostingMode = CONFIG.scraper?.sharedHostingMode || this.environment === 'shared_hosting';
+
+        // Use advanced mode if enabled and not on shared hosting
+        this.useAdvancedMode = options.advanced !== false &&
+            CONFIG.scraper?.useAdvancedMode !== false &&
+            !this.sharedHostingMode;
+
+        if (this.sharedHostingMode) {
+            // Lower concurrency for shared hosts
+            this.concurrency = Math.min(this.concurrency, 2);
+            // Disable browser automation for shared hosts
+            CONFIG.scraper.enableBrowser = false;
+        }
+
         // Initialize agents
         this.tickerScraper = new TickerScraper(this.sourceKey);
         this.articleScraper = new ArticleScraper(this.sourceKey);
         this.mobileScraper = new MobileDeviceScraper();
         this.diffDetector = new DiffDetector();
         this.db = DatabaseService;
+
+        // Initialize advanced components if in advanced mode
+        if (this.useAdvancedMode) {
+            this.advancedOrchestrator = null;
+            this.advancedHttpClient = null;
+            this.advancedBrowserScraper = null;
+            this.concurrentScraper = null;
+        }
 
         // Stats
         this.stats = {
@@ -53,7 +76,11 @@ class ScraperOrchestrator {
      * Initialize the orchestrator
      */
     async initialize() {
-        Logger.info('Initializing ScraperOrchestrator', { source: this.sourceKey, sourceId: this.sourceId });
+        Logger.info('Initializing ScraperOrchestrator', {
+            source: this.sourceKey,
+            sourceId: this.sourceId,
+            advancedMode: this.useAdvancedMode
+        });
 
         // Initialize database
         const dbConnected = await this.db.initialize({ preferAutoContent: !!this.sourceId });
@@ -62,6 +89,88 @@ class ScraperOrchestrator {
             throw new Error('db_connect_failed');
         }
 
+        // Initialize advanced components if enabled
+        if (this.useAdvancedMode) {
+            try {
+                await this.initializeAdvancedComponents();
+            } catch (e) {
+                Logger.warn('Advanced components initialization failed, falling back to legacy mode', { error: e.message || String(e) });
+                this.useAdvancedMode = false;
+            }
+        }
+
+        // Continue with legacy initialization for compatibility
+        await this.initializeLegacyComponents(dbConnected);
+
+        Logger.info('ScraperOrchestrator initialized', {
+            source: this.sourceKey,
+            existingLinks: this.diffDetector.getLinkCount(),
+            advancedMode: this.useAdvancedMode
+        });
+
+        return true;
+    }
+
+    /**
+     * Initialize advanced scraping components
+     */
+    async initializeAdvancedComponents() {
+        try {
+            Logger.info('Initializing advanced components...');
+
+            // Dynamic imports to avoid module loading errors on shared hosting
+            const [
+                { default: AdvancedScraperOrchestrator },
+                { default: AdvancedHttpClient },
+                { default: AdvancedBrowserScraper },
+                { default: ConcurrentScraper }
+            ] = await Promise.all([
+                import('./ScraperOrchestrator.js'),
+                import('./utils/AdvancedHttpClient.js'),
+                import('./utils/AdvancedBrowserScraper.js'),
+                import('./utils/ConcurrentScraper.js')
+            ]);
+
+            // Initialize advanced orchestrator
+            this.advancedOrchestrator = new AdvancedScraperOrchestrator({
+                maxConcurrent: this.concurrency,
+                enableBrowser: true,
+                enableValidation: true,
+                enableWafDetection: true
+            });
+            await this.advancedOrchestrator.initialize();
+
+            // Initialize advanced HTTP client
+            this.advancedHttpClient = new AdvancedHttpClient();
+            await this.advancedHttpClient.initialize();
+
+            // Initialize advanced browser scraper
+            this.advancedBrowserScraper = new AdvancedBrowserScraper({
+                maxPages: Math.min(this.concurrency, 3),
+                headless: true
+            });
+            await this.advancedBrowserScraper.initialize();
+
+            // Initialize concurrent scraper
+            this.concurrentScraper = new ConcurrentScraper({
+                maxConcurrent: this.concurrency,
+                useBrowser: true
+            });
+            await this.concurrentScraper.initialize();
+
+            Logger.info('Advanced components initialized successfully');
+        } catch (error) {
+            Logger.error('Failed to initialize advanced components:', error);
+            // Fall back to legacy mode
+            this.useAdvancedMode = false;
+            throw error;
+        }
+    }
+
+    /**
+     * Initialize legacy components for backward compatibility
+     */
+    async initializeLegacyComponents(dbConnected) {
         if (dbConnected) {
             // Mobiles-direct pipeline does not use autocontent_sources or article tables.
             if (this.pipeline === 'mobiles_direct') {
@@ -124,13 +233,13 @@ class ScraperOrchestrator {
                     homepageUrl: source.url
                 };
 
-                // Ensure agents target this preset/source 
+                // Ensure agents target this preset/source
                 this.tickerScraper.sourceKey = this.sourceKey;
                 this.articleScraper.sourceKey = this.sourceKey;
                 this.tickerScraper.sourceId = this.sourceId;
                 this.articleScraper.sourceId = this.sourceId;
 
-                // Load selectors from DB presets (if available) 
+                // Load selectors from DB presets (if available)
                 await this.tickerScraper.initialize();
                 await this.articleScraper.initialize();
 
@@ -156,13 +265,6 @@ class ScraperOrchestrator {
         }
 
         this.stats.startTime = new Date();
-
-        Logger.info('ScraperOrchestrator initialized', {
-            source: this.sourceKey,
-            existingLinks: this.diffDetector.getLinkCount()
-        });
-
-        return true;
     }
 
     /**
@@ -173,6 +275,35 @@ class ScraperOrchestrator {
 
         Logger.info(`=== Starting Cycle ${this.stats.cycles} ===`);
 
+        // Use advanced orchestrator if enabled and available
+        if (this.useAdvancedMode && this.advancedOrchestrator) {
+            return await this.runAdvancedCycle();
+        }
+
+        // Fall back to legacy cycle
+        return await this.runLegacyCycle();
+    }
+
+    /**
+     * Run cycle using advanced components
+     */
+    async runAdvancedCycle() {
+        try {
+            Logger.info('Running advanced scraping cycle');
+
+            // For now, delegate to legacy cycle but could be enhanced
+            // to use the new orchestrator's methods
+            return await this.runLegacyCycle();
+        } catch (error) {
+            Logger.error('Advanced cycle failed, falling back to legacy:', error);
+            return await this.runLegacyCycle();
+        }
+    }
+
+    /**
+     * Run cycle using legacy components (backward compatibility)
+     */
+    async runLegacyCycle() {
         // Mobiles-direct pipeline with a specific device URL (bypass ticker list).
         if (this.pipeline === 'mobiles_direct' && this.deviceUrl) {
             const singleLink = [{ link: this.deviceUrl, title: '', source: this.sourceKey }];
@@ -246,7 +377,7 @@ class ScraperOrchestrator {
 
         Logger.info(`Found ${limitedLinks.length} new articles to process`);
 
-        // Audit/debug: record discovered links (not the main queue). 
+        // Audit/debug: record discovered links (not the main queue).
         if (this.sourceId && this.db?.connected && typeof this.db.upsertAutoContentCrawlQueue === 'function') {
             for (const link of limitedLinks) {
                 if (link?.link) {
@@ -255,7 +386,7 @@ class ScraperOrchestrator {
             }
         }
 
-        // Mobiles-direct pipeline: scrape spec pages and insert into mobiles tables. 
+        // Mobiles-direct pipeline: scrape spec pages and insert into mobiles tables.
         if (this.pipeline === 'mobiles_direct') {
             const mobileResults = await this.processMobiles(limitedLinks);
 
@@ -361,8 +492,57 @@ class ScraperOrchestrator {
     }
 
     /**
-     * Process articles with concurrency limit
+     * Detect hosting environment
      */
+    detectEnvironment() {
+        // Check for shared hosting indicators
+        const isSharedHosting =
+            process.env.SHARED_HOSTING === 'true' ||
+            process.env.HOSTING_TYPE === 'shared' ||
+            !process.env.USER || process.env.USER === 'nobody' ||
+            process.env.PWD?.includes('/home/') && process.env.PWD?.includes('/public_html') ||
+            !require('fs').existsSync('/usr/bin/google-chrome') && !require('fs').existsSync('/usr/bin/chromium');
+
+        return isSharedHosting ? 'shared_hosting' : 'dedicated_vps';
+    }
+
+    /**
+     * Get environment-specific recommendations
+     */
+    getEnvironmentRecommendations() {
+        const env = this.environment || this.detectEnvironment();
+
+        if (env === 'shared_hosting') {
+            return {
+                environment: 'shared_hosting',
+                recommendations: [
+                    'Basic HTTP scraping will work',
+                    'Browser automation disabled (no Chrome/Chromium)',
+                    'Reduced concurrency for stability',
+                    'Use proxy rotation carefully',
+                    'Monitor memory usage'
+                ],
+                limitations: [
+                    'No Puppeteer browser automation',
+                    'Limited Node.js dependencies',
+                    'Memory/CPU restrictions',
+                    'No persistent processes'
+                ]
+            };
+        }
+
+        return {
+            environment: 'dedicated_vps',
+            recommendations: [
+                'Full advanced features available',
+                'Browser automation enabled',
+                'High concurrency possible',
+                'Advanced anti-detection measures',
+                'Real-time monitoring'
+            ],
+            limitations: []
+        };
+    }
     async processArticles(links) {
         const results = [];
 
@@ -501,17 +681,53 @@ class ScraperOrchestrator {
      * Get stats
      */
     getStats() {
-        return {
+        const baseStats = {
             ...this.stats,
             uptime: this.stats.startTime ?
-                Math.floor((Date.now() - this.stats.startTime.getTime()) / 1000) : 0
+                Math.floor((Date.now() - this.stats.startTime.getTime()) / 1000) : 0,
+            advancedMode: this.useAdvancedMode,
+            environment: this.detectEnvironment(),
+            recommendations: this.getEnvironmentRecommendations()
         };
+
+        // Add advanced component stats if available
+        if (this.useAdvancedMode) {
+            baseStats.advancedStats = {
+                orchestrator: this.advancedOrchestrator ? this.advancedOrchestrator.getStatus() : null,
+                concurrentScraper: this.concurrentScraper ? this.concurrentScraper.getStatus() : null,
+                browserAvailable: this.advancedBrowserScraper ? this.advancedBrowserScraper.isAvailable() : false,
+                httpClientAvailable: this.advancedHttpClient ? this.advancedHttpClient.isAvailable() : false
+            };
+        }
+
+        return baseStats;
     }
 
     /**
      * Cleanup
      */
     async cleanup() {
+        // Cleanup advanced components
+        if (this.useAdvancedMode) {
+            try {
+                if (this.advancedOrchestrator) {
+                    await this.advancedOrchestrator.cleanup();
+                }
+                if (this.concurrentScraper) {
+                    await this.concurrentScraper.cleanup();
+                }
+                if (this.advancedBrowserScraper) {
+                    await this.advancedBrowserScraper.close();
+                }
+                if (this.advancedHttpClient) {
+                    await this.advancedHttpClient.cleanup();
+                }
+            } catch (error) {
+                Logger.warn('Error cleaning up advanced components:', error);
+            }
+        }
+
+        // Cleanup legacy components
         await this.db.close();
         Logger.info('ScraperOrchestrator cleanup complete');
     }
@@ -597,7 +813,11 @@ class ScraperOrchestrator {
     }
 
     applySourceSettings(source) {
-        const useBrowser = Number(source?.use_browser) === 1;
+        const disableBrowser = String(process.env.SCRAPER_DISABLE_BROWSER || '').toLowerCase() === 'true';
+        let useBrowser = Number(source?.use_browser) === 1;
+        if (disableBrowser) {
+            useBrowser = false;
+        }
         const proxyEnabled = Number(source?.proxy_enabled) === 1;
         let proxyList = this.parseProxyConfig(source?.proxy_config);
         if (proxyEnabled && proxyList.length === 0 && Array.isArray(CONFIG.proxy.list)) {

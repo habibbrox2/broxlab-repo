@@ -358,12 +358,33 @@ body.admin-sidebar-open {
     }
 
     body.admin-sidebar-mini .admin-column-resizer {
-        display: flex !important;
+        display: flex;
         opacity: 0.55;
+        visibility: visible;
     }
 
     body.admin-sidebar-mini.admin-sidebar-mini-expanded .admin-column-resizer {
         opacity: 0.25;
+    }
+
+    /* Resizer state when sidebar is mini */
+    .admin-column-resizer.is-mini {
+        opacity: 0.55;
+    }
+
+    body.admin-sidebar-mini-expanded .admin-column-resizer.is-mini {
+        opacity: 0.25;
+    }
+
+    /* Ensure resizer is hidden on mobile regardless of mini mode */
+    @media (max-width: 991.98px) {
+        body.admin-sidebar-mini .admin-column-resizer {
+            display: none !important;
+        }
+        
+        .admin-column-resizer.is-mini {
+            display: none !important;
+        }
     }
 }
 
@@ -544,6 +565,24 @@ body.admin-sidebar-open {
     overflow: hidden;
 }
 
+/* Dark mode stat cards */
+[data-theme="dark"] .stat-card {
+    background: rgba(15, 23, 42, 0.92);
+    border-color: rgba(148, 163, 184, 0.2);
+}
+
+[data-theme="dark"] .stat-label {
+    color: #9fb0c8;
+}
+
+[data-theme="dark"] .stat-value {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .stat-icon {
+    color: rgba(129, 140, 248, 0.25);
+}
+
 .stat-card::before {
     content: '';
     position: absolute;
@@ -573,6 +612,10 @@ body.admin-sidebar-open {
 
 .stat-card.info::before {
     background: var(--info-gradient);
+}
+
+.stat-card.primary::before {
+    background: var(--primary-gradient);
 }
 
 .stat-label {
@@ -4310,8 +4353,36 @@ textarea.font-monospace {
     color: #fff;
 }
 
+/* Sidebar overlay dark mode */
+[data-theme="dark"] .sidebar-overlay {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+/* Sidebar toggle button dark mode */
+[data-theme="dark"] .sidebar-toggle {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .sidebar-toggle:hover {
+    background: rgba(148, 163, 184, 0.18);
+}
+
 [data-theme="dark"] .admin-main {
     background: transparent;
+}
+
+/* Admin page header dark mode - preserve gradient but ensure visibility */
+[data-theme="dark"] .admin-page-header {
+    background: linear-gradient(135deg, #4338ca 0%, #7c3aed 100%);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .admin-page-header .admin-page-title {
+    color: #fff;
+}
+
+[data-theme="dark"] .admin-page-header .admin-page-subtitle {
+    color: rgba(255, 255, 255, 0.85);
 }
 
 [data-theme="dark"] .admin-panel-card {

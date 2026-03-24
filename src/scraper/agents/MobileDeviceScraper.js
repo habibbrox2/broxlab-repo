@@ -6,6 +6,7 @@
 import HttpClient from '../utils/HttpClient.js';
 import HtmlParser from '../utils/HtmlParser.js';
 import Logger from '../utils/Logger.js';
+import CONFIG from '../config.js';
 
 class MobileDeviceScraper {
     constructor() { }
@@ -18,7 +19,9 @@ class MobileDeviceScraper {
 
         Logger.info(`Scraping device specs: ${targetUrl}`);
 
-        const result = await HttpClient.fetchHtml(targetUrl);
+        const result = await HttpClient.fetchHtml(targetUrl, {
+            allowlistHosts: this.buildAllowlistHosts()
+        });
         if (!result.success) {
             Logger.error('Failed to fetch device page', { url: targetUrl, error: result.error });
             return { success: false, error: result.error, data: null };
@@ -43,6 +46,27 @@ class MobileDeviceScraper {
         }
 
         return { success: true, data, html: result.html };
+    }
+
+    buildAllowlistHosts() {
+        const hosts = [];
+        const addHost = (url) => {
+            try {
+                const host = new URL(url).hostname;
+                if (host) hosts.push(host);
+            } catch {
+                // ignore
+            }
+        };
+
+        const sources = CONFIG.sources || {};
+        for (const key of Object.keys(sources)) {
+            const source = sources[key] || {};
+            if (source.baseUrl) addHost(source.baseUrl);
+            if (source.homepageUrl) addHost(source.homepageUrl);
+        }
+
+        return Array.from(new Set(hosts));
     }
 
     isGsmaBdLayout($dom) {

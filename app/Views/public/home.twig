@@ -143,53 +143,197 @@
   </div>
 </section>
 
-{# ==================== RAMADAN COMPACT WIDGET ==================== #}
-<section class="container home-ramadan-wrap mb-5">
-  <div class="home-ramadan-card tw-home-glass-card rounded-4 shadow-sm p-4 p-lg-5"
-       data-ramadan-widget
-       data-ramadan-mode="compact"
-       data-ramadan-today="{{ 'now'|date('Y-m-d', 'Asia/Dhaka') }}">
-    <div class="row align-items-center g-4">
-      <div class="col-lg-8">
-        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-          <span class="badge rounded-pill home-ramadan-badge" data-ramadan-status>লোড হচ্ছে...</span>
-          <span class="small text-muted">বিভাগ: <strong data-ramadan-division-label>ঢাকা</strong></span>
-        </div>
-        <h2 class="h4 fw-bold mb-3" data-ramadan-countdown-title>রমজান কাউন্টডাউন লোড হচ্ছে...</h2>
+{# ==================== DATE & TIME WIDGET ==================== #}
+<section class="container home-datetime-wrap mb-5">
+  <div class="home-datetime-card position-relative overflow-hidden rounded-4 shadow-lg"
+       style="background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%);
+              backdrop-filter: blur(20px);
+              border: 1px solid rgba(255,255,255,0.2);
+              box-shadow: 0 20px 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.1);">
 
-        <div class="home-ramadan-countdown d-flex align-items-center gap-2 mb-3">
-          <div class="count-item text-center">
-            <div class="num" data-ramadan-hours>০০</div>
-            <small>ঘণ্টা</small>
-          </div>
-          <span>:</span>
-          <div class="count-item text-center">
-            <div class="num" data-ramadan-minutes>০০</div>
-            <small>মিনিট</small>
-          </div>
-          <span>:</span>
-          <div class="count-item text-center">
-            <div class="num" data-ramadan-seconds>০০</div>
-            <small>সেকেন্ড</small>
+    {# Animated Background Elements #}
+    <div class="position-absolute top-0 end-0 opacity-25" style="transform: translate(20%, -20%);">
+      <div class="bg-primary rounded-circle" style="width: 120px; height: 120px; filter: blur(40px);"></div>
+    </div>
+    <div class="position-absolute bottom-0 start-0 opacity-25" style="transform: translate(-20%, 20%);">
+      <div class="bg-success rounded-circle" style="width: 100px; height: 100px; filter: blur(35px);"></div>
+    </div>
+
+    <div class="p-4 p-lg-5 position-relative" style="z-index: 2;">
+      <div class="row g-4">
+        {# Bengali Date & Time #}
+        <div class="col-lg-6">
+          <div class="datetime-section p-4 rounded-3 h-100 transition-all duration-300 hover-scale"
+               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white;
+                      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
+            <div class="d-flex align-items-center mb-3">
+              <div class="datetime-icon me-3">
+                <i class="bi bi-calendar-event-fill fs-4"></i>
+              </div>
+              <h3 class="h5 fw-bold mb-0">বাংলা তারিখ ও সময়</h3>
+            </div>
+
+            <div class="datetime-content">
+              <div class="mb-3">
+                <div class="d-flex align-items-center mb-2">
+                  <i class="bi bi-calendar-date me-2 opacity-75"></i>
+                  <small class="text-white-50 fw-semibold">বাংলা তারিখ</small>
+                </div>
+                <div class="fs-6 fw-bold" id="bengali-date" style="font-family: 'Noto Sans Bengali', sans-serif;">
+                  লোড হচ্ছে...
+                </div>
+              </div>
+
+              <div class="mb-0">
+                <div class="d-flex align-items-center mb-2">
+                  <i class="bi bi-clock-fill me-2 opacity-75"></i>
+                  <small class="text-white-50 fw-semibold">বাংলা সময়</small>
+                </div>
+                <div class="fs-5 fw-bold font-monospace" id="bengali-time" style="font-family: 'JetBrains Mono', monospace;">
+                  লোড হচ্ছে...
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="d-flex flex-wrap gap-3 text-muted small">
-          <span><strong>তারিখ:</strong> <span data-ramadan-date>--</span></span>
-          <span><strong>রোজা:</strong> <span data-ramadan-roja>--</span></span>
-          <span><strong>সেহরি:</strong> <span data-ramadan-today-sehri>--</span></span>
-          <span><strong>ইফতার:</strong> <span data-ramadan-today-iftar>--</span></span>
+        {# English Date & Time #}
+        <div class="col-lg-6">
+          <div class="datetime-section p-4 rounded-3 h-100 transition-all duration-300 hover-scale"
+               style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                      color: white;
+                      box-shadow: 0 10px 30px rgba(245, 87, 108, 0.3);">
+            <div class="d-flex align-items-center mb-3">
+              <div class="datetime-icon me-3">
+                <i class="bi bi-calendar-event-fill fs-4"></i>
+              </div>
+              <h3 class="h5 fw-bold mb-0">English Date & Time</h3>
+            </div>
+
+            <div class="datetime-content">
+              <div class="mb-3">
+                <div class="d-flex align-items-center mb-2">
+                  <i class="bi bi-calendar-date me-2 opacity-75"></i>
+                  <small class="text-white-50 fw-semibold">Date</small>
+                </div>
+                <div class="fs-6 fw-bold" id="english-date">
+                  Loading...
+                </div>
+              </div>
+
+              <div class="mb-0">
+                <div class="d-flex align-items-center mb-2">
+                  <i class="bi bi-clock-fill me-2 opacity-75"></i>
+                  <small class="text-white-50 fw-semibold">Time</small>
+                </div>
+                <div class="fs-5 fw-bold font-monospace" id="english-time">
+                  Loading...
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="col-lg-4 text-lg-end">
-        <a href="/ramadan-2026" class="btn btn-success rounded-pill px-4 py-2 fw-semibold tw-inline-flex tw-items-center gap-2 shadow-lg tw-shadow-emerald-500/20 hover:-tw-translate-y-0.5 tw-transition">
-          পূর্ণ রমজান ক্যালেন্ডার দেখুন
-        </a>
+      {# Live Indicator #}
+      <div class="text-center mt-4">
+        <div class="d-inline-flex align-items-center px-3 py-2 rounded-pill"
+             style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);">
+          <div class="live-dot me-2" style="width: 8px; height: 8px; background: #ff4757; border-radius: 50%; animation: pulse 2s infinite;"></div>
+          <small class="text-white-75 fw-semibold">Live Update</small>
+        </div>
       </div>
     </div>
   </div>
 </section>
+
+<style>
+@keyframes pulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.live-dot {
+  animation: pulse 2s infinite;
+}
+
+.hover-scale {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-scale:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2) !important;
+}
+
+.datetime-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.datetime-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.datetime-section:hover::before {
+  opacity: 1;
+}
+
+.datetime-icon {
+  background: rgba(255,255,255,0.2);
+  padding: 0.5rem;
+  border-radius: 50%;
+  backdrop-filter: blur(10px);
+}
+
+@media (max-width: 991.98px) {
+  .datetime-section {
+    margin-bottom: 1rem;
+  }
+}
+</style>
+
+<script>
+  function updateHomeDateTime() {
+    const now = new Date();
+
+    const banglaDate = new Intl.DateTimeFormat('bn-BD', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    }).format(now);
+
+    const banglaTime = new Intl.DateTimeFormat('bn-BD', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+      timeZone: 'Asia/Dhaka'
+    }).format(now);
+
+    const englishDate = new Intl.DateTimeFormat('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    }).format(now);
+
+    const englishTime = new Intl.DateTimeFormat('en-US', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true,
+      timeZone: 'Asia/Dhaka'
+    }).format(now);
+
+    document.getElementById('bengali-date').textContent = banglaDate;
+    document.getElementById('bengali-time').textContent = banglaTime;
+    document.getElementById('english-date').textContent = englishDate;
+    document.getElementById('english-time').textContent = englishTime;
+  }
+
+  updateHomeDateTime();
+  setInterval(updateHomeDateTime, 1000);
+</script>
 
 {# ==================== LATEST UPDATES SECTION ==================== #}
 <div class="container py-4 home-latest-section" id="latest-updates">
@@ -1075,5 +1219,4 @@
 {% endblock %}
 
 {% block extra_scripts %}
-  <script src="{{ asset('/assets/js/ramadan-2026.js') }}" defer></script>
 {% endblock %}

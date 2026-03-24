@@ -317,6 +317,60 @@
   background: rgba(14, 165, 233, 1);
 }
 
+/* Resizer handle */
+.bb-assistant-admin .admin-assistant-chat-resizer,
+.bb-assistant-public .public-assistant-shell-resizer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  cursor: ew-resize;
+  background: transparent;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.bb-assistant-admin .admin-assistant-chat:hover .admin-assistant-chat-resizer,
+.bb-assistant-public .public-assistant-shell:hover .public-assistant-shell-resizer {
+  opacity: 0.4;
+  background: linear-gradient(90deg, rgba(14, 165, 233, 0.6), transparent);
+}
+
+.bb-assistant-admin .admin-assistant-chat-resizer:active,
+.bb-assistant-public .public-assistant-shell-resizer:active {
+  opacity: 1;
+  background: rgba(14, 165, 233, 0.8);
+}
+
+/* Resizer handle - vertical (for height resizing) */
+.bb-assistant-admin .admin-assistant-chat-resizer-vertical,
+.bb-assistant-public .public-assistant-shell-resizer-vertical {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: ns-resize;
+  background: transparent;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.bb-assistant-admin .admin-assistant-chat:hover .admin-assistant-chat-resizer-vertical,
+.bb-assistant-public .public-assistant-shell:hover .public-assistant-shell-resizer-vertical {
+  opacity: 0.4;
+  background: linear-gradient(0deg, rgba(14, 165, 233, 0.6), transparent);
+}
+
+.bb-assistant-admin .admin-assistant-chat-resizer-vertical:active,
+.bb-assistant-public .public-assistant-shell-resizer-vertical:active {
+  opacity: 1;
+  background: rgba(14, 165, 233, 0.8);
+}
+
 /* Responsive */
 @media (max-width: 576px) {
 
@@ -330,5 +384,13 @@
   .bb-assistant-public .public-assistant-shell {
     width: calc(100vw - 24px);
     max-height: calc(80vh);
+  }
+  
+  /* Disable resizer on mobile */
+  .bb-assistant-admin .admin-assistant-chat-resizer,
+  .bb-assistant-public .public-assistant-shell-resizer,
+  .bb-assistant-admin .admin-assistant-chat-resizer-vertical,
+  .bb-assistant-public .public-assistant-shell-resizer-vertical {
+    display: none;
   }
 }

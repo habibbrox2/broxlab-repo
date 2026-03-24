@@ -249,10 +249,23 @@ document.addEventListener('DOMContentLoaded', function () {
             let liveWidth = readSidebarWidth();
 
             const updateResizerVisibility = () => {
-                const show = window.innerWidth >= DESKTOP_WIDTH;
-                sidebarResizer.classList.toggle('d-none', !show);
-                sidebarResizer.classList.toggle('d-lg-flex', show);
-                sidebarResizer.classList.toggle('is-mini', isMiniMode());
+                const isDesktop = window.innerWidth >= DESKTOP_WIDTH;
+                const isMini = isMiniMode();
+                
+                // Reset all visibility classes first
+                sidebarResizer.classList.remove('d-none', 'd-lg-flex', 'd-flex');
+                
+                if (isDesktop) {
+                    // On desktop, show the resizer (as flex)
+                    if (isMini) {
+                        sidebarResizer.classList.add('d-flex', 'is-mini');
+                    } else {
+                        sidebarResizer.classList.add('d-lg-flex');
+                    }
+                } else {
+                    // On mobile, hide completely
+                    sidebarResizer.classList.add('d-none');
+                }
             };
 
             const ensureMiniDisabledForResize = () => {

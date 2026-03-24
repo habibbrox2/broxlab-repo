@@ -11,20 +11,26 @@ import { createAiRouter } from './ai/server.js';
 import { MultimodalRAGSystem, attachRoutes as attachRagRoutes } from './index.js';
 import ScraperOrchestrator from './scraper/index.js';
 import Logger from './ai/utils/Logger.js';
+import { parseBoolean, parseInt, parseString, parseOrigins, parseSize } from './utils/EnvParser.js';
 
 const logger = Logger.child('Unified');
 
-const parsedPort = Number.parseInt(process.env.APP_PORT || process.env.RAG_PORT || '3000', 10);
-const APP_PORT = Number.isFinite(parsedPort) ? parsedPort : 3000;
+// Global error handlers
+process.on('unhandledRejection', (err) => {
+    logger.error('Unhandled Promise Rejection', { error: err.message, stack: err.stack });
+    process.exit(1);
+});
 
-const parseOrigins = (value) => String(value || '')
-    .split(',')
-    .map(item => item.trim())
-    .filter(Boolean);
+process.on('uncaughtException', (err) => {
+    logger.error('Uncaught Exception', { error: err.message, stack: err.stack });
+    process.exit(1);
+});
 
-const aiOrigins = parseOrigins(process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:8000');
-const ragOrigins = parseOrigins(process.env.RAG_CORS_ORIGINS || '');
-const appOrigins = parseOrigins(process.env.APP_CORS_ORIGINS || '');
+const APP_PORT = parseInt('APP_PORT', 10, parseInt('RAG_PORT', 10, 3000));
+
+const aiOrigins = parseOrigins('ALLOWED_ORIGINS', ['http://localhost:3000', 'http://localhost:8000']);
+const ragOrigins = parseOrigins('RAG_CORS_ORIGINS', []);
+const appOrigins = parseOrigins('APP_CORS_ORIGINS', []);
 const mergedOrigins = appOrigins.length
     ? appOrigins
     : Array.from(new Set([...aiOrigins, ...ragOrigins].filter(Boolean)));
@@ -54,20 +60,12 @@ const chooseBodyLimit = (a, b) => {
     return aBytes >= bBytes ? a : b;
 };
 
-const aiBodyLimit = process.env.AI_BODY_LIMIT || '10mb';
-const ragBodyLimit = process.env.RAG_BODY_LIMIT || '50mb';
-const bodyLimit = process.env.APP_BODY_LIMIT || chooseBodyLimit(aiBodyLimit, ragBodyLimit);
+const aiBodyLimit = parseSize(process.env.AI_BODY_LIMIT || '10mb');
+const ragBodyLimit = parseSize(process.env.RAG_BODY_LIMIT || '50mb');
+const bodyLimit = parseSize(process.env.APP_BODY_LIMIT || chooseBodyLimit(aiBodyLimit, ragBodyLimit));
 
-const parsedRateWindow = Number.parseInt(
-    process.env.RATE_LIMIT_WINDOW_MS || process.env.RAG_RATE_LIMIT_WINDOW_MS || String(15 * 60 * 1000),
-    10
-);
-const rateLimitWindowMs = Number.isFinite(parsedRateWindow) ? parsedRateWindow : 15 * 60 * 1000;
-const parsedRateMax = Number.parseInt(
-    process.env.RATE_LIMIT_MAX || process.env.RAG_RATE_LIMIT_MAX || '100',
-    10
-);
-const rateLimitMax = Number.isFinite(parsedRateMax) ? parsedRateMax : 100;
+const rateLimitWindowMs = parseInt('RATE_LIMIT_WINDOW_MS', 10, parseInt('RAG_RATE_LIMIT_WINDOW_MS', 10, 15 * 60 * 1000));
+const rateLimitMax = parseInt('RATE_LIMIT_MAX', 10, parseInt('RAG_RATE_LIMIT_MAX', 10, 100));
 
 const app = express();
 
@@ -109,13 +107,13 @@ let scraperPromise = null;
 let scraperCleanupPromise = null;
 let scraperRunning = false;
 
-const SCRAPER_ENABLED = (process.env.SCRAPER_ENABLED || 'true').toLowerCase() !== 'false';
-const SCRAPER_INTERVAL = Number.parseInt(process.env.SCRAPER_INTERVAL || '20000', 10);
-const SCRAPER_SOURCE = (process.env.SCRAPER_SOURCE || '').trim();
-const SCRAPER_SOURCE_ID = Number.parseInt(process.env.SCRAPER_SOURCE_ID || '', 10);
-const SCRAPER_MAX = Number.parseInt(process.env.SCRAPER_MAX || '10', 10);
-const SCRAPER_CYCLES = Number.parseInt(process.env.SCRAPER_CYCLES || '0', 10);
-const SCRAPER_CONCURRENCY = Number.parseInt(process.env.SCRAPER_CONCURRENCY || '', 10);
+const SCRAPER_ENABLED = parseBoolean(process.env.SCRAPER_ENABLED, false);
+const SCRAPER_INTERVAL = parseInt('SCRAPER_INTERVAL', 10, 20000);
+const SCRAPER_SOURCE = parseString('SCRAPER_SOURCE', '').trim();
+const SCRAPER_SOURCE_ID = parseInt('SCRAPER_SOURCE_ID', 10, 0);
+const SCRAPER_MAX = parseInt('SCRAPER_MAX', 10, 10);
+const SCRAPER_CYCLES = parseInt('SCRAPER_CYCLES', 10, 0);
+const SCRAPER_CONCURRENCY = parseInt('SCRAPER_CONCURRENCY', 10, 0);
 
 const cleanupScraper = async () => {
     if (!scraper) return;

@@ -12,6 +12,8 @@ use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use App\Modules\Scraper\AllowlistPolicy;
+use App\Modules\Scraper\RobotsPolicy;
 
 /**
  * HttpClientService.php
@@ -56,6 +58,14 @@ class HttpClientService
                 'max' => 3000,
             ],
         ];
+
+        $domainMin = (int)(getenv('SCRAPER_DOMAIN_MIN_DELAY_MS') ?: 0);
+        if ($domainMin > 0) {
+            $minDelay = max((int)$this->config['request_delay']['min'], $domainMin);
+            $maxDelay = max((int)$this->config['request_delay']['max'], $domainMin);
+            $this->config['request_delay']['min'] = $minDelay;
+            $this->config['request_delay']['max'] = $maxDelay;
+        }
 
         // Initialize components
         $this->userAgentRotator = new UserAgentRotator();
@@ -184,6 +194,26 @@ class HttpClientService
             'proxy' => null,
         ];
 
+        $allowlist = AllowlistPolicy::check($url, $GLOBALS['mysqli'] ?? null);
+        if (!($allowlist['allowed'] ?? false)) {
+            return [
+                'success' => false,
+                'error' => 'allowlist_blocked',
+                'error_code' => 'allowlist_blocked',
+                'status' => 0
+            ];
+        }
+
+        $robots = RobotsPolicy::check($url, 'BroxLabScraper');
+        if (!($robots['allowed'] ?? false)) {
+            return [
+                'success' => false,
+                'error' => 'robots_disallow',
+                'error_code' => 'robots_disallow',
+                'status' => 0
+            ];
+        }
+
         // Apply delay before request
         if ($options['delay']) {
             $domain = parse_url($url, PHP_URL_HOST);
@@ -277,6 +307,26 @@ class HttpClientService
             'delay' => true,
             'proxy' => null,
         ];
+
+        $allowlist = AllowlistPolicy::check($url, $GLOBALS['mysqli'] ?? null);
+        if (!($allowlist['allowed'] ?? false)) {
+            return [
+                'success' => false,
+                'error' => 'allowlist_blocked',
+                'error_code' => 'allowlist_blocked',
+                'status' => 0
+            ];
+        }
+
+        $robots = RobotsPolicy::check($url, 'BroxLabScraper');
+        if (!($robots['allowed'] ?? false)) {
+            return [
+                'success' => false,
+                'error' => 'robots_disallow',
+                'error_code' => 'robots_disallow',
+                'status' => 0
+            ];
+        }
 
         // Apply delay
         if ($options['delay']) {

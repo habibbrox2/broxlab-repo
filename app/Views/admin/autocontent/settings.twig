@@ -64,7 +64,7 @@
                             <i class="bi bi-x-circle-fill me-1"></i>
                             {{ browser_status.message }}
                         </div>
-                        <div class="small text-muted mb-2">Install Node.js (>=20) and Puppeteer on the server to enable WAF bypass.</div>
+                        <div class="small text-muted mb-2">Shared hosting uses HTTP-only scraping; WAF/JS pages may require PHP fallback.</div>
                     {% endif %}
                     {% if browser_status.details %}
                         <div class="small text-muted">{{ browser_status.details }}</div>
@@ -86,6 +86,22 @@
                         <label class="form-check-label fw-semibold" for="autocontent_enabled">
                             Enable Auto Content Engine
                         </label>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="auto_collect" id="auto_collect"
+                               {% if config.auto_collect %}checked{% endif %}>
+                        <label class="form-check-label fw-semibold" for="auto_collect">
+                            Auto-Collect Articles
+                        </label>
+                        <div class="form-text small text-muted">Cron collect script follows this toggle.</div>
+                    </div>
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" name="auto_process" id="auto_process"
+                               {% if config.auto_process %}checked{% endif %}>
+                        <label class="form-check-label fw-semibold" for="auto_process">
+                            Auto-Process with AI
+                        </label>
+                        <div class="form-text small text-muted">Cron process script follows this toggle.</div>
                     </div>
                     <div class="form-check form-switch mb-4">
                         <input class="form-check-input" type="checkbox" name="auto_publish" id="auto_publish"

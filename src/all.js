@@ -4,13 +4,14 @@
  */
 
 import { spawn } from 'child_process';
+import { parseBoolean, parseInt, parseString } from './utils/EnvParser.js';
 
-const RAG_PORT = process.env.RAG_PORT || '3000';
-const AI_PORT = process.env.AI_PORT || '3001';
-const SCRAPER_ENABLED = (process.env.SCRAPER_ENABLED || 'true').toLowerCase() !== 'false';
-const SCRAPER_INTERVAL = process.env.SCRAPER_INTERVAL || '20000';
-const SCRAPER_SOURCE = process.env.SCRAPER_SOURCE || '';
-const SCRAPER_MAX = process.env.SCRAPER_MAX || '';
+const RAG_PORT = parseInt('RAG_PORT', 10, 3000);
+const AI_PORT = parseInt('AI_PORT', 10, 3001);
+const SCRAPER_ENABLED = parseBoolean(process.env.SCRAPER_ENABLED, false);
+const SCRAPER_INTERVAL = parseInt('SCRAPER_INTERVAL', 10, 20000);
+const SCRAPER_SOURCE = parseString('SCRAPER_SOURCE', '');
+const SCRAPER_MAX = parseString('SCRAPER_MAX', '');
 
 const children = new Map();
 
@@ -51,6 +52,17 @@ function shutdown(exitCode = 0) {
 
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
+
+// Global error handlers
+process.on('unhandledRejection', (err) => {
+    console.error('[all] Unhandled Promise Rejection:', err.message, err.stack);
+    shutdown(1);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('[all] Uncaught Exception:', err.message, err.stack);
+    shutdown(1);
+});
 
 // Start AI server
 startProcess('ai-server', process.execPath, ['src/ai/server.js'], { AI_PORT });

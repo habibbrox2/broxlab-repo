@@ -54,7 +54,7 @@ class ArticleScraper
             } elseif ($response['error'] === 'waf_detected') {
                 return [
                     'success' => false,
-                    'error' => 'WAF detected but Puppeteer unavailable. Please install Puppeteer/browser runtime.',
+                    'error' => 'WAF detected. Shared hosting uses HTTP-only scraping; try PHP fallback.',
                     'url' => $url,
                     'waf_detected' => true,
                 ];
@@ -230,7 +230,7 @@ class ArticleScraper
             } elseif ($response['error'] === 'waf_detected') {
                 return [
                     'success' => false,
-                    'error' => 'WAF detected but Puppeteer unavailable. Please install Puppeteer/browser runtime.',
+                    'error' => 'WAF detected. Shared hosting uses HTTP-only scraping; try PHP fallback.',
                     'url' => $url,
                     'articles' => [],
                     'waf_detected' => true,

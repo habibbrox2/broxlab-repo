@@ -2,9 +2,8 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import BrowserAgent from '../scraper/utils/BrowserAgent.js';
 import HtmlParser from '../scraper/utils/HtmlParser.js';
-import ProxyManager from '../proxy/ProxyManager.js';
+import HttpClient from '../scraper/utils/HttpClient.js';
 import logger from '../utils/scraperLogger.js';
 
 const app = express();
@@ -21,6 +20,14 @@ app.use(rateLimit({
     windowMs: 60 * 1000,
     max: Number(process.env.SCRAPER_RATE_LIMIT || 60)
 }));
+
+app.get('/health', (req, res) => {
+    return res.json({
+        success: true,
+        service: 'direct-scraper',
+        timestamp: new Date().toISOString()
+    });
+});
 
 app.use((req, res, next) => {
     if (!apiKey) {
@@ -110,26 +117,18 @@ function extractFields(html, url) {
 
 async function fetchWithRetry(url, options = {}) {
     const attempts = Math.max(1, maxRetries + 1);
-    let lastError = 'browser_fetch_failed';
+    let lastError = 'fetch_failed';
 
     for (let i = 0; i < attempts; i++) {
-        const proxy = options.proxyMode === 'off' ? null : ProxyManager.getProxy();
-        const result = await BrowserAgent.fetchHtml(url, {
-            timeout: options.timeoutMs,
-            proxy
+        const result = await HttpClient.fetchHtml(url, {
+            proxyEnabled: options.proxyMode !== 'off'
         });
 
         if (result.success) {
-            if (proxy) {
-                ProxyManager.markSuccess(proxy, 0);
-            }
             return { success: true, html: result.html };
         }
 
         lastError = result.error || lastError;
-        if (proxy) {
-            ProxyManager.markFailure(proxy);
-        }
     }
 
     return { success: false, error: lastError };

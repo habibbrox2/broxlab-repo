@@ -41,6 +41,7 @@ if (!function_exists('jsonResponse')) {
 if (!function_exists('cvGetTemplateAllowlist')) {
     /**
      * Build a template allowlist from `app/Views/cv/templates/*.twig`.
+     * Excludes disabled templates based on metadata.
      * Returns template slugs (e.g. modern, minimal).
      */
     function cvGetTemplateAllowlist(): array
@@ -52,6 +53,10 @@ if (!function_exists('cvGetTemplateAllowlist')) {
         foreach ($files as $file) {
             $name = basename($file, '.twig');
             if ($name === '' || $name[0] === '_') {
+                continue;
+            }
+            // Check if template is disabled
+            if (function_exists('cvTemplateIsDisabled') && cvTemplateIsDisabled($name)) {
                 continue;
             }
             $templates[] = $name;
@@ -146,6 +151,8 @@ $router->post('/cv', ['middleware' => ['auth', 'csrf']], function () use ($cvMod
     $userId = requireAuth();
 
     $title = sanitize_input($_POST['title'] ?? 'My CV');
+    $profession = sanitize_input($_POST['profession'] ?? '');
+    $template = sanitize_input($_POST['template'] ?? 'modern');
 
     $cvId = $cvModel->create($userId, $title);
 
@@ -154,10 +161,22 @@ $router->post('/cv', ['middleware' => ['auth', 'csrf']], function () use ($cvMod
         $sectionTypes = cvDefaultSectionTypes();
 
         foreach ($sectionTypes as $type => $sectionTitle) {
-            $cvSectionModel->create($cvId, $type, $sectionTitle);
+            $sectionId = $cvSectionModel->create($cvId, $type, $sectionTitle);
+
+            // Add default content for professional summary if profession is provided
+            if ($type === 'summary' && !empty($profession)) {
+                $professionSummaries = cvTemplateGetProfessionSummaries();
+                if (isset($professionSummaries[$profession])) {
+                    // Create a default item with profession-specific summary
+                    $cvItemModel = new CvItemModel($GLOBALS['mysqli']);
+                    $cvItemModel->create($sectionId, 'text', [
+                        'content' => $professionSummaries[$profession]
+                    ]);
+                }
+            }
         }
 
-        logActivity("CV Created", "cv", $cvId, ['title' => $title], 'success');
+        logActivity("CV Created", "cv", $cvId, ['title' => $title, 'profession' => $profession, 'template' => $template], 'success');
         showMessage("CV created successfully", "success");
         header('Location: /cv/' . $cvId);
     } else {
@@ -169,7 +188,7 @@ $router->post('/cv', ['middleware' => ['auth', 'csrf']], function () use ($cvMod
 
 // ========== GET CV (EDITOR) ==========
 
-$router->get('/cv/{id}', ['middleware' => ['auth']], function ($id) use ($twig, $cvModel, $cvSectionModel, $cvItemModel) {
+$router->get('/cv/{id}', ['middleware' => ['auth']], function ($id) use ($twig, $cvModel, $cvSectionModel, $cvItemModel, $cvShareModel) {
     $userId = requireAuth();
     $id = (int)$id;
 
@@ -190,15 +209,24 @@ $router->get('/cv/{id}', ['middleware' => ['auth']], function ($id) use ($twig, 
     foreach ($sections as &$section) {
         $section['items'] = $cvItemModel->getBySectionId($section['id']);
     }
-    
+
     $templates = cvGetTemplateAllowlist();
     $selectedTemplate = cvResolveTemplate($_GET['template'] ?? null, $cv['template'] ?? null, $templates, 'modern');
+
+    // Get share status for this CV
+    $cvShare = $cvShareModel->getByCvId((int)$id);
+    $isShared = !empty($cvShare);
+    $shareToken = $cvShare['token'] ?? null;
+    $shareExpiresAt = $cvShare['expires_at'] ?? null;
 
     echo $twig->render('cv/editor.twig', [
         'cv' => $cv,
         'sections' => $sections,
         'templates' => $templates,
         'selected_template' => $selectedTemplate,
+        'is_shared' => $isShared,
+        'share_token' => $shareToken,
+        'share_expires_at' => $shareExpiresAt,
         'page_title' => 'Edit CV: ' . $cv['title']
     ]);
 });

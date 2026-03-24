@@ -37,7 +37,7 @@ class KBSelfHealer
 
         // Configuration
         $this->useNodeJs = $options['useNodeJs'] ?? (getenv('KB_USE_NODEJS') === 'true');
-        $this->nodeJsUrl = $options['nodeJsUrl'] ?? (getenv('NODEJS_AI_SERVER_URL') ?: 'http://localhost:3001');
+        $this->nodeJsUrl = $options['nodeJsUrl'] ?? (getenv('NODEJS_AI_SERVER_URL') ?: (getenv('APP_URL') ?: 'http://localhost:3001'));
         $this->autoImprove = $options['autoImprove'] ?? (getenv('KB_AUTO_IMPROVE') === 'true');
         $this->qualityThreshold = $options['qualityThreshold'] ?? 50;
         $this->lookbackDays = $options['lookbackDays'] ?? 30;
