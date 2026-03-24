@@ -107,6 +107,41 @@ class HttpClient {
         return markers.some(m => s.includes(m));
     }
 
+    /**
+     * Check for blocking (empty HTML or CAPTCHA)
+     */
+    _isBlocked(body, status) {
+        const s = String(body || '').toLowerCase();
+        const len = s.length;
+
+        // Check for empty or minimal content
+        if (len < 100) {
+            Logger.debug('Blocking detected: empty or minimal content', { length: len });
+            return true;
+        }
+
+        // Check for CAPTCHA keywords
+        const captchaMarkers = [
+            'captcha',
+            'recaptcha',
+            'google-recaptcha',
+            'verify you are human',
+            'security check',
+            'access denied',
+            'blocked',
+            'suspended',
+            'rate limit exceeded',
+            'too many requests'
+        ];
+
+        if (captchaMarkers.some(m => s.includes(m))) {
+            Logger.debug('Blocking detected: CAPTCHA or security check');
+            return true;
+        }
+
+        return false;
+    }
+
     _resolveRedirect(fromUrl, location) {
         if (!location) return null;
         try {
@@ -261,6 +296,31 @@ class HttpClient {
 
                 if (!response) {
                     throw new Error('no_response');
+                }
+
+                // Check for blocking (empty HTML, CAPTCHA, etc.)
+                if (this._isBlocked(response.data, response.status)) {
+                    Logger.warn('Blocking detected', {
+                        url: currentUrl,
+                        status: response.status,
+                        contentLength: response.data?.length || 0,
+                        attempt: attempt + 1
+                    });
+
+                    if (attempt < maxRetries) {
+                        await this._sleep(delayMs);
+                        delayMs = Math.min(delayMs * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelayMs);
+                        continue;
+                    }
+
+                    return {
+                        success: false,
+                        error: 'blocked',
+                        blocked: true,
+                        status: response.status,
+                        elapsed_ms: Date.now() - startedAt,
+                        proxy_used: proxyUrl || null
+                    };
                 }
 
                 // Some WAFs return HTTP 200/403 with a challenge page.
