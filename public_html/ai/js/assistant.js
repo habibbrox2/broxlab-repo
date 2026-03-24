@@ -251,14 +251,20 @@ if (!window.BroxAssistantLoaded) {
             this.idleTimer = null;
             this.isChatActive = false;
             this.modelBarOpen = false;
+            this.historyStateKey = 'brox.ai.assistant.open';
+            this.historyStateActive = !!(history.state && history.state[this.historyStateKey]);
+            this.overlay = null;
 
             this.initUI();
+            this.initOverlay();
             if (this.nodes.btn) {
                 this.bindEvents();
                 this.initSpeechRecognition();
                 this.renderInitialState();
                 this.bootstrapFrontendSettings();
             }
+
+            window.addEventListener('popstate', (event) => this.handlePopState(event));
         }
 
         t(key) { return I18N[this.lang][key] || key; }
@@ -762,27 +768,9 @@ if (!window.BroxAssistantLoaded) {
             // Toggle chat open/close with icon change
             this.nodes.btn.onclick = () => {
                 if (this.nodes.shell?.classList.contains('brox-ai-hidden')) {
-                    this.nodes.shell.classList.remove('brox-ai-hidden');
-                    this.nodes.btn.classList.add('brox-ai-active');
-
-                    // Check GDPR consent on first open
-                    const consentGiven = localStorage.getItem('brox.ai.gdpr_consent');
-                    if (!consentGiven) {
-                        this.initGdprConsent();
-                    } else if (this.user) {
-                        // User exists, show chat
-                        this.nodes.prechat?.classList.add('brox-ai-hidden');
-                        this.nodes.body?.classList.remove('brox-ai-hidden');
-                        this.nodes.footer?.classList.remove('brox-ai-hidden');
-                        this.isChatActive = true;
-                    } else {
-                        // No user, show pre-chat
-                        this.showPreChat();
-                    }
-                    this.markActivity();
+                    this.openAssistant();
                 } else {
-                    this.nodes.shell?.classList.add('brox-ai-hidden');
-                    this.nodes.btn.classList.remove('brox-ai-active');
+                    this.closeAssistant();
                 }
             };
             this.nodes.shell?.classList.add('brox-ai-hidden');
@@ -790,9 +778,7 @@ if (!window.BroxAssistantLoaded) {
             // Close button handler
             if (this.nodes.close) {
                 this.nodes.close.onclick = () => {
-                    this.nodes.shell?.classList.add('brox-ai-hidden');
-                    // Show open icon on FAB button
-                    this.nodes.btn?.classList.remove('brox-ai-active');
+                    this.closeAssistant();
                 };
             }
 
@@ -893,6 +879,99 @@ if (!window.BroxAssistantLoaded) {
                 if (clickedInside) return;
                 this.closeModelBar();
             });
+        }
+
+        initOverlay() {
+            const existing = document.getElementById('publicAssistantOverlay');
+            if (existing) {
+                this.overlay = existing;
+                return;
+            }
+            const overlay = document.createElement('div');
+            overlay.id = 'publicAssistantOverlay';
+            overlay.className = 'brox-ai-overlay';
+            overlay.addEventListener('click', () => this.closeAssistant());
+            document.body.appendChild(overlay);
+            this.overlay = overlay;
+        }
+
+        openAssistant(options = {}) {
+            if (!this.nodes.shell) return;
+            if (!this.nodes.shell.classList.contains('brox-ai-hidden')) return;
+
+            this.nodes.shell.classList.remove('brox-ai-hidden');
+            this.nodes.btn?.classList.add('brox-ai-active');
+            this.overlay?.classList.add('brox-ai-overlay-active');
+
+            if (!options.skipHistory) {
+                this.pushHistoryState();
+            }
+
+            // Check GDPR consent on first open
+            const consentGiven = localStorage.getItem('brox.ai.gdpr_consent');
+            if (!consentGiven) {
+                this.initGdprConsent();
+            } else if (this.user) {
+                // User exists, show chat
+                this.nodes.prechat?.classList.add('brox-ai-hidden');
+                this.nodes.body?.classList.remove('brox-ai-hidden');
+                this.nodes.footer?.classList.remove('brox-ai-hidden');
+                this.isChatActive = true;
+            } else {
+                // No user, show pre-chat
+                this.showPreChat();
+            }
+            this.markActivity();
+        }
+
+        closeAssistant(options = {}) {
+            if (!this.nodes.shell) return;
+            this.nodes.shell.classList.add('brox-ai-hidden');
+            this.nodes.btn?.classList.remove('brox-ai-active');
+            this.overlay?.classList.remove('brox-ai-overlay-active');
+            if (options.fromPop) {
+                this.historyStateActive = false;
+            } else {
+                this.clearHistoryState();
+            }
+        }
+
+        pushHistoryState() {
+            try {
+                if (this.historyStateActive || (history.state && history.state[this.historyStateKey])) return;
+                const nextState = Object.assign({}, history.state || {});
+                nextState[this.historyStateKey] = true;
+                history.pushState(nextState, '');
+                this.historyStateActive = true;
+            } catch (e) {
+                this.historyStateActive = false;
+            }
+        }
+
+        clearHistoryState() {
+            try {
+                if (!history.state || !history.state[this.historyStateKey]) return;
+                const nextState = Object.assign({}, history.state || {});
+                delete nextState[this.historyStateKey];
+                history.replaceState(nextState, '');
+                this.historyStateActive = false;
+            } catch (e) {
+                this.historyStateActive = false;
+            }
+        }
+
+        handlePopState(event) {
+            const state = event?.state || {};
+            if (state && state[this.historyStateKey]) {
+                if (this.nodes.shell?.classList.contains('brox-ai-hidden')) {
+                    this.openAssistant({ skipHistory: true });
+                }
+                return;
+            }
+
+            if (this.nodes.shell && !this.nodes.shell.classList.contains('brox-ai-hidden')) {
+                this.closeAssistant({ fromPop: true });
+            }
         }
 
         // ── Status Management ─────────────────────────────────────────────────────

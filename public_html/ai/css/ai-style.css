@@ -3260,6 +3260,23 @@ body {
     animation: brox-ai-spin 1s linear infinite;
 }
 
+/* --- Assistant Overlay --- */
+.brox-ai-overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(2, 6, 23, 0.55), rgba(15, 23, 42, 0.35));
+    backdrop-filter: blur(6px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 1998;
+}
+
+.brox-ai-overlay.brox-ai-overlay-active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
 /* Thinking Dots */
 :where(#adminAiShell, #publicAssistantChat) .brox-ai-thinking-dots {
     display: inline-flex;

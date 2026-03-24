@@ -152,8 +152,8 @@
     {% if cvs is not empty %}
       <div class="admin-panel-card">
         <div class="admin-panel-card-body">
-          <div class="table-container">
-            <table class="table table-hover align-middle cv-admin-table">
+          <div class="table-responsive">
+            <table class="table table-stacked table-hover align-middle cv-admin-table">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -222,3 +222,5 @@
   {{ parent() }}
   <script src="{{ asset('/assets/js/cv-admin.js') }}" defer></script>
 {% endblock %}
+
+
