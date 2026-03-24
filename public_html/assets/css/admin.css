@@ -3864,6 +3864,46 @@ textarea.font-monospace {
         padding: var(--space-md);
     }
 
+    .table-stacked thead {
+        display: none;
+    }
+
+    .table-stacked tbody tr {
+        display: block;
+        padding: 0.85rem 0.85rem;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+    }
+
+    .table-stacked tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.4rem 0;
+        border: 0;
+    }
+
+    .table-stacked tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #64748b;
+        flex: 0 0 auto;
+    }
+
+    .table-stacked .btn-group {
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .table-stacked a {
+        word-break: break-word;
+    }
+
+    .table-stacked .badge {
+        white-space: nowrap;
+    }
+
     .table-actions .btn {
         padding: 0.25rem 0.5rem;
         font-size: 0.75rem;

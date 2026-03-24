@@ -27,6 +27,37 @@ document.addEventListener('DOMContentLoaded', function () {
     overlay.className = 'sidebar-overlay';
     document.body.appendChild(overlay);
 
+    const applyStackedTables = () => {
+        const tables = document.querySelectorAll('table.table-stacked');
+        if (!tables.length) return;
+
+        tables.forEach((table) => {
+            const headers = Array.from(table.querySelectorAll('thead th')).map((th) => th.textContent.trim());
+            if (!headers.length) return;
+
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach((row) => {
+                const cells = Array.from(row.children).filter((cell) => cell.tagName === 'TD');
+                if (cells.length === 1 && cells[0].hasAttribute('colspan')) {
+                    return;
+                }
+                cells.forEach((cell, index) => {
+                    if (cell.hasAttribute('data-label')) return;
+                    let label = headers[index] || '';
+                    if (!label) {
+                        const hasCheckbox = cell.querySelector('input[type="checkbox"]');
+                        if (hasCheckbox) label = 'Select';
+                    }
+                    if (label) {
+                        cell.setAttribute('data-label', label);
+                    }
+                });
+            });
+        });
+    };
+
+    applyStackedTables();
+
     if (sidebar && sidebarToggles.length > 0) {
         const normalizePath = (value) => {
             const raw = String(value || '').trim();

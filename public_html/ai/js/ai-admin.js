@@ -492,14 +492,20 @@ if (!window.BroxAdminInstance) {
             this._filePickerTimer = null;
             this._micPermission = 'unknown';
             this._micAccessPromise = null;
+            this.historyStateKey = 'brox.ai.admin.open';
+            this.historyStateActive = !!(history.state && history.state[this.historyStateKey]);
+            this.overlay = null;
 
             this.initUI();
+            this.initOverlay();
             this.bindEvents();
             this.startLogMonitor();
             this.renderHistory();
             this.updateContext();
             this.startInactivityTimer();
             this.initResizer();
+
+            window.addEventListener('popstate', (event) => this.handlePopState(event));
         }
 
         // ── Resizer for AI Chat Panel ─────────────────────────────────────────────
@@ -594,6 +600,20 @@ if (!window.BroxAdminInstance) {
             shell.addEventListener('pointermove', onPointerMove);
             shell.addEventListener('pointerup', onPointerUp);
             shell.addEventListener('pointercancel', onPointerUp);
+        }
+
+        initOverlay() {
+            const existing = document.getElementById('adminAiOverlay');
+            if (existing) {
+                this.overlay = existing;
+                return;
+            }
+            const overlay = document.createElement('div');
+            overlay.id = 'adminAiOverlay';
+            overlay.className = 'brox-ai-overlay';
+            overlay.addEventListener('click', () => this.closeSidebar());
+            document.body.appendChild(overlay);
+            this.overlay = overlay;
         }
 
         ensureProvidersBootstrapped() {
@@ -1772,35 +1792,86 @@ if (!window.BroxAdminInstance) {
             this.updateContextUI();
 
             if (this.nodes.shell.classList.contains('brox-ai-hidden')) {
-                this.nodes.shell.classList.remove('d-none');
-                this.nodes.shell.classList.remove('brox-ai-hidden');
-                this.ensureProvidersBootstrapped();
-                setTimeout(() => {
-                    this.nodes.input?.focus();
-                }, 10);
-                // Toggle button icon: show close icon
-                this.nodes.btn?.classList.add('brox-ai-active');
+                this.openSidebar();
             } else {
-                this.nodes.shell.classList.add('brox-ai-hidden');
-                setTimeout(() => this.nodes.shell.classList.add('d-none'), 300);
-                // Toggle button icon: show open icon
-                this.nodes.btn?.classList.remove('brox-ai-active');
+                this.closeSidebar();
             }
         }
 
         minimizeSidebar() {
-            if (!this.nodes.shell) return;
-            this.nodes.shell.classList.add('brox-ai-hidden');
-            // Toggle button icon: show open icon
-            this.nodes.btn?.classList.remove('brox-ai-active');
+            this.closeSidebar();
         }
 
-        closeSidebar() {
+        openSidebar(options = {}) {
+            if (!this.nodes.shell) return;
+            if (!this.nodes.shell.classList.contains('brox-ai-hidden')) return;
+
+            this.nodes.shell.classList.remove('d-none');
+            this.nodes.shell.classList.remove('brox-ai-hidden');
+            this.ensureProvidersBootstrapped();
+            setTimeout(() => {
+                this.nodes.input?.focus();
+            }, 10);
+            // Toggle button icon: show close icon
+            this.nodes.btn?.classList.add('brox-ai-active');
+            this.overlay?.classList.add('brox-ai-overlay-active');
+
+            if (!options.skipHistory) {
+                this.pushHistoryState();
+            }
+        }
+
+        closeSidebar(options = {}) {
             if (!this.nodes.shell) return;
             this.nodes.shell.classList.add('brox-ai-hidden');
             setTimeout(() => this.nodes.shell.classList.add('d-none'), 300);
             // Toggle button icon: show open icon
             this.nodes.btn?.classList.remove('brox-ai-active');
+            this.overlay?.classList.remove('brox-ai-overlay-active');
+
+            if (options.fromPop) {
+                this.historyStateActive = false;
+            } else {
+                this.clearHistoryState();
+            }
+        }
+
+        pushHistoryState() {
+            try {
+                if (this.historyStateActive || (history.state && history.state[this.historyStateKey])) return;
+                const nextState = Object.assign({}, history.state || {});
+                nextState[this.historyStateKey] = true;
+                history.pushState(nextState, '');
+                this.historyStateActive = true;
+            } catch (e) {
+                this.historyStateActive = false;
+            }
+        }
+
+        clearHistoryState() {
+            try {
+                if (!history.state || !history.state[this.historyStateKey]) return;
+                const nextState = Object.assign({}, history.state || {});
+                delete nextState[this.historyStateKey];
+                history.replaceState(nextState, '');
+                this.historyStateActive = false;
+            } catch (e) {
+                this.historyStateActive = false;
+            }
+        }
+
+        handlePopState(event) {
+            const state = event?.state || {};
+            if (state && state[this.historyStateKey]) {
+                if (this.nodes.shell?.classList.contains('brox-ai-hidden')) {
+                    this.openSidebar({ skipHistory: true });
+                }
+                return;
+            }
+
+            if (this.nodes.shell && !this.nodes.shell.classList.contains('brox-ai-hidden')) {
+                this.closeSidebar({ fromPop: true });
+            }
         }
 
         // ── Chat Management ─────────────────────────────────────────────────────

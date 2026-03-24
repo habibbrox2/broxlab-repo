@@ -1,4 +1,4 @@
-﻿{% extends 'admin/layout.twig' %}
+{% extends 'admin/layout.twig' %}
 
 {% block title %}AI Auto Content Dashboard{% endblock %}
 
@@ -87,7 +87,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
   <div>
     <h4 class="fw-bold mb-1"><i class="bi bi-robot me-2"></i>AI Auto Content Dashboard</h4>
-    <p class="text-muted mb-0 small">Puter AI — Automated content collection, processing, and publishing</p>
+    <p class="text-muted mb-0 small">Puter AI � Automated content collection, processing, and publishing</p>
   </div>
   <div class="d-flex gap-2 flex-wrap">
     <button type="button" id="btn-collect-now" class="btn btn-outline-info btn-sm">
@@ -129,7 +129,7 @@
     <div class="small text-muted mb-2">These will be skipped/paused to protect data quality.</div>
     <ul class="mb-0 small">
       {% for b in blocked_sources %}
-        <li>{{ b.name ?? ('Source #' ~ b.source_id) }} — {{ b.cnt }} hits, last: {{ b.last_at }}</li>
+        <li>{{ b.name ?? ('Source #' ~ b.source_id) }} � {{ b.cnt }} hits, last: {{ b.last_at }}</li>
       {% endfor %}
     </ul>
   </div>
@@ -163,13 +163,13 @@
 <div class="card mb-4 border-0 shadow-sm">
   <div class="card-body py-3">
     <div class="d-flex align-items-center justify-content-center flex-wrap gap-2">
-      <span class="pipeline-step bg-info bg-opacity-10 text-info">📥 Collected ({{ stats.collected }})</span>
+      <span class="pipeline-step bg-info bg-opacity-10 text-info">?? Collected ({{ stats.collected }})</span>
       <i class="bi bi-arrow-right pipeline-arrow"></i>
-      <span class="pipeline-step bg-warning bg-opacity-10 text-warning">🤖 Processing ({{ stats.processing }})</span>
+      <span class="pipeline-step bg-warning bg-opacity-10 text-warning">?? Processing ({{ stats.processing }})</span>
       <i class="bi bi-arrow-right pipeline-arrow"></i>
-      <span class="pipeline-step bg-primary bg-opacity-10 text-primary">✅ Processed ({{ stats.processed }})</span>
+      <span class="pipeline-step bg-primary bg-opacity-10 text-primary">? Processed ({{ stats.processed }})</span>
       <i class="bi bi-arrow-right pipeline-arrow"></i>
-      <span class="pipeline-step bg-success bg-opacity-10 text-success">📰 Published ({{ stats.published }})</span>
+      <span class="pipeline-step bg-success bg-opacity-10 text-success">?? Published ({{ stats.published }})</span>
     </div>
   </div>
 </div>
@@ -182,7 +182,7 @@
         <div class="small text-muted">Live status from /admin/autocontent/health</div>
       </div>
       <div class="mt-2 d-flex flex-wrap gap-3" id="scraper-health">
-        <span class="badge bg-secondary">Loading…</span>
+        <span class="badge bg-secondary">Loading�</span>
       </div>
     </div>
   </div>
@@ -296,7 +296,7 @@
             {% for item in recent_items|slice(0, 5) %}
             <li class="activity-item">
               <div class="small fw-bold text-dark text-truncate" style="max-width: 200px;">{{ item.ai_title ?? item.original_title }}</div>
-              <div class="x-small text-muted">{{ item.status|capitalize }} • {{ item.created_at|date('H:i') }}</div>
+              <div class="x-small text-muted">{{ item.status|capitalize }} � {{ item.created_at|date('H:i') }}</div>
             </li>
             {% endfor %}
           </ul>
@@ -353,7 +353,7 @@
             <div class="small text-muted">Failed</div>
           </div>
           <div class="col-4 text-center">
-            <div class="fw-bold fs-6">{{ retry_summary.next_attempt ?? '—' }}</div>
+            <div class="fw-bold fs-6">{{ retry_summary.next_attempt ?? '�' }}</div>
             <div class="small text-muted">Next Attempt</div>
           </div>
         </div>
@@ -388,7 +388,7 @@
   </div>
   <div class="card-body p-0">
     <div class="table-responsive">
-      <table class="table table-hover mb-0">
+      <table class="table table-stacked table-hover mb-0">
         <thead class="table-light">
           <tr>
             <th>#</th>
@@ -461,7 +461,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 
-  // ── Chart ──────────────────────────────────────────────────────────────────
+  // -- Chart ------------------------------------------------------------------
   const ctx = document.getElementById('processingChart').getContext('2d');
   fetch('/admin/autocontent/stats/chart?days=7')
     .then(r => r.json())
@@ -485,7 +485,7 @@ document.addEventListener('DOMContentLoaded', function() {
       ctx.canvas.parentElement.innerHTML = '<p class="text-muted text-center py-4 small">Chart data unavailable</p>';
     });
 
-  // ── Action helper ──────────────────────────────────────────────────────────
+  // -- Action helper ----------------------------------------------------------
   function getCsrfToken() {
     var meta = document.querySelector('meta[name="csrf-token"]');
     return meta ? (meta.getAttribute('content') || '') : '';
@@ -526,13 +526,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (errors.length > 0) {
           messageText += '\n\n--- Errors ---';
           errors.forEach(e => {
-            messageText += `\n• ${e.source_name}: ${e.error}`;
+            messageText += `\n� ${e.source_name}: ${e.error}`;
           });
         }
         if (warnings.length > 0) {
           messageText += '\n\n--- Warnings ---';
           warnings.forEach(w => {
-            messageText += `\n• ${w.source_name}: ${w.error}`;
+            messageText += `\n� ${w.source_name}: ${w.error}`;
           });
         }
       }
@@ -559,14 +559,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // ── Button bindings ────────────────────────────────────────────────────────
+  // -- Button bindings --------------------------------------------------------
   const actions = {
-    'btn-collect-now':  ['/admin/autocontent/api/collect',  'Collecting…'],
-    'btn-collect-multi':['/admin/autocontent/api/collect-multi', 'Multi-Layer Scraping…'],
-    'btn-process-now':  ['/admin/autocontent/api/process',  'Processing AI…'],
-    'btn-publish-now':  ['/admin/autocontent/api/publish','Publishing…'],
-    'btn-retry-failed': ['/admin/autocontent/api/retry', 'Retrying…'],
-    'btn-run-pipeline': ['/admin/autocontent/api/run-pipeline', 'Running Pipeline…'],
+    'btn-collect-now':  ['/admin/autocontent/api/collect',  'Collecting�'],
+    'btn-collect-multi':['/admin/autocontent/api/collect-multi', 'Multi-Layer Scraping�'],
+    'btn-process-now':  ['/admin/autocontent/api/process',  'Processing AI�'],
+    'btn-publish-now':  ['/admin/autocontent/api/publish','Publishing�'],
+    'btn-retry-failed': ['/admin/autocontent/api/retry', 'Retrying�'],
+    'btn-run-pipeline': ['/admin/autocontent/api/run-pipeline', 'Running Pipeline�'],
   };
 
   // Special handler for multi-layer scrape with custom response handling
@@ -576,7 +576,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const btn = this;
     const originalHtml = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Multi-Layer Scraping…`;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Multi-Layer Scraping�`;
 
     try {
       const resp = await fetch('/admin/autocontent/api/collect-multi?ajax=1', {
@@ -589,9 +589,9 @@ document.addEventListener('DOMContentLoaded', function() {
       let messageText = result.message;
       if (result.pipeline) {
         messageText += `\n\nPipeline Results:`;
-        messageText += `\n• Links Found: ${result.pipeline.total_links_found || 0}`;
-        messageText += `\n• Articles Collected: ${result.pipeline.articles_collected || 0}`;
-        messageText += `\n• Steps Completed: ${result.pipeline.steps_completed || 0}/5`;
+        messageText += `\n� Links Found: ${result.pipeline.total_links_found || 0}`;
+        messageText += `\n� Articles Collected: ${result.pipeline.articles_collected || 0}`;
+        messageText += `\n� Steps Completed: ${result.pipeline.steps_completed || 0}/5`;
       }
       if (result.errors && result.errors.length > 0) {
         messageText += `\n\nErrors: ${result.errors.length}`;
@@ -602,11 +602,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
       await showResultMessage(messageText, !!result.success);
       if (result.warnings && result.warnings.length > 0) {
-        const warnText = result.warnings.slice(0, 5).join('\n• ');
+        const warnText = result.warnings.slice(0, 5).join('\n� ');
         if (typeof window.showAlert === 'function') {
-          await window.showAlert('• ' + warnText, 'Warnings', 'warning');
+          await window.showAlert('� ' + warnText, 'Warnings', 'warning');
         } else if (typeof window.showMessage === 'function') {
-          await window.showMessage('Warnings:\n• ' + warnText, 'warning', 6000);
+          await window.showMessage('Warnings:\n� ' + warnText, 'warning', 6000);
         }
       }
 
@@ -659,3 +659,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
+
