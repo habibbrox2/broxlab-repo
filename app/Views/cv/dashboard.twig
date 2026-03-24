@@ -640,11 +640,7 @@
             justify-content: center;
         }
     }
-</style>
-{% endblock %}
-
-{% block content %}
-    
+     
     .cv-grid {
         max-width: 1200px;
         margin: 0 auto;
@@ -965,6 +961,10 @@
         background: #DC2626;
     }
 </style>
+{% endblock %}
+
+{% block content %}
+
 
 <div class="cv-dashboard">
     <div class="cv-header">
@@ -978,11 +978,27 @@
                         <span class="cv-stat-label">Total CVs</span>
                     </div>
                     <div class="cv-stat">
-                        <span class="cv-stat-number">{{ cvs|selectattr('is_active', 'equalto', true)|list|length }}</span>
+                        <span class="cv-stat-number">
+                            {% set active_count = 0 %}
+                            {% for cv in cvs %}
+                                {% if cv.is_active == true or cv.is_active == 1 %}
+                                    {% set active_count = active_count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ active_count }}
+                        </span>
                         <span class="cv-stat-label">Active</span>
                     </div>
                     <div class="cv-stat">
-                        <span class="cv-stat-number">{{ cvs|selectattr('is_active', 'equalto', false)|list|length }}</span>
+                        <span class="cv-stat-number">
+                            {% set draft_count = 0 %}
+                            {% for cv in cvs %}
+                                {% if cv.is_active == false or cv.is_active == 0 %}
+                                    {% set draft_count = draft_count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ draft_count }}
+                        </span>
                         <span class="cv-stat-label">Drafts</span>
                     </div>
                 </div>

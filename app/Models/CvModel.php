@@ -17,14 +17,14 @@ class CvModel
     public function create(int $userId, string $title = 'My CV', string $template = 'modern'): ?int
     {
         $stmt = $this->mysqli->prepare(
-            "INSERT INTO cvs (user_id, title, template, is_active) VALUES (?, ?, ?, TRUE)"
+            "INSERT INTO cvs (user_id, title, is_active) VALUES (?, ?, TRUE)"
         );
-        $stmt->bind_param('iss', $userId, $title, $template);
-        
+        $stmt->bind_param('is', $userId, $title);
+
         if ($stmt->execute()) {
             return (int)$stmt->insert_id;
         }
-        
+
         return null;
     }
 
@@ -38,13 +38,13 @@ class CvModel
         );
         $stmt->bind_param('i', $userId);
         $stmt->execute();
-        
+
         $result = $stmt->get_result();
         $cvs = [];
         while ($row = $result->fetch_assoc()) {
             $cvs[] = $row;
         }
-        
+
         return $cvs;
     }
 
@@ -62,13 +62,13 @@ class CvModel
         );
         $stmt->bind_param('ii', $limit, $offset);
         $stmt->execute();
-        
+
         $result = $stmt->get_result();
         $cvs = [];
         while ($row = $result->fetch_assoc()) {
             $cvs[] = $row;
         }
-        
+
         return $cvs;
     }
 
@@ -78,26 +78,26 @@ class CvModel
     public function getStatistics(): array
     {
         $stats = [];
-        
+
         // Total CVs
         $result = $this->mysqli->query("SELECT COUNT(*) as total FROM cvs");
         $stats['total'] = $result->fetch_assoc()['total'] ?? 0;
-        
-        // CVs by template
-        $result = $this->mysqli->query(
-            "SELECT template, COUNT(*) as count FROM cvs GROUP BY template"
-        );
-        $stats['by_template'] = [];
-        while ($row = $result->fetch_assoc()) {
-            $stats['by_template'][$row['template']] = $row['count'];
-        }
-        
+
+        // CVs by template (commented out until column is added)
+        // $result = $this->mysqli->query(
+        //     "SELECT template, COUNT(*) as count FROM cvs GROUP BY template"
+        // );
+        // $stats['by_template'] = [];
+        // while ($row = $result->fetch_assoc()) {
+        //     $stats['by_template'][$row['template']] = $row['count'];
+        // }
+
         // Active users with CVs
         $result = $this->mysqli->query(
             "SELECT COUNT(DISTINCT user_id) as users_with_cvs FROM cvs"
         );
         $stats['users_with_cvs'] = $result->fetch_assoc()['users_with_cvs'] ?? 0;
-        
+
         return $stats;
     }
 
@@ -111,7 +111,7 @@ class CvModel
         );
         $stmt->bind_param('i', $id);
         $stmt->execute();
-        
+
         $result = $stmt->get_result();
         return $result->fetch_assoc() ?: null;
     }
@@ -137,11 +137,12 @@ class CvModel
             $types .= 'i';
         }
 
-        if (isset($data['template'])) {
-            $fields[] = 'template = ?';
-            $params[] = $data['template'];
-            $types .= 's';
-        }
+        // Template update (commented out until column is added)
+        // if (isset($data['template'])) {
+        //     $fields[] = 'template = ?';
+        //     $params[] = $data['template'];
+        //     $types .= 's';
+        // }
 
         if (empty($fields)) {
             return false;
@@ -153,7 +154,7 @@ class CvModel
         $sql = "UPDATE cvs SET " . implode(', ', $fields) . " WHERE id = ?";
         $stmt = $this->mysqli->prepare($sql);
         $stmt->bind_param($types, ...$params);
-        
+
         return $stmt->execute();
     }
 
@@ -166,7 +167,7 @@ class CvModel
             "DELETE FROM cvs WHERE id = ?"
         );
         $stmt->bind_param('i', $id);
-        
+
         return $stmt->execute();
     }
 
@@ -180,7 +181,7 @@ class CvModel
         );
         $stmt->bind_param('ii', $cvId, $userId);
         $stmt->execute();
-        
+
         $result = $stmt->get_result();
         return $result->num_rows > 0;
     }

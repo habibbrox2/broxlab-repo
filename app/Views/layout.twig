@@ -104,8 +104,10 @@
     {# Use bundled CSS for better performance #}
     <link rel="stylesheet" href="{{ asset('/assets/css/dist/public-bundle.css') }}">
     <link rel="stylesheet" href="{{ asset('/assets/css/tailwind.css') }}">
-
-    {% block extra_head %}{% endblock %}
+    {% block extra_styles %}
+    {% endblock %}
+    {% block extra_head %}
+    {% endblock %}
 
 </head>
 

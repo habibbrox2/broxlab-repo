@@ -169,7 +169,7 @@ $router->post('/cv', ['middleware' => ['auth', 'csrf']], function () use ($cvMod
 
 // ========== GET CV (EDITOR) ==========
 
-$router->get('/cv/{id}', ['middleware' => ['auth']], function ($id) use ($twig, $cvModel, $cvSectionModel, $cvItemModel) {
+$router->get('/cv/{id}', ['middleware' => ['auth']], function ($id) use ($twig, $cvModel, $cvSectionModel, $cvItemModel, $cvShareModel) {
     $userId = requireAuth();
     $id = (int)$id;
 
@@ -194,11 +194,20 @@ $router->get('/cv/{id}', ['middleware' => ['auth']], function ($id) use ($twig, 
     $templates = cvGetTemplateAllowlist();
     $selectedTemplate = cvResolveTemplate($_GET['template'] ?? null, $cv['template'] ?? null, $templates, 'modern');
 
+    // Get share status for this CV
+    $cvShare = $cvShareModel->getByCvId((int)$id);
+    $isShared = !empty($cvShare);
+    $shareToken = $cvShare['token'] ?? null;
+    $shareExpiresAt = $cvShare['expires_at'] ?? null;
+
     echo $twig->render('cv/editor.twig', [
         'cv' => $cv,
         'sections' => $sections,
         'templates' => $templates,
         'selected_template' => $selectedTemplate,
+        'is_shared' => $isShared,
+        'share_token' => $shareToken,
+        'share_expires_at' => $shareExpiresAt,
         'page_title' => 'Edit CV: ' . $cv['title']
     ]);
 });
