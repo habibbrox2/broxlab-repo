@@ -51,16 +51,57 @@ class CvModel
     /**
      * Get all CVs (for admin).
      */
-    public function getAll(int $limit = 100, int $offset = 0): array
-    {
-        $stmt = $this->mysqli->prepare(
-            "SELECT c.*, u.username, u.email, u.first_name, u.last_name 
-             FROM cvs c 
-             LEFT JOIN users u ON c.user_id = u.id 
-             ORDER BY c.updated_at DESC 
-             LIMIT ? OFFSET ?"
-        );
-        $stmt->bind_param('ii', $limit, $offset);
+    public function getAll(
+        int $limit = 100,
+        int $offset = 0,
+        string $search = '',
+        string $status = 'all',
+        string $sort = 'updated',
+        string $order = 'DESC'
+    ): array {
+        $allowedSort = [
+            'updated' => 'c.updated_at',
+            'created' => 'c.created_at',
+            'title' => 'c.title',
+            'owner' => 'u.username'
+        ];
+        $sortColumn = $allowedSort[$sort] ?? $allowedSort['updated'];
+        $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
+
+        $where = [];
+        $params = [];
+        $types = '';
+
+        if ($search !== '') {
+            $like = '%' . $search . '%';
+            $where[] = '(c.title LIKE ? OR u.username LIKE ? OR u.email LIKE ?)';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+            $types .= 'sss';
+        }
+
+        if ($status === 'active') {
+            $where[] = 'c.is_active = 1';
+        } elseif ($status === 'inactive') {
+            $where[] = 'c.is_active = 0';
+        }
+
+        $sql = "SELECT c.id, c.user_id, c.title, c.is_active, c.created_at, c.updated_at,
+                       u.username, u.email, u.first_name, u.last_name
+                FROM cvs c
+                LEFT JOIN users u ON c.user_id = u.id";
+        if (!empty($where)) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+        $sql .= " ORDER BY {$sortColumn} {$order} LIMIT ? OFFSET ?";
+
+        $params[] = $limit;
+        $params[] = $offset;
+        $types .= 'ii';
+
+        $stmt = $this->mysqli->prepare($sql);
+        $stmt->bind_param($types, ...$params);
         $stmt->execute();
 
         $result = $stmt->get_result();
@@ -70,6 +111,49 @@ class CvModel
         }
 
         return $cvs;
+    }
+
+    /**
+     * Count all CVs (for admin pagination).
+     */
+    public function countAll(string $search = '', string $status = 'all'): int
+    {
+        $where = [];
+        $params = [];
+        $types = '';
+
+        if ($search !== '') {
+            $like = '%' . $search . '%';
+            $where[] = '(c.title LIKE ? OR u.username LIKE ? OR u.email LIKE ?)';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+            $types .= 'sss';
+        }
+
+        if ($status === 'active') {
+            $where[] = 'c.is_active = 1';
+        } elseif ($status === 'inactive') {
+            $where[] = 'c.is_active = 0';
+        }
+
+        $sql = "SELECT COUNT(*) as total
+                FROM cvs c
+                LEFT JOIN users u ON c.user_id = u.id";
+        if (!empty($where)) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+
+        $stmt = $this->mysqli->prepare($sql);
+        if ($types !== '') {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+
+        return (int)($row['total'] ?? 0);
     }
 
     /**

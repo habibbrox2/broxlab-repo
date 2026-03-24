@@ -287,6 +287,50 @@ if (!function_exists('mpdf_download_html')) {
     }
 }
 
+if (!function_exists('mpdf_render_html_to_string')) {
+    /**
+     * Render HTML to PDF binary string (no direct output).
+     *
+     * @param array<string,mixed> $options Supports:
+     * - title: string
+     * - config: array<string,mixed>
+     * - optimize: bool (default true)
+     * @return string|null
+     */
+    function mpdf_render_html_to_string(string $html, array $options = []): ?string
+    {
+        $title = trim((string)($options['title'] ?? ''));
+        $configOverrides = is_array($options['config'] ?? null) ? $options['config'] : [];
+        $optimize = !array_key_exists('optimize', $options) || (bool)$options['optimize'];
+        $htmlToRender = $optimize ? mpdf_optimize_html($html) : $html;
+
+        $mpdf = mpdf_create_instance($configOverrides);
+        if (!$mpdf) {
+            return null;
+        }
+
+        try {
+            if ($optimize) {
+                mpdf_apply_runtime_optimizations($mpdf);
+            }
+
+            if ($title !== '') {
+                $mpdf->SetTitle($title);
+            }
+
+            $mpdf->WriteHTML($htmlToRender);
+            return $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN);
+        } catch (Throwable $e) {
+            if (function_exists('logError')) {
+                logError('mPDF render (string) failed: ' . $e->getMessage());
+            } else {
+                error_log('mPDF render (string) failed: ' . $e->getMessage());
+            }
+            return null;
+        }
+    }
+}
+
 if (!function_exists('generatePdf')) {
     /**
      * Convenience wrapper for direct controller usage:

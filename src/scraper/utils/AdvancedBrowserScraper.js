@@ -291,6 +291,48 @@ class AdvancedBrowserScraper {
     }
 
     /**
+     * Fetch raw HTML using browser automation (HTTP-first fallback support).
+     */
+    async fetchHtml(url, options = {}) {
+        const startTime = Date.now();
+
+        try {
+            if (!this.isAvailable()) {
+                return { success: false, error: 'browser_unavailable' };
+            }
+
+            const page = await this.getPageFromPool();
+            try {
+                const timeout = options.timeout || 30000;
+                page.setDefaultTimeout(timeout);
+                page.setDefaultNavigationTimeout(timeout);
+
+                Logger.info(`Browser HTML fetch: ${url}`);
+
+                await this.navigateWithRealism(page, url, options);
+                await this.waitForContent(page, options);
+
+                const html = await page.content();
+
+                return {
+                    success: true,
+                    html,
+                    elapsed_ms: Date.now() - startTime
+                };
+            } finally {
+                await this.returnPageToPool(page);
+            }
+        } catch (error) {
+            Logger.error(`Browser HTML fetch failed: ${url}`, error);
+            return {
+                success: false,
+                error: error.message,
+                elapsed_ms: Date.now() - startTime
+            };
+        }
+    }
+
+    /**
      * Navigate with realistic browser behavior
      */
     async navigateWithRealism(page, url, options = {}) {

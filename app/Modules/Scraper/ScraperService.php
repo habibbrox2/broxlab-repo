@@ -6,6 +6,8 @@ namespace App\Modules\Scraper;
 require_once __DIR__ . '/ScraperApiClient.php';
 
 use App\Modules\Scraper\ScraperApiClient;
+use App\Modules\Scraper\AllowlistPolicy;
+use App\Modules\Scraper\RobotsPolicy;
 
 /**
  * ScraperService.php
@@ -29,6 +31,17 @@ class ScraperService
             return ['error' => 'Invalid URL. Please provide a valid URL (e.g. https://example.com).'];
         }
 
+        $mysqli = $GLOBALS['mysqli'] ?? null;
+        $allowlist = AllowlistPolicy::check($url, $mysqli instanceof \mysqli ? $mysqli : null);
+        if (!($allowlist['allowed'] ?? false)) {
+            return ['error' => 'allowlist_blocked', 'error_code' => 'allowlist_blocked'];
+        }
+
+        $robots = RobotsPolicy::check($url, self::DEFAULT_UA);
+        if (!($robots['allowed'] ?? false)) {
+            return ['error' => 'robots_disallow', 'error_code' => 'robots_disallow'];
+        }
+
         $apiClient = new ScraperApiClient();
         $apiResult = $apiClient->fetchScrape($url, [], self::DEFAULT_TIMEOUT);
 
@@ -37,7 +50,10 @@ class ScraperService
             if (in_array($code, ['api_unreachable', 'timeout', 'invalid_response', 'curl_unavailable'], true)) {
                 $html = $this->fetchHtml($url);
                 if ($html === null) {
-                    return ['error' => 'Failed to fetch URL. Check that the URL is publicly accessible.'];
+                    return [
+                        'error' => 'Failed to fetch URL. Check that the URL is publicly accessible.',
+                        'error_code' => 'http_fetch_failed'
+                    ];
                 }
 
                 $data = $this->parseHtml($html, $url);
@@ -46,7 +62,10 @@ class ScraperService
                 return $data;
             }
 
-            return ['error' => $apiResult['error'] ?? 'Failed to fetch URL.'];
+            return [
+                'error' => $apiResult['error'] ?? 'Failed to fetch URL.',
+                'error_code' => $apiResult['error_code'] ?? 'scrape_failed'
+            ];
         }
 
         return [

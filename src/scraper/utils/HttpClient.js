@@ -7,6 +7,9 @@ import axios from 'axios';
 import CONFIG from '../config.js';
 import Logger from './Logger.js';
 import URLValidator from './URLValidator.js';
+import AllowlistPolicy from './AllowlistPolicy.js';
+import RobotsPolicy from './RobotsPolicy.js';
+import AdvancedBrowserScraper from './AdvancedBrowserScraper.js';
 
 const RETRY_CONFIG = {
     maxRetries: 3,
@@ -24,6 +27,8 @@ class HttpClient {
         this.requestCount = 0;
         this.proxyList = CONFIG.proxy.list;
         this.proxyIndex = 0;
+        this.domainLastRequestAt = new Map();
+        this.browserScraper = null;
 
         // WAF challenge handling
         this.wafChallengeCount = 0;
@@ -49,10 +54,12 @@ class HttpClient {
             ? Number(options.maxRedirects)
             : 0;
 
+        const userAgent = options.userAgent || this._getUserAgent();
+
         return axios.create({
             timeout: CONFIG.http.timeout,
             headers: {
-                'User-Agent': this._getUserAgent(),
+                'User-Agent': userAgent,
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.9,bn;q=0.8',
                 'Accept-Encoding': 'gzip, deflate, br',
@@ -142,6 +149,48 @@ class HttpClient {
         return false;
     }
 
+    async _enforceDomainDelay(url) {
+        const minDelayMs = Number(CONFIG.scraper?.domainMinDelayMs || 0);
+        if (!Number.isFinite(minDelayMs) || minDelayMs <= 0) return;
+
+        let host = '';
+        try {
+            host = new URL(url).hostname;
+        } catch {
+            return;
+        }
+
+        const last = this.domainLastRequestAt.get(host) || 0;
+        const elapsed = Date.now() - last;
+        if (elapsed < minDelayMs) {
+            await this._sleep(minDelayMs - elapsed);
+        }
+        this.domainLastRequestAt.set(host, Date.now());
+    }
+
+    async _getBrowserScraper() {
+        if (!CONFIG.scraper?.enableBrowser) return null;
+        if (this.browserScraper && this.browserScraper.isAvailable()) return this.browserScraper;
+
+        try {
+            if (!this.browserScraper) {
+                this.browserScraper = new AdvancedBrowserScraper({
+                    maxPages: Math.min(CONFIG.scraper?.maxConcurrent || 3, 3),
+                    headless: true
+                });
+            }
+
+            if (!this.browserScraper.isAvailable()) {
+                await this.browserScraper.initialize();
+            }
+
+            return this.browserScraper.isAvailable() ? this.browserScraper : null;
+        } catch (error) {
+            Logger.warn('Browser scraper unavailable', { error: error.message });
+            return null;
+        }
+    }
+
     _resolveRedirect(fromUrl, location) {
         if (!location) return null;
         try {
@@ -219,6 +268,29 @@ class HttpClient {
             throw error;
         }
 
+        const userAgent = options.userAgent || this._getUserAgent();
+        options.userAgent = userAgent;
+
+        const allowlistCheck = AllowlistPolicy.check(url, options.allowlistHosts || null);
+        if (!allowlistCheck.allowed) {
+            return {
+                success: false,
+                error: allowlistCheck.reason === 'allowlist_blocked' ? 'allowlist_blocked' : allowlistCheck.reason,
+                status: 0,
+                elapsed_ms: 0
+            };
+        }
+
+        const robotsCheck = await RobotsPolicy.isAllowed(url, userAgent);
+        if (!robotsCheck.allowed) {
+            return {
+                success: false,
+                error: 'robots_disallow',
+                status: 0,
+                elapsed_ms: 0
+            };
+        }
+
         const maxRetries = options.maxRetries ?? RETRY_CONFIG.maxRetries;
         const proxyEnabled = options.proxyEnabled !== false;
         const forcedProxyUrl = String(options.proxyUrl || '').trim();
@@ -260,7 +332,7 @@ class HttpClient {
                     ? (forcedProxyUrl || (proxyListOverride ? getProxyFromOverride() : this._getNextProxy()))
                     : null;
                 const proxyConfig = useProxy ? this._buildProxyConfig(proxyUrl) : null;
-                const client = this._createInstance({ maxRedirects: 0, proxy: proxyConfig ?? false });
+                const client = this._createInstance({ maxRedirects: 0, proxy: proxyConfig ?? false, userAgent });
 
                 const visited = new Set();
                 let currentUrl = url;
@@ -269,6 +341,8 @@ class HttpClient {
 
                 for (let redirectHop = 0; redirectHop < 10; redirectHop++) {
                     visited.add(currentUrl);
+
+                    await this._enforceDomainDelay(currentUrl);
 
                     response = await client.get(currentUrl, {
                         ...options,
@@ -432,9 +506,28 @@ class HttpClient {
             };
         }
 
+        const shouldFallback = options.useBrowser && ['blocked', 'waf_challenge', 'http_fetch_failed'].includes(String(result.error || ''));
+        if (shouldFallback) {
+            const browser = await this._getBrowserScraper();
+            if (browser) {
+                const browserResult = await browser.fetchHtml(url, {
+                    timeout: options.timeout || CONFIG.browser?.timeout || 30000
+                });
+                if (browserResult?.success) {
+                    return {
+                        success: true,
+                        html: browserResult.html,
+                        status: 200,
+                        elapsed_ms: browserResult.elapsed_ms || 0,
+                        browser_fallback_used: true
+                    };
+                }
+            }
+        }
+
         return {
             success: false,
-            error: result.error,
+            error: result.error || 'http_fetch_failed',
             status: result.status || 0,
             elapsed_ms: result.elapsed_ms || 0
         };

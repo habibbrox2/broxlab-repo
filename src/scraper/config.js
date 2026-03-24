@@ -598,7 +598,11 @@ const CONFIG = {
         maxConcurrent: parseInt(process.env.SCRAPER_MAX_CONCURRENT || '3'),
         enableBrowser: (process.env.SCRAPER_ENABLE_BROWSER || 'false').toLowerCase() === 'true' && !(process.env.SHARED_HOSTING === 'true' || process.env.HOSTING_TYPE === 'shared'),
         enableValidation: process.env.SCRAPER_ENABLE_VALIDATION !== 'false',
-        enableWafDetection: process.env.SCRAPER_ENABLE_WAF_DETECTION !== 'false'
+        enableWafDetection: process.env.SCRAPER_ENABLE_WAF_DETECTION !== 'false',
+        allowlistEnforce: process.env.SCRAPER_ALLOWLIST_ENFORCE !== 'false',
+        robotsEnforce: process.env.SCRAPER_ROBOTS_ENFORCE !== 'false',
+        robotsCacheTtlMs: parseInt(process.env.SCRAPER_ROBOTS_CACHE_TTL || '3600000', 10),
+        domainMinDelayMs: parseInt(process.env.SCRAPER_DOMAIN_MIN_DELAY_MS || '0', 10)
     },
 
     browser: {

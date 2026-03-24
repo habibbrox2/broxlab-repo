@@ -11,7 +11,9 @@ class ScraperEngine {
                 proxyEnabled: options.proxyEnabled,
                 proxyList: options.proxyList,
                 proxyUrl: options.proxyUrl,
-                timeout: options.timeout
+                timeout: options.timeout,
+                allowlistHosts: options.allowlistHosts || null,
+                useBrowser: options.useBrowser || false
             });
 
             if (!result.success) {

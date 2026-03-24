@@ -364,6 +364,14 @@
         z-index: 10;
     }
 
+    .cv-editor.preview-only .editor-panel {
+        display: none;
+    }
+
+    .cv-editor.preview-only .preview-panel {
+        width: 100%;
+    }
+
     /* Enhanced Editor Panel */
     .editor-panel {
         width: 45%;
@@ -795,8 +803,6 @@
         from { transform: translateX(100%); opacity: 0; }
         to { transform: translateX(0); opacity: 1; }
     }
-</style>
-{% endblock %}
         color: var(--warning);
     }
     
@@ -1303,7 +1309,9 @@
         }
     }
 </style>
+{% endblock %}
 
+{% block content %}
 <div class="cv-editor">
     <!-- Enhanced Header -->
     <div class="editor-header">
@@ -1529,6 +1537,9 @@
                         <button class="btn-zoom" onclick="zoomIn()" title="Zoom in">
                             <i class="bi bi-plus"></i>
                         </button>
+                        <button class="btn-zoom" onclick="resetZoom()" title="Reset zoom">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
                     </div>
                     <button class="btn-zoom" onclick="togglePreviewMode()" title="Toggle preview mode">
                         <i class="bi bi-arrows-fullscreen"></i>
@@ -1583,70 +1594,6 @@
 </div>
 
 <!-- Add Section Modal -->
-<div id="addSectionModal" class="modal fade" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
-            <div class="modal-header" style="background: linear-gradient(135deg, var(--cv-editor-primary) 0%, var(--cv-editor-secondary) 100%); color: white; border: none; border-radius: 16px 16px 0 0;">
-                <h5 class="modal-title">
-                    <i class="bi bi-plus-circle me-2"></i>
-                    Add New Section
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="row g-3">
-                    {% set section_options = {
-                        'summary': {'icon': 'bi-person-circle', 'desc': 'Professional summary or objective'},
-                        'experience': {'icon': 'bi-briefcase', 'desc': 'Work experience and job history'},
-                        'education': {'icon': 'bi-mortarboard', 'desc': 'Educational background and degrees'},
-                        'skills': {'icon': 'bi-tools', 'desc': 'Technical and soft skills'},
-                        'projects': {'icon': 'bi-code-slash', 'desc': 'Personal and professional projects'},
-                        'certifications': {'icon': 'bi-award', 'desc': 'Certifications and licenses'}
-                    } %}
-                    {% for type, info in section_options %}
-                        <div class="col-md-6">
-                            <div class="section-option p-3 border rounded-3 cursor-pointer" onclick="addSection('{{ type }}', '{{ info.desc|title }}')" style="transition: all 0.3s ease;">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="section-icon" style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--cv-editor-primary) 0%, var(--cv-editor-secondary) 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                                        <i class="bi {{ info.icon }} text-white"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-1" style="font-weight: 600; color: var(--cv-editor-gray-800);">{{ type|title }}</h6>
-                                        <small style="color: var(--cv-editor-gray-500);">{{ info.desc }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-            
-            <button onclick="showAddSectionModal()" class="btn-add-section">
-                <i class="bi bi-plus-lg"></i> Add Section
-            </button>
-        </div>
-
-        <!-- Preview Panel -->
-        <div class="preview-panel">
-            <div class="preview-container">
-                <div id="previewContent">
-                    <div class="preview-loading">
-                        <i class="bi bi-arrow-repeat spin"></i> Loading preview...
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add Section Modal -->
 <div id="addSectionModal" class="modal-overlay">
     <div class="modal-content">
         <h5>Add Section</h5>
@@ -1673,6 +1620,7 @@
     </div>
 </div>
 
+
 <!-- ATS Score Modal -->
 <div id="atsScoreModal" class="modal-overlay">
     <div class="modal-content">
@@ -1686,150 +1634,16 @@
     </div>
 </div>
 
-{% macro render_item_form(section_type, item, cv_id, section_id) %}
-    {% if section_type == 'summary' %}
-        <div class="item-fields">
-            <div class="field-group">
-                <label class="field-label">Summary</label>
-                <textarea class="field-input field-textarea" rows="4" 
-                    onchange="updateItem({{ cv_id }}, {{ section_id }}, {{ item.id }}, this.value)">{{ item.content.text ?? '' }}</textarea>
-            </div>
-        </div>
-    {% elseif section_type == 'experience' %}
-        <div class="item-fields">
-            <div class="field-row">
-                <div class="field-group">
-                    <label class="field-label">Company</label>
-                        <input type="text" class="field-input" placeholder="Company Name"
-                        value="{{ item.content.company ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'company', this.value)">
-                </div>
-                <div class="field-group">
-                    <label class="field-label">Position</label>
-                    <input type="text" class="field-input" placeholder="Job Title"
-                        value="{{ item.content.position ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'position', this.value)">
-                </div>
-            </div>
-            <div class="field-row">
-                <div class="field-group">
-                    <label class="field-label">Start Date</label>
-                    <input type="text" class="field-input" placeholder="MM/YYYY"
-                        value="{{ item.content.start_date ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'start_date', this.value)">
-                </div>
-                <div class="field-group">
-                    <label class="field-label">End Date</label>
-                    <input type="text" class="field-input" placeholder="MM/YYYY or Present"
-                        value="{{ item.content.end_date ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'end_date', this.value)">
-                </div>
-            </div>
-            <div class="field-group">
-                <label class="field-label">Description</label>
-                <textarea class="field-input field-textarea" rows="3" placeholder="Describe your responsibilities and achievements"
-                    onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'description', this.value)">{{ item.content.description ?? '' }}</textarea>
-            </div>
-        </div>
-    {% elseif section_type == 'education' %}
-        <div class="item-fields">
-            <div class="field-row">
-                <div class="field-group">
-                    <label class="field-label">Institution</label>
-                    <input type="text" class="field-input" placeholder="University/College Name"
-                        value="{{ item.content.institution ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'institution', this.value)">
-                </div>
-                <div class="field-group">
-                    <label class="field-label">Degree</label>
-                    <input type="text" class="field-input" placeholder="Bachelor's, Master's, etc."
-                        value="{{ item.content.degree ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'degree', this.value)">
-                </div>
-            </div>
-            <div class="field-row">
-                <div class="field-group">
-                    <label class="field-label">Start Date</label>
-                    <input type="text" class="field-input" placeholder="MM/YYYY"
-                        value="{{ item.content.start_date ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'start_date', this.value)">
-                </div>
-                <div class="field-group">
-                    <label class="field-label">End Date</label>
-                    <input type="text" class="field-input" placeholder="MM/YYYY"
-                        value="{{ item.content.end_date ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'end_date', this.value)">
-                </div>
-            </div>
-        </div>
-    {% elseif section_type == 'skills' %}
-        <div class="item-fields">
-            <div class="field-row">
-                <div class="field-group">
-                    <label class="field-label">Skill Name</label>
-                    <input type="text" class="field-input" placeholder="e.g., JavaScript, Project Management"
-                        value="{{ item.content.name ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'name', this.value)">
-                </div>
-                <div class="field-group">
-                    <label class="field-label">Proficiency (1-100)</label>
-                    <input type="number" class="field-input" placeholder="85" min="1" max="100"
-                        value="{{ item.content.proficiency ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'proficiency', this.value)">
-                </div>
-            </div>
-        </div>
-    {% elseif section_type == 'projects' %}
-        <div class="item-fields">
-            <div class="field-group">
-                <label class="field-label">Project Name</label>
-                <input type="text" class="field-input" placeholder="Project Title"
-                    value="{{ item.content.name ?? '' }}" 
-                    onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'name', this.value)">
-            </div>
-            <div class="field-group">
-                <label class="field-label">Description</label>
-                <textarea class="field-input field-textarea" rows="2" placeholder="Describe the project and your role"
-                    onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'description', this.value)">{{ item.content.description ?? '' }}</textarea>
-            </div>
-        </div>
-    {% elseif section_type == 'certifications' %}
-        <div class="item-fields">
-            <div class="field-row">
-                <div class="field-group">
-                    <label class="field-label">Certification Name</label>
-                    <input type="text" class="field-input" placeholder="Certification Title"
-                        value="{{ item.content.name ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'name', this.value)">
-                </div>
-                <div class="field-group">
-                    <label class="field-label">Issuer</label>
-                    <input type="text" class="field-input" placeholder="Issuing Organization"
-                        value="{{ item.content.issuer ?? '' }}" 
-                        onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'issuer', this.value)">
-                </div>
-            </div>
-            <div class="field-group">
-                <label class="field-label">Date</label>
-                <input type="text" class="field-input" placeholder="MM/YYYY"
-                    value="{{ item.content.date ?? '' }}" 
-                    onchange="updateItemField({{ cv_id }}, {{ section_id }}, {{ item.id }}, 'date', this.value)">
-            </div>
-        </div>
-    {% endif %}
-    
-    <div class="item-actions">
-        <button onclick="deleteItem({{ cv_id }}, {{ section_id }}, {{ item.id }})" class="btn-delete-item">
-            <i class="bi bi-trash"></i> Delete
-        </button>
-    </div>
-{% endmacro %}
+{% endblock %}
 
+{% block extra_scripts %}
 <script>
 let currentCvId = {{ cv.id }};
 let currentTemplate = '{{ selected_template }}';
 let autoSaveTimer = null;
+let previewScale = 1;
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+const previewScaleKey = `cv-editor-preview-scale-${currentCvId}`;
 const jsonHeaders = () => ({
     'Content-Type': 'application/json',
     'X-CSRF-Token': csrfToken
@@ -1875,6 +1689,84 @@ function setTemplateUi(template) {
         pdfLink.href = `/cv/${currentCvId}/export?template=${encodeURIComponent(template)}`;
     }
 }
+
+function applyPreviewScale() {
+    const frame = document.getElementById('cvPreview');
+    if (frame) {
+        frame.style.transform = `scale(${previewScale})`;
+    }
+    const zoomLabel = document.getElementById('zoomLevel');
+    if (zoomLabel) {
+        zoomLabel.textContent = `${Math.round(previewScale * 100)}%`;
+    }
+
+    try {
+        localStorage.setItem(previewScaleKey, String(previewScale));
+    } catch (e) {
+    }
+}
+
+function zoomIn() {
+    previewScale = Math.min(1.6, previewScale + 0.1);
+    applyPreviewScale();
+}
+
+function zoomOut() {
+    previewScale = Math.max(0.6, previewScale - 0.1);
+    applyPreviewScale();
+}
+
+function resetZoom() {
+    previewScale = 1;
+    applyPreviewScale();
+}
+
+function togglePreviewMode() {
+    const container = document.querySelector('.cv-editor');
+    if (!container) return;
+    container.classList.toggle('preview-only');
+
+    const btn = document.querySelector('[onclick="togglePreviewMode()"] i');
+    if (btn) {
+        const isPreviewOnly = container.classList.contains('preview-only');
+        btn.classList.toggle('bi-arrows-fullscreen', !isPreviewOnly);
+        btn.classList.toggle('bi-layout-split', isPreviewOnly);
+    }
+
+    try {
+        const isPreviewOnly = container.classList.contains('preview-only');
+        localStorage.setItem('cv-editor-preview-only', isPreviewOnly ? '1' : '0');
+    } catch (e) {
+    }
+}
+
+// Restore preview mode from localStorage
+document.addEventListener('DOMContentLoaded', function () {
+    try {
+        const stored = localStorage.getItem('cv-editor-preview-only');
+        if (stored === '1') {
+            const container = document.querySelector('.cv-editor');
+            if (container) {
+                container.classList.add('preview-only');
+                const btn = document.querySelector('[onclick="togglePreviewMode()"] i');
+                if (btn) {
+                    btn.classList.remove('bi-arrows-fullscreen');
+                    btn.classList.add('bi-layout-split');
+                }
+            }
+        }
+    } catch (e) {
+    }
+
+    try {
+        const storedScale = parseFloat(localStorage.getItem(previewScaleKey) || '');
+        if (!Number.isNaN(storedScale)) {
+            previewScale = Math.max(0.6, Math.min(1.6, storedScale));
+            applyPreviewScale();
+        }
+    } catch (e) {
+    }
+});
 
 // Update CV title
 function updateCvTitle(id, title) {

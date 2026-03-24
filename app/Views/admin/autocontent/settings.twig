@@ -87,6 +87,22 @@
                             Enable Auto Content Engine
                         </label>
                     </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="auto_collect" id="auto_collect"
+                               {% if config.auto_collect %}checked{% endif %}>
+                        <label class="form-check-label fw-semibold" for="auto_collect">
+                            Auto-Collect Articles
+                        </label>
+                        <div class="form-text small text-muted">Cron collect script follows this toggle.</div>
+                    </div>
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" name="auto_process" id="auto_process"
+                               {% if config.auto_process %}checked{% endif %}>
+                        <label class="form-check-label fw-semibold" for="auto_process">
+                            Auto-Process with AI
+                        </label>
+                        <div class="form-text small text-muted">Cron process script follows this toggle.</div>
+                    </div>
                     <div class="form-check form-switch mb-4">
                         <input class="form-check-input" type="checkbox" name="auto_publish" id="auto_publish"
                                {% if config.auto_publish %}checked{% endif %}>

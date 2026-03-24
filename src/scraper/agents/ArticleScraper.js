@@ -90,6 +90,8 @@ class ArticleScraper {
             };
         }
 
+        HtmlParser.cleanHtml($);
+
         // Extract all fields
         const data = {
             title: this.extractTitle($),
@@ -702,7 +704,23 @@ class ArticleScraper {
         } else {
             options.proxyUrl = '';
         }
+        options.allowlistHosts = this.buildAllowlistHosts();
         return options;
+    }
+
+    buildAllowlistHosts() {
+        const hosts = [];
+        const addHost = (url) => {
+            try {
+                const host = new URL(url).hostname;
+                if (host) hosts.push(host);
+            } catch {
+                // ignore
+            }
+        };
+        if (this.sourceConfig?.baseUrl) addHost(this.sourceConfig.baseUrl);
+        if (this.sourceConfig?.homepageUrl) addHost(this.sourceConfig.homepageUrl);
+        return Array.from(new Set(hosts));
     }
 
     getNextProxy() {

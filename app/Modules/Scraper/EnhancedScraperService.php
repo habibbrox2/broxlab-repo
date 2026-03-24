@@ -7,6 +7,8 @@ namespace App\Modules\Scraper;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\DomCrawler\Crawler;
+use App\Modules\Scraper\AllowlistPolicy;
+use App\Modules\Scraper\RobotsPolicy;
 
 /**
  * EnhancedScraperService.php
@@ -22,6 +24,9 @@ class EnhancedScraperService
     private array $proxies;
     private int $proxyIndex = 0;
     private ?BrowserScraperService $browserScraper = null;
+    private ?\mysqli $mysqli = null;
+    private ContentCleanerService $cleaner;
+    private bool $useBrowser = false;
 
     // CSS selectors for common content extraction
     private const SELECTORS = [
@@ -131,6 +136,9 @@ class EnhancedScraperService
         $this->maxRedirects = $config['max_redirects'] ?? 5;
         $this->proxies = array_values($config['proxies'] ?? []);
         $this->browserScraper = new BrowserScraperService($config['browser_config'] ?? []);
+        $this->mysqli = $config['mysqli'] ?? ($GLOBALS['mysqli'] ?? null);
+        $this->cleaner = new ContentCleanerService();
+        $this->useBrowser = (bool)($config['use_browser'] ?? false);
 
         $this->client = new Client([
             'timeout' => $this->timeout,
@@ -189,6 +197,24 @@ class EnhancedScraperService
 
     private function fetchHtmlSmart(string $url): array
     {
+        $allowlist = AllowlistPolicy::check($url, $this->mysqli instanceof \mysqli ? $this->mysqli : null);
+        if (!($allowlist['allowed'] ?? false)) {
+            return [
+                'success' => false,
+                'error' => 'allowlist_blocked',
+                'error_code' => 'allowlist_blocked'
+            ];
+        }
+
+        $robots = RobotsPolicy::check($url, $this->userAgent);
+        if (!($robots['allowed'] ?? false)) {
+            return [
+                'success' => false,
+                'error' => 'robots_disallow',
+                'error_code' => 'robots_disallow'
+            ];
+        }
+
         $proxy = null;
         $response = $this->get($url, $proxy);
         $status = $response->getStatusCode();
@@ -199,7 +225,7 @@ class EnhancedScraperService
         $wafDetection = AdvancedWafDetector::detectAdvanced($html, $status, $headers);
 
         if ($wafDetection['is_waf']) {
-            if ($this->browserScraper && $this->browserScraper->isAvailable()) {
+            if ($this->useBrowser && $this->browserScraper && $this->browserScraper->isAvailable()) {
                 $browser = $this->browserScraper->fetchHtml($url);
                 if ($browser['success'] ?? false) {
                     return [
@@ -208,6 +234,7 @@ class EnhancedScraperService
                         'status' => 200,
                         'final_url' => $url,
                         'via_browser' => true,
+                        'error_code' => 'browser_fallback_used'
                     ];
                 }
             }
@@ -237,6 +264,29 @@ class EnhancedScraperService
                 'error' => 'HTTP ' . $status,
                 'error_code' => $status === 429 ? 'http_429' : 'http_' . $status,
                 'status' => $status,
+            ];
+        }
+
+        if (trim($html) === '' || strlen($html) < 100) {
+            if ($this->useBrowser && $this->browserScraper && $this->browserScraper->isAvailable()) {
+                $browser = $this->browserScraper->fetchHtml($url);
+                if ($browser['success'] ?? false) {
+                    return [
+                        'success' => true,
+                        'html' => (string)($browser['html'] ?? ''),
+                        'status' => 200,
+                        'final_url' => $url,
+                        'via_browser' => true,
+                        'error_code' => 'browser_fallback_used'
+                    ];
+                }
+            }
+
+            return [
+                'success' => false,
+                'error' => 'Empty response',
+                'error_code' => 'http_fetch_failed',
+                'status' => $status
             ];
         }
 
@@ -373,6 +423,11 @@ class EnhancedScraperService
                 $content = $node->html();
             }
         });
+
+        $cleaned = $this->cleaner->clean($content);
+        if (!empty($cleaned['html'])) {
+            $content = $cleaned['html'];
+        }
 
         // Extract links
         $links = [];
@@ -534,6 +589,10 @@ class EnhancedScraperService
                     $content .= $node->html() . "\n";
                 }
             });
+            $cleaned = $this->cleaner->clean($content);
+            if (!empty($cleaned['html'])) {
+                $content = $cleaned['html'];
+            }
 
             // Author
             $author = '';
@@ -905,6 +964,10 @@ class EnhancedScraperService
                     $content = $nodes->first()->html();
                     if (!empty($content)) break;
                 }
+            }
+            $cleaned = $this->cleaner->clean($content);
+            if (!empty($cleaned['html'])) {
+                $content = $cleaned['html'];
             }
 
             // Author
