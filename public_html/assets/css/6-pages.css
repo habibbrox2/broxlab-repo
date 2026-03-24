@@ -641,6 +641,11 @@
   border: 1px solid var(--border-light) !important;
   border-radius: 1rem;
   box-shadow: 0 16px 30px rgba(15,23,42,0.08);
+  transition: box-shadow var(--t-base), transform var(--t-base);
+}
+.public-surface-card:hover {
+  box-shadow: 0 20px 40px rgba(15,23,42,0.12);
+  transform: translateY(-3px);
 }
 
 .public-surface-card .card-header {
@@ -653,18 +658,25 @@
   max-width: 900px; margin: 40px auto; padding: 40px;
   background: white; border: 1px solid var(--border-light);
   border-radius: 1rem; box-shadow: 0 16px 30px rgba(15,23,42,0.08);
+  transition: box-shadow var(--t-base), transform var(--t-base);
+}
+.legal-content:hover {
+  box-shadow: 0 20px 40px rgba(15,23,42,0.12);
+  transform: translateY(-2px);
 }
 .legal-content h2 { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-color); }
 .legal-content p, .legal-content li { color: #555; line-height: 1.8; }
 .legal-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; margin-top: 15px; font-size: 0.9rem; }
 
 /* FAQ */
-.page-faq .accordion-item   { border: 1px solid var(--border-light) !important; border-radius: 0.9rem !important; overflow: hidden; box-shadow: 0 12px 22px rgba(15,23,42,0.08); }
+.page-faq .accordion-item   { border: 1px solid var(--border-light) !important; border-radius: 0.9rem !important; overflow: hidden; box-shadow: 0 12px 22px rgba(15,23,42,0.08); transition: box-shadow var(--t-base), transform var(--t-base); }
+.page-faq .accordion-item:hover { box-shadow: 0 16px 28px rgba(15,23,42,0.12); transform: translateY(-2px); }
 .page-faq .accordion-button { font-weight: 600; color: var(--text-light); }
 .page-faq .accordion-button:not(.collapsed) { color: var(--primary-600); background: rgba(99,102,241,0.1); }
 
 /* Contact */
-.page-contact .card, .page-contactm .card { border-radius: 1rem; border: 1px solid var(--border-light); box-shadow: 0 16px 30px rgba(15,23,42,0.08); }
+.page-contact .card, .page-contactm .card { border-radius: 1rem; border: 1px solid var(--border-light); box-shadow: 0 16px 30px rgba(15,23,42,0.08); transition: box-shadow var(--t-base), transform var(--t-base); }
+.page-contact .card:hover, .page-contactm .card:hover { box-shadow: 0 20px 40px rgba(15,23,42,0.12); transform: translateY(-3px); }
 .page-contact .card-header, .page-contactm .card-header {
   background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-color) 100%) !important;
   color: #fff !important;
@@ -686,11 +698,18 @@
   padding: 0.45rem 0.65rem;
   border-radius: 0.65rem;
   background: rgba(99,102,241,0.06);
+  transition: background var(--t-fast), transform var(--t-fast);
+}
+.advertise-check-item:hover,
+.advertise-list li:hover,
+.advertise-faq-list li:hover {
+  background: rgba(99,102,241,0.12);
+  transform: translateX(4px);
 }
 
 /* Sitemap */
 .sitemap-link { display: block; padding: 10px; background: #f8f9fa; border-radius: 8px; color: var(--primary-color); text-decoration: none; transition: all var(--t-base); border-left: 3px solid transparent; }
-.sitemap-link:hover { background: var(--primary-color); color: white; }
+.sitemap-link:hover { background: var(--primary-color); color: white; transform: translateX(4px); }
 .sitemap-scroll { max-height: 300px; overflow-y: auto; padding-right: 0.2rem; }
 .public-page-head { border-bottom: 1px solid var(--border-light); }
 
@@ -777,8 +796,17 @@
 }
 .newsletter-form .form-control { background: rgba(255,255,255,0.9); border: none; border-radius: 8px; padding: 12px 15px; }
 .newsletter-form .form-control:focus { background: white; }
-.newsletter-card { background: white; border: 1px solid var(--border-light); border-radius: 1rem; transition: all var(--t-base); }
-.newsletter-card:hover { box-shadow: 0 20px 25px rgba(0,0,0,0.1); transform: translateY(-4px); }
+.newsletter-card {
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: 1rem;
+  transition: all var(--t-base);
+}
+.newsletter-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 20px 40px rgba(37, 99, 235, 0.12);
+  transform: translateY(-4px) scale(1.01);
+}
 
 /* ══════════════════════════════════════════════════════════════
    RAMADAN WIDGET
