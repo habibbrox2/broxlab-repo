@@ -22,6 +22,8 @@ class ArticleScraper {
             proxyUrl: ''
         };
         this.proxyIndex = 0;
+        this.lastFetchMethod = 'http';
+        this.selectorFallbacks = new Set();
     }
 
     /**
@@ -48,6 +50,8 @@ class ArticleScraper {
         const startedAt = Date.now();
         const result = await HttpClient.fetchHtml(url, this.buildFetchOptions());
         const elapsedMs = Date.now() - startedAt;
+        const fetchMethod = this.determineFetchMethod(result);
+        this.lastFetchMethod = fetchMethod;
 
         if (!result.success) {
             Logger.error('Failed to fetch article', { url, error: result.error });
@@ -64,6 +68,8 @@ class ArticleScraper {
             return {
                 success: false,
                 error: result.error,
+                fetch_method: fetchMethod,
+                error_class: this.classifyError(result.error),
                 data: null
             };
         }
@@ -113,7 +119,8 @@ class ArticleScraper {
         return {
             success: true,
             data,
-            html: result.html
+            html: result.html,
+            fetch_method: fetchMethod
         };
     }
 
@@ -128,6 +135,11 @@ class ArticleScraper {
 
         if (!title && selectorConfig.fallback) {
             title = HtmlParser.extractText($dom, selectorConfig.fallback);
+        }
+
+        if (!title) {
+            title = this.autoDetectTitle($dom);
+            if (title) this.recordSelectorFallback('title');
         }
 
         return this.cleanText(title);
@@ -145,6 +157,11 @@ class ArticleScraper {
             subtitle = HtmlParser.extractText($dom, selectorConfig.fallback);
         }
 
+        if (!subtitle) {
+            subtitle = this.autoDetectSubtitle($dom);
+            if (subtitle) this.recordSelectorFallback('subtitle');
+        }
+
         return this.cleanText(subtitle);
     }
 
@@ -158,6 +175,11 @@ class ArticleScraper {
 
         if (!author && selectorConfig.fallback) {
             author = HtmlParser.extractText($dom, selectorConfig.fallback);
+        }
+
+        if (!author) {
+            author = this.autoDetectAuthor($dom);
+            if (author) this.recordSelectorFallback('author');
         }
 
         return this.cleanText(author);
@@ -176,6 +198,11 @@ class ArticleScraper {
 
         if (!category && selectorConfig.fallback) {
             category = HtmlParser.extractText($dom, selectorConfig.fallback);
+        }
+
+        if (!category) {
+            category = this.autoDetectCategory($dom);
+            if (category) this.recordSelectorFallback('category');
         }
 
         return this.cleanText(category);
@@ -729,6 +756,103 @@ class ArticleScraper {
         const proxy = list[this.proxyIndex % list.length];
         this.proxyIndex = (this.proxyIndex + 1) % list.length;
         return proxy || '';
+    }
+
+    determineFetchMethod(result) {
+        if (result?.browser_fallback_used) {
+            return 'http';
+        }
+        if (this.fetchOptions.useBrowser) {
+            return 'browser';
+        }
+        return 'http';
+    }
+
+    classifyError(error) {
+        const message = String(error || '').toLowerCase();
+        if (!message) return 'network';
+        if (message.includes('waf') || message.includes('blocked') || message.includes('captcha')) {
+            return 'blocked';
+        }
+        if (message.includes('parse')) {
+            return 'parsing';
+        }
+        if (message.includes('selector')) {
+            return 'selectors';
+        }
+        if (message.includes('timeout') || message.includes('ec') || message.includes('connection')) {
+            return 'network';
+        }
+        return 'network';
+    }
+
+    recordSelectorFallback(field) {
+        if (!field) return;
+        if (!this.selectorFallbacks.has(field)) {
+            this.selectorFallbacks.add(field);
+            Logger.info('Selector fallback applied', {
+                field,
+                source: this.sourceKey,
+                url: this.sourceConfig?.homepageUrl || ''
+            });
+        }
+    }
+
+    autoDetectTitle($dom) {
+        const primarySelectors = ['h1', '.article-title', '.post-title', '[itemprop="headline"]'];
+        for (const selector of primarySelectors) {
+            const text = HtmlParser.extractText($dom, selector);
+            if (text) {
+                return this.cleanText(text);
+            }
+        }
+        const metaTitle = HtmlParser.extractAttribute($dom, 'meta[property="og:title"]', 'content');
+        if (metaTitle) {
+            return this.cleanText(metaTitle);
+        }
+        return '';
+    }
+
+    autoDetectSubtitle($dom) {
+        const selectors = ['h2', '.subtitle', '.post-subtitle', '.entry-subtitle'];
+        for (const selector of selectors) {
+            const text = HtmlParser.extractText($dom, selector);
+            if (text) {
+                return this.cleanText(text);
+            }
+        }
+        return '';
+    }
+
+    autoDetectAuthor($dom) {
+        const selectors = ['.author', '.byline', '[itemprop="author"]', '.post-author'];
+        for (const selector of selectors) {
+            const text = HtmlParser.extractText($dom, selector);
+            if (text) {
+                return this.cleanText(text);
+            }
+        }
+        const metaAuthor = HtmlParser.extractAttribute($dom, 'meta[name="author"]', 'content');
+        if (metaAuthor) {
+            return this.cleanText(metaAuthor);
+        }
+        return '';
+    }
+
+    autoDetectCategory($dom) {
+        const metaCategory = HtmlParser.extractAttribute($dom, 'meta[property="article:section"]', 'content') ||
+            HtmlParser.extractAttribute($dom, 'meta[name="category"]', 'content');
+        if (metaCategory) {
+            return this.cleanText(metaCategory);
+        }
+        const selectors = ['.category', '.post-category', '.entry-category'];
+        for (const selector of selectors) {
+            const text = HtmlParser.extractText($dom, selector);
+            if (text) {
+                return this.cleanText(text);
+            }
+        }
+        return '';
     }
 }
 

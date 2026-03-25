@@ -48,7 +48,7 @@
         "rag:process": "node src/index.js --process",
         "rag:search": "node src/index.js --search",
         "rag:init": "node src/index.js --init",
-        "all:start": "node src/server.js"
+        "all:start": "pm2 delete broxlab-all scraper-api scraper-direct-api scraper-worker scraper-retry-worker 2>/dev/null || true && pm2 start src/server.js --name broxlab-all && pm2 start src/ecosystem.config.cjs --env production --only scraper-api && pm2 save"
     },
     "keywords": [
         "firebase",

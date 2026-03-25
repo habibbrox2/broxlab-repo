@@ -46,6 +46,15 @@ class ScraperOrchestrator {
             CONFIG.scraper.enableBrowser = false;
         }
 
+        this.sourceRow = null;
+        this.sourceScrapeDepth = 1;
+        this.latestMeta = {
+            fetch_method: 'http',
+            pages_processed: 0,
+            scrape_depth: 1
+        };
+        this.sourceValidationError = null;
+
         // Initialize agents
         this.tickerScraper = new TickerScraper(this.sourceKey);
         this.articleScraper = new ArticleScraper(this.sourceKey);
@@ -226,6 +235,11 @@ class ScraperOrchestrator {
                 }
                 this.pipeline = CONFIG.sources?.[this.sourceKey]?.pipeline || this.pipeline || 'articles';
 
+            const validation = this.validateAutoContentSource(source);
+            if (!validation.valid) {
+                this.sourceValidationError = validation.error;
+                Logger.warn('Invalid AutoContent source', { sourceId: this.sourceId, reason: validation.error });
+            } else {
                 const base = new URL(source.url);
                 const overrideConfig = {
                     name: source.name || presetKey || this.sourceKey,
@@ -251,7 +265,8 @@ class ScraperOrchestrator {
 
                 const existingUrls = await this.db.getExistingUrlsBySource(this.sourceId);
                 await this.diffDetector.initialize(existingUrls);
-            } else {
+            }
+        } else {
                 // Legacy mode: initialize diff detector with existing links
                 await this.diffDetector.initializeFromDb(this.db);
                 await this.tickerScraper.initialize();
@@ -304,6 +319,22 @@ class ScraperOrchestrator {
      * Run cycle using legacy components (backward compatibility)
      */
     async runLegacyCycle() {
+        if (this.sourceValidationError) {
+            this.latestMeta.pages_processed = 0;
+            return {
+                success: false,
+                error: this.sourceValidationError,
+                retryable: false,
+                error_class: 'validation',
+                status: 'validation_failed',
+                processed: 0,
+                saved: 0,
+                duplicates: 0,
+                failed: 0,
+                newArticles: []
+            };
+        }
+
         // Mobiles-direct pipeline with a specific device URL (bypass ticker list).
         if (this.pipeline === 'mobiles_direct' && this.deviceUrl) {
             const singleLink = [{ link: this.deviceUrl, title: '', source: this.sourceKey }];
@@ -346,6 +377,13 @@ class ScraperOrchestrator {
             return {
                 success: false,
                 error: 'ticker_failed',
+                retryable: true,
+                error_class: 'network',
+                status: 'ticker_failed',
+                processed: 0,
+                saved: 0,
+                duplicates: 0,
+                failed: 0,
                 newArticles: []
             };
         }
@@ -359,6 +397,7 @@ class ScraperOrchestrator {
         const limitedLinks = (this.maxArticles && this.maxArticles > 0)
             ? newLinks.slice(0, this.maxArticles)
             : newLinks;
+        this.latestMeta.pages_processed = limitedLinks.length;
 
         if (limitedLinks.length === 0) {
             Logger.info('No new articles found');
@@ -422,6 +461,7 @@ class ScraperOrchestrator {
 
         // Step 3: Process new articles (with concurrency limit)
         const newArticles = await this.processArticles(limitedLinks);
+        this.latestMeta.fetch_method = this.articleScraper.lastFetchMethod || this.latestMeta.fetch_method;
 
         // Step 4: Save valid articles
         const savedArticles = [];
@@ -826,6 +866,10 @@ class ScraperOrchestrator {
         const delaySec = Number(source?.delay || 0);
         const maxPages = Number(source?.max_pages || 0);
 
+        this.sourceRow = source;
+        this.sourceScrapeDepth = Number(source?.scrape_depth || 1) || 1;
+        this.latestMeta.scrape_depth = this.sourceScrapeDepth;
+
         if (!this.maxProvided && Number.isFinite(maxPages) && maxPages > 0) {
             this.maxArticles = maxPages;
         }
@@ -964,6 +1008,78 @@ class ScraperOrchestrator {
             .filter(Boolean);
     }
 
+    validateAutoContentSource(source) {
+        if (!source) {
+            return { valid: false, error: 'source_missing' };
+        }
+        const url = String(source.url || '').trim();
+        if (!url) {
+            return { valid: false, error: 'url_missing' };
+        }
+        const validation = URLValidator.validate(url);
+        if (!validation.valid) {
+            return { valid: false, error: 'invalid_url' };
+        }
+        const contentType = String(source.content_type || 'articles').trim().toLowerCase();
+        const allowedTypes = ['articles', 'pages', 'mobiles', 'services'];
+        if (!allowedTypes.includes(contentType)) {
+            return { valid: false, error: 'invalid_content_type' };
+        }
+        const type = String(source.type || 'scrape').trim().toLowerCase();
+        const presetKey = String(source.website_preset_key || '').trim();
+        if (type === 'scrape' && presetKey === '') {
+            return { valid: false, error: 'missing_website_preset_key' };
+        }
+        return { valid: true };
+    }
+
+    normalizeArticleForStructured(article) {
+        if (!article || typeof article !== 'object') {
+            return null;
+        }
+        return {
+            title: article.title || '',
+            content: article.content || '',
+            image: article.image || article.image_url || '',
+            date: article.published_at || article.publishedAt || article.date || '',
+            url: article.link || article.url || '',
+            category: article.category || ''
+        };
+    }
+
+    buildStructuredResponse(baseResult) {
+        const rawArticles = Array.isArray(baseResult.newArticles) ? baseResult.newArticles : [];
+        const articles = rawArticles
+            .map((item) => this.normalizeArticleForStructured(item))
+            .filter(Boolean);
+
+        const meta = {
+            fetch_method: this.latestMeta.fetch_method || 'http',
+            scrape_depth: this.latestMeta.scrape_depth || 1,
+            pages_processed: Number(this.latestMeta.pages_processed || 0)
+        };
+
+        const structured = {
+            success: Boolean(baseResult.success),
+            source: this.sourceKey,
+            articles,
+            meta
+        };
+
+        if (!structured.success) {
+            structured.error = baseResult.error || 'scrape_failed';
+            structured.retryable = typeof baseResult.retryable === 'boolean'
+                ? baseResult.retryable
+                : baseResult.error !== 'validation_failed';
+            structured.error_class = baseResult.error_class || 'network';
+        }
+
+        return {
+            ...baseResult,
+            structured
+        };
+    }
+
     sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
@@ -1082,8 +1198,9 @@ async function main() {
                 await orchestrator.runContinuous(options.interval, options.cycles);
             } else {
                 const result = await orchestrator.runCycle();
+                const structured = orchestrator.buildStructuredResponse(result);
                 // Provide stable, machine-readable output for PHP runner.
-                console.log(JSON.stringify(result));
+                console.log(JSON.stringify(structured));
             }
 
             await orchestrator.cleanup();
