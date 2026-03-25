@@ -36,10 +36,12 @@ class NodeScraperRunner
             return ['success' => false, 'error' => 'scraper_entry_not_found'];
         }
 
+        // Build command with enhanced error handling
         $cmd = escapeshellcmd($this->nodePath)
             . ' ' . escapeshellarg($scraperPath)
             . ' --sourceId=' . (int)$sourceId
-            . ' --max=' . (int)$max;
+            . ' --max=' . (int)$max
+            . ' --timeout=' . (int)$timeoutSec;
 
         $descriptors = [
             0 => ['pipe', 'r'],
@@ -72,6 +74,7 @@ class NodeScraperRunner
         $stderr = '';
         $start = time();
         $exitCode = 0;
+        $killed = false;
 
         while (true) {
             $stdout .= (string)stream_get_contents($pipes[1]);
@@ -85,12 +88,13 @@ class NodeScraperRunner
 
             if ((time() - $start) > $timeoutSec) {
                 proc_terminate($process);
+                $killed = true;
                 $exitCode = -1;
                 $stderr .= "\nTimeout after {$timeoutSec}s";
                 break;
             }
 
-            usleep(100000);
+            usleep(100000); // 100ms polling
         }
 
         fclose($pipes[1]);
@@ -99,6 +103,18 @@ class NodeScraperRunner
 
         $data = $this->parseJsonFromStdout($stdout);
 
+        // Enhanced error handling
+        if ($killed) {
+            return [
+                'success' => false,
+                'exit_code' => $exitCode,
+                'stdout' => $stdout,
+                'stderr' => $stderr,
+                'error' => 'timeout_exceeded',
+                'timeout_seconds' => $timeoutSec,
+            ];
+        }
+
         if ($exitCode !== 0) {
             return [
                 'success' => false,
@@ -106,6 +122,7 @@ class NodeScraperRunner
                 'stdout' => $stdout,
                 'stderr' => $stderr,
                 'error' => 'node_scraper_failed',
+                'error_details' => $this->parseErrorFromStderr($stderr),
             ];
         }
 
@@ -116,6 +133,7 @@ class NodeScraperRunner
                 'stdout' => $stdout,
                 'stderr' => $stderr,
                 'error' => 'invalid_json_output',
+                'json_error' => json_last_error_msg(),
             ];
         }
 
@@ -126,6 +144,31 @@ class NodeScraperRunner
             'stdout' => $stdout,
             'stderr' => $stderr,
         ];
+    }
+
+    /**
+     * Parse error details from stderr
+     */
+    private function parseErrorFromStderr(string $stderr): array
+    {
+        $errors = [];
+        $lines = explode("\n", trim($stderr));
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) continue;
+
+            // Look for common error patterns
+            if (preg_match('/Error:\s*(.+)/i', $line, $matches)) {
+                $errors[] = $matches[1];
+            } elseif (preg_match('/Exception:\s*(.+)/i', $line, $matches)) {
+                $errors[] = $matches[1];
+            } elseif (preg_match('/Failed to/i', $line)) {
+                $errors[] = $line;
+            }
+        }
+
+        return array_slice($errors, 0, 5); // Limit to first 5 errors
     }
 
     private function parseJsonFromStdout(string $stdout): ?array

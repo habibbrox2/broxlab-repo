@@ -123,7 +123,7 @@ class HtmlParser {
     }
 
     /**
-     * Extract all paragraphs from content area
+     * Enhanced paragraph extraction with better content detection
      */
     extractParagraphs($dom, contentSelector) {
         const paragraphs = [];
@@ -134,7 +134,9 @@ class HtmlParser {
             if (content.length > 0) {
                 const getCleanText = (el) => {
                     const $el = $dom(el).clone();
-                    $el.find('script,style,noscript,iframe').remove();
+                    $el.find('script,style,noscript,iframe,form,input,button,select,textarea').remove();
+                    // Remove common ad/social elements
+                    $el.find('.ad,.ads,.advertisement,.social-share,.share-buttons,.related-articles,.comments').remove();
                     return $el.text().trim();
                 };
 
@@ -149,6 +151,7 @@ class HtmlParser {
                     return paragraphs;
                 }
 
+                // Extract paragraphs from content area
                 content.find('p').each((i, el) => {
                     const text = getCleanText(el);
                     if (text && text.length > 20) { // Filter out short snippets
@@ -162,6 +165,20 @@ class HtmlParser {
                         const text = getCleanText(el);
                         if (text && text.length > 20) {
                             paragraphs.push(text);
+                        }
+                    });
+                }
+
+                // Fallback: extract from divs with substantial text content
+                if (paragraphs.length === 0) {
+                    content.find('div').each((i, el) => {
+                        const text = getCleanText(el);
+                        if (text && text.length > 50 && !text.includes('©') && !text.includes('All rights reserved')) {
+                            // Split long div text into paragraphs
+                            const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 20);
+                            if (sentences.length >= 2) {
+                                paragraphs.push(...sentences.map(s => s.trim()));
+                            }
                         }
                     });
                 }

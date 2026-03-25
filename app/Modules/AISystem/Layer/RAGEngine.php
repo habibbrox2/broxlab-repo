@@ -263,18 +263,18 @@ class RAGEngine
 
     /**
      * Generate embedding for text using available AI providers
-     * Uses sentence-transformers via Python subprocess for actual semantic embeddings
+     * Uses Node.js service (sentence-transformers) for actual semantic embeddings
      */
     private function generateEmbedding(string $text): ?array
     {
-        // Try to use sentence-transformers via Python
-        $embedding = $this->generateEmbeddingPython($text);
-        
+        // Try to use Node.js embedding service
+        $embedding = $this->generateEmbeddingNodeJs($text);
+
         if ($embedding !== null) {
             return $embedding;
         }
-        
-        // Fallback to simple embedding if Python fails
+
+        // Fallback to simple embedding if Node.js service fails
         return $this->simpleEmbedding($text);
     }
 
@@ -289,12 +289,12 @@ class RAGEngine
     public function generateEmbeddingMultiProvider(string $text, string $preferredProvider = 'openai'): ?array
     {
         $providers = [];
-        
+
         // Add preferred provider first
         if (!empty($preferredProvider)) {
             $providers[] = $preferredProvider;
         }
-        
+
         // Add fallback providers
         $fallbacks = ['openai', 'anthropic', 'ollama', 'cohere', 'voyage'];
         foreach ($fallbacks as $fb) {
@@ -302,14 +302,14 @@ class RAGEngine
                 $providers[] = $fb;
             }
         }
-        
+
         foreach ($providers as $provider) {
             $embedding = $this->generateEmbeddingForProvider($text, $provider);
             if ($embedding !== null) {
                 return $embedding;
             }
         }
-        
+
         // Final fallback to simple embedding
         return $this->simpleEmbedding($text);
     }
@@ -325,7 +325,7 @@ class RAGEngine
     {
         $embeddingModel = null;
         $apiKey = null;
-        
+
         switch ($provider) {
             case 'openai':
                 $embeddingModel = 'text-embedding-3-small';
@@ -347,11 +347,11 @@ class RAGEngine
             default:
                 return null;
         }
-        
+
         if (empty($apiKey)) {
             return null;
         }
-        
+
         return $this->callEmbeddingAPI($provider, $embeddingModel, $apiKey, $text);
     }
 
@@ -362,20 +362,20 @@ class RAGEngine
     {
         $aiProvider = new \AIProvider($this->mysqli);
         $settings = $aiProvider->getSettings();
-        
+
         $keyMap = [
             'openai' => 'openai_api_key',
-            'anthropic' => 'anthropic_api_key', 
+            'anthropic' => 'anthropic_api_key',
             'cohere' => 'cohere_api_key',
             'voyage' => 'voyage_api_key',
             'ollama' => null // Ollama doesn't need API key (local)
         ];
-        
+
         $key = $keyMap[$provider] ?? null;
         if ($key && !empty($settings[$key])) {
             return $settings[$key];
         }
-        
+
         return null;
     }
 
@@ -389,17 +389,17 @@ class RAGEngine
             'cohere' => 'https://api.cohere.ai/v1/embed',
             'voyage' => 'https://api.voyageai.com/v1/embeddings'
         ];
-        
+
         $url = $endpoints[$provider] ?? null;
         if (!$url) {
             return null;
         }
-        
+
         $headers = [
             'Authorization: Bearer ' . $apiKey,
             'Content-Type: application/json'
         ];
-        
+
         $payload = [];
         switch ($provider) {
             case 'openai':
@@ -421,24 +421,24 @@ class RAGEngine
                 ];
                 break;
         }
-        
+
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        
+
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        
+
         if ($httpCode !== 200) {
             return null;
         }
-        
+
         $data = json_decode($response, true);
-        
+
         // Parse response based on provider
         switch ($provider) {
             case 'openai':
@@ -459,38 +459,38 @@ class RAGEngine
     {
         $aiProvider = new \AIProvider($this->mysqli);
         $ollamaProvider = $aiProvider->getByName('ollama');
-        
+
         if (!$ollamaProvider || empty($ollamaProvider['base_url'])) {
             return null;
         }
-        
+
         $baseUrl = rtrim($ollamaProvider['base_url'], '/');
         $url = $baseUrl . '/api/embeddings';
-        
+
         // Get embedding model from settings
         $settings = $aiProvider->getSettings();
         $model = $settings['ollama_embedding_model'] ?? 'nomic-embed-text';
-        
+
         $payload = [
             'model' => $model,
             'prompt' => $text
         ];
-        
+
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        
+
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        
+
         if ($httpCode !== 200) {
             return null;
         }
-        
+
         $data = json_decode($response, true);
         return $data['embedding'] ?? null;
     }
@@ -506,11 +506,11 @@ class RAGEngine
         $items = $this->knowledgeModel->list(1000, 0, null, false);
         $success = 0;
         $errors = [];
-        
+
         foreach ($items as $item) {
             $text = $item['title'] . ' ' . $item['content'];
             $embedding = $this->generateEmbeddingMultiProvider($text, $preferredProvider);
-            
+
             if ($embedding !== null) {
                 $this->knowledgeModel->updateEmbedding($item['id'], $embedding);
                 $success++;
@@ -518,63 +518,73 @@ class RAGEngine
                 $errors[] = 'Failed to generate embedding for item #' . $item['id'];
             }
         }
-        
+
         return [
             'total' => count($items),
             'success' => $success,
             'errors' => $errors
         ];
     }
-    
+
     /**
-     * Generate embeddings using Python sentence-transformers
-     * Requires: pip install sentence-transformers
+     * Generate embeddings using Node.js sentence-transformers service
+     * Requires: Node.js service running on port 7020 with embedding endpoint
+     * Service: npm install @xenova/transformers (or similar)
      */
-    private function generateEmbeddingPython(string $text): ?array
+    private function generateEmbeddingNodeJs(string $text): ?array
     {
-        // Escape text for shell
-        $escapedText = base64_encode($text);
-        
-        // Try Python script
-        $pythonScript = <<<'PYTHON'
-import sys
-import base64
-import json
-try:
-    from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-    data = base64.b64decode(sys.argv[1]).decode('utf-8')
-    embedding = model.encode(data, normalize_embeddings=True)
-    print(json.dumps(embedding.tolist()))
-except Exception as e:
-    print(f"ERROR:{e}", file=sys.stderr)
-    sys.exit(1)
-PYTHON;
-        
-        // Save temp script
-        $scriptPath = sys_get_temp_dir() . '/rag_embed_' . uniqid() . '.py';
-        file_put_contents($scriptPath, $pythonScript);
-        
-        $cmd = "python \"$scriptPath\" " . escapeshellarg($escapedText) . " 2>&1";
-        $output = trim(shell_exec($cmd));
-        
-        // Cleanup
-        @unlink($scriptPath);
-        
-        if (strpos($output, 'ERROR:') === 0) {
-            error_log('Python embedding failed: ' . $output);
+        try {
+            // Prepare payload
+            $payload = [
+                'text' => $text,
+                'model' => 'sentence-transformers/all-MiniLM-L6-v2'
+            ];
+
+            // Call Node.js embedding service
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => 'http://localhost:7020/embedding/generate',
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => json_encode($payload),
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: application/json'
+                ]
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+
+            if ($error) {
+                error_log('Node.js embedding service error: ' . $error);
+                return null;
+            }
+
+            if ($httpCode !== 200) {
+                error_log('Node.js embedding service HTTP error: ' . $httpCode);
+                return null;
+            }
+
+            $data = json_decode($response, true);
+            if (!$data || empty($data['embedding'])) {
+                error_log('Node.js embedding service returned invalid response');
+                return null;
+            }
+
+            return is_array($data['embedding']) ? $data['embedding'] : null;
+        } catch (Exception $e) {
+            error_log('Node.js embedding generation failed: ' . $e->getMessage());
             return null;
         }
-        
-        $embedding = json_decode($output, true);
-        
-        return is_array($embedding) ? $embedding : null;
     }
 
     /**
      * Simple hash-based embedding for fallback
      * Not semantic but provides deterministic results
-     * NOTE: all-MiniLM-L6-v2 produces 384-dim embeddings
+     * NOTE: all-MiniLM-L6-v2 produces 384-dimension embeddings
      */
     private function simpleEmbedding(string $text): array
     {
@@ -768,34 +778,32 @@ PYTHON;
     }
 
     /**
-     * Extract text from PDF using Python or fallback to basic extraction
+     * Extract text from PDF using Node.js or fallback to pdftotext command
      * @param string $pdfPath Path to PDF file
      * @return array{success: bool, text: string, error?: string}
      */
     public function extractTextFromPDF(string $pdfPath): array
     {
-        // Try Python pymupdf first (better quality)
-        $pythonScript = base_path('py_system/pdf_processor.py');
-        
-        if (file_exists($pythonScript)) {
-            $cmd = "python \"$pythonScript\" \"$pdfPath\" 2>&1";
-            $output = shell_exec($cmd);
-            
-            if ($output && strlen(trim($output)) > 10) {
-                return ['success' => true, 'text' => trim($output)];
+        // Try Node.js PDF extraction service first (better quality)
+        try {
+            $nodeResult = $this->extractPdfViaNodeJs($pdfPath);
+            if ($nodeResult['success']) {
+                return $nodeResult;
             }
+        } catch (Exception $e) {
+            error_log('Node.js PDF extraction failed: ' . $e->getMessage());
         }
 
         // Fallback: basic PDF text extraction using pdftotext command
         $tempText = sys_get_temp_dir() . '/pdf_extract_' . uniqid() . '.txt';
         $cmd = "pdftotext -layout \"" . escapeshellcmd($pdfPath) . "\" \"" . escapeshellcmd($tempText) . "\" 2>&1";
-        
+
         @exec($cmd, $output, $return);
-        
+
         if (file_exists($tempText)) {
             $text = file_get_contents($tempText);
             @unlink($tempText);
-            
+
             if (!empty($text)) {
                 return ['success' => true, 'text' => $text];
             }
@@ -805,41 +813,128 @@ PYTHON;
     }
 
     /**
-     * Extract text from image using OCR (Python or Tesseract)
+     * Extract text from PDF using Node.js service
+     * Requires: Node.js service with pdf-parse or similar library
+     * @param string $pdfPath Path to PDF file
+     * @return array{success: bool, text: string, error?: string}
+     */
+    private function extractPdfViaNodeJs(string $pdfPath): array
+    {
+        if (!file_exists($pdfPath)) {
+            return ['success' => false, 'text' => '', 'error' => 'PDF file not found'];
+        }
+
+        try {
+            // Read PDF file as base64
+            $pdfContent = file_get_contents($pdfPath);
+            $pdfBase64 = base64_encode($pdfContent);
+
+            // Prepare payload
+            $payload = [
+                'pdf_data' => $pdfBase64,
+                'extract_text' => true
+            ];
+
+            // Call Node.js PDF extraction service
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => 'http://localhost:7020/pdf/extract',
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => json_encode($payload),
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 60,
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: application/json'
+                ]
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            if (is_resource($ch)) {
+                curl_close($ch);
+            }
+
+            if ($error) {
+                return ['success' => false, 'text' => '', 'error' => 'Service error: ' . $error];
+            }
+
+            if ($httpCode !== 200) {
+                return ['success' => false, 'text' => '', 'error' => 'Service HTTP ' . $httpCode];
+            }
+
+            $data = json_decode($response, true);
+            if (!$data || empty($data['text'])) {
+                return ['success' => false, 'text' => '', 'error' => 'No text extracted'];
+            }
+
+            return ['success' => true, 'text' => trim($data['text'])];
+        } catch (Exception $e) {
+            return ['success' => false, 'text' => '', 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Extract text from image using OCR.space API (web hosting compatible)
      * @param string $imagePath Path to image file
      * @return array{success: bool, text: string, error?: string}
      */
     public function extractTextFromImage(string $imagePath): array
     {
-        // Try Python pytesseract/EasyOCR first
-        $pythonScript = base_path('py_system/image_processor.py');
-        
-        if (file_exists($pythonScript)) {
-            $cmd = "python \"$pythonScript\" \"" . escapeshellcmd($imagePath) . "\" 2>&1";
-            $output = shell_exec($cmd);
-            
-            if ($output && strlen(trim($output)) > 5) {
-                return ['success' => true, 'text' => trim($output)];
+        try {
+            // Read image file and encode as base64
+            if (!file_exists($imagePath)) {
+                return ['success' => false, 'text' => '', 'error' => 'Image file not found'];
             }
-        }
 
-        // Fallback: use tesseract command line
-        $tempText = sys_get_temp_dir() . '/ocr_output_' . uniqid();
-        $cmd = "tesseract \"" . escapeshellcmd($imagePath) . "\" \"" . escapeshellcmd($tempText) . "\" 2>&1";
-        
-        @exec($cmd, $output, $return);
-        
-        $txtFile = $tempText . '.txt';
-        if (file_exists($txtFile)) {
-            $text = file_get_contents($txtFile);
-            @unlink($txtFile);
-            
-            if (!empty($text)) {
-                return ['success' => true, 'text' => $text];
+            $imageData = base64_encode(file_get_contents($imagePath));
+
+            // Use OCR.space API
+            $postData = [
+                'apikey' => 'K81289438988957', // Paid tier API key
+                'language' => 'eng',
+                'isOverlayRequired' => 'false',
+                'detectOrientation' => 'true',
+                'scale' => 'true'
+            ];
+
+            // Create temp file for upload
+            $tempFile = tempnam(sys_get_temp_dir(), 'ocr_');
+            file_put_contents($tempFile, base64_decode($imageData));
+            $postData['file'] = new CURLFile($tempFile, 'image/png', 'ocr.png');
+
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => 'https://api.ocr.space/parse/image',
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $postData,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_SSL_VERIFYPEER => true
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            @unlink($tempFile);
+
+            if ($httpCode === 200 && $response) {
+                $result = json_decode($response, true);
+                if (!empty($result['ParsedResults'][0]['ParsedText'])) {
+                    $text = trim($result['ParsedResults'][0]['ParsedText']);
+                    if (!empty($text)) {
+                        return ['success' => true, 'text' => $text];
+                    }
+                }
+                if (!empty($result['ErrorMessage'])) {
+                    return ['success' => false, 'text' => '', 'error' => implode(', ', $result['ErrorMessage'])];
+                }
             }
-        }
 
-        return ['success' => false, 'text' => '', 'error' => 'Could not extract text from image'];
+            return ['success' => false, 'text' => '', 'error' => 'OCR API request failed'];
+        } catch (Exception $e) {
+            return ['success' => false, 'text' => '', 'error' => $e->getMessage()];
+        }
     }
 
     /**
@@ -855,7 +950,7 @@ PYTHON;
         // If file provided, extract text from it and combine with query
         if (!empty($file) && $file['error'] === UPLOAD_ERR_OK) {
             $extracted = $this->processFile($file);
-            
+
             if ($extracted['success'] && !empty($extracted['text'])) {
                 $queryText = "Query: " . $query . "\n\nDocument content:\n" . $extracted['text'];
             }

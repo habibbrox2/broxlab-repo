@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types = 1)
-;
+declare(strict_types=1);
 
 namespace App\Modules\Scraper;
 
@@ -194,8 +193,7 @@ class ScraperOrchestrator
 
             if ($type === 'rss') {
                 $listResult = $this->articleScraper->scrapeRss($source['url']);
-            }
-            else {
+            } else {
                 $listResult = $this->articleScraper->scrapeList($source['url'], $selectors);
             }
 
@@ -224,11 +222,9 @@ class ScraperOrchestrator
 
                 if ($articleResult['saved']) {
                     $results['saved']++;
-                }
-                elseif ($articleResult['duplicate']) {
+                } elseif ($articleResult['duplicate']) {
                     $results['duplicates']++;
-                }
-                elseif (!$articleResult['success']) {
+                } elseif (!$articleResult['success']) {
                     $results['errors']++;
                 }
 
@@ -243,8 +239,7 @@ class ScraperOrchestrator
             $this->sourceManager->updateLastFetch($source['url']);
 
             return array_merge($results, ['success' => true]);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             return array_merge($results, [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -292,8 +287,7 @@ class ScraperOrchestrator
 
             if (!empty($source['use_browser'])) {
                 $articleData = $this->browserScraper->scrape($url, $detailSelectors);
-            }
-            else {
+            } else {
                 $articleData = $this->articleScraper->scrape($url, $detailSelectors);
             }
 
@@ -353,8 +347,7 @@ class ScraperOrchestrator
 
             $this->stats['articles_scraped']++;
             return $result;
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             $result['error'] = $e->getMessage();
             $this->stats['errors']++;
             return $result;
@@ -660,5 +653,81 @@ class ScraperOrchestrator
         $stmt->bind_param('isssi', $sourceId, $url, $status, $error, $responseTime);
         $stmt->execute();
         $stmt->close();
+    }
+
+    /**
+     * Scrape using Node.js scraper for enhanced content extraction
+     */
+    public function scrapeWithNodeJs(int $sourceId, int $maxArticles = 10): array
+    {
+        $nodeRunner = new \App\Modules\Scraper\NodeScraperRunner();
+        $result = $nodeRunner->runForSourceId($sourceId, $maxArticles);
+
+        if (!$result['success']) {
+            return [
+                'success' => false,
+                'error' => $result['error'] ?? 'node_scraper_failed',
+                'details' => $result
+            ];
+        }
+
+        $data = $result['data'] ?? [];
+        $processed = 0;
+        $saved = 0;
+        $duplicates = 0;
+        $errors = 0;
+
+        // Process each scraped article
+        if (isset($data['articles']) && is_array($data['articles'])) {
+            foreach ($data['articles'] as $articleData) {
+                try {
+                    $processed++;
+
+                    // Check for duplicates if enabled
+                    if ($this->config['check_duplicates'] && $this->duplicateChecker) {
+                        $duplicateResult = $this->duplicateChecker->checkDuplicate($articleData);
+
+                        if ($duplicateResult['is_duplicate']) {
+                            $duplicates++;
+                            $this->stats['duplicates_skipped']++;
+                            continue;
+                        }
+                    }
+
+                    // Prepare article data
+                    $source = ['id' => $sourceId, 'category_id' => null]; // Would need to load actual source
+                    $preparedData = $this->prepareArticleData($articleData, $source);
+
+                    // Download images if enabled
+                    if ($this->config['download_images'] && $this->imageDownloader) {
+                        $preparedData = $this->downloadArticleImages($preparedData, $articleData['url'] ?? '');
+                    }
+
+                    // Save to database
+                    $articleId = $this->saveArticle($preparedData, $source);
+                    if ($articleId) {
+                        $saved++;
+                        $this->stats['articles_saved']++;
+
+                        // Save duplicate hash
+                        if ($this->config['check_duplicates'] && $this->duplicateChecker) {
+                            $this->duplicateChecker->saveHash($articleId, $preparedData['content']);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    $errors++;
+                    $this->stats['errors']++;
+                }
+            }
+        }
+
+        return [
+            'success' => true,
+            'processed' => $processed,
+            'saved' => $saved,
+            'duplicates' => $duplicates,
+            'errors' => $errors,
+            'node_result' => $result
+        ];
     }
 }

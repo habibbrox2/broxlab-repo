@@ -14,6 +14,12 @@ require_once __DIR__ . '/../Helpers/FirebaseHelper.php';
 $aiProviderPath = realpath(__DIR__ . '/../Models/AIProvider.php');
 require_once $aiProviderPath ?: (__DIR__ . '/../Models/AIProvider.php');
 
+// OCR Integration for AI Assistant
+require_once __DIR__ . '/../Helpers/OCRService.php';
+require_once __DIR__ . '/../Helpers/NodeOCRClient.php';
+$ocrService = new OCRService();
+$nodeOCRClient = new NodeOCRClient('http://localhost:7020');
+
 // Centralize AI assistant/coplay endpoints here. We still reuse shared handler functions
 // (aiChatHandleRequest, aiChatSendJson, aiChatStreamContent, ...) from AISystemController,
 // but we prevent that controller from registering overlapping /api/* routes.
@@ -27,23 +33,24 @@ require_once __DIR__ . '/../Controllers/AISystemController.php';
  * 
  * @return string|null API key or null if not configured
  */
-function getOpenRouterApiKey(): ?string {
+function getOpenRouterApiKey(): ?string
+{
     global $mysqli;
-    
+
     // Try to get from database first
     $aiProvider = new AIProvider($mysqli);
     $key = $aiProvider->getSetting('openrouter_api_key', '');
-    
+
     if (!empty($key)) {
         return $key;
     }
-    
+
     // Fallback to environment variable
     $envKey = getenv('OPENROUTER_API_KEY');
     if (!empty($envKey)) {
         return $envKey;
     }
-    
+
     return null;
 }
 
@@ -185,7 +192,7 @@ $router->post('/api/chat', ['middleware' => ['csrf']], function () use ($mysqli)
     }
     $stream = isset($input['stream']) ? (bool)$input['stream'] : false;
     $response = $agent->chat($messages, $provider, $model, $extraContext, $stream);
-    
+
     // Audit log: Public chat response
     if (isset($response['error'])) {
         logActivity(
@@ -200,7 +207,7 @@ $router->post('/api/chat', ['middleware' => ['csrf']], function () use ($mysqli)
             'warning'
         );
     }
-    
+
     jsonResponse($response);
 });
 
@@ -683,7 +690,7 @@ $router->post('/api/gdpr/consent', ['middleware' => ['csrf']], function () use (
     // Optionally store in database for audit trail
     require_once __DIR__ . '/../Models/AIFeedback.php';
     $feedbackModel = new AIFeedback($mysqli);
-    
+
     // Create GDPR consent table if not exists
     $tableName = 'ai_gdpr_consent';
     $mysqli->query("CREATE TABLE IF NOT EXISTS `$tableName` (
@@ -714,34 +721,34 @@ $router->post('/api/admin/ai/tts', ['middleware' => ['auth', 'admin_only', 'csrf
     $voice = $input['voice'] ?? 'alloy';
     $model = $input['model'] ?? 'gpt-4o-mini-tts';
     $format = $input['format'] ?? 'wav';
-    
+
     if (empty($text)) {
         jsonResponse(['success' => false, 'error' => 'Text is required']);
         return;
     }
-    
+
     // Validate voice
     $allowedVoices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
     if (!in_array($voice, $allowedVoices)) {
         $voice = 'alloy';
     }
-    
+
     // Validate format
     $allowedFormats = ['wav', 'mp3', 'opus', 'aac'];
     if (!in_array($format, $allowedFormats)) {
         $format = 'wav';
     }
-    
+
     // Get API key from settings
     $aiProvider = new AIProvider($mysqli);
     $settings = $aiProvider->getSettings();
     $apiKey = $settings['openai_api_key'] ?? '';
-    
+
     if (empty($apiKey)) {
         jsonResponse(['success' => false, 'error' => 'OpenAI API key not configured']);
         return;
     }
-    
+
     // Call OpenAI TTS API
     $ch = curl_init('https://api.openai.com/v1/audio/speech');
     curl_setopt_array($ch, [
@@ -759,26 +766,26 @@ $router->post('/api/admin/ai/tts', ['middleware' => ['auth', 'admin_only', 'csrf
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 60
     ]);
-    
+
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $error = curl_error($ch);
     curl_close($ch);
-    
+
     if ($httpCode !== 200) {
         jsonResponse(['success' => false, 'error' => 'TTS generation failed', 'details' => $response]);
         return;
     }
-    
+
     // Return audio as base64
     $audioBase64 = base64_encode($response);
-    $mimeType = match($format) {
+    $mimeType = match ($format) {
         'mp3' => 'audio/mpeg',
         'opus' => 'audio/opus',
         'aac' => 'audio/aac',
         default => 'audio/wav'
     };
-    
+
     jsonResponse([
         'success' => true,
         'audio' => $audioBase64,
@@ -795,37 +802,37 @@ $router->post('/api/admin/ai/image', ['middleware' => ['auth', 'admin_only', 'cs
     $quality = $input['quality'] ?? 'standard';
     $size = $input['size'] ?? '1024x1024';
     $n = $input['n'] ?? 1;
-    
+
     if (empty($prompt)) {
         jsonResponse(['success' => false, 'error' => 'Prompt is required']);
         return;
     }
-    
+
     // Validate size
     $allowedSizes = ['1024x1024', '1024x1536', '1536x1024', '512x512', '768x768'];
     if (!in_array($size, $allowedSizes)) {
         $size = '1024x1024';
     }
-    
+
     // Validate quality
     $allowedQuality = ['standard', 'hd'];
     if (!in_array($quality, $allowedQuality)) {
         $quality = 'standard';
     }
-    
+
     // Validate n
     $n = max(1, min(10, (int)$n));
-    
+
     // Get API key from settings
     $aiProvider = new AIProvider($mysqli);
     $settings = $aiProvider->getSettings();
     $apiKey = $settings['openai_api_key'] ?? '';
-    
+
     if (empty($apiKey)) {
         jsonResponse(['success' => false, 'error' => 'OpenAI API key not configured']);
         return;
     }
-    
+
     // Call OpenAI Images API using Responses API for GPT Image
     $ch = curl_init('https://api.openai.com/v1/responses');
     curl_setopt_array($ch, [
@@ -846,19 +853,19 @@ $router->post('/api/admin/ai/image', ['middleware' => ['auth', 'admin_only', 'cs
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 120
     ]);
-    
+
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $error = curl_error($ch);
     curl_close($ch);
-    
+
     if ($httpCode !== 200) {
         jsonResponse(['success' => false, 'error' => 'Image generation failed', 'http_code' => $httpCode, 'details' => $response]);
         return;
     }
-    
+
     $data = json_decode($response, true);
-    
+
     // Extract images from response
     $images = [];
     if (!empty($data['output'])) {
@@ -874,12 +881,12 @@ $router->post('/api/admin/ai/image', ['middleware' => ['auth', 'admin_only', 'cs
             }
         }
     }
-    
+
     if (empty($images)) {
         jsonResponse(['success' => false, 'error' => 'No images generated', 'response' => $data]);
         return;
     }
-    
+
     jsonResponse([
         'success' => true,
         'images' => $images,
@@ -892,25 +899,25 @@ $router->post('/api/admin/ai/image', ['middleware' => ['auth', 'admin_only', 'cs
 // Admin Web Search Endpoint – Add Real-time Web Data to AI Model Responses
 $router->post('/api/admin/ai/websearch', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     $input = json_decode(file_get_contents('php://input'), true);
-    
+
     $query = $input['query'] ?? '';
     $model = $input['model'] ?? 'openai/gpt-4o';
     $maxResults = isset($input['max_results']) ? (int)$input['max_results'] : 5;
     $includeDomains = $input['include_domains'] ?? [];
     $excludeDomains = $input['exclude_domains'] ?? [];
     $engine = $input['engine'] ?? 'exa';
-    
+
     if (empty($query)) {
         jsonResponse(['success' => false, 'error' => 'Query is required']);
         return;
     }
-    
+
     $apiKey = getOpenRouterApiKey();
     if (!$apiKey) {
         jsonResponse(['success' => false, 'error' => 'OpenRouter API key not configured']);
         return;
     }
-    
+
     $plugins = [
         [
             'id' => 'web-search',
@@ -920,19 +927,19 @@ $router->post('/api/admin/ai/websearch', ['middleware' => ['auth', 'admin_only',
             ]
         ]
     ];
-    
+
     if (!empty($includeDomains)) {
         $plugins[0]['web']['include_domains'] = $includeDomains;
     }
     if (!empty($excludeDomains)) {
         $plugins[0]['web']['exclude_domains'] = $excludeDomains;
     }
-    
+
     $modelName = $model;
     if (strpos($model, ':online') === false) {
         $modelName = $model . ':online';
     }
-    
+
     $url = 'https://openrouter.ai/api/v1/chat/completions';
     $headers = [
         'Authorization: Bearer ' . $apiKey,
@@ -940,68 +947,67 @@ $router->post('/api/admin/ai/websearch', ['middleware' => ['auth', 'admin_only',
         'HTTP-Referer: ' . ($_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_HOST'] ?? ''),
         'X-Title: BroxLab Admin'
     ];
-    
+
     $payload = [
         'model' => $modelName,
         'messages' => [
             ['role' => 'user', 'content' => $query]
         ],
-        'plugins' => $plugins,
         'temperature' => 0.7,
         'max_tokens' => 4000
     ];
-    
+
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-    
+
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
     curl_close($ch);
-    
+
     if ($curlError) {
         jsonResponse(['success' => false, 'error' => 'CURL error: ' . $curlError]);
         return;
     }
-    
+
     $data = json_decode($response, true);
-    
+
     if ($httpCode !== 200 || isset($data['error'])) {
         jsonResponse(['success' => false, 'error' => $data['error']['message'] ?? 'Web search failed', 'response' => $data]);
         return;
     }
-    
+
     $content = $data['choices'][0]['message']['content'] ?? '';
     $usage = $data['usage'] ?? [];
-    
+
     jsonResponse(['success' => true, 'query' => $query, 'response' => $content, 'model' => $modelName, 'engine' => $engine, 'usage' => $usage]);
 });
 
 // Admin PDF Input Endpoint – Process PDF Documents with AI
 $router->post('/api/admin/ai/pdf', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     $input = json_decode(file_get_contents('php://input'), true);
-    
+
     $prompt = $input['prompt'] ?? 'Extract and summarize the key information from this PDF document.';
     $pdfUrl = $input['url'] ?? '';
     $pdfBase64 = $input['base64'] ?? '';
     $model = $input['model'] ?? 'openai/gpt-4o-mini';
     $pdfEngine = $input['engine'] ?? 'pdf-text';
-    
+
     if (empty($pdfUrl) && empty($pdfBase64)) {
         jsonResponse(['success' => false, 'error' => 'Either PDF URL or base64 data is required']);
         return;
     }
-    
+
     $apiKey = getOpenRouterApiKey();
     if (!$apiKey) {
         jsonResponse(['success' => false, 'error' => 'OpenRouter API key not configured']);
         return;
     }
-    
+
     $fileContent = [];
     if (!empty($pdfUrl)) {
         $fileContent = [
@@ -1014,11 +1020,11 @@ $router->post('/api/admin/ai/pdf', ['middleware' => ['auth', 'admin_only', 'csrf
             'file' => ['filename' => 'document.pdf', 'file_data' => 'data:application/pdf;base64,' . $pdfBase64]
         ];
     }
-    
+
     $plugins = [
         ['id' => 'file-parser', 'pdf' => ['engine' => $pdfEngine]]
     ];
-    
+
     $url = 'https://openrouter.ai/api/v1/chat/completions';
     $headers = [
         'Authorization: Bearer ' . $apiKey,
@@ -1026,7 +1032,7 @@ $router->post('/api/admin/ai/pdf', ['middleware' => ['auth', 'admin_only', 'csrf
         'HTTP-Referer: ' . ($_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_HOST'] ?? ''),
         'X-Title: BroxLab Admin'
     ];
-    
+
     $payload = [
         'model' => $model,
         'messages' => [
@@ -1035,51 +1041,50 @@ $router->post('/api/admin/ai/pdf', ['middleware' => ['auth', 'admin_only', 'csrf
                 $fileContent
             ]]
         ],
-        'plugins' => $plugins,
         'temperature' => 0.7,
         'max_tokens' => 4000
     ];
-    
+
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     curl_setopt($ch, CURLOPT_TIMEOUT, 90);
-    
+
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
     curl_close($ch);
-    
+
     if ($curlError) {
         jsonResponse(['success' => false, 'error' => 'CURL error: ' . $curlError]);
         return;
     }
-    
+
     $data = json_decode($response, true);
-    
+
     if ($httpCode !== 200 || isset($data['error'])) {
         jsonResponse(['success' => false, 'error' => $data['error']['message'] ?? 'PDF processing failed', 'response' => $data]);
         return;
     }
-    
+
     $content = $data['choices'][0]['message']['content'] ?? '';
     $usage = $data['usage'] ?? [];
     $annotations = $data['choices'][0]['message']['annotations'] ?? null;
-    
+
     jsonResponse(['success' => true, 'response' => $content, 'model' => $model, 'pdf_engine' => $pdfEngine, 'usage' => $usage, 'annotations' => $annotations]);
 });
 
 // Skip PDF Parsing Costs – Reuse annotations from previous requests
 $router->post('/api/admin/ai/pdf/continue', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     $input = json_decode(file_get_contents('php://input'), true);
-    
+
     $prompt = $input['prompt'] ?? '';
     $annotations = $input['annotations'] ?? [];
     $pdfBase64 = $input['base64'] ?? '';
     $model = $input['model'] ?? 'openai/gpt-4o-mini';
-    
+
     if (empty($prompt)) {
         jsonResponse(['success' => false, 'error' => 'Prompt is required']);
         return;
@@ -1088,24 +1093,24 @@ $router->post('/api/admin/ai/pdf/continue', ['middleware' => ['auth', 'admin_onl
         jsonResponse(['success' => false, 'error' => 'Annotations from previous request are required to skip parsing costs']);
         return;
     }
-    
+
     $apiKey = getOpenRouterApiKey();
     if (!$apiKey) {
         jsonResponse(['success' => false, 'error' => 'OpenRouter API key not configured']);
         return;
     }
-    
+
     $content = [
         ['type' => 'text', 'text' => $prompt]
     ];
-    
+
     if (!empty($pdfBase64)) {
         $content[] = ['type' => 'file', 'file' => ['filename' => 'document.pdf', 'file_data' => 'data:application/pdf;base64,' . $pdfBase64]];
     }
-    
+
     $content[] = ['role' => 'assistant', 'content' => '', 'annotations' => $annotations];
     $content[] = ['role' => 'user', 'content' => $prompt];
-    
+
     $url = 'https://openrouter.ai/api/v1/chat/completions';
     $headers = [
         'Authorization: Bearer ' . $apiKey,
@@ -1113,41 +1118,41 @@ $router->post('/api/admin/ai/pdf/continue', ['middleware' => ['auth', 'admin_onl
         'HTTP-Referer: ' . ($_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_HOST'] ?? ''),
         'X-Title: BroxLab Admin'
     ];
-    
+
     $payload = [
         'model' => $model,
         'messages' => [['role' => 'user', 'content' => $content]],
         'temperature' => 0.7,
         'max_tokens' => 4000
     ];
-    
+
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-    
+
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
     curl_close($ch);
-    
+
     if ($curlError) {
         jsonResponse(['success' => false, 'error' => 'CURL error: ' . $curlError]);
         return;
     }
-    
+
     $data = json_decode($response, true);
-    
+
     if ($httpCode !== 200 || isset($data['error'])) {
         jsonResponse(['success' => false, 'error' => $data['error']['message'] ?? 'PDF continue request failed', 'response' => $data]);
         return;
     }
-    
+
     $content = $data['choices'][0]['message']['content'] ?? '';
     $usage = $data['usage'] ?? [];
-    
+
     jsonResponse(['success' => true, 'response' => $content, 'model' => $model, 'usage' => $usage, 'note' => 'Annotations reused - no additional PDF parsing costs']);
 });
 
@@ -1156,16 +1161,16 @@ $router->get('/api/admin/ai/presence', ['middleware' => ['auth', 'admin_only']],
     $sessionKey = 'ai_active_sessions';
     $currentUserId = AuthManager::getCurrentUserId() ?? $_SESSION['user_id'] ?? null;
     $currentUserName = AuthManager::getCurrentUserArray()['username'] ?? 'Admin';
-    
+
     // Initialize session tracking
     if (!isset($_SESSION[$sessionKey])) {
         $_SESSION[$sessionKey] = [];
     }
-    
+
     $sessions = $_SESSION[$sessionKey];
     $now = time();
     $activeUsers = [];
-    
+
     // Clean up old sessions (older than 5 minutes)
     foreach ($sessions as $userId => $session) {
         if ($now - $session['last_active'] > 300) {
@@ -1179,7 +1184,7 @@ $router->get('/api/admin/ai/presence', ['middleware' => ['auth', 'admin_only']],
             ];
         }
     }
-    
+
     // Update current user's session
     if ($currentUserId) {
         $sessions[$currentUserId] = [
@@ -1188,9 +1193,9 @@ $router->get('/api/admin/ai/presence', ['middleware' => ['auth', 'admin_only']],
             'action' => 'chatting'
         ];
     }
-    
+
     $_SESSION[$sessionKey] = $sessions;
-    
+
     jsonResponse([
         'success' => true,
         'active_users' => $activeUsers,
@@ -1203,15 +1208,15 @@ $router->get('/api/admin/ai/presence', ['middleware' => ['auth', 'admin_only']],
 $router->post('/api/admin/ai/heartbeat', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     $input = json_decode(file_get_contents('php://input'), true);
     $action = $input['action'] ?? 'idle';
-    
+
     $sessionKey = 'ai_active_sessions';
     $currentUserId = AuthManager::getCurrentUserId() ?? $_SESSION['user_id'] ?? null;
-    
+
     if ($currentUserId && isset($_SESSION[$sessionKey][$currentUserId])) {
         $_SESSION[$sessionKey][$currentUserId]['last_active'] = time();
         $_SESSION[$sessionKey][$currentUserId]['action'] = $action;
     }
-    
+
     jsonResponse(['success' => true, 'timestamp' => time()]);
 });
 
@@ -1220,35 +1225,163 @@ $router->post('/api/admin/ai/share', ['middleware' => ['auth', 'admin_only', 'cs
     $input = json_decode(file_get_contents('php://input'), true);
     $shareWithUserId = $input['user_id'] ?? null;
     $expiresIn = (int)($input['expires_hours'] ?? 24);
-    
+
     if (!$shareWithUserId) {
         jsonResponse(['success' => false, 'error' => 'User ID is required']);
         return;
     }
-    
+
     // Generate share token
     $token = bin2hex(random_bytes(16));
     $expiresAt = time() + ($expiresIn * 3600);
-    
+
     $shareKey = 'ai_session_shares';
     if (!isset($_SESSION[$shareKey])) {
         $_SESSION[$shareKey] = [];
     }
-    
+
     $_SESSION[$shareKey][$token] = [
         'shared_by' => AuthManager::getCurrentUserId() ?? $_SESSION['user_id'],
         'shared_with' => $shareWithUserId,
         'expires_at' => $expiresAt,
         'created_at' => time()
     ];
-    
+
     $baseUrl = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_HOST'] ?? '';
     $shareUrl = $baseUrl . '/admin/ai-copilot?share_token=' . $token;
-    
+
     jsonResponse([
         'success' => true,
         'share_token' => $token,
         'share_url' => $shareUrl,
         'expires_at' => date('Y-m-d H:i:s', $expiresAt)
     ]);
+});
+
+// ================== OCR Integration for AI Assistant ==================
+
+// OCR Health Check
+$router->get('/api/ai/ocr/health', function () use ($ocrService) {
+    try {
+        $usageInfo = $ocrService->getUsageInfo();
+
+        jsonResponse([
+            'status' => 'healthy',
+            'ocr_available' => $ocrService->isAvailable(),
+            'available_languages' => $ocrService->getAvailableLanguages(),
+            'service_type' => 'ocr_space_api',
+            'usage_info' => $usageInfo,
+            'timestamp' => date('c')
+        ]);
+    } catch (Exception $e) {
+        jsonResponse([
+            'status' => 'error',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
+
+// Extract text from image
+$router->post('/api/ai/ocr/image', function () use ($ocrService) {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        if (!$input || !isset($input['image'])) {
+            jsonResponse(['success' => false, 'error' => 'Image data is required'], 400);
+            return;
+        }
+
+        $options = $input['options'] ?? [];
+        $result = $ocrService->extractTextFromImage($input['image'], $options);
+
+        jsonResponse($result);
+    } catch (Exception $e) {
+        jsonResponse([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
+
+// Extract text from PDF
+$router->post('/api/ai/ocr/pdf', function () use ($ocrService) {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        if (!$input || !isset($input['pdf'])) {
+            jsonResponse(['success' => false, 'error' => 'PDF data is required'], 400);
+            return;
+        }
+
+        $options = $input['options'] ?? [];
+        $result = $ocrService->extractTextFromPDF($input['pdf'], $options);
+
+        jsonResponse($result);
+    } catch (Exception $e) {
+        jsonResponse([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
+
+// Process batch OCR
+$router->post('/api/ai/ocr/batch', function () use ($ocrService) {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        if (!$input || !isset($input['files'])) {
+            jsonResponse(['success' => false, 'error' => 'Files array is required'], 400);
+            return;
+        }
+
+        $options = $input['options'] ?? [];
+        $result = $ocrService->processBatch($input['files'], $options);
+
+        jsonResponse($result);
+    } catch (Exception $e) {
+        jsonResponse([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
+
+// Handle file upload OCR
+$router->post('/api/ai/ocr/upload', function () use ($ocrService) {
+    try {
+        if (!isset($_FILES['file'])) {
+            jsonResponse(['success' => false, 'error' => 'File upload is required'], 400);
+            return;
+        }
+
+        $file = $_FILES['file'];
+        $filePath = $file['tmp_name'];
+        $fileType = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+        if (!in_array($fileType, ['jpg', 'jpeg', 'png', 'bmp', 'tiff', 'tif', 'pdf'])) {
+            jsonResponse(['success' => false, 'error' => 'Unsupported file type'], 400);
+            return;
+        }
+
+        $fileData = file_get_contents($filePath);
+        $base64Data = base64_encode($fileData);
+
+        $options = $_POST['options'] ?? [];
+        $options = is_string($options) ? json_decode($options, true) : $options;
+        $options = is_array($options) ? $options : [];
+
+        if ($fileType === 'pdf') {
+            $result = $ocrService->extractTextFromPDF($base64Data, $options);
+        } else {
+            $result = $ocrService->extractTextFromImage($base64Data, $options);
+        }
+
+        jsonResponse($result);
+    } catch (Exception $e) {
+        jsonResponse([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
 });
