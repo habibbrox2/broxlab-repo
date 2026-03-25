@@ -2624,8 +2624,19 @@ $router->post('/admin/autocontent/api/collect-multi', ['middleware' => ['auth', 
 
                 if (($node['success'] ?? false) && !empty($node['data']) && is_array($node['data'])) {
                     $data = $node['data'];
-                    $saved = (int)($data['saved'] ?? 0);
-                    $processed = (int)($data['processed'] ?? 0);
+                    $structured = $data['structured'] ?? null;
+
+                    if ($structured) {
+                        $saved = count($structured['articles'] ?? []);
+                        $processed = (int)($structured['meta']['pages_processed'] ?? $data['processed'] ?? 0);
+                        $fetchMethod = $structured['meta']['fetch_method'] ?? '';
+                        if ($fetchMethod) {
+                            $sourceResult['fetch_method'] = $fetchMethod;
+                        }
+                    } else {
+                        $saved = (int)($data['saved'] ?? 0);
+                        $processed = (int)($data['processed'] ?? 0);
+                    }
 
                     $sourceResult['success'] = true;
                     $sourceResult['articles_collected'] = $saved;
