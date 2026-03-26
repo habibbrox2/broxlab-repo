@@ -25,7 +25,7 @@ class ScraperService
      */
     public function scrape(string $url): array
     {
-        $url = trim($url);
+        $url = trim((string)$url); // normalize non-string DB values before validation
 
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
             return ['error' => 'Invalid URL. Please provide a valid URL (e.g. https://example.com).'];

@@ -303,7 +303,7 @@ class EnhancedScraperService
      */
     public function scrape(string $url): array
     {
-        $url = trim($url);
+        $url = trim((string)$url); // normalize to string so bad DB rows don't crash
 
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
             return ['success' => false, 'error' => 'Invalid URL provided', 'error_code' => 'invalid_url'];

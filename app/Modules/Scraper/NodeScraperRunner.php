@@ -10,13 +10,107 @@ namespace App\Modules\Scraper;
  */
 class NodeScraperRunner
 {
-    private string $nodePath;
+    private ?string $nodePath;
     private int $defaultTimeoutSec;
 
     public function __construct(?string $nodePath = null, int $defaultTimeoutSec = 120)
     {
-        $this->nodePath = $nodePath ?: (getenv('NODE_PATH') ?: 'node');
+        $this->nodePath = $this->resolveNodePath($nodePath);
         $this->defaultTimeoutSec = max(10, $defaultTimeoutSec);
+    }
+
+    /**
+     * Resolve node binary path from a provided path, NODE_BINARY, NODE_PATH, or system PATH.
+     */
+    private function resolveNodePath(?string $maybeNode): ?string
+    {
+        $candidate = trim((string)$maybeNode);
+
+        //$1. explicit candidate
+        if ($candidate !== '') {
+            if ($this->isExecutablePath($candidate)) {
+                return $candidate;
+            }
+
+            if (strtolower(basename($candidate)) === 'node' || stripos($candidate, 'node') !== false) {
+                $found = $this->resolveSystemNode();
+                if ($found !== null) {
+                    return $found;
+                }
+            }
+        }
+
+        //$2. NODE_BINARY environ
+        $envNodeBinary = getenv('NODE_BINARY');
+        if ($envNodeBinary !== false && trim($envNodeBinary) !== '' && $this->isExecutablePath(trim($envNodeBinary))) {
+            return trim($envNodeBinary);
+        }
+
+        //$3. NODE_PATH environ
+        $envNodePath = getenv('NODE_PATH');
+        if ($envNodePath !== false && trim($envNodePath) !== '' && $this->isExecutablePath(trim($envNodePath))) {
+            return trim($envNodePath);
+        }
+
+        //$4. system PATH / common paths
+        $system = $this->resolveSystemNode();
+        if ($system !== null) {
+            return $system;
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if path exists and is executable.
+     */
+    private function isExecutablePath(string $path): bool
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            // Windows accepts file existence for node.exe
+            return file_exists($path) && is_file($path);
+        }
+
+        return file_exists($path) && is_file($path) && is_executable($path);
+    }
+
+    /**
+     * Try to find node from system PATH or common locations.
+     */
+    private function resolveSystemNode(): ?string
+    {
+        $cmd = (stripos(PHP_OS_FAMILY, 'Windows') === 0) ? 'where node' : 'command -v node';
+        $output = null;
+        $exit = 1;
+        @exec($cmd . ' 2>&1', $output, $exit);
+
+        if ($exit === 0 && !empty($output)) {
+            foreach ($output as $line) {
+                $path = trim($line);
+                if ($path !== '' && $this->isExecutablePath($path)) {
+                    return $path;
+                }
+            }
+        }
+
+        $common = [
+            'C:\\Program Files\\nodejs\\node.exe',
+            '/usr/local/bin/node',
+            '/usr/bin/node',
+            '/opt/nodejs/bin/node',
+            'node'
+        ];
+
+        foreach ($common as $value) {
+            if ($value === 'node') {
+                continue;
+            }
+            if ($this->isExecutablePath($value)) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -36,8 +130,16 @@ class NodeScraperRunner
             return ['success' => false, 'error' => 'scraper_entry_not_found'];
         }
 
+        if (empty($this->nodePath)) {
+            return [
+                'success' => false,
+                'error' => 'node_not_found',
+                'stderr' => 'Node.js not found. Set NODE_BINARY or NODE_PATH, or install Node.js so command "node" is available.',
+            ];
+        }
+
         // Build command with enhanced error handling
-        $cmd = escapeshellcmd($this->nodePath)
+        $cmd = escapeshellarg($this->nodePath)
             . ' ' . escapeshellarg($scraperPath)
             . ' --sourceId=' . (int)$sourceId
             . ' --max=' . (int)$max

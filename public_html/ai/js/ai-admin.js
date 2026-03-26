@@ -630,10 +630,18 @@ if (!window.BroxAdminInstance) {
 
         loadHistory() {
             try {
-                const stored = sessionStorage.getItem(ADMIN_CONFIG.chatKey);
-                const parsed = stored ? JSON.parse(stored) : [];
-                // Ensure we respect the max history limit
-                return parsed.slice(-ADMIN_CONFIG.maxHistory);
+                const storages = this.getHistoryStorages();
+                for (const storage of storages) {
+                    const stored = storage?.getItem(ADMIN_CONFIG.chatKey);
+                    if (!stored) continue;
+                    const parsed = safeParseJSON(stored);
+                    if (!Array.isArray(parsed)) continue;
+                    const trimmed = parsed.slice(-ADMIN_CONFIG.maxHistory);
+                    if (trimmed.length) {
+                        return trimmed;
+                    }
+                }
+                return [];
             } catch (e) {
                 console.warn('[Admin Copilot] Failed to load history:', e);
                 return [];
@@ -642,13 +650,50 @@ if (!window.BroxAdminInstance) {
 
         saveHistory() {
             try {
-                // Keep only the last N messages
                 const trimmed = this.history.slice(-ADMIN_CONFIG.maxHistory);
-                sessionStorage.setItem(ADMIN_CONFIG.chatKey, JSON.stringify(trimmed));
+                this.persistHistory(trimmed);
                 this.updateSaveIndicator();
                 this.renderHistorySidebar();
             } catch (e) {
                 console.warn('[Admin Copilot] Failed to save history:', e);
+            }
+        }
+
+        getHistoryStorages() {
+            if (Array.isArray(this._historyStorages)) {
+                return this._historyStorages;
+            }
+            const storages = [];
+            for (const name of ['localStorage', 'sessionStorage']) {
+                try {
+                    const candidate = window[name];
+                    if (!candidate || typeof candidate.getItem !== 'function') continue;
+                    storages.push(candidate);
+                } catch {
+                    // Storage not available – skip
+                }
+            }
+            this._historyStorages = storages;
+            return storages;
+        }
+
+        persistHistory(trimmed) {
+            for (const storage of this.getHistoryStorages()) {
+                try {
+                    storage.setItem(ADMIN_CONFIG.chatKey, JSON.stringify(trimmed));
+                } catch {
+                    // Ignore write failures (privacy mode, quota)
+                }
+            }
+        }
+
+        clearStoredHistory() {
+            for (const storage of this.getHistoryStorages()) {
+                try {
+                    storage.removeItem(ADMIN_CONFIG.chatKey);
+                } catch {
+                    // ignore removal errors
+                }
             }
         }
 
@@ -1879,7 +1924,7 @@ if (!window.BroxAdminInstance) {
             if (!confirm('Clear all chat history?')) return;
 
             this.history = [];
-            sessionStorage.removeItem(ADMIN_CONFIG.chatKey);
+            this.clearStoredHistory();
 
             if (this.nodes.body) {
                 this.nodes.body.innerHTML = '';
@@ -3627,7 +3672,6 @@ if (!window.BroxAdminInstance) {
 
         async handleOCR(imageData) {
             this.updateStatus('loading', 'Processing OCR...');
-            this.addMessage('assistant', '🔍 *OCR: Extracting text from image...');
 
             try {
                 const response = await fetch('/admin/ai-system/ocr', {

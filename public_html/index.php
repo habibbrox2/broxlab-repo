@@ -71,7 +71,10 @@ if (!class_exists('Memcached')) {
 // .env is optional (may be absent in production / distributed packages)
 // Use safeLoad() so missing env file does not cause a fatal error.
 // If you need custom env vars, create a `.env` file in the project root.
-$dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+//
+// IMPORTANT: createImmutable() only writes to $_ENV/$_SERVER, not PHP's getenv().
+// Use createUnsafeImmutable() to also write via putenv() so getenv() works.
+$dotenv = Dotenv\Dotenv::createUnsafeImmutable(dirname(__DIR__));
 $dotenv->safeLoad();
 
 // ============================================================================
