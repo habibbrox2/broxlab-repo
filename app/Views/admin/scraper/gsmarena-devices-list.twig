@@ -1,0 +1,239 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}GSMArena Devices - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">GSMArena Devices</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ base_url('admin/scraper/gsmarena-devices') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Devices</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{{ base_url('admin/scraper/gsmarena-devices/export/csv') }}" class="btn btn-outline-success me-2">
+                <i class="fas fa-file-csv me-1"></i> Export CSV
+            </a>
+            <a href="{{ base_url('admin/scraper/gsmarena-devices/export/json') }}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-file-code me-1"></i> Export JSON
+            </a>
+            <a href="{{ base_url('admin/scraper/gsmarena-devices') }}" class="btn btn-primary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ base_url('admin/scraper/gsmarena-devices/list') }}" class="row g-3">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Search</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" id="search" name="search" placeholder="Search by name..." value="{{ search|default('') }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="brand" class="form-label">Brand</label>
+                    <select class="form-select" id="brand" name="brand">
+                        <option value="">All Brands</option>
+                        {% for brand in brands %}
+                            <option value="{{ brand.brand }}" {{ brand_filter == brand.brand ? 'selected' : '' }}>{{ brand.brand }} ({{ brand.count }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="perPage" class="form-label">Per Page</label>
+                    <select class="form-select" id="perPage" name="per_page">
+                        <option value="20" {{ per_page == 20 ? 'selected' : '' }}>20</option>
+                        <option value="50" {{ per_page == 50 ? 'selected' : '' }}>50</option>
+                        <option value="100" {{ per_page == 100 ? 'selected' : '' }}>100</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-1"></i> Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Devices Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            {% if devices|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Image</th>
+                                <th>Device</th>
+                                <th>Brand</th>
+                                <th>Key Specs</th>
+                                <th>Released</th>
+                                <th>Scraped</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for device in devices %}
+                                <tr>
+                                    <td>
+                                        {% if device.image_url %}
+                                            <img src="{{ device.image_url }}" alt="{{ device.name }}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                                <i class="fas fa-mobile-alt text-muted"></i>
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ base_url('admin/scraper/gsmarena-devices/' ~ device.id) }}" class="text-decoration-none fw-bold">
+                                            {{ device.name }}
+                                        </a>
+                                        <div class="text-muted small">
+                                            <a href="{{ device.url }}" target="_blank" class="text-decoration-none">
+                                                <i class="fas fa-external-link-alt me-1"></i>View Original
+                                            </a>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ device.brand }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="small">
+                                            {% if device.ram %}<span class="badge bg-info me-1">{{ device.ram }}</span>{% endif %}
+                                            {% if device.storage %}<span class="badge bg-success me-1">{{ device.storage }}</span>{% endif %}
+                                            {% if device.display_size %}<span class="badge bg-warning text-dark">{{ device.display_size }}</span>{% endif %}
+                                            {% if device.battery_capacity %}<span class="badge bg-secondary">{{ device.battery_capacity }}</span>{% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if device.released %}
+                                            <span class="badge bg-light text-dark">{{ device.released }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">
+                                            {{ device.scraped_at|date('M d, Y') }}
+                                        </span>
+                                        {% if device.updated_at != device.scraped_at %}
+                                            <div class="text-muted small">
+                                                Updated: {{ device.updated_at|date('M d, Y') }}
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ base_url('admin/scraper/gsmarena-devices/' ~ device.id) }}" class="btn btn-sm btn-outline-primary me-1" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ device.url }}" target="_blank" class="btn btn-sm btn-outline-secondary me-1" title="Open Original">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ device.id }}" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if total_pages > 1 %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if current_page > 1 %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ base_url('admin/scraper/gsmarena-devices/list?page=' ~ (current_page - 1) ~ '&search=' ~ (search|default('')) ~ '&brand=' ~ (brand_filter|default('')) ~ '&per_page=' ~ per_page) }}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for page in 1..total_pages %}
+                                {% if page == current_page %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page }}</span>
+                                    </li>
+                                {% elseif page == 1 or page == total_pages or (page >= current_page - 2 and page <= current_page + 2) %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ base_url('admin/scraper/gsmarena-devices/list?page=' ~ page ~ '&search=' ~ (search|default('')) ~ '&brand=' ~ (brand_filter|default('')) ~ '&per_page=' ~ per_page) }}">{{ page }}</a>
+                                    </li>
+                                {% elseif page == current_page - 3 or page == current_page + 3 %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if current_page < total_pages %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ base_url('admin/scraper/gsmarena-devices/list?page=' ~ (current_page + 1) ~ '&search=' ~ (search|default('')) ~ '&brand=' ~ (brand_filter|default('')) ~ '&per_page=' ~ per_page) }}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+
+                <!-- Results Info -->
+                <div class="text-center text-muted mt-3">
+                    Showing {{ (current_page - 1) * per_page + 1 }} to {{ min(current_page * per_page, total_count) }} of {{ total_count }} devices
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-mobile-alt text-muted fa-3x mb-3"></i>
+                    <p class="text-muted mb-0">No devices found matching your criteria.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modals -->
+{% for device in devices %}
+<div class="modal fade" id="deleteModal{{ device.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ device.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel{{ device.id }}">Delete Device</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this device?</p>
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ device.name }}</h6>
+                        <p class="card-text text-muted small mb-0">{{ device.url }}</p>
+                    </div>
+                </div>
+                <p class="text-danger small mt-3">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ base_url('admin/scraper/gsmarena-devices/' ~ device.id ~ '/delete') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i> Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
