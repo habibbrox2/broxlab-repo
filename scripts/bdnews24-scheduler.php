@@ -1,4 +1,5 @@
 <?php
+
 /**
  * bdnews24 Scheduler Script
  * CLI script to run the scraper at regular intervals
@@ -68,42 +69,86 @@ if (!is_dir($logDir)) {
 /**
  * Find Node.js executable path
  */
-function findNodePath(): string {
-    // Check if NODE_PATH environment variable is set
-    if (!empty($_ENV['NODE_PATH'])) {
-        return $_ENV['NODE_PATH'];
+function findNodePath(): ?string
+{
+    // 1. Explicit environment variables
+    $envNodeBinary = getenv('NODE_BINARY');
+    if ($envNodeBinary !== false && trim($envNodeBinary) !== '' && isNodeExecutable(trim($envNodeBinary))) {
+        return trim($envNodeBinary);
     }
-    
-    // Check common locations
+
+    $envNodePath = getenv('NODE_PATH');
+    if ($envNodePath !== false && trim($envNodePath) !== '' && isNodeExecutable(trim($envNodePath))) {
+        return trim($envNodePath);
+    }
+
+    // 2. Path resolver
+    $command = (stripos(PHP_OS_FAMILY, 'Windows') === 0) ? 'where node' : 'command -v node';
+    $output = [];
+    $exitCode = 1;
+    @exec($command . ' 2>&1', $output, $exitCode);
+
+    if ($exitCode === 0 && !empty($output)) {
+        foreach ($output as $candidate) {
+            $candidate = trim($candidate);
+            if ($candidate !== '' && isNodeExecutable($candidate)) {
+                return $candidate;
+            }
+        }
+    }
+
+    // 3. Common locations
     $paths = [
-        'node',
-        'C:\Program Files\nodejs\node.exe',
+        'C:\\Program Files\\nodejs\\node.exe',
         '/usr/local/bin/node',
         '/usr/bin/node',
         '/opt/nodejs/bin/node'
     ];
-    
+
     foreach ($paths as $path) {
-        if ($path === 'node' || file_exists($path)) {
+        if (isNodeExecutable($path)) {
             return $path;
         }
     }
-    
-    return 'node';
+
+    return null;
+}
+
+function isNodeExecutable(string $path): bool
+{
+    if ($path === '') {
+        return false;
+    }
+
+    if (DIRECTORY_SEPARATOR === '\\') {
+        // Windows: executable if file exists and ends with node.exe
+        if (stripos($path, 'node.exe') !== false && file_exists($path) && is_file($path)) {
+            return true;
+        }
+        // fallback check by checking PATH name
+        return ($path === 'node');
+    }
+
+    if ($path === 'node') {
+        return true;
+    }
+
+    return file_exists($path) && is_file($path) && is_executable($path);
 }
 
 /**
  * Log message
  */
-function logMessage(string $message, string $level = 'INFO'): void {
+function logMessage(string $message, string $level = 'INFO'): void
+{
     global $config;
-    
+
     $timestamp = date('Y-m-d H:i:s');
     $logMessage = "[{$timestamp}] [{$level}] {$message}\n";
-    
+
     // Console output
     echo $logMessage;
-    
+
     // File output
     if ($config['log_file']) {
         file_put_contents($config['log_file'], $logMessage, FILE_APPEND);
@@ -113,12 +158,13 @@ function logMessage(string $message, string $level = 'INFO'): void {
 /**
  * Log activity to database
  */
-function logActivity(string $message, string $status = 'success'): void {
+function logActivity(string $message, string $status = 'success'): void
+{
     global $basePath;
-    
+
     // Include database connection if available
     $dbFile = $basePath . '/public_html/_db.php';
-    
+
     if (file_exists($dbFile)) {
         try {
             // Only log to system activities - minimal impact
@@ -134,50 +180,63 @@ function logActivity(string $message, string $status = 'success'): void {
 /**
  * Run the scraper
  */
-function runScraper(array $config): array {
+function runScraper(array $config): array
+{
     global $basePath;
-    
+
     $nodePath = $config['node_path'];
     $scraperPath = $basePath . '/src/scraper/index.js';
-    
+
+    if (empty($nodePath)) {
+        return [
+            'success' => false,
+            'return_code' => null,
+            'error' => 'node_not_found',
+            'output' => [
+                'stdout' => '',
+                'stderr' => 'Node.js executable not found. Set NODE_BINARY or NODE_PATH to a valid path.',
+            ],
+        ];
+    }
+
     // Build command
-    $cmd = escapeshellcmd($nodePath) . ' ' . escapeshellarg($scraperPath);
-    
+    $cmd = escapeshellarg($nodePath) . ' ' . escapeshellarg($scraperPath);
+
     // Add options
     if ($config['continuous']) {
         $cmd .= ' --continuous';
     }
-    
+
     if ($config['interval'] > 0) {
         $cmd .= ' --interval=' . $config['interval'];
     }
-    
+
     if ($config['cycles'] > 0) {
         $cmd .= ' --cycles=' . $config['cycles'];
     }
-    
+
     if (!empty($config['source'])) {
         $cmd .= ' --source=' . escapeshellarg($config['source']);
     }
-    
+
     logMessage("Executing: {$cmd}");
-    
+
     // Set timeout
     $timeout = 300; // 5 minutes max per run
-    
+
     // Execute
     $output = [];
     $returnCode = 0;
-    
+
     // Use proc_open for better control
     $descriptors = [
         0 => ['pipe', 'r'],  // stdin
         1 => ['pipe', 'w'],  // stdout
         2 => ['pipe', 'w']   // stderr
     ];
-    
+
     $process = proc_open($cmd, $descriptors, $pipes, $basePath);
-    
+
     if (!is_resource($process)) {
         return [
             'success' => false,
@@ -185,27 +244,27 @@ function runScraper(array $config): array {
             'output' => []
         ];
     }
-    
+
     // Set timeout
     stream_set_blocking($pipes[1], false);
     stream_set_blocking($pipes[2], false);
-    
+
     $startTime = time();
     $stdout = '';
     $stderr = '';
-    
+
     while (true) {
         $stdout .= stream_get_contents($pipes[1]);
         $stderr .= stream_get_contents($pipes[2]);
-        
+
         // Check if process ended
         $status = proc_get_status($process);
-        
+
         if (!$status['running']) {
             $returnCode = $status['exitcode'];
             break;
         }
-        
+
         // Check timeout
         if (time() - $startTime > $timeout) {
             proc_terminate($process);
@@ -213,22 +272,22 @@ function runScraper(array $config): array {
             $stderr .= "\nProcess terminated due to timeout";
             break;
         }
-        
+
         usleep(100000); // 100ms
     }
-    
+
     // Close pipes
     fclose($pipes[0]);
     fclose($pipes[1]);
     fclose($pipes[2]);
     proc_close($process);
-    
+
     $output = [
         'stdout' => $stdout,
         'stderr' => $stderr,
         'return_code' => $returnCode
     ];
-    
+
     return [
         'success' => $returnCode === 0,
         'return_code' => $returnCode,
@@ -241,9 +300,14 @@ logMessage("=== Starting bdnews24 Scheduler ===");
 logMessage("Configuration: " . json_encode($config));
 
 // Verify Node.js is available
-$nodeCheck = shell_exec($config['node_path'] . ' --version');
-if (!$nodeCheck) {
-    logMessage("ERROR: Node.js not found at: " . $config['node_path'], 'ERROR');
+if (empty($config['node_path'])) {
+    logMessage('ERROR: Node.js binary path could not be resolved. Please set NODE_BINARY or NODE_PATH.', 'ERROR');
+    exit(1);
+}
+
+$nodeCheck = @shell_exec(escapeshellarg($config['node_path']) . ' --version 2>&1');
+if (!$nodeCheck || stripos($nodeCheck, 'command not found') !== false || stripos($nodeCheck, 'not recognized') !== false) {
+    logMessage("ERROR: Node.js not executable at: " . $config['node_path'] . " (" . trim($nodeCheck ?: 'unknown') . ")", 'ERROR');
     exit(1);
 }
 
@@ -255,7 +319,7 @@ $result = runScraper($config);
 if ($result['success']) {
     logMessage("Scraper completed successfully");
     logActivity('Scraper cycle completed', 'success');
-    
+
     // Parse output for stats
     if (!empty($result['output']['stdout'])) {
         $output = json_decode($result['output']['stdout'], true);
