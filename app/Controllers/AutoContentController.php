@@ -37,6 +37,36 @@ $router->get('/admin/autocontent', ['middleware' => ['auth', 'admin_only']], fun
         $retry_summary = $model->getScrapeQueueSummary();
         $browser_status = (new BrowserScraperService())->checkRuntimeStatus();
 
+        $purifier = function_exists('getPurifier') ? getPurifier() : null;
+        $firstNonEmpty = function (...$values) {
+            foreach ($values as $value) {
+                if (is_string($value)) {
+                    $trimmed = trim($value);
+                    if ($trimmed !== '') {
+                        return $trimmed;
+                    }
+                } elseif (!empty($value)) {
+                    return $value;
+                }
+            }
+            return '';
+        };
+
+        foreach ($recent_items as &$item) {
+            $item['display_title'] = $firstNonEmpty($item['ai_title'] ?? '', $item['original_title'] ?? '', $item['title'] ?? '');
+            $item['display_excerpt'] = $firstNonEmpty($item['ai_excerpt'] ?? '', $item['original_excerpt'] ?? '', $item['excerpt'] ?? '');
+            $item['display_author'] = $firstNonEmpty($item['original_author'] ?? '', $item['author'] ?? '');
+            $item['display_content'] = $firstNonEmpty($item['ai_content'] ?? '', $item['original_content'] ?? '', $item['content'] ?? '');
+            $item['display_original_content'] = $firstNonEmpty($item['original_content'] ?? '', $item['content'] ?? '');
+            $item['display_ai_content'] = $item['ai_content'] ?? '';
+            $item['content_type'] = $item['source_content_type'] ?? ($item['content_type'] ?? '');
+
+            $item['display_content_clean'] = $purifier ? $purifier->purify((string)$item['display_content']) : (string)$item['display_content'];
+            $item['display_original_content_clean'] = $purifier ? $purifier->purify((string)$item['display_original_content']) : (string)$item['display_original_content'];
+            $item['display_ai_content_clean'] = $purifier ? $purifier->purify((string)$item['display_ai_content']) : (string)$item['display_ai_content'];
+        }
+        unset($item);
+
         // Tail cron log for quick health visibility (best-effort).
         $cronTail = [];
         try {
@@ -110,6 +140,12 @@ $router->get('/admin/autocontent', ['middleware' => ['auth', 'admin_only']], fun
  * Admin-only JSON health check for dashboard.
  */
 $router->get('/admin/autocontent/health', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    // Ensure .env is loaded
+    if (!getenv('SCRAPER_DIRECT_API_URL')) {
+        $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__, 2));
+        $dotenv->safeLoad();
+    }
+
     $dbOk = false;
     try {
         $dbOk = $mysqli->ping();
@@ -146,13 +182,12 @@ $router->get('/admin/autocontent/health', ['middleware' => ['auth', 'admin_only'
     };
 
     $directUrl = getenv('SCRAPER_DIRECT_API_URL') ?: getenv('APP_URL') ?: '';
-    $queueUrl = getenv('SCRAPER_API_URL') ?: '';
 
     $payload = [
         'success' => true,
         'db' => $dbOk ? 'ok' : 'down',
         'direct_api' => $checkUrl((string)$directUrl),
-        'queue_api' => $checkUrl((string)$queueUrl),
+        'queue_api' => ['status' => 'not_used'], // Queue API disabled - requires Redis 5.0+
         'timestamp' => date('c')
     ];
 
