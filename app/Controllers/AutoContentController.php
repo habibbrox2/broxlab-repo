@@ -4940,3 +4940,73 @@ $router->get('/admin/autocontent/presets', ['middleware' => ['auth', 'admin_only
         echo "Error loading presets: " . $e->getMessage();
     }
 });
+
+/**
+ * Scrape with Node.js (Enhanced Axios + Cheerio)
+ * POST /admin/autocontent/api/scrape-nodejs
+ */
+$router->post('/admin/autocontent/api/scrape-nodejs', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    try {
+        $sourceId = (int)($_POST['source_id'] ?? 0);
+        $maxArticles = (int)($_POST['max_articles'] ?? 10);
+
+        if ($sourceId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Invalid source ID']);
+            exit;
+        }
+
+        if ($maxArticles < 1 || $maxArticles > 50) {
+            $maxArticles = 10; // Default and max limit
+        }
+
+        require_once __DIR__ . '/../Modules/Scraper/ScraperOrchestrator.php';
+        $orchestrator = new \App\Modules\Scraper\ScraperOrchestrator();
+        $orchestrator->setDatabase($mysqli);
+
+        $result = $orchestrator->scrapeWithNodeJs($sourceId, $maxArticles);
+
+        if ($result['success']) {
+            $message = sprintf(
+                'Node.js scraping completed: %d processed, %d saved, %d duplicates, %d errors',
+                $result['processed'],
+                $result['saved'],
+                $result['duplicates'],
+                $result['errors']
+            );
+
+            logActivity("Auto Content Node.js Scrape", "autocontent", $sourceId, [
+                'max_articles' => $maxArticles,
+                'result' => $result
+            ], 'success');
+
+            echo json_encode([
+                'success' => true,
+                'message' => $message,
+                'data' => $result
+            ]);
+        } else {
+            logActivity("Auto Content Node.js Scrape Failed", "autocontent", $sourceId, [
+                'error' => $result['error'] ?? 'unknown',
+                'details' => $result
+            ], 'error');
+
+            echo json_encode([
+                'success' => false,
+                'message' => 'Node.js scraping failed: ' . ($result['error'] ?? 'Unknown error'),
+                'data' => $result
+            ]);
+        }
+    } catch (Throwable $e) {
+        error_log("Auto Content Node.js Scrape Error: " . $e->getMessage());
+
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage(),
+            'error_id' => substr(md5($e->getMessage()), 0, 8)
+        ]);
+    }
+
+    exit;
+});

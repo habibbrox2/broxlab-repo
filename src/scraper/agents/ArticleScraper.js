@@ -73,7 +73,7 @@ class ArticleScraper {
                 data: null
             };
         }
- 
+
         if (this.sourceId && DatabaseService?.connected) {
             await DatabaseService.insertAutoContentScrapeLog(this.sourceId, {
                 url,
@@ -667,6 +667,9 @@ class ArticleScraper {
     /**
      * Extract article content using configured selectors
      */
+    /**
+     * Enhanced content extraction with better cleaning
+     */
     extractContent($dom) {
         const selectorConfig = this.selectors?.article?.content || CONFIG.defaultSelectors.article.content;
 
@@ -691,8 +694,42 @@ class ArticleScraper {
             }
         }
 
+        // Clean and filter content
+        const cleanedParagraphs = this.cleanContentParagraphs(paragraphs);
+
         // Join paragraphs
-        return paragraphs.join('\n\n');
+        return cleanedParagraphs.join('\n\n');
+    }
+
+    /**
+     * Clean and filter content paragraphs
+     */
+    cleanContentParagraphs(paragraphs) {
+        return paragraphs
+            .map(p => this.cleanText(p))
+            .filter(p => {
+                // Filter out very short paragraphs
+                if (p.length < 30) return false;
+
+                // Filter out paragraphs that look like ads or navigation
+                const lower = p.toLowerCase();
+                const adPatterns = [
+                    /advertisement/i,
+                    /sponsored/i,
+                    /read more/i,
+                    /click here/i,
+                    /subscribe/i,
+                    /newsletter/i,
+                    /share this/i,
+                    /related articles/i,
+                    /you might also like/i,
+                    /©/i,
+                    /all rights reserved/i
+                ];
+
+                return !adPatterns.some(pattern => pattern.test(lower));
+            })
+            .slice(0, 50); // Limit to first 50 paragraphs to avoid excessive content
     }
 
     /**

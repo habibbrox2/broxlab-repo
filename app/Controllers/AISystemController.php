@@ -235,7 +235,7 @@ function aiChatExtractImageReferences(array $messages): array
             }
             $image = $part['image_url'] ?? [];
             $url = $image['url'] ?? null;
-            
+
             // Support multiple image input formats:
             // 1. URL: "https://..."
             // 2. Base64: "data:image/png;base64,..."
@@ -243,13 +243,13 @@ function aiChatExtractImageReferences(array $messages): array
             if (!$url) {
                 continue;
             }
-            
+
             // Extract detail level (low, high, original, auto) - default to "high" for better analysis
             $detail = $image['detail'] ?? 'high';
             if (!in_array($detail, ['low', 'high', 'original', 'auto'], true)) {
                 $detail = 'high';
             }
-            
+
             $refs[] = [
                 'url' => $url,
                 'name' => $image['name'] ?? null,
@@ -350,22 +350,22 @@ function aiChatBuildVisionMessages(array $messages, array $imageRefs): array
     if (empty($imageRefs)) {
         return $messages;
     }
-    
+
     $builtMessages = [];
-    
+
     foreach ($messages as $msg) {
         if (!is_array($msg)) {
             $builtMessages[] = $msg;
             continue;
         }
-        
+
         $role = $msg['role'] ?? 'user';
         $content = $msg['content'] ?? '';
-        
+
         // If content is a string and there are images, convert to multimodal format
         if (is_string($content) && !empty($imageRefs) && $role === 'user') {
             $newContent = [];
-            
+
             // Add text part
             if (!empty(trim($content))) {
                 $newContent[] = [
@@ -373,25 +373,25 @@ function aiChatBuildVisionMessages(array $messages, array $imageRefs): array
                     'text' => $content
                 ];
             }
-            
+
             // Add image parts
             foreach ($imageRefs as $img) {
                 $imageData = [
                     'url' => $img['url'],
                     'detail' => $img['detail'] ?? 'high'
                 ];
-                
+
                 // Add name if available
                 if (!empty($img['name'])) {
                     $imageData['name'] = $img['name'];
                 }
-                
+
                 $newContent[] = [
                     'type' => 'image_url',
                     'image_url' => $imageData
                 ];
             }
-            
+
             $builtMessages[] = [
                 'role' => $role,
                 'content' => $newContent
@@ -401,7 +401,7 @@ function aiChatBuildVisionMessages(array $messages, array $imageRefs): array
             $builtMessages[] = $msg;
         }
     }
-    
+
     return $builtMessages;
 }
 
@@ -413,23 +413,32 @@ function aiChatSupportsVision(?string $model): bool
     if (empty($model)) {
         return true; // Default to allowing
     }
-    
+
     $modelLower = strtolower($model);
-    
+
     // Known vision models
     $visionIndicators = [
-        'vision', 'gpt-4o', 'gpt-4-vision', 'gpt-4-turbo',
-        'claude-3', 'claude-3.5', 'claude-3.7',
-        'gemini', 'llama-3.2', 'qwen2-vl', 'pixtral',
-        'minimax', 'deepseek-vl'
+        'vision',
+        'gpt-4o',
+        'gpt-4-vision',
+        'gpt-4-turbo',
+        'claude-3',
+        'claude-3.5',
+        'claude-3.7',
+        'gemini',
+        'llama-3.2',
+        'qwen2-vl',
+        'pixtral',
+        'minimax',
+        'deepseek-vl'
     ];
-    
+
     foreach ($visionIndicators as $indicator) {
         if (strpos($modelLower, $indicator) !== false) {
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -445,7 +454,7 @@ function aiChatEncodeImageBase64(string $filePath): ?string
     if (!file_exists($filePath) || !is_readable($filePath)) {
         return null;
     }
-    
+
     $mimeTypes = [
         'png' => 'image/png',
         'jpg' => 'image/jpeg',
@@ -453,15 +462,15 @@ function aiChatEncodeImageBase64(string $filePath): ?string
         'webp' => 'image/webp',
         'gif' => 'image/gif'
     ];
-    
+
     $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
     $mime = $mimeTypes[$ext] ?? 'image/png';
-    
+
     $data = file_get_contents($filePath);
     if ($data === false) {
         return null;
     }
-    
+
     $base64 = base64_encode($data);
     return "data:{$mime};base64,{$base64}";
 }
@@ -481,20 +490,20 @@ function aiChatEncodeRemoteImage(string $url): ?string
             'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         ]
     ]);
-    
+
     $data = @file_get_contents($url, false, $context);
     if ($data === false) {
         return null;
     }
-    
+
     // Detect MIME type from content
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime = $finfo->buffer($data);
-    
+
     if (strpos($mime, 'image/') !== 0) {
         return null;
     }
-    
+
     $base64 = base64_encode($data);
     return "data:{$mime};base64,{$base64}";
 }
@@ -789,6 +798,76 @@ function aiChatNormalizeAdvancedOptions(array $inputOptions): array
 
     return $normalized;
 }
+
+/**
+ * Extract OCR text from images for admin assistant
+ * Processes each image through OCR service with Node.js primary + OCR.space fallback
+ * Only used for admin - public chat relies on AI model's vision capability
+ * 
+ * @param array $imageRefs Image references extracted from messages
+ * @return string OCR extracted text concatenated from all images
+ */
+function aiChatExtractOCRForAdmin(array $imageRefs): string
+{
+    if (empty($imageRefs)) {
+        return '';
+    }
+
+    // Hybrid OCR: Node.js Tesseract.js first, fallback to OCR.space API
+    $ocrTexts = [];
+
+    require_once __DIR__ . '/../Helpers/OCRService.php';
+    $ocr = new OCRService();
+
+    foreach ($imageRefs as $ref) {
+        try {
+            $imageData = null;
+
+            // Handle base64 data URLs
+            if ($ref['is_base64'] ?? false) {
+                $imageData = $ref['url'];
+            }
+            // Handle uploaded file references
+            elseif (isset($ref['file_path']) && file_exists($ref['file_path'])) {
+                $imageData = base64_encode(file_get_contents($ref['file_path']));
+            }
+            // Handle HTTP/HTTPS URLs by downloading
+            elseif ($ref['is_url'] ?? false) {
+                $ch = curl_init();
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => $ref['url'],
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT => 10,
+                    CURLOPT_FOLLOWLOCATION => true
+                ]);
+                $imageData = curl_exec($ch);
+                curl_close($ch);
+                if ($imageData) {
+                    $imageData = base64_encode($imageData);
+                }
+            }
+
+            // Extract text using hybrid OCR (Node.js → OCR.space fallback)
+            if ($imageData) {
+                $result = $ocr->extractTextFromImage($imageData, ['language' => 'eng']);
+                if (!empty($result['success']) && !empty($result['text'])) {
+                    $fileName = $ref['name'] ?? 'Image';
+                    $engine = $result['engine'] ?? 'OCR Service';
+                    $ocrTexts[] = "**OCR from $fileName** ($engine):\n" . trim($result['text']);
+                } else {
+                    // Log failure for debugging
+                    error_log('Admin OCR extraction failed for ' . ($ref['name'] ?? 'Image') . ': ' . ($result['error'] ?? 'Unknown error'));
+                }
+            }
+        } catch (Exception $e) {
+            // Silently skip failed OCR attempts
+            error_log("Admin OCR extraction failed: " . $e->getMessage());
+        }
+    }
+
+    return implode("\n\n", $ocrTexts);
+}
+
 function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $allowOverrides): void
 {
     $aiProvider = new AIProvider($mysqli);
@@ -886,7 +965,7 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
 
     // Admin-only slash commands routing via ToolRegistry
     $cmd = ($isAdmin && $lastUserMessage !== '') ? ToolRegistry::parseCommand($lastUserMessage) : null;
-    
+
     // Backward compatibility: map old command names to new ones
     $commandAliases = [
         'diagnostics' => 'get_system_health',
@@ -905,12 +984,12 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         'content_stats' => 'get_content_stats',
         'help' => 'list_tools',
     ];
-    
+
     if ($cmd) {
         // Resolve command alias
         $originalCmd = $cmd['cmd'];
         $cmd['cmd'] = $commandAliases[$cmd['cmd']] ?? $cmd['cmd'];
-        
+
         // Execute tool via registry
         $toolResult = ToolRegistry::execute($cmd['cmd'], $cmd['args'], $mysqli);
 
@@ -920,7 +999,7 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
 
             // Provide helpful error for unknown tools
             if ($errorCode === 'tool_not_found') {
-                $availableTools = array_map(fn($t) => '/'.$t['name'], ToolRegistry::listTools());
+                $availableTools = array_map(fn($t) => '/' . $t['name'], ToolRegistry::listTools());
                 $errorMsg = "Unknown command: /{$originalCmd}\n\nAvailable: " . implode(', ', $availableTools);
             }
 
@@ -960,6 +1039,14 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     // Add image context to system prompt so non-multimodal providers are aware of visual inputs
     if (!empty($imageRefs)) {
         $systemPrompt = aiChatAppendImageContext($systemPrompt, $imageRefs);
+
+        // Admin-only: Automatically extract text from images using OCR
+        if ($isAdmin) {
+            $ocrText = aiChatExtractOCRForAdmin($imageRefs);
+            if ($ocrText !== '') {
+                $systemPrompt .= "\n\n[EXTRACTED TEXT FROM IMAGES]\n" . $ocrText;
+            }
+        }
     }
 
     array_unshift($messages, ['role' => 'system', 'content' => $systemPrompt]);
@@ -1021,13 +1108,35 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     }
     if ($allowOverrides) {
         $topLevelOptionKeys = [
-            'plugins', 'response_format', 'reasoning_effort', 'tool_choice',
-            'tools', 'web_search_options', 'modalities', 'audio',
-            'parallel_tool_calls', 'stream_options', 'metadata', 'store',
-            'n', 'logprobs', 'top_logprobs', 'top_p', 'presence_penalty',
-            'frequency_penalty', 'seed', 'max_completion_tokens', 'stop',
-            'service_tier', 'prompt_cache_key', 'prompt_cache_retention',
-            'safety_identifier', 'prediction', 'logit_bias', 'user', 'verbosity'
+            'plugins',
+            'response_format',
+            'reasoning_effort',
+            'tool_choice',
+            'tools',
+            'web_search_options',
+            'modalities',
+            'audio',
+            'parallel_tool_calls',
+            'stream_options',
+            'metadata',
+            'store',
+            'n',
+            'logprobs',
+            'top_logprobs',
+            'top_p',
+            'presence_penalty',
+            'frequency_penalty',
+            'seed',
+            'max_completion_tokens',
+            'stop',
+            'service_tier',
+            'prompt_cache_key',
+            'prompt_cache_retention',
+            'safety_identifier',
+            'prediction',
+            'logit_bias',
+            'user',
+            'verbosity'
         ];
         foreach ($topLevelOptionKeys as $key) {
             if (array_key_exists($key, $input) && !array_key_exists($key, $options)) {
@@ -1313,92 +1422,92 @@ $router->get('/admin/ai-system', ['middleware' => ['auth', 'admin_only']], funct
 // ==================== GET /api/ai-system/frontend ====================
 // NOTE: API routes are centralized in app/Routes/AISystemRoutes.php.
 if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
-$router->get('/api/ai-system/frontend', function () use ($mysqli) {
-    $aiProvider = new AIProvider($mysqli);
-    $settings = $aiProvider->getSettings();
+    $router->get('/api/ai-system/frontend', function () use ($mysqli) {
+        $aiProvider = new AIProvider($mysqli);
+        $settings = $aiProvider->getSettings();
 
-    $openrouterDbKey = $settings['openrouter_api_key'] ?? '';
+        $openrouterDbKey = $settings['openrouter_api_key'] ?? '';
 
-    $openrouterKeySource = !empty($openrouterDbKey) ? 'db' : 'none';
+        $openrouterKeySource = !empty($openrouterDbKey) ? 'db' : 'none';
 
-    // Ensure frontend provider never returns a Puter option (Puter is only used as a pure frontend fallback)
-    $frontendProvider = $settings['frontend_provider'] ?? 'openrouter';
-    if ($frontendProvider === 'puter-js' || $frontendProvider === 'puter') {
-        $frontendProvider = 'openrouter';
-    }
+        // Ensure frontend provider never returns a Puter option (Puter is only used as a pure frontend fallback)
+        $frontendProvider = $settings['frontend_provider'] ?? 'openrouter';
+        if ($frontendProvider === 'puter-js' || $frontendProvider === 'puter') {
+            $frontendProvider = 'openrouter';
+        }
 
-    // Default model selection varies by provider.
-    $providers = $aiProvider->getActive();
-    $defaultModel = aiSystemResolveModel(
-        $aiProvider,
-        $frontendProvider,
-        (string)($settings['frontend_model'] ?? ''),
-        $providers,
-        (string)($settings['default_model'] ?? '')
-    );
-    $backendProvider = $settings['backend_provider'] ?? $frontendProvider;
-    $backendModel = aiSystemResolveModel(
-        $aiProvider,
-        $backendProvider,
-        (string)($settings['backend_model'] ?? ''),
-        $providers,
-        (string)($settings['default_model'] ?? '')
-    );
+        // Default model selection varies by provider.
+        $providers = $aiProvider->getActive();
+        $defaultModel = aiSystemResolveModel(
+            $aiProvider,
+            $frontendProvider,
+            (string)($settings['frontend_model'] ?? ''),
+            $providers,
+            (string)($settings['default_model'] ?? '')
+        );
+        $backendProvider = $settings['backend_provider'] ?? $frontendProvider;
+        $backendModel = aiSystemResolveModel(
+            $aiProvider,
+            $backendProvider,
+            (string)($settings['backend_model'] ?? ''),
+            $providers,
+            (string)($settings['default_model'] ?? '')
+        );
 
-    // Build provider list for frontend use (no API keys exposed)
-    $activeProviders = $providers;
-    $providerList = [];
-    foreach ($activeProviders as $p) {
-        $providerName = $p['provider_name'];
+        // Build provider list for frontend use (no API keys exposed)
+        $activeProviders = $providers;
+        $providerList = [];
+        foreach ($activeProviders as $p) {
+            $providerName = $p['provider_name'];
 
-        $providerList[] = [
-            'provider_name' => $providerName,
-            'display_name' => $p['display_name'],
-            'has_api_key' => !empty($settings[$providerName . '_api_key'] ?? ''),
-            'models' => $p['supported_models'] ?? [],
-            'is_default' => !empty($p['is_default']),
-            'is_active' => !empty($p['is_active'])
-        ];
-    }
+            $providerList[] = [
+                'provider_name' => $providerName,
+                'display_name' => $p['display_name'],
+                'has_api_key' => !empty($settings[$providerName . '_api_key'] ?? ''),
+                'models' => $p['supported_models'] ?? [],
+                'is_default' => !empty($p['is_default']),
+                'is_active' => !empty($p['is_active'])
+            ];
+        }
 
-    header('Content-Type: application/json');
-    echo json_encode([
-        'provider' => $frontendProvider,
-        'model' => $defaultModel,
-        'frontend_model' => $defaultModel,
-        'backend_model' => $backendModel,
-        'providers' => $providerList,
-        'openrouter_key_source' => $openrouterKeySource
-    ]);
-});
+        header('Content-Type: application/json');
+        echo json_encode([
+            'provider' => $frontendProvider,
+            'model' => $defaultModel,
+            'frontend_model' => $defaultModel,
+            'backend_model' => $backendModel,
+            'providers' => $providerList,
+            'openrouter_key_source' => $openrouterKeySource
+        ]);
+    });
 
-// ==================== GET /api/ai-system/admin-defaults ====================
-$router->get('/api/ai-system/admin-defaults', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    $aiProvider = new AIProvider($mysqli);
-    $settings = $aiProvider->getSettings();
-    $providers = $aiProvider->getActive();
+    // ==================== GET /api/ai-system/admin-defaults ====================
+    $router->get('/api/ai-system/admin-defaults', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        $aiProvider = new AIProvider($mysqli);
+        $settings = $aiProvider->getSettings();
+        $providers = $aiProvider->getActive();
 
-    $defaultProvider = trim((string)($settings['default_provider'] ?? ''));
-    if ($defaultProvider === '') {
-        $effective = $aiProvider->getEffectiveProvider();
-        $defaultProvider = $effective['provider_name'] ?? 'openrouter';
-    }
+        $defaultProvider = trim((string)($settings['default_provider'] ?? ''));
+        if ($defaultProvider === '') {
+            $effective = $aiProvider->getEffectiveProvider();
+            $defaultProvider = $effective['provider_name'] ?? 'openrouter';
+        }
 
-    $defaultModel = aiSystemResolveModel(
-        $aiProvider,
-        $defaultProvider,
-        '',
-        $providers,
-        (string)($settings['default_model'] ?? '')
-    );
+        $defaultModel = aiSystemResolveModel(
+            $aiProvider,
+            $defaultProvider,
+            '',
+            $providers,
+            (string)($settings['default_model'] ?? '')
+        );
 
-    header('Content-Type: application/json');
-    echo json_encode([
-        'provider' => $defaultProvider,
-        'model' => $defaultModel,
-        'default_model' => $settings['default_model'] ?? ''
-    ]);
-});
+        header('Content-Type: application/json');
+        echo json_encode([
+            'provider' => $defaultProvider,
+            'model' => $defaultModel,
+            'default_model' => $settings['default_model'] ?? ''
+        ]);
+    });
 }
 
 // ==================== POST /admin/ai-system/save ====================
@@ -1730,12 +1839,12 @@ $router->get('/api/ai/settings', function () use ($mysqli) {
 
 // POST /api/ai/test (centralized in app/Routes/AISystemRoutes.php)
 if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
-$router->post('/api/ai/test', function () use ($mysqli) {
-    $aiProvider = new AIProvider($mysqli);
-    $result = $aiProvider->testConnection($_POST['provider'] ?? '', $_POST['model'] ?? null);
-    header('Content-Type: application/json');
-    echo json_encode($result);
-});
+    $router->post('/api/ai/test', function () use ($mysqli) {
+        $aiProvider = new AIProvider($mysqli);
+        $result = $aiProvider->testConnection($_POST['provider'] ?? '', $_POST['model'] ?? null);
+        header('Content-Type: application/json');
+        echo json_encode($result);
+    });
 }
 
 // GET /api/ai/ollama/status - Check Ollama server status
@@ -1785,288 +1894,288 @@ $router->get('/api/ai/current-provider', function () use ($mysqli) {
 
 // GET /api/ai/default-provider (Admin only) (centralized in app/Routes/AISystemRoutes.php)
 if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
-$router->get('/api/ai/default-provider', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    $aiProvider = new AIProvider($mysqli);
-    $settings = $aiProvider->getSettings();
+    $router->get('/api/ai/default-provider', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        $aiProvider = new AIProvider($mysqli);
+        $settings = $aiProvider->getSettings();
 
-    $provider = trim((string)($settings['default_provider'] ?? ''));
-    if ($provider === '') {
-        $effective = $aiProvider->getEffectiveProvider();
-        $provider = $effective['provider_name'] ?? 'openrouter';
-    }
+        $provider = trim((string)($settings['default_provider'] ?? ''));
+        if ($provider === '') {
+            $effective = $aiProvider->getEffectiveProvider();
+            $provider = $effective['provider_name'] ?? 'openrouter';
+        }
 
-    header('Content-Type: application/json');
-    echo json_encode([
-        'success' => true,
-        'provider' => $provider
-    ]);
-});
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'provider' => $provider
+        ]);
+    });
 }
 
 // GET /api/ai/models?provider=fireworks (centralized in app/Routes/AISystemRoutes.php)
 if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
-$router->get('/api/ai/models', function () use ($mysqli) {
-    $providerName = $_GET['provider'] ?? '';
-    $scope = $_GET['scope'] ?? '';
-    $forceRefresh = !empty($_GET['refresh']);
-    $aiProvider = new AIProvider($mysqli);
+    $router->get('/api/ai/models', function () use ($mysqli) {
+        $providerName = $_GET['provider'] ?? '';
+        $scope = $_GET['scope'] ?? '';
+        $forceRefresh = !empty($_GET['refresh']);
+        $aiProvider = new AIProvider($mysqli);
 
-    header('Content-Type: application/json');
+        header('Content-Type: application/json');
 
-    if ($providerName === 'ollama' || $scope === 'admin' || $forceRefresh) {
-        if (
-            !run_middleware('auth', ['method' => 'GET', 'uri' => '/api/ai/models'])
-            || !run_middleware('admin_only', ['method' => 'GET', 'uri' => '/api/ai/models'])
-        ) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'error' => 'Forbidden']);
-            return;
+        if ($providerName === 'ollama' || $scope === 'admin' || $forceRefresh) {
+            if (
+                !run_middleware('auth', ['method' => 'GET', 'uri' => '/api/ai/models'])
+                || !run_middleware('admin_only', ['method' => 'GET', 'uri' => '/api/ai/models'])
+            ) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'error' => 'Forbidden']);
+                return;
+            }
         }
-    }
 
-    $settings = $aiProvider->getSettings();
-    $defaultModel = $settings['default_model'] ?? '';
+        $settings = $aiProvider->getSettings();
+        $defaultModel = $settings['default_model'] ?? '';
 
-    if (!$providerName) {
-        $providers = [];
-        $providerMeta = [];
-        foreach ($aiProvider->getActive() as $provider) {
-            $name = $provider['provider_name'] ?? '';
-            if ($name === '') {
-                continue;
-            }
-            $models = $provider['supported_models'] ?? [];
-            if (empty($models)) {
-                $config = AIProvider::getProviderConfig($name);
-                $models = $config['models'] ?? [];
-            }
+        if (!$providerName) {
+            $providers = [];
+            $providerMeta = [];
+            foreach ($aiProvider->getActive() as $provider) {
+                $name = $provider['provider_name'] ?? '';
+                if ($name === '') {
+                    continue;
+                }
+                $models = $provider['supported_models'] ?? [];
+                if (empty($models)) {
+                    $config = AIProvider::getProviderConfig($name);
+                    $models = $config['models'] ?? [];
+                }
 
-            $list = [];
-            foreach ($models as $id => $label) {
-                $list[] = [
-                    'id' => (string)$id,
-                    'name' => (string)$label,
-                    'default' => ($defaultModel !== '' && $defaultModel === (string)$id)
+                $list = [];
+                foreach ($models as $id => $label) {
+                    $list[] = [
+                        'id' => (string)$id,
+                        'name' => (string)$label,
+                        'default' => ($defaultModel !== '' && $defaultModel === (string)$id)
+                    ];
+                }
+
+                if (!empty($list) && !array_filter($list, fn($m) => !empty($m['default']))) {
+                    $list[0]['default'] = true;
+                }
+
+                $providers[$name] = $list;
+                $providerMeta[$name] = [
+                    'supports_multimodal' => !empty($provider['supports_multimodal'])
                 ];
             }
 
-            if (!empty($list) && !array_filter($list, fn($m) => !empty($m['default']))) {
-                $list[0]['default'] = true;
-            }
+            echo json_encode([
+                'success' => true,
+                'providers' => $providers,
+                'provider_meta' => $providerMeta
+            ]);
+            return;
+        }
 
-            $providers[$name] = $list;
-            $providerMeta[$name] = [
-                'supports_multimodal' => !empty($provider['supports_multimodal'])
+        $provider = $aiProvider->getByName($providerName);
+        if (!$provider) {
+            echo json_encode(['success' => false, 'error' => 'Provider not found']);
+            return;
+        }
+
+        $models = $provider['supported_models'] ?? [];
+        if (empty($models)) {
+            $config = AIProvider::getProviderConfig($providerName);
+            $models = $config['models'] ?? [];
+        }
+
+        // OpenRouter / OpenAI / Fireworks / Hugging Face / Ollama / Kilo can optionally return remote list when configured
+        if (in_array($providerName, ['openrouter', 'openai', 'fireworks', 'huggingface', 'ollama', 'kilo'], true)) {
+            $remote = $aiProvider->fetchRemoteModels($providerName, $forceRefresh);
+            if (!empty($remote)) {
+                $models = $remote;
+            }
+        }
+
+        if (empty($models)) {
+            echo json_encode(['success' => false, 'error' => 'No models available']);
+            return;
+        }
+
+        $providerSupportsRich = $aiProvider->supportsRichContent($providerName, $provider);
+        $overrides = $provider['extra_settings']['model_multimodal'] ?? [];
+        if (!is_array($overrides)) {
+            $overrides = [];
+        }
+
+        $list = [];
+        foreach ($models as $id => $label) {
+            $modelId = (string)$id;
+            if (array_key_exists($modelId, $overrides)) {
+                $supportsMultimodal = (bool)$overrides[$modelId];
+            } else {
+                $supportsMultimodal = $providerSupportsRich;
+            }
+            $list[] = [
+                'id' => $modelId,
+                'name' => (string)$label,
+                'default' => ($defaultModel !== '' && $defaultModel === (string)$id),
+                'supports_multimodal' => $supportsMultimodal
             ];
         }
 
-    echo json_encode([
-        'success' => true,
-        'providers' => $providers,
-        'provider_meta' => $providerMeta
-    ]);
-    return;
-    }
-
-    $provider = $aiProvider->getByName($providerName);
-    if (!$provider) {
-        echo json_encode(['success' => false, 'error' => 'Provider not found']);
-        return;
-    }
-
-    $models = $provider['supported_models'] ?? [];
-    if (empty($models)) {
-        $config = AIProvider::getProviderConfig($providerName);
-        $models = $config['models'] ?? [];
-    }
-
-    // OpenRouter / OpenAI / Fireworks / Hugging Face / Ollama / Kilo can optionally return remote list when configured
-    if (in_array($providerName, ['openrouter', 'openai', 'fireworks', 'huggingface', 'ollama', 'kilo'], true)) {
-        $remote = $aiProvider->fetchRemoteModels($providerName, $forceRefresh);
-        if (!empty($remote)) {
-            $models = $remote;
-        }
-    }
-
-    if (empty($models)) {
-        echo json_encode(['success' => false, 'error' => 'No models available']);
-        return;
-    }
-
-    $providerSupportsRich = $aiProvider->supportsRichContent($providerName, $provider);
-    $overrides = $provider['extra_settings']['model_multimodal'] ?? [];
-    if (!is_array($overrides)) {
-        $overrides = [];
-    }
-
-    $list = [];
-    foreach ($models as $id => $label) {
-        $modelId = (string)$id;
-        if (array_key_exists($modelId, $overrides)) {
-            $supportsMultimodal = (bool)$overrides[$modelId];
-        } else {
-            $supportsMultimodal = $providerSupportsRich;
-        }
-        $list[] = [
-            'id' => $modelId,
-            'name' => (string)$label,
-            'default' => ($defaultModel !== '' && $defaultModel === (string)$id),
-            'supports_multimodal' => $supportsMultimodal
-        ];
-    }
-
-    if ($providerName === 'kilo' && !empty($list)) {
-        usort($list, function ($a, $b) {
-            $aFree = str_contains($a['id'], ':free') || str_contains(strtolower($a['name']), 'free');
-            $bFree = str_contains($b['id'], ':free') || str_contains(strtolower($b['name']), 'free');
-            if ($aFree === $bFree) {
-                return strcmp($a['id'], $b['id']);
+        if ($providerName === 'kilo' && !empty($list)) {
+            usort($list, function ($a, $b) {
+                $aFree = str_contains($a['id'], ':free') || str_contains(strtolower($a['name']), 'free');
+                $bFree = str_contains($b['id'], ':free') || str_contains(strtolower($b['name']), 'free');
+                if ($aFree === $bFree) {
+                    return strcmp($a['id'], $b['id']);
+                }
+                return $aFree ? -1 : 1;
+            });
+            // Preselect the first free model
+            foreach ($list as &$item) {
+                $item['default'] = false;
             }
-            return $aFree ? -1 : 1;
-        });
-        // Preselect the first free model
-        foreach ($list as &$item) {
-            $item['default'] = false;
+            unset($item);
+            foreach ($list as &$item) {
+                $isFree = str_contains($item['id'], ':free') || str_contains(strtolower($item['name']), 'free');
+                if ($isFree) {
+                    $item['default'] = true;
+                    break;
+                }
+            }
+            unset($item);
         }
-        unset($item);
-        foreach ($list as &$item) {
-            $isFree = str_contains($item['id'], ':free') || str_contains(strtolower($item['name']), 'free');
-            if ($isFree) {
-                $item['default'] = true;
-                break;
+
+        if (!empty($list) && !array_filter($list, fn($m) => !empty($m['default']))) {
+            $list[0]['default'] = true;
+        }
+
+        $payload = ['success' => true, 'models' => $list];
+        $meta = $aiProvider->getLastRemoteModelsMeta();
+        if (is_array($meta) && isset($meta['cached_at'], $meta['cache_ttl'])) {
+            $payload['cached_at'] = (int)$meta['cached_at'];
+            $payload['cache_ttl'] = (int)$meta['cache_ttl'];
+            if (!empty($meta['source'])) {
+                $payload['cache_source'] = (string)$meta['source'];
             }
         }
-        unset($item);
-    }
 
-    if (!empty($list) && !array_filter($list, fn($m) => !empty($m['default']))) {
-        $list[0]['default'] = true;
-    }
-
-    $payload = ['success' => true, 'models' => $list];
-    $meta = $aiProvider->getLastRemoteModelsMeta();
-    if (is_array($meta) && isset($meta['cached_at'], $meta['cache_ttl'])) {
-        $payload['cached_at'] = (int)$meta['cached_at'];
-        $payload['cache_ttl'] = (int)$meta['cache_ttl'];
-        if (!empty($meta['source'])) {
-            $payload['cache_source'] = (string)$meta['source'];
-        }
-    }
-
-    echo json_encode($payload);
-});
+        echo json_encode($payload);
+    });
 }
 
 // POST /api/ai/chat (Public assistant) - centralized in app/Routes/AISystemRoutes.php
 if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
-$router->post('/api/ai/chat', function () use ($mysqli) {
-    run_middleware('rate_limit', [
-        'scope' => 'ai_public_chat',
-        'limit' => 30,
-        'window' => 60,
-        'is_api' => true
-    ]);
-
-    // CSRF validation - accept from body or header
-    $input = json_decode(file_get_contents('php://input'), true) ?: [];
-    $csrfToken = (string)($input['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
-    if (!empty($csrfToken) && function_exists('validateCsrfToken') && !validateCsrfToken($csrfToken)) {
-        http_response_code(403);
-        header('Content-Type: application/json');
-        echo json_encode([
-            'success' => false,
-            'error' => 'Invalid CSRF token',
-            'error_code' => 'csrf_token_invalid'
+    $router->post('/api/ai/chat', function () use ($mysqli) {
+        run_middleware('rate_limit', [
+            'scope' => 'ai_public_chat',
+            'limit' => 30,
+            'window' => 60,
+            'is_api' => true
         ]);
-        return;
-    }
 
-    aiChatHandleRequest($input, $mysqli, false, false);
-});
-
-// POST /api/ai/clear-image-context
-$router->post('/api/ai/clear-image-context', function () use ($mysqli) {
-    $input = json_decode(file_get_contents('php://input'), true);
-    if (!is_array($input)) {
-        $input = [];
-    }
-
-    $sessionKey = null;
-    if (!empty($input['visitorToken'])) {
-        $sessionKey = 'visitor_' . (string)$input['visitorToken'];
-    } else {
-        $userId = AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null);
-        if ($userId) {
-            $sessionKey = 'user_' . (int)$userId;
+        // CSRF validation - accept from body or header
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $csrfToken = (string)($input['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+        if (!empty($csrfToken) && function_exists('validateCsrfToken') && !validateCsrfToken($csrfToken)) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'error' => 'Invalid CSRF token',
+                'error_code' => 'csrf_token_invalid'
+            ]);
+            return;
         }
-    }
 
-    if ($sessionKey && isset($_SESSION['ai_image_context'][$sessionKey])) {
-        unset($_SESSION['ai_image_context'][$sessionKey]);
-    }
+        aiChatHandleRequest($input, $mysqli, false, false);
+    });
 
-    header('Content-Type: application/json');
-    echo json_encode(['success' => true]);
-});
+    // POST /api/ai/clear-image-context
+    $router->post('/api/ai/clear-image-context', function () use ($mysqli) {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
+        }
 
-// POST /api/admin/ai/upload (Admin-only image upload for copilot)
-$router->post('/api/admin/ai/upload', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
-    if (empty($_FILES['file']) || !is_array($_FILES['file'])) {
-        aiChatSendJson(['success' => false, 'error' => 'No file uploaded'], 400);
-        return;
-    }
-    $file = $_FILES['file'];
-    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-        aiChatSendJson(['success' => false, 'error' => 'Upload failed'], 400);
-        return;
-    }
+        $sessionKey = null;
+        if (!empty($input['visitorToken'])) {
+            $sessionKey = 'visitor_' . (string)$input['visitorToken'];
+        } else {
+            $userId = AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null);
+            if ($userId) {
+                $sessionKey = 'user_' . (int)$userId;
+            }
+        }
 
-    if (!class_exists('UploadService')) {
-        aiChatSendJson(['success' => false, 'error' => 'Upload service unavailable'], 500);
-        return;
-    }
+        if ($sessionKey && isset($_SESSION['ai_image_context'][$sessionKey])) {
+            unset($_SESSION['ai_image_context'][$sessionKey]);
+        }
 
-    $userId = 0;
-    if (isset($_SESSION['user_id'])) {
-        $userId = (int)$_SESSION['user_id'];
-    } elseif (!empty($_SESSION['auth_user_id'])) {
-        $userId = (int)$_SESSION['auth_user_id'];
-    }
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true]);
+    });
 
-    $uploadService = new UploadService($mysqli, $userId);
-    $result = $uploadService->upload($file, 'ai_upload', ['preserve_name' => true]);
-    if (empty($result['success'])) {
-        aiChatSendJson(['success' => false, 'error' => $result['error'] ?? 'Upload failed'], 400);
-        return;
-    }
+    // POST /api/admin/ai/upload (Admin-only image upload for copilot)
+    $router->post('/api/admin/ai/upload', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+        if (empty($_FILES['file']) || !is_array($_FILES['file'])) {
+            aiChatSendJson(['success' => false, 'error' => 'No file uploaded'], 400);
+            return;
+        }
+        $file = $_FILES['file'];
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            aiChatSendJson(['success' => false, 'error' => 'Upload failed'], 400);
+            return;
+        }
 
-    aiChatSendJson([
-        'success' => true,
-        'url' => $result['url'] ?? '',
-        'size' => $result['size'] ?? ($file['size'] ?? 0),
-        'mime' => $file['type'] ?? ''
-    ]);
-});
+        if (!class_exists('UploadService')) {
+            aiChatSendJson(['success' => false, 'error' => 'Upload service unavailable'], 500);
+            return;
+        }
 
-// POST /api/admin/ai/chat (Admin-only)
-$router->post('/api/admin/ai/chat', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
-    $input = json_decode(file_get_contents('php://input'), true);
-    if (!is_array($input)) {
-        $input = [];
-    }
+        $userId = 0;
+        if (isset($_SESSION['user_id'])) {
+            $userId = (int)$_SESSION['user_id'];
+        } elseif (!empty($_SESSION['auth_user_id'])) {
+            $userId = (int)$_SESSION['auth_user_id'];
+        }
 
-    aiChatHandleRequest($input, $mysqli, true, true);
-});
+        $uploadService = new UploadService($mysqli, $userId);
+        $result = $uploadService->upload($file, 'ai_upload', ['preserve_name' => true]);
+        if (empty($result['success'])) {
+            aiChatSendJson(['success' => false, 'error' => $result['error'] ?? 'Upload failed'], 400);
+            return;
+        }
 
-// POST /api/ai-system/chat (Legacy alias for admin)
-$router->post('/api/ai-system/chat', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
-    $input = json_decode(file_get_contents('php://input'), true);
-    if (!is_array($input)) {
-        $input = [];
-    }
+        aiChatSendJson([
+            'success' => true,
+            'url' => $result['url'] ?? '',
+            'size' => $result['size'] ?? ($file['size'] ?? 0),
+            'mime' => $file['type'] ?? ''
+        ]);
+    });
 
-    aiChatHandleRequest($input, $mysqli, true, true);
-});
+    // POST /api/admin/ai/chat (Admin-only)
+    $router->post('/api/admin/ai/chat', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
+        }
+
+        aiChatHandleRequest($input, $mysqli, true, true);
+    });
+
+    // POST /api/ai-system/chat (Legacy alias for admin)
+    $router->post('/api/ai-system/chat', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
+        }
+
+        aiChatHandleRequest($input, $mysqli, true, true);
+    });
 }
 
 // ==================== Knowledge Base Management (Admin) ====================
@@ -2230,7 +2339,7 @@ $router->post('/api/admin/ai-knowledge/delete', ['middleware' => ['auth', 'admin
 $router->get('/api/admin/ai-knowledge/suggestions', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     $model = new AIKnowledge($mysqli);
     $suggestions = $model->getImprovementSuggestions(10);
-    
+
     header('Content-Type: application/json');
     echo json_encode(['success' => true, 'suggestions' => $suggestions]);
 });
@@ -2239,7 +2348,7 @@ $router->get('/api/admin/ai-knowledge/suggestions', ['middleware' => ['auth', 'a
 $router->get('/api/admin/ai-knowledge/analytics', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     $model = new AIKnowledge($mysqli);
     $analytics = $model->getAnalytics();
-    
+
     header('Content-Type: application/json');
     echo json_encode(['success' => true, 'analytics' => $analytics]);
 });
@@ -2249,7 +2358,7 @@ $router->get('/api/admin/ai-knowledge/by-quality', ['middleware' => ['auth', 'ad
     $model = new AIKnowledge($mysqli);
     $limit = min(50, (int)($_GET['limit'] ?? 20));
     $items = $model->getByQuality($limit);
-    
+
     header('Content-Type: application/json');
     echo json_encode(['success' => true, 'items' => $items]);
 });
@@ -2257,15 +2366,15 @@ $router->get('/api/admin/ai-knowledge/by-quality', ['middleware' => ['auth', 'ad
 // POST /api/ai/record-usage - Record knowledge usage
 $router->post('/api/ai/record-usage', ['middleware' => ['csrf']], function () use ($mysqli) {
     $model = new AIKnowledge($mysqli);
-    
+
     $knowledgeId = (int)($_POST['knowledge_id'] ?? 0);
-    
+
     if (!$knowledgeId) {
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'error' => 'Knowledge ID required']);
         return;
     }
-    
+
     $ok = $model->recordUsage($knowledgeId);
     header('Content-Type: application/json');
     echo json_encode(['success' => $ok]);
@@ -2732,7 +2841,7 @@ $router->post('/admin/ai-system/browse-url', ['middleware' => ['auth', 'admin_on
 // POST /admin/ai-system/web-search - Search the web for information
 $router->post('/admin/ai-system/web-search', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     $input = json_decode(file_get_contents('php://input'), true);
-    
+
     // CSRF validation
     $csrfToken = (string)($input['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
     if (!empty($csrfToken) && function_exists('validateCsrfToken') && !validateCsrfToken($csrfToken)) {
@@ -2740,7 +2849,7 @@ $router->post('/admin/ai-system/web-search', ['middleware' => ['auth', 'admin_on
         echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
         return;
     }
-    
+
     $query = $input['query'] ?? '';
     $limit = min((int)($input['limit'] ?? 10), 20);
 
@@ -2753,7 +2862,7 @@ $router->post('/admin/ai-system/web-search', ['middleware' => ['auth', 'admin_on
     try {
         // Use DuckDuckGo HTML search (free, no API key required)
         $searchUrl = 'https://html.duckduckgo.com/html/?q=' . urlencode($query) . '&limit=' . $limit;
-        
+
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL => $searchUrl,
@@ -2780,13 +2889,13 @@ $router->post('/admin/ai-system/web-search', ['middleware' => ['auth', 'admin_on
 
         // Parse DuckDuckGo results
         $results = [];
-        
+
         // Match result links
         preg_match_all('/<a class="result__a" href="([^"]+)"[^>]*>(.+?)<\/a>/', $html, $links, PREG_SET_ORDER);
-        
+
         // Match result snippets
         preg_match_all('/<a class="result__snippet"[^>]*>(.+?)<\/a>/', $html, $snippets, PREG_SET_ORDER);
-        
+
         // Match result titles
         preg_match_all('/<a class="result__a"[^>]*>(.+?)<\/a>/', $html, $titles, PREG_SET_ORDER);
 
@@ -2796,7 +2905,7 @@ $router->post('/admin/ai-system/web-search', ['middleware' => ['auth', 'admin_on
             if (isset($titles[$i][1])) {
                 $title = strip_tags(html_entity_decode($titles[$i][1]));
             }
-            
+
             $url = '';
             if (isset($links[$i][1])) {
                 // DuckDuckGo redirects through its own URL, extract actual URL
@@ -2806,7 +2915,7 @@ $router->post('/admin/ai-system/web-search', ['middleware' => ['auth', 'admin_on
                     $url = $params['uddg'] ?? $url;
                 }
             }
-            
+
             $snippet = '';
             if (isset($snippets[$i][1])) {
                 $snippet = strip_tags(html_entity_decode($snippets[$i][1]));
@@ -2932,6 +3041,7 @@ $router->post('/admin/ai-system/add-knowledge', ['middleware' => ['auth', 'admin
 });
 
 // POST /admin/ai-system/ocr - OCR for images uploaded to AI assistant
+// Uses hybrid approach: Node.js OCR (Tesseract.js) primary, OCR.space API fallback
 $router->post('/admin/ai-system/ocr', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     $input = json_decode(file_get_contents('php://input'), true);
     $imageData = $input['image'] ?? '';
@@ -2942,139 +3052,27 @@ $router->post('/admin/ai-system/ocr', ['middleware' => ['auth', 'admin_only']], 
         return;
     }
 
-    // Check if GD extension is available
-    if (!extension_loaded('gd')) {
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'error' => 'GD extension not available']);
-        return;
-    }
-
     try {
-        // Handle base64 data with or without prefix
-        if (preg_match('/^data:image\\/(\\w+);base64,/', $imageData, $matches)) {
-            $mimeType = $matches[1];
-            $imageData = base64_decode(preg_replace('/^data:image\\/\\w+;base64,/', '', $imageData));
-        } else {
-            $imageData = base64_decode($imageData);
-        }
+        // Use hybrid OCRService (Node.js primary → OCR.space fallback)
+        require_once __DIR__ . '/../Helpers/OCRService.php';
+        $ocr = new OCRService();
 
-        if (!$imageData) {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'error' => 'Invalid image data']);
-            return;
-        }
+        // Extract text using hybrid OCR
+        $result = $ocr->extractTextFromImage($imageData, ['language' => 'eng']);
 
-        // Create image resource from data
-        $image = imagecreatefromstring($imageData);
-        if (!$image) {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'error' => 'Could not create image from data']);
-            return;
-        }
-
-        // Save temporary file
-        $tempFile = sys_get_temp_dir() . '/ocr_' . uniqid() . '.png';
-        imagepng($image, $tempFile);
-        imagedestroy($image);
-
-        // Try to use Tesseract if available
-        $text = '';
-        $error = '';
-
-        if (function_exists('exec') && file_exists($tempFile)) {
-            @exec("tesseract " . escapeshellarg($tempFile) . " stdout -l eng 2>&1", $output, $returnCode);
-            if ($returnCode === 0 && !empty($output)) {
-                $text = implode("\n", $output);
-            } else {
-                $error = 'Tesseract not available';
-            }
-        } else {
-            $error = 'Tesseract not available';
-        }
-
-        // Try PaddleOCR if available (Python)
-        if (empty($text) && function_exists('exec') && file_exists($tempFile)) {
-            // Check if paddleocr is installed
-            @exec("pip show paddleocr 2>&1 | head -1", $paddleCheck, $paddleReturn);
-            if (!empty($paddleCheck) && strpos($paddleCheck[0] ?? '', 'Name:') !== false) {
-                $paddleScript = sys_get_temp_dir() . '/paddle_ocr_' . uniqid() . '.py';
-                $paddlePyCode = "
-from paddleocr import PaddleOCR
-from PIL import Image
-import sys
-
-img_path = sys.argv[1]
-ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
-result = ocr.ocr(img_path, cls=True)
-
-if result and result[0]:
-    texts = []
-    for line in result[0]:
-        if line and len(line) >= 2:
-            texts.append(line[1][0])
-    print('\\n'.join(texts))
-else:
-    print('')
-";
-                file_put_contents($paddleScript, $paddlePyCode);
-
-                @exec("python " . escapeshellarg($paddleScript) . " " . escapeshellarg($tempFile) . " 2>&1", $paddleOutput, $paddleReturnCode);
-                @unlink($paddleScript);
-
-                if ($paddleReturnCode === 0 && !empty($paddleOutput)) {
-                    $text = implode("\n", $paddleOutput);
-                    $error = '';
-                }
-            }
-        }
-
-        // If local OCR failed, try OCR.space free API
-        if (empty($text) && function_exists('curl_init') && file_exists($tempFile)) {
-            $apiKey = 'helloworld'; // Free tier API key
-            $postData = [
-                'apikey' => $apiKey,
-                'language' => 'eng',
-                'isOverlayRequired' => false,
-                'file' => new CURLFile($tempFile, 'image/png', 'ocr.png')
-            ];
-
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => 'https://api.ocr.space/parse/image',
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => $postData,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 30,
-            ]);
-
-            $apiResponse = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if ($httpCode === 200 && $apiResponse) {
-                $result = json_decode($apiResponse, true);
-                if (!empty($result['ParsedResults'][0]['ParsedText'])) {
-                    $text = $result['ParsedResults'][0]['ParsedText'];
-                } elseif (!empty($result['ErrorMessage'])) {
-                    $error = implode(', ', $result['ErrorMessage']);
-                }
-            }
-        }
-
-        // Clean up temp file
-        @unlink($tempFile);
-
-        if (!empty($text) && trim($text) !== '') {
+        if (!empty($result['success']) && !empty($result['text'])) {
             header('Content-Type: application/json');
             echo json_encode([
                 'success' => true,
-                'text' => trim($text)
+                'text' => trim($result['text']),
+                'engine' => $result['engine'] ?? 'OCR Service',
+                'confidence' => $result['confidence'] ?? null
             ]);
         } else {
             header('Content-Type: application/json');
             echo json_encode([
                 'success' => false,
-                'error' => $error ?: 'No readable text found in the image. Please ensure the image has clear, visible text.'
+                'error' => $result['error'] ?? 'No readable text found in the image. Please ensure the image has clear, visible text.'
             ]);
         }
     } catch (Exception $e) {
