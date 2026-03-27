@@ -161,6 +161,7 @@ Thumbs.db
 .history/
 .continue/
 .kilocode/
+.roo/
 
 # ─────────────────────────────────────────────────────────────────
 #  9. GENERATED ASSETS (Edit sources, run build - don't commit dist)
