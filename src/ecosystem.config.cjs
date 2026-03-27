@@ -2,7 +2,8 @@ module.exports = {
     apps: [
         {
             name: 'unified-server',
-            script: 'src/index.js',
+            script: './node_modules/.bin/tsx',
+            args: ['src/index.ts'],
             instances: 1,
             exec_mode: 'fork',
             env: {
