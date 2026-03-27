@@ -88,27 +88,27 @@
               <tbody>
                 {% for post in posts %}
                   <tr>
-                    <td class="fw-bold">{{ post.id }}</td>
-                    <td>{{ post.title }}</td>
-                    <td>
+                    <td class="fw-bold" data-label="#">ID</td>
+                    <td data-label="Title">{{ post.title }}</td>
+                    <td data-label="Author">
                       <i class="bi bi-person-circle text-secondary"></i> {{ post.author ?? 'N/A' }}
                     </td>
-                    <td>
+                    <td data-label="Permalink">
                       <code class="text-muted">{{ post.slug }}</code>
                     </td>
-                    <td>
+                    <td data-label="Status">
                       {# Status: published=1 means published, published=0 means draft #}
                       <span class="badge {{ post.published ? 'bg-success' : 'bg-warning text-surface-dark' }} rounded-pill">
                         <i class="bi {{ post.published ? 'bi-check2' : 'bi-pencil' }}"></i>
                         {{ post.published ? 'Published' : 'Draft' }}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Stats">
                       <i class="bi bi-bar-chart text-info me-1"></i>{{ post.impressions }}
                       <hr>
                       <i class="bi bi-eye text-success me-1"></i>{{ post.views }}
                     </td>
-                    <td class="text-center">
+                    <td class="text-center" data-label="Actions">
                       <a href="/admin/posts/view?id={{ post.id }}"
                          class="modern-btn btn-sm btn-info me-1"
                          title="View">

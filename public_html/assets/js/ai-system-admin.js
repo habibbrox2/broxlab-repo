@@ -100,6 +100,9 @@
         initTemperatureSlider();
         initModelSelects();
         initEventListeners();
+        hydrateProviderHealth();
+        setupProviderFilters();
+        updateSidebarSummaryFromRows();
         checkOllamaStatus();
     }
 
@@ -469,6 +472,11 @@
         }
     }
 
+    // Get Node.js server URL from config
+    function getAIServerUrl() {
+        return window.AppConfig?.get('ai.nodeServerUrl') || 'http://localhost:3000';
+    }
+
     // Fetch provider models from API
     async function fetchProviderModels(providerName, refresh) {
         const params = new URLSearchParams();
@@ -477,7 +485,7 @@
         if (refresh) {
             params.set('refresh', '1');
         }
-        const res = await fetch('/api/ai/models?' + params.toString(), {
+        const res = await fetch(getAIServerUrl() + '/api/ai/models?' + params.toString(), {
             credentials: 'same-origin'
         });
 
@@ -795,6 +803,9 @@
         var btn = document.querySelector('#testConnectionModal .btn-primary');
         var _warningDiv = document.getElementById('testConnectionWarning');
         var csrfToken = document.querySelector('input[name="csrf_token"]');
+        var provider = providersData.find(function (p) {
+            return String(p.id) === String(currentTestProviderId);
+        });
 
         if (!model) {
             if (window.showAlert) {
@@ -805,6 +816,11 @@
             return;
         }
 
+        if (!provider) {
+            console.warn('[AI System] Provider not found for testing', currentTestProviderId);
+            return;
+        }
+
         var originalBtnHtml = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Testing...';
@@ -812,7 +828,7 @@
 
         try {
             var csrfTokenValue = csrfToken ? csrfToken.value : '';
-            var response = await fetch('/api/ai-system/test', {
+            var response = await fetch(getAIServerUrl() + '/api/ai/test', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -835,6 +851,7 @@
                 } else {
                     alert('Connection successful!\n\nModel: ' + data.model + '\nResponse: ' + (data.response || 'OK'));
                 }
+                handleTestResult(provider.provider_name, 'success', 'Response: ' + (data.response || 'OK'));
             } else {
                 if (window.showAlert) {
                     await window.showAlert(
@@ -845,21 +862,17 @@
                 } else {
                     alert('Connection failed: ' + (data.error || 'Unknown error'));
                 }
+                handleTestResult(provider.provider_name, 'error', data.error || 'Unknown error occurred');
             }
 
-            var provider = providersData.find(function (p) {
-                return String(p.id) === String(currentTestProviderId);
-            });
-            if (provider) {
-                setLastTested(provider.provider_name);
-                updateStatusPills(provider.provider_name);
-            }
+            // ensure health badge and summary are up to date (helper already handles this)
         } catch (e) {
             if (window.showAlert) {
                 await window.showAlert('Network error: ' + e.message, 'Error', 'error');
             } else {
                 alert('Network error: ' + e.message);
             }
+            handleTestResult(provider.provider_name, 'error', e.message || 'Network error');
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalBtnHtml;
@@ -876,7 +889,7 @@
         inputEl.disabled = true;
 
         try {
-            var res = await fetch('/api/ai-system/toggle-provider', {
+            var res = await fetch(getAIServerUrl() + '/api/admin/ai/toggle-provider', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: parseInt(id, 10), active })
@@ -947,6 +960,11 @@
                 badge.className = 'badge ' + (enabled ? 'bg-success' : 'bg-secondary');
                 badge.textContent = enabled ? 'Yes' : 'No';
             }
+
+            if (rowEl) {
+                rowEl.dataset.supportsMultimodal = enabled ? '1' : '0';
+            }
+            updateSidebarSummaryFromRows();
         } catch (e) {
             inputEl.checked = !enabled;
             var errMsg = e && e.message ? e.message : 'Failed to update provider';
@@ -970,10 +988,14 @@
             badge.textContent = isActive ? 'Active' : 'Inactive';
         }
 
+        rowEl.dataset.isActive = isActive ? '1' : '0';
+
         var defaultBtn = rowEl.querySelector('.set-default-btn');
         if (defaultBtn) {
             defaultBtn.disabled = !isActive;
         }
+
+        updateSidebarSummaryFromRows();
     }
 
     // Status pills functions
@@ -1013,6 +1035,185 @@
         if (testedPill) {
             testedPill.className = 'badge bg-info text-dark';
             testedPill.textContent = 'Last tested: ' + getLastTested(providerName);
+        }
+    }
+
+    function getHealthStorageKey(providerName) {
+        return 'brox.ai.health.' + providerName;
+    }
+
+    function getProviderHealth(providerName) {
+        if (!providerName) return null;
+        var raw = localStorage.getItem(getHealthStorageKey(providerName));
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw);
+        } catch (e) {
+            console.warn('[AI System] Invalid health payload for', providerName);
+            return null;
+        }
+    }
+
+    function setProviderHealth(providerName, data) {
+        if (!providerName || !data) return;
+        localStorage.setItem(getHealthStorageKey(providerName), JSON.stringify(data));
+    }
+
+    function formatRelativeTime(timestamp) {
+        if (!timestamp) return 'Not tested';
+        var date = new Date(timestamp);
+        if (Number.isNaN(date.getTime())) return 'Invalid date';
+        var diff = Date.now() - date.getTime();
+        if (diff < 60000) return 'Just now';
+        var minutes = Math.floor(diff / 60000);
+        if (minutes < 60) return minutes + 'm ago';
+        var hours = Math.floor(minutes / 60);
+        if (hours < 24) return hours + 'h ago';
+        var days = Math.floor(hours / 24);
+        return days + 'd ago';
+    }
+
+    function renderHealthPill(providerName) {
+        if (!providerName) return;
+        var row = document.querySelector('tr[data-provider-name="' + providerName + '"]');
+        if (!row) return;
+        var pill = row.querySelector('.provider-health-pill[data-provider-name="' + providerName + '"]');
+        var timestamp = row.querySelector('.provider-health-timestamp[data-provider-name="' + providerName + '"]');
+        if (!pill || !timestamp) return;
+
+        var health = getProviderHealth(providerName);
+        var status = health && health.status ? health.status : 'unknown';
+        var message = health && health.message ? health.message : 'Not tested yet';
+        var label = 'Not tested yet';
+        if (status === 'success') {
+            label = 'Last success';
+        } else if (status === 'error') {
+            label = 'Last failure';
+        }
+
+        pill.textContent = label;
+        pill.dataset.status = status;
+        pill.classList.remove('success', 'error', 'unknown');
+        pill.classList.add(status === 'success' ? 'success' : status === 'error' ? 'error' : 'unknown');
+        pill.setAttribute('title', message);
+        timestamp.textContent = health && health.testedAt ? formatRelativeTime(health.testedAt) : 'Not tested';
+    }
+
+    function renderAllHealthPills() {
+        providersData.forEach(function (p) {
+            renderHealthPill(p.provider_name);
+        });
+        updateSidebarSummaryFromRows();
+    }
+
+    function applyHealthToProvider(providerName) {
+        renderHealthPill(providerName);
+        updateSidebarSummaryFromRows();
+    }
+
+    function handleTestResult(providerName, status, message) {
+        if (!providerName) return;
+        var payload = {
+            status: status,
+            message: message || (status === 'success' ? 'Connection successful' : 'Unknown error'),
+            testedAt: new Date().toISOString()
+        };
+        setProviderHealth(providerName, payload);
+        applyHealthToProvider(providerName);
+        setLastTested(providerName);
+        updateStatusPills(providerName);
+    }
+
+    function setupProviderFilters() {
+        var searchInput = document.getElementById('providerSearchInput');
+        var statusSelect = document.getElementById('providerStatusFilter');
+        var apiKeySelect = document.getElementById('providerApiKeyFilter');
+        var multimodalSelect = document.getElementById('providerMultimodalFilter');
+        var healthSelect = document.getElementById('providerHealthFilter');
+        var handler = filterProviderRows;
+        [searchInput, statusSelect, apiKeySelect, multimodalSelect, healthSelect].forEach(function (el) {
+            if (!el) return;
+            var eventName = el.tagName === 'INPUT' ? 'input' : 'change';
+            el.addEventListener(eventName, handler);
+        });
+        filterProviderRows();
+    }
+
+    function filterProviderRows() {
+        var table = document.getElementById('providersTable');
+        if (!table) return;
+        var searchInput = document.getElementById('providerSearchInput');
+        var statusSelect = document.getElementById('providerStatusFilter');
+        var apiKeySelect = document.getElementById('providerApiKeyFilter');
+        var multimodalSelect = document.getElementById('providerMultimodalFilter');
+        var healthSelect = document.getElementById('providerHealthFilter');
+        var searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        var status = statusSelect ? statusSelect.value : 'all';
+        var apiKey = apiKeySelect ? apiKeySelect.value : 'all';
+        var multimodal = multimodalSelect ? multimodalSelect.value : 'all';
+        var health = healthSelect ? healthSelect.value : 'all';
+
+        table.querySelectorAll('tbody tr').forEach(function (row) {
+            var displayName = row.dataset.displayName ? row.dataset.displayName.toLowerCase() : '';
+            var providerName = row.dataset.providerName ? row.dataset.providerName : '';
+            var hasKey = row.dataset.hasKey === '1';
+            var isActive = row.dataset.isActive === '1';
+            var supportsMultimodal = row.dataset.supportsMultimodal === '1';
+            var healthData = getProviderHealth(providerName);
+            var healthStatus = healthData && healthData.status ? healthData.status : 'unknown';
+
+            var matchesSearch = !searchTerm || displayName.includes(searchTerm) || providerName.includes(searchTerm);
+            var matchesStatus = status === 'all' || (status === 'active' && isActive) || (status === 'inactive' && !isActive);
+            var matchesKey = apiKey === 'all' || (apiKey === 'keyed' && hasKey) || (apiKey === 'missing' && !hasKey);
+            var matchesMultimodal = multimodal === 'all' || (multimodal === 'yes' && supportsMultimodal) || (multimodal === 'no' && !supportsMultimodal);
+            var matchesHealth = health === 'all' || healthStatus === health;
+
+            var visible = matchesSearch && matchesStatus && matchesKey && matchesMultimodal && matchesHealth;
+            row.classList.toggle('d-none', !visible);
+        });
+        updateSidebarSummaryFromRows();
+    }
+
+    function updateSidebarSummaryFromRows() {
+        var rows = document.querySelectorAll('#providersTable tbody tr');
+        var activeCount = 0;
+        var needsKeyCount = 0;
+        var testedCount = 0;
+        var latestTested = null;
+
+        rows.forEach(function (row) {
+            if (row.classList.contains('d-none')) return;
+            if (row.dataset.isActive === '1') {
+                activeCount++;
+            }
+            if (row.dataset.hasKey === '0') {
+                needsKeyCount++;
+            }
+            var providerName = row.dataset.providerName;
+            var health = getProviderHealth(providerName);
+            if (health && health.status && health.status !== 'unknown') {
+                testedCount++;
+                if (health.testedAt) {
+                    var date = new Date(health.testedAt);
+                    if (!Number.isNaN(date.getTime())) {
+                        if (!latestTested || date > latestTested) {
+                            latestTested = date;
+                        }
+                    }
+                }
+            }
+        });
+
+        var activeEl = document.getElementById('providerSummaryActiveCount');
+        var needsKeyEl = document.getElementById('providerSummaryNeedsKeyCount');
+        var testedEl = document.getElementById('providerSummaryTestedCount');
+        var lastTestedEl = document.getElementById('providerSummaryLastTestedTime');
+
+        if (activeEl) activeEl.textContent = activeCount;
+        if (needsKeyEl) needsKeyEl.textContent = needsKeyCount;
+        if (testedEl) testedEl.textContent = testedCount;
+        if (lastTestedEl) {
+            lastTestedEl.textContent = latestTested ? formatRelativeTime(latestTested.toISOString()) : 'Not run';
         }
     }
 

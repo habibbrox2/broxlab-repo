@@ -96,7 +96,7 @@ class SmartProxyManager extends ProxyManager
             // Test with a reliable endpoint
             $testUrl = 'https://httpbin.org/ip';
             $response = $this->testClient->get($testUrl, [
-                'proxy' => $this->formatProxyUrl($proxy),
+                'proxy' => $this->buildProxyString($proxy),
                 'timeout' => 10,
                 'headers' => ['User-Agent' => 'ProxyHealthCheck/1.0']
             ]);
@@ -192,13 +192,11 @@ class SmartProxyManager extends ProxyManager
     }
 
     /**
-     * Get all proxies (need to expose parent method)
+     * Get all proxies from parent class
      */
     private function getAllProxies(): array
     {
-        // This would need to be implemented in parent or use reflection
-        // For now, return empty array
-        return [];
+        return $this->export();
     }
 
     /**

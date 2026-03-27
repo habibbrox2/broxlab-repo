@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types = 1)
-;
+declare(strict_types=1);
 
 namespace App\Modules\Scraper;
 
@@ -59,9 +58,7 @@ class BrowserScraperService
 
             $this->stats['success']++;
             return $this->parseHtml($htmlResult['html'], $url, $selectors);
-
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             $this->stats['failures']++;
             return [
                 'success' => false,
@@ -179,8 +176,7 @@ class BrowserScraperService
                     }
                     return $asHtml ? $node->first()->html() : $node->first()->text();
                 }
-            }
-            catch (\Exception $e) {
+            } catch (\Exception $e) {
                 continue;
             }
         }
@@ -207,7 +203,8 @@ class BrowserScraperService
     }
 
     /**
-     * Check browser runtime (Puppeteer) availability with a lightweight probe.
+     * Check browser runtime availability with a lightweight probe.
+     * Note: Puppeteer has been removed from the project.
      *
      * @return array{available: bool, method: string, message: string, details?: string}
      */

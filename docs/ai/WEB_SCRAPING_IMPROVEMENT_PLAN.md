@@ -5,9 +5,9 @@ This plan outlines the proposed improvements for the web scraping system, focusi
 ## User Review Required
 
 > [!IMPORTANT]
-> **JavaScript Rendering Strategy**: I'm proposing a decoupled approach for browser-based scraping. Since this is an XAMPP environment, running a full Chrome instance locally might be resource-intensive. I suggest either:
+> **JavaScript Rendering Strategy**: The project now uses a simplified scraping approach with only Axios and Cheerio. Puppeteer has been removed from the project. For JavaScript-heavy sites, consider:
 > 1.  Using a dedicated Scraping API (like Browserless or ScrapingBee) if budget allows.
-> 2.  Setting up a small Node.js microservice running Puppeteer that PHP can call via API.
+> 2.  Implementing API-based scraping if the site provides public APIs.
 > Please let me know your preference.
 
 > [!WARNING]
@@ -17,17 +17,11 @@ This plan outlines the proposed improvements for the web scraping system, focusi
 
 ### [Core Scraper Engine]
 
-Summary: Implement browser automation and enhance proxy/error handling.
-
-#### [NEW] `app/Modules/Scraper/BrowserScraperService.php` (file:///e:/xampp-server/broxbhai/app/Modules/Scraper/BrowserScraperService.php)
-- Implements the `ScraperInterface` (if exists) or provides a consistent API for browser-based scraping.
-- Initially will support calling a headless browser (like a local Chromedriver or remote service).
-- Handles the `use_browser` flag from the source configuration.
+Summary: Enhance HTTP-based scraping with improved proxy/error handling.
 
 #### [MODIFY] `app/Modules/Scraper/ScraperOrchestrator.php` (file:///e:/xampp-server/broxbhai/app/Modules/Scraper/ScraperOrchestrator.php)
-- Integrate `BrowserScraperService`.
-- Select which scraper to use based on the `use_browser` field in `autocontent_sources`.
 - Enhance error logging to the `autocontent_scrape_logs` table.
+- Improve proxy rotation and health checking.
 
 #### [MODIFY] `app/Modules/Scraper/HttpClientService.php` (file:///e:/xampp-server/broxbhai/app/Modules/Scraper/HttpClientService.php)
 - Add proxy health check logic.
@@ -57,10 +51,8 @@ Summary: Unify and optimize worker scripts.
 
 ### Automated Tests
 - Run `scripts/autocontent_worker.php` on a test source and verify output in console and database.
-- Unit tests for `BrowserScraperService` (mocking the browser response).
 - Test AI selector detection with a complex news site URL.
 
 ### Manual Verification
-- **JS-Heavy Site Test**: Add a source that requires JS (e.g., a site with dynamic content loading) and verify it scrapes correctly with `use_browser = 1`.
 - **Selector Detection UI**: Test the selector detection tool in the admin panel and ensure it correctly populates the source form.
 - **Log Review**: Ensure all scrape attempts (success and failure) are correctly logged in the `autocontent_scrape_logs` page in admin.

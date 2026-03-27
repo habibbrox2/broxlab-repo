@@ -39,12 +39,12 @@
               <tbody>
                 {% for service in services %}
                   <tr>
-                    <td>
+                    <td data-label="Select">
                       <input type="checkbox"
                              class="form-check-input service-checkbox"
                              value="{{ service.id }}">
                     </td>
-                    <td>
+                    <td data-label="Name">
                       <div class="d-flex align-items-center gap-3">
                         <div class="inl-a-0054">
                           {% if service.images is defined and service.images is not empty %}
@@ -84,22 +84,22 @@
                         </div>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Status">
                       <span class="badge {% if service.status == 'active' %}bg-success {% elseif service.status == 'inactive' %}bg-warning {% elseif service.status == 'archived' %}bg-info {% else %}bg-light text-surface-dark{% endif %}">
                         {{ service.status|capitalize }}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Applications">
                       <span class="badge bg-info">{{ service.total_applications|default(0) }}</span>
                     </td>
-                    <td>
+                    <td data-label="Impressions">
                       <span class="badge bg-light text-surface-dark">{{ service.impressions|default(0) |number_format }}</span>
                     </td>
-                    <td>
+                    <td data-label="Views">
                       <span class="badge bg-light text-surface-dark">{{ service.views|default(0) |number_format }}</span>
                     </td>
-                    <td class="text-muted small">{{ service.created_at|date("d M Y") }}</td>
-                    <td class="text-end">
+                    <td data-label="Created" class="text-muted small">{{ service.created_at|date("d M Y") }}</td>
+                    <td class="text-end" data-label="Actions">
                       <a href="/admin/services/details/{{ service.id }}"
                          class="modern-btn btn-sm btn-info">
                         <i class="bi bi-eye"></i>

@@ -12,15 +12,7 @@ require_once __DIR__ . '/../Models/AppSettings.php';
 // Initialize OCR service
 $ocrService = new OCRService();
 
-// Debug: Log that controller is loaded
-error_log("OCRController loaded successfully");
 
-// Check if router is available
-if (!isset($router)) {
-    error_log("ERROR: \$router variable not available in OCRController");
-} else {
-    error_log("Router is available in OCRController");
-}
 
 // ---------------- OCR API ROUTES ----------------
 
@@ -30,8 +22,6 @@ $router->get('/test-ocr', function () {
     exit;
 });
 
-// Health check endpoint
-error_log("Registering OCR health route: /api/ocr/health");
 $router->get('/api/ocr/health', function () use ($ocrService) {
     try {
         $usageInfo = $ocrService->getUsageInfo();

@@ -114,33 +114,33 @@
                   {% else %}
                     {% for s in subscribers %}
                       <tr>
-                        <td>{{ s.id }}</td>
-                        <td>
+                        <td data-label="ID">{{ s.id }}</td>
+                        <td data-label="User">
                           {% if s.user_id %}
                             <strong>{{ s.username ?: s.email ?: ('UID:' ~ s.user_id) }}</strong>
                           {% else %}
                             <span class="text-muted">Guest</span>
                           {% endif %}
                         </td>
-                        <td>
+                        <td data-label="Device ID">
                           <small>{{ s.device_id ?: '-' }}</small>
                         </td>
-                        <td>
+                        <td data-label="Device Name">
                           <small>{{ s.device_name ?: '-' }}</small>
                         </td>
-                        <td>
+                        <td data-label="Token">
                           <small>{{ s.token[:40] }}{{ s.token|length > 40 ? '...' : '' }}</small>
                         </td>
-                        <td>
+                        <td data-label="Permission">
                           {% set perm = s.permission ?: 'granted' %}
                           {% set badge = perm == 'granted' ? 'bg-success' : (perm == 'default' ? 'bg-secondary' : 'bg-danger') %}
                           <span class="badge {{ badge }}">{{ perm }}</span>
                         </td>
-                        <td>{{ s.device_type ?: '-' }}</td>
-                        <td>
+                        <td data-label="Type">{{ s.device_type ?: '-' }}</td>
+                        <td data-label="Created">
                           <small>{{ s.created_at ?: '-' }}</small>
                         </td>
-                        <td class="text-end">
+                        <td class="text-end" data-label="Action">
                           <div class="d-inline-flex gap-2">
                             <button class="modern-btn modern-btn-danger btn-sm"
                                     onclick="revokeDevice('{{ s.device_id }}', this)">Revoke</button>

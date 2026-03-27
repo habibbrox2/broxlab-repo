@@ -1,0 +1,377 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}GSMArena News Scraper - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">GSMArena News Scraper</h1>
+        <div>
+            <a href="{{ base_url('admin/scraper/gsmarena-news/articles') }}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-list me-1"></i> View All Articles
+            </a>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scrapeModal">
+                <i class="fas fa-download me-1"></i> Scrape News
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary bg-opacity-10 rounded-3 p-3">
+                                <i class="fas fa-newspaper text-primary fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Total Articles</h6>
+                            <h3 class="mb-0">{{ stats.total_articles|default(0) }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-10 rounded-3 p-3">
+                                <i class="fas fa-clock text-success fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Last Scrape</h6>
+                            <h3 class="mb-0">{{ stats.last_scraped|default('Never') }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-info bg-opacity-10 rounded-3 p-3">
+                                <i class="fas fa-layer-group text-info fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Pages Scraped</h6>
+                            <h3 class="mb-0">{{ stats.pages_scraped|default(0) }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-warning bg-opacity-10 rounded-3 p-3">
+                                <i class="fas fa-plus-circle text-warning fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">New Today</h6>
+                            <h3 class="mb-0">{{ stats.new_today|default(0) }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Articles -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 py-3">
+            <h5 class="mb-0">Recent Articles</h5>
+        </div>
+        <div class="card-body">
+            {% if recent_articles|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Image</th>
+                                <th>Title</th>
+                                <th>Published</th>
+                                <th>Scraped</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for article in recent_articles %}
+                                <tr>
+                                    <td>
+                                        {% if article.image_url %}
+                                            <img src="{{ article.image_url }}" alt="{{ article.title }}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                                <i class="fas fa-newspaper text-muted"></i>
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ base_url('admin/scraper/gsmarena-news/articles/' ~ article.id) }}" class="text-decoration-none fw-bold">
+                                            {{ article.title }}
+                                        </a>
+                                        <div class="text-muted small">
+                                            <a href="{{ article.url }}" target="_blank" class="text-decoration-none">
+                                                <i class="fas fa-external-link-alt me-1"></i>View Original
+                                            </a>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if article.published_at %}
+                                            <span class="badge bg-light text-dark">
+                                                {{ article.published_at|date('M d, Y') }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">
+                                            {{ article.scraped_at|date('M d, Y H:i') }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ base_url('admin/scraper/gsmarena-news/articles/' ~ article.id) }}" class="btn btn-sm btn-outline-primary me-1" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ article.url }}" target="_blank" class="btn btn-sm btn-outline-secondary me-1" title="Open Original">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-newspaper text-muted fa-3x mb-3"></i>
+                    <p class="text-muted mb-0">No articles found. Start scraping to populate the database.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Last Scrape Statistics -->
+    {% if last_scrape %}
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="mb-0">Last Scrape Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-calendar-check text-primary me-2"></i>
+                            <div>
+                                <small class="text-muted">Date</small>
+                                <div class="fw-bold">{{ last_scrape.date|default('N/A') }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-clock text-success me-2"></i>
+                            <div>
+                                <small class="text-muted">Duration</small>
+                                <div class="fw-bold">{{ last_scrape.duration|default('N/A') }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-plus-circle text-info me-2"></i>
+                            <div>
+                                <small class="text-muted">New Articles</small>
+                                <div class="fw-bold">{{ last_scrape.new_articles|default(0) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-sync text-warning me-2"></i>
+                            <div>
+                                <small class="text-muted">Updated Articles</small>
+                                <div class="fw-bold">{{ last_scrape.updated_articles|default(0) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-layer-group text-secondary me-2"></i>
+                            <div>
+                                <small class="text-muted">Pages Scraped</small>
+                                <div class="fw-bold">{{ last_scrape.pages_scraped|default(0) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                            <div>
+                                <small class="text-muted">Errors</small>
+                                <div class="fw-bold">{{ last_scrape.errors|default(0) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Scrape Modal -->
+<div class="modal fade" id="scrapeModal" tabindex="-1" aria-labelledby="scrapeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scrapeModalLabel">Scrape GSMArena News</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="scrapeForm">
+                    <div class="mb-3">
+                        <label for="maxPages" class="form-label">Maximum Pages</label>
+                        <input type="number" class="form-control" id="maxPages" name="max_pages" value="5" min="1" max="50">
+                        <div class="form-text">Number of news pages to scrape (1-50)</div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Scraping will run in the background. You can close this modal and track progress below.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="startScrapeBtn">
+                    <i class="fas fa-download me-1"></i> Start Scraping
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Modal -->
+<div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="progressModalLabel">Scraping Progress</h5>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span id="progressStatus">Initializing...</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="row g-3 mt-3">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h4 mb-0" id="progressPages">0</div>
+                            <small class="text-muted">Pages</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h4 mb-0" id="progressArticles">0</div>
+                            <small class="text-muted">Articles</small>
+                        </div>
+                    </div>
+                </div>
+                <div id="progressError" class="alert alert-danger mt-3 d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="closeProgressBtn" disabled>Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const scrapeModal = new bootstrap.Modal(document.getElementById('scrapeModal'));
+    const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+    let progressInterval = null;
+
+    document.getElementById('startScrapeBtn').addEventListener('click', function() {
+        const maxPages = document.getElementById('maxPages').value;
+        
+        fetch('{{ base_url('admin/scraper/gsmarena-news/scrape') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'max_pages=' + encodeURIComponent(maxPages) + '&csrf_token={{ csrf_token }}'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                scrapeModal.hide();
+                progressModal.show();
+                startProgressTracking(data.task_id);
+            } else {
+                alert('Error: ' + (data.message || 'Failed to start scraping'));
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+    });
+
+    function startProgressTracking(taskId) {
+        progressInterval = setInterval(function() {
+            fetch('{{ base_url('admin/scraper/gsmarena-news/progress/') }}' + taskId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const progress = data.progress;
+                        document.getElementById('progressStatus').textContent = progress.status || 'Processing...';
+                        document.getElementById('progressPercent').textContent = progress.percent + '%';
+                        document.getElementById('progressBar').style.width = progress.percent + '%';
+                        document.getElementById('progressPages').textContent = progress.pages || 0;
+                        document.getElementById('progressArticles').textContent = progress.articles || 0;
+
+                        if (progress.error) {
+                            document.getElementById('progressError').textContent = progress.error;
+                            document.getElementById('progressError').classList.remove('d-none');
+                        }
+
+                        if (progress.completed) {
+                            clearInterval(progressInterval);
+                            document.getElementById('progressBar').classList.remove('progress-bar-animated');
+                            document.getElementById('closeProgressBtn').disabled = false;
+                            setTimeout(() => location.reload(), 2000);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Progress tracking error:', error);
+                });
+        }, 1000);
+    }
+
+    document.getElementById('closeProgressBtn').addEventListener('click', function() {
+        progressModal.hide();
+        if (progressInterval) {
+            clearInterval(progressInterval);
+        }
+    });
+});
+</script>
+{% endblock %}

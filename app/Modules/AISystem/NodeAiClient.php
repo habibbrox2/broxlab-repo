@@ -12,15 +12,15 @@ class NodeAiClient
     public function __construct(array $options = [])
     {
         $sharedBaseUrl = $options['baseUrl'] ?? (getenv('NODEJS_SERVER_URL') ?: getenv('APP_URL') ?: '');
-        $aiBaseUrl = $options['aiBaseUrl'] ?? (getenv('NODEJS_AI_SERVER_URL') ?: getenv('APP_URL') ?: '');
-        $ragBaseUrl = $options['ragBaseUrl'] ?? (getenv('NODEJS_RAG_SERVER_URL') ?: getenv('APP_URL') ?: '');
+        $aiBaseUrl = $options['aiBaseUrl'] ?? (getenv('NODEJS_AI_SERVER_URL') ?: getenv('NODE_API_URL') ?: getenv('APP_URL') ?: '');
+        $ragBaseUrl = $options['ragBaseUrl'] ?? (getenv('NODEJS_RAG_SERVER_URL') ?: getenv('NODE_API_URL') ?: getenv('APP_URL') ?: '');
 
         $this->aiBaseUrl = rtrim(
-            (string)($aiBaseUrl ?: ($sharedBaseUrl ?: 'http://localhost:3001')),
+            (string)($aiBaseUrl ?: ($sharedBaseUrl ?: 'http://localhost:3000/api/ai')),
             '/'
         );
         $this->ragBaseUrl = rtrim(
-            (string)($ragBaseUrl ?: ($sharedBaseUrl ?: 'http://localhost:3000')),
+            (string)($ragBaseUrl ?: ($sharedBaseUrl ?: 'http://localhost:3000/api/search')),
             '/'
         );
         $this->timeout = (int)($options['timeout'] ?? 10);

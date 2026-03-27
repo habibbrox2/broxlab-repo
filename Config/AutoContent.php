@@ -34,4 +34,19 @@ return [
         'token' => $_ENV['AUTOCONTENT_API_TOKEN'] ?? $_ENV['AUTOBLOG_API_TOKEN'] ?? '',
         'max_limit' => (int)($_ENV['AUTOCONTENT_API_MAX_LIMIT'] ?? $_ENV['AUTOBLOG_API_MAX_LIMIT'] ?? 100),
     ],
+    'sources' => [
+        'gsmarena_bd' => [
+            'name' => 'GSMArena Bangladesh',
+            'url' => 'https://www.gsmarena.com.bd',
+            'type' => 'mobile_devices',
+            'enabled' => true,
+            'config' => [
+                'base_url' => 'https://www.gsmarena.com.bd',
+                'phones_url' => '/phones.php',
+                'max_pages' => 5,
+                'delay_min' => 2,
+                'delay_max' => 5,
+            ],
+        ],
+    ],
 ];

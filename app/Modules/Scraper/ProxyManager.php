@@ -23,9 +23,9 @@ class ProxyManager
     private ?string $currentProxy = null;
     private int $maxRetries = 3;
     private int $failureThreshold = 3;
-    private ?Client $testClient = null;
+    protected ?Client $testClient = null;
     private array $proxyStats = [];
-    
+
     // Provider configurations
     public const PROVIDER_BRIGHT_DATA = 'bright_data';
     public const PROVIDER_SCRAPER_API = 'scraper_api';
@@ -43,7 +43,7 @@ class ProxyManager
     {
         $this->maxRetries = $config['max_retries'] ?? 3;
         $this->failureThreshold = $config['failure_threshold'] ?? 3;
-        
+
         if (!empty($config['providers'])) {
             $this->providers = $config['providers'];
         }
@@ -79,7 +79,7 @@ class ProxyManager
 
         $key = $this->getProxyKey($proxy['host'], $proxy['port']);
         $this->proxies[$key] = $proxy;
-        
+
         return $this;
     }
 
@@ -100,14 +100,14 @@ class ProxyManager
     public function getRandomProxy(): ?array
     {
         $activeProxies = array_filter($this->proxies, fn($p) => ($p['is_active'] ?? true));
-        
+
         if (empty($activeProxies)) {
             return null;
         }
 
         $proxy = $activeProxies[array_rand($activeProxies)];
         $this->currentProxy = $this->getProxyKey($proxy['host'], $proxy['port']);
-        
+
         return $proxy;
     }
 
@@ -116,7 +116,7 @@ class ProxyManager
      */
     public function getHealthyProxy(): ?array
     {
-        $activeProxies = array_filter($this->proxies, function($p) {
+        $activeProxies = array_filter($this->proxies, function ($p) {
             return ($p['is_active'] ?? true) && ($p['failure_count'] ?? 0) < $this->failureThreshold;
         });
 
@@ -125,7 +125,7 @@ class ProxyManager
         }
 
         // Sort by success rate
-        usort($activeProxies, function($a, $b) {
+        usort($activeProxies, function ($a, $b) {
             $rateA = ($a['success_count'] ?? 1) / max(($a['success_count'] + $a['failure_count']), 1);
             $rateB = ($b['success_count'] ?? 1) / max(($b['success_count'] + $b['failure_count']), 1);
             return $rateB <=> $rateA;
@@ -133,7 +133,7 @@ class ProxyManager
 
         $proxy = reset($activeProxies);
         $this->currentProxy = $this->getProxyKey($proxy['host'], $proxy['port']);
-        
+
         return $proxy;
     }
 
@@ -142,7 +142,7 @@ class ProxyManager
      */
     public function getProxyForProvider(string $provider): ?array
     {
-        $providerProxies = array_filter($this->proxies, function($p) use ($provider) {
+        $providerProxies = array_filter($this->proxies, function ($p) use ($provider) {
             return ($p['provider'] ?? self::PROVIDER_CUSTOM) === $provider && ($p['is_active'] ?? true);
         });
 
@@ -152,7 +152,7 @@ class ProxyManager
 
         $proxy = $providerProxies[array_rand($providerProxies)];
         $this->currentProxy = $this->getProxyKey($proxy['host'], $proxy['port']);
-        
+
         return $proxy;
     }
 
@@ -166,7 +166,7 @@ class ProxyManager
         }
 
         $protocol = $proxy['type'] ?? self::TYPE_HTTP;
-        
+
         if (!empty($proxy['username']) && !empty($proxy['password'])) {
             return sprintf(
                 '%s://%s:%s@%s:%d',
@@ -199,9 +199,9 @@ class ProxyManager
             'device' => 'desktop',
             'render' => 'false',
         ];
-        
+
         $host = 'http://' . ($options['country'] ? $options['country'] . '.' : '') . 'scraperapi:' . $apiKey;
-        
+
         return $host;
     }
 
@@ -234,7 +234,7 @@ class ProxyManager
         $key = $proxyKey ?? $this->currentProxy;
         if ($key && isset($this->proxies[$key])) {
             $this->proxies[$key]['failure_count'] = ($this->proxies[$key]['failure_count'] ?? 0) + 1;
-            
+
             // Deactivate if too many failures
             if (($this->proxies[$key]['failure_count'] ?? 0) >= $this->failureThreshold) {
                 $this->proxies[$key]['is_active'] = false;
@@ -250,7 +250,7 @@ class ProxyManager
     {
         try {
             $proxyString = $this->buildProxyString($proxy);
-            
+
             if (empty($proxyString)) {
                 return false;
             }
@@ -278,14 +278,14 @@ class ProxyManager
     public function testAllProxies(string $testUrl = 'https://httpbin.org/ip'): array
     {
         $results = [];
-        
+
         foreach ($this->proxies as $key => $proxy) {
             $results[$key] = [
                 'proxy' => $proxy,
                 'success' => $this->testProxy($proxy, $testUrl),
             ];
         }
-        
+
         return $results;
     }
 
@@ -305,7 +305,7 @@ class ProxyManager
         foreach ($this->proxies as $proxy) {
             $provider = $proxy['provider'] ?? self::PROVIDER_CUSTOM;
             $type = $proxy['type'] ?? self::TYPE_HTTP;
-            
+
             $stats['by_provider'][$provider] = ($stats['by_provider'][$provider] ?? 0) + 1;
             $stats['by_type'][$type] = ($stats['by_type'][$type] ?? 0) + 1;
         }
@@ -356,7 +356,7 @@ class ProxyManager
     /**
      * Generate proxy key
      */
-    private function getProxyKey(string $host, int $port): string
+    protected function getProxyKey(string $host, int $port): string
     {
         return "{$host}:{$port}";
     }

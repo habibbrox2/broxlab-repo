@@ -134,32 +134,32 @@
           <tbody>
             {% for app in applications %}
               <tr>
-                <td>
+                <td data-label="ID">
                   <strong>#{{ app.id }}</strong>
                 </td>
-                <td>
+                <td data-label="User">
                   {{ app.user_name }}
                   <br>
                   <small class="text-muted">{{ app.user_email }}</small>
                 </td>
-                <td>
+                <td data-label="Service">
                   <strong>{{ app.service_name }}</strong>
                 </td>
-                <td>
+                <td data-label="Status">
                   {% set status_colors = {"pending": "warning", "processing": "info", "approved": "success", "rejected": "danger"} %}
                   <span class="badge bg-{{ status_colors[app.status] }}">{{ app.status|title }}</span>
                 </td>
-                <td>
+                <td data-label="Submitted">
                   <small>{{ app.created_at|date("M d, Y") }}</small>
                 </td>
-                <td>
+                <td data-label="Approver">
                   {% if app.approved_by_name %}
                     <small>{{ app.approved_by_name }}</small>
                   {% else %}
                     <span class="text-muted">-</span>
                   {% endif %}
                 </td>
-                <td>
+                <td data-label="Actions">
                   <div class="modern-btn-group btn-group-sm" role="group">
                     <a href="/admin/applications/{{ app.id }}"
                        class="modern-btn modern-btn-white"

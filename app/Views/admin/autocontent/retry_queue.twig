@@ -87,17 +87,17 @@
           <tbody>
             {% for row in items %}
               <tr>
-                <td class="small text-nowrap"><input type="checkbox" name="ids[]" value="{{ row.id }}"></td>
-                <td class="small text-nowrap">{{ row.id }}</td>
-                <td class="small text-nowrap">{{ row.source_name ?? ('#' ~ row.source_id) }}</td>
-                <td class="small text-nowrap"><code>{{ row.status }}</code></td>
-                <td class="small text-nowrap">{{ row.attempts ?? 0 }}/{{ row.max_attempts ?? 3 }}</td>
-                <td class="small text-nowrap">{{ row.next_attempt ?? '—' }}</td>
-                <td class="small text-nowrap">{{ row.last_attempt ?? '—' }}</td>
-                <td class="small text-break"><a href="{{ row.url }}" target="_blank" rel="noopener">{{ row.url }}</a></td>
-                <td class="small text-break text-muted">{{ row.error_message ?? '' }}</td>
-                <td class="small text-nowrap">{{ row.created_at }}</td>
-                <td class="small text-nowrap">{{ row.updated_at ?? '' }}</td>
+                <td class="small text-nowrap" data-label="Select"><input type="checkbox" name="ids[]" value="{{ row.id }}"></td>
+                <td class="small text-nowrap" data-label="ID">{{ row.id }}</td>
+                <td class="small text-nowrap" data-label="Source">{{ row.source_name ?? ('#' ~ row.source_id) }}</td>
+                <td class="small text-nowrap" data-label="Status"><code>{{ row.status }}</code></td>
+                <td class="small text-nowrap" data-label="Attempts">{{ row.attempts ?? 0 }}/{{ row.max_attempts ?? 3 }}</td>
+                <td class="small text-nowrap" data-label="Next Attempt">{{ row.next_attempt ?? '—' }}</td>
+                <td class="small text-nowrap" data-label="Last Attempt">{{ row.last_attempt ?? '—' }}</td>
+                <td class="small text-break" data-label="URL"><a href="{{ row.url }}" target="_blank" rel="noopener">{{ row.url }}</a></td>
+                <td class="small text-break text-muted" data-label="Error">{{ row.error_message ?? '' }}</td>
+                <td class="small text-nowrap" data-label="Created">{{ row.created_at }}</td>
+                <td class="small text-nowrap" data-label="Updated">{{ row.updated_at ?? '' }}</td>
               </tr>
             {% else %}
               <tr>

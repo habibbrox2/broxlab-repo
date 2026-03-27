@@ -89,19 +89,19 @@
               <tbody>
                 {% for category in categories %}
                   <tr class="border-bottom hover-effect">
-                    <td>
+                    <td data-label="ID">
                       <span class="badge bg-light text-surface-dark fw-bold">{{ category.id }}</span>
                     </td>
-                    <td>
+                    <td data-label="Name">
                       <div class="d-flex align-items-center">
                         <i class="bi bi-folder text-primary me-2"></i>
                         <strong>{{ category.name }}</strong>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="URL Slug">
                       <code class="bg-light px-3 py-2 rounded-2 d-inline-block">{{ category.slug }}</code>
                     </td>
-                    <td class="text-center">
+                    <td class="text-center" data-label="Actions">
                       <div class="modern-btn-group" role="group">
                         <a href="/admin/categories/edit/{{ category.id }}"
                            class="modern-btn btn-sm btn-warning rounded-start-3"

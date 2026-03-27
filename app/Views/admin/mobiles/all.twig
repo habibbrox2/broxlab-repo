@@ -75,15 +75,15 @@
               {% if mobiles is not empty %}
                 {% for m in mobiles %}
                   <tr>
-                    <td>{{ loop.index }}</td>
-                    <td>{{ m.brand_name }}</td>
-                    <td>{{ m.model_name }}</td>
-                    <td>
+                    <td data-label="#">ID</td>
+                    <td data-label="Brand">{{ m.brand_name }}</td>
+                    <td data-label="Model">{{ m.model_name }}</td>
+                    <td data-label="Status">
                       <span class="badge bg-{% if m.status == 'official' %}primary{% elseif m.status == 'unofficial' %}warning{% else %}secondary{% endif %}">{{ m.status|capitalize }}</span>
                     </td>
-                    <td>{{ m.release_date ? m.release_date|date("M d, Y") : 'N/A' }}</td>
-                    <td class="text-center">{{ m.image_count|default(0) }}</td>
-                    <td class="text-end">
+                    <td data-label="Release Date">{{ m.release_date ? m.release_date|date("M d, Y") : 'N/A' }}</td>
+                    <td class="text-center" data-label="Images">{{ m.image_count|default(0) }}</td>
+                    <td class="text-end" data-label="Actions">
                       <a href="/admin/mobiles/view/{{ m.id }}"
                          class="modern-btn btn-sm btn-outline-secondary"
                          title="View"><i class="bi bi-eye"></i></a>

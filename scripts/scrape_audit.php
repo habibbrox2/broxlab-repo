@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 // Scraping System Full Check (Both Pipelines + Manual Selectors)
@@ -23,7 +24,7 @@ function resolveScraperApiUrl(array $env): string
     if ($appUrl !== '') {
         return rtrim((string)$appUrl, '/');
     }
-    return 'http://127.0.0.1:7010';
+    return 'http://127.0.0.1:3000/api/scraper';
 }
 
 function httpGet(string $url, int $timeoutSec = 10): array
@@ -451,47 +452,47 @@ function testListSelectors(string $html, string $url, array $selectors): array
             }
             $item = [];
 
-                if ($list['title'] !== '') {
-                    $titleNodes = $xpath->query(selectorToXPath($list['title'], true), $itemNode);
-                    if ($titleNodes && $titleNodes->length > 0) {
-                        $item['title'] = domNodeGetText($titleNodes->item(0));
-                        $matches['title'] = true;
-                    }
+            if ($list['title'] !== '') {
+                $titleNodes = $xpath->query(selectorToXPath($list['title'], true), $itemNode);
+                if ($titleNodes && $titleNodes->length > 0) {
+                    $item['title'] = domNodeGetText($titleNodes->item(0));
+                    $matches['title'] = true;
                 }
+            }
 
-                if ($list['link'] !== '') {
-                    $linkNodes = $xpath->query(selectorToXPath($list['link'], true), $itemNode);
-                } else {
-                    $linkNodes = $xpath->query('.//a', $itemNode);
+            if ($list['link'] !== '') {
+                $linkNodes = $xpath->query(selectorToXPath($list['link'], true), $itemNode);
+            } else {
+                $linkNodes = $xpath->query('.//a', $itemNode);
+            }
+            if ($linkNodes && $linkNodes->length > 0) {
+                $linkNode = $linkNodes->item(0);
+                $link = domNodeGetAttr($linkNode, 'href');
+                if ($link === '') {
+                    $link = domNodeGetText($linkNode);
                 }
-                if ($linkNodes && $linkNodes->length > 0) {
-                    $linkNode = $linkNodes->item(0);
-                    $link = domNodeGetAttr($linkNode, 'href');
-                    if ($link === '') {
-                        $link = domNodeGetText($linkNode);
-                    }
-                    if ($link !== '') {
-                        $item['link'] = makeAbsoluteUrl($link, $url);
-                        $matches['link'] = true;
-                    }
+                if ($link !== '') {
+                    $item['link'] = makeAbsoluteUrl($link, $url);
+                    $matches['link'] = true;
                 }
+            }
 
-                if ($list['date'] !== '') {
-                    $dateNodes = $xpath->query(selectorToXPath($list['date'], true), $itemNode);
-                    if ($dateNodes && $dateNodes->length > 0) {
-                        $item['date'] = domNodeGetText($dateNodes->item(0));
-                        $matches['date'] = true;
-                    }
+            if ($list['date'] !== '') {
+                $dateNodes = $xpath->query(selectorToXPath($list['date'], true), $itemNode);
+                if ($dateNodes && $dateNodes->length > 0) {
+                    $item['date'] = domNodeGetText($dateNodes->item(0));
+                    $matches['date'] = true;
                 }
+            }
 
-                if ($list['image'] !== '') {
-                    $imageNodes = $xpath->query(selectorToXPath($list['image'], true), $itemNode);
-                    if ($imageNodes && $imageNodes->length > 0) {
-                        $img = $imageNodes->item(0);
-                        $item['image'] = domNodeGetAttr($img, 'src') ?: (domNodeGetAttr($img, 'data-src') ?: domNodeGetText($img));
-                        $matches['image'] = true;
-                    }
+            if ($list['image'] !== '') {
+                $imageNodes = $xpath->query(selectorToXPath($list['image'], true), $itemNode);
+                if ($imageNodes && $imageNodes->length > 0) {
+                    $img = $imageNodes->item(0);
+                    $item['image'] = domNodeGetAttr($img, 'src') ?: (domNodeGetAttr($img, 'data-src') ?: domNodeGetText($img));
+                    $matches['image'] = true;
                 }
+            }
 
             $items[] = $item;
         }

@@ -1,6 +1,6 @@
 # cPanel WebHost এ Cron Job সেটআপ (BroxLab / BroxBhai)
 
-## খুব গুরুত্বপূর্ণ (Invalid crontab / “bad command” এড়াতে)
+## খুব গুরুত্বপূর্ণ (Invalid crontab / "bad command" এড়াতে)
 
 `docs/CPANEL_CRONJOBS.md` ফাইলটা **ডকুমেন্টেশন**—এটা কখনোই `crontab docs/CPANEL_CRONJOBS.md` দিয়ে install করবেন না।
 
@@ -13,7 +13,7 @@
 - **SSH/Server crontab হলে:** crontab ফাইলে **শুধু cron লাইন** থাকবে (এক লাইনে schedule + command)
 
 Windows থেকে কপি-পেস্ট করলে line ending (CRLF) সমস্যা করতে পারে। চেষ্টা করুন **LF** রাখতে:
-- VS Code: status bar এ “CRLF” → “LF”
+- VS Code: status bar এ "CRLF" → "LF"
 - অথবা server এ: `dos2unix cron_jobs.txt` (যদি available থাকে)
 
 এই ডকুমেন্টে cPanel (shared web hosting) এ Cron Job সেট করে `scripts/` এর CLI PHP worker গুলো চালানোর নিয়ম দেখানো হলো—বিশেষ করে AutoContent pipeline (collect → process → publish → retry)।
@@ -40,7 +40,7 @@ Windows থেকে কপি-পেস্ট করলে line ending (CRLF) �
 
 **কীভাবে বের করবেন**
 - **SSH থাকলে:** `which php`, `php -v`, `which node`, `node -v`
-- **SSH না থাকলে:** cPanel → **Software** → **Select PHP Version** / **MultiPHP Manager** থেকে PHP version দেখুন, অথবা হোস্ট সাপোর্টে জিজ্ঞেস করুন “PHP CLI binary path”.
+- **SSH না থাকলে:** cPanel → **Software** → **Select PHP Version** / **MultiPHP Manager** থেকে PHP version দেখুন, অথবা হোস্ট সাপোর্টে জিজ্ঞেস করুন "PHP CLI binary path"।
 
 ---
 
@@ -48,7 +48,7 @@ Windows থেকে কপি-পেস্ট করলে line ending (CRLF) �
 
 1. cPanel লগইন করুন  
 2. **Advanced** → **Cron Jobs**  
-3. “Add New Cron Job” সেকশনে:
+3. "Add New Cron Job" সেকশনে:
    - Schedule (minute/hour/day/month/weekday) সেট করুন  
    - Command বসান (**শুধু command অংশ**; `*/15 * * * *` এখানে দিবেন না)  
    - চাইলে Cron output email সেট করুন (Debug এর জন্য ভালো; পরে log redirect করে email বন্ধ রাখুন)
@@ -68,7 +68,7 @@ Windows থেকে কপি-পেস্ট করলে line ending (CRLF) �
 
 `YOUR_APP_PATH` উদাহরণ: `/home/YOUR_USER/broxlab`
 
-#### A1) cPanel UI (Recommended) — “Command” field only (schedule UI থেকে সেট করবেন)
+#### A1) cPanel UI (Recommended) — "Command" field only (schedule UI থেকে সেট করবেন)
 
 Example paths:
 - Current release: `/home/tdhuedhn/broxlab/app/current`
@@ -142,7 +142,7 @@ Recommended schedules:
 
 ## 5) GSMArena Scraper (News + Devices)
 
-এই প্রজেক্টে Node-based scraper আছে (`src/scraper/index.js`) যেটা GSMArena থেকে:
+এই প্রোজেক্টে Node-based scraper আছে (`src/scraper/index.js`) যেটা GSMArena থেকে:
 - `gsmarena_news` → `autocontent_articles` এ collect করে (পরে existing `autocontent_process.php` + `autocontent_publish.php` দিয়ে posts হবে)
 - `gsmarena_devices` → `mobiles/mobile_specs/mobile_images` এ সরাসরি insert করে
 - `gsmarena_bd_devices` → `https://www.gsmarena.com.bd/` থেকে `mobiles/mobile_specs/mobile_images` এ সরাসরি insert করে (BDT price mapping)
@@ -156,7 +156,7 @@ Example paths:
 - Current release: `/home/tdhuedhn/broxlab/app/current`
 - Shared logs: `/home/tdhuedhn/broxlab/app/shared/storage/logs`
 
-Commands (paste into “Command” field):
+Commands (paste into "Command" field):
 ```bash
 /usr/local/bin/node /home/tdhuedhn/broxlab/app/current/src/scraper/index.js --source=gsmarena_news --max=10 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/cron_gsmarena_news.log 2>&1
 ```
@@ -201,30 +201,327 @@ Recommended schedules (Assumption):
 1. Log ফাইলের জন্য ফোল্ডার থাকা দরকার:
    - `storage/logs/`
 2. Shared hosting এ permission ইস্যু হলে `storage/` এবং `storage/logs/` writeable কিনা দেখুন।
-3. Debug করার সময় cron output email অন রাখলে error দ্রুত ধরতে পারবেন; stable হলে log redirect করে email বন্ধ রাখুন।
+3. Debug করার সময় cron output email অনরাখলে error দ্রুত ধরতে পারবেন; stable হলে log redirect করে email বন্ধ রাখুন।
 
 ---
 
 ## 7) Common সমস্যা ও সমাধান (Troubleshooting)
 
-### “php: command not found”
+### "php: command not found"
 - `php` এর জায়গায় full path দিন: `/usr/local/bin/php` বা `/usr/bin/php`
 
-### “Permission denied”
+### "Permission denied"
 - `storage/logs/` writeable কিনা দেখুন
 - Script path ঠিক কিনা নিশ্চিত করুন
 
 ### Script চলেছে কিনা বুঝবো কীভাবে?
 - `storage/logs/cron_autocontent.log` এ নতুন লাইন আসছে কিনা দেখুন
-- cPanel Cron Jobs এর “Email” এ output আসছে কিনা দেখুন
+- cPanel Cron Jobs এর "Email" এ output আসছে কিনা দেখুন
 
 ### Overlap / duplicate run হচ্ছে
 - Interval কমিয়ে দিন, অথবা Option B (`flock`) ব্যবহার করুন
 
 ---
 
-## 8) Security Notes
+## 8) Teletalk Jobs Scraper
+
+Teletalk government jobs scraper দিয়ে সরকারি চাকরির বিজ্ঞপ্তি স্বয়ংক্রিয়ভাবে সংগ্রহ করা যায়।
+
+### cPanel UI (Command field only) — schedule UI থেকে সেট করবেন
+
+Example paths:
+- Current release: `/home/tdhuedhn/broxlab/app/current`
+- Shared logs: `/home/tdhuedhn/broxlab/app/shared/storage/logs`
+
+Command (daily at 6 AM):
+```bash
+/usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/cron/teletalk-scraper.php --max-pages=3 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/teletalk-scraper.log 2>&1
+```
+
+Command (twice daily):
+```bash
+/usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/cron/teletalk-scraper.php --max-pages=3 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/teletalk-scraper.log 2>&1
+```
+
+Recommended schedules:
+- Daily: `0 6 * * *` (6 AM daily)
+- Twice daily: `0 6,18 * * *` (6 AM and 6 PM)
+- Every 6 hours: `0 */6 * * *`
+
+### Linux crontab (SSH) — full cron lines (schedule + command)
+
+```cron
+0 6 * * * /usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/cron/teletalk-scraper.php --max-pages=3 >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/teletalk-scraper.log 2>&1
+```
+
+### Template (placeholders)
+
+```cron
+0 6 * * * /usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/cron/teletalk-scraper.php --max-pages=3 >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/teletalk-scraper.log 2>&1
+```
+
+### Command Options
+
+- `--max-pages=N`: Maximum number of pages to scrape (1-10, default: 3)
+- `--verbose`: Enable verbose output for debugging
+
+Example with options:
+```bash
+/usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/cron/teletalk-scraper.php --max-pages=5 --verbose >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/teletalk-scraper.log 2>&1
+```
+
+### Features
+
+- Automatic duplicate detection
+- Email notifications to admins when new jobs are found
+- Detailed logging to `logs/teletalk-scraper.log`
+- Progress tracking and statistics
+- Error handling with admin notifications
+
+---
+
+## 9) MobileDokan Phone Scraper
+
+MobileDokan phone scraper দিয়ে মোবাইল ফোনের তথ্য স্বয়ংক্রিয়ভাবে সংগ্রহ করা যায়।
+
+### cPanel UI (Command field only) — schedule UI থেকে সেট করবেন
+
+Example paths:
+- Current release: `/home/tdhuedhn/broxlab/app/current`
+- Shared logs: `/home/tdhuedhn/broxlab/app/shared/storage/logs`
+
+Command (daily at 6 AM):
+```bash
+/usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/cron/mobiledokan-scraper.php --max-pages=3 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/mobiledokan-scraper.log 2>&1
+```
+
+Command (twice daily):
+```bash
+/usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/cron/mobiledokan-scraper.php --max-pages=3 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/mobiledokan-scraper.log 2>&1
+```
+
+Recommended schedules:
+- Daily: `0 6 * * *` (6 AM daily)
+- Twice daily: `0 6,18 * * *` (6 AM and 6 PM)
+- Every 6 hours: `0 */6 * * *`
+
+### Linux crontab (SSH) — full cron lines (schedule + command)
+
+```cron
+0 6 * * * /usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/cron/mobiledokan-scraper.php --max-pages=3 >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/mobiledokan-scraper.log 2>&1
+```
+
+### Template (placeholders)
+
+```cron
+0 6 * * * /usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/cron/mobiledokan-scraper.php --max-pages=3 >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/mobiledokan-scraper.log 2>&1
+```
+
+### Command Options
+
+- `--max-pages=N`: Maximum number of pages to scrape (1-10, default: 3)
+- `--verbose`: Enable verbose output for debugging
+
+Example with options:
+```bash
+/usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/cron/mobiledokan-scraper.php --max-pages=5 --verbose >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/mobiledokan-scraper.log 2>&1
+```
+
+### Features
+
+- Automatic duplicate detection
+- Email notifications to admins when new phones are found
+- Detailed logging to `logs/mobiledokan-scraper.log`
+- Progress tracking and statistics
+- Error handling with admin notifications
+- Bengali text encoding support
+- JavaScript embedded data extraction
+
+---
+
+## 10) BDNews24 Article Scraper
+
+BDNews24 article scraper দিয়ে bangla.bdnews24.com থেকে বাংলা নিউজ আর্টিকেল স্বয়ংক্রিয়ভাবে সংগ্রহ করা যায়।
+
+### cPanel UI (Command field only) — schedule UI থেকে সেট করবেন
+
+Example paths:
+- Current release: `/home/tdhuedhn/broxlab/app/current`
+- Shared logs: `/home/tdhuedhn/broxlab/app/shared/storage/logs`
+
+Command (daily at 6 AM):
+```bash
+/usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/cron/bdnews24-scraper.php --max-pages=5 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/bdnews24-scraper.log 2>&1
+```
+
+Command (twice daily):
+```bash
+/usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/cron/bdnews24-scraper.php --max-pages=5 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/bdnews24-scraper.log 2>&1
+```
+
+Recommended schedules:
+- Daily: `0 6 * * *` (6 AM daily)
+- Twice daily: `0 6,18 * * *` (6 AM and 6 PM)
+- Every 6 hours: `0 */6 * * *`
+
+### Linux crontab (SSH) — full cron lines (schedule + command)
+
+```cron
+0 6 * * * /usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/cron/bdnews24-scraper.php --max-pages=5 >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/bdnews24-scraper.log 2>&1
+```
+
+### Template (placeholders)
+
+```cron
+0 6 * * * /usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/cron/bdnews24-scraper.php --max-pages=5 >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/bdnews24-scraper.log 2>&1
+```
+
+### Command Options
+
+- `--max-pages=N`: Maximum number of pages to scrape (1-20, default: 10)
+- `--verbose`: Enable verbose output for debugging
+
+Example with options:
+```bash
+/usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/cron/bdnews24-scraper.php --max-pages=10 --verbose >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/bdnews24-scraper.log 2>&1
+```
+
+### Features
+
+- Automatic duplicate detection
+- Email notifications to admins when new articles are found
+- Detailed logging to `logs/bdnews24-scraper.log`
+- Progress tracking and statistics
+- Error handling with admin notifications
+- Bengali text encoding support (UTF-8)
+- Cursor-based pagination for infinite scroll
+- Category and published date extraction
+
+---
+
+## 11) GSMArena News Scraper
+
+Automated scraping of GSMArena news articles from gsmarena.com/news
+
+### cPanel UI (Command field only) — schedule UI থেকে সেট করবেন
+
+Example paths:
+- Current release: `/home/tdhuedhn/broxlab/app/current`
+- Shared logs: `/home/tdhuedhn/broxlab/app/shared/storage/logs`
+
+Command (every 6 hours):
+```bash
+/usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/cron/gsmarena-news-scraper.php --max-pages=5 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/gsmarena-news-scraper.log 2>&1
+```
+
+Command (daily):
+```bash
+/usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/cron/gsmarena-news-scraper.php --max-pages=10 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/gsmarena-news-scraper.log 2>&1
+```
+
+Recommended schedules:
+- Every 6 hours: `0 */6 * * *` (recommended for news)
+- Every 12 hours: `0 */12 * * *`
+- Daily: `0 6 * * *` (6 AM daily)
+
+### Linux crontab (SSH) — full cron lines (schedule + command)
+
+```cron
+0 */6 * * * /usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/cron/gsmarena-news-scraper.php --max-pages=5 >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/gsmarena-news-scraper.log 2>&1
+```
+
+### Template (placeholders)
+
+```cron
+0 */6 * * * /usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/cron/gsmarena-news-scraper.php --max-pages=5 >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/gsmarena-news-scraper.log 2>&1
+```
+
+### Command Options
+
+- `--max-pages=N`: Maximum number of pages to scrape (1-20, default: 5)
+- `--verbose`: Enable verbose output for debugging
+
+Example with options:
+```bash
+/usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/cron/gsmarena-news-scraper.php --max-pages=10 --verbose >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/gsmarena-news-scraper.log 2>&1
+```
+
+### Features
+
+- Automatic duplicate detection
+- Email notifications to admins when new articles are found
+- Detailed logging to `logs/gsmarena-news-scraper.log`
+- Progress tracking and statistics
+- Error handling with admin notifications
+- News ID extraction from URL
+- Date parsing with multiple format support
+- Rate limiting (1 second delay between requests)
+
+---
+
+## 12) GSMArena Devices Scraper
+
+Automated scraping of GSMArena mobile devices from gsmarena.com
+
+### cPanel UI (Command field only) — schedule UI থেকে সেট করবেন
+
+Example paths:
+- Current release: `/home/tdhuedhn/broxlab/app/current`
+- Shared logs: `/home/tdhuedhn/broxlab/app/shared/storage/logs`
+
+Command (daily at 2 AM):
+```bash
+/usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/cron/gsmarena-devices-scraper.php --max-pages=10 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/gsmarena-devices-scraper.log 2>&1
+```
+
+Command (twice daily):
+```bash
+/usr/local/bin/php /home/tdhuedhn/broxlab/app/current/scripts/cron/gsmarena-devices-scraper.php --max-pages=10 >> /home/tdhuedhn/broxlab/app/shared/storage/logs/gsmarena-devices-scraper.log 2>&1
+```
+
+Recommended schedules:
+- Daily: `0 2 * * *` (2 AM daily - recommended)
+- Twice daily: `0 2,14 * * *` (2 AM and 2 PM)
+- Every 12 hours: `0 */12 * * *`
+
+### Linux crontab (SSH) — full cron lines (schedule + command)
+
+```cron
+0 2 * * * /usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/cron/gsmarena-devices-scraper.php --max-pages=10 >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/gsmarena-devices-scraper.log 2>&1
+```
+
+### Template (placeholders)
+
+```cron
+0 2 * * * /usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/cron/gsmarena-devices-scraper.php --max-pages=10 >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/gsmarena-devices-scraper.log 2>&1
+```
+
+### Command Options
+
+- `--max-pages=N`: Maximum number of pages to scrape (1-50, default: 10)
+- `--verbose`: Enable verbose output for debugging
+
+Example with options:
+```bash
+/usr/local/bin/php /home/YOUR_USER/YOUR_APP_PATH/scripts/cron/gsmarena-devices-scraper.php --max-pages=20 --verbose >> /home/YOUR_USER/YOUR_APP_PATH/storage/logs/gsmarena-devices-scraper.log 2>&1
+```
+
+### Features
+
+- Automatic duplicate detection
+- Email notifications to admins when new devices are found
+- Detailed logging to `logs/gsmarena-devices-scraper.log`
+- Progress tracking and statistics
+- Error handling with admin notifications
+- Specification extraction from device pages
+- Brand extraction from device name (50+ brands supported)
+- URL-friendly slug generation
+- Rate limiting (2 second delay between requests)
+
+---
+
+## 13) Security Notes
 
 - Cron command এ কখনও **API key/token** লিখবেন না।
-- Log ফাইল public web root এ expose হচ্ছে কিনা খেয়াল করুন (সাধারণত `storage/` webroot-এর বাইরে/প্রটেক্টেড রাখা ভালো)।
-- অপ্রয়োজনে খুব frequent cron দিবেন না (shared hosting এ resource limit থাকতে পারে)।
+- Log ফাইল public web root এ expose হচ্ছে কিনা খেয়াল করুন (সাধারণত `storage/` webroot-এর বাইরে/প্রটেক্টেড রাখা ভালো)।
+- অপ্রয়োজনেখুব frequent cron দিবেন না (shared hosting এ resource limit থাকতে পারে)।

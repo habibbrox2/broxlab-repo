@@ -145,6 +145,49 @@
     border-color: rgba(13, 110, 253, 0.25);
 }
 
+/* Provider filter toolbar */
+.ai-filter-toolbar {
+    gap: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.ai-filter-toolbar .form-control,
+.ai-filter-toolbar .form-select {
+    min-width: 160px;
+}
+.ai-filter-toolbar .input-group {
+    max-width: 320px;
+}
+
+/* Health pills */
+.provider-health-pill {
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-radius: 999px;
+    padding: 3px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.provider-health-pill.success {
+    background: #198754;
+    color: #fff;
+}
+.provider-health-pill.error {
+    background: #dc3545;
+    color: #fff;
+}
+.provider-health-pill.unknown {
+    background: #6c757d;
+    color: #fff;
+}
+.provider-health-timestamp {
+    font-size: 12px;
+    color: #6c757d;
+}
+
 @media (max-width: 991.98px) {
     .ai-system-table thead {
         display: none;
@@ -209,6 +252,17 @@
         min-height: auto;
     }
 }
+
+@media (max-width: 767.98px) {
+    .ai-filter-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .ai-filter-toolbar .form-select,
+    .ai-filter-toolbar .input-group {
+        width: 100%;
+    }
+}
 </style>
 {% endblock %}
 {% block content %}
@@ -236,6 +290,35 @@
                         <i class="bi bi-plus-lg me-1"></i>Add Custom Provider
                     </button>
                 </div>
+                <div class="card-body border-bottom bg-white py-2">
+                    <div class="ai-filter-toolbar">
+                        <div class="input-group input-group-sm flex-fill">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="search" class="form-control" id="providerSearchInput" placeholder="Search providers...">
+                        </div>
+                        <select class="form-select form-select-sm" id="providerStatusFilter">
+                            <option value="all">Status: All</option>
+                            <option value="active">Status: Active</option>
+                            <option value="inactive">Status: Inactive</option>
+                        </select>
+                        <select class="form-select form-select-sm" id="providerApiKeyFilter">
+                            <option value="all">API Key: All</option>
+                            <option value="keyed">Configured</option>
+                            <option value="missing">Missing</option>
+                        </select>
+                        <select class="form-select form-select-sm" id="providerMultimodalFilter">
+                            <option value="all">Multimodal: All</option>
+                            <option value="yes">Multimodal</option>
+                            <option value="no">No Multimodal</option>
+                        </select>
+                        <select class="form-select form-select-sm" id="providerHealthFilter">
+                            <option value="all">Health: All</option>
+                            <option value="success">Last success</option>
+                            <option value="error">Last failure</option>
+                            <option value="unknown">Not tested</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle ai-system-table" id="providersTable">
@@ -244,6 +327,7 @@
                                     <th>Provider</th>
                                     <th>Endpoint</th>
                                     <th>Status</th>
+                                    <th>Health</th>
                                     <th>Multimodal</th>
                                     <th>Default</th>
                                     <th>API Key</th>
@@ -252,7 +336,12 @@
                             </thead>
                               <tbody>
                                   {% for provider in providers %}
-                                  <tr data-provider-id="{{ provider.id }}" data-provider-name="{{ provider.provider_name }}">
+                                  <tr data-provider-id="{{ provider.id }}"
+                                      data-provider-name="{{ provider.provider_name }}"
+                                      data-display-name="{{ provider.display_name|e('html_attr') }}"
+                                      data-has-key="{{ provider.has_api_key ? '1' : '0' }}"
+                                      data-supports-multimodal="{{ provider.supports_multimodal ? '1' : '0' }}"
+                                      data-is-active="{{ provider.is_active ? '1' : '0' }}">
                                       <td data-label="Provider">
                                           <div class="d-flex align-items-center">
                                             <div class="provider-icon me-3">
@@ -313,6 +402,14 @@
                                                     {{ provider.is_active ? 'Active' : 'Inactive' }}
                                                 </span>
                                             </label>
+                                        </div>
+                                    </td>
+                                    <td data-label="Health">
+                                        <div class="d-flex flex-column gap-1 align-items-start">
+                                            <span class="provider-health-pill unknown" data-provider-name="{{ provider.provider_name }}" title="Not tested yet">
+                                                Not tested
+                                            </span>
+                                            <small class="provider-health-timestamp" data-provider-name="{{ provider.provider_name }}">Not tested</small>
                                         </div>
                                     </td>
                                     <td data-label="Multimodal">
@@ -637,8 +734,22 @@
                         <i class="bi bi-info-circle me-2 text-primary"></i>Current Configuration
                     </h6>
                 </div>
-                <div class="card-body">
-                    {% if default_provider %}
+            <div class="card-body">
+                <div class="provider-status-summary mb-3 d-flex flex-wrap gap-2">
+                    <span class="badge bg-success">
+                        Active <strong id="providerSummaryActiveCount">0</strong>
+                    </span>
+                    <span class="badge bg-warning text-dark">
+                        Needs Key <strong id="providerSummaryNeedsKeyCount">0</strong>
+                    </span>
+                    <span class="badge bg-info text-dark">
+                        Tested <strong id="providerSummaryTestedCount">0</strong>
+                    </span>
+                    <span class="badge bg-secondary">
+                        Last test <strong id="providerSummaryLastTestedTime">Not run</strong>
+                    </span>
+                </div>
+                {% if default_provider %}
                     <div class="mb-3">
                         <small class="text-muted d-block">Frontend AI (Assistant)</small>
                         <strong>{% if settings.frontend_provider == 'openrouter' %}OpenRouter{% elseif settings.frontend_provider == 'fireworks' %}Fireworks AI{% else %}{{ settings.frontend_provider|default('OpenRouter')|upper }}{% endif %}</strong>

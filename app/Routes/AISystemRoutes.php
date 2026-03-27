@@ -18,7 +18,7 @@ require_once $aiProviderPath ?: (__DIR__ . '/../Models/AIProvider.php');
 require_once __DIR__ . '/../Helpers/OCRService.php';
 require_once __DIR__ . '/../Helpers/NodeOCRClient.php';
 $ocrService = new OCRService();
-$nodeOCRClient = new NodeOCRClient('http://localhost:7020');
+$nodeOCRClient = new NodeOCRClient(getenv('OCR_API_URL') ?: 'http://localhost:3000/api/ocr');
 
 // Centralize AI assistant/coplay endpoints here. We still reuse shared handler functions
 // (aiChatHandleRequest, aiChatSendJson, aiChatStreamContent, ...) from AISystemController,

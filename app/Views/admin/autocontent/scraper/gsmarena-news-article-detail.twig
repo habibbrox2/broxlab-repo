@@ -1,0 +1,209 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}{{ article.title }} - GSMArena News - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">News Article Detail</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ base_url('admin/scraper/gsmarena-news') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ base_url('admin/scraper/gsmarena-news/articles') }}">Articles</a></li>
+                    <li class="breadcrumb-item active">Detail</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{{ article.url }}" target="_blank" class="btn btn-outline-primary me-2">
+                <i class="fas fa-external-link-alt me-1"></i> View Original
+            </a>
+            <a href="{{ base_url('admin/scraper/gsmarena-news/articles') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Articles
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Article Image -->
+            {% if article.image_url %}
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-0">
+                        <img src="{{ article.image_url }}" alt="{{ article.title }}" class="w-100 rounded-top" style="max-height: 400px; object-fit: cover;">
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Article Content -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h2 class="card-title mb-3">{{ article.title }}</h2>
+                    {% if article.summary %}
+                        <p class="lead text-muted">{{ article.summary }}</p>
+                    {% endif %}
+                    <hr>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <strong>News ID:</strong>
+                            <span class="badge bg-light text-dark">{{ article.news_id }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Published:</strong>
+                            {% if article.published_at %}
+                                <span class="badge bg-light text-dark">{{ article.published_at|date('F d, Y H:i') }}</span>
+                            {% else %}
+                                <span class="text-muted">Not available</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Scraped:</strong>
+                            <span class="badge bg-light text-dark">{{ article.scraped_at|date('F d, Y H:i') }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Last Updated:</strong>
+                            <span class="badge bg-light text-dark">{{ article.updated_at|date('F d, Y H:i') }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Article URL -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Source URL</h5>
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="{{ article.url }}" readonly>
+                        <a href="{{ article.url }}" target="_blank" class="btn btn-outline-primary">
+                            <i class="fas fa-external-link-alt"></i> Open
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Quick Actions</h5>
+                    <div class="d-grid gap-2">
+                        <a href="{{ article.url }}" target="_blank" class="btn btn-primary">
+                            <i class="fas fa-external-link-alt me-1"></i> View Original Article
+                        </a>
+                        <a href="{{ base_url('admin/scraper/gsmarena-news/articles') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list me-1"></i> View All Articles
+                        </a>
+                        <a href="{{ base_url('admin/scraper/gsmarena-news') }}" class="btn btn-outline-info">
+                            <i class="fas fa-tachometer-alt me-1"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Article Info -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Article Information</h5>
+                    <table class="table table-sm">
+                        <tr>
+                            <th class="text-muted" style="width: 40%;">ID</th>
+                            <td>{{ article.id }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">News ID</th>
+                            <td>{{ article.news_id }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Image URL</th>
+                            <td>
+                                {% if article.image_url %}
+                                    <a href="{{ article.image_url }}" target="_blank" class="text-decoration-none">
+                                        <i class="fas fa-image me-1"></i> View
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">No image</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Has Summary</th>
+                            <td>
+                                {% if article.summary %}
+                                    <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Published Date</th>
+                            <td>
+                                {% if article.published_at %}
+                                    {{ article.published_at|date('Y-m-d H:i:s') }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Scraped At</th>
+                            <td>{{ article.scraped_at|date('Y-m-d H:i:s') }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Updated At</th>
+                            <td>{{ article.updated_at|date('Y-m-d H:i:s') }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Delete Article -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3 text-danger">Danger Zone</h5>
+                    <p class="text-muted small">Once you delete an article, there is no going back. Please be certain.</p>
+                    <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <i class="fas fa-trash me-1"></i> Delete This Article
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Delete Article</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this article?</p>
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ article.title }}</h6>
+                        <p class="card-text text-muted small mb-0">{{ article.url }}</p>
+                    </div>
+                </div>
+                <p class="text-danger small mt-3">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ base_url('admin/scraper/gsmarena-news/articles/' ~ article.id ~ '/delete') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i> Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,286 @@
+import { FastifyRequest, FastifyReply } from 'fastify';
+import { OpenRouterProvider } from '../providers/openrouter.provider.js';
+import { config } from '../config/index.js';
+import { query, queryOne } from '../config/database.js';
+import { Message } from '../types/index.js';
+import logger from '../utils/logger.js';
+
+export interface ChatRequest {
+    messages: Message[];
+    stream?: boolean;
+    options?: {
+        model?: string;
+        temperature?: number;
+        maxTokens?: number;
+    };
+    context?: Record<string, any>;
+    visitorToken?: string;
+}
+
+export interface ChatResponse {
+    success: boolean;
+    content?: string;
+    meta?: {
+        model: string;
+        provider: string;
+        tokensUsed?: number;
+        finishReason?: string;
+        executionTimeMs?: number;
+    };
+    error?: string;
+}
+
+export class ChatService {
+    private provider: OpenRouterProvider;
+    private maxMessages: number;
+    private maxChars: number;
+
+    constructor() {
+        this.provider = new OpenRouterProvider(
+            config.ai.openrouter.apiKey || '',
+            config.ai.defaultModel
+        );
+        this.maxMessages = 20;
+        this.maxChars = 4000;
+    }
+
+    /**
+     * Handle chat request
+     */
+    async handleChat(
+        request: FastifyRequest,
+        reply: FastifyReply,
+        isAdmin: boolean
+    ): Promise<void> {
+        const body = request.body as ChatRequest;
+        const { messages, stream, options, context } = body;
+
+        // Normalize messages
+        const normalizedMessages = this.normalizeMessages(messages);
+        if (!normalizedMessages) {
+            reply.code(400).send({
+                success: false,
+                error: 'Invalid messages format',
+            });
+            return;
+        }
+
+        // Build system prompt
+        const systemPrompt = await this.buildSystemPrompt(isAdmin, context);
+
+        // Handle streaming or non-streaming
+        if (stream) {
+            await this.handleStreamingChat(
+                reply,
+                systemPrompt,
+                normalizedMessages,
+                options
+            );
+        } else {
+            await this.handleNonStreamingChat(
+                reply,
+                systemPrompt,
+                normalizedMessages,
+                options
+            );
+        }
+    }
+
+    /**
+     * Normalize messages array
+     */
+    private normalizeMessages(messages: Message[]): Message[] | null {
+        if (!Array.isArray(messages) || messages.length === 0) {
+            return null;
+        }
+
+        // Limit messages
+        const limited = messages.slice(-this.maxMessages);
+
+        // Validate each message
+        const valid = limited.filter(msg => {
+            if (!msg || typeof msg !== 'object') return false;
+            if (
+                !['user', 'assistant', 'system'].includes(msg.role)
+            ) return false;
+            if (typeof msg.content !== 'string') return false;
+            if (msg.content.length > this.maxChars) return false;
+            return true;
+        });
+
+        return valid;
+    }
+
+    /**
+     * Build system prompt
+     */
+    private async buildSystemPrompt(
+        isAdmin: boolean,
+        context?: Record<string, any>
+    ): Promise<string> {
+        let prompt = isAdmin
+            ? 'You are an AI assistant for BroxLab admin panel. Help administrators manage their website efficiently.'
+            : 'You are a helpful AI assistant for BroxLab. Provide accurate and helpful responses to users.';
+
+        // Add context if provided
+        if (context && Object.keys(context).length > 0) {
+            prompt += '\n\n[USER CONTEXT]\n';
+            for (const [key, value] of Object.entries(context)) {
+                if (typeof value === 'string' || typeof value === 'number') {
+                    prompt += `${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}\n`;
+                }
+            }
+        }
+
+        return prompt;
+    }
+
+    /**
+     * Handle non-streaming chat
+     */
+    private async handleNonStreamingChat(
+        reply: FastifyReply,
+        systemPrompt: string,
+        messages: Message[],
+        options?: ChatRequest['options']
+    ): Promise<void> {
+        try {
+            const startTime = Date.now();
+
+            const response = await this.provider.chat(
+                systemPrompt,
+                messages,
+                {
+                    model: options?.model || config.ai.frontendModel,
+                    temperature: options?.temperature || config.ai.temperature,
+                    maxTokens: options?.maxTokens || config.ai.maxTokens,
+                }
+            );
+
+            const executionTime = Date.now() - startTime;
+
+            // Log usage
+            await this.logUsage(response.meta, executionTime);
+
+            reply.send({
+                success: true,
+                content: response.content,
+                meta: {
+                    ...response.meta,
+                    executionTimeMs: executionTime,
+                },
+            });
+        } catch (error: any) {
+            logger.error('Chat error:', error);
+            reply.code(500).send({
+                success: false,
+                error: error.message || 'Failed to process chat request',
+            });
+        }
+    }
+
+    /**
+     * Handle streaming chat with SSE
+     */
+    private async handleStreamingChat(
+        reply: FastifyReply,
+        systemPrompt: string,
+        messages: Message[],
+        options?: ChatRequest['options']
+    ): Promise<void> {
+        reply.raw.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no',
+        });
+
+        try {
+            const startTime = Date.now();
+            let fullContent = '';
+            let model = '';
+
+            for await (const chunk of this.provider.streamChat(
+                systemPrompt,
+                messages,
+                {
+                    model: options?.model || config.ai.frontendModel,
+                    temperature: options?.temperature || config.ai.temperature,
+                    maxTokens: options?.maxTokens || config.ai.maxTokens,
+                }
+            )) {
+                if (chunk.content) {
+                    fullContent += chunk.content;
+                    reply.raw.write(`data: ${JSON.stringify({ content: chunk.content })}\n\n`);
+                }
+
+                if (chunk.meta) {
+                    model = chunk.meta.model;
+                    const executionTime = Date.now() - startTime;
+
+                    // Send final meta
+                    reply.raw.write(
+                        `data: ${JSON.stringify({
+                            done: true,
+                            meta: {
+                                ...chunk.meta,
+                                executionTimeMs: executionTime,
+                            },
+                        })}\n\n`
+                    );
+
+                    // Log usage
+                    await this.logUsage(
+                        {
+                            model,
+                            provider: chunk.meta.provider,
+                            finishReason: chunk.meta.finishReason,
+                        },
+                        executionTime
+                    );
+                }
+            }
+
+            reply.raw.end();
+        } catch (error: any) {
+            logger.error('Streaming chat error:', error);
+            reply.raw.write(
+                `data: ${JSON.stringify({ error: error.message || 'Stream error' })}\n\n`
+            );
+            reply.raw.end();
+        }
+    }
+
+    /**
+     * Log usage to database
+     */
+    private async logUsage(
+        meta: any,
+        executionTime: number
+    ): Promise<void> {
+        try {
+            // Check if usage table exists
+            const tableExists = await queryOne(
+                `SELECT COUNT(*) as count FROM information_schema.tables 
+                 WHERE table_schema = DATABASE() AND table_name = 'ai_chat_usage'`
+            );
+
+            if (tableExists && tableExists.count > 0) {
+                await query(
+                    `INSERT INTO ai_chat_usage 
+                     (provider, model, tokens_used, finish_reason, execution_time_ms, created_at)
+                     VALUES (?, ?, ?, ?, NOW())`,
+                    [
+                        meta.provider || 'openrouter',
+                        meta.model || 'unknown',
+                        meta.tokensUsed || 0,
+                        meta.finishReason || 'unknown',
+                        executionTime,
+                    ]
+                );
+            }
+        } catch (error) {
+            logger.error('Failed to log usage:', error);
+        }
+    }
+}

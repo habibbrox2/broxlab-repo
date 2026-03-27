@@ -16,6 +16,18 @@ use App\Modules\Scraper\ImageDownloaderService;
 use App\Modules\Scraper\MultiLayerScraperService;
 use App\Modules\Scraper\SitemapCrawlerService;
 use App\Modules\Scraper\BrowserScraperService;
+use App\Modules\Scraper\TeletalkScraperService;
+use App\Modules\Scraper\BDNews24ScraperService;
+use App\Modules\Scraper\MobileDokanScraperService;
+use App\Modules\Scraper\HttpClientService;
+use App\Helpers\JsonResponse;
+
+// Scraper models
+require_once __DIR__ . '/../Models/TeletalkJobModel.php';
+require_once __DIR__ . '/../Models/BDNews24ArticleModel.php';
+require_once __DIR__ . '/../Models/MobilePhoneModel.php';
+require_once __DIR__ . '/../Models/GSMArenaDeviceModel.php';
+require_once __DIR__ . '/../Models/GSMArenaNewsModel.php';
 
 // Ensure database tables exist
 $autoContentModel = new AutoContentModel($mysqli);
@@ -2497,6 +2509,128 @@ $router->post('/admin/autocontent/api/collect-single', ['middleware' => ['auth',
         $collected = 0;
         $fallbackWarning = null;
 
+        // Check if it's Teletalk
+        if (stripos($source['url'] ?? '', 'teletalk.com.bd') !== false) {
+            require_once __DIR__ . '/../Modules/Scraper/TeletalkScraperService.php';
+            require_once __DIR__ . '/../Models/TeletalkJobModel.php';
+
+            $httpClient = new \App\Modules\Scraper\HttpClientService();
+            $teletalkScraper = new \App\Modules\Scraper\TeletalkScraperService($httpClient);
+            $teletalkScraper->setDatabase($mysqli);
+            $teletalkModel = new \TeletalkJobModel($mysqli);
+
+            // Enqueue listing pages
+            $enqueueResult = $teletalkScraper->enqueueListingPages(3);
+
+            if (!$enqueueResult['success']) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to enqueue Teletalk pages: ' . ($enqueueResult['error'] ?? 'Unknown error')
+                ]);
+                exit;
+            }
+
+            // Process queue items
+            $processed = 0;
+            $jobsSaved = 0;
+            $errors = 0;
+
+            $stmt = $mysqli->prepare(
+                "SELECT q.id, q.url, q.attempts, q.max_attempts
+                 FROM autocontent_scrape_queue q
+                 INNER JOIN autocontent_sources s ON s.id = q.source_id
+                 WHERE s.url LIKE '%teletalk%' AND q.status = 'pending'
+                 ORDER BY q.priority ASC, q.next_attempt ASC
+                 LIMIT 20"
+            );
+            $stmt->execute();
+            $result = $stmt->get_result();
+
+            while ($row = $result->fetch_assoc()) {
+                $queueId = (int)$row['id'];
+                $url = $row['url'];
+                $attempts = (int)$row['attempts'];
+                $maxAttempts = (int)$row['max_attempts'];
+
+                // Update queue status to processing
+                $updateStmt = $mysqli->prepare(
+                    "UPDATE autocontent_scrape_queue
+                     SET status = 'processing', attempts = attempts + 1, last_attempt = NOW(), updated_at = NOW()
+                     WHERE id = ?"
+                );
+                $updateStmt->bind_param('i', $queueId);
+                $updateStmt->execute();
+                $updateStmt->close();
+
+                // Process queue item
+                $processResult = $teletalkScraper->processQueueItem($queueId, $url);
+
+                if ($processResult['success']) {
+                    // Save jobs to database
+                    foreach ($processResult['jobs'] as $job) {
+                        $saveResult = $teletalkModel->saveJob($job);
+                        if ($saveResult['success']) {
+                            $jobsSaved++;
+                        }
+                    }
+
+                    // Mark queue item as completed
+                    $completeStmt = $mysqli->prepare(
+                        "UPDATE autocontent_scrape_queue
+                         SET status = 'completed', updated_at = NOW()
+                         WHERE id = ?"
+                    );
+                    $completeStmt->bind_param('i', $queueId);
+                    $completeStmt->execute();
+                    $completeStmt->close();
+
+                    $processed++;
+                } else {
+                    // Check if should retry
+                    if ($attempts < $maxAttempts) {
+                        $retryDelay = pow(2, $attempts) * 60;
+                        $retryTime = date('Y-m-d H:i:s', time() + $retryDelay);
+
+                        $retryStmt = $mysqli->prepare(
+                            "UPDATE autocontent_scrape_queue
+                             SET status = 'pending', next_attempt = ?, error_message = ?, updated_at = NOW()
+                             WHERE id = ?"
+                        );
+                        $errorMsg = substr($processResult['error'] ?? 'Unknown error', 0, 255);
+                        $retryStmt->bind_param('ssi', $retryTime, $errorMsg, $queueId);
+                        $retryStmt->execute();
+                        $retryStmt->close();
+                    } else {
+                        // Mark as failed
+                        $failStmt = $mysqli->prepare(
+                            "UPDATE autocontent_scrape_queue
+                             SET status = 'failed', error_message = ?, updated_at = NOW()
+                             WHERE id = ?"
+                        );
+                        $errorMsg = substr($processResult['error'] ?? 'Max attempts reached', 0, 255);
+                        $failStmt->bind_param('si', $errorMsg, $queueId);
+                        $failStmt->execute();
+                        $failStmt->close();
+                    }
+                    $errors++;
+                }
+            }
+            $stmt->close();
+
+            // Update last fetched time
+            $model->updateLastFetched($sourceId);
+
+            echo json_encode([
+                'success' => true,
+                'engine' => 'teletalk',
+                'collected' => $jobsSaved,
+                'processed' => $processed,
+                'errors' => $errors,
+                'message' => "Teletalk scraper collected {$jobsSaved} job(s) from {$source['name']}"
+            ]);
+            exit;
+        }
+
         // Check if it's Prothom Alo
         if (stripos($source['url'] ?? '', 'prothomalo.com') !== false) {
             $prothomResult = $prothomAloScraper->scrapeHomepage($source['url']);
@@ -2696,6 +2830,130 @@ $router->post('/admin/autocontent/api/collect-multi', ['middleware' => ['auth', 
                 $warnings[] = $sourceResult['source_name'] . ': Node scraper failed (' . $nodeError . ')';
             }
 
+            // Check if it's Teletalk
+            if (stripos($source['url'] ?? '', 'teletalk.com.bd') !== false) {
+                require_once __DIR__ . '/../Modules/Scraper/TeletalkScraperService.php';
+                require_once __DIR__ . '/../Models/TeletalkJobModel.php';
+
+                $httpClient = new \App\Modules\Scraper\HttpClientService();
+                $teletalkScraper = new \App\Modules\Scraper\TeletalkScraperService($httpClient);
+                $teletalkScraper->setDatabase($mysqli);
+                $teletalkModel = new \TeletalkJobModel($mysqli);
+
+                // Enqueue listing pages
+                $enqueueResult = $teletalkScraper->enqueueListingPages(3);
+
+                if (!$enqueueResult['success']) {
+                    $sourceResult['errors'][] = 'Failed to enqueue Teletalk pages: ' . ($enqueueResult['error'] ?? 'Unknown error');
+                    $sourceResults[] = $sourceResult;
+                    continue;
+                }
+
+                // Process queue items
+                $processed = 0;
+                $jobsSaved = 0;
+                $errors = 0;
+
+                $stmt = $mysqli->prepare(
+                    "SELECT q.id, q.url, q.attempts, q.max_attempts
+                     FROM autocontent_scrape_queue q
+                     INNER JOIN autocontent_sources s ON s.id = q.source_id
+                     WHERE s.url LIKE '%teletalk%' AND q.status = 'pending'
+                     ORDER BY q.priority ASC, q.next_attempt ASC
+                     LIMIT ?"
+                );
+                $stmt->bind_param('i', 20);
+                $stmt->execute();
+                $result = $stmt->get_result();
+
+                while ($row = $result->fetch_assoc()) {
+                    $queueId = (int)$row['id'];
+                    $url = $row['url'];
+                    $attempts = (int)$row['attempts'];
+                    $maxAttempts = (int)$row['max_attempts'];
+
+                    // Update queue status to processing
+                    $updateStmt = $mysqli->prepare(
+                        "UPDATE autocontent_scrape_queue
+                         SET status = 'processing', attempts = attempts + 1, last_attempt = NOW(), updated_at = NOW()
+                         WHERE id = ?"
+                    );
+                    $updateStmt->bind_param('i', $queueId);
+                    $updateStmt->execute();
+                    $updateStmt->close();
+
+                    // Process queue item
+                    $processResult = $teletalkScraper->processQueueItem($queueId, $url);
+
+                    if ($processResult['success']) {
+                        // Save jobs to database
+                        foreach ($processResult['jobs'] as $job) {
+                            $saveResult = $teletalkModel->saveJob($job);
+                            if ($saveResult['success']) {
+                                $jobsSaved++;
+                            }
+                        }
+
+                        // Mark queue item as completed
+                        $completeStmt = $mysqli->prepare(
+                            "UPDATE autocontent_scrape_queue
+                             SET status = 'completed', updated_at = NOW()
+                             WHERE id = ?"
+                        );
+                        $completeStmt->bind_param('i', $queueId);
+                        $completeStmt->execute();
+                        $completeStmt->close();
+
+                        $processed++;
+                    } else {
+                        // Check if should retry
+                        if ($attempts < $maxAttempts) {
+                            $retryDelay = pow(2, $attempts) * 60;
+                            $retryTime = date('Y-m-d H:i:s', time() + $retryDelay);
+
+                            $retryStmt = $mysqli->prepare(
+                                "UPDATE autocontent_scrape_queue
+                                 SET status = 'pending', next_attempt = ?, error_message = ?, updated_at = NOW()
+                                 WHERE id = ?"
+                            );
+                            $errorMsg = substr($processResult['error'] ?? 'Unknown error', 0, 255);
+                            $retryStmt->bind_param('ssi', $retryTime, $errorMsg, $queueId);
+                            $retryStmt->execute();
+                            $retryStmt->close();
+                        } else {
+                            // Mark as failed
+                            $failStmt = $mysqli->prepare(
+                                "UPDATE autocontent_scrape_queue
+                                 SET status = 'failed', error_message = ?, updated_at = NOW()
+                                 WHERE id = ?"
+                            );
+                            $errorMsg = substr($processResult['error'] ?? 'Max attempts reached', 0, 255);
+                            $failStmt->bind_param('si', $errorMsg, $queueId);
+                            $failStmt->execute();
+                            $failStmt->close();
+                        }
+                        $errors++;
+                    }
+                }
+                $stmt->close();
+
+                $sourceResult['success'] = true;
+                $sourceResult['articles_collected'] = $jobsSaved;
+                $sourceResult['errors'] = [];
+                $sourceResult['warnings'] = [];
+
+                $totalCollected += $jobsSaved;
+                $totalLinksFound += $processed;
+                $stepsCompleted = max($stepsCompleted, 5);
+
+                if ($jobsSaved > 0) {
+                    $model->updateLastFetched((int)$source['id']);
+                }
+
+                $sourceResults[] = $sourceResult;
+                continue;
+            }
+
             // Check if source has selectors configured
             if (empty($source['selector_list_item']) && empty($source['selector_list_title'])) {
                 $sourceResult['warnings'][] = 'Missing CSS selectors (list item/title)';
@@ -2842,6 +3100,127 @@ $router->post('/admin/autocontent/api/collect', ['middleware' => ['auth', 'admin
                     $sourceResult['status'] = 'warning';
                     $sourceResult['error'] = 'Node scraper failed: ' . ($node['error'] ?? 'node_scraper_failed');
                     // Fall back to PHP scraping below (best-effort) without duplicating source_results
+                }
+
+                // Check if it's Teletalk
+                if (stripos($source['url'] ?? '', 'teletalk.com.bd') !== false) {
+                    require_once __DIR__ . '/../Modules/Scraper/TeletalkScraperService.php';
+                    require_once __DIR__ . '/../Models/TeletalkJobModel.php';
+
+                    $httpClient = new \App\Modules\Scraper\HttpClientService();
+                    $teletalkScraper = new \App\Modules\Scraper\TeletalkScraperService($httpClient);
+                    $teletalkScraper->setDatabase($mysqli);
+                    $teletalkModel = new \TeletalkJobModel($mysqli);
+
+                    // Enqueue listing pages
+                    $enqueueResult = $teletalkScraper->enqueueListingPages(3);
+
+                    if (!$enqueueResult['success']) {
+                        $sourceResult['status'] = 'error';
+                        $sourceResult['error'] = 'Failed to enqueue Teletalk pages: ' . ($enqueueResult['error'] ?? 'Unknown error');
+                        $sourceResults[] = $sourceResult;
+                        continue;
+                    }
+
+                    // Process queue items
+                    $processed = 0;
+                    $jobsSaved = 0;
+                    $errors = 0;
+
+                    $stmt = $mysqli->prepare(
+                        "SELECT q.id, q.url, q.attempts, q.max_attempts
+                         FROM autocontent_scrape_queue q
+                         INNER JOIN autocontent_sources s ON s.id = q.source_id
+                         WHERE s.url LIKE '%teletalk%' AND q.status = 'pending'
+                         ORDER BY q.priority ASC, q.next_attempt ASC
+                         LIMIT ?"
+                    );
+                    $stmt->bind_param('i', 20);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+
+                    while ($row = $result->fetch_assoc()) {
+                        $queueId = (int)$row['id'];
+                        $url = $row['url'];
+                        $attempts = (int)$row['attempts'];
+                        $maxAttempts = (int)$row['max_attempts'];
+
+                        // Update queue status to processing
+                        $updateStmt = $mysqli->prepare(
+                            "UPDATE autocontent_scrape_queue
+                             SET status = 'processing', attempts = attempts + 1, last_attempt = NOW(), updated_at = NOW()
+                             WHERE id = ?"
+                        );
+                        $updateStmt->bind_param('i', $queueId);
+                        $updateStmt->execute();
+                        $updateStmt->close();
+
+                        // Process queue item
+                        $processResult = $teletalkScraper->processQueueItem($queueId, $url);
+
+                        if ($processResult['success']) {
+                            // Save jobs to database
+                            foreach ($processResult['jobs'] as $job) {
+                                $saveResult = $teletalkModel->saveJob($job);
+                                if ($saveResult['success']) {
+                                    $jobsSaved++;
+                                }
+                            }
+
+                            // Mark queue item as completed
+                            $completeStmt = $mysqli->prepare(
+                                "UPDATE autocontent_scrape_queue
+                                 SET status = 'completed', updated_at = NOW()
+                                 WHERE id = ?"
+                            );
+                            $completeStmt->bind_param('i', $queueId);
+                            $completeStmt->execute();
+                            $completeStmt->close();
+
+                            $processed++;
+                        } else {
+                            // Check if should retry
+                            if ($attempts < $maxAttempts) {
+                                $retryDelay = pow(2, $attempts) * 60;
+                                $retryTime = date('Y-m-d H:i:s', time() + $retryDelay);
+
+                                $retryStmt = $mysqli->prepare(
+                                    "UPDATE autocontent_scrape_queue
+                                     SET status = 'pending', next_attempt = ?, error_message = ?, updated_at = NOW()
+                                     WHERE id = ?"
+                                );
+                                $errorMsg = substr($processResult['error'] ?? 'Unknown error', 0, 255);
+                                $retryStmt->bind_param('ssi', $retryTime, $errorMsg, $queueId);
+                                $retryStmt->execute();
+                                $retryStmt->close();
+                            } else {
+                                // Mark as failed
+                                $failStmt = $mysqli->prepare(
+                                    "UPDATE autocontent_scrape_queue
+                                     SET status = 'failed', error_message = ?, updated_at = NOW()
+                                     WHERE id = ?"
+                                );
+                                $errorMsg = substr($processResult['error'] ?? 'Max attempts reached', 0, 255);
+                                $failStmt->bind_param('si', $errorMsg, $queueId);
+                                $failStmt->execute();
+                                $failStmt->close();
+                            }
+                            $errors++;
+                        }
+                    }
+                    $stmt->close();
+
+                    $collected += $jobsSaved;
+                    $sourceResult['articles_collected'] = $jobsSaved;
+                    $sourceResult['status'] = 'success';
+                    $sourceResult['error'] = null;
+
+                    if ($jobsSaved > 0) {
+                        $model->updateLastFetched((int)$source['id']);
+                    }
+
+                    $sourceResults[] = $sourceResult;
+                    continue;
                 }
 
                 // Check if it's Prothom Alo
@@ -5044,4 +5423,1018 @@ $router->post('/admin/autocontent/api/scrape-nodejs', ['middleware' => ['auth', 
     }
 
     exit;
+});
+
+// ================== SCRAPER INTEGRATION ==================
+
+/**
+ * Scraper Dashboard (Unified)
+ * GET /admin/autocontent/scraper
+ */
+$router->get('/admin/autocontent/scraper', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    try {
+        $model = new AutoContentModel($mysqli);
+
+        // Get scraper-specific stats with error handling for missing tables
+        $stats = [
+            'teletalk' => [
+                'total' => 0,
+                'recent' => [],
+                'last_scrape' => null
+            ],
+            'bdnews24' => [
+                'total' => 0,
+                'recent' => [],
+                'last_scrape' => null
+            ],
+            'mobiledokan' => [
+                'total' => 0,
+                'recent' => [],
+                'last_scrape' => null
+            ],
+            'gsmarena_devices' => [
+                'total' => 0,
+                'recent' => [],
+                'last_scrape' => null
+            ],
+            'gsmarena_news' => [
+                'total' => 0,
+                'recent' => [],
+                'last_scrape' => null
+            ]
+        ];
+
+        // Teletalk stats
+        try {
+            $teletalkModel = new TeletalkJobModel($mysqli);
+            $stats['teletalk']['total'] = $teletalkModel->getTotalCount();
+            $stats['teletalk']['recent'] = $teletalkModel->getRecentJobs(5);
+        } catch (Throwable $e) {
+            error_log("Teletalk stats error: " . $e->getMessage());
+        }
+
+        // BDNews24 stats
+        try {
+            $bdnews24Model = new BDNews24ArticleModel($mysqli);
+            $stats['bdnews24']['total'] = $bdnews24Model->getTotalCount();
+            $stats['bdnews24']['recent'] = $bdnews24Model->getRecentArticles(5);
+        } catch (Throwable $e) {
+            error_log("BDNews24 stats error: " . $e->getMessage());
+        }
+
+        // MobileDokan stats
+        try {
+            $mobilePhoneModel = new MobilePhoneModel($mysqli);
+            $stats['mobiledokan']['total'] = $mobilePhoneModel->getTotalCount();
+            $stats['mobiledokan']['recent'] = $mobilePhoneModel->getRecentPhones(5);
+        } catch (Throwable $e) {
+            error_log("MobileDokan stats error: " . $e->getMessage());
+        }
+
+        // GSMArena Devices stats
+        try {
+            $gsmarenaDeviceModel = new GSMArenaDeviceModel($mysqli);
+            $stats['gsmarena_devices']['total'] = $gsmarenaDeviceModel->getTotalCount();
+            $stats['gsmarena_devices']['recent'] = $gsmarenaDeviceModel->getRecentDevices(5);
+        } catch (Throwable $e) {
+            error_log("GSMArena Devices stats error: " . $e->getMessage());
+        }
+
+        // GSMArena News stats
+        try {
+            $gsmarenaNewsModel = new GSMArenaNewsModel($mysqli);
+            $stats['gsmarena_news']['total'] = $gsmarenaNewsModel->getTotalCount();
+            $stats['gsmarena_news']['recent'] = $gsmarenaNewsModel->getRecentNews(5);
+        } catch (Throwable $e) {
+            error_log("GSMArena News stats error: " . $e->getMessage());
+        }
+
+        // Load last scrape info from logs
+        $scrapeLogs = [
+            'teletalk' => __DIR__ . '/../Modules/Scraper/logs/teletalk_last_scrape.json',
+            'bdnews24' => __DIR__ . '/../Modules/Scraper/logs/bdnews24_last_scrape.json',
+            'mobiledokan' => __DIR__ . '/../Modules/Scraper/logs/mobiledokan_last_scrape.json'
+        ];
+
+        foreach ($scrapeLogs as $key => $logFile) {
+            if (file_exists($logFile)) {
+                $stats[$key]['last_scrape'] = json_decode(file_get_contents($logFile), true);
+            }
+        }
+
+        echo $twig->render('admin/autocontent/scraper/dashboard.twig', [
+            'title' => 'Scraper Dashboard',
+            'stats' => $stats,
+            'current_page' => 'autocontent-scraper'
+        ]);
+    } catch (Throwable $e) {
+        error_log("Scraper Dashboard Error: " . $e->getMessage());
+        echo "Error loading scraper dashboard: " . $e->getMessage();
+    }
+});
+
+// ================== TELETALK SCRAPER ==================
+
+/**
+ * Teletalk Scraper Dashboard
+ * GET /admin/autocontent/scraper/teletalk
+ */
+$router->get('/admin/autocontent/scraper/teletalk', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    try {
+        $model = new TeletalkJobModel($mysqli);
+
+        $totalJobs = $model->getTotalCount();
+        $recentJobs = $model->getRecentJobs(10);
+        $organizations = $model->getOrganizations();
+
+        $lastScrape = null;
+        $lastScrapeFile = __DIR__ . '/../Modules/Scraper/logs/teletalk_last_scrape.json';
+        if (file_exists($lastScrapeFile)) {
+            $lastScrape = json_decode(file_get_contents($lastScrapeFile), true);
+        }
+
+        echo $twig->render('admin/autocontent/scraper/teletalk.twig', [
+            'total_jobs' => $totalJobs,
+            'recent_jobs' => $recentJobs,
+            'organizations' => $organizations,
+            'last_scrape' => $lastScrape,
+            'page_title' => 'Teletalk Jobs Scraper',
+            'current_page' => 'autocontent-scraper-teletalk'
+        ]);
+    } catch (Throwable $e) {
+        error_log("Teletalk Scraper Error: " . $e->getMessage());
+        echo "Error loading teletalk scraper: " . $e->getMessage();
+    }
+});
+
+/**
+ * Trigger Teletalk manual scrape
+ * POST /admin/autocontent/scraper/teletalk/scrape
+ */
+$router->post('/admin/autocontent/scraper/teletalk/scrape', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    try {
+        if (!validateCsrfToken(getCsrfTokenFromRequest())) {
+            return JsonResponse::error('Invalid CSRF token', 403);
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $maxPages = (int)($input['max_pages'] ?? 3);
+        $maxPages = min(max($maxPages, 1), 10);
+
+        $httpClient = new HttpClientService();
+        $scraper = new TeletalkScraperService($httpClient);
+        $model = new TeletalkJobModel($mysqli);
+
+        $results = $scraper->scrapeAllPages($maxPages, function ($page, $totalPages, $success, $data) use ($model, $scraper) {
+            if ($success) {
+                foreach ($data as $job) {
+                    $saveResult = $model->saveJob($job);
+                    if ($saveResult['success']) {
+                        $scraper->updateStats('new_jobs', 1);
+                    } else {
+                        if (strpos($saveResult['error'], 'already exists') !== false) {
+                            $scraper->updateStats('duplicates', 1);
+                        } else {
+                            $scraper->updateStats('errors', 1);
+                        }
+                    }
+                }
+            }
+        });
+
+        $lastScrapeFile = __DIR__ . '/../Modules/Scraper/logs/teletalk_last_scrape.json';
+        $lastScrapeDir = dirname($lastScrapeFile);
+        if (!is_dir($lastScrapeDir)) {
+            mkdir($lastScrapeDir, 0755, true);
+        }
+        file_put_contents($lastScrapeFile, json_encode([
+            'timestamp' => date('Y-m-d H:i:s'),
+            'pages_scraped' => $maxPages,
+            'stats' => $scraper->getStats(),
+        ]));
+
+        return JsonResponse::success([
+            'message' => 'Scraping completed successfully',
+            'stats' => $scraper->getStats(),
+            'jobs_count' => count($results['jobs']),
+        ]);
+    } catch (Throwable $e) {
+        error_log("Teletalk Scrape Error: " . $e->getMessage());
+        return JsonResponse::error('Failed to scrape jobs: ' . $e->getMessage(), 500);
+    }
+});
+
+/**
+ * List Teletalk jobs
+ * GET /admin/autocontent/scraper/teletalk/jobs
+ */
+$router->get('/admin/autocontent/scraper/teletalk/jobs', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    try {
+        $model = new TeletalkJobModel($mysqli);
+
+        $page = (int)($_GET['page'] ?? 1);
+        $limit = (int)($_GET['limit'] ?? 20);
+        $offset = ($page - 1) * $limit;
+
+        $search = $_GET['search'] ?? '';
+        $organization = $_GET['organization'] ?? '';
+
+        if ($search) {
+            $jobs = $model->searchJobs($search, $limit, $offset);
+            $total = count($model->searchJobs($search, 1000, 0));
+        } elseif ($organization) {
+            $jobs = $model->getJobsByOrganization($organization, $limit, $offset);
+            $total = $model->getCountByOrganization($organization);
+        } else {
+            $jobs = $model->getRecentJobs($limit, $offset);
+            $total = $model->getTotalCount();
+        }
+
+        $organizations = $model->getOrganizations();
+
+        echo $twig->render('admin/autocontent/scraper/teletalk-jobs.twig', [
+            'jobs' => $jobs,
+            'organizations' => $organizations,
+            'current_page' => $page,
+            'limit' => $limit,
+            'total' => $total,
+            'total_pages' => (int)ceil($total / $limit),
+            'search' => $search,
+            'selected_organization' => $organization,
+            'page_title' => 'Teletalk Jobs',
+            'current_page' => 'autocontent-scraper-teletalk-jobs'
+        ]);
+    } catch (Throwable $e) {
+        error_log("Teletalk Jobs List Error: " . $e->getMessage());
+        echo "Error loading jobs: " . $e->getMessage();
+    }
+});
+
+/**
+ * View Teletalk job details
+ * GET /admin/autocontent/scraper/teletalk/jobs/{id}
+ */
+$router->get('/admin/autocontent/scraper/teletalk/jobs/(\d+)', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
+    try {
+        $model = new TeletalkJobModel($mysqli);
+        $job = $model->getJobById((int)$id);
+
+        if (!$job) {
+            echo $twig->render('error.twig', [
+                'error' => 'Job not found',
+                'page_title' => 'Error',
+            ]);
+            return;
+        }
+
+        echo $twig->render('admin/autocontent/scraper/teletalk-job-detail.twig', [
+            'job' => $job,
+            'page_title' => 'Job Details',
+            'current_page' => 'autocontent-scraper-teletalk-jobs'
+        ]);
+    } catch (Throwable $e) {
+        error_log("Teletalk Job Detail Error: " . $e->getMessage());
+        echo "Error loading job details: " . $e->getMessage();
+    }
+});
+
+/**
+ * Delete Teletalk job
+ * DELETE /admin/autocontent/scraper/teletalk/jobs/{id}
+ */
+$router->delete('/admin/autocontent/scraper/teletalk/jobs/(\d+)', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+    try {
+        if (!validateCsrfToken(getCsrfTokenFromRequest())) {
+            return JsonResponse::error('Invalid CSRF token', 403);
+        }
+
+        $model = new TeletalkJobModel($mysqli);
+        $result = $model->deleteJob((int)$id);
+
+        if ($result['success']) {
+            return JsonResponse::success(['message' => 'Job deleted successfully']);
+        } else {
+            return JsonResponse::error($result['error'] ?? 'Failed to delete job', 500);
+        }
+    } catch (Throwable $e) {
+        error_log("Teletalk Delete Job Error: " . $e->getMessage());
+        return JsonResponse::error('Failed to delete job: ' . $e->getMessage(), 500);
+    }
+});
+
+/**
+ * Export Teletalk jobs to JSON
+ * GET /admin/autocontent/scraper/teletalk/export/json
+ */
+$router->get('/admin/autocontent/scraper/teletalk/export/json', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    try {
+        $model = new TeletalkJobModel($mysqli);
+        $jobs = $model->getRecentJobs(1000, 0);
+
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename="teletalk-jobs-' . date('Y-m-d') . '.json"');
+
+        echo json_encode($jobs, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        exit;
+    } catch (Throwable $e) {
+        error_log("Teletalk Export JSON Error: " . $e->getMessage());
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Failed to export jobs']);
+        exit;
+    }
+});
+
+/**
+ * Export Teletalk jobs to CSV
+ * GET /admin/autocontent/scraper/teletalk/export/csv
+ */
+$router->get('/admin/autocontent/scraper/teletalk/export/csv', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    try {
+        $model = new TeletalkJobModel($mysqli);
+        $jobs = $model->getRecentJobs(1000, 0);
+
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="teletalk-jobs-' . date('Y-m-d') . '.csv"');
+
+        $output = fopen('php://output', 'w');
+        fputcsv($output, ['ID', 'Job ID', 'Title', 'Organization', 'Openings', 'URL', 'Image URL', 'Scraped At']);
+
+        foreach ($jobs as $job) {
+            fputcsv($output, [
+                $job['id'],
+                $job['job_id'],
+                $job['title'],
+                $job['organization'],
+                $job['openings'],
+                $job['url'],
+                $job['image_url'],
+                $job['scraped_at'],
+            ]);
+        }
+
+        fclose($output);
+        exit;
+    } catch (Throwable $e) {
+        error_log("Teletalk Export CSV Error: " . $e->getMessage());
+        header('Content-Type: text/plain');
+        echo 'Failed to export jobs';
+        exit;
+    }
+});
+
+// ================== BDNEWS24 SCRAPER ==================
+
+/**
+ * BDNews24 Scraper Dashboard
+ * GET /admin/autocontent/scraper/bdnews24
+ */
+$router->get('/admin/autocontent/scraper/bdnews24', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    try {
+        $model = new BDNews24ArticleModel($mysqli);
+
+        $totalArticles = $model->getTotalCount();
+        $recentArticles = $model->getRecentArticles(10);
+
+        $lastScrape = null;
+        $lastScrapeFile = __DIR__ . '/../Modules/Scraper/logs/bdnews24_last_scrape.json';
+        if (file_exists($lastScrapeFile)) {
+            $lastScrape = json_decode(file_get_contents($lastScrapeFile), true);
+        }
+
+        echo $twig->render('admin/autocontent/scraper/bdnews24.twig', [
+            'total_articles' => $totalArticles,
+            'recent_articles' => $recentArticles,
+            'last_scrape' => $lastScrape,
+            'page_title' => 'BDNews24 Scraper',
+            'current_page' => 'autocontent-scraper-bdnews24'
+        ]);
+    } catch (Throwable $e) {
+        error_log("BDNews24 Scraper Error: " . $e->getMessage());
+        echo "Error loading bdnews24 scraper: " . $e->getMessage();
+    }
+});
+
+/**
+ * Trigger BDNews24 manual scrape
+ * POST /admin/autocontent/scraper/bdnews24/scrape
+ */
+$router->post('/admin/autocontent/scraper/bdnews24/scrape', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    try {
+        if (!validateCsrfToken(getCsrfTokenFromRequest())) {
+            return JsonResponse::error('Invalid CSRF token', 403);
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $maxPages = (int)($input['max_pages'] ?? 3);
+        $maxPages = min(max($maxPages, 1), 10);
+
+        $httpClient = new HttpClientService();
+        $scraper = new BDNews24ScraperService($httpClient);
+        $model = new BDNews24ArticleModel($mysqli);
+
+        $results = $scraper->scrapeAllPages($maxPages, function ($page, $totalPages, $success, $data) use ($model, $scraper) {
+            if ($success) {
+                foreach ($data as $article) {
+                    $saveResult = $model->saveArticle($article);
+                    if ($saveResult['success']) {
+                        $scraper->updateStats('new_articles', 1);
+                    } else {
+                        if (strpos($saveResult['error'], 'already exists') !== false) {
+                            $scraper->updateStats('duplicates', 1);
+                        } else {
+                            $scraper->updateStats('errors', 1);
+                        }
+                    }
+                }
+            }
+        });
+
+
+        $lastScrapeFile = __DIR__ . '/../Modules/Scraper/logs/bdnews24_last_scrape.json';
+        $lastScrapeDir = dirname($lastScrapeFile);
+        if (!is_dir($lastScrapeDir)) {
+            mkdir($lastScrapeDir, 0755, true);
+        }
+        file_put_contents($lastScrapeFile, json_encode([
+            'timestamp' => date('Y-m-d H:i:s'),
+            'pages_scraped' => $maxPages,
+            'stats' => $scraper->getStats(),
+        ]));
+
+        return JsonResponse::success([
+            'message' => 'Scraping completed successfully',
+            'stats' => $scraper->getStats(),
+            'articles_count' => count($results['articles'] ?? []),
+        ]);
+    } catch (Throwable $e) {
+        error_log("BDNews24 Scrape Error: " . $e->getMessage());
+        return JsonResponse::error('Failed to scrape articles: ' . $e->getMessage(), 500);
+    }
+});
+
+/**
+ * List BDNews24 articles
+ * GET /admin/autocontent/scraper/bdnews24/articles
+ */
+$router->get('/admin/autocontent/scraper/bdnews24/articles', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    try {
+        $model = new BDNews24ArticleModel($mysqli);
+
+        $page = (int)($_GET['page'] ?? 1);
+        $limit = (int)($_GET['limit'] ?? 20);
+        $offset = ($page - 1) * $limit;
+
+        $search = $_GET['search'] ?? '';
+
+        if ($search) {
+            $articles = $model->searchArticles($search, $limit, $offset);
+            $total = count($model->searchArticles($search, 1000, 0));
+        } else {
+            $articles = $model->getRecentArticles($limit, $offset);
+            $total = $model->getTotalCount();
+        }
+
+        echo $twig->render('admin/autocontent/scraper/bdnews24-articles.twig', [
+            'articles' => $articles,
+            'current_page' => $page,
+            'limit' => $limit,
+            'total' => $total,
+            'total_pages' => (int)ceil($total / $limit),
+            'search' => $search,
+            'page_title' => 'BDNews24 Articles',
+            'current_page' => 'autocontent-scraper-bdnews24-articles'
+        ]);
+    } catch (Throwable $e) {
+        error_log("BDNews24 Articles List Error: " . $e->getMessage());
+        echo "Error loading articles: " . $e->getMessage();
+    }
+});
+
+/**
+ * View BDNews24 article details
+ * GET /admin/autocontent/scraper/bdnews24/articles/{id}
+ */
+$router->get('/admin/autocontent/scraper/bdnews24/articles/(\d+)', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
+    try {
+        $model = new BDNews24ArticleModel($mysqli);
+        $article = $model->getArticleById((int)$id);
+
+        if (!$article) {
+            echo $twig->render('error.twig', [
+                'error' => 'Article not found',
+                'page_title' => 'Error',
+            ]);
+            return;
+        }
+
+        echo $twig->render('admin/autocontent/scraper/bdnews24-article-detail.twig', [
+            'article' => $article,
+            'page_title' => 'Article Details',
+            'current_page' => 'autocontent-scraper-bdnews24-articles'
+        ]);
+    } catch (Throwable $e) {
+        error_log("BDNews24 Article Detail Error: " . $e->getMessage());
+        echo "Error loading article details: " . $e->getMessage();
+    }
+});
+
+/**
+ * Delete BDNews24 article
+ * DELETE /admin/autocontent/scraper/bdnews24/articles/{id}
+ */
+$router->delete('/admin/autocontent/scraper/bdnews24/articles/(\d+)', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+    try {
+        if (!validateCsrfToken(getCsrfTokenFromRequest())) {
+            return JsonResponse::error('Invalid CSRF token', 403);
+        }
+
+        $model = new BDNews24ArticleModel($mysqli);
+        $result = $model->deleteArticle((int)$id);
+
+        if ($result['success']) {
+            return JsonResponse::success(['message' => 'Article deleted successfully']);
+        } else {
+            return JsonResponse::error($result['error'] ?? 'Failed to delete article', 500);
+        }
+    } catch (Throwable $e) {
+        error_log("BDNews24 Delete Article Error: " . $e->getMessage());
+        return JsonResponse::error('Failed to delete article: ' . $e->getMessage(), 500);
+    }
+});
+
+/**
+ * Export BDNews24 articles to JSON
+ * GET /admin/autocontent/scraper/bdnews24/export/json
+ */
+$router->get('/admin/autocontent/scraper/bdnews24/export/json', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    try {
+        $model = new BDNews24ArticleModel($mysqli);
+        $articles = $model->getRecentArticles(1000, 0);
+
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename="bdnews24-articles-' . date('Y-m-d') . '.json"');
+
+        echo json_encode($articles, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        exit;
+    } catch (Throwable $e) {
+        error_log("BDNews24 Export JSON Error: " . $e->getMessage());
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Failed to export articles']);
+        exit;
+    }
+});
+
+/**
+ * Export BDNews24 articles to CSV
+ * GET /admin/autocontent/scraper/bdnews24/export/csv
+ */
+$router->get('/admin/autocontent/scraper/bdnews24/export/csv', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    try {
+        $model = new BDNews24ArticleModel($mysqli);
+        $articles = $model->getRecentArticles(1000, 0);
+
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="bdnews24-articles-' . date('Y-m-d') . '.csv"');
+
+        $output = fopen('php://output', 'w');
+        fputcsv($output, ['ID', 'Title', 'URL', 'Author', 'Published At', 'Scraped At']);
+
+        foreach ($articles as $article) {
+            fputcsv($output, [
+                $article['id'],
+                $article['title'],
+                $article['url'],
+                $article['author'],
+                $article['published_at'],
+                $article['scraped_at'],
+            ]);
+        }
+
+        fclose($output);
+        exit;
+    } catch (Throwable $e) {
+        error_log("BDNews24 Export CSV Error: " . $e->getMessage());
+        header('Content-Type: text/plain');
+        echo 'Failed to export articles';
+        exit;
+    }
+});
+
+// ================== MOBILEDOKAN SCRAPER ==================
+
+/**
+ * MobileDokan Scraper Dashboard
+ * GET /admin/autocontent/scraper/mobiledokan
+ */
+$router->get('/admin/autocontent/scraper/mobiledokan', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    try {
+        $model = new MobilePhoneModel($mysqli);
+
+        $totalPhones = $model->getTotalCount();
+        $recentPhones = $model->getRecentPhones(10);
+
+        $lastScrape = null;
+        $lastScrapeFile = __DIR__ . '/../Modules/Scraper/logs/mobiledokan_last_scrape.json';
+        if (file_exists($lastScrapeFile)) {
+            $lastScrape = json_decode(file_get_contents($lastScrapeFile), true);
+        }
+
+        echo $twig->render('admin/autocontent/scraper/mobiledokan.twig', [
+            'total_phones' => $totalPhones,
+            'recent_phones' => $recentPhones,
+            'last_scrape' => $lastScrape,
+            'page_title' => 'MobileDokan Scraper',
+            'current_page' => 'autocontent-scraper-mobiledokan'
+        ]);
+    } catch (Throwable $e) {
+        error_log("MobileDokan Scraper Error: " . $e->getMessage());
+        echo "Error loading mobiledokan scraper: " . $e->getMessage();
+    }
+});
+
+/**
+ * Trigger MobileDokan manual scrape
+ * POST /admin/autocontent/scraper/mobiledokan/scrape
+ */
+$router->post('/admin/autocontent/scraper/mobiledokan/scrape', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    try {
+        if (!validateCsrfToken(getCsrfTokenFromRequest())) {
+            return JsonResponse::error('Invalid CSRF token', 403);
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $maxPages = (int)($input['max_pages'] ?? 3);
+        $maxPages = min(max($maxPages, 1), 10);
+
+        $httpClient = new HttpClientService();
+        $scraper = new MobileDokanScraperService($httpClient);
+        $model = new MobilePhoneModel($mysqli);
+
+        $results = $scraper->scrapeAllPages($maxPages, function ($page, $totalPages, $success, $data) use ($model, $scraper) {
+            if ($success) {
+                foreach ($data as $phone) {
+                    $saveResult = $model->savePhone($phone);
+                    if ($saveResult['success']) {
+                        $scraper->updateStats('new_phones', 1);
+                    } else {
+                        if (strpos($saveResult['error'], 'already exists') !== false) {
+                            $scraper->updateStats('duplicates', 1);
+                        } else {
+                            $scraper->updateStats('errors', 1);
+                        }
+                    }
+                }
+            }
+        });
+
+
+        $lastScrapeFile = __DIR__ . '/../Modules/Scraper/logs/mobiledokan_last_scrape.json';
+        $lastScrapeDir = dirname($lastScrapeFile);
+        if (!is_dir($lastScrapeDir)) {
+            mkdir($lastScrapeDir, 0755, true);
+        }
+        file_put_contents($lastScrapeFile, json_encode([
+            'timestamp' => date('Y-m-d H:i:s'),
+            'pages_scraped' => $maxPages,
+            'stats' => $scraper->getStats(),
+        ]));
+
+        return JsonResponse::success([
+            'message' => 'Scraping completed successfully',
+            'stats' => $scraper->getStats(),
+            'phones_count' => count($results['phones'] ?? []),
+        ]);
+    } catch (Throwable $e) {
+        error_log("MobileDokan Scrape Error: " . $e->getMessage());
+        return JsonResponse::error('Failed to scrape phones: ' . $e->getMessage(), 500);
+    }
+});
+
+/**
+ * List MobileDokan phones
+ * GET /admin/autocontent/scraper/mobiledokan/phones
+ */
+$router->get('/admin/autocontent/scraper/mobiledokan/phones', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    try {
+        $model = new MobilePhoneModel($mysqli);
+
+        $page = (int)($_GET['page'] ?? 1);
+        $limit = (int)($_GET['limit'] ?? 20);
+        $offset = ($page - 1) * $limit;
+
+        $search = $_GET['search'] ?? '';
+
+        if ($search) {
+            $phones = $model->searchPhones($search, $limit, $offset);
+            $total = count($model->searchPhones($search, 1000, 0));
+        } else {
+            $phones = $model->getRecentPhones($limit, $offset);
+            $total = $model->getTotalCount();
+        }
+
+        echo $twig->render('admin/autocontent/scraper/mobiledokan-phones.twig', [
+            'phones' => $phones,
+            'current_page' => $page,
+            'limit' => $limit,
+            'total' => $total,
+            'total_pages' => (int)ceil($total / $limit),
+            'search' => $search,
+            'page_title' => 'MobileDokan Phones',
+            'current_page' => 'autocontent-scraper-mobiledokan-phones'
+        ]);
+    } catch (Throwable $e) {
+        error_log("MobileDokan Phones List Error: " . $e->getMessage());
+        echo "Error loading phones: " . $e->getMessage();
+    }
+});
+
+/**
+ * View MobileDokan phone details
+ * GET /admin/autocontent/scraper/mobiledokan/phones/{id}
+ */
+$router->get('/admin/autocontent/scraper/mobiledokan/phones/(\d+)', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
+    try {
+        $model = new MobilePhoneModel($mysqli);
+        $phone = $model->getPhoneById((int)$id);
+
+        if (!$phone) {
+            echo $twig->render('error.twig', [
+                'error' => 'Phone not found',
+                'page_title' => 'Error',
+            ]);
+            return;
+        }
+
+        echo $twig->render('admin/autocontent/scraper/mobiledokan-phone-detail.twig', [
+            'phone' => $phone,
+            'page_title' => 'Phone Details',
+            'current_page' => 'autocontent-scraper-mobiledokan-phones'
+        ]);
+    } catch (Throwable $e) {
+        error_log("MobileDokan Phone Detail Error: " . $e->getMessage());
+        echo "Error loading phone details: " . $e->getMessage();
+    }
+});
+
+/**
+ * Delete MobileDokan phone
+ * DELETE /admin/autocontent/scraper/mobiledokan/phones/{id}
+ */
+$router->delete('/admin/autocontent/scraper/mobiledokan/phones/(\d+)', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+    try {
+        if (!validateCsrfToken(getCsrfTokenFromRequest())) {
+            return JsonResponse::error('Invalid CSRF token', 403);
+        }
+
+        $model = new MobilePhoneModel($mysqli);
+        $result = $model->deletePhone((int)$id);
+
+        if ($result['success']) {
+            return JsonResponse::success(['message' => 'Phone deleted successfully']);
+        } else {
+            return JsonResponse::error($result['error'] ?? 'Failed to delete phone', 500);
+        }
+    } catch (Throwable $e) {
+        error_log("MobileDokan Delete Phone Error: " . $e->getMessage());
+        return JsonResponse::error('Failed to delete phone: ' . $e->getMessage(), 500);
+    }
+});
+
+/**
+ * Export MobileDokan phones to JSON
+ * GET /admin/autocontent/scraper/mobiledokan/export/json
+ */
+$router->get('/admin/autocontent/scraper/mobiledokan/export/json', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    try {
+        $model = new MobilePhoneModel($mysqli);
+        $phones = $model->getRecentPhones(1000, 0);
+
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename="mobiledokan-phones-' . date('Y-m-d') . '.json"');
+
+        echo json_encode($phones, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        exit;
+    } catch (Throwable $e) {
+        error_log("MobileDokan Export JSON Error: " . $e->getMessage());
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Failed to export phones']);
+        exit;
+    }
+});
+
+/**
+ * Export MobileDokan phones to CSV
+ * GET /admin/autocontent/scraper/mobiledokan/export/csv
+ */
+$router->get('/admin/autocontent/scraper/mobiledokan/export/csv', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    try {
+        $model = new MobilePhoneModel($mysqli);
+        $phones = $model->getRecentPhones(1000, 0);
+
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="mobiledokan-phones-' . date('Y-m-d') . '.csv"');
+
+        $output = fopen('php://output', 'w');
+        fputcsv($output, ['ID', 'Name', 'Brand', 'Price', 'URL', 'Image URL', 'Scraped At']);
+
+        foreach ($phones as $phone) {
+            fputcsv($output, [
+                $phone['id'],
+                $phone['name'],
+                $phone['brand'],
+                $phone['price'],
+                $phone['url'],
+                $phone['image_url'],
+                $phone['scraped_at'],
+            ]);
+        }
+
+        fclose($output);
+        exit;
+    } catch (Throwable $e) {
+        error_log("MobileDokan Export CSV Error: " . $e->getMessage());
+        header('Content-Type: text/plain');
+        echo 'Failed to export phones';
+        exit;
+    }
+});
+
+// ================== GSMARENA SCRAPER ==================
+
+/**
+ * GSMArena BD Devices Dashboard
+ * GET /admin/autocontent/scraper/gsmarena-bd
+ */
+$router->get('/admin/autocontent/scraper/gsmarena-bd', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    try {
+        $model = new GSMArenaDeviceModel($mysqli);
+
+        $totalDevices = $model->getTotalCount();
+        $recentDevices = $model->getRecentDevices(10);
+
+        echo $twig->render('admin/autocontent/scraper/gsmarena-bd.twig', [
+            'total_devices' => $totalDevices,
+            'recent_devices' => $recentDevices,
+            'page_title' => 'GSMArena Bangladesh Devices',
+            'current_page' => 'autocontent-scraper-gsmarena-bd'
+        ]);
+    } catch (Throwable $e) {
+        error_log("GSMArena BD Scraper Error: " . $e->getMessage());
+        echo "Error loading gsmarena bd scraper: " . $e->getMessage();
+    }
+});
+
+/**
+ * List GSMArena BD devices
+ * GET /admin/autocontent/scraper/gsmarena-bd/devices
+ */
+$router->get('/admin/autocontent/scraper/gsmarena-bd/devices', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    try {
+        $model = new GSMArenaDeviceModel($mysqli);
+
+        $page = (int)($_GET['page'] ?? 1);
+        $limit = (int)($_GET['limit'] ?? 20);
+        $offset = ($page - 1) * $limit;
+
+        $search = $_GET['search'] ?? '';
+
+        if ($search) {
+            $devices = $model->searchDevices($search, $limit, $offset);
+            $total = count($model->searchDevices($search, 1000, 0));
+        } else {
+            $devices = $model->getRecentDevices($limit, $offset);
+            $total = $model->getTotalCount();
+        }
+
+        echo $twig->render('admin/autocontent/scraper/gsmarena-bd-list.twig', [
+            'devices' => $devices,
+            'current_page' => $page,
+            'limit' => $limit,
+            'total' => $total,
+            'total_pages' => (int)ceil($total / $limit),
+            'search' => $search,
+            'page_title' => 'GSMArena Bangladesh Devices',
+            'current_page' => 'autocontent-scraper-gsmarena-bd-devices'
+        ]);
+    } catch (Throwable $e) {
+        error_log("GSMArena BD Devices List Error: " . $e->getMessage());
+        echo "Error loading devices: " . $e->getMessage();
+    }
+});
+
+/**
+ * View GSMArena BD device details
+ * GET /admin/autocontent/scraper/gsmarena-bd/devices/{id}
+ */
+$router->get('/admin/autocontent/scraper/gsmarena-bd/devices/(\d+)', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
+    try {
+        $model = new GSMArenaDeviceModel($mysqli);
+        $device = $model->getDeviceById((int)$id);
+
+        if (!$device) {
+            echo $twig->render('error.twig', [
+                'error' => 'Device not found',
+                'page_title' => 'Error',
+            ]);
+            return;
+        }
+
+        echo $twig->render('admin/autocontent/scraper/gsmarena-device-detail.twig', [
+            'device' => $device,
+            'page_title' => 'Device Details',
+            'current_page' => 'autocontent-scraper-gsmarena-bd-devices'
+        ]);
+    } catch (Throwable $e) {
+        error_log("GSMArena BD Device Detail Error: " . $e->getMessage());
+        echo "Error loading device details: " . $e->getMessage();
+    }
+});
+
+/**
+ * GSMArena News Dashboard
+ * GET /admin/autocontent/scraper/gsmarena-news
+ */
+$router->get('/admin/autocontent/scraper/gsmarena-news', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    try {
+        $model = new GSMArenaNewsModel($mysqli);
+
+        $totalArticles = $model->getTotalCount();
+        $recentArticles = $model->getRecentNews(10);
+
+        echo $twig->render('admin/autocontent/scraper/gsmarena-news.twig', [
+            'total_articles' => $totalArticles,
+            'recent_articles' => $recentArticles,
+            'page_title' => 'GSMArena News',
+            'current_page' => 'autocontent-scraper-gsmarena-news'
+        ]);
+    } catch (Throwable $e) {
+        error_log("GSMArena News Scraper Error: " . $e->getMessage());
+        echo "Error loading gsmarena news scraper: " . $e->getMessage();
+    }
+});
+
+/**
+ * List GSMArena news articles
+ * GET /admin/autocontent/scraper/gsmarena-news/articles
+ */
+$router->get('/admin/autocontent/scraper/gsmarena-news/articles', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    try {
+        $model = new GSMArenaNewsModel($mysqli);
+
+        $page = (int)($_GET['page'] ?? 1);
+        $limit = (int)($_GET['limit'] ?? 20);
+        $offset = ($page - 1) * $limit;
+
+        $search = $_GET['search'] ?? '';
+
+        if ($search) {
+            $articles = $model->searchNews($search, $limit, $offset);
+            $total = count($model->searchNews($search, 1000, 0));
+        } else {
+            $articles = $model->getRecentNews($limit, $offset);
+            $total = $model->getTotalCount();
+        }
+
+        echo $twig->render('admin/autocontent/scraper/gsmarena-news-articles.twig', [
+            'articles' => $articles,
+            'current_page' => $page,
+            'limit' => $limit,
+            'total' => $total,
+            'total_pages' => (int)ceil($total / $limit),
+            'search' => $search,
+            'page_title' => 'GSMArena News Articles',
+            'current_page' => 'autocontent-scraper-gsmarena-news-articles'
+        ]);
+    } catch (Throwable $e) {
+        error_log("GSMArena News Articles List Error: " . $e->getMessage());
+        echo "Error loading articles: " . $e->getMessage();
+    }
+});
+
+/**
+ * View GSMArena news article details
+ * GET /admin/autocontent/scraper/gsmarena-news/articles/{id}
+ */
+$router->get('/admin/autocontent/scraper/gsmarena-news/articles/(\d+)', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
+    try {
+        $model = new GSMArenaNewsModel($mysqli);
+        $article = $model->getNewsById((int)$id);
+
+        if (!$article) {
+            echo $twig->render('error.twig', [
+                'error' => 'Article not found',
+                'page_title' => 'Error',
+            ]);
+            return;
+        }
+
+        echo $twig->render('admin/autocontent/scraper/gsmarena-news-article-detail.twig', [
+            'article' => $article,
+            'page_title' => 'Article Details',
+            'current_page' => 'autocontent-scraper-gsmarena-news-articles'
+        ]);
+    } catch (Throwable $e) {
+        error_log("GSMArena News Article Detail Error: " . $e->getMessage());
+        echo "Error loading article details: " . $e->getMessage();
+    }
 });

@@ -241,11 +241,11 @@
         <tbody>
           {% for item in items %}
           <tr id="row-{{ item.id }}">
-            <td class="text-center">
+            <td class="text-center" data-label="Select">
               <input type="checkbox" class="form-check-input table-select-checkbox item-checkbox" value="{{ item.id }}" data-status="{{ item.status }}">
             </td>
-            <td class="text-muted small">#{{ item.id }}</td>
-            <td>
+            <td class="text-muted small" data-label="ID">#{{ item.id }}</td>
+            <td data-label="Article Information">
               <a href="/admin/autocontent/queue/view?id={{ item.id }}" class="text-decoration-none fw-bold text-dark d-block">
                 {{ item.display_title ?? 'Untitled' }}
               </a>
@@ -260,15 +260,15 @@
                 </small>
               {% endif %}
             </td>
-            <td>
+            <td data-label="Author">
               {% if item.display_author %}
                 <span class="small text-dark"><i class="bi bi-person me-1"></i>{{ item.display_author }}</span>
               {% else %}
                 <span class="text-muted small">—</span>
               {% endif %}
             </td>
-            <td><span class="badge bg-light text-dark border">{{ item.source_name ?? '-' }}</span></td>
-            <td>
+            <td data-label="Source"><span class="badge bg-light text-dark border">{{ item.source_name ?? '-' }}</span></td>
+            <td data-label="Pipeline Status">
               <span class="status-badge {{ item.status }}">
                 {% if item.status == 'collected' %}<i class="bi bi-download"></i>
                 {% elseif item.status == 'processing' %}<i class="bi bi-robot"></i>
@@ -281,19 +281,19 @@
                 {{ item.status|capitalize }}
               </span>
             </td>
-            <td>
+            <td data-label="Type">
               <span class="badge bg-secondary bg-opacity-10 text-secondary">{{ item.content_type ? item.content_type|capitalize : '-' }}</span>
             </td>
-            <td class="text-center">
+            <td class="text-center" data-label="SEO">
               {% if item.seo_score is defined and item.seo_score > 0 %}
                 <div class="small fw-bold {% if item.seo_score >= 70 %}text-success{% elseif item.seo_score >= 40 %}text-warning{% else %}text-danger{% endif %}">
                   {{ item.seo_score }}%
                 </div>
               {% else %}-{% endif %}
             </td>
-            <td class="text-muted small">{{ item.word_count > 0 ? item.word_count : '-' }}</td>
-            <td class="small text-muted">{{ item.created_at|date('M d, H:i') }}</td>
-            <td>
+            <td class="text-muted small" data-label="Words">{{ item.word_count > 0 ? item.word_count : '-' }}</td>
+            <td class="small text-muted" data-label="Created">{{ item.created_at|date('M d, H:i') }}</td>
+            <td data-label="Actions">
               <div class="btn-group btn-group-sm">
                 <a href="/admin/autocontent/queue/view?id={{ item.id }}" class="btn btn-outline-primary" title="Full Editor">
                   <i class="bi bi-pencil-square"></i>
@@ -449,11 +449,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    itemCheckboxes.forEach(function(cb) {
-        cb.addEventListener('change', updateBulkBar);
-    });
-
-    async function handleAction(btn, url) {
+     itemCheckboxes.forEach(function(cb) {
+         cb.addEventListener('change', updateBulkBar);
+     });
+     
+     // Initial update to reflect any pre-selected checkboxes
+     updateBulkBar();
+ 
+     async function handleAction(btn, url) {
         const originalHtml = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>...';

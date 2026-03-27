@@ -1,0 +1,279 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}Teletalk Jobs - Admin{% endblock %}
+
+{% block stylesheets %}
+<style>
+  .job-card {
+    transition: all 0.2s ease;
+  }
+  .job-card:hover {
+    background-color: var(--bs-tertiary-bg);
+  }
+  .org-logo {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+              <li class="breadcrumb-item"><a href="/admin/scraper/teletalk">Scraper</a></li>
+              <li class="breadcrumb-item active">Jobs</li>
+            </ol>
+          </nav>
+          <h2 class="mb-0">
+            <i class="bi bi-briefcase-fill me-2"></i>
+            Teletalk Jobs
+          </h2>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="/admin/scraper/teletalk/export/json" class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-code me-1"></i> Export JSON
+          </a>
+          <a href="/admin/scraper/teletalk/export/csv" class="btn btn-outline-primary">
+            <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
+          </a>
+          <a href="/admin/scraper/teletalk" class="btn btn-primary">
+            <i class="bi bi-download me-1"></i> Scrape New Jobs
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <form method="GET" class="row g-3">
+            <div class="col-md-4">
+              <label for="search" class="form-label">Search</label>
+              <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Search by title or organization...">
+            </div>
+            <div class="col-md-3">
+              <label for="organization" class="form-label">Organization</label>
+              <select class="form-select" id="organization" name="organization">
+                <option value="">All Organizations</option>
+                {% for org in organizations %}
+                <option value="{{ org }}" {% if org == selected_organization %}selected{% endif %}>{{ org }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-search me-1"></i> Search
+              </button>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              {% if search or selected_organization %}
+              <a href="/admin/scraper/teletalk/jobs" class="btn btn-outline-secondary w-100">
+                <i class="bi bi-x-circle me-1"></i> Clear
+              </a>
+              {% endif %}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Info -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <span class="text-muted">Showing {{ ((current_page - 1) * limit) + 1 }} to {{ min(current_page * limit, total) }} of {{ total }} jobs</span>
+        </div>
+        <div>
+          <select class="form-select form-select-sm d-inline-block w-auto" onchange="changeLimit(this.value)">
+            <option value="20" {% if limit == 20 %}selected{% endif %}>20 per page</option>
+            <option value="50" {% if limit == 50 %}selected{% endif %}>50 per page</option>
+            <option value="100" {% if limit == 100 %}selected{% endif %}>100 per page</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Jobs Table -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body p-0">
+          {% if jobs is empty %}
+          <div class="text-center py-5">
+            <i class="bi bi-inbox fs-1 text-muted"></i>
+            <p class="text-muted mt-3">No jobs found matching your criteria.</p>
+          </div>
+          {% else %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 50px;">ID</th>
+                  <th>Organization</th>
+                  <th>Job ID</th>
+                  <th>Openings</th>
+                  <th>Scraped At</th>
+                  <th>Updated At</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for job in jobs %}
+                <tr class="job-card">
+                  <td><span class="badge bg-secondary">{{ job.id }}</span></td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      {% if job.image_url %}
+                      <img src="{{ job.image_url }}" alt="{{ job.organization }}" class="org-logo rounded me-2">
+                      {% else %}
+                      <div class="bg-secondary rounded me-2 d-flex align-items-center justify-content-center org-logo">
+                        <i class="bi bi-building text-white"></i>
+                      </div>
+                      {% endif %}
+                      <div>
+                        <div class="fw-bold">{{ job.title }}</div>
+                        <small class="text-muted">{{ job.organization }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td><code>{{ job.job_id }}</code></td>
+                  <td>
+                    <span class="badge bg-primary">{{ job.openings }}</span>
+                  </td>
+                  <td>
+                    <small>{{ job.scraped_at|date('M d, Y H:i') }}</small>
+                  </td>
+                  <td>
+                    <small>{{ job.updated_at|date('M d, Y H:i') }}</small>
+                  </td>
+                  <td class="text-end">
+                    <a href="{{ job.url }}" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="View on Teletalk">
+                      <i class="bi bi-box-arrow-up-right"></i>
+                    </a>
+                    <a href="/admin/scraper/teletalk/jobs/{{ job.id }}" class="btn btn-sm btn-outline-secondary me-1" title="View Details">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    <button onclick="deleteJob({{ job.id }})" class="btn btn-sm btn-outline-danger" title="Delete">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  {% if total_pages > 1 %}
+  <div class="row mt-4">
+    <div class="col-12">
+      <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+          {% if current_page > 1 %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ current_page - 1 }}&limit={{ limit }}&search={{ search }}&organization={{ selected_organization }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          </li>
+          {% endif %}
+
+          {% for page in 1..total_pages %}
+            {% if page == 1 or page == total_pages or (page >= current_page - 2 and page <= current_page + 2) %}
+              <li class="page-item {% if page == current_page %}active{% endif %}">
+                <a class="page-link" href="?page={{ page }}&limit={{ limit }}&search={{ search }}&organization={{ selected_organization }}">
+                  {{ page }}
+                </a>
+              </li>
+            {% elseif page == current_page - 3 or page == current_page + 3 %}
+              <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+          {% endfor %}
+
+          {% if current_page < total_pages %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ current_page + 1 }}&limit={{ limit }}&search={{ search }}&organization={{ selected_organization }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function changeLimit(limit) {
+    const url = new URL(window.location);
+    url.searchParams.set('limit', limit);
+    url.searchParams.set('page', '1');
+    window.location.href = url.toString();
+  }
+
+  function deleteJob(jobId) {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: 'This action cannot be undone!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        fetch(`/admin/scraper/teletalk/jobs/${jobId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Deleted!',
+              text: 'Job has been deleted.',
+              timer: 1500,
+              timerProgressBar: true
+            }).then(() => {
+              location.reload();
+            });
+          } else {
+            throw new Error(data.error || 'Failed to delete job');
+          }
+        })
+        .catch(error => {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message || 'Failed to delete job'
+          });
+        });
+      }
+    });
+  }
+</script>
+{% endblock %}

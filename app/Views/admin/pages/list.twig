@@ -85,24 +85,24 @@
               <tbody>
                 {% for page in pages %}
                   <tr>
-                    <td class="fw-bold">{{ page.id }}</td>
-                    <td>{{ page.title }}</td>
-                    <td>
+                    <td class="fw-bold" data-label="#">ID</td>
+                    <td data-label="Title">{{ page.title }}</td>
+                    <td data-label="Slug">
                       <code class="text-muted">{{ page.slug ?? '-' }}</code>
                     </td>
-                    <td>
+                    <td data-label="Status">
                       {% if page.published %}
                         <span class="badge bg-success rounded-pill"><i class="bi bi-check2"></i> Published</span>
                       {% else %}
                         <span class="badge bg-warning text-surface-dark rounded-pill"><i class="bi bi-pencil"></i> Draft</span>
                       {% endif %}
                     </td>
-                    <td>
+                    <td data-label="Stats">
                       <i class="bi bi-bar-chart text-info me-1"></i>{{ page.impressions }}
                       <hr>
                       <i class="bi bi-eye text-success me-1"></i>{{ page.views }}
                     </td>
-                    <td class="text-center">
+                    <td class="text-center" data-label="Actions">
                       <a href="/admin/pages/view/{{ page.slug }}"
                          class="modern-btn btn-sm btn-info me-1"
                          title="View">

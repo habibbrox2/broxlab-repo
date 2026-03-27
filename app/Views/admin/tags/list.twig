@@ -91,19 +91,19 @@
               <tbody>
                 {% for tag in tags %}
                   <tr class="border-bottom hover-effect">
-                    <td>
+                    <td data-label="ID">
                       <span class="badge bg-light text-surface-dark fw-bold">{{ tag.id }}</span>
                     </td>
-                    <td>
+                    <td data-label="Name">
                       <div class="d-flex align-items-center">
                         <i class="bi bi-bookmark text-primary me-2"></i>
                         <strong>{{ tag.name }}</strong>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="URL Slug">
                       <code class="bg-light px-3 py-2 rounded d-inline-block">{{ tag.slug }}</code>
                     </td>
-                    <td class="text-center">
+                    <td class="text-center" data-label="Actions">
                       <a href="/admin/tags/edit/{{ tag.id }}"
                          class="modern-btn btn-sm btn-outline-primary"
                          title="Edit Tag">

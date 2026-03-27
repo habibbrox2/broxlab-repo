@@ -95,18 +95,18 @@
             <tbody>
               {% for user in users %}
                 <tr>
-                  <td class="fw-bold">{{ user.id }}</td>
-                  <td>
+                  <td class="fw-bold" data-label="ID">{{ user.id }}</td>
+                  <td data-label="Username">
                     <strong>{{ user.username }}</strong>
                     {% if user.first_name or user.last_name %}
                       <br>
                       <small class="text-muted">{{ user.first_name }} {{ user.last_name }}</small>
                     {% endif %}
                   </td>
-                  <td>
+                  <td data-label="Email">
                     <small>{{ user.email }}</small>
                   </td>
-                  <td>
+                  <td data-label="Roles">
                     {% set roles = [] %}
                     {% if user.roles is iterable %}
                       {% for r in user.roles %}
@@ -132,7 +132,7 @@
                       <span class="text-muted">No roles assigned</span>
                     {% endif %}
                   </td>
-                  <td>
+                  <td data-label="Status">
                     {% if user.status == 'active' %}
                       <span class="badge bg-success"><i class="bi bi-check-circle"></i> Active</span>
                     {% elseif user.status == 'inactive' %}
@@ -145,7 +145,7 @@
                       <span class="badge bg-secondary">{{ user.status }}</span>
                     {% endif %}
                   </td>
-                  <td class="text-center">
+                  <td class="text-center" data-label="Actions">
                     <a href="/admin/users/edit?id={{ user.id }}"
                        class="modern-btn btn-sm btn-outline-warning me-1"
                        title="Edit">
