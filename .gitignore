@@ -86,6 +86,8 @@ rollback_backup_*.tar.gz
 *.log
 *.log.*
 /logs/
+/storage/*
+/storage/
 /storage/logs/
 /storage/cache/
 /storage/tmp/
