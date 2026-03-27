@@ -47,19 +47,19 @@
               <tbody>
                 {% for perm in permissions %}
                   <tr class="permission-row">
-                    <td>
+                    <td data-label="Permission Name">
                       <code class="text-primary">{{ perm.name }}</code>
                     </td>
-                    <td>
+                    <td data-label="Module">
                       <span class="badge bg-light text-surface-dark">{{ perm.module }}</span>
                     </td>
-                    <td>
+                    <td data-label="Description">
                       <small class="text-muted">{{ perm.description|default("N/A") }}</small>
                     </td>
-                    <td>
+                    <td data-label="Created">
                       <small class="text-muted">{{ perm.created_at|date("M d, Y") }}</small>
                     </td>
-                    <td class="text-center">
+                    <td class="text-center" data-label="Actions">
                       <a href="/admin/permissions/{{ perm.id }}"
                          class="modern-btn btn-sm btn-primary-outline"
                          title="View">

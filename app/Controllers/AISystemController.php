@@ -1108,7 +1108,6 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     }
     if ($allowOverrides) {
         $topLevelOptionKeys = [
-            'plugins',
             'response_format',
             'reasoning_effort',
             'tool_choice',

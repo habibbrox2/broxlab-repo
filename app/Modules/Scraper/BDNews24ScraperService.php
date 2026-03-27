@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace App\Modules\Scraper;
+
 /**
  * BDNews24ScraperService.php
  * Service for scraping BDNews24 Bangla articles
@@ -9,11 +11,13 @@ declare(strict_types=1);
 
 use App\Modules\Scraper\HttpClientService;
 use App\Modules\Scraper\HtmlParserService;
+use App\Modules\Scraper\RawHtmlStorageService;
 
 class BDNews24ScraperService
 {
     private HttpClientService $httpClient;
     private HtmlParserService $parser;
+    private RawHtmlStorageService $htmlStorage;
     private array $config;
     private array $stats = [
         'total_scraped' => 0,
@@ -22,11 +26,12 @@ class BDNews24ScraperService
         'errors' => 0,
     ];
 
-    public function __construct(HttpClientService $httpClient, ?array $config = null)
+    public function __construct(HttpClientService $httpClient, ?array $config = null, ?RawHtmlStorageService $htmlStorage = null)
     {
         $this->httpClient = $httpClient;
         $this->parser = new HtmlParserService();
-        
+        $this->htmlStorage = $htmlStorage ?? new RawHtmlStorageService();
+
         // Load configuration
         $this->config = $config ?? $this->loadConfig();
     }
@@ -40,7 +45,7 @@ class BDNews24ScraperService
         if (file_exists($configFile)) {
             return require $configFile;
         }
-        
+
         // Default configuration
         return [
             'base_url' => 'https://bangla.bdnews24.com',
@@ -94,13 +99,13 @@ class BDNews24ScraperService
             }
 
             $html = $response['body'];
-            
+
             // Load HTML into parser
             $this->parser->loadHtml($html, $this->config['base_url']);
 
             // Extract articles
             $articles = $this->extractArticlesFromHtml();
-            
+
             // Extract cursor for next page
             $nextCursor = $this->extractCursorFromHtml();
 
@@ -127,14 +132,14 @@ class BDNews24ScraperService
     {
         $articles = [];
         $crawler = $this->parser->getCrawler();
-        
+
         if (!$crawler) {
             return $articles;
         }
 
         // Find all article containers
         $containers = $crawler->filter($this->config['selectors']['article_container']);
-        
+
         foreach ($containers as $container) {
             try {
                 $article = $this->extractArticleFromContainer($container);
@@ -224,14 +229,14 @@ class BDNews24ScraperService
     private function extractCursorFromHtml(): ?string
     {
         $crawler = $this->parser->getCrawler();
-        
+
         if (!$crawler) {
             return null;
         }
 
         // Find the cursor input element
         $cursorElement = $crawler->filter($this->config['selectors']['cursor_input'])->first();
-        
+
         if ($cursorElement) {
             $cursor = $cursorElement->attr('value');
             if ($cursor) {
@@ -254,11 +259,11 @@ class BDNews24ScraperService
 
         while ($pageCount < $maxPages) {
             $pageCount++;
-            
+
             try {
                 // Scrape current page
                 $result = $this->scrapeArticleListings($currentUrl);
-                
+
                 if (!$result['success']) {
                     $this->updateStats('errors', 1);
                     if ($progressCallback) {
@@ -282,8 +287,8 @@ class BDNews24ScraperService
                 }
 
                 // Build next URL with cursor
-                $currentUrl = $this->config['base_url'] . $this->config['special_url'] . 
-                              '?' . $this->config['pagination']['cursor_param'] . '=' . urlencode($nextCursor);
+                $currentUrl = $this->config['base_url'] . $this->config['special_url'] .
+                    '?' . $this->config['pagination']['cursor_param'] . '=' . urlencode($nextCursor);
 
                 // Rate limiting delay
                 $delay = rand($this->config['rate_limit']['delay_min'], $this->config['rate_limit']['delay_max']);
@@ -322,7 +327,23 @@ class BDNews24ScraperService
             }
 
             $html = $response['body'];
-            $this->parser->loadHtml($html, $this->config['base_url']);
+
+            // Save raw HTML to file before parsing
+            $saveResult = $this->htmlStorage->save($url, $html, 'bdnews24', 'detail');
+            if (!$saveResult['success']) {
+                error_log("BDNews24ScraperService: Failed to save raw HTML: " . ($saveResult['error'] ?? 'Unknown error'));
+            }
+
+            // Parse from saved file if available, otherwise use response body
+            $htmlToParse = $html;
+            if ($saveResult['success'] && file_exists($saveResult['file_path'])) {
+                $loadResult = $this->htmlStorage->load($url, 'bdnews24', 'detail');
+                if ($loadResult['success']) {
+                    $htmlToParse = $loadResult['html'];
+                }
+            }
+
+            $this->parser->loadHtml($htmlToParse, $this->config['base_url']);
 
             // Extract additional details
             $category = $this->extractCategoryFromHtml();
@@ -332,6 +353,7 @@ class BDNews24ScraperService
                 'success' => true,
                 'category' => $category,
                 'published_at' => $publishedAt,
+                'raw_html_file' => $saveResult['file_path'] ?? null,
             ];
         } catch (\Exception $e) {
             error_log("BDNews24ScraperService::scrapeArticleDetail error: " . $e->getMessage());
@@ -350,7 +372,7 @@ class BDNews24ScraperService
     private function extractCategoryFromHtml(): ?string
     {
         $crawler = $this->parser->getCrawler();
-        
+
         if (!$crawler) {
             return null;
         }
@@ -376,7 +398,7 @@ class BDNews24ScraperService
     private function extractPublishedAtFromHtml(): ?string
     {
         $crawler = $this->parser->getCrawler();
-        
+
         if (!$crawler) {
             return null;
         }

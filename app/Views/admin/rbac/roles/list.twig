@@ -77,26 +77,26 @@
               <tbody>
                 {% for role in roles %}
                   <tr>
-                    <td>
+                    <td data-label="Role Name">
                       <div class="fw-semibold">{{ role.name|upper }}</div>
                     </td>
-                    <td>
+                    <td data-label="Description">
                       <small class="text-muted">{{ role.description|default("N/A") }}</small>
                     </td>
-                    <td>
+                    <td data-label="Permissions">
                       <span class="badge bg-info">{{ role.permission_count }} permissions</span>
                     </td>
-                    <td>
+                    <td data-label="Type">
                       {% if role.is_super_admin %}
                         <span class="badge bg-danger">Super Admin</span>
                       {% else %}
                         <span class="badge bg-secondary">Standard</span>
                       {% endif %}
                     </td>
-                    <td>
+                    <td data-label="Created">
                       <small class="text-muted">{{ role.created_at|date("M d, Y") }}</small>
                     </td>
-                    <td class="text-center">
+                    <td class="text-center" data-label="Actions">
                       <a href="/admin/roles/{{ role.id }}"
                          class="modern-btn btn-sm btn-primary-outline"
                          title="View">

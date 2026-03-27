@@ -170,25 +170,25 @@
                   {% set owner_name = (cv.first_name ~ ' ' ~ cv.last_name)|trim %}
                   {% set owner_name = owner_name ? owner_name : (cv.username|default('Unknown')) %}
                   <tr data-id="{{ cv.id }}">
-                    <td class="fw-semibold">#{{ cv.id }}</td>
-                    <td>
+                    <td class="fw-semibold" data-label="ID">#{{ cv.id }}</td>
+                    <td data-label="Title">
                       <div class="fw-semibold">{{ cv.title|default('Untitled CV') }}</div>
                       <div class="text-muted small">User ID: {{ cv.user_id }}</div>
                     </td>
-                    <td>
+                    <td data-label="Owner">
                       <div class="fw-semibold">{{ owner_name }}</div>
                       <div class="text-muted small">{{ cv.email|default('') }}</div>
                     </td>
-                    <td>
+                    <td data-label="Status">
                       {% if cv.is_active %}
                         <span class="badge bg-success-subtle text-success">Active</span>
                       {% else %}
                         <span class="badge bg-secondary-subtle text-muted">Inactive</span>
                       {% endif %}
                     </td>
-                    <td class="text-muted">{{ cv.created_at ? (cv.created_at|date('M d, Y')) : '—' }}</td>
-                    <td class="text-muted">{{ cv.updated_at ? (cv.updated_at|date('M d, Y')) : '—' }}</td>
-                    <td class="text-center">
+                    <td class="text-muted" data-label="Created">{{ cv.created_at ? (cv.created_at|date('M d, Y')) : '—' }}</td>
+                    <td class="text-muted" data-label="Updated">{{ cv.updated_at ? (cv.updated_at|date('M d, Y')) : '—' }}</td>
+                    <td class="text-center" data-label="Actions">
                       <a href="/admin/cvs/{{ cv.id }}/preview{{ template_query }}"
                          class="modern-btn btn-sm btn-info me-1"
                          target="_blank"

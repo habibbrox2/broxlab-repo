@@ -137,10 +137,10 @@
                 {% set payment_amount = app.payment_amount ?? (p.amount ?? null) %}
                 {% set payment_currency = app.payment_currency ?? (p.currency ?? 'BDT') %}
                 {% set payment_status = (app.payment_status ?? p.status ?? app.status ?? 'unknown')|lower %}
-                <td>
+                <td data-label="ID">
                   <strong>#{{ app.id }}</strong>
                 </td>
-                <td>
+                <td data-label="Transaction">
                   {% if tx_id %}
                     <div>
                       <strong>{{ tx_id }}</strong>
@@ -150,22 +150,22 @@
                     <span class="text-muted">-</span>
                   {% endif %}
                 </td>
-                <td>
+                <td data-label="User">
                   {{ app.user_name }}
                   <br>
                   <small class="text-muted">{{ app.user_email }}</small>
                 </td>
-                <td>
+                <td data-label="Service">
                   <strong>{{ app.service_name }}</strong>
                 </td>
-                <td>
+                <td data-label="Amount">
                   {% if payment_amount is not same as(null) and payment_amount is not same as('') %}
                     {{ payment_amount }} {{ payment_currency }}
                   {% else %}
                     -
                   {% endif %}
                 </td>
-                <td>
+                <td data-label="Status">
                   {% if payment_status in ['paid', 'completed', 'success', 'succeeded'] %}
                     <span class="badge bg-success">{{ payment_status|title }}</span>
                   {% elseif payment_status in ['submitted', 'pending', 'initiated', 'processing'] %}
@@ -176,10 +176,10 @@
                     <span class="badge bg-secondary">{{ payment_status|title }}</span>
                   {% endif %}
                 </td>
-                <td>
+                <td data-label="Submitted">
                   <small>{{ app.created_at|date("M d, Y H:i") }}</small>
                 </td>
-                <td>
+                <td data-label="Actions">
                   <div class="d-flex flex-wrap gap-1">
                     <a href="/admin/applications/{{ app.id }}"
                        class="modern-btn modern-btn-white btn-sm"

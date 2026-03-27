@@ -28,26 +28,26 @@
               <tbody>
                 {% for template in templates %}
                   <tr>
-                    <td>
+                    <td data-label="Name">
                       <strong>{{ template.name }}</strong>
                     </td>
-                    <td>
+                    <td data-label="Slug">
                       <code class="bg-light">{{ template.slug }}</code>
                     </td>
-                    <td>
+                    <td data-label="Description">
                       <small class="text-muted">{{ template.description|default("N/A") |truncate(50) }}</small>
                     </td>
-                    <td>
+                    <td data-label="Status">
                       {% if template.is_active %}
                         <span class="badge bg-success">Active</span>
                       {% else %}
                         <span class="badge bg-secondary">Inactive</span>
                       {% endif %}
                     </td>
-                    <td>
+                    <td data-label="Last Updated">
                       <small class="text-muted">{{ template.updated_at|date("M d, Y H:i") }}</small>
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <a href="{{ admin_dir }}/email-templates/{{ template.id }}/edit"
                          class="modern-btn btn-sm btn-primary">
                         <i class="bi bi-pencil"></i> Edit

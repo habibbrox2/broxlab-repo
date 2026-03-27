@@ -18,8 +18,8 @@ const url = getArg('--url') || DEFAULT_URL;
 const outPath = getArg('--out') || '';
 
 const apiKey = String(process.env.SCRAPER_API_KEY || '').trim();
-const directBase = String(process.env.SCRAPER_DIRECT_API_URL || process.env.APP_URL || 'http://127.0.0.1:7020').replace(/\/+$/, '');
-const queueBase = String(process.env.SCRAPER_API_URL || process.env.APP_URL || 'http://127.0.0.1:7010').replace(/\/+$/, '');
+const directBase = String(process.env.SCRAPER_DIRECT_API_URL || process.env.NODE_API_URL || process.env.APP_URL || 'http://127.0.0.1:3000/api/direct-scraper').replace(/\/+$/, '');
+const queueBase = String(process.env.SCRAPER_API_URL || process.env.NODE_API_URL || process.env.APP_URL || 'http://127.0.0.1:3000/api/scraper').replace(/\/+$/, '');
 
 const headers = {
     'Content-Type': 'application/json'

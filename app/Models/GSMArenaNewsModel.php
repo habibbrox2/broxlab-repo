@@ -1,14 +1,10 @@
 <?php
 
-namespace App\Models;
-
-use mysqli;
-
 /**
  * GSMArena News Model
- * 
+ *
  * Handles database operations for GSMArena news articles
- * 
+ *
  * @package BroxBhai
  * @since 2026-03-26
  */
@@ -28,8 +24,9 @@ class GSMArenaNewsModel
     {
         $sql = "INSERT INTO gsmarena_news (news_id, url, title, summary, image_url, published_at) VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $this->mysqli->prepare($sql);
-        
-        $stmt->bind_param('ssssss', 
+
+        $stmt->bind_param(
+            'ssssss',
             $newsData['news_id'],
             $newsData['url'],
             $newsData['title'],
@@ -37,14 +34,14 @@ class GSMArenaNewsModel
             $newsData['image_url'],
             $newsData['published_at']
         );
-        
+
         $result = $stmt->execute();
         $stmt->close();
-        
+
         if ($result) {
             return (int)$this->mysqli->insert_id;
         }
-        
+
         throw new \Exception("Failed to save news article: " . $this->mysqli->error);
     }
 
@@ -55,8 +52,9 @@ class GSMArenaNewsModel
     {
         $sql = "UPDATE gsmarena_news SET url = ?, title = ?, summary = ?, image_url = ?, published_at = ?, updated_at = NOW() WHERE id = ?";
         $stmt = $this->mysqli->prepare($sql);
-        
-        $stmt->bind_param('sssssi', 
+
+        $stmt->bind_param(
+            'sssssi',
             $newsData['url'],
             $newsData['title'],
             $newsData['summary'],
@@ -64,14 +62,14 @@ class GSMArenaNewsModel
             $newsData['published_at'],
             $id
         );
-        
+
         $result = $stmt->execute();
         $stmt->close();
-        
+
         if (!$result) {
             throw new \Exception("Failed to update news article: " . $this->mysqli->error);
         }
-        
+
         return $result;
     }
 
@@ -86,11 +84,11 @@ class GSMArenaNewsModel
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
-        
+
         if ($result && $row = $result->fetch_assoc()) {
             return $row;
         }
-        
+
         return null;
     }
 
@@ -105,11 +103,11 @@ class GSMArenaNewsModel
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
-        
+
         if ($result && $row = $result->fetch_assoc()) {
             return $row;
         }
-        
+
         return null;
     }
 
@@ -124,11 +122,11 @@ class GSMArenaNewsModel
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
-        
+
         if ($result && $row = $result->fetch_assoc()) {
             return (int)$row['count'] > 0;
         }
-        
+
         return false;
     }
 
@@ -143,12 +141,12 @@ class GSMArenaNewsModel
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
-        
+
         $news = [];
         while ($row = $result->fetch_assoc()) {
             $news[] = $row;
         }
-        
+
         return $news;
     }
 
@@ -164,12 +162,12 @@ class GSMArenaNewsModel
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
-        
+
         $news = [];
         while ($row = $result->fetch_assoc()) {
             $news[] = $row;
         }
-        
+
         return $news;
     }
 
@@ -184,12 +182,12 @@ class GSMArenaNewsModel
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
-        
+
         $news = [];
         while ($row = $result->fetch_assoc()) {
             $news[] = $row;
         }
-        
+
         return $news;
     }
 
@@ -200,11 +198,11 @@ class GSMArenaNewsModel
     {
         $sql = "SELECT COUNT(*) as count FROM gsmarena_news";
         $result = $this->mysqli->query($sql);
-        
+
         if ($result && $row = $result->fetch_assoc()) {
             return (int)$row['count'];
         }
-        
+
         return 0;
     }
 
@@ -218,7 +216,7 @@ class GSMArenaNewsModel
         $stmt->bind_param('i', $id);
         $result = $stmt->execute();
         $stmt->close();
-        
+
         return $result;
     }
 }

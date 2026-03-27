@@ -1,14 +1,10 @@
 <?php
 
-namespace App\Models;
-
-use mysqli;
-
 /**
  * GSMArena Device Model
- * 
+ *
  * Handles database operations for GSMArena mobile devices
- * 
+ *
  * @package BroxBhai
  * @since 2026-03-26
  */
@@ -28,10 +24,11 @@ class GSMArenaDeviceModel
     {
         $sql = "INSERT INTO gsmarena_devices (slug, name, brand, url, image_url, specs, released, body, sim, os, display_size, display_resolution, display_type, cpu, ram, storage, main_camera, battery_capacity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->mysqli->prepare($sql);
-        
+
         $specsJson = json_encode($deviceData['specs'] ?? [], JSON_UNESCAPED_UNICODE);
-        
-        $stmt->bind_param('ssssssssssssssssss', 
+
+        $stmt->bind_param(
+            'ssssssssssssssssss',
             $deviceData['slug'],
             $deviceData['name'],
             $deviceData['brand'],
@@ -51,14 +48,14 @@ class GSMArenaDeviceModel
             $deviceData['main_camera'],
             $deviceData['battery_capacity']
         );
-        
+
         $result = $stmt->execute();
         $stmt->close();
-        
+
         if ($result) {
             return (int)$this->mysqli->insert_id;
         }
-        
+
         throw new \Exception("Failed to save device: " . $this->mysqli->error);
     }
 
@@ -69,10 +66,11 @@ class GSMArenaDeviceModel
     {
         $sql = "UPDATE gsmarena_devices SET slug = ?, name = ?, brand = ?, url = ?, image_url = ?, specs = ?, released = ?, body = ?, sim = ?, os = ?, display_size = ?, display_resolution = ?, display_type = ?, cpu = ?, ram = ?, storage = ?, main_camera = ?, battery_capacity = ?, updated_at = NOW() WHERE id = ?";
         $stmt = $this->mysqli->prepare($sql);
-        
+
         $specsJson = json_encode($deviceData['specs'] ?? [], JSON_UNESCAPED_UNICODE);
-        
-        $stmt->bind_param('ssssssssssssssssssi', 
+
+        $stmt->bind_param(
+            'ssssssssssssssssssi',
             $deviceData['slug'],
             $deviceData['name'],
             $deviceData['brand'],
@@ -93,14 +91,14 @@ class GSMArenaDeviceModel
             $deviceData['battery_capacity'],
             $id
         );
-        
+
         $result = $stmt->execute();
         $stmt->close();
-        
+
         if (!$result) {
             throw new \Exception("Failed to update device: " . $this->mysqli->error);
         }
-        
+
         return $result;
     }
 
@@ -115,12 +113,12 @@ class GSMArenaDeviceModel
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
-        
+
         if ($result && $row = $result->fetch_assoc()) {
             $row['specs'] = json_decode($row['specs'], true);
             return $row;
         }
-        
+
         return null;
     }
 
@@ -135,12 +133,12 @@ class GSMArenaDeviceModel
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
-        
+
         if ($result && $row = $result->fetch_assoc()) {
             $row['specs'] = json_decode($row['specs'], true);
             return $row;
         }
-        
+
         return null;
     }
 
@@ -155,11 +153,11 @@ class GSMArenaDeviceModel
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
-        
+
         if ($result && $row = $result->fetch_assoc()) {
             return (int)$row['count'] > 0;
         }
-        
+
         return false;
     }
 
@@ -174,13 +172,13 @@ class GSMArenaDeviceModel
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
-        
+
         $devices = [];
         while ($row = $result->fetch_assoc()) {
             $row['specs'] = json_decode($row['specs'], true);
             $devices[] = $row;
         }
-        
+
         return $devices;
     }
 
@@ -196,13 +194,13 @@ class GSMArenaDeviceModel
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
-        
+
         $devices = [];
         while ($row = $result->fetch_assoc()) {
             $row['specs'] = json_decode($row['specs'], true);
             $devices[] = $row;
         }
-        
+
         return $devices;
     }
 
@@ -217,13 +215,13 @@ class GSMArenaDeviceModel
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
-        
+
         $devices = [];
         while ($row = $result->fetch_assoc()) {
             $row['specs'] = json_decode($row['specs'], true);
             $devices[] = $row;
         }
-        
+
         return $devices;
     }
 
@@ -234,11 +232,11 @@ class GSMArenaDeviceModel
     {
         $sql = "SELECT COUNT(*) as count FROM gsmarena_devices";
         $result = $this->mysqli->query($sql);
-        
+
         if ($result && $row = $result->fetch_assoc()) {
             return (int)$row['count'];
         }
-        
+
         return 0;
     }
 
@@ -253,11 +251,11 @@ class GSMArenaDeviceModel
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
-        
+
         if ($result && $row = $result->fetch_assoc()) {
             return (int)$row['count'];
         }
-        
+
         return 0;
     }
 
@@ -268,12 +266,12 @@ class GSMArenaDeviceModel
     {
         $sql = "SELECT DISTINCT brand FROM gsmarena_devices ORDER BY brand ASC";
         $result = $this->mysqli->query($sql);
-        
+
         $brands = [];
         while ($row = $result->fetch_assoc()) {
             $brands[] = $row['brand'];
         }
-        
+
         return $brands;
     }
 
@@ -288,13 +286,13 @@ class GSMArenaDeviceModel
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
-        
+
         $devices = [];
         while ($row = $result->fetch_assoc()) {
             $row['specs'] = json_decode($row['specs'], true);
             $devices[] = $row;
         }
-        
+
         return $devices;
     }
 
@@ -308,7 +306,7 @@ class GSMArenaDeviceModel
         $stmt->bind_param('i', $id);
         $result = $stmt->execute();
         $stmt->close();
-        
+
         return $result;
     }
 }

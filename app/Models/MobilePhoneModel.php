@@ -75,7 +75,7 @@ class MobilePhoneModel
         $display = $phoneData['display'] ?? null;
         $battery = $phoneData['battery'] ?? null;
 
-        $stmt->bind_param('sssissssssss', $slug, $name, $brand, $price, $priceValue, $url, $imageUrl, $specs, $processor, $ram, $storage, $display, $battery);
+        $stmt->bind_param('ssssissssssss', $slug, $name, $brand, $price, $priceValue, $url, $imageUrl, $specs, $processor, $ram, $storage, $display, $battery);
         $success = $stmt->execute();
         $insertId = $stmt->insert_id;
         $stmt->close();
@@ -128,7 +128,7 @@ class MobilePhoneModel
             if (isset($fieldMap[$key])) {
                 $fields[] = "{$key} = ?";
                 $types .= $fieldMap[$key];
-                
+
                 if ($key === 'specs' && is_array($value)) {
                     $values[] = json_encode($value);
                 } else {
@@ -386,7 +386,7 @@ class MobilePhoneModel
     public function getTotalCount(): int
     {
         $result = $this->mysqli->query("SELECT COUNT(*) as count FROM {$this->table}");
-        
+
         if (!$result) {
             return 0;
         }

@@ -2,7 +2,7 @@
 
 /**
  * OCR Service - Hybrid Approach
- * Primary: Node.js OCR service (Tesseract.js on port 7020)
+ * Primary: Node.js OCR service (Tesseract.js on unified server port 3000)
  * Fallback: OCR.space API (web hosting compatible)
  */
 
@@ -17,7 +17,7 @@ class OCRService
     {
         $this->ocrSpaceApiKey = $apiKey ?: getenv('OCR_SPACE_API_KEY') ?: 'K81289438988957'; // Paid tier API key
         $this->timeout = $timeout;
-        $this->nodeOcrUrl = $nodeOcrUrl ?: (getenv('OCR_SERVICE_URL') ?: 'http://localhost:7020');
+        $this->nodeOcrUrl = $nodeOcrUrl ?: (getenv('OCR_API_URL') ?: 'http://localhost:3000/api/ocr');
     }
 
     /**

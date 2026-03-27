@@ -12,7 +12,7 @@ class NodeOCRClient
 
     public function __construct(string $baseUrl = null, int $timeout = 60)
     {
-        $this->baseUrl = $baseUrl ?: 'http://localhost:7020';
+        $this->baseUrl = $baseUrl ?: (getenv('OCR_API_URL') ?: 'http://localhost:3000/api/ocr');
         $this->timeout = $timeout;
     }
 

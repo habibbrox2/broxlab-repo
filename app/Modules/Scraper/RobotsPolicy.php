@@ -59,7 +59,8 @@ class RobotsPolicy
         };
 
         foreach ($lines as $rawLine) {
-            $line = trim(strtok($rawLine, '#'));
+            $token = strtok($rawLine, '#');
+            $line = $token !== false ? trim($token) : '';
             if ($line === '') continue;
 
             $parts = explode(':', $line, 2);

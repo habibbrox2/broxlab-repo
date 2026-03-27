@@ -1,43 +1,30 @@
 module.exports = {
-  apps: [
-    {
-      name: 'scraper-api',
-      script: 'src/api/scraper-server.js',
-      env: {
-        NODE_ENV: 'production'
-      },
-      max_memory_restart: '512M',
-      autorestart: true
-    },
-    {
-      name: 'scraper-direct-api',
-      script: 'src/api/direct-scraper.js',
-      env: {
-        NODE_ENV: 'production'
-      },
-      max_memory_restart: '512M',
-      autorestart: true
-    },
-    {
-      name: 'scraper-worker',
-      script: 'src/workers/scrape-worker.js',
-      instances: 'max',
-      exec_mode: 'cluster',
-      env: {
-        NODE_ENV: 'production'
-      },
-      max_memory_restart: '512M',
-      autorestart: true
-    },
-    {
-      name: 'scraper-retry-worker',
-      script: 'src/workers/retry-worker.js',
-      instances: 1,
-      env: {
-        NODE_ENV: 'production'
-      },
-      max_memory_restart: '512M',
-      autorestart: true
-    }
-  ]
+    apps: [
+        {
+            name: 'unified-server',
+            script: 'src/index.js',
+            instances: 1,
+            exec_mode: 'fork',
+            env: {
+                NODE_ENV: 'production',
+                PORT: 3000
+            },
+            error_file: './logs/unified-server-error.log',
+            out_file: './logs/unified-server-out.log',
+            log_file: './logs/unified-server.log'
+        },
+        {
+            name: 'ai-assistant',
+            script: 'src/ai-assistant-server.js',
+            instances: 1,
+            exec_mode: 'fork',
+            env: {
+                NODE_ENV: 'production',
+                PORT: 3001
+            },
+            error_file: './logs/ai-assistant-error.log',
+            out_file: './logs/ai-assistant-out.log',
+            log_file: './logs/ai-assistant.log'
+        }
+    ]
 };

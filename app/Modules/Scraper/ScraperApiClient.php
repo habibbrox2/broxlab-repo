@@ -134,12 +134,12 @@ class ScraperApiClient
 
     private function resolveBaseUrl(): string
     {
-        $directUrl = getenv('SCRAPER_DIRECT_API_URL') ?: getenv('APP_URL');
+        $directUrl = getenv('SCRAPER_DIRECT_API_URL') ?: getenv('NODE_API_URL') ?: getenv('APP_URL');
         if ($this->mode === 'direct' && $directUrl) {
             return (string)$directUrl;
         }
 
-        $envUrl = getenv('SCRAPER_API_URL');
+        $envUrl = getenv('SCRAPER_API_URL') ?: getenv('NODE_API_URL');
         if ($envUrl) {
             return (string)$envUrl;
         }
@@ -149,6 +149,6 @@ class ScraperApiClient
             return $appUrl;
         }
 
-        return 'http://127.0.0.1:7010';
+        return 'http://127.0.0.1:3000';
     }
 }

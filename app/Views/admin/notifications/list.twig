@@ -137,18 +137,18 @@
               <tbody>
                 {% for n in notifications %}
                   <tr>
-                    <td class="text-secondary fw-medium font-monospace">
+                    <td class="text-secondary fw-medium font-monospace" data-label="ID">
                       <span data-bs-toggle="tooltip" title="Notification ID">#{{ n.id }}</span>
                     </td>
-                    <td>
+                    <td data-label="Title">
                       <strong class="text-dark d-inline-block text-truncate" style="max-width: 250px;" data-bs-toggle="tooltip" title="{{ n.title|e('html_attr') }}">
                         {{ n.title }}
                       </strong>
                     </td>
-                    <td>
+                    <td data-label="Type">
                       <span class="badge bg-primary">{{ n.type }}</span>
                     </td>
-                    <td class="notification-status-col">
+                    <td class="notification-status-col" data-label="Status">
                       {% set row_status = (n.status|default('')|lower|trim) %}
                       {% set delivery_status = (n.delivery_status|default('')|lower|trim) %}
                       {% if row_status == 'draft' %}
@@ -163,8 +163,8 @@
                         <span class="badge notification-status-badge bg-secondary">Pending</span>
                       {% endif %}
                     </td>
-                    <td>{{ n.created_at|date("d M Y H:i") }}</td>
-                    <td class="text-nowrap">
+                    <td data-label="Created">{{ n.created_at|date("d M Y H:i") }}</td>
+                    <td class="text-nowrap" data-label="Actions">
                       <a href="/admin/notifications/view?id={{ n.id }}"
                          class="modern-btn btn-sm btn-outline-secondary">
                         <i class="bi bi-eye me-1"></i>View

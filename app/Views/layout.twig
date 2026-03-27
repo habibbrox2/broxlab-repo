@@ -265,8 +265,15 @@
                             {'label': 'Home', 'url': '/', 'icon': 'bi-house-door-fill', 'match': '/'},
                             {'label': 'Mobiles', 'url': '/mobiles', 'icon': 'bi-phone-fill', 'match': '/mobiles'},
                             {'label': 'Articles', 'url': '/posts', 'icon': 'bi-newspaper', 'match': '/posts'},
-                            {'label': 'Services', 'url': '/services', 'icon': 'bi-award-fill', 'match': '/services'}
+                            {'label': 'Services', 'url': '/services', 'icon': 'bi-award-fill', 'match': '/services'},
+                              { label: 'Jobs', url: '/jobs', icon: 'bi-briefcase-fill', match: '/jobs' }
+
                         ] %}
+                        {# Add Dashboard link for authenticated users #}
+                        {% if auth_user is defined and auth_user.is_authenticated %}
+                            {% set dashboard_url = (auth_user.is_super_admin is defined and auth_user.is_super_admin) or (auth_user.role is defined and auth_user.role == 'admin') ? '/admin/dashboard' : '/user/dashboard' %}
+                            {% set nav_items = nav_items|merge([{'label': 'Dashboard', 'url': dashboard_url, 'icon': 'bi-speedometer2', 'match': dashboard_url}]) %}
+                        {% endif %}
                     {% endif %}
 
                     <ul class="navbar-nav ms-auto align-items-lg-center gap-1">

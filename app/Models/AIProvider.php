@@ -625,7 +625,11 @@ class AIProvider
         // Handle 503 DEPLOYMENT_SCALING_UP (Fireworks AI autoscaling)
         if ($httpCode === 503 && $providerName === 'fireworks') {
             $scalingResult = $this->handleDeploymentScalingUp(
-                $endpoint, $headers, $requestData, $options, $response
+                $endpoint,
+                $headers,
+                $requestData,
+                $options,
+                $response
             );
             if ($scalingResult !== null) {
                 return $scalingResult;
@@ -976,7 +980,6 @@ class AIProvider
     private function applyAdvancedRequestOptions(array $request, array $options): array
     {
         $passThroughKeys = [
-            'plugins',
             'response_format',
             'reasoning_effort',
             'tool_choice',

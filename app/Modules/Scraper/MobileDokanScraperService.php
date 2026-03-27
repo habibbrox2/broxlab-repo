@@ -6,7 +6,7 @@ namespace App\Modules\Scraper;
 
 use App\Modules\Scraper\HttpClientService;
 use App\Modules\Scraper\HtmlParserService;
-use App\Helpers\ErrorLogging;
+use App\Modules\Scraper\RawHtmlStorageService;
 
 /**
  * MobileDokanScraperService.php
@@ -17,6 +17,7 @@ class MobileDokanScraperService
 {
     private HttpClientService $httpClient;
     private HtmlParserService $parser;
+    private RawHtmlStorageService $htmlStorage;
     private string $baseUrl;
     private array $config;
     private array $stats = [
@@ -29,10 +30,12 @@ class MobileDokanScraperService
     public function __construct(
         HttpClientService $httpClient,
         ?HtmlParserService $parser = null,
-        ?array $config = null
+        ?array $config = null,
+        ?RawHtmlStorageService $htmlStorage = null
     ) {
         $this->httpClient = $httpClient;
         $this->parser = $parser ?? new HtmlParserService();
+        $this->htmlStorage = $htmlStorage ?? new RawHtmlStorageService();
         $this->config = $config ?? $this->getDefaultConfig();
         $this->baseUrl = $this->config['base_url'];
     }
@@ -91,7 +94,7 @@ class MobileDokanScraperService
             $response = $this->httpClient->get($url);
 
             if (!$response['success']) {
-                ErrorLogging::logError("MobileDokanScraper: Failed to fetch page {$page}: " . ($response['error'] ?? 'Unknown error'));
+                logError("MobileDokanScraper: Failed to fetch page {$page}: " . ($response['error'] ?? 'Unknown error'));
                 return [
                     'success' => false,
                     'phones' => [],
@@ -101,7 +104,22 @@ class MobileDokanScraperService
                 ];
             }
 
-            $this->parser->loadHtml($response['body'], $this->baseUrl);
+            // Save raw HTML to file before parsing
+            $saveResult = $this->htmlStorage->save($url, $response['body'], 'mobiledokan', 'listing');
+            if (!$saveResult['success']) {
+                logError("MobileDokanScraper: Failed to save raw HTML: " . ($saveResult['error'] ?? 'Unknown error'));
+            }
+
+            // Parse from saved file if available, otherwise use response body
+            $htmlToParse = $response['body'];
+            if ($saveResult['success'] && file_exists($saveResult['file_path'])) {
+                $loadResult = $this->htmlStorage->load($url, 'mobiledokan', 'listing');
+                if ($loadResult['success']) {
+                    $htmlToParse = $loadResult['html'];
+                }
+            }
+
+            $this->parser->loadHtml($htmlToParse, $this->baseUrl);
             $phones = $this->extractPhoneCards($limit);
 
             return [
@@ -109,11 +127,11 @@ class MobileDokanScraperService
                 'phones' => $phones,
                 'page' => $page,
                 'total_pages' => $this->estimateTotalPages(),
-                'error' => null
+                'error' => null,
+                'raw_html_file' => $saveResult['file_path'] ?? null,
             ];
-
         } catch (\Exception $e) {
-            ErrorLogging::logError("MobileDokanScraper: Exception on page {$page}: " . $e->getMessage());
+            logError("MobileDokanScraper: Exception on page {$page}: " . $e->getMessage());
             return [
                 'success' => false,
                 'phones' => [],
@@ -136,7 +154,7 @@ class MobileDokanScraperService
             $response = $this->httpClient->get($phoneUrl);
 
             if (!$response['success']) {
-                ErrorLogging::logError("MobileDokanScraper: Failed to fetch phone detail: " . ($response['error'] ?? 'Unknown error'));
+                logError("MobileDokanScraper: Failed to fetch phone detail: " . ($response['error'] ?? 'Unknown error'));
                 return [
                     'success' => false,
                     'phone' => null,
@@ -144,17 +162,32 @@ class MobileDokanScraperService
                 ];
             }
 
-            $this->parser->loadHtml($response['body'], $this->baseUrl);
+            // Save raw HTML to file before parsing
+            $saveResult = $this->htmlStorage->save($phoneUrl, $response['body'], 'mobiledokan', 'detail');
+            if (!$saveResult['success']) {
+                logError("MobileDokanScraper: Failed to save raw HTML: " . ($saveResult['error'] ?? 'Unknown error'));
+            }
+
+            // Parse from saved file if available, otherwise use response body
+            $htmlToParse = $response['body'];
+            if ($saveResult['success'] && file_exists($saveResult['file_path'])) {
+                $loadResult = $this->htmlStorage->load($phoneUrl, 'mobiledokan', 'detail');
+                if ($loadResult['success']) {
+                    $htmlToParse = $loadResult['html'];
+                }
+            }
+
+            $this->parser->loadHtml($htmlToParse, $this->baseUrl);
             $phone = $this->extractPhoneDetail();
 
             return [
                 'success' => true,
                 'phone' => $phone,
-                'error' => null
+                'error' => null,
+                'raw_html_file' => $saveResult['file_path'] ?? null,
             ];
-
         } catch (\Exception $e) {
-            ErrorLogging::logError("MobileDokanScraper: Exception on phone detail: " . $e->getMessage());
+            logError("MobileDokanScraper: Exception on phone detail: " . $e->getMessage());
             return [
                 'success' => false,
                 'phone' => null,
@@ -218,7 +251,7 @@ class MobileDokanScraperService
     private function buildListingsUrl(int $page): string
     {
         $url = $this->baseUrl;
-        
+
         if ($page > 1) {
             $url .= '?' . http_build_query([$this->config['pagination']['page_param'] => $page]);
         }
@@ -346,13 +379,13 @@ class MobileDokanScraperService
         if (preg_match('/window\.__INITIAL_STATE__\s*=\s*({.*?});/s', $html, $matches)) {
             try {
                 $data = json_decode($matches[1], true);
-                
+
                 if (is_array($data)) {
                     // Flatten nested data structure
                     $specs = $this->flattenJsData($data);
                 }
             } catch (\Exception $e) {
-                ErrorLogging::logError("MobileDokanScraper: Failed to parse JS data: " . $e->getMessage());
+                logError("MobileDokanScraper: Failed to parse JS data: " . $e->getMessage());
             }
         }
 
@@ -366,10 +399,22 @@ class MobileDokanScraperService
     {
         $specs = [];
         $specKeys = [
-            'প্রসেসর', 'র‍্যাম', 'স্টোরেজ', 'ডিসপ্লে', 'ব্যাটারি',
-            'ক্যামেরা', 'সেলফি ক্যামেরা', 'অপারেটিং সিস্টেম',
-            'প্রসেসর', 'র‍্যাম', 'স্টোরেজ', 'ডিসপ্লে', 'ব্যাটারি',
-            'ক্যামেরা', 'সেলফি ক্যামেরা', 'অপারেটিং সিস্টেম',
+            'প্রসেসর',
+            'র‍্যাম',
+            'স্টোরেজ',
+            'ডিসপ্লে',
+            'ব্যাটারি',
+            'ক্যামেরা',
+            'সেলফি ক্যামেরা',
+            'অপারেটিং সিস্টেম',
+            'প্রসেসর',
+            'র‍্যাম',
+            'স্টোরেজ',
+            'ডিসপ্লে',
+            'ব্যাটারি',
+            'ক্যামেরা',
+            'সেলফি ক্যামেরা',
+            'অপারেটিং সিস্টেম',
         ];
 
         foreach ($data as $key => $value) {
@@ -417,7 +462,7 @@ class MobileDokanScraperService
 
         // Remove Bengali currency symbol and commas
         $cleanPrice = preg_replace('/[৳,\s]/', '', $priceText);
-        
+
         return $cleanPrice ?: null;
     }
 
@@ -445,11 +490,32 @@ class MobileDokanScraperService
     {
         // Common brands
         $brands = [
-            'Samsung', 'Apple', 'Xiaomi', 'Realme', 'Oppo', 'Vivo',
-            'OnePlus', 'Huawei', 'Nokia', 'Motorola', 'Sony',
-            'LG', 'HTC', 'BlackBerry', 'Alcatel', 'ZTE',
-            'Lenovo', 'Asus', 'Acer', 'Microsoft', 'Google',
-            'Tecno', 'Infinix', 'Itel', 'Symphony', 'Walton',
+            'Samsung',
+            'Apple',
+            'Xiaomi',
+            'Realme',
+            'Oppo',
+            'Vivo',
+            'OnePlus',
+            'Huawei',
+            'Nokia',
+            'Motorola',
+            'Sony',
+            'LG',
+            'HTC',
+            'BlackBerry',
+            'Alcatel',
+            'ZTE',
+            'Lenovo',
+            'Asus',
+            'Acer',
+            'Microsoft',
+            'Google',
+            'Tecno',
+            'Infinix',
+            'Itel',
+            'Symphony',
+            'Walton',
         ];
 
         foreach ($brands as $brand) {
@@ -470,16 +536,16 @@ class MobileDokanScraperService
         $path = parse_url($url, PHP_URL_PATH);
         $parts = explode('/', trim($path, '/'));
         $lastPart = end($parts);
-        
+
         // Remove extension if present
         $slug = preg_replace('/\.[^.]+$/', '', $lastPart);
-        
+
         // Convert to lowercase and replace spaces with hyphens
         $slug = strtolower(str_replace(' ', '-', $slug));
-        
+
         // Remove special characters
         $slug = preg_replace('/[^a-z0-9-]/', '', $slug);
-        
+
         return $slug ?: 'phone-' . time();
     }
 
@@ -508,7 +574,7 @@ class MobileDokanScraperService
     {
         // Try to find pagination elements
         $pagination = $this->parser->extractAll('.pagination a, .page-link, [class*="page"]');
-        
+
         if (empty($pagination)) {
             return 1;
         }

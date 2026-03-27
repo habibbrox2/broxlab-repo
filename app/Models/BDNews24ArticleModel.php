@@ -9,9 +9,9 @@ declare(strict_types=1);
 
 class BDNews24ArticleModel
 {
-    private $mysqli;
+    private mysqli $mysqli;
 
-    public function __construct($mysqli)
+    public function __construct(mysqli $mysqli)
     {
         $this->mysqli = $mysqli;
     }
@@ -29,7 +29,7 @@ class BDNews24ArticleModel
             ");
 
             $stmt->bind_param(
-                'ssssss',
+                'sssssss',
                 $articleData['article_id'],
                 $articleData['url'],
                 $articleData['title'],

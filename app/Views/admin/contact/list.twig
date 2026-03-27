@@ -77,20 +77,20 @@
             <tbody>
               {% for msg in messages %}
                 <tr>
-                  <td class="fw-bold">{{ msg.id }}</td>
-                  <td>{{ msg.name }}</td>
-                  <td>
+                  <td class="fw-bold" data-label="#">ID</td>
+                  <td data-label="Name">{{ msg.name }}</td>
+                  <td data-label="Email">
                     {% if msg.email matches '/^.+@.+\..+$/' %}
                       <a href="mailto:{{ msg.email }}" class="text-decoration-none"><i class="bi bi-envelope-check text-success me-1"></i>{{ msg.email }}</a>
                     {% else %}
                       {{ msg.email }}
                     {% endif %}
                   </td>
-                  <td>{{ msg.subject }}</td>
-                  <td>
+                  <td data-label="Subject">{{ msg.subject }}</td>
+                  <td data-label="Date">
                     <i class="bi bi-clock-fill text-info me-1"></i>{{ msg.created_at|date("Y-m-d H:i") }}
                   </td>
-                  <td class="text-center">
+                  <td class="text-center" data-label="Actions">
                     <a href="/admin/contact/view/{{ msg.id }}"
                        class="modern-btn btn-sm btn-outline-info rounded-circle me-1"
                        title="View">

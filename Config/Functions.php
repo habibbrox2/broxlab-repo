@@ -134,11 +134,11 @@ if (!function_exists('validateCsrfToken')) {
      * @param string|null $token Token to validate
      * @return bool Validation result
      */
-    function validateCsrfToken($token)
-    {
-        try {
-            $sessionMgr = SessionManager::getInstance();
-            return $sessionMgr->validateCsrfToken($token);
+function validateCsrfToken($token)
+{
+    try {
+        $sessionMgr = SessionManager::getInstance();
+        return $sessionMgr->validateCsrfToken($token);
         } catch (Throwable $e) {
             error_log("validateCsrfToken error: " . $e->getMessage());
             // Fallback to direct comparison
@@ -147,6 +147,34 @@ if (!function_exists('validateCsrfToken')) {
             }
             return hash_equals($_SESSION['csrf_token'], $token);
         }
+    }
+}
+
+if (!function_exists('getCsrfTokenFromRequest')) {
+    /**
+     * Extract CSRF token from current request (POST body or header)
+     *
+     * @return string|null
+     */
+    function getCsrfTokenFromRequest(): ?string
+    {
+        if (isset($_POST['csrf_token'])) {
+            return $_POST['csrf_token'];
+        }
+
+        $headers = [
+            'HTTP_X_CSRF_TOKEN',
+            'HTTP_X_XSRF_TOKEN',
+            'X-CSRF-Token',
+        ];
+
+        foreach ($headers as $header) {
+            if (!empty($_SERVER[$header])) {
+                return $_SERVER[$header];
+            }
+        }
+
+        return $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_SERVER['HTTP_X_XSRF_TOKEN'] ?? $_SERVER['X-CSRF-Token'] ?? null;
     }
 }
 

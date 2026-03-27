@@ -69,14 +69,14 @@
         <tbody>
           {% for row in logs %}
             <tr>
-              <td class="small text-nowrap">{{ row.created_at }}</td>
-              <td class="small text-nowrap">{{ row.source_name ?? ('#' ~ row.source_id) }}</td>
-              <td class="small text-nowrap"><code>{{ row.status }}</code></td>
-              <td class="small text-nowrap">{{ row.http_status ?? '' }}</td>
-              <td class="small text-nowrap">{{ row.response_time ? (row.response_time * 1000)|round : '' }}</td>
-              <td class="small text-nowrap">{{ row.content_length ?? '' }}</td>
-              <td class="small text-break"><a href="{{ row.url }}" target="_blank" rel="noopener">{{ row.url }}</a></td>
-              <td class="small text-break text-muted">{{ row.error_message ?? '' }}</td>
+              <td class="small text-nowrap" data-label="Time">{{ row.created_at }}</td>
+              <td class="small text-nowrap" data-label="Source">{{ row.source_name ?? ('#' ~ row.source_id) }}</td>
+              <td class="small text-nowrap" data-label="Status"><code>{{ row.status }}</code></td>
+              <td class="small text-nowrap" data-label="HTTP">{{ row.http_status ?? '' }}</td>
+              <td class="small text-nowrap" data-label="ms">{{ row.response_time ? (row.response_time * 1000)|round : '' }}</td>
+              <td class="small text-nowrap" data-label="Len">{{ row.content_length ?? '' }}</td>
+              <td class="small text-break" data-label="URL"><a href="{{ row.url }}" target="_blank" rel="noopener">{{ row.url }}</a></td>
+              <td class="small text-break text-muted" data-label="Error">{{ row.error_message ?? '' }}</td>
             </tr>
           {% else %}
             <tr>

@@ -38,10 +38,10 @@ function logMessage(string $message, bool $verbose = false): void
     global $logFile;
     $timestamp = date('Y-m-d H:i:s');
     $logLine = "[{$timestamp}] {$message}\n";
-    
+
     // Write to log file
     file_put_contents($logFile, $logLine, FILE_APPEND);
-    
+
     // Output to console if verbose
     if ($verbose || in_array('--verbose', $GLOBALS['argv'])) {
         echo $logLine;
@@ -56,7 +56,7 @@ function sendNotification(string $subject, string $message): void
     try {
         // Load database connection
         require_once ROOT_DIR . '/public_html/_db.php';
-        
+
         // Get admin emails
         $stmt = $mysqli->prepare("
             SELECT DISTINCT u.email 
@@ -67,29 +67,29 @@ function sendNotification(string $subject, string $message): void
               AND u.status = 'active'
               AND u.email != ''
         ");
-        
+
         if ($stmt) {
             $stmt->execute();
             $result = $stmt->get_result();
             $emails = [];
-            
+
             while ($row = $result->fetch_assoc()) {
                 $emails[] = $row['email'];
             }
-            
+
             $stmt->close();
-            
+
             if (!empty($emails)) {
                 require_once ROOT_DIR . '/app/Helpers/EmailHelper.php';
-                
+
                 $htmlBody = "<h2>{$subject}</h2>";
                 $htmlBody .= "<p>{$message}</p>";
                 $htmlBody .= "<p><small>This is an automated message from Teletalk Scraper.</small></p>";
-                
+
                 foreach ($emails as $email) {
                     sendEmail($email, $subject, $htmlBody, 'Admin');
                 }
-                
+
                 logMessage("Notification sent to " . count($emails) . " admins");
             }
         }
@@ -121,22 +121,22 @@ try {
     require_once ROOT_DIR . '/app/Modules/Scraper/TeletalkScraperService.php';
     require_once ROOT_DIR . '/app/Models/TeletalkJobModel.php';
     require_once ROOT_DIR . '/app/Helpers/ErrorLogging.php';
-    
+
     // Initialize services
     $httpClient = new \App\Modules\Scraper\HttpClientService();
     $scraper = new \App\Modules\Scraper\TeletalkScraperService($httpClient);
     $model = new TeletalkJobModel($mysqli);
-    
+
     // Get previous stats for comparison
     $previousTotal = $model->getTotalCount();
     logMessage("Previous total jobs: {$previousTotal}", true);
-    
+
     // Scrape with progress tracking
     $startTime = microtime(true);
     $results = $scraper->scrapeAllPages($maxPages, function ($page, $totalPages, $success, $data) use ($model, $scraper) {
         if ($success) {
             logMessage("Page {$page}/{$totalPages}: Found " . count($data) . " jobs");
-            
+
             // Save jobs to database
             foreach ($data as $job) {
                 $saveResult = $model->saveJob($job);
@@ -156,15 +156,15 @@ try {
             logMessage("Error on page {$page}: {$data}");
         }
     });
-    
+
     $endTime = microtime(true);
     $duration = round($endTime - $startTime, 2);
-    
+
     // Get final stats
     $stats = $scraper->getStats();
     $currentTotal = $model->getTotalCount();
     $newJobsAdded = $currentTotal - $previousTotal;
-    
+
     logMessage("=== Scraping Complete ===", true);
     logMessage("Duration: {$duration} seconds", true);
     logMessage("Total scraped: {$stats['total_scraped']}", true);
@@ -172,7 +172,7 @@ try {
     logMessage("Duplicates skipped: {$stats['duplicates']}", true);
     logMessage("Errors: {$stats['errors']}", true);
     logMessage("Database total: {$currentTotal}", true);
-    
+
     // Save last scrape info
     $lastScrapeFile = ROOT_DIR . '/app/Modules/Scraper/logs/teletalk_last_scrape.json';
     $lastScrapeDir = dirname($lastScrapeFile);
@@ -185,7 +185,7 @@ try {
         'stats' => $stats,
         'duration' => $duration,
     ]));
-    
+
     // Send notification if new jobs were added
     if ($stats['new_jobs'] > 0) {
         $subject = "Teletalk Scraper: {$stats['new_jobs']} New Jobs Found";
@@ -196,25 +196,24 @@ try {
         $message .= "<li>Database total: {$currentTotal}</li>";
         $message .= "</ul>";
         $message .= "<p><a href='https://{$_SERVER['HTTP_HOST']}/admin/scraper/teletalk'>View in Admin Panel</a></p>";
-        
+
         sendNotification($subject, $message);
         logMessage("Notification sent for {$stats['new_jobs']} new jobs");
     }
-    
+
     // Exit with success code
     exit(0);
-    
 } catch (\Exception $e) {
     $errorMessage = "FATAL ERROR: " . $e->getMessage();
     logMessage($errorMessage, true);
     logMessage("Stack trace: " . $e->getTraceAsString(), true);
-    
+
     // Send error notification
     $subject = "Teletalk Scraper: ERROR";
     $message = "<p><strong>Error occurred during scraping:</strong></p>";
     $message .= "<p><code>" . htmlspecialchars($e->getMessage()) . "</code></p>";
     sendNotification($subject, $message);
-    
+
     // Exit with error code
     exit(1);
 }
