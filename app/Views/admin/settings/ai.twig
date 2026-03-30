@@ -1,0 +1,61 @@
+<div class="mb-4">
+  <h5 class="mb-3"><i class="bi bi-robot me-2"></i>AI Provider Configuration</h5>
+  
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">AI Provider</label>
+      <select class="form-select" name="ai_provider" id="ai_provider">
+        <option value="openrouter" {{ settings.ai_provider|default('openrouter') == 'openrouter' ? 'selected' : '' }}>OpenRouter</option>
+        <option value="ollama" {{ settings.ai_provider|default('openrouter') == 'ollama' ? 'selected' : '' }}>Ollama Cloud</option>
+      </select>
+      <small class="text-muted">Select the AI provider to use for content generation and analysis.</small>
+    </div>
+    
+    <div class="col-md-6">
+      <label class="form-label">AI Model</label>
+      <input type="text"
+             class="form-control"
+             name="ai_model"
+             id="ai_model"
+             value="{{ settings.ai_model|default('openrouter/auto') }}"
+             placeholder="e.g., openrouter/auto, llama2">
+      <small class="text-muted">Model identifier for the selected provider.</small>
+    </div>
+    
+    <div class="col-12">
+      <label class="form-label">API Key</label>
+      <input type="password"
+             class="form-control"
+             name="ai_api_key"
+             id="ai_api_key"
+             value="{{ settings.ai_api_key|default('') }}"
+             placeholder="Enter API key"
+             autocomplete="off">
+      <small class="text-muted">
+        For OpenRouter: Get your API key from <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a><br>
+        For Ollama: Usually not required when running locally, but can be set if configured.
+      </small>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const aiProviderSelect = document.getElementById('ai_provider');
+  const aiModelInput = document.getElementById('ai_model');
+  
+  if (aiProviderSelect && aiModelInput) {
+    const updateModelPlaceholder = () => {
+      const provider = aiProviderSelect.value;
+      if (provider === 'openrouter') {
+        aiModelInput.placeholder = 'e.g., openrouter/auto, openai/gpt-4';
+      } else if (provider === 'ollama') {
+        aiModelInput.placeholder = 'e.g., llama2, codellama, mistral (via Ollama Cloud)';
+      }
+    };
+    
+    aiProviderSelect.addEventListener('change', updateModelPlaceholder);
+    updateModelPlaceholder(); // Set initial placeholder
+  }
+});
+</script>

@@ -1385,3 +1385,34 @@ $router->post('/api/ai/ocr/upload', function () use ($ocrService) {
         ], 500);
     }
 });
+
+// Health check endpoints for admin dashboard
+$router->get('/api/admin/health/database', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+    try {
+        $result = $mysqli->query('SELECT 1');
+        if ($result) {
+            jsonResponse(['status' => 'ok', 'message' => 'Database is healthy']);
+        } else {
+            jsonResponse(['status' => 'error', 'message' => 'Database query failed'], 500);
+        }
+    } catch (Exception $e) {
+        jsonResponse(['status' => 'error', 'message' => $e->getMessage()], 500);
+    }
+});
+
+$router->get('/api/admin/health/redis', ['middleware' => ['auth', 'admin_only']], function () {
+    header('Content-Type: application/json');
+    try {
+        $redis = new Redis();
+        $connected = $redis->connect('127.0.0.1', 6379);
+        if ($connected) {
+            $redis->close();
+            jsonResponse(['status' => 'ok', 'message' => 'Redis is healthy']);
+        } else {
+            jsonResponse(['status' => 'error', 'message' => 'Could not connect to Redis'], 500);
+        }
+    } catch (Exception $e) {
+        jsonResponse(['status' => 'error', 'message' => $e->getMessage()], 500);
+    }
+});

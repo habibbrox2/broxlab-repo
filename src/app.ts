@@ -10,41 +10,59 @@ import { ocrRoutes } from './routes/ocr.routes.js';
 import { adminRoutes } from './routes/admin.routes.js';
 
 export async function createApp() {
+    console.log('Creating Fastify app...');
     const app = Fastify({
         logger: false, // Using custom logger
         trustProxy: true,
     });
 
-    // Register plugins
-    await app.register(cors, {
-        origin: config.cors.origin,
-        credentials: config.cors.credentials,
+    console.log('Skipping CORS for compatibility...');
+    // await app.register(cors, {
+    //     origin: config.cors.origin,
+    //     credentials: config.cors.credentials,
+    // });
+
+    // Add manual CORS headers
+    app.addHook('preHandler', (request, reply, done) => {
+        reply.header('Access-Control-Allow-Origin', '*');
+        reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        if (request.method === 'OPTIONS') {
+            reply.code(200).send();
+            return;
+        }
+        done();
     });
 
-    await app.register(helmet, {
-        contentSecurityPolicy: false, // Disable for SSE
-    });
+    console.log('Skipping helmet for compatibility...');
+    // await app.register(helmet, {
+    //     contentSecurityPolicy: false, // Disable for SSE
+    // });
 
-    await app.register(rateLimit, {
-        max: config.rateLimit.maxRequests,
-        timeWindow: config.rateLimit.windowMs,
-        errorResponseBuilder: (_request, context) => ({
-            code: 429,
-            error: 'Too Many Requests',
-            message: `Rate limit exceeded, retry in ${Math.round(Number(context.after) / 1000)}s`,
-            expiresIn: context.after,
-        }),
-    });
+    console.log('Skipping rate limit for compatibility...');
+    // await app.register(rateLimit, {
+    //     max: config.rateLimit.maxRequests,
+    //     timeWindow: config.rateLimit.windowMs,
+    //     errorResponseBuilder: (_request, context) => ({
+    //         code: 429,
+    //         error: 'Too Many Requests',
+    //         message: `Rate limit exceeded, retry in ${Math.round(Number(context.after) / 1000)}s`,
+    //         expiresIn: context.after,
+    //     }),
+    // });
 
+    console.log('Initializing tools...');
     // Initialize tools registry
     initializeTools();
 
+    console.log('Registering routes...');
     // Register routes
     await chatRoutes(app);
     await toolsRoutes(app);
     await ocrRoutes(app);
     await adminRoutes(app);
 
+    console.log('App created successfully');
     // Health check endpoint
     app.get('/health', async () => {
         return {
