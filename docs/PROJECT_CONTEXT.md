@@ -114,20 +114,20 @@ npm run build        # Production build
 - Role-based access control (RBAC) available
 
 **Key Classes:**
-- [`app/Models/AuthManager.php`](app/Models/AuthManager.php) - Auth logic
-- [`app/Models/SessionManager.php`](app/Models/SessionManager.php) - Session handling
-- [`app/Models/SecurityManager.php`](app/Models/SecurityManager.php) - Security features
+- [`app/Models/AuthManager.php`](..\app\Models\AuthManager.php) - Auth logic
+- [`app/Models/SessionManager.php`](..\app\Models\SessionManager.php) - Session handling
+- [`app/Models/SecurityManager.php`](..\app\Models\SecurityManager.php) - Security features
 
 ---
 
 ## 🤖 AI Features
 
 AI features are handled through:
-- [`app/Models/AIProvider.php`](app/Models/AIProvider.php) - Multi-provider AI abstraction with Fireworks autoscaling retry
-- [`app/Controllers/AISystemController.php`](app/Controllers/AISystemController.php) - AI endpoints + tool execution
-- [`app/Helpers/ToolRegistry.php`](app/Helpers/ToolRegistry.php) - Tool execution system (v3.0: parallel, streaming, circuit breaker)
-- [`app/Helpers/ToolDefinitions.php`](app/Helpers/ToolDefinitions.php) - 10 registered tools (system health, DB queries, etc.)
-- [`app/Helpers/PromptLoader.php`](app/Helpers/PromptLoader.php) - Prompt management
+- [`app/Models/AIProvider.php`](..\app\Models\AIProvider.php) - Multi-provider AI abstraction with Fireworks autoscaling retry
+- [`app/Controllers/AISystemController.php`](..\app\Controllers\AISystemController.php) - AI endpoints + tool execution
+- [`app/Helpers/ToolRegistry.php`](..\app\Helpers\ToolRegistry.php) - Tool execution system (v3.0: parallel, streaming, circuit breaker)
+- [`app/Helpers/ToolDefinitions.php`](..\app\Helpers\ToolDefinitions.php) - 10 registered tools (system health, DB queries, etc.)
+- [`app/Helpers/PromptLoader.php`](..\app\Helpers\PromptLoader.php) - Prompt management
 
 **Supported Providers:**
 - Anthropic Claude
@@ -155,8 +155,8 @@ AI features are handled through:
 - Real-time features
 
 **Key Files:**
-- [`app/Helpers/FirebaseHelper.php`](app/Helpers/FirebaseHelper.php)
-- [`app/Models/FirebaseModel.php`](app/Models/FirebaseModel.php)
+- [`app/Helpers/FirebaseHelper.php`](..\app\Helpers\FirebaseHelper.php)
+- [`app/Models/FirebaseModel.php`](..\app\Models\FirebaseModel.php)
 
 ---
 
@@ -183,7 +183,7 @@ Template location: `app/Views/`
 
 ## 🐛 Error Handling
 
-- [`app/Helpers/ErrorLogging.php`](app/Helpers/ErrorLogging.php) - Centralized logging
+- [`app/Helpers/ErrorLogging.php`](..\app\Helpers\ErrorLogging.php) - Centralized logging
 - `logActivity()` for user actions
 - `logError()` for errors
 
@@ -193,7 +193,7 @@ Template location: `app/Views/`
 
 - PHPMailer for sending emails
 - Templates stored in database (see `EmailTemplate` model)
-- [`app/Helpers/EmailHelper.php`](app/Helpers/EmailHelper.php)
+- [`app/Helpers/EmailHelper.php`](..\app\Helpers\EmailHelper.php)
 
 ---
 

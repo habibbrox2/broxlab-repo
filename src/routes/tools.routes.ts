@@ -3,6 +3,7 @@ import { ToolRegistry } from '../tools/registry.js';
 import { registerAllTools } from '../tools/index.js';
 import { adminMiddleware } from '../middleware/auth.middleware.js';
 import logger from '../utils/logger.js';
+import { metrics } from '../utils/metrics.js';
 
 let toolRegistry: ToolRegistry;
 
@@ -123,6 +124,17 @@ export async function toolsRoutes(fastify: FastifyInstance): Promise<void> {
 
             const result = await registry.execute(tool, args || {}, context);
 
+            // Record metrics
+            metrics.toolExecutionsTotal
+                .labels(tool, result.success ? 'true' : 'false')
+                .inc();
+
+            if (result.executionTimeMs) {
+                metrics.toolExecutionDuration
+                    .labels(tool)
+                    .observe(result.executionTimeMs / 1000); // Convert to seconds
+            }
+
             reply.send({
                 success: result.success,
                 data: result.data,
@@ -132,6 +144,12 @@ export async function toolsRoutes(fastify: FastifyInstance): Promise<void> {
             });
         } catch (error: any) {
             logger.error('Tool execution failed:', error);
+
+            // Record failed tool execution metric
+            metrics.toolExecutionsTotal
+                .labels('unknown', 'false')
+                .inc();
+
             reply.code(500).send({
                 success: false,
                 error: error.message || 'Tool execution failed',

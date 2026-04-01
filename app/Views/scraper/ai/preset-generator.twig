@@ -1,0 +1,395 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .preset-result {
+        display: none;
+    }
+    .preset-result.show {
+        display: block;
+    }
+    .selector-group {
+        margin-bottom: 1rem;
+    }
+    .selector-group label {
+        font-weight: 500;
+        color: #495057;
+    }
+    .confidence-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: #e9ecef;
+        overflow: hidden;
+    }
+    .confidence-fill {
+        height: 100%;
+        background: #28a745;
+        transition: width 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-magic me-2"></i>
+                    AI Preset Generator
+                </h1>
+                <div>
+                    <a href="/admin/scraper" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+            <p class="text-muted mb-4">
+                Automatically analyze any website and generate optimized scraping presets with CSS selectors.
+                The AI will detect the content type and suggest the best selectors for extraction.
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Generate Preset</h5>
+                </div>
+                <div class="card-body">
+                    <form id="presetGeneratorForm">
+                        <div class="mb-3">
+                            <label for="url" class="form-label">Website URL <span class="text-danger">*</span></label>
+                            <input type="url" 
+                                   class="form-control" 
+                                   id="url" 
+                                   name="url" 
+                                   placeholder="https://example.com" 
+                                   required
+                                   pattern="https?://.+">
+                            <div class="form-text">
+                                Enter the full URL of the website you want to generate a preset for.
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Options</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="useAI" name="use_ai" checked>
+                                <label class="form-check-label" for="useAI">
+                                    Use AI enhancement (recommended)
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                AI will analyze the page structure and provide better selector suggestions.
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="generateBtn">
+                            <i class="bi bi-magic me-1"></i>
+                            Generate Preset
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0 ps-3">
+                        <li>Use a specific page URL (e.g., an article page for news sites)</li>
+                        <li>The page should have clear content structure</li>
+                        <li>Avoid login-protected pages</li>
+                        <li>Results may take 10-30 seconds</li>
+                        <li>Review generated selectors before saving</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="row mt-4" id="loadingState" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+                    <h5>Analyzing Website...</h5>
+                    <p class="text-muted mb-0">
+                        The AI is analyzing the website structure and generating selectors.
+                        This may take up to 30 seconds.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="row mt-4 preset-result" id="resultSection">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Generated Preset</h5>
+                    <div>
+                        <span class="badge bg-success" id="contentTypeBadge"></span>
+                        <span class="badge bg-info" id="confidenceBadge"></span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Summary -->
+                    <div class="alert alert-success mb-4" id="successAlert" style="display: none;">
+                        <i class="bi bi-check-circle me-2"></i>
+                        <strong>Success!</strong> Preset generated with <span id="confidenceText"></span> confidence.
+                    </div>
+
+                    <!-- Error -->
+                    <div class="alert alert-danger mb-4" id="errorAlert" style="display: none;">
+                        <i class="bi bi-exclamation-circle me-2"></i>
+                        <strong>Error:</strong> <span id="errorText"></span>
+                    </div>
+
+                    <!-- Preset Form -->
+                    <form id="presetForm" method="POST" action="/admin/scraper/sources/save" style="display: none;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="id" id="presetId">
+                        <input type="hidden" name="url" id="presetUrl">
+                        <input type="hidden" name="website_preset_key" id="presetKey">
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Preset Name</label>
+                                <input type="text" class="form-control" name="name" id="presetName" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Content Type</label>
+                                <select class="form-select" name="content_type" id="presetContentType">
+                                    <option value="articles">Articles</option>
+                                    <option value="pages">Pages</option>
+                                    <option value="mobiles">Mobiles</option>
+                                    <option value="services">Services</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Generated Selectors</label>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 150px;">Field</th>
+                                            <th>Selector</th>
+                                            <th style="width: 100px;">Confidence</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="selectorsTable">
+                                        <!-- Dynamically populated -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="form-text">
+                                These selectors were generated by AI. You can edit them before saving.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Advanced Configuration (JSON)</label>
+                            <textarea class="form-control font-monospace" name="advance_config" id="advanceConfig" rows="4" placeholder='{"timeout": 30, "retry_attempts": 3}'></textarea>
+                            <div class="form-text">
+                                Optional: Advanced configuration in JSON format.
+                            </div>
+                        </div>
+
+                        <div class="mb-3 form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="isActive" checked>
+                            <label class="form-check-label" for="isActive">
+                                Active (enable automatic scraping)
+                            </label>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-save me-1"></i>
+                                Save as Source
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="copyToClipboard()">
+                                <i class="bi bi-clipboard me-1"></i>
+                                Copy JSON
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JSON Export Modal -->
+<div class="modal fade" id="jsonModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Preset JSON</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="jsonContent" class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="copyJson()">Copy</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let generatedPreset = null;
+
+document.getElementById('presetGeneratorForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const url = document.getElementById('url').value.trim();
+    const useAI = document.getElementById('useAI').checked;
+    
+    if (!url) {
+        alert('Please enter a URL');
+        return;
+    }
+
+    // Show loading
+    document.getElementById('loadingState').style.display = 'block';
+    document.getElementById('resultSection').classList.remove('show');
+    document.getElementById('generateBtn').disabled = true;
+
+    try {
+        const response = await fetch('/admin/scraper/ai/preset-generator/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                url: url,
+                use_ai: useAI
+            })
+        });
+
+        const data = await response.json();
+        
+        // Hide loading
+        document.getElementById('loadingState').style.display = 'none';
+        
+        if (data.success && data.preset) {
+            generatedPreset = data.preset;
+            displayPresetResult(generatedPreset);
+        } else {
+            showError(data.error || 'Failed to generate preset');
+        }
+    } catch (err) {
+        document.getElementById('loadingState').style.display = 'none';
+        showError('Network error: ' + err.message);
+    } finally {
+        document.getElementById('generateBtn').disabled = false;
+    }
+});
+
+function displayPresetResult(preset) {
+    document.getElementById('resultSection').classList.add('show');
+    document.getElementById('presetForm').style.display = 'block';
+    document.getElementById('successAlert').style.display = 'block';
+    document.getElementById('errorAlert').style.display = 'none';
+
+    // Set summary info
+    document.getElementById('contentTypeBadge').textContent = preset.content_type?.label() || preset.content_type || 'Unknown';
+    const confidence = Math.round((preset.confidence || 0) * 100);
+    document.getElementById('confidenceBadge').textContent = confidence + '% Confidence';
+    document.getElementById('confidenceText').textContent = confidence + '%';
+
+    // Fill form fields
+    const siteName = new URL(preset.url).hostname.replace('www.', '');
+    document.getElementById('presetName').value = siteName + ' Scraper';
+    document.getElementById('presetUrl').value = preset.url;
+    document.getElementById('presetKey').value = preset.name || siteName;
+    document.getElementById('presetContentType').value = preset.content_type?.value || 'articles';
+    document.getElementById('advanceConfig').value = JSON.stringify(preset.config || {}, null, 2);
+
+    // Populate selectors table
+    const tbody = document.getElementById('selectorsTable');
+    tbody.innerHTML = '';
+
+    const selectors = preset.selectors || {};
+    const fields = [
+        { key: 'title', label: 'Title' },
+        { key: 'content', label: 'Content' },
+        { key: 'excerpt', label: 'Excerpt' },
+        { key: 'date', label: 'Date' },
+        { key: 'author', label: 'Author' },
+        { key: 'image', label: 'Image' },
+        { key: 'category', label: 'Category' },
+        { key: 'tags', label: 'Tags' }
+    ];
+
+    fields.forEach(field => {
+        if (selectors[field.key] && selectors[field.key].length > 0) {
+            const selector = selectors[field.key][0]; // Take first selector
+            const confidence = preset.confidence ? Math.round(preset.confidence * 100) : 50;
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><strong>${field.label}</strong></td>
+                <td>
+                    <code class="d-block" style="font-size: 0.9em;">${selector}</code>
+                </td>
+                <td>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: ${confidence}%"></div>
+                    </div>
+                    <small>${confidence}%</small>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
+    });
+
+    if (tbody.children.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No selectors generated</td></tr>';
+    }
+}
+
+function showError(message) {
+    document.getElementById('resultSection').classList.add('show');
+    document.getElementById('presetForm').style.display = 'none';
+    document.getElementById('successAlert').style.display = 'none';
+    document.getElementById('errorAlert').style.display = 'block';
+    document.getElementById('errorText').textContent = message;
+}
+
+function copyToClipboard() {
+    if (!generatedPreset) return;
+    
+    const json = JSON.stringify(generatedPreset, null, 2);
+    navigator.clipboard.writeText(json).then(() => {
+        alert('Preset JSON copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy to clipboard');
+    });
+}
+
+function copyJson() {
+    const jsonContent = document.getElementById('jsonContent').textContent;
+    navigator.clipboard.writeText(jsonContent).then(() => {
+        alert('JSON copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+    });
+}
+</script>
+{% endblock %}

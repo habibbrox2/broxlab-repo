@@ -1,6 +1,7 @@
 import mysql from 'mysql2/promise';
 import { config } from './index.js';
 import logger from '../utils/logger.js';
+import { metrics } from '../utils/metrics.js';
 
 // Create connection pool
 const pool = mysql.createPool({
@@ -35,8 +36,15 @@ export async function query<T = any>(
     sql: string,
     params?: any[]
 ): Promise<T[]> {
+    const startTime = Date.now();
     try {
         const [rows] = await pool.execute(sql, params);
+
+        // Record metrics
+        const duration = (Date.now() - startTime) / 1000;
+        const queryType = sql.trim().split(' ')[0].toLowerCase();
+        metrics.dbQueryDuration.labels(queryType).observe(duration);
+
         return rows as T[];
     } catch (error) {
         logger.error('Database query error:', { sql, params, error });
@@ -58,8 +66,15 @@ export async function execute(
     sql: string,
     params?: any[]
 ): Promise<mysql.ResultSetHeader> {
+    const startTime = Date.now();
     try {
         const [result] = await pool.execute(sql, params);
+
+        // Record metrics
+        const duration = (Date.now() - startTime) / 1000;
+        const queryType = sql.trim().split(' ')[0].toLowerCase();
+        metrics.dbQueryDuration.labels(queryType).observe(duration);
+
         return result as mysql.ResultSetHeader;
     } catch (error) {
         logger.error('Database execute error:', { sql, params, error });

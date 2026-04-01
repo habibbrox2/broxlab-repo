@@ -2,13 +2,13 @@ module.exports = {
     apps: [
         {
             name: 'unified-server',
-            script: './node_modules/.bin/tsx',
-            args: ['src/index.ts'],
+            script: 'node',
+            args: ['./node_modules/tsx/dist/cli.mjs', 'src/index.ts'],
             instances: 1,
             exec_mode: 'fork',
             env: {
                 NODE_ENV: 'production',
-                PORT: 3000
+                PORT: 3002
             },
             error_file: './logs/unified-server-error.log',
             out_file: './logs/unified-server-out.log',

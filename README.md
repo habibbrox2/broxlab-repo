@@ -209,7 +209,7 @@ We welcome contributions! Please follow these steps:
 - [Project Context](docs/PROJECT_CONTEXT.md)
 - [Coding Conventions](docs/CODING_CONVENTIONS.md)
 - [AI Coding Guide](docs/ai/AI_CODING_GUIDE.md)
-- [Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
+- [Deployment Guide](web-host\DEPLOYMENT_GUIDE.md)
 - [AI Context Index](docs/ai/AI_CONTEXT_INDEX.md)
 
 ---

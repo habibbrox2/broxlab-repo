@@ -4,6 +4,8 @@ import logger from '../utils/logger.js';
 import { execute } from '../config/database.js';
 import redis from '../config/redis.js';
 import multipart from '@fastify/multipart';
+import { aiController } from '../controllers/ai.controller.js';
+import { mcpController } from '../controllers/mcp.controller.js';
 
 export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
     // Register multipart plugin for file uploads
@@ -1097,4 +1099,30 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
             });
         }
     });
+
+    // AI Settings routes
+    fastify.get('/admin/settings/ai', {
+        preHandler: async (request, reply) => {
+            await adminMiddleware(request, reply);
+        },
+    }, aiController.getAISettings);
+
+    fastify.post('/admin/settings/ai', {
+        preHandler: async (request, reply) => {
+            await adminMiddleware(request, reply);
+        },
+    }, aiController.saveAISettings);
+
+    // MCP Settings routes
+    fastify.get('/admin/settings/mcp', {
+        preHandler: async (request, reply) => {
+            await adminMiddleware(request, reply);
+        },
+    }, mcpController.getMCPSettings);
+
+    fastify.post('/admin/settings/mcp', {
+        preHandler: async (request, reply) => {
+            await adminMiddleware(request, reply);
+        },
+    }, mcpController.saveMCPSettings);
 }

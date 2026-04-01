@@ -1,0 +1,123 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-file-earmark-text me-2"></i>
+                    Log Details
+                </h1>
+                <a href="/admin/scraper/logs" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Back to Logs
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Log Entry #{{ log.id }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">ID:</dt>
+                                <dd class="col-sm-8">{{ log.id }}</dd>
+
+                                <dt class="col-sm-4">Level:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-{{ log.level == 'error' ? 'danger' : (log.level == 'warning' ? 'warning' : (log.level == 'info' ? 'info' : 'secondary')) }}">
+                                        {{ log.level|capitalize }}
+                                    </span>
+                                </dd>
+
+                                <dt class="col-sm-4">Type:</dt>
+                                <dd class="col-sm-8">{{ log.log_type|default('General') }}</dd>
+
+                                <dt class="col-sm-4">Source:</dt>
+                                <dd class="col-sm-8">
+                                    {% if log.source_name %}
+                                        <a href="/admin/scraper/sources/{{ log.source_id }}">{{ log.source_name }}</a>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </dd>
+
+                                <dt class="col-sm-4">Job Type:</dt>
+                                <dd class="col-sm-8">{{ log.job_type|default('N/A') }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Created:</dt>
+                                <dd class="col-sm-8">{{ log.created_at }}</dd>
+
+                                <dt class="col-sm-4">Job ID:</dt>
+                                <dd class="col-sm-8">
+                                    {% if log.job_id %}
+                                        <a href="/admin/scraper/logs?job_id={{ log.job_id }}">{{ log.job_id }}</a>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </dd>
+
+                                <dt class="col-sm-4">Source ID:</dt>
+                                <dd class="col-sm-8">{{ log.source_id ?: 'N/A' }}</dd>
+
+                                <dt class="col-sm-4">IP Address:</dt>
+                                <dd class="col-sm-8">{{ log.ip_address ?: 'N/A' }}</dd>
+
+                                <dt class="col-sm-4">User Agent:</dt>
+                                <dd class="col-sm-8">{{ log.user_agent ?: 'N/A' }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Message:</h6>
+                            <div class="bg-light p-3 rounded">
+                                <pre class="mb-0">{{ log.message }}</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if log.context %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Context:</h6>
+                            <div class="bg-light p-3 rounded">
+                                <pre class="mb-0">{{ log.context|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if log.stack_trace %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Stack Trace:</h6>
+                            <div class="bg-light p-3 rounded">
+                                <pre class="mb-0">{{ log.stack_trace }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

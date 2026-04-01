@@ -102,14 +102,14 @@ echo $twig->render('public/contact.twig', [
 
 | Helper | Purpose |
 |--------|---------|
-| [`app/Helpers/EmailHelper.php`](app/Helpers/EmailHelper.php) | `sendEmail($to, $subject, $body, $name)` |
-| [`app/Helpers/FirebaseHelper.php`](app/Helpers/FirebaseHelper.php) | Push notifications, FCM |
-| [`app/Helpers/NotificationHelper.php`](app/Helpers/NotificationHelper.php) | Multi-channel notifications |
-| [`app/Helpers/ErrorLogging.php`](app/Helpers/ErrorLogging.php) | `logError()`, `logActivity()` |
-| [`app/Helpers/PurifierHelper.php`](app/Helpers/PurifierHelper.php) | HTML sanitization |
-| [`app/Helpers/BreadcrumbHelper.php`](app/Helpers/BreadcrumbHelper.php) | Breadcrumb generation |
-| [`app/Helpers/EditorHelper.php`](app/Helpers/EditorHelper.php) | Content editor utilities |
-| [`app/Helpers/AuthAndSecurityHelper.php`](app/Helpers/AuthAndSecurityHelper.php) | Auth & security functions |
+| [`app/Helpers/EmailHelper.php`](..\..\app\Helpers\EmailHelper.php) | `sendEmail($to, $subject, $body, $name)` |
+| [`app/Helpers/FirebaseHelper.php`](..\..\app\Helpers\FirebaseHelper.php) | Push notifications, FCM |
+| [`app/Helpers/NotificationHelper.php`](..\..\app\Helpers\NotificationHelper.php) | Multi-channel notifications |
+| [`app/Helpers/ErrorLogging.php`](..\..\app\Helpers\ErrorLogging.php) | `logError()`, `logActivity()` |
+| [`app/Helpers/PurifierHelper.php`](..\..\app\Helpers\PurifierHelper.php) | HTML sanitization |
+| [`app/Helpers/BreadcrumbHelper.php`](..\..\app\Helpers\BreadcrumbHelper.php) | Breadcrumb generation |
+| [`app/Helpers/EditorHelper.php`](..\..\app\Helpers\EditorHelper.php) | Content editor utilities |
+| [`app/Helpers/AuthAndSecurityHelper.php`](..\..\app\Helpers\AuthAndSecurityHelper.php) | Auth & security functions |
 
 ---
 
@@ -236,13 +236,13 @@ $htmlContent = PurifierHelper::purify($rawHtml);
 
 | Model | Purpose |
 |-------|---------|
-| [`app/Models/UserModel.php`](app/Models/UserModel.php) | User CRUD, authentication |
-| [`app/Models/ContentModel.php`](app/Models/ContentModel.php) | Posts, pages, categories |
-| [`app/Models/AuthManager.php`](app/Models/AuthManager.php) | Session, login, permissions |
-| [`app/Models/AppSettings.php`](app/Models/AppSettings.php) | Application settings |
-| [`app/Models/NotificationModel.php`](app/Models/NotificationModel.php) | Notifications |
+| [`app/Models/UserModel.php`](..\..\app\Models\UserModel.php) | User CRUD, authentication |
+| [`app/Models/ContentModel.php`](..\..\app\Models\ContentModel.php) | Posts, pages, categories |
+| [`app/Models/AuthManager.php`](..\..\app\Models\AuthManager.php) | Session, login, permissions |
+| [`app/Models/AppSettings.php`](..\..\app\Models\AppSettings.php) | Application settings |
+| [`app/Models/NotificationModel.php`](..\..\app\Models\NotificationModel.php) | Notifications |
 | [`app/Models/AutoContentModel.php`](app/Models/AutoContentModel.php) | Web scraping, auto-content |
-| [`app/Models/AIProvider.php`](app/Models/AIProvider.php) | AI API integrations |
+| [`app/Models/AIProvider.php`](..\..\app\Models\AIProvider.php) | AI API integrations |
 
 ---
 
@@ -443,6 +443,6 @@ For instant responses without cold starts, set `--min-replica-count 1` or higher
 
 ## 📞 Need Help?
 
-- Check [`README.md`](README.md) for setup instructions
+- Check [`README.md`](..\..\README.md) for setup instructions
 - Check existing code in `app/Controllers/` for patterns
 - Check `app/Views/` for template examples

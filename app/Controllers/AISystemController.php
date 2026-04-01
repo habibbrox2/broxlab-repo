@@ -2725,6 +2725,10 @@ $router->get('/api/admin/system-health', ['middleware' => ['auth', 'admin_only']
         'cache' => [
             'status' => 'active',
             'check' => false
+        ],
+        'nodejs' => [
+            'status' => 'checking',
+            'check' => false
         ]
     ];
 
@@ -2745,6 +2749,24 @@ $router->get('/api/admin/system-health', ['middleware' => ['auth', 'admin_only']
         @unlink($cacheFile);
     } catch (Exception $e) {
         $health['cache']['status'] = 'error';
+    }
+
+    // Check Node.js server
+    $nodejsPort = getenv('NODEJS_PORT') ?: '3000';
+    $nodejsHost = getenv('NODEJS_HOST') ?: 'localhost';
+    try {
+        $fp = @fsockopen($nodejsHost, $nodejsPort, $errno, $errstr, 5);
+        if ($fp) {
+            fclose($fp);
+            $health['nodejs']['check'] = true;
+            $health['nodejs']['status'] = 'online';
+        } else {
+            $health['nodejs']['status'] = 'offline';
+            $health['nodejs']['error'] = "Connection failed: $errstr ($errno)";
+        }
+    } catch (Exception $e) {
+        $health['nodejs']['status'] = 'error';
+        $health['nodejs']['error'] = $e->getMessage();
     }
 
     // Check API (try a simple endpoint)

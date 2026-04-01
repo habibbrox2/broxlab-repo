@@ -12,7 +12,7 @@ BroxBhai uses a **3-tier pyramid of context files** (Tier 1/2/3) to keep AI agen
 - When to create new context files
 - Change propagation rules
 
-**For navigation:** See [`docs/ai/AI_CONTEXT_INDEX.md`](docs/ai/AI_CONTEXT_INDEX.md)
+**For navigation:** See [`docs/ai/AI_CONTEXT_INDEX.md`](ai\AI_CONTEXT_INDEX.md)
 
 ---
 
@@ -23,8 +23,8 @@ These files grow over time; agents add entries but NEVER delete.
 
 | File | How | When | Responsible |
 |------|-----|------|-------------|
-| [`docs/ai/AGENT_MEMORY.md`](docs/ai/AGENT_MEMORY.md) | Append new `[BROX-XXX]` entries | After non-trivial work | Coding agent |
-| [`docs/ai/KNOWN_PITFALLS.md`](docs/ai/KNOWN_PITFALLS.md) | Append new `[PIT-XXX]` entries (mark `Resolved: Y/N`) | After finding/fixing a gotcha | Coding agent |
+| [`docs/ai/AGENT_MEMORY.md`](ai\AGENT_MEMORY.md) | Append new `[BROX-XXX]` entries | After non-trivial work | Coding agent |
+| [`docs/ai/KNOWN_PITFALLS.md`](ai\KNOWN_PITFALLS.md) | Append new `[PIT-XXX]` entries (mark `Resolved: Y/N`) | After finding/fixing a gotcha | Coding agent |
 | `AGENTS.md` Changelog | Add entry to "Changelog (latest N)" | After significant feature/fix | Coding agent |
 
 **Key rule:** Append only. Never delete entries. Mark as "Resolved: Yes" to retire them.
@@ -34,11 +34,11 @@ These files should be reviewed quarterly or after major changes.
 
 | File | Refresh Interval | Who | Notes |
 |------|------------------|-----|-------|
-| [`docs/CODING_STANDARDS.md`](docs/CODING_STANDARDS.md) | Quarterly or after architecture change | Tech Lead / Senior Agent | Single source of truth |
-| [`docs/ai/AI_QUICK_CONTEXT.md`](docs/ai/AI_QUICK_CONTEXT.md) | Quarterly (token saver baseline) | Tech Lead | Keep ultra-concise |
-| [`docs/ai/AI_CODING_GUIDE.md`](docs/ai/AI_CODING_GUIDE.md) | Bi-annual or after major refactor | Tech Lead | Deep-dive reference |
-| [`editor/.rules-base.md`](editor/.rules-base.md) | Quarterly (shared foundation) | Tech Lead | Sync with CODING_STANDARDS |
-| [`system/prompts/INDEX.md`](system/prompts/INDEX.md) | After prompt changes | AI/Prompt Engineer | Keep in sync with actual prompts |
+| [`docs/CODING_STANDARDS.md`](CODING_STANDARDS.md) | Quarterly or after architecture change | Tech Lead / Senior Agent | Single source of truth |
+| [`docs/ai/AI_QUICK_CONTEXT.md`](ai\AI_QUICK_CONTEXT.md) | Quarterly (token saver baseline) | Tech Lead | Keep ultra-concise |
+| [`docs/ai/AI_CODING_GUIDE.md`](ai\AI_CODING_GUIDE.md) | Bi-annual or after major refactor | Tech Lead | Deep-dive reference |
+| [`editor/.rules-base.md`](..\editor\.rules-base.md) | Quarterly (shared foundation) | Tech Lead | Sync with CODING_STANDARDS |
+| [`system/prompts/INDEX.md`](..\system\prompts\INDEX.md) | After prompt changes | AI/Prompt Engineer | Keep in sync with actual prompts |
 
 ---
 
@@ -51,7 +51,7 @@ When adding a new context file:
    - **Tier 1:** Only for absolutely foundational repo facts (rare)
    - **Tier 2:** Standard features, workflows, patterns
    - **Tier 3:** Deep-dive, optional, specialized
-3. **Update [`docs/ai/AI_CONTEXT_INDEX.md`](docs/ai/AI_CONTEXT_INDEX.md)** — Add entry in appropriate tier
+3. **Update [`docs/ai/AI_CONTEXT_INDEX.md`](ai\AI_CONTEXT_INDEX.md)** — Add entry in appropriate tier
 4. **Link from parent file** — If part of a set, link from index
 5. **Set version number** — Start at 1.0, increment with major updates
 6. **Add to this file** — Document maintenance profile above
@@ -74,7 +74,7 @@ When a context file becomes outdated:
    **Deprecated:** March 22, 2026 | **Replace with:** See docs/NewFeature.md
    ```
 
-2. **Update [`AI_CONTEXT_INDEX.md`](docs/ai/AI_CONTEXT_INDEX.md):**
+2. **Update [`AI_CONTEXT_INDEX.md`](ai\AI_CONTEXT_INDEX.md):**
    - Remove from active tiers
    - Add note: "Deprecated (see docs/NewFeature.md instead)"
 
@@ -101,15 +101,15 @@ When a context file becomes outdated:
 ## Sync & Consistency Rules
 
 ### Rule: Single Source of Truth
-- **Security rules** → live in [`docs/CODING_STANDARDS.md`](docs/CODING_STANDARDS.md) (only source)
-- **Repo facts** → live in [`AGENTS.md`](AGENTS.md) (entry point + quick check-ins)
-- **Shared editor rules** → live in [`editor/.rules-base.md`](editor/.rules-base.md) (referenced, not duplicated)
+- **Security rules** → live in [`docs/CODING_STANDARDS.md`](CODING_STANDARDS.md) (only source)
+- **Repo facts** → live in [`AGENTS.md`](..\AGENTS.md) (entry point + quick check-ins)
+- **Shared editor rules** → live in [`editor/.rules-base.md`](..\editor\.rules-base.md) (referenced, not duplicated)
 
 **Violation:** If a rule appears in 2+ places, consolidate to the canonical source, then link from others.
 
 ### Rule: Editor Files Don't Duplicate
 - `editor/CLAUDE.md`, `editor/CURSOR.md`, `editor/WINDSURF.md`, `.github/copilot-instructions.md`
-- All reference [`editor/.rules-base.md`](.rules-base.md) instead of repeating rules
+- All reference [`editor/.rules-base.md`](..\editor\.rules-base.md) instead of repeating rules
 - Editor-specific notes (shortcuts, workflow) can be unique
 
 **Violation check:** `grep -r "prepared statements" editor/` should only find `.rules-base.md` mention
@@ -216,8 +216,8 @@ A: If you spent >30 min learning something that required reading multiple files,
 
 ## References
 
-- [AI Context Index (3-Tier Navigation)](docs/ai/AI_CONTEXT_INDEX.md)
-- [CODING STANDARDS (Single Source of Truth)](docs/CODING_STANDARDS.md)
-- [AGENTS.md (Repo Facts + Changelog)](AGENTS.md)
-- [AGENT_MEMORY.md (Decision Log)](docs/ai/AGENT_MEMORY.md)
-- [SELF_IMPROVEMENT_LOOP.md (Post-Work Docs)](docs/ai/SELF_IMPROVEMENT_LOOP.md)
+- [AI Context Index (3-Tier Navigation)](ai\AI_CONTEXT_INDEX.md)
+- [CODING STANDARDS (Single Source of Truth)](CODING_STANDARDS.md)
+- [AGENTS.md (Repo Facts + Changelog)](..\AGENTS.md)
+- [AGENT_MEMORY.md (Decision Log)](ai\AGENT_MEMORY.md)
+- [SELF_IMPROVEMENT_LOOP.md (Post-Work Docs)](ai\SELF_IMPROVEMENT_LOOP.md)

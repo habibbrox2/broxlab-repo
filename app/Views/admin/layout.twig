@@ -146,6 +146,41 @@
           <i class="bi bi-circle-half"></i>
         </button>
 
+        <!-- Server Status Indicator -->
+        <div class="server-status-indicator dropdown" id="serverStatusIndicator" title="Checking server status...">
+          <div class="d-flex align-items-center" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-server" id="serverStatusIcon"></i>
+            <span class="server-status-text d-none d-md-inline ms-1" id="serverStatusText">Checking...</span>
+            <i class="bi bi-chevron-down ms-1" style="font-size: 0.7rem;"></i>
+          </div>
+          <ul class="dropdown-menu server-status-dropdown" aria-labelledby="serverStatusIndicator">
+            <li class="dropdown-header">Server Status</li>
+            <li><div class="server-status-item" data-service="database">
+                <i class="bi bi-database"></i>
+                <span>Database</span>
+                <span class="status-badge" data-status="checking">Checking...</span>
+              </div></li>
+            <li><div class="server-status-item" data-service="cache">
+                <i class="bi bi-hdd-stack"></i>
+                <span>Cache</span>
+                <span class="status-badge" data-status="checking">Checking...</span>
+              </div></li>
+            <li><div class="server-status-item" data-service="api">
+                <i class="bi bi-gear"></i>
+                <span>API</span>
+                <span class="status-badge" data-status="checking">Checking...</span>
+              </div></li>
+            <li><div class="server-status-item" data-service="nodejs">
+                <i class="bi bi-code-slash"></i>
+                <span>Node.js</span>
+                <span class="status-badge" data-status="checking">Checking...</span>
+              </div></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><div class="server-status-item">
+                <small class="text-muted" id="serverStatusLastCheck">Last checked: Never</small>
+              </div></li>
+          </ul>
+        </div>
         {% if auth_user.is_authenticated %}
         <div class="dropdown admin-user-menu" data-admin-user-menu>
           <a class="d-flex align-items-center text-white text-decoration-none dropdown-toggle admin-user-toggle"
@@ -216,12 +251,11 @@
           {'name': 'All Posts', 'url': '/admin/posts', 'key': 'all-posts'},
           {'name': 'Add Post', 'url': '/admin/posts/create', 'key': 'add-post'}
       ]},
-      {'name': 'AI Auto Content', 'icon': 'bi-robot', 'url': '/admin/autocontent', 'key': 'autocontent', 'children': [
-          {'name': 'Dashboard', 'url': '/admin/autocontent', 'key': 'autocontent-dashboard'},
-          {'name': 'Sources', 'url': '/admin/autocontent/sources', 'key': 'autocontent-sources'},
-          {'name': 'Content Queue', 'url': '/admin/autocontent/queue', 'key': 'autocontent-queue'},
-          {'name': 'Retry Queue', 'url': '/admin/autocontent/retry-queue', 'key': 'autocontent-retry-queue'},
-          {'name': 'Settings', 'url': '/admin/autocontent/settings', 'key': 'autocontent-settings'}
+      {'name': 'Web Scraping Menu', 'icon': 'bi-robot', 'url': '/admin/scraper', 'key': 'scraper', 'children': [
+          {'name': 'Dashboard', 'url': '/admin/scraper', 'key': 'scraper-dashboard'},
+          {'name': 'Collected Data', 'url': '/admin/scraper/collected-data', 'key': 'scraper-collected-data'},
+          {'name': 'AI Preset Generator', 'url': '/admin/scraper/ai/preset-generator', 'key': 'scraper-ai-preset-generator'},
+          {'name': 'AI Analyzer', 'url': '/admin/scraper/ai/analyzer', 'key': 'scraper-ai-analyzer'}
       ]},
       {'name': 'AI Conversations', 'icon': 'bi-chat-dots', 'url': '/admin/ai-chats', 'key': 'ai-chats'},
       {'name': 'Services', 'icon': 'bi-award-fill', 'url': '/admin/services', 'key': 'services', 'children': [
@@ -442,7 +476,7 @@
           const td = document.createElement('td');
           td.className = 'text-center';
           if (rowId) {
-            td.innerHTML = '<input type="checkbox" class="form-check-input table-select-checkbox item-checkbox" value="' + rowId.replace(/\"/g, '&quot;') + '">';
+            td.innerHTML = '<input type="checkbox" class="form-check-input table-select-checkbox item-checkbox" value="' + rowId.replace(/\"/g, '"') + '">';
           } else {
             td.innerHTML = '<input type="checkbox" class="form-check-input table-select-checkbox item-checkbox" disabled>';
           }

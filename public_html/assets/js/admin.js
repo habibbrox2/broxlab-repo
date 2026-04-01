@@ -3,29 +3,29 @@
  * Handles sidebar toggling and responsive behaviors
  */
 
+import { initSidebar } from './modules/sidebar.js';
+import { initAdminNotificationRuntime, initAdminUserDropdownSync, initAdminDebugUtils, initAdminUnifiedLogout } from './modules/notifications.js';
+import { initPasswordModals } from './modules/security.js';
+import { runWhenReady } from './modules/utils.js';
+
 document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
-    // Sidebar Toggle Logic
-    const sidebar = document.querySelector('.sidebar');
-    const sidebarToggles = document.querySelectorAll('.sidebar-toggle');
-    const sidebarMiniToggle = document.querySelector('.sidebar-mini-toggle');
-    const adminShellRow = document.querySelector('.admin-shell-row');
-    const adminMain = document.querySelector('.admin-main');
-    const sidebarResizer = document.getElementById('adminColumnResizer');
-    const MINI_STORAGE_KEY = 'admin.sidebar.mini';
-    const SIDEBAR_WIDTH_KEY = 'admin.sidebar.width';
-    const MINI_EXPANDED_CLASS = 'admin-sidebar-mini-expanded';
-    const MOBILE_OPEN_CLASS = 'admin-sidebar-open';
-    const DESKTOP_WIDTH = 992;
-    const DEFAULT_SIDEBAR_WIDTH = 280;
-    const MIN_SIDEBAR_WIDTH = 220;
-    const MAX_SIDEBAR_WIDTH = 520;
+    // Initialize modules
+    initSidebar();
+    initAdminNotificationRuntime();
+    runWhenReady(initAdminUserDropdownSync);
+    initAdminDebugUtils();
+    initAdminUnifiedLogout();
+    runWhenReady(initPasswordModals);
 
-    // Create overlay element
-    const overlay = document.createElement('div');
-    overlay.className = 'sidebar-overlay';
-    document.body.appendChild(overlay);
+    // Attach functions to window for global access
+    window.validatePasswordStrength = validatePasswordStrength;
+    window.setPassword = setPassword;
+    window.changePassword = changePassword;
+    // Add other functions as needed
+
+    // The rest of the original code...
 
     const applyStackedTables = () => {
         const tables = document.querySelectorAll('table.table-stacked');
@@ -282,10 +282,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const updateResizerVisibility = () => {
                 const isDesktop = window.innerWidth >= DESKTOP_WIDTH;
                 const isMini = isMiniMode();
-                
+
                 // Reset all visibility classes first
                 sidebarResizer.classList.remove('d-none', 'd-lg-flex', 'd-flex');
-                
+
                 if (isDesktop) {
                     // On desktop, show the resizer (as flex)
                     if (isMini) {
@@ -568,15 +568,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-const runWhenReady = (fn) => {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', fn, { once: true });
-    } else {
-        fn();
-    }
-};
-
-const getUserId = () => document.querySelector('meta[name="user-id"]')?.content || null;
 const ADMIN_NAV_DROPDOWN_OPEN_EVENT = 'brox:navbar-dropdown-open';
 
 const adminNotificationCoreState = new Map();
@@ -3934,6 +3925,149 @@ runWhenReady(() => {
         initNotificationsDashboardLegacy();
         initNotificationsAnalytics();
     });
+
+    // Server Status Indicator
+    const initServerStatusIndicator = () => {
+        const indicator = document.getElementById('serverStatusIndicator');
+        const icon = document.getElementById('serverStatusIcon');
+        const text = document.getElementById('serverStatusText');
+
+        if (!indicator || !icon || !text) return;
+
+        let checkInterval;
+        let isChecking = false;
+
+        const updateStatus = (status, message) => {
+            indicator.classList.remove('online', 'offline', 'warning', 'checking');
+
+            switch (status) {
+                case 'online':
+                    indicator.classList.add('online');
+                    icon.className = 'bi bi-server';
+                    text.textContent = 'Online';
+                    indicator.title = 'All systems operational';
+                    break;
+                case 'offline':
+                    indicator.classList.add('offline');
+                    icon.className = 'bi bi-server';
+                    text.textContent = 'Offline';
+                    indicator.title = message || 'Server offline';
+                    break;
+                case 'warning':
+                    indicator.classList.add('warning');
+                    icon.className = 'bi bi-exclamation-triangle';
+                    text.textContent = 'Warning';
+                    indicator.title = message || 'Some services may be degraded';
+                    break;
+                case 'checking':
+                default:
+                    indicator.classList.add('checking');
+                    icon.className = 'bi bi-arrow-repeat';
+                    text.textContent = 'Checking...';
+                    indicator.title = 'Checking server status...';
+                    break;
+            }
+        };
+
+        const updateServiceStatus = (serviceName, status, error = null) => {
+            const item = document.querySelector(`.server-status-item[data-service="${serviceName}"]`);
+            if (!item) return;
+
+            const badge = item.querySelector('.status-badge');
+            if (!badge) return;
+
+            badge.setAttribute('data-status', status);
+            badge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+
+            if (error) {
+                badge.title = error;
+            }
+        };
+
+        const updateLastCheck = () => {
+            const lastCheckEl = document.getElementById('serverStatusLastCheck');
+            if (lastCheckEl) {
+                lastCheckEl.textContent = `Last checked: ${new Date().toLocaleTimeString()}`;
+            }
+        };
+
+        const checkServerStatus = async () => {
+            if (isChecking) return;
+            isChecking = true;
+
+            try {
+                updateStatus('checking');
+
+                const response = await fetch('/api/admin/system-health', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update individual service statuses
+                    const services = ['database', 'cache', 'api', 'nodejs'];
+                    services.forEach(service => {
+                        if (data[service]) {
+                            const status = data[service].check ? 'online' : 'offline';
+                            const error = data[service].error || null;
+                            updateServiceStatus(service, status, error);
+                        }
+                    });
+
+                    // Check if all services are operational
+                    const { database, cache, api, nodejs } = data;
+
+                    if (database.check && cache.check && api.check && nodejs.check) {
+                        updateStatus('online', 'All systems operational');
+                    } else if (database.check || cache.check || api.check || nodejs.check) {
+                        updateStatus('warning', 'Some services may be degraded');
+                    } else {
+                        updateStatus('offline', 'All services offline');
+                    }
+
+                    updateLastCheck();
+                } else {
+                    updateStatus('offline', 'Server health check failed');
+                }
+            } catch (error) {
+                console.warn('Server status check failed:', error);
+                updateStatus('offline', 'Unable to check server status');
+            } finally {
+                isChecking = false;
+            }
+        };
+
+        // Initial check
+        checkServerStatus();
+
+        // Set up periodic checks (every 30 seconds)
+        checkInterval = setInterval(checkServerStatus, 30000);
+
+        // Add click handler to manually refresh
+        indicator.addEventListener('click', (e) => {
+            e.preventDefault();
+            checkServerStatus();
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (checkInterval) {
+                clearInterval(checkInterval);
+            }
+        });
+    };
+
+    initServerStatusIndicator();
 })();
 
 

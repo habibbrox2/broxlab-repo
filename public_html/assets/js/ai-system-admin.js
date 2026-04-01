@@ -2,6 +2,7 @@
  * AI System Admin - Vanilla JavaScript
  * Handles provider management, model loading, and connection testing
  * Uses SweetAlert2 for all alerts via window.showAlert()
+ * Cache bust: 2026-04-01
  */
 
 (function () {
@@ -100,7 +101,7 @@
         initTemperatureSlider();
         initModelSelects();
         initEventListeners();
-        hydrateProviderHealth();
+        renderAllHealthPills();
         setupProviderFilters();
         updateSidebarSummaryFromRows();
         checkOllamaStatus();

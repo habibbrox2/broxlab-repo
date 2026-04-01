@@ -1,5 +1,5 @@
 # BroxBhai - AI Agent Guardrails (Repo Root)
-# Version: 2.1.0 | Auto-updated by agent loop
+# Version: 2.1.1 | Auto-updated by agent loop
 
 Default read order (keep token cost low):
 1) `AGENTS.md`
@@ -19,7 +19,7 @@ Self-improvement loop (only after non-trivial work):
 - Helpers: `app/Helpers/*` (reuse before creating new helpers)
 
 ## Hard rules (security + correctness)
-→ **See [`docs/CODING_STANDARDS.md`](docs/CODING_STANDARDS.md)** for detailed standards on:
+→ **See [docs/CODING_STANDARDS.md](docs/CODING_STANDARDS.md)** for detailed standards on:
 - CSRF validation, input sanitization, secrets management
 - Prepared statements, explicit columns (`SELECT id, name, ...` not `SELECT *`)
 - Error handling, logging, JSON response format
@@ -38,9 +38,9 @@ Self-improvement loop (only after non-trivial work):
 ## Changelog (latest 6)
 | Version | Date | Agent | Change |
 |---------|------|-------|--------|
+| 2.1.1 | 2026-03-31 | BroxBhai | Implemented Servers Online/Offline Status indicator in admin header: added HTML dropdown in layout.twig, JavaScript health checks in admin.js, API endpoint in AISystemController.php, and CSS styling in admin.css for real-time monitoring of database, cache, API, and Node.js services. |
 | 2.1.0 | 2026-03-22 | BroxBhai | Context consolidation: created `docs/CODING_STANDARDS.md` (single source for security/DB/code rules), created `editor/.rules-base.md` (shared foundation for all editor instructions), simplified editor files to reference shared rules (reduced duplication). |
 | 2.0.9 | 2026-03-21 | BroxBhai | Added defensive guard in `AIProvider.php` to prevent fatal redeclare if included twice under release symlinks. |
 | 2.0.8 | 2026-03-21 | BroxBhai | AutoContent production hardening: fixed AIProvider redeclare 500, enforced CSRF on admin APIs, improved pipeline robustness, added schema health warning. |
 | 2.0.7 | 2026-03-20 | BroxBhai | Removed unused duplicate agent instruction files to reduce repo noise and editor context size. |
 | 2.0.6 | 2026-03-20 | BroxBhai | Token-cost optimization: added `docs/ai/AI_QUICK_CONTEXT.md`, minimized editor rules + `SKILL.md`, migrated older AGENTS changelog to `docs/ai/AGENT_MEMORY.md`. |
-| 2.0.5 | 2026-03-20 | BroxBhai | Centralized assistant/coplay API routes in `app/Routes/AISystemRoutes.php`, enforced CSRF for public chat, added SSE meta IDs for feedback, removed duplicate assistant script include, stripped production console logs. |

@@ -36,6 +36,7 @@ async function start() {
         logger.info(`📝 Environment: ${config.nodeEnv}`);
         logger.info(`🔗 API: http://${config.host}:${config.port}`);
     } catch (error) {
+        console.error('❌ Failed to start server:', error);
         logger.error('❌ Failed to start server:', error);
         process.exit(1);
     }
@@ -73,6 +74,7 @@ async function start() {
 
 // Start the server
 start().catch((error) => {
+    console.error('Fatal error during startup:', error);
     logger.error('Fatal error during startup:', error);
     process.exit(1);
 });

@@ -12,7 +12,11 @@
     "mpdf/mpdf": "^8.2",
     "guzzlehttp/guzzle": "^7.8",
     "symfony/dom-crawler": "^6.4",
-    "symfony/css-selector": "^6.4"
+    "symfony/css-selector": "^6.4",
+    "spekulatius/phpscraper": "^3.0",
+    "roach-php/core": "^3.0",
+    "vdb/php-spider": "^0.7",
+    "symfony/panther": "^2.1"
   },
   "autoload": {
     "psr-4": {

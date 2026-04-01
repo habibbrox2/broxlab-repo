@@ -1,0 +1,184 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-gear me-2"></i>
+                    Job Details
+                </h1>
+                <a href="/admin/scraper/jobs" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Back to Jobs
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Job #{{ job.id }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">ID:</dt>
+                                <dd class="col-sm-8">{{ job.id }}</dd>
+
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-{{ job.status == 'completed' ? 'success' : (job.status == 'failed' ? 'danger' : (job.status == 'running' ? 'warning' : (job.status == 'pending' ? 'secondary' : 'light'))) }}">
+                                        {{ job.status|capitalize }}
+                                    </span>
+                                </dd>
+
+                                <dt class="col-sm-4">Type:</dt>
+                                <dd class="col-sm-8">{{ job.job_type|capitalize }}</dd>
+
+                                <dt class="col-sm-4">Priority:</dt>
+                                <dd class="col-sm-8">{{ job.priority }}</dd>
+
+                                <dt class="col-sm-4">Source:</dt>
+                                <dd class="col-sm-8">
+                                    <a href="/admin/scraper/sources/{{ job.source_id }}">{{ job.source_name }}</a>
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Created:</dt>
+                                <dd class="col-sm-8">{{ job.created_at|date('M j, Y g:i A') }}</dd>
+
+                                <dt class="col-sm-4">Started:</dt>
+                                <dd class="col-sm-8">
+                                    {% if job.started_at %}
+                                        {{ job.started_at|date('M j, Y g:i A') }}
+                                    {% else %}
+                                        <span class="text-muted">Not started</span>
+                                    {% endif %}
+                                </dd>
+
+                                <dt class="col-sm-4">Completed:</dt>
+                                <dd class="col-sm-8">
+                                    {% if job.completed_at %}
+                                        {{ job.completed_at|date('M j, Y g:i A') }}
+                                    {% else %}
+                                        <span class="text-muted">Not completed</span>
+                                    {% endif %}
+                                </dd>
+
+                                <dt class="col-sm-4">Duration:</dt>
+                                <dd class="col-sm-8">
+                                    {% if job.started_at and job.completed_at %}
+                                        {% set duration = date(job.completed_at).getTimestamp() - date(job.started_at).getTimestamp() %}
+                                        {{ duration }} seconds
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </dd>
+
+                                <dt class="col-sm-4">Attempts:</dt>
+                                <dd class="col-sm-8">{{ job.attempts ?? 0 }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    {% if job.error_message %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-danger">Error Message:</h6>
+                            <div class="bg-light p-3 rounded border border-danger">
+                                <pre class="mb-0 text-danger">{{ job.error_message }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if job.result_data %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Result Data:</h6>
+                            <div class="bg-light p-3 rounded">
+                                <pre class="mb-0">{{ job.result_data|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Job Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Items Processed:</strong>
+                        <p class="text-muted">{{ job.items_processed ?? 0 }}</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong>Items Successful:</strong>
+                        <p class="text-muted">{{ job.items_successful ?? 0 }}</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong>Items Failed:</strong>
+                        <p class="text-muted">{{ job.items_failed ?? 0 }}</p>
+                    </div>
+
+                    {% if job.items_processed and job.items_processed > 0 %}
+                        <div class="mb-3">
+                            <strong>Success Rate:</strong>
+                            <p class="text-muted">
+                                {{ ((job.items_successful ?? 0) / job.items_processed * 100)|round(1) }}%
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if job.logs %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Recent Logs</h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for log in job.logs|slice(0, 5) %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <small class="text-muted">{{ log.created_at|date('H:i:s') }}</small>
+                                        <p class="mb-1">{{ log.message }}</p>
+                                    </div>
+                                    <span class="badge bg-{{ log.level == 'error' ? 'danger' : (log.level == 'warning' ? 'warning' : 'info') }}">
+                                        {{ log.level }}
+                                    </span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if job.logs|length > 5 %}
+                        <div class="text-center mt-2">
+                            <small class="text-muted">And {{ job.logs|length - 5 }} more logs...</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

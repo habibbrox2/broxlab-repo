@@ -1,0 +1,122 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">
+                        <i class="bi bi-list me-2"></i>{{ pageTitle }}
+                    </h1>
+                    <p class="text-muted mb-0">Manage your scraping sources</p>
+                </div>
+                <div>
+                    <a href="/admin/scraper/sources/create" class="btn btn-primary">
+                        <i class="bi bi-plus me-1"></i>Create New Source
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sources Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Sources</h5>
+                </div>
+                <div class="card-body">
+                    {% if sources %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Last Tested</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for source in sources %}
+                                        <tr>
+                                            <td>{{ loop.index }}</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="flex-shrink-0 me-3">
+                                                        <div class="avatar avatar-sm">
+                                                            <i class="bi bi-globe text-primary"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0">{{ source.name }}</h6>
+                                                        <small class="text-muted">{{ source.url|truncate(50) }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark">{{ source.type|title }}</span>
+                                            </td>
+                                            <td>
+                                                {% if source.is_active %}
+                                                    <span class="badge bg-success">Active</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Inactive</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if source.last_tested_at %}
+                                                    <small class="text-muted">{{ source.last_tested_at|date('M d, Y H:i') }}</small>
+                                                {% else %}
+                                                    <small class="text-muted">Never</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="/admin/scraper/sources/{{ source.id }}/edit" class="btn btn-outline-primary" title="Edit">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <a href="/admin/scraper/sources/{{ source.id }}/test" class="btn btn-outline-info" title="Test Source">
+                                                        <i class="bi bi-play-circle"></i>
+                                                    </a>
+                                                    {% if source.is_active %}
+                                                        <a href="/admin/scraper/sources/{{ source.id }}/toggle?status=0" class="btn btn-outline-secondary" title="Deactivate">
+                                                            <i class="bi bi-pause-circle"></i>
+                                                        </a>
+                                                    {% else %}
+                                                        <a href="/admin/scraper/sources/{{ source.id }}/toggle?status=1" class="btn btn-outline-secondary" title="Activate">
+                                                            <i class="bi bi-play-circle"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                    <a href="/admin/scraper/sources/{{ source.id }}/delete" class="btn btn-outline-danger" title="Delete">
+                                                        <i class="bi bi-trash"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-collection text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="mt-3 text-muted">No Sources Found</h5>
+                            <p class="text-muted">You haven't added any scraping sources yet.</p>
+                            <a href="/admin/scraper/sources/create" class="btn btn-primary">
+                                <i class="bi bi-plus me-1"></i>Create First Source
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
