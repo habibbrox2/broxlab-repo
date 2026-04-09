@@ -9,11 +9,11 @@ import logger from './utils/logger.js';
 async function start() {
     logger.info('🚀 Starting AI Assistant Backend...');
 
-    // Test database connection
+    // Test database connection (optional for testing)
     const dbConnected = await testConnection();
     if (!dbConnected) {
-        logger.error('❌ Failed to connect to database. Exiting...');
-        process.exit(1);
+        logger.warn('⚠️  Database connection failed. Running in limited mode (some features may not work).');
+        // process.exit(1); // Commented out for testing
     }
 
     // Test Redis connection

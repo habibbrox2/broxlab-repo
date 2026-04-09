@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { providers } from '../providers/registry';
+import { providers } from '../providers/registry.js';
 
 // Mock database interaction - in production, use actual database
 const getSettingsFromDB = async () => {
@@ -42,7 +42,7 @@ export const aiController = {
   saveAISettings: async (_req: FastifyRequest, reply: FastifyReply) => {
     try {
       const { provider, apiKey, model } = _req.body as { provider?: string; apiKey?: string; model?: string };
-      
+
       // Validate provider
       if (!provider || !(provider in providers)) {
         return reply.code(400).send({ error: 'Invalid provider selected' });
@@ -55,8 +55,8 @@ export const aiController = {
 
       await saveSettingsToDB(provider, apiKey || '', model || '');
 
-      reply.send({ 
-        success: true, 
+      reply.send({
+        success: true,
         message: 'AI settings saved successfully',
         settings: {
           provider,

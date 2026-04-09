@@ -1,5 +1,5 @@
-import { OllamaProvider } from './ollama.provider'
-import { OpenRouterProvider } from './openrouter.provider'
+import { OllamaProvider } from './ollama.provider.js'
+import { OpenRouterProvider } from './openrouter.provider.js'
 
 export const providers = {
   ollama: new OllamaProvider(),

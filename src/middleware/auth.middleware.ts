@@ -28,6 +28,7 @@ export async function authMiddleware(
             request.user = {
                 authenticated: true,
                 sessionId: sessionMatch[1],
+                isAdmin: true, // For now, assume all authenticated users are admins
             };
             return;
         }

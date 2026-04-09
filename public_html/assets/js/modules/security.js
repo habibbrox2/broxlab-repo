@@ -3,7 +3,7 @@
  * Handles password validation, 2FA, and security settings
  */
 
-import { adminGetCsrfToken, adminEscapeHtml } from './utils.js';
+import { adminGetCsrfToken } from './utils.js';
 
 export function validatePasswordStrength(inputId) {
     const input = document.getElementById(inputId);

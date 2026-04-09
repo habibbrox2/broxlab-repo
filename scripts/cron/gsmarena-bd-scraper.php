@@ -105,7 +105,7 @@ if ($testMode) {
 try {
     require_once ROOT_DIR . '/vendor/autoload.php';
     require_once ROOT_DIR . '/public_html/_db.php';
-    require_once ROOT_DIR . '/app/Modules/Scraper/Services/HttpClientService.php';
+    require_once ROOT_DIR . '/app/Modules/Scraper/HttpClientService.php';
     require_once ROOT_DIR . '/app/Modules/Scraper/Services/GSMArenaScraperService.php';
     require_once ROOT_DIR . '/app/Modules/Scraper/Pipelines/GSMArenaPipeline.php';
     require_once ROOT_DIR . '/app/Models/ScraperModel.php';

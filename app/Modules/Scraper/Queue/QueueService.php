@@ -48,14 +48,33 @@ class QueueService
     public function cancel(int $jobId): array
     {
         // Implementation would go here
-        return [
-            'success' => true,
-            'message' => 'Job cancelled successfully'
-        ];
+        return ['success' => false, 'error' => 'Not implemented'];
     }
 
     /**
-     * Retry a queue job
+     * Dequeue next job
+     * 
+     * @return array|null Next job data or null if no jobs
+     */
+    public function dequeueNextJob(): ?array
+    {
+        // Implementation would go here
+        return null;
+    }
+
+    /**
+     * Clear all pending jobs
+     * 
+     * @return array Result
+     */
+    public function clearPendingJobs(): array
+    {
+        // Implementation would go here
+        return ['success' => false, 'error' => 'Not implemented'];
+    }
+
+    /**
+     * Retry a failed job
      * 
      * @param int $jobId Job ID to retry
      * @return array Result
@@ -63,20 +82,6 @@ class QueueService
     public function retry(int $jobId): array
     {
         // Implementation would go here
-        return [
-            'success' => true,
-            'message' => 'Job retried successfully'
-        ];
-    }
-
-    /**
-     * Clear pending jobs
-     * 
-     * @return int Number of jobs cleared
-     */
-    public function clearPendingJobs(): int
-    {
-        // Implementation would go here
-        return 0;
+        return ['success' => false, 'error' => 'Not implemented'];
     }
 }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Scraper\Services;
+namespace App\Modules\Scraper;
 
 /**
  * Simple HTTP client wrapper for scraper jobs

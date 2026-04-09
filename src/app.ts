@@ -8,7 +8,7 @@ import { chatRoutes } from './routes/chat.routes.js';
 import { toolsRoutes, initializeTools } from './routes/tools.routes.js';
 import { ocrRoutes } from './routes/ocr.routes.js';
 import { adminRoutes } from './routes/admin.routes.js';
-import { metricsMiddleware, setupMetricsEndpoint } from './utils/metrics.js';
+import { metricsMiddleware, setupMetricsEndpoint, metrics } from './utils/metrics.js';
 
 // Health check functions
 async function testDatabaseHealth(): Promise<boolean> {

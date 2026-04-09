@@ -23,6 +23,8 @@ class AdvanceScraper
     private ?RoachService $roachService = null;
     private ?PhpSpiderService $phpSpiderService = null;
     private ?PantherService $pantherService = null;
+    private bool $testMode = false;
+    private int $maxItems = 10;
 
     /**
      * Set source configuration
@@ -47,14 +49,20 @@ class AdvanceScraper
     }
 
     /**
-     * Set scraper configuration
-     *
-     * @param array $config Configuration options
-     * @return $this
+     * Set test mode
      */
-    public function setConfig(array $config): self
+    public function setTestMode(bool $testMode): self
     {
-        $this->config = array_merge($this->getDefaultConfig(), $config);
+        $this->testMode = $testMode;
+        return $this;
+    }
+
+    /**
+     * Set max items to scrape
+     */
+    public function setMaxItems(int $maxItems): self
+    {
+        $this->maxItems = $maxItems;
         return $this;
     }
 

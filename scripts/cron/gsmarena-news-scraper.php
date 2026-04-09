@@ -38,10 +38,10 @@ function logMessage(string $message, bool $verbose = false): void
     global $logFile;
     $timestamp = date('Y-m-d H:i:s');
     $logLine = "[{$timestamp}] {$message}\n";
-    
+
     // Write to log file
     file_put_contents($logFile, $logLine, FILE_APPEND);
-    
+
     // Output to console if verbose
     if ($verbose || in_array('--verbose', $GLOBALS['argv'])) {
         echo $logLine;
@@ -56,7 +56,7 @@ function sendNotification(string $subject, string $message): void
     try {
         // Load database connection
         require_once ROOT_DIR . '/public_html/_db.php';
-        
+
         // Get admin emails
         $stmt = $mysqli->prepare("
             SELECT DISTINCT u.email 
@@ -67,29 +67,29 @@ function sendNotification(string $subject, string $message): void
               AND u.status = 'active'
               AND u.email != ''
         ");
-        
+
         if ($stmt) {
             $stmt->execute();
             $result = $stmt->get_result();
             $emails = [];
-            
+
             while ($row = $result->fetch_assoc()) {
                 $emails[] = $row['email'];
             }
-            
+
             $stmt->close();
-            
+
             if (!empty($emails)) {
                 require_once ROOT_DIR . '/app/Helpers/EmailHelper.php';
-                
+
                 $htmlBody = "<h2>{$subject}</h2>";
                 $htmlBody .= "<p>{$message}</p>";
                 $htmlBody .= "<p><small>This is an automated message from GSMArena News Scraper.</small></p>";
-                
+
                 foreach ($emails as $email) {
                     sendEmail($email, $subject, $htmlBody, 'Admin');
                 }
-                
+
                 logMessage("Notification sent to " . count($emails) . " admins");
             }
         }
@@ -115,7 +115,7 @@ logMessage("Max pages: {$maxPages}", true);
 try {
     require_once ROOT_DIR . '/vendor/autoload.php';
     require_once ROOT_DIR . '/public_html/_db.php';
-    require_once ROOT_DIR . '/app/Modules/Scraper/Services/HttpClientService.php';
+    require_once ROOT_DIR . '/app/Modules/Scraper/HttpClientService.php';
     require_once ROOT_DIR . '/app/Modules/Scraper/Services/GSMArenaScraperService.php';
     require_once ROOT_DIR . '/app/Modules/Scraper/Pipelines/GSMArenaPipeline.php';
     require_once ROOT_DIR . '/app/Models/ScraperModel.php';
@@ -161,18 +161,17 @@ try {
     }
 
     exit(0);
-    
 } catch (\Exception $e) {
     $errorMessage = "FATAL ERROR: " . $e->getMessage();
     logMessage($errorMessage, true);
     logMessage("Stack trace: " . $e->getTraceAsString(), true);
-    
+
     // Send error notification
     $subject = "GSMArena News Scraper: ERROR";
     $message = "<p><strong>Error occurred during scraping:</strong></p>";
     $message .= "<p><code>" . htmlspecialchars($e->getMessage()) . "</code></p>";
     sendNotification($subject, $message);
-    
+
     // Exit with error code
     exit(1);
 }

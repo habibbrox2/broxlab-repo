@@ -444,4 +444,3 @@ export async function initAdminUnifiedLogout() {
         // Silent fail
     }
 }
-

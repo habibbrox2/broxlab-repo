@@ -40,7 +40,8 @@ if (!function_exists('parseJsonRequest')) {
 if (!function_exists('ensureCsrfToken')) {
     function ensureCsrfToken(): bool
     {
-        if (!validateCsrfToken()) {
+        $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+        if (!validateCsrfToken($token)) {
             jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
             return false;
         }
@@ -298,7 +299,7 @@ $router->get('/admin/scraper/collected-data', ['middleware' => ['auth', 'admin_o
  */
 $router->delete('/admin/scraper/collected-data/{id}', ['middleware' => ['auth', 'admin_only']], function ($params) use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
