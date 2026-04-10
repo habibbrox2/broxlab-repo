@@ -1060,3 +1060,152 @@ $router->get('/admin/account-settings', ['middleware' => ['auth', 'admin_or_supe
         exit;
     }
 });
+
+
+// ========= AI & MCP SETTINGS =========
+
+/**
+ * Get AI settings (GET)
+ * Returns current AI provider configuration
+ */
+$router->get('/admin/settings/ai', ['middleware' => ['auth', 'super_admin_only']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+    try {
+        $settingsModel = new AppSettings($mysqli);
+        $settings = $settingsModel->getAll();
+
+        echo json_encode([
+            'success' => true,
+            'provider' => $settings['ai_provider'] ?? 'openrouter',
+            'apiKey' => $settings['ai_api_key'] ?? '',
+            'model' => $settings['ai_model'] ?? 'openrouter/auto',
+            'availableProviders' => ['openrouter', 'ollama']
+        ]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Failed to fetch AI settings']);
+    }
+});
+
+/**
+ * Save AI settings (POST)
+ * Updates AI provider configuration
+ */
+$router->post('/admin/settings/ai', ['middleware' => ['auth', 'super_admin_only']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $provider = $input['provider'] ?? '';
+        $apiKey = $input['apiKey'] ?? '';
+        $model = $input['model'] ?? '';
+
+        // Validate provider
+        if (!in_array($provider, ['openrouter', 'ollama'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Invalid provider selected']);
+            return;
+        }
+
+        // Validate API key for OpenRouter (required)
+        if ($provider === 'openrouter' && empty($apiKey)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'API key is required for OpenRouter']);
+            return;
+        }
+
+        $settingsModel = new AppSettings($mysqli);
+        $data = [
+            'ai_provider' => $provider,
+            'ai_api_key' => $apiKey,
+            'ai_model' => $model ?: ($provider === 'openrouter' ? 'openrouter/auto' : 'llama2')
+        ];
+
+        if ($settingsModel->update($data)) {
+            echo json_encode([
+                'success' => true,
+                'message' => 'AI settings saved successfully',
+                'settings' => [
+                    'provider' => $provider,
+                    'apiKey' => $apiKey ? '••••••••' . substr($apiKey, -4) : '',
+                    'model' => $data['ai_model']
+                ]
+            ]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => 'Failed to save AI settings']);
+        }
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Failed to save AI settings']);
+    }
+});
+
+/**
+ * Get MCP settings (GET)
+ * Returns current MCP server configuration
+ */
+$router->get('/admin/settings/mcp', ['middleware' => ['auth', 'super_admin_only']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+    try {
+        $settingsModel = new AppSettings($mysqli);
+        $settings = $settingsModel->getAll();
+
+        echo json_encode([
+            'success' => true,
+            'serverUrl' => $settings['mcp_server_url'] ?? '',
+            'apiKey' => $settings['mcp_api_key'] ?? ''
+        ]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Failed to fetch MCP settings']);
+    }
+});
+
+/**
+ * Save MCP settings (POST)
+ * Updates MCP server configuration
+ */
+$router->post('/admin/settings/mcp', ['middleware' => ['auth', 'super_admin_only']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $serverUrl = $input['serverUrl'] ?? '';
+        $apiKey = $input['apiKey'] ?? '';
+
+        // Validate server URL
+        if (empty($serverUrl)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Server URL is required']);
+            return;
+        }
+
+        if (!filter_var($serverUrl, FILTER_VALIDATE_URL)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Invalid server URL format']);
+            return;
+        }
+
+        $settingsModel = new AppSettings($mysqli);
+        $data = [
+            'mcp_server_url' => $serverUrl,
+            'mcp_api_key' => $apiKey
+        ];
+
+        if ($settingsModel->update($data)) {
+            echo json_encode([
+                'success' => true,
+                'message' => 'MCP settings saved successfully',
+                'settings' => [
+                    'serverUrl' => $serverUrl,
+                    'apiKey' => $apiKey ? '••••••••' . substr($apiKey, -4) : ''
+                ]
+            ]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => 'Failed to save MCP settings']);
+        }
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Failed to save MCP settings']);
+    }
+});

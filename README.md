@@ -197,8 +197,9 @@ We welcome contributions! Please follow these steps:
 5. Open a Pull Request
 
 ### Development Guidelines
-- Follow `docs/CODING_CONVENTIONS.md`
+- Follow `docs/guides/coding-conventions.md`
 - Run quality scans before committing
+- Use `docs/index.md` to find the right documentation before adding new files or editing existing guides
 - Update documentation for new features
 - Test AI features thoroughly
 
@@ -206,10 +207,10 @@ We welcome contributions! Please follow these steps:
 
 ## 📚 Documentation
 
-- [Project Context](docs/PROJECT_CONTEXT.md)
-- [Coding Conventions](docs/CODING_CONVENTIONS.md)
+- [Project Context](docs/project/project-context.md)
+- [Coding Conventions](docs/guides/coding-conventions.md)
 - [AI Coding Guide](docs/ai/AI_CODING_GUIDE.md)
-- [Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
+- [Deployment Guide](web-host\DEPLOYMENT_GUIDE.md)
 - [AI Context Index](docs/ai/AI_CONTEXT_INDEX.md)
 
 ---

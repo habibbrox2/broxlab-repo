@@ -1,52 +1,47 @@
-# BroxBhai AI Quick Context (Editor Token Saver)
+﻿# BroxBhai AI Quick Context (Token Saver)
 
-Read order (default):
-1) `AGENTS.md`
-2) `docs/ai/AI_QUICK_CONTEXT.md`
+## Overview
+Single-page reference that keeps token usage low while summarizing the repo facts and security expectations needed for AI-assisted edits.
 
-Open deeper docs only when needed:
-- `docs/PROJECT_CONTEXT.md` (business + integrations)
-- `docs/CODING_CONVENTIONS.md` (naming + patterns)
-- `docs/ai/AI_CODING_GUIDE.md` (AI workflows + helpers)
-- `docs/ROUTING_AND_MIDDLEWARE.md`, `docs/GENERATED_ASSETS_AND_BUILD.md`
+## Purpose
+Point every agent to `AGENTS.md` first, then this file, so they can escalate to deeper guides (`docs/index.md`, `docs/guides/`, `docs/plans/`) only when necessary.
 
-## Repo essentials (do not guess)
+## Repo Essentials
 - Entry point: `public_html/index.php`
-- Routing: register routes in `app/Controllers/*.php` using `$router->get/post/...`
-- Views: Twig templates in `app/Views/`
-- DB access: models in `app/Models/*` (prepared statements only)
-- Shared utilities: `app/Helpers/*` (reuse before creating new helpers)
+- Routing: declare `$router->get/post/...` handlers inside `app/Controllers/*.php`
+- Views: `app/Views/` Twig templates
+- Database: use `app/Models/*` with prepared statements (no raw concatenation)
+- Helpers: reuse `app/Helpers/*` before creating new ones
+- Request lifecycle: `public_html/index.php -> Router -> Middleware -> Controller -> Model -> View (Twig)`
 
-Request lifecycle:
-`Request -> public_html/index.php -> Router -> Middleware -> Controller -> Model -> View (Twig)`
+## Non-Negotiables
+- Validate CSRF tokens on all state-changing requests (or use middleware) and include `X-CSRF-Token` in AJAX headers.
+- Never commit secrets; keep API keys in `.env` (gitignored) only and rotate if exposed.
+- Purify rich HTML via `PurifierHelper::purify(...)` before rendering.
+- Always list explicit columns (`SELECT id, name, ...`), use prepared statements, and avoid `SELECT *`.
+- Never edit `public_html/assets/**/dist/**`; modify source files (`src/`, `public_html/assets/`) and run `npm run build`.
 
-## Non-negotiables (security + correctness)
-- CSRF: all state-changing requests must validate CSRF (`validateCsrfToken(...)`) and/or follow existing CSRF middleware patterns.
-- Auth/roles: follow `AuthManager` patterns and existing middleware usage.
-- SQL: prepared statements only. No raw concatenation. Avoid `SELECT *` (explicit columns).
-- No secrets: never commit `.env` or paste real keys/tokens.
-- Sanitization: rich HTML must go through `PurifierHelper::purify(...)`.
+## Token-Saver Workflow
+1. Search with `rg`/repo search before opening files.
+2. Open a maximum of 1-3 files that are truly relevant.
+3. Make surgical edits that match existing patterns.
+4. Ask at most one clarifying question (if critical information is missing; otherwise assume the safest default).
+5. Validate locally with the smallest check that proves correctness.
 
-Generated assets:
-- Do not edit: `public_html/assets/**/dist/**`
-- Edit sources under `src/**` (or the repo's documented source folders) and run `npm run build`.
+## Verification Checklist
+- `php -l path/to/file.php`
+- `php scripts/quality_scan.php`
+- `npm run lint` (if JavaScript changed)
+- `npm run check:assets` (if frontend assets changed)
 
-## Token-saver workflow (how to work cheaply)
-1) Search first with `rg` (or repo search), then open only the 1-3 relevant files.
-2) Make minimal, surgical edits matching existing patterns.
-3) Avoid pasting large files into the chat. Reference paths and line numbers instead.
-4) If one critical detail is missing, ask exactly one clarifying question (otherwise assume the safest default).
-5) Validate locally with the smallest check that proves correctness.
-
-## Verification shortlist
-- PHP syntax: `php -l path/to/file.php`
-- PHP quality scan: `php scripts/quality_scan.php`
-- JS lint (if JS changed): `npm run lint`
-- Asset consistency (if assets changed): `npm run check:assets`
-
-## Quick pointers (common "where is it?" answers)
+## Quick References
 - CSRF/auth helpers: `app/Helpers/AuthAndSecurityHelper.php`, `app/Middleware/*`
-- AI endpoints/tools: `app/Controllers/AISystemController.php`, `app/Helpers/ToolRegistry.php`
-- Central AI routes: `app/Routes/AISystemRoutes.php`
-- Twig layouts: `app/Views/layout.twig`, `app/Views/admin/layout.twig` and `app/Views/**`
+- AI controllers/tools: `app/Controllers/AISystemController.php`, `app/Helpers/ToolRegistry.php`
+- AI routes: `app/Routes/AISystemRoutes.php`
+- Layouts: `app/Views/layout.twig`, `app/Views/admin/layout.twig`
 
+## References
+- `AGENTS.md`
+- `docs/index.md`
+- `docs/guides/coding-standards.md`
+- `docs/guides/context-governance.md`

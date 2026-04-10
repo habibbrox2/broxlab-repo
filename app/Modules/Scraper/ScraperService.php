@@ -1,197 +1,212 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Modules\Scraper;
 
-require_once __DIR__ . '/ScraperApiClient.php';
-
-use App\Modules\Scraper\ScraperApiClient;
-use App\Modules\Scraper\AllowlistPolicy;
-use App\Modules\Scraper\RobotsPolicy;
+use App\Models\ScraperModel;
+use App\Modules\Scraper\Scrapers\AdvanceScraper;
+use Exception;
 
 /**
- * ScraperService.php
- * Module for scraping basic metadata (Title, Description, Links) from a public URL.
+ * ScraperService - Main service for web scraping operations
+ *
+ * Handles the coordination between different scraping libraries and the database.
+ * Provides methods for testing, scraping, and running sources.
  */
 class ScraperService
 {
-    private const DEFAULT_TIMEOUT = 10;
-    private const DEFAULT_UA = 'Mozilla/5.0 (compatible; BroxBot/1.0)';
+    private ScraperModel $model;
+    private AdvanceScraper $advanceScraper;
+
+    public function __construct(ScraperModel $model)
+    {
+        $this->model = $model;
+        $this->advanceScraper = new AdvanceScraper();
+    }
 
     /**
-     * Scrape a URL and return its metadata.
+     * Test a scraping source
      *
-     * @return array{url: string, title: string, description: string, image: string, links: list<string>, timestamp: string}|array{error: string}
+     * @param int $sourceId
+     * @return array
      */
-    public function scrape(string $url): array
+    public function testSource(int $sourceId): array
     {
-        $url = trim((string)$url); // normalize non-string DB values before validation
-
-        if (!filter_var($url, FILTER_VALIDATE_URL)) {
-            return ['error' => 'Invalid URL. Please provide a valid URL (e.g. https://example.com).'];
-        }
-
-        $mysqli = $GLOBALS['mysqli'] ?? null;
-        $allowlist = AllowlistPolicy::check($url, $mysqli instanceof \mysqli ? $mysqli : null);
-        if (!($allowlist['allowed'] ?? false)) {
-            return ['error' => 'allowlist_blocked', 'error_code' => 'allowlist_blocked'];
-        }
-
-        $robots = RobotsPolicy::check($url, self::DEFAULT_UA);
-        if (!($robots['allowed'] ?? false)) {
-            return ['error' => 'robots_disallow', 'error_code' => 'robots_disallow'];
-        }
-
-        $apiClient = new ScraperApiClient();
-        $apiResult = $apiClient->fetchScrape($url, [], self::DEFAULT_TIMEOUT);
-
-        if (!($apiResult['success'] ?? false)) {
-            $code = (string)($apiResult['error_code'] ?? $apiResult['error'] ?? '');
-            if (in_array($code, ['api_unreachable', 'timeout', 'invalid_response', 'curl_unavailable'], true)) {
-                $html = $this->fetchHtml($url);
-                if ($html === null) {
-                    return [
-                        'error' => 'Failed to fetch URL. Check that the URL is publicly accessible.',
-                        'error_code' => 'http_fetch_failed'
-                    ];
-                }
-
-                $data = $this->parseHtml($html, $url);
-                $data['timestamp'] = date('Y-m-d H:i:s');
-                $data['warning'] = 'API down; used legacy scraper.';
-                return $data;
+        try {
+            $source = $this->model->getSourceById($sourceId);
+            if (!$source) {
+                throw new Exception('Source not found');
             }
+
+            // Use AdvanceScraper to test the source
+            $this->advanceScraper->setSource($source);
+
+            // Try to scrape a limited amount for testing
+            $result = $this->advanceScraper->scrape();
 
             return [
-                'error' => $apiResult['error'] ?? 'Failed to fetch URL.',
-                'error_code' => $apiResult['error_code'] ?? 'scrape_failed'
+                'source_id' => $sourceId,
+                'source_name' => $source['name'],
+                'success' => $result['success'],
+                'items_found' => $result['success'] ? count($result['data']['links'] ?? []) : 0,
+                'library_used' => $result['strategy_used'] ?? 'unknown',
+                'errors' => $result['success'] ? [] : [$result['error'] ?? 'Unknown error'],
+                'test_url' => $source['url']
+            ];
+        } catch (Exception $e) {
+            return [
+                'source_id' => $sourceId,
+                'success' => false,
+                'items_found' => 0,
+                'errors' => [$e->getMessage()],
+                'test_url' => null
             ];
         }
-
-        return [
-            'url' => (string)($apiResult['url'] ?? $url),
-            'title' => (string)($apiResult['title'] ?? '(No title found)'),
-            'description' => (string)($apiResult['description'] ?? '(No description found)'),
-            'image' => (string)($apiResult['image'] ?? ''),
-            'links' => is_array($apiResult['links'] ?? null) ? $apiResult['links'] : [],
-            'timestamp' => date('Y-m-d H:i:s')
-        ];
     }
 
-    private function fetchHtml(string $url): ?string
+    /**
+     * Scrape a source and store results
+     *
+     * @param int $sourceId
+     * @return array
+     */
+    public function scrapeSource(int $sourceId): array
     {
-        if (function_exists('curl_init')) {
-            $ch = curl_init($url);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_MAXREDIRS      => 5,
-                CURLOPT_TIMEOUT        => self::DEFAULT_TIMEOUT,
-                CURLOPT_CONNECTTIMEOUT => 5,
-                CURLOPT_SSL_VERIFYPEER => true,
-                CURLOPT_USERAGENT      => self::DEFAULT_UA,
-                CURLOPT_ENCODING       => '',   // Accept all encodings
+        try {
+            $source = $this->model->getSourceById($sourceId);
+            if (!$source) {
+                throw new Exception('Source not found');
+            }
+
+            // Create a job record
+            $jobId = $this->model->createJob([
+                'source_id' => $sourceId,
+                'job_type' => 'scrape',
+                'priority' => 5
             ]);
-            $body = curl_exec($ch);
-            $err  = curl_error($ch);
-            curl_close($ch);
 
-            if ($body === false || $err) {
-                return null;
+            try {
+                // Perform the scrape
+                $this->advanceScraper->setSource($source);
+                $result = $this->advanceScraper->scrape();
+
+                if ($result['success']) {
+                    // Store the scraped data
+                    $this->storeScrapedData($sourceId, $result['data'], $source);
+
+                    // Update job status
+                    $this->model->updateJobResult($jobId, 'completed', [
+                        'items_found' => count($result['data']['links'] ?? []),
+                        'items_saved' => 1, // Assuming we saved one article
+                        'items_failed' => 0
+                    ]);
+
+                    return [
+                        'success' => true,
+                        'job_id' => $jobId,
+                        'items_processed' => count($result['data']['links'] ?? []),
+                        'message' => 'Scraping completed successfully'
+                    ];
+                } else {
+                    // Update job status to failed
+                    $this->model->updateJobResult($jobId, 'failed', [
+                        'error_message' => $result['error'] ?? 'Unknown error'
+                    ]);
+
+                    return [
+                        'success' => false,
+                        'job_id' => $jobId,
+                        'error' => $result['error'] ?? 'Scraping failed'
+                    ];
+                }
+            } catch (Exception $e) {
+                // Update job status to failed
+                $this->model->updateJobResult($jobId, 'failed', [
+                    'error_message' => $e->getMessage()
+                ]);
+                throw $e;
             }
-
-            return (string)$body;
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
         }
-
-        $context = stream_context_create([
-            'http' => [
-                'method'          => 'GET',
-                'timeout'         => self::DEFAULT_TIMEOUT,
-                'user_agent'      => self::DEFAULT_UA,
-                'ignore_errors'   => true,
-            ],
-            'ssl' => [
-                'verify_peer'      => true,
-                'verify_peer_name' => true,
-            ],
-        ]);
-
-        $body = @file_get_contents($url, false, $context);
-        return $body !== false ? (string)$body : null;
     }
 
-    private function parseHtml(string $html, string $baseUrl): array
+    /**
+     * Run a source (alias for scrapeSource for backward compatibility)
+     *
+     * @param int $sourceId
+     * @return array
+     */
+    public function runSource(int $sourceId): array
     {
-        $doc = new \DOMDocument();
-        // Suppress warnings for malformed HTML
-        libxml_use_internal_errors(true);
-        $doc->loadHTML('<?xml encoding="utf-8">' . $html, LIBXML_NOWARNING | LIBXML_NOERROR);
-        libxml_clear_errors();
+        return $this->scrapeSource($sourceId);
+    }
 
-        $xpath = new \DOMXPath($doc);
-
-        // Title
-        $title = '';
-        $titleNode = $xpath->query('//title');
-        if ($titleNode && $titleNode->length > 0) {
-            $title = trim($titleNode->item(0)->textContent);
+    /**
+     * Store scraped data in the database
+     *
+     * @param int $sourceId
+     * @param array $data
+     * @param array $source
+     */
+    private function storeScrapedData(int $sourceId, array $data, array $source): void
+    {
+        // Store articles
+        if (!empty($data['content'])) {
+            $this->model->saveArticle([
+                'source_id' => $sourceId,
+                'title' => $data['title'] ?? 'Untitled',
+                'content' => $data['content'],
+                'url' => $source['url'],
+                'image_url' => $data['images'][0]['src'] ?? null,
+                'status' => 'completed',
+                'content_hash' => hash('sha256', $data['content']),
+                'excerpt' => substr($data['content'], 0, 200) . (strlen($data['content']) > 200 ? '...' : ''),
+                'categories' => [],
+                'tags' => []
+            ]);
         }
 
-        // OG Title fallback
-        if ($title === '') {
-            $og = $xpath->query('//meta[@property="og:title"]/@content');
-            if ($og && $og->length > 0) {
-                $title = trim($og->item(0)->nodeValue ?? '');
+        // Store mobile data if applicable
+        if (($source['content_type'] ?? 'article') === 'mobile' && !empty($data['title'])) {
+            $this->model->saveMobile([
+                'source_id' => $sourceId,
+                'source_url' => $source['url'],
+                'title' => $data['title'],
+                'brand' => $this->extractBrandFromTitle($data['title']),
+                'model' => $this->extractModelFromTitle($data['title']),
+                'image_url' => $data['images'][0]['src'] ?? null,
+                'specifications' => $data,
+                'status' => 'active'
+            ]);
+        }
+    }
+
+    /**
+     * Extract brand from mobile title
+     */
+    private function extractBrandFromTitle(string $title): string
+    {
+        $brands = ['Samsung', 'Apple', 'Google', 'OnePlus', 'Xiaomi', 'Huawei', 'Sony', 'LG', 'Motorola', 'Nokia'];
+        foreach ($brands as $brand) {
+            if (stripos($title, $brand) !== false) {
+                return $brand;
             }
         }
+        return 'Unknown';
+    }
 
-        // Meta description
-        $description = '';
-        $descNode = $xpath->query('//meta[@name="description"]/@content');
-        if ($descNode && $descNode->length > 0) {
-            $description = trim($descNode->item(0)->nodeValue ?? '');
-        }
-        // OG description fallback
-        if ($description === '') {
-            $og = $xpath->query('//meta[@property="og:description"]/@content');
-            if ($og && $og->length > 0) {
-                $description = trim($og->item(0)->nodeValue ?? '');
-            }
-        }
-
-        // OG Image
-        $image = '';
-        $imgNode = $xpath->query('//meta[@property="og:image"]/@content');
-        if ($imgNode && $imgNode->length > 0) {
-            $image = trim($imgNode->item(0)->nodeValue ?? '');
-        }
-
-        // Collect top-level links (up to 5)
-        $links   = [];
-        $linkNodes = $xpath->query('//a[@href]/@href');
-        if ($linkNodes) {
-            foreach ($linkNodes as $link) {
-                $href = trim($link->nodeValue ?? '');
-                if ($href === '' || $href === '#' || str_starts_with($href, 'javascript:')) {
-                    continue;
-                }
-                // Resolve relative URLs
-                if (!str_starts_with($href, 'http')) {
-                    $href = rtrim($baseUrl, '/') . '/' . ltrim($href, '/');
-                }
-                $links[] = $href;
-                if (count($links) >= 5) {
-                    break;
-                }
-            }
-        }
-
-        return [
-            'url'         => $baseUrl,
-            'title'       => $title !== '' ? $title : '(No title found)',
-            'description' => $description !== '' ? $description : '(No description found)',
-            'image'       => $image,
-            'links'       => $links,
-        ];
+    /**
+     * Extract model from mobile title
+     */
+    private function extractModelFromTitle(string $title): string
+    {
+        // Simple extraction - can be improved with regex patterns
+        $parts = explode(' ', $title);
+        return end($parts);
     }
 }

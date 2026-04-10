@@ -38,10 +38,10 @@ function logMessage(string $message, bool $verbose = false): void
     global $logFile;
     $timestamp = date('Y-m-d H:i:s');
     $logLine = "[{$timestamp}] {$message}\n";
-    
+
     // Write to log file
     file_put_contents($logFile, $logLine, FILE_APPEND);
-    
+
     // Output to console if verbose
     if ($verbose || in_array('--verbose', $GLOBALS['argv'])) {
         echo $logLine;
@@ -56,7 +56,7 @@ function sendNotification(string $subject, string $message): void
     try {
         // Load database connection
         require_once ROOT_DIR . '/public_html/_db.php';
-        
+
         // Get admin emails
         $stmt = $mysqli->prepare("
             SELECT DISTINCT u.email 
@@ -67,29 +67,29 @@ function sendNotification(string $subject, string $message): void
               AND u.status = 'active'
               AND u.email != ''
         ");
-        
+
         if ($stmt) {
             $stmt->execute();
             $result = $stmt->get_result();
             $emails = [];
-            
+
             while ($row = $result->fetch_assoc()) {
                 $emails[] = $row['email'];
             }
-            
+
             $stmt->close();
-            
+
             if (!empty($emails)) {
                 require_once ROOT_DIR . '/app/Helpers/EmailHelper.php';
-                
+
                 $htmlBody = "<h2>{$subject}</h2>";
                 $htmlBody .= "<p>{$message}</p>";
                 $htmlBody .= "<p><small>This is an automated message from GSMArena Devices Scraper.</small></p>";
-                
+
                 foreach ($emails as $email) {
                     sendEmail($email, $subject, $htmlBody, 'Admin');
                 }
-                
+
                 logMessage("Notification sent to " . count($emails) . " admins");
             }
         }
@@ -113,108 +113,65 @@ logMessage("=== GSMArena Devices Scraper Started ===", true);
 logMessage("Max pages: {$maxPages}", true);
 
 try {
-    // Load dependencies
     require_once ROOT_DIR . '/vendor/autoload.php';
     require_once ROOT_DIR . '/public_html/_db.php';
     require_once ROOT_DIR . '/app/Modules/Scraper/HttpClientService.php';
-    require_once ROOT_DIR . '/app/Modules/Scraper/HtmlParserService.php';
-    require_once ROOT_DIR . '/app/Modules/Scraper/GSMArenaDeviceScraperService.php';
+    require_once ROOT_DIR . '/app/Modules/Scraper/Services/GSMArenaScraperService.php';
+    require_once ROOT_DIR . '/app/Modules/Scraper/Pipelines/GSMArenaPipeline.php';
+    require_once ROOT_DIR . '/app/Models/ScraperModel.php';
     require_once ROOT_DIR . '/app/Models/GSMArenaDeviceModel.php';
-    require_once ROOT_DIR . '/app/Helpers/ErrorLogging.php';
-    
-    // Initialize services
-    $httpClient = new \App\Modules\Scraper\HttpClientService();
-    $scraper = new \App\Modules\Scraper\GSMArenaDeviceScraperService($httpClient);
-    $model = new GSMArenaDeviceModel($mysqli);
-    
-    // Get previous stats for comparison
-    $previousTotal = $model->getTotalCount();
-    logMessage("Previous total devices: {$previousTotal}", true);
-    
-    // Scrape with progress tracking
+
+    $scraperModel = new \App\Models\ScraperModel($mysqli);
+    $pipeline = new \App\Modules\Scraper\Pipelines\GSMArenaPipeline($scraperModel);
+
     $startTime = microtime(true);
-    $results = $scraper->scrapeAllPages($maxPages, function ($page, $totalPages, $success, $data) use ($model, $scraper) {
+    $result = $pipeline->run('devices', $maxPages, false, function ($page, $totalPages, $success, $data, $url, $error) {
         if ($success) {
             logMessage("Page {$page}/{$totalPages}: Found " . count($data) . " devices");
-            
-            // Save devices to database
-            foreach ($data as $device) {
-                $saveResult = $model->saveDevice($device);
-                if ($saveResult['success']) {
-                    $scraper->updateStats('new_devices', 1);
-                } else {
-                    if (strpos($saveResult['error'], 'already exists') !== false) {
-                        $scraper->updateStats('duplicates', 1);
-                    } else {
-                        $scraper->updateStats('errors', 1);
-                        logMessage("Error saving device: " . $saveResult['error']);
-                    }
-                }
-            }
         } else {
-            $scraper->updateStats('errors', 1);
-            logMessage("Error on page {$page}: {$data}");
+            logMessage("Page {$page}/{$totalPages}: Failed to fetch ({$error})");
         }
     });
-    
-    $endTime = microtime(true);
-    $duration = round($endTime - $startTime, 2);
-    
-    // Get final stats
-    $stats = $scraper->getStats();
-    $currentTotal = $model->getTotalCount();
-    $newDevicesAdded = $currentTotal - $previousTotal;
-    
+
+    $duration = round(microtime(true) - $startTime, 2);
+    $stats = $result['status']['stats'] ?? [];
+    $sourceId = (int)($result['status']['source_id'] ?? 0);
+    $deviceModel = new \App\Models\GSMArenaDeviceModel($mysqli);
+    $currentTotal = $sourceId ? $deviceModel->getTotalCount($sourceId) : 0;
+
     logMessage("=== Scraping Complete ===", true);
     logMessage("Duration: {$duration} seconds", true);
-    logMessage("Total scraped: {$stats['total_scraped']}", true);
-    logMessage("New devices added: {$stats['new_devices']}", true);
-    logMessage("Duplicates skipped: {$stats['duplicates']}", true);
-    logMessage("Errors: {$stats['errors']}", true);
+    logMessage("Total scraped: " . ($stats['total_scraped'] ?? 0), true);
+    logMessage("Saved: " . ($stats['saved'] ?? 0), true);
+    logMessage("Errors: " . ($stats['errors'] ?? 0), true);
     logMessage("Database total: {$currentTotal}", true);
-    
-    // Save last scrape info
-    $lastScrapeFile = ROOT_DIR . '/app/Modules/Scraper/logs/gsmarena_devices_last_scrape.json';
-    $lastScrapeDir = dirname($lastScrapeFile);
-    if (!is_dir($lastScrapeDir)) {
-        mkdir($lastScrapeDir, 0755, true);
-    }
-    file_put_contents($lastScrapeFile, json_encode([
-        'timestamp' => date('Y-m-d H:i:s'),
-        'pages_scraped' => $maxPages,
-        'stats' => $stats,
-        'duration' => $duration,
-    ]));
-    
-    // Send notification if new devices were added
-    if ($stats['new_devices'] > 0) {
-        $subject = "GSMArena Devices Scraper: {$stats['new_devices']} New Devices Found";
-        $message = "<p>The GSMArena Devices scraper found <strong>{$stats['new_devices']}</strong> new devices.</p>";
+
+    if (($stats['saved'] ?? 0) > 0) {
+        $subject = "GSMArena Devices Scraper: {$stats['saved']} New Devices";
+        $message = "<p>The scraper saved <strong>{$stats['saved']}</strong> new devices.</p>";
         $message .= "<ul>";
-        $message .= "<li>Total scraped: {$stats['total_scraped']}</li>";
-        $message .= "<li>Duplicates skipped: {$stats['duplicates']}</li>";
+        $message .= "<li>Total scraped: " . ($stats['total_scraped'] ?? 0) . "</li>";
+        $message .= "<li>Errors: " . ($stats['errors'] ?? 0) . "</li>";
         $message .= "<li>Database total: {$currentTotal}</li>";
         $message .= "</ul>";
-        $message .= "<p><a href='https://{$_SERVER['HTTP_HOST']}/admin/scraper/gsmarena-devices'>View in Admin Panel</a></p>";
-        
+        $message .= "<p><a href='https://{$_SERVER['HTTP_HOST']}/admin/scraper/gsmarena-devices'>View results</a></p>";
+
         sendNotification($subject, $message);
-        logMessage("Notification sent for {$stats['new_devices']} new devices");
+        logMessage("Notification sent for {$stats['saved']} new devices");
     }
-    
-    // Exit with success code
+
     exit(0);
-    
 } catch (\Exception $e) {
     $errorMessage = "FATAL ERROR: " . $e->getMessage();
     logMessage($errorMessage, true);
     logMessage("Stack trace: " . $e->getTraceAsString(), true);
-    
+
     // Send error notification
     $subject = "GSMArena Devices Scraper: ERROR";
     $message = "<p><strong>Error occurred during scraping:</strong></p>";
     $message .= "<p><code>" . htmlspecialchars($e->getMessage()) . "</code></p>";
     sendNotification($subject, $message);
-    
+
     // Exit with error code
     exit(1);
 }

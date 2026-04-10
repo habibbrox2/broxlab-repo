@@ -1,0 +1,327 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block head %}
+<style>
+    .test-results {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .result-item {
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    .result-item.success {
+        border-color: #198754;
+        background-color: #f8fff9;
+    }
+    .result-item.error {
+        border-color: #dc3545;
+        background-color: #fff5f5;
+    }
+    .result-item.warning {
+        border-color: #ffc107;
+        background-color: #fffbf0;
+    }
+    .json-output {
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        white-space: pre-wrap;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">
+                        <i class="bi bi-play-circle me-2"></i>{{ pageTitle }}
+                    </h1>
+                    <p class="text-muted mb-0">
+                        Test the scraping configuration for <strong>{{ source.name }}</strong>
+                    </p>
+                </div>
+                <div>
+                    <a href="/admin/scraper/sources/{{ source.id }}/edit" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-pencil me-1"></i>Edit Source
+                    </a>
+                    <a href="/admin/scraper/sources" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Back to Sources
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Test Configuration -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-gear me-2"></i>Test Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Source Details</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Name:</strong></td>
+                                    <td>{{ source.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>URL:</strong></td>
+                                    <td><a href="{{ source.url }}" target="_blank">{{ source.url }}</a></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Type:</strong></td>
+                                    <td><span class="badge bg-light text-dark">{{ source.type|title }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Content Type:</strong></td>
+                                    <td>{{ source.content_type|title }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Test Options</h6>
+                            <form id="testForm">
+                                <div class="mb-3">
+                                    <label for="maxItems" class="form-label">Max Items to Test</label>
+                                    <input type="number" class="form-control" id="maxItems" name="maxItems" value="5" min="1" max="20">
+                                    <div class="form-text">Maximum number of items to scrape for testing</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="timeout" class="form-label">Timeout (seconds)</label>
+                                    <input type="number" class="form-control" id="timeout" name="timeout" value="30" min="5" max="120">
+                                    <div class="form-text">Maximum time to wait for the test to complete</div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="includeErrors" name="includeErrors" checked>
+                                        <label class="form-check-label" for="includeErrors">
+                                            Include detailed error information
+                                        </label>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary" id="runTestBtn">
+                                    <i class="bi bi-play-circle me-1"></i>Run Test
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Results -->
+            <div class="card" id="resultsCard" style="display: none;">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-check-circle me-2"></i>Test Results</h5>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="clearResults()">
+                        <i class="bi bi-x-circle me-1"></i>Clear
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="testStatus" class="alert alert-info">
+                        <i class="bi bi-hourglass-split me-2"></i>Running test...
+                    </div>
+                    <div id="testResults" class="test-results">
+                        <!-- Results will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Test Information</h6>
+                </div>
+                <div class="card-body">
+                    <h6>What does this test do?</h6>
+                    <p class="small mb-3">
+                        This test runs the scraper configuration against the source URL and attempts to extract content using the defined selectors and settings.
+                    </p>
+
+                    <h6>Test Results Include:</h6>
+                    <ul class="small mb-3">
+                        <li><strong>Items Found:</strong> Successfully extracted content items</li>
+                        <li><strong>Errors:</strong> Any errors encountered during scraping</li>
+                        <li><strong>Warnings:</strong> Potential issues or inconsistencies</li>
+                        <li><strong>Performance:</strong> Timing and resource usage metrics</li>
+                    </ul>
+
+                    <h6>Troubleshooting:</h6>
+                    <ul class="small mb-0">
+                        <li>Check selectors if no items are found</li>
+                        <li>Verify URL is accessible</li>
+                        <li>Review error messages for specific issues</li>
+                        <li>Consider adjusting timeout for slow sites</li>
+                    </ul>
+                </div>
+            </div>
+
+            {% if source.last_tested_at %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-clock me-2"></i>Last Test</h6>
+                </div>
+                <div class="card-body text-center">
+                    <h4 class="text-info">{{ source.last_tested_at|date('M j, H:i') }}</h4>
+                    <small class="text-muted">Last tested on</small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('testForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    runTest();
+});
+
+function runTest() {
+    const formData = new FormData(document.getElementById('testForm'));
+    const btn = document.getElementById('runTestBtn');
+    const resultsCard = document.getElementById('resultsCard');
+    const testStatus = document.getElementById('testStatus');
+    const testResults = document.getElementById('testResults');
+
+    // Show results card and set loading state
+    resultsCard.style.display = 'block';
+    testStatus.className = 'alert alert-info';
+    testStatus.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Running test...';
+    testResults.innerHTML = '';
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Testing...';
+
+    // Prepare request data
+    const requestData = {
+        maxItems: parseInt(formData.get('maxItems')) || 5,
+        timeout: parseInt(formData.get('timeout')) || 30,
+        includeErrors: formData.get('includeErrors') === 'on'
+    };
+
+    // Add CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    if (csrfToken) {
+        requestData.csrf_token = csrfToken.getAttribute('content');
+    }
+
+    fetch(`/admin/scraper/sources/{{ source.id }}/test`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayResults(data.result);
+            testStatus.className = 'alert alert-success';
+            testStatus.innerHTML = '<i class="bi bi-check-circle me-2"></i>Test completed successfully';
+        } else {
+            testStatus.className = 'alert alert-danger';
+            testStatus.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Test failed: ' + (data.error || 'Unknown error');
+        }
+    })
+    .catch(error => {
+        console.error('Test error:', error);
+        testStatus.className = 'alert alert-danger';
+        testStatus.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Test failed: Network error';
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-play-circle me-1"></i>Run Test';
+    });
+}
+
+function displayResults(result) {
+    const testResults = document.getElementById('testResults');
+    let html = '';
+
+    // Summary
+    if (result.summary) {
+        html += '<div class="mb-3">';
+        html += '<h6>Test Summary</h6>';
+        html += '<div class="row">';
+        html += '<div class="col-3"><strong>Items:</strong> ' + (result.summary.items || 0) + '</div>';
+        html += '<div class="col-3"><strong>Errors:</strong> ' + (result.summary.errors || 0) + '</div>';
+        html += '<div class="col-3"><strong>Warnings:</strong> ' + (result.summary.warnings || 0) + '</div>';
+        html += '<div class="col-3"><strong>Duration:</strong> ' + (result.summary.duration || 0) + 'ms</div>';
+        html += '</div>';
+        html += '</div>';
+    }
+
+    // Items
+    if (result.items && result.items.length > 0) {
+        html += '<div class="mb-3">';
+        html += '<h6>Extracted Items</h6>';
+        result.items.forEach((item, index) => {
+            html += '<div class="result-item success">';
+            html += '<h6>Item ' + (index + 1) + '</h6>';
+            if (item.title) html += '<p><strong>Title:</strong> ' + item.title + '</p>';
+            if (item.url) html += '<p><strong>URL:</strong> <a href="' + item.url + '" target="_blank">' + item.url + '</a></p>';
+            if (item.excerpt) html += '<p><strong>Excerpt:</strong> ' + item.excerpt.substring(0, 100) + '...</p>';
+            html += '</div>';
+        });
+        html += '</div>';
+    }
+
+    // Errors
+    if (result.errors && result.errors.length > 0) {
+        html += '<div class="mb-3">';
+        html += '<h6>Errors</h6>';
+        result.errors.forEach(error => {
+            html += '<div class="result-item error">';
+            html += '<strong>Error:</strong> ' + error.message;
+            if (error.details) html += '<br><small>' + error.details + '</small>';
+            html += '</div>';
+        });
+        html += '</div>';
+    }
+
+    // Warnings
+    if (result.warnings && result.warnings.length > 0) {
+        html += '<div class="mb-3">';
+        html += '<h6>Warnings</h6>';
+        result.warnings.forEach(warning => {
+            html += '<div class="result-item warning">';
+            html += '<strong>Warning:</strong> ' + warning.message;
+            if (warning.details) html += '<br><small>' + warning.details + '</small>';
+            html += '</div>';
+        });
+        html += '</div>';
+    }
+
+    // Raw JSON
+    html += '<div class="mb-3">';
+    html += '<h6>Raw JSON Response</h6>';
+    html += '<div class="json-output">' + JSON.stringify(result, null, 2) + '</div>';
+    html += '</div>';
+
+    testResults.innerHTML = html;
+}
+
+function clearResults() {
+    document.getElementById('resultsCard').style.display = 'none';
+    document.getElementById('testResults').innerHTML = '';
+}
+</script>
+
+{% endblock %}

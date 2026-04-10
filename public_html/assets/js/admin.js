@@ -3,29 +3,29 @@
  * Handles sidebar toggling and responsive behaviors
  */
 
+import { initSidebar } from './modules/sidebar.js';
+import { initAdminNotificationRuntime, initAdminUserDropdownSync, initAdminDebugUtils, initAdminUnifiedLogout } from './modules/notifications.js';
+import { initPasswordModals } from './modules/security.js';
+import { runWhenReady } from './modules/utils.js';
+
 document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
-    // Sidebar Toggle Logic
-    const sidebar = document.querySelector('.sidebar');
-    const sidebarToggles = document.querySelectorAll('.sidebar-toggle');
-    const sidebarMiniToggle = document.querySelector('.sidebar-mini-toggle');
-    const adminShellRow = document.querySelector('.admin-shell-row');
-    const adminMain = document.querySelector('.admin-main');
-    const sidebarResizer = document.getElementById('adminColumnResizer');
-    const MINI_STORAGE_KEY = 'admin.sidebar.mini';
-    const SIDEBAR_WIDTH_KEY = 'admin.sidebar.width';
-    const MINI_EXPANDED_CLASS = 'admin-sidebar-mini-expanded';
-    const MOBILE_OPEN_CLASS = 'admin-sidebar-open';
-    const DESKTOP_WIDTH = 992;
-    const DEFAULT_SIDEBAR_WIDTH = 280;
-    const MIN_SIDEBAR_WIDTH = 220;
-    const MAX_SIDEBAR_WIDTH = 520;
+    // Initialize modules
+    initSidebar();
+    initAdminNotificationRuntime();
+    runWhenReady(initAdminUserDropdownSync);
+    initAdminDebugUtils();
+    initAdminUnifiedLogout();
+    runWhenReady(initPasswordModals);
 
-    // Create overlay element
-    const overlay = document.createElement('div');
-    overlay.className = 'sidebar-overlay';
-    document.body.appendChild(overlay);
+    // Attach functions to window for global access
+    window.validatePasswordStrength = validatePasswordStrength;
+    window.setPassword = setPassword;
+    window.changePassword = changePassword;
+    // Add other functions as needed
+
+    // The rest of the original code...
 
     const applyStackedTables = () => {
         const tables = document.querySelectorAll('table.table-stacked');
@@ -282,10 +282,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const updateResizerVisibility = () => {
                 const isDesktop = window.innerWidth >= DESKTOP_WIDTH;
                 const isMini = isMiniMode();
-                
+
                 // Reset all visibility classes first
                 sidebarResizer.classList.remove('d-none', 'd-lg-flex', 'd-flex');
-                
+
                 if (isDesktop) {
                     // On desktop, show the resizer (as flex)
                     if (isMini) {
@@ -568,503 +568,25 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-const runWhenReady = (fn) => {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', fn, { once: true });
-    } else {
-        fn();
-    }
-};
 
-const getUserId = () => document.querySelector('meta[name="user-id"]')?.content || null;
-const ADMIN_NAV_DROPDOWN_OPEN_EVENT = 'brox:navbar-dropdown-open';
 
-const adminNotificationCoreState = new Map();
-const adminNotificationBellState = new Map();
 
-function adminEmitFcmSupportResolved(supported, context = 'admin') {
-    if (typeof window === 'undefined') return;
-    const normalized = !!supported;
-    window.__fcmMessagingSupported = normalized;
-    try {
-        window.dispatchEvent(new CustomEvent('fcm-support-resolved', {
-            detail: { supported: normalized, context }
-        }));
-    } catch (err) {
-        // Ignore dispatch failures.
-    }
-}
 
-function adminEmitNavbarDropdownState(kind, open) {
-    try {
-        document.dispatchEvent(new CustomEvent(
-            open ? ADMIN_NAV_DROPDOWN_OPEN_EVENT : 'brox:navbar-dropdown-close',
-            { detail: { kind, open: !!open, timestamp: Date.now() } }
-        ));
-    } catch (err) {
-        // Ignore dispatch failures.
-    }
-}
 
-function adminGetCsrfToken() {
-    return document.querySelector('meta[name="csrf-token"]')?.content || '';
-}
 
-function adminEscapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    }[char] || char));
-}
 
-function adminToSafeUrl(url) {
-    const value = String(url || '').trim();
-    if (!value) return '#';
-    if (value.startsWith('/')) return value;
-    if (/^https?:\/\//i.test(value)) return value;
-    return '#';
-}
 
-function adminFormatTime(value) {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    return date.toLocaleString();
-}
 
-function adminSetListEmpty(listEl, message) {
-    if (!listEl) return;
-    listEl.innerHTML = `
-        <div class="text-center py-4 text-muted">
-            <i class="bi bi-inbox fs-4"></i>
-            <p class="mb-0 mt-2 small">${adminEscapeHtml(message)}</p>
-        </div>
-    `;
-}
 
-function adminUpdateBadge(badgeEl, countEl, unreadCount) {
-    const safeCount = Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : 0;
-    if (countEl) {
-        countEl.textContent = String(safeCount);
-    }
-    if (badgeEl) {
-        badgeEl.classList.toggle('d-none', safeCount <= 0);
-    }
-}
 
-function adminRenderNotifications(listEl, notifications) {
-    if (!listEl) return;
-    if (!Array.isArray(notifications) || notifications.length === 0) {
-        adminSetListEmpty(listEl, 'No new notifications');
-        return;
-    }
 
-    listEl.innerHTML = notifications.map((notification) => {
-        const id = Number.parseInt(notification?.id, 10) || 0;
-        const title = adminEscapeHtml(notification?.title || 'Notification');
-        const message = adminEscapeHtml(notification?.message || '');
-        const createdAt = adminEscapeHtml(adminFormatTime(notification?.created_at));
-        const href = adminToSafeUrl(notification?.action_url);
-        const isRead = Number(notification?.is_read) === 1;
-        const rowClass = isRead ? '' : 'bg-light border-start border-primary border-2';
-        const urlAttr = href === '#' ? '' : ` data-action-url="${adminEscapeHtml(href)}"`;
 
-        return `
-            <div class="notification-entry p-2 mb-2 rounded ${rowClass}" data-notification-id="${id}"${urlAttr}>
-                <div class="d-flex align-items-start gap-2">
-                    <div class="flex-grow-1">
-                        <div class="fw-semibold small mb-1">${title}</div>
-                        <div class="small text-muted mb-1">${message}</div>
-                        <div class="small text-secondary">${createdAt}</div>
-                    </div>
-                    ${isRead ? '' : `<button type="button" class="btn btn-sm btn-outline-primary" data-action="mark-read" data-notification-id="${id}">Read</button>`}
-                </div>
-            </div>
-        `;
-    }).join('');
-}
 
-async function adminFetchNotifications(limit = 10) {
-    const response = await fetch(`/api/user-notifications?limit=${encodeURIComponent(limit)}`, {
-        credentials: 'same-origin',
-        headers: { Accept: 'application/json' }
-    });
-    if (!response.ok) {
-        throw new Error(`Failed to load notifications (${response.status})`);
-    }
-    const data = await response.json().catch(() => ({}));
-    const notifications = Array.isArray(data.notifications) ? data.notifications : [];
-    const unreadCount = Number.isFinite(Number(data.unread_count))
-        ? Number(data.unread_count)
-        : notifications.filter((row) => Number(row?.is_read) !== 1).length;
-    return { notifications, unreadCount };
-}
 
-async function adminMarkNotificationRead(notificationId) {
-    const response = await fetch('/api/notification/mark-read', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': adminGetCsrfToken()
-        },
-        body: JSON.stringify({ notification_id: notificationId })
-    });
-    if (!response.ok) return false;
-    const data = await response.json().catch(() => ({}));
-    return data?.success !== false;
-}
 
-function adminGetBellKey(options) {
-    return [
-        options.context || 'admin',
-        options.bellSelector || '',
-        options.listSelector || ''
-    ].join('|');
-}
 
-function adminFindElement(selector, attrName) {
-    if (selector) {
-        const selected = document.querySelector(selector);
-        if (selected) return selected;
-    }
-    if (!attrName) return null;
-    return document.querySelector(`[${attrName}]`);
-}
 
-function adminGetDropdownMenuElement(bellEl, listEl) {
-    const wrapper = bellEl?.closest('[data-notification-menu]');
-    if (wrapper) {
-        const menu = wrapper.querySelector('[data-notification-dropdown]');
-        if (menu) return menu;
-    }
-    return listEl?.closest('.admin-notification-dropdown, .brox-notification-dropdown') || null;
-}
 
-async function adminInitNotificationCore(options = {}) {
-    const context = options.context || 'admin';
-    const existing = adminNotificationCoreState.get(context);
-    if (existing?.promise) return existing.promise;
-
-    const state = { initialized: false, promise: null };
-    state.promise = (async () => {
-        try {
-            const userId = options.userId ?? getUserId();
-            const [{ initFirebase }, messagingMod] = await Promise.all([
-                import('/assets/firebase/v2/dist/init.js'),
-                import('/assets/firebase/v2/dist/messaging.js')
-            ]);
-
-            const {
-                autoInitializeFCMToken,
-                obtainAndSendFCMToken,
-                autoInitializeForegroundListener,
-                isMessagingSupported
-            } = messagingMod;
-
-            const messagingSupported = typeof isMessagingSupported === 'function'
-                ? (await isMessagingSupported()) === true
-                : true;
-            adminEmitFcmSupportResolved(messagingSupported, context);
-
-            if (!messagingSupported) {
-                window.__fcmTokenObtained = false;
-                window.__requestFcmTokenSync = async () => false;
-                if (window.__pendingFcmTokenSync) {
-                    window.__pendingFcmTokenSync = false;
-                }
-                state.initialized = true;
-                return true;
-            }
-
-            window.__requestFcmTokenSync = async (syncOptions = {}) => {
-                try {
-                    window.__fcmTokenObtained = true;
-                    const effectiveUserId = syncOptions.userId ?? userId;
-                    await obtainAndSendFCMToken({
-                        requestPermission: false,
-                        userId: effectiveUserId || undefined,
-                        deviceId: syncOptions.deviceId
-                    });
-                    return true;
-                } catch (err) {
-                    window.__fcmTokenObtained = false;
-                    return false;
-                }
-            };
-
-            autoInitializeForegroundListener();
-            autoInitializeFCMToken({
-                userId,
-                onSuccess: () => { },
-                onError: () => { },
-                autoRetry: true
-            });
-
-            try {
-                await initFirebase();
-            } catch (err) {
-                // Non-fatal by design.
-            }
-
-            if (window.__pendingFcmTokenSync) {
-                window.__pendingFcmTokenSync = false;
-                window.__requestFcmTokenSync?.();
-            }
-
-            state.initialized = true;
-            return true;
-        } catch (err) {
-            adminNotificationCoreState.delete(context);
-            return false;
-        }
-    })();
-
-    adminNotificationCoreState.set(context, state);
-    return state.promise;
-}
-
-function adminInitNotificationBell(options = {}) {
-    const key = adminGetBellKey(options);
-    const previous = adminNotificationBellState.get(key);
-    if (previous?.destroy) previous.destroy();
-
-    const pollIntervalMs = Number.isFinite(options.pollIntervalMs) ? options.pollIntervalMs : 60000;
-    const limit = Number.isFinite(options.limit) ? options.limit : 10;
-    const bellEl = adminFindElement(options.bellSelector, 'data-notification-bell');
-    const badgeEl = adminFindElement(options.badgeSelector, 'data-notification-badge');
-    const countEl = adminFindElement(options.countSelector, 'data-notification-count');
-    const listEl = adminFindElement(options.listSelector, 'data-notification-list');
-    const menuEl = adminGetDropdownMenuElement(bellEl, listEl);
-
-    if (!bellEl || !listEl || !menuEl) {
-        return { active: false };
-    }
-
-    if (bellEl.hasAttribute('data-bs-toggle')) {
-        bellEl.removeAttribute('data-bs-toggle');
-    }
-
-    menuEl.classList.remove('show');
-    bellEl.classList.remove('show');
-    bellEl.closest('.dropdown')?.classList.remove('show');
-    bellEl.setAttribute('aria-expanded', 'false');
-
-    const abortController = new AbortController();
-    const state = {
-        loading: false,
-        initialized: false,
-        pollId: null,
-        destroy() {
-            abortController.abort();
-            if (state.pollId) {
-                clearInterval(state.pollId);
-                state.pollId = null;
-            }
-            adminNotificationBellState.delete(key);
-        }
-    };
-
-    const loadAndRender = async () => {
-        if (state.loading) return;
-        state.loading = true;
-        try {
-            const data = await adminFetchNotifications(limit);
-            adminRenderNotifications(listEl, data.notifications);
-            adminUpdateBadge(badgeEl, countEl, data.unreadCount);
-            state.initialized = true;
-        } catch (err) {
-            if (!state.initialized) {
-                adminSetListEmpty(listEl, 'Failed to load notifications');
-            }
-            adminUpdateBadge(badgeEl, countEl, 0);
-        } finally {
-            state.loading = false;
-        }
-    };
-
-    const showMenu = () => {
-        menuEl.classList.add('show');
-        bellEl.classList.add('show');
-        bellEl.closest('.dropdown')?.classList.add('show');
-        bellEl.setAttribute('aria-expanded', 'true');
-        adminEmitNavbarDropdownState('notification', true);
-    };
-
-    const hideMenu = () => {
-        const wasOpen = menuEl.classList.contains('show');
-        menuEl.classList.remove('show');
-        bellEl.classList.remove('show');
-        bellEl.closest('.dropdown')?.classList.remove('show');
-        bellEl.setAttribute('aria-expanded', 'false');
-        if (wasOpen) {
-            adminEmitNavbarDropdownState('notification', false);
-        }
-    };
-
-    const toggleMenu = () => {
-        if (menuEl.classList.contains('show')) {
-            hideMenu();
-            return;
-        }
-        showMenu();
-        loadAndRender();
-    };
-
-    const handleListClick = async (event) => {
-        const button = event.target.closest('[data-action="mark-read"]');
-        if (button && listEl.contains(button)) {
-            event.preventDefault();
-            event.stopPropagation();
-            const notificationId = Number.parseInt(button.dataset.notificationId || '0', 10);
-            if (!notificationId) return;
-            button.disabled = true;
-            const ok = await adminMarkNotificationRead(notificationId);
-            button.disabled = false;
-            if (ok) await loadAndRender();
-            return;
-        }
-
-        const entry = event.target.closest('.notification-entry[data-action-url]');
-        if (!entry || !listEl.contains(entry)) return;
-        const href = adminToSafeUrl(entry.dataset.actionUrl || '');
-        if (href !== '#') {
-            window.location.href = href;
-        }
-    };
-
-    const closeForExternalOpen = (event) => {
-        const sourceKind = String(event?.detail?.kind || '');
-        const isOpening = event?.detail?.open === true;
-        if (!isOpening || sourceKind === 'notification') return;
-        hideMenu();
-    };
-
-    const globalClickHandler = (event) => {
-        if (!menuEl.classList.contains('show')) return;
-        const target = event.target;
-        if (target instanceof Element && (bellEl.contains(target) || menuEl.contains(target))) return;
-        hideMenu();
-    };
-
-    const escapeHandler = (event) => {
-        if (event.key === 'Escape') hideMenu();
-    };
-
-    bellEl.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        toggleMenu();
-    }, { signal: abortController.signal });
-
-    listEl.addEventListener('click', handleListClick, { signal: abortController.signal });
-    document.addEventListener('click', globalClickHandler, { signal: abortController.signal });
-    document.addEventListener('keydown', escapeHandler, { signal: abortController.signal });
-    document.addEventListener(ADMIN_NAV_DROPDOWN_OPEN_EVENT, closeForExternalOpen, { signal: abortController.signal });
-
-    runWhenReady(() => {
-        loadAndRender();
-    });
-
-    state.pollId = window.setInterval(loadAndRender, pollIntervalMs);
-    adminNotificationBellState.set(key, state);
-    return { active: true, destroy: state.destroy };
-}
-
-async function initAdminNotificationRuntime() {
-    try {
-        await adminInitNotificationCore({
-            context: 'admin',
-            permissionScope: 'admin',
-            requestPermissionOnLoad: false,
-            userId: getUserId(),
-            permissionTitle: 'Enable Push Notifications',
-            permissionMessage: 'Stay updated with instant alerts and important updates.',
-            permissionEnableLabel: 'Enable',
-            permissionLaterLabel: 'Later'
-        });
-
-        runWhenReady(() => {
-            adminInitNotificationBell({
-                context: 'admin',
-                bellSelector: '#adminNotificationBell',
-                badgeSelector: '#adminNotificationBadge',
-                countSelector: '#adminNotificationCount',
-                listSelector: '#adminNotificationsList'
-            });
-        });
-    } catch (err) {
-        // Silent fail
-    }
-}
-
-function initAdminUserDropdownSync() {
-    const userToggle = document.getElementById('adminUserMenu');
-    if (!userToggle) return;
-    const userMenu = userToggle.closest('[data-admin-user-menu]');
-    const userDropdown = userMenu?.querySelector('[data-admin-user-dropdown]');
-
-    const closeUserDropdown = () => {
-        if (window.bootstrap?.Dropdown?.getOrCreateInstance) {
-            const instance = window.bootstrap.Dropdown.getOrCreateInstance(userToggle);
-            if (instance && typeof instance.hide === 'function') {
-                instance.hide();
-                return;
-            }
-        }
-
-        const wrapper = userMenu || userToggle.closest('.dropdown');
-        const menu = userDropdown || wrapper?.querySelector('[data-admin-user-dropdown], .dropdown-menu');
-        if (!wrapper || !menu) return;
-
-        menu.classList.remove('show');
-        userToggle.classList.remove('show');
-        wrapper.classList.remove('show');
-        userToggle.setAttribute('aria-expanded', 'false');
-    };
-
-    userToggle.addEventListener('shown.bs.dropdown', () => {
-        adminEmitNavbarDropdownState('user', true);
-    });
-
-    userToggle.addEventListener('hidden.bs.dropdown', () => {
-        adminEmitNavbarDropdownState('user', false);
-    });
-
-    document.addEventListener(ADMIN_NAV_DROPDOWN_OPEN_EVENT, (event) => {
-        const sourceKind = String(event?.detail?.kind || '');
-        const isOpening = event?.detail?.open === true;
-        if (!isOpening || sourceKind === 'user') return;
-        closeUserDropdown();
-    });
-}
-
-async function initAdminDebugUtils() {
-    try {
-        const mod = await import('/assets/firebase/v2/dist/debug.js');
-        const DebugUtils = mod.default || mod.DebugUtils;
-        if (!DebugUtils) return;
-
-        window.DebugUtils = DebugUtils;
-        window.debugUtilsReady = true;
-        console.log('[DebugUtils] Initialized and ready');
-        window.dispatchEvent(new CustomEvent('debugUtilsLoaded', { detail: DebugUtils }));
-    } catch (err) {
-        // Silent fail
-    }
-}
-
-async function initAdminUnifiedLogout() {
-    try {
-        const logoutRuntime = await import('./shared/logout-runtime.js');
-        logoutRuntime.initUnifiedLogout({ context: 'admin' });
-    } catch (err) {
-        // Silent fail
-    }
-}
 
 initAdminNotificationRuntime();
 runWhenReady(initAdminUserDropdownSync);
@@ -3934,6 +3456,149 @@ runWhenReady(() => {
         initNotificationsDashboardLegacy();
         initNotificationsAnalytics();
     });
+
+    // Server Status Indicator
+    const initServerStatusIndicator = () => {
+        const indicator = document.getElementById('serverStatusIndicator');
+        const icon = document.getElementById('serverStatusIcon');
+        const text = document.getElementById('serverStatusText');
+
+        if (!indicator || !icon || !text) return;
+
+        let checkInterval;
+        let isChecking = false;
+
+        const updateStatus = (status, message) => {
+            indicator.classList.remove('online', 'offline', 'warning', 'checking');
+
+            switch (status) {
+                case 'online':
+                    indicator.classList.add('online');
+                    icon.className = 'bi bi-server';
+                    text.textContent = 'Online';
+                    indicator.title = 'All systems operational';
+                    break;
+                case 'offline':
+                    indicator.classList.add('offline');
+                    icon.className = 'bi bi-server';
+                    text.textContent = 'Offline';
+                    indicator.title = message || 'Server offline';
+                    break;
+                case 'warning':
+                    indicator.classList.add('warning');
+                    icon.className = 'bi bi-exclamation-triangle';
+                    text.textContent = 'Warning';
+                    indicator.title = message || 'Some services may be degraded';
+                    break;
+                case 'checking':
+                default:
+                    indicator.classList.add('checking');
+                    icon.className = 'bi bi-arrow-repeat';
+                    text.textContent = 'Checking...';
+                    indicator.title = 'Checking server status...';
+                    break;
+            }
+        };
+
+        const updateServiceStatus = (serviceName, status, error = null) => {
+            const item = document.querySelector(`.server-status-item[data-service="${serviceName}"]`);
+            if (!item) return;
+
+            const badge = item.querySelector('.status-badge');
+            if (!badge) return;
+
+            badge.setAttribute('data-status', status);
+            badge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+
+            if (error) {
+                badge.title = error;
+            }
+        };
+
+        const updateLastCheck = () => {
+            const lastCheckEl = document.getElementById('serverStatusLastCheck');
+            if (lastCheckEl) {
+                lastCheckEl.textContent = `Last checked: ${new Date().toLocaleTimeString()}`;
+            }
+        };
+
+        const checkServerStatus = async () => {
+            if (isChecking) return;
+            isChecking = true;
+
+            try {
+                updateStatus('checking');
+
+                const response = await fetch('/api/admin/system-health', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update individual service statuses
+                    const services = ['database', 'cache', 'api', 'nodejs'];
+                    services.forEach(service => {
+                        if (data[service]) {
+                            const status = data[service].check ? 'online' : 'offline';
+                            const error = data[service].error || null;
+                            updateServiceStatus(service, status, error);
+                        }
+                    });
+
+                    // Check if all services are operational
+                    const { database, cache, api, nodejs } = data;
+
+                    if (database.check && cache.check && api.check && nodejs.check) {
+                        updateStatus('online', 'All systems operational');
+                    } else if (database.check || cache.check || api.check || nodejs.check) {
+                        updateStatus('warning', 'Some services may be degraded');
+                    } else {
+                        updateStatus('offline', 'All services offline');
+                    }
+
+                    updateLastCheck();
+                } else {
+                    updateStatus('offline', 'Server health check failed');
+                }
+            } catch (error) {
+                console.warn('Server status check failed:', error);
+                updateStatus('offline', 'Unable to check server status');
+            } finally {
+                isChecking = false;
+            }
+        };
+
+        // Initial check
+        checkServerStatus();
+
+        // Set up periodic checks (every 30 seconds)
+        checkInterval = setInterval(checkServerStatus, 30000);
+
+        // Add click handler to manually refresh
+        indicator.addEventListener('click', (e) => {
+            e.preventDefault();
+            checkServerStatus();
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (checkInterval) {
+                clearInterval(checkInterval);
+            }
+        });
+    };
+
+    initServerStatusIndicator();
 })();
 
 

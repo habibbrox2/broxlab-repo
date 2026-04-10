@@ -381,7 +381,7 @@ body.admin-sidebar-open {
         body.admin-sidebar-mini .admin-column-resizer {
             display: none !important;
         }
-        
+
         .admin-column-resizer.is-mini {
             display: none !important;
         }
@@ -4839,4 +4839,159 @@ textarea.font-monospace {
     border-radius: 8px;
     font-weight: 600;
     font-size: 0.8rem;
+}
+
+/* ============================================================================
+   13. SERVER STATUS INDICATOR
+   ============================================================================ */
+
+.server-status-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+.server-status-indicator:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.server-status-indicator.online {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #10b981;
+}
+
+.server-status-indicator.offline {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+}
+
+.server-status-indicator.warning {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #f59e0b;
+}
+
+.server-status-indicator.checking {
+    background: rgba(156, 163, 175, 0.2);
+    border-color: rgba(156, 163, 175, 0.4);
+    color: #9ca3af;
+}
+
+.server-status-indicator i {
+    font-size: 1rem;
+    transition: all var(--transition-fast);
+}
+
+.server-status-indicator.online i {
+    color: #10b981;
+}
+
+.server-status-indicator.offline i {
+    color: #ef4444;
+}
+
+.server-status-indicator.warning i {
+    color: #f59e0b;
+}
+
+.server-status-indicator.checking i {
+    color: #9ca3af;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.server-status-text {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* ============================================================================
+   13. SERVER STATUS DROPDOWN
+   ============================================================================ */
+
+.server-status-dropdown {
+    min-width: 220px;
+    padding: 0;
+    border: none;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius-md);
+}
+
+.server-status-dropdown .dropdown-header {
+    padding: var(--space-md);
+    font-weight: 600;
+    color: var(--neutral-700);
+    background: var(--neutral-50);
+    border-bottom: 1px solid var(--neutral-200);
+    margin-bottom: 0;
+}
+
+.server-status-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) var(--space-md);
+    gap: var(--space-sm);
+}
+
+.server-status-item i {
+    font-size: 1rem;
+    width: 16px;
+    color: var(--neutral-600);
+}
+
+.server-status-item span:first-of-type {
+    flex: 1;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge[data-status="online"] {
+    background: rgba(16, 185, 129, 0.2);
+    color: #065f46;
+}
+
+.status-badge[data-status="offline"] {
+    background: rgba(239, 68, 68, 0.2);
+    color: #7f1d1d;
+}
+
+.status-badge[data-status="warning"] {
+    background: rgba(245, 158, 11, 0.2);
+    color: #78350f;
+}
+
+.status-badge[data-status="checking"] {
+    background: rgba(156, 163, 175, 0.2);
+    color: #374151;
 }

@@ -1,0 +1,392 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .classification-result {
+        display: none;
+    }
+    .classification-result.show {
+        display: block;
+    }
+    .type-badge {
+        font-size: 1.1em;
+        padding: 0.5em 1em;
+    }
+    .confidence-bar {
+        height: 10px;
+        border-radius: 5px;
+        background: #e9ecef;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+    .confidence-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        transition: width 0.5s ease;
+    }
+    .structured-data-card {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+    .extracted-field {
+        border-bottom: 1px solid #e9ecef;
+        padding: 0.75rem 0;
+    }
+    .extracted-field:last-child {
+        border-bottom: none;
+    }
+    .extracted-label {
+        font-weight: 600;
+        color: #495057;
+        min-width: 120px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-tags me-2"></i>
+                    AI Content Classifier
+                </h1>
+                <div>
+                    <a href="/admin/scraper" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+            <p class="text-muted mb-4">
+                Analyze HTML content to classify its type and extract structured data.
+                The AI will detect content type (news, blog, product, job, event) and extract key information.
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Classify Content</h5>
+                </div>
+                <div class="card-body">
+                    <form id="classifierForm">
+                        <div class="mb-3">
+                            <label for="classifyHtml" class="form-label">HTML Content <span class="text-danger">*</span></label>
+                            <textarea class="form-control font-monospace" 
+                                      id="classifyHtml" 
+                                      name="html" 
+                                      rows="12" 
+                                      placeholder="Paste HTML content here..." 
+                                      required></textarea>
+                            <div class="form-text">
+                                Paste the full HTML source of the page you want to analyze.
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sourceUrl" class="form-label">Source URL (optional)</label>
+                            <input type="url" 
+                                   class="form-control" 
+                                   id="sourceUrl" 
+                                   name="url" 
+                                   placeholder="https://example.com/page">
+                            <div class="form-text">
+                                Providing the URL can improve classification accuracy.
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="classifyBtn">
+                            <i class="bi bi-tags me-1"></i>
+                            Classify Content
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Supported Types</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-primary">News Article</span>
+                        <span class="badge bg-success">Blog Post</span>
+                        <span class="badge bg-warning text-dark">Product</span>
+                        <span class="badge bg-info text-dark">Job Listing</span>
+                        <span class="badge bg-secondary">Event</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">What gets extracted?</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0 ps-3">
+                        <li>Content type classification</li>
+                        <li>Title and description</li>
+                        <li>Publication date</li>
+                        <li>Author name</li>
+                        <li>Main content body</li>
+                        <li>Images and metadata</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="row" id="loadingState" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+                    <h5>Analyzing Content...</h5>
+                    <p class="text-muted mb-0">
+                        The AI is classifying and extracting structured data.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="row mt-4 classification-result" id="resultSection">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Classification Results</h5>
+                    <div>
+                        <span class="badge bg-success" id="typeBadge"></span>
+                        <span class="badge bg-info" id="confidenceBadge"></span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Success Alert -->
+                    <div class="alert alert-success mb-4" id="successAlert" style="display: none;">
+                        <i class="bi bi-check-circle me-2"></i>
+                        <strong>Analysis Complete!</strong>
+                    </div>
+
+                    <!-- Error Alert -->
+                    <div class="alert alert-danger mb-4" id="errorAlert" style="display: none;">
+                        <i class="bi bi-exclamation-circle me-2"></i>
+                        <strong>Error:</strong> <span id="errorText"></span>
+                    </div>
+
+                    <!-- Results Container -->
+                    <div id="classificationResults" style="display: none;">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Detected Type</h6>
+                                        <p class="card-text h4 mb-0" id="detectedType"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Confidence</h6>
+                                        <div class="confidence-bar">
+                                            <div class="confidence-fill" id="confidenceFill"></div>
+                                        </div>
+                                        <p class="card-text mb-0" id="confidenceText"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6 class="mb-3">Extracted Structured Data</h6>
+                        <div class="card structured-data-card">
+                            <div class="card-body" id="structuredData">
+                                <!-- Dynamically populated -->
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button class="btn btn-primary" onclick="exportResults()">
+                                <i class="bi bi-download me-1"></i>
+                                Export Results
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JSON Export Modal -->
+<div class="modal fade" id="jsonModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Classification Results (JSON)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="jsonContent" class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto; font-size: 0.85em;"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="copyJson()">Copy</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let classificationResult = null;
+
+document.getElementById('classifierForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const html = document.getElementById('classifyHtml').value.trim();
+    const url = document.getElementById('sourceUrl').value.trim();
+    
+    if (!html) {
+        alert('Please enter HTML content');
+        return;
+    }
+
+    // Show loading
+    document.getElementById('loadingState').style.display = 'block';
+    document.getElementById('resultSection').classList.remove('show');
+    document.getElementById('classifyBtn').disabled = true;
+
+    try {
+        const response = await fetch('/admin/scraper/ai/classifier/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]).content
+            },
+            body: JSON.stringify({
+                html: html,
+                url: url
+            })
+        });
+
+        const data = await response.json();
+        
+        // Hide loading
+        document.getElementById('loadingState').style.display = 'none';
+        
+        if (data.success) {
+            classificationResult = data;
+            displayClassificationResult(data);
+        } else {
+            showError(data.error || 'Classification failed');
+        }
+    } catch (err) {
+        document.getElementById('loadingState').style.display = 'none';
+        showError('Network error: ' + err.message);
+    } finally {
+        document.getElementById('classifyBtn').disabled = false;
+    }
+});
+
+function displayClassificationResult(result) {
+    document.getElementById('resultSection').classList.add('show');
+    document.getElementById('successAlert').style.display = 'block';
+    document.getElementById('errorAlert').style.display = 'none';
+    document.getElementById('classificationResults').style.display = 'block';
+
+    const basic = result.basic_classification || {};
+    const ai = result.ai_analysis || {};
+    const structured = result.structured_data || {};
+    const confidence = Math.round((result.confidence || 0) * 100);
+
+    // Type badge
+    const typeName = ai.content_type || basic.primary_type || 'Unknown';
+    document.getElementById('typeBadge').textContent = typeName;
+    document.getElementById('detectedType').textContent = typeName;
+
+    // Confidence
+    document.getElementById('confidenceBadge').textContent = confidence + '%';
+    const fill = document.getElementById('confidenceFill');
+    fill.style.width = confidence + '%';
+    fill.className = 'confidence-fill ' + (confidence >= 70 ? 'bg-success' : confidence >= 40 ? 'bg-warning' : 'bg-danger');
+    document.getElementById('confidenceText').textContent = confidence + '% confidence';
+
+    // Structured data
+    const container = document.getElementById('structuredData');
+    container.innerHTML = '';
+
+    const fields = [
+        { key: 'title', label: 'Title' },
+        { key: 'description', label: 'Description' },
+        { key: 'date', label: 'Date' },
+        { key: 'author', label: 'Author' },
+        { key: 'content', label: 'Content' },
+        { key: 'image', label: 'Image URL' },
+        { key: 'price', label: 'Price' },
+        { key: 'location', label: 'Location' },
+        { key: 'company', label: 'Company' }
+    ];
+
+    let hasData = false;
+    fields.forEach(field => {
+        const value = structured[field.key] || ai.structured_data?.[field.key];
+        if (value) {
+            hasData = true;
+            const div = document.createElement('div');
+            div.className = 'extracted-field';
+            div.innerHTML = `
+                <div class="d-flex">
+                    <div class="extracted-label">${field.label}:</div>
+                    <div class="flex-grow-1">${escapeHtml(value)}</div>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+    });
+
+    if (!hasData) {
+        container.innerHTML = '<p class="text-muted">No structured data was extracted.</p>';
+    }
+}
+
+function showError(message) {
+    document.getElementById('resultSection').classList.add('show');
+    document.getElementById('successAlert').style.display = 'none';
+    document.getElementById('errorAlert').style.display = 'block';
+    document.getElementById('errorText').textContent = message;
+    document.getElementById('classificationResults').style.display = 'none';
+}
+
+function exportResults() {
+    if (!classificationResult) return;
+    
+    const json = JSON.stringify(classificationResult, null, 2);
+    document.getElementById('jsonContent').textContent = json;
+    
+    const modal = new bootstrap.Modal(document.getElementById('jsonModal'));
+    modal.show();
+}
+
+function copyJson() {
+    const jsonContent = document.getElementById('jsonContent').textContent;
+    navigator.clipboard.writeText(jsonContent).then(() => {
+        alert('JSON copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = typeof text === 'string' ? text : JSON.stringify(text);
+    return div.innerHTML;
+}
+</script>
+{% endblock %}

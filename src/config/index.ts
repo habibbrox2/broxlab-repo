@@ -28,8 +28,11 @@ const envSchema = z.object({
     // AI Providers
     OPENROUTER_API_KEY: z.string().optional(),
     ANTHROPIC_API_KEY: z.string().optional(),
-    OLLAMA_BASE_URL: z.string().default('http://localhost:11434'),
+    OPENAI_API_KEY: z.string().optional(),
+    OLLAMA_BASE_URL: z.string().default('https://api.ollama.ai/v1'),
     FIREWORKS_API_KEY: z.string().optional(),
+    HUGGINGFACE_API_KEY: z.string().optional(),
+    KILO_API_KEY: z.string().optional(),
 
     // Default AI Settings
     DEFAULT_PROVIDER: z.string().default('openrouter'),
@@ -103,11 +106,20 @@ export const config = {
         anthropic: {
             apiKey: env.data.ANTHROPIC_API_KEY,
         },
+        openai: {
+            apiKey: env.data.OPENAI_API_KEY,
+        },
         ollama: {
             baseURL: env.data.OLLAMA_BASE_URL,
         },
         fireworks: {
             apiKey: env.data.FIREWORKS_API_KEY,
+        },
+        huggingface: {
+            apiKey: env.data.HUGGINGFACE_API_KEY,
+        },
+        kilo: {
+            apiKey: env.data.KILO_API_KEY,
         },
         defaultProvider: env.data.DEFAULT_PROVIDER,
         defaultModel: env.data.DEFAULT_MODEL,

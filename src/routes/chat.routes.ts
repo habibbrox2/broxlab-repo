@@ -108,32 +108,4 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
             });
         }
     });
-
-    /**
-     * Get cache statistics
-     * GET /api/ai/cache/stats
-     */
-    fastify.get('/api/ai/cache/stats', async (_request, reply) => {
-        reply.send({
-            success: true,
-            stats: {
-                keys: 0,
-                memory: '0B',
-                hits: 0,
-                misses: 0,
-            },
-        });
-    });
-
-    /**
-     * Clear cache
-     * POST /api/ai/cache/clear
-     */
-    fastify.post('/api/ai/cache/clear', async (_request, reply) => {
-        reply.send({
-            success: true,
-            message: 'Cache cleared',
-            timestamp: new Date().toISOString(),
-        });
-    });
 }

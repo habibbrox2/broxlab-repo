@@ -373,7 +373,7 @@ foreach ($controllerFiles as $controller) {
 // Dispatch Router
 // ============================================================================
 try {
-    error_log("Dispatching: " . $_SERVER['REQUEST_METHOD'] . " " . $_SERVER['REQUEST_URI']);
+    //error_log("Dispatching: " . $_SERVER['REQUEST_METHOD'] . " " . $_SERVER['REQUEST_URI']);
     $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);
 } catch (Throwable $e) {
     logError('Routing Error: ' . $e->getMessage());

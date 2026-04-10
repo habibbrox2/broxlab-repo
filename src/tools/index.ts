@@ -16,6 +16,7 @@ import { getAppSettingsTool } from './system/settings.tool.js';
 // Content tools
 import { summarizeTextTool } from './content/summarize.tool.js';
 import { getContentStatsTool } from './content/content-stats.tool.js';
+import { fetchUrlContentTool } from './content/fetch-url.tool.js';
 
 // Knowledge base tools
 import { searchKnowledgeBaseTool } from './knowledge/search.tool.js';
@@ -40,6 +41,7 @@ export {
     getAppSettingsTool,
     summarizeTextTool,
     getContentStatsTool,
+    fetchUrlContentTool,
     searchKnowledgeBaseTool,
     reindexKnowledgeBaseTool,
     listToolsTool,
@@ -65,6 +67,7 @@ export function registerAllTools(registry: ToolRegistry): void {
     // Content tools
     registry.register(summarizeTextTool);
     registry.register(getContentStatsTool);
+    registry.register(fetchUrlContentTool);
 
     // Knowledge base tools
     registry.register(searchKnowledgeBaseTool);

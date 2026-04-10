@@ -1,0 +1,476 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">
+                        <i class="bi bi-gear me-2"></i>{{ pageTitle }}
+                    </h1>
+                    <p class="text-muted mb-0">Monitor and manage scraping jobs</p>
+                </div>
+                <div>
+                    <a href="/admin/scraper/dashboard" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-house me-1"></i>Dashboard
+                    </a>
+                    <button type="button" class="btn btn-primary" onclick="runAllPendingJobs()">
+                        <i class="bi bi-play-circle me-1"></i>Run All Pending
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3">
+                                <i class="bi bi-clock fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Pending Jobs</h6>
+                            <h4 class="mb-0">{{ stats.pending|default(0) }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-info bg-opacity-10 text-info rounded-circle p-3">
+                                <i class="bi bi-play-circle fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Running Jobs</h6>
+                            <h4 class="mb-0">{{ stats.running|default(0) }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-10 text-success rounded-circle p-3">
+                                <i class="bi bi-check-circle fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Completed Jobs</h6>
+                            <h4 class="mb-0">{{ stats.completed|default(0) }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-3">
+                                <i class="bi bi-x-circle fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Failed Jobs</h6>
+                            <h4 class="mb-0">{{ stats.failed|default(0) }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="status_filter" class="form-label">Status</label>
+                            <select name="status" id="status_filter" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="pending" {{ filters.status == 'pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="running" {{ filters.status == 'running' ? 'selected' : '' }}>Running</option>
+                                <option value="completed" {{ filters.status == 'completed' ? 'selected' : '' }}>Completed</option>
+                                <option value="failed" {{ filters.status == 'failed' ? 'selected' : '' }}>Failed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="type_filter" class="form-label">Job Type</label>
+                            <select name="type" id="type_filter" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="scrape" {{ filters.type == 'scrape' ? 'selected' : '' }}>Scrape</option>
+                                <option value="test" {{ filters.type == 'test' ? 'selected' : '' }}>Test</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="source_filter" class="form-label">Source</label>
+                            <select name="source_id" id="source_filter" class="form-select">
+                                <option value="">All Sources</option>
+                                {% for source in sources %}
+                                    <option value="{{ source.id }}" {{ filters.source_id == source.id ? 'selected' : '' }}>
+                                        {{ source.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_filter" class="form-label">Date Range</label>
+                            <select name="date_range" id="date_filter" class="form-select">
+                                <option value="">All Time</option>
+                                <option value="today" {{ filters.date_range == 'today' ? 'selected' : '' }}>Today</option>
+                                <option value="yesterday" {{ filters.date_range == 'yesterday' ? 'selected' : '' }}>Yesterday</option>
+                                <option value="week" {{ filters.date_range == 'week' ? 'selected' : '' }}>This Week</option>
+                                <option value="month" {{ filters.date_range == 'month' ? 'selected' : '' }}>This Month</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="bi bi-search me-1"></i>Filter
+                            </button>
+                            <a href="/admin/scraper/jobs" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i>Clear Filters
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Jobs Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Jobs ({{ jobs|length }} total)</h5>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-danger me-2" onclick="clearCompletedJobs()">
+                            <i class="bi bi-trash me-1"></i>Clear Completed
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-info" onclick="refreshJobs()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if jobs %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Source</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Priority</th>
+                                        <th>Created</th>
+                                        <th>Duration</th>
+                                        <th>Items</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for job in jobs %}
+                                        <tr>
+                                            <td>
+                                                <code>#{{ job.id }}</code>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="flex-shrink-0 me-2">
+                                                        {% if job.status == 'completed' %}
+                                                            <i class="bi bi-check-circle text-success"></i>
+                                                        {% elseif job.status == 'running' %}
+                                                            <i class="bi bi-play-circle text-info"></i>
+                                                        {% elseif job.status == 'failed' %}
+                                                            <i class="bi bi-x-circle text-danger"></i>
+                                                        {% else %}
+                                                            <i class="bi bi-clock text-warning"></i>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-medium">
+                                                            <a href="/admin/scraper/sources/{{ job.source_id }}" class="text-decoration-none">
+                                                                {{ job.source_name|default('Unknown') }}
+                                                            </a>
+                                                        </div>
+                                                        <small class="text-muted">{{ job.url|truncate(40) }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ job.job_type|capitalize }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-
+                                                    {% if job.status == 'completed' %}success
+                                                    {% elseif job.status == 'running' %}info
+                                                    {% elseif job.status == 'failed' %}danger
+                                                    {% else %}warning{% endif %}">
+                                                    {{ job.status|title }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark">{{ job.priority }}</span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    {{ job.created_at|date('M j, H:i') }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                {% if job.started_at and job.completed_at %}
+                                                    {% set duration = date(job.completed_at).getTimestamp() - date(job.started_at).getTimestamp() %}
+                                                    <small class="text-muted">{{ duration }}s</small>
+                                                {% elseif job.started_at %}
+                                                    <small class="text-info">
+                                                        <i class="bi bi-play-circle me-1"></i>
+                                                        {{ (date().getTimestamp() - date(job.started_at).getTimestamp()) }}s
+                                                    </small>
+                                                {% else %}
+                                                    <small class="text-muted">-</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if job.items_processed %}
+                                                    <small class="text-muted">
+                                                        {{ job.items_successful ?? 0 }}/{{ job.items_processed }}
+                                                    </small>
+                                                {% else %}
+                                                    <small class="text-muted">-</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="/admin/scraper/jobs/{{ job.id }}" class="btn btn-outline-primary" title="View Details">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    {% if job.status == 'pending' %}
+                                                        <button type="button" class="btn btn-outline-success" onclick="runJob({{ job.id }})" title="Run Job">
+                                                            <i class="bi bi-play"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                    {% if job.status == 'running' %}
+                                                        <button type="button" class="btn btn-outline-warning" onclick="stopJob({{ job.id }})" title="Stop Job">
+                                                            <i class="bi bi-stop"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                    <button type="button" class="btn btn-outline-danger" onclick="deleteJob({{ job.id }})" title="Delete Job">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if pagination.total_pages > 1 %}
+                            <div class="d-flex justify-content-center mt-4">
+                                <nav aria-label="Jobs pagination">
+                                    <ul class="pagination">
+                                        {% if pagination.current_page > 1 %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ pagination.current_page - 1 }}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source_id %}&source_id={{ filters.source_id }}{% endif %}">
+                                                    Previous
+                                                </a>
+                                            </li>
+                                        {% endif %}
+
+                                        {% for page in range(max(1, pagination.current_page - 2), min(pagination.total_pages, pagination.current_page + 2)) %}
+                                            <li class="page-item {{ page == pagination.current_page ? 'active' : '' }}">
+                                                <a class="page-link" href="?page={{ page }}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source_id %}&source_id={{ filters.source_id }}{% endif %}">
+                                                    {{ page }}
+                                                </a>
+                                            </li>
+                                        {% endfor %}
+
+                                        {% if pagination.current_page < pagination.total_pages %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ pagination.current_page + 1 }}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source_id %}&source_id={{ filters.source_id }}{% endif %}">
+                                                    Next
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-gear text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="mt-3 text-muted">No Jobs Found</h5>
+                            <p class="text-muted">There are no jobs matching your current filters.</p>
+                            <a href="/admin/scraper/jobs" class="btn btn-primary">
+                                <i class="bi bi-x-circle me-1"></i>Clear Filters
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function runJob(jobId) {
+    if (confirm('Are you sure you want to run this job?')) {
+        fetch(`/admin/scraper/jobs/${jobId}/run`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while running the job');
+        });
+    }
+}
+
+function stopJob(jobId) {
+    if (confirm('Are you sure you want to stop this job?')) {
+        fetch(`/admin/scraper/jobs/${jobId}/stop`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while stopping the job');
+        });
+    }
+}
+
+function deleteJob(jobId) {
+    if (confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
+        fetch(`/admin/scraper/jobs/${jobId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the job');
+        });
+    }
+}
+
+function runAllPendingJobs() {
+    if (confirm('Are you sure you want to run all pending jobs?')) {
+        fetch('/admin/scraper/jobs/run-all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('All pending jobs have been queued for execution');
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while running jobs');
+        });
+    }
+}
+
+function clearCompletedJobs() {
+    if (confirm('Are you sure you want to delete all completed jobs? This action cannot be undone.')) {
+        fetch('/admin/scraper/jobs/clear-completed', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while clearing jobs');
+        });
+    }
+}
+
+function refreshJobs() {
+    location.reload();
+}
+
+// Auto-refresh for running jobs
+{% if stats.running > 0 %}
+setInterval(function() {
+    // Only refresh if page is visible
+    if (!document.hidden) {
+        location.reload();
+    }
+}, 10000); // Refresh every 10 seconds
+{% endif %}
+</script>
+
+{% endblock %}

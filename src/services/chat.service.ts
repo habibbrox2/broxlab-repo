@@ -4,6 +4,7 @@ import { config } from '../config/index.js';
 import { query, queryOne } from '../config/database.js';
 import { Message } from '../types/index.js';
 import logger from '../utils/logger.js';
+import { metrics } from '../utils/metrics.js';
 
 export interface ChatRequest {
     messages: Message[];
@@ -159,6 +160,17 @@ export class ChatService {
 
             const executionTime = Date.now() - startTime;
 
+            // Record metrics
+            metrics.aiRequestsTotal
+                .labels(response.meta.provider, response.meta.model, 'true')
+                .inc();
+
+            if (response.meta.tokensUsed) {
+                metrics.aiTokensUsed
+                    .labels(response.meta.provider, response.meta.model)
+                    .inc(response.meta.tokensUsed);
+            }
+
             // Log usage
             await this.logUsage(response.meta, executionTime);
 
@@ -172,6 +184,12 @@ export class ChatService {
             });
         } catch (error: any) {
             logger.error('Chat error:', error);
+
+            // Record failed request metric
+            metrics.aiRequestsTotal
+                .labels('unknown', 'unknown', 'false')
+                .inc();
+
             reply.code(500).send({
                 success: false,
                 error: error.message || 'Failed to process chat request',
@@ -229,6 +247,17 @@ export class ChatService {
                         })}\n\n`
                     );
 
+                    // Record metrics
+                    metrics.aiRequestsTotal
+                        .labels(chunk.meta.provider, chunk.meta.model, 'true')
+                        .inc();
+
+                    if (chunk.meta.tokensUsed) {
+                        metrics.aiTokensUsed
+                            .labels(chunk.meta.provider, chunk.meta.model)
+                            .inc(chunk.meta.tokensUsed);
+                    }
+
                     // Log usage
                     await this.logUsage(
                         {
@@ -244,6 +273,12 @@ export class ChatService {
             reply.raw.end();
         } catch (error: any) {
             logger.error('Streaming chat error:', error);
+
+            // Record failed request metric
+            metrics.aiRequestsTotal
+                .labels('unknown', 'unknown', 'false')
+                .inc();
+
             reply.raw.write(
                 `data: ${JSON.stringify({ error: error.message || 'Stream error' })}\n\n`
             );

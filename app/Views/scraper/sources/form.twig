@@ -1,0 +1,382 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block head %}
+<style>
+    .form-section {
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .form-section h5 {
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        color: #495057;
+    }
+    .json-editor {
+        font-family: 'Courier New', monospace;
+        min-height: 120px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">
+                        <i class="bi bi-{{ source ? 'pencil' : 'plus-circle' }} me-2"></i>{{ pageTitle }}
+                    </h1>
+                    <p class="text-muted mb-0">
+                        {{ source ? 'Edit the configuration for this scraping source' : 'Create a new web scraping source' }}
+                    </p>
+                </div>
+                <div>
+                    <a href="/admin/scraper/sources" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Back to Sources
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <form id="sourceForm" method="POST" action="/admin/scraper/sources/save">
+                {% if source %}
+                    <input type="hidden" name="id" value="{{ source.id }}">
+                {% endif %}
+
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h5><i class="bi bi-info-circle me-2"></i>Basic Information</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Source Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ source.name ?? '' }}" required>
+                            <div class="form-text">A descriptive name for this scraping source</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="url" class="form-label">URL <span class="text-danger">*</span></label>
+                            <input type="url" class="form-control" id="url" name="url" value="{{ source.url ?? '' }}" required>
+                            <div class="form-text">The main URL to scrape from</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="type" class="form-label">Source Type <span class="text-danger">*</span></label>
+                            <select class="form-select" id="type" name="type" required>
+                                <option value="">Select Type</option>
+                                <option value="rss" {{ (source.type ?? '') == 'rss' ? 'selected' : '' }}>RSS Feed</option>
+                                <option value="html" {{ (source.type ?? '') == 'html' ? 'selected' : '' }}>HTML Page</option>
+                                <option value="api" {{ (source.type ?? '') == 'api' ? 'selected' : '' }}>API Endpoint</option>
+                                <option value="scrape" {{ (source.type ?? 'scrape') == 'scrape' ? 'selected' : '' }}>Web Scraper</option>
+                                <option value="xml" {{ (source.type ?? '') == 'xml' ? 'selected' : '' }}>XML Feed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="content_type" class="form-label">Content Type <span class="text-danger">*</span></label>
+                            <select class="form-select" id="content_type" name="content_type" required>
+                                <option value="">Select Content Type</option>
+                                <option value="articles" {{ (source.content_type ?? 'articles') == 'articles' ? 'selected' : '' }}>Articles</option>
+                                <option value="pages" {{ (source.content_type ?? '') == 'pages' ? 'selected' : '' }}>Pages</option>
+                                <option value="mobiles" {{ (source.content_type ?? '') == 'mobiles' ? 'selected' : '' }}>Mobile Devices</option>
+                                <option value="services" {{ (source.content_type ?? '') == 'services' ? 'selected' : '' }}>Services</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="category_id" class="form-label">Category</label>
+                            <select class="form-select" id="category_id" name="category_id">
+                                <option value="">No Category</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}" {{ (source.category_id ?? '') == category.id ? 'selected' : '' }}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scraping Configuration -->
+                <div class="form-section">
+                    <h5><i class="bi bi-gear me-2"></i>Scraping Configuration</h5>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="fetch_interval" class="form-label">Fetch Interval (seconds)</label>
+                            <input type="number" class="form-control" id="fetch_interval" name="fetch_interval" value="{{ source.fetch_interval ?? 3600 }}" min="60">
+                            <div class="form-text">How often to check for updates</div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="scrape_depth" class="form-label">Scrape Depth</label>
+                            <input type="number" class="form-control" id="scrape_depth" name="scrape_depth" value="{{ source.scrape_depth ?? 1 }}" min="1" max="10">
+                            <div class="form-text">How many levels deep to scrape</div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="max_pages" class="form-label">Max Pages</label>
+                            <input type="number" class="form-control" id="max_pages" name="max_pages" value="{{ source.max_pages ?? 50 }}" min="1">
+                            <div class="form-text">Maximum pages to scrape</div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="delay" class="form-label">Delay (seconds)</label>
+                            <input type="number" class="form-control" id="delay" name="delay" value="{{ source.delay ?? 2 }}" min="0" step="0.1">
+                            <div class="form-text">Delay between requests</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="use_browser" name="use_browser" value="1" {{ (source.use_browser ?? 0) == 1 ? 'checked' : '' }}>
+                                <label class="form-check-label" for="use_browser">
+                                    Use Browser Rendering
+                                </label>
+                                <div class="form-text">Use headless browser for JavaScript-heavy sites</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="ssl_verify" name="ssl_verify" value="1" {{ (source.ssl_verify ?? 1) == 1 ? 'checked' : '' }}>
+                                <label class="form-check-label" for="ssl_verify">
+                                    Verify SSL Certificates
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination Settings -->
+                <div class="form-section">
+                    <h5><i class="bi bi-arrow-right-circle me-2"></i>Pagination Settings</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="pagination_type" class="form-label">Pagination Type</label>
+                            <select class="form-select" id="pagination_type" name="pagination_type">
+                                <option value="none" {{ (source.pagination_type ?? 'none') == 'none' ? 'selected' : '' }}>None</option>
+                                <option value="link" {{ (source.pagination_type ?? '') == 'link' ? 'selected' : '' }}>Link-based</option>
+                                <option value="query" {{ (source.pagination_type ?? '') == 'query' ? 'selected' : '' }}>Query Parameter</option>
+                                <option value="scroll" {{ (source.pagination_type ?? '') == 'scroll' ? 'selected' : '' }}>Infinite Scroll</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="pagination_selector" class="form-label">Pagination Selector</label>
+                            <input type="text" class="form-control" id="pagination_selector" name="pagination_selector" value="{{ source.pagination_selector ?? '' }}">
+                            <div class="form-text">CSS selector for pagination links</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="pagination_pattern" class="form-label">Pagination Pattern</label>
+                            <input type="text" class="form-control" id="pagination_pattern" name="pagination_pattern" value="{{ source.pagination_pattern ?? '' }}">
+                            <div class="form-text">URL pattern for pagination (e.g., ?page={page})</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Proxy Settings -->
+                <div class="form-section">
+                    <h5><i class="bi bi-shield me-2"></i>Proxy Settings</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="proxy_enabled" name="proxy_enabled" value="1" {{ (source.proxy_enabled ?? 0) == 1 ? 'checked' : '' }}>
+                                <label class="form-check-label" for="proxy_enabled">
+                                    Enable Proxy
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="proxy_provider" class="form-label">Proxy Provider</label>
+                            <select class="form-select" id="proxy_provider" name="proxy_provider">
+                                <option value="">No Proxy</option>
+                                <option value="brightdata" {{ (source.proxy_provider ?? '') == 'brightdata' ? 'selected' : '' }}>Bright Data</option>
+                                <option value="oxylabs" {{ (source.proxy_provider ?? '') == 'oxylabs' ? 'selected' : '' }}>Oxylabs</option>
+                                <option value="smartproxy" {{ (source.proxy_provider ?? '') == 'smartproxy' ? 'selected' : '' }}>Smart Proxy</option>
+                                <option value="custom" {{ (source.proxy_provider ?? '') == 'custom' ? 'selected' : '' }}>Custom</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="timeout" class="form-label">Timeout (seconds)</label>
+                            <input type="number" class="form-control" id="timeout" name="timeout" value="{{ source.timeout ?? 30 }}" min="5" max="300">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="proxy_config" class="form-label">Proxy Configuration</label>
+                        <textarea class="form-control json-editor" id="proxy_config" name="proxy_config" rows="3">{{ source.proxy_config ?? '' }}</textarea>
+                        <div class="form-text">JSON configuration for proxy settings</div>
+                    </div>
+                </div>
+
+                <!-- Advanced Configuration -->
+                <div class="form-section">
+                    <h5><i class="bi bi-code-slash me-2"></i>Advanced Configuration</h5>
+                    <div class="mb-3">
+                        <label for="selectors" class="form-label">CSS Selectors</label>
+                        <textarea class="form-control json-editor" id="selectors" name="selectors" rows="6">{{ source.selectors ? source.selectors|json_encode(constant('JSON_PRETTY_PRINT')) : '' }}</textarea>
+                        <div class="form-text">JSON object defining CSS selectors for content extraction</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="advance_config" class="form-label">Advanced Config</label>
+                        <textarea class="form-control json-editor" id="advance_config" name="advance_config" rows="6">{{ source.advance_config ? source.advance_config|json_encode(constant('JSON_PRETTY_PRINT')) : '' }}</textarea>
+                        <div class="form-text">JSON object for advanced scraping configuration</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="presets" class="form-label">Presets</label>
+                        <select class="form-select" id="presets" name="presets">
+                            <option value="">No Preset</option>
+                            {% for presetName, presetData in presets %}
+                                <option value="{{ presetName }}" {{ (source.presets ?? '') == presetName ? 'selected' : '' }}>
+                                    {{ presetName }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Select a preset configuration for this source</div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="d-flex justify-content-between">
+                    <a href="/admin/scraper/sources" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>{{ source ? 'Update Source' : 'Create Source' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Help & Tips</h6>
+                </div>
+                <div class="card-body">
+                    <h6>Source Types:</h6>
+                    <ul class="small mb-3">
+                        <li><strong>RSS:</strong> For RSS/Atom feeds</li>
+                        <li><strong>HTML:</strong> For static HTML pages</li>
+                        <li><strong>API:</strong> For JSON/XML APIs</li>
+                        <li><strong>Scrape:</strong> For dynamic web scraping</li>
+                    </ul>
+
+                    <h6>Content Types:</h6>
+                    <ul class="small mb-3">
+                        <li><strong>Articles:</strong> News, blog posts</li>
+                        <li><strong>Pages:</strong> General web pages</li>
+                        <li><strong>Mobiles:</strong> Mobile device data</li>
+                        <li><strong>Services:</strong> Service listings</li>
+                    </ul>
+
+                    <h6>Pagination:</h6>
+                    <ul class="small mb-0">
+                        <li><strong>Link-based:</strong> Next page links</li>
+                        <li><strong>Query:</strong> ?page=1, ?page=2</li>
+                        <li><strong>Scroll:</strong> Infinite scroll loading</li>
+                    </ul>
+                </div>
+            </div>
+
+            {% if source %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-clock me-2"></i>Source Status</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h4 class="text-{{ source.is_active == 1 ? 'success' : 'warning' }}">
+                                    {{ source.is_active == 1 ? 'Active' : 'Inactive' }}
+                                </h4>
+                                <small class="text-muted">Status</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-info">
+                                {% if source.last_fetched_at %}
+                                    {{ source.last_fetched_at|date('M j, H:i') }}
+                                {% else %}
+                                    Never
+                                {% endif %}
+                            </h4>
+                            <small class="text-muted">Last Fetched</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('sourceForm').addEventListener('submit', function(e) {
+    // Validate JSON fields
+    const jsonFields = ['selectors', 'advance_config', 'proxy_config'];
+    let isValid = true;
+
+    jsonFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field.value.trim()) {
+            try {
+                JSON.parse(field.value);
+                field.classList.remove('is-invalid');
+            } catch (e) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            }
+        }
+    });
+
+    if (!isValid) {
+        e.preventDefault();
+        alert('Please fix the JSON syntax errors in the highlighted fields.');
+        return false;
+    }
+
+    // Show loading state
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Saving...';
+    submitBtn.disabled = true;
+});
+
+// JSON validation on blur
+document.querySelectorAll('.json-editor').forEach(field => {
+    field.addEventListener('blur', function() {
+        if (this.value.trim()) {
+            try {
+                JSON.parse(this.value);
+                this.classList.remove('is-invalid');
+            } catch (e) {
+                this.classList.add('is-invalid');
+            }
+        } else {
+            this.classList.remove('is-invalid');
+        }
+    });
+});
+
+// Auto-format JSON on focus out
+document.querySelectorAll('.json-editor').forEach(field => {
+    field.addEventListener('blur', function() {
+        if (this.value.trim()) {
+            try {
+                const parsed = JSON.parse(this.value);
+                this.value = JSON.stringify(parsed, null, 2);
+                this.classList.remove('is-invalid');
+            } catch (e) {
+                // Keep invalid JSON as-is
+            }
+        }
+    });
+});
+</script>
+
+{% endblock %}

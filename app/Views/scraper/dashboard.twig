@@ -1,0 +1,305 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1"><i class="bi bi-robot me-2"></i>{{ pageTitle }}</h1>
+                    <p class="text-muted mb-0">Monitor and manage your web scraping operations</p>
+                </div>
+                <div>
+                    <a href="/admin/scraper/sources" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Add Source
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3">
+                                <i class="bi bi-diagram-3 fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Total Sources</h6>
+                            <h4 class="mb-0">{{ stats.total_sources|default(0) }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-10 text-success rounded-circle p-3">
+                                <i class="bi bi-check-circle fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Active Sources</h6>
+                            <h4 class="mb-0">{{ stats.active_sources|default(0) }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-info bg-opacity-10 text-info rounded-circle p-3">
+                                <i class="bi bi-file-earmark-text fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Total Articles</h6>
+                            <h4 class="mb-0">{{ stats.total_articles|default(0) }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3">
+                                <i class="bi bi-clock fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-1">Queued Jobs</h6>
+                            <h4 class="mb-0">{{ stats.queue.pending|default(0) }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <a href="/admin/scraper/sources" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-diagram-3 me-2"></i>Manage Sources
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="/admin/scraper/collected-data" class="btn btn-outline-success w-100">
+                                <i class="bi bi-file-earmark-text me-2"></i>View Data
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="/admin/scraper/jobs" class="btn btn-outline-info w-100">
+                                <i class="bi bi-gear me-2"></i>Job Queue
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="/admin/scraper/logs" class="btn btn-outline-warning w-100">
+                                <i class="bi bi-journal-text me-2"></i>View Logs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Jobs and Active Sources -->
+    <div class="row">
+        <!-- Recent Jobs -->
+        <div class="col-lg-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Jobs</h5>
+                    <a href="/admin/scraper/jobs" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recentJobs %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Source</th>
+                                        <th>Status</th>
+                                        <th>Started</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for job in recentJobs %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="flex-shrink-0 me-2">
+                                                        {% if job.status == 'completed' %}
+                                                            <i class="bi bi-check-circle text-success"></i>
+                                                        {% elseif job.status == 'running' %}
+                                                            <i class="bi bi-play-circle text-info"></i>
+                                                        {% elseif job.status == 'failed' %}
+                                                            <i class="bi bi-x-circle text-danger"></i>
+                                                        {% else %}
+                                                            <i class="bi bi-clock text-warning"></i>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-medium">{{ job.source_name|default('Unknown') }}</div>
+                                                        <small class="text-muted">{{ job.url|truncate(50) }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge
+                                                    {% if job.status == 'completed' %}bg-success
+                                                    {% elseif job.status == 'running' %}bg-info
+                                                    {% elseif job.status == 'failed' %}bg-danger
+                                                    {% else %}bg-warning{% endif %}">
+                                                    {{ job.status|title }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    {{ job.created_at|date('M j, H:i') }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <a href="/admin/scraper/jobs/{{ job.id }}" class="btn btn-sm btn-outline-primary">
+                                                    View
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+                            <h6 class="text-muted">No recent jobs</h6>
+                            <p class="text-muted small mb-0">Jobs will appear here once scraping operations begin.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Sources -->
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Active Sources</h5>
+                    <a href="/admin/scraper/sources" class="btn btn-sm btn-outline-primary">Manage</a>
+                </div>
+                <div class="card-body">
+                    {% if activeSources %}
+                        <div class="list-group list-group-flush">
+                            {% for source in activeSources %}
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0 me-3">
+                                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-diagram-3"></i>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">{{ source.name }}</h6>
+                                            <p class="text-muted small mb-0">{{ source.url|truncate(40) }}</p>
+                                        </div>
+                                        <div class="flex-shrink-0">
+                                            <a href="/admin/scraper/sources/{{ source.id }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-gear"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-diagram-3 fs-1 text-muted mb-3"></i>
+                            <h6 class="text-muted">No active sources</h6>
+                            <p class="text-muted small mb-0">Configure sources to start scraping data.</p>
+                            <a href="/admin/scraper/sources" class="btn btn-primary btn-sm mt-2">Add Source</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Tools Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">AI-Powered Tools</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <a href="/admin/scraper/ai/preset-generator" class="card h-100 text-decoration-none">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-magic fs-1 text-primary mb-3"></i>
+                                    <h6 class="card-title">AI Preset Generator</h6>
+                                    <p class="card-text text-muted small">Generate scraper configurations using AI analysis</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="/admin/scraper/ai/analyzer" class="card h-100 text-decoration-none">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-search fs-1 text-info mb-3"></i>
+                                    <h6 class="card-title">Content Analyzer</h6>
+                                    <p class="card-text text-muted small">Analyze scraped content with AI insights</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="/admin/scraper/ai/optimizer" class="card h-100 text-decoration-none">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-gear fs-1 text-success mb-3"></i>
+                                    <h6 class="card-title">Scraper Optimizer</h6>
+                                    <p class="card-text text-muted small">Optimize scraper performance with AI recommendations</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh dashboard data every 30 seconds
+setInterval(function() {
+    // Could implement AJAX refresh for live stats
+    console.log('Dashboard refresh check...');
+}, 30000);
+</script>
+{% endblock %}

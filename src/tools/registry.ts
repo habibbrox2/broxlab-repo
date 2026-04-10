@@ -1,6 +1,7 @@
 import type { ToolDefinition, ToolContext, ToolResult, CircuitBreakerState } from '../types/index.js';
 import logger from '../utils/logger.js';
 import redis from '../config/redis.js';
+import { metrics } from '../utils/metrics.js';
 
 export class ToolRegistry {
     private tools = new Map<string, ToolDefinition>();
@@ -216,13 +217,17 @@ export class ToolRegistry {
             const key = this.getCacheKey(name, args);
             const cached = await redis.get(key);
             if (cached) {
+                metrics.cacheHits.labels('redis').inc();
                 return JSON.parse(cached);
+            } else {
+                metrics.cacheMisses.labels('redis').inc();
             }
         } catch (error: any) {
             logger.error('Cache get error', {
                 tool: name,
                 error: error.message,
             });
+            metrics.cacheMisses.labels('redis').inc();
         }
         return null;
     }

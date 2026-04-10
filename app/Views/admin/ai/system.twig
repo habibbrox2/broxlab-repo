@@ -650,35 +650,13 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="content_enhancement_enabled" 
-                                           id="contentEnhancement" 
-                                           {% if settings.content_enhancement_enabled|default(true) %}checked{% endif %}>
-                                    <label class="form-check-label fw-semibold" for="contentEnhancement">
-                                        AI Content Enhancement
-                                    </label>
-                                    <small class="d-block text-muted">Automatically enhance scraped content using AI</small>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="enable_fallback" 
-                                           id="enableFallback" 
+                                    <input class="form-check-input" type="checkbox" name="enable_fallback"
+                                           id="enableFallback"
                                            {% if settings.enable_fallback|default(true) %}checked{% endif %}>
                                     <label class="form-check-label fw-semibold" for="enableFallback">
                                         Enable Fallback
                                     </label>
                                     <small class="d-block text-muted">Use other providers if the default fails</small>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="auto_publish_ai_content" 
-                                           id="autoPublishAi" 
-                                           {% if settings.auto_publish_ai_content|default(false) %}checked{% endif %}>
-                                    <label class="form-check-label fw-semibold" for="autoPublishAi">
-                                        Auto-Publish AI Content
-                                    </label>
-                                    <small class="d-block text-muted">Automatically publish AI-enhanced content</small>
                                 </div>
                             </div>
                         <div class="col-md-6">
@@ -835,15 +813,16 @@
                       <div class="accordion-item border-0">
                           <h2 class="accordion-header">
                               <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#helpOllama">
-                                  Ollama (Local) Quick Start
+                                  Ollama Cloud Quick Start
                               </button>
                           </h2>
                           <div id="helpOllama" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
                               <div class="accordion-body small text-muted p-3">
-                                  <p class="mb-2">Local Ollama does not require an API key. Use the OpenAI-compatible endpoint:</p>
-                                  <pre class="mb-0"><code>curl -X POST http://localhost:11434/v1/chat/completions \
+                                  <p class="mb-2">Ollama Cloud provides API access to various models. Get your API key from <a href="https://ollama.ai" target="_blank">ollama.ai</a> and use the cloud endpoint:</p>
+                                  <pre class="mb-0"><code>curl -X POST https://api.ollama.ai/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model":"llama3.2","messages":[{"role":"user","content":"Hello"}]}'</code></pre>
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{"model":"llama2","messages":[{"role":"user","content":"Hello"}]}'</code></pre>
                               </div>
                           </div>
                       </div>

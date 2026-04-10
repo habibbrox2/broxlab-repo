@@ -27,6 +27,8 @@
               "security": "Security",
               "payments": "Payments",
               "api": "API / Integrations",
+              "ai": "AI Settings",
+              "mcp": "MCP Server",
               "cache": "Cache",
               "security_controls": "Security Controls"
             } %}
@@ -746,6 +748,14 @@
                   </div>
                 {% endfor %}
               </div>
+            </div>
+            <!-- AI Settings -->
+            <div class="tab-pane fade" id="ai">
+              {% include 'admin/settings/ai.twig' %}
+            </div>
+            <!-- MCP Server -->
+            <div class="tab-pane fade" id="mcp">
+              {% include 'admin/settings/mcp.twig' %}
             </div>
           </div>
           <button type="submit" class="modern-btn modern-btn-primary">

@@ -1561,8 +1561,6 @@ $router->post('/admin/ai-system/save', ['middleware' => ['auth', 'admin_only', '
         'max_tokens' => (int)($_POST['max_tokens'] ?? 4000),
         'temperature' => (float)($_POST['temperature'] ?? 0.7),
         'enable_fallback' => isset($_POST['enable_fallback']),
-        'content_enhancement_enabled' => isset($_POST['content_enhancement_enabled']),
-        'auto_publish_ai_content' => isset($_POST['auto_publish_ai_content']),
         'default_author' => $_POST['default_author'] ?? 'BroxBhai AI',
         'image_context_max_messages' => (int)($_POST['image_context_max_messages'] ?? 10),
         // New separate prompts for Admin and Public assistants
@@ -2727,6 +2725,10 @@ $router->get('/api/admin/system-health', ['middleware' => ['auth', 'admin_only']
         'cache' => [
             'status' => 'active',
             'check' => false
+        ],
+        'nodejs' => [
+            'status' => 'checking',
+            'check' => false
         ]
     ];
 
@@ -2747,6 +2749,24 @@ $router->get('/api/admin/system-health', ['middleware' => ['auth', 'admin_only']
         @unlink($cacheFile);
     } catch (Exception $e) {
         $health['cache']['status'] = 'error';
+    }
+
+    // Check Node.js server
+    $nodejsPort = getenv('NODEJS_PORT') ?: '3000';
+    $nodejsHost = getenv('NODEJS_HOST') ?: 'localhost';
+    try {
+        $fp = @fsockopen($nodejsHost, $nodejsPort, $errno, $errstr, 5);
+        if ($fp) {
+            fclose($fp);
+            $health['nodejs']['check'] = true;
+            $health['nodejs']['status'] = 'online';
+        } else {
+            $health['nodejs']['status'] = 'offline';
+            $health['nodejs']['error'] = "Connection failed: $errstr ($errno)";
+        }
+    } catch (Exception $e) {
+        $health['nodejs']['status'] = 'error';
+        $health['nodejs']['error'] = $e->getMessage();
     }
 
     // Check API (try a simple endpoint)

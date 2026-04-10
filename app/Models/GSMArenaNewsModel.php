@@ -1,222 +1,68 @@
 <?php
 
-/**
- * GSMArena News Model
- *
- * Handles database operations for GSMArena news articles
- *
- * @package BroxBhai
- * @since 2026-03-26
- */
+declare(strict_types=1);
+
+namespace App\Models;
+
+use DateTime;
+
 class GSMArenaNewsModel
 {
-    private mysqli $mysqli;
+    private ScraperModel $scraper;
+    private \mysqli $mysqli;
 
-    public function __construct(mysqli $mysqli)
+    public function __construct(\mysqli $mysqli)
     {
+        $this->scraper = new ScraperModel($mysqli);
         $this->mysqli = $mysqli;
     }
 
-    /**
-     * Save a new news article to database
-     */
-    public function saveNews(array $newsData): int
+    public function saveNews(int $sourceId, array $article): array
     {
-        $sql = "INSERT INTO gsmarena_news (news_id, url, title, summary, image_url, published_at) VALUES (?, ?, ?, ?, ?, ?)";
-        $stmt = $this->mysqli->prepare($sql);
+        $publishedAt = $this->normalizeDate($article['date'] ?? '') ?: date('Y-m-d H:i:s');
+        $payload = [
+            'source_id' => $sourceId,
+            'url' => $article['url'] ?? '',
+            'title' => $article['title'] ?? 'Untitled',
+            'content' => $article['summary'] ?? '',
+            'excerpt' => $article['summary'] ?? '',
+            'author' => $article['author'] ?? '',
+            'image_url' => $article['image'] ?? '',
+            'published_at' => $publishedAt,
+            'status' => 'completed',
+            'content_hash' => hash('sha256', ($article['url'] ?? '') . ($article['title'] ?? '')),
+            'categories' => $article['categories'] ?? [],
+            'tags' => $article['tags'] ?? [],
+        ];
 
-        $stmt->bind_param(
-            'ssssss',
-            $newsData['news_id'],
-            $newsData['url'],
-            $newsData['title'],
-            $newsData['summary'],
-            $newsData['image_url'],
-            $newsData['published_at']
-        );
+        $success = $this->scraper->saveArticle($payload);
 
-        $result = $stmt->execute();
-        $stmt->close();
-
-        if ($result) {
-            return (int)$this->mysqli->insert_id;
-        }
-
-        throw new \Exception("Failed to save news article: " . $this->mysqli->error);
+        return [
+            'success' => (bool)$success,
+            'error' => $success ? null : 'Failed to persist article'
+        ];
     }
 
-    /**
-     * Update an existing news article
-     */
-    public function updateNews(int $id, array $newsData): bool
+    public function getTotalCount(int $sourceId): int
     {
-        $sql = "UPDATE gsmarena_news SET url = ?, title = ?, summary = ?, image_url = ?, published_at = ?, updated_at = NOW() WHERE id = ?";
-        $stmt = $this->mysqli->prepare($sql);
-
-        $stmt->bind_param(
-            'sssssi',
-            $newsData['url'],
-            $newsData['title'],
-            $newsData['summary'],
-            $newsData['image_url'],
-            $newsData['published_at'],
-            $id
-        );
-
-        $result = $stmt->execute();
-        $stmt->close();
-
-        if (!$result) {
-            throw new \Exception("Failed to update news article: " . $this->mysqli->error);
-        }
-
-        return $result;
-    }
-
-    /**
-     * Get news article by database ID
-     */
-    public function getNewsById(int $id): ?array
-    {
-        $sql = "SELECT id, news_id, url, title, summary, image_url, published_at, scraped_at, updated_at FROM gsmarena_news WHERE id = ?";
-        $stmt = $this->mysqli->prepare($sql);
-        $stmt->bind_param('i', $id);
+        $stmt = $this->mysqli->prepare("SELECT COUNT(*) as total FROM web_scraping_articles WHERE source_id = ?");
+        $stmt->bind_param("i", $sourceId);
         $stmt->execute();
-        $result = $stmt->get_result();
-        $stmt->close();
-
-        if ($result && $row = $result->fetch_assoc()) {
-            return $row;
-        }
-
-        return null;
+        $result = $stmt->get_result()->fetch_assoc();
+        return (int)($result['total'] ?? 0);
     }
 
-    /**
-     * Get news article by GSMArena news ID
-     */
-    public function getNewsByNewsId(string $newsId): ?array
+    private function normalizeDate(string $value): ?string
     {
-        $sql = "SELECT id, news_id, url, title, summary, image_url, published_at, scraped_at, updated_at FROM gsmarena_news WHERE news_id = ?";
-        $stmt = $this->mysqli->prepare($sql);
-        $stmt->bind_param('s', $newsId);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $stmt->close();
-
-        if ($result && $row = $result->fetch_assoc()) {
-            return $row;
+        $value = trim($value);
+        if ($value === '') {
+            return null;
         }
-
-        return null;
-    }
-
-    /**
-     * Check if news article exists by news ID
-     */
-    public function existsByNewsId(string $newsId): bool
-    {
-        $sql = "SELECT COUNT(*) as count FROM gsmarena_news WHERE news_id = ?";
-        $stmt = $this->mysqli->prepare($sql);
-        $stmt->bind_param('s', $newsId);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $stmt->close();
-
-        if ($result && $row = $result->fetch_assoc()) {
-            return (int)$row['count'] > 0;
+        try {
+            $dt = new DateTime($value);
+            return $dt->format('Y-m-d H:i:s');
+        } catch (\Throwable $e) {
+            return null;
         }
-
-        return false;
-    }
-
-    /**
-     * Get recent news articles with pagination
-     */
-    public function getRecentNews(int $limit = 20, int $offset = 0): array
-    {
-        $sql = "SELECT id, news_id, url, title, summary, image_url, published_at, scraped_at, updated_at FROM gsmarena_news ORDER BY published_at DESC LIMIT ? OFFSET ?";
-        $stmt = $this->mysqli->prepare($sql);
-        $stmt->bind_param('ii', $limit, $offset);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $stmt->close();
-
-        $news = [];
-        while ($row = $result->fetch_assoc()) {
-            $news[] = $row;
-        }
-
-        return $news;
-    }
-
-    /**
-     * Search news articles by title
-     */
-    public function searchNews(string $query, int $limit = 20, int $offset = 0): array
-    {
-        $sql = "SELECT id, news_id, url, title, summary, image_url, published_at, scraped_at, updated_at FROM gsmarena_news WHERE title LIKE ? OR summary LIKE ? ORDER BY published_at DESC LIMIT ? OFFSET ?";
-        $searchTerm = "%{$query}%";
-        $stmt = $this->mysqli->prepare($sql);
-        $stmt->bind_param('sssii', $searchTerm, $searchTerm, $limit, $offset);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $stmt->close();
-
-        $news = [];
-        while ($row = $result->fetch_assoc()) {
-            $news[] = $row;
-        }
-
-        return $news;
-    }
-
-    /**
-     * Get news articles after a specific date
-     */
-    public function getNewsAfterDate(string $date): array
-    {
-        $sql = "SELECT id, news_id, url, title, summary, image_url, published_at, scraped_at, updated_at FROM gsmarena_news WHERE scraped_at > ? ORDER BY published_at DESC";
-        $stmt = $this->mysqli->prepare($sql);
-        $stmt->bind_param('s', $date);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $stmt->close();
-
-        $news = [];
-        while ($row = $result->fetch_assoc()) {
-            $news[] = $row;
-        }
-
-        return $news;
-    }
-
-    /**
-     * Get total count of news articles
-     */
-    public function getTotalCount(): int
-    {
-        $sql = "SELECT COUNT(*) as count FROM gsmarena_news";
-        $result = $this->mysqli->query($sql);
-
-        if ($result && $row = $result->fetch_assoc()) {
-            return (int)$row['count'];
-        }
-
-        return 0;
-    }
-
-    /**
-     * Delete a news article
-     */
-    public function deleteNews(int $id): bool
-    {
-        $sql = "DELETE FROM gsmarena_news WHERE id = ?";
-        $stmt = $this->mysqli->prepare($sql);
-        $stmt->bind_param('i', $id);
-        $result = $stmt->execute();
-        $stmt->close();
-
-        return $result;
     }
 }
