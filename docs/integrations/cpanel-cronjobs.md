@@ -1,4 +1,20 @@
 # cPanel WebHost এ Cron Job সেটআপ (BroxLab / BroxBhai)
+## Summary
+Guidance for scheduling cron jobs on cPanel so the AutoContent pipeline and CLI workers operate without invalid crontab errors.
+
+## Purpose
+Clarify absolute paths, binary locations, line endings, and command structure that cPanel expects before installing cron entries.
+
+## Key Actions
+- Always provide absolute paths (/home/YOUR_USER/...) and verify PHP/Node binaries with which php / which node in SSH or cPanel's command output.
+- Use cron expressions like */15 * * * * for AutoContent processing and keep commands quoted for bash execution.
+- Save cron definitions with LF line endings and avoid Markdown artifacts when importing via crontab.
+
+## Related References
+- docs/project/project-context.md for how AutoContent fits in the repository.
+- docs/plans/index.md for the planning artifacts produced by prior work.
+- docs/guides/coding-standards.md for logging, sanitizing, and prepared-statement rules the workers use.
+
 
 ## খুব গুরুত্বপূর্ণ (Invalid crontab / "bad command" এড়াতে)
 

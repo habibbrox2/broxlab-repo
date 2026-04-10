@@ -1,6 +1,18 @@
 # OCR Service Integration Guide
 
-## Overview
+## Summary
+Documentation of the Tesseract.js OCR service, its architecture, and how BroxLab consumes extracted text for automation workflows.
+
+## Purpose
+Help engineers start, monitor, and secure the OCR service while keeping service fallbacks and dependency notes centralized.
+
+## Key Actions
+- Run the OCR service via the provided scripts (`start-ocr-service.bat`, `node src/ocr-service.js`, or PM2`) on port 7020 by default.\n- Provide the optional OCR.space fallback key when capturing images that fail in-house extraction.\n- Pipe output through `NodeOCRClient.php` so controllers can reuse sanitized text.
+
+## Related References
+- `docs/integrations/scraper-api.md` for the upstream scraping inputs.\n- `docs/project/project-context.md` for where OCR fits inside the platform architecture.\n- `docs/guides/coding-standards.md` for input sanitization requirements.
+
+## Service Overview
 BroxLab now includes a **Tesseract.js-based OCR service** running on port 7020. This service provides cloud-free, fast text extraction from images via REST API endpoints.
 
 ## Service Architecture

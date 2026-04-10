@@ -106,9 +106,20 @@ class CronWorker
                 $result['duplicates_skipped']++;
             }
         } else {
-            // In production mode, this would implement actual scraping
-            // For now, skip with a note
-            $result['errors'][] = "Production scraping not yet implemented for {$source['name']}";
+            // Delegate to the scraper service for production workloads
+            try {
+                $scrapeResult = $this->scraperService->scrapeSource((int)$source['id']);
+                if (!empty($scrapeResult['success'])) {
+                    $created = max(0, (int)($scrapeResult['items_processed'] ?? 0));
+                    $result['articles_created'] += $created;
+                    $result['duplicates_skipped'] += max(0, (int)($scrapeResult['duplicates_skipped'] ?? 0));
+                } else {
+                    $message = $scrapeResult['error'] ?? 'Unknown scraper error';
+                    $result['errors'][] = "Source {$source['id']} ({$source['name']}): {$message}";
+                }
+            } catch (Exception $e) {
+                $result['errors'][] = "Source {$source['id']} ({$source['name']}): " . $e->getMessage();
+            }
         }
 
         return $result;

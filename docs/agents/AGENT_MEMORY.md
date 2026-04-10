@@ -123,7 +123,7 @@ context নেয়।
 - Date: 2026-03-20
 - Agent: BroxBhai Coding Agent
 - Context: Editor agents (Cursor/Windsurf/Claude/Copilot) were ingesting large, noisy instruction files (mojibake, emojis, long references) which increased token cost and reduced consistency.
-- Decision: Introduced `docs/ai/AI_QUICK_CONTEXT.md` and rewrote `AGENTS.md`, `SKILL.md`, and `editor/*` rules to be short, repo-specific, and pointer-first (default context <= 2 files).
+- Decision: Introduced `docs/ai/AI_QUICK_CONTEXT.md` and rewrote `AGENTS.md`, `SKILL.md`, and `docs/editors/*` rules to be short, repo-specific, and pointer-first (default context <= 2 files).
 - Alternatives Considered: Shrinking every existing long doc (rejected: higher churn; humans still benefit from deep-dive docs).
 - Trade-offs: Some details moved out of default view; mitigated by clear pointers in `docs/ai/AI_CONTEXT_INDEX.md`.
 - Follow-up needed: No (refresh when architecture changes).

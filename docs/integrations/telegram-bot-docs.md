@@ -1,6 +1,18 @@
 # Telegram Bot System Documentation
 
-## Overview
+## Summary
+Setup and configuration details for the BroxLab Telegram bot, covering SMS, device control, scraping, and PDF tools.
+
+## Purpose
+Help integrators configure tokens, HTTPS endpoints, migrations, and feature flags so the Telegram experience matches the expected workflow.
+
+## Key Actions
+- Run the telegram migrations before enabling the bot to provision sessions, rate limits, activity logs, and user mappings.\n- Configure `TELEGRAM_BOT_TOKEN`, webhook secrets, and feature flags through `/admin/telegram-settings` before setting the webhook.\n- Enable `telegram_panel`, `sms_gateway`, `remote_device`, and `sim_routing` feature flags as needed.
+
+## Related References
+- `docs/project/project-context.md` for where the bot fits in the overall architecture.\n- `docs/guides/coding-standards.md` for authentication and logging rules.\n- `docs/integrations/scraper-api.md` when leveraging scraping commands through Telegram.
+
+## System Overview
 This document describes how to set up, configure, and use the Telegram bot system for BroxLab.
 
 ## Features

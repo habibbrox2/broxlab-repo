@@ -13,7 +13,7 @@ Default read order (keep editor token cost low):
 Open this guide only when you need deeper implementation detail.
 
 Cleanup:
-- After implementing a temporary plan in `docs/plans/` (including audit plans), delete that plan file to avoid stale context. Preserve long-term decisions in `docs/PROJECT_CONTEXT.md` or `docs/ai/AGENT_MEMORY.md`.
+- After implementing a temporary plan in `docs/plans/` (including audit plans), delete that plan file to avoid stale context. Preserve long-term decisions in `docs/project/project-context.md` or `docs/ai/AGENT_MEMORY.md`.
 
 ---
 

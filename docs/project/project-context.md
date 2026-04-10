@@ -1,5 +1,21 @@
 # Project Context - BroxBhai
 
+## Overview
+Global context for BroxLab: structure, dependencies, and touchpoints that every contributor should review before diving into new features.
+
+## Purpose
+Provide a single reference that explains the repository layout, external services, and frequently inspected directories so onboarding and investigation stay efficient.
+
+## Key Actions
+- Read this document before editing `app/`, AI services, or automation workflows.
+- Keep the directory tree at the top of the file in sync with reality when new folders are added.
+- Reference the dependency lists and integrations sections when adding or updating Composer/npm packages.
+
+## Related References
+- `docs/guides/coding-standards.md` for security and SQL rules.
+- `docs/index.md` to locate other guides, plans, and editors docs.
+- `docs/project/cv-system-improvements.md` for upcoming capabilities.
+
 Quick reference for understanding the BroxBhai project structure and dependencies.
 
 ---
@@ -223,7 +239,7 @@ Template location: `app/Views/`
 - Conducted comprehensive audit of multi-agent scraping system (TickerScraper, ArticleScraper, ValidationAgent, DiffDetector, SelfHealingAgent, LearningAgent, NotificationAgent).
 - **Critical findings** (addressed in CODING_STANDARDS.md): Input validation gaps, inconsistent error handling, SSRF risks, missing log rotation, lack of graceful shutdown.
 - **High-priority improvements** (backlog): Persistent URL tracking, robust date parsing consolidation, improved content extraction, performance monitoring, configuration validation.
-- **Documentation**: All findings consolidated into `docs/CODING_STANDARDS.md` security rules, error handling patterns, and logging standards. Audit report deleted per governance rule #7 (delete completed plans).
+- **Documentation**: All findings consolidated into `docs/guides/coding-standards.md` security rules, error handling patterns, and logging standards. Audit report deleted per governance rule #7 (delete completed plans).
 
 ---
 

@@ -20,9 +20,9 @@ This file guides AI agents on what to read, depending on task scope and complexi
 
 **When:** Non-trivial feature, security/architecture question, refactoring  
 **Addition to Tier 1:**
-- [`docs/CODING_STANDARDS.md`](../CODING_STANDARDS.md) — All detailed standards (security, DB, architecture, naming)
+- [`docs/guides/coding-standards.md`](../guides/coding-standards.md) — All detailed standards (security, DB, architecture, naming)
 - [`docs/ai/AGENT_MEMORY.md`](AGENT_MEMORY.md) — Decision log + pattern registry (learn from past decisions)
-- [`editor/.rules-base.md`](../../editor/.rules-base.md) — Shared rules for all editors
+- [`docs/editors/rules-base.md`](../editors/rules-base.md) — Shared rules for all editors
 
 **Cost:** ~300 tokens | **Sufficient for:** Feature implementation, API design, security fixes
 
@@ -46,7 +46,7 @@ This file guides AI agents on what to read, depending on task scope and complexi
 - [`docs/ai/DEV_REFERENCE_LINKS.md`](DEV_REFERENCE_LINKS.md) — External docs (React, Next, Tailwind, etc.)
 
 ### Historical Context
-- `docs/PROJECT_CONTEXT.md` (if exists) — Business context, integrations
+- `docs/project/project-context.md` (if exists) — Business context, integrations
 - `docs/GENERATED_ASSETS_AND_BUILD.md` (if exists) — Asset build pipeline details
 
 **Cost:** 500–1000+ tokens | **Sufficient for:** Full architectural redesign, deep system understanding
@@ -57,10 +57,10 @@ This file guides AI agents on what to read, depending on task scope and complexi
 
 | Task Type | Start Here | Spend Time On | Tier |
 |-----------|-----------|-----------|------|
-| Fix a bug | AGENTS.md → AI_QUICK_CONTEXT | CODING_STANDARDS (if security) | 1–2 |
-| Build a feature | AGENTS.md → AI_QUICK_CONTEXT → CODING_STANDARDS | Specific pattern in AGENT_MEMORY | 2 |
-| Refactor a module | AGENTS.md → CODING_STANDARDS → AGENT_MEMORY | KNOWN_PITFALLS | 2–3 |
-| Design API | AGENTS.md → CODING_STANDARDS | AI_CODING_GUIDE (if AI-related) | 2 |
+| Fix a bug | AGENTS.md → AI_QUICK_CONTEXT | docs/guides/coding-standards (if security) | 1–2 |
+| Build a feature | AGENTS.md → AI_QUICK_CONTEXT → docs/guides/coding-standards | Specific pattern in AGENT_MEMORY | 2 |
+| Refactor a module | AGENTS.md → docs/guides/coding-standards → AGENT_MEMORY | KNOWN_PITFALLS | 2–3 |
+| Design API | AGENTS.md → docs/guides/coding-standards | AI_CODING_GUIDE (if AI-related) | 2 |
 | Debug weird issue | AGENTS.md → KNOWN_PITFALLS | SYSTEM_SUMMARY, AGENT_MEMORY | 3 |
 | Improve documentation | AGENTS.md → SELF_IMPROVEMENT_LOOP | AGENT_MEMORY, KNOWN_PITFALLS | 2 |
 
@@ -68,14 +68,14 @@ This file guides AI agents on what to read, depending on task scope and complexi
 
 ##  Editor-Specific Entry Points
 
-- **Claude:** Start with [editor/CLAUDE.md](../../editor/CLAUDE.md) (references all tiers)
-- **Cursor:** Start with [editor/CURSOR.md](../../editor/CURSOR.md) (references all tiers)
+- **Claude:** Start with [`docs/editors/claude.md`](../editors/claude.md) (references all tiers)
+- **Cursor:** Start with [`docs/editors/cursor.md`](../editors/cursor.md) (references all tiers)
 - **Copilot:** Start with [.github/copilot-instructions.md](../../.github/copilot-instructions.md) (references all tiers)
-- **Windsurf:** Start with [editor/WINDSURF.md](../../editor/WINDSURF.md) (references all tiers)
+- **Windsurf:** Start with [`docs/editors/windsurf.md`](../editors/windsurf.md) (references all tiers)
 
 All editor files point to:
 - Tier 1: `AGENTS.md` + `docs/ai/AI_QUICK_CONTEXT.md`
-- Shared rules: [`editor/.rules-base.md`](../../editor/.rules-base.md)
+- Shared rules: [`docs/editors/rules-base.md`](../editors/rules-base.md)
 
 ---
 
@@ -92,5 +92,5 @@ All editor files point to:
 Don't load Tier 3 unless you're stuck or working on architecture.  
 Reference paths + line numbers instead of pasting large files (token efficiency).
 
-- Claude Code: `editor/CLAUDE.md`
+- Claude Code: `docs/editors/claude.md`
 - GitHub Copilot: `.github/copilot-instructions.md`

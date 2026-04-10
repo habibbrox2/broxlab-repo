@@ -1,6 +1,18 @@
 # Teletalk Government Job Automation System
 
-## Overview
+## Summary
+Automation pipeline for syncing Teletalk government job data, including fetching, deduplication, and persistence.
+
+## Purpose
+Document how the cron worker, models, and configuration collaborate so automations stay reliable and auditable.
+
+## Key Actions
+- Run the cron worker every 10 minutes to fetch paginated job data from the Teletalk API.\n- Deduplicate records using `job_id` and normalize fields to avoid dirty data.\n- Use the migration script when schema changes occur and capture operational metrics in logs.
+
+## Related References
+- `docs/project/project-context.md` for where the automation lives inside BroxLab.\n- `docs/integrations/cpanel-cronjobs.md` for how cron jobs are managed.\n- `docs/guides/coding-standards.md` for transaction, CSRF, and logging rules.
+
+## System Overview
 
 This system automatically fetches government job data from the Teletalk API and stores it in a database with deduplication, normalization, and scheduled automation.
 

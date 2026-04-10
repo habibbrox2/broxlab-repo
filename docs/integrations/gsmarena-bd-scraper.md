@@ -1,6 +1,18 @@
 # GSMArena Bangladesh Scraper
 
-## Overview
+## Summary
+Document the PHP scraper that collects device data from gsmarena.com.bd for integration into the BroxLab catalog.
+
+## Purpose
+Clarify architecture, features, and configuration so contributors can extend or debug the scraper while keeping logs and rate limits consistent.
+
+## Key Actions
+- Keep the multi-page pagination and price parsing up to date with the selectors defined in `app/Modules/Scraper/config/gsmarena_bd.php`.\n- Respect rate limits and user-agent rotation to avoid blocks.\n- Use the cron/test scripts for scheduled runs and debugging.
+
+## Related References
+- `docs/integrations/scraper-api.md` for how the collected data flows into APIs.\n- `docs/project/project-context.md` for module placement.\n- `docs/guides/coding-standards.md` for logging and error-handling expectations.
+
+## Scraper Overview
 
 The GSMArena Bangladesh Scraper is a PHP-based web scraping system designed to extract mobile device information, specifications, and prices from [gsmarena.com.bd](https://www.gsmarena.com.bd). This scraper follows the same architectural pattern as other scrapers in the BroxBhai project.
 

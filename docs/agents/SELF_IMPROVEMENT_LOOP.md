@@ -3,13 +3,13 @@
 This repo uses a lightweight, append-only workflow so agents improve documentation and reduce rework over time.
 
 Do this at the end of any non-trivial session:
-1) If you discovered a new pattern/gotcha/convention, append it to `docs/CODING_CONVENTIONS.md`.
-2) If you made an architectural decision, log it in `docs/PROJECT_CONTEXT.md` under `## Decision Log`.
-3) If the feature changed the repo layout (new top-level area/module), update the Directory Structure section in `docs/PROJECT_CONTEXT.md`.
+1) If you discovered a new pattern/gotcha/convention, append it to `docs/guides/coding-conventions.md`.
+2) If you made an architectural decision, log it in `docs/project/project-context.md` under `## Decision Log`.
+3) If the feature changed the repo layout (new top-level area/module), update the Directory Structure section in `docs/project/project-context.md`.
 4) If you learned an AI-specific trick (prompting, token saving, tool usage), add it to `docs/ai/AI_CODING_GUIDE.md`.
 5) Bump the `Version:` line in `AGENTS.md` (patch increment).
 6) Add a Changelog entry in `AGENTS.md` (keep it short and factual).
-7) If you created/used a temporary plan doc under `docs/plans/` (including audit plans), delete it after implementation. If any part is still valuable long-term, move the key decisions to `docs/PROJECT_CONTEXT.md` or `docs/ai/AGENT_MEMORY.md` first.
+7) If you created/used a temporary plan doc under `docs/plans/` (including audit plans), delete it after implementation. If any part is still valuable long-term, move the key decisions to `docs/project/project-context.md` or `docs/ai/AGENT_MEMORY.md` first.
 
 ## Agent Improvement Rule - Examples
 

@@ -1,5 +1,21 @@
 # Scraper System API Documentation
 
+## Summary
+RESTful endpoints covering dashboard, source management, AI selector generation, queue operations, and more for the scraping subsystem.
+
+## Purpose
+Give contributors a central specification of every scraper API so they can consume or extend it safely during integrations or automation.
+
+## Key Actions
+- Authenticate via admin sessions and include CSRF tokens for POST/PUT/DELETE requests.
+- Review dashboard, source management, queue, and testing endpoints before building tooling.
+- Follow the documented error responses and log summaries to keep monitoring aligned.
+
+## Related References
+- `docs/project/project-context.md` for system architecture.
+- `docs/integrations/ocr-service-integration.md` for the OCR pipeline that consumes scraper output.
+- `docs/guides/coding-standards.md` for security and response shaping.
+
 Complete API reference for the BroxBhai web scraping system.
 
 ---
