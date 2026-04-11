@@ -1,5 +1,5 @@
-import { createWorker, Worker } from 'tesseract.js';
-import logger from '../utils/logger.js';
+import { createWorker, Worker } from 'tesseract;
+import logger from '../utils/logger;
 
 export interface OCRResult {
     text: string;

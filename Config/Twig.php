@@ -1038,6 +1038,11 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             return bin2hex(random_bytes($length / 2));
         }));
 
+        // CSRF token helper
+        $twig->addFunction(new \Twig\TwigFunction('generateCsrfToken', function () {
+            return generateCsrfToken();
+        }));
+
         // Current URL (full URL with protocol, host, and query params)
         $twig->addFunction(new \Twig\TwigFunction('current_url', function () {
             // Build full URL with protocol and host

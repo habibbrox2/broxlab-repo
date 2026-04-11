@@ -94,9 +94,13 @@
                                                             <i class="bi bi-play-circle"></i>
                                                         </a>
                                                     {% endif %}
-                                                    <a href="/admin/scraper/sources/{{ source.id }}/delete" class="btn btn-outline-danger" title="Delete">
-                                                        <i class="bi bi-trash"></i>
-                                                    </a>
+                                                     <form method="POST" action="/admin/scraper/sources/delete" class="d-inline-block ms-1" id="delete-form-{{ source.id }}">
+                                                         <input type="hidden" name="id" value="{{ source.id }}">
+                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                                          <button type="button" class="btn btn-outline-danger" title="Delete" data-source-name="{{ source.name|e('html_attr') }}" data-source-id="{{ source.id }}" onclick="handleDeleteClick(this)">
+                                                             <i class="bi bi-trash"></i>
+                                                         </button>
+                                                     </form>
                                                 </div>
                                             </td>
                                         </tr>
@@ -119,4 +123,57 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, SweetAlert available:', typeof window.showConfirm);
+});
+
+function handleDeleteClick(button) {
+    const sourceName = button.getAttribute('data-source-name');
+    const sourceId = button.getAttribute('data-source-id');
+
+    console.log('Delete clicked for:', sourceName, sourceId);
+
+    // Use a timeout to ensure SweetAlert is loaded
+    setTimeout(async () => {
+        try {
+            // Check if SweetAlert is available
+            if (typeof window.showConfirm !== 'function') {
+                console.warn('SweetAlert not loaded, falling back to browser confirm');
+                if (confirm(`Delete "${sourceName}"? This cannot be undone.`)) {
+                    submitDeleteForm(sourceId);
+                }
+                return;
+            }
+
+            const confirmed = await window.showConfirm(
+                `Delete "${sourceName}"? This cannot be undone.`,
+                'Delete Source',
+                'danger'
+            );
+
+            if (confirmed) {
+                submitDeleteForm(sourceId);
+            }
+        } catch (error) {
+            console.error('Error in handleDeleteClick:', error);
+            // Fallback to browser confirm
+            if (confirm(`Delete "${sourceName}"? This cannot be undone.`)) {
+                submitDeleteForm(sourceId);
+            }
+        }
+    }, 100);
+}
+
+function submitDeleteForm(sourceId) {
+    const form = document.getElementById(`delete-form-${sourceId}`);
+    if (form) {
+        console.log('Submitting form:', form);
+        form.submit();
+    } else {
+        console.error('Form not found:', `delete-form-${sourceId}`);
+    }
+}
+</script>
 {% endblock %}

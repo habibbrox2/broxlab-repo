@@ -90,34 +90,61 @@ if (!function_exists('sanitizeSensitiveData')) {
      * @return mixed Sanitized data
      */
     function sanitizeSensitiveData($data) {
+        // Guard against closures/resources that cannot be serialized
+        if ($data instanceof \Closure) {
+            return '[closure]';
+        }
+        if (is_resource($data)) {
+            return '[resource:' . get_resource_type($data) . ']';
+        }
+
         if (!is_array($data) && !is_object($data)) {
             return $data;
         }
-        
-        $sensitiveFields = LOG_SENSITIVE_FIELDS;
-        $sanitized = [];
-        
-        foreach ((array)$data as $key => $value) {
-            $lowerKey = strtolower($key);
-            $isSensitive = false;
-            
-            foreach ($sensitiveFields as $field) {
-                if (str_contains($lowerKey, $field)) {
-                    $isSensitive = true;
-                    break;
+
+        try {
+            $sensitiveFields = LOG_SENSITIVE_FIELDS;
+            $sanitized = [];
+            $iterable = is_object($data) ? (array)$data : $data;
+
+            foreach ($iterable as $key => $value) {
+                $lowerKey = strtolower((string)$key);
+                $isSensitive = false;
+
+                foreach ($sensitiveFields as $field) {
+                    if (str_contains($lowerKey, $field)) {
+                        $isSensitive = true;
+                        break;
+                    }
                 }
-            }
-            
-            if ($isSensitive) {
-                $sanitized[$key] = '[REDACTED]';
-            } elseif (is_array($value) || is_object($value)) {
-                $sanitized[$key] = sanitizeSensitiveData($value);
-            } else {
+
+                if ($isSensitive) {
+                    $sanitized[$key] = '[REDACTED]';
+                    continue;
+                }
+
+                if ($value instanceof \Closure) {
+                    $sanitized[$key] = '[closure]';
+                    continue;
+                }
+
+                if (is_resource($value)) {
+                    $sanitized[$key] = '[resource:' . get_resource_type($value) . ']';
+                    continue;
+                }
+
+                if (is_array($value) || is_object($value)) {
+                    $sanitized[$key] = sanitizeSensitiveData($value);
+                    continue;
+                }
+
                 $sanitized[$key] = $value;
             }
+
+            return is_object($data) ? (object)$sanitized : $sanitized;
+        } catch (\Throwable $e) {
+            return '[unserializable]';
         }
-        
-        return is_object($data) ? (object)$sanitized : $sanitized;
     }
 }
 

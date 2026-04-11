@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
-import { ChatService } from '../services/chat.service.js';
-import { adminMiddleware } from '../middleware/auth.middleware.js';
-import logger from '../utils/logger.js';
+import { ChatService } from '../services/chat.service;
+import { adminMiddleware } from '../middleware/auth.middleware;
+import logger from '../utils/logger;
 
 export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
     const chatService = new ChatService();

@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { providers } from '../providers/registry.js';
+import { providers } from '../providers/registry';
 
 // Mock database interaction - in production, use actual database
 const getSettingsFromDB = async () => {
@@ -41,7 +41,11 @@ export const aiController = {
 
   saveAISettings: async (_req: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { provider, apiKey, model } = _req.body as { provider?: string; apiKey?: string; model?: string };
+      const { provider, apiKey, model } = _req.body as {
+        provider?: string;
+        apiKey?: string;
+        model?: string;
+      };
 
       // Validate provider
       if (!provider || !(provider in providers)) {
@@ -62,7 +66,7 @@ export const aiController = {
           provider,
           apiKey: apiKey ? '••••••••' + apiKey.slice(-4) : '',
           model: model || (provider === 'openrouter' ? 'openrouter/auto' : 'llama2'),
-        }
+        },
       });
     } catch (error) {
       console.error('Error saving AI settings:', error);

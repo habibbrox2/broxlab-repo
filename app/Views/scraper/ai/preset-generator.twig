@@ -286,8 +286,8 @@ document.getElementById('presetGeneratorForm').addEventListener('submit', async 
         // Hide loading
         document.getElementById('loadingState').style.display = 'none';
         
-        if (data.success && data.preset) {
-            generatedPreset = data.preset;
+        if (data.success) {
+            generatedPreset = data;
             displayPresetResult(generatedPreset);
         } else {
             showError(data.error || 'Failed to generate preset');

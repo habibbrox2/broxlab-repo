@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index.js';
+import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index;
 import { readFile } from 'fs/promises';
-import logger from '../../utils/logger.js';
+import logger from '../../utils/logger;
 
 const analyzeLogsSchema = z.object({
     logFile: z.string().optional().default('storage/logs/app.log'),

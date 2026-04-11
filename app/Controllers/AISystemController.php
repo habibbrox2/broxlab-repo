@@ -2752,7 +2752,7 @@ $router->get('/api/admin/system-health', ['middleware' => ['auth', 'admin_only']
     }
 
     // Check Node.js server
-    $nodejsPort = getenv('NODEJS_PORT') ?: '3000';
+    $nodejsPort = getenv('NODEJS_PORT') ?: '3001';
     $nodejsHost = getenv('NODEJS_HOST') ?: 'localhost';
     try {
         $fp = @fsockopen($nodejsHost, $nodejsPort, $errno, $errstr, 5);

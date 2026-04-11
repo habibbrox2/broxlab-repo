@@ -82,7 +82,7 @@
                                 </tr>
                                 <tr>
                                     <td><strong>URL:</strong></td>
-                                    <td><a href="{{ source.url }}" target="_blank">{{ source.url }}</a></td>
+                                    <td><a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.url }}</a></td>
                                 </tr>
                                 <tr>
                                     <td><strong>Type:</strong></td>
@@ -276,7 +276,7 @@ function displayResults(result) {
             html += '<div class="result-item success">';
             html += '<h6>Item ' + (index + 1) + '</h6>';
             if (item.title) html += '<p><strong>Title:</strong> ' + item.title + '</p>';
-            if (item.url) html += '<p><strong>URL:</strong> <a href="' + item.url + '" target="_blank">' + item.url + '</a></p>';
+            if (item.url) html += '<p><strong>URL:</strong> <a href="' + item.url + '" target="_blank" rel="noopener noreferrer">' + item.url + '</a></p>';
             if (item.excerpt) html += '<p><strong>Excerpt:</strong> ' + item.excerpt.substring(0, 100) + '...</p>';
             html += '</div>';
         });

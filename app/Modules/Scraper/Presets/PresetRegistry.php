@@ -97,6 +97,24 @@ class PresetRegistry
     }
 
     /**
+     * Find preset by content type
+     */
+    public static function findByContentType(string $contentType): ?BasePreset
+    {
+        $target = strtolower(trim($contentType));
+        if ($target === '') {
+            return null;
+        }
+        foreach (self::getAll() as $preset) {
+            if (strtolower($preset->getContentType()) === $target) {
+                return $preset;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Get presets as array for API response
      */
     public static function toArray(): array

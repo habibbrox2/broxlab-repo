@@ -124,14 +124,17 @@
 
 ### Local Development
 ```bash
-# Start PHP development server
+# Start the unified Node backend (API + AI assistant, default port 3000)
+npm run node:start
+
+# Start PHP development server (renders existing front-end / admin themes)
 php -S localhost:8000 -t public_html
 
 # For asset watching (separate terminal)
 npm run dev
 ```
 
-Visit `http://localhost:8000` in your browser.
+Visit `http://localhost:3000` for the Node-powered AI APIs and `http://localhost:8000` for the PHP frontend.
 
 ### Production Deployment
 1. Upload files to your web server

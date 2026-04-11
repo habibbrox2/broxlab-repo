@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index.js';
-import redis from '../../config/redis.js';
-import logger from '../../utils/logger.js';
+import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index;
+import redis from '../../config/redis;
+import logger from '../../utils/logger;
 
 const clearCacheSchema = z.object({
     pattern: z.string().optional().default('tool:*'),

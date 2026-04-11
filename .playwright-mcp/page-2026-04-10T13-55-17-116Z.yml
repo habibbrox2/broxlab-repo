@@ -1,0 +1,160 @@
+- application [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=e3]:
+    - navigation [ref=e5]:
+      - link " BroxLab" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e7]:
+          - generic [ref=e8]: 
+          - generic [ref=e9]: BroxLab
+      - button "Toggle navigation" [ref=e10] [cursor=pointer]
+      - text:        
+  - main [ref=e12]:
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - heading " Welcome Back" [level=2] [ref=e16]:
+          - generic [ref=e17]: 
+          - text: Welcome Back
+        - paragraph [ref=e18]: Sign in to your BroxLab account
+      - generic [ref=e19]:
+        - status [ref=e20]: Please log in.
+        - generic [ref=e21]:
+          - generic [ref=e22]:
+            - generic [ref=e23]: Email or Username
+            - generic [ref=e24]:
+              - generic [ref=e25]: 
+              - textbox "Email or Username" [ref=e26]:
+                - /placeholder: Enter email or username
+            - generic [ref=e27]: Use the email or username associated with your account.
+          - generic [ref=e28]:
+            - generic [ref=e29]: Password
+            - generic [ref=e30]:
+              - generic [ref=e31]: 
+              - textbox "Password" [ref=e32]:
+                - /placeholder: ••••••••
+              - button "Show password" [ref=e33] [cursor=pointer]: 
+          - generic [ref=e34]:
+            - checkbox "Remember me for 30 days" [ref=e35] [cursor=pointer]
+            - generic [ref=e36] [cursor=pointer]: Remember me for 30 days
+          - button " Sign In" [ref=e37] [cursor=pointer]:
+            - generic [ref=e38]: 
+            - text: Sign In
+        - generic [ref=e40]: Continue With
+        - generic [ref=e41]:
+          - button "Sign in with Google" [ref=e42] [cursor=pointer]:
+            - generic [ref=e43]: 
+          - button "Sign in with Facebook" [ref=e44] [cursor=pointer]:
+            - generic [ref=e45]: 
+          - button "Continue as guest" [ref=e46] [cursor=pointer]:
+            - generic [ref=e47]: 
+        - generic [ref=e48]:
+          - paragraph [ref=e49]:
+            - link " Forgot your password?" [ref=e50] [cursor=pointer]:
+              - /url: /forgot-password
+              - generic [ref=e51]: 
+              - text: Forgot your password?
+          - paragraph [ref=e52]:
+            - text: Don't have an account?
+            - link "Create an account" [ref=e53] [cursor=pointer]:
+              - /url: /register?redirect=%2Fadmin%2Fscraper%2Fsources
+  - contentinfo [ref=e54]:
+    - generic [ref=e55]:
+      - generic [ref=e56]:
+        - generic [ref=e57]:
+          - heading "BroxLab" [level=5] [ref=e58]:
+            - generic [ref=e59]: 
+            - text: BroxLab
+          - paragraph [ref=e60]: Your trusted source for mobile reviews and tech insights.
+        - generic [ref=e61]:
+          - heading "Quick Links" [level=6] [ref=e62]
+          - navigation "Quick navigation" [ref=e63]:
+            - listitem [ref=e64]:
+              - link "About Us" [ref=e65] [cursor=pointer]:
+                - /url: /about-us
+                - generic [ref=e66]: 
+                - text: About Us
+            - listitem [ref=e67]:
+              - link "Contact" [ref=e68] [cursor=pointer]:
+                - /url: /contact
+                - generic [ref=e69]: 
+                - text: Contact
+            - listitem [ref=e70]:
+              - link "Newsletter" [ref=e71] [cursor=pointer]:
+                - /url: /newsletter
+                - generic [ref=e72]: 
+                - text: Newsletter
+            - listitem [ref=e73]:
+              - link "Advertise" [ref=e74] [cursor=pointer]:
+                - /url: /advertise
+                - generic [ref=e75]: 
+                - text: Advertise
+            - listitem [ref=e76]:
+              - link "FAQ" [ref=e77] [cursor=pointer]:
+                - /url: /faq
+                - generic [ref=e78]: 
+                - text: FAQ
+        - generic [ref=e79]:
+          - heading "Legal" [level=6] [ref=e80]
+          - navigation "Legal navigation" [ref=e81]:
+            - listitem [ref=e82]:
+              - link "Terms of Service" [ref=e83] [cursor=pointer]:
+                - /url: /terms
+                - generic [ref=e84]: 
+                - text: Terms of Service
+            - listitem [ref=e85]:
+              - link "Privacy Policy" [ref=e86] [cursor=pointer]:
+                - /url: /privacy
+                - generic [ref=e87]: 
+                - text: Privacy Policy
+            - listitem [ref=e88]:
+              - link "Sitemap" [ref=e89] [cursor=pointer]:
+                - /url: /sitemap
+                - generic [ref=e90]: 
+                - text: Sitemap
+            - listitem [ref=e91]:
+              - link "XML Sitemap" [ref=e92] [cursor=pointer]:
+                - /url: /sitemap.xml
+                - generic [ref=e93]: 
+                - text: XML Sitemap
+      - separator [ref=e94]
+      - paragraph [ref=e97]:
+        - text: © 2026
+        - strong [ref=e98]: BroxLab
+        - text: . All rights reserved. |
+        - link "hrhabib.admin@broxlab.online" [ref=e99] [cursor=pointer]:
+          - /url: mailto:hrhabib.admin@broxlab.online
+        - generic [ref=e100]: Designed for maximum performance & accessibility.
+  - text: 
+  - generic:
+    - button "Open Chat" [ref=e101] [cursor=pointer]:
+      - img [ref=e102]
+    - generic:
+      - generic:
+        - generic:
+          - generic: ব্রক্স সহকারী
+          - generic: AI
+        - generic:
+          - button "":
+            - generic: 
+          - generic:
+            - button "বাং"
+            - button "EN"
+          - button:
+            - img
+      - generic:
+        - generic:
+          - generic: Chat History
+          - button "Toggle history":
+            - generic: 
+        - generic:
+          - generic: কোন ইতিহাস নেই
+      - generic:
+        - generic:
+          - generic:
+            - img
+          - heading "How can I help you today?" [level=2]
+          - generic:
+            - generic: আপনার নাম
+            - textbox "Your name"
+            - button "Continue"

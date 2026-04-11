@@ -16,12 +16,14 @@ module.exports = {
         },
         {
             name: 'ai-assistant',
-            script: 'src/ai-assistant-server.js',
+            script: 'node',
+            args: ['./node_modules/tsx/dist/cli.mjs', 'src/index.ts'],
             instances: 1,
             exec_mode: 'fork',
             env: {
                 NODE_ENV: 'production',
-                PORT: 3001
+                PORT: 3001,
+                AI_ASSISTANT_PORT: 3001
             },
             error_file: './logs/ai-assistant-error.log',
             out_file: './logs/ai-assistant-out.log',

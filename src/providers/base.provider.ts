@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { Message, ChatOptions, ResponseMeta } from '../types/index.js';
+import { Message, ChatOptions, ResponseMeta } from '../types/index;
 
 export abstract class BaseAIProvider {
     protected client: OpenAI;

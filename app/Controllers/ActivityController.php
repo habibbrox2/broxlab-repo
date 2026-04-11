@@ -134,7 +134,7 @@ $router->get('/api/log-activity/latest', ['middleware' => ['auth', 'admin_only']
 
 
 // Clear all activity logs (superadmin or admin only)
-$router->post('/api/log-activity/clear', ['middleware' => ['auth']], function () use ($mysqli, $twig) {
+$router->post('/api/log-activity/clear', ['middleware' => ['auth', 'csrf']], function () use ($mysqli, $twig) {
     try {
         // Get current user properly
         $userId = AuthManager::getCurrentUserId();
@@ -234,7 +234,7 @@ $router->post('/api/log-activity/clear', ['middleware' => ['auth']], function ()
 
 
 // Toggle activity logging on/off (admin/super_admin)
-$router->post('/api/log-activity/toggle', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->post('/api/log-activity/toggle', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     try {
         $user = AuthManager::isUserAuthenticated();
         $role = $user['role'] ?? 'user';

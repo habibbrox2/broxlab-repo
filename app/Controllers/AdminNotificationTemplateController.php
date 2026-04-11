@@ -61,7 +61,7 @@ $router->get('/admin/my/notifications', ['middleware' => ['auth', 'admin_only']]
  * Mark a notification as read
  * POST /api/notification/mark-read
  */
-$router->post('/api/notification/mark-read', ['middleware' => ['auth']], function () use ($mysqli) {
+$router->post('/api/notification/mark-read', ['middleware' => ['auth', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     $userId = AuthManager::getCurrentUserId();
@@ -84,7 +84,7 @@ $router->post('/api/notification/mark-read', ['middleware' => ['auth']], functio
  * Mark all notifications as read for current user
  * POST /api/notification/mark-all-read
  */
-$router->post('/api/notification/mark-all-read', ['middleware' => ['auth']], function () use ($mysqli) {
+$router->post('/api/notification/mark-all-read', ['middleware' => ['auth', 'csrf']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
     $userId = AuthManager::getCurrentUserId();

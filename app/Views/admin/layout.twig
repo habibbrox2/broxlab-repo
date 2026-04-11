@@ -253,6 +253,7 @@
       ]},
       {'name': 'Web Scraping Menu', 'icon': 'bi-robot', 'url': '/admin/scraper', 'key': 'scraper', 'children': [
           {'name': 'Dashboard', 'url': '/admin/scraper', 'key': 'scraper-dashboard'},
+          {'name': 'Manual Collection', 'url': '/admin/scraper/collect', 'key': 'scraper-collect'},
           {'name': 'Collected Data', 'url': '/admin/scraper/collected-data', 'key': 'scraper-collected-data'},
           {'name': 'AI Preset Generator', 'url': '/admin/scraper/ai/preset-generator', 'key': 'scraper-ai-preset-generator'},
           {'name': 'AI Analyzer', 'url': '/admin/scraper/ai/analyzer', 'key': 'scraper-ai-analyzer'}
@@ -423,9 +424,9 @@
 
   <script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}" defer></script>
 
-  {# Admin scripts #}
-  <script src="{{ asset('/assets/js/dist/admin.js') }}" defer></script>
-  <script src="{{ asset('/assets/js/dist/activity.js') }}" defer></script>
+   {# Admin scripts #}
+   <script type="module" src="{{ asset('/assets/js/dist/admin.js') }}" defer></script>
+   <script src="{{ asset('/assets/js/dist/activity.js') }}" defer></script>
 
   {# Listing tables: select-all checkbox + row selection wiring #}
   <script>

@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index.js';
-import { OpenRouterProvider } from '../../providers/openrouter.provider.js';
-import { config } from '../../config/index.js';
-import logger from '../../utils/logger.js';
+import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index;
+import { OpenRouterProvider } from '../../providers/openrouter.provider;
+import { config } from '../../config/index;
+import logger from '../../utils/logger;
 
 const summarizeSchema = z.object({
     text: z.string().min(10).max(10000),

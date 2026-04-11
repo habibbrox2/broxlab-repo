@@ -171,7 +171,8 @@ class ScraperModel
     {
         $sql = "INSERT INTO web_scraping_jobs (source_id, job_type, priority) VALUES (?, ?, ?)";
         $stmt = $this->mysqli->prepare($sql);
-        $stmt->bind_param("isi", $data['source_id'], $data['job_type'], $data['priority'] ?? 5);
+        $priority = $data['priority'] ?? 5;
+        $stmt->bind_param("isi", $data['source_id'], $data['job_type'], $priority);
         $stmt->execute();
         return $this->mysqli->insert_id;
     }
@@ -485,7 +486,7 @@ class ScraperModel
 
         if ($search) {
             $sql .= " AND (a.title LIKE ? OR a.content LIKE ? OR a.excerpt LIKE ?)";
-            $searchTerm = "%$search%";
+            $searchTerm = "%" . $this->mysqli->real_escape_string($search) . "%";
             $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm]);
             $types .= "sss";
         }
@@ -624,7 +625,9 @@ class ScraperModel
     public function createCategory($data)
     {
         $stmt = $this->mysqli->prepare("INSERT INTO web_scraping_categories (name, description, parent_id, is_active, created_at) VALUES (?, ?, ?, ?, NOW())");
-        $stmt->bind_param("ssii", $data['name'], $data['description'], $data['parent_id'] ?? null, $data['is_active'] ?? 1);
+        $parentId = $data['parent_id'] ?? null;
+        $isActive = $data['is_active'] ?? 1;
+        $stmt->bind_param("ssii", $data['name'], $data['description'], $parentId, $isActive);
         $result = $stmt->execute();
         $insertId = $stmt->insert_id;
         $stmt->close();
@@ -634,7 +637,9 @@ class ScraperModel
     public function updateCategory($id, $data)
     {
         $stmt = $this->mysqli->prepare("UPDATE web_scraping_categories SET name = ?, description = ?, parent_id = ?, is_active = ?, updated_at = NOW() WHERE id = ?");
-        $stmt->bind_param("ssiii", $data['name'], $data['description'], $data['parent_id'] ?? null, $data['is_active'] ?? 1, $id);
+        $parentId = $data['parent_id'] ?? null;
+        $isActive = $data['is_active'] ?? 1;
+        $stmt->bind_param("ssiii", $data['name'], $data['description'], $parentId, $isActive, $id);
         return $stmt->execute();
     }
 
@@ -747,8 +752,8 @@ class ScraperModel
         }
 
         if ($search) {
-            $sql .= " AND (m.name LIKE ? OR m.brand LIKE ? OR m.model LIKE ?)";
-            $searchParam = "%$search%";
+            $sql .= " AND (m.title LIKE ? OR m.brand LIKE ? OR m.model LIKE ?)";
+            $searchParam = "%" . $this->mysqli->real_escape_string($search) . "%";
             $params[] = $searchParam;
             $params[] = $searchParam;
             $params[] = $searchParam;
@@ -1433,5 +1438,130 @@ class ScraperModel
         $stmt->close();
 
         return (bool)$result;
+    }
+
+    // Pipeline and Collection Methods
+    public function getSourcesByCategory($categoryId)
+    {
+        $stmt = $this->mysqli->prepare("SELECT * FROM web_scraping_sources WHERE category_id = ? AND is_active = 1 ORDER BY name");
+        $stmt->bind_param("i", $categoryId);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+
+    public function getAllCategories()
+    {
+        $sql = "SELECT * FROM web_scraping_categories ORDER BY name";
+        $result = $this->mysqli->query($sql);
+        return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    }
+
+    public function getRecentCollections($limit = 10)
+    {
+        $stmt = $this->mysqli->prepare("
+            SELECT cj.*, u.username as created_by_name
+            FROM collection_jobs cj
+            LEFT JOIN users u ON cj.created_by = u.id
+            ORDER BY cj.created_at DESC LIMIT ?
+        ");
+        $stmt->bind_param("i", $limit);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+
+    public function getCollectionsCountToday()
+    {
+        $today = date('Y-m-d');
+        $stmt = $this->mysqli->prepare("
+            SELECT COUNT(*) as count
+            FROM collection_jobs
+            WHERE DATE(created_at) = ? AND status = 'completed'
+        ");
+        $stmt->bind_param("s", $today);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        return (int)($result['count'] ?? 0);
+    }
+
+    public function getItemsCollectedToday()
+    {
+        $today = date('Y-m-d');
+        $stmt = $this->mysqli->prepare("
+            SELECT SUM(total_items) as total
+            FROM collection_jobs
+            WHERE DATE(created_at) = ? AND status = 'completed'
+        ");
+        $stmt->bind_param("s", $today);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        return (int)($result['total'] ?? 0);
+    }
+
+    public function createCollectionJob($data)
+    {
+        $stmt = $this->mysqli->prepare("
+            INSERT INTO collection_jobs
+            (type, target_ids, options, status, created_by, created_at)
+            VALUES (?, ?, ?, ?, ?, NOW())
+        ");
+        $stmt->bind_param(
+            "sssss",
+            $data['type'],
+            $data['target_ids'],
+            $data['options'],
+            $data['status'],
+            $data['created_by']
+        );
+        $stmt->execute();
+        return $this->mysqli->insert_id;
+    }
+
+    public function updateCollectionJob($jobId, $data)
+    {
+        $updates = [];
+        $types = '';
+        $values = [];
+
+        if (isset($data['status'])) {
+            $updates[] = "status = ?";
+            $types .= 's';
+            $values[] = $data['status'];
+        }
+
+        if (isset($data['completed_at'])) {
+            $updates[] = "completed_at = ?";
+            $types .= 's';
+            $values[] = $data['completed_at'];
+        }
+
+        if (isset($data['results'])) {
+            $updates[] = "results = ?";
+            $types .= 's';
+            $values[] = $data['results'];
+        }
+
+        if (isset($data['total_items'])) {
+            $updates[] = "total_items = ?";
+            $types .= 'i';
+            $values[] = $data['total_items'];
+        }
+
+        if (isset($data['execution_time'])) {
+            $updates[] = "execution_time = ?";
+            $types .= 'd';
+            $values[] = $data['execution_time'];
+        }
+
+        if (empty($updates)) {
+            return false;
+        }
+
+        $sql = "UPDATE collection_jobs SET " . implode(', ', $updates) . " WHERE id = ?";
+        $types .= 'i';
+        $values[] = $jobId;
+
+        $stmt = $this->mysqli->prepare($sql);
+        $stmt->bind_param($types, ...$values);
+        return $stmt->execute();
     }
 }

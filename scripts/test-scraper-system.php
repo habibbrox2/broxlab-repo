@@ -93,7 +93,6 @@ try {
     ];
 
     $advanceScraper->setSource($testSource);
-    $advanceScraper->setConfig(['strategy' => 'auto']); // Set default config
     $result = $advanceScraper->scrape();
 
     echo "   ✓ AdvanceScraper executed\n";

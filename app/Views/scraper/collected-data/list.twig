@@ -351,7 +351,7 @@
 
 <script>
 function viewArticle(id) {
-    fetch(`/admin/scraper/articles/${id}`)
+    fetch(`/admin/scraper/articles/${id}/json`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -359,7 +359,7 @@ function viewArticle(id) {
                     <h4>${data.article.title}</h4>
                     <p class="text-muted">Source: ${data.article.source_name} | Created: ${new Date(data.article.created_at).toLocaleString()}</p>
                     <div class="mb-3">
-                        <strong>URL:</strong> <a href="${data.article.url}" target="_blank">${data.article.url}</a>
+                        <strong>URL:</strong> <a href="${data.article.url}" target="_blank" rel="noopener noreferrer">${data.article.url}</a>
                     </div>
                     <div class="mb-3">
                         <strong>Content:</strong>
