@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
-import { config } from './index;
-import logger from '../utils/logger;
-import { metrics } from '../utils/metrics;
+import { config } from './index';
+import logger from '../utils/logger';
+import { metrics } from '../utils/metrics';
 
 // Create connection pool
 const pool = mysql.createPool({

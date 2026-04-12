@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index;
+import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index';
 // import { chromium } from 'playwright';
-import logger from '../../utils/logger;
+import logger from '../../utils/logger';
 import https from 'https';
 import http from 'http';
 

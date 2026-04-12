@@ -78,7 +78,7 @@ class HtmlFetcher
 
     private static function fetchFromNodeService(string $url): string
     {
-        $nodeServiceUrl = getenv('NODE_SCRAPER_SERVICE_URL') ?: 'http://localhost:3001';
+        $nodeServiceUrl = getenv('NODE_SCRAPER_SERVICE_URL') ?: 'http://localhost:3002';
         $apiKey = getenv('NODE_SERVICE_API_KEY') ?: 'internal-key';
 
         $payload = json_encode([

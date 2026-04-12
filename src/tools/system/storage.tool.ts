@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index;
+import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index';
 import { readdir, stat } from 'fs/promises';
 import { join } from 'path';
-import logger from '../../utils/logger;
+import logger from '../../utils/logger';
 
 const listStorageSchema = z.object({
     directory: z.string().optional().default('storage'),

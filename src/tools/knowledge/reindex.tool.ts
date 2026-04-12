@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index;
-import { query, queryOne } from '../../config/database;
-import { delPattern } from '../../config/redis;
-import logger from '../../utils/logger;
+import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index';
+import { query, queryOne } from '../../config/database';
+import { delPattern } from '../../config/redis';
+import logger from '../../utils/logger';
 
 const reindexKbSchema = z.object({
     category: z.string().optional(),

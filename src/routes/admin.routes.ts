@@ -1,12 +1,12 @@
 import { FastifyInstance } from 'fastify';
-import { adminMiddleware } from '../middleware/auth.middleware;
-import logger from '../utils/logger;
-import { execute } from '../config/database;
-import redis from '../config/redis;
+import { adminMiddleware } from '../middleware/auth.middleware';
+import logger from '../utils/logger';
+import { execute } from '../config/database';
+import redis from '../config/redis';
 import multipart from '@fastify/multipart';
-import { aiController } from '../controllers/ai.controller;
-import { mcpController } from '../controllers/mcp.controller;
-import { config } from '../config/index;
+import { aiController } from '../controllers/ai.controller';
+import { mcpController } from '../controllers/mcp.controller';
+import { config } from '../config/index';
 
 export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
     // Register multipart plugin for file uploads

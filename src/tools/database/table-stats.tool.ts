@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index;
-import { query } from '../../config/database;
-import logger from '../../utils/logger;
+import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index';
+import { query } from '../../config/database';
+import logger from '../../utils/logger';
 
 const tableStatsSchema = z.object({
     tableName: z.string().optional(),

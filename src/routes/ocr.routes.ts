@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
-import { getOCRService } from '../services/ocr.service;
-import logger from '../utils/logger;
+import { getOCRService } from '../services/ocr.service';
+import logger from '../utils/logger';
 
 export async function ocrRoutes(fastify: FastifyInstance): Promise<void> {
     const ocrService = getOCRService();

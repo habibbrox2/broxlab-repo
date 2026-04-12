@@ -596,6 +596,175 @@ $router->get('/admin/scraper/articles/{id}', ['middleware' => ['auth', 'admin_on
     exit;
 });
 
+/**
+ * Edit Article
+ *
+ * Displays the form for editing a scraped article.
+ *
+ * @route GET /admin/scraper/articles/{id}/edit
+ * @middleware auth, admin_only
+ *
+ * @param id int Article ID to edit (from URL path)
+ *
+ * @return void Renders article edit template with:
+ *               - article: Article object with all fields
+ *               - pageTitle: "Edit Article"
+ *
+ * @throws Exception If database query fails or article not found
+ *
+ * @example Response: HTML form with article data pre-filled
+ */
+$router->get('/admin/scraper/articles/{id}/edit', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
+    try {
+        $id = (int)$id;
+        $model = new ScraperModel($mysqli);
+        $article = $model->getArticleById($id);
+
+        if (!$article) {
+            http_response_code(404);
+            echo $twig->render('error.twig', [
+                'pageTitle' => 'Article Not Found',
+                'message' => 'The requested article was not found.'
+            ]);
+            return;
+        }
+
+        $article = prepareScrapedArticlePayload($article);
+
+        echo $twig->render('scraper/collected-data/edit.twig', [
+            'article' => $article,
+            'pageTitle' => 'Edit Article',
+            'csrf_token' => generateCsrfToken()
+        ]);
+    } catch (Exception $e) {
+        error_log("Edit article error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig', [
+            'pageTitle' => 'Error',
+            'message' => 'Failed to load article edit form.'
+        ]);
+    }
+});
+
+/**
+ * Update Article
+ *
+ * Updates a scraped article with form data.
+ *
+ * @route POST /admin/scraper/articles/{id}/edit
+ * @middleware auth, admin_only
+ *
+ * @param id int Article ID to update (from URL path)
+ *
+ * @request_body Form data containing:
+ *               - title (string, required): Article title
+ *               - content (string, required): Article content
+ *               - excerpt (string, optional): Article excerpt
+ *               - author (string, optional): Article author
+ *               - image_url (string, optional): Article image URL
+ *               - status (string, optional): Article status
+ *               - categories (string, optional): JSON array of categories
+ *               - tags (string, optional): JSON array of tags
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - message: string (success message)
+ *               - error: string (error message, if failed)
+ *
+ * @throws Exception If database operation fails or validation fails
+ *
+ * @example Success: {"success": true, "message": "Article updated successfully"}
+ * @example Error: {"success": false, "error": "Title is required"}
+ */
+$router->post('/admin/scraper/articles/{id}/edit', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+    // Validate CSRF token
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $id = (int)$id;
+        $model = new ScraperModel($mysqli);
+
+        // Check if article exists
+        $article = $model->getArticleById($id);
+        if (!$article) {
+            return jsonResponse(['success' => false, 'error' => 'Article not found'], 404);
+        }
+
+        // Validate required fields
+        $title = trim($_POST['title'] ?? '');
+        $content = trim($_POST['content'] ?? '');
+        $excerpt = trim($_POST['excerpt'] ?? '');
+        $author = trim($_POST['author'] ?? '');
+        $imageUrl = trim($_POST['image_url'] ?? '');
+        $status = trim($_POST['status'] ?? 'collected');
+        $categoriesJson = trim($_POST['categories'] ?? '[]');
+        $tagsJson = trim($_POST['tags'] ?? '[]');
+
+        if (empty($title)) {
+            return jsonResponse(['success' => false, 'error' => 'Title is required'], 400);
+        }
+
+        if (empty($content)) {
+            return jsonResponse(['success' => false, 'error' => 'Content is required'], 400);
+        }
+
+        // Validate JSON
+        $categories = [];
+        if (!empty($categoriesJson)) {
+            $categories = json_decode($categoriesJson, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return jsonResponse(['success' => false, 'error' => 'Invalid categories JSON'], 400);
+            }
+        }
+
+        $tags = [];
+        if (!empty($tagsJson)) {
+            $tags = json_decode($tagsJson, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return jsonResponse(['success' => false, 'error' => 'Invalid tags JSON'], 400);
+            }
+        }
+
+        // Update article
+        $sql = "UPDATE web_scraping_articles SET
+                title = ?, content = ?, excerpt = ?, author = ?, image_url = ?, status = ?,
+                categories_json = ?, tags_json = ?, updated_at = NOW()
+                WHERE id = ?";
+
+        $stmt = $mysqli->prepare($sql);
+        $categoriesJson = json_encode($categories);
+        $tagsJson = json_encode($tags);
+
+        $stmt->bind_param(
+            "sssssssss",
+            $title,
+            $content,
+            $excerpt,
+            $author,
+            $imageUrl,
+            $status,
+            $categoriesJson,
+            $tagsJson,
+            $id
+        );
+
+        if ($stmt->execute()) {
+            logActivity('scraper_article_updated', 'article', $id, ['user_id' => $_SESSION['user_id'] ?? 0]);
+            return jsonResponse([
+                'success' => true,
+                'message' => 'Article updated successfully'
+            ]);
+        }
+
+        return jsonResponse(['success' => false, 'error' => 'Failed to update article'], 500);
+    } catch (Exception $e) {
+        error_log("Update article error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
 // ================== AI FEATURES ==================
 
 /**
@@ -774,6 +943,44 @@ $router->get('/admin/scraper/presets/create', ['middleware' => ['auth', 'admin_o
         echo $twig->render('error.twig', [
             'pageTitle' => 'Error',
             'message' => 'Failed to load create preset form.'
+        ]);
+    }
+});
+
+/**
+ * List Presets
+ *
+ * Displays all available scraper presets with filtering and actions.
+ *
+ * @route GET /admin/scraper/presets
+ * @middleware auth, admin_only
+ *
+ * @return void Renders presets list template with:
+ *               - presets: Array of all preset objects
+ *               - categories: Array of available categories for filtering
+ *               - pageTitle: "Scraper Presets"
+ *
+ * @throws Exception If template rendering fails
+ *
+ * @example Response: HTML page with preset cards and management actions
+ */
+$router->get('/admin/scraper/presets', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    try {
+        $presets = PresetRegistry::getAll();
+        $categories = PresetRegistry::getCategories();
+
+        echo $twig->render('scraper/presets/index.twig', [
+            'presets' => $presets,
+            'categories' => $categories,
+            'pageTitle' => 'Scraper Presets',
+            'csrf_token' => generateCsrfToken()
+        ]);
+    } catch (Exception $e) {
+        error_log("Presets list error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig', [
+            'pageTitle' => 'Error',
+            'message' => 'Failed to load presets.'
         ]);
     }
 });
@@ -1050,6 +1257,99 @@ $router->post('/api/v1/scraper/presets/ai-detect', ['middleware' => ['auth', 'ad
 });
 
 /**
+ * Apply Preset
+ *
+ * Creates a new scraper source based on a preset configuration.
+ *
+ * @route POST /admin/scraper/presets/{key}/apply
+ * @middleware auth, admin_only
+ *
+ * @param key string Preset key to apply (from URL path)
+ *
+ * @request_body Form data containing:
+ *               - name (string, required): Name for the new source
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - source_id: int (ID of created source)
+ *               - source_name: string (name of created source)
+ *               - error: string (error message, if failed)
+ *
+ * @throws Exception If database operation fails or preset not found
+ *
+ * @example Success: {"success": true, "source_id": 123, "source_name": "BDNews24 (Applied)"}
+ * @example Error: {"success": false, "error": "Preset not found"}
+ */
+$router->post('/admin/scraper/presets/{key}/apply', ['middleware' => ['auth', 'admin_only']], function ($key) use ($mysqli) {
+    // Validate CSRF token
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $model = new ScraperModel($mysqli);
+
+        // Check if preset exists
+        $preset = \App\Modules\Scraper\Presets\PresetRegistry::getByKey($key);
+        if (!$preset) {
+            return jsonResponse(['success' => false, 'error' => 'Preset not found'], 404);
+        }
+
+        // Get form data
+        $sourceName = trim($_POST['name'] ?? '');
+        if (empty($sourceName)) {
+            return jsonResponse(['success' => false, 'error' => 'Source name is required'], 400);
+        }
+
+        // Create source data from preset
+        $sourceData = [
+            'name' => $sourceName,
+            'url' => $preset->getExampleUrls()[0] ?? '',
+            'type' => 'scrape',
+            'category_id' => 1, // Default category
+            'selectors' => $preset->getConfig(),
+            'advance_config' => null,
+            'presets' => null,
+            'fetch_interval' => $preset->getFetchInterval(),
+            'content_type' => $preset->getContentType(),
+            'scrape_depth' => 1,
+            'use_browser' => 0,
+            'max_pages' => $preset->getMaxPages(),
+            'delay' => $preset->getDelay(),
+            'pagination_type' => $preset->getPaginationType() ?? 'none',
+            'pagination_selector' => $preset->getPaginationSelector(),
+            'pagination_pattern' => $preset->getPaginationPattern(),
+            'proxy_enabled' => 0,
+            'proxy_provider' => '',
+            'proxy_config' => null
+        ];
+
+        // Save the source
+        $sourceId = $model->createSource($sourceData);
+
+        if ($sourceId) {
+            logActivity('scraper_preset_applied', 'source', $sourceId, [
+                'preset_key' => $key,
+                'preset_name' => $preset->getName(),
+                'source_name' => $sourceName,
+                'user_id' => $_SESSION['user_id'] ?? 0
+            ]);
+
+            return jsonResponse([
+                'success' => true,
+                'source_id' => $sourceId,
+                'source_name' => $sourceName
+            ]);
+        }
+
+        return jsonResponse(['success' => false, 'error' => 'Failed to create source'], 500);
+    } catch (Exception $e) {
+        error_log("Apply preset error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
  * Delete Preset
  *
  * Deletes a scraper preset from the database.
@@ -1090,6 +1390,7 @@ $router->delete('/admin/scraper/presets/{key}', ['middleware' => ['auth', 'admin
         if ($result) {
             logActivity('scraper_preset_deleted', 'preset', 0, [
                 'preset_key' => $key,
+                'preset_name' => $preset->getName(),
                 'preset_name' => $preset->getName(),
                 'user_id' => $_SESSION['user_id'] ?? 0
             ]);
@@ -3026,7 +3327,7 @@ $router->post('/api/v1/scraper/collect/start', ['middleware' => ['auth', 'admin_
         foreach ($sourcesToRun as $source) {
             $jobId = $model->createJob([
                 'source_id' => $source['id'],
-                'job_type' => 'manual_collection',
+                'job_type' => 'manual',
                 'priority' => 1
             ]);
             $jobIds[] = $jobId;

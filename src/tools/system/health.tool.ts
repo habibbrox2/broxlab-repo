@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index;
-import logger from '../../utils/logger;
+import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index';
+import logger from '../../utils/logger';
 import os from 'os';
-import redis from '../../config/redis;
+import redis from '../../config/redis';
 
 const healthCheckSchema = z.object({
     includeDetails: z.boolean().optional().default(false),

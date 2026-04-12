@@ -1,5 +1,5 @@
-import { query, queryOne } from '../config/database;
-import logger from '../utils/logger;
+import { query, queryOne } from '../config/database';
+import logger from '../utils/logger';
 
 export interface AIProvider {
     id: number;

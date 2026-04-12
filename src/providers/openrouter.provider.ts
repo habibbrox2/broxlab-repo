@@ -1,6 +1,6 @@
-import { Message, ChatOptions, ResponseMeta } from '../types/index;
-import { BaseAIProvider } from './base.provider;
-import logger from '../utils/logger;
+import { Message, ChatOptions, ResponseMeta } from '../types/index';
+import { BaseAIProvider } from './base.provider';
+import logger from '../utils/logger';
 
 export class OpenRouterProvider extends BaseAIProvider {
     constructor(apiKey: string, model: string = 'openrouter/auto') {

@@ -3731,7 +3731,7 @@ runWhenReady(() => {
           break;
         case 'offline':
           indicator.classList.add('offline');
-          icon.className = 'bi bi-server';
+          icon.className = 'bi bi-exclamation-triangle';
           text.textContent = 'Offline';
           indicator.title = message || 'Server offline';
           break;
@@ -3769,7 +3769,7 @@ runWhenReady(() => {
     const updateLastCheck = () => {
       const lastCheckEl = document.getElementById('serverStatusLastCheck');
       if (lastCheckEl) {
-        lastCheckEl.textContent = `Last checked: ${new Date().toLocaleTimeString()}`;
+        lastCheckEl.textContent = `Last checked: ${new Date().toLocaleString()}`;
       }
     };
 

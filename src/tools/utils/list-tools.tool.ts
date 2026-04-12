@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index;
-import logger from '../../utils/logger;
+import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index';
+import logger from '../../utils/logger';
 
 const listToolsSchema = z.object({
     namespace: z.string().optional(),

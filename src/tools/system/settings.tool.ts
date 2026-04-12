@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index;
-import { config } from '../../config/index;
-import { query } from '../../config/database;
-import logger from '../../utils/logger;
+import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index';
+import { config } from '../../config/index';
+import { query } from '../../config/database';
+import logger from '../../utils/logger';
 
 const appSettingsSchema = z.object({
     section: z.string().optional().default('all'),

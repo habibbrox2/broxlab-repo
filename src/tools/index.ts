@@ -1,32 +1,32 @@
-import { ToolRegistry } from './registry;
+import { ToolRegistry } from './registry';
 
 // Database tools
-import { queryDatabaseTool } from './database/query.tool;
-import { getTableStatsTool } from './database/table-stats.tool;
-import { getUserStatsTool } from './database/user-stats.tool;
+import { queryDatabaseTool } from './database/query.tool';
+import { getTableStatsTool } from './database/table-stats.tool';
+import { getUserStatsTool } from './database/user-stats.tool';
 
 // System tools
-import { getSystemHealthTool } from './system/health.tool;
-import { getCacheStatsTool } from './system/cache.tool;
-import { clearCacheTool } from './system/clear-cache.tool;
-import { analyzeErrorLogsTool } from './system/logs.tool;
-import { listStorageFilesTool } from './system/storage.tool;
-import { getAppSettingsTool } from './system/settings.tool;
+import { getSystemHealthTool } from './system/health.tool';
+import { getCacheStatsTool } from './system/cache.tool';
+import { clearCacheTool } from './system/clear-cache.tool';
+import { analyzeErrorLogsTool } from './system/logs.tool';
+import { listStorageFilesTool } from './system/storage.tool';
+import { getAppSettingsTool } from './system/settings.tool';
 
 // Content tools
-import { summarizeTextTool } from './content/summarize.tool;
-import { getContentStatsTool } from './content/content-stats.tool;
-import { fetchUrlContentTool } from './content/fetch-url.tool;
+import { summarizeTextTool } from './content/summarize.tool';
+import { getContentStatsTool } from './content/content-stats.tool';
+import { fetchUrlContentTool } from './content/fetch-url.tool';
 
 // Knowledge base tools
-import { searchKnowledgeBaseTool } from './knowledge/search.tool;
-import { reindexKnowledgeBaseTool } from './knowledge/reindex.tool;
+import { searchKnowledgeBaseTool } from './knowledge/search.tool';
+import { reindexKnowledgeBaseTool } from './knowledge/reindex.tool';
 
 // Utility tools
-import { listToolsTool } from './utils/list-tools.tool;
+import { listToolsTool } from './utils/list-tools.tool';
 
 export { ToolRegistry };
-export type { ToolDefinition, ToolContext, ToolResult } from '../types/index;
+export type { ToolDefinition, ToolContext, ToolResult } from '../types/index';
 
 // Re-export all tools
 export {

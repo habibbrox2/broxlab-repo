@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index;
-import redis from '../../config/redis;
-import logger from '../../utils/logger;
+import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index';
+import redis from '../../config/redis';
+import logger from '../../utils/logger';
 
 const cacheStatsSchema = z.object({
     detailed: z.boolean().optional().default(false),

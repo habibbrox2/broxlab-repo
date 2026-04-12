@@ -118,6 +118,11 @@ class ScraperErrorHandler
             return self::ERROR_STRUCTURAL_CHANGE;
         }
 
+        // Empty content errors should fallback
+        if (str_contains($exception->getMessage(), 'empty HTML content')) {
+            return self::ERROR_NETWORK;
+        }
+
         return self::ERROR_UNKNOWN;
     }
 

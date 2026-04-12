@@ -478,7 +478,7 @@
         return window.AppConfig?.get('ai.nodeServerUrl') || 'http://localhost:3000';
     }
 
-    // Fetch provider models from API
+    // Fetch provider models from API (use PHP fallback if Node.js fails)
     async function fetchProviderModels(providerName, refresh) {
         const params = new URLSearchParams();
         params.set('provider', providerName);
@@ -486,37 +486,73 @@
         if (refresh) {
             params.set('refresh', '1');
         }
-        const res = await fetch(getAIServerUrl() + '/api/ai/models?' + params.toString(), {
-            credentials: 'same-origin'
-        });
 
-        if (!res.ok) {
-            console.warn('[AI Models] Fetch failed', providerName, res.status);
-            throw new Error('HTTP ' + res.status);
-        }
-
-        const raw = await res.text();
-        let data = null;
-
+        // Try Node.js server first, fallback to PHP API
         try {
-            data = JSON.parse(raw);
-        } catch (e) {
-            console.warn('[AI Models] Non-JSON response', providerName, raw);
-            throw new Error('Non-JSON response');
-        }
+            const nodeUrl = getAIServerUrl() + '/api/ai/models?' + params.toString();
+            const res = await fetch(nodeUrl, {
+                credentials: 'same-origin',
+                signal: AbortSignal.timeout(3000) // 3 second timeout
+            });
 
-        if (!data || data.success === false) {
-            const apiError = data && data.error ? String(data.error) : 'API returned success=false';
-            console.warn('[AI Models] API error', providerName, apiError);
-            throw new Error(apiError);
-        }
+            if (res.ok) {
+                const raw = await res.text();
+                let data = null;
+                try {
+                    data = JSON.parse(raw);
+                } catch (e) {
+                    console.warn('[AI Models] Non-JSON response from Node', providerName, raw);
+                    throw new Error('Non-JSON response');
+                }
 
-        if (!Array.isArray(data.models)) {
-            console.warn('[AI Models] Invalid models payload', providerName, data);
-            throw new Error('Invalid models payload');
-        }
+                if (!data || data.success === false) {
+                    const apiError = data && data.error ? String(data.error) : 'API returned success=false';
+                    console.warn('[AI Models] API error from Node', providerName, apiError);
+                    throw new Error(apiError);
+                }
 
-        return data.models;
+                if (!Array.isArray(data.models)) {
+                    console.warn('[AI Models] Invalid models payload from Node', providerName, data);
+                    throw new Error('Invalid models payload');
+                }
+                return data.models;
+            } else {
+                throw new Error('HTTP ' + res.status);
+            }
+        } catch (nodeError) {
+            console.warn('[AI Models] Node.js server unavailable, trying PHP API', providerName, nodeError.message);
+            // Fallback to PHP API
+            const phpUrl = '/api/ai/models?' + params.toString();
+            const res = await fetch(phpUrl, {
+                credentials: 'same-origin'
+            });
+
+            if (!res.ok) {
+                console.warn('[AI Models] PHP API fetch also failed', providerName, res.status);
+                throw new Error('HTTP ' + res.status);
+            }
+
+            const raw = await res.text();
+            let data = null;
+            try {
+                data = JSON.parse(raw);
+            } catch (e) {
+                console.warn('[AI Models] Non-JSON response from PHP', providerName, raw);
+                throw new Error('Non-JSON response');
+            }
+
+            if (!data || data.success === false) {
+                const apiError = data && data.error ? String(data.error) : 'API returned success=false';
+                console.warn('[AI Models] API error from PHP', providerName, apiError);
+                throw new Error(apiError);
+            }
+
+            if (!Array.isArray(data.models)) {
+                console.warn('[AI Models] Invalid models payload from PHP', providerName, data);
+                throw new Error('Invalid models payload');
+            }
+            return data.models;
+        }
     }
 
     // Get provider model map

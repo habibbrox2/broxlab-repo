@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import logger from '../utils/logger;
+import logger from '../utils/logger';
 
 export interface AuthContext {
   userId?: number;

@@ -7,11 +7,42 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { config } from './config/index.js';
-import { testConnection, query, queryOne } from './config/database.js';
-import { testConnection as testRedisConnection, get, set, del } from './config/redis.js';
+import logger from './utils/simple-logger.js';
 import { ChatService } from './services/chat.service.js';
-import logger from './utils/logger.js';
+
+// Dynamic imports for config
+let config = {
+  cors: { origin: '*', credentials: true },
+  rateLimit: { windowMs: 15 * 60 * 1000, maxRequests: 100 },
+  nodeEnv: process.env.NODE_ENV || 'production',
+  port: parseInt(process.env.PORT || '3000'),
+  host: process.env.HOST || '0.0.0.0',
+};
+
+let query = null;
+let testConnection = null;
+let testRedisConnection = null;
+
+// Try to import database utilities
+(async () => {
+  try {
+    const db = await import('./config/database.js');
+    query = db.query;
+    testConnection = db.testConnection;
+  } catch (e) {
+    logger.warn('Database module not available', e.message);
+  }
+})();
+
+// Try to import redis utilities  
+(async () => {
+  try {
+    const redis = await import('./config/redis.js');
+    testRedisConnection = redis.testConnection;
+  } catch (e) {
+    logger.warn('Redis module not available', e.message);
+  }
+})();
 
 // Create Express app
 const app = express();
@@ -123,34 +154,152 @@ app.post('/api/ai-system/chat', async (req, res) => {
   await chatService.handleChat(req, res, true);
 });
 
-// Get available models
+// Get available models - connects to PHP database
 app.get('/api/ai/models', async (req, res) => {
-  res.json({
-    success: true,
-    models: [
-      {
-        id: 'openrouter/gpt-4o',
-        name: 'GPT-4o',
-        provider: 'openrouter',
-        description: 'OpenAI GPT-4o via OpenRouter',
-        supportsVision: true,
-      },
-      {
-        id: 'openrouter/gpt-4o-mini',
-        name: 'GPT-4o Mini',
-        provider: 'openrouter',
-        description: 'OpenAI GPT-4o Mini via OpenRouter',
-        supportsVision: true,
-      },
-      {
-        id: 'openrouter/claude-3.5-sonnet',
-        name: 'Claude 3.5 Sonnet',
-        provider: 'openrouter',
-        description: 'Anthropic Claude 3.5 Sonnet via OpenRouter',
-        supportsVision: true,
-      },
-    ],
-  });
+  try {
+    const providerName = req.query.provider || '';
+    const scope = req.query.scope || '';
+
+    // Check if admin access required
+    if (providerName === 'ollama' || scope === 'admin') {
+      // TODO: Implement auth check - for now allow all
+      // In production, validate session/JWT token here
+    }
+
+    // Get database connection
+    let query;
+    try {
+      const db = await import('./config/database.js');
+      query = db.query;
+    } catch (importError) {
+      logger.warn('Database module not available, returning empty models');
+      res.json({ success: true, models: [], providers: {} });
+      return;
+    }
+
+    // If no provider specified, return all active providers
+    if (!providerName) {
+      const rows = await query(
+        'SELECT id, provider_name, display_name, supported_models, extra_settings FROM ai_providers WHERE is_active = 1 ORDER BY sort_order'
+      );
+
+      const providers = {};
+      const providerMeta = {};
+
+      if (Array.isArray(rows)) {
+        for (const provider of rows) {
+          const pname = provider.provider_name || '';
+          if (pname === '') continue;
+
+          let models = {};
+          if (provider.supported_models) {
+            try {
+              models = typeof provider.supported_models === 'string'
+                ? JSON.parse(provider.supported_models)
+                : provider.supported_models;
+            } catch (e) {
+              logger.warn(`Failed to parse models for ${pname}`, e);
+            }
+          }
+
+          const list = Object.entries(models).map(([id, label]) => ({
+            id: String(id),
+            name: String(label),
+          }));
+
+          if (list.length > 0) {
+            list[0].default = true;
+          }
+
+          providers[pname] = list;
+
+          // Parse extra_settings for multimodal support
+          let supportsMultimodal = false;
+          if (provider.extra_settings) {
+            try {
+              const extra = typeof provider.extra_settings === 'string'
+                ? JSON.parse(provider.extra_settings)
+                : provider.extra_settings;
+              supportsMultimodal = !!(extra.supports_multimodal || extra.supports_rich_content);
+            } catch (e) {
+              logger.warn(`Failed to parse extra_settings for ${pname}`, e);
+            }
+          }
+
+          providerMeta[pname] = {
+            supports_multimodal: supportsMultimodal,
+          };
+        }
+      }
+
+      res.json({
+        success: true,
+        providers,
+        provider_meta: providerMeta,
+      });
+      return;
+    }
+
+    // Get specific provider
+    const rows = await query(
+      'SELECT id, provider_name, display_name, supported_models, extra_settings FROM ai_providers WHERE provider_name = ? AND is_active = 1 LIMIT 1',
+      [providerName]
+    );
+
+    const provider = rows?.[0];
+
+    if (!provider) {
+      res.json({ success: false, error: 'Provider not found' });
+      return;
+    }
+
+    let models = {};
+    if (provider.supported_models) {
+      try {
+        models = typeof provider.supported_models === 'string'
+          ? JSON.parse(provider.supported_models)
+          : provider.supported_models;
+      } catch (e) {
+        logger.warn(`Failed to parse models for ${providerName}`, e);
+      }
+    }
+
+    if (Object.keys(models).length === 0) {
+      res.json({ success: false, error: 'No models available', models: [] });
+      return;
+    }
+
+    // Parse extra_settings for multimodal support
+    let supportsMultimodal = false;
+    if (provider.extra_settings) {
+      try {
+        const extra = typeof provider.extra_settings === 'string'
+          ? JSON.parse(provider.extra_settings)
+          : provider.extra_settings;
+        supportsMultimodal = !!(extra.supports_multimodal || extra.supports_rich_content);
+      } catch (e) {
+        logger.warn(`Failed to parse extra_settings for ${providerName}`, e);
+      }
+    }
+
+    const list = Object.entries(models).map(([id, label]) => ({
+      id: String(id),
+      name: String(label),
+      supports_multimodal: supportsMultimodal,
+    }));
+
+    if (list.length > 0) {
+      list[0].default = true;
+    }
+
+    res.json({ success: true, models: list });
+  } catch (error) {
+    logger.error('Failed to fetch models:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to fetch models',
+    });
+  }
 });
 
 // Test AI connection
