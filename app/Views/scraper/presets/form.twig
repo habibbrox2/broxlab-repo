@@ -1,0 +1,243 @@
+{# templates/scraper/presets/form.twig #}
+{% extends "layouts/admin.twig" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-cogs mr-2"></i>
+                        {{ pageTitle }}
+                    </h3>
+                    <div class="card-tools">
+                        <a href="/admin/scraper/presets" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Presets
+                        </a>
+                    </div>
+                </div>
+
+                <form id="presetForm" method="POST" action="/admin/scraper/presets/save">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    {% if preset %}
+                    <input type="hidden" name="key" value="{{ preset.key }}">
+                    {% endif %}
+
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="name">Preset Name *</label>
+                                    <input type="text" class="form-control" id="name" name="name"
+                                           value="{{ preset.name ?? '' }}" required>
+                                    <small class="form-text text-muted">A descriptive name for the preset</small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="category">Category *</label>
+                                    <select class="form-control" id="category" name="category" required>
+                                        <option value="">Select Category</option>
+                                        {% for category in categories %}
+                                        <option value="{{ category }}" {{ preset.category == category ? 'selected' : '' }}>
+                                            {{ category|title }}
+                                        </option>
+                                        {% endfor %}
+                                        <option value="custom" {{ preset.category == 'custom' ? 'selected' : '' }}>Custom</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="content_type">Content Type *</label>
+                                    <select class="form-control" id="content_type" name="content_type" required>
+                                        <option value="">Select Content Type</option>
+                                        <option value="articles" {{ preset.content_type == 'articles' ? 'selected' : '' }}>Articles/News</option>
+                                        <option value="blog" {{ preset.content_type == 'blog' ? 'selected' : '' }}>Blog Posts</option>
+                                        <option value="product" {{ preset.content_type == 'product' ? 'selected' : '' }}>Products</option>
+                                        <option value="job" {{ preset.content_type == 'job' ? 'selected' : '' }}>Job Listings</option>
+                                        <option value="event" {{ preset.content_type == 'event' ? 'selected' : '' }}>Events</option>
+                                        <option value="mobile" {{ preset.content_type == 'mobile' ? 'selected' : '' }}>Mobile Phones</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="type">Scraper Type</label>
+                                    <select class="form-control" id="type" name="type">
+                                        <option value="scrape" {{ preset.type == 'scrape' ? 'selected' : '' }}>Scrape (Default)</option>
+                                        <option value="html" {{ preset.type == 'html' ? 'selected' : '' }}>HTML Only</option>
+                                        <option value="api" {{ preset.type == 'api' ? 'selected' : '' }}>API Based</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">Description *</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" required>{{ preset.description ?? '' }}</textarea>
+                            <small class="form-text text-muted">Describe what this preset is for and how it works</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="example_urls">Example URLs</label>
+                            <textarea class="form-control" id="example_urls" name="example_urls" rows="3"
+                                      placeholder='["https://example.com/page1", "https://example.com/page2"]'>{{ preset.example_urls ? preset.example_urls|json_encode : '' }}</textarea>
+                            <small class="form-text text-muted">JSON array of example URLs this preset works with</small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="selectors">CSS Selectors</label>
+                                    <textarea class="form-control" id="selectors" name="selectors" rows="6"
+                                              placeholder='{"title": "h1", "content": ".content", "date": ".date"}'>{{ preset.config.selectors ? preset.config.selectors|json_encode(constant('JSON_PRETTY_PRINT')) : '' }}</textarea>
+                                    <small class="form-text text-muted">JSON object with CSS selectors for content extraction</small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="advance_config">Advanced Configuration</label>
+                                    <textarea class="form-control" id="advance_config" name="advance_config" rows="6"
+                                              placeholder='{"user_agent": "Custom User Agent", "timeout": 30}'>{{ preset.config.advance_config ? preset.config.advance_config|json_encode(constant('JSON_PRETTY_PRINT')) : '' }}</textarea>
+                                    <small class="form-text text-muted">JSON object with advanced scraper settings</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Preset
+                        </button>
+                        <a href="/admin/scraper/presets" class="btn btn-secondary ml-2">Cancel</a>
+
+                        <div class="float-right">
+                            <button type="button" class="btn btn-info" id="aiDetectBtn">
+                                <i class="fas fa-robot"></i> AI Selector Detection
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Selector Detection Modal -->
+<div class="modal fade" id="aiDetectModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">
+                    <i class="fas fa-robot"></i> AI Selector Detection
+                </h4>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="aiUrl">Website URL</label>
+                    <input type="url" class="form-control" id="aiUrl" placeholder="https://example.com">
+                </div>
+                <div class="form-group">
+                    <label for="aiContentType">Content Type</label>
+                    <select class="form-control" id="aiContentType">
+                        <option value="articles">Articles/News</option>
+                        <option value="blog">Blog Posts</option>
+                        <option value="product">Products</option>
+                        <option value="mobile">Mobile Phones</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-primary" id="runAIDetection">
+                    <i class="fas fa-search"></i> Analyze Website
+                </button>
+                <div id="aiResults" class="mt-3" style="display: none;">
+                    <h5>Detected Selectors:</h5>
+                    <pre id="aiSelectors" class="bg-light p-3 rounded"></pre>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-success" id="applyAIResults">
+                            <i class="fas fa-check"></i> Apply to Form
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // AI Detection Modal
+    $('#aiDetectBtn').click(function() {
+        $('#aiDetectModal').modal('show');
+    });
+
+    // Run AI Detection
+    $('#runAIDetection').click(function() {
+        const url = $('#aiUrl').val();
+        const contentType = $('#aiContentType').val();
+
+        if (!url) {
+            alert('Please enter a URL');
+            return;
+        }
+
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Analyzing...');
+
+        $.post('/api/v1/scraper/presets/ai-detect', {
+            url: url,
+            content_type: contentType,
+            csrf_token: '{{ csrf_token }}'
+        })
+        .done(function(response) {
+            if (response.success) {
+                $('#aiSelectors').text(JSON.stringify(response.selectors, null, 2));
+                $('#aiResults').show();
+            } else {
+                alert('AI Detection Failed: ' + response.error);
+            }
+        })
+        .fail(function() {
+            alert('AI Detection request failed');
+        })
+        .always(function() {
+            $('#runAIDetection').prop('disabled', false).html('<i class="fas fa-search"></i> Analyze Website');
+        });
+    });
+
+    // Apply AI Results
+    $('#applyAIResults').click(function() {
+        const selectors = JSON.parse($('#aiSelectors').text());
+        $('#selectors').val(JSON.stringify(selectors, null, 2));
+        $('#aiDetectModal').modal('hide');
+    });
+
+    // Form Validation
+    $('#presetForm').submit(function(e) {
+        // Validate JSON fields
+        const selectors = $('#selectors').val();
+        const advanceConfig = $('#advance_config').val();
+        const exampleUrls = $('#example_urls').val();
+
+        try {
+            if (selectors) JSON.parse(selectors);
+            if (advanceConfig) JSON.parse(advanceConfig);
+            if (exampleUrls) JSON.parse(exampleUrls);
+        } catch (e) {
+            alert('Invalid JSON in one of the fields: ' + e.message);
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

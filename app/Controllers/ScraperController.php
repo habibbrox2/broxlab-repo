@@ -158,6 +158,7 @@ require_once __DIR__ . '/../Modules/Scraper/Pipelines/GSMArenaPipeline.php';
  *               - stats: Overall scraping statistics (total sources, jobs, success rate)
  *               - recentJobs: Array of recent scraping jobs (max 10)
  *               - activeSources: Array of currently active scraper sources
+ *               - errorStats: Recent error statistics and monitoring data
  *               - pageTitle: "Scraper Dashboard"
  *
  * @throws Exception If database queries fail or template rendering fails
@@ -171,10 +172,27 @@ $router->get('/admin/scraper', ['middleware' => ['auth', 'admin_only']], functio
         $recentJobs = $model->getPendingJobs(10);
         $activeSources = $model->getActiveSources();
 
+        // Get error statistics from a recent scraper service instance
+        $errorStats = [
+            'total_errors' => 0,
+            'by_type' => [],
+            'by_severity' => [],
+            'recent_errors' => []
+        ];
+
+        try {
+            $scraperService = new \App\Modules\Scraper\ScraperService($model);
+            $errorStats = $scraperService->getErrorStats();
+        } catch (Exception $e) {
+            // Ignore error stats collection errors
+            error_log("Error collecting error stats: " . $e->getMessage());
+        }
+
         echo $twig->render('scraper/dashboard.twig', [
             'stats' => $stats,
             'recentJobs' => $recentJobs,
             'activeSources' => $activeSources,
+            'errorStats' => $errorStats,
             'pageTitle' => 'Scraper Dashboard'
         ]);
     } catch (Exception $e) {
@@ -663,16 +681,15 @@ $router->post('/admin/scraper/ai/preset-generator/analyze', ['middleware' => ['a
 });
 
 /**
- * Get All Presets
+ * Displays detailed view of a specific scraper preset.
  *
- * Returns a list of all available scraper presets for selection.
- *
- * @route GET /admin/scraper/presets/list
+ * @route GET /admin/scraper/presets/{key}
  * @middleware auth, admin_only
  *
- * @return JSON Response with:
- *               - success: boolean
- *               - presets: Array of preset objects with:
+ * @param key string Preset key to view (from URL path)
+ *
+ * @return void Renders preset details template with:
+ *               - preset: Preset object containing:
  *                   - key: string (unique identifier)
  *                   - name: string (display name)
  *                   - description: string (description)
@@ -681,19 +698,411 @@ $router->post('/admin/scraper/ai/preset-generator/analyze', ['middleware' => ['a
  *                   - type: string (scraper type)
  *                   - content_type: string (content type)
  *                   - example_urls: array (example URLs)
+ *                   - config: array (full configuration)
  *
- * @example {"success": true, "presets": [...]}
+ * @throws Exception If preset not found or template rendering fails
+ *
+ * @example Response: HTML page with preset details and configuration
  */
-$router->get('/admin/scraper/presets/list', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->get('/admin/scraper/presets/{key}', ['middleware' => ['auth', 'admin_only']], function ($key) use ($twig) {
     try {
-        $presets = \App\Modules\Scraper\Presets\PresetRegistry::toArray();
+        $preset = PresetRegistry::getByKey($key);
 
-        return jsonResponse([
-            'success' => true,
-            'presets' => $presets
+        if (!$preset) {
+            http_response_code(404);
+            echo $twig->render('error.twig', [
+                'pageTitle' => 'Preset Not Found',
+                'message' => 'The requested preset was not found.'
+            ]);
+            return;
+        }
+
+        echo $twig->render('scraper/presets/view.twig', [
+            'preset' => [
+                'key' => $preset->getKey(),
+                'name' => $preset->getName(),
+                'description' => $preset->getDescription(),
+                'category' => $preset->getCategory(),
+                'icon' => $preset->getIcon(),
+                'type' => $preset->getType(),
+                'content_type' => $preset->getContentType(),
+                'example_urls' => $preset->getExampleUrls(),
+                'config' => $preset->getConfig()
+            ],
+            'pageTitle' => 'Preset Details'
         ]);
     } catch (Exception $e) {
-        error_log("Get presets list error: " . $e->getMessage());
+        error_log("Preset view error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig', [
+            'pageTitle' => 'Error',
+            'message' => 'Failed to load preset details.'
+        ]);
+    }
+});
+
+/**
+ * Create Preset Form
+ *
+ * Displays the form for creating a new scraper preset.
+ *
+ * @route GET /admin/scraper/presets/create
+ * @middleware auth, admin_only
+ *
+ * @return void Renders create preset template with:
+ *               - preset: null (for new preset)
+ *               - categories: Array of available categories
+ *               - pageTitle: "Create Scraper Preset"
+ *
+ * @throws Exception If template rendering fails
+ *
+ * @example Response: HTML form with fields for preset configuration
+ */
+$router->get('/admin/scraper/presets/create', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    try {
+        $categories = PresetRegistry::getCategories();
+
+        echo $twig->render('scraper/presets/form.twig', [
+            'preset' => null,
+            'categories' => $categories,
+            'pageTitle' => 'Create Scraper Preset',
+            'csrf_token' => generateCsrfToken()
+        ]);
+    } catch (Exception $e) {
+        error_log("Create preset form error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig', [
+            'pageTitle' => 'Error',
+            'message' => 'Failed to load create preset form.'
+        ]);
+    }
+});
+
+/**
+ * Edit Preset Form
+ *
+ * Displays the form for editing an existing scraper preset.
+ *
+ * @route GET /admin/scraper/presets/{key}/edit
+ * @middleware auth, admin_only
+ *
+ * @param key string Preset key to edit (from URL path)
+ *
+ * @return void Renders edit preset template with:
+ *               - preset: Preset object with current configuration
+ *               - categories: Array of available categories
+ *               - pageTitle: "Edit Scraper Preset"
+ *
+ * @throws Exception If preset not found or template rendering fails
+ *
+ * @example Response: HTML form pre-filled with preset data
+ */
+$router->get('/admin/scraper/presets/{key}/edit', ['middleware' => ['auth', 'admin_only']], function ($key) use ($twig) {
+    try {
+        $preset = PresetRegistry::getByKey($key);
+        $categories = PresetRegistry::getCategories();
+
+        if (!$preset) {
+            http_response_code(404);
+            echo $twig->render('error.twig', [
+                'pageTitle' => 'Preset Not Found',
+                'message' => 'The requested preset was not found.'
+            ]);
+            return;
+        }
+
+        echo $twig->render('scraper/presets/form.twig', [
+            'preset' => [
+                'key' => $preset->getKey(),
+                'name' => $preset->getName(),
+                'description' => $preset->getDescription(),
+                'category' => $preset->getCategory(),
+                'icon' => $preset->getIcon(),
+                'type' => $preset->getType(),
+                'content_type' => $preset->getContentType(),
+                'example_urls' => $preset->getExampleUrls(),
+                'config' => $preset->getConfig()
+            ],
+            'categories' => $categories,
+            'pageTitle' => 'Edit Scraper Preset',
+            'csrf_token' => generateCsrfToken()
+        ]);
+    } catch (Exception $e) {
+        error_log("Edit preset form error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig', [
+            'pageTitle' => 'Error',
+            'message' => 'Failed to load edit preset form.'
+        ]);
+    }
+});
+
+/**
+ * Save Preset (Create/Update)
+ *
+ * Creates a new preset or updates an existing one.
+ *
+ * @route POST /admin/scraper/presets/save
+ * @middleware auth, admin_only
+ *
+ * @request_body Form data containing:
+ *               - key (string, required for updates): Preset key
+ *               - name (string, required): Preset name
+ *               - description (string, required): Preset description
+ *               - category (string, required): Preset category
+ *               - content_type (string, required): Content type
+ *               - icon (string, optional): Icon class
+ *               - type (string, optional): Scraper type
+ *               - example_urls (string, optional): JSON array of example URLs
+ *               - selectors (string, optional): JSON object of selectors
+ *               - advance_config (string, optional): JSON object of advance config
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - message: string (success message)
+ *               - key: string (preset key)
+ *               - error: string (if failed)
+ *
+ * @throws Exception If database operation fails or validation fails
+ *
+ * @example Success: {"success": true, "message": "Preset created successfully", "key": "my-preset"}
+ * @example Error: {"success": false, "error": "Failed to save preset"}
+ */
+$router->post('/admin/scraper/presets/save', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    // Validate CSRF token
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $model = new ScraperModel($mysqli);
+        $key = trim($_POST['key'] ?? '');
+
+        // Validate required fields
+        $name = trim($_POST['name'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $category = trim($_POST['category'] ?? '');
+        $contentType = trim($_POST['content_type'] ?? '');
+
+        if (empty($name)) {
+            return jsonResponse(['success' => false, 'error' => 'Preset name is required'], 400);
+        }
+
+        if (empty($description)) {
+            return jsonResponse(['success' => false, 'error' => 'Preset description is required'], 400);
+        }
+
+        if (empty($category)) {
+            return jsonResponse(['success' => false, 'error' => 'Preset category is required'], 400);
+        }
+
+        if (empty($contentType)) {
+            return jsonResponse(['success' => false, 'error' => 'Content type is required'], 400);
+        }
+
+        // Validate and sanitize JSON fields
+        $selectors = null;
+        $selectorsRaw = trim($_POST['selectors'] ?? '');
+        if (!empty($selectorsRaw)) {
+            $decoded = json_decode($selectorsRaw, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return jsonResponse(['success' => false, 'error' => 'Invalid selectors JSON'], 400);
+            }
+            $selectors = $selectorsRaw;
+        }
+
+        $advanceConfig = null;
+        $advanceConfigRaw = trim($_POST['advance_config'] ?? '');
+        if (!empty($advanceConfigRaw)) {
+            $decoded = json_decode($advanceConfigRaw, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return jsonResponse(['success' => false, 'error' => 'Invalid advance_config JSON'], 400);
+            }
+            $advanceConfig = $advanceConfigRaw;
+        }
+
+        $exampleUrls = null;
+        $exampleUrlsRaw = trim($_POST['example_urls'] ?? '');
+        if (!empty($exampleUrlsRaw)) {
+            $decoded = json_decode($exampleUrlsRaw, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return jsonResponse(['success' => false, 'error' => 'Invalid example_urls JSON'], 400);
+            }
+            $exampleUrls = $exampleUrlsRaw;
+        }
+
+        // Generate key if creating new preset
+        if (empty($key)) {
+            $key = strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $name));
+            $key = preg_replace('/-+/', '-', $key);
+            $key = trim($key, '-');
+        }
+
+        $data = [
+            'key' => $key,
+            'name' => $name,
+            'description' => $description,
+            'content_type' => $contentType,
+            'selectors' => $selectors,
+            'advance_config' => $advanceConfig,
+            'is_default' => 0,
+            'is_active' => 1
+        ];
+
+        $presetId = $model->savePreset($data);
+
+        if ($presetId) {
+            logActivity('scraper_preset_saved', 'preset', $presetId, [
+                'preset_key' => $key,
+                'preset_name' => $name,
+                'user_id' => $_SESSION['user_id'] ?? 0
+            ]);
+
+            return jsonResponse([
+                'success' => true,
+                'message' => empty($_POST['key']) ? 'Preset created successfully' : 'Preset updated successfully',
+                'key' => $key
+            ]);
+        }
+
+        return jsonResponse(['success' => false, 'error' => 'Failed to save preset'], 500);
+    } catch (Exception $e) {
+        error_log("Save preset error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * AI Selector Detection
+ *
+ * Analyzes a website URL and automatically detects CSS selectors using AI.
+ *
+ * @route POST /api/v1/scraper/presets/ai-detect
+ * @middleware auth, admin_only
+ *
+ * @request_body JSON object containing:
+ *               - url (string, required): Website URL to analyze
+ *               - content_type (string, optional): Expected content type (news, blog, product, etc.)
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - selectors: Detected CSS selectors for various elements
+ *               - confidence: AI confidence score (0-1)
+ *               - recommendations: AI recommendations for scraper configuration
+ *               - content_type: Detected content type
+ *               - error: string (if failed)
+ *
+ * @throws Exception If AI analysis fails or URL is invalid
+ *
+ * @example Request: {"url": "https://example.com", "content_type": "news"}
+ * @example Success: {"success": true, "selectors": {...}, "confidence": 0.85, "content_type": "news"}
+ * @example Error: {"success": false, "error": "URL analysis failed"}
+ */
+$router->post('/api/v1/scraper/presets/ai-detect', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    // Validate CSRF token
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
+        }
+
+        $url = trim($input['url'] ?? '');
+        $contentType = trim($input['content_type'] ?? '');
+
+        if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
+            return jsonResponse(['success' => false, 'error' => 'Valid URL is required'], 400);
+        }
+
+        // Use AIScraperAnalyzer to detect selectors
+        $analyzer = \App\Modules\Scraper\AIScraperAnalyzer::fromMysqli($mysqli);
+
+        try {
+            // First fetch HTML
+            $html = \App\Modules\Scraper\HtmlFetcher::fetch($url);
+
+            // Then analyze it
+            $result = $analyzer->analyzeHtml($html, $url);
+
+            if (!$result['success']) {
+                return jsonResponse(['success' => false, 'error' => 'AI analysis failed'], 500);
+            }
+
+            return jsonResponse([
+                'success' => true,
+                'selectors' => $result['selectors'] ?? [],
+                'confidence' => $result['confidence'] ?? 0,
+                'content_type' => $result['content_type'] ?? $contentType,
+                'recommendations' => $result['recommendations'] ?? []
+            ]);
+
+        } catch (\Exception $e) {
+            return jsonResponse(['success' => false, 'error' => 'Failed to analyze URL: ' . $e->getMessage()], 500);
+        }
+
+    } catch (Exception $e) {
+        error_log("AI selector detection error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Delete Preset
+ *
+ * Deletes a scraper preset from the database.
+ *
+ * @route DELETE /admin/scraper/presets/{key}
+ * @middleware auth, admin_only
+ *
+ * @param key string Preset key to delete (from URL path)
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - message: string (success message)
+ *               - error: string (error message, if failed)
+ *
+ * @throws Exception If database operation fails
+ *
+ * @example Success: {"success": true, "message": "Preset deleted successfully"}
+ * @example Error: {"success": false, "error": "Preset not found"}
+ */
+$router->delete('/admin/scraper/presets/{key}', ['middleware' => ['auth', 'admin_only']], function ($key) use ($mysqli) {
+    // Validate CSRF token
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $model = new ScraperModel($mysqli);
+
+        // Check if preset exists
+        $preset = \App\Modules\Scraper\Presets\PresetRegistry::getByKey($key);
+        if (!$preset) {
+            return jsonResponse(['success' => false, 'error' => 'Preset not found'], 404);
+        }
+
+        // Delete from database
+        $result = $model->deletePreset($key);
+
+        if ($result) {
+            logActivity('scraper_preset_deleted', 'preset', 0, [
+                'preset_key' => $key,
+                'preset_name' => $preset->getName(),
+                'user_id' => $_SESSION['user_id'] ?? 0
+            ]);
+
+            return jsonResponse([
+                'success' => true,
+                'message' => 'Preset deleted successfully'
+            ]);
+        }
+
+        return jsonResponse(['success' => false, 'error' => 'Failed to delete preset'], 500);
+    } catch (Exception $e) {
+        error_log("Delete preset error: " . $e->getMessage());
         return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
@@ -1104,6 +1513,78 @@ $router->post('/api/v1/scraper/ai/optimizer', ['middleware' => ['auth', 'admin_o
         return jsonResponse($result);
     } catch (Exception $e) {
         error_log("API AI optimizer error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// ================== ERROR MONITORING ==================
+
+/**
+ * Get Error Statistics API
+ *
+ * Returns current error statistics and monitoring data for the scraping system.
+ *
+ * @route GET /api/v1/scraper/error-stats
+ * @middleware auth, admin_only
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - error_stats: Error statistics object with:
+ *                   - total: Total number of errors
+ *                   - by_type: Errors grouped by type (network, parsing, etc.)
+ *                   - by_severity: Errors grouped by severity (low, medium, high, critical)
+ *                   - recent: Array of recent error entries
+ *               - error: string (if failed)
+ *
+ * @example {"success": true, "error_stats": {"total": 15, "by_type": {...}, ...}}
+ */
+$router->get('/api/v1/scraper/error-stats', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    try {
+        $model = new ScraperModel($mysqli);
+        $scraperService = new \App\Modules\Scraper\ScraperService($model);
+        $errorStats = $scraperService->getErrorStats();
+
+        return jsonResponse([
+            'success' => true,
+            'error_stats' => $errorStats
+        ]);
+    } catch (Exception $e) {
+        error_log("Error stats API error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Clear Error Logs API
+ *
+ * Clears the accumulated error logs in the scraper service.
+ *
+ * @route POST /api/v1/scraper/clear-errors
+ * @middleware auth, admin_only
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - message: Success message
+ *               - error: string (if failed)
+ *
+ * @example {"success": true, "message": "Error logs cleared successfully"}
+ */
+$router->post('/api/v1/scraper/clear-errors', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $model = new ScraperModel($mysqli);
+        $scraperService = new \App\Modules\Scraper\ScraperService($model);
+        $scraperService->clearErrors();
+
+        return jsonResponse([
+            'success' => true,
+            'message' => 'Error logs cleared successfully'
+        ]);
+    } catch (Exception $e) {
+        error_log("Clear errors API error: " . $e->getMessage());
         return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });

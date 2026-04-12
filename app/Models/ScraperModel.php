@@ -1564,4 +1564,99 @@ class ScraperModel
         $stmt->bind_param($types, ...$values);
         return $stmt->execute();
     }
+
+    /**
+     * Update article status
+     *
+     * @param int $articleId
+     * @param string $status
+     * @return bool
+     */
+    public function updateArticleStatus(int $articleId, string $status): bool
+    {
+        $stmt = $this->mysqli->prepare("UPDATE web_scraping_articles SET status = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->bind_param('si', $status, $articleId);
+        return $stmt->execute();
+    }
+
+    /**
+     * Save preset (create or update)
+     *
+     * @param array $data
+     * @return int|false
+     */
+    public function savePreset(array $data)
+    {
+        $key = $data['key'];
+
+        // Check if preset exists
+        $stmt = $this->mysqli->prepare("SELECT id FROM web_scraping_presets WHERE `key` = ?");
+        $stmt->bind_param('s', $key);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows > 0) {
+            // Update existing preset
+            $row = $result->fetch_assoc();
+            $id = $row['id'];
+
+            $stmt = $this->mysqli->prepare("
+                UPDATE web_scraping_presets
+                SET name = ?, description = ?, content_type = ?, selectors = ?, advance_config = ?, updated_at = NOW()
+                WHERE id = ?
+            ");
+            $stmt->bind_param('sssssi',
+                $data['name'],
+                $data['description'],
+                $data['content_type'],
+                $data['selectors'],
+                $data['advance_config'],
+                $id
+            );
+            $stmt->execute();
+            return $id;
+        } else {
+            // Create new preset
+            $stmt = $this->mysqli->prepare("
+                INSERT INTO web_scraping_presets (`key`, `name`, `description`, `content_type`, `selectors`, `advance_config`, `is_default`, `is_active`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->bind_param('ssssssii',
+                $data['key'],
+                $data['name'],
+                $data['description'],
+                $data['content_type'],
+                $data['selectors'],
+                $data['advance_config'],
+                $data['is_default'] ?? 0,
+                $data['is_active'] ?? 1
+            );
+            $stmt->execute();
+            return $this->mysqli->insert_id;
+        }
+    }
+
+    /**
+     * Delete preset
+     *
+     * @param string $key
+     * @return bool
+     */
+    public function deletePreset(string $key): bool
+    {
+        $stmt = $this->mysqli->prepare("DELETE FROM web_scraping_presets WHERE `key` = ?");
+        $stmt->bind_param('s', $key);
+        return $stmt->execute();
+    }
+
+    /**
+     * Get all custom presets from database
+     *
+     * @return array
+     */
+    public function getCustomPresets(): array
+    {
+        $stmt = $this->mysqli->query("SELECT * FROM web_scraping_presets WHERE is_active = 1 ORDER BY name ASC");
+        return $stmt->fetch_all(MYSQLI_ASSOC);
+    }
 }
