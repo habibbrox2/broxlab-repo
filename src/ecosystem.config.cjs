@@ -18,6 +18,8 @@ module.exports = {
       script: 'src/index.ts',
       instances: 1,
       exec_mode: 'fork',
+      // Use tsx.cmd on Windows, tsx on Linux/Unix
+      interpreter: process.platform === 'win32' ? 'node_modules/.bin/tsx.cmd' : 'node_modules/.bin/tsx',
       env: {
         NODE_ENV: 'production',
         PORT: 3002,
