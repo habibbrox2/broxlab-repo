@@ -438,7 +438,7 @@ export async function initAdminDebugUtils() {
 
 export async function initAdminUnifiedLogout() {
     try {
-        const logoutRuntime = await import('./shared/logout-runtime.js');
+        const logoutRuntime = await import('../shared/logout-runtime.js');
         logoutRuntime.initUnifiedLogout({ context: 'admin' });
     } catch (err) {
         // Silent fail

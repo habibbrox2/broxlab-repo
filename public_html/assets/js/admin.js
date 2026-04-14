@@ -14,6 +14,16 @@ import { initPasswordModals } from './modules/security.js';
 import { initPresetAutoSelector } from './modules/preset-selector.js';
 import { runWhenReady } from './modules/utils.js';
 
+// Constants
+const DESKTOP_WIDTH = 992;
+const MINI_EXPANDED_CLASS = 'admin-sidebar-mini-expanded';
+const MOBILE_OPEN_CLASS = 'sidebar-mobile-open';
+const MINI_STORAGE_KEY = 'adminSidebarMini';
+const SIDEBAR_WIDTH_KEY = 'adminSidebarWidth';
+const MIN_SIDEBAR_WIDTH = 200;
+const MAX_SIDEBAR_WIDTH = 600;
+const DEFAULT_SIDEBAR_WIDTH = 300;
+
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
@@ -607,12 +617,12 @@ runWhenReady(() => {
     typeof runWhenReady === 'function'
       ? runWhenReady
       : (fn) => {
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', fn, { once: true });
-          } else {
-            fn();
-          }
-        };
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', fn, { once: true });
+        } else {
+          fn();
+        }
+      };
 
   const byId = (id) => document.getElementById(id);
   const getCsrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -1030,7 +1040,7 @@ runWhenReady(() => {
     setTimeout(() => {
       try {
         new bootstrap.Alert(flashMsg).close();
-      } catch (e) {}
+      } catch (e) { }
     }, 5000);
   }
 
@@ -1486,7 +1496,7 @@ runWhenReady(() => {
             : 'Activity: OFF';
           alert(
             data.message ||
-              (activityEnabled ? 'Activity logging enabled' : 'Activity logging disabled')
+            (activityEnabled ? 'Activity logging enabled' : 'Activity logging disabled')
           );
         } else {
           alert(data.message || 'Failed to update activity logging');
@@ -2422,8 +2432,8 @@ runWhenReady(() => {
           window.showMessage?.(data.message || 'Service saved successfully!', 'success');
           setTimeout(
             () =>
-              (window.location.href =
-                '/admin/services/details/' + (data.service_id || formData.get('service_id'))),
+            (window.location.href =
+              '/admin/services/details/' + (data.service_id || formData.get('service_id'))),
             2000
           );
         } else {
@@ -2638,46 +2648,44 @@ runWhenReady(() => {
                     <pre class="bg-light p-3 rounded-2 small"><code>${JSON.stringify(app.application_data, null, 2)}</code></pre>
                 </div>
 
-                ${
-                  app.status === 'rejected' && app.rejection_reason
-                    ? `
+                ${app.status === 'rejected' && app.rejection_reason
+          ? `
                     <div class="alert alert-danger rounded-2">
                         <strong>Rejection Reason:</strong>
                         <p class="mb-0">${app.rejection_reason}</p>
                     </div>
                 `
-                    : ''
-                }
+          : ''
+        }
 
                 <div class="mb-3">
                     <label class="form-label small text-muted text-uppercase">Admin Notes</label>
                     <textarea class="form-control rounded-2" id="appAdminNotes" rows="4">${app.admin_notes || ''}</textarea>
                 </div>
 
-                ${
-                  app.status === 'rejected'
-                    ? `
+                ${app.status === 'rejected'
+          ? `
                     <div class="mb-3">
                         <label class="form-label small text-muted text-uppercase">Rejection Reason</label>
                         <input type="text" class="form-control rounded-2" id="appRejectionReason" value="${app.rejection_reason || ''}">
                     </div>
                 `
-                    : ''
-                }
+          : ''
+        }
 
                 <div class="mt-4">
                     <h6 class="fw-bold mb-2">Audit Log</h6>
                     <div class="timeline small">
                         ${app.audit_log
-                          .map(
-                            (log) => `
+          .map(
+            (log) => `
                             <div class="mb-2">
                                 <div class="text-muted"><small>${new Date(log.created_at).toLocaleString()}</small></div>
                                 <div><strong>${log.action_type}</strong>: ${log.description}</div>
                             </div>
                         `
-                          )
-                          .join('')}
+          )
+          .join('')}
                     </div>
                 </div>
             `;
@@ -3190,7 +3198,7 @@ runWhenReady(() => {
         MultiDeviceSync,
         OfflineNotificationHandler,
       });
-    } catch (e) {}
+    } catch (e) { }
   }
 
   function initNotificationsDeviceSync() {
@@ -3634,13 +3642,13 @@ runWhenReady(() => {
   function initNotificationsSubscribersLegacy() {
     const root = byId('notificationsSubscribersLegacyRoot');
     if (!root) return;
-    window.applySubsFilter = window.applySubsFilter || function () {};
+    window.applySubsFilter = window.applySubsFilter || function () { };
   }
 
   function initNotificationsDashboardLegacy() {
     const root = byId('notificationsDashboardLegacyRoot');
     if (!root) return;
-    window.filterNotifications = window.filterNotifications || function () {};
+    window.filterNotifications = window.filterNotifications || function () { };
   }
 
   function initNotificationsAnalytics() {
