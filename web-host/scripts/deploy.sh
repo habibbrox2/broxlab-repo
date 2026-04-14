@@ -246,11 +246,46 @@ log_section "INSTALLING DEPENDENCIES"
 
 # PHP/Composer
 log_info "Installing PHP dependencies..."
-if command -v composer &> /dev/null; then
-    composer install --no-dev --optimize-autoloader -q 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
+
+# Check for composer
+COMPOSER_CMD="composer"
+if ! command -v composer &> /dev/null; then
+    # Try to find composer in shared location
+    if [[ -f "$SHARED/composer" ]]; then
+        COMPOSER_CMD="$SHARED/composer"
+        log_debug "Using composer from shared: $COMPOSER_CMD"
+    elif [[ -f "$SHARED/composer.phar" ]]; then
+        COMPOSER_CMD="php $SHARED/composer.phar"
+        log_debug "Using composer.phar from shared: $COMPOSER_CMD"
+    elif [[ -f "./composer.phar" ]]; then
+        COMPOSER_CMD="php ./composer.phar"
+        log_debug "Using local composer.phar"
+    else
+        # Try to download composer if available
+        log_warn "⚠️  Composer not found, attempting to download..."
+        if command -v curl &> /dev/null; then
+            mkdir -p "$SHARED"
+            curl -s https://getcomposer.org/installer | php -- --install-dir="$SHARED" --filename=composer 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
+            if [[ -f "$SHARED/composer" ]]; then
+                COMPOSER_CMD="$SHARED/composer"
+                log_info "✅ Composer downloaded successfully"
+            else
+                log_error "❌ Failed to download composer and no local composer found"
+                exit 1
+            fi
+        else
+            log_error "❌ Composer not found and curl not available to download it"
+            exit 1
+        fi
+    fi
+fi
+
+# Install PHP dependencies
+if $COMPOSER_CMD install --no-dev --optimize-autoloader -q 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
     log_info "✅ PHP dependencies installed"
 else
-    log_warn "⚠️  Composer not found, skipping PHP dependencies"
+    log_error "❌ Composer install failed"
+    exit 1
 fi
 
 # Node.js
