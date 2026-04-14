@@ -199,7 +199,7 @@ log_info "✅ Shared storage initialized"
 # ============== GIT CLONE ==============
 log_section "GIT REPOSITORY CLONE"
 
-mkdir -p $NEW_RELEASE
+mkdir -p "$NEW_RELEASE"
 log_info "Cloning repository: $GIT_REPO"
 
 if git clone --depth=1 "$GIT_REPO" "$NEW_RELEASE" 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
@@ -337,13 +337,14 @@ log_debug "Deployment info saved to: $VERSION_FILE"
 log_section "SWITCHING DEPLOYMENT"
 
 log_info "Switching current symlink to new release..."
-ln -sfn $NEW_RELEASE $CURRENT
+ln -sfn "$NEW_RELEASE" "$CURRENT"
 
-VERIFY_LINK=$(readlink $CURRENT)
+VERIFY_LINK=$(readlink "$CURRENT")
 if [[ "$VERIFY_LINK" == "$NEW_RELEASE" ]]; then
-    log_info "✅ Symlink switched successfully"
+    log_info "✅ Symlink switched successfully: $CURRENT → $NEW_RELEASE"
 else
-    log_error "❌ Failed to switch symlink"
+    log_error "❌ Failed to switch symlink: $CURRENT does not point to $NEW_RELEASE"
+    log_debug "Current symlink points to: $VERIFY_LINK"
     exit 1
 fi
 
