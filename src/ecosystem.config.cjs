@@ -1,6 +1,20 @@
 module.exports = {
   apps: [
     {
+      name: 'reverse-proxy',
+      script: 'npx',
+      args: ['tsx', 'src/reverse-proxy.js'],
+      instances: 1,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
+      error_file: './storage/logs/reverse-proxy-error.log',
+      out_file: './storage/logs/reverse-proxy-out.log',
+      log_file: './storage/logs/reverse-proxy.log',
+    },
+    {
       name: 'broxlab-node',
       script: 'npx',
       args: ['tsx', 'src/index.ts'],
