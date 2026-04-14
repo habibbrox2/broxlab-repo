@@ -210,6 +210,15 @@ else
     exit 1
 fi
 
+# Copy deployment helper scripts from cloned repo to server scripts directory
+if [[ -d "$NEW_RELEASE/web-host/scripts" ]]; then
+    log_debug "Syncing helper scripts from repository..."
+    mkdir -p "$BASE/scripts"
+    cp -f "$NEW_RELEASE/web-host/scripts"/*.sh "$BASE/scripts/" 2>&1 || log_warn "⚠️  Failed to sync some scripts"
+    chmod +x "$BASE/scripts"/*.sh 2>&1 || true
+    log_debug "✅ Helper scripts synchronized"
+fi
+
 cd "$NEW_RELEASE"
 
 # ============== LINK SHARED FILES ==============
@@ -394,6 +403,20 @@ else
     log_warn "⚠️  public_html directory not found in release"
 fi
 
+# Reload PHP-FPM to clear cached PHP processes from old release
+log_info "Reloading PHP-FPM (clearing cached processes)..."
+if command -v systemctl &> /dev/null 2>&1; then
+    systemctl reload php-fpm 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || {
+        log_warn "⚠️  systemctl reload php-fpm failed (may not be available in this environment)"
+    }
+elif command -v php-fpm &> /dev/null; then
+    php-fpm -t 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
+    killall -HUP php-fpm 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || true
+    log_debug "✅ PHP-FPM signaled for reload"
+else
+    log_debug "PHP-FPM reload skipped (not installed)"
+fi
+
 # ============== SERVICE RESTART & START ==============
 log_section "STARTING SERVICES"
 
@@ -421,6 +444,13 @@ log_info "✅ Service restart completed"
 # ============== POST-DEPLOYMENT CLEANUP ==============
 if [[ "$SKIP_CLEANUP" == "false" ]]; then
     log_section "POST-DEPLOYMENT CLEANUP"
+    
+    # Remove broken symlinks in old releases to prevent error_log attempts
+    log_info "Cleaning up old release symlinks..."
+    find "$RELEASES" -maxdepth 2 -type l -xtype l 2>/dev/null | while read broken_link; do
+        log_debug "Removing broken symlink: $broken_link"
+        rm -f "$broken_link" 2>/dev/null || true
+    done
     
     CLEANUP_SCRIPT="$BASE/scripts/cleanup.sh"
     if [[ -x "$CLEANUP_SCRIPT" ]]; then
