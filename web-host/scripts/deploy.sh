@@ -394,13 +394,40 @@ fi
 
 # Create public_html symlink for web server
 log_info "Linking public_html directory for web server..."
-if [[ -d "$CURRENT/public_html" ]]; then
-    PUBLIC_HTML_BASE="$BASE/public_html"
-    mkdir -p "$(dirname "$PUBLIC_HTML_BASE")"
-    ln -sfn "$CURRENT/public_html" "$PUBLIC_HTML_BASE"
-    log_debug "✅ public_html symlink created: $PUBLIC_HTML_BASE → $CURRENT/public_html"
+
+PUBLIC_HTML_BASE="$BASE/public_html"
+PUBLIC_HTML_TARGET="$CURRENT/public_html"
+
+if [[ -d "$PUBLIC_HTML_TARGET" ]]; then
+    # Remove old symlink if it exists
+    if [[ -L "$PUBLIC_HTML_BASE" ]]; then
+        log_debug "Removing old symlink: $PUBLIC_HTML_BASE"
+        rm -f "$PUBLIC_HTML_BASE" || {
+            log_error "❌ Failed to remove old symlink: $PUBLIC_HTML_BASE"
+            exit 1
+        }
+    elif [[ -d "$PUBLIC_HTML_BASE" ]]; then
+        log_warn "⚠️  Directory exists at $PUBLIC_HTML_BASE, backing up and replacing..."
+        mv "$PUBLIC_HTML_BASE" "$PUBLIC_HTML_BASE.backup_$DATE" || {
+            log_error "❌ Failed to backup existing public_html directory"
+            exit 1
+        }
+    fi
+
+    # Create new symlink using absolute paths
+    ln -sfn "$PUBLIC_HTML_TARGET" "$PUBLIC_HTML_BASE"
+    
+    # Verify symlink was created correctly
+    if [[ -L "$PUBLIC_HTML_BASE" ]]; then
+        VERIFY_LINK=$(readlink "$PUBLIC_HTML_BASE")
+        log_info "✅ public_html symlink created: $PUBLIC_HTML_BASE → $VERIFY_LINK"
+    else
+        log_error "❌ Failed to create public_html symlink"
+        exit 1
+    fi
 else
-    log_warn "⚠️  public_html directory not found in release"
+    log_error "❌ public_html directory not found in release: $PUBLIC_HTML_TARGET"
+    exit 1
 fi
 
 # Reload PHP-FPM to clear cached PHP processes from old release
