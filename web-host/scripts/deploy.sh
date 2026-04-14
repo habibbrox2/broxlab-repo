@@ -298,12 +298,20 @@ else
 fi
 
 # Node.js
-log_info "Installing Node.js dependencies..."
-npm ci 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || {
-    log_warn "⚠️  npm ci failed, trying npm install..."
-    npm install 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
-}
-log_info "✅ Node dependencies installed"
+log_info "Installing Node.js dependencies (including devDependencies for tsx compiler)..."
+# CRITICAL: tsx is in devDependencies and required for TypeScript compilation (broxlab-node service)
+# Must install with --include=dev or without NODE_ENV=production
+if NODE_ENV="" npm ci --include=dev 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
+    log_info "✅ Node dependencies installed (with devDependencies)"
+else
+    log_warn "⚠️  npm ci with --include=dev failed, trying npm install --legacy-peer-deps..."
+    if NODE_ENV="" npm install --legacy-peer-deps 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
+        log_info "✅ Node dependencies installed via npm install"
+    else
+        log_error "❌ Failed to install Node dependencies"
+        exit 1
+    fi
+fi
 
 # ============== ASSET BUILD ==============
 log_section "BUILDING ASSETS"
@@ -467,8 +475,12 @@ log_debug "Service manager script: src/service-manager.js"
 pkill -f service-manager 2>/dev/null || true
 sleep 1
 
-# Start the service manager (will manage all 3 services)
-if nohup node src/service-manager.js > "$LOGS/service-manager_$DATE.log" 2>&1 &
+# Start the service manager via npm script (preserves ES module context)
+# CRITICAL: Cannot use `node src/service-manager.js` directly because:
+# - package.json specifies "type": "module" (ES modules required)
+# - npm run nodes:start provides the proper execution context
+log_debug "Starting services via npm script: npm run nodes:start"
+if nohup npm run nodes:start > "$LOGS/service-manager_$DATE.log" 2>&1 &
 then
     log_info "✅ Service manager started (PID: $!)"
     SERVICE_MANAGER_PID=$!
@@ -481,13 +493,26 @@ sleep 5
 
 # Verify services are running by checking if processes exist
 log_info "Verifying service status..."
-if ps aux | grep -E "reverse-proxy|broxlab-node|notification-websocket" | grep -v grep > /dev/null 2>&1; then
-    log_info "✅ Services verified running"
-    ps aux | grep -E "reverse-proxy|broxlab-node|notification-websocket" | grep -v grep | tee -a "$LOGS/deploy_$DATE.log"
-else
-    log_error "❌ Services not running after startup"
-    log_debug "Service manager log:"
-    tail -50 "$LOGS/service-manager_$DATE.log" | tee -a "$LOGS/deploy_$DATE.log"
+MAX_RETRIES=3
+RETRY_COUNT=0
+while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
+    if ps aux | grep -E "reverse-proxy|broxlab-node|notification-websocket" | grep -v grep > /dev/null 2>&1; then
+        log_info "✅ Services verified running"
+        ps aux | grep -E "reverse-proxy|broxlab-node|notification-websocket" | grep -v grep | tee -a "$LOGS/deploy_$DATE.log"
+        break
+    else
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        if [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; then
+            log_warn "⚠️  Services not detected yet, retrying... ($RETRY_COUNT/$MAX_RETRIES)"
+            sleep 3
+        fi
+    fi
+done
+
+if [[ $RETRY_COUNT -ge $MAX_RETRIES ]]; then
+    log_error "❌ Services not running after startup attempts"
+    log_error "Service manager log (last 100 lines):"
+    tail -100 "$LOGS/service-manager_$DATE.log" | tee -a "$LOGS/deploy_$DATE.log"
     exit 1
 fi
 

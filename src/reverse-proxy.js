@@ -130,6 +130,49 @@ app.use((err, req, res, next) => {
 // Graceful shutdown
 const server = createServer(app);
 
+// ============== WEBSOCKET UPGRADE HANDLER ==============
+// Handle WebSocket connections for proper upgrade negotiation
+server.on('upgrade', (req, res, head) => {
+  console.log(`[WebSocket] Upgrade request for ${req.url}`);
+
+  if (req.url.startsWith('/ws/notifications')) {
+    const proxy = createProxyMiddleware({
+      target: NOTIFICATION_WS_URL,
+      changeOrigin: true,
+      ws: true,
+      pathRewrite: {
+        '^/ws/notifications': '',
+      },
+      onError: (err, req, res) => {
+        console.error('[WebSocket] Notification proxy error:', err.message);
+        res.writeHead(502, { 'Content-Type': 'text/plain' });
+        res.end('Bad Gateway');
+      },
+    });
+
+    proxy.upgrade(req, res, head);
+  } else if (req.url.startsWith('/ai-ws')) {
+    const proxy = createProxyMiddleware({
+      target: BROXLAB_NODE_URL,
+      changeOrigin: true,
+      ws: true,
+      pathRewrite: {
+        '^/ai-ws': '',
+      },
+      onError: (err, req, res) => {
+        console.error('[WebSocket] AI Assistant proxy error:', err.message);
+        res.writeHead(502, { 'Content-Type': 'text/plain' });
+        res.end('Bad Gateway');
+      },
+    });
+
+    proxy.upgrade(req, res, head);
+  } else {
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Not Found');
+  }
+});
+
 process.on('SIGINT', () => {
   console.log('\n🛑 Shutting down reverse proxy server...');
   server.close(() => {
