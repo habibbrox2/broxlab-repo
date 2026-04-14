@@ -443,15 +443,20 @@ PM2="./node_modules/.bin/pm2"
 
 # Start or restart PM2 services using local pm2
 log_info "Starting PM2 services from ecosystem.config.cjs..."
-if $PM2 delete broxlab-node broxlab-rag notification-websocket reverse-proxy 2>/dev/null || true; then
-    if $PM2 start src/ecosystem.config.cjs 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
-        log_info "✅ PM2 services started"
-    else
-        log_error "❌ PM2 start failed"
-        exit 1
-    fi
+
+# Kill all PM2 apps and flush state to ensure clean start
+log_debug "Flushing PM2 state..."
+$PM2 kill 2>/dev/null || true
+sleep 1
+
+# Start fresh from ecosystem config
+if $PM2 start src/ecosystem.config.cjs 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
+    log_info "✅ PM2 services started"
+    $PM2 save 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || true
 else
-    log_error "❌ PM2 delete failed"
+    log_error "❌ PM2 start failed"
+    $PM2 status 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || true
+    $PM2 logs 2>&1 | tail -50 | tee -a "$LOGS/deploy_$DATE.log" || true
     exit 1
 fi
 
@@ -459,14 +464,13 @@ sleep 3
 
 # Verify services are running
 log_info "Verifying service status..."
-if $PM2 list 2>&1 | tee -a "$LOGS/deploy_$DATE.log" | grep -qE "online"; then
-    $PM2 save 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || true
+if $PM2 list 2>&1 | tee -a "$LOGS/deploy_$DATE.log" | grep -cE "online" | grep -q "[1-9]"; then
     log_info "✅ Services started and verified"
 else
     log_error "❌ Services not running after startup"
     log_debug "PM2 status:"
-    $PM2 status 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
-    $PM2 logs 2>&1 | tail -30 | tee -a "$LOGS/deploy_$DATE.log"
+    $PM2 status 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || true
+    $PM2 logs 2>&1 | tail -50 | tee -a "$LOGS/deploy_$DATE.log" || true
     exit 1
 fi
 
