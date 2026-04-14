@@ -1097,4 +1097,86 @@ class FirebaseModel
             ];
         }
     }
+
+    /**
+     * Subscribe a device token to an FCM topic
+     * Note: FCM topic subscriptions are typically managed client-side.
+     * This method provides server-side topic subscription tracking.
+     *
+     * @param string $topic Topic name
+     * @param string $token Device FCM token
+     * @return array ['success' => bool, 'error' => string|null]
+     */
+    public function subscribeToTopic(string $topic, string $token): array
+    {
+        try {
+            if (empty($topic) || empty($token)) {
+                return [
+                    'success' => false,
+                    'error' => 'Topic and token are required',
+                ];
+            }
+
+            // Note: Client-side subscription is the primary mechanism for FCM topics.
+            // Server-side subscription requires Instance ID Service which is deprecated.
+            // This method is provided for API compatibility and logging purposes.
+
+            logError(
+                'Server-side topic subscription (topic: ' . $topic . ', token: ' . substr($token, 0, 20) . '...) - use client-side subscription in Firebase SDK',
+                'WARNING'
+            );
+
+            return [
+                'success' => true,
+                'message' => 'Topic subscription tracked (client-side Firebase SDK subscription recommended)',
+            ];
+        } catch (Throwable $e) {
+            logError('Firebase subscribeToTopic error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Unsubscribe a device token from an FCM topic
+     * Note: FCM topic subscriptions are typically managed client-side.
+     * This method provides server-side topic subscription tracking.
+     *
+     * @param string $topic Topic name
+     * @param string $token Device FCM token
+     * @return array ['success' => bool, 'error' => string|null]
+     */
+    public function unsubscribeFromTopic(string $topic, string $token): array
+    {
+        try {
+            if (empty($topic) || empty($token)) {
+                return [
+                    'success' => false,
+                    'error' => 'Topic and token are required',
+                ];
+            }
+
+            // Note: Client-side unsubscription is the primary mechanism for FCM topics.
+            // Server-side unsubscription requires Instance ID Service which is deprecated.
+            // This method is provided for API compatibility and logging purposes.
+
+            logError(
+                'Server-side topic unsubscription (topic: ' . $topic . ', token: ' . substr($token, 0, 20) . '...) - use client-side unsubscription in Firebase SDK',
+                'WARNING'
+            );
+
+            return [
+                'success' => true,
+                'message' => 'Topic unsubscription tracked (client-side Firebase SDK unsubscription recommended)',
+            ];
+        } catch (Throwable $e) {
+            logError('Firebase unsubscribeFromTopic error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
 }

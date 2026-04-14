@@ -17,7 +17,8 @@ class OCRService
     {
         $this->ocrSpaceApiKey = $apiKey ?: getenv('OCR_SPACE_API_KEY') ?: 'K81289438988957'; // Paid tier API key
         $this->timeout = $timeout;
-        $this->nodeOcrUrl = $nodeOcrUrl ?: (getenv('OCR_API_URL') ?: 'http://localhost:3000/api/ocr');
+        // Support both OCR_SERVICE_URL (preferred) and OCR_API_URL (legacy) environment variables
+        $this->nodeOcrUrl = $nodeOcrUrl ?: (getenv('OCR_SERVICE_URL') ?: (getenv('OCR_API_URL') ?: 'http://localhost:3000/api/ocr'));
     }
 
     /**
