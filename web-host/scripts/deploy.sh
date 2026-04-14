@@ -194,6 +194,18 @@ mkdir -p "$SHARED/backups"/{database,code,logs} 2>&1 | tee -a "$LOGS/deploy_$DAT
 mkdir -p "$LOGS" 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
 chmod -R 755 "$STORAGE" 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
 chmod -R 755 "$SHARED/backups" 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
+
+# Validate .env file exists in shared location
+log_info "Validating .env configuration..."
+if [[ ! -f "$SHARED/.env" ]]; then
+    log_error "❌ CRITICAL: .env file not found at $SHARED/.env"
+    log_error "Please upload .env to production server at: $SHARED/.env"
+    log_error "Required environment variables: DB_HOST, DB_USER, DB_PASS, DB_NAME, REDIS_HOST, etc."
+    exit 1
+else
+    log_info "✅ .env file found at $SHARED/.env"
+fi
+
 log_info "✅ Shared storage initialized"
 
 # ============== GIT CLONE ==============
@@ -511,8 +523,24 @@ done
 
 if [[ $RETRY_COUNT -ge $MAX_RETRIES ]]; then
     log_error "❌ Services not running after startup attempts"
-    log_error "Service manager log (last 100 lines):"
-    tail -100 "$LOGS/service-manager_$DATE.log" | tee -a "$LOGS/deploy_$DATE.log"
+    log_error "Service manager log (last 150 lines):"
+    tail -150 "$LOGS/service-manager_$DATE.log" | tee -a "$LOGS/deploy_$DATE.log"
+    
+    # Also show individual service error logs if they exist
+    log_error "Checking individual service logs for errors..."
+    if [[ -f "storage/logs/reverse-proxy-error.log" ]]; then
+        log_error "reverse-proxy error log:"
+        tail -30 "storage/logs/reverse-proxy-error.log" | tee -a "$LOGS/deploy_$DATE.log"
+    fi
+    if [[ -f "storage/logs/broxlab-node-error.log" ]]; then
+        log_error "broxlab-node error log:"
+        tail -30 "storage/logs/broxlab-node-error.log" | tee -a "$LOGS/deploy_$DATE.log"
+    fi
+    if [[ -f "storage/logs/notification-websocket-error.log" ]]; then
+        log_error "notification-websocket error log:"
+        tail -30 "storage/logs/notification-websocket-error.log" | tee -a "$LOGS/deploy_$DATE.log"
+    fi
+    
     exit 1
 fi
 

@@ -87,6 +87,14 @@ class ServiceManager {
             child.stdout?.pipe(outStream);
             child.stderr?.pipe(errStream);
 
+            // Also log stderr to main log for visibility during deployment
+            child.stderr?.on('data', (data) => {
+                const errorMsg = data.toString().trim();
+                if (errorMsg) {
+                    this.log(service.name, `[STDERR] ${errorMsg}`, 'WARN');
+                }
+            });
+
             child.on('error', (err) => {
                 this.log(service.name, `Error: ${err.message}`, 'ERROR');
             });
