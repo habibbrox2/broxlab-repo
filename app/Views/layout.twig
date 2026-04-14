@@ -87,7 +87,7 @@
     {# ===== CRITICAL CSS PRELOAD ===== #}
     <link rel="preload" href="{{ asset('/cdn/css/bootstrap.min.css') }}" as="style">
     <link rel="preload" href="{{ asset('/cdn/css/bootstrap-icons.min.css') }}" as="style">
-    <link rel="preload" href="{{ asset('/assets/css/dist/public-bundle.css') }}" as="style">
+    <link rel="preload" href="{{ asset('/assets/css/tailwind.css') }}" as="style">
 
     {# ===== BOOTSTRAP CSS (Critical Path) - CDN Subdomain ===== #}
     <link href="{{ asset('/cdn/css/bootstrap.min.css') }}" rel="stylesheet">
@@ -100,9 +100,7 @@
     {# ===== BOOTSTRAP ICONS (Deferred Loading) ===== #}
     <link href="{{ asset('/cdn/css/bootstrap-icons.min.css') }}" rel="stylesheet">
 
-    {# ===== APPLICATION STYLESHEETS (Bundled for Performance) ===== #}
-    {# Use bundled CSS for better performance #}
-    <link rel="stylesheet" href="{{ asset('/assets/css/dist/public-bundle.css') }}">
+    {# ===== APPLICATION STYLESHEETS (Tailwind CSS) ===== #}
     <link rel="stylesheet" href="{{ asset('/assets/css/tailwind.css') }}">
     {% block extra_styles %}
     {% endblock %}
