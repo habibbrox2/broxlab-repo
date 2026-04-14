@@ -6,8 +6,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "npx npm-run-all --parallel dev:firebase:v2 dev:tailwind dev:app:dist",
-    "build": "npm run clean:build && npx npm-run-all --sequential build:firebase:v2 build:app:dist build:tailwind",
-    "build:prod": "npm run clean:build && npx npm-run-all --sequential build:firebase:v2:prod build:app:dist build:tailwind && npm run check:assets",
+    "build": "npm run clean:build && npx npm-run-all --sequential build:firebase:v2 build:app:dist build:css build:tailwind",
+    "build:prod": "npm run clean:build && npx npm-run-all --sequential build:firebase:v2:prod build:app:dist build:css:prod build:tailwind && npm run check:assets",
+    "build:css": "node build/esbuild-css.mjs --dev",
+    "build:css:prod": "node build/esbuild-css.mjs",
     "serve": "serve public_html -l 8000",
     "lint": "eslint --no-error-on-unmatched-pattern --config build/eslint.config.cjs \"public_html/assets/js/**/*.js\" \"public_html/assets/firebase/v2/**/*.js\" \"public_html/assets/ai-assistant/**/*.js\" \"build/Scripts/**/*.mjs\" \"build/esbuild.config.js\" \"build/esbuild-firebase.mjs\"",
     "test": "vitest --config build/vitest.config.ts",
