@@ -492,7 +492,7 @@ class ScraperModel
         }
 
         if ($contentType) {
-            $sql .= " AND a.content_type = ?";
+            $sql .= " AND s.content_type = ?";
             $params[] = $contentType;
             $types .= "s";
         }

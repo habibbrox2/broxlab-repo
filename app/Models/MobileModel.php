@@ -234,7 +234,7 @@ class MobileModel {
 
     public function fetchMobileById($id) {
 
-        $stmt = $this->mysqli->prepare("SELECT * FROM mobiles WHERE id = ?");
+        $stmt = $this->mysqli->prepare("SELECT id, brand_name, model_name, is_official, official_price, unofficial_price, status, release_date, created_at FROM mobiles WHERE id = ?");
 
         $stmt->bind_param("i", $id);
 
@@ -527,7 +527,7 @@ class MobileModel {
         if (!$id || !is_numeric($id)) return null;
 
         // মোবাইল বেসিক ডেটা
-        $sql = "SELECT * FROM mobiles WHERE id = ? LIMIT 1";
+        $sql = "SELECT id, brand_name, model_name, is_official, official_price, unofficial_price, status, release_date, created_at FROM mobiles WHERE id = ? LIMIT 1";
         $stmt = $this->mysqli->prepare($sql);
         $stmt->bind_param("i", $id);
         $stmt->execute();
@@ -537,9 +537,9 @@ class MobileModel {
         if (!$mobile) return null;
 
         // তিনটি আলাদা কোয়েরিতে: স্পেসিফিকেশন, ইমেজ, ট্যাগ (প্রয়োজন অনুযায়ী)
-        
+
         // ১. স্পেসিফিকেশন
-        $specSQL = "SELECT * FROM mobile_specs WHERE mobile_id = ? ORDER BY id";
+        $specSQL = "SELECT id, mobile_id, spec_key, spec_value FROM mobile_specs WHERE mobile_id = ? ORDER BY id";
         $specStmt = $this->mysqli->prepare($specSQL);
         $specStmt->bind_param("i", $id);
         $specStmt->execute();
@@ -547,7 +547,7 @@ class MobileModel {
         $specStmt->close();
 
         // ২. ইমেজ
-        $imgSQL = "SELECT * FROM mobile_images WHERE mobile_id = ? ORDER BY id";
+        $imgSQL = "SELECT id, mobile_id, image_url FROM mobile_images WHERE mobile_id = ? ORDER BY id";
         $imgStmt = $this->mysqli->prepare($imgSQL);
         $imgStmt->bind_param("i", $id);
         $imgStmt->execute();
@@ -557,9 +557,9 @@ class MobileModel {
         // ৩. ট্যাগ (যদি অস্তিত্ব থাকে)
         $tagCheck = $this->mysqli->query("SHOW TABLES LIKE 'content_tags'");
         if ($tagCheck && $tagCheck->num_rows > 0) {
-            $tagSQL = "SELECT t.* FROM content_tags ct 
-                      JOIN tags t ON t.id = ct.tag_id 
-                      WHERE ct.content_type = 'mobile' AND ct.content_id = ? 
+            $tagSQL = "SELECT t.id, t.name FROM content_tags ct
+                      JOIN tags t ON t.id = ct.tag_id
+                      WHERE ct.content_type = 'mobile' AND ct.content_id = ?
                       ORDER BY ct.id";
             $tagStmt = $this->mysqli->prepare($tagSQL);
             $tagStmt->bind_param("i", $id);
