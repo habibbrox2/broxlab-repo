@@ -511,8 +511,24 @@ done
 
 if [[ $RETRY_COUNT -ge $MAX_RETRIES ]]; then
     log_error "❌ Services not running after startup attempts"
-    log_error "Service manager log (last 100 lines):"
-    tail -100 "$LOGS/service-manager_$DATE.log" | tee -a "$LOGS/deploy_$DATE.log"
+    log_error "Service manager log (last 150 lines):"
+    tail -150 "$LOGS/service-manager_$DATE.log" | tee -a "$LOGS/deploy_$DATE.log"
+    
+    # Also show individual service error logs if they exist
+    log_error "Checking individual service logs for errors..."
+    if [[ -f "storage/logs/reverse-proxy-error.log" ]]; then
+        log_error "reverse-proxy error log:"
+        tail -30 "storage/logs/reverse-proxy-error.log" | tee -a "$LOGS/deploy_$DATE.log"
+    fi
+    if [[ -f "storage/logs/broxlab-node-error.log" ]]; then
+        log_error "broxlab-node error log:"
+        tail -30 "storage/logs/broxlab-node-error.log" | tee -a "$LOGS/deploy_$DATE.log"
+    fi
+    if [[ -f "storage/logs/notification-websocket-error.log" ]]; then
+        log_error "notification-websocket error log:"
+        tail -30 "storage/logs/notification-websocket-error.log" | tee -a "$LOGS/deploy_$DATE.log"
+    fi
+    
     exit 1
 fi
 
