@@ -2,12 +2,17 @@
 /**
  * Service Manager - Multi-process manager with auto-restart capability
  * Manages: reverse-proxy, broxlab-node, notification-websocket
+ * Uses ES modules (import/export)
  */
 
-const { spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
+import { spawn } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const LOG_DIR = path.join(__dirname, '../storage/logs');
 const SERVICES = [
@@ -200,4 +205,4 @@ setInterval(() => {
 manager.startAll();
 
 // Export for testing
-module.exports = ServiceManager;
+export default ServiceManager;
