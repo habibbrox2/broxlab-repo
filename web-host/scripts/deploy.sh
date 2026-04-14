@@ -422,14 +422,12 @@ log_section "STARTING SERVICES"
 
 log_info "Restarting Node.js services..."
 
-# Check dependencies first
-log_debug "Checking PM2 and Node.js dependencies..."
-if ! command -v pm2 &> /dev/null; then
-    log_warn "⚠️  PM2 not found, installing globally..."
-    npm install -g pm2 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || {
-        log_error "❌ Failed to install PM2"
-        exit 1
-    }
+# Check dependencies first (using local node_modules npm on shared hosting)
+log_debug "Checking Node.js dependencies..."
+if ! npm list pm2 > /dev/null 2>&1; then
+    log_error "❌ PM2 not installed in node_modules"
+    log_info "Install with: npm install pm2"
+    exit 1
 fi
 
 if ! npm list morgan > /dev/null 2>&1; then
@@ -440,12 +438,20 @@ if ! npm list morgan > /dev/null 2>&1; then
     }
 fi
 
-# Start or restart PM2 services
+# Use local PM2 from node_modules for shared hosting (no global install permissions)
+PM2="./node_modules/.bin/pm2"
+
+# Start or restart PM2 services using local pm2
 log_info "Starting PM2 services from ecosystem.config.cjs..."
-if npm run all:start 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
-    log_info "✅ npm run all:start completed"
+if $PM2 delete broxlab-node broxlab-rag notification-websocket reverse-proxy 2>/dev/null || true; then
+    if $PM2 start src/ecosystem.config.cjs 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
+        log_info "✅ PM2 services started"
+    else
+        log_error "❌ PM2 start failed"
+        exit 1
+    fi
 else
-    log_error "❌ Service start failed"
+    log_error "❌ PM2 delete failed"
     exit 1
 fi
 
@@ -453,14 +459,14 @@ sleep 3
 
 # Verify services are running
 log_info "Verifying service status..."
-if pm2 list 2>&1 | tee -a "$LOGS/deploy_$DATE.log" | grep -qE "online"; then
-    pm2 save 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || true
+if $PM2 list 2>&1 | tee -a "$LOGS/deploy_$DATE.log" | grep -qE "online"; then
+    $PM2 save 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || true
     log_info "✅ Services started and verified"
 else
     log_error "❌ Services not running after startup"
     log_debug "PM2 status:"
-    pm2 status 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
-    pm2 logs 2>&1 | tail -30 | tee -a "$LOGS/deploy_$DATE.log"
+    $PM2 status 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
+    $PM2 logs 2>&1 | tail -30 | tee -a "$LOGS/deploy_$DATE.log"
     exit 1
 fi
 
