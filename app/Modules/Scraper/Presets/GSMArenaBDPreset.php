@@ -66,6 +66,11 @@ class GSMArenaBDPreset extends BasePreset
         return 'path';
     }
 
+    public function getPaginationSelector(): ?string
+    {
+        return '.pagination a.next';
+    }
+
     public function getPaginationPattern(): ?string
     {
         return '/page/{page}';

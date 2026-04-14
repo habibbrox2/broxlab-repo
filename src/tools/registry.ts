@@ -1,7 +1,7 @@
-import type { ToolDefinition, ToolContext, ToolResult, CircuitBreakerState } from '../types/index.js';
-import logger from '../utils/logger.js';
-import redis from '../config/redis.js';
-import { metrics } from '../utils/metrics.js';
+import type { ToolDefinition, ToolContext, ToolResult, CircuitBreakerState } from '../types/index';
+import logger from '../utils/logger';
+import redis from '../config/redis';
+import { metrics } from '../utils/metrics';
 
 export class ToolRegistry {
     private tools = new Map<string, ToolDefinition>();

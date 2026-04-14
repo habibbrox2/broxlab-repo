@@ -19,7 +19,6 @@ export default defineConfig({
                 '**/*.d.ts',
                 '**/*.config.{js,ts}',
                 'src/index.ts',
-                'src/ai-assistant-server.js',
             ],
         },
     },

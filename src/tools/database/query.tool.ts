@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index.js';
-import { query, queryOne } from '../../config/database.js';
-import logger from '../../utils/logger.js';
+import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index';
+import { query, queryOne } from '../../config/database';
+import logger from '../../utils/logger';
 
 const querySchema = z.object({
     sql: z.string().min(1).max(1000),

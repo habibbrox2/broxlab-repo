@@ -130,7 +130,7 @@ $router->group('/admin/security', ['middleware' => ['auth', 'admin_or_super_only
 
         // ==================== ADMIN 2FA VERIFY SETUP ====================
         // POST /admin/security/2fa/verify - Verify and enable 2FA
-        $router->post('/2fa/verify', function () use ($securityManager, $canManageAdminSecurity) {
+        $router->post('/2fa/verify', ['middleware' => ['auth', 'admin_or_super_only', 'csrf']], function () use ($securityManager, $canManageAdminSecurity) {
             try {
                 if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
                     showMessage("Invalid CSRF token", "error");
@@ -198,7 +198,7 @@ $router->group('/admin/security', ['middleware' => ['auth', 'admin_or_super_only
 
         // ==================== ADMIN 2FA DISABLE ====================
         // POST /admin/security/2fa/disable - Disable 2FA for admin
-        $router->post('/2fa/disable', function () use ($securityManager, $canManageAdminSecurity) {
+        $router->post('/2fa/disable', ['middleware' => ['auth', 'admin_or_super_only', 'csrf']], function () use ($securityManager, $canManageAdminSecurity) {
             try {
                 header('Content-Type: application/json');
 
@@ -311,7 +311,7 @@ $router->group('/admin/security', ['middleware' => ['auth', 'admin_or_super_only
 
         // ==================== ADMIN 2FA REGENERATE BACKUP CODES ====================
         // POST /admin/security/2fa/backup-codes/regenerate - Generate new backup codes
-        $router->post('/2fa/backup-codes/regenerate', function () use ($securityManager, $canManageAdminSecurity) {
+        $router->post('/2fa/backup-codes/regenerate', ['middleware' => ['auth', 'admin_or_super_only', 'csrf']], function () use ($securityManager, $canManageAdminSecurity) {
             try {
                 header('Content-Type: application/json');
 

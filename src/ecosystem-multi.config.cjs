@@ -1,0 +1,62 @@
+module.exports = {
+  apps: [
+    {
+      name: 'unified-server-3002',
+      script: 'node',
+      args: ['./node_modules/tsx/dist/cli.mjs', 'src/index.ts'],
+      instances: 1,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3002,
+      },
+      error_file: './logs/unified-server-3002-error.log',
+      out_file: './logs/unified-server-3002-out.log',
+      log_file: './logs/unified-server-3002.log',
+    },
+    {
+      name: 'unified-server-3003',
+      script: 'node',
+      args: ['./node_modules/tsx/dist/cli.mjs', 'src/index.ts'],
+      instances: 1,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3003,
+      },
+      error_file: './logs/unified-server-3003-error.log',
+      out_file: './logs/unified-server-3003-out.log',
+      log_file: './logs/unified-server-3003.log',
+    },
+    {
+      name: 'ai-assistant-3001',
+      script: 'node',
+      args: ['./node_modules/tsx/dist/cli.mjs', 'src/index.ts'],
+      instances: 1,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3001,
+        AI_ASSISTANT_PORT: 3001,
+      },
+      error_file: './logs/ai-assistant-3001-error.log',
+      out_file: './logs/ai-assistant-3001-out.log',
+      log_file: './logs/ai-assistant-3001.log',
+    },
+    {
+      name: 'ai-assistant-3004',
+      script: 'node',
+      args: ['./node_modules/tsx/dist/cli.mjs', 'src/index.ts'],
+      instances: 1,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3004,
+        AI_ASSISTANT_PORT: 3004,
+      },
+      error_file: './logs/ai-assistant-3004-error.log',
+      out_file: './logs/ai-assistant-3004-out.log',
+      log_file: './logs/ai-assistant-3004.log',
+    },
+  ],
+};

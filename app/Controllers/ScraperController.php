@@ -14,6 +14,7 @@ use App\Modules\Scraper\AIContentClassifier;
 use App\Modules\Scraper\AIPresetGenerator;
 use App\Modules\Scraper\AIScraperAnalyzer;
 use App\Modules\Scraper\AIScraperOptimizer;
+use App\Modules\Scraper\HtmlFetcher;
 use App\Modules\Scraper\Presets\PresetRegistry;
 use App\Modules\Scraper\ScraperService;
 use App\Modules\Scraper\ScraperFactory;
@@ -21,19 +22,55 @@ use App\Modules\Scraper\Pipelines\GSMArenaPipeline;
 
 global $mysqli, $router, $twig;
 
-// Alias for json_response to jsonResponse for compatibility
-if (!function_exists('jsonResponse')) {
-    function jsonResponse(array $data, int $statusCode = 200): void
-    {
-        json_response($data, $statusCode);
-    }
-}
+// Include JsonResponse helper for JSON responses
+require_once __DIR__ . '/../Helpers/JsonResponse.php';
 
 if (!function_exists('parseJsonRequest')) {
     function parseJsonRequest(): array
     {
         $input = json_decode(file_get_contents('php://input'), true);
         return is_array($input) ? $input : [];
+    }
+}
+
+if (!function_exists('validateScraperInput')) {
+    function validateScraperInput(array $data, array $required = []): array
+    {
+        $errors = [];
+
+        foreach ($required as $field) {
+            if (!isset($data[$field]) || empty(trim($data[$field]))) {
+                $errors[] = "Field '{$field}' is required";
+            }
+        }
+
+        // Validate URL fields
+        if (isset($data['url']) && !filter_var($data['url'], FILTER_VALIDATE_URL)) {
+            $errors[] = "Invalid URL format";
+        }
+
+        // Validate integer fields
+        $intFields = ['category_id', 'fetch_interval', 'scrape_depth', 'max_pages', 'delay'];
+        foreach ($intFields as $field) {
+            if (isset($data[$field]) && !is_numeric($data[$field])) {
+                $errors[] = "Field '{$field}' must be numeric";
+            }
+        }
+
+        // Validate JSON fields
+        $jsonFields = ['selectors', 'advance_config', 'presets'];
+        foreach ($jsonFields as $field) {
+            if (isset($data[$field]) && !empty($data[$field])) {
+                if (is_string($data[$field])) {
+                    json_decode($data[$field]);
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        $errors[] = "Field '{$field}' contains invalid JSON";
+                    }
+                }
+            }
+        }
+
+        return $errors;
     }
 }
 
@@ -74,6 +111,37 @@ if (!function_exists('ensureCsrfToken')) {
     }
 }
 
+if (!function_exists('prepareScrapedArticlePayload')) {
+    function prepareScrapedArticlePayload(array $article): array
+    {
+        $article['categories'] = [];
+        if (!empty($article['categories_json'])) {
+            $decoded = json_decode($article['categories_json'], true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $article['categories'] = $decoded;
+            }
+        }
+
+        $article['tags'] = [];
+        if (!empty($article['tags_json'])) {
+            $decoded = json_decode($article['tags_json'], true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $article['tags'] = $decoded;
+            }
+        }
+
+        $article['metadata_struct'] = [];
+        if (!empty($article['metadata'])) {
+            $decodedMetadata = json_decode($article['metadata'], true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decodedMetadata)) {
+                $article['metadata_struct'] = $decodedMetadata;
+            }
+        }
+
+        return $article;
+    }
+}
+
 require_once __DIR__ . '/../Modules/Scraper/Pipelines/GSMArenaPipeline.php';
 
 // ================== DASHBOARD ==================
@@ -90,6 +158,7 @@ require_once __DIR__ . '/../Modules/Scraper/Pipelines/GSMArenaPipeline.php';
  *               - stats: Overall scraping statistics (total sources, jobs, success rate)
  *               - recentJobs: Array of recent scraping jobs (max 10)
  *               - activeSources: Array of currently active scraper sources
+ *               - errorStats: Recent error statistics and monitoring data
  *               - pageTitle: "Scraper Dashboard"
  *
  * @throws Exception If database queries fail or template rendering fails
@@ -103,10 +172,27 @@ $router->get('/admin/scraper', ['middleware' => ['auth', 'admin_only']], functio
         $recentJobs = $model->getPendingJobs(10);
         $activeSources = $model->getActiveSources();
 
+        // Get error statistics from a recent scraper service instance
+        $errorStats = [
+            'total_errors' => 0,
+            'by_type' => [],
+            'by_severity' => [],
+            'recent_errors' => []
+        ];
+
+        try {
+            $scraperService = new \App\Modules\Scraper\ScraperService($model);
+            $errorStats = $scraperService->getErrorStats();
+        } catch (Exception $e) {
+            // Ignore error stats collection errors
+            error_log("Error collecting error stats: " . $e->getMessage());
+        }
+
         echo $twig->render('scraper/dashboard.twig', [
             'stats' => $stats,
             'recentJobs' => $recentJobs,
             'activeSources' => $activeSources,
+            'errorStats' => $errorStats,
             'pageTitle' => 'Scraper Dashboard'
         ]);
     } catch (Exception $e) {
@@ -140,6 +226,50 @@ $router->get('/admin/scraper/gsmarena', ['middleware' => ['auth', 'admin_only']]
         echo $twig->render('error.twig', [
             'pageTitle' => 'Error',
             'message' => 'Failed to load GSMArena dashboard.'
+        ]);
+    }
+});
+
+/**
+ * Redirect /admin/scraper/dashboard to /admin/scraper for backward compatibility
+ *
+ * @route GET /admin/scraper/dashboard
+ */
+$router->get('/admin/scraper/dashboard', ['middleware' => ['auth', 'admin_only']], function () {
+    header('Location: /admin/scraper', true, 302);
+    exit;
+});
+
+/**
+ * Data Collection Interface
+ *
+ * Displays the manual data collection interface for triggering scraper runs.
+ *
+ * @route GET /admin/scraper/collect
+ * @middleware auth, admin_only
+ *
+ * @return void Renders collect template with sources and categories
+ *
+ * @throws Exception If database query fails or template rendering fails
+ */
+$router->get('/admin/scraper/collect', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    try {
+        $model = new ScraperModel($mysqli);
+        $sources = $model->getAllSources();
+        $categories = $model->getCategories();
+
+        echo $twig->render('scraper/collect/index.twig', [
+            'sources' => $sources,
+            'categories' => $categories,
+            'pageTitle' => 'Data Collection',
+            'csrf_token' => generateCsrfToken()
+        ]);
+    } catch (Exception $e) {
+        error_log("Collect page error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig', [
+            'pageTitle' => 'Error',
+            'message' => 'Failed to load collection page.'
         ]);
     }
 });
@@ -297,14 +427,14 @@ $router->get('/admin/scraper/collected-data', ['middleware' => ['auth', 'admin_o
  * @example Success: {"success": true, "message": "Article deleted successfully"}
  * @example Error: {"success": false, "error": "Article not found or could not be deleted"}
  */
-$router->delete('/admin/scraper/collected-data/{id}', ['middleware' => ['auth', 'admin_only']], function ($params) use ($mysqli) {
+$router->delete('/admin/scraper/collected-data/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
     // Validate CSRF token
     if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
     try {
-        $id = (int)$params['id'];
+        $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $result = $model->deleteArticle($id);
 
@@ -319,6 +449,39 @@ $router->delete('/admin/scraper/collected-data/{id}', ['middleware' => ['auth', 
         return jsonResponse(['success' => false, 'error' => 'Article not found or could not be deleted'], 404);
     } catch (Exception $e) {
         error_log("Delete article error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Delete Article (legacy route)
+ *
+ * Handles DELETE requests previously routed to /admin/scraper/articles/{id} for compatibility with older clients.
+ *
+ * @route DELETE /admin/scraper/articles/{id}
+ * @middleware auth, admin_only
+ */
+$router->delete('/admin/scraper/articles/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $id = (int)$id;
+        $model = new ScraperModel($mysqli);
+        $result = $model->deleteArticle($id);
+
+        if ($result) {
+            logActivity('scraper_article_deleted', 'article', $id, ['user_id' => $_SESSION['user_id'] ?? 0]);
+            return jsonResponse([
+                'success' => true,
+                'message' => 'Article deleted successfully'
+            ]);
+        }
+
+        return jsonResponse(['success' => false, 'error' => 'Article not found or could not be deleted'], 404);
+    } catch (Exception $e) {
+        error_log("Legacy delete article error: " . $e->getMessage());
         return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
@@ -341,9 +504,9 @@ $router->delete('/admin/scraper/collected-data/{id}', ['middleware' => ['auth', 
  *
  * @example Response: HTML page with article content, metadata, and actions
  */
-$router->get('/admin/scraper/collected-data/{id}', ['middleware' => ['auth', 'admin_only']], function ($params) use ($twig, $mysqli) {
+$router->get('/admin/scraper/collected-data/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
     try {
-        $id = (int)$params['id'];
+        $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $article = $model->getArticleById($id);
 
@@ -356,27 +519,7 @@ $router->get('/admin/scraper/collected-data/{id}', ['middleware' => ['auth', 'ad
             return;
         }
 
-        $article['categories'] = [];
-        if (!empty($article['categories_json'])) {
-            $decoded = json_decode($article['categories_json'], true);
-            if (is_array($decoded)) {
-                $article['categories'] = $decoded;
-            }
-        }
-        $article['tags'] = [];
-        if (!empty($article['tags_json'])) {
-            $decoded = json_decode($article['tags_json'], true);
-            if (is_array($decoded)) {
-                $article['tags'] = $decoded;
-            }
-        }
-        $article['metadata_struct'] = [];
-        if (!empty($article['metadata'])) {
-            $decodedMetadata = json_decode($article['metadata'], true);
-            if (is_array($decodedMetadata)) {
-                $article['metadata_struct'] = $decodedMetadata;
-            }
-        }
+        $article = prepareScrapedArticlePayload($article);
 
         echo $twig->render('scraper/collected-data/view.twig', [
             'article' => $article,
@@ -389,6 +532,236 @@ $router->get('/admin/scraper/collected-data/{id}', ['middleware' => ['auth', 'ad
             'pageTitle' => 'Error',
             'message' => 'Failed to load article details.'
         ]);
+    }
+});
+
+/**
+ * Article Details API
+ *
+ * Returns structured article metadata for AJAX/detail views.
+ *
+ * @route GET /admin/scraper/articles/{id}/json
+ * @middleware auth, admin_only
+ */
+$router->get('/admin/scraper/articles/{id}/json', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+    try {
+        $id = (int)$id;
+        $model = new ScraperModel($mysqli);
+        $article = $model->getArticleById($id);
+
+        if (!$article) {
+            return jsonResponse(['success' => false, 'error' => 'Article not found'], 404);
+        }
+
+        $article = prepareScrapedArticlePayload($article);
+
+        return jsonResponse(['success' => true, 'article' => $article]);
+    } catch (Exception $e) {
+        error_log("Article JSON endpoint error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => 'Failed to load article details'], 500);
+    }
+});
+
+// ================== ARTICLES REDIRECTS ==================
+
+/**
+ * Articles List Redirect
+ *
+ * Redirects /admin/scraper/articles to /admin/scraper/collected-data for backward compatibility
+ *
+ * @route GET /admin/scraper/articles
+ * @middleware auth, admin_only
+ */
+$router->get('/admin/scraper/articles', ['middleware' => ['auth', 'admin_only']], function () {
+    // Preserve query parameters
+    $queryString = $_SERVER['QUERY_STRING'] ?? '';
+    $redirectUrl = '/admin/scraper/collected-data';
+    if (!empty($queryString)) {
+        $redirectUrl .= '?' . $queryString;
+    }
+    header('Location: ' . $redirectUrl, true, 302);
+    exit;
+});
+
+/**
+ * Article Detail Redirect
+ *
+ * Redirects /admin/scraper/articles/{id} to /admin/scraper/collected-data/{id} for backward compatibility
+ *
+ * @route GET /admin/scraper/articles/{id}
+ * @middleware auth, admin_only
+ */
+$router->get('/admin/scraper/articles/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) {
+    header('Location: /admin/scraper/collected-data/' . $id, true, 302);
+    exit;
+});
+
+/**
+ * Edit Article
+ *
+ * Displays the form for editing a scraped article.
+ *
+ * @route GET /admin/scraper/articles/{id}/edit
+ * @middleware auth, admin_only
+ *
+ * @param id int Article ID to edit (from URL path)
+ *
+ * @return void Renders article edit template with:
+ *               - article: Article object with all fields
+ *               - pageTitle: "Edit Article"
+ *
+ * @throws Exception If database query fails or article not found
+ *
+ * @example Response: HTML form with article data pre-filled
+ */
+$router->get('/admin/scraper/articles/{id}/edit', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
+    try {
+        $id = (int)$id;
+        $model = new ScraperModel($mysqli);
+        $article = $model->getArticleById($id);
+
+        if (!$article) {
+            http_response_code(404);
+            echo $twig->render('error.twig', [
+                'pageTitle' => 'Article Not Found',
+                'message' => 'The requested article was not found.'
+            ]);
+            return;
+        }
+
+        $article = prepareScrapedArticlePayload($article);
+
+        echo $twig->render('scraper/collected-data/edit.twig', [
+            'article' => $article,
+            'pageTitle' => 'Edit Article',
+            'csrf_token' => generateCsrfToken()
+        ]);
+    } catch (Exception $e) {
+        error_log("Edit article error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig', [
+            'pageTitle' => 'Error',
+            'message' => 'Failed to load article edit form.'
+        ]);
+    }
+});
+
+/**
+ * Update Article
+ *
+ * Updates a scraped article with form data.
+ *
+ * @route POST /admin/scraper/articles/{id}/edit
+ * @middleware auth, admin_only
+ *
+ * @param id int Article ID to update (from URL path)
+ *
+ * @request_body Form data containing:
+ *               - title (string, required): Article title
+ *               - content (string, required): Article content
+ *               - excerpt (string, optional): Article excerpt
+ *               - author (string, optional): Article author
+ *               - image_url (string, optional): Article image URL
+ *               - status (string, optional): Article status
+ *               - categories (string, optional): JSON array of categories
+ *               - tags (string, optional): JSON array of tags
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - message: string (success message)
+ *               - error: string (error message, if failed)
+ *
+ * @throws Exception If database operation fails or validation fails
+ *
+ * @example Success: {"success": true, "message": "Article updated successfully"}
+ * @example Error: {"success": false, "error": "Title is required"}
+ */
+$router->post('/admin/scraper/articles/{id}/edit', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+    // Validate CSRF token
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $id = (int)$id;
+        $model = new ScraperModel($mysqli);
+
+        // Check if article exists
+        $article = $model->getArticleById($id);
+        if (!$article) {
+            return jsonResponse(['success' => false, 'error' => 'Article not found'], 404);
+        }
+
+        // Validate required fields
+        $title = trim($_POST['title'] ?? '');
+        $content = trim($_POST['content'] ?? '');
+        $excerpt = trim($_POST['excerpt'] ?? '');
+        $author = trim($_POST['author'] ?? '');
+        $imageUrl = trim($_POST['image_url'] ?? '');
+        $status = trim($_POST['status'] ?? 'collected');
+        $categoriesJson = trim($_POST['categories'] ?? '[]');
+        $tagsJson = trim($_POST['tags'] ?? '[]');
+
+        if (empty($title)) {
+            return jsonResponse(['success' => false, 'error' => 'Title is required'], 400);
+        }
+
+        if (empty($content)) {
+            return jsonResponse(['success' => false, 'error' => 'Content is required'], 400);
+        }
+
+        // Validate JSON
+        $categories = [];
+        if (!empty($categoriesJson)) {
+            $categories = json_decode($categoriesJson, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return jsonResponse(['success' => false, 'error' => 'Invalid categories JSON'], 400);
+            }
+        }
+
+        $tags = [];
+        if (!empty($tagsJson)) {
+            $tags = json_decode($tagsJson, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return jsonResponse(['success' => false, 'error' => 'Invalid tags JSON'], 400);
+            }
+        }
+
+        // Update article
+        $sql = "UPDATE web_scraping_articles SET
+                title = ?, content = ?, excerpt = ?, author = ?, image_url = ?, status = ?,
+                categories_json = ?, tags_json = ?, updated_at = NOW()
+                WHERE id = ?";
+
+        $stmt = $mysqli->prepare($sql);
+        $categoriesJson = json_encode($categories);
+        $tagsJson = json_encode($tags);
+
+        $stmt->bind_param(
+            "sssssssss",
+            $title,
+            $content,
+            $excerpt,
+            $author,
+            $imageUrl,
+            $status,
+            $categoriesJson,
+            $tagsJson,
+            $id
+        );
+
+        if ($stmt->execute()) {
+            logActivity('scraper_article_updated', 'article', $id, ['user_id' => $_SESSION['user_id'] ?? 0]);
+            return jsonResponse([
+                'success' => true,
+                'message' => 'Article updated successfully'
+            ]);
+        }
+
+        return jsonResponse(['success' => false, 'error' => 'Failed to update article'], 500);
+    } catch (Exception $e) {
+        error_log("Update article error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
 
@@ -451,7 +824,7 @@ $router->get('/admin/scraper/ai/preset-generator', ['middleware' => ['auth', 'ad
  */
 $router->post('/admin/scraper/ai/preset-generator/analyze', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -477,16 +850,15 @@ $router->post('/admin/scraper/ai/preset-generator/analyze', ['middleware' => ['a
 });
 
 /**
- * Get All Presets
+ * Displays detailed view of a specific scraper preset.
  *
- * Returns a list of all available scraper presets for selection.
- *
- * @route GET /admin/scraper/presets/list
+ * @route GET /admin/scraper/presets/{key}
  * @middleware auth, admin_only
  *
- * @return JSON Response with:
- *               - success: boolean
- *               - presets: Array of preset objects with:
+ * @param key string Preset key to view (from URL path)
+ *
+ * @return void Renders preset details template with:
+ *               - preset: Preset object containing:
  *                   - key: string (unique identifier)
  *                   - name: string (display name)
  *                   - description: string (description)
@@ -495,19 +867,543 @@ $router->post('/admin/scraper/ai/preset-generator/analyze', ['middleware' => ['a
  *                   - type: string (scraper type)
  *                   - content_type: string (content type)
  *                   - example_urls: array (example URLs)
+ *                   - config: array (full configuration)
  *
- * @example {"success": true, "presets": [...]}
+ * @throws Exception If preset not found or template rendering fails
+ *
+ * @example Response: HTML page with preset details and configuration
  */
-$router->get('/admin/scraper/presets/list', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->get('/admin/scraper/presets/{key}', ['middleware' => ['auth', 'admin_only']], function ($key) use ($twig) {
     try {
-        $presets = \App\Modules\Scraper\Presets\PresetRegistry::toArray();
+        $preset = PresetRegistry::getByKey($key);
 
-        return jsonResponse([
-            'success' => true,
-            'presets' => $presets
+        if (!$preset) {
+            http_response_code(404);
+            echo $twig->render('error.twig', [
+                'pageTitle' => 'Preset Not Found',
+                'message' => 'The requested preset was not found.'
+            ]);
+            return;
+        }
+
+        echo $twig->render('scraper/presets/view.twig', [
+            'preset' => [
+                'key' => $preset->getKey(),
+                'name' => $preset->getName(),
+                'description' => $preset->getDescription(),
+                'category' => $preset->getCategory(),
+                'icon' => $preset->getIcon(),
+                'type' => $preset->getType(),
+                'content_type' => $preset->getContentType(),
+                'example_urls' => $preset->getExampleUrls(),
+                'config' => $preset->getConfig()
+            ],
+            'pageTitle' => 'Preset Details'
         ]);
     } catch (Exception $e) {
-        error_log("Get presets list error: " . $e->getMessage());
+        error_log("Preset view error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig', [
+            'pageTitle' => 'Error',
+            'message' => 'Failed to load preset details.'
+        ]);
+    }
+});
+
+/**
+ * Create Preset Form
+ *
+ * Displays the form for creating a new scraper preset.
+ *
+ * @route GET /admin/scraper/presets/create
+ * @middleware auth, admin_only
+ *
+ * @return void Renders create preset template with:
+ *               - preset: null (for new preset)
+ *               - categories: Array of available categories
+ *               - pageTitle: "Create Scraper Preset"
+ *
+ * @throws Exception If template rendering fails
+ *
+ * @example Response: HTML form with fields for preset configuration
+ */
+$router->get('/admin/scraper/presets/create', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    try {
+        $categories = PresetRegistry::getCategories();
+
+        echo $twig->render('scraper/presets/form.twig', [
+            'preset' => null,
+            'categories' => $categories,
+            'pageTitle' => 'Create Scraper Preset',
+            'csrf_token' => generateCsrfToken()
+        ]);
+    } catch (Exception $e) {
+        error_log("Create preset form error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig', [
+            'pageTitle' => 'Error',
+            'message' => 'Failed to load create preset form.'
+        ]);
+    }
+});
+
+/**
+ * List Presets
+ *
+ * Displays all available scraper presets with filtering and actions.
+ *
+ * @route GET /admin/scraper/presets
+ * @middleware auth, admin_only
+ *
+ * @return void Renders presets list template with:
+ *               - presets: Array of all preset objects
+ *               - categories: Array of available categories for filtering
+ *               - pageTitle: "Scraper Presets"
+ *
+ * @throws Exception If template rendering fails
+ *
+ * @example Response: HTML page with preset cards and management actions
+ */
+$router->get('/admin/scraper/presets', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    try {
+        $presets = PresetRegistry::getAll();
+        $categories = PresetRegistry::getCategories();
+
+        echo $twig->render('scraper/presets/index.twig', [
+            'presets' => $presets,
+            'categories' => $categories,
+            'pageTitle' => 'Scraper Presets',
+            'csrf_token' => generateCsrfToken()
+        ]);
+    } catch (Exception $e) {
+        error_log("Presets list error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig', [
+            'pageTitle' => 'Error',
+            'message' => 'Failed to load presets.'
+        ]);
+    }
+});
+
+/**
+ * Edit Preset Form
+ *
+ * Displays the form for editing an existing scraper preset.
+ *
+ * @route GET /admin/scraper/presets/{key}/edit
+ * @middleware auth, admin_only
+ *
+ * @param key string Preset key to edit (from URL path)
+ *
+ * @return void Renders edit preset template with:
+ *               - preset: Preset object with current configuration
+ *               - categories: Array of available categories
+ *               - pageTitle: "Edit Scraper Preset"
+ *
+ * @throws Exception If preset not found or template rendering fails
+ *
+ * @example Response: HTML form pre-filled with preset data
+ */
+$router->get('/admin/scraper/presets/{key}/edit', ['middleware' => ['auth', 'admin_only']], function ($key) use ($twig) {
+    try {
+        $preset = PresetRegistry::getByKey($key);
+        $categories = PresetRegistry::getCategories();
+
+        if (!$preset) {
+            http_response_code(404);
+            echo $twig->render('error.twig', [
+                'pageTitle' => 'Preset Not Found',
+                'message' => 'The requested preset was not found.'
+            ]);
+            return;
+        }
+
+        echo $twig->render('scraper/presets/form.twig', [
+            'preset' => [
+                'key' => $preset->getKey(),
+                'name' => $preset->getName(),
+                'description' => $preset->getDescription(),
+                'category' => $preset->getCategory(),
+                'icon' => $preset->getIcon(),
+                'type' => $preset->getType(),
+                'content_type' => $preset->getContentType(),
+                'example_urls' => $preset->getExampleUrls(),
+                'config' => $preset->getConfig()
+            ],
+            'categories' => $categories,
+            'pageTitle' => 'Edit Scraper Preset',
+            'csrf_token' => generateCsrfToken()
+        ]);
+    } catch (Exception $e) {
+        error_log("Edit preset form error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig', [
+            'pageTitle' => 'Error',
+            'message' => 'Failed to load edit preset form.'
+        ]);
+    }
+});
+
+/**
+ * Save Preset (Create/Update)
+ *
+ * Creates a new preset or updates an existing one.
+ *
+ * @route POST /admin/scraper/presets/save
+ * @middleware auth, admin_only
+ *
+ * @request_body Form data containing:
+ *               - key (string, required for updates): Preset key
+ *               - name (string, required): Preset name
+ *               - description (string, required): Preset description
+ *               - category (string, required): Preset category
+ *               - content_type (string, required): Content type
+ *               - icon (string, optional): Icon class
+ *               - type (string, optional): Scraper type
+ *               - example_urls (string, optional): JSON array of example URLs
+ *               - selectors (string, optional): JSON object of selectors
+ *               - advance_config (string, optional): JSON object of advance config
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - message: string (success message)
+ *               - key: string (preset key)
+ *               - error: string (if failed)
+ *
+ * @throws Exception If database operation fails or validation fails
+ *
+ * @example Success: {"success": true, "message": "Preset created successfully", "key": "my-preset"}
+ * @example Error: {"success": false, "error": "Failed to save preset"}
+ */
+$router->post('/admin/scraper/presets/save', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    // Validate CSRF token
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $model = new ScraperModel($mysqli);
+        $key = trim($_POST['key'] ?? '');
+
+        // Validate required fields
+        $name = trim($_POST['name'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $category = trim($_POST['category'] ?? '');
+        $contentType = trim($_POST['content_type'] ?? '');
+
+        if (empty($name)) {
+            return jsonResponse(['success' => false, 'error' => 'Preset name is required'], 400);
+        }
+
+        if (empty($description)) {
+            return jsonResponse(['success' => false, 'error' => 'Preset description is required'], 400);
+        }
+
+        if (empty($category)) {
+            return jsonResponse(['success' => false, 'error' => 'Preset category is required'], 400);
+        }
+
+        if (empty($contentType)) {
+            return jsonResponse(['success' => false, 'error' => 'Content type is required'], 400);
+        }
+
+        // Validate and sanitize JSON fields
+        $selectors = null;
+        $selectorsRaw = trim($_POST['selectors'] ?? '');
+        if (!empty($selectorsRaw)) {
+            $decoded = json_decode($selectorsRaw, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return jsonResponse(['success' => false, 'error' => 'Invalid selectors JSON'], 400);
+            }
+            $selectors = $selectorsRaw;
+        }
+
+        $advanceConfig = null;
+        $advanceConfigRaw = trim($_POST['advance_config'] ?? '');
+        if (!empty($advanceConfigRaw)) {
+            $decoded = json_decode($advanceConfigRaw, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return jsonResponse(['success' => false, 'error' => 'Invalid advance_config JSON'], 400);
+            }
+            $advanceConfig = $advanceConfigRaw;
+        }
+
+        $exampleUrls = null;
+        $exampleUrlsRaw = trim($_POST['example_urls'] ?? '');
+        if (!empty($exampleUrlsRaw)) {
+            $decoded = json_decode($exampleUrlsRaw, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return jsonResponse(['success' => false, 'error' => 'Invalid example_urls JSON'], 400);
+            }
+            $exampleUrls = $exampleUrlsRaw;
+        }
+
+        // Generate key if creating new preset
+        if (empty($key)) {
+            $key = strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $name));
+            $key = preg_replace('/-+/', '-', $key);
+            $key = trim($key, '-');
+        }
+
+        $data = [
+            'key' => $key,
+            'name' => $name,
+            'description' => $description,
+            'content_type' => $contentType,
+            'selectors' => $selectors,
+            'advance_config' => $advanceConfig,
+            'is_default' => 0,
+            'is_active' => 1
+        ];
+
+        $presetId = $model->savePreset($data);
+
+        if ($presetId) {
+            logActivity('scraper_preset_saved', 'preset', $presetId, [
+                'preset_key' => $key,
+                'preset_name' => $name,
+                'user_id' => $_SESSION['user_id'] ?? 0
+            ]);
+
+            return jsonResponse([
+                'success' => true,
+                'message' => empty($_POST['key']) ? 'Preset created successfully' : 'Preset updated successfully',
+                'key' => $key
+            ]);
+        }
+
+        return jsonResponse(['success' => false, 'error' => 'Failed to save preset'], 500);
+    } catch (Exception $e) {
+        error_log("Save preset error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * AI Selector Detection
+ *
+ * Analyzes a website URL and automatically detects CSS selectors using AI.
+ *
+ * @route POST /api/v1/scraper/presets/ai-detect
+ * @middleware auth, admin_only
+ *
+ * @request_body JSON object containing:
+ *               - url (string, required): Website URL to analyze
+ *               - content_type (string, optional): Expected content type (news, blog, product, etc.)
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - selectors: Detected CSS selectors for various elements
+ *               - confidence: AI confidence score (0-1)
+ *               - recommendations: AI recommendations for scraper configuration
+ *               - content_type: Detected content type
+ *               - error: string (if failed)
+ *
+ * @throws Exception If AI analysis fails or URL is invalid
+ *
+ * @example Request: {"url": "https://example.com", "content_type": "news"}
+ * @example Success: {"success": true, "selectors": {...}, "confidence": 0.85, "content_type": "news"}
+ * @example Error: {"success": false, "error": "URL analysis failed"}
+ */
+$router->post('/api/v1/scraper/presets/ai-detect', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    // Validate CSRF token
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
+        }
+
+        $url = trim($input['url'] ?? '');
+        $contentType = trim($input['content_type'] ?? '');
+
+        if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
+            return jsonResponse(['success' => false, 'error' => 'Valid URL is required'], 400);
+        }
+
+        // Use AIScraperAnalyzer to detect selectors
+        $analyzer = \App\Modules\Scraper\AIScraperAnalyzer::fromMysqli($mysqli);
+
+        try {
+            // First fetch HTML
+            $html = \App\Modules\Scraper\HtmlFetcher::fetch($url);
+
+            // Then analyze it
+            $result = $analyzer->analyzeHtml($html, $url);
+
+            if (!$result['success']) {
+                return jsonResponse(['success' => false, 'error' => 'AI analysis failed'], 500);
+            }
+
+            return jsonResponse([
+                'success' => true,
+                'selectors' => $result['selectors'] ?? [],
+                'confidence' => $result['confidence'] ?? 0,
+                'content_type' => $result['content_type'] ?? $contentType,
+                'recommendations' => $result['recommendations'] ?? []
+            ]);
+
+        } catch (\Exception $e) {
+            return jsonResponse(['success' => false, 'error' => 'Failed to analyze URL: ' . $e->getMessage()], 500);
+        }
+
+    } catch (Exception $e) {
+        error_log("AI selector detection error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Apply Preset
+ *
+ * Creates a new scraper source based on a preset configuration.
+ *
+ * @route POST /admin/scraper/presets/{key}/apply
+ * @middleware auth, admin_only
+ *
+ * @param key string Preset key to apply (from URL path)
+ *
+ * @request_body Form data containing:
+ *               - name (string, required): Name for the new source
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - source_id: int (ID of created source)
+ *               - source_name: string (name of created source)
+ *               - error: string (error message, if failed)
+ *
+ * @throws Exception If database operation fails or preset not found
+ *
+ * @example Success: {"success": true, "source_id": 123, "source_name": "BDNews24 (Applied)"}
+ * @example Error: {"success": false, "error": "Preset not found"}
+ */
+$router->post('/admin/scraper/presets/{key}/apply', ['middleware' => ['auth', 'admin_only']], function ($key) use ($mysqli) {
+    // Validate CSRF token
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $model = new ScraperModel($mysqli);
+
+        // Check if preset exists
+        $preset = \App\Modules\Scraper\Presets\PresetRegistry::getByKey($key);
+        if (!$preset) {
+            return jsonResponse(['success' => false, 'error' => 'Preset not found'], 404);
+        }
+
+        // Get form data
+        $sourceName = trim($_POST['name'] ?? '');
+        if (empty($sourceName)) {
+            return jsonResponse(['success' => false, 'error' => 'Source name is required'], 400);
+        }
+
+        // Create source data from preset
+        $sourceData = [
+            'name' => $sourceName,
+            'url' => $preset->getExampleUrls()[0] ?? '',
+            'type' => 'scrape',
+            'category_id' => 1, // Default category
+            'selectors' => $preset->getConfig(),
+            'advance_config' => null,
+            'presets' => null,
+            'fetch_interval' => $preset->getFetchInterval(),
+            'content_type' => $preset->getContentType(),
+            'scrape_depth' => 1,
+            'use_browser' => 0,
+            'max_pages' => $preset->getMaxPages(),
+            'delay' => $preset->getDelay(),
+            'pagination_type' => $preset->getPaginationType() ?? 'none',
+            'pagination_selector' => $preset->getPaginationSelector(),
+            'pagination_pattern' => $preset->getPaginationPattern(),
+            'proxy_enabled' => 0,
+            'proxy_provider' => '',
+            'proxy_config' => null
+        ];
+
+        // Save the source
+        $sourceId = $model->createSource($sourceData);
+
+        if ($sourceId) {
+            logActivity('scraper_preset_applied', 'source', $sourceId, [
+                'preset_key' => $key,
+                'preset_name' => $preset->getName(),
+                'source_name' => $sourceName,
+                'user_id' => $_SESSION['user_id'] ?? 0
+            ]);
+
+            return jsonResponse([
+                'success' => true,
+                'source_id' => $sourceId,
+                'source_name' => $sourceName
+            ]);
+        }
+
+        return jsonResponse(['success' => false, 'error' => 'Failed to create source'], 500);
+    } catch (Exception $e) {
+        error_log("Apply preset error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Delete Preset
+ *
+ * Deletes a scraper preset from the database.
+ *
+ * @route DELETE /admin/scraper/presets/{key}
+ * @middleware auth, admin_only
+ *
+ * @param key string Preset key to delete (from URL path)
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - message: string (success message)
+ *               - error: string (error message, if failed)
+ *
+ * @throws Exception If database operation fails
+ *
+ * @example Success: {"success": true, "message": "Preset deleted successfully"}
+ * @example Error: {"success": false, "error": "Preset not found"}
+ */
+$router->delete('/admin/scraper/presets/{key}', ['middleware' => ['auth', 'admin_only']], function ($key) use ($mysqli) {
+    // Validate CSRF token
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $model = new ScraperModel($mysqli);
+
+        // Check if preset exists
+        $preset = \App\Modules\Scraper\Presets\PresetRegistry::getByKey($key);
+        if (!$preset) {
+            return jsonResponse(['success' => false, 'error' => 'Preset not found'], 404);
+        }
+
+        // Delete from database
+        $result = $model->deletePreset($key);
+
+        if ($result) {
+            logActivity('scraper_preset_deleted', 'preset', 0, [
+                'preset_key' => $key,
+                'preset_name' => $preset->getName(),
+                'preset_name' => $preset->getName(),
+                'user_id' => $_SESSION['user_id'] ?? 0
+            ]);
+
+            return jsonResponse([
+                'success' => true,
+                'message' => 'Preset deleted successfully'
+            ]);
+        }
+
+        return jsonResponse(['success' => false, 'error' => 'Failed to delete preset'], 500);
+    } catch (Exception $e) {
+        error_log("Delete preset error: " . $e->getMessage());
         return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
@@ -571,7 +1467,7 @@ $router->get('/admin/scraper/ai/analyzer', ['middleware' => ['auth', 'admin_only
  */
 $router->post('/admin/scraper/ai/analyzer/run', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -584,14 +1480,27 @@ $router->post('/admin/scraper/ai/analyzer/run', ['middleware' => ['auth', 'admin
         $url = trim($input['url'] ?? '');
         $html = trim($input['html'] ?? '');
 
-        if ($url === '' && $html === '') {
+        if ($html === '' && $url !== '') {
+            try {
+                $html = HtmlFetcher::fetch($url);
+            } catch (\Exception $fetchError) {
+                error_log('AI Scraper Analyzer fetch error: ' . $fetchError->getMessage());
+                return jsonResponse(['success' => false, 'error' => 'Failed to fetch HTML for analysis'], 500);
+            }
+        }
+
+        if (trim((string)$html) === '' && $url === '') {
             return jsonResponse(['success' => false, 'error' => 'Either URL or HTML content is required'], 400);
         }
 
         $analyzer = AIScraperAnalyzer::fromMysqli($mysqli);
-        $result = $analyzer->analyzeHtml($html, $url);
+        try {
+            $result = $analyzer->analyzeHtml($html, $url);
+        } catch (\InvalidArgumentException $ex) {
+            return jsonResponse(['success' => false, 'error' => $ex->getMessage()], 400);
+        }
 
-        return jsonResponse($result->toArray());
+        return jsonResponse($result);
     } catch (Exception $e) {
         error_log("AI Scraper Analyzer run error: " . $e->getMessage());
         return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
@@ -657,7 +1566,7 @@ $router->get('/admin/scraper/ai/classifier', ['middleware' => ['auth', 'admin_on
  */
 $router->post('/admin/scraper/ai/classifier/analyze', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -754,7 +1663,7 @@ $router->get('/admin/scraper/ai/optimizer', ['middleware' => ['auth', 'admin_onl
  */
 $router->post('/admin/scraper/ai/optimizer/analyze', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -837,7 +1746,7 @@ $router->post('/api/v1/scraper/ai/analyzer', ['middleware' => ['auth', 'admin_on
         $analyzer = AIScraperAnalyzer::fromMysqli($mysqli);
         $result = $analyzer->analyzeHtml($html, $url);
 
-        return jsonResponse($result->toArray());
+        return jsonResponse($result);
     } catch (Exception $e) {
         error_log("API AI analyzer error: " . $e->getMessage());
         return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
@@ -909,6 +1818,78 @@ $router->post('/api/v1/scraper/ai/optimizer', ['middleware' => ['auth', 'admin_o
     }
 });
 
+// ================== ERROR MONITORING ==================
+
+/**
+ * Get Error Statistics API
+ *
+ * Returns current error statistics and monitoring data for the scraping system.
+ *
+ * @route GET /api/v1/scraper/error-stats
+ * @middleware auth, admin_only
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - error_stats: Error statistics object with:
+ *                   - total: Total number of errors
+ *                   - by_type: Errors grouped by type (network, parsing, etc.)
+ *                   - by_severity: Errors grouped by severity (low, medium, high, critical)
+ *                   - recent: Array of recent error entries
+ *               - error: string (if failed)
+ *
+ * @example {"success": true, "error_stats": {"total": 15, "by_type": {...}, ...}}
+ */
+$router->get('/api/v1/scraper/error-stats', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    try {
+        $model = new ScraperModel($mysqli);
+        $scraperService = new \App\Modules\Scraper\ScraperService($model);
+        $errorStats = $scraperService->getErrorStats();
+
+        return jsonResponse([
+            'success' => true,
+            'error_stats' => $errorStats
+        ]);
+    } catch (Exception $e) {
+        error_log("Error stats API error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Clear Error Logs API
+ *
+ * Clears the accumulated error logs in the scraper service.
+ *
+ * @route POST /api/v1/scraper/clear-errors
+ * @middleware auth, admin_only
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - message: Success message
+ *               - error: string (if failed)
+ *
+ * @example {"success": true, "message": "Error logs cleared successfully"}
+ */
+$router->post('/api/v1/scraper/clear-errors', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $model = new ScraperModel($mysqli);
+        $scraperService = new \App\Modules\Scraper\ScraperService($model);
+        $scraperService->clearErrors();
+
+        return jsonResponse([
+            'success' => true,
+            'message' => 'Error logs cleared successfully'
+        ]);
+    } catch (Exception $e) {
+        error_log("Clear errors API error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
 // ================== SELECTOR TESTER ==================
 
 /**
@@ -966,7 +1947,8 @@ $router->get('/admin/scraper/sources', ['middleware' => ['auth', 'admin_only']],
 
         echo $twig->render('scraper/sources/list.twig', [
             'sources' => $sources,
-            'pageTitle' => 'Scraper Sources'
+            'pageTitle' => 'Scraper Sources',
+            'csrf_token' => generateCsrfToken()
         ]);
     } catch (Exception $e) {
         error_log("Sources list error: " . $e->getMessage());
@@ -1038,9 +2020,9 @@ $router->get('/admin/scraper/sources/create', ['middleware' => ['auth', 'admin_o
  *
  * @example Response: HTML form pre-filled with source data
  */
-$router->get('/admin/scraper/sources/{id}/edit', ['middleware' => ['auth', 'admin_only']], function ($params) use ($twig, $mysqli) {
+$router->get('/admin/scraper/sources/{id}/edit', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
     try {
-        $id = (int)$params['id'];
+        $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $source = $model->getSourceById($id);
         $categories = $model->getCategories();
@@ -1092,9 +2074,9 @@ $router->get('/admin/scraper/sources/{id}/edit', ['middleware' => ['auth', 'admi
  *
  * @example Response: HTML page with read-only source details
  */
-$router->get('/admin/scraper/sources/{id}', ['middleware' => ['auth', 'admin_only']], function ($params) use ($twig, $mysqli) {
+$router->get('/admin/scraper/sources/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
     try {
-        $id = (int)$params['id'];
+        $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $source = $model->getSourceById($id);
 
@@ -1168,25 +2150,44 @@ $router->get('/admin/scraper/sources/{id}', ['middleware' => ['auth', 'admin_onl
  */
 $router->post('/admin/scraper/sources/save', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
     try {
         $model = new ScraperModel($mysqli);
         $id = isset($_POST['id']) ? (int)$_POST['id'] : null;
+
+        // Validate required fields
+        $name = trim($_POST['name'] ?? '');
+        $url = trim($_POST['url'] ?? '');
+
+        if (empty($name)) {
+            return jsonResponse(['success' => false, 'error' => 'Source name is required'], 400);
+        }
+
+        if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+            return jsonResponse(['success' => false, 'error' => 'Valid URL is required'], 400);
+        }
+
+        // Validate and sanitize advance_config
         $advanceConfigRaw = trim($_POST['advance_config'] ?? '');
         $advanceConfig = [];
         if ($advanceConfigRaw !== '') {
             $decoded = json_decode($advanceConfigRaw, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                $advanceConfig = $decoded;
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return jsonResponse(['success' => false, 'error' => 'Invalid advance_config JSON'], 400);
             }
+            // Basic validation - ensure it's an array
+            if (!is_array($decoded)) {
+                return jsonResponse(['success' => false, 'error' => 'advance_config must be a JSON object'], 400);
+            }
+            $advanceConfig = $decoded;
         }
 
         $data = [
-            'name' => $_POST['name'] ?? '',
-            'url' => $_POST['url'] ?? '',
+            'name' => $name,
+            'url' => $url,
             'type' => $_POST['type'] ?? 'static',
             'category_id' => (int)($_POST['category_id'] ?? 0),
             'selector_list_container' => $_POST['selector_list_container'] ?? '',
@@ -1272,7 +2273,8 @@ $router->post('/admin/scraper/sources/save', ['middleware' => ['auth', 'admin_on
  */
 $router->post('/admin/scraper/sources/delete', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    $csrfToken = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!validateCsrfToken($csrfToken)) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -1321,7 +2323,7 @@ $router->post('/admin/scraper/sources/delete', ['middleware' => ['auth', 'admin_
  */
 $router->post('/admin/scraper/sources/toggle', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -1369,7 +2371,7 @@ $router->post('/admin/scraper/sources/toggle', ['middleware' => ['auth', 'admin_
  */
 $router->post('/admin/scraper/sources/toggle-all', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -1411,9 +2413,9 @@ $router->post('/admin/scraper/sources/toggle-all', ['middleware' => ['auth', 'ad
  *
  * @example Response: HTML page with test interface for the source
  */
-$router->get('/admin/scraper/sources/{id}/test', ['middleware' => ['auth', 'admin_only']], function ($params) use ($twig, $mysqli) {
+$router->get('/admin/scraper/sources/{id}/test', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
     try {
-        $id = (int)$params['id'];
+        $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $source = $model->getSourceById($id);
 
@@ -1464,9 +2466,13 @@ $router->get('/admin/scraper/sources/{id}/test', ['middleware' => ['auth', 'admi
  * @example Success: {"success": true, "result": {"items": [...], "errors": []}}
  * @example Error: {"success": false, "error": "Source not found"}
  */
-$router->post('/admin/scraper/sources/{id}/test', ['middleware' => ['auth', 'admin_only']], function ($params) use ($mysqli) {
-    // Parse JSON input first to get CSRF token
-    $input = json_decode(file_get_contents('php://input'), true) ?: [];
+$router->post('/admin/scraper/sources/{id}/test', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+    $rawInput = file_get_contents('php://input');
+    $input = json_decode($rawInput, true);
+    if (!is_array($input)) {
+        $input = [];
+    }
+
     $csrfToken = $input['csrf_token'] ?? '';
 
     // Validate CSRF token
@@ -1475,12 +2481,17 @@ $router->post('/admin/scraper/sources/{id}/test', ['middleware' => ['auth', 'adm
     }
 
     try {
-        $id = (int)$params['id'];
+        $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $service = new ScraperService($model);
+    $maxRetries = 3;
+    $error = '';
+    $success = false;
 
-        // Parse JSON input for test options
-        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+$maxRetries = 3;
+$error = '';
+$success = false;
+
         $maxItems = (int)($input['maxItems'] ?? 5);
         $timeout = (int)($input['timeout'] ?? 30);
         $includeErrors = (bool)($input['includeErrors'] ?? true);
@@ -1506,11 +2517,8 @@ $router->post('/admin/scraper/sources/{id}/test', ['middleware' => ['auth', 'adm
             ]
         ];
 
-        // If successful, try to get some sample items
-        if ($result['success'] && isset($result['data'])) {
-            // This would need to be implemented based on the actual data structure
-            $formattedResult['items'] = []; // Placeholder
-        }
+        // Note: testSource doesn't return scraped data for security/performance reasons
+        // Items would need to be populated from a separate safe method if needed
 
         return jsonResponse([
             'success' => $result['success'],
@@ -1659,9 +2667,9 @@ $router->post('/api/admin/scraper/settings', ['middleware' => ['auth', 'admin_on
  *
  * @return void JSON response with success status
  */
-$router->delete('/api/admin/scraper/settings/([^/]+)', ['middleware' => ['auth', 'admin_only']], function ($params) use ($mysqli) {
+$router->delete('/api/admin/scraper/settings/([^/]+)', ['middleware' => ['auth', 'admin_only']], function ($key = null) use ($mysqli) {
     try {
-        $key = $params[1] ?? '';
+        $key = (string)($key ?? '');
 
         if (empty($key)) {
             http_response_code(400);
@@ -1740,6 +2748,70 @@ $router->get('/api/admin/scraper/logs', ['middleware' => ['auth', 'admin_only']]
 });
 
 /**
+ * Source metadata list
+ *
+ * Returns the available scraper categories and presets that power the admin form dropdowns.
+ *
+ * @route GET /api/admin/scraper/source-lists
+ * @middleware auth, admin_only
+ *
+ * @return JSON Response with category/preset collections
+ */
+$router->get('/api/admin/scraper/source-lists', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    try {
+        $model = new ScraperModel($mysqli);
+        $categories = $model->getCategories();
+        $presets = PresetRegistry::toArray();
+        $presetCategories = PresetRegistry::getCategories();
+
+        return jsonResponse([
+            'success' => true,
+            'categories' => $categories,
+            'presets' => $presets,
+            'preset_categories' => $presetCategories
+        ]);
+    } catch (Exception $e) {
+        error_log("Source lists fetch error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => 'Failed to load source metadata'], 500);
+    }
+});
+
+/**
+ * Guess preset for source
+ *
+ * @route GET /api/admin/scraper/presets/guess
+ * @middleware auth, admin_only
+ */
+$router->get('/api/admin/scraper/presets/guess', ['middleware' => ['auth', 'admin_only']], function () {
+    try {
+        $url = trim($_GET['url'] ?? '');
+        $contentType = trim($_GET['content_type'] ?? '');
+
+        $preset = null;
+        if ($url !== '') {
+            $preset = PresetRegistry::findByUrl($url);
+        }
+        if (!$preset && $contentType !== '') {
+            $preset = PresetRegistry::findByContentType($contentType);
+        }
+
+        $response = ['success' => true, 'preset' => null];
+        if ($preset) {
+            $response['preset'] = [
+                'key' => $preset->getKey(),
+                'name' => $preset->getName(),
+                'reason' => $url !== '' ? 'url' : 'content_type'
+            ];
+        }
+
+        return jsonResponse($response);
+    } catch (Exception $e) {
+        error_log("Preset guess error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => 'Failed to guess preset'], 500);
+    }
+});
+
+/**
  * Update Source via Direct Route
  *
  * Alternative endpoint for updating a scraper source configuration.
@@ -1779,15 +2851,15 @@ $router->get('/api/admin/scraper/logs', ['middleware' => ['auth', 'admin_only']]
  * @example Success: Redirects to /admin/scraper/sources with flash message
  * @example Error: {"success": false, "error": "Source not found"}
  */
-$router->post('/admin/scraper/sources/{id}', ['middleware' => ['auth', 'admin_only']], function ($params) use ($mysqli) {
+$router->post('/admin/scraper/sources/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         http_response_code(403);
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
     try {
-        $id = (int)$params['id'];
+        $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $existing = $model->getSourceById($id);
 
@@ -1899,7 +2971,7 @@ $router->post('/admin/scraper/sources/{id}', ['middleware' => ['auth', 'admin_on
  * @example Error: {"success": false, "error": "Valid URL is required"}
  */
 $router->post('/admin/scraper/advance/test', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -1973,16 +3045,23 @@ $router->post('/admin/scraper/advance/test', ['middleware' => ['auth', 'admin_on
  * @example Success: {"success": true, "result": {"job_id": 123, "items_count": 45}}
  * @example Error: {"success": false, "error": "Source not found"}
  */
-$router->post('/admin/scraper/sources/{id}/run', ['middleware' => ['auth', 'admin_only']], function ($params) use ($mysqli) {
+$router->post('/admin/scraper/sources/{id}/run', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
     try {
-        $id = (int)$params['id'];
+        $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $service = new ScraperService($model);
+    $maxRetries = 3;
+    $error = '';
+    $success = false;
+
+$maxRetries = 3;
+$error = '';
+$success = false;
 
         $result = $service->scrapeSource($id);
 
@@ -2101,7 +3180,7 @@ $router->get('/api/v1/scraper/queue/status', ['middleware' => ['auth', 'admin_on
  * @middleware auth, admin_only
  */
 $router->post('/api/v1/scraper/queue/run', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -2142,7 +3221,7 @@ $router->post('/api/v1/scraper/queue/run', ['middleware' => ['auth', 'admin_only
  * @middleware auth, admin_only
  */
 $router->post('/api/v1/scraper/queue/clear', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -2161,6 +3240,125 @@ $router->post('/api/v1/scraper/queue/clear', ['middleware' => ['auth', 'admin_on
         'message' => $message,
         'data' => $queueService->getQueueSummary()
     ]);
+});
+
+/**
+ * Get Collection Status
+ *
+ * Returns current collection statistics and recent activity.
+ *
+ * @route GET /api/v1/scraper/collect/status
+ * @middleware auth, admin_only
+ *
+ * @return array Collection status data
+ */
+$router->get('/api/v1/scraper/collect/status', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    try {
+        $model = new ScraperModel($mysqli);
+        $stats = $model->getOverallStats();
+        $recentActivity = $model->getRecentCollections(10);
+
+        return jsonResponse([
+            'success' => true,
+            'data' => [
+                'stats' => [
+                    'total_sources' => $stats['total_sources'] ?? 0,
+                    'active_sources' => $stats['active_sources'] ?? 0,
+                    'total_collections_today' => $stats['total_collections_today'] ?? 0,
+                    'total_items_today' => $stats['total_items_today'] ?? 0
+                ],
+                'recent_activity' => $recentActivity
+            ]
+        ]);
+    } catch (Exception $e) {
+        error_log("Collection status API error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => 'Failed to get collection status'], 500);
+    }
+});
+
+/**
+ * Start Data Collection
+ *
+ * Initiates a new data collection run based on the provided parameters.
+ *
+ * @route POST /api/v1/scraper/collect/start
+ * @middleware auth, admin_only
+ *
+ * @param type string Collection type ('all', 'sources', 'category')
+ * @param target_ids array Array of source or category IDs
+ * @param options array Additional collection options
+ *
+ * @return array Collection result data
+ */
+$router->post('/api/v1/scraper/collect/start', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        $type = $input['type'] ?? 'all';
+        $targetIds = $input['target_ids'] ?? [];
+        $options = $input['options'] ?? [];
+
+        $model = new ScraperModel($mysqli);
+        $queueService = new \App\Modules\Scraper\Queue\QueueService($mysqli);
+
+        // Get sources based on type
+        $sourcesToRun = [];
+        if ($type === 'all') {
+            $sourcesToRun = $model->getActiveSources();
+        } elseif ($type === 'sources') {
+            $sourcesToRun = array_filter($model->getAllSources(), function($source) use ($targetIds) {
+                return in_array($source['id'], $targetIds);
+            });
+        } elseif ($type === 'category') {
+            $sourcesToRun = array_filter($model->getAllSources(), function($source) use ($targetIds) {
+                return in_array($source['category_id'], $targetIds);
+            });
+        }
+
+        if (empty($sourcesToRun)) {
+            return jsonResponse(['success' => false, 'error' => 'No sources found for collection'], 400);
+        }
+
+        // Create jobs for each source
+        $jobIds = [];
+        foreach ($sourcesToRun as $source) {
+            $jobId = $model->createJob([
+                'source_id' => $source['id'],
+                'job_type' => 'manual',
+                'priority' => 1
+            ]);
+            $jobIds[] = $jobId;
+        }
+
+        // Trigger queue processing
+        spawnQueueWorker();
+
+        logActivity('scraper_manual_collection_started', null, null, [
+            'user_id' => $_SESSION['user_id'] ?? 0,
+            'job_ids' => $jobIds,
+            'type' => $type,
+            'sources_count' => count($sourcesToRun)
+        ]);
+
+        return jsonResponse([
+            'success' => true,
+            'message' => 'Collection started successfully',
+            'data' => [
+                'job_ids' => $jobIds,
+                'sources' => array_map(function($source) {
+                    return ['id' => $source['id'], 'name' => $source['name']];
+                }, $sourcesToRun),
+                'total_items' => 0,
+                'results' => []
+            ]
+        ]);
+    } catch (Exception $e) {
+        error_log("Collection start API error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => 'Failed to start collection'], 500);
+    }
 });
 
 /**
@@ -2208,7 +3406,7 @@ function spawnQueueWorker(array $args = []): bool
  */
 $router->post('/admin/scraper/queue/cancel', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -2255,7 +3453,7 @@ $router->post('/admin/scraper/queue/cancel', ['middleware' => ['auth', 'admin_on
  */
 $router->post('/admin/scraper/queue/retry', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -2298,7 +3496,7 @@ $router->post('/admin/scraper/queue/retry', ['middleware' => ['auth', 'admin_onl
  * @example Error: {"success": false, "error": "Failed to clear queue"}
  */
 $router->post('/admin/scraper/queue/clear', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -2338,7 +3536,7 @@ $router->post('/admin/scraper/queue/clear', ['middleware' => ['auth', 'admin_onl
  */
 $router->post('/admin/scraper/queue/process', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -2448,9 +3646,9 @@ $router->get('/admin/scraper/logs', ['middleware' => ['auth', 'admin_only']], fu
  *
  * @example Response: HTML page with detailed log information
  */
-$router->get('/admin/scraper/logs/{id}', ['middleware' => ['auth', 'admin_only']], function ($params) use ($twig, $mysqli) {
+$router->get('/admin/scraper/logs/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
     try {
-        $id = (int)$params['id'];
+        $id = (int)$id;
         $model = new ScraperModel($mysqli);
 
         $log = $model->getLogById($id);
@@ -2501,7 +3699,7 @@ $router->get('/admin/scraper/logs/{id}', ['middleware' => ['auth', 'admin_only']
  */
 $router->post('/admin/scraper/logs/clear', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -2649,9 +3847,9 @@ $router->get('/admin/scraper/categories/create', ['middleware' => ['auth', 'admi
  *
  * @return void Renders category form template with existing data
  */
-$router->get('/admin/scraper/categories/{id}/edit', ['middleware' => ['auth', 'admin_only']], function ($params) use ($twig, $mysqli) {
+$router->get('/admin/scraper/categories/{id}/edit', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
     try {
-        $id = (int)$params['id'];
+        $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $category = $model->getCategoryById($id);
         $categories = $model->getCategories();
@@ -2699,7 +3897,7 @@ $router->get('/admin/scraper/categories/{id}/edit', ['middleware' => ['auth', 'a
  */
 $router->post('/admin/scraper/categories/save', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         $_SESSION['error'] = 'Invalid CSRF token';
         header('Location: /admin/scraper/categories');
         exit;
@@ -2762,7 +3960,7 @@ $router->post('/admin/scraper/categories/save', ['middleware' => ['auth', 'admin
  */
 $router->post('/admin/scraper/categories/delete', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         $_SESSION['error'] = 'Invalid CSRF token';
         header('Location: /admin/scraper/categories');
         exit;
@@ -2871,9 +4069,9 @@ $router->get('/admin/scraper/jobs', ['middleware' => ['auth', 'admin_only']], fu
  *
  * @example Response: HTML page with detailed job information
  */
-$router->get('/admin/scraper/jobs/{id}', ['middleware' => ['auth', 'admin_only']], function ($params) use ($twig, $mysqli) {
+$router->get('/admin/scraper/jobs/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
     try {
-        $id = (int)$params['id'];
+        $id = (int)$id;
         $model = new ScraperModel($mysqli);
 
         $job = $model->getJobById($id);
@@ -2892,7 +4090,10 @@ $router->get('/admin/scraper/jobs/{id}', ['middleware' => ['auth', 'admin_only']
             'pageTitle' => 'Job Details'
         ]);
     } catch (Exception $e) {
-        error_log("Job detail error: " . $e->getMessage());
+        $service = new ScraperService($model);
+error_log("Job detail error: " . $e->getMessage());
+
+$service = new ScraperService($model);
         http_response_code(500);
         echo $twig->render('error.twig', [
             'pageTitle' => 'Error',
@@ -2982,9 +4183,9 @@ $router->get('/admin/scraper/mobiles', ['middleware' => ['auth', 'admin_only']],
  *
  * @example Response: HTML page with detailed mobile information
  */
-$router->get('/admin/scraper/mobiles/{id}', ['middleware' => ['auth', 'admin_only']], function ($params) use ($twig, $mysqli) {
+$router->get('/admin/scraper/mobiles/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
     try {
-        $id = (int)$params['id'];
+        $id = (int)$id;
         $model = new ScraperModel($mysqli);
 
         $mobile = $model->getMobileById($id);
@@ -3028,7 +4229,7 @@ $router->get('/admin/scraper/mobiles/{id}', ['middleware' => ['auth', 'admin_onl
  */
 $router->post('/admin/scraper/mobiles/delete', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         $_SESSION['error'] = 'Invalid CSRF token';
         header('Location: /admin/scraper/mobiles');
         exit;
@@ -3134,7 +4335,7 @@ $router->get('/admin/scraper/seen-urls', ['middleware' => ['auth', 'admin_only']
  */
 $router->post('/admin/scraper/seen-urls/delete', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         $_SESSION['error'] = 'Invalid CSRF token';
         header('Location: /admin/scraper/seen-urls');
         exit;
@@ -3231,7 +4432,7 @@ $router->get('/admin/scraper/settings', ['middleware' => ['auth', 'admin_only']]
  */
 $router->post('/admin/scraper/settings/create', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         $_SESSION['error'] = 'Invalid CSRF token';
         header('Location: /admin/scraper/settings');
         exit;
@@ -3310,7 +4511,7 @@ $router->post('/admin/scraper/settings/create', ['middleware' => ['auth', 'admin
  */
 $router->post('/admin/scraper/settings/update', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         $_SESSION['error'] = 'Invalid CSRF token';
         header('Location: /admin/scraper/settings');
         exit;
@@ -3393,7 +4594,7 @@ $router->post('/admin/scraper/settings/update', ['middleware' => ['auth', 'admin
  */
 $router->post('/admin/scraper/settings/delete', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         $_SESSION['error'] = 'Invalid CSRF token';
         header('Location: /admin/scraper/settings');
         exit;
@@ -3425,6 +4626,46 @@ $router->post('/admin/scraper/settings/delete', ['middleware' => ['auth', 'admin
         $_SESSION['error'] = 'Failed to delete setting: ' . $e->getMessage();
         header('Location: /admin/scraper/settings');
         exit;
+    }
+});
+
+/**
+ * Diagnostics Dashboard
+ *
+ * Displays scraper diagnostics and health check information.
+ *
+ * @route GET /admin/scraper/diagnostics
+ * @middleware auth, admin_only
+ *
+ * @return void Renders diagnostics template with system health data
+ */
+$router->get('/admin/scraper/diagnostics', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    try {
+        $model = new ScraperModel($mysqli);
+        $jobs = $model->getJobs(1, 1); // Get first job to check if any exist
+        $diagnostics = [
+            'database_status' => 'ok', // Placeholder - could implement actual checks
+            'queue_status' => 'ok',
+            'sources_count' => count($model->getAllSources()),
+            'jobs_count' => $jobs['total'] ?? 0,
+            'last_job_time' => 'N/A', // Could implement later
+            'system_info' => [
+                'php_version' => PHP_VERSION,
+                'server_time' => date('Y-m-d H:i:s')
+            ]
+        ];
+
+        echo $twig->render('scraper/diagnostics/index.twig', [
+            'diagnostics' => $diagnostics,
+            'pageTitle' => 'Scraper Diagnostics'
+        ]);
+    } catch (Exception $e) {
+        error_log("Diagnostics page error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig', [
+            'pageTitle' => 'Error',
+            'message' => 'Failed to load diagnostics page.'
+        ]);
     }
 });
 
@@ -3493,14 +4734,14 @@ $router->get('/admin/scraper/presets', ['middleware' => ['auth', 'admin_only']],
  * @example Success: {"success": true, "message": "Preset applied successfully", "source_id": 123}
  * @example Error: {"success": false, "error": "Preset not found"}
  */
-$router->post('/admin/scraper/presets/{key}/apply', ['middleware' => ['auth', 'admin_only']], function ($params) use ($mysqli) {
+$router->post('/admin/scraper/presets/{key}/apply', ['middleware' => ['auth', 'admin_only']], function ($key) use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
     try {
-        $key = $params['key'];
+        $key = (string)$key;
         $preset = PresetRegistry::getByKey($key);
 
         if (!$preset) {
@@ -3590,9 +4831,9 @@ $router->post('/admin/scraper/presets/{key}/apply', ['middleware' => ['auth', 'a
  *
  * @example Response: HTML page with preset details and configuration
  */
-$router->get('/admin/scraper/presets/{key}', ['middleware' => ['auth', 'admin_only']], function ($params) use ($twig) {
+$router->get('/admin/scraper/presets/{key}', ['middleware' => ['auth', 'admin_only']], function ($key) use ($twig) {
     try {
-        $key = $params['key'];
+        $key = (string)$key;
         $preset = PresetRegistry::getByKey($key);
 
         if (!$preset) {
@@ -3621,6 +4862,32 @@ $router->get('/admin/scraper/presets/{key}', ['middleware' => ['auth', 'admin_on
         echo $twig->render('error.twig', [
             'pageTitle' => 'Error',
             'message' => 'Failed to load preset details.'
+        ]);
+    }
+});
+
+/**
+ * Create Preset Form
+ *
+ * Displays form for creating a new scraper preset.
+ *
+ * @route GET /admin/scraper/presets/create
+ * @middleware auth, admin_only
+ *
+ * @return void Renders create preset template
+ */
+$router->get('/admin/scraper/presets/create', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    try {
+        echo $twig->render('scraper/presets/create.twig', [
+            'pageTitle' => 'Create Scraper Preset',
+            'csrf_token' => generateCsrfToken()
+        ]);
+    } catch (Exception $e) {
+        error_log("Create preset form error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig', [
+            'pageTitle' => 'Error',
+            'message' => 'Failed to load create preset form.'
         ]);
     }
 });
@@ -3680,9 +4947,9 @@ $router->get('/api/v1/scraper/sources', ['middleware' => ['auth']], function () 
  * @example Success: {"success": true, "data": {...}}
  * @example Error: {"success": false, "error": "Source not found"}
  */
-$router->get('/api/v1/scraper/sources/{id}', ['middleware' => ['auth']], function ($params) use ($mysqli) {
+$router->get('/api/v1/scraper/sources/{id}', ['middleware' => ['auth']], function ($id) use ($mysqli) {
     try {
-        $id = (int)$params['id'];
+        $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $source = $model->getSourceById($id);
 
@@ -3723,7 +4990,7 @@ $router->get('/api/v1/scraper/sources/{id}', ['middleware' => ['auth']], functio
  */
 $router->post('/api/v1/scraper/sources', ['middleware' => ['auth']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -3774,14 +5041,14 @@ $router->post('/api/v1/scraper/sources', ['middleware' => ['auth']], function ()
  * @example Success: {"success": true, "message": "Source updated successfully"}
  * @example Error: {"success": false, "error": "Failed to update source"}
  */
-$router->put('/api/v1/scraper/sources/{id}', ['middleware' => ['auth']], function ($params) use ($mysqli) {
+$router->put('/api/v1/scraper/sources/{id}', ['middleware' => ['auth']], function ($id) use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
     try {
-        $id = (int)$params['id'];
+        $id = (int)$id;
         $input = json_decode(file_get_contents('php://input'), true);
 
         if (!$input) {
@@ -3825,14 +5092,14 @@ $router->put('/api/v1/scraper/sources/{id}', ['middleware' => ['auth']], functio
  * @example Success: {"success": true, "message": "Source deleted successfully"}
  * @example Error: {"success": false, "error": "Failed to delete source"}
  */
-$router->delete('/api/v1/scraper/sources/{id}', ['middleware' => ['auth']], function ($params) use ($mysqli) {
+$router->delete('/api/v1/scraper/sources/{id}', ['middleware' => ['auth']], function ($id) use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
     try {
-        $id = (int)$params['id'];
+        $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $result = $model->deleteSource($id);
 
@@ -3879,7 +5146,7 @@ $router->delete('/api/v1/scraper/sources/{id}', ['middleware' => ['auth']], func
  * @example Error: {"success": false, "error": "No selector provided"}
  */
 $router->post('/admin/scraper/selectors/test-css', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken()) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -3897,1460 +5164,142 @@ $router->post('/admin/scraper/selectors/test-css', ['middleware' => ['auth', 'ad
             return jsonResponse(['success' => false, 'error' => 'No URL provided'], 400);
         }
 
-        // Fetch the URL content
-        $httpClient = new \App\Modules\Scraper\HttpClientService();
-        $response = $httpClient->get($url);
+        $service = new ScraperService($model);
+// Fetch the URL content
+// Create and initialize dependencies
+$model = new ScraperModel($mysqli);
+$service = new ScraperService($model);
 
-        if (!$httpClient->isSuccess($response)) {
-            return jsonResponse([
-                'success' => false,
-                'error' => 'Failed to fetch URL (HTTP ' . $httpClient->getStatusCode($response) . ')'
-            ], 400);
-        }
+// Start the collection process
+$service = new ScraperService($model);
+$maxRetries = 3;
+$error = '';
+$success = false;
 
-        $html = $httpClient->getBody($response);
+$maxRetries = 3;
+$error = '';
+$success = false;
 
-        // Test the selector
-        $testingService = new \App\Modules\Scraper\Services\SelectorTestingService($html);
-        $result = $testingService->testCssSelector($selector, $maxSamples);
-
-        return jsonResponse($result);
-    } catch (Exception $e) {
-        error_log("Test CSS selector error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * Test XPath Selector
- *
- * Tests an XPath selector against a URL to verify it works correctly.
- *
- * @route POST /admin/scraper/selectors/test-xpath
- * @middleware auth, admin_only
- *
- * @request_body JSON object containing:
- *               - selector (string, required): XPath selector to test
- *               - url (string, required): URL to test against
- *               - max_samples (int, optional): Maximum samples to return (default: 5)
- *
- * @return JSON Response with:
- *               - success: boolean
- *               - selector: Tested selector
- *               - matches: Array of matched elements
- *               - count: Number of matches
- *               - samples: Array of sample matches
- *               - error: string (if failed)
- *
- * @throws Exception If URL fetch fails or selector testing fails
- *
- * @example Success: {"success": true, "selector": "//div[@class='title']", "count": 10, "samples": [...]}
- * @example Error: {"success": false, "error": "No selector provided"}
- */
-$router->post('/admin/scraper/selectors/test-xpath', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken()) {
-        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
-    }
-
+for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
     try {
-        $input = json_decode((string)file_get_contents('php://input'), true);
-        $selector = trim($input['selector'] ?? '');
-        $url = trim($input['url'] ?? '');
-        $maxSamples = (int)($input['max_samples'] ?? 5);
-
-        if (empty($selector)) {
-            return jsonResponse(['success' => false, 'error' => 'No selector provided'], 400);
-        }
-
-        if (empty($url)) {
-            return jsonResponse(['success' => false, 'error' => 'No URL provided'], 400);
-        }
-
-        // Fetch the URL
-        $httpClient = new \App\Modules\Scraper\HttpClientService();
-        $response = $httpClient->get($url);
-
-        if (!$httpClient->isSuccess($response)) {
-            return jsonResponse([
-                'success' => false,
-                'error' => 'Failed to fetch URL (HTTP ' . $httpClient->getStatusCode($response) . ')'
-            ], 400);
-        }
-
-        $html = $httpClient->getBody($response);
-
-        // Test the XPath selector
-        $testingService = new \App\Modules\Scraper\Services\SelectorTestingService($html);
-        $result = $testingService->testXPathSelector($selector, $maxSamples);
-
-        return jsonResponse($result);
+        $result = $service->scrapeSource((int)$source['id']);
+        $success = !empty($result['success']);
+        break; // Exit loop on success
     } catch (Exception $e) {
-        error_log("Test XPath selector error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+        $error = $e->getMessage();
+        error_log("Attempt $attempt failed for source ID {$source['id']}: $error");
+        // Optionally add a delay before retrying
+        if ($attempt < $maxRetries) {
+            sleep(1); // Sleep for 1 second before retrying
+        }
     }
-});
+}
+        $startTime = microtime(true);
+        $collectionData = [
+            'job_id' => $jobId,
+            'sources' => array_map(function ($s) {
+                return ['id' => $s['id'], 'name' => $s['name']];
+            }, $sourcesToRun),
+            'total_sources' => count($sourcesToRun),
+            'status' => 'running',
+            'started_at' => date('Y-m-d H:i:s'),
+            '_start_microtime' => $startTime // Store precise start time
+        ];
 
-$router->post('/api/v1/scraper/presets/test-selectors', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
-    if (!ensureCsrfToken()) {
-        return;
-    }
+        // For now, run synchronously (can be made async later)
+        $service = new ScraperService($model);
+    $maxRetries = 3;
+    $error = '';
+    $success = false;
 
-    try {
-        $input = parseJsonRequest();
-        $url = trim($input['url'] ?? '');
-        $selectors = $input['selectors'] ?? [];
-        $maxSamples = min(max((int)($input['max_samples'] ?? 5), 1), 10);
-
-        if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
-            return jsonResponse(['success' => false, 'error' => 'Valid URL is required'], 400);
-        }
-        if (!is_array($selectors) || empty($selectors)) {
-            return jsonResponse(['success' => false, 'error' => 'Selectors object is required'], 400);
-        }
-
-        $httpClient = new \App\Modules\Scraper\HttpClientService();
-        $response = $httpClient->get($url);
-
-        if (!$httpClient->isSuccess($response)) {
-            return jsonResponse([
-                'success' => false,
-                'error' => 'Failed to fetch the URL (HTTP ' . $httpClient->getStatusCode($response) . ')'
-            ], 400);
-        }
-
-        $html = $httpClient->getBody($response);
-        $testingService = new \App\Modules\Scraper\Services\SelectorTestingService($html);
-
+$maxRetries = 3;
+$error = '';
+$success = false;
         $results = [];
-        foreach ($selectors as $name => $value) {
-            $selector = '';
-            $type = 'css';
-            if (is_array($value)) {
-                $selector = trim($value['selector'] ?? '');
-                $type = strtolower($value['type'] ?? 'css');
-            } else {
-                $selector = trim((string)$value);
-            }
+        $totalItems = 0;
 
-            if ($selector === '') {
-                $results[$name] = [
-                    'success' => false,
-                    'error' => 'Selector is empty'
+        foreach ($sourcesToRun as $source) {
+            try {
+                $maxRetries = 3;
+$error = '';
+$success = false;
+
+for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+    try {
+        $result = $service->scrapeSource((int)$source['id']);
+        $success = !empty($result['success']);
+        break; // Exit loop on success
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+        error_log("Attempt $attempt failed for source ID {$source['id']}: $error");
+        // Optionally add a delay before retrying
+        if ($attempt < $maxRetries) {
+            sleep(1); // Sleep for 1 second before retrying
+        }
+    }
+}
+                $success = !empty($result['success']);
+                $itemsCollected = $result['stats']['items_saved'] ?? 0;
+
+                $results[] = [
+                    'source_id' => $source['id'],
+                    'source_name' => $source['name'],
+                    'success' => $success,
+                    'items_collected' => $itemsCollected,
+                    'error' => $success ? null : ($result['error'] ?? 'Unknown error')
                 ];
-                continue;
-            }
 
-            if ($type === 'xpath') {
-                $results[$name] = $testingService->testXPathSelector($selector, $maxSamples);
-            } else {
-                $results[$name] = $testingService->testCssSelector($selector, $maxSamples);
-            }
-        }
-
-        return jsonResponse([
-            'success' => true,
-            'url' => $url,
-            'results' => $results
-        ]);
-    } catch (Exception $e) {
-        error_log("Preset selector test error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * Test Attribute Extraction
- *
- * Tests extracting a specific attribute from elements matched by a selector.
- * Useful for extracting URLs from href attributes, image sources from src attributes, etc.
- *
- * @route POST /admin/scraper/selectors/test-attribute
- * @middleware auth, admin_only
- *
- * @request_body JSON object containing:
- *               - selector (string, required): CSS or XPath selector to match elements
- *               - attribute (string, required): Attribute name to extract (e.g., 'href', 'src', 'data-id')
- *               - url (string, required): URL to test against
- *               - max_samples (int, optional): Maximum samples to return (default: 5)
- *
- * @return JSON Response with:
- *               - success: boolean
- *               - selector: Tested selector
- *               - attribute: Extracted attribute name
- *               - matches: Array of extracted attribute values
- *               - count: Number of matches
- *               - samples: Array of sample matches with element context
- *               - error: string (if failed)
- *
- * @throws Exception If URL fetch fails or attribute extraction fails
- *
- * @example Success: {"success": true, "selector": "a.link", "attribute": "href", "count": 10, "samples": [...]}
- * @example Error: {"success": false, "error": "No attribute specified"}
- */
-$router->post('/admin/scraper/selectors/test-attribute', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken()) {
-        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
-    }
-
-    try {
-        $input = json_decode((string)file_get_contents('php://input'), true);
-        $selector = trim($input['selector'] ?? '');
-        $attribute = trim($input['attribute'] ?? '');
-        $url = trim($input['url'] ?? '');
-        $maxSamples = (int)($input['max_samples'] ?? 5);
-
-        if (empty($selector)) {
-            return jsonResponse(['success' => false, 'error' => 'No selector provided'], 400);
-        }
-
-        if (empty($attribute)) {
-            return jsonResponse(['success' => false, 'error' => 'No attribute specified'], 400);
-        }
-
-        if (empty($url)) {
-            return jsonResponse(['success' => false, 'error' => 'No URL provided'], 400);
-        }
-
-        // Fetch the URL
-        $httpClient = new \App\Modules\Scraper\HttpClientService();
-        $response = $httpClient->get($url);
-
-        if (!$httpClient->isSuccess($response)) {
-            return jsonResponse([
-                'success' => false,
-                'error' => 'Failed to fetch URL (HTTP ' . $httpClient->getStatusCode($response) . ')'
-            ], 400);
-        }
-
-        $html = $httpClient->getBody($response);
-
-        // Test attribute extraction
-        $testingService = new \App\Modules\Scraper\Services\SelectorTestingService($html);
-        $result = $testingService->testAttributeExtraction($selector, $attribute, $maxSamples);
-
-        return jsonResponse($result);
-    } catch (Exception $e) {
-        error_log("Test attribute extraction error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * Test Nested Selectors
- *
- * Tests extracting multiple fields from container elements using nested selectors.
- * This is useful for scraping structured data like product listings, job postings, or article cards.
- *
- * @route POST /admin/scraper/selectors/test-nested
- * @middleware auth, admin_only
- *
- * @request_body JSON object containing:
- *               - container_selector (string, required): Selector for container elements
- *               - field_mappings (array, required): Array of field name to selector mappings
- *                 Example: {"title": "h2.title", "price": ".price", "link": "a@href"}
- *               - url (string, required): URL to test against
- *               - max_samples (int, optional): Maximum samples to return (default: 5)
- *
- * @return JSON Response with:
- *               - success: boolean
- *               - container_selector: Tested container selector
- *               - field_mappings: Field mappings used
- *               - containers: Number of container elements found
- *               - samples: Array of extracted data samples
- *               - error: string (if failed)
- *
- * @throws Exception If URL fetch fails or nested extraction fails
- *
- * @example Success: {"success": true, "containers": 5, "samples": [{"title": "Product 1", "price": "$10"}, ...]}
- * @example Error: {"success": false, "error": "No field mappings provided"}
- */
-$router->post('/admin/scraper/selectors/test-nested', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken()) {
-        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
-    }
-
-    try {
-        $input = json_decode((string)file_get_contents('php://input'), true);
-        $containerSelector = trim($input['container_selector'] ?? '');
-        $fieldMappings = $input['field_mappings'] ?? [];
-        $url = trim($input['url'] ?? '');
-        $maxSamples = (int)($input['max_samples'] ?? 5);
-
-        if (empty($containerSelector)) {
-            return jsonResponse(['success' => false, 'error' => 'No container selector provided'], 400);
-        }
-
-        if (empty($fieldMappings)) {
-            return jsonResponse(['success' => false, 'error' => 'No field mappings provided'], 400);
-        }
-
-        if (empty($url)) {
-            return jsonResponse(['success' => false, 'error' => 'No URL provided'], 400);
-        }
-
-        // Fetch the URL
-        $httpClient = new \App\Modules\Scraper\HttpClientService();
-        $response = $httpClient->get($url);
-
-        if (!$httpClient->isSuccess($response)) {
-            return jsonResponse([
-                'success' => false,
-                'error' => 'Failed to fetch URL (HTTP ' . $httpClient->getStatusCode($response) . ')'
-            ], 400);
-        }
-
-        $html = $httpClient->getBody($response);
-
-        // Test nested selection
-        $testingService = new \App\Modules\Scraper\Services\SelectorTestingService($html);
-        $fieldMappingsJson = is_array($fieldMappings) ? json_encode($fieldMappings) : $fieldMappings;
-        $result = $testingService->testNestedSelection($containerSelector, $fieldMappingsJson, $maxSamples);
-
-        return jsonResponse($result);
-    } catch (Exception $e) {
-        error_log("Test nested selectors error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * Validate Multiple Selectors
- *
- * Validates a batch of selectors against a URL to check if they work correctly.
- * Useful for validating all selectors in a scraper configuration before deployment.
- *
- * @route POST /admin/scraper/selectors/validate-batch
- * @middleware auth, admin_only
- *
- * @request_body JSON object containing:
- *               - selectors (array, required): Array of selectors to validate
- *                 Each selector can be a string or object with 'selector' and 'type' properties
- *               - url (string, required): URL to test against
- *
- * @return JSON Response with:
- *               - success: boolean
- *               - selectors_count: Total number of selectors tested
- *               - valid_count: Number of valid selectors
- *               - results: Array of validation results for each selector
- *                 - selector: The selector tested
- *                 - valid: boolean indicating if selector works
- *                 - matches: Number of matches found
- *                 - error: Error message if validation failed
- *
- * @throws Exception If URL fetch fails or validation fails
- *
- * @example Success: {"success": true, "selectors_count": 5, "valid_count": 4, "results": [...]}
- * @example Error: {"success": false, "error": "No selectors provided"}
- */
-$router->post('/admin/scraper/selectors/validate-batch', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken()) {
-        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
-    }
-
-    try {
-        $input = json_decode((string)file_get_contents('php://input'), true);
-        $selectors = $input['selectors'] ?? [];
-        $url = trim($input['url'] ?? '');
-
-        if (empty($selectors) || !is_array($selectors)) {
-            return jsonResponse(['success' => false, 'error' => 'No selectors provided'], 400);
-        }
-
-        if (empty($url)) {
-            return jsonResponse(['success' => false, 'error' => 'No URL provided'], 400);
-        }
-
-        // Fetch the URL
-        $httpClient = new \App\Modules\Scraper\HttpClientService();
-        $response = $httpClient->get($url);
-
-        if (!$httpClient->isSuccess($response)) {
-            return jsonResponse([
-                'success' => false,
-                'error' => 'Failed to fetch URL (HTTP ' . $httpClient->getStatusCode($response) . ')'
-            ], 400);
-        }
-
-        $html = $httpClient->getBody($response);
-
-        // Validate batch
-        $testingService = new \App\Modules\Scraper\Services\SelectorTestingService($html);
-        $results = $testingService->validateSelectors($selectors);
-
-        return jsonResponse([
-            'success' => true,
-            'selectors_count' => count($selectors),
-            'valid_count' => count(array_filter($results, fn($r) => $r['valid'])),
-            'results' => $results
-        ]);
-    } catch (Exception $e) {
-        error_log("Validate batch selectors error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * Get Page Metadata
- *
- * Retrieves metadata from a webpage including title, description, canonical URL, and HTML size.
- * Useful for understanding page structure before creating scraper configurations.
- *
- * @route POST /admin/scraper/selectors/page-info
- * @middleware auth (optional - can be used without auth for testing)
- *
- * @request_body JSON object containing:
- *               - url (string, required): URL to fetch metadata from
- *
- * @return JSON Response with:
- *               - success: boolean
- *               - url: The URL that was fetched
- *               - title: Page title from <title> tag
- *               - description: Meta description from <meta name="description">
- *               - canonical_url: Canonical URL from <link rel="canonical">
- *               - html_size: Size of HTML content in bytes
- *               - message: Status message
- *
- * @throws Exception If URL fetch fails or metadata extraction fails
- *
- * @example Success: {"success": true, "url": "https://example.com", "title": "Example", "description": "...", "canonical_url": "...", "html_size": 12345}
- * @example Error: {"success": false, "error": "No URL provided"}
- */
-$router->post('/admin/scraper/selectors/page-info', function () use ($mysqli) {
-    // Validate CSRF token
-    if (!validateCsrfToken()) {
-        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
-    }
-
-    try {
-        $input = json_decode((string)file_get_contents('php://input'), true);
-        $url = trim($input['url'] ?? '');
-
-        if (empty($url)) {
-            return jsonResponse(['success' => false, 'error' => 'No URL provided'], 400);
-        }
-
-        // Fetch the URL
-        $httpClient = new \App\Modules\Scraper\HttpClientService();
-        $response = $httpClient->get($url);
-
-        if (!$httpClient->isSuccess($response)) {
-            return jsonResponse([
-                'success' => false,
-                'error' => 'Failed to fetch URL (HTTP ' . $httpClient->getStatusCode($response) . ')'
-            ], 400);
-        }
-
-        $html = $httpClient->getBody($response);
-        $testingService = new \App\Modules\Scraper\Services\SelectorTestingService($html);
-
-        return jsonResponse([
-            'success' => true,
-            'url' => $url,
-            'title' => $testingService->getPageTitle(),
-            'description' => $testingService->getPageDescription(),
-            'canonical_url' => $testingService->detectPageUrl(),
-            'html_size' => strlen($html),
-            'message' => 'Page metadata retrieved'
-        ]);
-    } catch (Exception $e) {
-        error_log("Get page info error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * AI-Powered Selector Suggestions
- *
- * Uses AI to analyze a webpage and suggest optimal CSS/XPath selectors for common content types.
- *
- * @route POST /admin/scraper/selectors/ai-suggest
- * @middleware auth, admin_only
- *
- * @request_body JSON object containing:
- *               - url (string, required): URL to analyze
- *               - content_type (string, optional): Type of content to extract ('articles', 'products', 'news', etc.)
- *
- * @return JSON Response with:
- *               - success: boolean
- *               - suggestions: Array of selector suggestions
- *                 - type: 'css' or 'xpath'
- *                 - selector: The suggested selector
- *                 - confidence: Confidence score (0-1)
- *                 - description: What this selector targets
- *                 - sample_matches: Number of matches found
- *               - page_analysis: Basic page structure analysis
- *
- * @example {"success": true, "suggestions": [...], "page_analysis": {...}}
- */
-$router->post('/admin/scraper/selectors/ai-suggest', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken()) {
-        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
-    }
-
-    try {
-        $input = json_decode((string)file_get_contents('php://input'), true);
-        $url = trim($input['url'] ?? '');
-        $contentType = trim($input['content_type'] ?? 'articles');
-
-        if (empty($url)) {
-            return jsonResponse(['success' => false, 'error' => 'No URL provided'], 400);
-        }
-
-        // Fetch the URL
-        $httpClient = new \App\Modules\Scraper\HttpClientService();
-        $response = $httpClient->get($url);
-
-        if (!$httpClient->isSuccess($response)) {
-            return jsonResponse([
-                'success' => false,
-                'error' => 'Failed to fetch URL (HTTP ' . $httpClient->getStatusCode($response) . ')'
-            ], 400);
-        }
-
-        $html = $httpClient->getBody($response);
-        $testingService = new \App\Modules\Scraper\Services\SelectorTestingService($html);
-
-        // Use AI analyzer to analyze HTML and get selector suggestions
-        $aiAnalyzer = new \App\Modules\Scraper\AIScraperAnalyzer($mysqli);
-        $analysis = $aiAnalyzer->analyzeHtml($html, $url);
-
-        // Convert analysis results to selector suggestions
-        $suggestions = [];
-        if ($analysis->success) {
-            // Use recommended selectors from AI analysis
-            foreach ($analysis->recommendedSelectors as $type => $selectors) {
-                foreach ($selectors as $selector) {
-                    if (!empty($selector)) {
-                        // Test the selector
-                        $testResult = $testingService->testCssSelector($selector, 3);
-
-                        $suggestions[] = [
-                            'type' => 'css',
-                            'selector' => $selector,
-                            'confidence' => $analysis->confidence,
-                            'description' => ucfirst($type) . ' selector (AI recommended)',
-                            'sample_matches' => $testResult['count'] ?? 0
-                        ];
-                    }
+                if ($success) {
+                    $totalItems += $itemsCollected;
                 }
-            }
-
-            // Also include validated results with their scores
-            foreach ($analysis->validatedResults as $type => $results) {
-                foreach ($results as $result) {
-                    if ($result->isValid()) {
-                        $suggestions[] = [
-                            'type' => 'css',
-                            'selector' => $result->selector,
-                            'confidence' => $result->score,
-                            'description' => ucfirst($type) . ' selector (validated)',
-                            'sample_matches' => $result->found
-                        ];
-                    }
-                }
+            } catch (Exception $e) {
+                $results[] = [
+                    'source_id' => $source['id'],
+                    'source_name' => $source['name'],
+                    'success' => false,
+                    'items_collected' => 0,
+                    'error' => $e->getMessage()
+                ];
             }
         }
 
-        // If no AI suggestions, provide basic fallback suggestions
-        if (empty($suggestions)) {
-            $basicSelectors = [
-                ['type' => 'css', 'selector' => 'article', 'description' => 'Article elements'],
-                ['type' => 'css', 'selector' => '.post', 'description' => 'Post containers'],
-                ['type' => 'css', 'selector' => '.entry', 'description' => 'Entry containers'],
-                ['type' => 'css', 'selector' => '.content', 'description' => 'Content containers'],
-                ['type' => 'css', 'selector' => 'h1, h2, h3', 'description' => 'Headings'],
-            ];
+        // Calculate execution time
+        $completedAt = date('Y-m-d H:i:s');
+        $executionTime = round(microtime(true) - ($collectionData['_start_microtime'] ?? microtime(true)), 2);
 
-            foreach ($basicSelectors as $basic) {
-                $testResult = $testingService->testCssSelector($basic['selector'], 3);
-                if ($testResult['count'] > 0) {
-                    $suggestions[] = [
-                        'type' => $basic['type'],
-                        'selector' => $basic['selector'],
-                        'confidence' => 0.3,
-                        'description' => $basic['description'],
-                        'sample_matches' => $testResult['count']
-                    ];
-                }
-            }
-        }
+        // Update job status
+        $model->updateCollectionJob($jobId, [
+            'status' => 'completed',
+            'completed_at' => $completedAt,
+            'execution_time' => $executionTime,
+            'results' => json_encode($results),
+            'total_items' => $totalItems
+        ]);
 
-        // Basic page analysis
-        $pageAnalysis = [
-            'title' => $testingService->getPageTitle(),
-            'description' => $testingService->getPageDescription(),
-            'canonical_url' => $testingService->detectPageUrl(),
-            'has_structured_data' => strpos($html, 'application/ld+json') !== false,
-            'estimated_content_blocks' => substr_count($html, '<article') + substr_count($html, '<div') + substr_count($html, '<section'),
-            'html_size' => strlen($html)
-        ];
+        $collectionData['completed_at'] = date('Y-m-d H:i:s');
+        $collectionData['results'] = $results;
+        $collectionData['total_items'] = $totalItems;
+        $collectionData['status'] = 'completed';
+        $collectionData['execution_time'] = $executionTime;
+
+        // Remove internal field
+        unset($collectionData['_start_microtime']);
+
+        // Log activity
+        logActivity('scraper_manual_collection', null, null, [
+            'user_id' => $_SESSION['user_id'] ?? 0,
+            'job_id' => $jobId,
+            'sources_count' => count($sourcesToRun),
+            'total_items' => $totalItems
+        ]);
 
         return jsonResponse([
             'success' => true,
-            'suggestions' => $suggestions,
-            'page_analysis' => $pageAnalysis,
-            'message' => 'AI selector suggestions generated'
+            'message' => "Collection completed successfully. Collected {$totalItems} items from " . count($sourcesToRun) . " sources.",
+            'data' => $collectionData
         ]);
     } catch (Exception $e) {
-        error_log("AI selector suggestions error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * API: Run Source
- *
- * Triggers a scraping job for a specific source configuration.
- * This is a programmatic API endpoint for external systems to trigger scraping.
- *
- * @route POST /api/v1/scraper/sources/{id}/run
- * @middleware auth
- *
- * @param id (int, required): Source ID to run
- *
- * @return JSON Response with:
- *               - success: boolean
- *               - data: Job information including job_id, status, and estimated completion time
- *
- * @throws Exception If source not found or scraping fails to start
- *
- * @example Success: {"success": true, "data": {"job_id": 123, "status": "queued", "eta": "5 minutes"}}
- * @example Error: {"success": false, "error": "Source not found"}
- */
-$router->post('/api/v1/scraper/sources/{id}/run', ['middleware' => ['auth']], function ($params) use ($mysqli) {
-    // Validate CSRF token
-    if (!validateCsrfToken()) {
-        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
-    }
-
-    try {
-        $id = (int)$params['id'];
-        $model = new ScraperModel($mysqli);
-        $service = new \App\Modules\Scraper\ScraperService($model);
-
-        $result = $service->runSource($id);
-
-        return jsonResponse([
-            'success' => true,
-            'data' => $result
-        ]);
-    } catch (Exception $e) {
-        error_log("API run source error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * API: Get Queue
- *
- * Retrieves pending scraping jobs from the queue.
- * Useful for monitoring queue status and job progress.
- *
- * @route GET /api/v1/scraper/queue
- * @middleware auth
- *
- * @return JSON Response with:
- *               - success: boolean
- *               - data: Array of pending jobs
- *                 - id: Job ID
- *                 - source_id: Source configuration ID
- *                 - source_name: Source name
- *                 - status: Job status (pending, running, completed, failed)
- *                 - created_at: Job creation timestamp
- *                 - priority: Job priority level
- *
- * @throws Exception If queue retrieval fails
- *
- * @example Success: {"success": true, "data": [{"id": 1, "source_id": 5, "status": "pending", ...}]}
- */
-$router->get('/api/v1/scraper/queue', ['middleware' => ['auth']], function () use ($mysqli) {
-    try {
-        $model = new ScraperModel($mysqli);
-        $jobs = $model->getPendingJobs(50);
-
-        return jsonResponse([
-            'success' => true,
-            'data' => $jobs
-        ]);
-    } catch (Exception $e) {
-        error_log("API get queue error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * API: Get Logs
- *
- * Retrieves scraper logs with optional filtering by source and log level.
- * Useful for debugging and monitoring scraper performance.
- *
- * @route GET /api/v1/scraper/logs
- * @middleware auth
- *
- * @query_param source_id (int, optional): Filter logs by source ID
- * @query_param level (string, optional): Filter logs by level (info, warning, error)
- * @query_param limit (int, optional): Maximum number of logs to return (default: 100)
- *
- * @return JSON Response with:
- *               - success: boolean
- *               - data: Array of log entries
- *                 - id: Log ID
- *                 - source_id: Source ID
- *                 - level: Log level
- *                 - message: Log message
- *                 - context: Additional context data
- *                 - created_at: Log timestamp
- *               - pagination: Pagination metadata
- *
- * @throws Exception If log retrieval fails
- *
- * @example Success: {"success": true, "data": [{"id": 1, "level": "info", "message": "...", ...}], "pagination": {...}}
- */
-$router->get('/api/v1/scraper/logs', ['middleware' => ['auth']], function () use ($mysqli) {
-    try {
-        $model = new ScraperModel($mysqli);
-        $sourceId = isset($_GET['source_id']) ? (int)$_GET['source_id'] : null;
-        $level = isset($_GET['level']) ? $_GET['level'] : null;
-        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
-
-        $logs = $model->getLogs([
-            'source_id' => $sourceId,
-            'level' => $level
-        ], 1, $limit);
-
-        return jsonResponse([
-            'success' => true,
-            'data' => $logs['logs'],
-            'pagination' => [
-                'total' => $logs['total'],
-                'page' => $logs['page'],
-                'limit' => $logs['limit'],
-                'pages' => $logs['pages']
-            ]
-        ]);
-    } catch (Exception $e) {
-        error_log("API get logs error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * API: Get Statistics
- *
- * Retrieves overall scraper statistics including job counts, success rates, and performance metrics.
- * Useful for monitoring scraper health and performance.
- *
- * @route GET /api/v1/scraper/stats
- * @middleware auth
- *
- * @return JSON Response with:
- *               - success: boolean
- *               - data: Statistics object containing:
- *                 - total_sources: Total number of scraper sources
- *                 - active_sources: Number of active sources
- *                 - total_jobs: Total number of jobs
- *                 - completed_jobs: Number of completed jobs
- *                 - failed_jobs: Number of failed jobs
- *                 - success_rate: Success rate percentage
- *                 - avg_duration: Average job duration in seconds
- *                 - total_articles: Total articles collected
- *                 - recent_activity: Recent activity summary
- *
- * @throws Exception If statistics retrieval fails
- *
- * @example Success: {"success": true, "data": {"total_sources": 10, "active_sources": 8, "success_rate": 95.5, ...}}
- */
-$router->get('/api/v1/scraper/stats', ['middleware' => ['auth']], function () use ($mysqli) {
-    try {
-        $model = new ScraperModel($mysqli);
-        $stats = $model->getOverallStats();
-
-        return jsonResponse([
-            'success' => true,
-            'data' => $stats
-        ]);
-    } catch (Exception $e) {
-        error_log("API get stats error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-$router->get('/admin/scraper/presets/create', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
-    try {
-        echo $twig->render('scraper/presets/create.twig', [
-            'pageTitle' => 'Create Scraper Preset',
-            'contentTypes' => ['articles', 'blog', 'news', 'product', 'service', 'mobiles']
-        ]);
-    } catch (Exception $e) {
-        error_log("Preset create page error: " . $e->getMessage());
-        http_response_code(500);
-        echo $twig->render('error.twig', [
-            'pageTitle' => 'Error',
-            'message' => 'Failed to load preset creation form.'
-        ]);
-    }
-});
-
-$router->post('/admin/scraper/presets/create', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken()) {
-        showMessage('Invalid CSRF token', 'error');
-        header('Location: /admin/scraper/presets/create');
-        exit;
-    }
-
-    try {
-        $key = trim($_POST['preset_key'] ?? '');
-        $name = trim($_POST['preset_name'] ?? '');
-        $contentType = trim($_POST['content_type'] ?? 'articles');
-        $description = trim($_POST['description'] ?? '');
-        $selectors = trim($_POST['selectors'] ?? '');
-        $advance = trim($_POST['advance_config'] ?? '');
-        $isDefault = isset($_POST['is_default']) ? 1 : 0;
-
-        if ($key === '' || $name === '') {
-            showMessage('Key and name are required', 'error');
-            header('Location: /admin/scraper/presets/create');
-            exit;
-        }
-
-        $model = new ScraperModel($mysqli);
-        $created = $model->createPreset([
-            'key' => $key,
-            'name' => $name,
-            'description' => $description,
-            'content_type' => $contentType,
-            'selectors' => $selectors !== '' ? $selectors : null,
-            'advance_config' => $advance !== '' ? $advance : null,
-            'is_default' => $isDefault
-        ]);
-
-        if (!$created) {
-            showMessage('Failed to create preset', 'error');
-            header('Location: /admin/scraper/presets/create');
-            exit;
-        }
-
-        showMessage('Preset created successfully', 'success');
-        header('Location: /admin/scraper/presets', true, 302);
-        exit;
-    } catch (Exception $e) {
-        error_log("Create preset error: " . $e->getMessage());
-        showMessage('Failed to create preset: ' . $e->getMessage(), 'error');
-        header('Location: /admin/scraper/presets/create');
-        exit;
-    }
-});
-
-/**
- * API: Job Health Summary
- *
- * Provides success/failure counts and success rate derived from recent jobs.
- *
- * @route GET /api/v1/scraper/jobs/health
- * @middleware auth
- *
- * @return JSON Response with:
- *               - success: boolean
- *               - data: Object containing stats and health signals
- */
-$router->get('/api/v1/scraper/jobs/health', ['middleware' => ['auth']], function () use ($mysqli) {
-    try {
-        $model = new ScraperModel($mysqli);
-        $stats = $model->getOverallStats();
-        $jobs = $stats['jobs'] ?? [];
-        $completed = (int)($jobs['completed'] ?? 0);
-        $failed = (int)($jobs['failed'] ?? 0);
-        $finished = $completed + $failed;
-        $successRate = $finished === 0 ? 0 : round(($completed / $finished) * 100, 2);
-        $lastCompletedResult = $mysqli->query("SELECT MAX(completed_at) as last_completed FROM web_scraping_jobs WHERE completed_at IS NOT NULL");
-        $lastCompleted = $lastCompletedResult ? $lastCompletedResult->fetch_assoc()['last_completed'] : null;
-
-        return jsonResponse([
-            'success' => true,
-            'data' => [
-                'stats' => $jobs,
-                'completed_jobs' => $completed,
-                'failed_jobs' => $failed,
-                'success_rate' => $successRate,
-                'finished_jobs' => $finished,
-                'last_completed_at' => $lastCompleted,
-                'timestamp' => date('c')
-            ]
-        ]);
-    } catch (Exception $e) {
-        error_log("API job health error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * API: Collected Data Summary
- *
- * Returns aggregated article counts, published timestamps, and category breakdowns.
- *
- * @route GET /api/v1/scraper/collected-data/summary
- * @middleware auth
- */
-$router->get('/api/v1/scraper/collected-data/summary', ['middleware' => ['auth']], function () use ($mysqli) {
-    try {
-        $model = new ScraperModel($mysqli);
-        $summary = $model->getCollectedDataSummary();
-
-        return jsonResponse([
-            'success' => true,
-            'data' => $summary
-        ]);
-    } catch (Exception $e) {
-        error_log("API collected data summary error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * API: Logs Summary
- *
- * Returns log-level counts and latest timestamp for the current filters.
- *
- * @route GET /api/v1/scraper/logs/summary
- * @middleware auth
- */
-$router->get('/api/v1/scraper/logs/summary', ['middleware' => ['auth']], function () use ($mysqli) {
-    try {
-        $model = new ScraperModel($mysqli);
-        $filters = [
-            'source_id' => isset($_GET['source_id']) ? (int)$_GET['source_id'] : null,
-            'level' => $_GET['level'] ?? null
-        ];
-        $summary = $model->getLogSummary($filters);
-
-        return jsonResponse([
-            'success' => true,
-            'data' => $summary
-        ]);
-    } catch (Exception $e) {
-        error_log("API logs summary error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
- // ================== DIAGNOSTICS ==================
-
-/**
- * API: CSS Selector Test
- * 
- * Tests CSS selectors against a URL
- * 
- * @route POST /api/v1/scraper/diagnostics/css-selector
- * @middleware auth
- */
-$router->post('/api/v1/scraper/diagnostics/css-selector', ['middleware' => ['auth']], function () use ($mysqli) {
-    // Validate CSRF token for POST requests
-    if (!validateCsrfToken()) {
-        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
-    }
-
-    try {
-        $input = json_decode((string)file_get_contents('php://input'), true);
-        if (!is_array($input)) {
-            return jsonResponse(['success' => false, 'error' => 'Invalid JSON input'], 400);
-        }
-
-        $url = $input['url'] ?? '';
-        $selectors = $input['selectors'] ?? [];
-
-        if (empty($url)) {
-            return jsonResponse(['success' => false, 'error' => 'URL is required'], 400);
-        }
-
-        if (!is_array($selectors) || empty($selectors)) {
-            return jsonResponse(['success' => false, 'error' => 'Selectors must be a non-empty array'], 400);
-        }
-
-        // Import and use the CSS Selector Tester
-        require_once __DIR__ . '/../../Modules/Scraper/Diagnostics/CssSelectorTester.php';
-        $tester = new \App\Modules\Scraper\Diagnostics\CssSelectorTester();
-        $results = $tester->testSelectors($url, $selectors);
-
-        return jsonResponse([
-            'success' => true,
-            'result' => $tester->getFormattedResults()
-        ]);
-    } catch (Exception $e) {
-        error_log("CSS selector test error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * API: Service Test
- * 
- * Tests individual scraping services
- * 
- * @route POST /api/v1/scraper/diagnostics/service
- * @middleware auth
- */
-$router->post('/api/v1/scraper/diagnostics/service', ['middleware' => ['auth']], function () use ($mysqli) {
-    // Validate CSRF token for POST requests
-    if (!validateCsrfToken()) {
-        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
-    }
-
-    try {
-        $input = json_decode((string)file_get_contents('php://input'), true);
-        if (!is_array($input)) {
-            return jsonResponse(['success' => false, 'error' => 'Invalid JSON input'], 400);
-        }
-
-        $url = $input['url'] ?? '';
-        $service = $input['service'] ?? '';
-
-        if (empty($url)) {
-            return jsonResponse(['success' => false, 'error' => 'URL is required'], 400);
-        }
-
-        if (empty($service)) {
-            return jsonResponse(['success' => false, 'error' => 'Service is required'], 400);
-        }
-
-        // Import and use the Service Tester
-        require_once __DIR__ . '/../../Modules/Scraper/Diagnostics/ServiceTester.php';
-        $tester = new \App\Modules\Scraper\Diagnostics\ServiceTester();
-
-        $result = null;
-        switch ($service) {
-            case 'php_scraper':
-                $result = $tester->testPhpScraper($url);
-                break;
-            case 'panther':
-                $result = $tester->testPanther($url);
-                break;
-            case 'roach':
-                $result = $tester->testRoach($url);
-                break;
-            case 'php_spider':
-                $result = $tester->testPhpSpider($url);
-                break;
-            default:
-                return jsonResponse(['success' => false, 'error' => 'Invalid service specified'], 400);
-        }
-
-        if ($result === null) {
-            return jsonResponse(['success' => false, 'error' => 'Failed to run test'], 500);
-        }
-
-        return jsonResponse([
-            'success' => true,
-            'result' => $tester->getFormattedResults()
-        ]);
-    } catch (Exception $e) {
-        error_log("Service test error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * API: All Services Test
- * 
- * Tests all scraping services against a URL
- * 
- * @route POST /api/v1/scraper/diagnostics/services
- * @middleware auth
- */
-$router->post('/api/v1/scraper/diagnostics/services', ['middleware' => ['auth']], function () use ($mysqli) {
-    // Validate CSRF token for POST requests
-    if (!validateCsrfToken()) {
-        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
-    }
-
-    try {
-        $input = json_decode((string)file_get_contents('php://input'), true);
-        if (!is_array($input)) {
-            return jsonResponse(['success' => false, 'error' => 'Invalid JSON input'], 400);
-        }
-
-        $url = $input['url'] ?? '';
-
-        if (empty($url)) {
-            return jsonResponse(['success' => false, 'error' => 'URL is required'], 400);
-        }
-
-        // Import and use the Service Tester
-        require_once __DIR__ . '/../../Modules/Scraper/Diagnostics/ServiceTester.php';
-        $tester = new \App\Modules\Scraper\Diagnostics\ServiceTester();
-        $results = $tester->runAllTests($url);
-
-        return jsonResponse([
-            'success' => true,
-            'result' => $tester->getFormattedResults()
-        ]);
-    } catch (Exception $e) {
-        error_log("All services test error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * API: System Diagnostics
- * 
- * Runs system diagnostics on the scraper system
- * 
- * @route GET /api/v1/scraper/diagnostics/system
- * @middleware auth
- */
-$router->get('/api/v1/scraper/diagnostics/system', ['middleware' => ['auth']], function () use ($mysqli) {
-    try {
-        // Import ScraperModel for diagnostics
-        require_once __DIR__ . '/../../Models/ScraperModel.php';
-        $model = new ScraperModel($mysqli);
-
-        // Run diagnostics similar to our diagnostic script
-        $output = [];
-        $output[] = "SCRAPER SYSTEM DIAGNOSTICS";
-        $output[] = "==========================";
-        $output[] = "Timestamp: " . date('Y-m-d H:i:s');
-        $output[] = "";
-
-        // 1. Get all active sources
-        $activeSources = $model->getActiveSources();
-        $output[] = "1. ACTIVE SCRAPER SOURCES";
-        $output[] = "-------------------------";
-        $output[] = "Total active sources: " . count($activeSources);
-        $output[] = "";
-
-        if (!empty($activeSources)) {
-            foreach ($activeSources as $source) {
-                $output[] = "Source ID: {$source['id']}";
-                $output[] = "Name: {$source['name']}";
-                $output[] = "URL: {$source['url']}";
-                $output[] = "Type: {$source['type']}";
-                $output[] = "Content Type: {$source['content_type']}";
-                $output[] = "Last Fetched: " . ($source['last_fetched_at'] ?? 'Never');
-                $output[] = "Fetch Interval: {$source['fetch_interval']} seconds";
-                $output[] = "Selectors: " . ($source['selectors'] ? 'Set' : 'Not Set');
-                $output[] = "Advance Config: " . ($source['advance_config'] ? 'Set' : 'Not Set');
-                $output[] = "Preset: " . ($source['presets'] ? $source['presets'] : 'None');
-                $output[] = "";
-            }
-        } else {
-            $output[] = "No active sources found.";
-            $output[] = "";
-        }
-
-        // 2. Get overall stats
-        $stats = $model->getOverallStats();
-        $output[] = "2. OVERALL STATISTICS";
-        $output[] = "---------------------";
-        $output[] = "Total Sources: {$stats['total_sources']}";
-        $output[] = "Active Sources: {$stats['active_sources']}";
-        $output[] = "Total Articles: {$stats['total_articles']}";
-        $output[] = "";
-        $output[] = "Jobs Stats:";
-        if (!empty($stats['jobs'])) {
-            foreach ($stats['jobs'] as $status => $count) {
-                $output[] = "  {$status}: {$count}";
-            }
-        }
-        $output[] = "";
-        $output[] = "Queue Stats:";
-        if (!empty($stats['queue'])) {
-            foreach ($stats['queue'] as $status => $count) {
-                $output[] = "  {$status}: {$count}";
-            }
-        }
-        $output[] = "";
-
-        // 3. Get recent failed jobs
-        $failedJobs = $model->getJobs(1, 10, 'failed');
-        $output[] = "3. RECENT FAILED JOBS (LAST 10)";
-        $output[] = "--------------------------------";
-        if (!empty($failedJobs['jobs'])) {
-            $output[] = "Found " . count($failedJobs['jobs']) . " failed jobs:";
-            $output[] = "";
-            foreach ($failedJobs['jobs'] as $job) {
-                $output[] = "Job ID: {$job['id']}";
-                $output[] = "Source: {$job['source_name']}";
-                $output[] = "Job Type: {$job['job_type']}";
-                $output[] = "Created: {$job['created_at']}";
-                if (!empty($job['error_message'])) {
-                    $output[] = "Error: {$job['error_message']}";
-                }
-                $output[] = "";
-            }
-        } else {
-            $output[] = "No failed jobs found.";
-            $output[] = "";
-        }
-
-        // 4. Sources that haven't been fetched recently
-        $allSources = $model->getAllSources();
-        $staleSources = [];
-        $now = new DateTime();
-        foreach ($allSources as $source) {
-            if ($source['is_active']) {
-                $lastFetched = $source['last_fetched_at'] ? new DateTime($source['last_fetched_at']) : null;
-                if (!$lastFetched || $now->diff($lastFetched)->h >= 24) {
-                    $staleSources[] = $source;
-                }
-            }
-        }
-
-        $output[] = "4. SOURCES NOT FETCHED IN LAST 24 HOURS";
-        $output[] = "----------------------------------------";
-        if (!empty($staleSources)) {
-            $output[] = "Found " . count($staleSources) . " stale sources:";
-            $output[] = "";
-            foreach ($staleSources as $source) {
-                $output[] = "Source ID: {$source['id']}";
-                $output[] = "Name: {$source['name']}";
-                $output[] = "URL: {$source['url']}";
-                $output[] = "Last Fetched: " . ($source['last_fetched_at'] ?? 'Never');
-                $output[] = "";
-            }
-        } else {
-            $output[] = "All active sources have been fetched within the last 24 hours.";
-            $output[] = "";
-        }
-
-        $output[] = "=== END OF DIAGNOSTICS ===";
-
-        return jsonResponse([
-            'success' => true,
-            'result' => implode("\n", $output)
-        ]);
-    } catch (Exception $e) {
-        error_log("System diagnostics error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * API: Categories
- *
- * Returns the list of scraper categories with metadata.
- *
- * @route GET /api/v1/scraper/categories
- * @middleware auth
- */
-$router->get('/api/v1/scraper/categories', ['middleware' => ['auth']], function () use ($mysqli) {
-    try {
-        $model = new ScraperModel($mysqli);
-        $categories = $model->getCategories();
-
-        return jsonResponse([
-            'success' => true,
-            'data' => $categories
-        ]);
-    } catch (Exception $e) {
-        error_log("API categories error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-$router->get('/api/v1/scraper/categories/table', ['middleware' => ['auth']], function () use ($mysqli) {
-    try {
-        $model = new ScraperModel($mysqli);
-        $rows = $model->getCategoryTableData();
-        return jsonResponse([
-            'success' => true,
-            'data' => $rows
-        ]);
-    } catch (Exception $e) {
-        error_log("API categories table error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-$router->get('/api/v1/scraper/external-data', function () use ($mysqli) {
-    if (!ensureScraperApiKey()) {
-        return jsonResponse(['success' => false, 'error' => 'Invalid API key'], 401);
-    }
-
-    $type = $_GET['data_type'] ?? 'articles';
-    $page = max(1, (int)($_GET['page'] ?? 1));
-    $limit = min(max((int)($_GET['limit'] ?? 25), 1), 100);
-    $sourceId = isset($_GET['source_id']) ? (int)$_GET['source_id'] : null;
-    $status = $_GET['status'] ?? null;
-    $contentType = $_GET['content_type'] ?? null;
-    $search = $_GET['search'] ?? null;
-
-    $model = new ScraperModel($mysqli);
-    if ($type === 'mobiles') {
-        $payload = $model->getMobiles($page, $limit, $sourceId, $search);
-        return jsonResponse([
-            'success' => true,
-            'type' => 'mobiles',
-            'data' => $payload['mobiles'] ?? [],
-            'total' => $payload['total'] ?? 0,
-            'page' => $payload['page'] ?? $page,
-            'limit' => $payload['limit'] ?? $limit
-        ]);
-    }
-
-    $articles = $model->getArticles($page, $limit, $status, $sourceId, $search, $contentType);
-    return jsonResponse([
-        'success' => true,
-        'type' => 'articles',
-        'data' => $articles['articles'] ?? [],
-        'pagination' => $articles['pagination'] ?? []
-    ]);
-});
-
-$router->post('/api/v1/scraper/external-data', function () use ($mysqli) {
-    if (!ensureScraperApiKey()) {
-        return jsonResponse(['success' => false, 'error' => 'Invalid API key'], 401);
-    }
-
-    $input = parseJsonRequest();
-    $type = $input['type'] ?? 'article';
-    $sourceId = isset($input['source_id']) ? (int)$input['source_id'] : 0;
-    $url = trim($input['url'] ?? '');
-
-    if (!$sourceId || $url === '') {
-        return jsonResponse(['success' => false, 'error' => 'source_id and url are required'], 400);
-    }
-
-    $model = new ScraperModel($mysqli);
-
-    if ($type === 'mobile') {
-        $payload = [
-            'source_id' => $sourceId,
-            'source_url' => $url,
-            'title' => $input['title'] ?? ($input['name'] ?? 'Device'),
-            'price' => $input['price'] ?? 0,
-            'brand' => $input['brand'] ?? null,
-            'model' => $input['model'] ?? null,
-            'image_url' => $input['image_url'] ?? '',
-            'specifications' => $input['specifications'] ?? [],
-            'release_date' => $input['release_date'] ?? null,
-            'status' => $input['status'] ?? 'active',
-        ];
-
-        $saved = $model->saveMobile($payload);
-        $record = $model->getMobileByUrl($url);
-        return jsonResponse([
-            'success' => (bool)$saved,
-            'id' => $record['id'] ?? null
-        ]);
-    }
-
-    $content = $input['content'] ?? '';
-    $title = $input['title'] ?? '';
-
-    $payload = [
-        'source_id' => $sourceId,
-        'url' => $url,
-        'title' => $title ?: 'Untitled',
-        'content' => $content,
-        'excerpt' => $input['excerpt'] ?? substr($content, 0, 200),
-        'author' => $input['author'] ?? '',
-        'image_url' => $input['image_url'] ?? '',
-        'published_at' => $input['published_at'] ?? null,
-        'status' => $input['status'] ?? 'completed',
-        'content_hash' => hash('sha256', $url . $title),
-        'categories' => $input['categories'] ?? [],
-        'tags' => $input['tags'] ?? []
-    ];
-
-    $saved = $model->saveArticle($payload);
-    $record = $model->getArticleByUrl($url);
-    return jsonResponse([
-        'success' => (bool)$saved,
-        'id' => $record['id'] ?? null
-    ]);
-});
-
-$router->post('/api/v1/scraper/categories', ['middleware' => ['auth']], function () use ($mysqli) {
-    if (!validateCsrfToken()) {
-        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
-    }
-
-    try {
-        $input = json_decode((string)file_get_contents('php://input'), true) ?? [];
-        $name = trim($input['name'] ?? '');
-        if ($name === '') {
-            return jsonResponse(['success' => false, 'error' => 'Category name is required'], 400);
-        }
-
-        $model = new ScraperModel($mysqli);
-        $newId = $model->createCategory([
-            'name' => $name,
-            'description' => trim($input['description'] ?? ''),
-            'parent_id' => isset($input['parent_id']) ? (int)$input['parent_id'] : null,
-            'is_active' => !empty($input['is_active']) ? 1 : 0
-        ]);
-
-        if (!$newId) {
-            return jsonResponse(['success' => false, 'error' => 'Unable to create category'], 500);
-        }
-
-        $category = $model->getCategoryById($newId);
-
-        return jsonResponse([
-            'success' => true,
-            'category' => $category
-        ]);
-    } catch (Exception $e) {
-        error_log("API create category error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * API: Settings List
- *
- * Returns settings metadata for the admin UI summary strip.
- *
- * @route GET /api/v1/scraper/settings
- * @middleware auth
- */
-$router->get('/api/v1/scraper/settings', ['middleware' => ['auth']], function () use ($mysqli) {
-    try {
-        $limit = isset($_GET['limit']) ? min(200, max(5, (int)$_GET['limit'])) : 50;
-        $model = new ScraperModel($mysqli);
-        $payload = $model->getSettingsForApi($limit);
-
-        return jsonResponse([
-            'success' => true,
-            'data' => $payload
-        ]);
-    } catch (Exception $e) {
-        error_log("API settings error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
-
-/**
- * API: Get Presets
- *
- * Retrieves all available scraper presets for different website types.
- * Presets provide pre-configured selectors for common website structures.
- *
- * @route GET /api/v1/scraper/presets
- * @middleware auth
- *
- * @return JSON Response with:
- *               - success: boolean
- *               - data: Array of preset configurations
- *                 - key: Preset identifier (e.g., 'bdnews24', 'prothom_alo', 'wordpress_blog')
- *                 - name: Human-readable preset name
- *                 - description: Preset description
- *                 - selectors: Pre-configured selectors for this preset
- *                 - site_type: Type of website (news, blog, job, etc.)
- *
- * @throws Exception If preset retrieval fails
- *
- * @example Success: {"success": true, "data": [{"key": "bdnews24", "name": "BDNews24", "selectors": {...}}, ...]}
- */
-$router->get('/api/v1/scraper/presets', ['middleware' => ['auth']], function () {
-    try {
-        $presets = PresetRegistry::toArray();
-
-        return jsonResponse([
-            'success' => true,
-            'data' => $presets
-        ]);
-    } catch (Exception $e) {
-        error_log("API get presets error: " . $e->getMessage());
+        error_log("Collection start error: " . $e->getMessage());
         return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });

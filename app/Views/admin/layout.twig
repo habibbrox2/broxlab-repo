@@ -69,7 +69,7 @@
   <!-- Header -->
   <header class="navbar navbar-dark bg-dark shadow-sm sticky-top">
     <div class="container-fluid">
-      <button class="sidebar-toggle btn btn-dark d-lg-none me-2" type="button">
+      <button class="sidebar-toggle btn btn-dark d-lg-none me-2" type="button" aria-label="Toggle sidebar">
         <i class="bi bi-list"></i>
       </button>
       <a class="navbar-brand d-flex align-items-center" href="/admin/dashboard">
@@ -147,10 +147,10 @@
         </button>
 
         <!-- Server Status Indicator -->
-        <div class="server-status-indicator dropdown" id="serverStatusIndicator" title="Checking server status...">
-          <div class="d-flex align-items-center" data-bs-toggle="dropdown" aria-expanded="false">
+        <div class="server-status-indicator dropdown" id="serverStatusIndicator" data-bs-toggle="dropdown" aria-expanded="false" title="Checking server status..." aria-label="Server status">
+          <div class="d-flex align-items-center">
             <i class="bi bi-server" id="serverStatusIcon"></i>
-            <span class="server-status-text d-none d-md-inline ms-1" id="serverStatusText">Checking...</span>
+            <span class="server-status-text d-none d-md-inline ms-1" id="serverStatusText">Checking</span>
             <i class="bi bi-chevron-down ms-1" style="font-size: 0.7rem;"></i>
           </div>
           <ul class="dropdown-menu server-status-dropdown" aria-labelledby="serverStatusIndicator">
@@ -158,22 +158,22 @@
             <li><div class="server-status-item" data-service="database">
                 <i class="bi bi-database"></i>
                 <span>Database</span>
-                <span class="status-badge" data-status="checking">Checking...</span>
+                <span class="status-badge" data-status="checking">Checking</span>
               </div></li>
             <li><div class="server-status-item" data-service="cache">
                 <i class="bi bi-hdd-stack"></i>
                 <span>Cache</span>
-                <span class="status-badge" data-status="checking">Checking...</span>
+                <span class="status-badge" data-status="checking">Checking</span>
               </div></li>
             <li><div class="server-status-item" data-service="api">
                 <i class="bi bi-gear"></i>
                 <span>API</span>
-                <span class="status-badge" data-status="checking">Checking...</span>
+                <span class="status-badge" data-status="checking">Checking</span>
               </div></li>
             <li><div class="server-status-item" data-service="nodejs">
                 <i class="bi bi-code-slash"></i>
                 <span>Node.js</span>
-                <span class="status-badge" data-status="checking">Checking...</span>
+                <span class="status-badge" data-status="checking">Checking</span>
               </div></li>
             <li><hr class="dropdown-divider"></li>
             <li><div class="server-status-item">
@@ -251,12 +251,14 @@
           {'name': 'All Posts', 'url': '/admin/posts', 'key': 'all-posts'},
           {'name': 'Add Post', 'url': '/admin/posts/create', 'key': 'add-post'}
       ]},
-      {'name': 'Web Scraping Menu', 'icon': 'bi-robot', 'url': '/admin/scraper', 'key': 'scraper', 'children': [
-          {'name': 'Dashboard', 'url': '/admin/scraper', 'key': 'scraper-dashboard'},
-          {'name': 'Collected Data', 'url': '/admin/scraper/collected-data', 'key': 'scraper-collected-data'},
-          {'name': 'AI Preset Generator', 'url': '/admin/scraper/ai/preset-generator', 'key': 'scraper-ai-preset-generator'},
-          {'name': 'AI Analyzer', 'url': '/admin/scraper/ai/analyzer', 'key': 'scraper-ai-analyzer'}
-      ]},
+       {'name': 'Web Scraping Menu', 'icon': 'bi-robot', 'url': '/admin/scraper', 'key': 'scraper', 'children': [
+           {'name': 'Dashboard', 'url': '/admin/scraper', 'key': 'scraper-dashboard'},
+           {'name': 'Presets', 'url': '/admin/scraper/presets', 'key': 'scraper-presets'},
+           {'name': 'Manual Collection', 'url': '/admin/scraper/collect', 'key': 'scraper-collect'},
+           {'name': 'Collected Data', 'url': '/admin/scraper/collected-data', 'key': 'scraper-collected-data'},
+           {'name': 'AI Preset Generator', 'url': '/admin/scraper/ai/preset-generator', 'key': 'scraper-ai-preset-generator'},
+           {'name': 'AI Analyzer', 'url': '/admin/scraper/ai/analyzer', 'key': 'scraper-ai-analyzer'}
+       ]},
       {'name': 'AI Conversations', 'icon': 'bi-chat-dots', 'url': '/admin/ai-chats', 'key': 'ai-chats'},
       {'name': 'Services', 'icon': 'bi-award-fill', 'url': '/admin/services', 'key': 'services', 'children': [
           {'name': 'All Services', 'url': '/admin/services', 'key': 'all-services'},
@@ -423,9 +425,9 @@
 
   <script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}" defer></script>
 
-  {# Admin scripts #}
-  <script src="{{ asset('/assets/js/dist/admin.js') }}" defer></script>
-  <script src="{{ asset('/assets/js/dist/activity.js') }}" defer></script>
+   {# Admin scripts #}
+   <script type="module" src="{{ asset('/assets/js/dist/admin.js') }}" defer></script>
+   <script src="{{ asset('/assets/js/dist/activity.js') }}" defer></script>
 
   {# Listing tables: select-all checkbox + row selection wiring #}
   <script>

@@ -128,7 +128,7 @@ $router->get('/admin/applications/{id}', ['middleware' => ['auth', 'admin_only']
  * Approve application
  * POST /admin/applications/{id}/approve
  */
-$router->post('/admin/applications/{id}/approve', ['middleware' => ['auth', 'admin_only']], function ($id) use ($appModel, $notificationModel, $userModel, $serviceModel, $mysqli) {
+$router->post('/admin/applications/{id}/approve', ['middleware' => ['auth', 'admin_only', 'csrf']], function ($id) use ($appModel, $notificationModel, $userModel, $serviceModel, $mysqli) {
     header('Content-Type: application/json');
 
     $appId = (int)$id;

@@ -47,10 +47,11 @@
 
     <div class="row">
         <div class="col-lg-8">
-            <form id="sourceForm" method="POST" action="/admin/scraper/sources/save">
-                {% if source %}
-                    <input type="hidden" name="id" value="{{ source.id }}">
-                {% endif %}
+<form id="sourceForm" method="POST" action="/admin/scraper/sources/save">
+                 {% if source %}
+                     <input type="hidden" name="id" value="{{ source.id }}">
+                 {% endif %}
+                 <input type="hidden" name="csrf_token" value="{{ csrf_token ?? generateCsrfToken() }}">
 
                 <!-- Basic Information -->
                 <div class="form-section">
@@ -224,17 +225,21 @@
                         <textarea class="form-control json-editor" id="advance_config" name="advance_config" rows="6">{{ source.advance_config ? source.advance_config|json_encode(constant('JSON_PRETTY_PRINT')) : '' }}</textarea>
                         <div class="form-text">JSON object for advanced scraping configuration</div>
                     </div>
-                    <div class="mb-3">
-                        <label for="presets" class="form-label">Presets</label>
-                        <select class="form-select" id="presets" name="presets">
-                            <option value="">No Preset</option>
-                            {% for presetName, presetData in presets %}
-                                <option value="{{ presetName }}" {{ (source.presets ?? '') == presetName ? 'selected' : '' }}>
-                                    {{ presetName }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                        <div class="form-text">Select a preset configuration for this source</div>
+<div class="mb-3">
+                         <label for="presets" class="form-label">Presets</label>
+                         <select class="form-select" id="presets" name="presets">
+                             <option value="">No Preset</option>
+                             {% for preset in presets %}
+                                 <option value="{{ preset.key }}" {{ (source.presets ?? '') == preset.key ? 'selected' : '' }}>
+                                     {{ preset.name }}
+                                 </option>
+                             {% endfor %}
+                         </select>
+                         <div class="form-text">
+                             <span id="presetAutoHint" data-default-hint="Select a preset configuration for this source">
+                                 Select a preset configuration for this source
+                             </span>
+                         </div>
                     </div>
                 </div>
 

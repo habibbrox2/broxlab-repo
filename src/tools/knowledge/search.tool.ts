@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index.js';
-import { query } from '../../config/database.js';
-import logger from '../../utils/logger.js';
+import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index';
+import { query } from '../../config/database';
+import logger from '../../utils/logger';
 
 const searchKbSchema = z.object({
     query: z.string().min(1).max(500),

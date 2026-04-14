@@ -10,7 +10,7 @@ use Exception;
 class QueueProcessor
 {
     private ScraperService $scraperService;
-    private ?callable $logger;
+    private $logger;
 
     public function __construct(ScraperService $scraperService, ?callable $logger = null)
     {

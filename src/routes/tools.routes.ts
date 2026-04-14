@@ -1,9 +1,9 @@
 import { FastifyInstance } from 'fastify';
-import { ToolRegistry } from '../tools/registry.js';
-import { registerAllTools } from '../tools/index.js';
-import { adminMiddleware } from '../middleware/auth.middleware.js';
-import logger from '../utils/logger.js';
-import { metrics } from '../utils/metrics.js';
+import { ToolRegistry } from '../tools/registry';
+import { registerAllTools } from '../tools/index';
+import { adminMiddleware } from '../middleware/auth.middleware';
+import logger from '../utils/logger';
+import { metrics } from '../utils/metrics';
 
 let toolRegistry: ToolRegistry;
 

@@ -1,32 +1,32 @@
-import { ToolRegistry } from './registry.js';
+import { ToolRegistry } from './registry';
 
 // Database tools
-import { queryDatabaseTool } from './database/query.tool.js';
-import { getTableStatsTool } from './database/table-stats.tool.js';
-import { getUserStatsTool } from './database/user-stats.tool.js';
+import { queryDatabaseTool } from './database/query.tool';
+import { getTableStatsTool } from './database/table-stats.tool';
+import { getUserStatsTool } from './database/user-stats.tool';
 
 // System tools
-import { getSystemHealthTool } from './system/health.tool.js';
-import { getCacheStatsTool } from './system/cache.tool.js';
-import { clearCacheTool } from './system/clear-cache.tool.js';
-import { analyzeErrorLogsTool } from './system/logs.tool.js';
-import { listStorageFilesTool } from './system/storage.tool.js';
-import { getAppSettingsTool } from './system/settings.tool.js';
+import { getSystemHealthTool } from './system/health.tool';
+import { getCacheStatsTool } from './system/cache.tool';
+import { clearCacheTool } from './system/clear-cache.tool';
+import { analyzeErrorLogsTool } from './system/logs.tool';
+import { listStorageFilesTool } from './system/storage.tool';
+import { getAppSettingsTool } from './system/settings.tool';
 
 // Content tools
-import { summarizeTextTool } from './content/summarize.tool.js';
-import { getContentStatsTool } from './content/content-stats.tool.js';
-import { fetchUrlContentTool } from './content/fetch-url.tool.js';
+import { summarizeTextTool } from './content/summarize.tool';
+import { getContentStatsTool } from './content/content-stats.tool';
+import { fetchUrlContentTool } from './content/fetch-url.tool';
 
 // Knowledge base tools
-import { searchKnowledgeBaseTool } from './knowledge/search.tool.js';
-import { reindexKnowledgeBaseTool } from './knowledge/reindex.tool.js';
+import { searchKnowledgeBaseTool } from './knowledge/search.tool';
+import { reindexKnowledgeBaseTool } from './knowledge/reindex.tool';
 
 // Utility tools
-import { listToolsTool } from './utils/list-tools.tool.js';
+import { listToolsTool } from './utils/list-tools.tool';
 
 export { ToolRegistry };
-export type { ToolDefinition, ToolContext, ToolResult } from '../types/index.js';
+export type { ToolDefinition, ToolContext, ToolResult } from '../types/index';
 
 // Re-export all tools
 export {

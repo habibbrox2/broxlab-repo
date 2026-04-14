@@ -366,7 +366,8 @@ Provide only valid JSON without any markdown formatting.";
 
     private function localKeywordExtraction(string $text): array
     {
-        $words = strtolower(preg_split('/\W+/', $text));
+        $splitWords = preg_split('/\W+/', $text);
+        $words = is_array($splitWords) ? array_map('strtolower', $splitWords) : [];
         $stopWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'];
 
         $wordCount = [];

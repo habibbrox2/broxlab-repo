@@ -1,11 +1,12 @@
 import { FastifyInstance } from 'fastify';
-import { adminMiddleware } from '../middleware/auth.middleware.js';
-import logger from '../utils/logger.js';
-import { execute } from '../config/database.js';
-import redis from '../config/redis.js';
+import { adminMiddleware } from '../middleware/auth.middleware';
+import logger from '../utils/logger';
+import { execute } from '../config/database';
+import redis from '../config/redis';
 import multipart from '@fastify/multipart';
-import { aiController } from '../controllers/ai.controller.js';
-import { mcpController } from '../controllers/mcp.controller.js';
+import { aiController } from '../controllers/ai.controller';
+import { mcpController } from '../controllers/mcp.controller';
+import { config } from '../config/index';
 
 export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
     // Register multipart plugin for file uploads
@@ -452,7 +453,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json',
-                    'HTTP-Referer': process.env.APP_URL || 'http://localhost',
+                    'HTTP-Referer': config.appUrl,
                     'X-Title': 'BroxLab Admin',
                 },
                 body: JSON.stringify({
@@ -548,7 +549,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json',
-                    'HTTP-Referer': process.env.APP_URL || 'http://localhost',
+                    'HTTP-Referer': config.appUrl,
                     'X-Title': 'BroxLab Admin',
                 },
                 body: JSON.stringify({
@@ -659,7 +660,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json',
-                    'HTTP-Referer': process.env.APP_URL || 'http://localhost',
+                    'HTTP-Referer': config.appUrl,
                     'X-Title': 'BroxLab Admin',
                 },
                 body: JSON.stringify({

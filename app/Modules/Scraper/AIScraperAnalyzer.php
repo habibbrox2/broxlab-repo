@@ -2,6 +2,8 @@
 
 namespace App\Modules\Scraper;
 
+use InvalidArgumentException;
+
 class AIScraperAnalyzer
 {
     public static function fromMysqli($mysqli)
@@ -15,6 +17,11 @@ class AIScraperAnalyzer
         $selectors = [];
 
         // Load HTML
+        $html = trim((string)$html);
+        if ($html === '') {
+            throw new InvalidArgumentException('HTML content is required for analysis.');
+        }
+
         $dom = new \DOMDocument();
         @$dom->loadHTML($html);
         $xpath = new \DOMXPath($dom);

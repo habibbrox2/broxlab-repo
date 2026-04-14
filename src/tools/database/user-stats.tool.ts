@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index.js';
-import { queryOne, query } from '../../config/database.js';
-import logger from '../../utils/logger.js';
+import type { ToolDefinition, ToolContext, ToolResult } from '../../types/index';
+import { queryOne, query } from '../../config/database';
+import logger from '../../utils/logger';
 
 const userStatsSchema = z.object({
     userId: z.number().int().positive().optional(),

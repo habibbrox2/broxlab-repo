@@ -10,6 +10,7 @@ const envSchema = z.object({
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     PORT: z.string().default('3000'),
     HOST: z.string().default('0.0.0.0'),
+    APP_URL: z.string().default(''),
 
     // Database
     DB_HOST: z.string().default('localhost'),
@@ -70,12 +71,23 @@ if (!env.success) {
     process.exit(1);
 }
 
+const normalizedPort = parseInt(env.data.PORT, 10);
+const normalizedHost = env.data.HOST.trim() || '0.0.0.0';
+const isWildcardHost = ['0.0.0.0', '::', ''].includes(normalizedHost);
+const fallbackHost = isWildcardHost ? 'localhost' : normalizedHost;
+const protocol = env.data.NODE_ENV === 'production' ? 'https' : 'http';
+const portSegment = !Number.isNaN(normalizedPort) ? `:${normalizedPort}` : '';
+const fallbackAppUrl = `${protocol}://${fallbackHost}${portSegment}`;
+const appUrl = (env.data.APP_URL.trim() || fallbackAppUrl).replace(/\/+$/, '');
+const corsOrigin = env.data.CORS_ORIGIN === '*' ? '*' : (env.data.CORS_ORIGIN || appUrl);
+
 // Export typed config
 export const config = {
     // Server
     nodeEnv: env.data.NODE_ENV,
     port: parseInt(env.data.PORT, 10),
     host: env.data.HOST,
+    appUrl,
     isDevelopment: env.data.NODE_ENV === 'development',
     isProduction: env.data.NODE_ENV === 'production',
     isTest: env.data.NODE_ENV === 'test',
@@ -149,7 +161,7 @@ export const config = {
 
     // CORS
     cors: {
-        origin: env.data.CORS_ORIGIN,
+        origin: corsOrigin,
         credentials: env.data.CORS_CREDENTIALS === 'true',
     },
 } as const;

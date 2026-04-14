@@ -4,6 +4,33 @@ namespace App\Modules\Scraper;
 
 use App\Modules\Scraper\AIContentClassifier;
 use App\Modules\Scraper\AIScraperAnalyzer;
+use App\Modules\Scraper\HtmlFetcher;
+
+class PresetResult
+{
+    public $selectors = [];
+    public $confidence = 0.0;
+    public $content_type = 'unknown';
+    public $analysis = [];
+    public $classification = [];
+    public $success = false;
+    public $url = '';
+    public $error = null;
+
+    public function toArray()
+    {
+        return [
+            'success' => $this->success,
+            'selectors' => $this->selectors,
+            'confidence' => $this->confidence,
+            'content_type' => $this->content_type,
+            'analysis' => $this->analysis,
+            'classification' => $this->classification,
+            'url' => $this->url,
+            'error' => $this->error
+        ];
+    }
+}
 
 class AIPresetGenerator
 {
@@ -24,74 +51,97 @@ class AIPresetGenerator
     public function generatePreset($url, $html = null)
     {
         try {
-            // If no HTML provided, fetch it from the URL
             if ($html === null) {
-                $html = $this->fetchUrlContent($url);
+                $html = HtmlFetcher::fetch($url);
             }
 
-            // Analyze the HTML structure
+            $html = trim((string)$html);
+            if ($html === '') {
+                throw new \RuntimeException('Fetched HTML content was empty.');
+            }
+
             $analysis = $this->aiAnalyzer->analyzeHtml($html, $url);
 
             // Classify content type and extract selectors
             $classification = $this->classifier->classifyAndExtract($html, $url, $analysis['selectors'] ?? []);
 
-            return [
-                'selectors' => $analysis['selectors'] ?? [],
-                'confidence' => $classification['confidence'] ?? 0.5,
-                'content_type' => $classification['content_type'] ?? 'article',
-                'analysis' => $analysis,
-                'classification' => $classification
-            ];
+            $result = new PresetResult();
+            $result->selectors = $analysis['selectors'] ?? [];
+            $result->confidence = $classification['confidence'] ?? 0.5;
+            $result->content_type = $classification['content_type'] ?? 'article';
+            $result->analysis = $analysis;
+            $result->classification = $classification;
+            $result->success = true;
+            $result->url = $url;
+
+            return $result;
         } catch (\Exception $e) {
-            // Fallback to basic preset
-            return [
-                'selectors' => [],
-                'confidence' => 0.1,
-                'content_type' => 'unknown',
-                'error' => $e->getMessage()
-            ];
+            error_log('AI Preset Generator error for URL ' . $url . ': ' . $e->getMessage());
+
+            // Fallback: Create basic preset from HTML structure analysis
+            try {
+                $basicSelectors = $this->extractBasicSelectors($html ?? '');
+                $basicContentType = $this->guessContentType($html ?? '');
+
+                $result = new PresetResult();
+                $result->selectors = $basicSelectors;
+                $result->confidence = 0.3; // Low confidence for fallback
+                $result->content_type = $basicContentType;
+                $result->analysis = ['method' => 'fallback', 'error' => $e->getMessage()];
+                $result->classification = ['method' => 'basic'];
+                $result->success = true; // Still return success with basic analysis
+                $result->url = $url;
+
+                return $result;
+            } catch (\Exception $fallbackError) {
+                // Ultimate fallback
+                $result = new PresetResult();
+                $result->selectors = [];
+                $result->confidence = 0.1;
+                $result->content_type = 'article';
+                $result->error = 'Analysis failed: ' . $e->getMessage();
+                $result->success = false;
+                $result->url = $url;
+
+                return $result;
+            }
         }
     }
 
-    private function fetchUrlContent($url)
+    private function extractBasicSelectors($html)
     {
-        // Use the Node.js scraper service
-        $nodeServiceUrl = getenv('NODE_SCRAPER_SERVICE_URL') ?: 'http://localhost:3001';
+        // Basic fallback selectors when AI analysis fails
+        return [
+            'title' => 'h1, .title, .post-title',
+            'content' => 'article, .content, .post-content, .entry-content',
+            'excerpt' => 'p:first-child, .excerpt, .summary',
+            'date' => '.date, .published, time',
+            'author' => '.author, .byline',
+            'image' => 'img:first-of-type'
+        ];
+    }
 
-        $ch = curl_init($nodeServiceUrl . '/api/tools/execute');
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode([
-                'tool' => 'fetch_url_content',
-                'parameters' => [
-                    'url' => $url,
-                    'javascript' => true,
-                    'timeout' => 30000
-                ]
-            ]),
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'Authorization: Bearer ' . (getenv('NODE_SERVICE_API_KEY') ?: 'internal-key')
-            ],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 60,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false
-        ]);
+    private function guessContentType($html)
+    {
+        // Basic content type detection based on HTML content
+        $html = strtolower($html);
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($response === false || $httpCode !== 200) {
-            throw new \Exception('Failed to fetch URL content from scraper service');
+        if (strpos($html, 'product') !== false || strpos($html, 'price') !== false) {
+            return 'product';
         }
 
-        $result = json_decode($response, true);
-        if (!is_array($result) || !isset($result['success']) || !$result['success']) {
-            throw new \Exception('Invalid response from scraper service');
+        if (strpos($html, 'job') !== false || strpos($html, 'career') !== false) {
+            return 'job';
         }
 
-        return $result['data']['html'] ?? '';
+        if (strpos($html, 'news') !== false || strpos($html, 'article') !== false) {
+            return 'news';
+        }
+
+        if (strpos($html, 'blog') !== false || strpos($html, 'post') !== false) {
+            return 'blog';
+        }
+
+        return 'article'; // Default
     }
 }

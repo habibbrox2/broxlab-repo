@@ -10,9 +10,10 @@ class NodeOCRClient
     private string $baseUrl;
     private int $timeout;
 
-    public function __construct(string $baseUrl = null, int $timeout = 60)
+    public function __construct(?string $baseUrl = null, int $timeout = 60)
     {
-        $this->baseUrl = $baseUrl ?: (getenv('OCR_API_URL') ?: 'http://localhost:3000/api/ocr');
+        // Fix: Use union type to explicitly allow null
+        $this->baseUrl = $baseUrl ?? (getenv('OCR_API_URL') ?? 'http://localhost:3000/api/ocr');
         $this->timeout = $timeout;
     }
 
@@ -129,7 +130,7 @@ class NodeOCRClient
         $tempFiles = [];
         foreach ($imageDataArray as $imageData) {
             $tempFile = tempnam(sys_get_temp_dir(), 'ocr_');
-            if ($imageData['startsWith']('data:')) {
+            if (strpos($imageData, 'data:') === 0) {
                 $imageData = preg_replace('/^data:image\/\w+;base64,/', '', $imageData);
             }
             file_put_contents($tempFile, base64_decode($imageData));

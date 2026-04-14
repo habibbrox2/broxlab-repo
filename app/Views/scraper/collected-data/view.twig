@@ -1,0 +1,298 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1"><i class="bi bi-file-earmark-text me-2"></i>{{ pageTitle }}</h1>
+                    <p class="text-muted mb-0">Article ID: {{ article.id }} • Source: {{ article.source_id }}</p>
+                </div>
+                <div>
+                    <a href="/admin/scraper/collected-data" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left me-1"></i>Back to List
+                    </a>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-gear me-1"></i>Actions
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/admin/scraper/articles/{{ article.id }}/edit">
+                                <i class="bi bi-pencil me-1"></i>Edit Article
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportArticle({{ article.id }})">
+                                <i class="bi bi-download me-1"></i>Export Article
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteArticle({{ article.id }})">
+                                <i class="bi bi-trash me-1"></i>Delete Article
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Article Status -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="mb-1">{{ article.title|default('Untitled Article') }}</h5>
+                            <p class="text-muted mb-0">
+                                <i class="bi bi-calendar me-1"></i>{{ article.created_at|date('M d, Y H:i') }}
+                                {% if article.published_at %}
+                                    • Published: {{ article.published_at|date('M d, Y H:i') }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <span class="badge bg-{{ article.status == 'collected' ? 'success' : (article.status == 'processed' ? 'info' : 'secondary') }} fs-6">
+                                {{ article.status|title }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-body-text me-2"></i>Content</h5>
+                </div>
+                <div class="card-body">
+                    {% if article.content %}
+                        <div class="article-content">
+                            {{ article.content|raw }}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-file-earmark-x display-4"></i>
+                            <p class="mt-2">No content available</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Excerpt -->
+            {% if article.excerpt %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-quote me-2"></i>Excerpt</h5>
+                </div>
+                <div class="card-body">
+                    <blockquote class="blockquote">
+                        <p class="mb-0">{{ article.excerpt }}</p>
+                    </blockquote>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Original Content (if different) -->
+            {% if article.original_content and article.original_content != article.content %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-code me-2"></i>Original Content</h5>
+                </div>
+                <div class="card-body">
+                    <pre class="bg-light p-3 rounded"><code>{{ article.original_content }}</code></pre>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Metadata -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Metadata</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">ID:</dt>
+                        <dd class="col-sm-8">{{ article.id }}</dd>
+
+                        <dt class="col-sm-4">Source:</dt>
+                        <dd class="col-sm-8">{{ article.source_id }}</dd>
+
+                        <dt class="col-sm-4">URL:</dt>
+                        <dd class="col-sm-8">
+                            <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" class="text-truncate d-inline-block" style="max-width: 200px;">
+                                {{ article.url }}
+                                <i class="bi bi-box-arrow-up-right ms-1"></i>
+                            </a>
+                        </dd>
+
+                        {% if article.author %}
+                        <dt class="col-sm-4">Author:</dt>
+                        <dd class="col-sm-8">{{ article.author }}</dd>
+                        {% endif %}
+
+                        {% if article.image_url %}
+                        <dt class="col-sm-4">Image:</dt>
+                        <dd class="col-sm-8">
+                            <a href="{{ article.image_url }}" target="_blank" rel="noopener noreferrer">View Image</a>
+                        </dd>
+                        {% endif %}
+
+                        {% if article.content_hash %}
+                        <dt class="col-sm-4">Hash:</dt>
+                        <dd class="col-sm-8"><code class="small">{{ article.content_hash|slice(0, 16) }}...</code></dd>
+                        {% endif %}
+
+                        <dt class="col-sm-4">Length:</dt>
+                        <dd class="col-sm-8">{{ article.content_length ?: article.content|length }} chars</dd>
+
+                        <dt class="col-sm-4">Processing:</dt>
+                        <dd class="col-sm-8">{{ article.processing_time_ms ?: 'N/A' }} ms</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Categories & Tags -->
+            {% if article.categories or article.tags %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-tags me-2"></i>Categories & Tags</h5>
+                </div>
+                <div class="card-body">
+                    {% if article.categories %}
+                        <div class="mb-2">
+                            <strong>Categories:</strong>
+                            {% for category in article.categories %}
+                                <span class="badge bg-primary me-1">{{ category }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% if article.tags %}
+                        <div>
+                            <strong>Tags:</strong>
+                            {% for tag in article.tags %}
+                                <span class="badge bg-secondary me-1">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- AI Analysis -->
+            {% if article.ai_title or article.ai_content or article.ai_summary %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-robot me-2"></i>AI Analysis</h5>
+                </div>
+                <div class="card-body">
+                    {% if article.ai_title %}
+                        <div class="mb-2">
+                            <strong>Suggested Title:</strong><br>
+                            {{ article.ai_title }}
+                        </div>
+                    {% endif %}
+
+                    {% if article.ai_summary %}
+                        <div class="mb-2">
+                            <strong>AI Summary:</strong><br>
+                            <small class="text-muted">{{ article.ai_summary }}</small>
+                        </div>
+                    {% endif %}
+
+                    {% if article.seo_score %}
+                        <div>
+                            <strong>SEO Score:</strong>
+                            <span class="badge bg-{{ article.seo_score >= 70 ? 'success' : (article.seo_score >= 50 ? 'warning' : 'danger') }}">
+                                {{ article.seo_score }}/100
+                            </span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Error Details -->
+            {% if article.error_details %}
+            <div class="card mb-4 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Errors</h5>
+                </div>
+                <div class="card-body">
+                    <pre class="text-danger small">{{ article.error_details }}</pre>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function exportArticle(articleId) {
+    window.open('/admin/scraper/collected-data/' + articleId + '/export', '_blank');
+}
+
+function deleteArticle(articleId) {
+    if (confirm('Are you sure you want to delete this article? This action cannot be undone.')) {
+        fetch('/admin/scraper/collected-data/' + articleId, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/admin/scraper/collected-data';
+            } else {
+                alert('Error: ' + (data.error || 'Failed to delete article'));
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            alert('Failed to delete article');
+        });
+    }
+}
+</script>
+
+<style>
+.article-content {
+    line-height: 1.6;
+}
+
+.article-content img {
+    max-width: 100%;
+    height: auto;
+    margin: 1rem 0;
+    border-radius: 0.25rem;
+}
+
+.article-content h1, .article-content h2, .article-content h3,
+.article-content h4, .article-content h5, .article-content h6 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.article-content p {
+    margin-bottom: 1rem;
+}
+
+.article-content blockquote {
+    border-left: 4px solid #dee2e6;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    font-style: italic;
+}
+</style>
+{% endblock %}

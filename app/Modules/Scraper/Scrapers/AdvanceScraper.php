@@ -71,15 +71,34 @@ class AdvanceScraper
      */
     private function getDefaultConfig(): array
     {
-        return [
+        $config = [
             'strategy' => 'auto', // 'auto', 'php-scraper', 'roach', 'php-spider', 'panther'
             'user_agent' => 'BroxLab AdvanceScraper/1.0',
             'timeout' => 30,
-            'max_depth' => 2,
+            'max_depth' => min(2, $this->source['scrape_depth'] ?? 2), // Respect source limits
             'follow_links' => false,
-            'extract_dynamic' => false,
+            'extract_dynamic' => $this->source['use_browser'] ?? false,
             'use_cache' => true,
+            'max_requests' => 50, // Safety limit
         ];
+
+        // Merge source selectors if available
+        if (!empty($this->source['selectors'])) {
+            $selectors = json_decode($this->source['selectors'], true);
+            if (is_array($selectors)) {
+                $config['selectors'] = $selectors;
+            }
+        }
+
+        // Merge advance config if available
+        if (!empty($this->source['advance_config'])) {
+            $advanceConfig = json_decode($this->source['advance_config'], true);
+            if (is_array($advanceConfig)) {
+                $config = array_merge($config, $advanceConfig);
+            }
+        }
+
+        return $config;
     }
 
     /**
@@ -146,12 +165,12 @@ class AdvanceScraper
     private function autoSelectStrategy(string $url): array
     {
         // Check if dynamic content is needed
-        if ($this->config['extract_dynamic']) {
+        if (($this->config['extract_dynamic'] ?? false)) {
             return $this->scrapeWithPanther($url);
         }
 
         // Check if crawling is needed
-        if ($this->config['follow_links'] || $this->config['max_depth'] > 1) {
+        if (($this->config['follow_links'] ?? false) || ($this->config['max_depth'] ?? 1) > 1) {
             return $this->scrapeWithRoach($url);
         }
 
@@ -260,8 +279,8 @@ class AdvanceScraper
     {
         if (!$this->phpScraper) {
             $this->phpScraper = new PhpScraperService([
-                'user_agent' => $this->config['user_agent'],
-                'timeout' => $this->config['timeout'],
+                'user_agent' => $this->config['user_agent'] ?? 'BroxLab Scraper/1.0',
+                'timeout' => $this->config['timeout'] ?? 30,
             ]);
         }
         return $this->phpScraper;
