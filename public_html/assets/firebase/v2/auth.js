@@ -69,15 +69,15 @@ export async function syncIdTokenWithBackend(user, options = {}) {
   try {
     const idToken = await user.getIdToken(true);
     const requestBody = { idToken, provider };
-    
+
     // Add device info for new device detection
     if (deviceId) {
       requestBody.device_id = deviceId;
     }
-    
+
     // Get browser info for new device notification
     requestBody.browser = navigator.userAgent;
-    
+
     const { ok, status, data, error: _error } = await fetchWithTimeout(endpoint, {
       method: 'POST',
       credentials: 'same-origin',
@@ -134,7 +134,14 @@ export async function signInWithGoogle(options = {}) {
     }
     return res;
   } catch (err) {
-    DebugUtils.moduleError('auth', 'Authentication failed');
+    const errCode = String(err?.code || err?.errorCode || '').toLowerCase();
+    const isPopupClosed = errCode.includes('popup') && errCode.includes('closed');
+
+    if (isPopupClosed) {
+      DebugUtils.moduleWarn('auth', 'Google sign-in popup was closed by user');
+    } else {
+      DebugUtils.moduleError('auth', `Google authentication failed: ${err?.message || String(err)}`);
+    }
     throw err;
   }
 }
@@ -162,7 +169,14 @@ export async function signInWithFacebook(options = {}) {
     }
     return res;
   } catch (err) {
-    DebugUtils.moduleError('auth', 'Authentication failed');
+    const errCode = String(err?.code || err?.errorCode || '').toLowerCase();
+    const isPopupClosed = errCode.includes('popup') && errCode.includes('closed');
+
+    if (isPopupClosed) {
+      DebugUtils.moduleWarn('auth', 'Facebook sign-in popup was closed by user');
+    } else {
+      DebugUtils.moduleError('auth', `Facebook authentication failed: ${err?.message || String(err)}`);
+    }
     throw err;
   }
 }
@@ -190,7 +204,14 @@ export async function signInWithGithub(options = {}) {
     }
     return res;
   } catch (err) {
-    DebugUtils.moduleError('auth', 'Authentication failed');
+    const errCode = String(err?.code || err?.errorCode || '').toLowerCase();
+    const isPopupClosed = errCode.includes('popup') && errCode.includes('closed');
+
+    if (isPopupClosed) {
+      DebugUtils.moduleWarn('auth', 'GitHub sign-in popup was closed by user');
+    } else {
+      DebugUtils.moduleError('auth', `GitHub authentication failed: ${err?.message || String(err)}`);
+    }
     throw err;
   }
 }

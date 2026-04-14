@@ -38,7 +38,15 @@ export function getErrorMessage(error) {
  */
 export function isPopupClosedError(error) {
     const code = String(error?.code || '').toLowerCase().replace(/^auth\//, '');
-    return code === 'popup_closed_by_user' || code === 'cancelled-popup-request' || code === 'popup_closed';
+    // Handle all variants of popup closed errors
+    return (
+        code === 'popup_closed_by_user' ||
+        code === 'popup-closed-by-user' ||
+        code === 'cancelled-popup-request' ||
+        code === 'cancelled_popup_request' ||
+        code === 'popup_closed' ||
+        code === 'popup-closed'
+    );
 }
 
 /**
