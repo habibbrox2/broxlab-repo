@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
   const sidebar = document.querySelector('.sidebar');
+  const overlay = document.querySelector('.sidebar-overlay');
   const sidebarToggles = document.querySelectorAll('.sidebar-toggle');
   const sidebarMiniToggle = document.querySelector('.sidebar-mini-toggle');
   const adminShellRow = document.querySelector('.admin-shell-row');
@@ -178,13 +179,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const toggleSidebar = () => {
       sidebar.classList.toggle('show');
-      overlay.classList.toggle('show');
+      if (overlay) overlay.classList.toggle('show');
       syncMobileSidebarState();
     };
 
     const closeSidebar = () => {
       sidebar.classList.remove('show');
-      overlay.classList.remove('show');
+      if (overlay) overlay.classList.remove('show');
       syncMobileSidebarState();
     };
 
@@ -477,7 +478,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Close sidebar when clicking on overlay
-    overlay.addEventListener('click', closeSidebar);
+    if (overlay) overlay.addEventListener('click', closeSidebar);
 
     // Close sidebar on outside click in mobile view.
     document.addEventListener('click', function (event) {
@@ -487,7 +488,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const target = event.target;
       if (!(target instanceof Element)) return;
       if (sidebar.contains(target)) return;
-      if (overlay.contains(target)) return;
+      if (overlay && overlay.contains(target)) return;
       if (Array.from(sidebarToggles).some((toggle) => toggle.contains(target))) return;
 
       closeSidebar();

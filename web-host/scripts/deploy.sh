@@ -421,17 +421,47 @@ fi
 log_section "STARTING SERVICES"
 
 log_info "Restarting Node.js services..."
-if command -v pm2 &> /dev/null; then
-    # Start or restart PM2 services
-    npm run all:start 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || {
-        log_warn "⚠️  Service start failed, this may be normal for first deploy"
+
+# Check dependencies first
+log_debug "Checking PM2 and Node.js dependencies..."
+if ! command -v pm2 &> /dev/null; then
+    log_warn "⚠️  PM2 not found, installing globally..."
+    npm install -g pm2 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || {
+        log_error "❌ Failed to install PM2"
+        exit 1
     }
-    sleep 2
-    pm2 save 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || true
-    pm2 list 2>&1 | grep -E "broxlab|ai-assistant|scraper" | tee -a "$LOGS/deploy_$DATE.log" || true
-    log_info "✅ Services started"
+fi
+
+if ! npm list morgan > /dev/null 2>&1; then
+    log_warn "⚠️  morgan not found, installing..."
+    npm install morgan 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || {
+        log_error "❌ Failed to install morgan"
+        exit 1
+    }
+fi
+
+# Start or restart PM2 services
+log_info "Starting PM2 services from ecosystem.config.cjs..."
+if npm run all:start 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
+    log_info "✅ npm run all:start completed"
 else
-    log_warn "⚠️  PM2 not available, services may need manual start"
+    log_error "❌ Service start failed"
+    exit 1
+fi
+
+sleep 3
+
+# Verify services are running
+log_info "Verifying service status..."
+if pm2 list 2>&1 | tee -a "$LOGS/deploy_$DATE.log" | grep -qE "online"; then
+    pm2 save 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || true
+    log_info "✅ Services started and verified"
+else
+    log_error "❌ Services not running after startup"
+    log_debug "PM2 status:"
+    pm2 status 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
+    pm2 logs 2>&1 | tail -30 | tee -a "$LOGS/deploy_$DATE.log"
+    exit 1
 fi
 
 # Reload PHP-FPM if running as web server
