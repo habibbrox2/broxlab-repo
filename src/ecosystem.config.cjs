@@ -24,7 +24,6 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 3002,
       },
-      interpreter: 'node_modules/.bin/tsx.cmd',
       error_file: './storage/logs/broxlab-node-error.log',
       out_file: './storage/logs/broxlab-node-out.log',
       log_file: './storage/logs/broxlab-node.log',
