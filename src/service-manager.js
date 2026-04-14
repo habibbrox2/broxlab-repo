@@ -25,9 +25,10 @@ const SERVICES = [
     },
     {
         name: 'broxlab-node',
-        script: 'src/index.ts',
+        script: 'node:start', // Use npm script to get tsx in path
         port: 3002,
-        interpreter: process.platform === 'win32' ? 'node_modules/.bin/tsx.cmd' : './node_modules/.bin/tsx',
+        interpreter: 'npm',
+        isNpmScript: true,
         env: { PORT: 3002, NODE_ENV: 'production' },
     },
     {
@@ -78,11 +79,21 @@ class ServiceManager {
         const errStream = fs.createWriteStream(errorFile, { flags: 'a' });
 
         try {
-            const child = spawn(service.interpreter, [service.script], {
+            // Handle npm scripts differently
+            let spawnArgs = [service.script];
+            let spawnOptions = {
                 cwd: process.cwd(),
                 env: { ...process.env, ...service.env },
                 stdio: ['inherit', 'pipe', 'pipe'],
-            });
+            };
+
+            if (service.isNpmScript) {
+                spawnArgs = ['run', service.script];
+                // npm needs shell to resolve properly on Windows
+                spawnOptions.shell = true;
+            }
+
+            const child = spawn(service.interpreter, spawnArgs, spawnOptions);
 
             child.stdout?.pipe(outStream);
             child.stderr?.pipe(errStream);
@@ -108,7 +119,8 @@ class ServiceManager {
 
             this.processes.set(service.name, child);
             this.restartCounts.set(service.name, 0);
-            this.log(service.name, `✅ Service started (PID: ${child.pid})`);
+            const pidInfo = child.pid ? `(PID: ${child.pid})` : '(spawned successfully)';
+            this.log(service.name, `✅ Service started ${pidInfo}`);
         } catch (err) {
             this.log(service.name, `Failed to start: ${err.message}`, 'ERROR');
             this.restartService(service);
@@ -185,7 +197,8 @@ class ServiceManager {
 
         SERVICES.forEach((service) => {
             const proc = this.processes.get(service.name);
-            const status = proc ? `✅ running (PID: ${proc.pid})` : '❌ not running';
+            const pidInfo = proc ? (proc.pid ? `(PID: ${proc.pid})` : '(running)') : '';
+            const status = proc ? `✅ running ${pidInfo}` : '❌ not running';
             const restarts = this.restartCounts.get(service.name) || 0;
             console.log(`${service.name.padEnd(25)} ${status.padEnd(25)} (restarts: ${restarts})`);
         });

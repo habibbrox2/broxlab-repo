@@ -6,7 +6,7 @@
 
 import http from 'http';
 import express from 'express';
-import WebSocket from 'ws';
+import { WebSocketServer } from 'ws';
 import cors from 'cors';
 import helmet from 'helmet';
 import logger from './utils/simple-logger.js';
@@ -82,7 +82,7 @@ function broadcastToUser(userId, message) {
 
     let successCount = 0;
     connections.forEach((ws) => {
-        if (ws.readyState === WebSocket.OPEN) {
+        if (ws.readyState === 1) { // WebSocket.OPEN = 1
             try {
                 ws.send(JSON.stringify(message));
                 successCount++;
@@ -227,7 +227,7 @@ app.post('/api/notifications/batch-broadcast', express.json(), (req, res) => {
 
 // Create HTTP server and WebSocket server
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocketServer({ server });
 
 // Connection handler
 wss.on('connection', (ws, req) => {
