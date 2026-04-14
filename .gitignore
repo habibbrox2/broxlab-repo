@@ -286,6 +286,12 @@ npm-debug.log*
 # - web-host/scripts/*.sh (deployment scripts)
 # - web-host/.github/workflows/ (CI/CD)
 # - web-host/DEPLOYMENT_SCRIPTS_GUIDE.md (documentation)
+!/web-host/
+!/web-host/scripts/
+!/web-host/scripts/*.sh
+!/web-host/.github/
+!/web-host/.github/**
+!/web-host/DEPLOYMENT_SCRIPTS_GUIDE.md
 # ───────────────────────────────────────────────────────────────────
 # ⚠️  NEVER COMMIT:
 #   - .env files (use .env.example instead)
