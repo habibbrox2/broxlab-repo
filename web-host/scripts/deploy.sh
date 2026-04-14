@@ -298,12 +298,20 @@ else
 fi
 
 # Node.js
-log_info "Installing Node.js dependencies..."
-npm ci 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || {
-    log_warn "⚠️  npm ci failed, trying npm install..."
-    npm install 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
-}
-log_info "✅ Node dependencies installed"
+log_info "Installing Node.js dependencies (including devDependencies for tsx compiler)..."
+# CRITICAL: tsx is in devDependencies and required for TypeScript compilation (broxlab-node service)
+# Must install with --include=dev or without NODE_ENV=production
+if NODE_ENV="" npm ci --include=dev 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
+    log_info "✅ Node dependencies installed (with devDependencies)"
+else
+    log_warn "⚠️  npm ci with --include=dev failed, trying npm install --legacy-peer-deps..."
+    if NODE_ENV="" npm install --legacy-peer-deps 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
+        log_info "✅ Node dependencies installed via npm install"
+    else
+        log_error "❌ Failed to install Node dependencies"
+        exit 1
+    fi
+fi
 
 # ============== ASSET BUILD ==============
 log_section "BUILDING ASSETS"
