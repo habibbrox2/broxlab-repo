@@ -40,7 +40,7 @@ while [[ $# -gt 0 ]]; do
         --skip-backup) SKIP_BACKUP=true; shift ;;
         --skip-db-backup) SKIP_DB_BACKUP=true; shift ;;
         --skip-cleanup) SKIP_CLEANUP=true; shift ;;
-        --keeps) KEEP_RELEASES="$2"; shift 2 ;;
+        --keep) KEEP_RELEASES="$2"; shift 2 ;;
         --base) BASE="$2"; shift 2 ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac

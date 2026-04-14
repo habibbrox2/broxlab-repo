@@ -7,8 +7,19 @@
 
 class NotificationWebSocketHelper
 {
-    private static $wsServerUrl = 'http://localhost:3003';
+    private static $wsServerUrl = null;
     private static $timeout = 5; // seconds
+
+    /**
+     * Get WebSocket server URL from environment or use default
+     */
+    private static function getWsServerUrl(): string
+    {
+        if (self::$wsServerUrl === null) {
+            self::$wsServerUrl = getenv('WEBSOCKET_SERVER_URL') ?: 'http://localhost:3003';
+        }
+        return self::$wsServerUrl;
+    }
 
     /**
      * Send notification to user(s) via WebSocket
@@ -107,7 +118,7 @@ class NotificationWebSocketHelper
      */
     private static function sendRequest($endpoint, $data = [], $method = 'POST')
     {
-        $url = self::$wsServerUrl . $endpoint;
+        $url = self::getWsServerUrl() . $endpoint;
 
         $options = [
             'http' => [
@@ -150,7 +161,7 @@ class NotificationWebSocketHelper
     public static function isServerAvailable()
     {
         try {
-            $url = self::$wsServerUrl . '/notifications-health';
+            $url = self::getWsServerUrl() . '/notifications-health';
             $options = [
                 'http' => [
                     'method' => 'GET',

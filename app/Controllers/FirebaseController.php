@@ -1,4 +1,5 @@
 <?php
+
 /**
  * controllers/FirebaseAuthController.php
  * 
@@ -74,7 +75,7 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
         $error = $_GET['error'] ?? null;
         $errorCode = $_GET['error_code'] ?? null;
         $errorDescription = urldecode($_GET['error_description'] ?? '');
-        
+
         // If error parameter exists, handle it
         if (!empty($error)) {
             logError("Firebase auth callback error: {$error} (code: {$errorCode}, desc: {$errorDescription})");
@@ -89,20 +90,20 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
             ];
 
             $displayMessage = $errorMessages[$error] ?? "Login failed: {$errorDescription}";
-            
+
             // Store error in session and redirect to login with error message
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
             $_SESSION['auth_error'] = $displayMessage;
             $_SESSION['auth_error_code'] = $error;
-            
+
             logActivity('Firebase auth failed', 'auth', null, [
                 'error' => $error,
                 'error_code' => $errorCode,
                 'error_description' => $errorDescription
             ], 'warning');
-            
+
             // Redirect to login page with error
             header('Location: /login?error=' . urlencode($displayMessage), true, 302);
             exit;
@@ -111,7 +112,7 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
         // ========== STEP 1: VALIDATE REQUEST METHOD ==========
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         $method = strtoupper($method);
-        
+
         $allowedMethods = ['GET', 'POST', 'OPTIONS', 'HEAD'];
         if (!in_array($method, $allowedMethods, true)) {
             logError("Firebase proxy: Method not allowed: {$method}");
@@ -124,7 +125,7 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
         // ========== STEP 2: HANDLE CORS PREFLIGHT (OPTIONS) ==========
         if ($method === 'OPTIONS') {
             $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-            
+
             // Whitelist of allowed origins
             $allowedOrigins = [
                 'http://localhost',
@@ -133,19 +134,19 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
                 'https://broxlab.online',
                 'https://www.broxlab.online',
             ];
-            
+
             // Allow all localhost origins in development
             $isDevelopment = env('APP_ENV') === 'development';
-            $isOriginAllowed = $origin === '*' || 
-                             in_array($origin, $allowedOrigins, true) || 
-                             ($isDevelopment && stripos($origin, 'localhost') !== false);
-            
+            $isOriginAllowed = $origin === '*' ||
+                in_array($origin, $allowedOrigins, true) ||
+                ($isDevelopment && stripos($origin, 'localhost') !== false);
+
             if ($isOriginAllowed && !empty($origin)) {
                 header('Access-Control-Allow-Origin: ' . $origin);
                 header('Access-Control-Allow-Credentials: true');
                 header('Access-Control-Max-Age: 3600');
             }
-            
+
             header('Access-Control-Allow-Methods: GET, POST, OPTIONS, HEAD');
             header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
             http_response_code(204);
@@ -155,7 +156,7 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
         // ========== STEP 3: VALIDATE REQUEST BODY SIZE ==========
         $contentLength = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
         $maxBodySize = 5 * 1024 * 1024; // 5MB limit
-        
+
         if ($contentLength > $maxBodySize) {
             logError("Firebase proxy: Request body too large: {$contentLength} bytes");
             http_response_code(413);
@@ -165,21 +166,21 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
 
         // ========== STEP 4: RESOLVE FIREBASE CONFIGURATION ==========
         $projectId = env('FIREBASE_PROJECT_ID', 'broxlab-dbd2a');
-        
+
         if (empty($projectId)) {
             logError('Firebase proxy: FIREBASE_PROJECT_ID not configured');
             http_response_code(500);
             echo 'Server configuration error';
             return;
         }
-        
+
         $firebaseHost = $projectId . '.firebaseapp.com';
         $scheme = 'https';
 
         // ========== STEP 5: BUILD TARGET URL ==========
         $incomingUri = $_SERVER['REQUEST_URI'] ?? '/';
         $path = parse_url($incomingUri, PHP_URL_PATH) ?: '/';
-        
+
         $pos = strpos($path, '/__/auth');
         if ($pos === false) {
             logError("Firebase proxy: Invalid path: {$path}");
@@ -187,17 +188,17 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
             echo 'Bad Request';
             return;
         }
-        
+
         $suffix = substr($path, $pos + strlen('/__/auth')) ?: '';
         $target = $scheme . '://' . $firebaseHost . '/__/auth' . $suffix;
-        
+
         if (!empty($_SERVER['QUERY_STRING'])) {
             $target .= '?' . $_SERVER['QUERY_STRING'];
         }
 
         // ========== STEP 6: PREPARE REQUEST HEADERS ==========
         $inHeaders = [];
-        
+
         foreach ($_SERVER as $key => $value) {
             if (strpos($key, 'HTTP_') === 0) {
                 $headerName = str_replace(
@@ -208,25 +209,25 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
                 $inHeaders[$headerName] = $value;
             }
         }
-        
+
         if (isset($_SERVER['CONTENT_TYPE'])) {
             $inHeaders['Content-Type'] = $_SERVER['CONTENT_TYPE'];
         }
-        
+
         $inHeaders['Accept'] = $inHeaders['Accept'] ?? 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
         $inHeaders['Accept-Language'] = $inHeaders['Accept-Language'] ?? 'en-US,en;q=0.9';
         $inHeaders['User-Agent'] = $_SERVER['HTTP_USER_AGENT'] ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)';
-        
+
         // Critical: Override Host to Firebase
         $inHeaders['Host'] = $firebaseHost;
-        
+
         // Remove headers that cause issues
         unset($inHeaders['Content-Length']);
         unset($inHeaders['Transfer-Encoding']);
 
         // ========== STEP 7: READ REQUEST BODY ==========
         $body = file_get_contents('php://input');
-        
+
         if ($body === false) {
             logError('Firebase proxy: Failed to read request body');
             http_response_code(400);
@@ -241,16 +242,16 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
             echo 'Server configuration error';
             return;
         }
-        
+
         $ch = curl_init($target);
-        
+
         if ($ch === false) {
             logError('Firebase proxy: Failed to initialize cURL');
             http_response_code(500);
             echo 'Server error';
             return;
         }
-        
+
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER    => true,
             CURLOPT_HEADER            => true,
@@ -262,12 +263,12 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
             CURLOPT_SSL_VERIFYPEER    => true,
             CURLOPT_SSL_VERIFYHOST    => 2,
         ]);
-        
+
         // Add request body for POST/PUT/PATCH
         if ($method !== 'GET' && $method !== 'HEAD' && !empty($body)) {
             curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
         }
-        
+
         // Convert headers to cURL format
         $curlHeaders = [];
         foreach ($inHeaders as $headerName => $headerValue) {
@@ -280,7 +281,7 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
         $curlError = curl_error($ch);
         $curlErrno = curl_errno($ch);
         $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        
+
         if ($response === false) {
             logError("Firebase proxy cURL error ({$curlErrno}): {$curlError}");
             curl_close($ch);
@@ -288,14 +289,14 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
             echo 'Bad Gateway';
             return;
         }
-        
+
         $headerSize = (int)curl_getinfo($ch, CURLINFO_HEADER_SIZE);
         curl_close($ch);
 
         // ========== STEP 10: PARSE AND FORWARD RESPONSE ==========
         $responseHeaders = substr($response, 0, $headerSize);
         $responseBody = substr($response, $headerSize);
-        
+
         // ========== STEP 10A: HANDLE SUCCESSFUL AUTH RESPONSE ==========
         // Check if this is a successful auth response (typically contains set-cookie or redirect headers)
         if ($httpCode >= 200 && $httpCode < 300) {
@@ -306,21 +307,21 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
                     $setCookieHeaders[] = trim(substr($headerLine, 11));
                 }
             }
-            
+
             // If we have auth cookies or redirect from Firebase, attempt to create local session
             if (!empty($setCookieHeaders) || strpos($responseHeaders, 'Location:') !== false) {
                 // Try to extract Firebase user info from cookies or make a fallback auth call
                 if (session_status() === PHP_SESSION_NONE) {
                     session_start();
                 }
-                
+
                 logActivity('Firebase auth successful (proxy pass-through)', 'auth', null, [
                     'http_code' => $httpCode,
                     'has_cookies' => !empty($setCookieHeaders)
                 ], 'info');
             }
         }
-        
+
         // Security-blocked headers
         $blockedHeaders = [
             'content-length',
@@ -334,27 +335,26 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
             'x-xss-protection',
             'strict-transport-security',
         ];
-        
+
         // Forward response headers
         foreach (preg_split("/\r\n|\n|\r/", $responseHeaders) as $headerLine) {
             if (stripos($headerLine, 'HTTP/') === 0 || trim($headerLine) === '') {
                 continue;
             }
-            
+
             [$headerName, $headerValue] = array_pad(explode(':', $headerLine, 2), 2, null);
-            
+
             if ($headerValue !== null) {
                 $headerNameLower = strtolower(trim($headerName));
-                
+
                 if (!in_array($headerNameLower, $blockedHeaders, true)) {
                     header(trim($headerName) . ': ' . trim($headerValue));
                 }
             }
         }
-        
+
         http_response_code($httpCode);
         echo $responseBody;
-        
     } catch (Throwable $e) {
         logError('Firebase proxy exception: ' . $e->getMessage());
         http_response_code(500);
@@ -365,13 +365,13 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
 
 
 // Register proxy routes (supports up to 6 depth segments)
-$router->match(['GET','POST','OPTIONS'], '/__/auth', $proxyFirebaseAuthHandler);
-$router->match(['GET','POST','OPTIONS'], '/__/auth/{a}', $proxyFirebaseAuthHandler);
-$router->match(['GET','POST','OPTIONS'], '/__/auth/{a}/{b}', $proxyFirebaseAuthHandler);
-$router->match(['GET','POST','OPTIONS'], '/__/auth/{a}/{b}/{c}', $proxyFirebaseAuthHandler);
-$router->match(['GET','POST','OPTIONS'], '/__/auth/{a}/{b}/{c}/{d}', $proxyFirebaseAuthHandler);
-$router->match(['GET','POST','OPTIONS'], '/__/auth/{a}/{b}/{c}/{d}/{e}', $proxyFirebaseAuthHandler);
-$router->match(['GET','POST','OPTIONS'], '/__/auth/{a}/{b}/{c}/{d}/{e}/{f}', $proxyFirebaseAuthHandler);
+$router->match(['GET', 'POST', 'OPTIONS'], '/__/auth', $proxyFirebaseAuthHandler);
+$router->match(['GET', 'POST', 'OPTIONS'], '/__/auth/{a}', $proxyFirebaseAuthHandler);
+$router->match(['GET', 'POST', 'OPTIONS'], '/__/auth/{a}/{b}', $proxyFirebaseAuthHandler);
+$router->match(['GET', 'POST', 'OPTIONS'], '/__/auth/{a}/{b}/{c}', $proxyFirebaseAuthHandler);
+$router->match(['GET', 'POST', 'OPTIONS'], '/__/auth/{a}/{b}/{c}/{d}', $proxyFirebaseAuthHandler);
+$router->match(['GET', 'POST', 'OPTIONS'], '/__/auth/{a}/{b}/{c}/{d}/{e}', $proxyFirebaseAuthHandler);
+$router->match(['GET', 'POST', 'OPTIONS'], '/__/auth/{a}/{b}/{c}/{d}/{e}/{f}', $proxyFirebaseAuthHandler);
 // =====================================================
 // Public Routes
 // =====================================================
@@ -388,7 +388,7 @@ $router->get('/api/firebase-config', ['response' => 'json'], function () use ($f
         }
 
         $config = $firebaseModel->getFirebaseConfig();
-        
+
         // Filter out null values and ensure strings
         $filtered = [];
         foreach ($config as $k => $v) {
@@ -397,16 +397,15 @@ $router->get('/api/firebase-config', ['response' => 'json'], function () use ($f
             }
         }
 
-        $filtered['messagingEnabled'] = !empty($filtered['messagingSenderId']) && 
-                        !empty($filtered['vapidKey']) && 
-                        !empty($filtered['projectId']);
+        $filtered['messagingEnabled'] = !empty($filtered['messagingSenderId']) &&
+            !empty($filtered['vapidKey']) &&
+            !empty($filtered['projectId']);
 
         // Set cache headers so this endpoint can be CDN cached (read-only config)
         header('Cache-Control: public, max-age=300, s-maxage=3600, stale-while-revalidate=60');
         header('Vary: Accept-Encoding');
 
         return json_response(['success' => true, 'config' => $filtered], 200);
-
     } catch (Throwable $e) {
         logError('Firebase config error: ' . $e->getMessage());
         return json_response(['success' => false, 'error' => 'Config unavailable'], 500);
@@ -414,7 +413,7 @@ $router->get('/api/firebase-config', ['response' => 'json'], function () use ($f
 });
 
 // Explicitly reject non-GET methods for the config endpoint to enforce read-only usage
-$router->match(['POST','PUT','PATCH','DELETE'], '/api/firebase-config', function () {
+$router->match(['POST', 'PUT', 'PATCH', 'DELETE'], '/api/firebase-config', function () {
     header('Allow: GET');
     return json_response(['success' => false, 'error' => 'Method Not Allowed'], 405);
 });
@@ -426,7 +425,7 @@ $router->match(['POST','PUT','PATCH','DELETE'], '/api/firebase-config', function
  * Enhanced with account-exists-with-different-credential conflict detection
  * If email exists with different provider, returns conflict response instead of auto-linking
  */
-$router->post('/api/firebase/signin', ['response' => 'json'], function () use ($userModel, $authManager, $firebaseModel, $securityManager) {
+$router->post('/api/firebase/signin', ['response' => 'json'], function () use ($userModel, $authManager, $firebaseModel, $securityManager, $notificationModel) {
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -471,7 +470,7 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
         // Verify token
         logActivity('Firebase sign-in token verification started', 'auth', null, ['provider' => $provider], 'info');
         $result = $firebaseModel->verifyIdToken($idToken);
-        
+
         if (!$result['success']) {
             $errorCode = (string)($result['error_code'] ?? 'token_verification_failed');
             $errorMessage = (string)($result['error'] ?? 'Token verification failed');
@@ -516,7 +515,7 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
         }
 
         logError('Firebase signin: Token verified for uid: ' . $uid);
-        
+
         $user = $firebaseModel->getUserByUid($uid);
         if (!$user) {
             $user = [];
@@ -538,15 +537,15 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
         }
 
         logError('Firebase signin: Email verified - ' . $email);
-        
+
         // ========== ACCOUNT CONFLICT DETECTION ==========
         // Check if email exists in local database
         $existingUser = $userModel->findByEmail($email);
-        
+
         if ($existingUser !== null && !$isAnonymousProvider) {
             // Email exists in local database - check if this is the FIRST login with this provider
             $isProviderAlreadyLinked = $userModel->isProviderLinked($existingUser['id'], $provider);
-            
+
             if ($isProviderAlreadyLinked) {
                 // Provider already linked to this user - returning user, no conflict check needed
                 logError('Firebase signin: Provider already linked to user ID ' . $existingUser['id']);
@@ -554,11 +553,11 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
                 // FIRST LOGIN WITH THIS PROVIDER - Check for conflicts
                 // This prevents account hijacking and guides users to proper resolution
                 $conflict = $userModel->checkAccountConflict($email, $provider, $uid);
-                
+
                 if ($conflict !== null) {
                     // CONFLICT DETECTED: Email exists with different provider(s)
                     logError('Firebase signin: CONFLICT DETECTED - ' . json_encode($conflict));
-                    
+
                     // Return conflict response using unified helper
                     authConflictResponse([
                         'type' => 'account_exists_with_different_credential',
@@ -575,7 +574,7 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
         }
 
         logError('Firebase signin: Creating/syncing local user for email: ' . $email);
-        
+
         // Extract data from request (frontend may send profile fields)
         $displayName = $input['displayName'] ?? ($user['displayName'] ?? $result['claims']['name'] ?? null);
         $photoURL = $input['photoURL'] ?? ($user['photoUrl'] ?? $result['claims']['picture'] ?? null);
@@ -586,7 +585,7 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
         if (!preg_match('/^[a-zA-Z0-9._-]{3,30}$/', $requestedUsername)) {
             $requestedUsername = '';
         }
-        
+
         if ($isAnonymousProvider && empty($displayName)) {
             $displayName = 'Guest User';
         }
@@ -595,9 +594,9 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
         $nameParts = array_filter(explode(' ', trim($displayName ?? ''), 2));
         $firstName = $requestedFirstName !== '' ? $requestedFirstName : ($nameParts[0] ?? null);
         $lastName = $requestedLastName !== '' ? $requestedLastName : ($nameParts[1] ?? null);
-        
+
         logError('Firebase signin: displayName=' . ($displayName ?? 'null') . ', photoURL=' . ($photoURL ?? 'null'));
-        
+
         // Create or sync local user with all OAuth data
         $localUserId = $authManager->createOrSyncLocalUserFromFirebase([
             'uid' => $uid,
@@ -614,7 +613,7 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
         $authManager->createSession((int)$localUserId);
 
         logError('Firebase signin: Success - user_id: ' . $localUserId);
-        
+
         // ========== ENSURE USER_LINKED_ACCOUNTS ENTRY ==========
         // Create/update user_linked_accounts entry for Account Conflict Flow
         // This ensures the account can be properly identified in future conflict checks
@@ -637,7 +636,7 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
         } else {
             logError('Firebase signin: Warning - user_linked_accounts entry creation failed for user_id=' . $localUserId);
         }
-        
+
         // ========== AUDIT LOGGING ==========
         // 1. Record in auth_audit_log (event_type='oauth')
         if ($securityManager) {
@@ -650,23 +649,23 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
             );
             logError('OAuth action recorded in auth_audit_log for user_id=' . $localUserId . ', provider=' . $provider);
         }
-        
+
         // 2. Record in auth_audit_log (event_type='login')
         if ($securityManager) {
             $securityManager->recordSuccessfulLogin((int)$localUserId, 'firebase_' . $provider);
             logError('Login recorded in auth_audit_log for user_id=' . $localUserId . ', method=firebase_' . $provider);
         }
-        
+
         // 3. Log to activity log
         logActivity('Firebase sign-in succeeded', 'auth', (int)$localUserId, ['provider' => $provider, 'firebase_uid' => $uid], 'info');
-        
+
         // 4. Check for new device and send notification
         if ($loginDeviceId) {
-            $notificationModel = new NotificationModel($mysqli);
+            // Use the initialized notification model (already has mysqli connection)
             // Check if device exists for this user in fcm_tokens
             $existingToken = $notificationModel->getDeviceTokenByDeviceId((int)$localUserId, $loginDeviceId);
             $isNewDevice = empty($existingToken);
-            
+
             if ($isNewDevice) {
                 // New device detected - send notification
                 $browserName = 'Unknown Browser';
@@ -674,7 +673,7 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
                 elseif (stripos($loginBrowserInfo, 'Chrome') !== false) $browserName = 'Chrome';
                 elseif (stripos($loginBrowserInfo, 'Safari') !== false) $browserName = 'Safari';
                 elseif (stripos($loginBrowserInfo, 'Edge') !== false) $browserName = 'Edge';
-                
+
                 $notifId = $notificationModel->create(
                     (int)$localUserId,
                     'নতুন ডিভাইসে লগইন',
@@ -693,7 +692,7 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
                 logActivity('New device login notification sent', 'auth', (int)$localUserId, ['device_id' => $loginDeviceId, 'browser' => $browserName], 'info');
             }
         }
-        
+
         $redirectUrl = '/user/dashboard';
         if ($userModel->isSuperAdmin((int)$localUserId) || $userModel->hasRole((int)$localUserId, 'admin')) {
             $redirectUrl = '/admin/dashboard';
@@ -721,7 +720,6 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
             200,
             $redirectUrl
         );
-
     } catch (Throwable $e) {
         logError('Firebase signin: Exception - ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
         logActivity('Firebase sign-in exception', 'auth', null, ['error' => $e->getMessage()], 'error');
@@ -823,10 +821,9 @@ $router->post('/api/firebase/verify-token', ['response' => 'json'], function () 
         logActivity('Firebase verify-token succeeded', 'auth', (int)$localUserId, ['firebase_uid' => $uid], 'info');
 
         return json_response(['success' => true, 'user_id' => (int)$localUserId], 200);
-
     } catch (Throwable $e) {
         header('Cross-Origin-Opener-Policy: same-origin-allow-popups');
-        
+
         $payload = ['success' => false, 'message' => 'Token verification failed', 'closePopup' => true];
         if (env('APP_DEBUG') === 'true') {
             $payload['debug'] = ['error' => $e->getMessage()];
@@ -834,7 +831,7 @@ $router->post('/api/firebase/verify-token', ['response' => 'json'], function () 
 
         logActivity('Firebase verify-token error', 'auth', null, ['error' => $e->getMessage()], 'error');
         logError('Firebase verify-token: ' . $e->getMessage());
-        
+
         return json_response($payload, 500);
     }
 });
@@ -849,9 +846,9 @@ $router->post('/api/firebase/verify-token', ['response' => 'json'], function () 
 $router->post('/api/firebase/link', ['middleware' => ['auth'], 'response' => 'json'], function () use ($firebaseModel, $userModel, $securityManager) {
     if (session_status() === PHP_SESSION_NONE) session_start();
     $userId = AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null);
-    
+
     logError("Firebase /api/firebase/link called - userId: " . ($userId ?? 'NONE'));
-    
+
     if (!$userId) {
         logError("Firebase link: No userId found");
         return json_response(['success' => false, 'error' => 'Unauthorized', 'error_code' => 'unauthorized'], 401);
@@ -875,7 +872,7 @@ $router->post('/api/firebase/link', ['middleware' => ['auth'], 'response' => 'js
         logError("Firebase link blocked: enable_firebase_oauth is disabled");
         return json_response(['success' => false, 'error' => 'OAuth provider is currently disabled', 'error_code' => 'oauth_provider_disabled'], 403);
     }
-    
+
     logError("Firebase link: Received provider=$provider, idToken length=" . strlen($idToken));
 
     if (empty($idToken)) {
@@ -918,9 +915,9 @@ $router->post('/api/firebase/link', ['middleware' => ['auth'], 'response' => 'js
                 ], 200);
             }
         }
-        
+
         $firebaseUser = $firebaseModel->getUserByUid($uid);
-        
+
         if (!$firebaseUser) {
             logError("Firebase link: Firebase user not found for uid=$uid");
             return json_response(['success' => false, 'error' => 'Firebase user not found', 'error_code' => 'invalid_token'], 400);
@@ -954,7 +951,7 @@ $router->post('/api/firebase/link', ['middleware' => ['auth'], 'response' => 'js
         if ($success) {
             logError("Firebase link: SUCCESS - account linked for userId=$userId, provider=$provider");
             logActivity('Firebase account linked', 'auth', (int)$userId, [
-                'provider' => $provider, 
+                'provider' => $provider,
                 'firebase_uid' => $uid,
                 'email' => $firebaseUser['email'] ?? 'unknown'
             ], 'success');
@@ -972,7 +969,6 @@ $router->post('/api/firebase/link', ['middleware' => ['auth'], 'response' => 'js
                 'error_code' => 'server_error'
             ], 500);
         }
-
     } catch (Throwable $e) {
         logError('Firebase link error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
         logActivity('Firebase link error', 'auth', (int)$userId, ['error' => $e->getMessage()], 'error');
@@ -1035,7 +1031,7 @@ if ($debugEnabled) {
 
         try {
             $result = $firebaseModel->verifyIdToken($idToken);
-            
+
             if (!$result['success']) {
                 return json_response(['success' => false, 'error' => $result['error']], 401);
             }
@@ -1049,7 +1045,6 @@ if ($debugEnabled) {
                 'user' => $user,
                 'claims' => $result['claims'] ?? [],
             ], 200);
-
         } catch (Throwable $e) {
             logError('debug verify-token: ' . $e->getMessage());
             return json_response([
@@ -1187,4 +1182,3 @@ if ($debugEnabled) {
         return json_response(['success' => true, 'config' => $config], 200);
     });
 }
-

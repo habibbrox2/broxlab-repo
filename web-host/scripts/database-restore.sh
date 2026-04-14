@@ -40,15 +40,18 @@ log_debug() {
     echo -e "${BLUE}[DEBUG]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
 }
 
+# ============== INITIALIZATION ==============
+mkdir -p "$LOGS"
+
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+LOG_FILE="$LOGS/database-restore_$TIMESTAMP.log"
+
 # ============== ERROR HANDLING ==============
 cleanup_on_error() {
     log_error "Database restore interrupted"
 }
 
 trap cleanup_on_error EXIT ERR
-
-# ============== INITIALIZATION ==============
-mkdir -p "$LOGS"
 
 # Determine backup file to restore
 BACKUP_FILE="${1:--}"  # Use argument or default
@@ -68,9 +71,6 @@ if [[ "$BACKUP_FILE" == "-" ]]; then
         exit 1
     fi
 fi
-
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-LOG_FILE="$LOGS/database-restore_$TIMESTAMP.log"
 
 log_info "Starting database restore process..."
 log_debug "Backup file: $BACKUP_FILE"
