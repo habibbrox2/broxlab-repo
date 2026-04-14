@@ -1,4 +1,12 @@
-import { appendAssistant, appendMessage, animateBody as _animateBody, attachAssistantTools as _attachAssistantTools, buildStaticReplyMatcher, parseResponseConfig, typeMessage } from '../../core/render.js';
+import {
+  appendAssistant,
+  appendMessage,
+  animateBody as _animateBody,
+  attachAssistantTools as _attachAssistantTools,
+  buildStaticReplyMatcher,
+  parseResponseConfig,
+  typeMessage,
+} from '../../core/render.js';
 import { createHistoryStore } from '../../core/storage.js';
 import { createLanguageState } from '../../core/i18n.js';
 import { ensurePuterReady, getPuterClient, extractResponseText } from '../../core/puter.js';
@@ -20,7 +28,7 @@ const UI = {
   typingText: document.getElementById('publicAssistantTypingText'),
   footer: document.getElementById('publicAssistantFooter'),
   preChat: document.getElementById('publicAssistantPreChat'),
-  btnNewChat: null
+  btnNewChat: null,
 };
 
 // Enable public-only mode to skip sign-in requirements
@@ -33,13 +41,13 @@ const LAST_ACTIVITY_KEY = 'brox.publicAssistant.lastActivity.v2';
 const LANGUAGE_KEY = 'brox.publicAssistant.language.v2';
 const USER_INFO_KEY = 'brox.publicAssistant.userInfo.v2';
 const MAX_STORED_MESSAGES = 40;
-const INACTIVITY_LIMIT_MS = 30 * 60 * 1000;
+const INACTIVITY_LIMIT_MS = 60 * 60 * 1000; // 1 hour
 const ASSISTANT_SITE_URL = 'https://broxlab.online';
 const _TOPIC_KEYS = ['general', 'support', 'billing', 'feedback'];
 
 const DEFAULT_PREFS = {
   provider: 'puter-js',
-  model: 'gemini-2.0-flash'
+  model: 'gemini-2.0-flash',
 };
 
 let assistantPrefs = { ...DEFAULT_PREFS };
@@ -54,7 +62,10 @@ async function loadAssistantPrefs() {
       assistantPrefs.providers = Array.isArray(data.providers) ? data.providers : [];
 
       // Ensure we have a default model for OpenRouter (free router) when not explicitly set.
-      if (assistantPrefs.provider === 'openrouter' && (!assistantPrefs.model || !assistantPrefs.model.includes('/'))) {
+      if (
+        assistantPrefs.provider === 'openrouter' &&
+        (!assistantPrefs.model || !assistantPrefs.model.includes('/'))
+      ) {
         assistantPrefs.model = 'openrouter/free';
       }
 
@@ -98,10 +109,10 @@ const I18N = {
     topic_feedback: 'মতামত',
     alert_name_required: 'অনুগ্রহ করে আপনার নাম লিখুন।',
     alert_topic_required: 'কমপক্ষে একটি টপিক নির্বাচন করুন।',
-    session_expired_notice: 'পূর্বের চ্যাট সেশন শেষ হয়েছে। নতুন সেশন শুরু।',
+    session_expired_notice: 'পূর্বের চ্যাট সেশন শেষ হয়েছে। অনুগ্রহ করে আপনার তথ্য পুনরায় দিন।',
     chat_reset_notice: 'নিষ্ক্রিয়তার কারণে চ্যাট রিসেট হয়েছে।',
     fallback_error: 'দুঃখিত, এখন সংযোগে সমস্যা হচ্ছে।',
-    response_time_label: 'রেসপন্স'
+    response_time_label: 'রেসপন্স',
   },
   en: {
     assistant_title: 'Brox Assistant',
@@ -127,22 +138,22 @@ const I18N = {
     topic_feedback: 'Feedback',
     alert_name_required: 'Please enter your name.',
     alert_topic_required: 'Please select at least one topic.',
-    session_expired_notice: 'Previous chat expired. Starting fresh.',
+    session_expired_notice: 'Previous chat session expired. Please provide your information again.',
     chat_reset_notice: 'Chat reset due to inactivity.',
     fallback_error: 'Sorry, having trouble connecting right now.',
-    response_time_label: 'Response'
-  }
+    response_time_label: 'Response',
+  },
 };
 
 const STATIC_REPLIES = {
   bn: {
     name: 'আমি brox বলছি, BroxLab সহকারী হিসেবে আপনাকে তথ্য ও সাপোর্টে সাহায্য করি।',
-    about: `আমি brox বলছি। BroxLab হলো ${ASSISTANT_SITE_URL} শিরোনামের Bengali-first tech platform, যেখানে কনটেন্ট, সেবা ও ডিজিটাল তথ্য সাজানোভাবে প্রকাশ করা হয়।`
+    about: `আমি brox বলছি। BroxLab হলো ${ASSISTANT_SITE_URL} শিরোনামের Bengali-first tech platform, যেখানে কনটেন্ট, সেবা ও ডিজিটাল তথ্য সাজানোভাবে প্রকাশ করা হয়।`,
   },
   en: {
     name: 'I am Brox, speaking as the BroxLab assistant.',
-    about: `I am Brox. BroxLab is the Bengali-first tech platform at ${ASSISTANT_SITE_URL}.`
-  }
+    about: `I am Brox. BroxLab is the Bengali-first tech platform at ${ASSISTANT_SITE_URL}.`,
+  },
 };
 
 let userInfo = null;
@@ -151,7 +162,11 @@ let chatHistory = [];
 let historyExpired = false;
 
 const getStaticReply = buildStaticReplyMatcher(STATIC_REPLIES);
-const { getLanguage, setLanguage } = createLanguageState({ storageKey: LANGUAGE_KEY, defaultLang: 'bn', storage: window.localStorage });
+const { getLanguage, setLanguage } = createLanguageState({
+  storageKey: LANGUAGE_KEY,
+  defaultLang: 'bn',
+  storage: window.localStorage,
+});
 let currentLang = getLanguage();
 let lastProviderUsed = null;
 let lastProviderChain = null;
@@ -160,7 +175,7 @@ const historyStore = createHistoryStore({
   chatKey: CHAT_STORAGE_KEY,
   activityKey: LAST_ACTIVITY_KEY,
   maxMessages: MAX_STORED_MESSAGES,
-  inactivityMs: INACTIVITY_LIMIT_MS
+  inactivityMs: INACTIVITY_LIMIT_MS,
 });
 
 // Fireworks AI API call function
@@ -170,14 +185,14 @@ async function callFireworksAI(messages, options = {}) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: options.model || 'accounts/fireworks/models/deepseek-v3p1',
       messages: messages,
       stream: options.stream || false,
-      ...options
-    })
+      ...options,
+    }),
   });
   if (!response.ok) throw new Error('Fireworks API error');
   return await response.json();
@@ -187,23 +202,25 @@ async function callFireworksAI(messages, options = {}) {
 async function callOpenRouterAI(messages, options = {}) {
   const apiKey = String(window.OPENROUTER_API_KEY || '').trim();
   if (!apiKey) {
-    throw new Error('Missing OpenRouter API key. Configure it in AI settings and refresh the page.');
+    throw new Error(
+      'Missing OpenRouter API key. Configure it in AI settings and refresh the page.'
+    );
   }
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
       'HTTP-Referer': window.location.origin, // Optional
-      'X-OpenRouter-Title': 'BroxBhai Assistant' // Optional
+      'X-OpenRouter-Title': 'BroxBhai Assistant', // Optional
     },
     body: JSON.stringify({
       model: options.model || 'openrouter/free',
       messages: messages,
       stream: options.stream || false,
-      ...options
-    })
+      ...options,
+    }),
   });
 
   if (!response.ok) {
@@ -231,7 +248,9 @@ async function callOpenRouterAI(messages, options = {}) {
     } catch {
       // ignore
     }
-    throw new Error(`OpenRouter response parse error: ${parseErr.message}${raw ? ` - ${raw}` : ''}`);
+    throw new Error(
+      `OpenRouter response parse error: ${parseErr.message}${raw ? ` - ${raw}` : ''}`
+    );
   }
 }
 
@@ -239,7 +258,7 @@ async function callOpenRouterAI(messages, options = {}) {
 function _parseSuggestionsFromText(text) {
   const match = text.match(/\[SUGGESTION:\s*(.*?)\]/);
   if (match) {
-    const suggestions = match[1].split(',').map(s => s.trim());
+    const suggestions = match[1].split(',').map((s) => s.trim());
     const cleanText = text.replace(/\[SUGGESTION:\s*.*?\]/, '').trim();
     return { text: cleanText, suggestions };
   }
@@ -277,9 +296,12 @@ function updateOpenRouterKeyStatus() {
     return;
   }
 
-  const label = source === 'db'
-    ? 'OpenRouter key configured (DB)' : source === 'env'
-      ? 'OpenRouter key configured (env)' : 'OpenRouter key configured';
+  const label =
+    source === 'db'
+      ? 'OpenRouter key configured (DB)'
+      : source === 'env'
+        ? 'OpenRouter key configured (env)'
+        : 'OpenRouter key configured';
 
   UI.openRouterKeyStatus.textContent = label;
   UI.openRouterKeyStatus.className = 'assistant-status text-success';
@@ -293,11 +315,17 @@ function setTyping(active) {
 function normalizeSuggestions(rawSuggestions) {
   if (!rawSuggestions) return [];
   if (Array.isArray(rawSuggestions)) {
-    return rawSuggestions.map((item) => {
-      if (typeof item === 'string') return { label: item, action: item };
-      if (item && typeof item === 'object') return { label: item.label || item.action || String(item), action: item.action || item.label || String(item) };
-      return null;
-    }).filter(Boolean);
+    return rawSuggestions
+      .map((item) => {
+        if (typeof item === 'string') return { label: item, action: item };
+        if (item && typeof item === 'object')
+          return {
+            label: item.label || item.action || String(item),
+            action: item.action || item.label || String(item),
+          };
+        return null;
+      })
+      .filter(Boolean);
   }
   if (typeof rawSuggestions === 'string') {
     return [{ label: rawSuggestions, action: rawSuggestions }];
@@ -353,7 +381,9 @@ function renderSuggestChips(message, suggestions = []) {
 
 async function applyResponseConfig(message, rawText, opts = {}) {
   const responseConfig = opts.responseConfig || null;
-  const { config, content } = responseConfig ? { config: responseConfig, content: rawText } : parseResponseConfig(rawText || '');
+  const { config, content } = responseConfig
+    ? { config: responseConfig, content: rawText }
+    : parseResponseConfig(rawText || '');
   if (!config) return rawText;
 
   const body = message.querySelector('.message-content');
@@ -392,8 +422,14 @@ function updateLangButtons() {
 }
 
 function applyLanguage() {
-  const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  const setPlaceholder = (id, val) => { const el = document.getElementById(id); if (el) el.setAttribute('placeholder', val); };
+  const setText = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
+  const setPlaceholder = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.setAttribute('placeholder', val);
+  };
   setText('publicAssistantTitle', t('assistant_title'));
   setText('publicAssistantStatusText', t('assistant_status'));
   setText('publicAssistantTypingText', t('typing_text'));
@@ -421,7 +457,9 @@ function renderHistory() {
     renderWelcome();
     return;
   }
-  chatHistory.forEach((row) => appendMessage(UI.messages, row.role, row.text, { ts: row.ts, responseMs: row.responseMs }));
+  chatHistory.forEach((row) =>
+    appendMessage(UI.messages, row.role, row.text, { ts: row.ts, responseMs: row.responseMs })
+  );
 }
 
 function loadUserInfo() {
@@ -434,7 +472,7 @@ function loadUserInfo() {
       email: String(parsed.email || '').trim(),
       mobile: String(parsed.mobile || '').trim(),
       topics: Array.isArray(parsed.topics) ? parsed.topics : [],
-      supportSent: parsed.supportSent === true
+      supportSent: parsed.supportSent === true,
     };
     if (!userInfo.topics.length) userInfo.topics = ['general'];
     supportLogged = userInfo.supportSent;
@@ -474,7 +512,9 @@ function clearPreChat() {
 }
 
 function getSelectedTopics() {
-  return Array.from(document.querySelectorAll('.intro-topic-option:checked')).map((el) => String(el.value || '').trim()).filter(Boolean);
+  return Array.from(document.querySelectorAll('.intro-topic-option:checked'))
+    .map((el) => String(el.value || '').trim())
+    .filter(Boolean);
 }
 
 function buildSystemPrompt() {
@@ -489,15 +529,17 @@ function buildSystemPrompt() {
     'Keep replies concise and friendly.',
     'If asked your name, answer that you are Brox and mention BroxLab with the URL.',
     'If asked about yourself or broxlab.online, describe briefly and include the site URL.',
-    'Do not promise backend actions; provide helpful guidance and links.'
-  ].filter(Boolean).join('\n');
+    'Do not promise backend actions; provide helpful guidance and links.',
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 function _buildMessages(userText) {
   return [
     { role: 'system', content: buildSystemPrompt() },
     ...chatHistory.map((r) => ({ role: r.role, content: r.text })),
-    { role: 'user', content: userText }
+    { role: 'user', content: userText },
   ];
 }
 
@@ -527,8 +569,18 @@ function initQuickAction() {
 }
 
 function bindEvents() {
-  UI.langBnBtn?.addEventListener('click', () => { currentLang = 'bn'; setLanguage('bn'); applyLanguage(); renderHistory(); });
-  UI.langEnBtn?.addEventListener('click', () => { currentLang = 'en'; setLanguage('en'); applyLanguage(); renderHistory(); });
+  UI.langBnBtn?.addEventListener('click', () => {
+    currentLang = 'bn';
+    setLanguage('bn');
+    applyLanguage();
+    renderHistory();
+  });
+  UI.langEnBtn?.addEventListener('click', () => {
+    currentLang = 'en';
+    setLanguage('en');
+    applyLanguage();
+    renderHistory();
+  });
   UI.btn?.addEventListener('click', () => {
     const opening = UI.window?.classList.contains('d-none');
     UI.window?.classList.toggle('hidden');
@@ -542,20 +594,34 @@ function bindEvents() {
     UI.window?.classList.add('d-none');
   });
   UI.sendBtn?.addEventListener('click', handleUserMessage);
-  UI.input?.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleUserMessage(); });
+  UI.input?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleUserMessage();
+  });
   document.getElementById('introNext1')?.addEventListener('click', () => {
     const name = String(document.getElementById('introName')?.value || '').trim();
-    if (!name) { alert(t('alert_name_required')); return; }
+    if (!name) {
+      alert(t('alert_name_required'));
+      return;
+    }
     setPreChatStep('step-contact');
   });
-  document.getElementById('introNext2')?.addEventListener('click', () => setPreChatStep('step-topic'));
+  document
+    .getElementById('introNext2')
+    ?.addEventListener('click', () => setPreChatStep('step-topic'));
   document.getElementById('introStartChat')?.addEventListener('click', () => {
     const name = String(document.getElementById('introName')?.value || '').trim();
     const email = String(document.getElementById('introEmail')?.value || '').trim();
     const mobile = String(document.getElementById('introMobile')?.value || '').trim();
     const topics = getSelectedTopics();
-    if (!name) { alert(t('alert_name_required')); setPreChatStep('step-name'); return; }
-    if (!topics.length) { alert(t('alert_topic_required')); return; }
+    if (!name) {
+      alert(t('alert_name_required'));
+      setPreChatStep('step-name');
+      return;
+    }
+    if (!topics.length) {
+      alert(t('alert_topic_required'));
+      return;
+    }
     userInfo = { name, email, mobile, topics, supportSent: false };
     supportLogged = false;
     saveUserInfo();
@@ -572,7 +638,15 @@ async function handleUserMessage() {
 
   const { history, expired } = historyStore.load();
   chatHistory = expired ? [] : history;
-  if (expired) appendAssistant(UI.messages, t('chat_reset_notice'));
+  if (expired) {
+    // Reset user info and show pre-chat when session expires due to inactivity
+    userInfo = null;
+    window.localStorage.removeItem(USER_INFO_KEY);
+    supportLogged = false;
+    showPreChat();
+    appendAssistant(UI.messages, t('session_expired_notice'), { animate: true });
+    return; // Don't proceed with the message
+  }
 
   UI.input.value = '';
   const ts = new Date().toISOString();
@@ -582,7 +656,11 @@ async function handleUserMessage() {
 
   if (userInfo.topics.includes('support') && !supportLogged) {
     const queued = sendSupportMessage(text);
-    if (queued) { supportLogged = true; userInfo.supportSent = true; saveUserInfo(); }
+    if (queued) {
+      supportLogged = true;
+      userInfo.supportSent = true;
+      saveUserInfo();
+    }
   }
 
   const staticReply = getStaticReply(text, currentLang);
@@ -615,19 +693,22 @@ async function handleUserMessage() {
     return ordered.filter((p) => p.has_api_key);
   })();
 
-  const providerOrder = (providerChain.length > 0
-    ? providerChain.map((p) => p.provider_name).join(' → ') + ' → Puter'
-    : 'Puter');
+  const providerOrder =
+    providerChain.length > 0
+      ? providerChain.map((p) => p.provider_name).join(' → ') + ' → Puter'
+      : 'Puter';
 
   if (providerOrder !== lastProviderChain) {
-    await appendAssistant(UI.messages, `Provider fallback order: ${providerOrder}`, { animate: true });
+    await appendAssistant(UI.messages, `Provider fallback order: ${providerOrder}`, {
+      animate: true,
+    });
     lastProviderChain = providerOrder;
   }
 
   const apiMessages = [
     { role: 'system', content: buildSystemPrompt() },
     ...chatHistory.map((r) => ({ role: r.role, content: r.text })),
-    { role: 'user', content: text }
+    { role: 'user', content: text },
   ];
 
   let providerError = null;
@@ -662,11 +743,16 @@ async function handleUserMessage() {
           onRun: () => {
             UI.input.value = reply;
             handleUserMessage();
-          }
+          },
         });
         const finalContent = await applyResponseConfig(assistantMsg, reply, { responseConfig: {} });
         const responseMs = Math.max(0, Math.round(performance.now() - started));
-        chatHistory.push({ role: 'assistant', text: finalContent, ts: new Date().toISOString(), responseMs });
+        chatHistory.push({
+          role: 'assistant',
+          text: finalContent,
+          ts: new Date().toISOString(),
+          responseMs,
+        });
         historyStore.save(chatHistory);
         setStatus(t('assistant_status'));
         setTyping(false);
@@ -674,7 +760,11 @@ async function handleUserMessage() {
 
         // Show provider switch message when changing provider during session
         if (lastProviderUsed && lastProviderUsed !== prov.provider_name) {
-          await appendAssistant(UI.messages, `Switched provider: ${lastProviderUsed} → ${prov.provider_name}`, { animate: true });
+          await appendAssistant(
+            UI.messages,
+            `Switched provider: ${lastProviderUsed} → ${prov.provider_name}`,
+            { animate: true }
+          );
         }
         lastProviderUsed = prov.provider_name;
         return;
@@ -684,7 +774,11 @@ async function handleUserMessage() {
 
         // If auth failure, show a helpful message (only for openrouter)
         if (prov.provider_name === 'openrouter' && /401|Unauthorized/i.test(providerErr.message)) {
-          await appendAssistant(UI.messages, 'OpenRouter authentication failed (401). Please verify your OpenRouter API key in AI Settings and refresh the page.', { animate: true });
+          await appendAssistant(
+            UI.messages,
+            'OpenRouter authentication failed (401). Please verify your OpenRouter API key in AI Settings and refresh the page.',
+            { animate: true }
+          );
         }
 
         // If we got an invalid-model error, try the free router once and retry.
@@ -703,19 +797,25 @@ async function handleUserMessage() {
         break;
       }
     }
-
   } // end for providerChain
 
   // If we get here, all providers failed; fall back to Puter.js.
   if (providerChain.length > 0) {
     const lastUsed = lastProviderUsed ? ` (last used: ${lastProviderUsed})` : '';
-    await appendAssistant(UI.messages, `All configured providers failed, falling back to Puter.js${lastUsed}.`, { animate: true });
+    await appendAssistant(
+      UI.messages,
+      `All configured providers failed, falling back to Puter.js${lastUsed}.`,
+      { animate: true }
+    );
   }
 
   if (providerChain.length > 0) {
     // Show fallback badge when we attempted providers but fell back to Puter.
     setFallbackBadge(true);
-    console.log('All configured providers failed, falling back to Puter.js', providerError?.message);
+    console.log(
+      'All configured providers failed, falling back to Puter.js',
+      providerError?.message
+    );
   }
 
   // Use Puter.js directly (no sign-in required)
@@ -728,7 +828,7 @@ async function handleUserMessage() {
     const apiMessages = [
       { role: 'system', content: buildSystemPrompt() },
       ...chatHistory.map((r) => ({ role: r.role, content: r.text })),
-      { role: 'user', content: text }
+      { role: 'user', content: text },
     ];
 
     const response = await puter.ai.chat(apiMessages, { model: model, stream: false });
@@ -742,11 +842,16 @@ async function handleUserMessage() {
       onRun: () => {
         UI.input.value = reply;
         handleUserMessage();
-      }
+      },
     });
     const finalContent = await applyResponseConfig(assistantMsg, reply, { responseConfig: {} });
     const responseMs = Math.max(0, Math.round(performance.now() - started));
-    chatHistory.push({ role: 'assistant', text: finalContent, ts: new Date().toISOString(), responseMs });
+    chatHistory.push({
+      role: 'assistant',
+      text: finalContent,
+      ts: new Date().toISOString(),
+      responseMs,
+    });
     historyStore.save(chatHistory);
     setStatus(t('assistant_status'));
   } catch (puterErr) {
@@ -770,10 +875,24 @@ function sendSupportMessage(messageText) {
   if (mobile) payload.append('mobile', mobile);
   if (contact) payload.append('contact', contact);
   payload.append('message', messageText);
-  fetch('/api/public-chat/support', { method: 'POST', body: payload, headers: { Accept: 'application/json' } })
+  fetch('/api/public-chat/support', {
+    method: 'POST',
+    body: payload,
+    headers: { Accept: 'application/json' },
+  })
     .then((res) => res.json())
-    .then((data) => { if (!data?.success && userInfo) { userInfo.supportSent = false; saveUserInfo(); } })
-    .catch(() => { if (userInfo) { userInfo.supportSent = false; saveUserInfo(); } });
+    .then((data) => {
+      if (!data?.success && userInfo) {
+        userInfo.supportSent = false;
+        saveUserInfo();
+      }
+    })
+    .catch(() => {
+      if (userInfo) {
+        userInfo.supportSent = false;
+        saveUserInfo();
+      }
+    });
   return true;
 }
 
@@ -788,7 +907,8 @@ async function init() {
   if (historyExpired) appendAssistant(UI.messages, t('session_expired_notice'));
   bindEvents();
   initQuickAction();
-  if (userInfo?.name) clearPreChat(); else showPreChat();
+  if (userInfo?.name) clearPreChat();
+  else showPreChat();
   setStatus(t('assistant_status'));
 }
 
