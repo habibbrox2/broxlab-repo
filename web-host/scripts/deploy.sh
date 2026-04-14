@@ -185,6 +185,17 @@ else
     fi
 fi
 
+# ============== INITIALIZE SHARED STORAGE ==============
+log_section "INITIALIZING SHARED STORAGE"
+
+log_info "Ensuring shared storage directories exist..."
+mkdir -p "$STORAGE"/{uploads,cache,logs,tmp,ocr-temp,sessions} 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
+mkdir -p "$SHARED/backups"/{database,code,logs} 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
+mkdir -p "$LOGS" 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
+chmod -R 755 "$STORAGE" 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
+chmod -R 755 "$SHARED/backups" 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
+log_info "✅ Shared storage initialized"
+
 # ============== GIT CLONE ==============
 log_section "GIT REPOSITORY CLONE"
 
@@ -220,18 +231,13 @@ elif [[ -f "$SHARED/broxlab-firebase.json" ]]; then
     ln -sfn "$SHARED/broxlab-firebase.json" "Config/broxlab-firebase.json"
 fi
 
-# Ensure shared storage directories exist
-mkdir -p "$STORAGE"/{uploads,cache,logs,tmp,ocr-temp}
-
-# Create storage symlinks (now that directories exist in new release)
+# Create storage symlinks (shared directories created in INITIALIZE SHARED STORAGE phase)
 ln -sfn "$STORAGE/uploads" "public_html/uploads"
 ln -sfn "$STORAGE/cache" "storage/cache"
 ln -sfn "$STORAGE/logs" "storage/logs"
 ln -sfn "$STORAGE/tmp" "storage/tmp"
 ln -sfn "$STORAGE/ocr-temp" "storage/ocr-temp"
-
-# Create database backups directory
-mkdir -p "$SHARED/backups/database"
+ln -sfn "$STORAGE/sessions" "storage/sessions"
 
 log_info "✅ Shared resources linked"
 
