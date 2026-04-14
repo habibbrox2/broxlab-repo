@@ -30,6 +30,7 @@ app.get('/health', (req, res) => {
     services: {
       'unified-server': 'http://localhost:3001',
       'ai-assistant': 'http://localhost:3002',
+      'notification-ws': 'http://localhost:3003',
     },
   });
 });
@@ -75,6 +76,19 @@ app.use(
     ws: true, // WebSocket support
     pathRewrite: {
       '^/ai-ws': '', // /ai-ws/* -> /*
+    },
+  })
+);
+
+// WebSocket support for Notifications
+app.use(
+  '/ws/notifications',
+  createProxyMiddleware({
+    target: 'http://localhost:3003',
+    changeOrigin: true,
+    ws: true, // WebSocket support
+    pathRewrite: {
+      '^/ws/notifications': '', // /ws/notifications/* -> /*
     },
   })
 );
@@ -128,7 +142,8 @@ server.listen(PORT, () => {
   console.log(`📋 Routes:`);
   console.log(`   • Unified Server (RAG): http://localhost:${PORT}/api/*`);
   console.log(`   • AI Assistant: http://localhost:${PORT}/ai/*`);
-  console.log(`   • WebSocket: http://localhost:${PORT}/ai-ws/*`);
+  console.log(`   • AI Assistant WebSocket: http://localhost:${PORT}/ai-ws/*`);
+  console.log(`   • Notification WebSocket: http://localhost:${PORT}/ws/notifications/*`);
   console.log(`   • Health Check: http://localhost:${PORT}/health`);
   console.log(`   • Default: http://localhost:${PORT}/* (fallback to unified server)`);
 });

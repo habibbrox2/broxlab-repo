@@ -124,7 +124,7 @@ class UserModel
     {
         $sql = "
             SELECT
-                u.id, u.username, u.email, u.password, u.first_name, u.last_name, u.gender, u.dob, u.phone, u.alternate_phone, u.address, u.city, u.state, u.country, u.zipcode, u.profile_pic, u.auth_provider, u.role, u.status, u.firebase_uid, u.login_ip, u.login_device, u.last_login, u.password_changed_at, u.created_at, u.updated_at, u.deleted_at,
+                u.id, u.username, u.email, u.password, u.first_name, u.last_name, u.gender, u.dob, u.phone, u.alternate_phone, u.address, u.city, u.state, u.country, u.zipcode, u.profile_pic, u.auth_provider, u.status, u.firebase_uid, u.login_ip, u.login_device, u.last_login, u.password_changed_at, u.created_at, u.updated_at, u.deleted_at,
                 GROUP_CONCAT(DISTINCT r.name ORDER BY r.ranking DESC) AS roles,
                 MAX(r.is_super_admin) AS is_super_admin
             FROM users u
@@ -1655,7 +1655,7 @@ class UserModel
     {
         $sql = "
             SELECT
-                u.id, u.username, u.email, u.password, u.first_name, u.last_name, u.gender, u.dob, u.phone, u.alternate_phone, u.address, u.city, u.state, u.country, u.zipcode, u.profile_pic, u.auth_provider, u.role, u.status, u.firebase_uid, u.login_ip, u.login_device, u.last_login, u.password_changed_at, u.created_at, u.updated_at, u.deleted_at,
+                u.id, u.username, u.email, u.password, u.first_name, u.last_name, u.gender, u.dob, u.phone, u.alternate_phone, u.address, u.city, u.state, u.country, u.zipcode, u.profile_pic, u.auth_provider, u.status, u.firebase_uid, u.login_ip, u.login_device, u.last_login, u.password_changed_at, u.created_at, u.updated_at, u.deleted_at,
                 GROUP_CONCAT(DISTINCT r.name ORDER BY r.is_super_admin DESC, r.name ASC) AS roles,
                 MAX(r.is_super_admin) AS is_super_admin
             FROM users u
