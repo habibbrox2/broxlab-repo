@@ -424,12 +424,6 @@ log_info "Restarting Node.js services..."
 
 # Check dependencies first (using local node_modules npm on shared hosting)
 log_debug "Checking Node.js dependencies..."
-if ! npm list pm2 > /dev/null 2>&1; then
-    log_error "❌ PM2 not installed in node_modules"
-    log_info "Install with: npm install pm2"
-    exit 1
-fi
-
 if ! npm list morgan > /dev/null 2>&1; then
     log_warn "⚠️  morgan not found, installing..."
     npm install morgan 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || {
@@ -438,35 +432,35 @@ if ! npm list morgan > /dev/null 2>&1; then
     }
 fi
 
-# Use local PM2 from node_modules for shared hosting (no global install permissions)
-PM2="./node_modules/.bin/pm2"
+# Start services using Node service manager (no PM2 required)
+log_info "Starting Node services via service-manager..."
+log_debug "Service manager script: src/service-manager.js"
 
-# Start or restart PM2 services using local pm2
-log_info "Starting PM2 services from ecosystem.config.cjs..."
-if $PM2 delete broxlab-node broxlab-rag notification-websocket reverse-proxy 2>/dev/null || true; then
-    if $PM2 start src/ecosystem.config.cjs 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
-        log_info "✅ PM2 services started"
-    else
-        log_error "❌ PM2 start failed"
-        exit 1
-    fi
+# Kill any existing service manager processes
+pkill -f service-manager 2>/dev/null || true
+sleep 1
+
+# Start the service manager (will manage all 3 services)
+if nohup node src/service-manager.js > "$LOGS/service-manager_$DATE.log" 2>&1 &
+then
+    log_info "✅ Service manager started (PID: $!)"
+    SERVICE_MANAGER_PID=$!
 else
-    log_error "❌ PM2 delete failed"
+    log_error "❌ Failed to start service manager"
     exit 1
 fi
 
-sleep 3
+sleep 5
 
-# Verify services are running
+# Verify services are running by checking if processes exist
 log_info "Verifying service status..."
-if $PM2 list 2>&1 | tee -a "$LOGS/deploy_$DATE.log" | grep -qE "online"; then
-    $PM2 save 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || true
-    log_info "✅ Services started and verified"
+if ps aux | grep -E "reverse-proxy|broxlab-node|notification-websocket" | grep -v grep > /dev/null 2>&1; then
+    log_info "✅ Services verified running"
+    ps aux | grep -E "reverse-proxy|broxlab-node|notification-websocket" | grep -v grep | tee -a "$LOGS/deploy_$DATE.log"
 else
     log_error "❌ Services not running after startup"
-    log_debug "PM2 status:"
-    $PM2 status 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
-    $PM2 logs 2>&1 | tail -30 | tee -a "$LOGS/deploy_$DATE.log"
+    log_debug "Service manager log:"
+    tail -50 "$LOGS/service-manager_$DATE.log" | tee -a "$LOGS/deploy_$DATE.log"
     exit 1
 fi
 
