@@ -64,11 +64,16 @@
   color: #e8eaf0;
 }
 
+[data-theme="dark"] .nav-link,
 [data-theme="dark"] .brox-nav-link {
-  color: #b0b8d0 !important;
+  color: #f0f4ff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
+[data-theme="dark"] .nav-link:hover,
 [data-theme="dark"] .brox-nav-link:hover,
+[data-theme="dark"] .nav-link.active,
 [data-theme="dark"] .brox-nav-link.active {
   color: var(--primary-400, #7b93ff) !important;
   background: rgba(123, 147, 255, .1);
@@ -112,9 +117,9 @@
 }
 
 [data-theme="dark"] .brox-theme-toggle {
-  background: rgba(255, 255, 255, .06);
-  border-color: rgba(255, 255, 255, .1);
-  color: #e8eaf0;
+  color: #f0f4ff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 [data-theme="dark"] .theme-toggle-btn:hover {
