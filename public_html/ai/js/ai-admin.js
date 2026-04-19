@@ -16,7 +16,17 @@
  *  - Slash command overlay menu
  *  - Mobile responsive design
  *  - Keyboard shortcuts (Ctrl+Alt+A)
+ *  - Dark mode toggle with localStorage
+ *  - Syntax highlighting for code blocks
+ *  - Voice input (Web Speech API)
+ *  - Enhanced command menu
  */
+
+// ── Import Enhanced UI Modules ───────────────────────────────────────────────
+import UIEnhancements from './modules/ui-enhancements.js';
+import SyntaxHighlighter from './modules/syntax-highlighter.js';
+import VoiceInputHandler from './modules/voice-input.js';
+import CommandMenu from './modules/command-menu.js';
 
 // ── Auto-inject ai-style.css ──────────────────────────────────────────────────
 (function injectAiCSS() {
@@ -234,7 +244,7 @@ if (!window.BroxAdminInstance) {
       if (this.currentXhr) {
         try {
           this.currentXhr.abort();
-        } catch {}
+        } catch { }
         this.currentXhr = null;
       }
       this.uploading = false;
@@ -311,7 +321,7 @@ if (!window.BroxAdminInstance) {
       if (this.uploading && this.currentXhr) {
         try {
           this.currentXhr.abort();
-        } catch {}
+        } catch { }
       }
       this.uploading = true;
       if (this.progressWrap) {
@@ -990,7 +1000,7 @@ if (!window.BroxAdminInstance) {
                     micBtn.title = 'Voice input';
                   }
                 };
-              } catch {}
+              } catch { }
             })
             .catch(() => {
               /* ignore */
@@ -1020,7 +1030,7 @@ if (!window.BroxAdminInstance) {
             .then((stream) => {
               try {
                 stream.getTracks().forEach((t) => t.stop());
-              } catch {}
+              } catch { }
               self._micPermission = 'granted';
               return true;
             })
@@ -1494,6 +1504,19 @@ if (!window.BroxAdminInstance) {
       }
       if (this.nodes.statusText) {
         this.nodes.statusText.textContent = text;
+      }
+
+      // Show toast for important status updates
+      if (window.broxUIModules && window.broxUIModules.ui) {
+        const ui = window.broxUIModules.ui;
+
+        if (status === 'error') {
+          ui.showToast(text || 'An error occurred', 'error', 4000);
+        } else if (status === 'success') {
+          ui.showToast(text || 'Success', 'success', 3000);
+        } else if (status === 'warning') {
+          ui.showToast(text || 'Warning', 'warning', 3000);
+        }
       }
     }
 
@@ -2640,6 +2663,22 @@ if (!window.BroxAdminInstance) {
         msg.dataset.msgIndex = String(msgIndex);
       }
       this.nodes.body.appendChild(msg);
+
+      // Apply UI enhancements (dark mode, syntax highlighting, etc.)
+      if (window.broxUIModules) {
+        const { ui, highlighter } = window.broxUIModules;
+
+        // Add timestamp with relative time
+        if (ui) {
+          ui.addMessageTimestamp(msg, new Date());
+        }
+
+        // Enhance code blocks with syntax highlighting
+        if (highlighter) {
+          highlighter.processCodeBlocks(contentDiv);
+        }
+      }
+
       this.scrollToBottom();
       this.pruneDomMessages();
     }
@@ -2975,10 +3014,10 @@ if (!window.BroxAdminInstance) {
       const dispatchFieldEvents = (el) => {
         try {
           el.dispatchEvent(new Event('input', { bubbles: true }));
-        } catch {}
+        } catch { }
         try {
           el.dispatchEvent(new Event('change', { bubbles: true }));
-        } catch {}
+        } catch { }
       };
 
       keys.forEach((key) => {
@@ -3300,9 +3339,9 @@ if (!window.BroxAdminInstance) {
         const form = this.findPrimaryForm();
         const fieldNames = form
           ? Array.from(form.querySelectorAll('input[name], textarea[name], select[name]'))
-              .map((el) => el.getAttribute('name'))
-              .filter(Boolean)
-              .filter((name, idx, arr) => arr.indexOf(name) === idx)
+            .map((el) => el.getAttribute('name'))
+            .filter(Boolean)
+            .filter((name, idx, arr) => arr.indexOf(name) === idx)
           : [];
 
         const intro = fieldNames.length
@@ -3344,9 +3383,9 @@ if (!window.BroxAdminInstance) {
         const form = this.findPrimaryForm();
         const fieldNames = form
           ? Array.from(form.querySelectorAll('input[name], textarea[name], select[name]'))
-              .map((el) => el.getAttribute('name'))
-              .filter(Boolean)
-              .filter((name, idx, arr) => arr.indexOf(name) === idx)
+            .map((el) => el.getAttribute('name'))
+            .filter(Boolean)
+            .filter((name, idx, arr) => arr.indexOf(name) === idx)
           : [];
 
         const intro = fieldNames.length
@@ -3422,9 +3461,9 @@ if (!window.BroxAdminInstance) {
           const form = this.findPrimaryForm();
           const fieldNames = form
             ? Array.from(form.querySelectorAll('input[name], textarea[name], select[name]'))
-                .map((el) => el.getAttribute('name'))
-                .filter(Boolean)
-                .filter((name, idx, arr) => arr.indexOf(name) === idx)
+              .map((el) => el.getAttribute('name'))
+              .filter(Boolean)
+              .filter((name, idx, arr) => arr.indexOf(name) === idx)
             : [];
 
           const intro = fieldNames.length
@@ -4700,6 +4739,23 @@ if (!window.BroxAdminInstance) {
   // ── Bootstrap ─────────────────────────────────────────────────────────────
   function bootstrapAdminCopilot() {
     if (window.BroxAdminInstance) return;
+
+    // Initialize UI Enhancement Modules
+    const ui = new UIEnhancements();
+    const highlighter = new SyntaxHighlighter();
+    const voice = new VoiceInputHandler();
+    const commands = new CommandMenu();
+
+    // Apply initial dark mode if saved
+    ui.applyInitialTheme();
+
+    // Store modules for later use
+    window.broxUIModules = {
+      ui,
+      highlighter,
+      voice,
+      commands,
+    };
 
     window.broxAdmin = new BroxAdminCopilot();
     window.BroxAdminInstance = window.broxAdmin;

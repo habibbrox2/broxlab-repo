@@ -3,7 +3,6 @@
  * Handles sidebar toggling and responsive behaviors
  */
 
-import { initSidebar } from './modules/sidebar.js';
 import {
   initAdminNotificationRuntime,
   initAdminUserDropdownSync,
@@ -17,7 +16,6 @@ import { runWhenReady } from './modules/utils.js';
 // Constants
 const DESKTOP_WIDTH = 992;
 const MINI_EXPANDED_CLASS = 'admin-sidebar-mini-expanded';
-const MOBILE_OPEN_CLASS = 'sidebar-mobile-open';
 const MINI_STORAGE_KEY = 'adminSidebarMini';
 const SIDEBAR_WIDTH_KEY = 'adminSidebarWidth';
 const MIN_SIDEBAR_WIDTH = 200;
@@ -36,7 +34,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const sidebarResizer = document.getElementById('adminColumnResizer');
 
   // Initialize modules
-  initSidebar();
   initAdminNotificationRuntime();
   runWhenReady(initAdminUserDropdownSync);
   initAdminDebugUtils();
@@ -174,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const syncMobileSidebarState = () => {
       const isMobile = window.innerWidth < DESKTOP_WIDTH;
       const isOpen = sidebar.classList.contains('show');
-      document.body.classList.toggle(MOBILE_OPEN_CLASS, isMobile && isOpen);
+      document.body.classList.toggle('admin-sidebar-open', isMobile && isOpen);
     };
 
     const toggleSidebar = () => {
@@ -252,7 +249,6 @@ document.addEventListener('DOMContentLoaded', function () {
       if (window.innerWidth < 992) {
         document.body.classList.remove('admin-sidebar-mini');
         document.body.classList.remove(MINI_EXPANDED_CLASS);
-        document.body.classList.remove(MOBILE_OPEN_CLASS);
         resetSidebarWidth();
         if (sidebarMiniToggle) {
           sidebarMiniToggle.setAttribute('aria-expanded', 'false');

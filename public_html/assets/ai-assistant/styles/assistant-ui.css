@@ -1,19 +1,76 @@
 /* =======================
-   Shared Assistant UI Styles
+   Shared Assistant UI Styles (Enhanced)
    Applies to both public and admin assistant components
+   Features: Dark mode, smooth animations, improved message UI
    ======================= */
 
 :root {
+  /* Light mode (default) */
   --assistant-bg: #ffffff;
+  --assistant-bg-secondary: #f8fafc;
   --assistant-border: rgba(148, 163, 184, 0.5);
   --assistant-muted: #64748b;
   --assistant-text: #0f172a;
   --assistant-accent: #0ea5e9;
   --assistant-accent-2: #38bdf8;
+  --assistant-success: #22c55e;
+  --assistant-warning: #f59e0b;
+  --assistant-error: #ef4444;
   --assistant-radius: 14px;
   --assistant-shadow: 0 16px 40px rgba(15, 23, 42, 0.15);
   --assistant-elevated: 0 8px 24px rgba(15, 23, 42, 0.08);
   --assistant-font: "Segoe UI", "Noto Sans Bengali", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Emoji";
+
+  /* User/Assistant message colors */
+  --msg-user-bg: rgba(14, 165, 233, 0.15);
+  --msg-user-border: rgba(14, 165, 233, 0.35);
+  --msg-assistant-bg: rgba(34, 197, 94, 0.12);
+  --msg-assistant-border: rgba(34, 197, 94, 0.3);
+
+  /* Code block colors */
+  --code-bg: #1e293b;
+  --code-text: #e2e8f0;
+  --code-border: rgba(148, 163, 184, 0.3);
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --assistant-bg: #1e293b;
+    --assistant-bg-secondary: #0f172a;
+    --assistant-border: rgba(100, 116, 139, 0.5);
+    --assistant-muted: #94a3b8;
+    --assistant-text: #f1f5f9;
+    --assistant-accent: #38bdf8;
+    --assistant-accent-2: #0ea5e9;
+
+    --msg-user-bg: rgba(56, 189, 248, 0.15);
+    --msg-user-border: rgba(56, 189, 248, 0.35);
+    --msg-assistant-bg: rgba(34, 197, 94, 0.15);
+    --msg-assistant-border: rgba(34, 197, 94, 0.35);
+
+    --code-bg: #0f172a;
+    --code-text: #e2e8f0;
+  }
+}
+
+/* Dark mode toggle class */
+.brox-ai-dark-mode {
+  --assistant-bg: #1e293b;
+  --assistant-bg-secondary: #0f172a;
+  --assistant-border: rgba(100, 116, 139, 0.5);
+  --assistant-muted: #94a3b8;
+  --assistant-text: #f1f5f9;
+  --assistant-accent: #38bdf8;
+  --assistant-accent-2: #0ea5e9;
+
+  --msg-user-bg: rgba(56, 189, 248, 0.15);
+  --msg-user-border: rgba(56, 189, 248, 0.35);
+  --msg-assistant-bg: rgba(34, 197, 94, 0.15);
+  --msg-assistant-border: rgba(34, 197, 94, 0.35);
+
+  --code-bg: #0f172a;
+  --code-text: #e2e8f0;
 }
 
 .bb-assistant-admin,
@@ -226,6 +283,338 @@
   overflow: hidden;
 }
 
+/* Enhanced: Message timestamps and better styling */
+.message {
+  animation: fadeIn 0.3s ease-out;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+.message:hover {
+  background: var(--msg-user-bg);
+}
+
+.message.assistant:hover {
+  background: var(--msg-assistant-bg);
+}
+
+.message-timestamp {
+  font-size: 0.7rem;
+  color: var(--assistant-muted);
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+/* Enhanced: Message actions */
+.message-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.message:hover .message-actions {
+  opacity: 1;
+}
+
+.message-action-btn {
+  background: transparent;
+  border: 1px solid var(--assistant-border);
+  color: var(--assistant-text);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.message-action-btn:hover {
+  background: var(--assistant-accent);
+  color: white;
+  border-color: var(--assistant-accent);
+}
+
+/* Enhanced: Code block styling */
+.message code {
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.85em;
+}
+
+.message pre {
+  background: var(--code-bg);
+  color: var(--code-text);
+  border: 1px solid var(--code-border);
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+  margin: 8px 0;
+  font-size: 0.85em;
+  line-height: 1.5;
+}
+
+.message pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* Enhanced: Code block with toolbar */
+.code-block-container {
+  position: relative;
+  margin: 8px 0;
+  border: 1px solid var(--code-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.code-block-header {
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--code-border);
+  font-size: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+
+.code-block-header-label {
+  opacity: 0.8;
+}
+
+.code-copy-btn {
+  background: var(--assistant-accent);
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: background 0.2s ease;
+}
+
+.code-copy-btn:hover {
+  background: var(--assistant-accent-2);
+}
+
+.code-copy-btn.copied {
+  background: var(--assistant-success);
+}
+
+/* Enhanced: JSON rendering */
+.json-container {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.85em;
+  color: var(--code-text);
+  overflow-x: auto;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.json-expand-btn {
+  background: transparent;
+  border: 1px solid var(--code-border);
+  color: var(--code-text);
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+}
+
+.json-expand-btn:hover {
+  background: var(--assistant-accent);
+  color: white;
+  border-color: var(--assistant-accent);
+}
+
+/* Enhanced: Skeleton loader for messages */
+.message-skeleton {
+  background: linear-gradient(90deg, var(--assistant-border), var(--assistant-bg-secondary), var(--assistant-border));
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 8px;
+  height: 16px;
+  margin: 8px 0;
+}
+
+.message-skeleton-title {
+  height: 24px;
+  width: 60%;
+}
+
+.message-skeleton-text {
+  height: 16px;
+  width: 100%;
+}
+
+/* Enhanced: Sidebar animations */
+.brox-ai-sidebar {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.brox-ai-sidebar.brox-ai-collapsed {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Enhanced: Tab animations */
+.brox-ai-tabs-panel {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Enhanced: Better toggle switches */
+.brox-ai-toggle-switch {
+  background: var(--assistant-border);
+  border: none;
+  border-radius: 999px;
+  padding: 2px;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+}
+
+.brox-ai-toggle-switch.active {
+  background: var(--assistant-success);
+}
+
+.brox-ai-toggle-slider {
+  display: block;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 999px;
+  position: absolute;
+  left: 2px;
+  transition: left 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.brox-ai-toggle-switch.active .brox-ai-toggle-slider {
+  left: 22px;
+}
+
+/* Enhanced: Button hover states */
+.brox-ai-btn-clear,
+.brox-ai-send-btn,
+.brox-ai-action-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.brox-ai-btn-clear:hover,
+.brox-ai-send-btn:hover,
+.brox-ai-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.brox-ai-btn-clear:active,
+.brox-ai-send-btn:active,
+.brox-ai-action-btn:active {
+  transform: translateY(0);
+}
+
+/* Enhanced: Connection status indicator */
+.brox-ai-connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: var(--assistant-bg-secondary);
+  color: var(--assistant-text);
+  border: 1px solid var(--assistant-border);
+}
+
+.brox-ai-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  animation: pulse 2s infinite;
+}
+
+.brox-ai-status-dot.connected {
+  background: var(--assistant-success);
+  animation: none;
+}
+
+.brox-ai-status-dot.connecting {
+  background: var(--assistant-warning);
+}
+
+.brox-ai-status-dot.error {
+  background: var(--assistant-error);
+}
+
+/* Enhanced: Toast notifications */
+.brox-ai-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--assistant-bg);
+  border: 1px solid var(--assistant-border);
+  border-left: 4px solid var(--assistant-accent);
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: var(--assistant-shadow);
+  animation: slideInLeft 0.3s ease-out;
+  z-index: 10000;
+  max-width: 320px;
+}
+
+.brox-ai-toast.success {
+  border-left-color: var(--assistant-success);
+}
+
+.brox-ai-toast.error {
+  border-left-color: var(--assistant-error);
+}
+
+.brox-ai-toast.warning {
+  border-left-color: var(--assistant-warning);
+}
+
+/* Enhanced: Loading state */
+.brox-ai-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.brox-ai-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--assistant-border);
+  border-top-color: var(--assistant-accent);
+  border-radius: 999px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Typing indicator */
 .typing-indicator {
   display: flex;
@@ -264,6 +653,56 @@
   50% {
     opacity: 1;
     transform: translateY(-2px);
+  }
+}
+
+/* Enhanced: Skeleton loader animation */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Enhanced: Smooth fade-in */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Enhanced: Slide in from left */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Enhanced: Pulse animation */
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
   }
 }
 
@@ -372,6 +811,34 @@
 }
 
 /* Responsive */
+@media (max-width: 768px) {
+  .brox-ai-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 300px;
+    height: 100vh;
+    z-index: 10000;
+    background: var(--assistant-bg);
+    border-right: 1px solid var(--assistant-border);
+    border-radius: 0;
+  }
+
+  .brox-ai-message-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .message-action-btn {
+    min-width: 44px;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+}
+
 @media (max-width: 576px) {
 
   .bb-assistant-admin,
@@ -383,14 +850,80 @@
   .bb-assistant-admin .admin-assistant-chat,
   .bb-assistant-public .public-assistant-shell {
     width: calc(100vw - 24px);
-    max-height: calc(80vh);
+    max-height: calc(90vh);
   }
-  
+
+  /* Full-width on mobile */
+  .brox-ai-copilot-sidebar {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: 0 !important;
+  }
+
   /* Disable resizer on mobile */
   .bb-assistant-admin .admin-assistant-chat-resizer,
   .bb-assistant-public .public-assistant-shell-resizer,
   .bb-assistant-admin .admin-assistant-chat-resizer-vertical,
   .bb-assistant-public .public-assistant-shell-resizer-vertical {
     display: none;
+  }
+
+  /* Improved touch targets for mobile */
+  .brox-ai-send-btn,
+  .brox-ai-action-btn,
+  .brox-ai-icon-btn {
+    min-width: 44px;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Larger text for mobile */
+  .brox-ai-textarea {
+    font-size: 16px !important;
+  }
+
+  /* Better spacing on mobile */
+  .message {
+    padding: 12px 14px;
+  }
+
+  /* Hide desktop-only elements */
+  .brox-ai-input-hint {
+    display: none;
+  }
+
+  /* Better sidebar on mobile */
+  .brox-ai-sidebar {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* Auto-close sidebar on small screens */
+  .brox-ai-sidebar.brox-ai-mobile-hidden {
+    display: none;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-height: 500px) and (orientation: landscape) {
+  .brox-ai-copilot-sidebar {
+    max-height: 100vh;
+  }
+
+  .brox-ai-body {
+    max-height: calc(100vh - 140px);
+  }
+
+  .brox-ai-header {
+    padding: 10px 14px;
+  }
+
+  .message {
+    padding: 8px 10px;
   }
 }

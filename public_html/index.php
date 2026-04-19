@@ -193,8 +193,6 @@ function requireAllPhpFiles($dir)
 require_once BASE_PATH . 'Config/Db.php';
 require_once BASE_PATH . 'Config/Twig.php';
 require_once BASE_PATH . 'app/Routes/Router.php';
-// Load AI system routes – centralised route definitions
-require_once BASE_PATH . 'app/Routes/AISystemRoutes.php';
 
 // Other configs
 require_once BASE_PATH . 'Config/Functions.php';
@@ -369,9 +367,14 @@ usort($controllerFiles, static function (string $a, string $b): int {
 foreach ($controllerFiles as $controller) {
     require_once $controller;
 }
+
 // ============================================================================
-// Dispatch Router
+// Register Routes from Controllers
 // ============================================================================
+// Routes auto-register when controller files are loaded via require_once above
+// This keeps route definitions close to their implementations
+global $router;
+
 try {
     //error_log("Dispatching: " . $_SERVER['REQUEST_METHOD'] . " " . $_SERVER['REQUEST_URI']);
     $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);

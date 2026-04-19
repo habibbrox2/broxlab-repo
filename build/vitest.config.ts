@@ -1,30 +1,32 @@
-/// <reference types="vitest" />
+/**
+ * Vitest Configuration
+ * Unit testing framework configuration
+ */
+
 import { defineConfig } from 'vitest/config';
-import { resolve } from 'path';
+import path from 'path';
 
 export default defineConfig({
     test: {
+        environment: 'jsdom',
         globals: true,
-        environment: 'node',
-        setupFiles: ['tests/setup.ts'],
-        include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}', 'tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-        exclude: ['node_modules', 'dist', 'public_html'],
         coverage: {
+            provider: 'v8',
             reporter: ['text', 'json', 'html'],
             exclude: [
                 'node_modules/',
-                'dist/',
-                'public_html/',
-                'tests/',
-                '**/*.d.ts',
-                '**/*.config.{js,ts}',
-                'src/index.ts',
+                'build/',
+                'public_html/assets/**/dist/',
             ],
         },
+        include: ['**/__tests__/**/*.{test,spec}.{js,ts}'],
+        exclude: ['node_modules', 'build', 'public_html/assets/**/dist'],
     },
     resolve: {
         alias: {
-            '@': resolve(__dirname, '../src'),
+            '@': path.resolve(__dirname, './public_html/assets'),
+            '@js': path.resolve(__dirname, './public_html/assets/js'),
+            '@css': path.resolve(__dirname, './public_html/assets/css'),
         },
     },
 });

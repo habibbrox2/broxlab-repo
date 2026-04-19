@@ -448,56 +448,127 @@ fi
 # ============== SERVICE RESTART ==============
 log_section "STARTING SERVICES"
 
-# BUG FIX: `npm list morgan` was run from $BASE, not from $NEW_RELEASE where
-# node_modules lives, so it always reported morgan missing and re-installed it.
-# Removed: morgan should be declared in package.json and installed by npm ci above.
+# ============== AGGRESSIVE PORT CLEANUP - BATTLE TESTED ==============
+# Kill old service processes and wait for port cleanup
+# This is more aggressive because ports 3000-3003 MUST be free
 
-log_info "Stopping any existing service manager processes..."
-pkill -f service-manager 2>/dev/null || true
-sleep 1
+log_info "Killing old service processes..."
 
-log_info "Starting Node services via npm run nodes:start..."
-# IMPORTANT: `node src/service-manager.js` cannot be used directly because
-# package.json declares "type": "module". npm run provides the correct context.
-# NOTE: Running in background — verification happens below after sleep.
+# Step 1: Kill npm process running nodes:start (parent of all services)
+if pgrep -f "npm.*nodes:start" >/dev/null 2>&1; then
+    log_info "  • Found npm nodes:start process, killing..."
+    pkill -9 -f "npm.*nodes:start" 2>/dev/null || true
+fi
+
+# Step 2: Kill service-manager service (can spawn multiple processes)
+if pgrep -f "node.*service-manager" >/dev/null 2>&1; then
+    log_info "  • Found service-manager processes, killing..."
+    pkill -9 -f "node.*service-manager" 2>/dev/null || true
+fi
+
+# Step 3: Kill by individual service name
+for service in reverse-proxy broxlab-node notification-websocket; do
+    if pgrep -f "$service" >/dev/null 2>&1; then
+        log_info "  • Found $service process, killing..."
+        pkill -9 -f "$service" 2>/dev/null || true
+    fi
+done
+
+# Step 4: Kill any other node processes listening on our ports
+if command -v fuser &>/dev/null; then
+    for port in 3000 3001 3002 3003; do
+        if fuser ${port}/tcp &>/dev/null 2>&1; then
+            log_info "  • Killing process on port $port..."
+            fuser -k ${port}/tcp 2>/dev/null || true
+        fi
+    done
+fi
+
+# Step 5: Wait longer for TCP TIME_WAIT to expire and ports to be truly free
+log_info "Waiting 5 seconds for ports to be released..."
+sleep 5
+
+# Step 6: Verify at least one port is free (as sanity check)
+PORT_STATUS="unknown"
+if command -v lsof &>/dev/null; then
+    PORTS_USED=$(lsof -i :3000-3003 2>/dev/null | wc -l)
+    if [[ $PORTS_USED -lt 2 ]]; then
+        PORT_STATUS="free"
+    else
+        PORT_STATUS="in_use"
+    fi
+elif command -v netstat &>/dev/null; then
+    PORTS_USED=$(netstat -tln 2>/dev/null | grep -E ":3000|:3001|:3002|:3003" | wc -l)
+    if [[ $PORTS_USED -lt 2 ]]; then
+        PORT_STATUS="free"
+    else
+        PORT_STATUS="in_use"
+    fi
+fi
+
+if [[ "$PORT_STATUS" == "in_use" ]]; then
+    log_warn "⚠️  Some ports still in use, attempting final cleanup..."
+    # Last resort: kill ALL node processes
+    pkill -9 node 2>/dev/null || true
+    log_warn "  Killed all node processes"
+    sleep 5
+fi
+
+log_info "✅ Port cleanup complete, proceeding with service startup"
+
+log_info "Starting Node services..."
+cd "$NEW_RELEASE" || exit 1
 nohup npm run nodes:start > "$LOGS/service-manager_$DATE.log" 2>&1 &
 SERVICE_MANAGER_PID=$!
 log_info "✅ Service manager started (PID: $SERVICE_MANAGER_PID)"
 
-# Verify services come up
-sleep 5
-MAX_RETRIES=3
+log_info "Waiting 10 seconds for services to start..."
+sleep 10
+
+log_info "Verifying services are running..."
+MAX_RETRIES=6
 RETRY_COUNT=0
-SERVICE_PATTERN="reverse-proxy|broxlab-node|notification-websocket"
+SERVICES_FOUND=0
 
 while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
-    if ps aux | grep -E "$SERVICE_PATTERN" | grep -v grep &>/dev/null; then
-        log_info "✅ Services verified running"
-        ps aux | grep -E "$SERVICE_PATTERN" | grep -v grep | tee -a "$LOG_FILE"
+    SERVICES_FOUND=$(ps aux | grep -E "reverse-proxy|broxlab-node|notification-websocket" | grep -v grep | wc -l)
+    
+    if [[ $SERVICES_FOUND -ge 3 ]]; then
+        log_info "✅ All services verified running ($SERVICES_FOUND processes found)"
+        ps aux | grep -E "reverse-proxy|broxlab-node|notification-websocket" | grep -v grep | sed 's/^/    /' | tee -a "$LOG_FILE"
         break
     fi
+    
     RETRY_COUNT=$(( RETRY_COUNT + 1 ))
     if [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; then
-        log_warn "⚠️  Services not detected yet — retry $RETRY_COUNT/$MAX_RETRIES"
+        log_warn "⚠️  Only $SERVICES_FOUND/3 services running — retry $RETRY_COUNT/$MAX_RETRIES"
         sleep 3
     fi
 done
 
-if [[ $RETRY_COUNT -ge $MAX_RETRIES ]]; then
-    log_error "❌ Services did not start after $MAX_RETRIES attempts"
-    log_error "--- Service manager log (last 150 lines) ---"
+if [[ $SERVICES_FOUND -lt 3 ]]; then
+    log_error "❌ Services failed to start ($SERVICES_FOUND/3 found after $MAX_RETRIES retries)"
+    log_error ""
+    log_error "=== Service Manager Log ==="
     tail -150 "$LOGS/service-manager_$DATE.log" | tee -a "$LOG_FILE"
-    for svc in reverse-proxy broxlab-node notification-websocket; do
-        ERR_LOG="$STORAGE/logs/${svc}-error.log"
-        if [[ -f "$ERR_LOG" ]]; then
-            log_error "--- $svc error log ---"
-            tail -30 "$ERR_LOG" | tee -a "$LOG_FILE"
-        fi
+    log_error ""
+    log_error "=== Service Error Logs ==="
+    for log in "$STORAGE/logs"/*-error.log; do
+        [[ -f "$log" ]] && {
+            log_error "--- $(basename "$log") ---"
+            tail -50 "$log" | tee -a "$LOG_FILE"
+        }
     done
+    log_error ""
+    log_error "Deployment failed - could not start services"
     exit 1
 fi
 
 log_info "✅ Services started successfully"
+
+log_info "✅ Services started successfully"
+# Mark deployment as successful so cleanup errors won't trigger rollback
+DEPLOYMENT_SUCCESS=true
 
 # ============== POST-DEPLOYMENT CLEANUP ==============
 if [[ "$SKIP_CLEANUP" == "false" ]]; then
@@ -546,5 +617,4 @@ log_info ""
 log_info "✅ Finished at $(date '+%Y-%m-%d %H:%M:%S')"
 log_info "📝 Next: verify the deployment and monitor logs"
 
-DEPLOYMENT_SUCCESS=true
 exit 0

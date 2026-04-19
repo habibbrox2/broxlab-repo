@@ -251,14 +251,16 @@
           {'name': 'All Posts', 'url': '/admin/posts', 'key': 'all-posts'},
           {'name': 'Add Post', 'url': '/admin/posts/create', 'key': 'add-post'}
       ]},
-       {'name': 'Web Scraping Menu', 'icon': 'bi-robot', 'url': '/admin/scraper', 'key': 'scraper', 'children': [
-           {'name': 'Dashboard', 'url': '/admin/scraper', 'key': 'scraper-dashboard'},
-           {'name': 'Presets', 'url': '/admin/scraper/presets', 'key': 'scraper-presets'},
-           {'name': 'Manual Collection', 'url': '/admin/scraper/collect', 'key': 'scraper-collect'},
-           {'name': 'Collected Data', 'url': '/admin/scraper/collected-data', 'key': 'scraper-collected-data'},
-           {'name': 'AI Preset Generator', 'url': '/admin/scraper/ai/preset-generator', 'key': 'scraper-ai-preset-generator'},
-           {'name': 'AI Analyzer', 'url': '/admin/scraper/ai/analyzer', 'key': 'scraper-ai-analyzer'}
-       ]},
+        {'name': 'Web Scraping Menu', 'icon': 'bi-robot', 'url': '/admin/scraper', 'key': 'scraper', 'children': [
+            {'name': 'Dashboard', 'url': '/admin/scraper', 'key': 'scraper-dashboard'},
+            {'name': 'Presets', 'url': '/admin/scraper/presets', 'key': 'scraper-presets'},
+            {'name': 'Manual Collection', 'url': '/admin/scraper/collect', 'key': 'scraper-collect'},
+            {'name': 'Collected Data', 'url': '/admin/scraper/collected-data', 'key': 'scraper-collected-data'},
+            {'name': 'AI Preset Generator', 'url': '/admin/scraper/ai/preset-generator', 'key': 'scraper-ai-preset-generator'},
+            {'name': 'AI Analyzer', 'url': '/admin/scraper/ai/analyzer', 'key': 'scraper-ai-analyzer'},
+            {'name': 'API Reverse Engineering', 'url': '/admin/scraper/api-reverse-engineering', 'key': 'api-reverse-engineering'},
+            {'name': 'API Outbound Integration', 'url': '/admin/scraper/api-outbound', 'key': 'api-outbound'}
+        ]},
       {'name': 'AI Conversations', 'icon': 'bi-chat-dots', 'url': '/admin/ai-chats', 'key': 'ai-chats'},
       {'name': 'Services', 'icon': 'bi-award-fill', 'url': '/admin/services', 'key': 'services', 'children': [
           {'name': 'All Services', 'url': '/admin/services', 'key': 'all-services'},
@@ -317,7 +319,7 @@
             {% endif %}
           {% endfor %}
 
-          <a class="list-group-item list-group-item-action d-flex align-items-center {{ is_child_active ? 'active' }}"
+          <a class="list-group-item list-group-item-action d-flex align-items-center sidebar-menu-toggle {{ is_child_active ? 'active' }}"
             data-bs-toggle="collapse"
             href="#{{ prefix }}-submenu-{{ item.key }}"
             role="button"
@@ -328,11 +330,11 @@
             <span class="sidebar-label">{{ item.name }}</span>
             <i class="bi bi-chevron-down ms-auto"></i>
           </a>
-          <div class="collapse {{ is_child_active ? 'show' }}" id="{{ prefix }}-submenu-{{ item.key }}">
-            <div class="list-group list-group-flush ms-3">
+          <div class="sidebar-submenu collapse {{ is_child_active ? 'show' }}" id="{{ prefix }}-submenu-{{ item.key }}">
+            <div class="list-group list-group-flush sidebar-submenu-list ms-3">
               {% for child in item.children %}
                 <a href="{{ child.url }}"
-                  class="list-group-item list-group-item-action {{ current_page == child.key ? 'active' }}"
+                  class="list-group-item list-group-item-action sidebar-submenu-item {{ current_page == child.key ? 'active' }}"
                   aria-current="{{ current_page == child.key ? 'page' }}"
                   title="{{ child.name }}">
                   <span class="sidebar-label">{{ child.name }}</span>
@@ -342,7 +344,7 @@
           </div>
         {% else %}
           <a href="{{ item.url }}"
-            class="list-group-item list-group-item-action d-flex align-items-center {{ current_page == item.key ? 'active' }}"
+            class="list-group-item list-group-item-action d-flex align-items-center sidebar-menu-link {{ current_page == item.key ? 'active' }}"
             aria-current="{{ current_page == item.key ? 'page' }}"
             title="{{ item.name }}">
             <i class="bi {{ item.icon }} me-2"></i>
@@ -425,6 +427,9 @@
   <script src="{{ asset('/assets/js/dist/sweetalert2-handler.js') }}" defer></script>
 
   {# Feature scripts #}
+  {# Datepicker Library #}
+  <link rel="stylesheet" href="{{ asset('/assets/datepicker/datepicker.css') }}">
+  <script src="{{ asset('/assets/datepicker/datepicker.js') }}" defer></script>
   <script src="{{ asset('/assets/js/dist/datepicker.js') }}" defer></script>
 
   <script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}" defer></script>

@@ -6,7 +6,7 @@
 
 {% if breadcrumbs is defined and breadcrumbs|length > 0 %}
 <nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb bg-light rounded-3 px-4 py-3 shadow-sm">
+    <ol class="breadcrumb admin-breadcrumb bg-light rounded-3 px-4 py-3 shadow-sm">
         {% for breadcrumb in breadcrumbs %}
             {% if loop.last %}
                 <li class="breadcrumb-item active d-flex align-items-center" aria-current="page">

@@ -5303,3 +5303,387 @@ for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
         return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
+
+// ================== API REVERSE ENGINEERING ==================
+
+/**
+ * API Reverse Engineering Interface
+ *
+ * Displays the API reverse engineering interface for analyzing REST APIs.
+ *
+ * @route GET /admin/scraper/api-reverse-engineering
+ * @middleware auth, admin_only
+ *
+ * @return void Renders the API reverse engineering template with:
+ *               - pageTitle: "API Reverse Engineering"
+ *
+ * @throws Exception If template rendering fails
+ *
+ * @example Response: HTML page with API analysis tools and interface
+ */
+$router->get('/admin/scraper/api-reverse-engineering', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    try {
+        echo $twig->render('scraper/api-reverse-engineering.twig', [
+            'pageTitle' => 'API Reverse Engineering',
+            'csrf_token' => generateCsrfToken()
+        ]);
+    } catch (Exception $e) {
+        error_log("API Reverse Engineering UI error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig', [
+            'pageTitle' => 'Error',
+            'message' => 'Failed to load API Reverse Engineering.'
+        ]);
+    }
+});
+
+/**
+ * Analyze API Endpoint
+ *
+ * Analyzes a specific API endpoint and returns detailed information about it.
+ *
+ * @route POST /api/v1/scraper/api-reverse-engineering/analyze-endpoint
+ * @middleware auth, admin_only
+ *
+ * @request_body JSON object containing:
+ *               - url (string, required): API endpoint URL to analyze
+ *               - headers (object, optional): Custom headers to send with request
+ *               - timeout (integer, optional): Request timeout in seconds (default: 30)
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - analysis: Endpoint analysis results or null if failed
+ *               - error: string (error message, if failed)
+ *
+ * @throws Exception If analysis fails or URL is invalid
+ *
+ * @example Request: {"url": "https://api.example.com/users", "headers": {"Authorization": "Bearer token"}}
+ * @example Success: {"success": true, "analysis": {...}}
+ * @example Error: {"success": false, "error": "Invalid URL provided"}
+ */
+$router->post('/api/v1/scraper/api-reverse-engineering/analyze-endpoint', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    // Validate CSRF token
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
+        }
+
+        $url = trim($input['url'] ?? '');
+        $headers = $input['headers'] ?? [];
+        $timeout = min(max((int)($input['timeout'] ?? 30), 5), 120); // 5-120 seconds
+
+        if (empty($url)) {
+            return jsonResponse(['success' => false, 'error' => 'URL is required'], 400);
+        }
+
+        $apiService = new \App\Modules\Scraper\APIReverseEngineeringService();
+        $result = $apiService->analyzeEndpoint($url, [
+            'headers' => $headers,
+            'timeout' => $timeout
+        ]);
+
+        return jsonResponse($result);
+    } catch (Exception $e) {
+        error_log("API endpoint analysis error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Discover API Endpoints
+ *
+ * Discovers available API endpoints by testing common patterns and documentation.
+ *
+ * @route POST /api/v1/scraper/api-reverse-engineering/discover-endpoints
+ * @middleware auth, admin_only
+ *
+ * @request_body JSON object containing:
+ *               - base_url (string, required): Base API URL to discover endpoints from
+ *               - headers (object, optional): Custom headers to send with requests
+ *               - timeout (integer, optional): Request timeout in seconds (default: 30)
+ *               - common_endpoints (array, optional): Custom list of endpoints to test
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - endpoints: Array of discovered endpoint information
+ *               - total_discovered: integer (number of endpoints found)
+ *               - error: string (error message, if failed)
+ *
+ * @throws Exception If discovery fails or base URL is invalid
+ *
+ * @example Request: {"base_url": "https://api.example.com", "headers": {"Authorization": "Bearer token"}}
+ * @example Success: {"success": true, "endpoints": [...], "total_discovered": 5}
+ * @example Error: {"success": false, "error": "Invalid base URL"}
+ */
+$router->post('/api/v1/scraper/api-reverse-engineering/discover-endpoints', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    // Validate CSRF token
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
+        }
+
+        $baseUrl = trim($input['base_url'] ?? '');
+        $headers = $input['headers'] ?? [];
+        $timeout = min(max((int)($input['timeout'] ?? 30), 5), 120);
+        $commonEndpoints = $input['common_endpoints'] ?? null;
+
+        if (empty($baseUrl)) {
+            return jsonResponse(['success' => false, 'error' => 'Base URL is required'], 400);
+        }
+
+        $options = [
+            'headers' => $headers,
+            'timeout' => $timeout
+        ];
+
+        if ($commonEndpoints && is_array($commonEndpoints)) {
+            $options['common_endpoints'] = $commonEndpoints;
+        }
+
+        $apiService = new \App\Modules\Scraper\APIReverseEngineeringService();
+        $result = $apiService->discoverEndpoints($baseUrl, $options);
+
+        return jsonResponse($result);
+    } catch (Exception $e) {
+        error_log("API endpoints discovery error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Test HTTP Methods on Endpoint
+ *
+ * Tests different HTTP methods (GET, POST, PUT, etc.) on a given endpoint.
+ *
+ * @route POST /api/v1/scraper/api-reverse-engineering/test-methods
+ * @middleware auth, admin_only
+ *
+ * @request_body JSON object containing:
+ *               - url (string, required): Endpoint URL to test methods on
+ *               - headers (object, optional): Custom headers to send with requests
+ *               - timeout (integer, optional): Request timeout in seconds (default: 10)
+ *
+ * @return JSON Response with:
+ *               - success: boolean
+ *               - url: string (tested URL)
+ *               - methods: object (method test results keyed by HTTP method)
+ *               - error: string (error message, if failed)
+ *
+ * @throws Exception If method testing fails
+ *
+ * @example Request: {"url": "https://api.example.com/users/1", "headers": {"Authorization": "Bearer token"}}
+ * @example Success: {"success": true, "url": "https://api.example.com/users/1", "methods": {"GET": {"supported": true, "status_code": 200}, ...}}
+ * @example Error: {"success": false, "error": "URL is required"}
+ */
+$router->post('/api/v1/scraper/api-reverse-engineering/test-methods', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    // Validate CSRF token
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
+        }
+
+        $url = trim($input['url'] ?? '');
+        $headers = $input['headers'] ?? [];
+        $timeout = min(max((int)($input['timeout'] ?? 10), 5), 60); // 5-60 seconds for method testing
+
+        if (empty($url)) {
+            return jsonResponse(['success' => false, 'error' => 'URL is required'], 400);
+        }
+
+        $apiService = new \App\Modules\Scraper\APIReverseEngineeringService();
+        $result = $apiService->testMethods($url, [
+            'headers' => $headers,
+            'timeout' => $timeout
+        ]);
+
+        return jsonResponse($result);
+    } catch (Exception $e) {
+        error_log("API methods testing error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// ================== API OUTBOUND INTEGRATION ==================
+
+/**
+ * API Outbound Integration Interface
+ *
+ * @route GET /admin/scraper/api-outbound
+ * @middleware auth, admin_only
+ */
+$router->get('/admin/scraper/api-outbound', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    try {
+        echo $twig->render('scraper/api-outbound.twig', [
+            'pageTitle' => 'API Outbound Integration',
+            'csrf_token' => generateCsrfToken()
+        ]);
+    } catch (Exception $e) {
+        error_log("API Outbound UI error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig', [
+            'pageTitle' => 'Error',
+            'message' => 'Failed to load API Outbound Integration.'
+        ]);
+    }
+});
+
+/**
+ * List all API endpoints
+ *
+ * @route GET /api/v1/scraper/api-outbound/endpoints
+ * @middleware auth, admin_only
+ */
+$router->get('/api/v1/scraper/api-outbound/endpoints', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    if (!validateCsrfToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $apiService = new \App\Modules\Scraper\APIOutboundIntegrationService($mysqli);
+        $endpoints = $apiService->getEndpoints(false);
+        return jsonResponse(['success' => true, 'endpoints' => $endpoints]);
+    } catch (Exception $e) {
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Get single API endpoint
+ *
+ * @route GET /api/v1/scraper/api-outbound/endpoint/{id}
+ * @middleware auth, admin_only
+ */
+$router->get('/api/v1/scraper/api-outbound/endpoint/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+    if (!validateCsrfToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $id = (int)$id;
+        $apiService = new \App\Modules\Scraper\APIOutboundIntegrationService($mysqli);
+        $endpoint = $apiService->getEndpoint($id);
+        
+        if (!$endpoint) {
+            return jsonResponse(['success' => false, 'error' => 'Endpoint not found'], 404);
+        }
+
+        return jsonResponse(['success' => true, 'endpoint' => $endpoint]);
+    } catch (Exception $e) {
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Save API endpoint
+ *
+ * @route POST /api/v1/scraper/api-outbound/save
+ * @middleware auth, admin_only
+ */
+$router->post('/api/v1/scraper/api-outbound/save', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    if (!validateCsrfToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
+        }
+
+        $apiService = new \App\Modules\Scraper\APIOutboundIntegrationService($mysqli);
+        $result = $apiService->saveEndpoint($input);
+
+        if ($result) {
+            return jsonResponse(['success' => true, 'id' => $result, 'message' => 'Endpoint saved successfully']);
+        } else {
+            return jsonResponse(['success' => false, 'error' => 'Failed to save endpoint'], 400);
+        }
+    } catch (Exception $e) {
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Delete API endpoint
+ *
+ * @route DELETE /api/v1/scraper/api-outbound/delete/{id}
+ * @middleware auth, admin_only
+ */
+$router->delete('/api/v1/scraper/api-outbound/delete/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+    if (!validateCsrfToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $id = (int)$id;
+        $apiService = new \App\Modules\Scraper\APIOutboundIntegrationService($mysqli);
+        $success = $apiService->deleteEndpoint($id);
+
+        return jsonResponse(['success' => $success]);
+    } catch (Exception $e) {
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Test API endpoint
+ *
+ * @route POST /api/v1/scraper/api-outbound/test
+ * @middleware auth, admin_only
+ */
+$router->post('/api/v1/scraper/api-outbound/test', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    if (!validateCsrfToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
+        }
+
+        $apiService = new \App\Modules\Scraper\APIOutboundIntegrationService($mysqli);
+        $result = $apiService->testEndpoint($input);
+
+        return jsonResponse($result);
+    } catch (Exception $e) {
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Test saved API endpoint by ID
+ *
+ * @route POST /api/v1/scraper/api-outbound/test/{id}
+ * @middleware auth, admin_only
+ */
+$router->post('/api/v1/scraper/api-outbound/test/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+    if (!validateCsrfToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $id = (int)$id;
+        $apiService = new \App\Modules\Scraper\APIOutboundIntegrationService($mysqli);
+        $result = $apiService->testEndpoint($id);
+
+        return jsonResponse($result);
+    } catch (Exception $e) {
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});

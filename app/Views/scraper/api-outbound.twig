@@ -1,0 +1,411 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}API Outbound Integration{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .endpoint-card {
+        transition: transform 0.2s;
+    }
+    .endpoint-card:hover {
+        transform: translateY(-2px);
+    }
+    .method-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .method-post {
+        background: #0d6efd;
+        color: white;
+    }
+    .auth-badge {
+        font-size: 0.7rem;
+    }
+    .json-preview {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 1rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-send me-2"></i>
+                    API Outbound Integration
+                </h1>
+                <div>
+                    <button type="button" class="btn btn-primary" id="addEndpointBtn">
+                        <i class="bi bi-plus-lg me-1"></i> Add API Endpoint
+                    </button>
+                    <a href="/admin/scraper" class="btn btn-outline-secondary ms-2">
+                        <i class="bi bi-arrow-left me-1"></i> Back
+                    </a>
+                </div>
+            </div>
+            <p class="text-muted mb-4">
+                Configure external API endpoints to automatically post scraped data with API keys, authentication, and custom headers.
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-list-ul me-2"></i>Configured API Endpoints
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="endpointsList" class="row g-3"></div>
+                    <div id="noEndpoints" class="text-center py-4" style="display: none;">
+                        <i class="bi bi-slash-circle text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-3 mb-0">No API endpoints configured yet. Click "Add API Endpoint" to get started.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal fade" id="endpointModal" tabindex="-1" aria-labelledby="endpointModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="endpointModalLabel">Add API Endpoint</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="endpointForm">
+                    <input type="hidden" id="endpointId" value="">
+                    
+                    <div class="mb-3">
+                        <label for="endpointName" class="form-label">Endpoint Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="endpointName" required placeholder="Example: My External API">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="endpointUrl" class="form-label">API Endpoint URL <span class="text-danger">*</span></label>
+                        <input type="url" class="form-control" id="endpointUrl" required placeholder="https://api.example.com/webhook/scraper">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="authType" class="form-label">Authentication Type</label>
+                            <select class="form-select" id="authType">
+                                <option value="none">None</option>
+                                <option value="api_key_header">API Key (Header)</option>
+                                <option value="bearer_token">Bearer Token</option>
+                                <option value="basic_auth">Basic Authentication</option>
+                                <option value="query_param">API Key (Query Param)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="apiKey" class="form-label">API Key / Token</label>
+                            <input type="password" class="form-control" id="apiKey" placeholder="Enter API key or token">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="payloadFormat" class="form-label">Payload Format</label>
+                        <select class="form-select" id="payloadFormat">
+                            <option value="json">JSON (Recommended)</option>
+                            <option value="form">Form Data (x-www-form-urlencoded)</option>
+                            <option value="xml">XML</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="customHeaders" class="form-label">Custom Headers (JSON)</label>
+                        <textarea class="form-control font-monospace" id="customHeaders" rows="3" placeholder='{"X-Custom-Header": "value", "Accept": "application/json"}'></textarea>
+                        <div class="form-text">
+                            Optional: Add custom HTTP headers as JSON object
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="retryCount" class="form-label">Retries</label>
+                            <input type="number" class="form-control" id="retryCount" value="3" min="0" max="10">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="timeout" class="form-label">Timeout (seconds)</label>
+                            <input type="number" class="form-control" id="timeout" value="30" min="5" max="120">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="rateLimit" class="form-label">Rate Limit (req/min)</label>
+                            <input type="number" class="form-control" id="rateLimit" value="60" min="1">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="endpointDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="endpointDescription" rows="2" placeholder="Optional description for this endpoint"></textarea>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="endpointEnabled" checked>
+                        <label class="form-check-label" for="endpointEnabled">
+                            Enable this endpoint (automatically post scraped data)
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="testEndpointBtn">
+                    <i class="bi bi-play-circle me-1"></i> Test
+                </button>
+                <button type="button" class="btn btn-primary" id="saveEndpointBtn">
+                    <i class="bi bi-save me-1"></i> Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Result Modal -->
+<div class="modal fade" id="testResultModal" tabindex="-1" aria-labelledby="testResultModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="testResultModalLabel">API Test Result</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="testResultContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const endpointModal = new bootstrap.Modal(document.getElementById('endpointModal'));
+    const testResultModal = new bootstrap.Modal(document.getElementById('testResultModal'));
+
+    loadEndpoints();
+
+    document.getElementById('addEndpointBtn').addEventListener('click', () => {
+        document.getElementById('endpointModalLabel').textContent = 'Add API Endpoint';
+        document.getElementById('endpointForm').reset();
+        document.getElementById('endpointId').value = '';
+        endpointModal.show();
+    });
+
+    document.getElementById('saveEndpointBtn').addEventListener('click', saveEndpoint);
+    document.getElementById('testEndpointBtn').addEventListener('click', testEndpoint);
+
+    async function loadEndpoints() {
+        try {
+            const response = await fetch('/api/v1/scraper/api-outbound/endpoints', {
+                headers: { 'X-CSRF-Token': csrfToken }
+            });
+            const data = await response.json();
+            
+            const listEl = document.getElementById('endpointsList');
+            const noEl = document.getElementById('noEndpoints');
+
+            if (data.endpoints && data.endpoints.length > 0) {
+                noEl.style.display = 'none';
+                listEl.innerHTML = data.endpoints.map(ep => `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card endpoint-card ${ep.enabled ? '' : 'border-secondary opacity-75'}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">${ep.name}</h6>
+                                    <span class="badge method-badge method-post">POST</span>
+                                </div>
+                                <code class="text-muted d-block mb-2 small">${ep.endpoint_url}</code>
+                                <div class="mb-2">
+                                    <span class="badge auth-badge bg-${ep.auth_type === 'none' ? 'secondary' : 'info'}">${ep.auth_type}</span>
+                                    <span class="badge bg-${ep.enabled ? 'success' : 'danger'}">${ep.enabled ? 'Enabled' : 'Disabled'}</span>
+                                </div>
+                                <div class="btn-group btn-group-sm w-100">
+                                    <button class="btn btn-outline-primary" onclick="editEndpoint(${ep.id})">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </button>
+                                    <button class="btn btn-outline-warning" onclick="testSingleEndpoint(${ep.id})">
+                                        <i class="bi bi-play-circle"></i> Test
+                                    </button>
+                                    <button class="btn btn-outline-danger" onclick="deleteEndpoint(${ep.id})">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                noEl.style.display = 'block';
+                listEl.innerHTML = '';
+            }
+        } catch (err) {
+            console.error('Failed to load endpoints:', err);
+        }
+    }
+
+    async function saveEndpoint() {
+        const id = document.getElementById('endpointId').value;
+        const data = {
+            id: id ? parseInt(id) : null,
+            name: document.getElementById('endpointName').value,
+            endpoint_url: document.getElementById('endpointUrl').value,
+            api_key: document.getElementById('apiKey').value,
+            auth_type: document.getElementById('authType').value,
+            payload_format: document.getElementById('payloadFormat').value,
+            headers: parseJsonSafe(document.getElementById('customHeaders').value),
+            retry_count: parseInt(document.getElementById('retryCount').value),
+            timeout: parseInt(document.getElementById('timeout').value),
+            rate_limit: parseInt(document.getElementById('rateLimit').value),
+            description: document.getElementById('endpointDescription').value,
+            enabled: document.getElementById('endpointEnabled').checked ? 1 : 0
+        };
+
+        try {
+            const response = await fetch('/api/v1/scraper/api-outbound/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                endpointModal.hide();
+                loadEndpoints();
+            }
+        } catch (err) {
+            console.error('Save failed:', err);
+        }
+    }
+
+    async function testEndpoint() {
+        const data = {
+            endpoint_url: document.getElementById('endpointUrl').value,
+            api_key: document.getElementById('apiKey').value,
+            auth_type: document.getElementById('authType').value,
+            payload_format: document.getElementById('payloadFormat').value,
+            headers: parseJsonSafe(document.getElementById('customHeaders').value),
+            timeout: parseInt(document.getElementById('timeout').value)
+        };
+
+        try {
+            const response = await fetch('/api/v1/scraper/api-outbound/test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            document.getElementById('testResultContent').innerHTML = `
+                <div class="alert ${result.success ? 'alert-success' : 'alert-danger'}">
+                    <strong>${result.success ? 'Success' : 'Failed'}</strong> (Status: ${result.status_code || 'N/A'})
+                </div>
+                <h6>Response:</h6>
+                <pre class="json-preview">${formatJson(result.response || result.error)}</pre>
+            `;
+            testResultModal.show();
+        } catch (err) {
+            console.error('Test failed:', err);
+        }
+    }
+
+    window.editEndpoint = async function(id) {
+        try {
+            const response = await fetch(`/api/v1/scraper/api-outbound/endpoint/${id}`, {
+                headers: { 'X-CSRF-Token': csrfToken }
+            });
+            const result = await response.json();
+            
+            if (result.endpoint) {
+                const ep = result.endpoint;
+                document.getElementById('endpointModalLabel').textContent = 'Edit API Endpoint';
+                document.getElementById('endpointId').value = ep.id;
+                document.getElementById('endpointName').value = ep.name;
+                document.getElementById('endpointUrl').value = ep.endpoint_url;
+                document.getElementById('apiKey').value = ep.api_key;
+                document.getElementById('authType').value = ep.auth_type;
+                document.getElementById('payloadFormat').value = ep.payload_format;
+                document.getElementById('customHeaders').value = JSON.stringify(ep.headers, null, 2);
+                document.getElementById('retryCount').value = ep.retry_count;
+                document.getElementById('timeout').value = ep.timeout;
+                document.getElementById('rateLimit').value = ep.rate_limit;
+                document.getElementById('endpointDescription').value = ep.description;
+                document.getElementById('endpointEnabled').checked = !!ep.enabled;
+                endpointModal.show();
+            }
+        } catch (err) {
+            console.error('Failed to load endpoint:', err);
+        }
+    };
+
+    window.testSingleEndpoint = async function(id) {
+        try {
+            const response = await fetch(`/api/v1/scraper/api-outbound/test/${id}`, {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': csrfToken }
+            });
+            const result = await response.json();
+            
+            document.getElementById('testResultContent').innerHTML = `
+                <div class="alert ${result.success ? 'alert-success' : 'alert-danger'}">
+                    <strong>${result.success ? 'Success' : 'Failed'}</strong> (Status: ${result.status_code || 'N/A'})
+                </div>
+                <pre class="json-preview">${formatJson(result.response || result.error)}</pre>
+            `;
+            testResultModal.show();
+        } catch (err) {
+            console.error('Test failed:', err);
+        }
+    };
+
+    window.deleteEndpoint = async function(id) {
+        if (!confirm('Delete this API endpoint?')) return;
+        
+        try {
+            await fetch(`/api/v1/scraper/api-outbound/delete/${id}`, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-Token': csrfToken }
+            });
+            loadEndpoints();
+        } catch (err) {
+            console.error('Delete failed:', err);
+        }
+    };
+
+    function parseJsonSafe(str) {
+        try {
+            return JSON.parse(str);
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function formatJson(obj) {
+        try {
+            return JSON.stringify(typeof obj === 'string' ? JSON.parse(obj) : obj, null, 2);
+        } catch (e) {
+            return String(obj);
+        }
+    }
+});
+</script>
+{% endblock %}
