@@ -38,6 +38,8 @@ const entryPoints = {
   'theme-manager': path.join(rootDir, 'public_html', 'assets', 'js', 'theme-manager.js'),
   datepicker: path.join(rootDir, 'public_html', 'assets', 'js', 'datepicker.js'),
   activity: path.join(rootDir, 'public_html', 'assets', 'js', 'activity.js'),
+  'auth/login': path.join(rootDir, 'public_html', 'assets', 'js', 'auth', 'login.js'),
+  'auth/register': path.join(rootDir, 'public_html', 'assets', 'js', 'auth', 'register.js'),
 };
 
 // Build options

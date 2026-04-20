@@ -5,8 +5,8 @@
 
 // ── Auto-inject ai-style.css (no <link> tag needed in HTML) ──────────────────
 (function injectAiCSS() {
-    const cssUrl = (document.currentScript?.src || '/ai/js/ai-chat-manager.js')
-        .replace(/\/js\/[^/]+$/, '/css/ai-style.css');
+    const cssUrl = (document.currentScript?.src || '/ai/dist/ai-chat-manager.js')
+        .replace(/\/(?:js|dist)\/[^/]+$/, '/dist/ai-style.css');
     if (!document.querySelector(`link[href="${cssUrl}"]`)) {
         const link = document.createElement('link');
         link.rel = 'stylesheet';

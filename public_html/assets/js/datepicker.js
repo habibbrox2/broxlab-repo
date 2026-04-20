@@ -1,12 +1,8 @@
 /**
- * DatePicker Wrapper - ES Module wrapper for the standalone datepicker
+ * DatePicker Wrapper - browser script wrapper for the standalone datepicker
  * Source: /assets/datepicker/datepicker.js
  * This file is bundled by esbuild into /assets/js/dist/datepicker.js
  */
-
-// Import the standalone datepicker library
-// Since it's a script file, we'll assume it's already loaded globally
-// This wrapper initializes it for the bundled version
 
 (function initBundledDatePicker() {
   'use strict';
@@ -63,5 +59,3 @@
     checkDatePickerLib();
   }
 })();
-
-export default window.DatePicker;

@@ -84,6 +84,8 @@ export function getAppEntryPoints() {
         'theme-manager': path.join(jsDir, 'theme-manager.js'),
         datepicker: path.join(jsDir, 'datepicker.js'),
         activity: path.join(jsDir, 'activity.js'),
+        'auth/login': path.join(jsDir, 'auth', 'login.js'),
+        'auth/register': path.join(jsDir, 'auth', 'register.js'),
     };
 }
 
@@ -109,6 +111,7 @@ export function getFirebaseEntryPoints() {
 
     return {
         auth: path.join(firebaseDir, 'auth.js'),
+        'auth-ui-handler': path.join(firebaseDir, 'auth-ui-handler.js'),
         messaging: path.join(firebaseDir, 'messaging.js'),
         init: path.join(firebaseDir, 'init.js'),
         'firebase-config': path.join(firebaseDir, 'firebase-config.js'),

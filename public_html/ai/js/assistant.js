@@ -4,10 +4,10 @@ if (!window.BroxAssistantLoaded) {
     // ── Auto-inject ai-style.css (no <link> tag needed in HTML) ──────────────────
     (function injectAiCSS() {
         // We auto-load the CSS dynamically via JS
-        const scriptPath = document.currentScript?.src || '/ai/js/assistant.js';
-        // Strip query strings (?v=...) and replace /js/assistant.js with /css/ai-style.css
+        const scriptPath = document.currentScript?.src || '/ai/dist/assistant.js';
+        // Strip query strings (?v=...) and replace /js/assistant.js or /dist/assistant.js with /dist/ai-style.css
         const baseUrl = scriptPath.split('?')[0];
-        const cssUrl = baseUrl.replace(/\/js\/assistant\.js$/, '/css/ai-style.css');
+        const cssUrl = baseUrl.replace(/\/(?:js|dist)\/assistant\.js$/, '/dist/ai-style.css');
 
         if (!document.querySelector(`link[href^="${cssUrl}"]`)) {
             const link = document.createElement('link');

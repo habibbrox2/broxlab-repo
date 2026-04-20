@@ -30,9 +30,9 @@ import CommandMenu from './modules/command-menu.js';
 
 // ── Auto-inject ai-style.css ──────────────────────────────────────────────────
 (function injectAiCSS() {
-  const scriptPath = document.currentScript?.src || '/ai/js/ai-admin.js';
+  const scriptPath = document.currentScript?.src || '/ai/dist/ai-admin.js';
   const baseUrl = scriptPath.split('?')[0];
-  const cssUrl = baseUrl.replace(/\/js\/[^/]+$/, '/css/ai-style.css');
+  const cssUrl = baseUrl.replace(/\/(?:js|dist)\/[^/]+$/, '/dist/ai-style.css');
 
   if (!document.querySelector(`link[href^="${cssUrl}"]`)) {
     const link = document.createElement('link');

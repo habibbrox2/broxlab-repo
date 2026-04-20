@@ -17,6 +17,7 @@ const entryPoints = {
   init: path.join(srcDir, 'init.js'),
   messaging: path.join(srcDir, 'messaging.js'),
   auth: path.join(srcDir, 'auth.js'),
+  'auth-ui-handler': path.join(srcDir, 'auth-ui-handler.js'),
   'firebase-config': path.join(srcDir, 'firebase-config.js'),
 };
 
