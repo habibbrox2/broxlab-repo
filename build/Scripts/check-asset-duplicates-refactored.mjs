@@ -6,9 +6,10 @@
  * Uses shared build utilities for cleaner, more maintainable code
  */
 
+import { statSync } from 'fs';
 import { calculateFileHash, scanDirectory } from '../lib/fs-utils.mjs';
-import { Report, Logger, exit, isDev } from '../lib/utils.mjs';
-import { formatSize } from '../lib/utils.mjs';
+import { Report } from '../lib/reporter.mjs';
+import { Logger, exit, formatSize } from '../lib/utils.mjs';
 
 const CONFIG = {
   assetDirs: [
@@ -74,18 +75,23 @@ class AssetDuplicateChecker {
       if (!hash) continue;
 
       try {
-        const stat = require('fs').statSync(filePath);
+        const stat = statSync(filePath);
+        const fileInfo = {
+          path: filePath,
+          size: stat.size,
+          mtime: stat.mtime,
+        };
         this.checked++;
         this.totalSize += stat.size;
 
         if (this.fileHashes.has(hash)) {
           const existing = this.fileHashes.get(hash);
-          existing.push(filePath);
+          existing.push(fileInfo);
           if (!this.duplicates.has(hash)) {
             this.duplicates.set(hash, existing);
           }
         } else {
-          this.fileHashes.set(hash, [filePath,]);
+          this.fileHashes.set(hash, [fileInfo,]);
         }
       } catch (error) {
         Logger.warning(`Could not process file ${filePath}: ${error.message}`);
@@ -111,7 +117,7 @@ class AssetDuplicateChecker {
     for (const [, files,] of this.duplicates) {
       if (files.length < 2) continue;
 
-      const wastedSpace = files[0].length * (files.length - 1);
+      const wastedSpace = files[0].size * (files.length - 1);
       totalWastedSpace += wastedSpace;
 
       duplicateItems.push({
@@ -122,7 +128,7 @@ class AssetDuplicateChecker {
 
       files.forEach((file, index) => {
         const marker = index === 0 ? '✅' : '⚠️';
-        report.addWarning(`${marker} ${file}`);
+        report.addWarning(`${marker} ${file.path}`);
       });
     }
 
