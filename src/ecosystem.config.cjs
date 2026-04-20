@@ -1,3 +1,4 @@
+// DEPRECATED: legacy compatibility shim for older deployments.
 module.exports = {
   apps: [
     {
@@ -9,9 +10,9 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 3000,
       },
-      error_file: './storage/logs/reverse-proxy-error.log',
-      out_file: './storage/logs/reverse-proxy-out.log',
-      log_file: './storage/logs/reverse-proxy.log',
+      error_file: './storage/node/reverse-proxy-error.log',
+      out_file: './storage/node/reverse-proxy-out.log',
+      log_file: './storage/node/reverse-proxy.log',
     },
     {
       name: 'broxlab-node',
@@ -24,9 +25,9 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 3002,
       },
-      error_file: './storage/logs/broxlab-node-error.log',
-      out_file: './storage/logs/broxlab-node-out.log',
-      log_file: './storage/logs/broxlab-node.log',
+      error_file: './storage/node/broxlab-node-error.log',
+      out_file: './storage/node/broxlab-node-out.log',
+      log_file: './storage/node/broxlab-node.log',
     },
     {
       name: 'notification-websocket',
@@ -37,9 +38,9 @@ module.exports = {
         NODE_ENV: 'production',
         NOTIFICATION_WS_PORT: 3003,
       },
-      error_file: './storage/logs/notification-websocket-error.log',
-      out_file: './storage/logs/notification-websocket-out.log',
-      log_file: './storage/logs/notification-websocket.log',
+      error_file: './storage/node/notification-websocket-error.log',
+      out_file: './storage/node/notification-websocket-out.log',
+      log_file: './storage/node/notification-websocket.log',
     },
   ],
 };

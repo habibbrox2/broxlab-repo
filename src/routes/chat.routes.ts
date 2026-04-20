@@ -2,6 +2,8 @@ import { FastifyInstance } from 'fastify';
 import { ChatService } from '../services/chat.service';
 import { adminMiddleware } from '../middleware/auth.middleware';
 import logger from '../utils/logger';
+import { aiModelService } from '../services/ai-models.service';
+import { generateEmbedding } from '../services/embedding.service';
 
 export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
     const chatService = new ChatService();
@@ -68,69 +70,9 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
                 // In production, validate session/JWT token here
             }
 
-            // Import database with proper error handling
-            let query: any;
-            try {
-                const db = await import('../config/database.js');
-                query = db.query;
-            } catch (importError) {
-                logger.warn('Database module not available, returning empty models');
-                reply.send({ success: true, models: [], providers: {} });
-                return;
-            }
-
             // If no provider specified, return all active providers
             if (!providerName) {
-                const rows = (await query(
-                    'SELECT id, provider_name, display_name, supported_models, extra_settings FROM ai_providers WHERE is_active = 1 ORDER BY sort_order'
-                )) as any[];
-
-                const providers: Record<string, any> = {};
-                const providerMeta: Record<string, any> = {};
-
-                if (Array.isArray(rows)) {
-                    for (const provider of rows) {
-                        const pname = provider.provider_name || '';
-                        if (pname === '') continue;
-
-                        let models = {};
-                        if (provider.supported_models) {
-                            try {
-                                models = typeof provider.supported_models === 'string'
-                                    ? JSON.parse(provider.supported_models)
-                                    : provider.supported_models;
-                            } catch (e) {
-                                logger.warn(`Failed to parse models for ${pname}`, e);
-                            }
-                        }
-                        const list = Object.entries(models).map(([id, label]: any) => ({
-                            id: String(id),
-                            name: String(label),
-                        } as any));
-
-                        if (list.length > 0) {
-                            (list[0] as any).default = true;
-                        }
-
-                        providers[pname] = list;
-
-                        // Parse extra_settings for multimodal support
-                        let supportsMultimodal = false;
-                        if (provider.extra_settings) {
-                            try {
-                                const extra = typeof provider.extra_settings === 'string'
-                                    ? JSON.parse(provider.extra_settings)
-                                    : provider.extra_settings;
-                                supportsMultimodal = !!(extra.supports_multimodal || extra.supports_rich_content);
-                            } catch (e) {
-                                logger.warn(`Failed to parse extra_settings for ${pname}`, e);
-                            }
-                        }
-                        providerMeta[pname] = {
-                            supports_multimodal: supportsMultimodal,
-                        };
-                    }
-                }
+                const { providers, providerMeta } = await aiModelService.getActiveProviderModels();
 
                 reply.send({
                     success: true,
@@ -141,47 +83,18 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
             }
 
             // Get specific provider
-            const rows = (await query(
-                'SELECT provider_name, display_name, supported_models, extra_settings FROM ai_providers WHERE provider_name = ? LIMIT 1',
-                [providerName]
-            )) as any[];
-
-            const provider = rows?.[0];
-
-            if (!provider) {
+            const result = await aiModelService.getProviderModels(providerName);
+            if (!result) {
                 reply.send({ success: false, error: 'Provider not found' });
                 return;
             }
 
-            const models = provider.supported_models ? JSON.parse(provider.supported_models) : {};
-            if (Object.keys(models).length === 0) {
+            if (result.models.length === 0) {
                 reply.send({ success: false, error: 'No models available' });
                 return;
             }
 
-            let supportsMultimodal = false;
-            if (provider.extra_settings) {
-                try {
-                    const extra = typeof provider.extra_settings === 'string'
-                        ? JSON.parse(provider.extra_settings)
-                        : provider.extra_settings;
-                    supportsMultimodal = !!(extra.supports_multimodal || extra.supports_rich_content);
-                } catch (e) {
-                    logger.warn(`Failed to parse extra_settings for ${providerName}`, e);
-                }
-            }
-
-            const list = Object.entries(models).map(([id, label]: any) => ({
-                id: String(id),
-                name: String(label),
-                supports_multimodal: supportsMultimodal,
-            } as any));
-
-            if (list.length > 0) {
-                (list[0] as any).default = true;
-            }
-
-            reply.send({ success: true, models: list });
+            reply.send({ success: true, models: result.models });
         } catch (error: any) {
             logger.error('Failed to fetch models:', error);
             reply.status(500).send({
@@ -214,4 +127,42 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
             });
         }
     });
+
+    /**
+     * Generate embedding for text
+     * POST /api/ai/embed
+     * POST /api/embedding/generate
+     */
+    const handleEmbedding = async (request: any, reply: any) => {
+        try {
+            const body = request.body as any;
+            const text = String(body?.text ?? body?.input ?? '');
+
+            if (!text.trim()) {
+                reply.code(400).send({
+                    success: false,
+                    error: 'text is required',
+                });
+                return;
+            }
+
+            const embedding = generateEmbedding(text);
+
+            reply.send({
+                success: true,
+                embedding,
+                dimensions: embedding.length,
+                model: body?.model || 'broxlab/simple-embedding-384',
+            });
+        } catch (error: any) {
+            logger.error('Embedding generation failed:', error);
+            reply.code(500).send({
+                success: false,
+                error: error.message || 'Embedding generation failed',
+            });
+        }
+    };
+
+    fastify.post('/api/ai/embed', handleEmbedding);
+    fastify.post('/api/embedding/generate', handleEmbedding);
 }

@@ -1,9 +1,10 @@
 import pino from 'pino';
+import { config } from '../config/index';
 
 // Create logger instance
 // Use simple JSON transport to avoid ESM module resolution issues with pino-pretty
 const logger = pino({
-    level: process.env.LOG_LEVEL || 'info',
+    level: config.logging.level,
 });
 
 // Create child logger with context

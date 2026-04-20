@@ -2,7 +2,7 @@
 
 /**
  * Node.js OCR Service Client
- * Communicates with Node.js OCR service (Tesseract.js + EasyOCR)
+ * Communicates with the unified Node server OCR routes
  */
 
 class NodeOCRClient
@@ -12,8 +12,12 @@ class NodeOCRClient
 
     public function __construct(?string $baseUrl = null, int $timeout = 60)
     {
-        // Fix: Use union type to explicitly allow null
-        $this->baseUrl = $baseUrl ?? (getenv('OCR_API_URL') ?? 'http://localhost:3000/api/ocr');
+        $nodeBaseUrl = $baseUrl ?? (getenv('NODE_SERVICE_URL') ?: getenv('NODE_API_URL') ?: getenv('NODEJS_SERVER_URL') ?: 'http://localhost:3000');
+        $nodeBaseUrl = rtrim($nodeBaseUrl, '/');
+        if (str_ends_with($nodeBaseUrl, '/api/ocr')) {
+            $nodeBaseUrl = substr($nodeBaseUrl, 0, -8);
+        }
+        $this->baseUrl = rtrim($nodeBaseUrl, '/') . '/api/ocr';
         $this->timeout = $timeout;
     }
 
@@ -22,26 +26,7 @@ class NodeOCRClient
      */
     public function healthCheck(): array
     {
-        try {
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => $this->baseUrl . '/health',
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => $this->timeout,
-            ]);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if ($httpCode === 200) {
-                return json_decode($response, true) ?: ['success' => false];
-            }
-
-            return ['success' => false, 'error' => 'Service unavailable'];
-        } catch (Exception $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
-        }
+        return $this->sendRequest('GET', '/health');
     }
 
     /**
@@ -49,9 +34,9 @@ class NodeOCRClient
      */
     public function extractTextTesseract(string $imageData, string $language = 'eng'): array
     {
-        return $this->sendRequest('/ocr/tesseract/image', [
-            'image' => $imageData,
-            'language' => $language
+        return $this->sendRequest('POST', '/tesseract/image', [
+            'imageBase64' => $this->normalizeImageInput($imageData),
+            'language' => $language,
         ]);
     }
 
@@ -60,9 +45,9 @@ class NodeOCRClient
      */
     public function extractTextEasyOCR(string $imageData, array $languages = ['en']): array
     {
-        return $this->sendRequest('/ocr/easyocr/image', [
-            'image' => $imageData,
-            'languages' => $languages
+        return $this->sendRequest('POST', '/easyocr/image', [
+            'imageBase64' => $this->normalizeImageInput($imageData),
+            'languages' => $languages,
         ]);
     }
 
@@ -71,10 +56,10 @@ class NodeOCRClient
      */
     public function extractTextAuto(string $imageData, string $language = 'eng', array $easyOCRLanguages = ['en']): array
     {
-        return $this->sendRequest('/ocr/auto', [
-            'image' => $imageData,
+        return $this->sendRequest('POST', '/auto', [
+            'imageBase64' => $this->normalizeImageInput($imageData),
             'language' => $language,
-            'languages' => $easyOCRLanguages
+            'languages' => $easyOCRLanguages,
         ]);
     }
 
@@ -87,8 +72,9 @@ class NodeOCRClient
             return ['success' => false, 'error' => 'File not found'];
         }
 
-        return $this->sendFileRequest('/ocr/tesseract/image', $filePath, [
-            'language' => $language
+        return $this->sendRequest('POST', '/tesseract/image', [
+            'imageBase64' => base64_encode((string)file_get_contents($filePath)),
+            'language' => $language,
         ]);
     }
 
@@ -101,8 +87,9 @@ class NodeOCRClient
             return ['success' => false, 'error' => 'File not found'];
         }
 
-        return $this->sendFileRequest('/ocr/easyocr/image', $filePath, [
-            'languages' => $languages
+        return $this->sendRequest('POST', '/easyocr/image', [
+            'imageBase64' => base64_encode((string)file_get_contents($filePath)),
+            'languages' => $languages,
         ]);
     }
 
@@ -115,9 +102,10 @@ class NodeOCRClient
             return ['success' => false, 'error' => 'File not found'];
         }
 
-        return $this->sendFileRequest('/ocr/auto', $filePath, [
+        return $this->sendRequest('POST', '/auto', [
+            'imageBase64' => base64_encode((string)file_get_contents($filePath)),
             'language' => $language,
-            'languages' => $easyOCRLanguages
+            'languages' => $easyOCRLanguages,
         ]);
     }
 
@@ -126,27 +114,10 @@ class NodeOCRClient
      */
     public function batchOCRTesseract(array $imageDataArray, string $language = 'eng'): array
     {
-        // Create temp files
-        $tempFiles = [];
-        foreach ($imageDataArray as $imageData) {
-            $tempFile = tempnam(sys_get_temp_dir(), 'ocr_');
-            if (strpos($imageData, 'data:') === 0) {
-                $imageData = preg_replace('/^data:image\/\w+;base64,/', '', $imageData);
-            }
-            file_put_contents($tempFile, base64_decode($imageData));
-            $tempFiles[] = $tempFile;
-        }
-
-        $result = $this->sendMultiFileRequest('/ocr/tesseract/batch', $tempFiles, [
-            'language' => $language
+        return $this->sendRequest('POST', '/tesseract/batch', [
+            'images' => $this->normalizeImages($imageDataArray),
+            'language' => $language,
         ]);
-
-        // Cleanup
-        foreach ($tempFiles as $file) {
-            @unlink($file);
-        }
-
-        return $result;
     }
 
     /**
@@ -154,50 +125,39 @@ class NodeOCRClient
      */
     public function batchOCREasyOCR(array $imageDataArray, array $languages = ['en']): array
     {
-        // Create temp files
-        $tempFiles = [];
-        foreach ($imageDataArray as $imageData) {
-            $tempFile = tempnam(sys_get_temp_dir(), 'ocr_');
-            if (strpos($imageData, 'data:') === 0) {
-                $imageData = preg_replace('/^data:image\/\w+;base64,/', '', $imageData);
-            }
-            file_put_contents($tempFile, base64_decode($imageData));
-            $tempFiles[] = $tempFile;
-        }
-
-        $result = $this->sendMultiFileRequest('/ocr/easyocr/batch', $tempFiles, [
-            'languages' => $languages
+        return $this->sendRequest('POST', '/easyocr/batch', [
+            'images' => $this->normalizeImages($imageDataArray),
+            'languages' => $languages,
         ]);
-
-        // Cleanup
-        foreach ($tempFiles as $file) {
-            @unlink($file);
-        }
-
-        return $result;
     }
 
     /**
-     * Send JSON request to Node service
+     * Send request to Node service
      */
-    private function sendRequest(string $endpoint, array $payload): array
+    private function sendRequest(string $method, string $endpoint, array $payload = []): array
     {
         try {
             $ch = curl_init();
-            curl_setopt_array($ch, [
+            $options = [
                 CURLOPT_URL => $this->baseUrl . $endpoint,
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => json_encode($payload),
+                CURLOPT_CUSTOMREQUEST => $method,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => $this->timeout,
                 CURLOPT_HTTPHEADER => [
-                    'Content-Type: application/json'
-                ]
-            ]);
+                    'Content-Type: application/json',
+                    'Accept: application/json',
+                ],
+            ];
+
+            if ($method !== 'GET') {
+                $options[CURLOPT_POSTFIELDS] = json_encode($payload);
+            }
+
+            curl_setopt_array($ch, $options);
 
             $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
             if ($error) {
@@ -209,89 +169,38 @@ class NodeOCRClient
             }
 
             $result = json_decode($response, true);
-            return $result ?: ['success' => false, 'error' => 'Invalid response'];
+            return is_array($result) ? $result : ['success' => false, 'error' => 'Invalid response'];
         } catch (Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 
-    /**
-     * Send file request to Node service
-     */
-    private function sendFileRequest(string $endpoint, string $filePath, array $extraData = []): array
+    private function normalizeImageInput(string $imageData): string
     {
-        try {
-            $ch = curl_init();
-
-            $postData = $extraData;
-            $postData['file'] = new CURLFile($filePath);
-
-            curl_setopt_array($ch, [
-                CURLOPT_URL => $this->baseUrl . $endpoint,
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => $postData,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => $this->timeout,
-            ]);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $error = curl_error($ch);
-            curl_close($ch);
-
-            if ($error) {
-                return ['success' => false, 'error' => $error];
-            }
-
-            if ($httpCode !== 200) {
-                return ['success' => false, 'error' => "HTTP $httpCode"];
-            }
-
-            $result = json_decode($response, true);
-            return $result ?: ['success' => false, 'error' => 'Invalid response'];
-        } catch (Exception $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+        if (file_exists($imageData)) {
+            return base64_encode((string)file_get_contents($imageData));
         }
+
+        if (preg_match('/^data:image\/\w+;base64,/', $imageData)) {
+            return preg_replace('/^data:image\/\w+;base64,/', '', $imageData);
+        }
+
+        return preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $imageData)
+            ? $imageData
+            : base64_encode($imageData);
     }
 
-    /**
-     * Send multiple files request
-     */
-    private function sendMultiFileRequest(string $endpoint, array $filePaths, array $extraData = []): array
+    private function normalizeImages(array $images): array
     {
-        try {
-            $ch = curl_init();
-
-            $postData = $extraData;
-            foreach ($filePaths as $index => $filePath) {
-                $postData["files[$index]"] = new CURLFile($filePath);
+        $normalized = [];
+        foreach ($images as $image) {
+            if (!is_string($image) || $image === '') {
+                continue;
             }
 
-            curl_setopt_array($ch, [
-                CURLOPT_URL => $this->baseUrl . $endpoint,
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => $postData,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => $this->timeout,
-            ]);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $error = curl_error($ch);
-            curl_close($ch);
-
-            if ($error) {
-                return ['success' => false, 'error' => $error];
-            }
-
-            if ($httpCode !== 200) {
-                return ['success' => false, 'error' => "HTTP $httpCode"];
-            }
-
-            $result = json_decode($response, true);
-            return $result ?: ['success' => false, 'error' => 'Invalid response'];
-        } catch (Exception $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            $normalized[] = $this->normalizeImageInput($image);
         }
+
+        return $normalized;
     }
 }

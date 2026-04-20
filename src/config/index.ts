@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { z } from 'zod';
+import { runtime } from './runtime';
 
 // Load environment variables
 dotenv.config();
@@ -46,6 +47,7 @@ const envSchema = z.object({
     // Security
     JWT_SECRET: z.string().default('change-me-in-production'),
     CSRF_SECRET: z.string().default('change-me-in-production'),
+    NODE_SERVICE_API_KEY: z.string().optional(),
 
     // Rate Limiting
     RATE_LIMIT_WINDOW_MS: z.string().default('60000'),
@@ -71,43 +73,95 @@ if (!env.success) {
     process.exit(1);
 }
 
-const normalizedPort = parseInt(env.data.PORT, 10);
-const normalizedHost = env.data.HOST.trim() || '0.0.0.0';
-const isWildcardHost = ['0.0.0.0', '::', ''].includes(normalizedHost);
-const fallbackHost = isWildcardHost ? 'localhost' : normalizedHost;
+const DEFAULT_SECRET = 'change-me-in-production';
+
+function parseInteger(value: string, name: string): number {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isNaN(parsed)) {
+        throw new Error(`${name} must be a valid integer`);
+    }
+    return parsed;
+}
+
+function parseFloatValue(value: string, name: string): number {
+    const parsed = Number.parseFloat(value);
+    if (Number.isNaN(parsed)) {
+        throw new Error(`${name} must be a valid number`);
+    }
+    return parsed;
+}
+
+function assertProductionSecrets(nodeEnv: string, jwtSecret: string, csrfSecret: string): void {
+    if (nodeEnv !== 'production') {
+        return;
+    }
+
+    const errors: string[] = [];
+
+    if (!jwtSecret || jwtSecret === DEFAULT_SECRET || jwtSecret.length < 32) {
+        errors.push('JWT_SECRET must be set to a unique value with at least 32 characters');
+    }
+
+    if (!csrfSecret || csrfSecret === DEFAULT_SECRET || csrfSecret.length < 32) {
+        errors.push('CSRF_SECRET must be set to a unique value with at least 32 characters');
+    }
+
+    if (errors.length > 0) {
+        console.error('❌ Invalid production security configuration:');
+        for (const error of errors) {
+            console.error(`  - ${error}`);
+        }
+        process.exit(1);
+    }
+}
+
+const normalizedPort = parseInteger(env.data.PORT, 'PORT');
+const rawHost = env.data.HOST.trim();
+const loopbackHosts = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0', '::', '']);
+const normalizedHost = env.data.NODE_ENV === 'development'
+    ? (rawHost || '0.0.0.0')
+    : (loopbackHosts.has(rawHost) ? '0.0.0.0' : (rawHost || '0.0.0.0'));
+const fallbackHost = loopbackHosts.has(normalizedHost) ? 'localhost' : normalizedHost;
 const protocol = env.data.NODE_ENV === 'production' ? 'https' : 'http';
 const portSegment = !Number.isNaN(normalizedPort) ? `:${normalizedPort}` : '';
 const fallbackAppUrl = `${protocol}://${fallbackHost}${portSegment}`;
 const appUrl = (env.data.APP_URL.trim() || fallbackAppUrl).replace(/\/+$/, '');
 const corsOrigin = env.data.CORS_ORIGIN === '*' ? '*' : (env.data.CORS_ORIGIN || appUrl);
 
+assertProductionSecrets(env.data.NODE_ENV, env.data.JWT_SECRET, env.data.CSRF_SECRET);
+
 // Export typed config
 export const config = {
     // Server
     nodeEnv: env.data.NODE_ENV,
-    port: parseInt(env.data.PORT, 10),
-    host: env.data.HOST,
+    port: normalizedPort,
+    host: normalizedHost,
     appUrl,
     isDevelopment: env.data.NODE_ENV === 'development',
     isProduction: env.data.NODE_ENV === 'production',
     isTest: env.data.NODE_ENV === 'test',
+    runtime: {
+        name: runtime.name,
+        version: runtime.version,
+        nodeVersion: runtime.nodeVersion,
+    },
 
     // Database
     database: {
         host: env.data.DB_HOST,
-        port: parseInt(env.data.DB_PORT, 10),
+        port: parseInteger(env.data.DB_PORT, 'DB_PORT'),
         user: env.data.DB_USER,
         password: env.data.DB_PASS,
         database: env.data.DB_NAME,
-        connectionLimit: parseInt(env.data.DB_CONNECTION_LIMIT, 10),
+        connectionLimit: parseInteger(env.data.DB_CONNECTION_LIMIT, 'DB_CONNECTION_LIMIT'),
     },
 
     // Redis
     redis: {
         host: env.data.REDIS_HOST,
-        port: parseInt(env.data.REDIS_PORT, 10),
+        port: parseInteger(env.data.REDIS_PORT, 'REDIS_PORT'),
         password: env.data.REDIS_PASSWORD || undefined,
-        db: parseInt(env.data.REDIS_DB, 10),
+        db: parseInteger(env.data.REDIS_DB, 'REDIS_DB'),
     },
 
     // AI Providers
@@ -137,20 +191,21 @@ export const config = {
         defaultModel: env.data.DEFAULT_MODEL,
         frontendModel: env.data.FRONTEND_MODEL,
         backendModel: env.data.BACKEND_MODEL,
-        maxTokens: parseInt(env.data.MAX_TOKENS, 10),
-        temperature: parseFloat(env.data.TEMPERATURE),
+        maxTokens: parseInteger(env.data.MAX_TOKENS, 'MAX_TOKENS'),
+        temperature: parseFloatValue(env.data.TEMPERATURE, 'TEMPERATURE'),
     },
 
     // Security
     security: {
         jwtSecret: env.data.JWT_SECRET,
         csrfSecret: env.data.CSRF_SECRET,
+        serviceApiKey: env.data.NODE_SERVICE_API_KEY || '',
     },
 
     // Rate Limiting
     rateLimit: {
-        windowMs: parseInt(env.data.RATE_LIMIT_WINDOW_MS, 10),
-        maxRequests: parseInt(env.data.RATE_LIMIT_MAX_REQUESTS, 10),
+        windowMs: parseInteger(env.data.RATE_LIMIT_WINDOW_MS, 'RATE_LIMIT_WINDOW_MS'),
+        maxRequests: parseInteger(env.data.RATE_LIMIT_MAX_REQUESTS, 'RATE_LIMIT_MAX_REQUESTS'),
     },
 
     // Logging

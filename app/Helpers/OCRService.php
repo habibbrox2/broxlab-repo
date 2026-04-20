@@ -17,8 +17,13 @@ class OCRService
     {
         $this->ocrSpaceApiKey = $apiKey ?: getenv('OCR_SPACE_API_KEY') ?: 'K81289438988957'; // Paid tier API key
         $this->timeout = $timeout;
-        // Support both OCR_SERVICE_URL (preferred) and OCR_API_URL (legacy) environment variables
-        $this->nodeOcrUrl = $nodeOcrUrl ?: (getenv('OCR_SERVICE_URL') ?: (getenv('OCR_API_URL') ?: 'http://localhost:3000/api/ocr'));
+        // Prefer the unified Node service URL and keep legacy fallbacks for compatibility
+        $nodeBaseUrl = $nodeOcrUrl ?: (getenv('NODE_SERVICE_URL') ?: (getenv('OCR_SERVICE_URL') ?: (getenv('OCR_API_URL') ?: 'http://localhost:3000')));
+        $nodeBaseUrl = rtrim($nodeBaseUrl, '/');
+        if (str_ends_with($nodeBaseUrl, '/api/ocr')) {
+            $nodeBaseUrl = substr($nodeBaseUrl, 0, -8);
+        }
+        $this->nodeOcrUrl = rtrim($nodeBaseUrl, '/');
     }
 
     /**
@@ -45,7 +50,7 @@ class OCRService
         try {
             $ch = curl_init();
             curl_setopt_array($ch, [
-                CURLOPT_URL => $this->nodeOcrUrl . '/ocr/health',
+                CURLOPT_URL => $this->nodeOcrUrl . '/api/ocr/health',
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => 3,
                 CURLOPT_CONNECTTIMEOUT => 2
@@ -84,7 +89,7 @@ class OCRService
 
             $ch = curl_init();
             curl_setopt_array($ch, [
-                CURLOPT_URL => $this->nodeOcrUrl . '/ocr/tesseract/image',
+                CURLOPT_URL => $this->nodeOcrUrl . '/api/ocr/tesseract/image',
                 CURLOPT_POST => true,
                 CURLOPT_POSTFIELDS => json_encode($payload),
                 CURLOPT_RETURNTRANSFER => true,
@@ -158,6 +163,62 @@ class OCRService
             ];
         } catch (Exception $e) {
             error_log("Node.js OCR exception: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Extract text from PDF using the unified Node.js OCR service
+     */
+    private function extractTextViaNodePdf(string $pdfData, array $options = []): array
+    {
+        try {
+            $payload = [
+                'pdfBase64' => $pdfData,
+                'language' => $options['language'] ?? 'eng'
+            ];
+
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $this->nodeOcrUrl . '/api/ocr/pdf/extract',
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => json_encode($payload),
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => $this->timeout,
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: application/json'
+                ]
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+
+            if ($error || $httpCode !== 200) {
+                return [
+                    'success' => false,
+                    'error' => $error ?: "Node.js OCR HTTP $httpCode"
+                ];
+            }
+
+            $result = json_decode($response, true);
+            if (empty($result['success']) || empty($result['text'])) {
+                return [
+                    'success' => false,
+                    'error' => $result['error'] ?? 'Node.js OCR PDF processing failed'
+                ];
+            }
+
+            return [
+                'success' => true,
+                'text' => $result['text'],
+                'engine' => 'pdf-parse (Node.js)'
+            ];
+        } catch (Exception $e) {
             return [
                 'success' => false,
                 'error' => $e->getMessage()
@@ -491,8 +552,16 @@ class OCRService
     public function extractTextFromPDF(string $pdfData, array $options = []): array
     {
         try {
-            // For web hosting, we'll use a simple approach
-            // In a real implementation, you might want to use a PDF processing service
+            if ($this->isNodeOcrHealthy()) {
+                $pdfData = preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $pdfData)
+                    ? $pdfData
+                    : base64_encode($pdfData);
+
+                $nodeResult = $this->extractTextViaNodePdf($pdfData, $options);
+                if ($nodeResult['success']) {
+                    return $nodeResult;
+                }
+            }
 
             return [
                 'success' => false,

@@ -4,6 +4,7 @@
  * Configurable via environment variables
  */
 
+// DEPRECATED: legacy compatibility shim for older deployments.
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import cors from 'cors';

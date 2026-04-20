@@ -415,7 +415,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
             }
 
             // Get OpenRouter API key from environment
-            const apiKey = process.env.OPENROUTER_API_KEY;
+            const apiKey = config.ai.openrouter.apiKey;
             if (!apiKey) {
                 reply.code(500).send({
                     success: false,
@@ -518,7 +518,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
                 return;
             }
 
-            const apiKey = process.env.OPENROUTER_API_KEY;
+            const apiKey = config.ai.openrouter.apiKey;
             if (!apiKey) {
                 reply.code(500).send({
                     success: false,
@@ -629,7 +629,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
                 return;
             }
 
-            const apiKey = process.env.OPENROUTER_API_KEY;
+            const apiKey = config.ai.openrouter.apiKey;
             if (!apiKey) {
                 reply.code(500).send({
                     success: false,
@@ -732,7 +732,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
             const allowedFormats = ['wav', 'mp3', 'opus', 'aac'];
             const selectedFormat = allowedFormats.includes(format) ? format : 'wav';
 
-            const apiKey = process.env.OPENAI_API_KEY;
+            const apiKey = config.ai.openai.apiKey;
             if (!apiKey) {
                 reply.code(500).send({
                     success: false,
@@ -818,7 +818,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
 
             const numImages = Math.max(1, Math.min(10, parseInt(n) || 1));
 
-            const apiKey = process.env.OPENAI_API_KEY;
+            const apiKey = config.ai.openai.apiKey;
             if (!apiKey) {
                 reply.code(500).send({
                     success: false,

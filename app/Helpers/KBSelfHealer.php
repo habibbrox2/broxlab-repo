@@ -37,7 +37,17 @@ class KBSelfHealer
 
         // Configuration
         $this->useNodeJs = $options['useNodeJs'] ?? (getenv('KB_USE_NODEJS') === 'true');
-        $this->nodeJsUrl = $options['nodeJsUrl'] ?? (getenv('NODEJS_AI_SERVER_URL') ?: (getenv('NODE_API_URL') ?: getenv('APP_URL') ?: 'http://localhost:3000/api/ai'));
+        $nodeJsUrl = rtrim(
+            (string)($options['nodeJsUrl'] ?? (getenv('NODE_SERVICE_URL') ?: (getenv('NODEJS_AI_SERVER_URL') ?: (getenv('NODE_API_URL') ?: 'http://localhost:3000')))),
+            '/'
+        );
+        if (str_ends_with($nodeJsUrl, '/api/ai')) {
+            $nodeJsUrl = substr($nodeJsUrl, 0, -7);
+        }
+        if (str_ends_with($nodeJsUrl, '/api/ocr')) {
+            $nodeJsUrl = substr($nodeJsUrl, 0, -8);
+        }
+        $this->nodeJsUrl = $nodeJsUrl;
         $this->autoImprove = $options['autoImprove'] ?? (getenv('KB_AUTO_IMPROVE') === 'true');
         $this->qualityThreshold = $options['qualityThreshold'] ?? 50;
         $this->lookbackDays = $options['lookbackDays'] ?? 30;

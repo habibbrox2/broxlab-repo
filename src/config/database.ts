@@ -3,6 +3,16 @@ import { config } from './index';
 import logger from '../utils/logger';
 import { metrics } from '../utils/metrics';
 
+export function getDatabaseTarget(): string {
+    return `${config.database.host}:${config.database.port}/${config.database.database}`;
+}
+
+function formatConnectionHint(error: unknown): string {
+    const target = getDatabaseTarget();
+    const details = error instanceof Error ? `${error.message}` : 'Unknown error';
+    return `MySQL not reachable at ${target}. Check DB_HOST, DB_PORT, DB_USER, DB_PASS, and whether MySQL is running. (${details})`;
+}
+
 // Create connection pool
 const pool = mysql.createPool({
     host: config.database.host,
@@ -26,7 +36,11 @@ export async function testConnection(): Promise<boolean> {
         logger.info('✅ Database connection established');
         return true;
     } catch (error) {
-        logger.error('❌ Database connection failed:', error);
+        logger.error('❌ Database connection failed:', {
+            target: getDatabaseTarget(),
+            hint: formatConnectionHint(error),
+            error,
+        });
         return false;
     }
 }

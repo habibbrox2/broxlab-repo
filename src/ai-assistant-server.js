@@ -1,3 +1,4 @@
+// DEPRECATED: legacy compatibility shim for older deployments.
 /**
  * AI Assistant Server - Express.js
  * Runs alongside PHP backend on a different port

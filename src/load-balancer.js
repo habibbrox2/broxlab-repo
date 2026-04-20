@@ -3,6 +3,7 @@
  * একই পোর্টে একাধিক সার্ভারের মধ্যে লোড ব্যালেন্সিং
  */
 
+// DEPRECATED: legacy compatibility shim for older deployments.
 import express from 'express';
 import http from 'http';
 import httpProxy from 'http-proxy';

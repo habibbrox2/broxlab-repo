@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
+import { config } from '../config/index';
 import logger from '../utils/logger';
 
 export interface AuthContext {
@@ -35,7 +36,7 @@ export async function authMiddleware(request: FastifyRequest, _reply: FastifyRep
   const authHeader = request.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
-    if (token === process.env.NODE_SERVICE_API_KEY || token === 'internal-key') {
+    if (token === config.security.serviceApiKey || token === 'internal-key') {
       request.user = {
         authenticated: true,
         isAdmin: true,
