@@ -42,7 +42,8 @@
     "lint:fix": "eslint --fix --no-error-on-unmatched-pattern --config build/eslint.config.cjs \"public_html/assets/js/**/*.js\" \"public_html/assets/firebase/v2/**/*.js\" \"public_html/assets/ai-assistant/**/*.js\" \"build/Scripts/**/*.mjs\" \"build/esbuild.config.js\" \"build/esbuild-firebase.mjs\"",
     "type-check": "tsc -p build/tsconfig.json --noEmit --skipLibCheck",
     "validate": "npm run lint && npm run type-check && npm run test:run && npm run check:assets",
-    "prebuild:prod": "npm run validate",
+    "validate:prebuild": "npm run lint && npm run type-check && npm run test:run",
+    "prebuild:prod": "npm run validate:prebuild",
     "clean": "npm run clean:build && npm run clean:firebase:v2:dist && node -e \"require('fs').rmSync('public_html/assets/css/dist', { recursive: true, force: true })\"",
     "debug": "NODE_ENV=development npm run dev"
   },
