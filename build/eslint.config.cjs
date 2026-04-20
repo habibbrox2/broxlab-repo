@@ -21,6 +21,12 @@ module.exports = [
         firebase: 'readonly',
         moment: 'readonly',
         Apex: 'readonly',
+        bootstrap: 'readonly',
+        Chart: 'readonly',
+        Swal: 'readonly',
+        showToast: 'readonly',
+        withAssetVersion: 'readonly',
+        MessageHandlerConfig: 'readonly',
       },
     },
     rules: {

@@ -212,7 +212,7 @@ class NamingConventionChecker {
   /**
      * Run the naming convention check
      */
-  async run() {
+  run() {
     console.log('🔍 Checking naming conventions...\n');
 
     // Check if --changed flag is used
