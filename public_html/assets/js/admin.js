@@ -1037,7 +1037,7 @@ runWhenReady(() => {
     setTimeout(() => {
       try {
         new bootstrap.Alert(flashMsg).close();
-      } catch (e) { }
+      } catch (e) { /* ignore auto-dismiss errors */ }
     }, 5000);
   }
 
@@ -1045,6 +1045,8 @@ runWhenReady(() => {
     const setPasswordForm = byId('setPasswordForm');
     const changePasswordForm = byId('changePasswordForm');
     if (!setPasswordForm && !changePasswordForm) return;
+
+    const specialCharPattern = new RegExp("[!@#$%^&*()_+\\-=\\[\\]{};:'\",.<>?/\\\\]");
 
     function validatePasswordStrength(inputId) {
       const input = byId(inputId);
@@ -1066,7 +1068,7 @@ runWhenReady(() => {
       if (specialCheck)
         specialCheck.classList.toggle(
           'valid',
-          /[!@#$%^&*()_+\-=\[\]{};:'"",.<>?\/\\]/.test(password)
+          specialCharPattern.test(password)
         );
     }
 
@@ -1591,7 +1593,7 @@ runWhenReady(() => {
     window.deleteTemplate = function (id, name) {
       if (
         !confirm(
-          `Are you sure you want to delete the email template \"${name}\"? This action cannot be undone.`
+          `Are you sure you want to delete the email template "${name}"? This action cannot be undone.`
         )
       ) {
         return;
@@ -2187,7 +2189,7 @@ runWhenReady(() => {
       Array.from(files).forEach((file, index) => {
         if (file.type.startsWith('image/')) {
           if (file.size > 10 * 1024 * 1024) {
-            alert(`Image \"${file.name}\" is too large (max 10MB)`);
+            alert(`Image "${file.name}" is too large (max 10MB)`);
             return;
           }
 
@@ -2402,8 +2404,8 @@ runWhenReady(() => {
         const alt = altInput ? altInput.value.trim() : '';
         const caption = captionInput ? captionInput.value.trim() : '';
         const displayOrder = orderInput ? parseInt(orderInput.value || 0, 10) : 0;
-        const featuredRadio = document.querySelector('input[name=\"featured_image\"]:checked');
-        const isFeatured = featuredRadio && featuredRadio.value == id ? 1 : 0;
+        const featuredRadio = document.querySelector('input[name="featured_image"]:checked');
+        const isFeatured = featuredRadio && featuredRadio.value === id ? 1 : 0;
 
         imageUpdates.push({
           id: parseInt(id, 10),
@@ -2474,7 +2476,7 @@ runWhenReady(() => {
     let currentPage = 1;
     const pageSize = 20;
 
-    const viewToggle = document.querySelectorAll('input[name=\"view\"]');
+    const viewToggle = document.querySelectorAll('input[name="view"]');
     const dashboardView = byId('dashboardView');
 
     viewToggle.forEach((radio) => {
@@ -2517,7 +2519,7 @@ runWhenReady(() => {
       } catch (error) {
         console.error('Error loading applications:', error);
         byId('applicationsTable').innerHTML =
-          '<tr><td colspan=\"8\" class=\"text-center text-danger py-4\">Failed to load applications</td></tr>';
+          '<tr><td colspan="8" class="text-center text-danger py-4">Failed to load applications</td></tr>';
       }
     }
 
@@ -2833,7 +2835,7 @@ runWhenReady(() => {
     });
   }
 
-  async function initNotificationsDashboard() {
+  function initNotificationsDashboard() {
     const root = byId('notificationsDashboardRoot');
     if (!root) return;
     const filterEndpoints = [
@@ -3195,7 +3197,7 @@ runWhenReady(() => {
         MultiDeviceSync,
         OfflineNotificationHandler,
       });
-    } catch (e) { }
+    } catch (e) { /* ignore notification module diagnostics */ }
   }
 
   function initNotificationsDeviceSync() {
@@ -3499,7 +3501,7 @@ runWhenReady(() => {
       }
     }
 
-    async function post(url, body) {
+    function post(url, body) {
       return fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, },
@@ -3721,7 +3723,7 @@ runWhenReady(() => {
 
     if (!indicator || !icon || !text) return;
 
-    let checkInterval;
+    let checkInterval = null;
     let isChecking = false;
 
     const updateStatus = (status, message) => {

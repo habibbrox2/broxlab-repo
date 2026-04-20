@@ -14,7 +14,7 @@ import { formatError, AppError } from './error-handler';
 export async function timingMiddleware(request: FastifyRequest, reply: FastifyReply) {
     const startTime = Date.now();
 
-    reply.addHook('onSend', async () => {
+    (reply as any).addHook('onSend', async () => {
         const duration = Date.now() - startTime;
         reply.header('X-Response-Time-Ms', String(duration));
     });
@@ -29,7 +29,7 @@ export async function loggingMiddleware(request: FastifyRequest, reply: FastifyR
         userAgent: request.headers['user-agent'],
     });
 
-    reply.addHook('onSend', async () => {
+    (reply as any).addHook('onSend', async () => {
         Logger.info(`${request.method} ${request.url} - ${reply.statusCode}`, {
             statusCode: reply.statusCode,
         });
@@ -276,7 +276,7 @@ export function cacheMiddleware(
             return cached.data;
         }
 
-        reply.addHook('onSend', async (_request, reply, payload) => {
+        (reply as any).addHook('onSend', async (_request: FastifyRequest, reply: FastifyReply, payload: any) => {
             try {
                 const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
                 cache.set(key, {

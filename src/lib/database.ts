@@ -295,7 +295,7 @@ export class QueryBuilder {
     private joins: string[] = [];
     private wheres: string[] = [];
     private params: any[] = [];
-    private orderBy: string[] = [];
+    private orderByClauses: string[] = [];
     private limit: number | null = null;
     private offset: number | null = null;
 
@@ -332,7 +332,7 @@ export class QueryBuilder {
      * Add ORDER BY
      */
     orderBy(column: string, direction: 'ASC' | 'DESC' = 'ASC'): this {
-        this.orderBy.push(`${column} ${direction}`);
+        this.orderByClauses.push(`${column} ${direction}`);
         return this;
     }
 
@@ -379,8 +379,8 @@ export class QueryBuilder {
         }
 
         // ORDER BY
-        if (this.orderBy.length > 0) {
-            query += `ORDER BY ${this.orderBy.join(', ')} `;
+        if (this.orderByClauses.length > 0) {
+            query += `ORDER BY ${this.orderByClauses.join(', ')} `;
         }
 
         // LIMIT

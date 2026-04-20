@@ -312,7 +312,7 @@
   }
 
   // Build model options for a provider
-  async function buildModelOptions(providerName, selectEl, savedModel, warningEl, refreshBtn, refresh) {
+  function buildModelOptions(providerName, selectEl, savedModel, warningEl, refreshBtn, refresh) {
     return new Promise((resolve) => {
       if (!selectEl) {
         resolve();

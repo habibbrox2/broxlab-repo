@@ -49,7 +49,7 @@ function setMessagingSupportState(supported, { emit = true, } = {}) {
   }
 }
 
-export async function isMessagingSupported(forceRefresh = false) {
+export function isMessagingSupported(forceRefresh = false) {
   if (!forceRefresh && _messagingSupportPromise) return _messagingSupportPromise;
   _messagingSupportPromise = (async () => {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') {
@@ -117,7 +117,7 @@ function markTokenSynced(token) {
   try {
     localStorage.setItem(TOKEN_STORAGE_KEY, token);
     localStorage.setItem(TOKEN_LAST_SYNC_KEY, String(Date.now()));
-  } catch (e) { }
+  } catch (e) { /* ignore storage access failures */ }
 }
 
 function getPendingTokenSyncPayload() {
@@ -135,13 +135,13 @@ function setPendingTokenSyncPayload(payload) {
   try {
     if (!payload || !payload.token) return;
     localStorage.setItem(TOKEN_PENDING_SYNC_KEY, JSON.stringify(payload));
-  } catch (e) { }
+  } catch (e) { /* ignore storage access failures */ }
 }
 
 function clearPendingTokenSyncPayload() {
   try {
     localStorage.removeItem(TOKEN_PENDING_SYNC_KEY);
-  } catch (e) { }
+  } catch (e) { /* ignore storage access failures */ }
 }
 
 function isRetryableStatus(status) {
@@ -235,10 +235,10 @@ async function flushPendingTokenSync(sendUrl, options = {}) {
 function getOrCreateDeviceId() {
   const KEY = '__fcm_device_id';
   let deviceId = null;
-  try { deviceId = localStorage.getItem(KEY); } catch (e) { }
+  try { deviceId = localStorage.getItem(KEY); } catch (e) { /* ignore storage access failures */ }
   if (!deviceId) {
     deviceId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    try { localStorage.setItem(KEY, deviceId); } catch (e) { }
+    try { localStorage.setItem(KEY, deviceId); } catch (e) { /* ignore storage write failures */ }
   }
   return deviceId;
 }
@@ -254,7 +254,7 @@ function getDefaultDeviceName() {
     if (ua && typeof ua === 'string') {
       return clampDeviceName(ua, 'web');
     }
-  } catch (e) { }
+  } catch (e) { /* ignore storage access failures */ }
   return clampDeviceName('web', 'web');
 }
 
@@ -457,7 +457,7 @@ export async function unsubscribeFCMToken(token) {
       try {
         localStorage.removeItem(TOKEN_STORAGE_KEY);
         localStorage.removeItem(TOKEN_LAST_SYNC_KEY);
-      } catch (e) { }
+      } catch (e) { /* ignore storage access failures */ }
       DebugUtils.moduleLog('messaging', 'Token unsubscribed on server');
       return true;
     }
@@ -703,7 +703,7 @@ export function autoInitializeFCMToken(opts = {}) {
     // Token refresh detection: check on foreground/visibility change
     if (typeof document !== 'undefined' && !_lifecycleListenersBound) {
       _lifecycleListenersBound = true;
-      document.addEventListener('visibilitychange', async () => {
+      document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
           if (!shouldRunLifecycleTokenCheck()) return;
           DebugUtils.moduleLog('messaging', 'App became visible, checking token freshness');
@@ -736,7 +736,7 @@ async function checkAndRefreshTokenIfNeeded(opts = {}) {
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
   if (!(await isMessagingSupported())) return;
   let storedToken = null;
-  try { storedToken = localStorage.getItem(TOKEN_STORAGE_KEY); } catch (e) { }
+  try { storedToken = localStorage.getItem(TOKEN_STORAGE_KEY); } catch (e) { /* ignore storage access failures */ }
   const lastSyncedAtMs = getLastSyncedAtMs();
   const nowMs = Date.now();
 

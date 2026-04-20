@@ -897,7 +897,7 @@
   /**
      * Export data
      */
-  async function exportData(format) {
+  function exportData(format) {
     const startDate = document.getElementById('exportStartDate')?.value;
     const endDate = document.getElementById('exportEndDate')?.value;
     const dataType = document.getElementById('exportDataType')?.value || 'all';

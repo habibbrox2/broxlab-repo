@@ -5,6 +5,8 @@
 
 import { adminGetCsrfToken } from './utils.js';
 
+const SPECIAL_CHAR_PATTERN = new RegExp("[!@#$%^&*()_+\\-=\\[\\]{};:'\",.<>?/\\\\]");
+
 export function validatePasswordStrength(inputId) {
   const input = document.getElementById(inputId);
   if (!input) return;
@@ -22,7 +24,7 @@ export function validatePasswordStrength(inputId) {
   if (upperCheck) upperCheck.classList.toggle('valid', /[A-Z]/.test(password));
   if (lowerCheck) lowerCheck.classList.toggle('valid', /[a-z]/.test(password));
   if (numberCheck) numberCheck.classList.toggle('valid', /[0-9]/.test(password));
-  if (specialCheck) specialCheck.classList.toggle('valid', /[!@#$%^&*()_+\-=\[\]{};:'"",.<>?\/\\]/.test(password));
+  if (specialCheck) specialCheck.classList.toggle('valid', SPECIAL_CHAR_PATTERN.test(password));
 }
 
 export async function setPassword() {

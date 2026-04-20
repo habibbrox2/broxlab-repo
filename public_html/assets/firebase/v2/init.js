@@ -23,7 +23,7 @@ function setMessagingSupportState(supported) {
   window.__fcmMessagingSupported = Boolean(supported);
 }
 
-async function resolveMessagingSupport() {
+function resolveMessagingSupport() {
   if (_messagingSupportPromise) return _messagingSupportPromise;
   _messagingSupportPromise = (async () => {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') {
@@ -87,7 +87,7 @@ export async function initFirebase(options = {}) {
       if (typeof document !== 'undefined') {
         document.dispatchEvent(new Event('firebase-initialized'));
       }
-    } catch (e) { }
+    } catch (e) { /* ignore DOM dispatch errors */ }
     return { app: _app, modules: _modules, };
   } catch (err) {
     DebugUtils.moduleError('init', 'Firebase initialization failed');
@@ -120,7 +120,7 @@ function autoInitializeFirebaseOnModuleLoad() {
 
   try {
     window.__firebaseInitPromise = _autoInitPromise;
-  } catch (e) { }
+  } catch (e) { /* ignore auto-init window assignment errors */ }
 }
 
 autoInitializeFirebaseOnModuleLoad();

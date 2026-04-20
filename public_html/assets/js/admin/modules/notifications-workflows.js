@@ -925,7 +925,7 @@ export async function initNotificationsScheduled() {
 }
 
 
-export async function initNotificationsDeviceSync() {
+export function initNotificationsDeviceSync() {
   const root = byId('deviceSyncRoot');
   if (!root) return;
   let autoSyncInterval = null;
@@ -1177,7 +1177,7 @@ export async function initNotificationsDeviceSync() {
     }
   }
 
-  async function clearSyncLog() {
+  function clearSyncLog() {
     alert('Clear log API is not configured in backend.');
     loadSyncLog();
   }
@@ -1473,5 +1473,5 @@ export async function initNotificationsOfflineHandler() {
     } else {
       initializePageContent();
     }
-  } catch (e) { }
+  } catch (e) { /* ignore diagnostics from optional notification module loading */ }
 }

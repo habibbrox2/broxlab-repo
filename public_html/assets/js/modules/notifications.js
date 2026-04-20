@@ -210,7 +210,7 @@ export function adminDisconnectNotificationWebSocket(context = 'admin') {
   }
 }
 
-export async function adminInitNotificationCore(options = {}) {
+export function adminInitNotificationCore(options = {}) {
   const context = options.context || 'admin';
   const existing = adminNotificationCoreState.get(context);
   if (existing?.promise) return existing.promise;
@@ -238,7 +238,7 @@ export async function adminInitNotificationCore(options = {}) {
 
       if (!messagingSupported) {
         window.__fcmTokenObtained = false;
-        window.__requestFcmTokenSync = async () => false;
+        window.__requestFcmTokenSync = () => false;
         if (window.__pendingFcmTokenSync) {
           window.__pendingFcmTokenSync = false;
         }

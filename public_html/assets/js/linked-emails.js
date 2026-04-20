@@ -26,6 +26,15 @@ export function initLinkedEmails(options = {}) {
     return csrfTokenEl?.value || csrfTokenEl?.content || '';
   };
 
+  const showError = (error) => {
+    const message = error?.message || 'An unexpected error occurred.';
+    if (window.showAlert) {
+      window.showAlert(message, 'danger');
+      return;
+    }
+    console.error(message, error);
+  };
+
 
   // Fetch and display linked emails
   const loadLinkedEmails = async () => {
