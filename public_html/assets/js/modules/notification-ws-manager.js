@@ -30,7 +30,7 @@ class NotificationWebSocketManager extends EventTarget {
   /**
      * Connect to WebSocket server
      */
-  async connect(userId = null) {
+  connect(userId = null) {
     if (userId) {
       this.userId = userId;
     }

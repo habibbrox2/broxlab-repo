@@ -190,7 +190,7 @@ export async function loadFirebaseConfig(timeout = 5000) {
         const validated = validateFirebaseConfig(window.__EMBEDDED_FIREBASE_CONFIG);
         if (validated) { _cachedConfig = validated; return validated; }
       }
-    } catch (e) { }
+    } catch (e) { /* ignore embedded config parse errors */ }
 
     // 2) Network fetch from /api/firebase-config with timeout
     try {
@@ -206,7 +206,7 @@ export async function loadFirebaseConfig(timeout = 5000) {
         const cfg = body && body.config ? body.config : body;
         const validated = validateFirebaseConfig(cfg);
         if (validated) {
-          try { localStorage.setItem('firebase_config_cache', JSON.stringify({ ts: Date.now(), config: validated, })); } catch (e) { }
+          try { localStorage.setItem('firebase_config_cache', JSON.stringify({ ts: Date.now(), config: validated, })); } catch (e) { /* ignore storage write failure */ }
           _cachedConfig = validated;
           return validated;
         }
@@ -226,7 +226,7 @@ export async function loadFirebaseConfig(timeout = 5000) {
           if (validated) { _cachedConfig = validated; return validated; }
         }
       }
-    } catch (e) { }
+    } catch (e) { /* ignore cache parse errors */ }
 
     // 4) inline <script id="firebase-config"> fallback
     try {
@@ -238,7 +238,7 @@ export async function loadFirebaseConfig(timeout = 5000) {
           if (validated) { _cachedConfig = validated; return validated; }
         }
       }
-    } catch (e) { }
+    } catch (e) { /* ignore missing document environment */ }
 
     return null;
   })();
@@ -246,7 +246,7 @@ export async function loadFirebaseConfig(timeout = 5000) {
   try { const r = await _fetchInProgress; return r; } finally { _fetchInProgress = null; }
 }
 
-export function clearCachedFirebaseConfig() { _cachedConfig = null; _notificationConfig = null; try { localStorage.removeItem('firebase_config_cache'); } catch (e) { } }
+export function clearCachedFirebaseConfig() { _cachedConfig = null; _notificationConfig = null; try { localStorage.removeItem('firebase_config_cache'); } catch (e) { /* ignore cache clear errors */ } }
 
 // Get notification config (returns merged default + fetched config)
 // Synchronous: returns immediately (uses default if not yet loaded)
@@ -287,9 +287,9 @@ export async function prefetchAllConfigs() {
       loadFirebaseConfig().catch(() => null),
       _ensureNotificationConfig().catch(() => null),
     ]);
-  } catch (e) { }
+  } catch (e) { /* ignore config prefetch errors */ }
 }
 
-export async function prefetchFirebaseConfig() { try { await loadFirebaseConfig().catch(() => null); } catch (e) { } }
+export async function prefetchFirebaseConfig() { try { await loadFirebaseConfig().catch(() => null); } catch (e) { /* ignore prefetch errors */ } }
 
 export default { loadFirebaseConfig, getNotificationConfig, getFullConfig, clearCachedFirebaseConfig, prefetchFirebaseConfig, prefetchAllConfigs, DEFAULT_NOTIFICATION_CONFIG, };

@@ -565,7 +565,7 @@ function initNotificationCore(options = {}) {
       emitFcmSupportResolved(messagingSupported, context);
       if (!messagingSupported) {
         window.__fcmTokenObtained = false;
-        window.__requestFcmTokenSync = async () => false;
+        window.__requestFcmTokenSync = () => false;
         if (window.__pendingFcmTokenSync) {
           window.__pendingFcmTokenSync = false;
         }
@@ -1002,7 +1002,7 @@ if (!isAuthPageRoute) {
   });
 } else {
   window.__pendingFcmTokenSync = false;
-  window.__requestFcmTokenSync = async () => false;
+  window.__requestFcmTokenSync = () => false;
   window.__fcmTokenObtained = false;
 }
 
@@ -1320,7 +1320,7 @@ runWhenReady(initNavbarUserDropdownMobileFallback);
 
 // Export functions for external use
 let notificationSystemApiPromise = null;
-const loadNotificationSystemApi = async () => {
+const loadNotificationSystemApi = () => {
   if (!notificationSystemApiPromise) {
     notificationSystemApiPromise = import(withAssetVersion('/assets/firebase/v2/dist/notification-system.js'))
       .catch((error) => {

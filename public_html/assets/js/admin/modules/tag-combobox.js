@@ -105,7 +105,7 @@ function mergeTags(rows = []) {
   });
 }
 
-async function ensureTagsLoaded(options = {}) {
+function ensureTagsLoaded(options = {}) {
   const settings = normalizeOptions(options);
   if (tagCache.orderedIds.length > 0) {
     return tagCache.orderedIds.map((id) => tagCache.byId.get(id)).filter(Boolean);

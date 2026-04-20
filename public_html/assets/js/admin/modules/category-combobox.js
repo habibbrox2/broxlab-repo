@@ -105,7 +105,7 @@ function mergeCategories(rows = []) {
   });
 }
 
-async function ensureCategoriesLoaded(options = {}) {
+function ensureCategoriesLoaded(options = {}) {
   const settings = normalizeOptions(options);
   if (categoryCache.orderedIds.length > 0) {
     return categoryCache.orderedIds.map((id) => categoryCache.byId.get(id)).filter(Boolean);

@@ -45,9 +45,9 @@ export async function setUserProperties(props = {}) {
 }
 
 // Reuse earlier tracking helpers
-export async function trackUserLogin(userId) { return logEvent('login', { user_id: userId, }); }
-export async function trackUserLogout(userId) { return logEvent('user_logout', { user_id: userId, timestamp: new Date().toISOString(), }); }
-export async function trackTokenGenerated(tokenData = {}) { return logEvent('fcm_token_generated', { token_length: tokenData.token ? tokenData.token.length : 0, user_id: tokenData.user_id || 'guest', }); }
+export function trackUserLogin(userId) { return logEvent('login', { user_id: userId, }); }
+export function trackUserLogout(userId) { return logEvent('user_logout', { user_id: userId, timestamp: new Date().toISOString(), }); }
+export function trackTokenGenerated(tokenData = {}) { return logEvent('fcm_token_generated', { token_length: tokenData.token ? tokenData.token.length : 0, user_id: tokenData.user_id || 'guest', }); }
 
 // Backwards-compatible aliases
 export const trackUserLoginEvent = trackUserLogin;

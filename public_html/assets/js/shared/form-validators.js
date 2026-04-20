@@ -24,7 +24,7 @@ export const PASSWORD_REQUIREMENTS = {
     label: 'One number',
   },
   special: {
-    pattern: /[!@#$%^&*\-_=+\[\]{};:'",.<>?\/\\|`~]/,
+    pattern: new RegExp("[!@#$%^&*\\-_=+\\[\\]{};:'\",.<>?/\\\\|`~]"),
     label: 'One special character',
   },
 };

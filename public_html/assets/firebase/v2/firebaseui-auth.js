@@ -45,7 +45,7 @@ function loadCss(href) {
   document.head.appendChild(link);
 }
 
-async function ensureFirebaseUiResources() {
+function ensureFirebaseUiResources() {
   if (!resourcesPromise) {
     resourcesPromise = (async () => {
       loadCss(FIREBASEUI_CSS_SRC);
@@ -316,4 +316,3 @@ export default {
   isPopupCancelError,
   postFirebaseSignin,
 };
-

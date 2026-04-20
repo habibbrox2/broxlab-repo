@@ -15,6 +15,7 @@
         return true;
       }
     } catch (error) {
+      return false;
     }
 
     try {
@@ -125,7 +126,7 @@
             });
           }
           const disposition = response.headers.get('Content-Disposition') || '';
-          const filenameMatch = disposition.match(/filename=\"?([^\";]+)\"?/i);
+          const filenameMatch = disposition.match(/filename="?([^";]+)"?/i);
           const filename = filenameMatch ? filenameMatch[1] : 'cv-exports.zip';
           return response.blob().then((blob) => {
             return { blob: blob, filename: filename, };

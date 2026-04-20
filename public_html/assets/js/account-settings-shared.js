@@ -269,13 +269,15 @@ function renderAccounts(accountsContainer, accounts, theme, onSetPrimary, onUnli
   });
 }
 
+const SPECIAL_CHAR_PATTERN = new RegExp("[!@#$%^&*()_+\\-=\\[\\]{};:'\",.<>?/\\\\]");
+
 function updatePasswordStrengthMeter(password, config = {}) {
   const requirements = {
     length: password.length >= 8,
     uppercase: /[A-Z]/.test(password),
     lowercase: /[a-z]/.test(password),
     number: /[0-9]/.test(password),
-    special: /[!@#$%^&*()_+\-=\[\]{};:'"",.<>?\/\\]/.test(password),
+    special: SPECIAL_CHAR_PATTERN.test(password),
   };
 
   const met = Object.values(requirements).filter(Boolean).length;
@@ -449,7 +451,7 @@ export function initAccountSettingsOAuth(options = {}) {
   const isPopupCancelError = (err) => popupCancelCodes.has(normalizeErrorCode(err?.code || err?.errorCode));
 
   let firebaseAuthModulePromise = null;
-  const getFirebaseAuthModule = async () => {
+  const getFirebaseAuthModule = () => {
     if (!firebaseAuthModulePromise) {
       firebaseAuthModulePromise = import(withAssetVersion('/assets/firebase/v2/dist/auth.js'))
         .catch((error) => {
@@ -726,7 +728,7 @@ export function initAccountSettingsOAuth(options = {}) {
     await loadLinkedAccounts();
   };
 
-  const loadProviders = async () => {
+  const loadProviders = () => {
     if (!providersContainer) return;
     // Show available OAuth providers for linking via Firebase
     const providers = {
