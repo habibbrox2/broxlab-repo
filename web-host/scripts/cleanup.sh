@@ -42,9 +42,17 @@ while [[ $# -gt 0 ]]; do
             echo "Unknown option: $1"
             echo "Usage: $0 [--dry-run] [--releases N] [--backups N] [--logs-days N] [--db-backups N] [--base PATH]"
             exit 1
-            ;;
+        ;;
     esac
 done
+
+# Recompute derived paths after parsing so --base is applied consistently.
+APP="$BASE/app"
+RELEASES="$APP/releases"
+BACKUPS="$BASE/backups"
+LOGS="$BASE/logs"
+DB_BACKUPS="$APP/shared/backups/database"
+export BASE_PATH="$BASE"
 
 # ============== COLOR CODES ==============
 GREEN='\033[0;32m'

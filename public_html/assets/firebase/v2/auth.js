@@ -154,7 +154,7 @@ export async function signInWithFacebook(options = {}) {
     DebugUtils.moduleLog('auth', 'Facebook sign-in successful');
     try {
       await Analytics.trackUserLoginEvent(res?.user?.uid);
-    } catch (e) { }
+    } catch (e) { /* ignore Analytics tracking failures */ }
     try {
       const mod = await import('./messaging.js');
       if (mod && mod.obtainAndSendFCMToken && !options.syncWithBackend) {
@@ -189,7 +189,7 @@ export async function signInWithGithub(options = {}) {
     DebugUtils.moduleLog('auth', 'GitHub sign-in successful');
     try {
       await Analytics.trackUserLoginEvent(res?.user?.uid);
-    } catch (e) { }
+    } catch (e) { /* ignore Analytics tracking failures */ }
     try {
       const mod = await import('./messaging.js');
       if (mod && mod.obtainAndSendFCMToken && !options.syncWithBackend) {
@@ -262,7 +262,7 @@ export async function signInWithEmail(email, password, options = {}) {
     DebugUtils.moduleLog('auth', 'Email sign-in successful');
     try {
       await Analytics.trackUserLoginEvent(res?.user?.uid);
-    } catch (e) { }
+    } catch (e) { /* ignore FCM sync failure */ }
     try {
       const mod = await import('./messaging.js');
       if (mod && mod.obtainAndSendFCMToken && !options.syncWithBackend) {
@@ -288,10 +288,10 @@ export async function signUpWithEmail(email, password, displayName = null, optio
     const res = await createUserWithEmailAndPassword(auth, email, password);
     DebugUtils.moduleLog('auth', 'Email sign-up successful');
     if (displayName) {
-      try { await updateProfile(res.user, { displayName, }); } catch (e) { }
+      try { await updateProfile(res.user, { displayName, }); } catch (e) { /* ignore profile update failure */ }
     }
     if (options.sendEmailVerification !== false) {
-      try { await sendEmailVerification(res.user); } catch (e) { }
+      try { await sendEmailVerification(res.user); } catch (e) { /* ignore verification failure */ }
     }
     if (options.syncWithBackend) {
       res.backend = await syncIdTokenWithBackend(res?.user, { provider: 'password', endpoint: options.endpoint, });
@@ -356,7 +356,7 @@ export async function signOutUser(options = {}) {
     DebugUtils.moduleLog('auth', 'Sign-out successful');
     try {
       await Analytics.trackUserLogout(current?.uid);
-    } catch (e) { }
+    } catch (e) { /* ignore logout tracking failure */ }
     if (options.syncWithBackend && options.redirectTo) {
       window.location.href = options.redirectTo;
     }

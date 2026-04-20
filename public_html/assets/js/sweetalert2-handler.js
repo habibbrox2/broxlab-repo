@@ -114,7 +114,7 @@
       closeButtonAriaLabel: 'Close',
       timer: duration > 0 ? duration : undefined,
       timerProgressBar: duration > 0,
-      didOpen: async (_toast) => {
+      didOpen: (_toast) => {
         // Announce to screen readers
         if (MessageConfig.announceToasts) {
           announceToScreenReader(`${status}: ${message}`);
@@ -161,7 +161,7 @@
       allowOutsideClick: false,
       allowEscapeKey: MessageConfig.closeOnEscape,
       position: 'center', // Center position
-      didOpen: async (_modal) => {
+      didOpen: (_modal) => {
         if (MessageConfig.announceToasts) {
           announceToScreenReader(`Alert: ${title}. ${message}`);
         }
@@ -204,7 +204,7 @@
       allowOutsideClick: false,
       allowEscapeKey: MessageConfig.closeOnEscape,
       position: 'center', // Center position
-      didOpen: async (_modal) => {
+      didOpen: (_modal) => {
         if (MessageConfig.announceToasts) {
           announceToScreenReader(`Confirmation required: ${title}. ${message}`);
         }
@@ -257,7 +257,7 @@
           return 'This field is required';
         }
       },
-      didOpen: async (modal) => {
+      didOpen: (modal) => {
         const input = modal.querySelector('input');
         if (input) {
           input.focus();

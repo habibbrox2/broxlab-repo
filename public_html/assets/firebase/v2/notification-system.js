@@ -45,8 +45,8 @@ export async function markNotificationAsRead(id) {
 }
 
 // Backwards-compatible wrappers
-export async function broxLoadNotifications() { return loadUserNotifications(); }
-export async function broxMarkNotificationRead(id) { return markNotificationAsRead(id); }
+export function broxLoadNotifications() { return loadUserNotifications(); }
+export function broxMarkNotificationRead(id) { return markNotificationAsRead(id); }
 
 export class MultiDeviceSync {
   constructor() {
@@ -185,8 +185,8 @@ export const ForegroundNotifications = {
     try {
       this.state.audioElement.currentTime = 0;
       const playPromise = this.state.audioElement.play();
-      if (playPromise !== undefined) playPromise.catch(() => { });
-    } catch (err) { }
+      if (playPromise !== undefined) playPromise.catch(() => { /* ignore autoplay rejection */ });
+    } catch (err) { /* ignore audio playback failure */ }
   },
   _escapeHtml(text) {
     if (!text) return '';

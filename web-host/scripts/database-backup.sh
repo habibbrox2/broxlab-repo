@@ -33,9 +33,17 @@ while [[ $# -gt 0 ]]; do
             echo "Unknown option: $1"
             echo "Usage: $0 [--dry-run] [--keep N] [--base PATH]"
             exit 1
-            ;;
+        ;;
     esac
 done
+
+# Recompute derived paths after parsing so --base is applied consistently.
+APP="$BASE/app"
+SHARED="$APP/shared"
+DB_BACKUPS="$SHARED/backups/database"
+LOGS="$BASE/logs"
+ENV_FILE="$SHARED/.env"
+export BASE_PATH="$BASE"
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="$DB_BACKUPS/database_backup_$TIMESTAMP.sql.gz"

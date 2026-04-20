@@ -61,7 +61,7 @@
     }
 
     class Alert extends Base {
-        static NAME = 'Alert';
+        static get NAME() { return 'Alert'; }
         constructor(el) { super(el, Alert.NAME); }
         close() {
             if (!this._el) return;
@@ -75,7 +75,7 @@
     }
 
     class Collapse extends Base {
-        static NAME = 'Collapse';
+        static get NAME() { return 'Collapse'; }
         constructor(el, cfg) {
             super(el, Collapse.NAME);
             cfg = cfg || {};
@@ -125,8 +125,7 @@
     }
 
     class Modal extends Base {
-        static NAME = 'Modal';
-        static _open = 0;
+        static get NAME() { return 'Modal'; }
         constructor(el, cfg) {
             super(el, Modal.NAME);
             cfg = cfg || {};
@@ -185,7 +184,7 @@
     }
 
     class Offcanvas extends Base {
-        static NAME = 'Offcanvas';
+        static get NAME() { return 'Offcanvas'; }
         constructor(el, cfg) {
             super(el, Offcanvas.NAME);
             cfg = cfg || {};
@@ -231,7 +230,7 @@
     }
 
     class Toast extends Base {
-        static NAME = 'Toast';
+        static get NAME() { return 'Toast'; }
         constructor(el, cfg) {
             super(el, Toast.NAME);
             cfg = cfg || {};
@@ -272,7 +271,7 @@
     }
 
     class Carousel extends Base {
-        static NAME = 'Carousel';
+        static get NAME() { return 'Carousel'; }
         constructor(el, cfg) {
             super(el, Carousel.NAME);
             cfg = cfg || {};
@@ -340,8 +339,7 @@
     }
 
     class Dropdown extends Base {
-        static NAME = 'Dropdown';
-        static _open = null;
+        static get NAME() { return 'Dropdown'; }
         constructor(el) {
             super(el, Dropdown.NAME);
             this._menu = (el.closest('.dropdown') || el.parentElement)?.querySelector('.dropdown-menu') || null;
@@ -386,14 +384,14 @@
     }
 
     class Tooltip extends Base {
-        static NAME = 'Tooltip';
+        static get NAME() { return 'Tooltip'; }
         constructor(el) { super(el, Tooltip.NAME); }
         show() { if (this._el) { emit(this._el, 'show.bs.tooltip'); emit(this._el, 'shown.bs.tooltip'); } }
         hide() { if (this._el) { emit(this._el, 'hide.bs.tooltip'); emit(this._el, 'hidden.bs.tooltip'); } }
     }
 
     class Tab extends Base {
-        static NAME = 'Tab';
+        static get NAME() { return 'Tab'; }
         constructor(el) { super(el, Tab.NAME); }
         show() {
             if (!this._el) return;
@@ -426,6 +424,9 @@
             emit(this._el, 'shown.bs.tab', { relatedTarget: prev });
         }
     }
+
+    Modal._open = 0;
+    Dropdown._open = null;
 
     const ns = window.bootstrap || {};
     ns.Alert = Alert;

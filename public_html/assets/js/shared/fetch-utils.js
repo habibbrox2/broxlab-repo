@@ -43,7 +43,7 @@ export async function fetchWithTimeout(url, options = {}) {
  * @param {Object} options - Fetch options
  * @returns {Promise<{ok: boolean, status: number, data: *}>}
  */
-export async function fetchJson(url, options = {}) {
+export function fetchJson(url, options = {}) {
   return fetchWithTimeout(url, { ...options, timeoutMs: options.timeoutMs || getDefaultTimeoutMs(), });
 }
 
@@ -83,7 +83,7 @@ export async function safeFetchJson(url, options = {}) {
  * @param {Object} callbacks - Callback object with methods, onProgress, onSuccess, onError
  * @returns {Promise<void>}
  */
-export async function uploadFormData(url, formData, callbacks = {}) {
+export function uploadFormData(url, formData, callbacks = {}) {
   const { onProgress, onSuccess, onError, } = callbacks;
 
   return new Promise((resolve, reject) => {

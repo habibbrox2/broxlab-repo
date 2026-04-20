@@ -48,6 +48,15 @@ cleanup_on_error() {
 # BUG FIX: Trap EXIT only (not ERR) to avoid double-firing with set -e.
 trap cleanup_on_error EXIT
 
+# Recompute derived paths after argument parsing so --base is applied before
+# backup resolution and all subsequent filesystem lookups.
+APP="$BASE/app"
+SHARED="$APP/shared"
+DB_BACKUPS="$SHARED/backups/database"
+LOGS="$BASE/logs"
+ENV_FILE="$SHARED/.env"
+export BASE_PATH="$BASE"
+
 # ============== RESOLVE BACKUP FILE ==============
 # BUG FIX: Original used `BACKUP_FILE="${1:--}"` and then checked for "-" to
 # detect "no argument". This is ambiguous — a file literally named "-" (rare

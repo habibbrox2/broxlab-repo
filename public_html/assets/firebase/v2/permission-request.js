@@ -354,7 +354,7 @@ export function showPermissionBanner(options = {}) {
   container.appendChild(banner);
 
   function dismiss() {
-    try { localStorage.setItem(dismissKey, Date.now().toString()); } catch (e) {}
+    try { localStorage.setItem(dismissKey, Date.now().toString()); } catch (e) { /* ignore storage write failure */ }
     banner.remove();
   }
 

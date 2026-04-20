@@ -34,6 +34,15 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Recompute derived paths after parsing so --base is applied consistently.
+APP="$BASE/app"
+RELEASES="$APP/releases"
+CURRENT="$APP/current"
+SHARED="$APP/shared"
+VERSION_FILE="$SHARED/version.json"
+LOGS="$BASE/logs"
+export BASE_PATH="$BASE"
+
 # ============== COLOR CODES ==============
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -223,7 +232,7 @@ if [[ "$SKIP_DB_RESTORE" == "false" ]]; then
             # or ensuring it is executable. Using an explicit variable is fine,
             # but the -x check above ensures it; kept as-is and added set -e
             # awareness: wrap in if/else to avoid aborting the parent script.
-            if "$DB_RESTORE_SCRIPT"; then
+            if BASE_PATH="$BASE" "$DB_RESTORE_SCRIPT"; then
                 log_info "✅ Database restore completed"
             else
                 DB_EXIT=$?

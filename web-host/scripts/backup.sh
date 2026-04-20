@@ -35,6 +35,13 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Recompute derived paths after parsing so --base is applied consistently.
+APP="$BASE/app"
+BACKUPS="$BASE/backups"
+LOGS="$BASE/logs"
+CURRENT="$APP/current"
+export BASE_PATH="$BASE"
+
 DATE=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="$BACKUPS/backup_$DATE.tar.gz"
 
