@@ -979,7 +979,7 @@ function setupNotificationPermissionUI() {
   }
 
   if (!isLoggedIn && window.__FC_DEBUG) {
-    console.log('[Notifications] Checking notification status...');
+    console.info('[Notifications] Checking notification status...');
   }
 
   if (Notification.permission === 'denied') {
@@ -1004,7 +1004,7 @@ if (!isAuthPageRoute) {
 
   document.addEventListener('firebase-initialized', async () => {
     if (isMessagingUnsupported()) return;
-    if (window.__FC_DEBUG) console.log('[Notifications] Firebase initialized, checking notification status...');
+    if (window.__FC_DEBUG) console.info('[Notifications] Firebase initialized, checking notification status...');
     if ('Notification' in window && Notification.permission === 'granted') {
       await maybeSyncFcmToken();
     }

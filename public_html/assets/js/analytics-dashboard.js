@@ -104,7 +104,7 @@
     if (state.initialized) return;
     state.initialized = true;
 
-    console.log('Initializing Analytics Dashboard...');
+    console.info('Initializing Analytics Dashboard...');
     await Promise.all([
       loadSummaryStats(),
       loadSecurityAlerts(),
@@ -125,7 +125,7 @@
       renderDailyReports();
     }, 300);
 
-    console.log('Analytics Dashboard initialized successfully');
+    console.info('Analytics Dashboard initialized successfully');
   }
 
   /**
@@ -134,17 +134,17 @@
   async function loadSummaryStats() {
     try {
       const url = `${API_BASE}/summary`;
-      console.log('Fetching summary stats...');
+      console.info('Fetching summary stats...');
       const data = await safeFetchJson(url, {
         method: 'GET',
         headers: { 'Accept': 'application/json', },
       });
-      console.log('Summary stats response:', data);
+      console.info('Summary stats response:', data);
 
       if (data && data.success && data.data) {
         const stats = data.data;
         updateSummaryDOM(stats);
-        console.log('Summary stats updated successfully');
+        console.info('Summary stats updated successfully');
       }
     } catch (error) {
       console.error('Error loading summary stats:', error);
@@ -189,9 +189,9 @@
      */
   async function loadSecurityAlerts() {
     try {
-      console.log('Loading security alerts...');
+      console.info('Loading security alerts...');
       const data = await safeFetchJson(`${API_BASE}/security-alerts`);
-      console.log('Security alerts data:', data);
+      console.info('Security alerts data:', data);
 
       if (data && data.success && data.data && data.data.length > 0) {
         const alerts = data.data;
@@ -242,15 +242,15 @@
      */
   async function loadPostViews() {
     try {
-      console.log('Loading post views...');
+      console.info('Loading post views...');
       const data = await safeFetchJson(`${API_BASE}/post-views?limit=10`);
-      console.log('Post views data:', data);
+      console.info('Post views data:', data);
 
       if (data && data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
-        console.log('Post views found:', data.data.length);
+        console.info('Post views found:', data.data.length);
         updatePostViewsDOM(data.data);
       } else {
-        console.log('No post views data');
+        console.info('No post views data');
         updatePostViewsDOM([]);
       }
     } catch (error) {
@@ -291,7 +291,7 @@
   async function loadPageViews() {
     try {
       const data = await safeFetchJson(`${API_BASE}/page-views?limit=10`);
-      console.log('Page views data:', data);
+      console.info('Page views data:', data);
 
       if (data && data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
         updatePageViewsDOM(data.data);
@@ -336,7 +336,7 @@
   async function loadServiceViews() {
     try {
       const data = await safeFetchJson(`${API_BASE}/service-views?limit=10`);
-      console.log('Service views data:', data);
+      console.info('Service views data:', data);
 
       if (data && data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
         updateServiceViewsDOM(data.data);
@@ -523,7 +523,7 @@
      * Poll for new activity logs updates (lightweight polling instead of SSE)
      */
   function startActivityLogsPolling() {
-    console.log('Starting activity logs polling...');
+    console.info('Starting activity logs polling...');
     if (state.activityPollingId) {
       clearInterval(state.activityPollingId);
     }
@@ -535,7 +535,7 @@
         }
       } catch (error) {
         // Silently fail - polling errors shouldn't affect user experience
-        console.debug('Activity logs polling error:', error);
+        console.info('Activity logs polling error:', error);
       }
     }, 10000); // Poll every 10 seconds
   }
@@ -646,7 +646,7 @@
      * Start real-time polling (AJAX instead of SSE)
      */
   function startRealtimePolling() {
-    console.log('Starting real-time polling for alerts...');
+    console.info('Starting real-time polling for alerts...');
     if (state.alertPollingId) {
       clearInterval(state.alertPollingId);
     }
@@ -668,7 +668,7 @@
       if (!data) return;
 
       if (data && data.success && data.has_alerts && data.alerts) {
-        console.log('New security alerts detected:', data.alert_count);
+        console.info('New security alerts detected:', data.alert_count);
 
         // Show notification for each alert
         if (data.alerts && Array.isArray(data.alerts)) {
@@ -683,7 +683,7 @@
         }
       }
     } catch (error) {
-      console.debug('Error checking alerts:', error);
+      console.info('Error checking alerts:', error);
     }
   }
 
@@ -698,7 +698,7 @@
 
     // Check if notifications are supported
     if (!('Notification' in window)) {
-      console.debug('Notifications not supported');
+      console.info('Notifications not supported');
       return;
     }
 
@@ -746,7 +746,7 @@
       const icons = refreshButtons.map((btn) => btn.querySelector('i')).filter(Boolean);
       refreshButtons.forEach((btn) => { btn.disabled = true; });
       icons.forEach((icon) => icon.classList.add('fa-spin'));
-      console.log('Refreshing dashboard data...');
+      console.info('Refreshing dashboard data...');
       try {
         await Promise.all([
           loadSummaryStats(),
@@ -759,7 +759,7 @@
           loadActivityLogs(),
         ]);
         deferNonCritical(loadCharts, 150);
-        console.log('Dashboard data refreshed successfully');
+        console.info('Dashboard data refreshed successfully');
       } catch (error) {
         console.error('Error refreshing dashboard:', error);
       } finally {
@@ -961,7 +961,6 @@
     }
 
     // Get data from template (injected by controller)
-    const _dailyStats = window.dashboardData?.daily_stats || [];
     const dailyLogins = window.dashboardData?.daily_logins || [];
 
     // Calculate totals from login data
@@ -1084,8 +1083,6 @@
     }
 
     // Get monthly data from template
-    const _monthlyStats = window.dashboardData?.monthly_stats || [];
-
     // Browser Distribution Chart
     const browserCtx = getChartCanvas('browser-chart');
     if (browserCtx) {
@@ -1166,7 +1163,7 @@
       }
     });
     charts = {};
-    console.log('Dashboard cleanup complete');
+    console.info('Dashboard cleanup complete');
   }
 
   window.addEventListener('beforeunload', cleanupDashboard);

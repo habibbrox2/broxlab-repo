@@ -100,8 +100,8 @@
   }
 
   function logDebug(message, data) {
-    if (typeof console !== 'undefined' && typeof console.debug === 'function') {
-      console.debug(`[Ramadan2026] ${ message}`, data);
+    if (typeof console !== 'undefined' && typeof console.info === 'function') {
+      console.info(`[Ramadan2026] ${ message}`, data);
     }
   }
 

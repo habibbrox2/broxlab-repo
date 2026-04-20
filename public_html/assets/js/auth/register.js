@@ -400,7 +400,6 @@ import { checkPasswordRequirements, getPasswordStrength, validateConfirmation, P
         clearOAuthLoadingState();
         // Suppress non-critical Firebase/X-Frame-Options errors
         const errorMsg = error?.message || '';
-        const _isPopupClosed = errorMsg.includes('popup-closed-by-user');
         const isIframeBlocked = errorMsg.includes('X-Frame-Options') ||
                     errorMsg.includes('auth/iframe');
 

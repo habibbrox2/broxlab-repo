@@ -838,7 +838,6 @@
     const model = modelSelect ? modelSelect.value : '';
     const resultDiv = document.getElementById('testConnectionResult');
     const btn = document.querySelector('#testConnectionModal .btn-primary');
-    const _warningDiv = document.getElementById('testConnectionWarning');
     const csrfToken = document.querySelector('input[name="csrf_token"]');
     const provider = providersData.find((p) => {
       return String(p.id) === String(currentTestProviderId);

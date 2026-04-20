@@ -176,11 +176,11 @@ export async function adminInitNotificationWebSocket(context = 'admin', userId) 
     });
 
     // Register handler for connection status
-    wsManager.on('connected', (message) => {
-      console.log('[Notifications] WebSocket connected:', message);
+    wsManager.on('connected', (_message) => {
+      console.info('[Notifications] WebSocket connected');
     });
 
-    wsManager.on('pong', (message) => {
+    wsManager.on('pong', (_message) => {
       // Heartbeat response received
     });
 
@@ -360,7 +360,7 @@ export function adminInitNotificationBell(options = {}) {
     }
   };
 
-  const handleNewNotification = async (notification) => {
+  const handleNewNotification = async (_notification) => {
     // Add new notification to the modal if it's open
     if (listEl.classList.contains('show') || menuEl.classList.contains('show')) {
       await loadAndRender();
@@ -437,14 +437,14 @@ export function adminInitNotificationBell(options = {}) {
 
   const handleNotificationReceived = (event) => {
     if (state.fallbackToAjax) return; // Only process if using WebSocket
-    console.log('[Notifications] New notification received via WebSocket:', event.detail);
+    console.info('[Notifications] New notification received via WebSocket');
     handleNewNotification(event.detail);
   };
 
   const handleWebSocketStatus = (event) => {
-    console.log('[Notifications] WebSocket status changed:', event.detail.connected);
+    console.info('[Notifications] WebSocket status changed:', event.detail.connected);
     if (!event.detail.connected && !state.fallbackToAjax) {
-      console.log('[Notifications] WebSocket disconnected, switching to AJAX polling fallback');
+      console.info('[Notifications] WebSocket disconnected, switching to AJAX polling fallback');
       state.fallbackToAjax = true;
       // Enable AJAX polling as fallback
       if (!state.pollId) {
@@ -471,10 +471,10 @@ export function adminInitNotificationBell(options = {}) {
     try {
       const userId = options.userId ?? getUserId();
       if (state.useWebSocket && typeof WebSocket !== 'undefined') {
-        console.log('[Notifications] Attempting to initialize WebSocket for real-time updates');
+        console.info('[Notifications] Attempting to initialize WebSocket for real-time updates');
         const wsManager = await adminInitNotificationWebSocket(context, userId);
         if (wsManager && wsManager.isConnected) {
-          console.log('[Notifications] WebSocket connected successfully');
+          console.info('[Notifications] WebSocket connected successfully');
           state.wsManager = wsManager;
           state.fallbackToAjax = false;
           // Initial load via AJAX
@@ -484,7 +484,7 @@ export function adminInitNotificationBell(options = {}) {
       }
 
       // Fallback to AJAX polling
-      console.log('[Notifications] Using AJAX polling fallback');
+      console.info('[Notifications] Using AJAX polling fallback');
       state.fallbackToAjax = true;
       runWhenReady(() => {
         loadAndRender();
@@ -580,7 +580,7 @@ export async function initAdminDebugUtils() {
 
     window.DebugUtils = DebugUtils;
     window.debugUtilsReady = true;
-    console.log('[DebugUtils] Initialized and ready');
+    console.info('[DebugUtils] Initialized and ready');
     window.dispatchEvent(new CustomEvent('debugUtilsLoaded', { detail: DebugUtils, }));
   } catch (err) {
     // Silent fail
