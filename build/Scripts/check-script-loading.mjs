@@ -190,7 +190,7 @@ class ScriptLoadingChecker {
   /**
      * Run the script loading check
      */
-  async run() {
+  run() {
     console.log('🔍 Checking script loading and performance...\n');
 
     for (const htmlFile of CONFIG.htmlFiles) {

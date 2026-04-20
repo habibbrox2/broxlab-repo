@@ -80,9 +80,10 @@ class FirebaseDistChecker {
      * Analyze file
      */
   analyzeFile(filePath) {
+    let fileName;
     try {
       const stat = statSync(filePath);
-      const fileName = basename(filePath);
+      fileName = basename(filePath);
       const size = stat.size;
 
       this.files.push({
@@ -178,7 +179,7 @@ class FirebaseDistChecker {
   /**
      * Run the Firebase dist check
      */
-  async run() {
+  run() {
     console.log('🔍 Checking Firebase distribution chunks...\n');
 
     if (!this.checkDistDirectory()) {
@@ -213,7 +214,7 @@ class FirebaseDistChecker {
     if (this.errors.length > 0) {
       console.log('❌ Errors:');
       this.errors.forEach(error => {
-        console.log(`  ${error.file ? `${error.file }: ` : ''}${error.message}`);
+        console.log(`  ${error.file ? `${error.file}: ` : ''}${error.message}`);
         if (error.suggestion) {
           console.log(`    💡 ${error.suggestion}`);
         }
@@ -224,7 +225,7 @@ class FirebaseDistChecker {
     if (this.warnings.length > 0) {
       console.log('⚠️  Warnings:');
       this.warnings.forEach(warning => {
-        console.log(`  ${warning.file ? `${warning.file }: ` : ''}${warning.message}`);
+        console.log(`  ${warning.file ? `${warning.file}: ` : ''}${warning.message}`);
       });
       console.log();
     }
