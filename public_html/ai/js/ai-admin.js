@@ -538,6 +538,46 @@ if (!window.BroxAdminInstance) {
       this.initResizer();
 
       window.addEventListener('popstate', (event) => this.handlePopState(event));
+
+      // Redirect alerts to chat body instead of browser notifications
+      this.setupAlertInterception();
+    }
+
+    setupAlertInterception() {
+      const self = this;
+
+      // Override window.showAlert to display in chat body
+      window.showAlert = function (message, title = 'Message', type = 'info') {
+        if (self && typeof self.showChatAlert === 'function') {
+          self.showChatAlert(message, title, type);
+        } else {
+          // Fallback to browser alert if chat not ready
+          alert(message);
+        }
+      };
+
+      // Override window.alert to display in chat body
+      const originalAlert = window.alert;
+      window.alert = function (message) {
+        if (self && typeof self.showChatAlert === 'function') {
+          self.showChatAlert(String(message), 'Alert', 'info');
+        } else {
+          originalAlert(message);
+        }
+      };
+    }
+
+    showChatAlert(message, title = 'Message', type = 'info') {
+      const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️',
+      };
+      const icon = icons[type] || '📢';
+      const titleText = title ? `**${title}**\n\n` : '';
+      const fullMessage = `${icon} ${titleText}${message}`;
+      this.addMessage('system', fullMessage, false);
     }
 
     // ── Resizer for AI Chat Panel ─────────────────────────────────────────────

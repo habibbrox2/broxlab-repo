@@ -24,4 +24,4 @@ export async function fetchRemoteConfig() {
   } catch (e) { return null; }
 }
 
-export default { fetchRemoteConfigValues, fetchRemoteConfig };
+export default { fetchRemoteConfigValues, fetchRemoteConfig, };

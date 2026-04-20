@@ -25,7 +25,6 @@ STORAGE="$SHARED/storage"
 
 DATE=$(date +"%Y%m%d_%H%M%S")
 NEW_RELEASE="$RELEASES/$DATE"
-# BUG FIX: DEPLOYMENT_SUCCESS was declared twice (lines 23 and 82). Removed duplicate.
 DEPLOYMENT_SUCCESS=false
 
 # Deployment options
@@ -64,8 +63,6 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 # ============== LOGGING SETUP ==============
-# BUG FIX: Log directory must exist before any log_* call. mkdir moved here,
-# before the first logging function is invoked.
 mkdir -p "$LOGS" "$RELEASES"
 LOG_FILE="$LOGS/deploy_$DATE.log"
 
@@ -211,6 +208,7 @@ log_info "✅ Shared storage initialized"
 # ============== GIT CLONE ==============
 log_section "GIT REPOSITORY CLONE"
 
+mkdir -p "$RELEASES"
 mkdir -p "$NEW_RELEASE"
 log_info "Cloning: $GIT_REPO"
 
@@ -306,9 +304,9 @@ log_info "✅ PHP dependencies installed"
 # --- Node.js ---
 log_info "Installing Node.js dependencies (devDependencies included for tsx)..."
 # IMPORTANT: tsx lives in devDependencies and is required for TypeScript compilation.
-if ! NODE_ENV="" npm ci --include=dev 2>&1 | tee -a "$LOG_FILE"; then
+if ! env NODE_ENV= npm ci --include=dev 2>&1 | tee -a "$LOG_FILE"; then
     log_warn "⚠️  npm ci failed — falling back to npm install --legacy-peer-deps..."
-    if ! NODE_ENV="" npm install --legacy-peer-deps 2>&1 | tee -a "$LOG_FILE"; then
+    if ! env NODE_ENV= npm install --legacy-peer-deps 2>&1 | tee -a "$LOG_FILE"; then
         log_error "❌ Failed to install Node.js dependencies"
         exit 1
     fi

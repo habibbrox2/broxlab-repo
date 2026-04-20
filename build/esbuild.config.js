@@ -19,7 +19,7 @@ const outDir = path.join(rootDir, 'public_html', 'assets', 'js', 'dist');
 
 // Create output directory
 if (!fs.existsSync(outDir)) {
-  fs.mkdirSync(outDir, { recursive: true });
+  fs.mkdirSync(outDir, { recursive: true, });
 }
 
 // Define entry points
@@ -46,7 +46,7 @@ const buildOptions = {
   bundle: true,
   minify: !isDev,
   sourcemap: isDev,
-  target: ['es2020'],
+  target: ['es2020',],
   format: 'esm',
   outdir: outDir,
   logLevel: 'info',

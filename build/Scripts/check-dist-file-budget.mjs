@@ -10,7 +10,6 @@ import { join, extname, basename } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const CONFIG = {
     // Distribution directories to check
@@ -51,7 +50,7 @@ const CONFIG = {
     ],
 
     // File extensions to check
-    checkExtensions: ['.js', '.css'],
+    checkExtensions: ['.js', '.css',],
 
     // Warning threshold (percentage of budget)
     warningThreshold: 0.8, // 80%
@@ -68,10 +67,10 @@ class DistFileBudgetChecker {
     }
 
     /**
-     * Format file size
-     */
+       * Format file size
+       */
     formatSize(bytes) {
-        const units = ['B', 'KB', 'MB', 'GB'];
+        const units = ['B', 'KB', 'MB', 'GB',];
         let size = bytes;
         let unitIndex = 0;
 
@@ -84,8 +83,8 @@ class DistFileBudgetChecker {
     }
 
     /**
-     * Check file against budget
-     */
+       * Check file against budget
+       */
     checkFileBudget(filePath, fileName, fileSize, budget) {
         const usagePercent = fileSize / budget;
         const status = usagePercent > CONFIG.errorThreshold ? 'error' :
@@ -122,8 +121,8 @@ class DistFileBudgetChecker {
     }
 
     /**
-     * Check directory total budget
-     */
+       * Check directory total budget
+       */
     checkDirectoryTotal(dirConfig, totalSize) {
         const usagePercent = totalSize / dirConfig.totalBudget;
         const status = usagePercent > CONFIG.errorThreshold ? 'error' :
@@ -147,8 +146,8 @@ class DistFileBudgetChecker {
     }
 
     /**
-     * Scan directory and check budgets
-     */
+       * Scan directory and check budgets
+       */
     scanDirectory(dirConfig) {
         if (!existsSync(dirConfig.path)) {
             this.warnings.push({
@@ -205,8 +204,8 @@ class DistFileBudgetChecker {
     }
 
     /**
-     * Run the budget check
-     */
+       * Run the budget check
+       */
     async run() {
         console.log('📊 Checking distribution file budgets...\n');
 
@@ -219,8 +218,8 @@ class DistFileBudgetChecker {
     }
 
     /**
-     * Report results
-     */
+       * Report results
+       */
     reportResults() {
         if (this.results.length > 0) {
             console.log('\n📁 File Budget Analysis:\n');
@@ -233,7 +232,7 @@ class DistFileBudgetChecker {
                 byDirectory[dir].push(result);
             });
 
-            for (const [dir, files] of Object.entries(byDirectory)) {
+            for (const [dir, files,] of Object.entries(byDirectory)) {
                 console.log(`📂 ${dir}:`);
                 files.forEach(file => {
                     const statusIcon = file.status === 'error' ? '❌' :

@@ -23,7 +23,7 @@ export function displayForegroundNotification(notification = {}) {
     body = '',
     icon = '/icon-192x192.png',
     image = null,
-    data = {}
+    data = {},
   } = notification;
 
   // Create toast container if not exists
@@ -188,10 +188,10 @@ async function markNotificationAsReadSilent(notificationId) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRF-Token': csrf || ''
+        'X-CSRF-Token': csrf || '',
       },
-      body: JSON.stringify({ notification_id: notificationId }),
-      timeoutMs: 5000
+      body: JSON.stringify({ notification_id: notificationId, }),
+      timeoutMs: 5000,
     });
   } catch (e) {
     console.warn('Failed to mark notification as read:', e);
@@ -262,7 +262,7 @@ injectStyles();
 // Export for global use
 window.NotificationDisplay = {
   show: displayForegroundNotification,
-  close: closeToast
+  close: closeToast,
 };
 
 export default displayForegroundNotification;

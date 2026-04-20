@@ -1,6 +1,6 @@
 /**
  * SweetAlert2 Global Message Handler v3.0
- * 
+ *
  * Usage:
  *   window.showMessage('text', 'success');
  *   window.showAlert('title', 'message');
@@ -9,175 +9,175 @@
  */
 
 (function () {
-    'use strict';
+  'use strict';
 
-    /**
+  /**
      * Central Configuration
      */
-    const MessageConfig = {
-        // SweetAlert2 position for toasts
-        toastPosition: 'top-right', // top-start, top-center, top-end, center-start, center, center-end, bottom-start, bottom-center, bottom-end
+  const MessageConfig = {
+    // SweetAlert2 position for toasts
+    toastPosition: 'top-right', // top-start, top-center, top-end, center-start, center, center-end, bottom-start, bottom-center, bottom-end
 
-        // Animation timing
-        toastDuration: 4000, // ms, 0 = manual dismiss
-        animationDuration: 400, // ms
+    // Animation timing
+    toastDuration: 4000, // ms, 0 = manual dismiss
+    animationDuration: 400, // ms
 
-        // Theme colors
-        successColor: '#198754', // Bootstrap green
-        dangerColor: '#dc3545', // Bootstrap red
-        warningColor: '#ffc107', // Bootstrap warning
-        infoColor: '#0dcaf0', // Bootstrap info
-        primaryColor: '#0d6efd', // Bootstrap primary
+    // Theme colors
+    successColor: '#198754', // Bootstrap green
+    dangerColor: '#dc3545', // Bootstrap red
+    warningColor: '#ffc107', // Bootstrap warning
+    infoColor: '#0dcaf0', // Bootstrap info
+    primaryColor: '#0d6efd', // Bootstrap primary
 
-        // Accessibility
-        announceToasts: true, // Screen reader announcements
-        closeOnEscape: true, // Escape key closes modals
+    // Accessibility
+    announceToasts: true, // Screen reader announcements
+    closeOnEscape: true, // Escape key closes modals
 
-        // Additional options
-        allowHtml: false, // HTML content (unsafe by default)
-        showConfirmButton: true,
-        showCancelButton: false
-    };
+    // Additional options
+    allowHtml: false, // HTML content (unsafe by default)
+    showConfirmButton: true,
+    showCancelButton: false,
+  };
 
-    /**
+  /**
      * Get color based on status type
      */
-    function getColorByStatus(status) {
-        const colorMap = {
-            'success': MessageConfig.successColor,
-            'danger': MessageConfig.dangerColor,
-            'error': MessageConfig.dangerColor,
-            'warning': MessageConfig.warningColor,
-            'info': MessageConfig.infoColor,
-            'primary': MessageConfig.primaryColor
-        };
-        return colorMap[status] || colorMap['info'];
-    }
+  function getColorByStatus(status) {
+    const colorMap = {
+      'success': MessageConfig.successColor,
+      'danger': MessageConfig.dangerColor,
+      'error': MessageConfig.dangerColor,
+      'warning': MessageConfig.warningColor,
+      'info': MessageConfig.infoColor,
+      'primary': MessageConfig.primaryColor,
+    };
+    return colorMap[status] || colorMap['info'];
+  }
 
-    /**
+  /**
      * Get icon based on status type
      */
-    function getIconByStatus(status) {
-        const iconMap = {
-            'success': 'success',
-            'danger': 'error',
-            'error': 'error',
-            'warning': 'warning',
-            'info': 'info',
-            'primary': 'info'
-        };
-        return iconMap[status] || 'info';
-    }
+  function getIconByStatus(status) {
+    const iconMap = {
+      'success': 'success',
+      'danger': 'error',
+      'error': 'error',
+      'warning': 'warning',
+      'info': 'info',
+      'primary': 'info',
+    };
+    return iconMap[status] || 'info';
+  }
 
-    /**
+  /**
      * Split custom helper options from native SweetAlert2 options.
      * Prevents unknown parameter warnings in SweetAlert2.
      */
-    function splitSwalOptions(options = {}, customKeys = []) {
-        const custom = {};
-        const swalOptions = {};
+  function splitSwalOptions(options = {}, customKeys = []) {
+    const custom = {};
+    const swalOptions = {};
 
-        Object.entries(options || {}).forEach(([key, value]) => {
-            if (customKeys.includes(key)) {
-                custom[key] = value;
-            } else {
-                swalOptions[key] = value;
-            }
-        });
+    Object.entries(options || {}).forEach(([key, value,]) => {
+      if (customKeys.includes(key)) {
+        custom[key] = value;
+      } else {
+        swalOptions[key] = value;
+      }
+    });
 
-        return { custom, swalOptions };
-    }
+    return { custom, swalOptions, };
+  }
 
-    /**
+  /**
      * Toast notification (temporary popup)
      * @param {string} message - The message text
      * @param {string} status - 'success', 'danger', 'warning', 'info'
      * @param {number} duration - Auto-dismiss time in ms (0 = manual)
      * @param {object} options - Additional SweetAlert2 options
      */
-    window.showMessage = async function (message, status = 'info', duration = MessageConfig.toastDuration, options = {}) {
-        if (!message) return;
+  window.showMessage = async function (message, status = 'info', duration = MessageConfig.toastDuration, options = {}) {
+    if (!message) return;
 
-        const { custom, swalOptions } = splitSwalOptions(options, ['allowHtml']);
-        const allowHtml = custom.allowHtml === true;
-        const content = String(message);
-        const icon = getIconByStatus(status);
-        const config = {
-            toast: true,
-            position: MessageConfig.toastPosition,
-            icon: icon,
-            title: allowHtml ? undefined : content,
-            html: allowHtml ? content : undefined,
-            text: undefined,
-            showConfirmButton: false,
-            showCloseButton: true,
-            closeButtonAriaLabel: 'Close',
-            timer: duration > 0 ? duration : undefined,
-            timerProgressBar: duration > 0,
-            didOpen: async (_toast) => {
-                // Announce to screen readers
-                if (MessageConfig.announceToasts) {
-                    announceToScreenReader(`${status}: ${message}`);
-                }
-            },
-            customClass: {
-                container: 'swal2-message-container',
-                popup: `swal2-popup-${status}`,
-                title: 'swal2-message-title'
-            },
-            ...swalOptions
-        };
-
-        return await Swal.fire(config);
+    const { custom, swalOptions, } = splitSwalOptions(options, ['allowHtml',]);
+    const allowHtml = custom.allowHtml === true;
+    const content = String(message);
+    const icon = getIconByStatus(status);
+    const config = {
+      toast: true,
+      position: MessageConfig.toastPosition,
+      icon: icon,
+      title: allowHtml ? undefined : content,
+      html: allowHtml ? content : undefined,
+      text: undefined,
+      showConfirmButton: false,
+      showCloseButton: true,
+      closeButtonAriaLabel: 'Close',
+      timer: duration > 0 ? duration : undefined,
+      timerProgressBar: duration > 0,
+      didOpen: async (_toast) => {
+        // Announce to screen readers
+        if (MessageConfig.announceToasts) {
+          announceToScreenReader(`${status}: ${message}`);
+        }
+      },
+      customClass: {
+        container: 'swal2-message-container',
+        popup: `swal2-popup-${status}`,
+        title: 'swal2-message-title',
+      },
+      ...swalOptions,
     };
 
-    /**
+    return await Swal.fire(config);
+  };
+
+  /**
      * Toast alias for backward compatibility
      */
-    window.showToast = function (message, status = 'info', duration = MessageConfig.toastDuration, options = {}) {
-        return window.showMessage(message, status, duration, options);
-    };
+  window.showToast = function (message, status = 'info', duration = MessageConfig.toastDuration, options = {}) {
+    return window.showMessage(message, status, duration, options);
+  };
 
-    /**
+  /**
      * Alert dialog
      * @param {string} message - Message text
      * @param {string} title - Dialog title (optional)
      * @param {string} status - 'success', 'danger', 'warning', 'info'
      * @param {object} options - Additional SweetAlert2 options
      */
-    window.showAlert = async function (message, title = 'Alert', status = 'info', options = {}) {
-        if (!message) return;
+  window.showAlert = async function (message, title = 'Alert', status = 'info', options = {}) {
+    if (!message) return;
 
-        const { custom, swalOptions } = splitSwalOptions(options, ['allowHtml']);
-        const allowHtml = custom.allowHtml === true;
-        const icon = getIconByStatus(status);
-        const config = {
-            icon: icon,
-            title: String(title),
-            html: allowHtml ? String(message) : undefined,
-            text: allowHtml ? undefined : String(message),
-            confirmButtonText: 'OK',
-            confirmButtonColor: getColorByStatus(status),
-            allowOutsideClick: false,
-            allowEscapeKey: MessageConfig.closeOnEscape,
-            position: 'center',  // Center position
-            didOpen: async (_modal) => {
-                if (MessageConfig.announceToasts) {
-                    announceToScreenReader(`Alert: ${title}. ${message}`);
-                }
-            },
-            customClass: {
-                popup: `swal2-alert-${status}`,
-                title: 'swal2-alert-title',
-                confirmButton: 'swal2-button-confirm'
-            },
-            ...swalOptions
-        };
-
-        return await Swal.fire(config);
+    const { custom, swalOptions, } = splitSwalOptions(options, ['allowHtml',]);
+    const allowHtml = custom.allowHtml === true;
+    const icon = getIconByStatus(status);
+    const config = {
+      icon: icon,
+      title: String(title),
+      html: allowHtml ? String(message) : undefined,
+      text: allowHtml ? undefined : String(message),
+      confirmButtonText: 'OK',
+      confirmButtonColor: getColorByStatus(status),
+      allowOutsideClick: false,
+      allowEscapeKey: MessageConfig.closeOnEscape,
+      position: 'center', // Center position
+      didOpen: async (_modal) => {
+        if (MessageConfig.announceToasts) {
+          announceToScreenReader(`Alert: ${title}. ${message}`);
+        }
+      },
+      customClass: {
+        popup: `swal2-alert-${status}`,
+        title: 'swal2-alert-title',
+        confirmButton: 'swal2-button-confirm',
+      },
+      ...swalOptions,
     };
 
-    /**
+    return await Swal.fire(config);
+  };
+
+  /**
      * Confirmation dialog
      * @param {string} message - Message text
      * @param {string} title - Dialog title (optional)
@@ -185,44 +185,44 @@
      * @param {object} options - Additional SweetAlert2 options
      * @returns {Promise<boolean>} - true if confirmed, false if cancelled
      */
-    window.showConfirm = async function (message, title = 'Confirm', status = 'warning', options = {}) {
-        if (!message) return false;
+  window.showConfirm = async function (message, title = 'Confirm', status = 'warning', options = {}) {
+    if (!message) return false;
 
-        const { custom, swalOptions } = splitSwalOptions(options, ['allowHtml']);
-        const allowHtml = custom.allowHtml === true;
-        const icon = getIconByStatus(status);
-        const config = {
-            icon: icon,
-            title: String(title),
-            html: allowHtml ? String(message) : undefined,
-            text: allowHtml ? undefined : String(message),
-            showCancelButton: true,
-            confirmButtonText: 'Yes, Proceed',
-            confirmButtonColor: getColorByStatus(status),
-            cancelButtonText: 'Cancel',
-            cancelButtonColor: '#6c757d',
-            allowOutsideClick: false,
-            allowEscapeKey: MessageConfig.closeOnEscape,
-            position: 'center',  // Center position
-            didOpen: async (_modal) => {
-                if (MessageConfig.announceToasts) {
-                    announceToScreenReader(`Confirmation required: ${title}. ${message}`);
-                }
-            },
-            customClass: {
-                popup: `swal2-confirm-${status}`,
-                title: 'swal2-confirm-title',
-                confirmButton: 'swal2-button-confirm',
-                cancelButton: 'swal2-button-cancel'
-            },
-            ...swalOptions
-        };
-
-        const result = await Swal.fire(config);
-        return result.isConfirmed ?? false;
+    const { custom, swalOptions, } = splitSwalOptions(options, ['allowHtml',]);
+    const allowHtml = custom.allowHtml === true;
+    const icon = getIconByStatus(status);
+    const config = {
+      icon: icon,
+      title: String(title),
+      html: allowHtml ? String(message) : undefined,
+      text: allowHtml ? undefined : String(message),
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Proceed',
+      confirmButtonColor: getColorByStatus(status),
+      cancelButtonText: 'Cancel',
+      cancelButtonColor: '#6c757d',
+      allowOutsideClick: false,
+      allowEscapeKey: MessageConfig.closeOnEscape,
+      position: 'center', // Center position
+      didOpen: async (_modal) => {
+        if (MessageConfig.announceToasts) {
+          announceToScreenReader(`Confirmation required: ${title}. ${message}`);
+        }
+      },
+      customClass: {
+        popup: `swal2-confirm-${status}`,
+        title: 'swal2-confirm-title',
+        confirmButton: 'swal2-button-confirm',
+        cancelButton: 'swal2-button-cancel',
+      },
+      ...swalOptions,
     };
 
-    /**
+    const result = await Swal.fire(config);
+    return result.isConfirmed ?? false;
+  };
+
+  /**
      * Prompt for user input
      * @param {string} message - Prompt message
      * @param {string} defaultValue - Default input value
@@ -230,256 +230,256 @@
      * @param {object} options - Additional SweetAlert2 options
      * @returns {Promise<string|null>} - User input or null if cancelled
      */
-    window.showPrompt = async function (message, defaultValue = '', label = '', options = {}) {
-        if (!message) return null;
+  window.showPrompt = async function (message, defaultValue = '', label = '', options = {}) {
+    if (!message) return null;
 
-        const { custom, swalOptions } = splitSwalOptions(options, ['required']);
-        const isRequired = custom.required === true;
-        const config = {
-            title: String(label || 'Please Enter'),
-            html: String(message),
-            input: 'text',
-            inputValue: String(defaultValue),
-            inputAttributes: {
-                'aria-label': String(label || message),
-                'placeholder': String(defaultValue || 'Enter text...')
-            },
-            showCancelButton: true,
-            confirmButtonText: 'Submit',
-            confirmButtonColor: MessageConfig.primaryColor,
-            cancelButtonText: 'Cancel',
-            cancelButtonColor: '#6c757d',
-            allowOutsideClick: false,
-            allowEscapeKey: MessageConfig.closeOnEscape,
-            position: 'center',  // Center position
-            inputValidator: (value) => {
-                if (!value && isRequired) {
-                    return 'This field is required';
-                }
-            },
-            didOpen: async (modal) => {
-                const input = modal.querySelector('input');
-                if (input) {
-                    input.focus();
-                    input.select();
-                }
-                if (MessageConfig.announceToasts) {
-                    announceToScreenReader(`Prompt: ${message}`);
-                }
-            },
-            customClass: {
-                popup: 'swal2-prompt',
-                title: 'swal2-prompt-title',
-                input: 'swal2-prompt-input',
-                confirmButton: 'swal2-button-confirm',
-                cancelButton: 'swal2-button-cancel'
-            },
-            ...swalOptions
-        };
-
-        const result = await Swal.fire(config);
-        return result.value ?? null;
+    const { custom, swalOptions, } = splitSwalOptions(options, ['required',]);
+    const isRequired = custom.required === true;
+    const config = {
+      title: String(label || 'Please Enter'),
+      html: String(message),
+      input: 'text',
+      inputValue: String(defaultValue),
+      inputAttributes: {
+        'aria-label': String(label || message),
+        'placeholder': String(defaultValue || 'Enter text...'),
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Submit',
+      confirmButtonColor: MessageConfig.primaryColor,
+      cancelButtonText: 'Cancel',
+      cancelButtonColor: '#6c757d',
+      allowOutsideClick: false,
+      allowEscapeKey: MessageConfig.closeOnEscape,
+      position: 'center', // Center position
+      inputValidator: (value) => {
+        if (!value && isRequired) {
+          return 'This field is required';
+        }
+      },
+      didOpen: async (modal) => {
+        const input = modal.querySelector('input');
+        if (input) {
+          input.focus();
+          input.select();
+        }
+        if (MessageConfig.announceToasts) {
+          announceToScreenReader(`Prompt: ${message}`);
+        }
+      },
+      customClass: {
+        popup: 'swal2-prompt',
+        title: 'swal2-prompt-title',
+        input: 'swal2-prompt-input',
+        confirmButton: 'swal2-button-confirm',
+        cancelButton: 'swal2-button-cancel',
+      },
+      ...swalOptions,
     };
 
-    /**
+    const result = await Swal.fire(config);
+    return result.value ?? null;
+  };
+
+  /**
      * Show validation errors
      */
-    window.showValidationErrors = function (errors = []) {
-        if (!Array.isArray(errors) || errors.length === 0) return;
+  window.showValidationErrors = function (errors = []) {
+    if (!Array.isArray(errors) || errors.length === 0) return;
 
-        errors.forEach((error, index) => {
-            // Slight delay between toasts for visual effect
-            setTimeout(() => {
-                window.showMessage(error, 'danger', 5000);
-            }, index * 300);
-        });
-    };
+    errors.forEach((error, index) => {
+      // Slight delay between toasts for visual effect
+      setTimeout(() => {
+        window.showMessage(error, 'danger', 5000);
+      }, index * 300);
+    });
+  };
 
-    /**
+  /**
      * Handle AJAX success
      */
-    window.handleAjaxSuccess = function (data, userMessage = '') {
-        const message = userMessage || data.message || 'Success';
-        const status = data.status || 'success';
-        window.showMessage(message, status, 5000);
-    };
+  window.handleAjaxSuccess = function (data, userMessage = '') {
+    const message = userMessage || data.message || 'Success';
+    const status = data.status || 'success';
+    window.showMessage(message, status, 5000);
+  };
 
-    /**
+  /**
      * Handle AJAX error
      */
-    window.handleAjaxError = function (error, userMessage = '') {
-        const message = userMessage || error.message || 'An error occurred. Please try again.';
-        window.showMessage(message, 'danger', 5000);
-    };
+  window.handleAjaxError = function (error, userMessage = '') {
+    const message = userMessage || error.message || 'An error occurred. Please try again.';
+    window.showMessage(message, 'danger', 5000);
+  };
 
-    /**
+  /**
      * Announce message to screen readers
      */
-    function announceToScreenReader(message) {
-        if (!message) return;
+  function announceToScreenReader(message) {
+    if (!message) return;
 
-        const liveRegion = document.getElementById('sr-live-region') || createLiveRegion();
-        liveRegion.setAttribute('aria-live', 'assertive');
-        liveRegion.setAttribute('aria-atomic', 'true');
-        liveRegion.textContent = message;
+    const liveRegion = document.getElementById('sr-live-region') || createLiveRegion();
+    liveRegion.setAttribute('aria-live', 'assertive');
+    liveRegion.setAttribute('aria-atomic', 'true');
+    liveRegion.textContent = message;
 
-        // Clear after announcement
-        setTimeout(() => {
-            liveRegion.textContent = '';
-        }, 2000);
-    }
+    // Clear after announcement
+    setTimeout(() => {
+      liveRegion.textContent = '';
+    }, 2000);
+  }
 
-    /**
+  /**
      * Create screen reader live region
      */
-    function createLiveRegion() {
-        const region = document.createElement('div');
-        region.id = 'sr-live-region';
-        region.className = 'visually-hidden';
-        region.setAttribute('role', 'status');
-        region.setAttribute('aria-live', 'polite');
-        document.body.appendChild(region);
-        return region;
-    }
+  function createLiveRegion() {
+    const region = document.createElement('div');
+    region.id = 'sr-live-region';
+    region.className = 'visually-hidden';
+    region.setAttribute('role', 'status');
+    region.setAttribute('aria-live', 'polite');
+    document.body.appendChild(region);
+    return region;
+  }
 
-    /**
+  /**
      * ========================================
      * CONFIGURATION API
      * ========================================
      */
-    window.MessageHandlerConfig = {
-        set(key, value) {
-            if (key in MessageConfig) {
-                MessageConfig[key] = value;
-            } else {
-                console.warn(`Unknown config key: ${key}`);
-            }
-        },
+  window.MessageHandlerConfig = {
+    set(key, value) {
+      if (key in MessageConfig) {
+        MessageConfig[key] = value;
+      } else {
+        console.warn(`Unknown config key: ${key}`);
+      }
+    },
 
-        get(key) {
-            return MessageConfig[key];
-        },
+    get(key) {
+      return MessageConfig[key];
+    },
 
-        setAll(config) {
-            Object.assign(MessageConfig, config);
-        },
+    setAll(config) {
+      Object.assign(MessageConfig, config);
+    },
 
-        getAll() {
-            return { ...MessageConfig };
-        }
-    };
+    getAll() {
+      return { ...MessageConfig, };
+    },
+  };
 
-    /**
+  /**
      * ========================================
      * MESSAGE HANDLER OBJECT
      * ========================================
      */
-    window.MessageHandler = {
-        /**
+  window.MessageHandler = {
+    /**
          * Initialize the SweetAlert2 message handler
          */
-        init: function (config = null) {
-            // Merge any server-provided config
-            if (config && typeof config === 'object') {
-                MessageHandlerConfig.setAll(config);
-            }
+    init: function (config = null) {
+      // Merge any server-provided config
+      if (config && typeof config === 'object') {
+        MessageHandlerConfig.setAll(config);
+      }
 
-            // Display server-side flash queue (or fallback single flash).
-            const flashQueue = Array.isArray(window.__INITIAL_FLASH_QUEUE)
-                ? window.__INITIAL_FLASH_QUEUE.slice()
-                : [];
+      // Display server-side flash queue (or fallback single flash).
+      const flashQueue = Array.isArray(window.__INITIAL_FLASH_QUEUE)
+        ? window.__INITIAL_FLASH_QUEUE.slice()
+        : [];
 
-            if (flashQueue.length === 0 && window.__INITIAL_FLASH) {
-                flashQueue.push(window.__INITIAL_FLASH);
-            }
+      if (flashQueue.length === 0 && window.__INITIAL_FLASH) {
+        flashQueue.push(window.__INITIAL_FLASH);
+      }
 
-            if (flashQueue.length > 0) {
-                let renderedAnyFlash = false;
+      if (flashQueue.length > 0) {
+        let renderedAnyFlash = false;
 
-                flashQueue.forEach((flash, index) => {
-                    if (!flash || (!flash.text && !flash.message)) {
-                        return;
-                    }
+        flashQueue.forEach((flash, index) => {
+          if (!flash || (!flash.text && !flash.message)) {
+            return;
+          }
 
-                    const msg = flash.text || flash.message;
-                    const status = flash.status || flash.type || 'info';
-                    const duration = flash.duration || MessageConfig.toastDuration;
+          const msg = flash.text || flash.message;
+          const status = flash.status || flash.type || 'info';
+          const duration = flash.duration || MessageConfig.toastDuration;
 
-                    setTimeout(() => {
-                        window.showMessage(msg, status, duration);
-                    }, index * 160);
+          setTimeout(() => {
+            window.showMessage(msg, status, duration);
+          }, index * 160);
 
-                    renderedAnyFlash = true;
-                });
-
-                if (renderedAnyFlash) {
-                    window.__FLASH_RENDERED_ON_LOAD = true;
-                }
-            }
-
-            delete window.__INITIAL_FLASH;
-            delete window.__INITIAL_FLASH_QUEUE;
-
-        },
-
-        getConfig: function () {
-            return MessageHandlerConfig.getAll();
-        },
-
-        setConfig: function (key, value) {
-            if (typeof key === 'object') {
-                MessageHandlerConfig.setAll(key);
-            } else {
-                MessageHandlerConfig.set(key, value);
-            }
-        },
-
-        /**
-         * Show a loading state (no auto-dismiss)
-         */
-        showLoading: async function (message = 'Loading...', title = '') {
-            return await Swal.fire({
-                icon: 'info',
-                title: title,
-                html: message,
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-        },
-
-        /**
-         * Hide the loading state
-         */
-        hideLoading: function () {
-            Swal.hideLoading();
-            Swal.close();
-        }
-    };
-
-    // Auto-initialize on DOM ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () {
-            if (!window.__MESSAGE_HANDLER_INITIALIZED) {
-                window.__MESSAGE_HANDLER_INITIALIZED = true;
-                window.MessageHandler.init();
-            }
+          renderedAnyFlash = true;
         });
-    } else {
-        // DOM already loaded
-        if (!window.__MESSAGE_HANDLER_INITIALIZED) {
-            window.__MESSAGE_HANDLER_INITIALIZED = true;
-            window.MessageHandler.init();
+
+        if (renderedAnyFlash) {
+          window.__FLASH_RENDERED_ON_LOAD = true;
         }
-    }
+      }
+
+      delete window.__INITIAL_FLASH;
+      delete window.__INITIAL_FLASH_QUEUE;
+
+    },
+
+    getConfig: function () {
+      return MessageHandlerConfig.getAll();
+    },
+
+    setConfig: function (key, value) {
+      if (typeof key === 'object') {
+        MessageHandlerConfig.setAll(key);
+      } else {
+        MessageHandlerConfig.set(key, value);
+      }
+    },
 
     /**
+         * Show a loading state (no auto-dismiss)
+         */
+    showLoading: async function (message = 'Loading...', title = '') {
+      return await Swal.fire({
+        icon: 'info',
+        title: title,
+        html: message,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+    },
+
+    /**
+         * Hide the loading state
+         */
+    hideLoading: function () {
+      Swal.hideLoading();
+      Swal.close();
+    },
+  };
+
+  // Auto-initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!window.__MESSAGE_HANDLER_INITIALIZED) {
+        window.__MESSAGE_HANDLER_INITIALIZED = true;
+        window.MessageHandler.init();
+      }
+    });
+  } else {
+    // DOM already loaded
+    if (!window.__MESSAGE_HANDLER_INITIALIZED) {
+      window.__MESSAGE_HANDLER_INITIALIZED = true;
+      window.MessageHandler.init();
+    }
+  }
+
+  /**
      * SweetAlert2 Custom Styling
      */
-    const style = document.createElement('style');
-    style.textContent = `
+  const style = document.createElement('style');
+  style.textContent = `
         /* SweetAlert2 Toast Customization */
         .swal2-popup.swal2-toast {
             background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
@@ -664,6 +664,6 @@
             }
         }
     `;
-    document.head.appendChild(style);
+  document.head.appendChild(style);
 
 })();

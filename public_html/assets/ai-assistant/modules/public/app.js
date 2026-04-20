@@ -5,7 +5,7 @@ import {
   attachAssistantTools as _attachAssistantTools,
   buildStaticReplyMatcher,
   parseResponseConfig,
-  typeMessage,
+  typeMessage
 } from '../../core/render.js';
 import { createHistoryStore } from '../../core/storage.js';
 import { createLanguageState } from '../../core/i18n.js';
@@ -43,14 +43,14 @@ const USER_INFO_KEY = 'brox.publicAssistant.userInfo.v2';
 const MAX_STORED_MESSAGES = 40;
 const INACTIVITY_LIMIT_MS = 60 * 60 * 1000; // 1 hour
 const ASSISTANT_SITE_URL = 'https://broxlab.online';
-const _TOPIC_KEYS = ['general', 'support', 'billing', 'feedback'];
+const _TOPIC_KEYS = ['general', 'support', 'billing', 'feedback',];
 
 const DEFAULT_PREFS = {
   provider: 'puter-js',
   model: 'gemini-2.0-flash',
 };
 
-let assistantPrefs = { ...DEFAULT_PREFS };
+const assistantPrefs = { ...DEFAULT_PREFS, };
 
 async function loadAssistantPrefs() {
   try {
@@ -162,7 +162,7 @@ let chatHistory = [];
 let historyExpired = false;
 
 const getStaticReply = buildStaticReplyMatcher(STATIC_REPLIES);
-const { getLanguage, setLanguage } = createLanguageState({
+const { getLanguage, setLanguage, } = createLanguageState({
   storageKey: LANGUAGE_KEY,
   defaultLang: 'bn',
   storage: window.localStorage,
@@ -260,9 +260,9 @@ function _parseSuggestionsFromText(text) {
   if (match) {
     const suggestions = match[1].split(',').map((s) => s.trim());
     const cleanText = text.replace(/\[SUGGESTION:\s*.*?\]/, '').trim();
-    return { text: cleanText, suggestions };
+    return { text: cleanText, suggestions, };
   }
-  return { text, suggestions: [] };
+  return { text, suggestions: [], };
 }
 
 function t(key) {
@@ -274,7 +274,7 @@ function setStatus(text) {
   if (!UI.statusIndicator) return;
 
   // Green when assistant is ready; red otherwise
-  const readyTexts = [t('assistant_status'), t('default_greeting')];
+  const readyTexts = [t('assistant_status'), t('default_greeting'),];
   const isReady = readyTexts.includes(text);
   UI.statusIndicator.classList.toggle('ready', isReady);
 }
@@ -317,7 +317,7 @@ function normalizeSuggestions(rawSuggestions) {
   if (Array.isArray(rawSuggestions)) {
     return rawSuggestions
       .map((item) => {
-        if (typeof item === 'string') return { label: item, action: item };
+        if (typeof item === 'string') return { label: item, action: item, };
         if (item && typeof item === 'object')
           return {
             label: item.label || item.action || String(item),
@@ -328,7 +328,7 @@ function normalizeSuggestions(rawSuggestions) {
       .filter(Boolean);
   }
   if (typeof rawSuggestions === 'string') {
-    return [{ label: rawSuggestions, action: rawSuggestions }];
+    return [{ label: rawSuggestions, action: rawSuggestions, },];
   }
   return [];
 }
@@ -381,8 +381,8 @@ function renderSuggestChips(message, suggestions = []) {
 
 async function applyResponseConfig(message, rawText, opts = {}) {
   const responseConfig = opts.responseConfig || null;
-  const { config, content } = responseConfig
-    ? { config: responseConfig, content: rawText }
+  const { config, content, } = responseConfig
+    ? { config: responseConfig, content: rawText, }
     : parseResponseConfig(rawText || '');
   if (!config) return rawText;
 
@@ -395,7 +395,7 @@ async function applyResponseConfig(message, rawText, opts = {}) {
 
   if (animation === 'typing_effect') {
     try {
-      await typeMessage(body, finalText, { speed });
+      await typeMessage(body, finalText, { speed, });
     } catch {
       body.textContent = finalText;
     }
@@ -458,7 +458,7 @@ function renderHistory() {
     return;
   }
   chatHistory.forEach((row) =>
-    appendMessage(UI.messages, row.role, row.text, { ts: row.ts, responseMs: row.responseMs })
+    appendMessage(UI.messages, row.role, row.text, { ts: row.ts, responseMs: row.responseMs, })
   );
 }
 
@@ -474,7 +474,7 @@ function loadUserInfo() {
       topics: Array.isArray(parsed.topics) ? parsed.topics : [],
       supportSent: parsed.supportSent === true,
     };
-    if (!userInfo.topics.length) userInfo.topics = ['general'];
+    if (!userInfo.topics.length) userInfo.topics = ['general',];
     supportLogged = userInfo.supportSent;
   } catch {
     userInfo = null;
@@ -491,7 +491,7 @@ function saveUserInfo() {
 }
 
 function setPreChatStep(step) {
-  ['step-name', 'step-contact', 'step-topic'].forEach((name) => {
+  ['step-name', 'step-contact', 'step-topic',].forEach((name) => {
     const node = UI.preChat?.querySelector(`.${name}`);
     if (!node) return;
     node.classList.toggle('d-none', name !== step);
@@ -537,9 +537,9 @@ function buildSystemPrompt() {
 
 function _buildMessages(userText) {
   return [
-    { role: 'system', content: buildSystemPrompt() },
-    ...chatHistory.map((r) => ({ role: r.role, content: r.text })),
-    { role: 'user', content: userText },
+    { role: 'system', content: buildSystemPrompt(), },
+    ...chatHistory.map((r) => ({ role: r.role, content: r.text, })),
+    { role: 'user', content: userText, },
   ];
 }
 
@@ -547,7 +547,7 @@ function resetChat() {
   chatHistory = [];
   historyStore.save(chatHistory);
   renderHistory();
-  appendAssistant(UI.messages, t('chat_reset_notice'), { animate: true });
+  appendAssistant(UI.messages, t('chat_reset_notice'), { animate: true, });
 }
 
 function initQuickAction() {
@@ -622,7 +622,7 @@ function bindEvents() {
       alert(t('alert_topic_required'));
       return;
     }
-    userInfo = { name, email, mobile, topics, supportSent: false };
+    userInfo = { name, email, mobile, topics, supportSent: false, };
     supportLogged = false;
     saveUserInfo();
     clearPreChat();
@@ -636,7 +636,7 @@ async function handleUserMessage() {
     return;
   }
 
-  const { history, expired } = historyStore.load();
+  const { history, expired, } = historyStore.load();
   chatHistory = expired ? [] : history;
   if (expired) {
     // Reset user info and show pre-chat when session expires due to inactivity
@@ -644,15 +644,15 @@ async function handleUserMessage() {
     window.localStorage.removeItem(USER_INFO_KEY);
     supportLogged = false;
     showPreChat();
-    appendAssistant(UI.messages, t('session_expired_notice'), { animate: true });
+    appendAssistant(UI.messages, t('session_expired_notice'), { animate: true, });
     return; // Don't proceed with the message
   }
 
   UI.input.value = '';
   const ts = new Date().toISOString();
-  chatHistory.push({ role: 'user', text, ts });
+  chatHistory.push({ role: 'user', text, ts, });
   historyStore.save(chatHistory);
-  appendMessage(UI.messages, 'user', text, { ts });
+  appendMessage(UI.messages, 'user', text, { ts, });
 
   if (userInfo.topics.includes('support') && !supportLogged) {
     const queued = sendSupportMessage(text);
@@ -665,7 +665,7 @@ async function handleUserMessage() {
 
   const staticReply = getStaticReply(text, currentLang);
   if (staticReply) {
-    await appendAssistant(UI.messages, staticReply, { animate: true });
+    await appendAssistant(UI.messages, staticReply, { animate: true, });
     return;
   }
 
@@ -677,7 +677,7 @@ async function handleUserMessage() {
   let usedModel;
 
   const providerChain = (() => {
-    const list = Array.isArray(assistantPrefs.providers) ? [...assistantPrefs.providers] : [];
+    const list = Array.isArray(assistantPrefs.providers) ? [...assistantPrefs.providers,] : [];
     const primary = assistantPrefs.provider;
     const ordered = [];
 
@@ -695,7 +695,7 @@ async function handleUserMessage() {
 
   const providerOrder =
     providerChain.length > 0
-      ? providerChain.map((p) => p.provider_name).join(' → ') + ' → Puter'
+      ? `${providerChain.map((p) => p.provider_name).join(' → ') } → Puter`
       : 'Puter';
 
   if (providerOrder !== lastProviderChain) {
@@ -706,9 +706,9 @@ async function handleUserMessage() {
   }
 
   const apiMessages = [
-    { role: 'system', content: buildSystemPrompt() },
-    ...chatHistory.map((r) => ({ role: r.role, content: r.text })),
-    { role: 'user', content: text },
+    { role: 'system', content: buildSystemPrompt(), },
+    ...chatHistory.map((r) => ({ role: r.role, content: r.text, })),
+    { role: 'user', content: text, },
   ];
 
   let providerError = null;
@@ -723,10 +723,10 @@ async function handleUserMessage() {
 
         if (prov.provider_name === 'openrouter') {
           model = model && model.includes('/') ? model : 'openrouter/free';
-          response = await callOpenRouterAI(apiMessages, { stream: false, model });
+          response = await callOpenRouterAI(apiMessages, { stream: false, model, });
         } else if (prov.provider_name === 'fireworks') {
           model = model || '';
-          response = await callFireworksAI(apiMessages, { stream: false, model });
+          response = await callFireworksAI(apiMessages, { stream: false, model, });
         } else {
           // Provider not supported by client; skip.
           break;
@@ -745,7 +745,7 @@ async function handleUserMessage() {
             handleUserMessage();
           },
         });
-        const finalContent = await applyResponseConfig(assistantMsg, reply, { responseConfig: {} });
+        const finalContent = await applyResponseConfig(assistantMsg, reply, { responseConfig: {}, });
         const responseMs = Math.max(0, Math.round(performance.now() - started));
         chatHistory.push({
           role: 'assistant',
@@ -763,7 +763,7 @@ async function handleUserMessage() {
           await appendAssistant(
             UI.messages,
             `Switched provider: ${lastProviderUsed} → ${prov.provider_name}`,
-            { animate: true }
+            { animate: true, }
           );
         }
         lastProviderUsed = prov.provider_name;
@@ -777,7 +777,7 @@ async function handleUserMessage() {
           await appendAssistant(
             UI.messages,
             'OpenRouter authentication failed (401). Please verify your OpenRouter API key in AI Settings and refresh the page.',
-            { animate: true }
+            { animate: true, }
           );
         }
 
@@ -805,7 +805,7 @@ async function handleUserMessage() {
     await appendAssistant(
       UI.messages,
       `All configured providers failed, falling back to Puter.js${lastUsed}.`,
-      { animate: true }
+      { animate: true, }
     );
   }
 
@@ -820,18 +820,18 @@ async function handleUserMessage() {
 
   // Use Puter.js directly (no sign-in required)
   try {
-    await ensurePuterReady({ interactive: false, allowAuth: false, t: (key) => t(key) });
+    await ensurePuterReady({ interactive: false, allowAuth: false, t: (key) => t(key), });
     const puter = await getPuterClient();
     const model = assistantPrefs.model || 'gemini-2.0-flash';
     usedModel = model;
 
     const apiMessages = [
-      { role: 'system', content: buildSystemPrompt() },
-      ...chatHistory.map((r) => ({ role: r.role, content: r.text })),
-      { role: 'user', content: text },
+      { role: 'system', content: buildSystemPrompt(), },
+      ...chatHistory.map((r) => ({ role: r.role, content: r.text, })),
+      { role: 'user', content: text, },
     ];
 
-    const response = await puter.ai.chat(apiMessages, { model: model, stream: false });
+    const response = await puter.ai.chat(apiMessages, { model: model, stream: false, });
     const reply = extractResponseText(response) || t('fallback_error');
 
     const assistantMsg = await appendAssistant(UI.messages, reply, {
@@ -844,7 +844,7 @@ async function handleUserMessage() {
         handleUserMessage();
       },
     });
-    const finalContent = await applyResponseConfig(assistantMsg, reply, { responseConfig: {} });
+    const finalContent = await applyResponseConfig(assistantMsg, reply, { responseConfig: {}, });
     const responseMs = Math.max(0, Math.round(performance.now() - started));
     chatHistory.push({
       role: 'assistant',
@@ -856,7 +856,7 @@ async function handleUserMessage() {
     setStatus(t('assistant_status'));
   } catch (puterErr) {
     const msg = String(puterErr?.message || t('fallback_error'));
-    await appendAssistant(UI.messages, msg, { animate: true });
+    await appendAssistant(UI.messages, msg, { animate: true, });
     setStatus(msg);
   }
   setTyping(false);
@@ -878,7 +878,7 @@ function sendSupportMessage(messageText) {
   fetch('/api/public-chat/support', {
     method: 'POST',
     body: payload,
-    headers: { Accept: 'application/json' },
+    headers: { Accept: 'application/json', },
   })
     .then((res) => res.json())
     .then((data) => {
@@ -899,7 +899,7 @@ function sendSupportMessage(messageText) {
 async function init() {
   await loadAssistantPrefs();
   loadUserInfo();
-  const { history, expired } = historyStore.load();
+  const { history, expired, } = historyStore.load();
   chatHistory = history;
   historyExpired = expired;
   applyLanguage();

@@ -11,7 +11,7 @@ const outDir = path.join(srcDir, 'dist');
 const isMinify = process.argv.includes('--minify');
 const isWatch = process.argv.includes('--watch');
 
-if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true, });
 
 const entryPoints = {
   init: path.join(srcDir, 'init.js'),
@@ -29,7 +29,7 @@ const buildOptions = {
   bundle: true,
   minify: isMinify,
   sourcemap: !isMinify,
-  target: ['es2020'],
+  target: ['es2020',],
   format: 'iife',
   globalName: 'Firebase',
   outdir: outDir,

@@ -1,65 +1,67 @@
 /**
- * Datepicker Module
- * Wrapper for BroxBhai DatePicker (located in /assets/datepicker/)
- * This module ensures the datepicker is properly initialized on all .datepicker elements
+ * DatePicker Wrapper - ES Module wrapper for the standalone datepicker
+ * Source: /assets/datepicker/datepicker.js
+ * This file is bundled by esbuild into /assets/js/dist/datepicker.js
  */
 
-(function () {
-    'use strict';
+// Import the standalone datepicker library
+// Since it's a script file, we'll assume it's already loaded globally
+// This wrapper initializes it for the bundled version
 
-    /**
-     * Initialize BroxBhai DatePicker on elements with .datepicker or [data-bxdp-input]
-     */
-    function initDatepicker() {
-        // Wait for BroxBhai DatePicker to be available
-        if (typeof BroxBhaiDatePicker === 'undefined') {
-            console.warn('[Datepicker] BroxBhai DatePicker library not loaded');
-            return;
-        }
+(function initBundledDatePicker() {
+  'use strict';
 
-        // Find all input elements that need datepicker
-        const datepickerInputs = document.querySelectorAll('input.datepicker, input[data-bxdp-input]');
-
-        if (!datepickerInputs.length) return;
-
-        datepickerInputs.forEach((el) => {
-            // Skip if already initialized
-            if (el.hasAttribute('data-bxdp-initialized')) {
-                return;
-            }
-
-            try {
-                new BroxBhaiDatePicker(el, {
-                    format: el.dataset.format || 'DD-MM-YYYY',
-                    locale: el.dataset.locale || 'en',
-                    firstDay: el.dataset.firstDay || 0,
-                    minDate: el.dataset.minDate || null,
-                    maxDate: el.dataset.maxDate || null,
-                    disabledDates: el.dataset.disabledDates || null,
-                    range: el.dataset.range === 'true',
-                    multi: el.dataset.multi === 'true',
-                });
-
-                // Mark as initialized
-                el.setAttribute('data-bxdp-initialized', 'true');
-            } catch (error) {
-                console.error('[Datepicker] Failed to initialize:', error);
-            }
-        });
+  // Wait for the datepicker library to be available
+  const checkDatePickerLib = () => {
+    if (typeof window.DatePicker !== 'undefined') {
+      initializeDatapicker();
+    } else {
+      // Retry after a short delay
+      setTimeout(checkDatePickerLib, 100);
     }
+  };
+
+  function initializeDatapicker() {
+    // Re-export as BroxBhaiDatePicker for compatibility
+    if (typeof window.DatePicker !== 'undefined') {
+      window.BroxBhaiDatePicker = window.DatePicker;
+    }
+
+    // Initialize all datepicker inputs
+    const initializeInputs = () => {
+      const inputs = document.querySelectorAll('input.datepicker, input[data-bxdp-input]');
+      inputs.forEach((input) => {
+        if (!input.hasAttribute('data-bxdp-initialized')) {
+          try {
+            if (window.DatePicker && window.DatePicker.attachToInput) {
+              window.DatePicker.attachToInput(input);
+              input.setAttribute('data-bxdp-initialized', 'true');
+            }
+          } catch (error) {
+            console.error('[Datepicker] Failed to initialize:', error);
+          }
+        }
+      });
+    };
 
     // Initialize on DOM ready
     if (document.readyState !== 'loading') {
-        initDatepicker();
+      initializeInputs();
     } else {
-        document.addEventListener('DOMContentLoaded', initDatepicker);
+      document.addEventListener('DOMContentLoaded', initializeInputs);
     }
 
-    // Re-initialize on dynamic content
-    document.addEventListener('brox:dynamic-content-added', initDatepicker);
+    // Watch for dynamically added content
+    document.addEventListener('brox:dynamic-content-added', initializeInputs);
+    window.initDatepicker = initializeInputs;
+  }
 
-    // Expose globally if needed
-    if (!window.initDatepicker) {
-        window.initDatepicker = initDatepicker;
-    }
+  // Start checking for the library
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkDatePickerLib);
+  } else {
+    checkDatePickerLib();
+  }
 })();
+
+export default window.DatePicker;

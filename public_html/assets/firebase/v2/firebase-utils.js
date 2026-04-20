@@ -10,13 +10,13 @@ import { getCsrfToken as sharedCsrf, escapeHtml as sharedEscapeHtml } from '../.
  * @returns {string|null} normalized provider or null if unrecognized
  */
 export function normalizeProvider(provider) {
-    if (!provider) return 'firebase';
-    const str = String(provider).toLowerCase();
-    if (str === 'google.com' || str === 'google') return 'google';
-    if (str === 'facebook.com' || str === 'facebook') return 'facebook';
-    if (str === 'github.com' || str === 'github') return 'github';
-    if (str === 'anonymous' || str === 'guest') return 'anonymous';
-    return str;
+  if (!provider) return 'firebase';
+  const str = String(provider).toLowerCase();
+  if (str === 'google.com' || str === 'google') return 'google';
+  if (str === 'facebook.com' || str === 'facebook') return 'facebook';
+  if (str === 'github.com' || str === 'github') return 'github';
+  if (str === 'anonymous' || str === 'guest') return 'anonymous';
+  return str;
 }
 
 /**
@@ -25,10 +25,10 @@ export function normalizeProvider(provider) {
  * @returns {string}
  */
 export function getErrorMessage(error) {
-    if (!error) return 'Unknown error occurred';
-    if (error.message) return error.message;
-    if (error.error) return error.error;
-    return String(error);
+  if (!error) return 'Unknown error occurred';
+  if (error.message) return error.message;
+  if (error.error) return error.error;
+  return String(error);
 }
 
 /**
@@ -37,16 +37,16 @@ export function getErrorMessage(error) {
  * @returns {boolean}
  */
 export function isPopupClosedError(error) {
-    const code = String(error?.code || '').toLowerCase().replace(/^auth\//, '');
-    // Handle all variants of popup closed errors
-    return (
-        code === 'popup_closed_by_user' ||
+  const code = String(error?.code || '').toLowerCase().replace(/^auth\//, '');
+  // Handle all variants of popup closed errors
+  return (
+    code === 'popup_closed_by_user' ||
         code === 'popup-closed-by-user' ||
         code === 'cancelled-popup-request' ||
         code === 'cancelled_popup_request' ||
         code === 'popup_closed' ||
         code === 'popup-closed'
-    );
+  );
 }
 
 /**
@@ -54,7 +54,7 @@ export function isPopupClosedError(error) {
  * @returns {string|null}
  */
 export function getCsrfToken() {
-    return sharedCsrf();
+  return sharedCsrf();
 }
 
 /**

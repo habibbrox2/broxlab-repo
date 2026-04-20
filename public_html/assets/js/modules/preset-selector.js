@@ -48,7 +48,7 @@ export function initPresetAutoSelector() {
     manualOverride = true;
   });
 
-  const applyPreset = ({ key, name, reason }) => {
+  const applyPreset = ({ key, name, reason, }) => {
     if (manualOverride || !key) {
       return;
     }

@@ -1,7 +1,7 @@
 (function () {
   const ready = function (fn) {
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', fn, { once: true });
+      document.addEventListener('DOMContentLoaded', fn, { once: true, });
     } else {
       fn();
     }
@@ -39,7 +39,7 @@
         icon: type || 'success',
         title: message,
         timer: 1600,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
       return;
     }
@@ -48,8 +48,8 @@
 
   const wireCopyButtons = function () {
     const buttons = document.querySelectorAll('[data-copy-template]');
-    buttons.forEach(function (btn) {
-      btn.addEventListener('click', async function () {
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', async () => {
         const key = btn.getAttribute('data-template-key');
         const ok = await copyToClipboard(key);
         if (ok) {
@@ -70,7 +70,7 @@
       counter.textContent = String(selected);
     };
 
-    document.addEventListener('change', function (event) {
+    document.addEventListener('change', (event) => {
       if (event.target && event.target.classList.contains('item-checkbox')) {
         updateCount();
       }
@@ -87,14 +87,14 @@
     if (!button) return;
     const errorBox = document.querySelector('[data-bulk-error]');
 
-    button.addEventListener('click', function () {
+    button.addEventListener('click', () => {
       if (button.disabled) return;
       if (errorBox) {
         errorBox.classList.add('d-none');
         errorBox.textContent = '';
       }
       const selected = Array.from(document.querySelectorAll('input.item-checkbox:checked'))
-        .map(function (cb) { return (cb.value || '').trim(); })
+        .map((cb) => { return (cb.value || '').trim(); })
         .filter(Boolean);
 
       if (selected.length === 0) {
@@ -114,24 +114,24 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken
+          'X-CSRF-Token': csrfToken,
         },
-        body: JSON.stringify({ cv_ids: selected, template: template })
+        body: JSON.stringify({ cv_ids: selected, template: template, }),
       })
-        .then(function (response) {
+        .then((response) => {
           if (!response.ok) {
-            return response.json().then(function (data) {
+            return response.json().then((data) => {
               throw new Error(data && data.error ? data.error : 'Bulk export failed');
             });
           }
           const disposition = response.headers.get('Content-Disposition') || '';
           const filenameMatch = disposition.match(/filename=\"?([^\";]+)\"?/i);
           const filename = filenameMatch ? filenameMatch[1] : 'cv-exports.zip';
-          return response.blob().then(function (blob) {
-            return { blob: blob, filename: filename };
+          return response.blob().then((blob) => {
+            return { blob: blob, filename: filename, };
           });
         })
-        .then(function (result) {
+        .then((result) => {
           const url = window.URL.createObjectURL(result.blob);
           const link = document.createElement('a');
           link.href = url;
@@ -142,7 +142,7 @@
           window.URL.revokeObjectURL(url);
           notify('Bulk export ready');
         })
-        .catch(function (error) {
+        .catch((error) => {
           const message = error.message || 'Bulk export failed';
           notify(message, 'error');
           if (errorBox) {
@@ -150,7 +150,7 @@
             errorBox.classList.remove('d-none');
           }
         })
-        .finally(function () {
+        .finally(() => {
           button.disabled = false;
           button.innerHTML = originalLabel;
         });
@@ -159,8 +159,8 @@
 
   const wireToggleButtons = function () {
     const forms = document.querySelectorAll('[data-toggle-form]');
-    forms.forEach(function (form) {
-      form.addEventListener('submit', function (event) {
+    forms.forEach((form) => {
+      form.addEventListener('submit', (event) => {
         event.preventDefault();
         const button = form.querySelector('button[type="submit"]');
         if (!button) return;
@@ -173,38 +173,38 @@
 
         fetch(form.action, {
           method: 'POST',
-          body: formData
+          body: formData,
         })
-          .then(function (response) {
+          .then((response) => {
             return response.json();
           })
-          .then(function (data) {
+          .then((data) => {
             if (data.success) {
               // Update button text and class
               const isActive = data.status === 'active';
-              button.className = 'modern-btn btn-sm ' + (isActive ? 'btn-danger' : 'btn-success');
-              button.innerHTML = '<i class="bi ' + (isActive ? 'bi-pause-fill' : 'bi-play-fill') + ' me-1"></i> ' +
-                (isActive ? 'Disable' : 'Enable');
+              button.className = `modern-btn btn-sm ${ isActive ? 'btn-danger' : 'btn-success'}`;
+              button.innerHTML = `<i class="bi ${ isActive ? 'bi-pause-fill' : 'bi-play-fill' } me-1"></i> ${
+                isActive ? 'Disable' : 'Enable'}`;
 
               // Update status badge
               const card = form.closest('.cv-template-card');
               const title = card.querySelector('.cv-template-title');
               const badge = title.querySelector('.badge');
               if (badge) {
-                badge.className = 'badge ms-2 ' + (isActive ? 'bg-success' : 'bg-danger');
+                badge.className = `badge ms-2 ${ isActive ? 'bg-success' : 'bg-danger'}`;
                 badge.textContent = isActive ? 'Active' : 'Disabled';
               }
 
-              notify('Template ' + (isActive ? 'enabled' : 'disabled'));
+              notify(`Template ${ isActive ? 'enabled' : 'disabled'}`);
             } else {
               throw new Error(data.error || 'Toggle failed');
             }
           })
-          .catch(function (error) {
+          .catch((error) => {
             const message = error.message || 'Toggle failed';
             notify(message, 'error');
           })
-          .finally(function () {
+          .finally(() => {
             button.disabled = false;
             button.innerHTML = originalLabel;
           });
@@ -212,7 +212,7 @@
     });
   };
 
-  ready(function () {
+  ready(() => {
     wireCopyButtons();
     wireSelectionCount();
     wireBulkExport();

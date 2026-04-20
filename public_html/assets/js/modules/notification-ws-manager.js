@@ -1,250 +1,208 @@
 /**
- * WebSocket Notification Connection Manager
- * Handles connection lifecycle and message routing
+ * Notification WebSocket Manager
+ * Handles real-time WebSocket connections for notifications
  */
 
-class NotificationWebSocketManager {
+class NotificationWebSocketManager extends EventTarget {
     constructor(options = {}) {
-        this.userId = options.userId || null;
-        this.wsUrl = options.wsUrl || this.buildWebSocketUrl(options.baseUrl);
-        this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = options.maxReconnectAttempts || 5;
-        this.reconnectDelay = options.reconnectDelay || 3000;
-        this.heartbeatInterval = options.heartbeatInterval || 30000;
-        this.messageHandlers = new Map();
-        this.ws = null;
-        this.isManuallyDisconnected = false;
-        this.heartbeatTimer = null;
-        this.onConnectionChange = options.onConnectionChange || (() => { });
+        super();
+        this.userId = options.userId;
         this.debug = options.debug || false;
+        this.onConnectionChange = options.onConnectionChange || null;
+        this.ws = null;
+        this.isConnected = false;
+        this.heartbeatInterval = null;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+        this.reconnectDelay = 1000;
     }
 
-    /**
-     * Build WebSocket URL from base URL or use default
-     */
-    buildWebSocketUrl(baseUrl) {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.host;
-        return `${protocol}//${host}/ws/notifications`;
-    }
-
-    /**
-     * Logger utility
-     */
     log(...args) {
-        if (this.debug || process.env.NODE_ENV === 'development') {
-            console.log('[NotificationWS]', ...args);
+        if (this.debug) {
+            console.log('[WebSocketManager]', ...args);
         }
+    }
+
+    error(...args) {
+        console.error('[WebSocketManager]', ...args);
     }
 
     /**
      * Connect to WebSocket server
      */
-    async connect(userId) {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.log('Already connected');
-            return true;
+    async connect(userId = null) {
+        if (userId) {
+            this.userId = userId;
         }
 
-        if (!userId) {
-            this.log('User ID required to connect');
+        if (!this.userId) {
+            this.error('No userId provided for WebSocket connection');
             return false;
         }
 
-        this.userId = userId;
-        this.isManuallyDisconnected = false;
+        try {
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsHost = window.location.hostname;
+            const wsPort = 3003; // WebSocket server port
+            const wsUrl = `${wsProtocol}//${wsHost}:${wsPort}?userId=${this.userId}`;
 
-        return new Promise((resolve) => {
-            try {
-                const url = `${this.wsUrl}?userId=${encodeURIComponent(userId)}`;
-                this.log('Connecting to', url);
-                this.ws = new WebSocket(url);
+            this.log('Connecting to WebSocket:', wsUrl);
 
-                this.ws.onopen = () => {
-                    this.log('Connected successfully');
-                    this.reconnectAttempts = 0;
-                    this.startHeartbeat();
-                    this.onConnectionChange(true);
-                    resolve(true);
-                };
+            this.ws = new WebSocket(wsUrl);
 
-                this.ws.onmessage = (event) => {
-                    this.handleMessage(event.data);
-                };
+            this.ws.addEventListener('open', () => this.handleOpen());
+            this.ws.addEventListener('message', (event) => this.handleMessage(event));
+            this.ws.addEventListener('close', () => this.handleClose());
+            this.ws.addEventListener('error', (event) => this.handleError(event));
 
-                this.ws.onerror = (error) => {
-                    this.log('Connection error:', error);
-                    this.onConnectionChange(false);
-                };
-
-                this.ws.onclose = () => {
-                    this.log('Connection closed');
-                    this.stopHeartbeat();
-                    this.onConnectionChange(false);
-
-                    // Attempt reconnection if not manually disconnected
-                    if (!this.isManuallyDisconnected && this.reconnectAttempts < this.maxReconnectAttempts) {
-                        this.reconnectAttempts++;
-                        this.log(`Reconnecting... (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-                        setTimeout(() => this.connect(userId), this.reconnectDelay);
+            return new Promise((resolve) => {
+                const checkConnection = setInterval(() => {
+                    if (this.isConnected) {
+                        clearInterval(checkConnection);
+                        resolve(true);
                     }
-                };
+                }, 100);
 
-                // Set a timeout for connection attempt
-                const connectionTimeout = setTimeout(() => {
-                    if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
-                        this.log('Connection timeout');
-                        this.ws.close();
-                        resolve(false);
-                    }
-                }, 5000);
-
-                this.ws._connectionTimeout = connectionTimeout;
-            } catch (error) {
-                this.log('Connection error:', error.message);
-                this.onConnectionChange(false);
-                resolve(false);
-            }
-        });
+                setTimeout(() => {
+                    clearInterval(checkConnection);
+                    resolve(this.isConnected);
+                }, 5000); // 5 second timeout
+            });
+        } catch (err) {
+            this.error('Failed to connect to WebSocket:', err.message);
+            return false;
+        }
     }
 
     /**
-     * Disconnect from WebSocket
+     * Handle WebSocket open
      */
-    disconnect() {
-        this.isManuallyDisconnected = true;
+    handleOpen() {
+        this.log('WebSocket connection opened');
+        this.isConnected = true;
+        this.reconnectAttempts = 0;
+
+        if (this.onConnectionChange) {
+            this.onConnectionChange(true);
+        }
+
+        this.dispatchEvent(new CustomEvent('connected', {
+            detail: { userId: this.userId, },
+        }));
+
+        // Start heartbeat
+        this.startHeartbeat();
+    }
+
+    /**
+     * Handle WebSocket message
+     */
+    handleMessage(event) {
+        try {
+            const message = JSON.parse(event.data);
+            this.log('Received message:', message);
+
+            // Dispatch event based on message type
+            if (message.type) {
+                this.dispatchEvent(new CustomEvent(message.type, {
+                    detail: message,
+                }));
+            }
+        } catch (err) {
+            this.error('Failed to parse WebSocket message:', err.message);
+        }
+    }
+
+    /**
+     * Handle WebSocket close
+     */
+    handleClose() {
+        this.log('WebSocket connection closed');
+        this.isConnected = false;
+
+        if (this.onConnectionChange) {
+            this.onConnectionChange(false);
+        }
+
+        this.dispatchEvent(new CustomEvent('disconnected', {
+            detail: { userId: this.userId, },
+        }));
+
         this.stopHeartbeat();
-        if (this.ws) {
-            this.ws.close();
-            this.ws = null;
-        }
-        this.log('Disconnected');
-    }
 
-    /**
-     * Check if connected
-     */
-    isConnected() {
-        return this.ws && this.ws.readyState === WebSocket.OPEN;
-    }
-
-    /**
-     * Send message to server
-     */
-    send(message) {
-        if (!this.isConnected()) {
-            this.log('Not connected, cannot send message');
-            return false;
-        }
-
-        try {
-            this.ws.send(JSON.stringify(message));
-            return true;
-        } catch (error) {
-            this.log('Error sending message:', error.message);
-            return false;
+        // Attempt to reconnect
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            const delay = this.reconnectDelay * this.reconnectAttempts;
+            this.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+            setTimeout(() => this.connect(), delay);
         }
     }
 
     /**
-     * Handle incoming messages
+     * Handle WebSocket error
      */
-    handleMessage(data) {
-        try {
-            const message = JSON.parse(data);
-            this.log('Message received:', message.type);
-
-            // Call type-specific handlers
-            if (this.messageHandlers.has(message.type)) {
-                const handlers = this.messageHandlers.get(message.type);
-                handlers.forEach((handler) => {
-                    try {
-                        handler(message);
-                    } catch (error) {
-                        this.log(`Error in handler for ${message.type}:`, error.message);
-                    }
-                });
-            }
-        } catch (error) {
-            this.log('Error parsing message:', error.message);
-        }
-    }
-
-    /**
-     * Register handler for specific message type
-     */
-    on(type, handler) {
-        if (!this.messageHandlers.has(type)) {
-            this.messageHandlers.set(type, []);
-        }
-        this.messageHandlers.get(type).push(handler);
-
-        // Return unsubscribe function
-        return () => {
-            const handlers = this.messageHandlers.get(type);
-            const index = handlers.indexOf(handler);
-            if (index > -1) {
-                handlers.splice(index, 1);
-            }
-        };
-    }
-
-    /**
-     * Remove handler for specific message type
-     */
-    off(type, handler) {
-        if (!this.messageHandlers.has(type)) return;
-        const handlers = this.messageHandlers.get(type);
-        const index = handlers.indexOf(handler);
-        if (index > -1) {
-            handlers.splice(index, 1);
-        }
+    handleError(event) {
+        this.error('WebSocket error:', event);
+        this.dispatchEvent(new CustomEvent('error', {
+            detail: { error: event, },
+        }));
     }
 
     /**
      * Start heartbeat to keep connection alive
      */
     startHeartbeat() {
-        if (this.heartbeatTimer) {
-            clearInterval(this.heartbeatTimer);
-        }
-        this.heartbeatTimer = setInterval(() => {
-            if (this.isConnected()) {
-                this.send({ type: 'ping' });
+        this.stopHeartbeat();
+        this.heartbeatInterval = setInterval(() => {
+            if (this.isConnected && this.ws) {
+                this.send({
+                    type: 'ping',
+                    userId: this.userId,
+                    timestamp: Date.now(),
+                });
             }
-        }, this.heartbeatInterval);
+        }, 30000); // Send ping every 30 seconds
     }
 
     /**
      * Stop heartbeat
      */
     stopHeartbeat() {
-        if (this.heartbeatTimer) {
-            clearInterval(this.heartbeatTimer);
-            this.heartbeatTimer = null;
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
         }
     }
 
     /**
-     * Request to mark notification as read via WebSocket
+     * Send message to WebSocket server
      */
-    markNotificationRead(notificationId) {
-        return this.send({
-            type: 'mark-read',
-            notificationId,
-            timestamp: new Date().toISOString(),
-        });
+    send(data) {
+        if (!this.isConnected || !this.ws) {
+            this.error('WebSocket not connected, cannot send message');
+            return false;
+        }
+
+        try {
+            this.ws.send(JSON.stringify(data));
+            return true;
+        } catch (err) {
+            this.error('Failed to send WebSocket message:', err.message);
+            return false;
+        }
     }
 
     /**
-     * Subscribe to notification types
+     * Disconnect from WebSocket
      */
-    subscribe(types = []) {
-        return this.send({
-            type: 'subscribe',
-            types: Array.isArray(types) ? types : [types],
-            timestamp: new Date().toISOString(),
-        });
+    disconnect() {
+        this.stopHeartbeat();
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
+        this.isConnected = false;
     }
 }
 

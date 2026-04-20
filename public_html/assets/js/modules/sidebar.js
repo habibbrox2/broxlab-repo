@@ -136,7 +136,7 @@ export function initSidebar() {
       return;
     }
 
-    const shouldEnable = forceState !== null ? !!forceState : readMiniState();
+    const shouldEnable = forceState !== null ? Boolean(forceState) : readMiniState();
     document.body.classList.toggle('admin-sidebar-mini', shouldEnable);
 
     if (shouldEnable) {
@@ -149,7 +149,7 @@ export function initSidebar() {
 
   const setMiniExpanded = (expanded) => {
     if (!isDesktop() || !isMiniMode()) return;
-    document.body.classList.toggle('admin-sidebar-mini-expanded', !!expanded);
+    document.body.classList.toggle('admin-sidebar-mini-expanded', Boolean(expanded));
   };
 
   // ========== INITIALIZATION ==========
@@ -222,7 +222,7 @@ export function initSidebar() {
         applySidebarWidth(readSidebarWidth());
       }
 
-      window.dispatchEvent(new CustomEvent('sidebar-mini-toggled', { detail: { enabled: nextState } }));
+      window.dispatchEvent(new CustomEvent('sidebar-mini-toggled', { detail: { enabled: nextState, }, }));
     });
   }
 
@@ -326,7 +326,7 @@ export function initSidebar() {
       const el = document.getElementById(id);
       if (el && typeof bootstrap !== 'undefined') {
         try {
-          bootstrap.Collapse.getOrCreateInstance(el, { toggle: false }).show();
+          bootstrap.Collapse.getOrCreateInstance(el, { toggle: false, }).show();
         } catch (e) {
           // ignore
         }

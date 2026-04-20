@@ -15,18 +15,18 @@
     logging: {
       consoleEnabled: false,
       level: 'all',
-      firebaseModules: null
+      firebaseModules: null,
     },
     network: {
-      requestTimeoutMs: 12000
+      requestTimeoutMs: 12000,
     },
     notifications: {
-      autoInitFirebase: true
-    }
+      autoInitFirebase: true,
+    },
   };
 
   function isPlainObject(value) {
-    return !!value && typeof value === 'object' && !Array.isArray(value);
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
   }
 
   function deepMerge(base, source) {
@@ -86,6 +86,6 @@
         cursor = cursor[part];
       }
       return cursor;
-    }
+    },
   };
 })(window);

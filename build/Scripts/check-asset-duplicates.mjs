@@ -7,11 +7,10 @@
 
 import { readdirSync, statSync, readFileSync } from 'fs';
 import { createHash } from 'crypto';
-import { join, extname, relative, dirname } from 'path';
+import { join, extname, relative } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const CONFIG = {
     // Asset directories to check
@@ -68,8 +67,8 @@ class AssetDuplicateChecker {
     }
 
     /**
-     * Check if a path should be ignored
-     */
+       * Check if a path should be ignored
+       */
     shouldIgnore(path, isDirectory = false) {
         const fileName = path.split('/').pop() || '';
 
@@ -82,8 +81,8 @@ class AssetDuplicateChecker {
     }
 
     /**
-     * Calculate file hash
-     */
+       * Calculate file hash
+       */
     calculateFileHash(filePath) {
         try {
             const stat = statSync(filePath);
@@ -103,16 +102,16 @@ class AssetDuplicateChecker {
     }
 
     /**
-     * Check if file extension should be checked
-     */
+       * Check if file extension should be checked
+       */
     shouldCheckFile(filePath) {
         const ext = extname(filePath).toLowerCase();
         return CONFIG.checkExtensions.includes(ext);
     }
 
     /**
-     * Process a file for duplicates
-     */
+       * Process a file for duplicates
+       */
     processFile(filePath) {
         if (!this.shouldCheckFile(filePath)) return;
 
@@ -141,13 +140,13 @@ class AssetDuplicateChecker {
                 path: relativePath,
                 size: stat.size,
                 mtime: stat.mtime,
-            }]);
+            },]);
         }
     }
 
     /**
-     * Recursively scan directory
-     */
+       * Recursively scan directory
+       */
     scanDirectory(dirPath) {
         if (this.shouldIgnore(dirPath, true)) return;
 
@@ -173,10 +172,10 @@ class AssetDuplicateChecker {
     }
 
     /**
-     * Format file size
-     */
+       * Format file size
+       */
     formatSize(bytes) {
-        const units = ['B', 'KB', 'MB', 'GB'];
+        const units = ['B', 'KB', 'MB', 'GB',];
         let size = bytes;
         let unitIndex = 0;
 
@@ -189,8 +188,8 @@ class AssetDuplicateChecker {
     }
 
     /**
-     * Run the duplicate check
-     */
+       * Run the duplicate check
+       */
     async run() {
         console.log('🔍 Checking for duplicate assets...\n');
 
@@ -219,7 +218,7 @@ class AssetDuplicateChecker {
         let totalWastedSpace = 0;
         let duplicateCount = 0;
 
-        for (const [hash, files] of this.duplicates) {
+        for (const [, files,] of this.duplicates) {
             if (files.length < 2) continue;
 
             duplicateCount += files.length - 1;

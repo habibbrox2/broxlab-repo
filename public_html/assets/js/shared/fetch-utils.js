@@ -4,12 +4,12 @@
  */
 
 function getDefaultTimeoutMs() {
-    const configured = Number(
-        window.__APP_JS_CONFIG?.network?.requestTimeoutMs
+  const configured = Number(
+    window.__APP_JS_CONFIG?.network?.requestTimeoutMs
         ?? window.__APP_FIREBASE_CONFIG?.network?.requestTimeoutMs
         ?? window.__APP_CONFIG?.network?.requestTimeoutMs
-    );
-    return Number.isFinite(configured) && configured > 0 ? configured : 12000;
+  );
+  return Number.isFinite(configured) && configured > 0 ? configured : 12000;
 }
 
 /**
@@ -19,22 +19,22 @@ function getDefaultTimeoutMs() {
  * @returns {Promise<{ok: boolean, status: number, data: *}>}
  */
 export async function fetchWithTimeout(url, options = {}) {
-    const timeoutMs = Number(options.timeoutMs || getDefaultTimeoutMs());
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutMs = Number(options.timeoutMs || getDefaultTimeoutMs());
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-    try {
-        const response = await fetch(url, {
-            ...options,
-            signal: controller.signal
-        });
-        const data = await response.json().catch(() => ({}));
-        return { ok: response.ok, status: response.status, data };
-    } catch (error) {
-        return { ok: false, status: 0, data: {}, error };
-    } finally {
-        clearTimeout(timer);
-    }
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    const data = await response.json().catch(() => ({}));
+    return { ok: response.ok, status: response.status, data, };
+  } catch (error) {
+    return { ok: false, status: 0, data: {}, error, };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
@@ -44,7 +44,7 @@ export async function fetchWithTimeout(url, options = {}) {
  * @returns {Promise<{ok: boolean, status: number, data: *}>}
  */
 export async function fetchJson(url, options = {}) {
-    return fetchWithTimeout(url, { ...options, timeoutMs: options.timeoutMs || getDefaultTimeoutMs() });
+  return fetchWithTimeout(url, { ...options, timeoutMs: options.timeoutMs || getDefaultTimeoutMs(), });
 }
 
 /**
@@ -54,26 +54,26 @@ export async function fetchJson(url, options = {}) {
  * @returns {Promise<*|null>} Parsed JSON or null
  */
 export async function safeFetchJson(url, options = {}) {
-    const { timeoutMs = getDefaultTimeoutMs(), ...fetchOptions } = options;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const { timeoutMs = getDefaultTimeoutMs(), ...fetchOptions } = options;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-    try {
-        const response = await fetch(url, {
-            credentials: 'include',
-            ...fetchOptions,
-            signal: controller.signal
-        });
-        if (!response.ok) return null;
-        return await response.json().catch(() => null);
-    } catch (error) {
-        if (error?.name !== 'AbortError') {
-            console.debug('Fetch failed:', url, error);
-        }
-        return null;
-    } finally {
-        clearTimeout(timeoutId);
+  try {
+    const response = await fetch(url, {
+      credentials: 'include',
+      ...fetchOptions,
+      signal: controller.signal,
+    });
+    if (!response.ok) return null;
+    return await response.json().catch(() => null);
+  } catch (error) {
+    if (error?.name !== 'AbortError') {
+      console.debug('Fetch failed:', url, error);
     }
+    return null;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 /**
@@ -84,41 +84,41 @@ export async function safeFetchJson(url, options = {}) {
  * @returns {Promise<void>}
  */
 export async function uploadFormData(url, formData, callbacks = {}) {
-    const { onProgress, onSuccess, onError } = callbacks;
+  const { onProgress, onSuccess, onError, } = callbacks;
 
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', url, true);
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url, true);
 
-        if (onProgress) {
-            xhr.upload.onprogress = function (uploadEvent) {
-                if (!uploadEvent.lengthComputable) return;
-                const percent = Math.round((uploadEvent.loaded / uploadEvent.total) * 100);
-                onProgress(percent);
-            };
+    if (onProgress) {
+      xhr.upload.onprogress = function (uploadEvent) {
+        if (!uploadEvent.lengthComputable) return;
+        const percent = Math.round((uploadEvent.loaded / uploadEvent.total) * 100);
+        onProgress(percent);
+      };
+    }
+
+    xhr.onload = function () {
+      if (xhr.status === 200) {
+        try {
+          const result = JSON.parse(xhr.responseText);
+          if (onSuccess) onSuccess(result);
+          resolve(result);
+        } catch (error) {
+          if (onError) onError('Invalid response format');
+          reject(new Error('Invalid response format'));
         }
+      } else {
+        if (onError) onError(`Upload failed with status ${ xhr.status}`);
+        reject(new Error('Upload failed'));
+      }
+    };
 
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                try {
-                    const result = JSON.parse(xhr.responseText);
-                    if (onSuccess) onSuccess(result);
-                    resolve(result);
-                } catch (error) {
-                    if (onError) onError('Invalid response format');
-                    reject(new Error('Invalid response format'));
-                }
-            } else {
-                if (onError) onError('Upload failed with status ' + xhr.status);
-                reject(new Error('Upload failed'));
-            }
-        };
+    xhr.onerror = function () {
+      if (onError) onError('Connection error during upload');
+      reject(new Error('Upload failed'));
+    };
 
-        xhr.onerror = function () {
-            if (onError) onError('Connection error during upload');
-            reject(new Error('Upload failed'));
-        };
-
-        xhr.send(formData);
-    });
+    xhr.send(formData);
+  });
 }

@@ -20,7 +20,7 @@ let _autoInitPromise = null;
 
 function setMessagingSupportState(supported) {
   if (typeof window === 'undefined') return;
-  window.__fcmMessagingSupported = !!supported;
+  window.__fcmMessagingSupported = Boolean(supported);
 }
 
 async function resolveMessagingSupport() {
@@ -53,7 +53,7 @@ if (typeof window !== 'undefined') {
 
 export async function initFirebase(options = {}) {
   if (_initialized) {
-    return { app: _app, modules: _modules };
+    return { app: _app, modules: _modules, };
   }
 
   const cfg = await loadFirebaseConfig(options.configTimeout || 5000).catch(e => {
@@ -78,7 +78,7 @@ export async function initFirebase(options = {}) {
         ? (() => { try { return getMessaging(_app); } catch (e) { return null; } })()
         : null,
       analytics: (() => { try { return getAnalytics(_app); } catch (e) { return null; } })(),
-      remoteConfig: (() => { try { return getRemoteConfig(_app); } catch (e) { return null; } })()
+      remoteConfig: (() => { try { return getRemoteConfig(_app); } catch (e) { return null; } })(),
     };
 
     _initialized = true;
@@ -88,7 +88,7 @@ export async function initFirebase(options = {}) {
         document.dispatchEvent(new Event('firebase-initialized'));
       }
     } catch (e) { }
-    return { app: _app, modules: _modules };
+    return { app: _app, modules: _modules, };
   } catch (err) {
     DebugUtils.moduleError('init', 'Firebase initialization failed');
     throw err;

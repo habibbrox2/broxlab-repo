@@ -18,6 +18,7 @@
 require_once __DIR__ . '/../../Config/Functions.php';
 require_once __DIR__ . '/../Helpers/FirebaseHelper.php';
 require_once __DIR__ . '/../Helpers/AuthAndSecurityHelper.php';
+require_once __DIR__ . '/../Helpers/EmailHelper.php';
 
 $userModel = new UserModel($mysqli);
 $authManager = new AuthManager($mysqli);
@@ -122,18 +123,27 @@ $router->get('/reset-password', ['middleware' => ['guest_only']], function () us
 $router->get('/verify-email', function () use ($twig, $securityManager) {
     $token = sanitize_input($_GET['token'] ?? '');
     $email = sanitize_input($_GET['email'] ?? '');
+    $error = null;
 
     // If token provided, try to auto-verify
     if ($token && !$email) {
         // Try to verify with token
         if ($securityManager->verifyEmailWithToken($token)) {
+            // Clear pending verification from session
+            if (isset($_SESSION['pending_verification'])) {
+                unset($_SESSION['pending_verification']);
+            }
+
             authSuccessResponse(
                 [],
-                'Email verified successfully!',
+                'Email verified successfully! You can now log in.',
                 'redirect',
                 200,
                 '/login'
             );
+        } else {
+            // Token is invalid or expired, show error but allow manual entry
+            $error = 'Invalid or expired verification link. Please paste the token manually below.';
         }
     }
 
@@ -141,6 +151,7 @@ $router->get('/verify-email', function () use ($twig, $securityManager) {
         'title' => 'Verify Email',
         'token' => $token,
         'email' => $email ?: $_SESSION['pending_verification']['email'] ?? '',
+        'error' => $error,
     ]);
 });
 
@@ -239,7 +250,54 @@ $router->post('/login', ['middleware' => ['guest_only']], function () use ($auth
                 'email' => $result['email']
             ];
 
-            authErrorResponse('email_not_verified', $result['error'], $type, 403, '/send-verification-email');
+            // Automatically send verification email when login fails due to unverified email
+            try {
+                $userId = $result['user_id'];
+                $email = $result['email'];
+                $user = $userModel->findById($userId);
+
+                if ($user) {
+                    $verificationToken = $securityManager->generateEmailVerificationToken($userId);
+                    $verificationLink = getAppUrl() . "/verify-email?token=" . $verificationToken;
+
+                    // Send verification email
+                    $emailSent = sendEmailVerificationEmail(
+                        $mysqli,
+                        $email,
+                        $user['first_name'] ?: $user['username'],
+                        $verificationLink,
+                        24 * 60
+                    );
+
+                    if ($emailSent) {
+                        logActivity(
+                            "Verification Email Sent on Login Attempt",
+                            "auth",
+                            $userId,
+                            ['email' => $email, 'auto_sent' => true],
+                            'success'
+                        );
+                    } else {
+                        logActivity(
+                            "Verification Email Send Failed on Login Attempt",
+                            "auth",
+                            $userId,
+                            ['email' => $email, 'auto_sent' => true],
+                            'failure'
+                        );
+                        error_log("Failed to send verification email to $email during login");
+                    }
+                }
+            } catch (Throwable $e) {
+                logError('Email sending error during login: ' . $e->getMessage());
+            }
+
+            // Provide user-friendly message mentioning email was sent
+            $errorMessage = "Please verify your email before logging in. ";
+            $errorMessage .= "A verification email has been sent to your email address. ";
+            $errorMessage .= "Check your inbox (and spam folder) for the verification link.";
+
+            authErrorResponse('email_not_verified', $errorMessage, $type, 403, '/send-verification-email');
         }
 
         // Handle 2FA requirement
@@ -284,13 +342,13 @@ $router->post('/login', ['middleware' => ['guest_only']], function () use ($auth
     $loginDeviceId = $_COOKIE['guest_device_id'] ?? null;
     $loginBrowserInfo = $_SERVER['HTTP_USER_AGENT'] ?? '';
     $isNewDevice = false;
-    
+
     // Check if this is a new device
     if ($loginDeviceId) {
         $existingDevice = $notificationModel->getDeviceTokenByDeviceId((int)$result['user_id'], $loginDeviceId);
         $isNewDevice = empty($existingDevice);
     }
-    
+
     if ($isNewDevice && $loginDeviceId) {
         // New device detected - send new device notification
         $browserName = 'Unknown Browser';
@@ -298,7 +356,7 @@ $router->post('/login', ['middleware' => ['guest_only']], function () use ($auth
         elseif (stripos($loginBrowserInfo, 'Chrome') !== false) $browserName = 'Chrome';
         elseif (stripos($loginBrowserInfo, 'Safari') !== false) $browserName = 'Safari';
         elseif (stripos($loginBrowserInfo, 'Edge') !== false) $browserName = 'Edge';
-        
+
         $notifId = $notificationModel->create(
             (int)$result['user_id'],
             'নতুন ডিভাইসে লগইন',
@@ -643,31 +701,64 @@ $router->post('/reset-password', ['middleware' => ['guest_only']], function () u
  * Verify Email POST
  */
 $router->post('/verify-email', function () use ($securityManager) {
-    header('Content-Type: application/json');
-
     // Get request data (handles both JSON AJAX and form submissions)
     $data = getRequestData();
+
+    // Determine response type (AJAX or form submission)
+    $type = isAjaxRequest() ? 'json' : 'redirect';
 
     // Accept both 'token' and 'verification_token' for flexibility
     $token = sanitize_input($data['verification_token'] ?? $data['token'] ?? '');
 
     if (!$token) {
-        authErrorResponse('invalid_token', '', 'json', 400);
+        authErrorResponse('invalid_token', 'Verification token is required', $type, 400, '/verify-email');
     }
 
     if ($securityManager->verifyEmailWithToken($token)) {
-        authSuccessResponse([], 'Email verified successfully', 'json', 200);
+        // Clear pending verification from session
+        if (isset($_SESSION['pending_verification'])) {
+            unset($_SESSION['pending_verification']);
+        }
+
+        authSuccessResponse(
+            [],
+            'Email verified successfully! You can now log in.',
+            $type,
+            200,
+            '/login'
+        );
     } else {
-        authErrorResponse('invalid_token', 'Invalid or expired token', 'json', 400);
+        authErrorResponse(
+            'invalid_token',
+            'Invalid or expired token. Please request a new verification email.',
+            $type,
+            400,
+            '/send-verification-email'
+        );
     }
 });
 
 /**
  * Send Verification Email GET
  */
-$router->get('/send-verification-email', function () use ($twig) {
+$router->get('/send-verification-email', function () use ($twig, $securityManager, $userModel) {
+    // Get pending verification from session
+    $pendingVerification = $_SESSION['pending_verification'] ?? null;
+    $email = $pendingVerification['email'] ?? '';
+    $userId = $pendingVerification['user_id'] ?? null;
+
+    $verificationToken = null;
+
+    // If user_id exists in session, generate a fresh token to show as fallback
+    if ($userId) {
+        $verificationToken = $securityManager->generateEmailVerificationToken($userId);
+    }
+
     echo $twig->render('auth/send-verification-email.twig', [
         'title' => 'Verify Email',
+        'email' => $email,
+        'verification_token' => $verificationToken,
+        'show_fallback_token' => !empty($verificationToken),
     ]);
 });
 
@@ -678,10 +769,19 @@ $router->post('/resend-verification-email', function () use ($securityManager, $
     // Get request data (handles both JSON AJAX and form submissions)
     $data = getRequestData();
 
+    // Determine response type
+    $type = isAjaxRequest() ? 'json' : 'redirect';
+
+    // CSRF validation
+    $csrfToken = $data['csrf_token'] ?? '';
+    if (!validateCsrfToken($csrfToken)) {
+        authErrorResponse('csrf_token_invalid', 'Invalid security token', $type, 403, '/send-verification-email');
+    }
+
     $email = sanitize_input($data['email'] ?? '');
 
     if (!$email) {
-        authErrorResponse('invalid_email', 'Email is required', 'redirect', 400, '/send-verification-email');
+        authErrorResponse('invalid_email', 'Email is required', $type, 400, '/send-verification-email');
     }
 
     $user = $userModel->findByEmail($email);
@@ -693,14 +793,31 @@ $router->post('/resend-verification-email', function () use ($securityManager, $
             $verificationLink = getAppUrl() . "/verify-email?token=" . $verificationToken;
 
             // Send verification email using template
-            sendEmailVerificationEmail($mysqli, $email, $user['first_name'] ?: $user['username'], $verificationLink, 24 * 60);
+            $emailSent = sendEmailVerificationEmail(
+                $mysqli,
+                $email,
+                $user['first_name'] ?: $user['username'],
+                $verificationLink,
+                24 * 60
+            );
+
+            if ($emailSent) {
+                logActivity(
+                    "Verification Email Resent",
+                    "auth",
+                    $user['id'],
+                    ['email' => $email],
+                    'success'
+                );
+            }
         }
     }
 
+    // Always return success (for security, don't reveal if email exists or not)
     authSuccessResponse(
         [],
-        'Verification email has been sent',
-        'redirect',
+        'If the email address exists and is not verified, a verification email has been sent.',
+        $type,
         200,
         '/login'
     );
