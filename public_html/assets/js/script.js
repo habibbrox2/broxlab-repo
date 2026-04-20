@@ -116,9 +116,9 @@ function applyDropdownViewportFallback(menuEl, bellEl) {
   const rect = menuEl.getBoundingClientRect();
   const overflowed = (
     rect.left < margin ||
-        rect.right > viewportWidth - margin ||
-        rect.top < margin ||
-        rect.bottom > viewportHeight - margin
+    rect.right > viewportWidth - margin ||
+    rect.top < margin ||
+    rect.bottom > viewportHeight - margin
   );
 
   if (!overflowed) {
@@ -757,6 +757,10 @@ function initNotificationBell(options = {}) {
     // ensure bell remains on top so it can be clicked again even if menu
     // overlaps it due to positioning fallback.
     menuEl.style.zIndex = '1079';
+    menuEl.style.display = 'flex';
+    menuEl.style.visibility = 'visible';
+    menuEl.style.opacity = '1';
+    menuEl.style.pointerEvents = 'auto';
     bellEl.style.zIndex = '1081';
 
     menuEl.classList.add('show');
@@ -769,6 +773,10 @@ function initNotificationBell(options = {}) {
     if (!menuEl) return;
     const wasOpen = menuEl.classList.contains('show');
     menuEl.classList.remove('show');
+    menuEl.style.display = '';
+    menuEl.style.visibility = '';
+    menuEl.style.opacity = '';
+    menuEl.style.pointerEvents = '';
     bellEl.classList.remove('show');
     bellEl.closest('.dropdown')?.classList.remove('show');
     bellEl.setAttribute('aria-expanded', 'false');
@@ -801,6 +809,7 @@ function initNotificationBell(options = {}) {
     event.preventDefault();
     // stop bootstrap-lite document listener from firing
     event.stopImmediatePropagation();
+    event.stopPropagation();
     toggleMenu();
   };
 
@@ -1082,9 +1091,9 @@ function applyDropdownViewportRepositionFallback(menuEl, toggleEl) {
   const rect = menuEl.getBoundingClientRect();
   const isOverflowingViewport = (
     rect.left < margin ||
-        rect.right > viewportWidth - margin ||
-        rect.top < margin ||
-        rect.bottom > viewportHeight - margin
+    rect.right > viewportWidth - margin ||
+    rect.top < margin ||
+    rect.bottom > viewportHeight - margin
   );
 
   if (!isOverflowingViewport) {
@@ -1239,7 +1248,17 @@ function initNavbarUserDropdownMobileFallback() {
     toggleEl.classList.toggle('show', open);
     dropdownEl.classList.toggle('show', open);
     toggleEl.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (!open) {
+
+    if (open) {
+      menuEl.style.display = 'block';
+      menuEl.style.visibility = 'visible';
+      menuEl.style.opacity = '1';
+      menuEl.style.pointerEvents = 'auto';
+    } else {
+      menuEl.style.display = '';
+      menuEl.style.visibility = '';
+      menuEl.style.opacity = '';
+      menuEl.style.pointerEvents = '';
       resetDropdownViewportStyles(menuEl);
     }
     if (open !== wasOpen) {

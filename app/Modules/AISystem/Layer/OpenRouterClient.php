@@ -33,8 +33,12 @@ class OpenRouterClient
     /**
      * Send streaming request to OpenRouter
      */
-    public function stream(array $messages, string $model = 'openrouter/auto', array $options = [], callable $onChunk)
+    public function stream(array $messages, string $model = 'openrouter/auto', array $options = [], ?callable $onChunk = null)
     {
+        if ($onChunk === null) {
+            throw new \InvalidArgumentException('OpenRouterClient::stream requires a chunk callback.');
+        }
+
         $payload = array_merge([
             'model' => $model,
             'messages' => $messages,

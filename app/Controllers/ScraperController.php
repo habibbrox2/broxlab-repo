@@ -19,6 +19,7 @@ use App\Modules\Scraper\Presets\PresetRegistry;
 use App\Modules\Scraper\ScraperService;
 use App\Modules\Scraper\ScraperFactory;
 use App\Modules\Scraper\Pipelines\GSMArenaPipeline;
+use App\Modules\Scraper\Services\SelectorTestingService;
 
 global $mysqli, $router, $twig;
 
@@ -139,6 +140,13 @@ if (!function_exists('prepareScrapedArticlePayload')) {
         }
 
         return $article;
+    }
+}
+
+if (!function_exists('createSelectorTestingService')) {
+    function createSelectorTestingService(string $url): SelectorTestingService
+    {
+        return new SelectorTestingService(HtmlFetcher::fetch($url));
     }
 }
 
@@ -1245,11 +1253,9 @@ $router->post('/api/v1/scraper/presets/ai-detect', ['middleware' => ['auth', 'ad
                 'content_type' => $result['content_type'] ?? $contentType,
                 'recommendations' => $result['recommendations'] ?? []
             ]);
-
         } catch (\Exception $e) {
             return jsonResponse(['success' => false, 'error' => 'Failed to analyze URL: ' . $e->getMessage()], 500);
         }
-
     } catch (Exception $e) {
         error_log("AI selector detection error: " . $e->getMessage());
         return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
@@ -2484,13 +2490,13 @@ $router->post('/admin/scraper/sources/{id}/test', ['middleware' => ['auth', 'adm
         $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $service = new ScraperService($model);
-    $maxRetries = 3;
-    $error = '';
-    $success = false;
+        $maxRetries = 3;
+        $error = '';
+        $success = false;
 
-$maxRetries = 3;
-$error = '';
-$success = false;
+        $maxRetries = 3;
+        $error = '';
+        $success = false;
 
         $maxItems = (int)($input['maxItems'] ?? 5);
         $timeout = (int)($input['timeout'] ?? 30);
@@ -3055,13 +3061,13 @@ $router->post('/admin/scraper/sources/{id}/run', ['middleware' => ['auth', 'admi
         $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $service = new ScraperService($model);
-    $maxRetries = 3;
-    $error = '';
-    $success = false;
+        $maxRetries = 3;
+        $error = '';
+        $success = false;
 
-$maxRetries = 3;
-$error = '';
-$success = false;
+        $maxRetries = 3;
+        $error = '';
+        $success = false;
 
         $result = $service->scrapeSource($id);
 
@@ -3309,11 +3315,11 @@ $router->post('/api/v1/scraper/collect/start', ['middleware' => ['auth', 'admin_
         if ($type === 'all') {
             $sourcesToRun = $model->getActiveSources();
         } elseif ($type === 'sources') {
-            $sourcesToRun = array_filter($model->getAllSources(), function($source) use ($targetIds) {
+            $sourcesToRun = array_filter($model->getAllSources(), function ($source) use ($targetIds) {
                 return in_array($source['id'], $targetIds);
             });
         } elseif ($type === 'category') {
-            $sourcesToRun = array_filter($model->getAllSources(), function($source) use ($targetIds) {
+            $sourcesToRun = array_filter($model->getAllSources(), function ($source) use ($targetIds) {
                 return in_array($source['category_id'], $targetIds);
             });
         }
@@ -3348,7 +3354,7 @@ $router->post('/api/v1/scraper/collect/start', ['middleware' => ['auth', 'admin_
             'message' => 'Collection started successfully',
             'data' => [
                 'job_ids' => $jobIds,
-                'sources' => array_map(function($source) {
+                'sources' => array_map(function ($source) {
                     return ['id' => $source['id'], 'name' => $source['name']];
                 }, $sourcesToRun),
                 'total_items' => 0,
@@ -3357,7 +3363,17 @@ $router->post('/api/v1/scraper/collect/start', ['middleware' => ['auth', 'admin_
         ]);
     } catch (Exception $e) {
         error_log("Collection start API error: " . $e->getMessage());
-        return jsonResponse(['success' => false, 'error' => 'Failed to start collection'], 500);
+        error_log("Exception trace: " . $e->getTraceAsString());
+        return jsonResponse([
+            'success' => false,
+            'error' => 'Failed to start collection',
+            'debug' => [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]
+        ], 500);
     }
 });
 
@@ -4091,9 +4107,9 @@ $router->get('/admin/scraper/jobs/{id}', ['middleware' => ['auth', 'admin_only']
         ]);
     } catch (Exception $e) {
         $service = new ScraperService($model);
-error_log("Job detail error: " . $e->getMessage());
+        error_log("Job detail error: " . $e->getMessage());
 
-$service = new ScraperService($model);
+        $service = new ScraperService($model);
         http_response_code(500);
         echo $twig->render('error.twig', [
             'pageTitle' => 'Error',
@@ -5151,7 +5167,7 @@ $router->post('/admin/scraper/selectors/test-css', ['middleware' => ['auth', 'ad
     }
 
     try {
-        $input = json_decode((string)file_get_contents('php://input'), true);
+        $input = parseJsonRequest();
         $selector = trim($input['selector'] ?? '');
         $url = trim($input['url'] ?? '');
         $maxSamples = (int)($input['max_samples'] ?? 5);
@@ -5164,142 +5180,142 @@ $router->post('/admin/scraper/selectors/test-css', ['middleware' => ['auth', 'ad
             return jsonResponse(['success' => false, 'error' => 'No URL provided'], 400);
         }
 
-        $service = new ScraperService($model);
-// Fetch the URL content
-// Create and initialize dependencies
-$model = new ScraperModel($mysqli);
-$service = new ScraperService($model);
+        $service = createSelectorTestingService($url);
+        $result = $service->testCssSelector($selector, $maxSamples);
 
-// Start the collection process
-$service = new ScraperService($model);
-$maxRetries = 3;
-$error = '';
-$success = false;
-
-$maxRetries = 3;
-$error = '';
-$success = false;
-
-for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
-    try {
-        $result = $service->scrapeSource((int)$source['id']);
-        $success = !empty($result['success']);
-        break; // Exit loop on success
+        return jsonResponse($result);
     } catch (Exception $e) {
-        $error = $e->getMessage();
-        error_log("Attempt $attempt failed for source ID {$source['id']}: $error");
-        // Optionally add a delay before retrying
-        if ($attempt < $maxRetries) {
-            sleep(1); // Sleep for 1 second before retrying
-        }
+        error_log("CSS selector test error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
-}
-        $startTime = microtime(true);
-        $collectionData = [
-            'job_id' => $jobId,
-            'sources' => array_map(function ($s) {
-                return ['id' => $s['id'], 'name' => $s['name']];
-            }, $sourcesToRun),
-            'total_sources' => count($sourcesToRun),
-            'status' => 'running',
-            'started_at' => date('Y-m-d H:i:s'),
-            '_start_microtime' => $startTime // Store precise start time
-        ];
+});
 
-        // For now, run synchronously (can be made async later)
-        $service = new ScraperService($model);
-    $maxRetries = 3;
-    $error = '';
-    $success = false;
+$router->post('/admin/scraper/selectors/test-xpath', ['middleware' => ['auth', 'admin_only']], function () {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
 
-$maxRetries = 3;
-$error = '';
-$success = false;
-        $results = [];
-        $totalItems = 0;
-
-        foreach ($sourcesToRun as $source) {
-            try {
-                $maxRetries = 3;
-$error = '';
-$success = false;
-
-for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
     try {
-        $result = $service->scrapeSource((int)$source['id']);
-        $success = !empty($result['success']);
-        break; // Exit loop on success
-    } catch (Exception $e) {
-        $error = $e->getMessage();
-        error_log("Attempt $attempt failed for source ID {$source['id']}: $error");
-        // Optionally add a delay before retrying
-        if ($attempt < $maxRetries) {
-            sleep(1); // Sleep for 1 second before retrying
+        $input = parseJsonRequest();
+        $selector = trim($input['selector'] ?? '');
+        $url = trim($input['url'] ?? '');
+        $maxSamples = (int)($input['max_samples'] ?? 5);
+
+        if ($selector === '') {
+            return jsonResponse(['success' => false, 'error' => 'No selector provided'], 400);
         }
+
+        if ($url === '') {
+            return jsonResponse(['success' => false, 'error' => 'No URL provided'], 400);
+        }
+
+        $service = createSelectorTestingService($url);
+        return jsonResponse($service->testXPathSelector($selector, $maxSamples));
+    } catch (Exception $e) {
+        error_log("XPath selector test error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
-}
-                $success = !empty($result['success']);
-                $itemsCollected = $result['stats']['items_saved'] ?? 0;
+});
 
-                $results[] = [
-                    'source_id' => $source['id'],
-                    'source_name' => $source['name'],
-                    'success' => $success,
-                    'items_collected' => $itemsCollected,
-                    'error' => $success ? null : ($result['error'] ?? 'Unknown error')
-                ];
+$router->post('/admin/scraper/selectors/test-attribute', ['middleware' => ['auth', 'admin_only']], function () {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
 
-                if ($success) {
-                    $totalItems += $itemsCollected;
-                }
-            } catch (Exception $e) {
-                $results[] = [
-                    'source_id' => $source['id'],
-                    'source_name' => $source['name'],
-                    'success' => false,
-                    'items_collected' => 0,
-                    'error' => $e->getMessage()
-                ];
+    try {
+        $input = parseJsonRequest();
+        $selector = trim($input['selector'] ?? '');
+        $url = trim($input['url'] ?? '');
+        $attribute = trim($input['attribute'] ?? '');
+        $maxSamples = (int)($input['max_samples'] ?? 5);
+
+        if ($selector === '') {
+            return jsonResponse(['success' => false, 'error' => 'No selector provided'], 400);
+        }
+
+        if ($url === '') {
+            return jsonResponse(['success' => false, 'error' => 'No URL provided'], 400);
+        }
+
+        if ($attribute === '') {
+            return jsonResponse(['success' => false, 'error' => 'No attribute provided'], 400);
+        }
+
+        $service = createSelectorTestingService($url);
+        return jsonResponse($service->testAttributeExtraction($selector, $attribute, $maxSamples));
+    } catch (Exception $e) {
+        error_log("Attribute selector test error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+$router->post('/admin/scraper/selectors/test-nested', ['middleware' => ['auth', 'admin_only']], function () {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $input = parseJsonRequest();
+        $containerSelector = trim($input['container_selector'] ?? '');
+        $url = trim($input['url'] ?? '');
+        $fieldMappings = $input['field_mappings'] ?? [];
+        $maxSamples = (int)($input['max_samples'] ?? 5);
+
+        if ($containerSelector === '') {
+            return jsonResponse(['success' => false, 'error' => 'No container selector provided'], 400);
+        }
+
+        if ($url === '') {
+            return jsonResponse(['success' => false, 'error' => 'No URL provided'], 400);
+        }
+
+        if (!is_array($fieldMappings) || $fieldMappings === []) {
+            return jsonResponse(['success' => false, 'error' => 'No field mappings provided'], 400);
+        }
+
+        $service = createSelectorTestingService($url);
+        return jsonResponse($service->testNestedSelection($containerSelector, json_encode($fieldMappings), $maxSamples));
+    } catch (Exception $e) {
+        error_log("Nested selector test error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+$router->post('/admin/scraper/selectors/validate-batch', ['middleware' => ['auth', 'admin_only']], function () {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $input = parseJsonRequest();
+        $url = trim($input['url'] ?? '');
+        $selectors = $input['selectors'] ?? [];
+
+        if ($url === '') {
+            return jsonResponse(['success' => false, 'error' => 'No URL provided'], 400);
+        }
+
+        if (!is_array($selectors) || $selectors === []) {
+            return jsonResponse(['success' => false, 'error' => 'No selectors provided'], 400);
+        }
+
+        $service = createSelectorTestingService($url);
+        $results = $service->validateSelectors($selectors);
+        $validCount = 0;
+        foreach ($results as $result) {
+            if (!empty($result['valid'])) {
+                $validCount++;
             }
         }
 
-        // Calculate execution time
-        $completedAt = date('Y-m-d H:i:s');
-        $executionTime = round(microtime(true) - ($collectionData['_start_microtime'] ?? microtime(true)), 2);
-
-        // Update job status
-        $model->updateCollectionJob($jobId, [
-            'status' => 'completed',
-            'completed_at' => $completedAt,
-            'execution_time' => $executionTime,
-            'results' => json_encode($results),
-            'total_items' => $totalItems
-        ]);
-
-        $collectionData['completed_at'] = date('Y-m-d H:i:s');
-        $collectionData['results'] = $results;
-        $collectionData['total_items'] = $totalItems;
-        $collectionData['status'] = 'completed';
-        $collectionData['execution_time'] = $executionTime;
-
-        // Remove internal field
-        unset($collectionData['_start_microtime']);
-
-        // Log activity
-        logActivity('scraper_manual_collection', null, null, [
-            'user_id' => $_SESSION['user_id'] ?? 0,
-            'job_id' => $jobId,
-            'sources_count' => count($sourcesToRun),
-            'total_items' => $totalItems
-        ]);
-
         return jsonResponse([
             'success' => true,
-            'message' => "Collection completed successfully. Collected {$totalItems} items from " . count($sourcesToRun) . " sources.",
-            'data' => $collectionData
+            'selectors_count' => count($selectors),
+            'valid_count' => $validCount,
+            'results' => $results
         ]);
     } catch (Exception $e) {
-        error_log("Collection start error: " . $e->getMessage());
+        error_log("Batch selector validation error: " . $e->getMessage());
         return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
@@ -5577,7 +5593,7 @@ $router->get('/api/v1/scraper/api-outbound/endpoint/{id}', ['middleware' => ['au
         $id = (int)$id;
         $apiService = new \App\Modules\Scraper\APIOutboundIntegrationService($mysqli);
         $endpoint = $apiService->getEndpoint($id);
-        
+
         if (!$endpoint) {
             return jsonResponse(['success' => false, 'error' => 'Endpoint not found'], 404);
         }

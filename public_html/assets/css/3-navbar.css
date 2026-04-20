@@ -179,33 +179,45 @@
 
 /* ── Dropdown Menu ── */
 .brox-dropdown-menu {
-  background: #fff !important;
-  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  background: rgba(15, 23, 42, 0.96) !important;
+  border: 1px solid rgba(148, 163, 184, 0.18) !important;
   border-radius: 0.75rem !important;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.28) !important;
+  color: #f8fafc !important;
+  backdrop-filter: blur(18px);
 }
 
 .brox-dropdown-header {
-  padding: 0.75rem 1rem !important;
+  padding: 0.8rem 1rem !important;
   text-align: center;
-  border-bottom: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25) !important;
+  background: rgba(30, 41, 59, 0.98) !important;
 }
 
 .brox-dropdown-user-name {
-  color: #1e293b !important;
+  color: #f8fafc !important;
   font-size: 0.95rem;
+}
+
+.brox-dropdown-header .badge {
+  background: rgba(99, 102, 241, 0.14) !important;
+  color: #c7d2fe !important;
 }
 
 .brox-dropdown-item {
   padding: 0.6rem 1rem !important;
-  color: #475569 !important;
+  color: #e2e8f0 !important;
   text-decoration: none !important;
   transition: all var(--t-fast) !important;
 }
 
 .brox-dropdown-item:hover {
-  background: rgba(99, 102, 241, 0.1) !important;
-  color: var(--primary-600) !important;
+  background: rgba(99, 102, 241, 0.18) !important;
+  color: #ffffff !important;
+}
+
+.brox-dropdown-item.text-danger {
+  color: #f87171 !important;
 }
 
 .brox-dropdown-item i {
@@ -214,7 +226,50 @@
 
 .brox-dropdown-divider {
   margin: 0.5rem 0 !important;
-  border-color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+.dropdown-menu.brox-dropdown-menu {
+  position: absolute !important;
+  top: calc(100% + 0.5rem) !important;
+  right: 0 !important;
+  left: auto !important;
+  transform: none !important;
+  width: min(95vw, 320px) !important;
+  max-width: 320px !important;
+  display: none !important;
+  z-index: 1150 !important;
+  background: rgba(15, 23, 42, 0.96) !important;
+  border: 1px solid rgba(148, 163, 184, 0.18) !important;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.28) !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  overflow: visible !important;
+}
+
+.dropdown-menu.brox-dropdown-menu.show {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.dropdown-menu.brox-dropdown-menu>li,
+.dropdown-menu.brox-dropdown-menu>div {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: visible !important;
+  background: inherit !important;
+}
+
+.dropdown-menu.brox-dropdown-menu .brox-dropdown-item {
+  color: #e2e8f0 !important;
+}
+
+.dropdown-menu.brox-dropdown-menu .brox-dropdown-item:hover {
+  background: rgba(99, 102, 241, 0.18) !important;
+  color: #ffffff !important;
 }
 
 /* ── Notification Bell ── */
@@ -285,7 +340,8 @@
   position: relative;
 }
 
-.brox-notification-dropdown {
+.brox-notification-dropdown,
+.dropdown-menu.brox-notification-dropdown {
   /* open from bell icon area */
   position: absolute !important;
   top: calc(100% + 0.5rem) !important;
@@ -298,20 +354,33 @@
   max-height: min(72vh, 560px) !important;
   display: none !important;
   flex-direction: column !important;
-  overflow: hidden !important;
-  background: #fff !important;
+  overflow: visible !important;
+  background: #ffffff !important;
   border: 1px solid rgba(0, 0, 0, 0.1) !important;
   border-radius: 0.75rem !important;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
   animation: slideDownMenu 0.3s ease-out;
   z-index: 1090 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
-.brox-notification-dropdown.show {
+.brox-notification-dropdown.show,
+.dropdown-menu.brox-notification-dropdown.show {
   display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
-
+.brox-notification-dropdown>div,
+.dropdown-menu.brox-notification-dropdown>div {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: visible !important;
+  background: inherit !important;
+}
 
 @keyframes slideDownMenu {
   from {
@@ -341,19 +410,27 @@
 .brox-notification-list {
   padding: 1rem !important;
   color: #1e293b !important;
+  background: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: visible !important;
 }
 
 .brox-notification-list {
   max-height: calc(min(72vh, 560px) - 110px) !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
+  flex: 1 !important;
 }
 
 .brox-notification-list .notification-entry {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  overflow: hidden;
-  transition: background-color var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  overflow: visible !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transition: background-color var(--t-fast), border-color var(--t-fast), transform var(--t-fast) !important;
+  display: block !important;
 }
 
 .brox-notification-list .notification-entry>.d-flex {
@@ -556,7 +633,8 @@
     position: static !important;
   }
 
-  .brox-navbar-collapse .brox-notification-dropdown {
+  .brox-navbar-collapse .brox-notification-dropdown,
+  .brox-navbar-collapse .dropdown-menu.brox-notification-dropdown {
     position: static !important;
     top: auto !important;
     right: auto !important;
@@ -635,11 +713,13 @@
 }
 
 .brox-dropdown-menu,
-.brox-notification-dropdown {
+.brox-notification-dropdown,
+.dropdown-menu.brox-notification-dropdown {
   overflow: hidden;
 }
 
-.brox-notification-dropdown {
+.brox-notification-dropdown,
+.dropdown-menu.brox-notification-dropdown {
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }

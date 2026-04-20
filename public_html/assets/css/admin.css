@@ -344,12 +344,20 @@ body.admin-sidebar-open {
 
 .sidebar .sidebar-submenu-list {
   padding-left: 0.15rem;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .sidebar .sidebar-submenu.collapse,
 .sidebar .sidebar-submenu.collapsing {
-  overflow: hidden;
+  overflow: visible !important;
   will-change: height;
+}
+
+.sidebar .sidebar-submenu.show {
+  overflow: visible !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .sidebar .sidebar-submenu.collapsing {
@@ -357,7 +365,7 @@ body.admin-sidebar-open {
 }
 
 .sidebar .sidebar-submenu-item {
-  display: flex;
+  display: flex !important;
   align-items: center;
   margin-left: 0.4rem;
   padding: 0.45rem 0.65rem 0.45rem 1rem;
@@ -366,6 +374,9 @@ body.admin-sidebar-open {
   font-size: 0.875rem;
   background-color: rgba(148, 163, 184, 0.04);
   box-shadow: none;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
 .sidebar .sidebar-submenu-item:hover {
