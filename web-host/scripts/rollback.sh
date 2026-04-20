@@ -57,6 +57,28 @@ log_warn() { echo -e "${YELLOW}[WARN]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | 
 log_error() { echo -e "${RED}[ERROR]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$ROLLBACK_LOG"; }
 log_debug() { echo -e "${BLUE}[DEBUG]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$ROLLBACK_LOG"; }
 
+ensure_env_secret() {
+    local key="$1"
+    local env_file="$SHARED/.env"
+    local value=""
+
+    if [[ ! -f "$env_file" ]]; then
+        log_error ".env not found at $env_file"
+        exit 1
+    fi
+
+    value=$(php -r 'echo bin2hex(random_bytes(32));')
+    if grep -q "^${key}=" "$env_file"; then
+        if grep -q "^${key}=$" "$env_file"; then
+            log_warn "${key} is empty in shared .env; generating a secure value"
+            sed -i "s|^${key}=.*|${key}=${value}|" "$env_file"
+        fi
+    else
+        log_warn "${key} is missing in shared .env; generating a secure value"
+        printf '%s=%s\n' "$key" "$value" >> "$env_file"
+    fi
+}
+
 stop_node_server() {
     if [[ -f "$PID_FILE" ]]; then
         local pid
@@ -125,6 +147,9 @@ start_node_server() {
 log_info "Starting rollback process"
 $SKIP_DB_RESTORE && log_info "Database restore will be skipped"
 $SKIP_BACKUP && log_info "Safety backup will be skipped"
+
+ensure_env_secret "JWT_SECRET"
+ensure_env_secret "CSRF_SECRET"
 
 if [[ ! -d "$RELEASES" ]]; then
     log_error "Releases directory not found: $RELEASES"

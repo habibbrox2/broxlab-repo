@@ -19,7 +19,7 @@ class NotificationWebSocketManager extends EventTarget {
 
   log(...args) {
     if (this.debug) {
-      console.log('[WebSocketManager]', ...args);
+      console.info('[WebSocketManager]', ...args);
     }
   }
 

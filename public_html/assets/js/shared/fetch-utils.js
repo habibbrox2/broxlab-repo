@@ -68,7 +68,7 @@ export async function safeFetchJson(url, options = {}) {
     return await response.json().catch(() => null);
   } catch (error) {
     if (error?.name !== 'AbortError') {
-      console.debug('Fetch failed:', url, error);
+      console.info('Fetch failed:', url, error);
     }
     return null;
   } finally {
@@ -104,7 +104,7 @@ export function uploadFormData(url, formData, callbacks = {}) {
           const result = JSON.parse(xhr.responseText);
           if (onSuccess) onSuccess(result);
           resolve(result);
-        } catch (error) {
+        } catch {
           if (onError) onError('Invalid response format');
           reject(new Error('Invalid response format'));
         }

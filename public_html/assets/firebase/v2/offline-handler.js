@@ -13,11 +13,17 @@ export class OfflineNotificationHandler {
     try {
       const raw = localStorage.getItem(OFFLINE_QUEUE_KEY);
       return raw ? JSON.parse(raw) : [];
-  } catch (e) { return []; }
+    } catch {
+      return [];
+    }
   }
 
   _saveQueue() {
-    try { localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(this.queue)); } catch (e) { /* ignore storage write failure */ }
+    try {
+      localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(this.queue));
+    } catch {
+      /* ignore storage write failure */
+    }
   }
 
   enqueue(item) {
@@ -35,7 +41,7 @@ export class OfflineNotificationHandler {
         if (!ok) throw new Error('Sync request failed');
         this.queue.shift();
         this._saveQueue();
-    } catch (e) {
+      } catch {
         // Offline sync will retry next time
         return false;
       }

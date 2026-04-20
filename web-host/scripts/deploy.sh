@@ -178,6 +178,28 @@ require_command node
 require_command npm
 require_command php
 
+ensure_env_secret() {
+    local key="$1"
+    local env_file="$SHARED/.env"
+    local value=""
+
+    if [[ ! -f "$env_file" ]]; then
+        log_error ".env not found at $env_file"
+        exit 1
+    fi
+
+    value=$(php -r 'echo bin2hex(random_bytes(32));')
+    if grep -q "^${key}=" "$env_file"; then
+        if grep -q "^${key}=$" "$env_file"; then
+            log_warn "${key} is empty in shared .env; generating a secure value"
+            sed -i "s|^${key}=.*|${key}=${value}|" "$env_file"
+        fi
+    else
+        log_warn "${key} is missing in shared .env; generating a secure value"
+        printf '%s=%s\n' "$key" "$value" >> "$env_file"
+    fi
+}
+
 if command -v composer >/dev/null 2>&1 || [[ -f "$SHARED/composer" ]] || [[ -f "$SHARED/composer.phar" ]]; then
     log_debug "Composer available"
 else
@@ -188,6 +210,9 @@ if [[ ! -f "$SHARED/.env" ]]; then
     log_error ".env not found at $SHARED/.env"
     exit 1
 fi
+
+ensure_env_secret "JWT_SECRET"
+ensure_env_secret "CSRF_SECRET"
 
 mkdir -p \
     "$STORAGE/uploads" \

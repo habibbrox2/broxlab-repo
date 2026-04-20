@@ -16,10 +16,6 @@ export function initMediaUpload(options = {}) {
   const uploadStatus = byId('uploadStatus');
   const fileInfo = byId('fileInfo');
   const submitBtn = byId('submitBtn');
-  const _alertContainer = byId('alertContainer');
-
-  const _maxFileSize = parseInt(form.dataset.maxFileSize || '52428800', 10);
-
 
   if (fileInput) {
     fileInput.addEventListener('change', function () {

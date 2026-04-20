@@ -3191,8 +3191,8 @@ runWhenReady(() => {
       const OfflineNotificationHandler =
         offlineMod.OfflineNotificationHandler || offlineMod.default;
 
-      console.log('Notifications dashboard modules loaded');
-      console.log('Available modules:', {
+      console.info('Notifications dashboard modules loaded');
+      console.info('Available modules:', {
         ScheduledNotifications,
         MultiDeviceSync,
         OfflineNotificationHandler,

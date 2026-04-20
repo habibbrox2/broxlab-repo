@@ -46,7 +46,7 @@ class FormAutosave {
 
   _log(message) {
     if (this.options.debug) {
-      console.log(`[Autosave] ${message}`);
+      console.info(`[Autosave] ${message}`);
     }
   }
 

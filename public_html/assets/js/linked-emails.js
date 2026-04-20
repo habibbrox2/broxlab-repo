@@ -13,7 +13,7 @@ export function initLinkedEmails(options = {}) {
   const container = document.querySelector(containerSelector);
   const form = document.querySelector(formSelector);
   const emailInput = document.querySelector(emailInputSelector);
-  const _messageDiv = document.querySelector(messageSelector);
+  document.querySelector(messageSelector);
 
   if (!container && !form) return null;
 

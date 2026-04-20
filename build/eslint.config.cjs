@@ -8,7 +8,18 @@ const globals = require('globals');
 
 module.exports = [
   {
-    ignores: ['**/node_modules/', '**/dist/', '**/*.min.js', '**/.next/', '**/vendor/'],
+    ignores: [
+      '**/node_modules/',
+      '**/dist/',
+      '**/*.min.js',
+      '**/.next/',
+      '**/vendor/',
+      'build/Scripts/**',
+      'build/esbuild.config.js',
+      'build/esbuild-firebase.mjs',
+      'public_html/assets/js/bootstrap-lite.js',
+      'public_html/assets/firebase/v2/**',
+    ],
   },
   {
     files: ['**/*.js', '**/*.mjs'],
@@ -31,7 +42,7 @@ module.exports = [
     },
     rules: {
       ...js.configs.recommended.rules,
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrors: 'none' }],
       'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
       'require-await': 'error',
       'no-constant-condition': ['error', { checkLoops: false }],

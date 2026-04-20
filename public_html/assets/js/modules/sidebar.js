@@ -158,9 +158,9 @@ export function initSidebar() {
 
   // ========== TOGGLE BUTTON ==========
   sidebarToggles.forEach((toggle) => {
-    toggle.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+    toggle.addEventListener('click', (_e) => {
+      _e.preventDefault();
+      _e.stopPropagation();
       toggleSidebar();
     });
   });
@@ -208,9 +208,9 @@ export function initSidebar() {
 
   // ========== MINI MODE TOGGLE (DESKTOP) ==========
   if (sidebarMiniToggle) {
-    sidebarMiniToggle.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+    sidebarMiniToggle.addEventListener('click', (_e) => {
+      _e.preventDefault();
+      _e.stopPropagation();
       const nextState = !isMiniMode();
       document.body.classList.toggle('admin-sidebar-mini', nextState);
       document.body.classList.remove('admin-sidebar-mini-expanded');
@@ -266,26 +266,26 @@ export function initSidebar() {
     let pointerId = null;
     let liveWidth = readSidebarWidth();
 
-    const startResize = (e) => {
+    const startResize = (event) => {
       if (isMobile() || isMiniMode()) return;
       isResizing = true;
-      pointerId = e.pointerId;
+      pointerId = event.pointerId;
       try {
         sidebarResizer.setPointerCapture(pointerId);
-      } catch (e) {
+      } catch {
         // ignore
       }
       adminShellRow.classList.add('is-resizing');
     };
 
-    const moveResize = (e) => {
-      if (!isResizing || pointerId !== e.pointerId) return;
+    const moveResize = (event) => {
+      if (!isResizing || pointerId !== event.pointerId) return;
       const rowRect = adminShellRow.getBoundingClientRect();
-      liveWidth = clampWidth(e.clientX - rowRect.left, rowRect.width);
+      liveWidth = clampWidth(event.clientX - rowRect.left, rowRect.width);
       applySidebarWidth(liveWidth);
     };
 
-    const endResize = (e) => {
+    const endResize = () => {
       if (!isResizing) return;
       isResizing = false;
       adminShellRow.classList.remove('is-resizing');
@@ -295,7 +295,7 @@ export function initSidebar() {
       if (pointerId !== null) {
         try {
           sidebarResizer.releasePointerCapture(pointerId);
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
@@ -327,7 +327,7 @@ export function initSidebar() {
       if (el && typeof bootstrap !== 'undefined') {
         try {
           bootstrap.Collapse.getOrCreateInstance(el, { toggle: false, }).show();
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
@@ -348,5 +348,5 @@ export function initSidebar() {
     // Silent fail
   }
 
-  console.log('[Sidebar] Initialized');
+  console.info('[Sidebar] Initialized');
 }

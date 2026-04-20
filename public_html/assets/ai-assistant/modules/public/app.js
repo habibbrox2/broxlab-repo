@@ -1,8 +1,6 @@
 import {
   appendAssistant,
   appendMessage,
-  animateBody as _animateBody,
-  attachAssistantTools as _attachAssistantTools,
   buildStaticReplyMatcher,
   parseResponseConfig,
   typeMessage
@@ -43,7 +41,6 @@ const USER_INFO_KEY = 'brox.publicAssistant.userInfo.v2';
 const MAX_STORED_MESSAGES = 40;
 const INACTIVITY_LIMIT_MS = 60 * 60 * 1000; // 1 hour
 const ASSISTANT_SITE_URL = 'https://broxlab.online';
-const _TOPIC_KEYS = ['general', 'support', 'billing', 'feedback',];
 
 const DEFAULT_PREFS = {
   provider: 'puter-js',
@@ -78,9 +75,9 @@ async function loadAssistantPrefs() {
       });
     }
   } catch (err) {
-    console.log('Failed to load assistant prefs from backend:', err);
+    console.info('Failed to load assistant prefs from backend:', err);
   }
-  console.log('assistantPrefs loaded:', assistantPrefs);
+  console.info('assistantPrefs loaded:', assistantPrefs);
   updateOpenRouterKeyStatus();
 }
 
@@ -252,17 +249,6 @@ async function callOpenRouterAI(messages, options = {}) {
       `OpenRouter response parse error: ${parseErr.message}${raw ? ` - ${raw}` : ''}`
     );
   }
-}
-
-// Parse suggestions from response text
-function _parseSuggestionsFromText(text) {
-  const match = text.match(/\[SUGGESTION:\s*(.*?)\]/);
-  if (match) {
-    const suggestions = match[1].split(',').map((s) => s.trim());
-    const cleanText = text.replace(/\[SUGGESTION:\s*.*?\]/, '').trim();
-    return { text: cleanText, suggestions, };
-  }
-  return { text, suggestions: [], };
 }
 
 function t(key) {
@@ -535,14 +521,6 @@ function buildSystemPrompt() {
     .join('\n');
 }
 
-function _buildMessages(userText) {
-  return [
-    { role: 'system', content: buildSystemPrompt(), },
-    ...chatHistory.map((r) => ({ role: r.role, content: r.text, })),
-    { role: 'user', content: userText, },
-  ];
-}
-
 function resetChat() {
   chatHistory = [];
   historyStore.save(chatHistory);
@@ -770,7 +748,7 @@ async function handleUserMessage() {
         return;
       } catch (providerErr) {
         providerError = providerErr;
-        console.log('Provider failed, trying next:', prov.provider_name, providerErr.message);
+        console.info('Provider failed, trying next:', prov.provider_name, providerErr.message);
 
         // If auth failure, show a helpful message (only for openrouter)
         if (prov.provider_name === 'openrouter' && /401|Unauthorized/i.test(providerErr.message)) {
@@ -789,7 +767,7 @@ async function handleUserMessage() {
         ) {
           triedFallbackModel = true;
           assistantPrefs.model = 'openrouter/free';
-          console.log('Retrying OpenRouter using openrouter/free due to invalid model error');
+          console.info('Retrying OpenRouter using openrouter/free due to invalid model error');
           continue; // retry this provider with fallback model
         }
 
@@ -812,7 +790,7 @@ async function handleUserMessage() {
   if (providerChain.length > 0) {
     // Show fallback badge when we attempted providers but fell back to Puter.
     setFallbackBadge(true);
-    console.log(
+    console.info(
       'All configured providers failed, falling back to Puter.js',
       providerError?.message
     );

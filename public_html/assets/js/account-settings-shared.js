@@ -47,7 +47,7 @@ function defaultShowAlert(message, type = 'info', containerId = 'alerts-containe
         || document.getElementById('alerts-container');
 
   if (!container) {
-    const logFn = normalizedType === 'danger' ? console.error : console.log;
+    const logFn = normalizedType === 'danger' ? console.error : console.info;
     logFn('[AccountSettings]', safeMessage);
     return;
   }
@@ -468,37 +468,6 @@ export function initAccountSettingsOAuth(options = {}) {
     github: 'signInWithGithub',
   };
   let currentHasPassword = true;
-
-  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  const _waitForFirebaseIdToken = async (authMod, timeoutMs = 10000) => {
-    const getCurrentUserFn = authMod?.getCurrentUser || authMod?.default?.getCurrentUser;
-    const getIdTokenFn = authMod?.getIdToken || authMod?.default?.getIdToken;
-    const startedAt = Date.now();
-
-    while ((Date.now() - startedAt) < timeoutMs) {
-      try {
-        if (typeof getCurrentUserFn === 'function') {
-          const currentUser = await getCurrentUserFn();
-          if (currentUser?.getIdToken) {
-            const tokenFromUser = await currentUser.getIdToken(true).catch(() => '');
-            if (tokenFromUser) return tokenFromUser;
-          }
-        }
-
-        if (typeof getIdTokenFn === 'function') {
-          const token = await getIdTokenFn(true).catch(() => '');
-          if (token) return token;
-        }
-      } catch (e) {
-        // Keep polling until timeout
-      }
-
-      await sleep(300);
-    }
-
-    return '';
-  };
 
   const obtainIdTokenViaPopup = async (provider) => {
     const normalizedProvider = String(provider || '').toLowerCase();
