@@ -239,15 +239,40 @@ class ScraperErrorHandler
                 @$dom->loadHTML($html); // Suppress warnings
 
                 $xpath = new \DOMXPath($dom);
+                $selectorGroups = array_values(array_filter(array_map('trim', preg_split('/\s*,\s*/', (string)$selector) ?: [])));
+                $matched = false;
+                $invalidSelector = false;
 
-                // Try CSS selector first
-                if (strpos($selector, ' ') !== false || strpos($selector, '.') !== false || strpos($selector, '#') !== false) {
-                    $elements = $xpath->query($this->cssToXPath($selector));
-                } else {
-                    $elements = $xpath->query("//*[contains(@class, '$selector')] | //*[contains(@id, '$selector')]");
+                foreach ($selectorGroups as $group) {
+                    if (preg_match('/^[a-zA-Z][a-zA-Z0-9_-]*$/', $group) === 1) {
+                        $xpathExpression = '//' . $group;
+                        $elements = @$xpath->query($xpathExpression);
+                    } elseif (strpos($group, ' ') !== false || strpos($group, '.') !== false || strpos($group, '#') !== false) {
+                        $xpathExpression = $this->cssToXPath($group);
+                        $elements = @$xpath->query($xpathExpression);
+                    } else {
+                        $xpathExpression = "//*[contains(@class, '$group')] | //*[contains(@id, '$group')]";
+                        $elements = @$xpath->query($xpathExpression);
+                    }
+
+                    if ($elements === false) {
+                        $invalidSelector = true;
+                        continue;
+                    }
+
+                    if ($elements->length > 0) {
+                        $matched = true;
+                        break;
+                    }
                 }
 
-                if ($elements->length === 0) {
+                if ($invalidSelector && !$matched) {
+                    $issues[] = [
+                        'selector' => $selector,
+                        'type' => 'invalid',
+                        'message' => "Invalid selector '$selector': unable to evaluate XPath"
+                    ];
+                } elseif (!$matched) {
                     $issues[] = [
                         'selector' => $selector,
                         'type' => 'not_found',

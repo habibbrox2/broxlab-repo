@@ -20,6 +20,24 @@
         font-family: 'Courier New', monospace;
         min-height: 120px;
     }
+    .api-selector-disabled {
+        opacity: 0.58;
+        filter: saturate(0.85);
+        position: relative;
+    }
+    .api-selector-disabled .form-control,
+    .api-selector-disabled .form-select,
+    .api-selector-disabled .form-text {
+        pointer-events: none;
+    }
+    .api-selector-disabled::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 0.375rem;
+        background: rgba(255, 255, 255, 0.08);
+        pointer-events: none;
+    }
 </style>
 {% endblock %}
 
@@ -80,6 +98,15 @@
                                 <option value="scrape" {{ (source.type ?? 'scrape') == 'scrape' ? 'selected' : '' }}>Web Scraper</option>
                                 <option value="xml" {{ (source.type ?? '') == 'xml' ? 'selected' : '' }}>XML Feed</option>
                             </select>
+                            <div class="mt-2" id="sourceTypeHint">
+                                {% if (source.type ?? '') == 'api' %}
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle me-2">API Source</span>
+                                    <span class="small text-muted">This source is JSON-driven. It uses an API endpoint instead of HTML selectors.</span>
+                                {% elseif 'alljobs.teletalk.com.bd' in (source.url ?? '') %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle me-2">Teletalk Source</span>
+                                    <span class="small text-muted">Teletalk is currently configured as a structured source.</span>
+                                {% endif %}
+                            </div>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label for="content_type" class="form-label">Content Type <span class="text-danger">*</span></label>
@@ -213,8 +240,12 @@
                 </div>
 
                 <!-- Advanced Configuration -->
-                <div class="form-section">
+                <div class="form-section" id="selectorSection">
                     <h5><i class="bi bi-code-slash me-2"></i>Advanced Configuration</h5>
+                    <div class="alert alert-info py-2 px-3 small mb-3 d-none" id="apiSelectorNotice">
+                        <i class="bi bi-info-circle me-1"></i>
+                        API sources use JSON extraction, so selector inputs are visually disabled to reduce confusion.
+                    </div>
                     <div class="mb-3">
                         <label for="selectors" class="form-label">CSS Selectors</label>
                         <textarea class="form-control json-editor" id="selectors" name="selectors" rows="6">{{ source.selectors ? source.selectors|json_encode(constant('JSON_PRETTY_PRINT')) : '' }}</textarea>
@@ -244,15 +275,99 @@
                 </div>
 
                 <!-- Form Actions -->
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <a href="/admin/scraper/sources" class="btn btn-outline-secondary">
                         <i class="bi bi-x-circle me-1"></i>Cancel
                     </a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle me-1"></i>{{ source ? 'Update Source' : 'Create Source' }}
-                    </button>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-outline-warning" id="aiPrefillBtn">
+                            <i class="bi bi-magic me-1"></i>AI Auto Fill
+                        </button>
+                        <button type="button" class="btn btn-outline-info" id="liveTestBtn">
+                            <i class="bi bi-broadcast me-1"></i>Test Live Data
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>{{ source ? 'Update Source' : 'Create Source' }}
+                        </button>
+                    </div>
                 </div>
             </form>
+
+            <div class="card mt-4 d-none" id="liveTestResultCard">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-activity me-2"></i>Live Test Result</h5>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="clearLiveTestBtn">
+                        <i class="bi bi-x-circle me-1"></i>Clear
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="liveTestStatus" class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle me-2"></i>Run a live test to verify selectors, pagination and scraping settings.
+                    </div>
+                    <div id="liveTestSummary" class="row g-3 mb-4"></div>
+                    <div id="liveTestConfig" class="row g-3 mb-4"></div>
+                    <div id="liveTestSelectorAudit" class="mb-4"></div>
+                    <div id="liveTestDiagnosis" class="mb-4"></div>
+                    <div id="liveTestEngineFailure" class="mb-4"></div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-lg-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6 class="mb-3">Configuration Checks</h6>
+                                <div id="liveTestChecks" class="d-grid gap-2"></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6 class="mb-3">Sample Extracted Items</h6>
+                                <div id="liveTestSamples" class="d-grid gap-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h6 class="mb-3">Raw Response</h6>
+                        <pre id="liveTestRaw" class="bg-light border rounded p-3 small mb-0" style="max-height: 320px; overflow: auto;"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4 d-none" id="aiPrefillResultCard">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-magic me-2"></i>AI Source Suggestions</h5>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="clearAiPrefillBtn">
+                        <i class="bi bi-x-circle me-1"></i>Clear
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="aiPrefillStatus" class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle me-2"></i>Run AI analysis to detect real selectors and configuration hints from the live page.
+                    </div>
+                    <div id="aiPrefillSummary" class="row g-3 mb-4"></div>
+                    <div id="aiPrefillSuggestions" class="mb-4"></div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-lg-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6 class="mb-3">Selectors to Apply</h6>
+                                <div id="aiPrefillSelectors" class="d-grid gap-2"></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6 class="mb-3">Config to Apply</h6>
+                                <div id="aiPrefillConfig" class="d-grid gap-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mb-4">
+                        <button type="button" class="btn btn-success" id="applyAiPrefillBtn">
+                            <i class="bi bi-arrow-down-circle me-1"></i>Apply Suggestions
+                        </button>
+                    </div>
+                    <div>
+                        <h6 class="mb-3">Raw AI Response</h6>
+                        <pre id="aiPrefillRaw" class="bg-light border rounded p-3 small mb-0" style="max-height: 320px; overflow: auto;"></pre>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Sidebar -->
@@ -321,67 +436,771 @@
 </div>
 
 <script>
-document.getElementById('sourceForm').addEventListener('submit', function(e) {
-    // Validate JSON fields
+const sourceForm = document.getElementById('sourceForm');
+const liveTestBtn = document.getElementById('liveTestBtn');
+const clearLiveTestBtn = document.getElementById('clearLiveTestBtn');
+const liveTestResultCard = document.getElementById('liveTestResultCard');
+const liveTestStatus = document.getElementById('liveTestStatus');
+const liveTestSummary = document.getElementById('liveTestSummary');
+const liveTestConfig = document.getElementById('liveTestConfig');
+const liveTestSelectorAudit = document.getElementById('liveTestSelectorAudit');
+const liveTestDiagnosis = document.getElementById('liveTestDiagnosis');
+const liveTestEngineFailure = document.getElementById('liveTestEngineFailure');
+const liveTestChecks = document.getElementById('liveTestChecks');
+const liveTestSamples = document.getElementById('liveTestSamples');
+const liveTestRaw = document.getElementById('liveTestRaw');
+const aiPrefillBtn = document.getElementById('aiPrefillBtn');
+const clearAiPrefillBtn = document.getElementById('clearAiPrefillBtn');
+const aiPrefillResultCard = document.getElementById('aiPrefillResultCard');
+const aiPrefillStatus = document.getElementById('aiPrefillStatus');
+const aiPrefillSummary = document.getElementById('aiPrefillSummary');
+const aiPrefillSuggestions = document.getElementById('aiPrefillSuggestions');
+const aiPrefillSelectors = document.getElementById('aiPrefillSelectors');
+const aiPrefillConfig = document.getElementById('aiPrefillConfig');
+const aiPrefillRaw = document.getElementById('aiPrefillRaw');
+const applyAiPrefillBtn = document.getElementById('applyAiPrefillBtn');
+const sourceTypeSelect = document.getElementById('type');
+const sourceTypeHint = document.getElementById('sourceTypeHint');
+const selectorSection = document.getElementById('selectorSection');
+const apiSelectorNotice = document.getElementById('apiSelectorNotice');
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function validateJsonFields() {
     const jsonFields = ['selectors', 'advance_config', 'proxy_config'];
     let isValid = true;
 
     jsonFields.forEach(fieldId => {
         const field = document.getElementById(fieldId);
+        if (!field) {
+            return;
+        }
+
         if (field.value.trim()) {
             try {
                 JSON.parse(field.value);
                 field.classList.remove('is-invalid');
-            } catch (e) {
+            } catch (error) {
                 field.classList.add('is-invalid');
                 isValid = false;
             }
+        } else {
+            field.classList.remove('is-invalid');
         }
     });
 
-    if (!isValid) {
-        e.preventDefault();
-        alert('Please fix the JSON syntax errors in the highlighted fields.');
-        return false;
+    return isValid;
+}
+
+function formatJsonEditors() {
+    document.querySelectorAll('.json-editor').forEach(field => {
+        field.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                try {
+                    const parsed = JSON.parse(this.value);
+                    this.value = JSON.stringify(parsed, null, 2);
+                    this.classList.remove('is-invalid');
+                } catch (error) {
+                    this.classList.add('is-invalid');
+                }
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    });
+}
+
+function renderSourceTypeHint() {
+    if (!sourceTypeHint || !sourceTypeSelect) {
+        return;
     }
 
-    // Show loading state
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Saving...';
-    submitBtn.disabled = true;
-});
+    const type = (sourceTypeSelect.value || '').toLowerCase();
+    const sourceUrl = document.getElementById('url')?.value || '';
 
-// JSON validation on blur
-document.querySelectorAll('.json-editor').forEach(field => {
-    field.addEventListener('blur', function() {
-        if (this.value.trim()) {
-            try {
-                JSON.parse(this.value);
-                this.classList.remove('is-invalid');
-            } catch (e) {
-                this.classList.add('is-invalid');
+    if (type === 'api') {
+        sourceTypeHint.innerHTML = `
+            <span class="badge bg-info-subtle text-info border border-info-subtle me-2">API Source</span>
+            <span class="small text-muted">This source is JSON-driven. It uses an API endpoint instead of HTML selectors.</span>
+        `;
+        if (selectorSection) {
+            selectorSection.classList.add('api-selector-disabled');
+        }
+        if (apiSelectorNotice) {
+            apiSelectorNotice.classList.remove('d-none');
+        }
+        return;
+    }
+
+    if (sourceUrl.includes('alljobs.teletalk.com.bd')) {
+        sourceTypeHint.innerHTML = `
+            <span class="badge bg-success-subtle text-success border border-success-subtle me-2">Teletalk Source</span>
+            <span class="small text-muted">Teletalk is configured as a structured source. If the type changes to API, the live tester will switch to JSON extraction.</span>
+        `;
+        if (selectorSection) {
+            selectorSection.classList.remove('api-selector-disabled');
+        }
+        if (apiSelectorNotice) {
+            apiSelectorNotice.classList.add('d-none');
+        }
+        return;
+    }
+
+    sourceTypeHint.innerHTML = '';
+    if (selectorSection) {
+        selectorSection.classList.remove('api-selector-disabled');
+    }
+    if (apiSelectorNotice) {
+        apiSelectorNotice.classList.add('d-none');
+    }
+}
+
+function buildStatCard(label, value, tone = 'primary') {
+    return `
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <div class="text-uppercase small text-muted fw-semibold">${escapeHtml(label)}</div>
+                <div class="h4 mb-0 text-${tone}">${escapeHtml(value)}</div>
+            </div>
+        </div>
+    `;
+}
+
+function renderAiPrefillSummary(result = {}) {
+    const summary = [
+        ['Result', result.success ? 'Ready' : 'Failed', result.success ? 'success' : 'danger'],
+        ['Source Type', result.source_type || 'unknown', 'primary'],
+        ['Content Type', result.content_type || 'articles', 'info'],
+        ['Confidence', `${Math.round((result.confidence || 0) * 100)}%`, 'warning'],
+        ['Browser', result.use_browser ? 'Enabled' : 'Disabled', result.use_browser ? 'warning' : 'success']
+    ];
+
+    aiPrefillSummary.innerHTML = summary.map(([label, value, tone]) => buildStatCard(label, value, tone)).join('');
+}
+
+function renderAiPrefillSuggestions(result = {}) {
+    const suggestions = Array.isArray(result.suggestions) ? result.suggestions : [];
+    const warnings = Array.isArray(result.warnings) ? result.warnings : [];
+    const items = [...suggestions.map(msg => ({ type: 'suggestion', message: msg })), ...warnings.map(msg => ({ type: 'warning', message: msg }))];
+
+    if (!items.length) {
+        aiPrefillSuggestions.innerHTML = '<div class="text-muted small">No additional AI suggestions were returned.</div>';
+        return;
+    }
+
+    aiPrefillSuggestions.innerHTML = `
+        <div class="border rounded p-3 bg-light">
+            <div class="small text-uppercase fw-semibold text-muted mb-2">AI Notes</div>
+            <div class="d-grid gap-2">
+                ${items.map(item => `
+                    <div class="border rounded p-2 bg-white">
+                        <span class="badge text-bg-${item.type === 'warning' ? 'warning' : 'info'} me-2">${escapeHtml(item.type)}</span>
+                        <span class="small">${escapeHtml(item.message || '')}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function renderAiPrefillSelectors(result = {}) {
+    const selectors = result.selectors || {};
+    const candidates = result.selector_candidates || {};
+    const entries = Object.entries(selectors);
+
+    if (!entries.length) {
+        aiPrefillSelectors.innerHTML = '<div class="text-muted small">No reliable selectors were detected.</div>';
+        return;
+    }
+
+    aiPrefillSelectors.innerHTML = entries.map(([key, selector]) => {
+        const candidateList = Array.isArray(candidates[key]) ? candidates[key] : [];
+        const top = candidateList[0] || {};
+        const confidence = Math.round((top.confidence || 0) * 100);
+        const sample = top.sample_text ? `<div class="small text-muted mt-2">${escapeHtml(top.sample_text)}</div>` : '';
+        return `
+            <div class="border rounded p-3 bg-white">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                    <div class="fw-semibold">${escapeHtml(key)}</div>
+                    <span class="badge text-bg-success">${confidence}%</span>
+                </div>
+                <code class="d-block small">${escapeHtml(selector)}</code>
+                ${sample}
+            </div>
+        `;
+    }).join('');
+}
+
+function renderAiPrefillConfig(result = {}) {
+    const advanceConfig = result.advance_config || {};
+    const pagination = result.pagination || {};
+    const items = [];
+
+    if (advanceConfig && Object.keys(advanceConfig).length) {
+        items.push({ label: 'Advance Config', value: JSON.stringify(advanceConfig, null, 2) });
+    }
+    if (pagination && (pagination.type || pagination.selector || pagination.pattern)) {
+        items.push({ label: 'Pagination', value: JSON.stringify(pagination, null, 2) });
+    }
+    if (result.source_type) {
+        items.push({ label: 'Source Type', value: result.source_type });
+    }
+    if (result.content_type) {
+        items.push({ label: 'Content Type', value: result.content_type });
+    }
+
+    if (!items.length) {
+        aiPrefillConfig.innerHTML = '<div class="text-muted small">No config suggestions were returned.</div>';
+        return;
+    }
+
+    aiPrefillConfig.innerHTML = items.map(item => `
+        <div class="border rounded p-3 bg-white">
+            <div class="small text-uppercase fw-semibold text-muted mb-2">${escapeHtml(item.label)}</div>
+            <pre class="small mb-0" style="white-space: pre-wrap;">${escapeHtml(item.value)}</pre>
+        </div>
+    `).join('');
+}
+
+function setFieldValueIfPresent(fieldId, value, overwrite = true) {
+    const field = document.getElementById(fieldId);
+    if (!field || value === undefined || value === null || value === '') {
+        return;
+    }
+
+    if (!overwrite && String(field.value || '').trim() !== '') {
+        return;
+    }
+
+    field.value = String(value);
+}
+
+function mergeJsonValue(fieldId, suggestion) {
+    const field = document.getElementById(fieldId);
+    if (!field || !suggestion || typeof suggestion !== 'object') {
+        return;
+    }
+
+    let current = {};
+    const raw = String(field.value || '').trim();
+    if (raw !== '') {
+        try {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                current = parsed;
             }
-        } else {
-            this.classList.remove('is-invalid');
+        } catch (error) {
+            current = {};
+        }
+    }
+
+    field.value = JSON.stringify({ ...current, ...suggestion }, null, 2);
+}
+
+function applyAiPrefill(result = {}) {
+    const sourceType = String(result.source_type || '').trim();
+    const contentType = String(result.content_type || '').trim();
+    const selectors = result.selectors || {};
+    const advanceConfig = result.advance_config || {};
+    const pagination = result.pagination || {};
+
+    if (sourceType) {
+        sourceTypeSelect.value = sourceType;
+    }
+    if (contentType) {
+        document.getElementById('content_type').value = contentType;
+    }
+    if (typeof result.use_browser === 'boolean') {
+        document.getElementById('use_browser').checked = result.use_browser;
+    }
+
+    if (sourceType === 'api') {
+        document.getElementById('selectors').value = '';
+        document.getElementById('pagination_type').value = 'none';
+        document.getElementById('pagination_selector').value = '';
+        document.getElementById('pagination_pattern').value = '';
+    } else if (selectors && Object.keys(selectors).length) {
+        document.getElementById('selectors').value = JSON.stringify(selectors, null, 2);
+    }
+    if (advanceConfig && Object.keys(advanceConfig).length) {
+        mergeJsonValue('advance_config', advanceConfig);
+    }
+
+    if (pagination && pagination.type) {
+        document.getElementById('pagination_type').value = pagination.type;
+    }
+    if (pagination && pagination.selector) {
+        document.getElementById('pagination_selector').value = pagination.selector;
+    }
+    if (pagination && pagination.pattern) {
+        document.getElementById('pagination_pattern').value = pagination.pattern;
+    }
+
+    renderSourceTypeHint();
+}
+
+function renderAiPrefillResult(result = {}) {
+    if (!aiPrefillResultCard) {
+        return;
+    }
+
+    aiPrefillResultCard.classList.remove('d-none');
+    renderAiPrefillSummary(result);
+    renderAiPrefillSuggestions(result);
+    renderAiPrefillSelectors(result);
+    renderAiPrefillConfig(result);
+    aiPrefillRaw.textContent = JSON.stringify(result ?? {}, null, 2);
+}
+
+function resetAiPrefillCard() {
+    if (!aiPrefillResultCard) {
+        return;
+    }
+
+    aiPrefillResultCard.classList.add('d-none');
+    aiPrefillStatus.className = 'alert alert-info mb-4';
+    aiPrefillStatus.innerHTML = '<i class="bi bi-info-circle me-2"></i>Run AI analysis to detect real selectors and configuration hints from the live page.';
+    aiPrefillSummary.innerHTML = '';
+    aiPrefillSuggestions.innerHTML = '';
+    aiPrefillSelectors.innerHTML = '';
+    aiPrefillConfig.innerHTML = '';
+    aiPrefillRaw.textContent = '';
+}
+
+function renderConfiguration(configuration = {}) {
+    const map = [
+        ['Source Type', configuration.source_type || 'n/a', 'primary'],
+        ['Content Type', configuration.content_type || 'n/a', 'info'],
+        ['Timeout', `${configuration.timeout ?? 30}s`, 'secondary'],
+        ['Scrape Depth', configuration.scrape_depth ?? 1, 'secondary'],
+        ['Max Pages', configuration.max_pages ?? 1, 'secondary'],
+        ['Delay', `${configuration.delay ?? 0}s`, 'secondary'],
+        ['Pagination', configuration.pagination_type || 'none', 'secondary'],
+        ['Browser', configuration.use_browser ? 'Enabled' : 'Disabled', configuration.use_browser ? 'warning' : 'success'],
+        ['SSL Verify', configuration.ssl_verify ? 'Enabled' : 'Disabled', configuration.ssl_verify ? 'success' : 'warning'],
+        ['Selectors', `${configuration.selectors_count || 0} group(s)`, 'success'],
+        ['Proxy', configuration.proxy_enabled ? (configuration.proxy_provider || 'Enabled') : 'Disabled', configuration.proxy_enabled ? 'warning' : 'success']
+    ];
+
+    liveTestConfig.innerHTML = map.map(([label, value, tone]) => buildStatCard(label, value, tone)).join('');
+}
+
+function renderSummary(result) {
+    const summary = [
+        ['Result', result.success ? 'Success' : 'Failed', result.success ? 'success' : 'danger'],
+        ['Items Found', result.items_found ?? 0, 'primary'],
+        ['Library', result.library_used || 'unknown', 'info'],
+        ['Strategy', result.strategy_used || 'auto', 'secondary'],
+        ['Duration', `${result.duration ?? 0}s`, 'warning']
+    ];
+
+    liveTestSummary.innerHTML = summary.map(([label, value, tone]) => buildStatCard(label, value, tone)).join('');
+}
+
+function renderSelectorAudit(audit = {}, summary = {}) {
+    const checks = Array.isArray(audit) ? audit : [];
+    const total = summary.total ?? checks.length ?? 0;
+    const passed = summary.passed ?? 0;
+    const warnings = summary.warnings ?? 0;
+    const failed = summary.failed ?? 0;
+    const fetchedHtml = summary.fetched_html ? 'Yes' : 'No';
+
+    const header = `
+        <div class="border rounded p-3 mb-3 bg-light">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                <div>
+                    <h6 class="mb-1">Selector Validation</h6>
+                    <div class="small text-muted">Each selector group is tested against the live page and marked as pass, warn, or fail.</div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge text-bg-success">Passed ${escapeHtml(passed)}</span>
+                    <span class="badge text-bg-warning">Warnings ${escapeHtml(warnings)}</span>
+                    <span class="badge text-bg-danger">Failed ${escapeHtml(failed)}</span>
+                    <span class="badge text-bg-secondary">Total ${escapeHtml(total)}</span>
+                    <span class="badge text-bg-info">HTML ${escapeHtml(fetchedHtml)}</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    if (!checks.length) {
+        liveTestSelectorAudit.innerHTML = header + '<div class="text-muted small">No selector groups were configured.</div>';
+        return;
+    }
+
+    const cards = checks.map(check => {
+        const tone = check.status === 'pass' ? 'success' : (check.status === 'warn' ? 'warning' : (check.status === 'fail' ? 'danger' : 'secondary'));
+        const icon = check.status === 'pass' ? 'check-circle' : (check.status === 'warn' ? 'exclamation-triangle' : (check.status === 'fail' ? 'x-circle' : 'info-circle'));
+        const samples = Array.isArray(check.sample_values) ? check.sample_values : [];
+
+        return `
+            <div class="border rounded p-3 mb-2">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <div class="fw-semibold">${escapeHtml(check.label || check.key || 'Selector')}</div>
+                            <span class="badge text-bg-${tone}">
+                                <i class="bi bi-${icon} me-1"></i>${escapeHtml(check.status || 'info')}
+                            </span>
+                        </div>
+                        <div class="small text-muted mb-1">${escapeHtml(check.selector || 'No selector configured')}</div>
+                        <div class="small">${escapeHtml(check.message || '')}</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="small text-muted text-uppercase fw-semibold">Matches</div>
+                        <div class="h5 mb-0">${escapeHtml(check.count ?? 0)}</div>
+                    </div>
+                </div>
+                ${samples.length ? `
+                    <div class="mt-3">
+                        <div class="small text-uppercase fw-semibold text-muted mb-2">Samples</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            ${samples.map(sample => `<span class="badge text-bg-light border text-dark">${escapeHtml(sample)}</span>`).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+
+    liveTestSelectorAudit.innerHTML = header + `<div class="d-grid gap-2">${cards}</div>`;
+}
+
+function renderDiagnosis(diagnosis = {}) {
+    const items = Array.isArray(diagnosis.items) ? diagnosis.items : [];
+    if (!items.length) {
+        liveTestDiagnosis.innerHTML = '<div class="text-muted small">No configuration issues were detected.</div>';
+        return;
+    }
+
+    const tone = diagnosis.status === 'error' ? 'danger' : 'warning';
+    const icon = diagnosis.status === 'error' ? 'x-circle' : 'exclamation-triangle';
+
+    liveTestDiagnosis.innerHTML = `
+        <div class="border rounded p-3 bg-${tone}-subtle">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                <div>
+                    <h6 class="mb-1">Why it failed</h6>
+                    <div class="small text-muted">${escapeHtml(diagnosis.headline || 'There are selector or configuration issues that need attention.')}</div>
+                </div>
+                <span class="badge text-bg-${tone}">
+                    <i class="bi bi-${icon} me-1"></i>${escapeHtml(diagnosis.status || 'warning')}
+                </span>
+            </div>
+            <div class="d-grid gap-2">
+                ${items.map(item => `
+                    <div class="border rounded p-2 bg-white">
+                        <div class="small fw-semibold">${escapeHtml(item.level || 'info').toUpperCase()}</div>
+                        <div class="small text-muted">${escapeHtml(item.message || '')}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function renderEngineFailure(engineFailure = {}) {
+    if (!engineFailure.show) {
+        liveTestEngineFailure.innerHTML = '';
+        return;
+    }
+
+    const strategy = engineFailure.strategy || {};
+    const rawError = engineFailure.raw_error || '';
+    const inferredCause = engineFailure.inferred_cause || 'No specific cause could be inferred.';
+    const fixes = Array.isArray(engineFailure.suggested_fixes) ? engineFailure.suggested_fixes : [];
+
+    liveTestEngineFailure.innerHTML = `
+        <div class="border rounded p-3 bg-danger-subtle">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                <div>
+                    <h6 class="mb-1">Engine Failure</h6>
+                    <div class="small text-muted">The scraper engine stopped before producing usable data.</div>
+                </div>
+                <span class="badge text-bg-danger">
+                    <i class="bi bi-exclamation-octagon me-1"></i>engine
+                </span>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-lg-6">
+                    <div class="border rounded p-3 bg-white h-100">
+                        <div class="small text-uppercase fw-semibold text-muted mb-2">Strategy</div>
+                        <div class="d-grid gap-1 small">
+                            <div><strong>Strategy used:</strong> ${escapeHtml(strategy.strategy_used || 'auto')}</div>
+                            <div><strong>Library used:</strong> ${escapeHtml(strategy.library_used || 'unknown')}</div>
+                            <div><strong>Mode:</strong> ${escapeHtml(strategy.browser_mode || 'unknown')}</div>
+                            <div><strong>Dynamic extraction:</strong> ${escapeHtml(strategy.extract_dynamic || 'no')}</div>
+                            <div><strong>Wait selector:</strong> ${escapeHtml(strategy.wait_for_element || 'none')}</div>
+                            <div><strong>JS wait:</strong> ${escapeHtml(strategy.wait_for_js || 0)} ms</div>
+                            <div><strong>Timeout:</strong> ${escapeHtml(strategy.timeout || 0)} s</div>
+                            <div><strong>Max depth:</strong> ${escapeHtml(strategy.max_depth || 1)}</div>
+                            <div><strong>Max items:</strong> ${escapeHtml(strategy.max_items || 5)}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="border rounded p-3 bg-white h-100">
+                        <div class="small text-uppercase fw-semibold text-muted mb-2">Raw Error / Cause</div>
+                        <div class="small mb-2"><strong>Raw error:</strong> ${escapeHtml(rawError || 'No raw error was returned')}</div>
+                        <div class="small"><strong>Inferred cause:</strong> ${escapeHtml(inferredCause)}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="small text-uppercase fw-semibold text-muted mb-2">Suggested Fixes</div>
+                <div class="d-grid gap-2">
+                    ${fixes.length ? fixes.map(fix => `
+                        <div class="border rounded p-2 bg-white">
+                            <div class="fw-semibold small">${escapeHtml(fix.title || 'Fix')}</div>
+                            <div class="small text-muted">${escapeHtml(fix.detail || '')}</div>
+                        </div>
+                    `).join('') : '<div class="text-muted small">No specific fixes available.</div>'}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderChecks(checks = []) {
+    if (!checks.length) {
+        liveTestChecks.innerHTML = '<div class="text-muted small">No checks returned.</div>';
+        return;
+    }
+
+    liveTestChecks.innerHTML = checks.map(check => {
+        const badgeTone = check.status === 'pass' ? 'success' : (check.status === 'warn' ? 'warning' : (check.status === 'fail' ? 'danger' : 'info'));
+        const icon = check.status === 'pass' ? 'check-circle' : (check.status === 'warn' ? 'exclamation-triangle' : (check.status === 'fail' ? 'x-circle' : 'info-circle'));
+        return `
+            <div class="border rounded p-3 bg-light">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                        <div class="fw-semibold">${escapeHtml(check.label || 'Check')}</div>
+                        <div class="small text-muted">${escapeHtml(check.message || '')}</div>
+                    </div>
+                    <span class="badge text-bg-${badgeTone}">
+                        <i class="bi bi-${icon} me-1"></i>${escapeHtml(check.status || 'info')}
+                    </span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderSamples(samples = []) {
+    if (!samples.length) {
+        liveTestSamples.innerHTML = '<div class="text-muted small">No sample items were extracted.</div>';
+        return;
+    }
+
+    liveTestSamples.innerHTML = samples.map((sample, index) => {
+        const title = sample.title || sample.name || `Item ${index + 1}`;
+        const url = sample.url || '';
+        const excerpt = sample.excerpt || '';
+        const excerptPreview = excerpt ? escapeHtml(excerpt.slice(0, 240)) : '';
+        return `
+            <div class="border rounded p-3">
+                <div class="fw-semibold mb-1">${escapeHtml(title)}</div>
+                ${url ? `<div class="small mb-2"><a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a></div>` : ''}
+                ${excerpt ? `<div class="small text-muted">${excerptPreview}</div>` : '<div class="small text-muted">No excerpt available.</div>'}
+            </div>
+        `;
+    }).join('');
+}
+
+function renderRawResponse(result) {
+    liveTestRaw.textContent = JSON.stringify(result ?? {}, null, 2);
+}
+
+function showLiveTestCard() {
+    liveTestResultCard.classList.remove('d-none');
+}
+
+function resetLiveTestCard() {
+    liveTestResultCard.classList.add('d-none');
+    liveTestStatus.className = 'alert alert-info mb-4';
+    liveTestStatus.innerHTML = '<i class="bi bi-info-circle me-2"></i>Run a live test to verify selectors, pagination and scraping settings.';
+    liveTestSummary.innerHTML = '';
+    liveTestConfig.innerHTML = '';
+    liveTestSelectorAudit.innerHTML = '';
+    liveTestDiagnosis.innerHTML = '';
+    liveTestEngineFailure.innerHTML = '';
+    liveTestChecks.innerHTML = '';
+    liveTestSamples.innerHTML = '';
+    liveTestRaw.textContent = '';
+}
+
+if (sourceForm) {
+    sourceForm.addEventListener('submit', function(e) {
+        if (!validateJsonFields()) {
+            e.preventDefault();
+            alert('Please fix the JSON syntax errors in the highlighted fields.');
+            return false;
+        }
+
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Saving...';
+        submitBtn.disabled = true;
+    });
+}
+
+formatJsonEditors();
+renderSourceTypeHint();
+
+if (sourceTypeSelect) {
+    sourceTypeSelect.addEventListener('change', renderSourceTypeHint);
+}
+
+const sourceUrlInput = document.getElementById('url');
+if (sourceUrlInput) {
+    sourceUrlInput.addEventListener('input', renderSourceTypeHint);
+}
+
+if (aiPrefillBtn && sourceForm) {
+    aiPrefillBtn.addEventListener('click', async function() {
+        if (!validateJsonFields()) {
+            alert('Please fix the JSON syntax errors before running AI analysis.');
+            return;
+        }
+
+        const originalHtml = aiPrefillBtn.innerHTML;
+        const formData = new FormData(sourceForm);
+        formData.set('url', document.getElementById('url')?.value || '');
+
+        if (aiPrefillResultCard) {
+            aiPrefillResultCard.classList.remove('d-none');
+        }
+        aiPrefillStatus.className = 'alert alert-info mb-4';
+        aiPrefillStatus.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Analyzing live page for real selectors and config suggestions...';
+        aiPrefillSummary.innerHTML = '';
+        aiPrefillSuggestions.innerHTML = '';
+        aiPrefillSelectors.innerHTML = '';
+        aiPrefillConfig.innerHTML = '';
+        aiPrefillRaw.textContent = '';
+        aiPrefillBtn.disabled = true;
+        aiPrefillBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Analyzing...';
+
+        try {
+            const response = await fetch('/admin/scraper/ai/source-prefill', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                renderAiPrefillResult(data);
+                applyAiPrefill(data);
+                aiPrefillStatus.className = 'alert alert-success mb-4';
+                aiPrefillStatus.innerHTML = '<i class="bi bi-check-circle me-2"></i>AI suggestions were applied from real live page analysis.';
+            } else {
+                renderAiPrefillResult(data);
+                aiPrefillStatus.className = 'alert alert-warning mb-4';
+                aiPrefillStatus.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>${escapeHtml(data.error || 'AI analysis returned no usable suggestions')}`;
+            }
+        } catch (error) {
+            aiPrefillStatus.className = 'alert alert-danger mb-4';
+            aiPrefillStatus.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>${escapeHtml(error.message || 'AI analysis failed')}`;
+        } finally {
+            aiPrefillBtn.disabled = false;
+            aiPrefillBtn.innerHTML = originalHtml;
         }
     });
-});
+}
 
-// Auto-format JSON on focus out
-document.querySelectorAll('.json-editor').forEach(field => {
-    field.addEventListener('blur', function() {
-        if (this.value.trim()) {
-            try {
-                const parsed = JSON.parse(this.value);
-                this.value = JSON.stringify(parsed, null, 2);
-                this.classList.remove('is-invalid');
-            } catch (e) {
-                // Keep invalid JSON as-is
+if (liveTestBtn && sourceForm) {
+    liveTestBtn.addEventListener('click', async function() {
+        if (!validateJsonFields()) {
+            alert('Please fix the JSON syntax errors before running the live test.');
+            return;
+        }
+
+        const originalHtml = liveTestBtn.innerHTML;
+        const formData = new FormData(sourceForm);
+
+        formData.set('max_items', '5');
+        formData.set('timeout', '30');
+
+        showLiveTestCard();
+        liveTestStatus.className = 'alert alert-info mb-4';
+        liveTestStatus.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Running live test...';
+        liveTestSummary.innerHTML = '';
+        liveTestConfig.innerHTML = '';
+        liveTestSelectorAudit.innerHTML = '';
+        liveTestDiagnosis.innerHTML = '';
+        liveTestEngineFailure.innerHTML = '';
+        liveTestChecks.innerHTML = '';
+        liveTestSamples.innerHTML = '';
+        liveTestRaw.textContent = '';
+        liveTestBtn.disabled = true;
+        liveTestBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Testing...';
+
+        try {
+            const response = await fetch('/admin/scraper/sources/test-live', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            const result = data.result || {};
+            if (Object.keys(result).length) {
+                renderSummary(result);
+                renderConfiguration(result.configuration || {});
+                renderSelectorAudit(result.selector_checks || [], result.selector_summary || {});
+                renderDiagnosis(result.diagnosis || {});
+                renderEngineFailure(result.engine_failure || {});
+                renderChecks(result.checks || []);
+                renderSamples(result.samples || []);
+                renderRawResponse(result);
             }
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Live test failed');
+            }
+
+            liveTestStatus.className = 'alert alert-success mb-4';
+            liveTestStatus.innerHTML = '<i class="bi bi-check-circle me-2"></i>Live test completed successfully';
+        } catch (error) {
+            liveTestStatus.className = 'alert alert-danger mb-4';
+            liveTestStatus.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>${escapeHtml(error.message || 'Live test failed')}`;
+        } finally {
+            liveTestBtn.disabled = false;
+            liveTestBtn.innerHTML = originalHtml;
         }
     });
-});
+}
+
+if (clearLiveTestBtn) {
+    clearLiveTestBtn.addEventListener('click', resetLiveTestCard);
+}
+
+if (applyAiPrefillBtn) {
+    applyAiPrefillBtn.addEventListener('click', function() {
+        if (!aiPrefillRaw || !aiPrefillRaw.textContent) {
+            return;
+        }
+
+        try {
+            const result = JSON.parse(aiPrefillRaw.textContent);
+            applyAiPrefill(result);
+            aiPrefillStatus.className = 'alert alert-success mb-4';
+            aiPrefillStatus.innerHTML = '<i class="bi bi-check-circle me-2"></i>AI suggestions applied to the form.';
+        } catch (error) {
+            alert('Could not apply AI suggestions: invalid response data.');
+        }
+    });
+}
+
+if (clearAiPrefillBtn) {
+    clearAiPrefillBtn.addEventListener('click', resetAiPrefillCard);
+}
 </script>
 
 {% endblock %}

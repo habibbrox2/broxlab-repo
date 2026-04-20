@@ -150,6 +150,7 @@ $SKIP_BACKUP && log_info "Safety backup will be skipped"
 
 ensure_env_secret "JWT_SECRET"
 ensure_env_secret "CSRF_SECRET"
+ensure_env_secret "NODE_SERVICE_API_KEY"
 
 if [[ ! -d "$RELEASES" ]]; then
     log_error "Releases directory not found: $RELEASES"

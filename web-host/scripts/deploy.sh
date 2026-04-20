@@ -213,6 +213,7 @@ fi
 
 ensure_env_secret "JWT_SECRET"
 ensure_env_secret "CSRF_SECRET"
+ensure_env_secret "NODE_SERVICE_API_KEY"
 
 mkdir -p \
     "$STORAGE/uploads" \

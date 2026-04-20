@@ -49,13 +49,6 @@ class HtmlFetcher
                 }
                 return $html;
             } catch (\Exception $nodeError) {
-                // Log the Node.js failure but continue to fallback
-                $errorHandler->handleError($nodeError, [
-                    'url' => $url,
-                    'method' => 'node_service',
-                    'fallback_available' => true
-                ]);
-
                 // Try curl fallback
                 try {
                     $html = self::fetchViaCurl($url);
@@ -78,7 +71,7 @@ class HtmlFetcher
 
     private static function fetchFromNodeService(string $url): string
     {
-        $nodeServiceUrl = getenv('NODE_SCRAPER_SERVICE_URL') ?: 'http://localhost:3002';
+        $nodeServiceUrl = getenv('NODE_SCRAPER_SERVICE_URL') ?: 'http://localhost:3000';
         $apiKey = getenv('NODE_SERVICE_API_KEY') ?: 'internal-key';
 
         $payload = json_encode([
@@ -87,7 +80,9 @@ class HtmlFetcher
                 'url' => $url,
                 'javascript' => true,
                 'timeout' => 30000,
-                'wait_for_selector' => 'body', // Wait for body to load
+                'waitForSelector' => 'body',
+                'wait_for_selector' => 'body',
+                'userAgent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                 'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             ]
         ]);
@@ -157,6 +152,7 @@ class HtmlFetcher
             CURLOPT_TIMEOUT => 30,
             CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_ENCODING => '',
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_SSL_VERIFYHOST => false,
             CURLOPT_MAXREDIRS => 5,
@@ -166,6 +162,15 @@ class HtmlFetcher
                 'Accept-Encoding: gzip, deflate',
                 'Connection: keep-alive',
                 'Upgrade-Insecure-Requests: 1',
+                'Referer: https://www.bdnews24.com/',
+                'Cache-Control: no-cache',
+                'Pragma: no-cache',
+                'Sec-Fetch-Site: none',
+                'Sec-Fetch-Mode: navigate',
+                'Sec-Fetch-Dest: document',
+                'Sec-Ch-Ua: "Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+                'Sec-Ch-Ua-Mobile: ?0',
+                'Sec-Ch-Ua-Platform: "Windows"',
             ]
         ]);
 

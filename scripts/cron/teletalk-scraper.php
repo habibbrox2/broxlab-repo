@@ -20,15 +20,15 @@ ini_set('log_errors', '1');
 
 // Define paths
 define('ROOT_DIR', dirname(__DIR__, 2));
-define('LOG_DIR', ROOT_DIR . '/logs');
+$logDir = ROOT_DIR . '/logs';
 
 // Ensure log directory exists
-if (!is_dir(LOG_DIR)) {
-    mkdir(LOG_DIR, 0755, true);
+if (!is_dir($logDir)) {
+    mkdir($logDir, 0755, true);
 }
 
 // Log file
-$logFile = LOG_DIR . '/teletalk-scraper.log';
+$logFile = $logDir . '/teletalk-scraper.log';
 
 /**
  * Log message to file and console
@@ -53,6 +53,10 @@ function logMessage(string $message, bool $verbose = false): void
  */
 function sendNotification(string $subject, string $message): void
 {
+    if ((PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') && getenv('SCRAPER_SEND_NOTIFICATIONS') !== 'true') {
+        return;
+    }
+
     try {
         // Load database connection
         require_once ROOT_DIR . '/public_html/_db.php';
@@ -105,7 +109,7 @@ $verbose = false;
 foreach ($argv as $arg) {
     if (preg_match('/--max-pages=(\d+)/', $arg, $matches)) {
         $maxPages = (int)$matches[1];
-        $maxPages = min(max($maxPages, 1), 10); // Limit to 1-10
+        $maxPages = min(max($maxPages, 1), 50); // Limit to 1-50
     }
 }
 
@@ -116,16 +120,14 @@ try {
     // Load dependencies
     require_once ROOT_DIR . '/vendor/autoload.php';
     require_once ROOT_DIR . '/public_html/_db.php';
-    require_once ROOT_DIR . '/app/Modules/Scraper/HttpClientService.php';
-    require_once ROOT_DIR . '/app/Modules/Scraper/HtmlParserService.php';
-    require_once ROOT_DIR . '/app/Modules/Scraper/TeletalkScraperService.php';
     require_once ROOT_DIR . '/app/Models/TeletalkJobModel.php';
+    require_once ROOT_DIR . '/app/Modules/Scraper/TeletalkScraperService.php';
+    require_once ROOT_DIR . '/Config/Constants.php';
     require_once ROOT_DIR . '/app/Helpers/ErrorLogging.php';
 
     // Initialize services
-    $httpClient = new \App\Modules\Scraper\HttpClientService();
-    $scraper = new \App\Modules\Scraper\TeletalkScraperService($httpClient);
-    $model = new TeletalkJobModel($mysqli);
+    $scraper = new \App\Modules\Scraper\TeletalkScraperService($mysqli);
+    $model = new \App\Models\TeletalkJobModel($mysqli);
 
     // Get previous stats for comparison
     $previousTotal = $model->getTotalCount();
@@ -133,26 +135,10 @@ try {
 
     // Scrape with progress tracking
     $startTime = microtime(true);
-    $results = $scraper->scrapeAllPages($maxPages, function ($page, $totalPages, $success, $data) use ($model, $scraper) {
+    $results = $scraper->scrapeAllPages($maxPages, function ($page, $totalPages, $success, $data) {
         if ($success) {
             logMessage("Page {$page}/{$totalPages}: Found " . count($data) . " jobs");
-
-            // Save jobs to database
-            foreach ($data as $job) {
-                $saveResult = $model->saveJob($job);
-                if ($saveResult['success']) {
-                    $scraper->updateStats('new_jobs', 1);
-                } else {
-                    if (strpos($saveResult['error'], 'already exists') !== false) {
-                        $scraper->updateStats('duplicates', 1);
-                    } else {
-                        $scraper->updateStats('errors', 1);
-                        logMessage("Error saving job: " . $saveResult['error']);
-                    }
-                }
-            }
         } else {
-            $scraper->updateStats('errors', 1);
             logMessage("Error on page {$page}: {$data}");
         }
     });

@@ -79,21 +79,21 @@ class BDNews24Preset extends BasePreset
     public function getConfig(): array
     {
         return [
-            'list_container' => '.news-list .news-item',
-            'list_item' => '.news-item',
-            'list_title' => '.title a',
-            'list_link' => '.title a',
-            'list_date' => '.time',
-            'list_image' => '.img img',
-            'title' => 'h1.article-title',
-            'content' => '.article-body',
-            'image' => '.article-featured-image img',
-            'excerpt' => '.article-excerpt',
-            'date' => '.article-time',
-            'author' => '.author-name',
-            'category' => '.category-name',
-            'tags' => '.tags a',
-            'pagination' => '.pagination a.next'
+            'list_container' => 'article',
+            'list_item' => 'article',
+            'list_title' => 'article a',
+            'list_link' => 'article a',
+            'list_date' => 'time',
+            'list_image' => 'article img',
+            'title' => 'h1',
+            'content' => 'article, main',
+            'image' => 'article img',
+            'excerpt' => 'p',
+            'date' => 'time',
+            'author' => '[rel="author"], .author',
+            'category' => 'nav a, .breadcrumb a',
+            'tags' => 'a[rel="tag"]',
+            'pagination' => 'a[rel="next"], .pagination a.next'
         ];
     }
 

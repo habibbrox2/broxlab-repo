@@ -1,4 +1,5 @@
 <?php
+
 /**
  * config/firebase.php
  * 
@@ -51,9 +52,18 @@ $localAuthDomain = $normalizeDomainValue(
     env('FIREBASE_AUTH_DOMAIN_LOCAL', 'broxlab-dbd2a.firebaseapp.com'),
     'broxlab-dbd2a.firebaseapp.com'
 );
+$liveDomains = [
+    'broxlab.online',
+    'broxlab.govinpqms.online',
+];
+
+$resolvedLiveDomain = in_array($host, $liveDomains, true)
+    ? $host
+    : 'broxlab.online';
+
 $liveAuthDomain = $normalizeDomainValue(
-    env('FIREBASE_AUTH_DOMAIN_LIVE', 'broxlab.online'),
-    'broxlab.online'
+    env('FIREBASE_AUTH_DOMAIN_LIVE', $resolvedLiveDomain),
+    $resolvedLiveDomain
 );
 
 $resolvedAuthDomain = (!$isHttpsRequest && $isLocalHost) ? $localAuthDomain : $liveAuthDomain;
@@ -68,51 +78,51 @@ return [
     'authDomain' => $resolvedAuthDomain,
     'databaseUrl' => env('FIREBASE_DATABASE_URL', ''), // not provided in JS config
     'storageBucket' => env('FIREBASE_STORAGE_BUCKET', 'broxlab-dbd2a.firebasestorage.app'),
-    
+
     // Service Account Key (credentials for server-side operations)
     // Supports both file path and raw JSON
     'serviceAccountKeyPath' => env('FIREBASE_SERVICE_ACCOUNT', __DIR__ . '/broxlab-firebase.json'),
     'serviceAccountKey' => env('FIREBASE_SERVICE_ACCOUNT_JSON', null),
-    
+
     // Firebase Cloud Messaging (FCM) Settings
     'fcm' => [
         'vapidKey' => env('FIREBASE_VAPID_KEY', ''),
         'messagingSenderId' => env('FIREBASE_MESSAGING_SENDER_ID', '940556742943'),
         'serverApiKey' => env('FIREBASE_SERVER_API_KEY', ''),
     ],
-    
+
     // Firebase App Settings
     'app' => [
         'appId' => env('FIREBASE_APP_ID', '1:940556742943:web:b81ba31457cab98d70002a'),
         'measurementId' => env('FIREBASE_MEASUREMENT_ID', 'G-P76NMZBDQJ'),
     ],
-    
+
     // OAuth provider enable/disable is managed in Firebase Console
     // and resolved live via Firebase Admin APIs (not local client secrets).
 
     // ID token verification clock skew tolerance (seconds)
     // Helps when client/server time is slightly out of sync.
     'idTokenLeewaySeconds' => (int) env('FIREBASE_ID_TOKEN_LEEWAY', 120),
-    
+
     // Database Configuration (Realtime Database)
     'database' => [
         'enabled' => env('FIREBASE_DATABASE_ENABLED', false),
         'url' => env('FIREBASE_DATABASE_URL', null),
     ],
-    
+
     // Firestore Configuration
     'firestore' => [
         'enabled' => env('FIREBASE_FIRESTORE_ENABLED', false),
         'projectId' => env('FIREBASE_FIRESTORE_PROJECT_ID', null),
     ],
-    
+
     // Logging and Caching
     'logging' => [
         'enabled' => true,
         'path' => __DIR__ . '/../storage/logs/firebase.log',
         'level' => env('APP_DEBUG') === 'true' ? 'debug' : 'error',
     ],
-    
+
     'cache' => [
         'enabled' => true,
         'ttl' => 3600, // 1 hour

@@ -13,6 +13,7 @@ use App\Models\ScraperModel;
 use App\Modules\Scraper\AIContentClassifier;
 use App\Modules\Scraper\AIPresetGenerator;
 use App\Modules\Scraper\AIScraperAnalyzer;
+use App\Modules\Scraper\AISourceConfigGenerator;
 use App\Modules\Scraper\AIScraperOptimizer;
 use App\Modules\Scraper\HtmlFetcher;
 use App\Modules\Scraper\Presets\PresetRegistry;
@@ -25,6 +26,7 @@ global $mysqli, $router, $twig;
 
 // Include JsonResponse helper for JSON responses
 require_once __DIR__ . '/../Helpers/JsonResponse.php';
+require_once __DIR__ . '/../Modules/Scraper/AISourceConfigGenerator.php';
 
 if (!function_exists('parseJsonRequest')) {
     function parseJsonRequest(): array
@@ -72,6 +74,105 @@ if (!function_exists('validateScraperInput')) {
         }
 
         return $errors;
+    }
+}
+
+if (!function_exists('prepareScraperSourceForForm')) {
+    function prepareScraperSourceForForm(array $source): array
+    {
+        foreach (['selectors', 'advance_config'] as $jsonField) {
+            if (!isset($source[$jsonField]) || !is_string($source[$jsonField]) || trim($source[$jsonField]) === '') {
+                continue;
+            }
+
+            $decoded = json_decode($source[$jsonField], true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $source[$jsonField] = $decoded;
+            }
+        }
+
+        return $source;
+    }
+}
+
+if (!function_exists('normalizeScraperContentType')) {
+    function normalizeScraperContentType(?string $value): string
+    {
+        $value = strtolower(trim((string)$value));
+
+        return match ($value) {
+            'page', 'pages' => 'pages',
+            'mobile', 'mobiles', 'device', 'devices' => 'mobiles',
+            'service', 'services' => 'services',
+            default => 'articles',
+        };
+    }
+}
+
+if (!function_exists('buildLiveScraperSourcePayload')) {
+    function buildLiveScraperSourcePayload(array $input): array
+    {
+        $name = trim((string)($input['name'] ?? ''));
+        $url = trim((string)($input['url'] ?? ''));
+        $type = trim((string)($input['type'] ?? ''));
+        $contentType = normalizeScraperContentType($input['content_type'] ?? 'articles');
+
+        $errors = [];
+        if ($name === '') {
+            $errors[] = 'Source name is required';
+        }
+        if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
+            $errors[] = 'A valid source URL is required';
+        }
+        if ($type === '') {
+            $errors[] = 'Source type is required';
+        }
+        if ($contentType === '') {
+            $errors[] = 'Content type is required';
+        }
+
+        $jsonPayload = [];
+        foreach (['selectors', 'advance_config', 'proxy_config'] as $field) {
+            $rawValue = trim((string)($input[$field] ?? ''));
+            $jsonPayload[$field] = $rawValue;
+
+            if ($rawValue === '') {
+                continue;
+            }
+
+            $decoded = json_decode($rawValue, true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+                $errors[] = sprintf('Field "%s" must contain valid JSON', $field);
+            }
+        }
+
+        return [
+            'payload' => [
+                'id' => isset($input['id']) ? (int)$input['id'] : null,
+                'name' => $name,
+                'url' => $url,
+                'type' => $type,
+                'category_id' => (int)($input['category_id'] ?? 0),
+                'selectors' => $jsonPayload['selectors'],
+                'advance_config' => $jsonPayload['advance_config'],
+                'presets' => trim((string)($input['presets'] ?? '')),
+                'fetch_interval' => (int)($input['fetch_interval'] ?? 60),
+                'content_type' => $contentType,
+                'scrape_depth' => (int)($input['scrape_depth'] ?? 1),
+                'use_browser' => isset($input['use_browser']) ? 1 : 0,
+                'max_pages' => (int)($input['max_pages'] ?? 5),
+                'delay' => (float)($input['delay'] ?? 2),
+                'pagination_type' => trim((string)($input['pagination_type'] ?? 'none')),
+                'pagination_selector' => trim((string)($input['pagination_selector'] ?? '')),
+                'pagination_pattern' => trim((string)($input['pagination_pattern'] ?? '')),
+                'proxy_enabled' => isset($input['proxy_enabled']) ? 1 : 0,
+                'proxy_provider' => trim((string)($input['proxy_provider'] ?? '')),
+                'proxy_config' => $jsonPayload['proxy_config'],
+                'ssl_verify' => isset($input['ssl_verify']) ? 1 : 0,
+                'is_active' => isset($input['is_active']) ? 1 : 0
+            ],
+            'errors' => $errors
+        ];
     }
 }
 
@@ -853,6 +954,46 @@ $router->post('/admin/scraper/ai/preset-generator/analyze', ['middleware' => ['a
         return jsonResponse($result->toArray());
     } catch (Exception $e) {
         error_log("AI Preset Generator analyze error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * AI Source Prefill
+ *
+ * Analyzes a live URL and returns real, non-fake source configuration suggestions.
+ *
+ * @route POST /admin/scraper/ai/source-prefill
+ * @middleware auth, admin_only
+ */
+$router->post('/admin/scraper/ai/source-prefill', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $url = trim((string)($_POST['url'] ?? ''));
+        if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
+            return jsonResponse(['success' => false, 'error' => 'Valid URL is required'], 400);
+        }
+
+        $html = '';
+        try {
+            $html = HtmlFetcher::fetch($url);
+        } catch (Exception $fetchError) {
+            error_log('AI Source Prefill fetch error: ' . $fetchError->getMessage());
+            return jsonResponse([
+                'success' => false,
+                'error' => 'Failed to fetch live HTML for analysis',
+            ], 500);
+        }
+
+        $generator = AISourceConfigGenerator::fromMysqli($mysqli);
+        $result = $generator->generatePrefill($url, $html);
+
+        return jsonResponse($result);
+    } catch (Exception $e) {
+        error_log('AI Source Prefill error: ' . $e->getMessage());
         return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
@@ -2031,6 +2172,7 @@ $router->get('/admin/scraper/sources/{id}/edit', ['middleware' => ['auth', 'admi
         $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $source = $model->getSourceById($id);
+        $source = $source ? prepareScraperSourceForForm($source) : null;
         $categories = $model->getCategories();
         $presets = PresetRegistry::toArray();
 
@@ -2085,6 +2227,7 @@ $router->get('/admin/scraper/sources/{id}', ['middleware' => ['auth', 'admin_onl
         $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $source = $model->getSourceById($id);
+        $source = $source ? prepareScraperSourceForForm($source) : null;
 
         if (!$source) {
             http_response_code(404);
@@ -2218,7 +2361,7 @@ $router->post('/admin/scraper/sources/save', ['middleware' => ['auth', 'admin_on
             'advance_config' => json_encode($advanceConfig),
             'fetch_interval' => (int)($_POST['fetch_interval'] ?? 60),
             'is_active' => isset($_POST['is_active']) ? 1 : 0,
-            'content_type' => $_POST['content_type'] ?? 'article',
+            'content_type' => normalizeScraperContentType($_POST['content_type'] ?? 'articles'),
             'scrape_depth' => (int)($_POST['scrape_depth'] ?? 1),
             'use_browser' => isset($_POST['use_browser']) ? 1 : 0,
             'max_pages' => (int)($_POST['max_pages'] ?? 5),
@@ -2229,6 +2372,8 @@ $router->post('/admin/scraper/sources/save', ['middleware' => ['auth', 'admin_on
             'proxy_enabled' => isset($_POST['proxy_enabled']) ? 1 : 0,
             'proxy_provider' => $_POST['proxy_provider'] ?? '',
             'proxy_config' => $_POST['proxy_config'] ?? '',
+            'ssl_verify' => isset($_POST['ssl_verify']) ? 1 : 0,
+            'timeout' => (int)($_POST['timeout'] ?? 30),
             'website_preset_key' => $_POST['website_preset_key'] ?? ''
         ];
 
@@ -2532,6 +2677,52 @@ $router->post('/admin/scraper/sources/{id}/test', ['middleware' => ['auth', 'adm
         ]);
     } catch (Exception $e) {
         error_log("Test source error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Test Live Source Configuration
+ *
+ * Tests a source configuration directly from the create/edit form without saving it.
+ *
+ * @route POST /admin/scraper/sources/test-live
+ * @middleware auth, admin_only
+ */
+$router->post('/admin/scraper/sources/test-live', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $built = buildLiveScraperSourcePayload($_POST);
+        if (!empty($built['errors'])) {
+            return jsonResponse([
+                'success' => false,
+                'error' => implode(' ', $built['errors'])
+            ], 400);
+        }
+
+        $model = new ScraperModel($mysqli);
+        $service = new ScraperService($model);
+        $result = $service->testSourceConfiguration($built['payload'], [
+            'max_items' => (int)($_POST['max_items'] ?? 5),
+            'timeout' => (int)($_POST['timeout'] ?? 30)
+        ]);
+
+        $success = (bool)($result['success'] ?? false);
+        $response = [
+            'success' => $success,
+            'result' => $result
+        ];
+
+        if (!$success) {
+            $response['error'] = $result['errors'][0] ?? $result['error'] ?? 'Live test failed';
+        }
+
+        return jsonResponse($response, 200);
+    } catch (Exception $e) {
+        error_log("Live source test error: " . $e->getMessage());
         return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
@@ -2910,7 +3101,7 @@ $router->post('/admin/scraper/sources/{id}', ['middleware' => ['auth', 'admin_on
             'advance_config' => json_encode($advanceConfig),
             'fetch_interval' => (int)($_POST['fetch_interval'] ?? 60),
             'is_active' => isset($_POST['is_active']) ? 1 : 0,
-            'content_type' => $_POST['content_type'] ?? 'article',
+            'content_type' => normalizeScraperContentType($_POST['content_type'] ?? 'articles'),
             'scrape_depth' => (int)($_POST['scrape_depth'] ?? 1),
             'use_browser' => isset($_POST['use_browser']) ? 1 : 0,
             'max_pages' => (int)($_POST['max_pages'] ?? 5),
@@ -2921,6 +3112,8 @@ $router->post('/admin/scraper/sources/{id}', ['middleware' => ['auth', 'admin_on
             'proxy_enabled' => isset($_POST['proxy_enabled']) ? 1 : 0,
             'proxy_provider' => $_POST['proxy_provider'] ?? '',
             'proxy_config' => $_POST['proxy_config'] ?? '',
+            'ssl_verify' => isset($_POST['ssl_verify']) ? 1 : 0,
+            'timeout' => (int)($_POST['timeout'] ?? 30),
             'website_preset_key' => $_POST['website_preset_key'] ?? ''
         ];
 

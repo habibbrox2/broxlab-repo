@@ -1,231 +1,207 @@
 #!/usr/bin/env php
 <?php
+
+declare(strict_types=1);
+
 /**
- * BDNews24 Article Scraper - Cron Job Script
- * 
- * This script runs the BDNews24 scraper to collect articles from bangla.bdnews24.com/special
- * It can be scheduled via cPanel cron jobs or Linux crontab.
- * 
+ * BDNews24 Source Runner
+ *
+ * Runs the BDNews24 source through the shared ScraperService so the same
+ * production scraping pipeline, storage, and job tracking are used.
+ *
  * Usage:
  *   php scripts/cron/bdnews24-scraper.php [--max-pages=N] [--verbose]
- * 
- * Examples:
- *   php scripts/cron/bdnews24-scraper.php                    # Scrape with default settings
- *   php scripts/cron/bdnews24-scraper.php --max-pages=5       # Scrape max 5 pages
- *   php scripts/cron/bdnews24-scraper.php --verbose           # Show detailed output
- * 
- * @package BroxBhai
- * @since 2026-03-26
  */
 
-// Change to project root directory
 chdir(__DIR__ . '/../..');
 
-// Load dependencies
 require_once 'vendor/autoload.php';
 require_once 'public_html/_db.php';
+require_once 'app/Models/ScraperModel.php';
+require_once 'app/Modules/Scraper/ScraperService.php';
+require_once 'app/Modules/Scraper/Presets/BDNews24Preset.php';
 
-use App\Modules\Scraper\BDNews24ScraperService;
-use App\Models\BDNews24ArticleModel;
+use App\Models\ScraperModel;
+use App\Modules\Scraper\ScraperService;
+use App\Modules\Scraper\Presets\BDNews24Preset;
 
-// Parse command line arguments
-$options = getopt('', ['max-pages:', 'verbose']);
-$maxPages = isset($options['max-pages']) ? (int)$options['max-pages'] : 10;
-$verbose = isset($options['verbose']);
+$options = getopt('', ['max-pages::', 'verbose']);
+$maxPages = isset($options['max-pages']) ? max(1, (int) $options['max-pages']) : 10;
+$verbose = array_key_exists('verbose', $options);
 
-// Configuration
-$lastScrapeFile = __DIR__ . '/../../logs/bdnews24-last-scrape.json';
 $logFile = __DIR__ . '/../../logs/bdnews24-scraper.log';
-$adminEmails = ['admin@broxlab.com']; // Update with actual admin emails
+$stateFile = __DIR__ . '/../../logs/bdnews24-last-scrape.json';
+$adminEmails = ['admin@broxlab.com'];
 
-/**
- * Log message to file and optionally to console
- */
 function logMessage(string $message, bool $verbose = false): void
 {
     global $logFile, $verbose;
-    
-    $timestamp = date('Y-m-d H:i:s');
-    $logLine = "[{$timestamp}] {$message}\n";
-    
-    // Write to log file
-    file_put_contents($logFile, $logLine, FILE_APPEND);
-    
-    // Output to console if verbose mode
+    $line = '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL;
+    file_put_contents($logFile, $line, FILE_APPEND);
     if ($verbose) {
-        echo $logLine;
+        echo $line;
     }
 }
 
-/**
- * Send email notification to admins
- */
 function sendNotification(string $subject, string $message): void
 {
+    if ((PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') && getenv('SCRAPER_SEND_NOTIFICATIONS') !== 'true') {
+        return;
+    }
+
     global $adminEmails;
-    
+
     $headers = [
         'From: BDNews24 Scraper <noreply@broxlab.com>',
         'Content-Type: text/plain; charset=UTF-8',
-        'X-Mailer: PHP/' . phpversion()
+        'X-Mailer: PHP/' . phpversion(),
     ];
-    
+
     foreach ($adminEmails as $email) {
-        mail($email, $subject, $message, implode("\r\n", $headers));
+        @mail($email, $subject, $message, implode("\r\n", $headers));
     }
 }
 
-/**
- * Get last scrape information
- */
-function getLastScrapeInfo(): array
+function saveState(array $state): void
 {
-    global $lastScrapeFile;
-    
-    if (!file_exists($lastScrapeFile)) {
-        return [
-            'last_scrape' => null,
-            'total_articles' => 0,
-            'last_article_id' => null
-        ];
+    global $stateFile;
+    $state['updated_at'] = date('Y-m-d H:i:s');
+    file_put_contents($stateFile, json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+}
+
+function findBdNews24Source(ScraperModel $model): ?array
+{
+    $sources = $model->getAllSources();
+
+    foreach ($sources as $source) {
+        $name = strtolower((string) ($source['name'] ?? ''));
+        $url = strtolower((string) ($source['url'] ?? ''));
+        if (str_contains($name, 'bdnews24') || str_contains($url, 'bdnews24.com')) {
+            return $source;
+        }
     }
-    
-    $data = file_get_contents($lastScrapeFile);
-    return json_decode($data, true) ?: [];
+
+    return null;
 }
 
-/**
- * Save last scrape information
- */
-function saveLastScrapeInfo(array $info): void
-{
-    global $lastScrapeFile;
-    
-    $info['updated_at'] = date('Y-m-d H:i:s');
-    file_put_contents($lastScrapeFile, json_encode($info, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-}
-
-// Start scraping
-logMessage("=== BDNews24 Scraper Started ===", true);
-logMessage("Max pages: {$maxPages}", true);
+logMessage('=== BDNews24 Scraper Started ===', true);
+logMessage('Max pages: ' . $maxPages, true);
 
 try {
-    // Initialize database connection
-    $mysqli = new mysqli(
-        getenv('DB_HOST') ?: 'localhost',
-        getenv('DB_USER') ?: 'root',
-        getenv('DB_PASS') ?: '',
-        getenv('DB_NAME') ?: 'broxlab'
-    );
-    
-    if ($mysqli->connect_error) {
-        throw new Exception("Database connection failed: " . $mysqli->connect_error);
+    if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
+        throw new RuntimeException('Database connection not available');
     }
-    
-    logMessage("Database connected successfully", true);
-    
-    // Initialize model and service
-    $model = new BDNews24ArticleModel($mysqli);
-    $service = new BDNews24ScraperService();
-    
-    // Get last scrape info
-    $lastScrapeInfo = getLastScrapeInfo();
-    $lastScrapeDate = $lastScrapeInfo['last_scrape'] ?? null;
-    
-    logMessage("Last scrape: " . ($lastScrapeDate ?? 'Never'), true);
-    
-    // Track statistics
-    $stats = [
-        'pages_scraped' => 0,
-        'articles_found' => 0,
-        'articles_new' => 0,
-        'articles_updated' => 0,
-        'errors' => 0
-    ];
-    
-    // Progress callback
-    $progressCallback = function($page, $totalPages, $article) use (&$stats, $model, $verbose) {
-        $stats['pages_scraped'] = $page;
-        $stats['articles_found']++;
-        
-        if ($verbose) {
-            echo "Page {$page}/{$totalPages}: Found article - {$article['title']}\n";
-        }
-        
-        // Check if article already exists
-        $existing = $model->getArticleByArticleId($article['article_id']);
-        
-        if ($existing) {
-            // Update existing article
-            $article['id'] = $existing['id'];
-            $model->updateArticle($article);
-            $stats['articles_updated']++;
-            logMessage("Updated article: {$article['article_id']} - {$article['title']}", $verbose);
-        } else {
-            // Save new article
-            $model->saveArticle($article);
-            $stats['articles_new']++;
-            logMessage("New article: {$article['article_id']} - {$article['title']}", $verbose);
-        }
-    };
-    
-    // Run scraper
-    logMessage("Starting scrape...", true);
-    $result = $service->scrapeAllPages($maxPages, $progressCallback);
-    
-    // Update service stats
-    $serviceStats = $service->getStats();
-    $stats['pages_scraped'] = $serviceStats['pages_scraped'] ?? 0;
-    
-    logMessage("Scrape completed", true);
-    logMessage("Pages scraped: {$stats['pages_scraped']}", true);
-    logMessage("Articles found: {$stats['articles_found']}", true);
-    logMessage("New articles: {$stats['articles_new']}", true);
-    logMessage("Updated articles: {$stats['articles_updated']}", true);
-    
-    // Save last scrape info
-    saveLastScrapeInfo([
-        'last_scrape' => date('Y-m-d H:i:s'),
-        'total_articles' => $model->getTotalCount(),
-        'last_article_id' => $result['last_article_id'] ?? null
+
+    $model = new ScraperModel($mysqli);
+    $service = new ScraperService($model);
+    $preset = new BDNews24Preset();
+    $source = findBdNews24Source($model);
+
+    if (!$source) {
+        throw new RuntimeException('BDNews24 source not found in web_scraping_sources');
+    }
+
+    logMessage('Using source: ' . ($source['name'] ?? 'BDNews24') . ' (#' . ($source['id'] ?? 'n/a') . ')', true);
+
+    $sourceUrl = trim((string) ($source['url'] ?? ''));
+    if ($sourceUrl === '') {
+        $sourceUrl = 'https://www.bdnews24.com/bangladesh';
+    }
+
+    if ($sourceUrl === 'https://www.bdnews24.com/' || str_contains($sourceUrl, 'bdnews24.com')) {
+        $sourceUrl = 'https://www.bdnews24.com/bangladesh';
+    }
+
+    $existingAdvanceConfig = json_decode((string) ($source['advance_config'] ?? ''), true);
+    $existingAdvanceConfig = is_array($existingAdvanceConfig) ? $existingAdvanceConfig : [];
+
+    $updatedSource = array_merge($source, [
+        'name' => $source['name'] ?? 'BD News 24',
+        'url' => $sourceUrl,
+        'type' => $preset->getType(),
+        'category_id' => (int) ($source['category_id'] ?? 0),
+        'selectors' => $preset->getConfig(),
+        'advance_config' => array_merge($existingAdvanceConfig, [
+            'strategy' => 'php-scraper',
+            'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'timeout' => 45,
+            'allow_redirects' => true,
+            'verify_ssl' => false,
+        ]),
+        'presets' => [$preset->getKey()],
+        'fetch_interval' => (int) ($source['fetch_interval'] ?? $preset->getFetchInterval()),
+        'content_type' => $preset->getContentType(),
+        'scrape_depth' => 1,
+        'use_browser' => 0,
+        'max_pages' => $maxPages,
+        'delay' => $preset->getDelay(),
+        'pagination_type' => $preset->getPaginationType(),
+        'pagination_selector' => $preset->getPaginationSelector(),
+        'pagination_pattern' => $preset->getPaginationPattern(),
+        'proxy_enabled' => 0,
+        'proxy_provider' => null,
+        'proxy_config' => null,
+        'is_active' => 1,
     ]);
-    
-    // Send notification if new articles found
-    if ($stats['articles_new'] > 0) {
-        $subject = "BDNews24 Scraper: {$stats['articles_new']} New Articles Found";
-        $message = "BDNews24 scraper found {$stats['articles_new']} new articles.\n\n";
-        $message .= "Summary:\n";
-        $message .= "- Pages scraped: {$stats['pages_scraped']}\n";
-        $message .= "- Total articles found: {$stats['articles_found']}\n";
-        $message .= "- New articles: {$stats['articles_new']}\n";
-        $message .= "- Updated articles: {$stats['articles_updated']}\n";
-        $message .= "- Total articles in database: {$model->getTotalCount()}\n\n";
-        $message .= "Scrape time: " . date('Y-m-d H:i:s') . "\n";
-        $message .= "View articles: https://broxlab.com/admin/scraper/bdnews24/articles\n";
-        
+
+    $model->updateSource((int) $source['id'], $updatedSource);
+    logMessage('Source configuration refreshed from preset', true);
+
+    $result = $service->scrapeSource((int) $source['id'], [
+        'priority' => 5,
+        'max_pages' => $maxPages,
+    ]);
+
+    $stats = $result['stats'] ?? [];
+    $itemsFound = (int) ($stats['items_found'] ?? 0);
+    $itemsSaved = (int) ($stats['items_saved'] ?? 0);
+    $itemsFailed = (int) ($stats['items_failed'] ?? 0);
+    $pagesScraped = (int) ($stats['pages_scraped'] ?? 0);
+
+    logMessage('Scrape completed: ' . ($result['success'] ? 'success' : 'failed'), true);
+    logMessage('Pages scraped: ' . $pagesScraped, true);
+    logMessage('Items found: ' . $itemsFound, true);
+    logMessage('Items saved: ' . $itemsSaved, true);
+    logMessage('Items failed: ' . $itemsFailed, true);
+
+    saveState([
+        'source_id' => (int) $source['id'],
+        'source_name' => (string) ($source['name'] ?? 'BDNews24'),
+        'success' => (bool) $result['success'],
+        'items_found' => $itemsFound,
+        'items_saved' => $itemsSaved,
+        'items_failed' => $itemsFailed,
+        'pages_scraped' => $pagesScraped,
+        'job_id' => $result['job_id'] ?? null,
+        'message' => $result['message'] ?? ($result['error'] ?? null),
+    ]);
+
+    if (!empty($itemsSaved)) {
+        $subject = 'BDNews24 Scraper: ' . $itemsSaved . ' Items Saved';
+        $message = "BDNews24 scraper completed.\n\n";
+        $message .= 'Source: ' . ($source['name'] ?? 'BDNews24') . PHP_EOL;
+        $message .= 'Pages scraped: ' . $pagesScraped . PHP_EOL;
+        $message .= 'Items found: ' . $itemsFound . PHP_EOL;
+        $message .= 'Items saved: ' . $itemsSaved . PHP_EOL;
+        $message .= 'Items failed: ' . $itemsFailed . PHP_EOL;
         sendNotification($subject, $message);
-        logMessage("Notification sent to admins", true);
     }
-    
-    logMessage("=== BDNews24 Scraper Completed Successfully ===", true);
-    
-    // Exit with success code
+
+    logMessage('=== BDNews24 Scraper Completed ===', true);
     exit(0);
-    
-} catch (Exception $e) {
-    $errorMsg = "Error: " . $e->getMessage();
-    logMessage($errorMsg, true);
-    logMessage("=== BDNews24 Scraper Failed ===", true);
-    
-    // Send error notification
-    $subject = "BDNews24 Scraper Error";
-    $message = "BDNews24 scraper encountered an error:\n\n";
-    $message .= "Error: " . $e->getMessage() . "\n";
-    $message .= "Time: " . date('Y-m-d H:i:s') . "\n";
-    $message .= "Script: " . __FILE__ . "\n";
-    
-    sendNotification($subject, $message);
-    
-    // Exit with error code
+} catch (Throwable $e) {
+    logMessage('Error: ' . $e->getMessage(), true);
+    logMessage('=== BDNews24 Scraper Failed ===', true);
+
+    saveState([
+        'success' => false,
+        'error' => $e->getMessage(),
+    ]);
+
+    sendNotification(
+        'BDNews24 Scraper Error',
+        "BDNews24 scraper failed.\n\nError: " . $e->getMessage() . "\nTime: " . date('Y-m-d H:i:s')
+    );
+
     exit(1);
 }

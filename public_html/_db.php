@@ -1,14 +1,18 @@
 <?php
 /* ===================== AUTHENTICATION CHECK ===================== */
-// Start session if not already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// Skip browser-only auth guards when running from CLI cron/smoke scripts.
+$isCli = PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
+if (!$isCli) {
+    // Start session if not already started
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
 
-// Check if user is authenticated and is admin
-if (empty($_SESSION['logged_in']) || empty($_SESSION['user_id'])) {
-    http_response_code(403);
-    die('Access Denied: Authentication required. Please <a href="/">login</a> first.');
+    // Check if user is authenticated and is admin
+    if (empty($_SESSION['logged_in']) || empty($_SESSION['user_id'])) {
+        http_response_code(403);
+        die('Access Denied: Authentication required. Please <a href="/">login</a> first.');
+    }
 }
 
 // Optional: Check for admin role if your system has roles
@@ -67,6 +71,15 @@ function db()
 }
 
 /* ===================== টেবিল মেটাডাটা / TABLE METADATA ===================== */
+
+// Expose the shared connection for legacy scripts that expect a global handle.
+try {
+    $mysqli = db();
+} catch (Exception $e) {
+    if ($isCli) {
+        throw $e;
+    }
+}
 
 function getTablesWithStats()
 {
@@ -908,7 +921,7 @@ function deleteBackupFile($filename)
 
 /* ===================== AJAX HANDLER ===================== */
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (!$isCli && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     header('Content-Type: application/json; charset=utf-8');
 
     try {

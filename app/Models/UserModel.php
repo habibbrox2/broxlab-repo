@@ -60,7 +60,7 @@ class UserModel
     public function findByUsernameOrEmail(string $usernameOrEmail): ?array
     {
 
-        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid FROM users WHERE (username = ? OR email = ?) AND deleted_at IS NULL LIMIT 1");
+        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid, email_verified FROM users WHERE (username = ? OR email = ?) AND deleted_at IS NULL LIMIT 1");
 
         $stmt->bind_param('ss', $usernameOrEmail, $usernameOrEmail);
 
@@ -74,7 +74,7 @@ class UserModel
     public function findByUsername(string $username): ?array
     {
 
-        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid FROM users WHERE username = ? AND deleted_at IS NULL LIMIT 1");
+        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid, email_verified FROM users WHERE username = ? AND deleted_at IS NULL LIMIT 1");
 
         $stmt->bind_param('s', $username);
 
@@ -88,7 +88,7 @@ class UserModel
     public function findByEmail(string $email): ?array
     {
 
-        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1");
+        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid, email_verified FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1");
 
         $stmt->bind_param('s', $email);
 
@@ -124,7 +124,7 @@ class UserModel
     {
         $sql = "
             SELECT
-                u.id, u.username, u.email, u.password, u.first_name, u.last_name, u.gender, u.dob, u.phone, u.alternate_phone, u.address, u.city, u.state, u.country, u.zipcode, u.profile_pic, u.auth_provider, u.status, u.firebase_uid, u.login_ip, u.login_device, u.last_login, u.password_changed_at, u.created_at, u.updated_at, u.deleted_at,
+                u.id, u.username, u.email, u.password, u.first_name, u.last_name, u.gender, u.dob, u.phone, u.alternate_phone, u.address, u.city, u.state, u.country, u.zipcode, u.profile_pic, u.auth_provider, u.status, u.firebase_uid, u.login_ip, u.login_device, u.last_login, u.password_changed_at, u.email_verified, u.created_at, u.updated_at, u.deleted_at,
                 GROUP_CONCAT(DISTINCT r.name ORDER BY r.ranking DESC) AS roles,
                 MAX(r.is_super_admin) AS is_super_admin
             FROM users u
@@ -307,7 +307,7 @@ class UserModel
      */
     public function findByFirebaseUid(string $firebaseUid): ?array
     {
-        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid FROM users WHERE firebase_uid = ? AND deleted_at IS NULL LIMIT 1");
+        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid, email_verified FROM users WHERE firebase_uid = ? AND deleted_at IS NULL LIMIT 1");
         $stmt->bind_param('s', $firebaseUid);
         $stmt->execute();
         return $stmt->get_result()->fetch_assoc() ?: null;
@@ -713,7 +713,7 @@ class UserModel
     public function getProfile(int $userId): ?array
     {
 
-        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, gender, dob, phone, alternate_phone, address, city, state, country, zipcode, profile_pic, auth_provider, status, firebase_uid, login_ip, login_device, last_login, password_changed_at, created_at, updated_at, deleted_at FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1");
+        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, gender, dob, phone, alternate_phone, address, city, state, country, zipcode, profile_pic, auth_provider, status, firebase_uid, login_ip, login_device, last_login, password_changed_at, email_verified, created_at, updated_at, deleted_at FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1");
 
         $stmt->bind_param('i', $userId);
 
@@ -1199,7 +1199,7 @@ class UserModel
      */
     public function getUserById(int $id): ?array
     {
-        $sql = "SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1";
+        $sql = "SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid, email_verified FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1";
         $stmt = $this->mysqli->prepare($sql);
         $stmt->bind_param("i", $id);
         $stmt->execute();

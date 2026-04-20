@@ -8,10 +8,10 @@ class ScraperModel
 {
     private $mysqli;
 
-    public function __construct($mysqli = null)
+    public function __construct($db = null)
     {
         global $mysqli;
-        $this->mysqli = $mysqli ?: $mysqli;
+        $this->mysqli = $db ?: $mysqli;
     }
 
     public function getMysqli()
@@ -47,15 +47,18 @@ class ScraperModel
     {
         $sql = "INSERT INTO web_scraping_sources
                 (name, url, type, category_id, selectors, advance_config, presets, fetch_interval, content_type, scrape_depth, use_browser, max_pages, delay, pagination_type, pagination_selector, pagination_pattern, proxy_enabled, proxy_provider, proxy_config)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         $stmt = $this->mysqli->prepare($sql);
         $selectors = isset($data['selectors']) ? json_encode($data['selectors']) : null;
         $advance_config = isset($data['advance_config']) ? json_encode($data['advance_config']) : null;
         $presets = isset($data['presets']) ? json_encode($data['presets']) : null;
+        $contentType = $this->normalizeSourceContentType($data['content_type'] ?? 'articles');
+        $sslVerify = (int)($data['ssl_verify'] ?? 1);
+        $timeout = (int)($data['timeout'] ?? 30);
 
         $stmt->bind_param(
-            "ssissssisiiissssiss",
+            "sssisssisiiiisssissii",
             $data['name'],
             $data['url'],
             $data['type'],
@@ -64,7 +67,7 @@ class ScraperModel
             $advance_config,
             $presets,
             $data['fetch_interval'],
-            $data['content_type'],
+            $contentType,
             $data['scrape_depth'],
             $data['use_browser'],
             $data['max_pages'],
@@ -74,7 +77,9 @@ class ScraperModel
             $data['pagination_pattern'],
             $data['proxy_enabled'],
             $data['proxy_provider'],
-            $data['proxy_config']
+            $data['proxy_config'],
+            $sslVerify,
+            $timeout
         );
 
         if ($stmt->execute()) {
@@ -939,16 +944,23 @@ class ScraperModel
                 presets = ?, fetch_interval = ?, content_type = ?, scrape_depth = ?,
                 use_browser = ?, max_pages = ?, delay = ?, pagination_type = ?,
                 pagination_selector = ?, pagination_pattern = ?, proxy_enabled = ?,
-                proxy_provider = ?, proxy_config = ?, is_active = ?
+                proxy_provider = ?, proxy_config = ?, ssl_verify = ?, timeout = ?, is_active = ?
                 WHERE id = ?";
 
         $stmt = $this->mysqli->prepare($sql);
         $selectors = isset($data['selectors']) ? json_encode($data['selectors']) : null;
         $advance_config = isset($data['advance_config']) ? json_encode($data['advance_config']) : null;
         $presets = isset($data['presets']) ? json_encode($data['presets']) : null;
+        $contentType = $this->normalizeSourceContentType($data['content_type'] ?? 'articles');
+        $existing = null;
+        if (!array_key_exists('ssl_verify', $data) || !array_key_exists('timeout', $data)) {
+            $existing = $this->getSourceById($id) ?: [];
+        }
+        $sslVerify = isset($data['ssl_verify']) ? (int)$data['ssl_verify'] : (int)($existing['ssl_verify'] ?? 1);
+        $timeout = isset($data['timeout']) ? (int)$data['timeout'] : (int)($existing['timeout'] ?? 30);
 
         $stmt->bind_param(
-            "sssissssisiiisssisssi",
+            "sssissssisiiisssissiiii",
             $data['name'],
             $data['url'],
             $data['type'],
@@ -957,7 +969,7 @@ class ScraperModel
             $advance_config,
             $presets,
             $data['fetch_interval'],
-            $data['content_type'],
+            $contentType,
             $data['scrape_depth'],
             $data['use_browser'],
             $data['max_pages'],
@@ -968,6 +980,8 @@ class ScraperModel
             $data['proxy_enabled'],
             $data['proxy_provider'],
             $data['proxy_config'],
+            $sslVerify,
+            $timeout,
             $data['is_active'],
             $id
         );
@@ -994,6 +1008,18 @@ class ScraperModel
         $stmt = $this->mysqli->prepare("UPDATE web_scraping_sources SET is_active = ?");
         $stmt->bind_param("i", $isActive);
         return $stmt->execute();
+    }
+
+    private function normalizeSourceContentType(?string $value): string
+    {
+        $value = strtolower(trim((string)$value));
+
+        return match ($value) {
+            'page', 'pages' => 'pages',
+            'mobile', 'mobiles', 'device', 'devices' => 'mobiles',
+            'service', 'services' => 'services',
+            default => 'articles',
+        };
     }
 
     public function getActiveSources()

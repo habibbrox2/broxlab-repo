@@ -28,6 +28,12 @@
         background: #28a745;
         transition: width 0.3s ease;
     }
+    .ai-prefill-result {
+        display: none;
+    }
+    .ai-prefill-result.show {
+        display: block;
+    }
 </style>
 {% endblock %}
 
@@ -77,19 +83,18 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Options</label>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="useAI" name="use_ai" checked>
-                                <label class="form-check-label" for="useAI">
-                                    Use AI enhancement (recommended)
-                                </label>
-                            </div>
-                            <div class="form-text">
-                                AI will analyze the page structure and provide better selector suggestions.
+                            <div class="alert alert-info py-2 px-3 mb-0">
+                                <i class="bi bi-info-circle me-1"></i>
+                                This page always uses the live analyzer, so results are based on real page content.
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary" id="generateBtn">
                             <i class="bi bi-magic me-1"></i>
                             Generate Preset
+                        </button>
+                        <button type="button" class="btn btn-outline-warning ms-2" id="aiPrefillBtn">
+                            <i class="bi bi-broadcast me-1"></i>
+                            AI Auto Fill
                         </button>
                     </form>
                 </div>
@@ -160,6 +165,7 @@
                         <input type="hidden" name="id" id="presetId">
                         <input type="hidden" name="url" id="presetUrl">
                         <input type="hidden" name="website_preset_key" id="presetKey">
+                        <input type="hidden" name="type" id="presetSourceType" value="scrape">
 
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -230,6 +236,61 @@
     </div>
 </div>
 
+<!-- AI Auto Fill Results -->
+<div class="row mt-4 ai-prefill-result" id="aiPrefillSection">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">AI Auto Fill</h5>
+                <div class="d-flex gap-2">
+                    <span class="badge bg-success" id="aiSourceTypeBadge"></span>
+                    <span class="badge bg-info" id="aiConfidenceBadge"></span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4" id="aiPrefillStatus">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Run AI auto fill to detect real selectors and configuration from the live page.
+                </div>
+
+                <div id="aiPrefillSummary" class="row g-3 mb-4"></div>
+                <div id="aiPrefillNotes" class="mb-4"></div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-6">
+                        <div class="border rounded p-3 h-100">
+                            <h6 class="mb-3">Selectors</h6>
+                            <div id="aiPrefillSelectors" class="d-grid gap-2"></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="border rounded p-3 h-100">
+                            <h6 class="mb-3">Configuration</h6>
+                            <div id="aiPrefillConfig" class="d-grid gap-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mb-4">
+                    <button type="button" class="btn btn-success" id="applyAiPrefillBtn">
+                        <i class="bi bi-arrow-down-circle me-1"></i>
+                        Apply Suggestions
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="clearAiPrefillBtn">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Clear
+                    </button>
+                </div>
+
+                <div>
+                    <h6 class="mb-3">Raw AI Response</h6>
+                    <pre id="aiPrefillRaw" class="bg-light border rounded p-3 small mb-0" style="max-height: 320px; overflow: auto;"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- JSON Export Modal -->
 <div class="modal fade" id="jsonModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -251,54 +312,107 @@
 
 <script>
 let generatedPreset = null;
+let generatedAiPrefill = null;
 
-document.getElementById('presetGeneratorForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
+const aiPrefillSection = document.getElementById('aiPrefillSection');
+const aiPrefillBtn = document.getElementById('aiPrefillBtn');
+const applyAiPrefillBtn = document.getElementById('applyAiPrefillBtn');
+const clearAiPrefillBtn = document.getElementById('clearAiPrefillBtn');
+const aiPrefillStatus = document.getElementById('aiPrefillStatus');
+const aiSourceTypeBadge = document.getElementById('aiSourceTypeBadge');
+const aiConfidenceBadge = document.getElementById('aiConfidenceBadge');
+const aiPrefillSummary = document.getElementById('aiPrefillSummary');
+const aiPrefillNotes = document.getElementById('aiPrefillNotes');
+const aiPrefillSelectors = document.getElementById('aiPrefillSelectors');
+const aiPrefillConfig = document.getElementById('aiPrefillConfig');
+const aiPrefillRaw = document.getElementById('aiPrefillRaw');
+const generateBtn = document.getElementById('generateBtn');
+const presetGeneratorForm = document.getElementById('presetGeneratorForm');
+
+async function runLiveAnalyzer() {
     const url = document.getElementById('url').value.trim();
-    const useAI = document.getElementById('useAI').checked;
-    
+
     if (!url) {
         alert('Please enter a URL');
         return;
     }
 
-    // Show loading
     document.getElementById('loadingState').style.display = 'block';
     document.getElementById('resultSection').classList.remove('show');
-    document.getElementById('generateBtn').disabled = true;
+    aiPrefillSection.classList.add('show');
+    aiPrefillStatus.className = 'alert alert-info mb-4';
+    aiPrefillStatus.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Analyzing live page for real selectors and config...';
 
-    try {
-        const response = await fetch('/admin/scraper/ai/preset-generator/analyze', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify({
-                url: url,
-                use_ai: useAI
-            })
-        });
-
-        const data = await response.json();
-        
-        // Hide loading
-        document.getElementById('loadingState').style.display = 'none';
-        
-        if (data.success) {
-            generatedPreset = data;
-            displayPresetResult(generatedPreset);
-        } else {
-            showError(data.error || 'Failed to generate preset');
+    return new Promise(async (resolve) => {
+        const originalGenerateHtml = generateBtn ? generateBtn.innerHTML : '';
+        const originalAiHtml = aiPrefillBtn ? aiPrefillBtn.innerHTML : '';
+        if (generateBtn) {
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Analyzing...';
         }
-    } catch (err) {
-        document.getElementById('loadingState').style.display = 'none';
-        showError('Network error: ' + err.message);
-    } finally {
-        document.getElementById('generateBtn').disabled = false;
-    }
-});
+        if (aiPrefillBtn) {
+            aiPrefillBtn.disabled = true;
+            aiPrefillBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Analyzing...';
+        }
+
+        try {
+            const response = await fetch('/admin/scraper/ai/source-prefill', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: new FormData(presetGeneratorForm)
+            });
+
+            const data = await response.json();
+            document.getElementById('loadingState').style.display = 'none';
+
+            if (data.success) {
+                generatedAiPrefill = data;
+                generatedPreset = data;
+                renderAiPrefillResult(data);
+                applyAiPrefill(data);
+                aiPrefillStatus.className = 'alert alert-success mb-4';
+                aiPrefillStatus.innerHTML = '<i class="bi bi-check-circle me-2"></i>Real live analysis applied to the form.';
+                resolve(data);
+            } else {
+                generatedAiPrefill = data;
+                generatedPreset = data;
+                renderAiPrefillResult(data);
+                aiPrefillStatus.className = 'alert alert-warning mb-4';
+                aiPrefillStatus.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>${escapeHtml(data.error || 'AI analysis returned no usable suggestions')}`;
+                resolve(data);
+            }
+        } catch (err) {
+            document.getElementById('loadingState').style.display = 'none';
+            aiPrefillStatus.className = 'alert alert-danger mb-4';
+            aiPrefillStatus.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>${escapeHtml(err.message || 'AI analysis failed')}`;
+            resolve(null);
+        } finally {
+            if (generateBtn) {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = originalGenerateHtml;
+            }
+            if (aiPrefillBtn) {
+                aiPrefillBtn.disabled = false;
+                aiPrefillBtn.innerHTML = originalAiHtml;
+            }
+        }
+    });
+}
+
+if (presetGeneratorForm) {
+    presetGeneratorForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        await runLiveAnalyzer();
+    });
+}
+
+if (aiPrefillBtn) {
+    aiPrefillBtn.addEventListener('click', async function() {
+        await runLiveAnalyzer();
+    });
+}
 
 function displayPresetResult(preset) {
     document.getElementById('resultSection').classList.add('show');
@@ -361,6 +475,250 @@ function displayPresetResult(preset) {
     if (tbody.children.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No selectors generated</td></tr>';
     }
+}
+
+function buildMiniStat(label, value, tone = 'primary') {
+    return `
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <div class="text-uppercase small text-muted fw-semibold">${escapeHtml(label)}</div>
+                <div class="h5 mb-0 text-${tone}">${escapeHtml(value)}</div>
+            </div>
+        </div>
+    `;
+}
+
+function renderAiPrefillResult(result = {}) {
+    if (!aiPrefillSection) {
+        return;
+    }
+
+    aiPrefillSection.classList.add('show');
+
+    const sourceType = result.source_type || 'unknown';
+    const confidence = Math.round((result.confidence || 0) * 100);
+    if (aiSourceTypeBadge) {
+        aiSourceTypeBadge.textContent = sourceType.toUpperCase();
+    }
+    if (aiConfidenceBadge) {
+        aiConfidenceBadge.textContent = confidence + '% Confidence';
+    }
+    if (aiPrefillSummary) {
+        aiPrefillSummary.innerHTML = [
+            buildMiniStat('Result', result.success ? 'Ready' : 'Failed', result.success ? 'success' : 'danger'),
+            buildMiniStat('Source Type', sourceType, 'primary'),
+            buildMiniStat('Content Type', result.content_type || 'articles', 'info'),
+            buildMiniStat('Browser', result.use_browser ? 'Enabled' : 'Disabled', result.use_browser ? 'warning' : 'success')
+        ].join('');
+    }
+
+    const notes = [];
+    if (Array.isArray(result.suggestions)) {
+        result.suggestions.forEach(item => notes.push({ type: 'info', text: item }));
+    }
+    if (Array.isArray(result.warnings)) {
+        result.warnings.forEach(item => notes.push({ type: 'warning', text: item }));
+    }
+    if (aiPrefillNotes) {
+        if (notes.length) {
+            aiPrefillNotes.innerHTML = `
+                <div class="border rounded p-3 bg-light">
+                    <div class="small text-uppercase fw-semibold text-muted mb-2">AI Notes</div>
+                    <div class="d-grid gap-2">
+                        ${notes.map(note => `
+                            <div class="border rounded p-2 bg-white">
+                                <span class="badge text-bg-${note.type === 'warning' ? 'warning' : 'info'} me-2">${escapeHtml(note.type)}</span>
+                                <span class="small">${escapeHtml(note.text || '')}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } else {
+            aiPrefillNotes.innerHTML = '<div class="text-muted small">No additional AI notes were returned.</div>';
+        }
+    }
+}
+
+function renderAiPrefillSelectors(result = {}) {
+    const selectors = result.selectors || {};
+    const candidates = result.selector_candidates || {};
+    const entries = Object.entries(selectors);
+
+    if (!aiPrefillSelectors) {
+        return;
+    }
+
+    if (!entries.length) {
+        aiPrefillSelectors.innerHTML = '<div class="text-muted small">No reliable selectors were detected.</div>';
+        return;
+    }
+
+    aiPrefillSelectors.innerHTML = entries.map(([key, selector]) => {
+        const candidateList = Array.isArray(candidates[key]) ? candidates[key] : [];
+        const top = candidateList[0] || {};
+        const confidence = Math.round((top.confidence || 0) * 100);
+        const sample = top.sample_text ? `<div class="small text-muted mt-2">${escapeHtml(top.sample_text)}</div>` : '';
+        return `
+            <div class="border rounded p-3 bg-white">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                    <div class="fw-semibold">${escapeHtml(key)}</div>
+                    <span class="badge text-bg-success">${confidence}%</span>
+                </div>
+                <code class="d-block small">${escapeHtml(selector)}</code>
+                ${sample}
+            </div>
+        `;
+    }).join('');
+}
+
+function renderAiPrefillConfig(result = {}) {
+    const advanceConfig = result.advance_config || {};
+    const pagination = result.pagination || {};
+    const items = [];
+
+    if (advanceConfig && Object.keys(advanceConfig).length) {
+        items.push({ label: 'Advance Config', value: JSON.stringify(advanceConfig, null, 2) });
+    }
+    if (pagination && (pagination.type || pagination.selector || pagination.pattern)) {
+        items.push({ label: 'Pagination', value: JSON.stringify(pagination, null, 2) });
+    }
+    if (result.source_type) {
+        items.push({ label: 'Source Type', value: result.source_type });
+    }
+    if (result.content_type) {
+        items.push({ label: 'Content Type', value: result.content_type });
+    }
+
+    if (!aiPrefillConfig) {
+        return;
+    }
+
+    if (!items.length) {
+        aiPrefillConfig.innerHTML = '<div class="text-muted small">No config suggestions were returned.</div>';
+        return;
+    }
+
+    aiPrefillConfig.innerHTML = items.map(item => `
+        <div class="border rounded p-3 bg-white">
+            <div class="small text-uppercase fw-semibold text-muted mb-2">${escapeHtml(item.label)}</div>
+            <pre class="small mb-0" style="white-space: pre-wrap;">${escapeHtml(item.value)}</pre>
+        </div>
+    `).join('');
+}
+
+function applyAiPrefill(result = {}) {
+    const sourceType = String(result.source_type || '').trim();
+    const contentType = String(result.content_type || '').trim();
+    const selectors = result.selectors || {};
+    const advanceConfig = result.advance_config || {};
+    const pagination = result.pagination || {};
+    const presetUrl = document.getElementById('presetUrl');
+    const presetName = document.getElementById('presetName');
+    const presetKey = document.getElementById('presetKey');
+    const form = document.getElementById('presetForm');
+
+    if (!form) return;
+
+    const typeField = document.getElementById('presetSourceType');
+    if (typeField && sourceType) {
+        typeField.value = sourceType;
+    }
+    if (document.getElementById('presetContentType') && contentType) {
+        document.getElementById('presetContentType').value = contentType;
+    }
+    if (presetUrl && result.url) {
+        presetUrl.value = result.url;
+    }
+    try {
+        if (result.url) {
+            const host = new URL(result.url).hostname.replace(/^www\./, '');
+            if (presetName) {
+                presetName.value = host + ' Scraper';
+            }
+            if (presetKey) {
+                presetKey.value = host;
+            }
+        }
+    } catch (error) {
+        // Ignore invalid URL formatting in the analyzer response.
+    }
+
+    if (sourceType === 'api') {
+        document.getElementById('selectorsTable').innerHTML = '<tr><td colspan="3" class="text-center text-muted">API source detected. Selectors are intentionally left empty.</td></tr>';
+        document.getElementById('advanceConfig').value = JSON.stringify(advanceConfig || {}, null, 2);
+    } else {
+        if (selectors && Object.keys(selectors).length) {
+            const tbody = document.getElementById('selectorsTable');
+            const rows = Object.entries(selectors).map(([key, selector]) => {
+                const top = (result.selector_candidates && result.selector_candidates[key] && result.selector_candidates[key][0]) || {};
+                const confidence = Math.round((top.confidence || 0) * 100);
+                return `
+                    <tr>
+                        <td><strong>${escapeHtml(key)}</strong></td>
+                        <td><code class="d-block" style="font-size: 0.9em;">${escapeHtml(selector)}</code></td>
+                        <td>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: ${confidence}%"></div>
+                            </div>
+                            <small>${confidence}%</small>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            tbody.innerHTML = rows || '<tr><td colspan="3" class="text-center text-muted">No selectors generated</td></tr>';
+        }
+        if (advanceConfig && Object.keys(advanceConfig).length) {
+            document.getElementById('advanceConfig').value = JSON.stringify(advanceConfig, null, 2);
+        }
+        if (pagination && pagination.type && pagination.type !== 'none') {
+            const paginationHint = `Detected pagination: ${pagination.type}${pagination.selector ? ' (' + pagination.selector + ')' : ''}`;
+            const notes = document.createElement('div');
+            notes.className = 'alert alert-info mt-3 mb-0';
+            notes.innerHTML = `<i class="bi bi-info-circle me-2"></i>${escapeHtml(paginationHint)}`;
+            const existing = document.getElementById('aiPaginationNote');
+            if (existing) existing.remove();
+            notes.id = 'aiPaginationNote';
+            form.appendChild(notes);
+        }
+    }
+}
+
+function showAiPrefillError(message) {
+    aiPrefillSection.classList.add('show');
+    if (aiPrefillStatus) {
+        aiPrefillStatus.className = 'alert alert-danger mb-4';
+        aiPrefillStatus.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>${escapeHtml(message || 'AI analysis failed')}`;
+    }
+}
+
+if (applyAiPrefillBtn) {
+    applyAiPrefillBtn.addEventListener('click', function() {
+        if (!generatedAiPrefill) {
+            return;
+        }
+        applyAiPrefill(generatedAiPrefill);
+        if (aiPrefillStatus) {
+            aiPrefillStatus.className = 'alert alert-success mb-4';
+            aiPrefillStatus.innerHTML = '<i class="bi bi-check-circle me-2"></i>AI suggestions applied to the form.';
+        }
+    });
+}
+
+if (clearAiPrefillBtn) {
+    clearAiPrefillBtn.addEventListener('click', function() {
+        generatedAiPrefill = null;
+        if (aiPrefillSection) aiPrefillSection.classList.remove('show');
+        if (aiPrefillSummary) aiPrefillSummary.innerHTML = '';
+        if (aiPrefillNotes) aiPrefillNotes.innerHTML = '';
+        if (aiPrefillSelectors) aiPrefillSelectors.innerHTML = '';
+        if (aiPrefillConfig) aiPrefillConfig.innerHTML = '';
+        if (aiPrefillRaw) aiPrefillRaw.textContent = '';
+        if (aiPrefillStatus) {
+            aiPrefillStatus.className = 'alert alert-info mb-4';
+            aiPrefillStatus.innerHTML = '<i class="bi bi-info-circle me-2"></i>Run AI auto fill to detect real selectors and configuration from the live page.';
+        }
+    });
 }
 
 function showError(message) {
