@@ -71,7 +71,9 @@ if (!$dbName || !$dbUser) {
 // Database connection with enhanced error logging and retry logic
 // ---------------------------------------------------------------------------
 // Configure mysqli to throw exceptions instead of warnings
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+if (function_exists('mysqli_report')) {
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+}
 
 $maxAttempts = 3;
 $attempt = 0;

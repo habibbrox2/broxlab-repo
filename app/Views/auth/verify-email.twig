@@ -17,6 +17,18 @@
         <div class="auth-card-body auth-shell-body">
             {% if error %}{{ flash_macros.render_flash({ message: error, type: 'danger' }) }}{% endif %}
             {% if success %}{{ flash_macros.render_flash({ message: success, type: 'success' }) }}{% endif %}
+            
+            <!-- One-time Verification Info -->
+            <div class="alert alert-info mb-4" role="alert">
+              <div class="d-flex">
+                <i class="bi bi-info-circle-fill me-2 mt-1"></i>
+                <div>
+                  <strong>Completing Verification</strong>
+                  <p class="mb-0 small">After verifying your email, you'll be able to log in to your account.</p>
+                </div>
+              </div>
+            </div>
+
             <form method="POST" action="/verify-email" id="verifyForm" novalidate>
               <!-- CSRF Token -->
               <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -78,11 +90,20 @@
         </div>
       </div>
       <div class="auth-shell-notes">
+        <div class="alert alert-success auth-shell-note" role="alert">
+          <h6 class="alert-heading">
+            <i class="bi bi-lightning-charge me-2"></i>Next Step
+          </h6>
+          <p class="mb-0 small">
+            ✓ Once verified, you'll be redirected to <strong>login</strong> where you can access your account immediately.
+          </p>
+        </div>
+        
         <div class="alert alert-info auth-shell-note" role="alert">
           <h6 class="alert-heading">
             <i class="bi bi-question-circle-fill me-2"></i>Why verify your email?
           </h6>
-          <ul class="mb-0 ps-3">
+          <ul class="mb-0 ps-3 small">
             <li>Ensures we have your correct email address</li>
             <li>Helps secure your account</li>
             <li>Allows us to send important notifications</li>

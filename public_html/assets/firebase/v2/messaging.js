@@ -10,7 +10,7 @@ import { fetchWithTimeout } from '../../js/shared/fetch-utils.js';
 import { getCsrfToken } from './firebase-utils.js';
 
 // Token management defaults (overridable via config)
-let DEFAULT_RETRIES = 4;
+const DEFAULT_RETRIES = 4;
 let TOKEN_SYNC_DEBOUNCE = 3000;
 let _tokenSyncTimeout = null;
 const TOKEN_STORAGE_KEY = '__fcm_token';
@@ -32,16 +32,16 @@ function emitMessagingSupportResolved(supported) {
   if (typeof window === 'undefined') return;
   try {
     window.dispatchEvent(new CustomEvent('fcm-support-resolved', {
-      detail: { supported: !!supported, source: 'messaging' }
+      detail: { supported: Boolean(supported), source: 'messaging', },
     }));
   } catch (e) {
     // Ignore event dispatch errors.
   }
 }
 
-function setMessagingSupportState(supported, { emit = true } = {}) {
+function setMessagingSupportState(supported, { emit = true, } = {}) {
   if (typeof window === 'undefined') return;
-  const normalized = !!supported;
+  const normalized = Boolean(supported);
   const previous = window.__fcmMessagingSupported;
   window.__fcmMessagingSupported = normalized;
   if (emit && previous !== normalized) {
@@ -160,23 +160,23 @@ async function postTokenSyncWithRetry(sendUrl, payload, maxRetries = DEFAULT_SYN
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const { ok, status, error: _error } = await fetchWithTimeout(sendUrl, {
+      const { ok, status, error: _error, } = await fetchWithTimeout(sendUrl, {
         method: 'POST',
         credentials: 'same-origin',
         headers: {
           'Content-Type': 'application/json',
-          ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {})
+          ...(csrfToken ? { 'X-CSRF-Token': csrfToken, } : {}),
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       lastStatus = status;
 
       if (ok) {
-        return { ok: true, status };
+        return { ok: true, status, };
       }
 
       if (!isRetryableStatus(status) || attempt === retries) {
-        return { ok: false, status };
+        return { ok: false, status, };
       }
     } catch (err) {
       lastError = err;
@@ -187,12 +187,12 @@ async function postTokenSyncWithRetry(sendUrl, payload, maxRetries = DEFAULT_SYN
     await wait(backoffMs);
   }
 
-  return { ok: false, status: lastStatus, error: lastError };
+  return { ok: false, status: lastStatus, error: lastError, };
 }
 
 async function syncTokenToBackend(sendUrl, payload, options = {}) {
   const maxRetries = Number.isFinite(options.maxRetries) ? options.maxRetries : DEFAULT_SYNC_RETRIES;
-  const normalized = payload && typeof payload === 'object' ? { ...payload } : {};
+  const normalized = payload && typeof payload === 'object' ? { ...payload, } : {};
   const token = String(normalized.token || '').trim();
   const deviceId = String(normalized.device_id || '').trim();
   if (!token || !deviceId) return false;
@@ -213,7 +213,7 @@ async function syncTokenToBackend(sendUrl, payload, options = {}) {
   setPendingTokenSyncPayload({
     ...normalized,
     retry_count: retryCount,
-    last_retry_at_ms: Date.now()
+    last_retry_at_ms: Date.now(),
   });
   return false;
 }
@@ -273,15 +273,15 @@ async function postMessageToServiceWorker(message) {
   }
 }
 
-async function syncServiceWorkerContext({ deviceId, deviceName, csrfToken, debug } = {}) {
+async function syncServiceWorkerContext({ deviceId, deviceName, csrfToken, debug, } = {}) {
   const resolvedDeviceId = deviceId || getOrCreateDeviceId();
   const resolvedDeviceName = clampDeviceName(deviceName, 'web');
   if (csrfToken) {
-    await postMessageToServiceWorker({ type: 'STORE_CSRF_TOKEN', token: csrfToken });
+    await postMessageToServiceWorker({ type: 'STORE_CSRF_TOKEN', token: csrfToken, });
   }
-  await postMessageToServiceWorker({ type: 'STORE_DEVICE_META', device_id: resolvedDeviceId, device_name: resolvedDeviceName });
+  await postMessageToServiceWorker({ type: 'STORE_DEVICE_META', device_id: resolvedDeviceId, device_name: resolvedDeviceName, });
   if (typeof debug === 'boolean') {
-    await postMessageToServiceWorker({ type: 'SET_SW_DEBUG', enabled: debug });
+    await postMessageToServiceWorker({ type: 'SET_SW_DEBUG', enabled: debug, });
   }
 }
 
@@ -295,13 +295,13 @@ export async function registerServiceWorker(swPath = '/firebase-messaging-sw.js'
   if ('serviceWorker' in navigator) {
     try {
       // Verify service worker file exists before registration
-      const { ok: swOk } = await fetchWithTimeout(swPath);
-      const swCheckResponse = { ok: swOk };
+      const { ok: swOk, } = await fetchWithTimeout(swPath);
+      const swCheckResponse = { ok: swOk, };
       if (!swCheckResponse.ok) {
         throw new Error('Service Worker file not found');
       }
 
-      const reg = await navigator.serviceWorker.register(swPath, { scope: '/' });
+      const reg = await navigator.serviceWorker.register(swPath, { scope: '/', });
       DebugUtils.moduleLog('messaging', 'Service Worker registered');
       return reg;
     } catch (err) {
@@ -316,7 +316,7 @@ async function _getTokenWithRetries(messaging, vapidKey, retries = DEFAULT_RETRI
   let attempt = 0; let lastErr = null;
   while (attempt <= retries) {
     try {
-      const token = await getToken(messaging, { vapidKey });
+      const token = await getToken(messaging, { vapidKey, });
       if (token) {
         DebugUtils.moduleLog('messaging', 'FCM token obtained');
         return token;
@@ -337,7 +337,7 @@ export async function obtainAndSendFCMToken(opts = {}) {
   if (opts == null) opts = {};
   if (typeof opts !== 'object') {
     const legacyUserId = opts; const legacyRequestPermission = arguments[1] === true;
-    opts = { userId: legacyUserId, requestPermission: legacyRequestPermission };
+    opts = { userId: legacyUserId, requestPermission: legacyRequestPermission, };
   }
 
   const supported = await isMessagingSupported();
@@ -358,7 +358,7 @@ export async function obtainAndSendFCMToken(opts = {}) {
     sendUrl = opts.sendUrl || apiConfig.tokenSyncEndpoint || '/api/notifications/sync-token',
     deviceName = defaultDeviceName,
     deviceType = 'web',
-    requestPermission: _requestPermission = false
+    requestPermission: _requestPermission = false,
   } = opts;
   const normalizedDeviceName = clampDeviceName(deviceName, defaultDeviceName || 'web');
 
@@ -411,7 +411,7 @@ export async function obtainAndSendFCMToken(opts = {}) {
     deviceId: resolvedDeviceId,
     deviceName: normalizedDeviceName,
     csrfToken: getCsrfToken(),
-    debug: (typeof window !== 'undefined' && window.__FC_DEBUG === true)
+    debug: (typeof window !== 'undefined' && window.__FC_DEBUG === true),
   });
 
   const cfg = (globalThis?.firebaseConfig || {});
@@ -429,15 +429,15 @@ export async function obtainAndSendFCMToken(opts = {}) {
     device_id: opts.deviceId || resolvedDeviceId,
     userId: getEffectiveUserId(opts) || undefined,
     sync_reason: storedToken && storedToken !== token ? 'token_changed' : 'initial',
-    token_observed_at_ms: Date.now()
+    token_observed_at_ms: Date.now(),
   };
   if (storedToken && storedToken !== token) {
     payload.previous_token = storedToken;
   }
 
   try {
-    await flushPendingTokenSync(sendUrl, { maxRetries: syncRetries });
-    const synced = await syncTokenToBackend(sendUrl, payload, { maxRetries: syncRetries });
+    await flushPendingTokenSync(sendUrl, { maxRetries: syncRetries, });
+    const synced = await syncTokenToBackend(sendUrl, payload, { maxRetries: syncRetries, });
     if (synced) {
       DebugUtils.moduleLog('messaging', 'FCM token synced successfully');
     } else {
@@ -452,7 +452,7 @@ export async function obtainAndSendFCMToken(opts = {}) {
 // Unsubscribe / mute helpers
 export async function unsubscribeFCMToken(token) {
   try {
-    const { ok, status: _status } = await fetchWithTimeout('/api/unsubscribe-fcm', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fcm_token: token }) });
+    const { ok, status: _status, } = await fetchWithTimeout('/api/unsubscribe-fcm', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify({ fcm_token: token, }), });
     if (ok) {
       try {
         localStorage.removeItem(TOKEN_STORAGE_KEY);
@@ -472,18 +472,18 @@ export async function unsubscribeFCMToken(token) {
 // Topic subscription wrappers (server-side topic endpoints exist)
 export async function subscribeToTopic(topic, token = null) {
   try {
-    const body = { topic };
+    const body = { topic, };
     if (token) body.token = token;
-    const { ok } = await fetchWithTimeout('/api/topics/subscribe', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const { ok, } = await fetchWithTimeout('/api/topics/subscribe', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify(body), });
     return ok;
   } catch (e) { DebugUtils.moduleWarn('messaging', 'subscribeToTopic failed', e); return false; }
 }
 
 export async function unsubscribeFromTopic(topic, token = null) {
   try {
-    const body = { topic };
+    const body = { topic, };
     if (token) body.token = token;
-    const { ok } = await fetchWithTimeout('/api/topics/unsubscribe', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const { ok, } = await fetchWithTimeout('/api/topics/unsubscribe', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify(body), });
     return ok;
   } catch (e) { DebugUtils.moduleWarn('messaging', 'unsubscribeFromTopic failed', e); return false; }
 }
@@ -512,7 +512,7 @@ export async function listenForMessages(cb) {
 // Foreground Notification Display Handler
 // Shows toast/modal notification when app is in foreground
 export function showForegroundNotification(payload) {
-  const { notification = {}, data = {} } = payload;
+  const { notification = {}, data = {}, } = payload;
   const title = notification.title || 'নোটিফিকেশন';
   const body = notification.body || '';
   const icon = notification.icon || '/assets/logo/icon-192x192.png';
@@ -551,7 +551,7 @@ export function showForegroundNotification(payload) {
     const toastElement = document.getElementById(toastId);
     new window.bootstrap.Toast(toastElement, {
       autohide: true,
-      delay: 5000
+      delay: 5000,
     });
 
     // Auto-remove from DOM after hiding
@@ -582,14 +582,14 @@ export function showForegroundNotification(payload) {
     window.__fcmNotificationLog.push({
       title,
       body,
-      displayedAt: new Date().toISOString()
+      displayedAt: new Date().toISOString(),
     });
   }
 }
 
 // Auto-initialize foreground message listener
 export function autoInitializeForegroundListener(opts = {}) {
-  const { onMessageCallback = null } = opts;
+  const { onMessageCallback = null, } = opts;
 
   DebugUtils.moduleLog('messaging', 'Setting up auto-initialize foreground listener');
 
@@ -623,7 +623,7 @@ export function autoInitializeForegroundListener(opts = {}) {
       } catch (err) {
         DebugUtils.moduleError('messaging', 'Failed to setup foreground listener:', err);
       }
-    }, { once: true });
+    }, { once: true, });
   })();
 }
 
@@ -632,7 +632,7 @@ export function autoInitializeFCMToken(opts = {}) {
   const {
     onSuccess = null,
     onError = null,
-    autoRetry = true
+    autoRetry = true,
   } = opts;
 
   if (typeof window === 'undefined') return; // Not in browser
@@ -672,7 +672,7 @@ export function autoInitializeFCMToken(opts = {}) {
         window.__fcmTokenObtained = false;
         if (onError) onError(err);
       }
-    }, { once: true }); // Only listen once
+    }, { once: true, }); // Only listen once
 
     // Also listen for permission changes (if user grants permission after loading page)
     if ('Notification' in window) {
@@ -745,11 +745,11 @@ async function checkAndRefreshTokenIfNeeded(opts = {}) {
     const messaging = getMessagingInstance();
     if (!messaging) return;
     const cfg = globalThis?.firebaseConfig || {};
-    const currentToken = await getToken(messaging, { vapidKey: cfg?.vapidKey || null });
+    const currentToken = await getToken(messaging, { vapidKey: cfg?.vapidKey || null, });
 
-    const tokenChanged = !!(currentToken && currentToken !== storedToken);
+    const tokenChanged = Boolean(currentToken && currentToken !== storedToken);
     const syncIntervalMs = Math.max(60000, TOKEN_HEARTBEAT_SYNC_INTERVAL || DEFAULT_HEARTBEAT_SYNC_INTERVAL_MS);
-    const heartbeatDue = !!currentToken && (!lastSyncedAtMs || (nowMs - lastSyncedAtMs) >= syncIntervalMs);
+    const heartbeatDue = Boolean(currentToken) && (!lastSyncedAtMs || (nowMs - lastSyncedAtMs) >= syncIntervalMs);
     const needsSync = tokenChanged || heartbeatDue;
     const notifConfig = getNotificationConfig?.() || {};
     const apiConfig = notifConfig?.api || {};
@@ -757,7 +757,7 @@ async function checkAndRefreshTokenIfNeeded(opts = {}) {
     const sendUrl = apiConfig.tokenSyncEndpoint || opts.sendUrl || '/api/notifications/sync-token';
     const syncRetries = Number.isFinite(tokenConfig.maxSyncRetries) ? tokenConfig.maxSyncRetries : DEFAULT_SYNC_RETRIES;
 
-    await flushPendingTokenSync(sendUrl, { maxRetries: syncRetries });
+    await flushPendingTokenSync(sendUrl, { maxRetries: syncRetries, });
 
     if (currentToken && needsSync) {
       const syncReason = tokenChanged ? 'token_changed' : 'heartbeat';
@@ -772,7 +772,7 @@ async function checkAndRefreshTokenIfNeeded(opts = {}) {
             device_type: opts.deviceType || 'web',
             device_id: getOrCreateDeviceId(),
             sync_reason: syncReason,
-            token_observed_at_ms: nowMs
+            token_observed_at_ms: nowMs,
           };
           const effectiveUserId = getEffectiveUserId(opts);
           if (effectiveUserId) payload.userId = effectiveUserId;
@@ -780,7 +780,7 @@ async function checkAndRefreshTokenIfNeeded(opts = {}) {
             payload.previous_token = storedToken;
           }
 
-          const synced = await syncTokenToBackend(sendUrl, payload, { maxRetries: syncRetries });
+          const synced = await syncTokenToBackend(sendUrl, payload, { maxRetries: syncRetries, });
           if (synced) {
             DebugUtils.moduleLog('messaging', `Token sync complete (${syncReason})`);
           } else {
@@ -796,4 +796,4 @@ async function checkAndRefreshTokenIfNeeded(opts = {}) {
   }
 }
 
-export default { isMessagingSupported, obtainAndSendFCMToken, registerServiceWorker, listenForMessages, autoInitializeFCMToken, unsubscribeFCMToken, subscribeToTopic, unsubscribeFromTopic, showForegroundNotification, autoInitializeForegroundListener };
+export default { isMessagingSupported, obtainAndSendFCMToken, registerServiceWorker, listenForMessages, autoInitializeFCMToken, unsubscribeFCMToken, subscribeToTopic, unsubscribeFromTopic, showForegroundNotification, autoInitializeForegroundListener, };

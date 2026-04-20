@@ -7,31 +7,31 @@
 import { escapeHtml } from './firebase-utils.js';
 
 export class AccountConflictHandler {
-    constructor(containerId = 'accountConflictContainer') {
-        this.containerId = containerId;
-        this.container = document.getElementById(containerId);
-        this.resolveCallback = null;
-    }
+  constructor(containerId = 'accountConflictContainer') {
+    this.containerId = containerId;
+    this.container = document.getElementById(containerId);
+    this.resolveCallback = null;
+  }
 
-    /**
+  /**
      * Show conflict modal and handle resolution
      * @param {Object} conflictData - Email and existing provider info
      * @param {string} attemptedProvider - Provider user tried to sign in with
      * @param {Object} firebaseUser - Firebase user object
      * @param {Function} onResolve - Callback when user chooses resolution
      */
-    show(conflictData, attemptedProvider, firebaseUser, onResolve) {
-        if (!this.container) {
-            console.error('Account conflict container not found');
-            return;
-        }
+  show(conflictData, attemptedProvider, firebaseUser, onResolve) {
+    if (!this.container) {
+      console.error('Account conflict container not found');
+      return;
+    }
 
-        this.resolveCallback = onResolve;
+    this.resolveCallback = onResolve;
 
-        const existingProvider = conflictData.provider || 'unknown';
-        const email = escapeHtml(conflictData.email || 'your email');
+    const existingProvider = conflictData.provider || 'unknown';
+    const email = escapeHtml(conflictData.email || 'your email');
 
-        const modalHTML = `
+    const modalHTML = `
             <div class="modal fade show" id="accountConflictModal" tabindex="-1" role="dialog" aria-labelledby="accountConflictTitle" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content">
@@ -67,98 +67,98 @@ export class AccountConflictHandler {
             <div class="modal-backdrop fade show"></div>
         `;
 
-        this.container.innerHTML = modalHTML;
+    this.container.innerHTML = modalHTML;
 
-        // Handle button click
-        const existingBtn = document.getElementById('signInWithExistingBtn');
-        if (existingBtn) {
-            existingBtn.addEventListener('click', () => {
-                this.handleResolution(existingProvider, firebaseUser);
-            });
-        }
-
-        // Show modal
-        const modalElement = document.getElementById('accountConflictModal');
-        if (modalElement) {
-            modalElement.addEventListener('hidden.bs.modal', () => {
-                this.cleanup();
-            });
-        }
-
-        // Display modal
-        this.displayModal();
+    // Handle button click
+    const existingBtn = document.getElementById('signInWithExistingBtn');
+    if (existingBtn) {
+      existingBtn.addEventListener('click', () => {
+        this.handleResolution(existingProvider, firebaseUser);
+      });
     }
 
-    /**
+    // Show modal
+    const modalElement = document.getElementById('accountConflictModal');
+    if (modalElement) {
+      modalElement.addEventListener('hidden.bs.modal', () => {
+        this.cleanup();
+      });
+    }
+
+    // Display modal
+    this.displayModal();
+  }
+
+  /**
      * Display the modal using Bootstrap
      */
-    displayModal() {
-        const modalElement = document.getElementById('accountConflictModal');
-        if (modalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            const modal = new bootstrap.Modal(modalElement);
-            modal.show();
-        } else if (modalElement) {
-            // Fallback if Bootstrap is not available
-            modalElement.style.display = 'block';
-            modalElement.classList.add('show');
-        }
+  displayModal() {
+    const modalElement = document.getElementById('accountConflictModal');
+    if (modalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+      const modal = new bootstrap.Modal(modalElement);
+      modal.show();
+    } else if (modalElement) {
+      // Fallback if Bootstrap is not available
+      modalElement.style.display = 'block';
+      modalElement.classList.add('show');
     }
+  }
 
-    /**
+  /**
      * Handle user's resolution choice
      */
-    handleResolution(provider, firebaseUser) {
-        if (this.resolveCallback && typeof this.resolveCallback === 'function') {
-            this.resolveCallback(provider, firebaseUser);
-        }
-        this.cleanup();
-        this.redirect(provider);
+  handleResolution(provider, firebaseUser) {
+    if (this.resolveCallback && typeof this.resolveCallback === 'function') {
+      this.resolveCallback(provider, firebaseUser);
     }
+    this.cleanup();
+    this.redirect(provider);
+  }
 
-    /**
+  /**
      * Clean up modal DOM
      */
-    cleanup() {
-        if (this.container) {
-            this.container.innerHTML = '';
-        }
-
-        // Remove any remaining modal backdrops
-        const backdrops = document.querySelectorAll('.modal-backdrop');
-        backdrops.forEach(bd => bd.remove());
+  cleanup() {
+    if (this.container) {
+      this.container.innerHTML = '';
     }
 
-    /**
+    // Remove any remaining modal backdrops
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(bd => bd.remove());
+  }
+
+  /**
      * Redirect to provider-specific sign-in
      */
-    redirect(provider) {
-        const redirectMap = {
-            'google': '/login?auth=google',
-            'facebook': '/login?auth=facebook',
-            'password': '/login',
-            'anonymous': '/login?auth=guest'
-        };
+  redirect(provider) {
+    const redirectMap = {
+      'google': '/login?auth=google',
+      'facebook': '/login?auth=facebook',
+      'password': '/login',
+      'anonymous': '/login?auth=guest',
+    };
 
-        const redirectUrl = redirectMap[provider] || '/login';
-        setTimeout(() => {
-            window.location.href = redirectUrl;
-        }, 1000);
-    }
+    const redirectUrl = redirectMap[provider] || '/login';
+    setTimeout(() => {
+      window.location.href = redirectUrl;
+    }, 1000);
+  }
 
-    /**
+  /**
      * Get provider display name
      */
-    getProviderName(provider) {
-        const names = {
-            'google': 'Google',
-            'facebook': 'Facebook',
-            'github': 'GitHub',
-            'password': 'Email/Password',
-            'anonymous': 'Guest',
-            'unknown': 'your original method'
-        };
-        return names[provider] || 'your original method';
-    }
+  getProviderName(provider) {
+    const names = {
+      'google': 'Google',
+      'facebook': 'Facebook',
+      'github': 'GitHub',
+      'password': 'Email/Password',
+      'anonymous': 'Guest',
+      'unknown': 'your original method',
+    };
+    return names[provider] || 'your original method';
+  }
 
 }
 

@@ -1,6 +1,7 @@
 /**
  * Express Reverse Proxy - একই পোর্টে একাধিক Node.js সার্ভার চালানো
  * Port: 3000 (সব রিকোয়েস্ট এখানে আসবে)
+ * Configurable via environment variables
  */
 
 import express from 'express';
@@ -10,8 +11,18 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { createServer } from 'http';
 
+// Configuration from environment variables
+const REVERSE_PROXY_PORT = process.env.REVERSE_PROXY_PORT || process.env.PORT || 3000;
+const BROXLAB_NODE_HOST = process.env.BROXLAB_NODE_HOST || 'localhost';
+const BROXLAB_NODE_PORT = process.env.BROXLAB_NODE_PORT || 3002;
+const NOTIFICATION_WS_HOST = process.env.NOTIFICATION_WS_HOST || 'localhost';
+const NOTIFICATION_WS_PORT = process.env.NOTIFICATION_WS_PORT || 3003;
+
+const BROXLAB_NODE_URL = `http://${BROXLAB_NODE_HOST}:${BROXLAB_NODE_PORT}`;
+const NOTIFICATION_WS_URL = `http://${NOTIFICATION_WS_HOST}:${NOTIFICATION_WS_PORT}`;
+
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = REVERSE_PROXY_PORT;
 
 // Middleware
 app.use(
@@ -28,24 +39,24 @@ app.get('/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     services: {
-      'unified-server': 'http://localhost:3001',
-      'ai-assistant': 'http://localhost:3002',
+      'ai-assistant': BROXLAB_NODE_URL,
+      'notification-ws': NOTIFICATION_WS_URL,
     },
   });
 });
 
-// API Routes - Unified Server (RAG System)
+// API Routes - AI Assistant (formerly unified server)
 app.use(
   '/api',
   createProxyMiddleware({
-    target: 'http://localhost:3001',
+    target: BROXLAB_NODE_URL,
     changeOrigin: true,
     pathRewrite: {
       '^/api': '', // /api/* -> /*
     },
     onError: (err, req, res) => {
-      console.error('Unified Server Proxy Error:', err.message);
-      res.status(502).json({ error: 'Unified Server unavailable' });
+      console.error('AI Assistant Proxy Error:', err.message);
+      res.status(502).json({ error: 'AI Assistant unavailable' });
     },
   })
 );
@@ -54,7 +65,7 @@ app.use(
 app.use(
   '/ai',
   createProxyMiddleware({
-    target: 'http://localhost:3002',
+    target: BROXLAB_NODE_URL,
     changeOrigin: true,
     pathRewrite: {
       '^/ai': '', // /ai/* -> /*
@@ -70,7 +81,7 @@ app.use(
 app.use(
   '/ai-ws',
   createProxyMiddleware({
-    target: 'http://localhost:3002',
+    target: BROXLAB_NODE_URL,
     changeOrigin: true,
     ws: true, // WebSocket support
     pathRewrite: {
@@ -79,20 +90,33 @@ app.use(
   })
 );
 
-// Static assets (if served by unified server)
+// WebSocket support for Notifications
+app.use(
+  '/ws/notifications',
+  createProxyMiddleware({
+    target: NOTIFICATION_WS_URL,
+    changeOrigin: true,
+    ws: true, // WebSocket support
+    pathRewrite: {
+      '^/ws/notifications': '', // /ws/notifications/* -> /*
+    },
+  })
+);
+
+// Static assets (if served by AI Assistant)
 app.use(
   '/assets',
   createProxyMiddleware({
-    target: 'http://localhost:3001',
+    target: BROXLAB_NODE_URL,
     changeOrigin: true,
   })
 );
 
-// Default route - fallback to unified server
+// Default route - fallback to AI Assistant
 app.use(
   '/',
   createProxyMiddleware({
-    target: 'http://localhost:3001',
+    target: BROXLAB_NODE_URL,
     changeOrigin: true,
   })
 );
@@ -105,6 +129,49 @@ app.use((err, req, res, next) => {
 
 // Graceful shutdown
 const server = createServer(app);
+
+// ============== WEBSOCKET UPGRADE HANDLER ==============
+// Handle WebSocket connections for proper upgrade negotiation
+server.on('upgrade', (req, res, head) => {
+  console.log(`[WebSocket] Upgrade request for ${req.url}`);
+
+  if (req.url.startsWith('/ws/notifications')) {
+    const proxy = createProxyMiddleware({
+      target: NOTIFICATION_WS_URL,
+      changeOrigin: true,
+      ws: true,
+      pathRewrite: {
+        '^/ws/notifications': '',
+      },
+      onError: (err, req, res) => {
+        console.error('[WebSocket] Notification proxy error:', err.message);
+        res.writeHead(502, { 'Content-Type': 'text/plain' });
+        res.end('Bad Gateway');
+      },
+    });
+
+    proxy.upgrade(req, res, head);
+  } else if (req.url.startsWith('/ai-ws')) {
+    const proxy = createProxyMiddleware({
+      target: BROXLAB_NODE_URL,
+      changeOrigin: true,
+      ws: true,
+      pathRewrite: {
+        '^/ai-ws': '',
+      },
+      onError: (err, req, res) => {
+        console.error('[WebSocket] AI Assistant proxy error:', err.message);
+        res.writeHead(502, { 'Content-Type': 'text/plain' });
+        res.end('Bad Gateway');
+      },
+    });
+
+    proxy.upgrade(req, res, head);
+  } else {
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Not Found');
+  }
+});
 
 process.on('SIGINT', () => {
   console.log('\n🛑 Shutting down reverse proxy server...');
@@ -128,7 +195,8 @@ server.listen(PORT, () => {
   console.log(`📋 Routes:`);
   console.log(`   • Unified Server (RAG): http://localhost:${PORT}/api/*`);
   console.log(`   • AI Assistant: http://localhost:${PORT}/ai/*`);
-  console.log(`   • WebSocket: http://localhost:${PORT}/ai-ws/*`);
+  console.log(`   • AI Assistant WebSocket: http://localhost:${PORT}/ai-ws/*`);
+  console.log(`   • Notification WebSocket: http://localhost:${PORT}/ws/notifications/*`);
   console.log(`   • Health Check: http://localhost:${PORT}/health`);
   console.log(`   • Default: http://localhost:${PORT}/* (fallback to unified server)`);
 });

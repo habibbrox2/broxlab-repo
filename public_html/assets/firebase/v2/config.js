@@ -10,7 +10,7 @@ const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 let _cachedConfig = null; // module-local cache
 let _fetchInProgress = null;
 let _notificationConfig = null; // parsed notification/system config
-let _configFetchInitiated = true; // track if fetch started
+const _configFetchInitiated = true; // track if fetch started
 
 // ============ DEFAULT NOTIFICATION CONFIG ============
 // Centralized settings for notifications, FCM, offline, multi-device sync, token management, rate-limiting
@@ -27,7 +27,7 @@ const DEFAULT_NOTIFICATION_CONFIG = {
     popupDelay: 300, // ms before showing popup
     popupCooldown: 500, // ms between popup displays
     autoCloseDelay: 5000, // ms before auto-closing toast
-    soundUrl: 'assets/sounds/notification.mp3'
+    soundUrl: 'assets/sounds/notification.mp3',
   },
 
   // Scheduled Notifications
@@ -37,7 +37,7 @@ const DEFAULT_NOTIFICATION_CONFIG = {
     retentionDays: 30, // keep history for N days
     timezoneAware: true,
     maxScheduledPerUser: 100,
-    enableClientSideScheduler: false // use server-side scheduling
+    enableClientSideScheduler: false, // use server-side scheduling
   },
 
   // Multi-Device Sync
@@ -48,7 +48,7 @@ const DEFAULT_NOTIFICATION_CONFIG = {
     syncInterval: 30000, // ms between syncs
     syncOnForeground: true, // sync when tab comes to foreground
     maxDevicesPerUser: 5,
-    enableOfflineSync: true
+    enableOfflineSync: true,
   },
 
   // Offline Handling & Queue
@@ -62,7 +62,7 @@ const DEFAULT_NOTIFICATION_CONFIG = {
     enableBackgroundSync: true,
     syncReadStatus: true, // sync read/unread status offline
     persistToIndexedDB: true, // use IndexedDB for larger cache
-    enableAutoResume: true // auto-resume when online
+    enableAutoResume: true, // auto-resume when online
   },
 
   // FCM Token Management
@@ -80,7 +80,7 @@ const DEFAULT_NOTIFICATION_CONFIG = {
     tokenValidationRegex: '^[A-Za-z0-9_:-]+$', // FCM token format
     minTokenLength: 10,
     syncDebounceMs: 3000, // debounce token sync requests
-    enableTokenEncryption: false // for future enhancement
+    enableTokenEncryption: false, // for future enhancement
   },
 
   // Rate Limiting & Throttling
@@ -90,7 +90,7 @@ const DEFAULT_NOTIFICATION_CONFIG = {
     maxRetries: 3, // max retries before giving up
     retryDelayMultiplier: 2.0, // exponential backoff multiplier
     requestTimeout: 10000, // ms timeout for network requests
-    enableAdaptiveThrottling: true // adjust rates based on network
+    enableAdaptiveThrottling: true, // adjust rates based on network
   },
 
   // Analytics Integration
@@ -101,7 +101,7 @@ const DEFAULT_NOTIFICATION_CONFIG = {
     trackOfflineEvents: true,
     trackSyncEvents: true,
     batchEventsSizeThreshold: 20,
-    batchEventTimeThreshold: 60000 // ms (1 min)
+    batchEventTimeThreshold: 60000, // ms (1 min)
   },
 
   // Event Handlers (can be overridden)
@@ -113,7 +113,7 @@ const DEFAULT_NOTIFICATION_CONFIG = {
     onTokenGenerated: null, // function(token)
     onTokenRefreshed: null, // function(newToken)
     onSyncComplete: null, // function(syncResult)
-    onOfflineItemsRestored: null // function(itemCount)
+    onOfflineItemsRestored: null, // function(itemCount)
   },
 
   // Feature Flags
@@ -123,7 +123,7 @@ const DEFAULT_NOTIFICATION_CONFIG = {
     enableNotificationPreferences: true,
     enableGroupNotifications: true,
     enableNotificationActions: true, // action buttons on notifications
-    enableRichNotifications: true // images, badges, etc
+    enableRichNotifications: true, // images, badges, etc
   },
 
   // API Endpoints
@@ -135,8 +135,8 @@ const DEFAULT_NOTIFICATION_CONFIG = {
     multiDeviceSyncEndpoint: '/api/notification/sync-status',
     notificationsEndpoint: '/api/notification',
     // No backend audit endpoint available by default; rely on Firebase analytics
-    auditEndpoint: null
-  }
+    auditEndpoint: null,
+  },
 };
 
 function safeParseJSON(raw) {
@@ -146,7 +146,7 @@ function safeParseJSON(raw) {
 function validateFirebaseConfig(cfg) {
   if (!cfg || typeof cfg !== 'object') return null;
   // Basic required fields
-  const { apiKey, projectId, appId: _appId } = cfg;
+  const { apiKey, projectId, appId: _appId, } = cfg;
   if (!apiKey || !projectId) return null;
   return cfg;
 }
@@ -155,11 +155,11 @@ function validateFirebaseConfig(cfg) {
 function _mergeNotificationConfig(fetched = {}) {
   const defaults = DEFAULT_NOTIFICATION_CONFIG;
   // Shallow merge with fetched config (fetched overrides defaults)
-  const merged = { ...defaults, ...fetched };
+  const merged = { ...defaults, ...fetched, };
   // Deep merge nested objects
   Object.keys(defaults).forEach(key => {
     if (typeof defaults[key] === 'object' && !Array.isArray(defaults[key])) {
-      merged[key] = { ...defaults[key], ...(fetched[key] || {}) };
+      merged[key] = { ...defaults[key], ...(fetched[key] || {}), };
     }
   });
   return merged;
@@ -168,10 +168,10 @@ function _mergeNotificationConfig(fetched = {}) {
 // Synchronous version for immediate access
 function mergeNotificationConfigSync(fetched = {}) {
   const defaults = DEFAULT_NOTIFICATION_CONFIG;
-  const merged = { ...defaults, ...fetched };
+  const merged = { ...defaults, ...fetched, };
   Object.keys(defaults).forEach(key => {
     if (typeof defaults[key] === 'object' && !Array.isArray(defaults[key])) {
-      merged[key] = { ...defaults[key], ...(fetched[key] || {}) };
+      merged[key] = { ...defaults[key], ...(fetched[key] || {}), };
     }
   });
   return merged;
@@ -194,19 +194,19 @@ export async function loadFirebaseConfig(timeout = 5000) {
 
     // 2) Network fetch from /api/firebase-config with timeout
     try {
-      const { ok, status: _status, data } = await fetchWithTimeout('/api/firebase-config', {
+      const { ok, status: _status, data, } = await fetchWithTimeout('/api/firebase-config', {
         method: 'GET',
         credentials: 'same-origin',
         cache: 'no-store',
-        headers: { 'Accept': 'application/json' },
-        timeoutMs: timeout
+        headers: { 'Accept': 'application/json', },
+        timeoutMs: timeout,
       });
       if (ok) {
         const body = data || null;
         const cfg = body && body.config ? body.config : body;
         const validated = validateFirebaseConfig(cfg);
         if (validated) {
-          try { localStorage.setItem('firebase_config_cache', JSON.stringify({ ts: Date.now(), config: validated })); } catch (e) { }
+          try { localStorage.setItem('firebase_config_cache', JSON.stringify({ ts: Date.now(), config: validated, })); } catch (e) { }
           _cachedConfig = validated;
           return validated;
         }
@@ -260,7 +260,7 @@ export function getNotificationConfig() {
 export async function getFullConfig(timeout = 5000) {
   const firebaseConfig = await loadFirebaseConfig(timeout);
   const notifConfig = await _ensureNotificationConfig();
-  return { firebaseConfig, notificationConfig: notifConfig };
+  return { firebaseConfig, notificationConfig: notifConfig, };
 }
 
 // Internal: ensure notification config is loaded
@@ -272,7 +272,7 @@ async function _ensureNotificationConfig() {
   try {
     const fbConfig = _cachedConfig || {};
     const embedded = (typeof window !== 'undefined' && window.__EMBEDDED_NOTIFICATION_CONFIG) || {};
-    _notificationConfig = mergeNotificationConfigSync({ ...fbConfig.notificationConfig, ...embedded });
+    _notificationConfig = mergeNotificationConfigSync({ ...fbConfig.notificationConfig, ...embedded, });
   } catch (e) {
     _notificationConfig = mergeNotificationConfigSync({});
   }
@@ -285,11 +285,11 @@ export async function prefetchAllConfigs() {
   try {
     await Promise.all([
       loadFirebaseConfig().catch(() => null),
-      _ensureNotificationConfig().catch(() => null)
+      _ensureNotificationConfig().catch(() => null),
     ]);
   } catch (e) { }
 }
 
 export async function prefetchFirebaseConfig() { try { await loadFirebaseConfig().catch(() => null); } catch (e) { } }
 
-export default { loadFirebaseConfig, getNotificationConfig, getFullConfig, clearCachedFirebaseConfig, prefetchFirebaseConfig, prefetchAllConfigs, DEFAULT_NOTIFICATION_CONFIG };
+export default { loadFirebaseConfig, getNotificationConfig, getFullConfig, clearCachedFirebaseConfig, prefetchFirebaseConfig, prefetchAllConfigs, DEFAULT_NOTIFICATION_CONFIG, };

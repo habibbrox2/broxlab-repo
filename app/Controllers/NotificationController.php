@@ -16,6 +16,7 @@ require_once __DIR__ . '/../Models/AuthManager.php';
 require_once __DIR__ . '/../Models/FirebaseModel.php';
 require_once __DIR__ . '/../Helpers/FirebaseHelper.php';
 require_once __DIR__ . '/../Helpers/EmailHelper.php';
+require_once __DIR__ . '/../Helpers/NotificationWebSocketHelper.php';
 
 $notificationModel = null;
 /**
@@ -78,8 +79,7 @@ $router->post('/api/resend-notification', function () use ($mysqli) {
                     if ($ok) {
                         $sent++;
                         $notificationModel->logDelivery($notificationId, $user['id'], 'sent', null, $user['email'], 'sent', 'email');
-                    }
-                    else {
+                    } else {
                         $failed++;
                         $notificationModel->logDelivery($notificationId, $user['id'], 'failed', null, $user['email'], 'failed', 'email');
                     }
@@ -90,14 +90,13 @@ $router->post('/api/resend-notification', function () use ($mysqli) {
         $notificationModel->markAsSent($notificationId);
 
         echo json_encode([
-        'success' => true,
-        'notification_id' => $notificationId,
-        'sent' => $sent,
-        'failed' => $failed,
-        'message' => 'Operation completed'
+            'success' => true,
+            'notification_id' => $notificationId,
+            'sent' => $sent,
+            'failed' => $failed,
+            'message' => 'Operation completed'
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -263,8 +262,7 @@ $router->post('/api/send-draft', function () use ($mysqli) {
                             if ($ok) {
                                 $sent++;
                                 $notificationModel->logDelivery($notifId, $user['id'], 'sent', null, $user['email'], 'sent', 'email');
-                            }
-                            else {
+                            } else {
                                 $failed++;
                                 $notificationModel->logDelivery($notifId, $user['id'], 'failed', null, $user['email'], 'failed', 'email');
                             }
@@ -275,9 +273,56 @@ $router->post('/api/send-draft', function () use ($mysqli) {
         }
 
         $notificationModel->markAsSent($notifId);
+
+        // Broadcast via WebSocket for real-time in-app notifications
+        $recipientUserIds = [];
+        try {
+            switch ($recipientType) {
+                case 'all':
+                    $allUsers = $notificationModel->getAllUsers();
+                    $recipientUserIds = array_column($allUsers, 'id');
+                    break;
+                case 'specific':
+                    $recipientIds = json_decode($draft['recipient_ids'], true) ?? [];
+                    $recipientUserIds = array_filter($recipientIds, function ($id) {
+                        return filter_var($id, FILTER_VALIDATE_INT);
+                    });
+                    break;
+                case 'role':
+                    $roleName = $draft['role_name'] ?? '';
+                    if ($roleName) {
+                        $users = $notificationModel->getRecipientsByRole($roleName);
+                        $recipientUserIds = array_column($users, 'id');
+                    }
+                    break;
+                case 'permission':
+                    $permName = $draft['permission_name'] ?? '';
+                    if ($permName) {
+                        $users = $notificationModel->getRecipientsByPermission($permName);
+                        $recipientUserIds = array_column($users, 'id');
+                    }
+                    break;
+            }
+
+            // Send WebSocket notification to real-time subscribers
+            if (!empty($recipientUserIds)) {
+                $notificationData = [
+                    'id' => $notifId,
+                    'title' => $draft['title'],
+                    'message' => $draft['message'],
+                    'type' => $draft['type'] ?? 'general',
+                    'action_url' => $draft['action_url'] ?? '#',
+                    'created_at' => date('Y-m-d H:i:s')
+                ];
+
+                NotificationWebSocketHelper::broadcastNotification($recipientUserIds, $notificationData, ['websocket']);
+            }
+        } catch (Exception $wsError) {
+            error_log('[Notification] WebSocket broadcast error: ' . $wsError->getMessage());
+        }
+
         echo json_encode(['success' => true, 'notification_id' => $notifId, 'sent' => $sent, 'failed' => $failed, 'message' => "Operation completed ($sent sent, $failed failed)"]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -306,21 +351,22 @@ $router->get('/api/users', function () use ($mysqli) {
     $notificationModel = new NotificationModel($mysqli);
     if ($search) {
         $users = $notificationModel->searchUsers($search, 100);
-    }
-    else {
+    } else {
         // return last 500 users (id,username,email)
         $all = $notificationModel->getAllUsers();
-        $users = array_map(function ($u) {
-                    return [
+        $users = array_map(
+            function ($u) {
+                return [
                     'id' => $u['id'],
                     'username' => $u['username'],
                     'email' => $u['email']
-                    ];
-                }
-                    , array_slice($all, 0, 500));
-            }
-            echo json_encode(['users' => $users]);
-        });
+                ];
+            },
+            array_slice($all, 0, 500)
+        );
+    }
+    echo json_encode(['users' => $users]);
+});
 
 // ----- COUNT RECIPIENTS API -----
 $router->get('/api/count-recipients', function () use ($mysqli) {
@@ -337,20 +383,16 @@ $router->get('/api/count-recipients', function () use ($mysqli) {
         $warning = null;
         if ($type === 'specific' && !empty($specificIds)) {
             $count = count($specificIds);
-        }
-        elseif ($type === 'role' && $role) {
+        } elseif ($type === 'role' && $role) {
             $count = count($notificationModel->getRecipientsByRole($role));
-        }
-        elseif ($type === 'permission' && $permission) {
+        } elseif ($type === 'permission' && $permission) {
             $count = count($notificationModel->getRecipientsByPermission($permission));
-        }
-        else {
+        } else {
             $count = $notificationModel->getRecipientCount($type, $adminId);
         }
 
         echo json_encode(['count' => $count]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['error' => $e->getMessage(), 'count' => 0]);
     }
@@ -371,51 +413,53 @@ $router->get('/api/preview-recipients', ['middleware' => ['auth', 'admin_only']]
         $notificationModel = new NotificationModel($mysqli);
         if ($type === 'specific' && !empty($specificIds)) {
             $users = $notificationModel->getUsersByIds($specificIds);
-            $recipients = array_map(function ($u) {
-                            return [
-                            'username' => $u['username'] ?? ('User #' . $u['id']),
-                            'email' => $u['email'] ?? null,
-                            'device_info' => 'Selected user',
-                            'enabled_at' => date('Y-m-d H:i:s')
-                            ];
-                        }
-                            , $users);
-                    }
-                    elseif ($type === 'role' && $role) {
-                        $users = $notificationModel->getRecipientsByRole($role, $limit);
-                        $recipients = array_map(function ($u) {
-                            return [
-                            'username' => $u['username'] ?? ('User #' . $u['id']),
-                            'email' => $u['email'] ?? null,
-                            'device_info' => 'Role member',
-                            'enabled_at' => date('Y-m-d H:i:s')
-                            ];
-                        }
-                            , $users);
-                    }
-                    elseif ($type === 'permission' && $permission) {
-                        $users = $notificationModel->getRecipientsByPermission($permission, $limit);
-                        $recipients = array_map(function ($u) {
-                            return [
-                            'username' => $u['username'] ?? ('User #' . $u['id']),
-                            'email' => $u['email'] ?? null,
-                            'device_info' => 'Permission holder',
-                            'enabled_at' => date('Y-m-d H:i:s')
-                            ];
-                        }
-                            , $users);
-                    }
-                    else {
-                        $recipients = $notificationModel->getRecipientPreviewList($type, $adminId, $limit);
-                    }
+            $recipients = array_map(
+                function ($u) {
+                    return [
+                        'username' => $u['username'] ?? ('User #' . $u['id']),
+                        'email' => $u['email'] ?? null,
+                        'device_info' => 'Selected user',
+                        'enabled_at' => date('Y-m-d H:i:s')
+                    ];
+                },
+                $users
+            );
+        } elseif ($type === 'role' && $role) {
+            $users = $notificationModel->getRecipientsByRole($role, $limit);
+            $recipients = array_map(
+                function ($u) {
+                    return [
+                        'username' => $u['username'] ?? ('User #' . $u['id']),
+                        'email' => $u['email'] ?? null,
+                        'device_info' => 'Role member',
+                        'enabled_at' => date('Y-m-d H:i:s')
+                    ];
+                },
+                $users
+            );
+        } elseif ($type === 'permission' && $permission) {
+            $users = $notificationModel->getRecipientsByPermission($permission, $limit);
+            $recipients = array_map(
+                function ($u) {
+                    return [
+                        'username' => $u['username'] ?? ('User #' . $u['id']),
+                        'email' => $u['email'] ?? null,
+                        'device_info' => 'Permission holder',
+                        'enabled_at' => date('Y-m-d H:i:s')
+                    ];
+                },
+                $users
+            );
+        } else {
+            $recipients = $notificationModel->getRecipientPreviewList($type, $adminId, $limit);
+        }
 
-                    echo json_encode(['recipients' => $recipients]);
-                }
-                catch (Exception $e) {
-                    http_response_code(500);
-                    echo json_encode(['error' => $e->getMessage(), 'recipients' => []]);
-                }
-            });
+        echo json_encode(['recipients' => $recipients]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage(), 'recipients' => []]);
+    }
+});
 
 // ----- SCHEDULED NOTIFICATIONS PAGE -----
 $router->get('/scheduled', function () use ($twig, $mysqli) {
@@ -425,9 +469,9 @@ $router->get('/scheduled', function () use ($twig, $mysqli) {
     $stats = $notificationModel->getScheduledStats();
 
     echo $twig->render('admin/notifications/scheduled.twig', [
-    'title' => 'Scheduled Notifications',
-    'stats' => $stats,
-    'csrf_token' => generateCsrfToken()
+        'title' => 'Scheduled Notifications',
+        'stats' => $stats,
+        'csrf_token' => generateCsrfToken()
     ]);
 });
 
@@ -439,9 +483,9 @@ $router->get('/device-sync', function () use ($twig, $mysqli) {
     $stats = $notificationModel->getDeviceSyncStatus();
 
     echo $twig->render('admin/notifications/device-sync.twig', [
-    'title' => 'Multi-Device Sync Manager',
-    'stats' => $stats,
-    'csrf_token' => generateCsrfToken()
+        'title' => 'Multi-Device Sync Manager',
+        'stats' => $stats,
+        'csrf_token' => generateCsrfToken()
     ]);
 });
 
@@ -452,9 +496,9 @@ $router->get('/offline-handler', function () use ($twig, $mysqli) {
     $stats = $notificationModel->getOfflineHandlerStats();
 
     echo $twig->render('admin/notifications/offline-handler.twig', [
-    'title' => 'Offline Notification Manager',
-    'stats' => $stats,
-    'csrf_token' => generateCsrfToken()
+        'title' => 'Offline Notification Manager',
+        'stats' => $stats,
+        'csrf_token' => generateCsrfToken()
     ]);
 });
 
@@ -488,12 +532,11 @@ $router->get('/api/list-scheduled', function () use ($mysqli) {
         $notifications = $scheduledModel->getScheduledByAdmin($adminId, $status, $limit);
 
         echo json_encode([
-        'success' => true,
-        'notifications' => $notifications,
-        'count' => count($notifications)
+            'success' => true,
+            'notifications' => $notifications,
+            'count' => count($notifications)
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -525,8 +568,7 @@ $router->get('/api/scheduled/{id}', function ($id) use ($mysqli) {
         }
 
         echo json_encode(['success' => true, 'notification' => $notification]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -549,13 +591,11 @@ $router->delete('/api/scheduled/{id}', function ($id) use ($mysqli) {
 
         if ($result) {
             echo json_encode(['success' => true, 'message' => 'Operation completed']);
-        }
-        else {
+        } else {
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => 'Operation failed']);
         }
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -569,28 +609,29 @@ $router->get('/api/device-list', function () use ($mysqli) {
         $deviceSyncModel = new DeviceSyncModel($mysqli);
 
         $devices = $deviceSyncModel->listDevices(100);
-        $devices = array_map(function ($d) {
-                    $d['platform'] = $d['device_type'] ?? 'web';
-                    $d['last_sync'] = $d['last_active'] ?? null;
-                    return $d;
-                }
-                    , $devices);
+        $devices = array_map(
+            function ($d) {
+                $d['platform'] = $d['device_type'] ?? 'web';
+                $d['last_sync'] = $d['last_active'] ?? null;
+                return $d;
+            },
+            $devices
+        );
 
-                $syncCounts = $deviceSyncModel->getSyncCounts();
+        $syncCounts = $deviceSyncModel->getSyncCounts();
 
-                echo json_encode([
-                'success' => true,
-                'devices' => $devices,
-                'count' => count($devices),
-                'pending_count' => (int)($syncCounts['pending_count'] ?? 0),
-                'synced_count' => (int)($syncCounts['synced_count'] ?? 0)
-                ]);
-            }
-            catch (Exception $e) {
-                http_response_code(500);
-                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-            }
-        });
+        echo json_encode([
+            'success' => true,
+            'devices' => $devices,
+            'count' => count($devices),
+            'pending_count' => (int)($syncCounts['pending_count'] ?? 0),
+            'synced_count' => (int)($syncCounts['synced_count'] ?? 0)
+        ]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+});
 
 // ----- LIST SYNC LOG API -----
 $router->get('/api/sync-log', function () use ($mysqli) {
@@ -602,27 +643,28 @@ $router->get('/api/sync-log', function () use ($mysqli) {
 
         $deviceSyncModel = new DeviceSyncModel($mysqli);
         $logs = $deviceSyncModel->getSyncLogs($action, $limit);
-        $pendingActions = array_map(function ($row) {
-                    if (!isset($row['created_at']) && isset($row['synced_at'])) {
-                        $row['created_at'] = $row['synced_at'];
-                    }
-                    $row['synced'] = !empty($row['synced_at']);
-                    return $row;
+        $pendingActions = array_map(
+            function ($row) {
+                if (!isset($row['created_at']) && isset($row['synced_at'])) {
+                    $row['created_at'] = $row['synced_at'];
                 }
-                    , $logs);
+                $row['synced'] = !empty($row['synced_at']);
+                return $row;
+            },
+            $logs
+        );
 
-                echo json_encode([
-                'success' => true,
-                'logs' => $logs,
-                'pending_actions' => $pendingActions,
-                'count' => count($logs)
-                ]);
-            }
-            catch (Exception $e) {
-                http_response_code(500);
-                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-            }
-        });
+        echo json_encode([
+            'success' => true,
+            'logs' => $logs,
+            'pending_actions' => $pendingActions,
+            'count' => count($logs)
+        ]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+});
 
 // ----- GET SYNC STATUS API -----
 $router->get('/api/sync-status', function () use ($mysqli) {
@@ -640,12 +682,11 @@ $router->get('/api/sync-status', function () use ($mysqli) {
         $deviceCount = $deviceSyncModel->getActiveDeviceCount($userId);
 
         echo json_encode([
-        'success' => true,
-        'pending_actions' => $pendingActions,
-        'device_count' => $deviceCount
+            'success' => true,
+            'pending_actions' => $pendingActions,
+            'device_count' => $deviceCount
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -671,11 +712,10 @@ $router->post('/api/sync-status', function () use ($mysqli) {
         $result = $deviceSyncModel->logDeviceAction($userId, $notificationId, $deviceId, $action);
 
         echo json_encode([
-        'success' => $result,
-        'message' => 'Operation completed'
+            'success' => $result,
+            'message' => 'Operation completed'
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -696,11 +736,10 @@ $router->delete('/api/devices/{deviceId}', function ($deviceId) use ($mysqli) {
         $result = $notificationModel->deleteDeviceById($deviceId);
 
         echo json_encode([
-        'success' => $result,
-        'message' => 'Operation completed'
+            'success' => $result,
+            'message' => 'Operation completed'
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -731,12 +770,11 @@ $router->get('/api/notification/device-list', ['middleware' => ['auth', 'admin_o
             ")->fetch_all(MYSQLI_ASSOC);
 
         echo json_encode([
-        'success' => true,
-        'devices' => $devices,
-        'count' => count($devices)
+            'success' => true,
+            'devices' => $devices,
+            'count' => count($devices)
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -754,12 +792,11 @@ $router->get('/api/notification/sync-log', ['middleware' => ['auth', 'admin_only
         $logs = $deviceSyncModel->getSyncLogs($action, $limit);
 
         echo json_encode([
-        'success' => true,
-        'logs' => $logs,
-        'count' => count($logs)
+            'success' => true,
+            'logs' => $logs,
+            'count' => count($logs)
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -781,12 +818,11 @@ $router->get('/api/notification/sync-status', ['middleware' => ['auth']], functi
         $deviceCount = $deviceSyncModel->getActiveDeviceCount($userId);
 
         echo json_encode([
-        'success' => true,
-        'pending_actions' => $pendingActions,
-        'device_count' => $deviceCount
+            'success' => true,
+            'pending_actions' => $pendingActions,
+            'device_count' => $deviceCount
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -812,11 +848,10 @@ $router->post('/api/notification/sync-status', ['middleware' => ['auth']], funct
         $result = $deviceSyncModel->logDeviceAction($userId, $notificationId, $deviceId, $action);
 
         echo json_encode([
-        'success' => $result,
-        'message' => 'Operation completed'
+            'success' => $result,
+            'message' => 'Operation completed'
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -840,15 +875,14 @@ $router->get('/user/notifications', ['middleware' => ['auth']], function () use 
         $unreadCount = $notificationModel->getUnreadCount($userId);
 
         echo $twig->render('user/notifications.twig', [
-        'title' => 'My Notifications',
-        'notifications' => $notifications,
-        'unread_count' => $unreadCount,
-        'current_page' => $page,
-        'total_pages' => $totalPages,
-        'csrf_token' => generateCsrfToken()
+            'title' => 'My Notifications',
+            'notifications' => $notifications,
+            'unread_count' => $unreadCount,
+            'current_page' => $page,
+            'total_pages' => $totalPages,
+            'csrf_token' => generateCsrfToken()
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         logError("User Notifications Error: " . $e->getMessage());
         showMessage("Failed to load notifications", "danger");
         header('Location: /');
@@ -907,9 +941,23 @@ $router->post('/api/notification/send-test', ['middleware' => ['auth', 'admin_on
         // Mark as sent for record-keeping
         $notificationModel->markAsSent($notifId);
 
+        // Send test notification via WebSocket to the admin user
+        try {
+            $notificationData = [
+                'id' => $notifId,
+                'title' => 'Test Notification',
+                'message' => $message,
+                'type' => 'general',
+                'action_url' => '#',
+                'created_at' => date('Y-m-d H:i:s')
+            ];
+            NotificationWebSocketHelper::broadcastNotification($adminId, $notificationData, ['websocket']);
+        } catch (Exception $wsError) {
+            error_log('[Notification] WebSocket test notification error: ' . $wsError->getMessage());
+        }
+
         echo json_encode(['success' => true, 'notification_id' => $notifId, 'message' => 'Test notification queued']);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -938,8 +986,9 @@ $router->get('/api/user-notifications', ['middleware' => ['auth']], function () 
         $unreadCount = $notificationModel->getUnreadCount($userId);
 
         // Format response
-        $formattedNotifications = array_map(function ($notif) {
-                    return [
+        $formattedNotifications = array_map(
+            function ($notif) {
+                return [
                     'id' => (int)$notif['id'],
                     'title' => $notif['title'],
                     'message' => $notif['message'],
@@ -947,21 +996,21 @@ $router->get('/api/user-notifications', ['middleware' => ['auth']], function () 
                     'is_read' => (int)$notif['is_read'],
                     'created_at' => $notif['created_at'],
                     'action_url' => $notif['action_url']
-                    ];
-                }
-                    , $notifications);
+                ];
+            },
+            $notifications
+        );
 
-                echo json_encode([
-                'success' => true,
-                'notifications' => $formattedNotifications,
-                'unread_count' => (int)$unreadCount
-                ]);
-            }
-            catch (Exception $e) {
-                http_response_code(500);
-                echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
-            }
-        });
+        echo json_encode([
+            'success' => true,
+            'notifications' => $formattedNotifications,
+            'unread_count' => (int)$unreadCount
+        ]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
+    }
+});
 
 // ----- GET USER NOTIFICATION PREFERENCES API -----
 $router->get('/api/user/notification-preferences', ['middleware' => ['auth']], function () use ($mysqli) {
@@ -983,8 +1032,7 @@ $router->get('/api/user/notification-preferences', ['middleware' => ['auth']], f
             exit;
         }
         echo json_encode(array_merge(['success' => true], $prefs));
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -1065,8 +1113,7 @@ $router->post('/api/user/notification-preferences', ['middleware' => ['auth']], 
 
         $ok = $notificationModel->updateUserNotificationPreferences($userId, $prefs);
         echo json_encode(['success' => (bool)$ok]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -1088,8 +1135,7 @@ $router->get('/api/user/my-devices', ['middleware' => ['auth']], function () use
         $devices = $tokenModel->getUserDevices($userId);
 
         echo json_encode(['success' => true, 'devices' => $devices]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -1121,8 +1167,7 @@ $router->post('/api/user/revoke-device', ['middleware' => ['auth']], function ()
         $ok = $tokenModel->revokeUserDevice($userId, $deviceId);
 
         echo json_encode(['success' => (bool)$ok, 'message' => 'Operation completed']);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -1163,8 +1208,8 @@ $router->post('/api/save-fcm-token', function () use ($mysqli) {
         if (!$token || !$deviceId) {
             http_response_code(400);
             echo json_encode([
-            'success' => false,
-            'error' => 'Operation failed'
+                'success' => false,
+                'error' => 'Operation failed'
             ]);
             exit;
         }
@@ -1178,9 +1223,9 @@ $router->post('/api/save-fcm-token', function () use ($mysqli) {
                 logError("SenderId mismatch on token registration: client=$clientSenderId, server=$serverSenderId, deviceId=$deviceId");
                 http_response_code(400);
                 echo json_encode([
-                'success' => false,
-                'error' => 'Firebase configuration mismatch - token regeneration required',
-                'code' => 'SENDER_ID_MISMATCH'
+                    'success' => false,
+                    'error' => 'Firebase configuration mismatch - token regeneration required',
+                    'code' => 'SENDER_ID_MISMATCH'
                 ]);
                 exit;
             }
@@ -1197,21 +1242,20 @@ $router->post('/api/save-fcm-token', function () use ($mysqli) {
         );
 
         echo json_encode([
-        'success' => true,
-        'guest' => $userId === null,
-        'saved' => $saveResult['success'],
-        'isNew' => $saveResult['isNew'] ?? false,
-        'token_changed' => $saveResult['token_changed'] ?? false,
-        'id' => $saveResult['id'] ?? null,
-        'message' => 'Operation completed'
+            'success' => true,
+            'guest' => $userId === null,
+            'saved' => $saveResult['success'],
+            'isNew' => $saveResult['isNew'] ?? false,
+            'token_changed' => $saveResult['token_changed'] ?? false,
+            'id' => $saveResult['id'] ?? null,
+            'message' => 'Operation completed'
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         logError("FCM Token Save Error: " . $e->getMessage() . "\nStack: " . $e->getTraceAsString());
         echo json_encode([
-        'success' => false,
-        'error' => 'Server error: ' . $e->getMessage()
+            'success' => false,
+            'error' => 'Server error: ' . $e->getMessage()
         ]);
         exit;
     }
@@ -1254,19 +1298,17 @@ $router->post('/api/delete-fcm-token', function () use ($mysqli) {
         if ($permanent) {
             $removed = $notificationModel->removeDeviceById($deviceId);
             $message = $removed ? 'Device permanently removed' : 'Operation failed';
-        }
-        else {
+        } else {
             $removed = $notificationModel->revokeDeviceById($deviceId);
             $message = $removed ? 'Device revoked successfully' : 'Operation failed';
         }
 
         echo json_encode([
-        'success' => (bool)$removed,
-        'permanent' => (bool)$permanent,
-        'message' => $message
+            'success' => (bool)$removed,
+            'permanent' => (bool)$permanent,
+            'message' => $message
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
     }
@@ -1299,8 +1341,7 @@ $router->post('/api/notification/track-click', function () use ($mysqli) {
     try {
         $tokenModel = new TokenManagementModel($mysqli);
         $tokenModel->updateTokenTracking($now, $now, $deviceId, $deviceId);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         logError('Failed to update fcm_tokens on track-click: ' . $e->getMessage());
     }
     echo json_encode(['success' => true]);
@@ -1332,8 +1373,7 @@ $router->post('/api/notification/track-dismiss', function () use ($mysqli) {
     try {
         $tokenModel = new TokenManagementModel($mysqli);
         $tokenModel->updateTokenTracking(null, $now, $deviceId, $deviceId);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         logError('Failed to update fcm_tokens on track-dismiss: ' . $e->getMessage());
     }
     echo json_encode(['success' => true]);
@@ -1363,16 +1403,14 @@ $router->post('/api/update-fcm-subscription', function () use ($mysqli) {
                 $parts = explode('/', rtrim($newSub['endpoint'], '/'));
                 $newToken = sanitize_input(end($parts) ?: '');
             }
-        }
-        elseif (is_string($newSub) && !empty($newSub)) {
+        } elseif (is_string($newSub) && !empty($newSub)) {
             $newToken = sanitize_input($newSub);
         }
 
         $userId = null;
         if (!empty($data['user_id'])) {
             $userId = (int)$data['user_id'];
-        }
-        elseif (!empty($_SESSION['user_id'])) {
+        } elseif (!empty($_SESSION['user_id'])) {
             $userId = (int)$_SESSION['user_id'];
         }
 
@@ -1394,16 +1432,15 @@ $router->post('/api/update-fcm-subscription', function () use ($mysqli) {
         }
 
         echo json_encode([
-        'success' => true,
-        'removed_old' => (bool)$removedOld,
-        'saved' => $saveResult ? ($saveResult['success'] ?? false) : false,
-        'isNew' => $saveResult ? ($saveResult['isNew'] ?? false) : false,
-        'token_changed' => $saveResult ? ($saveResult['token_changed'] ?? false) : false,
-        'id' => $saveResult ? ($saveResult['id'] ?? null) : null,
-        'message' => 'Operation completed'
+            'success' => true,
+            'removed_old' => (bool)$removedOld,
+            'saved' => $saveResult ? ($saveResult['success'] ?? false) : false,
+            'isNew' => $saveResult ? ($saveResult['isNew'] ?? false) : false,
+            'token_changed' => $saveResult ? ($saveResult['token_changed'] ?? false) : false,
+            'id' => $saveResult ? ($saveResult['id'] ?? null) : null,
+            'message' => 'Operation completed'
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         logError('update-fcm-subscription error: ' . $e->getMessage());
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
@@ -1440,10 +1477,10 @@ $router->get('/admin/notifications', ['middleware' => ['auth', 'admin_only']], f
     $recent = $notificationModel->getRecentNotifications(10);
 
     echo $twig->render('admin/notifications/dashboard.twig', [
-    'title' => 'Notification Dashboard',
-    'stats' => $stats,
-    'recent_notifications' => $recent,
-    'csrf_token' => generateCsrfToken()
+        'title' => 'Notification Dashboard',
+        'stats' => $stats,
+        'recent_notifications' => $recent,
+        'csrf_token' => generateCsrfToken()
     ]);
 });
 
@@ -1501,10 +1538,10 @@ $router->get('/admin/notifications/list', ['middleware' => ['auth', 'admin_only'
     ];
 
     echo $twig->render('admin/notifications/list.twig', [
-    'title' => 'All Notifications',
-    'notifications' => $notifications,
-    'pagination' => $paginationData,
-    'csrf_token' => generateCsrfToken()
+        'title' => 'All Notifications',
+        'notifications' => $notifications,
+        'pagination' => $paginationData,
+        'csrf_token' => generateCsrfToken()
     ]);
 });
 
@@ -1526,11 +1563,11 @@ $router->get('/admin/notifications/view', ['middleware' => ['auth', 'admin_only'
     $stats = $notificationModel->getStatistics($id);
 
     echo $twig->render('admin/notifications/view.twig', [
-    'title' => 'Notification Details',
-    'notification' => $notification,
-    'delivery_logs' => $logs,
-    'statistics' => $stats,
-    'csrf_token' => generateCsrfToken()
+        'title' => 'Notification Details',
+        'notification' => $notification,
+        'delivery_logs' => $logs,
+        'statistics' => $stats,
+        'csrf_token' => generateCsrfToken()
     ]);
 });
 
@@ -1538,9 +1575,9 @@ $router->get('/admin/notifications/send', ['middleware' => ['auth', 'admin_only'
     $templateModel = new NotificationTemplate($mysqli);
     $notificationTemplates = $templateModel->getActive(200);
     echo $twig->render('admin/notifications/send.twig', [
-    'title' => 'Send Notification',
-    'notification_templates' => $notificationTemplates,
-    'csrf_token' => generateCsrfToken()
+        'title' => 'Send Notification',
+        'notification_templates' => $notificationTemplates,
+        'csrf_token' => generateCsrfToken()
     ]);
 });
 
@@ -1549,9 +1586,9 @@ $router->get('/admin/notifications/drafts', ['middleware' => ['auth', 'admin_onl
     $drafts = $notificationModel->getDrafts(100);
 
     echo $twig->render('admin/notifications/drafts.twig', [
-    'title' => 'Draft Notifications',
-    'drafts' => $drafts,
-    'csrf_token' => generateCsrfToken()
+        'title' => 'Draft Notifications',
+        'drafts' => $drafts,
+        'csrf_token' => generateCsrfToken()
     ]);
 });
 
@@ -1560,9 +1597,9 @@ $router->get('/admin/notifications/analytics', ['middleware' => ['auth', 'admin_
     $stats = $notificationModel->getAnalyticsStats();
 
     echo $twig->render('admin/notifications/analytics.twig', [
-    'title' => 'Google Analytics Dashboard',
-    'stats' => $stats,
-    'csrf_token' => generateCsrfToken()
+        'title' => 'Google Analytics Dashboard',
+        'stats' => $stats,
+        'csrf_token' => generateCsrfToken()
     ]);
 });
 
@@ -1571,9 +1608,9 @@ $router->get('/admin/notifications/scheduled', ['middleware' => ['auth', 'admin_
     $stats = $notificationModel->getScheduledStats();
 
     echo $twig->render('admin/notifications/scheduled.twig', [
-    'title' => 'Scheduled Notifications',
-    'stats' => $stats,
-    'csrf_token' => generateCsrfToken()
+        'title' => 'Scheduled Notifications',
+        'stats' => $stats,
+        'csrf_token' => generateCsrfToken()
     ]);
 });
 
@@ -1582,9 +1619,9 @@ $router->get('/admin/notifications/device-sync', ['middleware' => ['auth', 'admi
     $stats = $notificationModel->getDeviceSyncStatus();
 
     echo $twig->render('admin/notifications/device-sync.twig', [
-    'title' => 'Multi-Device Sync Manager',
-    'stats' => $stats,
-    'csrf_token' => generateCsrfToken()
+        'title' => 'Multi-Device Sync Manager',
+        'stats' => $stats,
+        'csrf_token' => generateCsrfToken()
     ]);
 });
 
@@ -1593,9 +1630,9 @@ $router->get('/admin/notifications/offline-handler', ['middleware' => ['auth', '
     $stats = $notificationModel->getOfflineHandlerStats();
 
     echo $twig->render('admin/notifications/offline-handler.twig', [
-    'title' => 'Offline Notification Manager',
-    'stats' => $stats,
-    'csrf_token' => generateCsrfToken()
+        'title' => 'Offline Notification Manager',
+        'stats' => $stats,
+        'csrf_token' => generateCsrfToken()
     ]);
 });
 
@@ -1620,16 +1657,15 @@ $router->get('/admin/my/notifications', ['middleware' => ['auth', 'admin_only']]
         $unreadCount = $notificationModel->getUnreadCount($userId);
 
         echo $twig->render('admin/notifications/my-notifications.twig', [
-        'title' => 'My Notifications',
-        'notifications' => $notifications,
-        'unread_count' => $unreadCount,
-        'current_page' => 'my-notifications',
-        'page' => $page,
-        'total_pages' => $totalPages,
-        'csrf_token' => generateCsrfToken()
+            'title' => 'My Notifications',
+            'notifications' => $notifications,
+            'unread_count' => $unreadCount,
+            'current_page' => 'my-notifications',
+            'page' => $page,
+            'total_pages' => $totalPages,
+            'csrf_token' => generateCsrfToken()
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         logError("Admin My Notifications Error: " . $e->getMessage());
         showMessage("Failed to load notifications", "danger");
         header('Location: /admin/dashboard');
@@ -1650,19 +1686,18 @@ $router->get('/api/admin/notifications', ['middleware' => ['auth', 'admin_only']
 
     if ($status) {
         $notifications = $notificationModel->getNotificationsByStatus($status, $limit, $offset);
-    }
-    else {
+    } else {
         $notifications = $notificationModel->getAllNotifications($limit, $offset);
     }
 
     $total = $notificationModel->getTotalNotifications();
 
     echo json_encode([
-    'success' => true,
-    'notifications' => $notifications,
-    'total' => $total,
-    'limit' => $limit,
-    'offset' => $offset
+        'success' => true,
+        'notifications' => $notifications,
+        'total' => $total,
+        'limit' => $limit,
+        'offset' => $offset
     ]);
 });
 
@@ -1685,13 +1720,12 @@ $router->get('/admin/notification-subscribers', ['middleware' => ['auth', 'admin
         $totalPages = max(1, ceil($total / $perPage));
 
         echo $twig->render('admin/notifications/notifications-subscribers.twig', [
-        'subscribers' => $subscribers,
-        'pagination' => ['current_page' => $page, 'total_pages' => $totalPages, 'per_page' => $perPage, 'total' => $total],
-        'filters' => ['recipient' => $recipient, 'search' => $search, 'permission' => $permission, 'sort_by' => $sort_by, 'sort_dir' => $sort_dir],
-        'csrf_token' => generateCsrfToken()
+            'subscribers' => $subscribers,
+            'pagination' => ['current_page' => $page, 'total_pages' => $totalPages, 'per_page' => $perPage, 'total' => $total],
+            'filters' => ['recipient' => $recipient, 'search' => $search, 'permission' => $permission, 'sort_by' => $sort_by, 'sort_dir' => $sort_dir],
+            'csrf_token' => generateCsrfToken()
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         logError("Admin Subscribers Error: " . $e->getMessage());
         showMessage('Failed to load subscriber list', 'danger');
         header('Location: /admin/notifications');
@@ -1714,22 +1748,20 @@ $router->get('/admin/notification-fcm-deletes', ['middleware' => ['auth', 'admin
                 $obj = json_decode($line, true);
                 if (!$obj) {
                     $entries[] = ['raw' => $line];
-                }
-                else {
+                } else {
                     $entries[] = $obj;
                 }
                 if (count($entries) >= 500)
                     break; // limit displayed rows
             }
-        }
-        catch (Exception $e) {
-        // ignore read errors
+        } catch (Exception $e) {
+            // ignore read errors
         }
     }
 
     echo $twig->render('admin/notifications/fcm-deletes-log.twig', [
-    'entries' => $entries,
-    'csrf_token' => generateCsrfToken()
+        'entries' => $entries,
+        'csrf_token' => generateCsrfToken()
     ]);
 });
 
@@ -1751,10 +1783,10 @@ $router->get('/admin/notification-logs', ['middleware' => ['auth', 'admin_only']
     $logs = $notificationModel->getDeliveryLogsFiltered($filters, $limit, $offset);
 
     echo $twig->render('admin/notifications/delivery-logs.twig', [
-    'logs' => $logs,
-    'filters' => $filters,
-    'pagination' => ['current_page' => $page, 'per_page' => $limit],
-    'csrf_token' => generateCsrfToken()
+        'logs' => $logs,
+        'filters' => $filters,
+        'pagination' => ['current_page' => $page, 'per_page' => $limit],
+        'csrf_token' => generateCsrfToken()
     ]);
 });
 
@@ -1791,14 +1823,14 @@ $router->get('/api/admin/notification-subscribers', ['middleware' => ['auth', 'a
     $totalPages = max(1, (int)ceil($total / max(1, $perPage)));
 
     echo json_encode([
-    'success' => true,
-    'subscribers' => $subscribers,
-    'pagination' => [
-    'current_page' => $page,
-    'per_page' => $perPage,
-    'total' => $total,
-    'total_pages' => $totalPages
-    ]
+        'success' => true,
+        'subscribers' => $subscribers,
+        'pagination' => [
+            'current_page' => $page,
+            'per_page' => $perPage,
+            'total' => $total,
+            'total_pages' => $totalPages
+        ]
     ]);
 });
 
@@ -1822,7 +1854,7 @@ $router->post('/api/admin/notification-subscribers/revoke', ['middleware' => ['a
             $result = $notificationModel->removeDeviceById($deviceId);
 
             // Server-side audit log for permanent deletes
-            $adminId = method_exists('AuthManager', 'getCurrentUserId') ?AuthManager::getCurrentUserId() : null;
+            $adminId = method_exists('AuthManager', 'getCurrentUserId') ? AuthManager::getCurrentUserId() : null;
             $logEntry = [
                 'ts' => date('c'),
                 'admin_id' => $adminId,
@@ -1832,19 +1864,16 @@ $router->post('/api/admin/notification-subscribers/revoke', ['middleware' => ['a
             $logPath = dirname(__DIR__, 2) . '/storage/logs/fcm-deletes.log';
             try {
                 @file_put_contents($logPath, json_encode($logEntry) . PHP_EOL, FILE_APPEND | LOCK_EX);
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError('Failed to write fcm delete audit: ' . $e->getMessage());
             }
 
             echo json_encode(['success' => (bool)$result, 'permanent' => true]);
-        }
-        else {
+        } else {
             $result = $notificationModel->revokeDeviceById($deviceId);
             echo json_encode(['success' => (bool)$result, 'permanent' => false]);
         }
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -1868,15 +1897,15 @@ $router->post('/api/admin/notification-subscribers/revoke-all', ['middleware' =>
         if (empty($result['success'])) {
             http_response_code(500);
             echo json_encode([
-            'success' => false,
-            'error' => 'Operation failed',
-            'affected' => 0
+                'success' => false,
+                'error' => 'Operation failed',
+                'affected' => 0
             ]);
             return;
         }
 
         if ($permanent) {
-            $adminId = method_exists('AuthManager', 'getCurrentUserId') ?AuthManager::getCurrentUserId() : null;
+            $adminId = method_exists('AuthManager', 'getCurrentUserId') ? AuthManager::getCurrentUserId() : null;
             $logEntry = [
                 'ts' => date('c'),
                 'admin_id' => $adminId,
@@ -1889,22 +1918,20 @@ $router->post('/api/admin/notification-subscribers/revoke-all', ['middleware' =>
             $logPath = dirname(__DIR__, 2) . '/storage/logs/fcm-deletes.log';
             try {
                 @file_put_contents($logPath, json_encode($logEntry) . PHP_EOL, FILE_APPEND | LOCK_EX);
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError('Failed to write bulk fcm delete audit: ' . $e->getMessage());
             }
         }
 
         echo json_encode([
-        'success' => true,
-        'permanent' => $permanent,
-        'affected' => (int)($result['affected'] ?? 0),
-        'message' => $permanent
-        ? 'Ã Â¦Â¨Ã Â¦Â¿Ã Â¦Â°Ã Â§ÂÃ Â¦Â¬Ã Â¦Â¾Ã Â¦Å¡Ã Â¦Â¿Ã Â¦Â¤ Ã Â¦Â¡Ã Â¦Â¿Ã Â¦Â­Ã Â¦Â¾Ã Â¦â€¡Ã Â¦Â¸Ã Â¦â€”Ã Â§ÂÃ Â¦Â²Ã Â§â€¹ Ã Â¦Â¸Ã Â§ÂÃ Â¦Â¥Ã Â¦Â¾Ã Â¦Â¯Ã Â¦Â¼Ã Â§â‚¬Ã Â¦Â­Ã Â¦Â¾Ã Â¦Â¬Ã Â§â€¡ Ã Â¦Â®Ã Â§ÂÃ Â¦â€ºÃ Â§â€¡ Ã Â¦Â«Ã Â§â€¡Ã Â¦Â²Ã Â¦Â¾ Ã Â¦Â¹Ã Â¦Â¯Ã Â¦Â¼Ã Â§â€¡Ã Â¦â€ºÃ Â§â€¡'
-        : 'Ã Â¦Â¨Ã Â¦Â¿Ã Â¦Â°Ã Â§ÂÃ Â¦Â¬Ã Â¦Â¾Ã Â¦Å¡Ã Â¦Â¿Ã Â¦Â¤ Ã Â¦Â¡Ã Â¦Â¿Ã Â¦Â­Ã Â¦Â¾Ã Â¦â€¡Ã Â¦Â¸Ã Â¦â€”Ã Â§ÂÃ Â¦Â²Ã Â§â€¹ revoke Ã Â¦â€¢Ã Â¦Â°Ã Â¦Â¾ Ã Â¦Â¹Ã Â¦Â¯Ã Â¦Â¼Ã Â§â€¡Ã Â¦â€ºÃ Â§â€¡'
+            'success' => true,
+            'permanent' => $permanent,
+            'affected' => (int)($result['affected'] ?? 0),
+            'message' => $permanent
+                ? 'Ã Â¦Â¨Ã Â¦Â¿Ã Â¦Â°Ã Â§ÂÃ Â¦Â¬Ã Â¦Â¾Ã Â¦Å¡Ã Â¦Â¿Ã Â¦Â¤ Ã Â¦Â¡Ã Â¦Â¿Ã Â¦Â­Ã Â¦Â¾Ã Â¦â€¡Ã Â¦Â¸Ã Â¦â€”Ã Â§ÂÃ Â¦Â²Ã Â§â€¹ Ã Â¦Â¸Ã Â§ÂÃ Â¦Â¥Ã Â¦Â¾Ã Â¦Â¯Ã Â¦Â¼Ã Â§â‚¬Ã Â¦Â­Ã Â¦Â¾Ã Â¦Â¬Ã Â§â€¡ Ã Â¦Â®Ã Â§ÂÃ Â¦â€ºÃ Â§â€¡ Ã Â¦Â«Ã Â§â€¡Ã Â¦Â²Ã Â¦Â¾ Ã Â¦Â¹Ã Â¦Â¯Ã Â¦Â¼Ã Â§â€¡Ã Â¦â€ºÃ Â§â€¡'
+                : 'Ã Â¦Â¨Ã Â¦Â¿Ã Â¦Â°Ã Â§ÂÃ Â¦Â¬Ã Â¦Â¾Ã Â¦Å¡Ã Â¦Â¿Ã Â¦Â¤ Ã Â¦Â¡Ã Â¦Â¿Ã Â¦Â­Ã Â¦Â¾Ã Â¦â€¡Ã Â¦Â¸Ã Â¦â€”Ã Â§ÂÃ Â¦Â²Ã Â§â€¹ revoke Ã Â¦â€¢Ã Â¦Â°Ã Â¦Â¾ Ã Â¦Â¹Ã Â¦Â¯Ã Â¦Â¼Ã Â§â€¡Ã Â¦â€ºÃ Â§â€¡'
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage(), 'affected' => 0]);
     }
@@ -1921,18 +1948,17 @@ $router->get('/api/notification/list', ['middleware' => ['auth', 'admin_only']],
 
     if ($status) {
         $notifications = $notificationModel->getNotificationsByStatus($status, $limit, $offset);
-    }
-    else {
+    } else {
         $notifications = $notificationModel->getAllNotifications($limit, $offset);
     }
 
     $total = $notificationModel->getTotalNotifications();
     echo json_encode([
-    'success' => true,
-    'notifications' => $notifications,
-    'total' => $total,
-    'limit' => $limit,
-    'offset' => $offset
+        'success' => true,
+        'notifications' => $notifications,
+        'total' => $total,
+        'limit' => $limit,
+        'offset' => $offset
     ]);
 });
 
@@ -2091,8 +2117,7 @@ $router->post('/api/notification/send-draft', ['middleware' => ['auth', 'admin_o
                             if ($ok) {
                                 $sent++;
                                 $notificationModel->logDelivery($notifId, $user['id'], 'sent', null, $user['email'], 'sent', 'email');
-                            }
-                            else {
+                            } else {
                                 $failed++;
                                 $notificationModel->logDelivery($notifId, $user['id'], 'failed', null, $user['email'], 'failed', 'email');
                             }
@@ -2104,14 +2129,13 @@ $router->post('/api/notification/send-draft', ['middleware' => ['auth', 'admin_o
 
         $notificationModel->markAsSent($notifId);
         echo json_encode([
-        'success' => true,
-        'notification_id' => $notifId,
-        'sent' => $sent,
-        'failed' => $failed,
-        'message' => 'Operation completed'
+            'success' => true,
+            'notification_id' => $notifId,
+            'sent' => $sent,
+            'failed' => $failed,
+            'message' => 'Operation completed'
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -2128,13 +2152,12 @@ $router->get('/api/notification/list-scheduled', ['middleware' => ['auth', 'admi
         $scheduledModel = new ScheduledNotificationModel($mysqli);
         $scheduled = $scheduledModel->getScheduledByAdmin($adminId, $status, $limit, $offset);
         echo json_encode([
-        'success' => true,
-        'scheduled' => $scheduled,
-        'total' => count($scheduled),
-        'pagination' => ['limit' => $limit, 'offset' => $offset]
+            'success' => true,
+            'scheduled' => $scheduled,
+            'total' => count($scheduled),
+            'pagination' => ['limit' => $limit, 'offset' => $offset]
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -2151,19 +2174,17 @@ $router->get('/api/notification/detail/{id}', ['middleware' => ['auth', 'admin_o
         if ($notification) {
             $logs = $notificationModel->getDeliveryLogs($id, 1000);
             echo json_encode([
-            'success' => true,
-            'notification' => $notification,
-            'delivery_logs' => $logs
+                'success' => true,
+                'notification' => $notification,
+                'delivery_logs' => $logs
             ]);
-        }
-        else {
+        } else {
             echo json_encode([
-            'success' => false,
-            'error' => 'Operation failed'
+                'success' => false,
+                'error' => 'Operation failed'
             ]);
         }
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         logError("Get Notification Detail Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'error' => 'Operation failed']);
     }
@@ -2180,11 +2201,10 @@ $router->delete('/api/notification/delete/{id}', ['middleware' => ['auth', 'admi
         $result = $notificationModel->deleteNotification($id);
 
         echo json_encode([
-        'success' => $result,
-        'message' => 'Operation completed'
+            'success' => $result,
+            'message' => 'Operation completed'
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         logError("Delete Notification Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'error' => 'Operation failed']);
     }
@@ -2211,8 +2231,8 @@ $router->post('/api/notification/schedule', ['middleware' => ['auth', 'admin_onl
         if (empty($title) || empty($body) || empty($scheduledAt)) {
             http_response_code(400);
             echo json_encode([
-            'success' => false,
-            'error' => 'Operation failed'
+                'success' => false,
+                'error' => 'Operation failed'
             ]);
             exit;
         }
@@ -2223,8 +2243,8 @@ $router->post('/api/notification/schedule', ['middleware' => ['auth', 'admin_onl
         if ($scheduledDateTime <= $now) {
             http_response_code(400);
             echo json_encode([
-            'success' => false,
-            'error' => 'Operation failed'
+                'success' => false,
+                'error' => 'Operation failed'
             ]);
             exit;
         }
@@ -2243,26 +2263,24 @@ $router->post('/api/notification/schedule', ['middleware' => ['auth', 'admin_onl
 
         if ($scheduledId) {
             echo json_encode([
-            'success' => true,
-            'scheduled_id' => $scheduledId,
-            'message' => 'Operation completed',
-            'scheduled_at' => $scheduledAt
+                'success' => true,
+                'scheduled_id' => $scheduledId,
+                'message' => 'Operation completed',
+                'scheduled_at' => $scheduledAt
             ]);
-        }
-        else {
+        } else {
             http_response_code(500);
             echo json_encode([
-            'success' => false,
-            'error' => 'Operation failed'
+                'success' => false,
+                'error' => 'Operation failed'
             ]);
         }
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         logError("Schedule Notification Error: " . $e->getMessage());
         http_response_code(500);
         echo json_encode([
-        'success' => false,
-        'error' => 'Operation failed' . $e->getMessage()
+            'success' => false,
+            'error' => 'Operation failed' . $e->getMessage()
         ]);
     }
 });
@@ -2280,21 +2298,20 @@ $router->get('/api/notification/scheduled', ['middleware' => ['auth', 'admin_onl
         $scheduled = $scheduledModel->getScheduledByAdmin($adminId, $status, $limit, $offset);
 
         echo json_encode([
-        'success' => true,
-        'scheduled' => $scheduled,
-        'total' => count($scheduled),
-        'pagination' => [
-        'limit' => $limit,
-        'offset' => $offset
-        ]
+            'success' => true,
+            'scheduled' => $scheduled,
+            'total' => count($scheduled),
+            'pagination' => [
+                'limit' => $limit,
+                'offset' => $offset
+            ]
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         logError("Get Scheduled Error: " . $e->getMessage());
         http_response_code(500);
         echo json_encode([
-        'success' => false,
-        'error' => 'Operation failed'
+            'success' => false,
+            'error' => 'Operation failed'
         ]);
     }
 });
@@ -2320,8 +2337,7 @@ $router->get('/api/notification/scheduled/{id}', ['middleware' => ['auth', 'admi
         }
 
         echo json_encode(['success' => true, 'notification' => $notification]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -2337,16 +2353,15 @@ $router->delete('/api/notification/scheduled/{id}', ['middleware' => ['auth', 'a
         $result = $scheduledModel->cancelScheduled((int)$id, $adminId);
 
         echo json_encode([
-        'success' => $result,
-        'message' => 'Operation completed'
+            'success' => $result,
+            'message' => 'Operation completed'
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         logError("Cancel Scheduled Error: " . $e->getMessage());
         http_response_code(500);
         echo json_encode([
-        'success' => false,
-        'error' => 'Operation failed'
+            'success' => false,
+            'error' => 'Operation failed'
         ]);
     }
 });
@@ -2367,8 +2382,8 @@ $router->post('/api/notification/log-device-action', ['middleware' => ['auth']],
         if (!$notificationId || !$action) {
             http_response_code(400);
             echo json_encode([
-            'success' => false,
-            'error' => 'Operation failed'
+                'success' => false,
+                'error' => 'Operation failed'
             ]);
             exit;
         }
@@ -2390,17 +2405,16 @@ $router->post('/api/notification/log-device-action', ['middleware' => ['auth']],
         }
 
         echo json_encode([
-        'success' => true,
-        'message' => 'Device action logged',
-        'action' => $action
+            'success' => true,
+            'message' => 'Device action logged',
+            'action' => $action
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         logError("Log Device Action Error: " . $e->getMessage());
         http_response_code(500);
         echo json_encode([
-        'success' => false,
-        'error' => 'Operation failed'
+            'success' => false,
+            'error' => 'Operation failed'
         ]);
     }
 });
@@ -2415,17 +2429,16 @@ $router->get('/api/notification/devices', ['middleware' => ['auth']], function (
         $devices = $syncModel->getUserDevices($userId);
 
         echo json_encode([
-        'success' => true,
-        'devices' => $devices,
-        'total_devices' => count($devices)
+            'success' => true,
+            'devices' => $devices,
+            'total_devices' => count($devices)
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         logError("Get Devices Error: " . $e->getMessage());
         http_response_code(500);
         echo json_encode([
-        'success' => false,
-        'error' => 'Operation failed'
+            'success' => false,
+            'error' => 'Operation failed'
         ]);
     }
 });
@@ -2447,11 +2460,10 @@ $router->delete('/api/notification/devices/{deviceId}', ['middleware' => ['auth'
         $stmt->close();
 
         echo json_encode([
-        'success' => (bool)$result,
-        'message' => 'Operation completed'
+            'success' => (bool)$result,
+            'message' => 'Operation completed'
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -2471,8 +2483,8 @@ $router->post('/api/notification/token-validation', ['middleware' => ['auth']], 
         if (empty($token)) {
             http_response_code(400);
             echo json_encode([
-            'success' => false,
-            'error' => 'Operation failed'
+                'success' => false,
+                'error' => 'Operation failed'
             ]);
             exit;
         }
@@ -2492,28 +2504,26 @@ $router->post('/api/notification/token-validation', ['middleware' => ['auth']], 
             }
 
             echo json_encode([
-            'success' => true,
-            'valid' => true,
-            'message' => 'Token valid and recorded'
+                'success' => true,
+                'valid' => true,
+                'message' => 'Token valid and recorded'
             ]);
-        }
-        else {
+        } else {
             // Mark token as invalid
             $tokenModel->markTokenInvalid($token, $validationResult['error'] ?? 'validation_failed');
 
             echo json_encode([
-            'success' => false,
-            'valid' => false,
-            'error' => 'Token invalid: ' . ($validationResult['error'] ?? 'unknown')
+                'success' => false,
+                'valid' => false,
+                'error' => 'Token invalid: ' . ($validationResult['error'] ?? 'unknown')
             ]);
         }
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         logError("Token Validation Error: " . $e->getMessage());
         http_response_code(500);
         echo json_encode([
-        'success' => false,
-        'error' => 'Operation failed'
+            'success' => false,
+            'error' => 'Operation failed'
         ]);
     }
 });
@@ -2526,8 +2536,7 @@ $router->get('/api/notification/roles', ['middleware' => ['auth', 'admin_only']]
         $notificationModel = new NotificationModel($mysqli);
         $roles = $notificationModel->getRoles();
         echo json_encode(['roles' => $roles]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         logError("Get Roles Error: " . $e->getMessage());
         http_response_code(500);
         echo json_encode(['error' => $e->getMessage(), 'roles' => []]);
@@ -2542,8 +2551,7 @@ $router->get('/api/notification/permissions', ['middleware' => ['auth', 'admin_o
         $notificationModel = new NotificationModel($mysqli);
         $permissions = $notificationModel->getPermissions();
         echo json_encode(['permissions' => $permissions]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         logError("Get Permissions Error: " . $e->getMessage());
         http_response_code(500);
         echo json_encode(['error' => $e->getMessage(), 'permissions' => []]);
@@ -2560,14 +2568,12 @@ $router->get('/api/notification/users', ['middleware' => ['auth', 'admin_only']]
         if ($search) {
             $notificationModel = new NotificationModel($mysqli);
             $users = $notificationModel->searchUsers($search, 100);
-        }
-        else {
+        } else {
             $res = $mysqli->query("SELECT id, username, email FROM users ORDER BY username ASC LIMIT 500");
             $users = $res->fetch_all(MYSQLI_ASSOC);
         }
         echo json_encode(['users' => $users, 'success' => true]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         logError("Get Users Error: " . $e->getMessage());
         http_response_code(500);
         echo json_encode(['error' => $e->getMessage(), 'users' => [], 'success' => false]);
@@ -2692,126 +2698,178 @@ $router->post('/api/notification/send', ['middleware' => ['auth', 'admin_only']]
 
             case 'specific':
                 $specificIds = $data['specific_ids'] ?? [];
-                $specificIds = array_filter($specificIds, function ($id) {
-                                    return filter_var($id, FILTER_VALIDATE_INT);
-                                }
-                                );
-                                if (!empty($specificIds)) {
-                                    $users = $notificationModel->getUsersByIds($specificIds);
-                                    foreach ($users as $user) {
-                                        // Push & Email usually happen uniquely for tokens
-                                        $result = sendNotificationViaChannels($notifId, $user, $title, $message, $channels, $notificationModel, $actionUrl);
-                                        $sent += $result['sent'];
-                                        $failed += $result['failed'];
-                                    }
-                                    // IN-APP Batch Optimization
-                                    if (in_array('in_app', $channels) || in_array('in-app', $channels)) {
-                                        $userIds = array_column($users, 'id');
-                                        if (!empty($userIds)) {
-                                            $notificationModel->createBatchForUsers($userIds, $adminId, $title, $message, $notificationType, ['action_url' => $actionUrl]);
-                                            $sent += count($userIds); // Increment sent tracking for in-app individually to match previous logic
-                                        }
-                                    }
-                                }
-                                break;
-
-                            case 'role':
-                                $roleName = $data['role_name'] ?? '';
-                                if ($roleName) {
-                                    $users = $notificationModel->getRecipientsByRole($roleName);
-                                    foreach ($users as $user) {
-                                        // Removed in-app loop from sendNotificationViaChannels side internally or handle email/push here.
-                                        $result = sendNotificationViaChannels($notifId, $user, $title, $message, $channels, $notificationModel, $actionUrl);
-                                        $sent += $result['sent'];
-                                        $failed += $result['failed'];
-                                    }
-                                    // IN-APP Batch Optimization
-                                    if (in_array('in_app', $channels) || in_array('in-app', $channels)) {
-                                        $userIds = array_column($users, 'id');
-                                        if (!empty($userIds)) {
-                                            $notificationModel->createBatchForUsers($userIds, $adminId, $title, $message, $notificationType, ['action_url' => $actionUrl]);
-                                            $sent += count($userIds);
-                                        }
-                                    }
-                                }
-                                break;
-
-                            case 'permission':
-                                $permissionName = $data['permission_name'] ?? '';
-                                if ($permissionName) {
-                                    $users = $notificationModel->getRecipientsByPermission($permissionName);
-                                    foreach ($users as $user) {
-                                        $result = sendNotificationViaChannels($notifId, $user, $title, $message, $channels, $notificationModel, $actionUrl);
-                                        $sent += $result['sent'];
-                                        $failed += $result['failed'];
-                                    }
-                                    // IN-APP Batch Optimization
-                                    if (in_array('in_app', $channels) || in_array('in-app', $channels)) {
-                                        $userIds = array_column($users, 'id');
-                                        if (!empty($userIds)) {
-                                            $notificationModel->createBatchForUsers($userIds, $adminId, $title, $message, $notificationType, ['action_url' => $actionUrl]);
-                                            $sent += count($userIds);
-                                        }
-                                    }
-                                }
-                                break;
-
-                            case 'all':
-                            default:
-                                $adminId = AuthManager::getCurrentUserId();
-                                // PUSH: only if 'push' is in channels array
-                                if (in_array('push', $channels)) {
-                                    $allTokens = $notificationModel->getDeviceTokensByRecipientType('all');
-                                    $result = $notificationModel->broadcastToRecipients($notifId, $allTokens, $title, $message, $adminId);
-                                    $sent += $result['sent'];
-                                    $failed += $result['failed'];
-                                }
-
-                                // IN-APP: Batched Query
-                                if (in_array('in_app', $channels) || in_array('in-app', $channels)) {
-                                    $allUsers = $notificationModel->getAllUsers();
-                                    $userIds = array_column($allUsers, 'id');
-                                    if (!empty($userIds)) {
-                                        $notificationModel->createBatchForUsers($userIds, $adminId, $title, $message, $notificationType, ['action_url' => $actionUrl]);
-                                        $sent += count($userIds);
-                                    }
-                                }
-
-                                // EMAIL: only if 'email' is in channels array
-                                if (in_array('email', $channels)) {
-                                    // Make sure we only load email logic
-                                    $allUsers = $notificationModel->getAllUsers();
-                                    foreach ($allUsers as $user) {
-                                        if (!empty($user['email'])) {
-                                            $htmlBody = "<h2>$title</h2><p>" . nl2br($message) . "</p>";
-                                            if (!empty($actionUrl)) {
-                                                $htmlBody .= '<p><a href="' . htmlspecialchars($actionUrl) . '">View details</a></p>';
-                                            }
-                                            $displayName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: ($user['username'] ?? '');
-                                            $ok = sendEmail($user['email'], $title, $htmlBody, $displayName);
-                                            $userId = $user['id'] ?? null;
-                                            if ($ok) {
-                                                $sent++;
-                                                $notificationModel->logDelivery($notifId, $userId, 'sent', null, $user['email'], 'sent', 'email');
-                                            }
-                                            else {
-                                                $failed++;
-                                                $notificationModel->logDelivery($notifId, $userId, 'failed', null, $user['email'], 'failed', 'email');
-                                            }
-                                        }
-                                    }
-                                }
-                                break;
+                $specificIds = array_filter(
+                    $specificIds,
+                    function ($id) {
+                        return filter_var($id, FILTER_VALIDATE_INT);
+                    }
+                );
+                if (!empty($specificIds)) {
+                    $users = $notificationModel->getUsersByIds($specificIds);
+                    foreach ($users as $user) {
+                        // Push & Email usually happen uniquely for tokens
+                        $result = sendNotificationViaChannels($notifId, $user, $title, $message, $channels, $notificationModel, $actionUrl);
+                        $sent += $result['sent'];
+                        $failed += $result['failed'];
+                    }
+                    // IN-APP Batch Optimization
+                    if (in_array('in_app', $channels) || in_array('in-app', $channels)) {
+                        $userIds = array_column($users, 'id');
+                        if (!empty($userIds)) {
+                            $notificationModel->createBatchForUsers($userIds, $adminId, $title, $message, $notificationType, ['action_url' => $actionUrl]);
+                            $sent += count($userIds); // Increment sent tracking for in-app individually to match previous logic
                         }
+                    }
+                }
+                break;
 
-                        $notificationModel->markAsSent($notifId);
-                        echo json_encode(['success' => true, 'notification_id' => $notifId, 'sent' => $sent, 'failed' => $failed, 'message' => "Operation completed ($sent sent, $failed failed)"]);
+            case 'role':
+                $roleName = $data['role_name'] ?? '';
+                if ($roleName) {
+                    $users = $notificationModel->getRecipientsByRole($roleName);
+                    foreach ($users as $user) {
+                        // Removed in-app loop from sendNotificationViaChannels side internally or handle email/push here.
+                        $result = sendNotificationViaChannels($notifId, $user, $title, $message, $channels, $notificationModel, $actionUrl);
+                        $sent += $result['sent'];
+                        $failed += $result['failed'];
                     }
-                    catch (Exception $e) {
-                        http_response_code(500);
-                        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+                    // IN-APP Batch Optimization
+                    if (in_array('in_app', $channels) || in_array('in-app', $channels)) {
+                        $userIds = array_column($users, 'id');
+                        if (!empty($userIds)) {
+                            $notificationModel->createBatchForUsers($userIds, $adminId, $title, $message, $notificationType, ['action_url' => $actionUrl]);
+                            $sent += count($userIds);
+                        }
                     }
-                });
+                }
+                break;
+
+            case 'permission':
+                $permissionName = $data['permission_name'] ?? '';
+                if ($permissionName) {
+                    $users = $notificationModel->getRecipientsByPermission($permissionName);
+                    foreach ($users as $user) {
+                        $result = sendNotificationViaChannels($notifId, $user, $title, $message, $channels, $notificationModel, $actionUrl);
+                        $sent += $result['sent'];
+                        $failed += $result['failed'];
+                    }
+                    // IN-APP Batch Optimization
+                    if (in_array('in_app', $channels) || in_array('in-app', $channels)) {
+                        $userIds = array_column($users, 'id');
+                        if (!empty($userIds)) {
+                            $notificationModel->createBatchForUsers($userIds, $adminId, $title, $message, $notificationType, ['action_url' => $actionUrl]);
+                            $sent += count($userIds);
+                        }
+                    }
+                }
+                break;
+
+            case 'all':
+            default:
+                $adminId = AuthManager::getCurrentUserId();
+                // PUSH: only if 'push' is in channels array
+                if (in_array('push', $channels)) {
+                    $allTokens = $notificationModel->getDeviceTokensByRecipientType('all');
+                    $result = $notificationModel->broadcastToRecipients($notifId, $allTokens, $title, $message, $adminId);
+                    $sent += $result['sent'];
+                    $failed += $result['failed'];
+                }
+
+                // IN-APP: Batched Query
+                if (in_array('in_app', $channels) || in_array('in-app', $channels)) {
+                    $allUsers = $notificationModel->getAllUsers();
+                    $userIds = array_column($allUsers, 'id');
+                    if (!empty($userIds)) {
+                        $notificationModel->createBatchForUsers($userIds, $adminId, $title, $message, $notificationType, ['action_url' => $actionUrl]);
+                        $sent += count($userIds);
+                    }
+                }
+
+                // EMAIL: only if 'email' is in channels array
+                if (in_array('email', $channels)) {
+                    // Make sure we only load email logic
+                    $allUsers = $notificationModel->getAllUsers();
+                    foreach ($allUsers as $user) {
+                        if (!empty($user['email'])) {
+                            $htmlBody = "<h2>$title</h2><p>" . nl2br($message) . "</p>";
+                            if (!empty($actionUrl)) {
+                                $htmlBody .= '<p><a href="' . htmlspecialchars($actionUrl) . '">View details</a></p>';
+                            }
+                            $displayName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: ($user['username'] ?? '');
+                            $ok = sendEmail($user['email'], $title, $htmlBody, $displayName);
+                            $userId = $user['id'] ?? null;
+                            if ($ok) {
+                                $sent++;
+                                $notificationModel->logDelivery($notifId, $userId, 'sent', null, $user['email'], 'sent', 'email');
+                            } else {
+                                $failed++;
+                                $notificationModel->logDelivery($notifId, $userId, 'failed', null, $user['email'], 'failed', 'email');
+                            }
+                        }
+                    }
+                }
+                break;
+        }
+
+        $notificationModel->markAsSent($notifId);
+
+        // Broadcast via WebSocket for real-time in-app notifications
+        // Determine which users should receive this notification
+        $recipientUserIds = [];
+        try {
+            switch ($recipientType) {
+                case 'all':
+                    $allUsers = $notificationModel->getAllUsers();
+                    $recipientUserIds = array_column($allUsers, 'id');
+                    break;
+                case 'guest':
+                    // Not applicable for WebSocket (guests not authenticated)
+                    break;
+                case 'specific':
+                    $recipientUserIds = array_filter($data['specific_ids'] ?? [], function ($id) {
+                        return filter_var($id, FILTER_VALIDATE_INT);
+                    });
+                    break;
+                case 'role':
+                    $roleName = $data['role_name'] ?? '';
+                    if ($roleName) {
+                        $users = $notificationModel->getRecipientsByRole($roleName);
+                        $recipientUserIds = array_column($users, 'id');
+                    }
+                    break;
+                case 'permission':
+                    $permissionName = $data['permission_name'] ?? '';
+                    if ($permissionName) {
+                        $users = $notificationModel->getRecipientsByPermission($permissionName);
+                        $recipientUserIds = array_column($users, 'id');
+                    }
+                    break;
+            }
+
+            // Send WebSocket notification to real-time subscribers
+            if (!empty($recipientUserIds)) {
+                $notificationData = [
+                    'id' => $notifId,
+                    'title' => $title,
+                    'message' => $message,
+                    'type' => $notificationType,
+                    'action_url' => $actionUrl,
+                    'created_at' => date('Y-m-d H:i:s')
+                ];
+
+                NotificationWebSocketHelper::broadcastNotification($recipientUserIds, $notificationData, ['websocket']);
+            }
+        } catch (Exception $wsError) {
+            // Log WebSocket error but don't fail the notification send
+            error_log('[Notification] WebSocket broadcast error: ' . $wsError->getMessage());
+        }
+
+        echo json_encode(['success' => true, 'notification_id' => $notifId, 'sent' => $sent, 'failed' => $failed, 'message' => "Operation completed ($sent sent, $failed failed)"]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+});
 
 // ==================== PUBLIC API: COUNT RECIPIENTS ====================
 // Accessible at /api/notification/count-recipients for admin dashboard
@@ -2828,14 +2886,11 @@ $router->get('/api/notification/count-recipients', ['middleware' => ['auth', 'ad
         $notificationModel = new NotificationModel($mysqli);
         if ($type === 'specific' && !empty($specificIds)) {
             $count = count($specificIds);
-        }
-        elseif ($type === 'role' && $role) {
+        } elseif ($type === 'role' && $role) {
             $count = count($notificationModel->getRecipientsByRole($role));
-        }
-        elseif ($type === 'permission' && $permission) {
+        } elseif ($type === 'permission' && $permission) {
             $count = count($notificationModel->getRecipientsByPermission($permission));
-        }
-        else {
+        } else {
             $count = $notificationModel->getRecipientCount($type, $adminId);
         }
 
@@ -2846,8 +2901,7 @@ $router->get('/api/notification/count-recipients', ['middleware' => ['auth', 'ad
         }
 
         echo json_encode(['count' => $count, 'guest_count' => $guestCount, 'success' => true]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         logError("Count Recipients Error: " . $e->getMessage());
         http_response_code(500);
         echo json_encode(['error' => $e->getMessage(), 'count' => 0, 'guest_count' => 0, 'success' => false]);
@@ -2871,58 +2925,60 @@ $router->get('/api/notification/preview-recipients', ['middleware' => ['auth', '
         $warning = null;
         if ($type === 'specific' && !empty($specificIds)) {
             $users = $notificationModel->getUsersByIds($specificIds);
-            $recipients = array_map(function ($u) {
-                            return [
-                            'username' => $u['username'] ?? ('User #' . $u['id']),
-                            'email' => $u['email'] ?? null,
-                            'device_info' => 'Selected user',
-                            'enabled_at' => date('Y-m-d H:i:s')
-                            ];
-                        }
-                            , $users);
-                    }
-                    elseif ($type === 'role' && $role) {
-                        $users = $notificationModel->getRecipientsByRole($role, $limit);
-                        $recipients = array_map(function ($u) {
-                            return [
-                            'username' => $u['username'] ?? ('User #' . $u['id']),
-                            'email' => $u['email'] ?? null,
-                            'device_info' => 'Role member',
-                            'enabled_at' => date('Y-m-d H:i:s')
-                            ];
-                        }
-                            , $users);
-                    }
-                    elseif ($type === 'permission' && $permission) {
-                        $users = $notificationModel->getRecipientsByPermission($permission, $limit);
-                        $recipients = array_map(function ($u) {
-                            return [
-                            'username' => $u['username'] ?? ('User #' . $u['id']),
-                            'email' => $u['email'] ?? null,
-                            'device_info' => 'Permission holder',
-                            'enabled_at' => date('Y-m-d H:i:s')
-                            ];
-                        }
-                            , $users);
-                    }
-                    else {
-                        $recipients = $notificationModel->getRecipientPreviewList($type, $adminId, $limit);
-                        if (empty($recipients) && $type === 'guest') {
-                            $fallbackCount = $notificationModel->countGuestTokensAnyPermission();
-                            if ($fallbackCount > 0) {
-                                $warning = "Found {$fallbackCount} guest device tokens, but all have permission != 'granted'. Recipients list is empty because push permission was denied.";
-                            }
-                        }
-                    }
+            $recipients = array_map(
+                function ($u) {
+                    return [
+                        'username' => $u['username'] ?? ('User #' . $u['id']),
+                        'email' => $u['email'] ?? null,
+                        'device_info' => 'Selected user',
+                        'enabled_at' => date('Y-m-d H:i:s')
+                    ];
+                },
+                $users
+            );
+        } elseif ($type === 'role' && $role) {
+            $users = $notificationModel->getRecipientsByRole($role, $limit);
+            $recipients = array_map(
+                function ($u) {
+                    return [
+                        'username' => $u['username'] ?? ('User #' . $u['id']),
+                        'email' => $u['email'] ?? null,
+                        'device_info' => 'Role member',
+                        'enabled_at' => date('Y-m-d H:i:s')
+                    ];
+                },
+                $users
+            );
+        } elseif ($type === 'permission' && $permission) {
+            $users = $notificationModel->getRecipientsByPermission($permission, $limit);
+            $recipients = array_map(
+                function ($u) {
+                    return [
+                        'username' => $u['username'] ?? ('User #' . $u['id']),
+                        'email' => $u['email'] ?? null,
+                        'device_info' => 'Permission holder',
+                        'enabled_at' => date('Y-m-d H:i:s')
+                    ];
+                },
+                $users
+            );
+        } else {
+            $recipients = $notificationModel->getRecipientPreviewList($type, $adminId, $limit);
+            if (empty($recipients) && $type === 'guest') {
+                $fallbackCount = $notificationModel->countGuestTokensAnyPermission();
+                if ($fallbackCount > 0) {
+                    $warning = "Found {$fallbackCount} guest device tokens, but all have permission != 'granted'. Recipients list is empty because push permission was denied.";
+                }
+            }
+        }
 
-                    echo json_encode(['recipients' => $recipients, 'success' => true, 'warning' => $warning]);
-                }
-                catch (Exception $e) {
-                    logError("Preview Recipients Error: " . $e->getMessage());
-                    http_response_code(500);
-                    echo json_encode(['error' => $e->getMessage(), 'recipients' => [], 'success' => false]);
-                }
-            });
+        echo json_encode(['recipients' => $recipients, 'success' => true, 'warning' => $warning]);
+    } catch (Exception $e) {
+        logError("Preview Recipients Error: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage(), 'recipients' => [], 'success' => false]);
+    }
+});
 
 // ==================== PUBLIC API: RESEND NOTIFICATION ====================
 // Accessible at /api/notification/resend for admin dashboard
@@ -2978,8 +3034,7 @@ $router->post('/api/notification/resend', ['middleware' => ['auth', 'admin_only'
                     if ($ok) {
                         $sent++;
                         $notificationModel->logDelivery($notificationId, $user['id'], 'sent', null, $user['email'], 'sent', 'email');
-                    }
-                    else {
+                    } else {
                         $failed++;
                         $notificationModel->logDelivery($notificationId, $user['id'], 'failed', null, $user['email'], 'failed', 'email');
                     }
@@ -2990,15 +3045,14 @@ $router->post('/api/notification/resend', ['middleware' => ['auth', 'admin_only'
         $notificationModel->markAsSent($notificationId);
 
         echo json_encode([
-        'success' => true,
-        'notification_id' => $notificationId,
-        'sent' => $sent,
-        'failed' => $failed,
-        'recipient_count' => $sent + $failed,
-        'message' => 'Operation completed'
+            'success' => true,
+            'notification_id' => $notificationId,
+            'sent' => $sent,
+            'failed' => $failed,
+            'recipient_count' => $sent + $failed,
+            'message' => 'Operation completed'
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         logError("Resend Notification Error: " . $e->getMessage());
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
@@ -3034,28 +3088,27 @@ $router->get('/api/notification/diagnose', ['middleware' => ['auth', 'admin_only
         ")->fetch_all(MYSQLI_ASSOC);
 
         echo json_encode([
-        'success' => true,
-        'validation' => $validation,
-        'diagnosis' => $diagnosis,
-        'token_health' => $tokenHealth,
-        'recent_errors' => $recentErrors,
-        'timestamp' => date('Y-m-d H:i:s'),
-        'action_plan' => [
-        '1_check_config' => 'Verify Firebase Console Sender ID matches server config',
-        '2_view_config' => 'Visit /api/firebase-config to see current server Sender ID',
-        '3_regenerate_tokens' => 'Have users refresh browser to regenerate tokens with new Sender ID',
-        '4_cleanup_stale' => 'POST to /api/notification/cleanup with {"confirm": true}',
-        '5_test_broadcast' => 'Send test notification from admin dashboard to new recipients',
-        '6_monitor_logs' => 'Check storage/logs/errors.log for SenderId mismatch errors'
-        ]
+            'success' => true,
+            'validation' => $validation,
+            'diagnosis' => $diagnosis,
+            'token_health' => $tokenHealth,
+            'recent_errors' => $recentErrors,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'action_plan' => [
+                '1_check_config' => 'Verify Firebase Console Sender ID matches server config',
+                '2_view_config' => 'Visit /api/firebase-config to see current server Sender ID',
+                '3_regenerate_tokens' => 'Have users refresh browser to regenerate tokens with new Sender ID',
+                '4_cleanup_stale' => 'POST to /api/notification/cleanup with {"confirm": true}',
+                '5_test_broadcast' => 'Send test notification from admin dashboard to new recipients',
+                '6_monitor_logs' => 'Check storage/logs/errors.log for SenderId mismatch errors'
+            ]
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage(),
-        'timestamp' => date('Y-m-d H:i:s')
+            'success' => false,
+            'error' => $e->getMessage(),
+            'timestamp' => date('Y-m-d H:i:s')
         ]);
     }
 });
@@ -3071,9 +3124,9 @@ $router->post('/api/notification/cleanup', ['middleware' => ['auth', 'admin_only
         if (!$confirm) {
             http_response_code(400);
             echo json_encode([
-            'success' => false,
-            'error' => 'Confirmation required',
-            'message' => 'Send {"confirm": true} to proceed with cleanup'
+                'success' => false,
+                'error' => 'Confirmation required',
+                'message' => 'Send {"confirm": true} to proceed with cleanup'
             ]);
             return;
         }
@@ -3082,19 +3135,18 @@ $router->post('/api/notification/cleanup', ['middleware' => ['auth', 'admin_only
         $result = diagnose_senderId_mismatch($mysqli, true);
 
         echo json_encode([
-        'success' => $result['status'] === 'cleaned' || $result['status'] === 'ok',
-        'result' => $result,
-        'timestamp' => date('Y-m-d H:i:s'),
-        'next_step' => 'Clients will regenerate tokens on next browser session',
-        'expected_improvement' => 'After users refresh their browsers and new tokens are registered, delivery success rate should increase significantly'
+            'success' => $result['status'] === 'cleaned' || $result['status'] === 'ok',
+            'result' => $result,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'next_step' => 'Clients will regenerate tokens on next browser session',
+            'expected_improvement' => 'After users refresh their browsers and new tokens are registered, delivery success rate should increase significantly'
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage(),
-        'timestamp' => date('Y-m-d H:i:s')
+            'success' => false,
+            'error' => $e->getMessage(),
+            'timestamp' => date('Y-m-d H:i:s')
         ]);
     }
 });
@@ -3135,35 +3187,34 @@ $router->get('/api/firebase-health', ['middleware' => ['auth', 'admin_only']], f
             : 0;
 
         echo json_encode([
-        'success' => true,
-        'system_status' => 'operational',
-        'firebase_config' => [
-        'sender_id_configured' => !empty($senderId),
-        'vapid_key_configured' => !empty($vapidKey),
-        'sender_id_preview' => $senderId ? substr($senderId, 0, 5) . '***' : 'NOT SET'
-        ],
-        'database' => [
-        'connected' => $dbOk,
-        'tables_ready' => $tablesExist
-        ],
-        'last_hour_stats' => [
-        'total_deliveries' => (int)$lastHour['total_logs'],
-        'successful' => (int)$lastHour['successful'],
-        'failed' => (int)$lastHour['failed'],
-        'success_rate' => $successRate . '%'
-        ],
-        'recommendations' => $successRate < 50 && $lastHour['total_logs'] > 0
-        ? ['Visit /api/notification/diagnose for detailed troubleshooting']
-        : ['System running normally'],
-        'timestamp' => date('Y-m-d H:i:s')
+            'success' => true,
+            'system_status' => 'operational',
+            'firebase_config' => [
+                'sender_id_configured' => !empty($senderId),
+                'vapid_key_configured' => !empty($vapidKey),
+                'sender_id_preview' => $senderId ? substr($senderId, 0, 5) . '***' : 'NOT SET'
+            ],
+            'database' => [
+                'connected' => $dbOk,
+                'tables_ready' => $tablesExist
+            ],
+            'last_hour_stats' => [
+                'total_deliveries' => (int)$lastHour['total_logs'],
+                'successful' => (int)$lastHour['successful'],
+                'failed' => (int)$lastHour['failed'],
+                'success_rate' => $successRate . '%'
+            ],
+            'recommendations' => $successRate < 50 && $lastHour['total_logs'] > 0
+                ? ['Visit /api/notification/diagnose for detailed troubleshooting']
+                : ['System running normally'],
+            'timestamp' => date('Y-m-d H:i:s')
         ]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage(),
-        'timestamp' => date('Y-m-d H:i:s')
+            'success' => false,
+            'error' => $e->getMessage(),
+            'timestamp' => date('Y-m-d H:i:s')
         ]);
     }
 });
@@ -3175,8 +3226,7 @@ $router->get('/api/topics/list', ['response' => 'json'], function () use ($mysql
         $notificationModel = new NotificationModel($mysqli);
         $topics = $notificationModel->getNotificationTopics();
         echo json_encode(['success' => true, 'topics' => $topics]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -3202,8 +3252,7 @@ $router->post('/api/topics/subscribe', function () use ($mysqli) {
             try {
                 $firebaseModel = new \Firebase\FirebaseModel(require __DIR__ . '/../../Config/Firebase.php');
                 $firebaseModel->subscribeToTopic($topic, $token);
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError('Firebase subscribe error: ' . $e->getMessage());
             }
         }
@@ -3224,8 +3273,7 @@ $router->post('/api/topics/subscribe', function () use ($mysqli) {
         }
 
         echo json_encode(['success' => true, 'topic' => $topic]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -3251,8 +3299,7 @@ $router->post('/api/topics/unsubscribe', function () use ($mysqli) {
             try {
                 $firebaseModel = new \Firebase\FirebaseModel(require __DIR__ . '/../../Config/Firebase.php');
                 $firebaseModel->unsubscribeFromTopic($topic, $token);
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError('Firebase unsubscribe error: ' . $e->getMessage());
             }
         }
@@ -3274,8 +3321,7 @@ $router->post('/api/topics/unsubscribe', function () use ($mysqli) {
         }
 
         echo json_encode(['success' => true, 'topic' => $topic]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -3325,8 +3371,7 @@ $router->post('/api/admin/send-by-topic', ['middleware' => ['auth', 'admin_only'
         }
 
         echo json_encode(['success' => true, 'notification_id' => $notifId, 'result' => $result]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -3339,8 +3384,7 @@ $router->get('/api/admin/notifications/kill-switch', ['middleware' => ['auth', '
         $notificationModel = new NotificationModel($mysqli);
         $result = $notificationModel->getNotificationKillSwitch();
         echo json_encode(['success' => true, 'enabled' => $result['enabled'], 'message' => $result['message']]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -3362,8 +3406,7 @@ $router->post('/api/admin/notifications/kill-switch', ['middleware' => ['auth', 
         $notificationModel = new NotificationModel($mysqli);
         $ok = $notificationModel->updateNotificationKillSwitch((bool)$enabled, $message);
         echo json_encode(['success' => $ok, 'enabled' => $enabled, 'message' => $message]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -3422,16 +3465,13 @@ $router->post('/api/notifications/dry-run', ['middleware' => ['auth', 'admin_onl
         if (!empty($topic)) {
             // find tokens with topic in JSON array
             $recipients = $notificationModel->getTokensByTopicSubscription($topic, 10000);
-        }
-        else {
+        } else {
             // recipientType: all/user/guest
             if ($recipientType === 'guest') {
                 $recipients = $notificationModel->getGuestDeviceTokens();
-            }
-            else if ($recipientType === 'user') {
+            } else if ($recipientType === 'user') {
                 $recipients = $notificationModel->getDeviceTokensByRecipientType('user');
-            }
-            else {
+            } else {
                 $recipients = $notificationModel->getDeviceTokensByRecipientType('all');
             }
         }
@@ -3439,25 +3479,26 @@ $router->post('/api/notifications/dry-run', ['middleware' => ['auth', 'admin_onl
         $estimate = count($recipients);
         // sample up to 10 tokens (mask)
         $sample = array_slice($recipients, 0, 10);
-        $sampleMasked = array_map(function ($r) {
-                    return ['device_id' => $r['device_id'] ?? null, 'token_sample' => substr($r['token'] ?? '', 0, 8) . '...'];
-                }
-                    , $sample);
+        $sampleMasked = array_map(
+            function ($r) {
+                return ['device_id' => $r['device_id'] ?? null, 'token_sample' => substr($r['token'] ?? '', 0, 8) . '...'];
+            },
+            $sample
+        );
 
-                // payload validation: basic length checks
-                $payloadIssues = [];
-                if (mb_strlen($title) > 200)
-                    $payloadIssues[] = 'title too long';
-                if (mb_strlen($message) > 5000)
-                    $payloadIssues[] = 'message too long';
+        // payload validation: basic length checks
+        $payloadIssues = [];
+        if (mb_strlen($title) > 200)
+            $payloadIssues[] = 'title too long';
+        if (mb_strlen($message) > 5000)
+            $payloadIssues[] = 'message too long';
 
-                echo json_encode(['success' => true, 'estimate' => $estimate, 'sample' => $sampleMasked, 'payload_issues' => $payloadIssues]);
-            }
-            catch (Exception $e) {
-                http_response_code(500);
-                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-            }
-        });
+        echo json_encode(['success' => true, 'estimate' => $estimate, 'sample' => $sampleMasked, 'payload_issues' => $payloadIssues]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+});
 
 // ----- PAUSE CAMPAIGN (ADMIN) -----
 $router->post('/api/notification/{id}/pause', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
@@ -3490,13 +3531,11 @@ $router->post('/api/notification/{id}/pause', ['middleware' => ['auth', 'admin_o
         $ok = $notificationModel->pauseCampaign($id, $reason);
         if ($ok) {
             echo json_encode(['success' => true, 'notification_id' => $id, 'message' => 'Campaign paused']);
-        }
-        else {
+        } else {
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => 'Failed to pause campaign']);
         }
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -3530,13 +3569,11 @@ $router->post('/api/notification/{id}/resume', ['middleware' => ['auth', 'admin_
         $ok = $notificationModel->resumeCampaign($id);
         if ($ok) {
             echo json_encode(['success' => true, 'notification_id' => $id, 'message' => 'Campaign resumed']);
-        }
-        else {
+        } else {
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => 'Failed to resume campaign']);
         }
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -3551,8 +3588,7 @@ $router->get('/api/notification/admin-rate-limit', ['middleware' => ['auth', 'ad
         $limits = $notificationModel->getAdminRateLimits($adminId);
         $message = !empty($limits) ? 'limits loaded' : 'no limits set';
         echo json_encode(['success' => true, 'admin_id' => $adminId, 'limits' => $limits, 'message' => $message]);
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -3622,13 +3658,11 @@ $router->post('/api/notification/admin-rate-limit', ['middleware' => ['auth', 'a
 
         if ($ok) {
             echo json_encode(['success' => true, 'limits' => $limits, 'message' => 'Rate limits updated']);
-        }
-        else {
+        } else {
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => 'Failed to update limits']);
         }
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -3668,19 +3702,17 @@ $router->get('/api/notification/{id}', ['middleware' => ['auth', 'admin_only']],
         if ($notification) {
             $logs = $notificationModel->getDeliveryLogs($id, 1000);
             echo json_encode([
-            'success' => true,
-            'notification' => $notification,
-            'delivery_logs' => $logs
+                'success' => true,
+                'notification' => $notification,
+                'delivery_logs' => $logs
             ]);
-        }
-        else {
+        } else {
             echo json_encode([
-            'success' => false,
-            'error' => 'Operation failed'
+                'success' => false,
+                'error' => 'Operation failed'
             ]);
         }
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         logError("Get Notification Detail Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'error' => 'Operation failed']);
     }
@@ -3694,11 +3726,10 @@ $router->delete('/api/notification/{id}', ['middleware' => ['auth', 'admin_only'
         $result = $notificationModel->deleteNotification($id);
 
         echo json_encode([
-        'success' => $result,
-        'message' => 'Operation completed'
+            'success' => $result,
+            'message' => 'Operation completed'
         ]);
-    }
-    catch (Throwable $e) {
+    } catch (Throwable $e) {
         logError("Delete Notification Error: " . $e->getMessage());
         echo json_encode(['success' => false, 'error' => 'Operation failed']);
     }

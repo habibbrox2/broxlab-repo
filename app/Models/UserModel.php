@@ -4,17 +4,18 @@
 
 
 
-class UserModel {
+class UserModel
+{
 
     private $mysqli;
     private ?array $userColumns = null;
 
 
 
-    public function __construct(mysqli $mysqli) {
+    public function __construct(mysqli $mysqli)
+    {
 
         $this->mysqli = $mysqli;
-
     }
 
     /**
@@ -56,44 +57,44 @@ class UserModel {
 
      * ------------------------------*/
 
-    public function findByUsernameOrEmail(string $usernameOrEmail): ?array {
+    public function findByUsernameOrEmail(string $usernameOrEmail): ?array
+    {
 
-        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid, role FROM users WHERE (username = ? OR email = ?) AND deleted_at IS NULL LIMIT 1");
+        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid FROM users WHERE (username = ? OR email = ?) AND deleted_at IS NULL LIMIT 1");
 
         $stmt->bind_param('ss', $usernameOrEmail, $usernameOrEmail);
 
         $stmt->execute();
 
         return $stmt->get_result()->fetch_assoc() ?: null;
-
     }
 
 
 
-    public function findByUsername(string $username): ?array {
+    public function findByUsername(string $username): ?array
+    {
 
-        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid, role FROM users WHERE username = ? AND deleted_at IS NULL LIMIT 1");
+        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid FROM users WHERE username = ? AND deleted_at IS NULL LIMIT 1");
 
         $stmt->bind_param('s', $username);
 
         $stmt->execute();
 
         return $stmt->get_result()->fetch_assoc() ?: null;
-
     }
 
 
 
-    public function findByEmail(string $email): ?array {
+    public function findByEmail(string $email): ?array
+    {
 
-        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid, role FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1");
+        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1");
 
         $stmt->bind_param('s', $email);
 
         $stmt->execute();
 
         return $stmt->get_result()->fetch_assoc() ?: null;
-
     }
 
 
@@ -105,7 +106,8 @@ class UserModel {
      * @param string $providerId Provider's user ID
      * @return array|null User record or null if not found
      */
-    public function findByProviderUserId(string $provider, string $providerId): ?array {
+    public function findByProviderUserId(string $provider, string $providerId): ?array
+    {
         $stmt = $this->mysqli->prepare("
             SELECT u.* FROM users u
             INNER JOIN user_linked_accounts ula ON ula.user_id = u.id
@@ -122,7 +124,7 @@ class UserModel {
     {
         $sql = "
             SELECT
-                u.id, u.username, u.email, u.password, u.first_name, u.last_name, u.gender, u.dob, u.phone, u.alternate_phone, u.address, u.city, u.state, u.country, u.zipcode, u.profile_pic, u.auth_provider, u.role, u.status, u.firebase_uid, u.login_ip, u.login_device, u.last_login, u.password_changed_at, u.created_at, u.updated_at, u.deleted_at,
+                u.id, u.username, u.email, u.password, u.first_name, u.last_name, u.gender, u.dob, u.phone, u.alternate_phone, u.address, u.city, u.state, u.country, u.zipcode, u.profile_pic, u.auth_provider, u.status, u.firebase_uid, u.login_ip, u.login_device, u.last_login, u.password_changed_at, u.created_at, u.updated_at, u.deleted_at,
                 GROUP_CONCAT(DISTINCT r.name ORDER BY r.ranking DESC) AS roles,
                 MAX(r.is_super_admin) AS is_super_admin
             FROM users u
@@ -157,22 +159,22 @@ class UserModel {
 
 
 
-    public function getAllUsers(): array {
+    public function getAllUsers(): array
+    {
 
         $result = $this->mysqli->query("SELECT id, username, email, first_name, last_name, status, created_at FROM users WHERE deleted_at IS NULL ORDER BY id DESC");
 
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
-
     }
 
 
 
-    public function getUserCount(): int {
+    public function getUserCount(): int
+    {
 
         $result = $this->mysqli->query("SELECT COUNT(*) as count FROM users WHERE deleted_at IS NULL");
 
         return $result ? (int)$result->fetch_assoc()['count'] : 0;
-
     }
 
 
@@ -183,7 +185,8 @@ class UserModel {
 
      * ------------------------------*/
 
-    public function create(array $data): bool {
+    public function create(array $data): bool
+    {
 
         $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
 
@@ -284,7 +287,7 @@ class UserModel {
 
         // Get newly created user ID and assign RBAC role
         $userId = $this->mysqli->insert_id;
-        
+
         if ($userId > 0) {
             // Assign RBAC role based on legacy role value.
             $defaultRoleId = $this->getDefaultRoleId($role);
@@ -294,7 +297,6 @@ class UserModel {
         }
 
         return true;
-
     }
 
     /**
@@ -303,8 +305,9 @@ class UserModel {
      * @param string $firebaseUid
      * @return array|null
      */
-    public function findByFirebaseUid(string $firebaseUid): ?array {
-        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid, role FROM users WHERE firebase_uid = ? AND deleted_at IS NULL LIMIT 1");
+    public function findByFirebaseUid(string $firebaseUid): ?array
+    {
+        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid FROM users WHERE firebase_uid = ? AND deleted_at IS NULL LIMIT 1");
         $stmt->bind_param('s', $firebaseUid);
         $stmt->execute();
         return $stmt->get_result()->fetch_assoc() ?: null;
@@ -317,7 +320,8 @@ class UserModel {
      * @param string $firebaseUid
      * @return bool
      */
-    public function linkFirebaseUid(int $userId, string $firebaseUid): bool {
+    public function linkFirebaseUid(int $userId, string $firebaseUid): bool
+    {
         $stmt = $this->mysqli->prepare("UPDATE users SET firebase_uid = ?, updated_at = NOW() WHERE id = ?");
         $stmt->bind_param('si', $firebaseUid, $userId);
         return $stmt->execute();
@@ -333,7 +337,8 @@ class UserModel {
      * @param string|null $providerData JSON or picture URL
      * @return bool
      */
-    public function createLinkedAccount(int $userId, string $provider, string $providerUserId, string $providerEmail, ?string $providerData = null): bool {
+    public function createLinkedAccount(int $userId, string $provider, string $providerUserId, string $providerEmail, ?string $providerData = null): bool
+    {
         try {
             $stmt = $this->mysqli->prepare("
                 INSERT INTO user_linked_accounts 
@@ -344,7 +349,7 @@ class UserModel {
                 provider_data = VALUES(provider_data),
                 last_used_at = NOW()
             ");
-            
+
             $stmt->bind_param('issss', $userId, $provider, $providerUserId, $providerEmail, $providerData);
             return $stmt->execute();
         } catch (Throwable $e) {
@@ -359,7 +364,8 @@ class UserModel {
      * @param array $data ['uid','email','name','picture']
      * @return int|null
      */
-    public function createFromFirebase(array $data): ?int {
+    public function createFromFirebase(array $data): ?int
+    {
         $email = $data['email'] ?? null;
         $uid = $data['uid'] ?? null;
         $displayName = $data['displayName'] ?? null;
@@ -413,10 +419,10 @@ class UserModel {
         if (!$newUser) return null;
 
         $userId = (int)$newUser['id'];
-        
+
         // 1. Link firebase_uid to the user
         $this->linkFirebaseUid($userId, $uid);
-        
+
         // 2. Create linked account entry for future provider linking
         $this->createLinkedAccount($userId, $provider, $uid, $email, $photoURL);
 
@@ -426,7 +432,8 @@ class UserModel {
     /**
      * Helper used internally to generate unique usernames when creating users here (avoids dependency on AuthManager helpers)
      */
-    private function generateUniqueUsernameForCreate(string $baseUsername): string {
+    private function generateUniqueUsernameForCreate(string $baseUsername): string
+    {
         $username = substr($baseUsername, 0, 30);
         $counter = 1;
         while ($this->findByUsername($username)) {
@@ -443,22 +450,24 @@ class UserModel {
     /**
      * Get role ID from role name
      */
-    private function getDefaultRoleId(string $roleName): int {
+    private function getDefaultRoleId(string $roleName): int
+    {
         $stmt = $this->mysqli->prepare("
             SELECT id FROM roles WHERE name = ? AND deleted_at IS NULL LIMIT 1
         ");
         $stmt->bind_param('s', $roleName);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         if ($row = $result->fetch_assoc()) {
             return (int)$row['id'];
         }
-        
+
         return 0;
     }
 
-    public function updateUser(int $id, array $data): bool {
+    public function updateUser(int $id, array $data): bool
+    {
 
         if ($id <= 0 || empty($data)) {
             return false;
@@ -479,7 +488,6 @@ class UserModel {
             $params[] = $value;
 
             $types .= is_int($value) ? 'i' : 's';
-
         }
 
 
@@ -502,12 +510,12 @@ class UserModel {
         $stmt->bind_param($types, ...$params);
 
         return $stmt->execute();
-
     }
 
 
 
-    public function updateUserRole(int $id, string $role): bool {
+    public function updateUserRole(int $id, string $role): bool
+    {
 
         if ($this->hasUserColumn('role')) {
             $stmt = $this->mysqli->prepare("UPDATE users SET role = ?, updated_at = NOW() WHERE id = ?");
@@ -525,12 +533,12 @@ class UserModel {
         }
 
         return $this->assignRoles($id, [$roleId]);
-
     }
 
 
 
-    public function deleteUser(int $id): bool {
+    public function deleteUser(int $id): bool
+    {
 
         // Soft delete
 
@@ -539,7 +547,6 @@ class UserModel {
         $stmt->bind_param('i', $id);
 
         return $stmt->execute();
-
     }
 
 
@@ -550,7 +557,8 @@ class UserModel {
 
      * ------------------------------*/
 
-    public function updateLastLogin(int $userId, ?string $ip = null, ?string $device = null): bool {
+    public function updateLastLogin(int $userId, ?string $ip = null, ?string $device = null): bool
+    {
 
         $stmt = $this->mysqli->prepare("
 
@@ -565,12 +573,12 @@ class UserModel {
         $stmt->bind_param('ssi', $ip, $device, $userId);
 
         return $stmt->execute();
-
     }
 
 
 
-    public function setResetToken(string $email, string $token, string $expiry): bool {
+    public function setResetToken(string $email, string $token, string $expiry): bool
+    {
 
         // First get user_id from email
         $userStmt = $this->mysqli->prepare("SELECT id FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1");
@@ -579,120 +587,119 @@ class UserModel {
         $userResult = $userStmt->get_result();
         $user = $userResult->fetch_assoc();
         $userStmt->close();
-        
+
         if (!$user) {
             return false;
         }
-        
+
         // Insert token into password_resets table (correct schema)
         $stmt = $this->mysqli->prepare("
             INSERT INTO password_resets (user_id, token, token_type, expires_at, created_at)
             VALUES (?, ?, 'password_reset', ?, NOW())
         ");
-        
+
         if (!$stmt) {
             logError("Prepare failed in setResetToken: " . $this->mysqli->error);
             return false;
         }
-        
+
         $stmt->bind_param('iss', $user['id'], $token, $expiry);
         $result = $stmt->execute();
         $stmt->close();
-        
-        return $result;
 
+        return $result;
     }
 
 
 
-    public function findByResetToken(string $token): ?array {
+    public function findByResetToken(string $token): ?array
+    {
 
         // Use password_resets table which has the correct schema
         $stmt = $this->mysqli->prepare("
             SELECT user_id FROM password_resets 
             WHERE token = ? AND expires_at > NOW() AND used = 0 LIMIT 1
         ");
-        
+
         if (!$stmt) {
             logError("Prepare failed in findByResetToken: " . $this->mysqli->error);
             return null;
         }
-        
+
         $stmt->bind_param('s', $token);
         $stmt->execute();
-        
+
         $result = $stmt->get_result()->fetch_assoc();
         $stmt->close();
-        
-        return $result ?: null;
 
+        return $result ?: null;
     }
 
 
 
-    public function updatePasswordByResetToken(string $token, string $hashedPassword): bool {
+    public function updatePasswordByResetToken(string $token, string $hashedPassword): bool
+    {
 
         // Find the password reset record (using correct password_resets table)
         $findStmt = $this->mysqli->prepare("
             SELECT user_id FROM password_resets 
             WHERE token = ? AND expires_at > NOW() AND used = 0 LIMIT 1
         ");
-        
+
         if (!$findStmt) {
             logError("Prepare failed in updatePasswordByResetToken: " . $this->mysqli->error);
             return false;
         }
-        
+
         $findStmt->bind_param('s', $token);
         $findStmt->execute();
         $result = $findStmt->get_result();
         $resetRecord = $result->fetch_assoc();
         $findStmt->close();
-        
+
         if (!$resetRecord) {
             logError("Password reset token not found or expired");
             return false;
         }
-        
+
         // Update user password in users table
         $updateStmt = $this->mysqli->prepare("
             UPDATE users 
             SET password = ?, password_changed_at = NOW(), updated_at = NOW() 
             WHERE id = ?
         ");
-        
+
         if (!$updateStmt) {
             logError("Prepare failed updating user password: " . $this->mysqli->error);
             return false;
         }
-        
+
         $updateStmt->bind_param('si', $hashedPassword, $resetRecord['user_id']);
         $updateResult = $updateStmt->execute();
         $updateStmt->close();
-        
+
         if (!$updateResult) {
             logError("Failed to update user password");
             return false;
         }
-        
+
         // Mark token as used in password_resets table
         $markStmt = $this->mysqli->prepare("
             UPDATE password_resets 
             SET used = 1, used_at = NOW(), updated_at = NOW() 
             WHERE token = ?
         ");
-        
+
         if (!$markStmt) {
             logError("Prepare failed marking token as used: " . $this->mysqli->error);
             return false;
         }
-        
+
         $markStmt->bind_param('s', $token);
         $markResult = $markStmt->execute();
         $markStmt->close();
-        
-        return $markResult;
 
+        return $markResult;
     }
 
 
@@ -703,16 +710,16 @@ class UserModel {
 
      * ------------------------------*/
 
-    public function getProfile(int $userId): ?array {
+    public function getProfile(int $userId): ?array
+    {
 
-        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, gender, dob, phone, alternate_phone, address, city, state, country, zipcode, profile_pic, auth_provider, role, status, firebase_uid, login_ip, login_device, last_login, password_changed_at, created_at, updated_at, deleted_at FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1");
+        $stmt = $this->mysqli->prepare("SELECT id, username, email, password, first_name, last_name, gender, dob, phone, alternate_phone, address, city, state, country, zipcode, profile_pic, auth_provider, status, firebase_uid, login_ip, login_device, last_login, password_changed_at, created_at, updated_at, deleted_at FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1");
 
         $stmt->bind_param('i', $userId);
 
         $stmt->execute();
 
         return $stmt->get_result()->fetch_assoc() ?: null;
-
     }
 
 
@@ -731,7 +738,8 @@ class UserModel {
 
      */
 
-    public function getRoles(int $userId): array {
+    public function getRoles(int $userId): array
+    {
 
         $stmt = $this->mysqli->prepare("
 
@@ -752,7 +760,6 @@ class UserModel {
         $stmt->execute();
 
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-
     }
 
 
@@ -763,7 +770,8 @@ class UserModel {
 
      */
 
-    public function assignRole(int $userId, int $roleId): bool {
+    public function assignRole(int $userId, int $roleId): bool
+    {
 
         $stmt = $this->mysqli->prepare("
 
@@ -776,7 +784,6 @@ class UserModel {
         $stmt->bind_param('ii', $userId, $roleId);
 
         return $stmt->execute();
-
     }
 
 
@@ -787,7 +794,8 @@ class UserModel {
 
      */
 
-    public function removeRole(int $userId, int $roleId): bool {
+    public function removeRole(int $userId, int $roleId): bool
+    {
 
         $stmt = $this->mysqli->prepare("
 
@@ -800,7 +808,6 @@ class UserModel {
         $stmt->bind_param('ii', $userId, $roleId);
 
         return $stmt->execute();
-
     }
 
 
@@ -811,7 +818,8 @@ class UserModel {
 
      */
 
-    public function hasRole(int $userId, string $roleName): bool {
+    public function hasRole(int $userId, string $roleName): bool
+    {
 
         $stmt = $this->mysqli->prepare("
 
@@ -830,7 +838,6 @@ class UserModel {
         $stmt->execute();
 
         return (bool)$stmt->get_result()->num_rows;
-
     }
 
 
@@ -841,12 +848,12 @@ class UserModel {
 
      */
 
-    public function hasAnyRole(int $userId, array $roleNames): bool {
+    public function hasAnyRole(int $userId, array $roleNames): bool
+    {
 
         if (empty($roleNames)) {
 
             return false;
-
         }
 
 
@@ -865,7 +872,7 @@ class UserModel {
 
         ";
 
-        
+
 
         $stmt = $this->mysqli->prepare($query);
 
@@ -878,7 +885,6 @@ class UserModel {
         $stmt->execute();
 
         return (bool)$stmt->get_result()->num_rows;
-
     }
 
 
@@ -889,7 +895,8 @@ class UserModel {
 
      */
 
-    public function getPermissions(int $userId): array {
+    public function getPermissions(int $userId): array
+    {
 
         $stmt = $this->mysqli->prepare("
 
@@ -914,7 +921,6 @@ class UserModel {
         $stmt->execute();
 
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-
     }
 
 
@@ -925,7 +931,8 @@ class UserModel {
 
      */
 
-    public function hasPermission(int $userId, string $permissionName): bool {
+    public function hasPermission(int $userId, string $permissionName): bool
+    {
 
         $stmt = $this->mysqli->prepare("
 
@@ -948,7 +955,6 @@ class UserModel {
         $stmt->execute();
 
         return (bool)$stmt->get_result()->num_rows;
-
     }
 
 
@@ -959,12 +965,12 @@ class UserModel {
 
      */
 
-    public function hasAnyPermission(int $userId, array $permissionNames): bool {
+    public function hasAnyPermission(int $userId, array $permissionNames): bool
+    {
 
         if (empty($permissionNames)) {
 
             return false;
-
         }
 
 
@@ -987,7 +993,7 @@ class UserModel {
 
         ";
 
-        
+
 
         $stmt = $this->mysqli->prepare($query);
 
@@ -1000,7 +1006,6 @@ class UserModel {
         $stmt->execute();
 
         return (bool)$stmt->get_result()->num_rows;
-
     }
 
 
@@ -1011,7 +1016,8 @@ class UserModel {
 
      */
 
-    public function isSuperAdmin(int $userId): bool {
+    public function isSuperAdmin(int $userId): bool
+    {
 
         $stmt = $this->mysqli->prepare("
 
@@ -1030,7 +1036,6 @@ class UserModel {
         $stmt->execute();
 
         return (bool)$stmt->get_result()->num_rows;
-
     }
 
 
@@ -1041,11 +1046,12 @@ class UserModel {
 
      */
 
-    public function assignRoles(int $userId, array $roleIds): bool {
+    public function assignRoles(int $userId, array $roleIds): bool
+    {
 
         $this->mysqli->begin_transaction();
 
-        
+
 
         try {
 
@@ -1059,7 +1065,7 @@ class UserModel {
 
             $stmt->close();
 
-            
+
 
             // Assign new roles
 
@@ -1073,7 +1079,7 @@ class UserModel {
 
                 ");
 
-                
+
 
                 foreach ($roleIds as $roleId) {
 
@@ -1088,29 +1094,23 @@ class UserModel {
                     if (!$stmt->execute()) {
 
                         throw new Exception("Failed to assign role");
-
                     }
-
                 }
 
                 $stmt->close();
-
             }
 
-            
+
 
             $this->mysqli->commit();
 
             return true;
-
         } catch (Exception $e) {
 
             $this->mysqli->rollback();
 
             return false;
-
         }
-
     }
 
 
@@ -1121,7 +1121,8 @@ class UserModel {
 
      */
 
-    public function getUsersWithRoles(): array {
+    public function getUsersWithRoles(): array
+    {
 
         $result = $this->mysqli->query("
 
@@ -1160,19 +1161,17 @@ class UserModel {
                 $user['roles'] = $this->getRoles($user['id']);
 
                 $users[] = $user;
-
             }
-
         }
 
         return $users;
-
     }
 
     /**
      * Get subscriber count
      */
-    public function getSubscriberCount(): int {
+    public function getSubscriberCount(): int
+    {
         $sql = "SELECT COUNT(*) as count FROM users WHERE status = 'active'";
         $result = $this->mysqli->query($sql);
         $row = $result->fetch_assoc();
@@ -1182,7 +1181,8 @@ class UserModel {
     /**
      * Get new subscribers today
      */
-    public function getNewSubscribersToday(): int {
+    public function getNewSubscribersToday(): int
+    {
         $today = date('Y-m-d');
         $sql = "SELECT COUNT(*) as count FROM users 
                 WHERE status = 'active' AND DATE(created_at) = ?";
@@ -1199,7 +1199,7 @@ class UserModel {
      */
     public function getUserById(int $id): ?array
     {
-        $sql = "SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid, role FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1";
+        $sql = "SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1";
         $stmt = $this->mysqli->prepare($sql);
         $stmt->bind_param("i", $id);
         $stmt->execute();
@@ -1213,7 +1213,7 @@ class UserModel {
      * Link OAuth account to user
      * Updates both user_linked_accounts and users table
      */
-/**
+    /**
      * Link OAuth account to user
      * Updates both user_linked_accounts and users table
      * 
@@ -1229,7 +1229,7 @@ class UserModel {
     ): bool {
         try {
             logError("linkOAuthAccount() called: userId=$userId, provider=$provider, providerUserId=$providerUserId, email=$providerEmail");
-            
+
             // 1. Insert/Update in user_linked_accounts table
             $sql = "INSERT INTO user_linked_accounts 
                     (user_id, provider, provider_user_id, provider_email, provider_data, is_primary, created_at, linked_at)
@@ -1238,26 +1238,26 @@ class UserModel {
                         provider_email = VALUES(provider_email),
                         provider_data = VALUES(provider_data),
                         linked_at = NOW()";
-            
+
             logError("Preparing SQL: $sql");
             $stmt = $this->mysqli->prepare($sql);
-            
+
             if (!$stmt) {
                 logError("Failed to prepare statement: " . $this->mysqli->error);
                 return false;
             }
-            
+
             $stmt->bind_param("issss", $userId, $provider, $providerUserId, $providerEmail, $providerData);
-            
+
             if (!$stmt->execute()) {
                 logError("Error inserting into user_linked_accounts: " . $stmt->error);
                 $stmt->close();
                 return false;
             }
-            
+
             logError("Successfully inserted into user_linked_accounts for user_id=$userId, provider=$provider");
             $stmt->close();
-            
+
             // 2. Update users table - only update auth_provider and profile_pic
             // Provider-specific IDs are now stored in user_linked_accounts.provider_user_id
             $updateSql = "UPDATE users SET 
@@ -1265,29 +1265,28 @@ class UserModel {
                           profile_pic = CASE WHEN profile_pic IS NULL OR profile_pic = '' THEN ? ELSE profile_pic END,
                           updated_at = NOW()
                           WHERE id = ?";
-            
+
             $updateStmt = $this->mysqli->prepare($updateSql);
-            
+
             if (!$updateStmt) {
                 logError("Error preparing update statement for user {$userId}: " . $this->mysqli->error);
                 return false;
             }
-            
+
             // If provider picture provided, use it; otherwise use empty string
             $picToUse = !empty($providerPicture) ? $providerPicture : '';
             $updateStmt->bind_param('ssi', $provider, $picToUse, $userId);
-            
+
             if (!$updateStmt->execute()) {
                 logError("Error updating users table for provider '{$provider}': " . $updateStmt->error);
                 $updateStmt->close();
                 return false;
             }
             $updateStmt->close();
-            
+
             logError("Successfully updated users table for provider '{$provider}', user_id: {$userId}");
-            
+
             return true;
-            
         } catch (Exception $e) {
             logError("Error linking OAuth account: " . $e->getMessage());
             return false;
@@ -1298,19 +1297,20 @@ class UserModel {
      * Unlink OAuth account from user
      * Removes from both user_linked_accounts and updates users table
      */
-    public function unlinkOAuthAccount(int $userId, string $provider): bool {
+    public function unlinkOAuthAccount(int $userId, string $provider): bool
+    {
         try {
             // 1. Delete from user_linked_accounts table
             $sql = "DELETE FROM user_linked_accounts WHERE user_id = ? AND provider = ?";
             $stmt = $this->mysqli->prepare($sql);
             $stmt->bind_param("is", $userId, $provider);
-            
+
             if (!$stmt->execute()) {
                 logError("Error deleting from user_linked_accounts: " . $stmt->error);
                 return false;
             }
             $stmt->close();
-            
+
             // 2. Check if any other OAuth accounts remain for this user
             $checkSql = "SELECT COUNT(*) as count FROM user_linked_accounts WHERE user_id = ? AND deleted_at IS NULL";
             $checkStmt = $this->mysqli->prepare($checkSql);
@@ -1318,20 +1318,20 @@ class UserModel {
             $checkStmt->execute();
             $countResult = $checkStmt->get_result()->fetch_assoc();
             $checkStmt->close();
-            
+
             // If no more linked accounts, set auth_provider back to 'email'
             if ($countResult['count'] == 0) {
                 $updateSql = "UPDATE users SET auth_provider = 'email', updated_at = NOW() WHERE id = ?";
                 $updateStmt = $this->mysqli->prepare($updateSql);
                 $updateStmt->bind_param('i', $userId);
-                
+
                 if (!$updateStmt->execute()) {
                     logError("Error updating users table on unlink: " . $updateStmt->error);
                     return false;
                 }
                 $updateStmt->close();
             }
-            
+
             return true;
         } catch (Exception $e) {
             logError("Error unlinking OAuth account: " . $e->getMessage());
@@ -1342,18 +1342,19 @@ class UserModel {
     /**
      * Get all linked OAuth accounts for user
      */
-    public function getLinkedOAuthAccounts(int $userId): array {
+    public function getLinkedOAuthAccounts(int $userId): array
+    {
         try {
             $sql = "SELECT id, provider, provider_user_id, provider_email, is_primary, linked_at, last_used_at
                     FROM user_linked_accounts
                     WHERE user_id = ?
                     ORDER BY is_primary DESC, linked_at DESC";
-            
+
             $stmt = $this->mysqli->prepare($sql);
             $stmt->bind_param("i", $userId);
             $stmt->execute();
             $result = $stmt->get_result();
-            
+
             $accounts = [];
             while ($row = $result->fetch_assoc()) {
                 $accounts[] = $row;
@@ -1368,13 +1369,14 @@ class UserModel {
     /**
      * Get linked account by provider and provider ID
      */
-    public function getLinkedAccountByProvider(string $provider, string $providerUserId): ?array {
+    public function getLinkedAccountByProvider(string $provider, string $providerUserId): ?array
+    {
         try {
             $sql = "SELECT id, user_id, provider, provider_user_id, provider_email, is_primary, linked_at
                     FROM user_linked_accounts
                     WHERE provider = ? AND provider_user_id = ?
                     LIMIT 1";
-            
+
             $stmt = $this->mysqli->prepare($sql);
             $stmt->bind_param("ss", $provider, $providerUserId);
             $stmt->execute();
@@ -1388,7 +1390,8 @@ class UserModel {
     /**
      * Check if user has a password set
      */
-    public function userHasPassword(int $userId): bool {
+    public function userHasPassword(int $userId): bool
+    {
         try {
             $sql = "SELECT id FROM users WHERE id = ? AND password IS NOT NULL AND password != '' LIMIT 1";
             $stmt = $this->mysqli->prepare($sql);
@@ -1404,7 +1407,8 @@ class UserModel {
     /**
      * Update user password
      */
-    public function updateUserPassword(int $userId, string $hashedPassword): bool {
+    public function updateUserPassword(int $userId, string $hashedPassword): bool
+    {
         try {
             $sql = "UPDATE users SET password = ?, password_changed_at = NOW() WHERE id = ?";
             $stmt = $this->mysqli->prepare($sql);
@@ -1420,19 +1424,20 @@ class UserModel {
      * Check if first-time OAuth user needs password setup
      * Returns true if user was created via OAuth and has no password
      */
-    public function needsFirstTimePasswordSetup(int $userId): bool {
+    public function needsFirstTimePasswordSetup(int $userId): bool
+    {
         try {
             $user = $this->getUserById($userId);
             if (!$user) {
                 return false;
             }
-            
+
             // Check if user has OAuth account(s)
             $linkedAccounts = $this->getLinkedOAuthAccounts($userId);
             if (empty($linkedAccounts)) {
                 return false;
             }
-            
+
             // Check if user has no password set
             return !$this->userHasPassword($userId);
         } catch (Exception $e) {
@@ -1445,23 +1450,24 @@ class UserModel {
      * Mark OAuth account as primary login method
      * Updates both user_linked_accounts and users table
      */
-    public function setPrimaryOAuthProvider(int $userId, string $provider): bool {
+    public function setPrimaryOAuthProvider(int $userId, string $provider): bool
+    {
         try {
             // Start transaction
             $this->mysqli->begin_transaction();
-            
+
             // Remove primary from all
             $sql1 = "UPDATE user_linked_accounts SET is_primary = 0 WHERE user_id = ?";
             $stmt1 = $this->mysqli->prepare($sql1);
             $stmt1->bind_param("i", $userId);
             $stmt1->execute();
-            
+
             // Set new primary
             $sql2 = "UPDATE user_linked_accounts SET is_primary = 1 WHERE user_id = ? AND provider = ?";
             $stmt2 = $this->mysqli->prepare($sql2);
             $stmt2->bind_param("is", $userId, $provider);
             $result = $stmt2->execute();
-            
+
             // Update users table auth_provider
             if ($result) {
                 // Get the provider_user_id to update users table
@@ -1470,11 +1476,11 @@ class UserModel {
                 $stmt3->bind_param("is", $userId, $provider);
                 $stmt3->execute();
                 $providerResult = $stmt3->get_result();
-                
+
                 if ($providerResult && $providerResult->num_rows > 0) {
                     $row = $providerResult->fetch_assoc();
                     $providerUserId = $row['provider_user_id'];
-                    
+
                     // Update auth_provider in users table (only track initial registration provider)
                     $sql4 = "UPDATE users SET auth_provider = ? WHERE id = ? AND auth_provider IS NULL";
                     $stmt4 = $this->mysqli->prepare($sql4);
@@ -1482,7 +1488,7 @@ class UserModel {
                     $stmt4->execute();
                 }
             }
-            
+
             // Commit transaction
             if ($result) {
                 $this->mysqli->commit();
@@ -1501,7 +1507,8 @@ class UserModel {
     /**
      * Update last used timestamp for OAuth account
      */
-    public function updateOAuthLastUsed(string $provider, string $providerUserId): bool {
+    public function updateOAuthLastUsed(string $provider, string $providerUserId): bool
+    {
         try {
             $sql = "UPDATE user_linked_accounts SET last_used_at = NOW() WHERE provider = ? AND provider_user_id = ?";
             $stmt = $this->mysqli->prepare($sql);
@@ -1520,7 +1527,8 @@ class UserModel {
      * @param string $roleName Role name to search
      * @return array List of users with that role
      */
-    public function getUsersByRole(string $roleName): array {
+    public function getUsersByRole(string $roleName): array
+    {
         $stmt = $this->mysqli->prepare("
             SELECT DISTINCT u.id, u.username, u.email, u.status 
             FROM users u
@@ -1541,7 +1549,8 @@ class UserModel {
      * @param string $permissionName Permission name to search
      * @return array List of users with that permission
      */
-    public function getUsersByPermission(string $permissionName): array {
+    public function getUsersByPermission(string $permissionName): array
+    {
         $stmt = $this->mysqli->prepare("
             SELECT DISTINCT u.id, u.username, u.email, u.status 
             FROM users u
@@ -1561,33 +1570,34 @@ class UserModel {
     /**
      * Get paginated, searched, and sorted users with their roles
      */
-    public function getUsers($page = 1, $limit = 20, $search = '', $sort = 'username', $order = 'ASC', $filters = []) {
+    public function getUsers($page = 1, $limit = 20, $search = '', $sort = 'username', $order = 'ASC', $filters = [])
+    {
         $offset = ($page - 1) * $limit;
         $order = strtoupper($order) === 'DESC' ? 'DESC' : 'ASC';
         $allowedSorts = ['id', 'username', 'email', 'first_name', 'status', 'created_at'];
         $sort = in_array($sort, $allowedSorts) ? $sort : 'username';
-        
+
         $sql = "SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.status, u.created_at
                 FROM users u
                 WHERE u.deleted_at IS NULL";
         $params = [];
         $types = '';
-        
+
         if (!empty($search)) {
             $sql .= " AND (u.username LIKE ? OR u.email LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?)";
             $searchTerm = '%' . $search . '%';
             $params = [$searchTerm, $searchTerm, $searchTerm, $searchTerm];
             $types = 'ssss';
         }
-        
+
         if (!empty($filters['status']) && in_array($filters['status'], ['active', 'inactive', 'suspended'])) {
             $sql .= " AND u.status = ?";
             $params[] = $filters['status'];
             $types .= 's';
         }
-        
+
         $sql .= " ORDER BY u.`{$sort}` {$order} LIMIT {$limit} OFFSET {$offset}";
-        
+
         if (!empty($params)) {
             $stmt = $this->mysqli->prepare($sql);
             $stmt->bind_param($types, ...$params);
@@ -1596,7 +1606,7 @@ class UserModel {
         } else {
             $result = $this->mysqli->query($sql);
         }
-        
+
         $users = [];
         if ($result) {
             while ($user = $result->fetch_assoc()) {
@@ -1610,24 +1620,25 @@ class UserModel {
     /**
      * Get total count of users with optional search/filter
      */
-    public function getUsersCount($search = '', $filters = []) {
+    public function getUsersCount($search = '', $filters = [])
+    {
         $sql = "SELECT COUNT(*) as total FROM users WHERE deleted_at IS NULL";
         $params = [];
         $types = '';
-        
+
         if (!empty($search)) {
             $sql .= " AND (username LIKE ? OR email LIKE ? OR first_name LIKE ? OR last_name LIKE ?)";
             $searchTerm = '%' . $search . '%';
             $params = [$searchTerm, $searchTerm, $searchTerm, $searchTerm];
             $types = 'ssss';
         }
-        
+
         if (!empty($filters['status']) && in_array($filters['status'], ['active', 'inactive', 'banned', 'pending'])) {
             $sql .= " AND status = ?";
             $params[] = $filters['status'];
             $types .= 's';
         }
-        
+
         if (!empty($params)) {
             $stmt = $this->mysqli->prepare($sql);
             $stmt->bind_param($types, ...$params);
@@ -1636,7 +1647,7 @@ class UserModel {
         } else {
             $result = $this->mysqli->query($sql);
         }
-        
+
         $row = $result->fetch_assoc();
         return (int)($row['total'] ?? 0);
     }
@@ -1644,7 +1655,7 @@ class UserModel {
     {
         $sql = "
             SELECT
-                u.id, u.username, u.email, u.password, u.first_name, u.last_name, u.gender, u.dob, u.phone, u.alternate_phone, u.address, u.city, u.state, u.country, u.zipcode, u.profile_pic, u.auth_provider, u.role, u.status, u.firebase_uid, u.login_ip, u.login_device, u.last_login, u.password_changed_at, u.created_at, u.updated_at, u.deleted_at,
+                u.id, u.username, u.email, u.password, u.first_name, u.last_name, u.gender, u.dob, u.phone, u.alternate_phone, u.address, u.city, u.state, u.country, u.zipcode, u.profile_pic, u.auth_provider, u.status, u.firebase_uid, u.login_ip, u.login_device, u.last_login, u.password_changed_at, u.created_at, u.updated_at, u.deleted_at,
                 GROUP_CONCAT(DISTINCT r.name ORDER BY r.is_super_admin DESC, r.name ASC) AS roles,
                 MAX(r.is_super_admin) AS is_super_admin
             FROM users u
@@ -1755,7 +1766,7 @@ class UserModel {
             $stmt->bind_param('i', $user['id']);
             $stmt->execute();
             $linkedResult = $stmt->get_result();
-            
+
             $existingProviders = [];
             while ($row = $linkedResult->fetch_assoc()) {
                 $existingProviders[] = $row['provider'];
@@ -1784,7 +1795,6 @@ class UserModel {
                 'account_age' => $this->getAccountAgeInDays($user['created_at']),
                 'conflict_type' => 'account_exists_with_different_credential'
             ];
-
         } catch (Exception $e) {
             logError("UserModel::checkAccountConflict - Exception: " . $e->getMessage());
             return null;
@@ -1858,7 +1868,6 @@ class UserModel {
             }
 
             return ['valid' => true, 'reason' => 'Conflict resolution is safe to proceed'];
-
         } catch (Exception $e) {
             logError("UserModel::validateConflictResolution - Exception: " . $e->getMessage());
             return ['valid' => false, 'reason' => 'Server error during validation'];
@@ -1890,7 +1899,8 @@ class UserModel {
      * @param string $provider OAuth provider (google, facebook, github)
      * @return bool True if provider already linked, false otherwise
      */
-    public function isProviderLinked(int $userId, string $provider): bool {
+    public function isProviderLinked(int $userId, string $provider): bool
+    {
         try {
             // Only check user_linked_accounts table (direct columns google_id/facebook_id/github_id are deprecated)
             $stmt = $this->mysqli->prepare(
@@ -1898,7 +1908,7 @@ class UserModel {
                  WHERE user_id = ? AND provider = ? AND deleted_at IS NULL 
                  LIMIT 1"
             );
-            
+
             if (!$stmt) {
                 logError("UserModel::isProviderLinked - Prepare failed: " . $this->mysqli->error);
                 return false;
@@ -1914,13 +1924,12 @@ class UserModel {
             $result = $stmt->get_result();
             $isLinked = $result->num_rows > 0;
             $stmt->close();
-            
+
             if ($isLinked) {
                 logError("UserModel::isProviderLinked - Provider {$provider} already linked to user {$userId}");
             }
 
             return $isLinked;
-
         } catch (Exception $e) {
             logError("UserModel::isProviderLinked - Exception: " . $e->getMessage());
             return false;
@@ -1932,7 +1941,8 @@ class UserModel {
      * @param int $userId
      * @return array
      */
-    public function getLinkedEmails(int $userId): array {
+    public function getLinkedEmails(int $userId): array
+    {
         try {
             $stmt = $this->mysqli->prepare("
                 SELECT id, user_id, email, is_primary, verified, created_at, verified_at 
@@ -1940,14 +1950,14 @@ class UserModel {
                 WHERE user_id = ? AND deleted_at IS NULL
                 ORDER BY is_primary DESC, created_at DESC
             ");
-            
+
             if (!$stmt) {
                 logError("UserModel::getLinkedEmails - Prepare failed: " . $this->mysqli->error);
                 return [];
             }
 
             $stmt->bind_param('i', $userId);
-            
+
             if (!$stmt->execute()) {
                 logError("UserModel::getLinkedEmails - Execute failed: " . $this->mysqli->error);
                 $stmt->close();
@@ -1956,7 +1966,7 @@ class UserModel {
 
             $result = $stmt->get_result();
             $emails = [];
-            
+
             while ($row = $result->fetch_assoc()) {
                 $emails[] = [
                     'id' => (int)$row['id'],
@@ -1970,7 +1980,6 @@ class UserModel {
 
             $stmt->close();
             return $emails;
-
         } catch (Exception $e) {
             logError("UserModel::getLinkedEmails - Exception: " . $e->getMessage());
             return [];
@@ -1983,10 +1992,11 @@ class UserModel {
      * @param string $email
      * @return array|false Returns email record with token or false on failure
      */
-    public function addRecoveryEmail(int $userId, string $email) {
+    public function addRecoveryEmail(int $userId, string $email)
+    {
         try {
             $email = strtolower(trim($email));
-            
+
             // Validate email
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 logError("UserModel::addRecoveryEmail - Invalid email format: $email");
@@ -1999,14 +2009,14 @@ class UserModel {
                 WHERE user_id = ? AND email = ? AND deleted_at IS NULL
                 LIMIT 1
             ");
-            
+
             if (!$stmt) {
                 logError("UserModel::addRecoveryEmail - Prepare check failed: " . $this->mysqli->error);
                 return false;
             }
 
             $stmt->bind_param('is', $userId, $email);
-            
+
             if (!$stmt->execute()) {
                 logError("UserModel::addRecoveryEmail - Check execute failed: " . $this->mysqli->error);
                 $stmt->close();
@@ -2023,21 +2033,21 @@ class UserModel {
 
             // Generate verification token
             $verificationToken = bin2hex(random_bytes(32));
-            
+
             // Insert new email
             $stmt = $this->mysqli->prepare("
                 INSERT INTO user_recovery_emails 
                 (user_id, email, is_primary, verified, verification_token, created_at) 
                 VALUES (?, ?, 0, 0, ?, NOW())
             ");
-            
+
             if (!$stmt) {
                 logError("UserModel::addRecoveryEmail - Insert prepare failed: " . $this->mysqli->error);
                 return false;
             }
 
             $stmt->bind_param('iss', $userId, $email, $verificationToken);
-            
+
             if (!$stmt->execute()) {
                 logError("UserModel::addRecoveryEmail - Insert execute failed: " . $this->mysqli->error);
                 $stmt->close();
@@ -2053,7 +2063,6 @@ class UserModel {
                 'verification_token' => $verificationToken,
                 'verified' => false
             ];
-
         } catch (Exception $e) {
             logError("UserModel::addRecoveryEmail - Exception: " . $e->getMessage());
             return false;
@@ -2066,7 +2075,8 @@ class UserModel {
      * @param string $email
      * @return bool
      */
-    public function removeRecoveryEmail(int $userId, string $email): bool {
+    public function removeRecoveryEmail(int $userId, string $email): bool
+    {
         try {
             $email = strtolower(trim($email));
 
@@ -2077,14 +2087,14 @@ class UserModel {
                 WHERE user_id = ? AND email = ? AND deleted_at IS NULL
                 LIMIT 1
             ");
-            
+
             if (!$stmt) {
                 logError("UserModel::removeRecoveryEmail - Prepare failed: " . $this->mysqli->error);
                 return false;
             }
 
             $stmt->bind_param('is', $userId, $email);
-            
+
             if (!$stmt->execute()) {
                 logError("UserModel::removeRecoveryEmail - Execute failed: " . $this->mysqli->error);
                 $stmt->close();
@@ -2100,7 +2110,6 @@ class UserModel {
             }
 
             return true;
-
         } catch (Exception $e) {
             logError("UserModel::removeRecoveryEmail - Exception: " . $e->getMessage());
             return false;
@@ -2113,7 +2122,8 @@ class UserModel {
      * @param string $email
      * @return bool
      */
-    public function setPrimaryRecoveryEmail(int $userId, string $email): bool {
+    public function setPrimaryRecoveryEmail(int $userId, string $email): bool
+    {
         try {
             $email = strtolower(trim($email));
 
@@ -2123,14 +2133,14 @@ class UserModel {
                 WHERE user_id = ? AND email = ? AND verified = 1 AND deleted_at IS NULL
                 LIMIT 1
             ");
-            
+
             if (!$stmt) {
                 logError("UserModel::setPrimaryRecoveryEmail - Verify prepare failed: " . $this->mysqli->error);
                 return false;
             }
 
             $stmt->bind_param('is', $userId, $email);
-            
+
             if (!$stmt->execute()) {
                 logError("UserModel::setPrimaryRecoveryEmail - Verify execute failed: " . $this->mysqli->error);
                 $stmt->close();
@@ -2151,7 +2161,7 @@ class UserModel {
                 SET is_primary = 0 
                 WHERE user_id = ? AND deleted_at IS NULL
             ");
-            
+
             if (!$stmt) {
                 logError("UserModel::setPrimaryRecoveryEmail - Clear primary prepare failed: " . $this->mysqli->error);
                 return false;
@@ -2168,14 +2178,14 @@ class UserModel {
                 WHERE user_id = ? AND email = ? AND deleted_at IS NULL
                 LIMIT 1
             ");
-            
+
             if (!$stmt) {
                 logError("UserModel::setPrimaryRecoveryEmail - Set primary prepare failed: " . $this->mysqli->error);
                 return false;
             }
 
             $stmt->bind_param('is', $userId, $email);
-            
+
             if (!$stmt->execute()) {
                 logError("UserModel::setPrimaryRecoveryEmail - Set primary execute failed: " . $this->mysqli->error);
                 $stmt->close();
@@ -2184,7 +2194,6 @@ class UserModel {
 
             $stmt->close();
             return true;
-
         } catch (Exception $e) {
             logError("UserModel::setPrimaryRecoveryEmail - Exception: " . $e->getMessage());
             return false;
@@ -2198,7 +2207,8 @@ class UserModel {
      * @param string $token
      * @return bool
      */
-    public function verifyRecoveryEmail(int $userId, string $email, string $token): bool {
+    public function verifyRecoveryEmail(int $userId, string $email, string $token): bool
+    {
         try {
             $email = strtolower(trim($email));
             $token = trim($token);
@@ -2209,14 +2219,14 @@ class UserModel {
                 WHERE user_id = ? AND email = ? AND verification_token = ? AND verified = 0 AND deleted_at IS NULL
                 LIMIT 1
             ");
-            
+
             if (!$stmt) {
                 logError("UserModel::verifyRecoveryEmail - Prepare failed: " . $this->mysqli->error);
                 return false;
             }
 
             $stmt->bind_param('iss', $userId, $email, $token);
-            
+
             if (!$stmt->execute()) {
                 logError("UserModel::verifyRecoveryEmail - Execute failed: " . $this->mysqli->error);
                 $stmt->close();
@@ -2232,12 +2242,9 @@ class UserModel {
             }
 
             return true;
-
         } catch (Exception $e) {
             logError("UserModel::verifyRecoveryEmail - Exception: " . $e->getMessage());
             return false;
         }
     }
-
 }
-

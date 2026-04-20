@@ -39,7 +39,7 @@ async function _syncFcmTokenAfterBackend(backendResult) {
     if (!userId) return;
     const mod = await import('./messaging.js');
     if (mod && mod.obtainAndSendFCMToken) {
-      await mod.obtainAndSendFCMToken({ requestPermission: false, userId });
+      await mod.obtainAndSendFCMToken({ requestPermission: false, userId, });
     }
   } catch (e) {
     DebugUtils.moduleWarn('auth', 'FCM token sync after backend skipped');
@@ -61,52 +61,52 @@ function getDeviceId() {
 }
 
 export async function syncIdTokenWithBackend(user, options = {}) {
-  if (!user) return { success: false, error: 'missing_user' };
+  if (!user) return { success: false, error: 'missing_user', };
   const provider = normalizeProvider(options.provider);
   const endpoint = options.endpoint || '/api/firebase/signin';
   const deviceId = getDeviceId();
 
   try {
     const idToken = await user.getIdToken(true);
-    const requestBody = { idToken, provider };
-    
+    const requestBody = { idToken, provider, };
+
     // Add device info for new device detection
     if (deviceId) {
       requestBody.device_id = deviceId;
     }
-    
+
     // Get browser info for new device notification
     requestBody.browser = navigator.userAgent;
-    
-    const { ok, status, data, error: _error } = await fetchWithTimeout(endpoint, {
+
+    const { ok, status, data, error: _error, } = await fetchWithTimeout(endpoint, {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
+        'X-Requested-With': 'XMLHttpRequest',
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
     });
 
     const payload = (data && typeof data === 'object') ? data : {};
 
     if (status === 409) {
-      return { success: false, conflict: payload?.conflict || null, status: 409, data: payload };
+      return { success: false, conflict: payload?.conflict || null, status: 409, data: payload, };
     }
 
     if (!ok || payload?.success === false) {
       const errorCode = payload?.error_code || payload?.code || 'signin_failed';
       const errorMessage = payload?.error || payload?.message || 'Sign-in sync failed.';
-      return { success: false, error: errorMessage, error_code: errorCode, status, data: payload };
+      return { success: false, error: errorMessage, error_code: errorCode, status, data: payload, };
     }
 
-    return { success: true, data: payload };
+    return { success: true, data: payload, };
   } catch (err) {
     const isAbortError = String(err?.name || '').toLowerCase() === 'aborterror';
     return {
       success: false,
       error: err?.message || 'signin_exception',
-      error_code: isAbortError ? 'network_timeout' : 'network_request_failed'
+      error_code: isAbortError ? 'network_timeout' : 'network_request_failed',
     };
   }
 }
@@ -123,18 +123,25 @@ export async function signInWithGoogle(options = {}) {
     try {
       const mod = await import('./messaging.js');
       if (mod && mod.obtainAndSendFCMToken && !options.syncWithBackend) {
-        await mod.obtainAndSendFCMToken({ requestPermission: false });
+        await mod.obtainAndSendFCMToken({ requestPermission: false, });
       }
     } catch (e) {
       DebugUtils.moduleWarn('auth', 'FCM token sync after authentication skipped');
     }
     if (options.syncWithBackend) {
-      res.backend = await syncIdTokenWithBackend(res?.user, { provider: 'google', endpoint: options.endpoint });
+      res.backend = await syncIdTokenWithBackend(res?.user, { provider: 'google', endpoint: options.endpoint, });
       await _syncFcmTokenAfterBackend(res.backend);
     }
     return res;
   } catch (err) {
-    DebugUtils.moduleError('auth', 'Authentication failed');
+    const errCode = String(err?.code || err?.errorCode || '').toLowerCase();
+    const isPopupClosed = errCode.includes('popup') && errCode.includes('closed');
+
+    if (isPopupClosed) {
+      DebugUtils.moduleWarn('auth', 'Google sign-in popup was closed by user');
+    } else {
+      DebugUtils.moduleError('auth', `Google authentication failed: ${err?.message || String(err)}`);
+    }
     throw err;
   }
 }
@@ -151,18 +158,25 @@ export async function signInWithFacebook(options = {}) {
     try {
       const mod = await import('./messaging.js');
       if (mod && mod.obtainAndSendFCMToken && !options.syncWithBackend) {
-        await mod.obtainAndSendFCMToken({ requestPermission: false });
+        await mod.obtainAndSendFCMToken({ requestPermission: false, });
       }
     } catch (e) {
       DebugUtils.moduleWarn('auth', 'FCM token sync after authentication skipped');
     }
     if (options.syncWithBackend) {
-      res.backend = await syncIdTokenWithBackend(res?.user, { provider: 'facebook', endpoint: options.endpoint });
+      res.backend = await syncIdTokenWithBackend(res?.user, { provider: 'facebook', endpoint: options.endpoint, });
       await _syncFcmTokenAfterBackend(res.backend);
     }
     return res;
   } catch (err) {
-    DebugUtils.moduleError('auth', 'Authentication failed');
+    const errCode = String(err?.code || err?.errorCode || '').toLowerCase();
+    const isPopupClosed = errCode.includes('popup') && errCode.includes('closed');
+
+    if (isPopupClosed) {
+      DebugUtils.moduleWarn('auth', 'Facebook sign-in popup was closed by user');
+    } else {
+      DebugUtils.moduleError('auth', `Facebook authentication failed: ${err?.message || String(err)}`);
+    }
     throw err;
   }
 }
@@ -179,18 +193,25 @@ export async function signInWithGithub(options = {}) {
     try {
       const mod = await import('./messaging.js');
       if (mod && mod.obtainAndSendFCMToken && !options.syncWithBackend) {
-        await mod.obtainAndSendFCMToken({ requestPermission: false });
+        await mod.obtainAndSendFCMToken({ requestPermission: false, });
       }
     } catch (e) {
       DebugUtils.moduleWarn('auth', 'FCM token sync after authentication skipped');
     }
     if (options.syncWithBackend) {
-      res.backend = await syncIdTokenWithBackend(res?.user, { provider: 'github', endpoint: options.endpoint });
+      res.backend = await syncIdTokenWithBackend(res?.user, { provider: 'github', endpoint: options.endpoint, });
       await _syncFcmTokenAfterBackend(res.backend);
     }
     return res;
   } catch (err) {
-    DebugUtils.moduleError('auth', 'Authentication failed');
+    const errCode = String(err?.code || err?.errorCode || '').toLowerCase();
+    const isPopupClosed = errCode.includes('popup') && errCode.includes('closed');
+
+    if (isPopupClosed) {
+      DebugUtils.moduleWarn('auth', 'GitHub sign-in popup was closed by user');
+    } else {
+      DebugUtils.moduleError('auth', `GitHub authentication failed: ${err?.message || String(err)}`);
+    }
     throw err;
   }
 }
@@ -203,20 +224,20 @@ export async function signInWithRedirectProvider(providerName, _options = {}) {
     provider = new GoogleAuthProvider();
     provider.addScope('email');
     provider.addScope('profile');
-    provider.setCustomParameters({ prompt: 'select_account' });
+    provider.setCustomParameters({ prompt: 'select_account', });
   } else if (normalized === 'facebook') {
     provider = new FacebookAuthProvider();
     provider.addScope('email');
   } else if (normalized === 'github') {
     provider = new GithubAuthProvider();
   } else {
-    throw Object.assign(new Error('Invalid provider for redirect sign-in'), { code: 'auth/invalid-provider' });
+    throw Object.assign(new Error('Invalid provider for redirect sign-in'), { code: 'auth/invalid-provider', });
   }
 
   try {
     await signInWithRedirect(auth, provider);
     // signInWithRedirect triggers a navigation; this function will not resolve with a credential.
-    return { initiated: true };
+    return { initiated: true, };
   } catch (err) {
     DebugUtils.moduleError('auth', 'Redirect sign-in failed');
     throw err;
@@ -245,13 +266,13 @@ export async function signInWithEmail(email, password, options = {}) {
     try {
       const mod = await import('./messaging.js');
       if (mod && mod.obtainAndSendFCMToken && !options.syncWithBackend) {
-        await mod.obtainAndSendFCMToken({ requestPermission: false });
+        await mod.obtainAndSendFCMToken({ requestPermission: false, });
       }
     } catch (e) {
       DebugUtils.moduleWarn('auth', 'FCM token sync after authentication skipped');
     }
     if (options.syncWithBackend) {
-      res.backend = await syncIdTokenWithBackend(res?.user, { provider: 'password', endpoint: options.endpoint });
+      res.backend = await syncIdTokenWithBackend(res?.user, { provider: 'password', endpoint: options.endpoint, });
       await _syncFcmTokenAfterBackend(res.backend);
     }
     return res;
@@ -267,13 +288,13 @@ export async function signUpWithEmail(email, password, displayName = null, optio
     const res = await createUserWithEmailAndPassword(auth, email, password);
     DebugUtils.moduleLog('auth', 'Email sign-up successful');
     if (displayName) {
-      try { await updateProfile(res.user, { displayName }); } catch (e) { }
+      try { await updateProfile(res.user, { displayName, }); } catch (e) { }
     }
     if (options.sendEmailVerification !== false) {
       try { await sendEmailVerification(res.user); } catch (e) { }
     }
     if (options.syncWithBackend) {
-      res.backend = await syncIdTokenWithBackend(res?.user, { provider: 'password', endpoint: options.endpoint });
+      res.backend = await syncIdTokenWithBackend(res?.user, { provider: 'password', endpoint: options.endpoint, });
       await _syncFcmTokenAfterBackend(res.backend);
     }
     return res;
@@ -289,7 +310,7 @@ export async function signInAnonymous(options = {}) {
     const res = await fbSignInAnonymously(auth);
     DebugUtils.moduleLog('auth', 'Anonymous sign-in successful');
     if (options.syncWithBackend) {
-      res.backend = await syncIdTokenWithBackend(res?.user, { provider: 'anonymous', endpoint: options.endpoint });
+      res.backend = await syncIdTokenWithBackend(res?.user, { provider: 'anonymous', endpoint: options.endpoint, });
       await _syncFcmTokenAfterBackend(res.backend);
     }
     return res;
@@ -379,5 +400,5 @@ export default {
   signOutUser,
   onAuthStateChanged,
   getCurrentUser,
-  reauthenticateWithCredential
+  reauthenticateWithCredential,
 };

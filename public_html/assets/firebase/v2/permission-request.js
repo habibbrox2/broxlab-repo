@@ -22,39 +22,39 @@ export function getNotificationPermission() {
  */
 export async function requestNotificationPermission() {
   if (!('Notification' in window)) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       permission: 'unsupported',
-      error: 'Notifications not supported in this browser' 
+      error: 'Notifications not supported in this browser',
     };
   }
-  
+
   const permission = Notification.permission;
-  
+
   if (permission === 'granted') {
-    return { success: true, permission: 'granted' };
+    return { success: true, permission: 'granted', };
   }
-  
+
   if (permission === 'denied') {
-    return { 
-      success: false, 
+    return {
+      success: false,
       permission: 'denied',
-      error: 'Notification permission denied by user' 
+      error: 'Notification permission denied by user',
     };
   }
-  
+
   // Request permission ('default' state)
   try {
     const result = await Notification.requestPermission();
-    return { 
-      success: result === 'granted', 
-      permission: result 
+    return {
+      success: result === 'granted',
+      permission: result,
     };
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       permission: 'error',
-      error: error.message 
+      error: error.message,
     };
   }
 }
@@ -70,15 +70,15 @@ export function showPermissionModal(options = {}) {
   const {
     onGranted = () => {},
     onDenied = () => {},
-    autoShow = true
+    autoShow = true,
   } = options;
-  
+
   // Skip if already granted or denied
   const permission = getNotificationPermission();
   if (permission === 'granted' || permission === 'denied') {
     return;
   }
-  
+
   // Create modal HTML
   const modalHtml = `
     <div class="modal fade" id="permissionRequestModal" tabindex="-1" data-bs-backdrop="static">
@@ -136,18 +136,18 @@ export function showPermissionModal(options = {}) {
       </div>
     </div>
   `;
-  
+
   // Inject modal into DOM if not already present
   if (!document.getElementById('permissionRequestModal')) {
     const container = document.createElement('div');
     container.innerHTML = modalHtml;
     document.body.appendChild(container.firstElementChild);
   }
-  
+
   // Get modal element
   const modalEl = document.getElementById('permissionRequestModal');
   const modal = new bootstrap.Modal(modalEl);
-  
+
   // Event listeners
   document.getElementById('enableBtn').addEventListener('click', async () => {
     const result = await requestNotificationPermission();
@@ -159,23 +159,23 @@ export function showPermissionModal(options = {}) {
       onDenied(result);
     }
   });
-  
+
   document.getElementById('laterBtn').addEventListener('click', () => {
     // Remember user clicked "later" to avoid showing again soon
     sessionStorage.setItem('permissionModalDismissed', Date.now().toString());
   });
-  
+
   // Show modal if not recently dismissed
   if (autoShow) {
     const dismissed = sessionStorage.getItem('permissionModalDismissed');
     const now = Date.now();
     const fiveMinutes = 5 * 60 * 1000;
-    
+
     if (!dismissed || (now - parseInt(dismissed)) > fiveMinutes) {
       modal.show();
     }
   }
-  
+
   return modal;
 }
 
@@ -196,14 +196,14 @@ function showSuccessNotification() {
       </div>
     </div>
   `;
-  
+
   const container = document.createElement('div');
   container.innerHTML = toastHtml;
   document.body.appendChild(container.firstElementChild);
-  
+
   const toast = new bootstrap.Toast(document.getElementById('permissionSuccessToast'));
   toast.show();
-  
+
   // Remove after hide
   document.getElementById('permissionSuccessToast').addEventListener('hidden.bs.toast', () => {
     document.getElementById('permissionSuccessToast').remove();
@@ -218,17 +218,17 @@ export function autoInitializePermissionModal() {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       const permission = getNotificationPermission();
-      
+
       // Only show if permission is not decided yet
       if (permission === 'default') {
-        showPermissionModal({ autoShow: true });
+        showPermissionModal({ autoShow: true, });
       }
     });
   } else {
     // DOM already loaded
     const permission = getNotificationPermission();
     if (permission === 'default') {
-      showPermissionModal({ autoShow: true });
+      showPermissionModal({ autoShow: true, });
     }
   }
 }
@@ -245,7 +245,7 @@ export function showPermissionBanner(options = {}) {
     container = document.body,
     dismissKey = 'permissionBannerDismissed',
     dismissDurationMs = 7 * 24 * 60 * 60 * 1000,
-    showIfDenied = false
+    showIfDenied = false,
   } = options;
 
   const permission = getNotificationPermission();
@@ -380,12 +380,12 @@ export function autoInitializePermissionBanner(options = {}) {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       if (getNotificationPermission() === 'default') {
-        showPermissionBanner({ autoShow: true, ...options });
+        showPermissionBanner({ autoShow: true, ...options, });
       }
     });
   } else {
     if (getNotificationPermission() === 'default') {
-      showPermissionBanner({ autoShow: true, ...options });
+      showPermissionBanner({ autoShow: true, ...options, });
     }
   }
 }
@@ -399,7 +399,7 @@ export function createPermissionButton() {
   btn.className = 'btn btn-outline-primary';
   btn.innerHTML = '<i class="bi bi-bell me-2"></i>পুশ নোটিফিকেশন সক্ষম করুন';
   btn.addEventListener('click', () => {
-    showPermissionModal({ autoShow: false });
+    showPermissionModal({ autoShow: false, });
   });
   return btn;
 }
@@ -410,53 +410,53 @@ export function createPermissionButton() {
 export function updatePermissionStatus() {
   const permission = getNotificationPermission();
   const statusEl = document.getElementById('permissionStatus');
-  
+
   if (!statusEl) return;
-  
+
   let html = '';
-  
+
   switch (permission) {
-    case 'granted':
-      html = `
+  case 'granted':
+    html = `
         <div class="alert alert-success d-flex align-items-center mb-0">
           <i class="bi bi-check-circle-fill me-2"></i>
           <span>পুশ নোটিফিকেশন সক্ষম</span>
         </div>
       `;
-      break;
-    
-    case 'denied':
-      html = `
+    break;
+
+  case 'denied':
+    html = `
         <div class="alert alert-warning d-flex align-items-center mb-0">
           <i class="bi bi-exclamation-triangle-fill me-2"></i>
           <span>পুশ নোটিফিকেশন অক্ষম (ব্রাউজার সেটিংস পরিবর্তন করুন)</span>
         </div>
       `;
-      break;
-    
-    case 'default':
-      html = `
+    break;
+
+  case 'default':
+    html = `
         <button id="permissionEnableBtn" class="btn btn-sm btn-outline-primary w-100" type="button">
           <i class="bi bi-bell me-1"></i>সক্ষম করুন
         </button>
       `;
-      break;
-    
-    default:
-      html = `
+    break;
+
+  default:
+    html = `
         <div class="alert alert-secondary d-flex align-items-center mb-0">
           <i class="bi bi-info-circle me-2"></i>
           <span>এই ব্রাউজারে পুশ নোটিফিকেশন সমর্থিত নয়</span>
         </div>
       `;
   }
-  
+
   statusEl.innerHTML = html;
   if (permission === 'default') {
     const btn = document.getElementById('permissionEnableBtn');
     if (btn) {
       btn.addEventListener('click', () => {
-        showPermissionModal({ autoShow: false });
+        showPermissionModal({ autoShow: false, });
       });
     }
   }
@@ -472,5 +472,5 @@ window.PermissionRequest = {
   getStatus: getNotificationPermission,
   updateStatus: updatePermissionStatus,
   autoInit: autoInitializePermissionModal,
-  autoInitBanner: autoInitializePermissionBanner
+  autoInitBanner: autoInitializePermissionBanner,
 };

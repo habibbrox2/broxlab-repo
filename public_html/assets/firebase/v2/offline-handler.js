@@ -21,7 +21,7 @@ export class OfflineNotificationHandler {
   }
 
   enqueue(item) {
-    this.queue.push({ ts: Date.now(), item });
+    this.queue.push({ ts: Date.now(), item, });
     this._saveQueue();
   }
 
@@ -31,7 +31,7 @@ export class OfflineNotificationHandler {
       const entry = this.queue[0];
       try {
         // Post to canonical server admin send endpoint
-        const { ok } = await fetchWithTimeout('/api/notification/send', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry.item) });
+        const { ok, } = await fetchWithTimeout('/api/notification/send', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify(entry.item), });
         if (!ok) throw new Error('Sync request failed');
         this.queue.shift();
         this._saveQueue();

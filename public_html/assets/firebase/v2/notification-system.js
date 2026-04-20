@@ -10,36 +10,36 @@ const offlineHandler = new OfflineNotificationHandler();
 export async function loadUserNotifications() {
   try {
     await initFirebase();
-    const { ok, status, data } = await fetchJson('/api/user-notifications', { credentials: 'same-origin' });
+    const { ok, status, data, } = await fetchJson('/api/user-notifications', { credentials: 'same-origin', });
     if (!ok) {
       // On server error, queue for retry
       if (status >= 500 || status === 408 || status === 429) {
-        offlineHandler.enqueue({ action: 'load_notifications', ts: Date.now() });
+        offlineHandler.enqueue({ action: 'load_notifications', ts: Date.now(), });
       }
       return [];
     }
     return (data && data.notifications) ? data.notifications : [];
   } catch (e) {
     // Network error - queue for retry
-    offlineHandler.enqueue({ action: 'load_notifications_error', ts: Date.now() });
+    offlineHandler.enqueue({ action: 'load_notifications_error', ts: Date.now(), });
     return [];
   }
 }
 
 export async function markNotificationAsRead(id) {
   try {
-    const { ok, status } = await fetchJson('/api/notification/mark-read', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notification_id: id }) });
+    const { ok, status, } = await fetchJson('/api/notification/mark-read', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify({ notification_id: id, }), });
     if (!ok) {
       // Queue for later retry
       if (status >= 500 || status === 408 || status === 429) {
-        offlineHandler.enqueue({ action: 'mark_read', notification_id: id, ts: Date.now() });
+        offlineHandler.enqueue({ action: 'mark_read', notification_id: id, ts: Date.now(), });
       }
       return false;
     }
     return true;
   } catch (e) {
     // Queue for retry on network error
-    offlineHandler.enqueue({ action: 'mark_read_error', notification_id: id, ts: Date.now() });
+    offlineHandler.enqueue({ action: 'mark_read_error', notification_id: id, ts: Date.now(), });
     return false;
   }
 }
@@ -72,16 +72,16 @@ export const ForegroundNotifications = {
     position: 'top-right',
     playSound: true,
     vibrate: true,
-    soundFile: '/assets/sounds/notification.mp3'
+    soundFile: '/assets/sounds/notification.mp3',
   },
   state: {
     queue: [],
     currentNotifications: 0,
     containerElement: null,
-    audioElement: null
+    audioElement: null,
   },
   init(options = {}) {
-    this.config = { ...this.config, ...options };
+    this.config = { ...this.config, ...options, };
     if (!this.state.containerElement) {
       this.state.containerElement = this._createContainer();
       document.body.appendChild(this.state.containerElement);
@@ -92,7 +92,7 @@ export const ForegroundNotifications = {
     return this;
   },
   show(payload) {
-    const { notification = {}, data = {} } = payload || {};
+    const { notification = {}, data = {}, } = payload || {};
     const title = notification.title || 'Notification';
     const body = notification.body || '';
     const icon = notification.icon || '/assets/logo/icon-192x192.png';
@@ -103,7 +103,7 @@ export const ForegroundNotifications = {
     }
 
     if (this.config.playSound && this.state.audioElement) this._playSound();
-    if (this.config.vibrate && navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    if (this.config.vibrate && navigator.vibrate) navigator.vibrate([200, 100, 200,]);
 
     const toastId = `toast-${Date.now()}`;
     const toastElement = this._createToastElement(toastId, title, body, icon, data.click_action || notification.clickAction);
@@ -113,7 +113,7 @@ export const ForegroundNotifications = {
     if (window.bootstrap?.Toast) {
       const bsToast = new window.bootstrap.Toast(toastElement, {
         autohide: true,
-        delay: this.config.toastDelay
+        delay: this.config.toastDelay,
       });
       toastElement.addEventListener('hidden.bs.toast', () => {
         this.state.currentNotifications -= 1;
@@ -193,7 +193,7 @@ export const ForegroundNotifications = {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
-  }
+  },
 };
 
 if (typeof window !== 'undefined') {
@@ -206,5 +206,5 @@ export default {
   broxLoadNotifications,
   broxMarkNotificationRead,
   MultiDeviceSync,
-  ForegroundNotifications
+  ForegroundNotifications,
 };

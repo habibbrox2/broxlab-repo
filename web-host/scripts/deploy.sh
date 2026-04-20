@@ -4,6 +4,11 @@
 # Full deployment pipeline: Git clone → Dependencies → Build → Deploy → Start services
 # Includes automatic backups, validation, and rollback support
 # Usage: ./deploy.sh [OPTIONS]
+#   --skip-backup       Skip pre-deployment file backup
+#   --skip-db-backup    Skip pre-deployment database backup
+#   --skip-cleanup      Skip post-deployment cleanup
+#   --keep N            Number of releases to keep (default: 5)
+#   --base PATH         Override base directory
 # Exit codes: 0=success, 1=error, 2=validation error
 
 set -euo pipefail
@@ -31,18 +36,21 @@ MIN_DISK_SPACE=2  # 2GB minimum free space
 NODE_ENV="production"
 
 # BroxLab-specific validators
-PHP_MIN_VERSION="8.0"
 NODE_MIN_VERSION="18"
 
 # ============== ARGUMENT PARSING ==============
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --skip-backup) SKIP_BACKUP=true; shift ;;
-        --skip-db-backup) SKIP_DB_BACKUP=true; shift ;;
-        --skip-cleanup) SKIP_CLEANUP=true; shift ;;
-        --keeps) KEEP_RELEASES="$2"; shift 2 ;;
-        --base) BASE="$2"; shift 2 ;;
-        *) echo "Unknown option: $1"; exit 1 ;;
+        --skip-backup)    SKIP_BACKUP=true;         shift ;;
+        --skip-db-backup) SKIP_DB_BACKUP=true;      shift ;;
+        --skip-cleanup)   SKIP_CLEANUP=true;        shift ;;
+        --keep)           KEEP_RELEASES="$2";       shift 2 ;;
+        --base)           BASE="$2";                shift 2 ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [--skip-backup] [--skip-db-backup] [--skip-cleanup] [--keep N] [--base PATH]"
+            exit 1
+            ;;
     esac
 done
 
@@ -54,36 +62,26 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# ============== LOGGING FUNCTIONS ==============
-log_info() {
-    echo -e "${GREEN}[INFO]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOGS/deploy_$DATE.log"
-}
+# ============== LOGGING SETUP ==============
+mkdir -p "$LOGS" "$RELEASES"
+LOG_FILE="$LOGS/deploy_$DATE.log"
 
-log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOGS/deploy_$DATE.log"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOGS/deploy_$DATE.log"
-}
-
-log_debug() {
-    echo -e "${BLUE}[DEBUG]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOGS/deploy_$DATE.log"
-}
-
+log_info()    { echo -e "${GREEN}[INFO]${NC}  $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
+log_warn()    { echo -e "${YELLOW}[WARN]${NC}  $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
+log_error()   { echo -e "${RED}[ERROR]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
+log_debug()   { echo -e "${BLUE}[DEBUG]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
 log_section() {
-    echo -e "${CYAN}" | tee -a "$LOGS/deploy_$DATE.log"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" | tee -a "$LOGS/deploy_$DATE.log"
-    echo -e "  $1${NC}" | tee -a "$LOGS/deploy_$DATE.log"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}" | tee -a "$LOGS/deploy_$DATE.log"
+    echo -e "${CYAN}" | tee -a "$LOG_FILE"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" | tee -a "$LOG_FILE"
+    echo -e "  $1${NC}" | tee -a "$LOG_FILE"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}" | tee -a "$LOG_FILE"
 }
 
 # ============== ERROR HANDLING ==============
-DEPLOYMENT_SUCCESS=false
-
 cleanup_on_error() {
+    local exit_code=$?
     if [[ "$DEPLOYMENT_SUCCESS" == "false" ]]; then
-        log_error "Deployment interrupted"
+        log_error "Deployment interrupted (exit code: $exit_code)"
         if [[ -d "$NEW_RELEASE" ]]; then
             log_info "Cleaning up incomplete release: $NEW_RELEASE"
             rm -rf "$NEW_RELEASE" || true
@@ -91,97 +89,96 @@ cleanup_on_error() {
     fi
 }
 
-trap cleanup_on_error EXIT ERR
+# BUG FIX: Trap only EXIT — trapping ERR separately alongside EXIT with set -e
+# causes the handler to fire twice on errors. EXIT always fires and covers both
+# normal and error exits.
+trap cleanup_on_error EXIT
 
 # ============== INITIALIZATION ==============
-mkdir -p "$LOGS" "$RELEASES"
-
 log_section "BROXLAB DEPLOYMENT PIPELINE STARTED"
-log_info "Deployment: $DATE"
+log_info "Deployment ID: $DATE"
 log_info "Release path: $NEW_RELEASE"
-log_debug "Config: Skip Backup=$SKIP_BACKUP, Skip DB Backup=$SKIP_DB_BACKUP, Keep Releases=$KEEP_RELEASES"
+log_debug "Options: SKIP_BACKUP=$SKIP_BACKUP | SKIP_DB_BACKUP=$SKIP_DB_BACKUP | KEEP_RELEASES=$KEEP_RELEASES"
 
 # ============== PRE-FLIGHT CHECKS ==============
 log_section "PRE-FLIGHT VALIDATION"
 
-# Check disk space
-AVAILABLE_GB=$(df "$SHARED" 2>/dev/null | tail -1 | awk '{print $4 / 1024 / 1024}')
-log_info "Available disk space: ${AVAILABLE_GB%.*}GB (required: ${MIN_DISK_SPACE}GB)"
+# BUG FIX: Original used `bc` for float comparison which may not be installed.
+# Replaced with pure-bash integer arithmetic (KB units from df).
+AVAILABLE_KB=$(df "$BASE" 2>/dev/null | tail -1 | awk '{print $4}')
+REQUIRED_KB=$(( MIN_DISK_SPACE * 1024 * 1024 ))
+AVAILABLE_GB=$(( AVAILABLE_KB / 1024 / 1024 ))
+log_info "Available disk space: ${AVAILABLE_GB}GB (required: ${MIN_DISK_SPACE}GB)"
 
-if (( $(echo "$AVAILABLE_GB < $MIN_DISK_SPACE" | bc -l) )); then
-    log_error "❌ Insufficient disk space (${AVAILABLE_GB%.*}GB < ${MIN_DISK_SPACE}GB)"
-    log_info "Attempting cleanup..."
-    rm -rf ~/.npm/* 2>/dev/null || true
-    AVAILABLE_GB=$(df "$SHARED" 2>/dev/null | tail -1 | awk '{print $4 / 1024 / 1024}')
-    if (( $(echo "$AVAILABLE_GB < $MIN_DISK_SPACE" | bc -l) )); then
-        log_error "Disk space still insufficient after cleanup"
+if [[ "$AVAILABLE_KB" -lt "$REQUIRED_KB" ]]; then
+    log_warn "Insufficient disk space — attempting npm cache cleanup..."
+    npm cache clean --force 2>/dev/null || true
+    AVAILABLE_KB=$(df "$BASE" 2>/dev/null | tail -1 | awk '{print $4}')
+    if [[ "$AVAILABLE_KB" -lt "$REQUIRED_KB" ]]; then
+        log_error "❌ Disk space still insufficient after cleanup (${AVAILABLE_GB}GB < ${MIN_DISK_SPACE}GB)"
         exit 2
-    else
-        log_info "✅ Sufficient space available after cleanup"
     fi
+    log_info "✅ Sufficient space available after cleanup"
 else
     log_info "✅ Disk space check passed"
 fi
 
 # Verify Node.js
-if ! command -v node &> /dev/null; then
+if ! command -v node &>/dev/null; then
     log_error "❌ Node.js not found in PATH"
-    log_info "Install Node.js $NODE_MIN_VERSION or higher using NVM:"
-    log_info "  nvm install $NODE_MIN_VERSION"
-    log_info "  nvm use $NODE_MIN_VERSION"
+    log_info "Install Node.js $NODE_MIN_VERSION+ via NVM: nvm install $NODE_MIN_VERSION && nvm use $NODE_MIN_VERSION"
     exit 2
 fi
 
-NODE_VERSION_CHECK=$(node --version 2>/dev/null | grep -oP '\d+(?=\.)' | head -1 || echo "")
+# BUG FIX: grep -oP is not available on all systems (requires PCRE). Use sed instead.
+NODE_VERSION_CHECK=$(node --version 2>/dev/null | sed 's/v//' | cut -d. -f1)
 if [[ -n "$NODE_VERSION_CHECK" ]] && [[ "$NODE_VERSION_CHECK" -lt "$NODE_MIN_VERSION" ]]; then
-    log_warn "⚠️  Node.js version may be below recommended (required: $NODE_MIN_VERSION+, found: v${NODE_VERSION_CHECK})"
+    log_warn "⚠️  Node.js v${NODE_VERSION_CHECK} is below recommended minimum (v${NODE_MIN_VERSION})"
 fi
-log_info "✅ Node version: $(node -v)"
+log_info "✅ Node.js: $(node -v)"
 
 # Verify npm
-if ! command -v npm &> /dev/null; then
+if ! command -v npm &>/dev/null; then
     log_error "❌ npm not found in PATH"
     exit 2
 fi
-log_info "✅ npm version: $(npm -v)"
+log_info "✅ npm: $(npm -v)"
 
 # ============== DATABASE BACKUP ==============
 if [[ "$SKIP_DB_BACKUP" == "false" ]]; then
     log_section "DATABASE BACKUP"
-    
     DB_BACKUP_SCRIPT="$BASE/scripts/database-backup.sh"
     if [[ -x "$DB_BACKUP_SCRIPT" ]]; then
-        if $DB_BACKUP_SCRIPT 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
+        if "$DB_BACKUP_SCRIPT" 2>&1 | tee -a "$LOG_FILE"; then
             log_info "✅ Database backup completed"
         else
-            log_warn "⚠️  Database backup warning (deployment continues)"
+            log_warn "⚠️  Database backup had warnings — deployment continues"
         fi
     else
-        log_warn "Database backup script not found: $DB_BACKUP_SCRIPT"
+        log_warn "Database backup script not found or not executable: $DB_BACKUP_SCRIPT"
     fi
 else
-    log_info "Database backup skipped (--skip-db-backup specified)"
+    log_info "Database backup skipped (--skip-db-backup)"
 fi
 
 # ============== PRE-DEPLOYMENT BACKUP ==============
 if [[ "$SKIP_BACKUP" == "false" ]] && [[ -L "$CURRENT" ]] && [[ -d "$CURRENT" ]]; then
     log_section "PRE-DEPLOYMENT BACKUP"
-    
     BACKUP_SCRIPT="$BASE/scripts/backup.sh"
     if [[ -x "$BACKUP_SCRIPT" ]]; then
-        if $BACKUP_SCRIPT 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
+        if "$BACKUP_SCRIPT" 2>&1 | tee -a "$LOG_FILE"; then
             log_info "✅ Backup completed"
         else
-            log_warn "⚠️  Backup failed (continuing deployment)"
+            log_warn "⚠️  Backup failed — deployment continues"
         fi
     else
-        log_warn "Backup script not found: $BACKUP_SCRIPT"
+        log_warn "Backup script not found or not executable: $BACKUP_SCRIPT"
     fi
 else
     if [[ "$SKIP_BACKUP" == "true" ]]; then
-        log_info "Release backup skipped (--skip-backup specified)"
+        log_info "Release backup skipped (--skip-backup)"
     else
-        log_info "No current release to backup"
+        log_info "No current release found to back up"
     fi
 fi
 
@@ -189,33 +186,46 @@ fi
 log_section "INITIALIZING SHARED STORAGE"
 
 log_info "Ensuring shared storage directories exist..."
-mkdir -p "$STORAGE"/{uploads,cache,logs,tmp,ocr-temp,sessions} 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
-mkdir -p "$SHARED/backups"/{database,code,logs} 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
-mkdir -p "$LOGS" 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
-chmod -R 755 "$STORAGE" 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
-chmod -R 755 "$SHARED/backups" 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
+mkdir -p \
+    "$STORAGE/uploads" "$STORAGE/cache" "$STORAGE/logs" \
+    "$STORAGE/tmp" "$STORAGE/ocr-temp" "$STORAGE/sessions" \
+    "$SHARED/backups/database" "$SHARED/backups/code" "$SHARED/backups/logs"
+
+chmod -R 755 "$STORAGE" "$SHARED/backups"
+
+# Validate .env
+log_info "Validating .env configuration..."
+if [[ ! -f "$SHARED/.env" ]]; then
+    log_error "❌ CRITICAL: .env not found at $SHARED/.env"
+    log_error "Upload it to the server before deploying."
+    log_error "Required keys: DB_HOST, DB_USER, DB_PASS, DB_NAME, REDIS_HOST, …"
+    exit 1
+fi
+log_info "✅ .env found"
+
 log_info "✅ Shared storage initialized"
 
 # ============== GIT CLONE ==============
 log_section "GIT REPOSITORY CLONE"
 
+mkdir -p "$RELEASES"
 mkdir -p "$NEW_RELEASE"
-log_info "Cloning repository: $GIT_REPO"
+log_info "Cloning: $GIT_REPO"
 
-if git clone --depth=1 "$GIT_REPO" "$NEW_RELEASE" 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
-    log_info "✅ Repository cloned successfully"
-else
+if ! git clone --depth=1 "$GIT_REPO" "$NEW_RELEASE" 2>&1 | tee -a "$LOG_FILE"; then
     log_error "❌ Failed to clone repository"
     rm -rf "$NEW_RELEASE"
     exit 1
 fi
+log_info "✅ Repository cloned"
 
-# Copy deployment helper scripts from cloned repo to server scripts directory
+# Sync helper scripts from repo
 if [[ -d "$NEW_RELEASE/web-host/scripts" ]]; then
     log_debug "Syncing helper scripts from repository..."
     mkdir -p "$BASE/scripts"
-    cp -f "$NEW_RELEASE/web-host/scripts"/*.sh "$BASE/scripts/" 2>&1 || log_warn "⚠️  Failed to sync some scripts"
-    chmod +x "$BASE/scripts"/*.sh 2>&1 || true
+    cp -f "$NEW_RELEASE/web-host/scripts"/*.sh "$BASE/scripts/" 2>/dev/null \
+        || log_warn "⚠️  Some scripts failed to sync"
+    chmod +x "$BASE/scripts"/*.sh 2>/dev/null || true
     log_debug "✅ Helper scripts synchronized"
 fi
 
@@ -224,127 +234,123 @@ cd "$NEW_RELEASE"
 # ============== LINK SHARED FILES ==============
 log_section "LINKING SHARED RESOURCES"
 
-log_info "Creating symlinks to shared configuration and storage..."
-
-# Create necessary directories in new release
 mkdir -p Config storage public_html
 
-# Create symlinks for configuration
+# .env symlinks
 ln -sfn "$SHARED/.env" .env
 ln -sfn "$SHARED/.env" "Config/.env"
 
-# Create symlinks for Firebase config
+# Firebase config (try both known locations)
 if [[ -f "$SHARED/Config/broxlab-firebase.json" ]]; then
     ln -sfn "$SHARED/Config/broxlab-firebase.json" "Config/broxlab-firebase.json"
 elif [[ -f "$SHARED/broxlab-firebase.json" ]]; then
     ln -sfn "$SHARED/broxlab-firebase.json" "Config/broxlab-firebase.json"
+else
+    log_warn "broxlab-firebase.json not found in shared — Firebase features may be unavailable"
 fi
 
-# Create storage symlinks (shared directories created in INITIALIZE SHARED STORAGE phase)
-ln -sfn "$STORAGE/uploads" "public_html/uploads"
-ln -sfn "$STORAGE/cache" "storage/cache"
-ln -sfn "$STORAGE/logs" "storage/logs"
-ln -sfn "$STORAGE/tmp" "storage/tmp"
-ln -sfn "$STORAGE/ocr-temp" "storage/ocr-temp"
-ln -sfn "$STORAGE/sessions" "storage/sessions"
+# Storage symlinks
+ln -sfn "$STORAGE/uploads"   "public_html/uploads"
+ln -sfn "$STORAGE/cache"     "storage/cache"
+ln -sfn "$STORAGE/logs"      "storage/logs"
+ln -sfn "$STORAGE/tmp"       "storage/tmp"
+ln -sfn "$STORAGE/ocr-temp"  "storage/ocr-temp"
+ln -sfn "$STORAGE/sessions"  "storage/sessions"
 
 log_info "✅ Shared resources linked"
 
 # ============== DEPENDENCY INSTALLATION ==============
 log_section "INSTALLING DEPENDENCIES"
 
-# PHP/Composer
+# --- PHP / Composer ---
 log_info "Installing PHP dependencies..."
 
-# Check for composer
-COMPOSER_CMD="composer"
-if ! command -v composer &> /dev/null; then
-    # Try to find composer in shared location
-    if [[ -f "$SHARED/composer" ]]; then
-        COMPOSER_CMD="$SHARED/composer"
-        log_debug "Using composer from shared: $COMPOSER_CMD"
-    elif [[ -f "$SHARED/composer.phar" ]]; then
-        COMPOSER_CMD="php $SHARED/composer.phar"
-        log_debug "Using composer.phar from shared: $COMPOSER_CMD"
-    elif [[ -f "./composer.phar" ]]; then
-        COMPOSER_CMD="php ./composer.phar"
-        log_debug "Using local composer.phar"
-    else
-        # Try to download composer if available
-        log_warn "⚠️  Composer not found, attempting to download..."
-        if command -v curl &> /dev/null; then
-            mkdir -p "$SHARED"
-            curl -s https://getcomposer.org/installer | php -- --install-dir="$SHARED" --filename=composer 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
-            if [[ -f "$SHARED/composer" ]]; then
-                COMPOSER_CMD="$SHARED/composer"
-                log_info "✅ Composer downloaded successfully"
-            else
-                log_error "❌ Failed to download composer and no local composer found"
-                exit 1
-            fi
-        else
-            log_error "❌ Composer not found and curl not available to download it"
-            exit 1
+COMPOSER_CMD=""
+if command -v composer &>/dev/null; then
+    COMPOSER_CMD="composer"
+elif [[ -f "$SHARED/composer" ]]; then
+    COMPOSER_CMD="$SHARED/composer"
+elif [[ -f "$SHARED/composer.phar" ]]; then
+    COMPOSER_CMD="php $SHARED/composer.phar"
+elif [[ -f "./composer.phar" ]]; then
+    COMPOSER_CMD="php ./composer.phar"
+else
+    log_warn "⚠️  Composer not found — attempting download..."
+    if command -v curl &>/dev/null; then
+        mkdir -p "$SHARED"
+        curl -sS https://getcomposer.org/installer \
+            | php -- --install-dir="$SHARED" --filename=composer 2>&1 | tee -a "$LOG_FILE"
+        if [[ -f "$SHARED/composer" ]]; then
+            COMPOSER_CMD="$SHARED/composer"
+            log_info "✅ Composer downloaded"
         fi
     fi
 fi
 
-# Install PHP dependencies
-if $COMPOSER_CMD install --no-dev --optimize-autoloader -q 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
-    log_info "✅ PHP dependencies installed"
-else
-    log_error "❌ Composer install failed"
+if [[ -z "$COMPOSER_CMD" ]]; then
+    log_error "❌ Composer not available and could not be downloaded"
     exit 1
 fi
 
-# Node.js
-log_info "Installing Node.js dependencies..."
-npm ci 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || {
-    log_warn "⚠️  npm ci failed, trying npm install..."
-    npm install 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
-}
-log_info "✅ Node dependencies installed"
+# BUG FIX: Split COMPOSER_CMD before use — quoting a string with embedded
+# spaces as a single variable causes "command not found" when it contains
+# `php ./composer.phar`. Use eval or an array.
+if ! eval "$COMPOSER_CMD install --no-dev --optimize-autoloader -q" 2>&1 | tee -a "$LOG_FILE"; then
+    log_error "❌ Composer install failed"
+    exit 1
+fi
+log_info "✅ PHP dependencies installed"
+
+# --- Node.js ---
+log_info "Installing Node.js dependencies (devDependencies included for tsx)..."
+# IMPORTANT: tsx lives in devDependencies and is required for TypeScript compilation.
+if ! env NODE_ENV= npm ci --include=dev 2>&1 | tee -a "$LOG_FILE"; then
+    log_warn "⚠️  npm ci failed — falling back to npm install --legacy-peer-deps..."
+    if ! env NODE_ENV= npm install --legacy-peer-deps 2>&1 | tee -a "$LOG_FILE"; then
+        log_error "❌ Failed to install Node.js dependencies"
+        exit 1
+    fi
+fi
+log_info "✅ Node.js dependencies installed"
 
 # ============== ASSET BUILD ==============
 log_section "BUILDING ASSETS"
 
 if [[ -f "package.json" ]]; then
     log_info "Building for $NODE_ENV..."
-    
     if [[ "$NODE_ENV" == "production" ]]; then
-        npm run build:prod 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || {
-            log_error "Production build failed"
+        if ! npm run build:prod 2>&1 | tee -a "$LOG_FILE"; then
+            log_error "❌ Production build failed"
             exit 1
-        }
+        fi
     else
-        npm run build 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || {
-            log_error "Development build failed"
+        if ! npm run build 2>&1 | tee -a "$LOG_FILE"; then
+            log_error "❌ Development build failed"
             exit 1
-        }
+        fi
     fi
-    
-    # Validate assets were built
+
     if [[ -d "public_html/assets/js/dist" ]]; then
         ASSET_COUNT=$(find public_html/assets/js/dist -name "*.js" 2>/dev/null | wc -l || echo 0)
-        log_info "✅ Assets built successfully ($ASSET_COUNT JS files)"
+        log_info "✅ Assets built ($ASSET_COUNT JS files)"
     else
-        log_warn "⚠️  Asset directory not found, continuing..."
+        log_warn "⚠️  Asset dist directory not found — continuing"
     fi
 fi
 
 # ============== PHP SYNTAX VALIDATION ==============
-log_info "Validating PHP code..."
-if command -v php &> /dev/null; then
+log_info "Validating PHP syntax..."
+if command -v php &>/dev/null; then
     PHP_ERROR_COUNT=0
     while IFS= read -r php_file; do
-        if ! php -l "$php_file" > /dev/null 2>&1; then
-            log_error "PHP syntax error: $php_file"
-            PHP_ERROR_COUNT=$((PHP_ERROR_COUNT + 1))
+        if ! php -l "$php_file" >/dev/null 2>&1; then
+            log_error "PHP syntax error in: $php_file"
+            PHP_ERROR_COUNT=$(( PHP_ERROR_COUNT + 1 ))
         fi
     done < <(find app/ Config/ -name "*.php" -type f 2>/dev/null)
-    
+
     if [[ $PHP_ERROR_COUNT -gt 0 ]]; then
-        log_error "$PHP_ERROR_COUNT PHP files have syntax errors"
+        log_error "❌ $PHP_ERROR_COUNT PHP file(s) have syntax errors — aborting"
         exit 1
     fi
     log_info "✅ PHP syntax validation passed"
@@ -355,27 +361,30 @@ log_section "VERSION MANAGEMENT"
 
 VERSION_FILE="$SHARED/version.json"
 
-# Create/update version.json
-if [[ -f "$VERSION_FILE" ]]; then
-    CURRENT_VERSION=$(jq -r '.version' "$VERSION_FILE" 2>/dev/null || echo "v1.0.0")
-    MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1 | sed 's/v//')
-    MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
-    PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
+if [[ -f "$VERSION_FILE" ]] && command -v jq &>/dev/null; then
+    CURRENT_VERSION=$(jq -r '.version // "v1.0.0"' "$VERSION_FILE" 2>/dev/null || echo "v1.0.0")
+    MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1 | sed 's/v//')
+    MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+    PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
     NEW_VERSION="v${MAJOR}.${MINOR}.$((PATCH + 1))"
 else
+    CURRENT_VERSION="v0.0.0"
     NEW_VERSION="v1.0.0"
-    cat > "$VERSION_FILE" << EOF
+fi
+
+# BUG FIX: version.json was only written when the file didn't exist. Now always
+# written so deployed_at and release_name stay current after every deploy.
+cat > "$VERSION_FILE" <<EOF
 {
-    "version": "v1.0.0",
+    "version": "$NEW_VERSION",
+    "previous_version": "$CURRENT_VERSION",
     "deployed_at": "$DATE",
     "release_name": "$DATE",
     "status": "active"
 }
 EOF
-fi
 
 log_info "Version: $CURRENT_VERSION → $NEW_VERSION"
-log_debug "Deployment info saved to: $VERSION_FILE"
 
 # ============== SWITCH SYMLINK ==============
 log_section "SWITCHING DEPLOYMENT"
@@ -384,113 +393,226 @@ log_info "Switching current symlink to new release..."
 ln -sfn "$NEW_RELEASE" "$CURRENT"
 
 VERIFY_LINK=$(readlink "$CURRENT")
-if [[ "$VERIFY_LINK" == "$NEW_RELEASE" ]]; then
-    log_info "✅ Symlink switched successfully: $CURRENT → $NEW_RELEASE"
-else
-    log_error "❌ Failed to switch symlink: $CURRENT does not point to $NEW_RELEASE"
-    log_debug "Current symlink points to: $VERIFY_LINK"
+if [[ "$VERIFY_LINK" != "$NEW_RELEASE" ]]; then
+    log_error "❌ Symlink verification failed: $CURRENT → $VERIFY_LINK (expected $NEW_RELEASE)"
+    exit 1
+fi
+log_info "✅ Symlink switched: $CURRENT → $NEW_RELEASE"
+
+# --- public_html symlink ---
+PUBLIC_HTML_BASE="$BASE/public_html"
+PUBLIC_HTML_TARGET="$CURRENT/public_html"
+
+if [[ ! -d "$PUBLIC_HTML_TARGET" ]]; then
+    log_error "❌ public_html not found in release: $PUBLIC_HTML_TARGET"
     exit 1
 fi
 
-# Create public_html symlink for web server
-log_info "Linking public_html directory for web server..."
-if [[ -d "$CURRENT/public_html" ]]; then
-    PUBLIC_HTML_BASE="$BASE/public_html"
-    mkdir -p "$(dirname "$PUBLIC_HTML_BASE")"
-    ln -sfn "$CURRENT/public_html" "$PUBLIC_HTML_BASE"
-    log_debug "✅ public_html symlink created: $PUBLIC_HTML_BASE → $CURRENT/public_html"
-else
-    log_warn "⚠️  public_html directory not found in release"
+if [[ -L "$PUBLIC_HTML_BASE" ]]; then
+    rm -f "$PUBLIC_HTML_BASE" || { log_error "❌ Cannot remove old public_html symlink"; exit 1; }
+elif [[ -d "$PUBLIC_HTML_BASE" ]]; then
+    log_warn "Directory exists at $PUBLIC_HTML_BASE — backing up..."
+    mv "$PUBLIC_HTML_BASE" "${PUBLIC_HTML_BASE}.backup_$DATE" \
+        || { log_error "❌ Failed to back up existing public_html"; exit 1; }
 fi
 
-# Reload PHP-FPM to clear cached PHP processes from old release
-log_info "Reloading PHP-FPM (clearing cached processes)..."
-if command -v systemctl &> /dev/null 2>&1; then
-    systemctl reload php-fpm 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || {
-        log_warn "⚠️  systemctl reload php-fpm failed (may not be available in this environment)"
-    }
-elif command -v php-fpm &> /dev/null; then
-    php-fpm -t 2>&1 | tee -a "$LOGS/deploy_$DATE.log"
-    killall -HUP php-fpm 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || true
-    log_debug "✅ PHP-FPM signaled for reload"
+ln -sfn "$PUBLIC_HTML_TARGET" "$PUBLIC_HTML_BASE"
+if [[ ! -L "$PUBLIC_HTML_BASE" ]]; then
+    log_error "❌ Failed to create public_html symlink"
+    exit 1
+fi
+log_info "✅ public_html symlink: $PUBLIC_HTML_BASE → $(readlink "$PUBLIC_HTML_BASE")"
+
+# --- PHP-FPM reload ---
+log_info "Reloading PHP-FPM..."
+if command -v systemctl &>/dev/null; then
+    # BUG FIX: Original ran both the outer check and the reload in a single
+    # compound command without proper error separation, which could silently
+    # swallow failures. Split into two clear steps.
+    if systemctl is-active --quiet php-fpm 2>/dev/null; then
+        systemctl reload php-fpm 2>&1 | tee -a "$LOG_FILE" || \
+            log_warn "⚠️  php-fpm reload failed via systemctl"
+    else
+        log_debug "php-fpm service not active — skipping reload"
+    fi
+elif command -v php-fpm &>/dev/null; then
+    php-fpm -t 2>&1 | tee -a "$LOG_FILE"
+    killall -HUP php-fpm 2>/dev/null || true
+    log_debug "✅ PHP-FPM signaled via HUP"
 else
-    log_debug "PHP-FPM reload skipped (not installed)"
+    log_debug "PHP-FPM not found — skipping reload"
 fi
 
-# ============== SERVICE RESTART & START ==============
+# ============== SERVICE RESTART ==============
 log_section "STARTING SERVICES"
 
-log_info "Restarting Node.js services..."
-if command -v pm2 &> /dev/null; then
-    # Start or restart PM2 services
-    npm run all:start 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || {
-        log_warn "⚠️  Service start failed, this may be normal for first deploy"
-    }
-    sleep 2
-    pm2 save 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || true
-    pm2 list 2>&1 | grep -E "broxlab|ai-assistant|scraper" | tee -a "$LOGS/deploy_$DATE.log" || true
-    log_info "✅ Services started"
-else
-    log_warn "⚠️  PM2 not available, services may need manual start"
+# ============== AGGRESSIVE PORT CLEANUP - BATTLE TESTED ==============
+# Kill old service processes and wait for port cleanup
+# This is more aggressive because ports 3000-3003 MUST be free
+
+log_info "Killing old service processes..."
+
+# Step 1: Kill npm process running nodes:start (parent of all services)
+if pgrep -f "npm.*nodes:start" >/dev/null 2>&1; then
+    log_info "  • Found npm nodes:start process, killing..."
+    pkill -9 -f "npm.*nodes:start" 2>/dev/null || true
 fi
 
-# Reload PHP-FPM if running as web server
-if command -v systemctl &> /dev/null; then
-    systemctl is-active --quiet php-fpm && systemctl reload php-fpm 2>&1 | tee -a "$LOGS/deploy_$DATE.log" || true
+# Step 2: Kill service-manager service (can spawn multiple processes)
+if pgrep -f "node.*service-manager" >/dev/null 2>&1; then
+    log_info "  • Found service-manager processes, killing..."
+    pkill -9 -f "node.*service-manager" 2>/dev/null || true
 fi
 
-log_info "✅ Service restart completed"
+# Step 3: Kill by individual service name
+for service in reverse-proxy broxlab-node notification-websocket; do
+    if pgrep -f "$service" >/dev/null 2>&1; then
+        log_info "  • Found $service process, killing..."
+        pkill -9 -f "$service" 2>/dev/null || true
+    fi
+done
+
+# Step 4: Kill any other node processes listening on our ports
+if command -v fuser &>/dev/null; then
+    for port in 3000 3001 3002 3003; do
+        if fuser ${port}/tcp &>/dev/null 2>&1; then
+            log_info "  • Killing process on port $port..."
+            fuser -k ${port}/tcp 2>/dev/null || true
+        fi
+    done
+fi
+
+# Step 5: Wait longer for TCP TIME_WAIT to expire and ports to be truly free
+log_info "Waiting 5 seconds for ports to be released..."
+sleep 5
+
+# Step 6: Verify at least one port is free (as sanity check)
+PORT_STATUS="unknown"
+if command -v lsof &>/dev/null; then
+    PORTS_USED=$(lsof -i :3000-3003 2>/dev/null | wc -l)
+    if [[ $PORTS_USED -lt 2 ]]; then
+        PORT_STATUS="free"
+    else
+        PORT_STATUS="in_use"
+    fi
+elif command -v netstat &>/dev/null; then
+    PORTS_USED=$(netstat -tln 2>/dev/null | grep -E ":3000|:3001|:3002|:3003" | wc -l)
+    if [[ $PORTS_USED -lt 2 ]]; then
+        PORT_STATUS="free"
+    else
+        PORT_STATUS="in_use"
+    fi
+fi
+
+if [[ "$PORT_STATUS" == "in_use" ]]; then
+    log_warn "⚠️  Some ports still in use, attempting final cleanup..."
+    # Last resort: kill ALL node processes
+    pkill -9 node 2>/dev/null || true
+    log_warn "  Killed all node processes"
+    sleep 5
+fi
+
+log_info "✅ Port cleanup complete, proceeding with service startup"
+
+log_info "Starting Node services..."
+cd "$NEW_RELEASE" || exit 1
+nohup npm run nodes:start > "$LOGS/service-manager_$DATE.log" 2>&1 &
+SERVICE_MANAGER_PID=$!
+log_info "✅ Service manager started (PID: $SERVICE_MANAGER_PID)"
+
+log_info "Waiting 10 seconds for services to start..."
+sleep 10
+
+log_info "Verifying services are running..."
+MAX_RETRIES=6
+RETRY_COUNT=0
+SERVICES_FOUND=0
+
+while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
+    SERVICES_FOUND=$(ps aux | grep -E "reverse-proxy|broxlab-node|notification-websocket" | grep -v grep | wc -l)
+    
+    if [[ $SERVICES_FOUND -ge 3 ]]; then
+        log_info "✅ All services verified running ($SERVICES_FOUND processes found)"
+        ps aux | grep -E "reverse-proxy|broxlab-node|notification-websocket" | grep -v grep | sed 's/^/    /' | tee -a "$LOG_FILE"
+        break
+    fi
+    
+    RETRY_COUNT=$(( RETRY_COUNT + 1 ))
+    if [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; then
+        log_warn "⚠️  Only $SERVICES_FOUND/3 services running — retry $RETRY_COUNT/$MAX_RETRIES"
+        sleep 3
+    fi
+done
+
+if [[ $SERVICES_FOUND -lt 3 ]]; then
+    log_error "❌ Services failed to start ($SERVICES_FOUND/3 found after $MAX_RETRIES retries)"
+    log_error ""
+    log_error "=== Service Manager Log ==="
+    tail -150 "$LOGS/service-manager_$DATE.log" | tee -a "$LOG_FILE"
+    log_error ""
+    log_error "=== Service Error Logs ==="
+    for log in "$STORAGE/logs"/*-error.log; do
+        [[ -f "$log" ]] && {
+            log_error "--- $(basename "$log") ---"
+            tail -50 "$log" | tee -a "$LOG_FILE"
+        }
+    done
+    log_error ""
+    log_error "Deployment failed - could not start services"
+    exit 1
+fi
+
+log_info "✅ Services started successfully"
+
+log_info "✅ Services started successfully"
+# Mark deployment as successful so cleanup errors won't trigger rollback
+DEPLOYMENT_SUCCESS=true
 
 # ============== POST-DEPLOYMENT CLEANUP ==============
 if [[ "$SKIP_CLEANUP" == "false" ]]; then
     log_section "POST-DEPLOYMENT CLEANUP"
-    
-    # Remove broken symlinks in old releases to prevent error_log attempts
-    log_info "Cleaning up old release symlinks..."
-    find "$RELEASES" -maxdepth 2 -type l -xtype l 2>/dev/null | while read broken_link; do
-        log_debug "Removing broken symlink: $broken_link"
-        rm -f "$broken_link" 2>/dev/null || true
+
+    # Remove broken symlinks in old releases
+    find "$RELEASES" -maxdepth 2 -type l -xtype l 2>/dev/null | while read -r broken; do
+        log_debug "Removing broken symlink: $broken"
+        rm -f "$broken" 2>/dev/null || true
     done
-    
+
     CLEANUP_SCRIPT="$BASE/scripts/cleanup.sh"
     if [[ -x "$CLEANUP_SCRIPT" ]]; then
-        if $CLEANUP_SCRIPT --releases $KEEP_RELEASES 2>&1 | tee -a "$LOGS/deploy_$DATE.log"; then
+        if "$CLEANUP_SCRIPT" --releases "$KEEP_RELEASES" 2>&1 | tee -a "$LOG_FILE"; then
             log_info "✅ Cleanup completed"
         else
-            log_warn "⚠️  Cleanup failed (non-blocking)"
+            log_warn "⚠️  Cleanup had errors (non-blocking)"
         fi
     else
-        log_warn "Cleanup script not found"
+        log_warn "Cleanup script not found or not executable: $CLEANUP_SCRIPT"
     fi
 else
-    log_info "Cleanup skipped (--skip-cleanup specified)"
+    log_info "Cleanup skipped (--skip-cleanup)"
 fi
 
 # ============== DEPLOYMENT SUMMARY ==============
-log_section "DEPLOYMENT COMPLETED SUCCESS"
-
-# ============== DEPLOYMENT SUMMARY ==============
+# BUG FIX: log_section was called twice back-to-back (duplicate section header).
+# Removed the first erroneous call.
 log_section "DEPLOYMENT COMPLETED SUCCESSFULLY ✅"
 
 echo ""
 log_info "╔════════════════════════════════════════════════════════════╗"
 log_info "║      ✅ BROXLAB DEPLOYMENT COMPLETED SUCCESSFULLY         ║"
 log_info "╠════════════════════════════════════════════════════════════╣"
-log_info "║ Release ID: $(basename $NEW_RELEASE)"
-log_info "║ Deployment: $DATE"
-log_info "║ Environment: $NODE_ENV"
+log_info "║ Release ID:   $DATE"
+log_info "║ Version:      $CURRENT_VERSION → $NEW_VERSION"
+log_info "║ Environment:  $NODE_ENV"
 log_info "╚════════════════════════════════════════════════════════════╝"
 echo ""
-
-log_info "📋 Deployment Information:"
-log_info "  • Base Directory: $BASE"
-log_info "  • Current Release: $(readlink $CURRENT 2>/dev/null || echo 'N/A')"
-log_info "  • Shared Storage: $STORAGE"
-log_info "  • Logs: $LOGS/deploy_$DATE.log"
+log_info "📋 Deployment details:"
+log_info "  • Base:           $BASE"
+log_info "  • Current release: $(readlink "$CURRENT" 2>/dev/null || echo 'N/A')"
+log_info "  • Shared storage: $STORAGE"
+log_info "  • Log:            $LOG_FILE"
 log_info ""
+log_info "✅ Finished at $(date '+%Y-%m-%d %H:%M:%S')"
+log_info "📝 Next: verify the deployment and monitor logs"
 
-log_info "✅ Deployment finished at $(date '+%Y-%m-%d %H:%M:%S')"
-log_info "📝 Next: Verify deployment and monitor logs"
-
-DEPLOYMENT_SUCCESS=true
 exit 0

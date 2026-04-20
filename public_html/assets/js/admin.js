@@ -3,12 +3,11 @@
  * Handles sidebar toggling and responsive behaviors
  */
 
-import { initSidebar } from './modules/sidebar.js';
 import {
   initAdminNotificationRuntime,
   initAdminUserDropdownSync,
   initAdminDebugUtils,
-  initAdminUnifiedLogout,
+  initAdminUnifiedLogout
 } from './modules/notifications.js';
 import { initPasswordModals } from './modules/security.js';
 import { initPresetAutoSelector } from './modules/preset-selector.js';
@@ -17,17 +16,17 @@ import { runWhenReady } from './modules/utils.js';
 // Constants
 const DESKTOP_WIDTH = 992;
 const MINI_EXPANDED_CLASS = 'admin-sidebar-mini-expanded';
-const MOBILE_OPEN_CLASS = 'sidebar-mobile-open';
 const MINI_STORAGE_KEY = 'adminSidebarMini';
 const SIDEBAR_WIDTH_KEY = 'adminSidebarWidth';
 const MIN_SIDEBAR_WIDTH = 200;
 const MAX_SIDEBAR_WIDTH = 600;
 const DEFAULT_SIDEBAR_WIDTH = 300;
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
   'use strict';
 
   const sidebar = document.querySelector('.sidebar');
+  const overlay = document.querySelector('.sidebar-overlay');
   const sidebarToggles = document.querySelectorAll('.sidebar-toggle');
   const sidebarMiniToggle = document.querySelector('.sidebar-mini-toggle');
   const adminShellRow = document.querySelector('.admin-shell-row');
@@ -35,7 +34,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const sidebarResizer = document.getElementById('adminColumnResizer');
 
   // Initialize modules
-  initSidebar();
   initAdminNotificationRuntime();
   runWhenReady(initAdminUserDropdownSync);
   initAdminDebugUtils();
@@ -173,18 +171,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const syncMobileSidebarState = () => {
       const isMobile = window.innerWidth < DESKTOP_WIDTH;
       const isOpen = sidebar.classList.contains('show');
-      document.body.classList.toggle(MOBILE_OPEN_CLASS, isMobile && isOpen);
+      document.body.classList.toggle('admin-sidebar-open', isMobile && isOpen);
     };
 
     const toggleSidebar = () => {
       sidebar.classList.toggle('show');
-      overlay.classList.toggle('show');
+      if (overlay) overlay.classList.toggle('show');
       syncMobileSidebarState();
     };
 
     const closeSidebar = () => {
       sidebar.classList.remove('show');
-      overlay.classList.remove('show');
+      if (overlay) overlay.classList.remove('show');
       syncMobileSidebarState();
     };
 
@@ -251,14 +249,13 @@ document.addEventListener('DOMContentLoaded', function () {
       if (window.innerWidth < 992) {
         document.body.classList.remove('admin-sidebar-mini');
         document.body.classList.remove(MINI_EXPANDED_CLASS);
-        document.body.classList.remove(MOBILE_OPEN_CLASS);
         resetSidebarWidth();
         if (sidebarMiniToggle) {
           sidebarMiniToggle.setAttribute('aria-expanded', 'false');
         }
         return;
       }
-      const shouldEnable = forceState !== null ? !!forceState : readMiniState();
+      const shouldEnable = forceState !== null ? Boolean(forceState) : readMiniState();
       document.body.classList.toggle('admin-sidebar-mini', shouldEnable);
       if (!shouldEnable) {
         document.body.classList.remove(MINI_EXPANDED_CLASS);
@@ -275,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const isDesktop = () => window.innerWidth >= DESKTOP_WIDTH;
     const isMiniMode = () => document.body.classList.contains('admin-sidebar-mini');
     const setMiniExpanded = (expanded) => {
-      const shouldExpand = !!expanded && isDesktop() && isMiniMode();
+      const shouldExpand = Boolean(expanded) && isDesktop() && isMiniMode();
       document.body.classList.toggle(MINI_EXPANDED_CLASS, shouldExpand);
       if (sidebarMiniToggle) {
         sidebarMiniToggle.setAttribute('aria-expanded', shouldExpand ? 'true' : 'false');
@@ -285,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function () {
     applyMiniSidebarState();
 
     if (sidebarMiniToggle) {
-      sidebarMiniToggle.addEventListener('click', function (e) {
+      sidebarMiniToggle.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         const nextState = !document.body.classList.contains('admin-sidebar-mini');
@@ -412,25 +409,25 @@ document.addEventListener('DOMContentLoaded', function () {
     // Desktop mini-sidebar behavior:
     // Hover/focus on sidebar => expand to full
     // Click/focus outside sidebar => collapse back to mini
-    sidebar.addEventListener('mouseenter', function () {
+    sidebar.addEventListener('mouseenter', () => {
       if (isDesktop() && isMiniMode()) {
         setMiniExpanded(true);
       }
     });
 
-    sidebar.addEventListener('focusin', function () {
+    sidebar.addEventListener('focusin', () => {
       if (isDesktop() && isMiniMode()) {
         setMiniExpanded(true);
       }
     });
 
-    sidebar.addEventListener('mouseleave', function () {
+    sidebar.addEventListener('mouseleave', () => {
       if (isDesktop() && isMiniMode()) {
         setMiniExpanded(false);
       }
     });
 
-    document.addEventListener('pointerdown', function (event) {
+    document.addEventListener('pointerdown', (event) => {
       if (!isDesktop() || !isMiniMode()) return;
       const target = event.target;
       if (sidebar.contains(target)) return;
@@ -438,7 +435,7 @@ document.addEventListener('DOMContentLoaded', function () {
       setMiniExpanded(false);
     });
 
-    document.addEventListener('focusin', function (event) {
+    document.addEventListener('focusin', (event) => {
       if (!isDesktop() || !isMiniMode()) return;
       const target = event.target;
       if (sidebar.contains(target)) return;
@@ -446,7 +443,7 @@ document.addEventListener('DOMContentLoaded', function () {
       setMiniExpanded(false);
     });
 
-    document.addEventListener('keydown', function (event) {
+    document.addEventListener('keydown', (event) => {
       if (
         event.key === 'Escape' &&
         window.innerWidth < DESKTOP_WIDTH &&
@@ -462,8 +459,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Toggle sidebar on click
-    sidebarToggles.forEach(function (toggle) {
-      toggle.addEventListener('click', function (e) {
+    sidebarToggles.forEach((toggle) => {
+      toggle.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation(); // Prevent document click from immediately closing it
         toggleSidebar();
@@ -472,29 +469,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Close sidebar on button click (Mobile)
     const closeBtns = document.querySelectorAll('.sidebar-close');
-    closeBtns.forEach(function (btn) {
+    closeBtns.forEach((btn) => {
       btn.addEventListener('click', closeSidebar);
     });
 
     // Close sidebar when clicking on overlay
-    overlay.addEventListener('click', closeSidebar);
+    if (overlay) overlay.addEventListener('click', closeSidebar);
 
     // Close sidebar on outside click in mobile view.
-    document.addEventListener('click', function (event) {
+    document.addEventListener('click', (event) => {
       if (window.innerWidth >= DESKTOP_WIDTH) return;
       if (!sidebar.classList.contains('show')) return;
 
       const target = event.target;
       if (!(target instanceof Element)) return;
       if (sidebar.contains(target)) return;
-      if (overlay.contains(target)) return;
+      if (overlay && overlay.contains(target)) return;
       if (Array.from(sidebarToggles).some((toggle) => toggle.contains(target))) return;
 
       closeSidebar();
     });
 
     // Handle window resize: remove .show class if switching to desktop view
-    window.addEventListener('resize', function () {
+    window.addEventListener('resize', () => {
       if (window.innerWidth >= 992 && sidebar.classList.contains('show')) {
         closeSidebar();
       }
@@ -507,8 +504,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Close sidebar when a menu link is clicked (Mobile)
     const menuLinks = sidebar.querySelectorAll('a.list-group-item:not([data-bs-toggle])');
-    menuLinks.forEach(function (link) {
-      link.addEventListener('click', function () {
+    menuLinks.forEach((link) => {
+      link.addEventListener('click', () => {
         if (window.innerWidth < 992) {
           closeSidebar();
         }
@@ -526,7 +523,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const el = document.getElementById(id);
         if (el) {
           try {
-            const bs = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
+            const bs = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false, });
             bs.show();
           } catch (e) {
             // ignore if bootstrap not available yet
@@ -536,11 +533,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Track show/hide events
       collapses.forEach((c) => {
-        c.addEventListener('shown.bs.collapse', function () {
+        c.addEventListener('shown.bs.collapse', () => {
           openSet.add(c.id);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(openSet)));
         });
-        c.addEventListener('hidden.bs.collapse', function () {
+        c.addEventListener('hidden.bs.collapse', () => {
           openSet.delete(c.id);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(openSet)));
         });
@@ -555,7 +552,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const collapses = Array.from(sidebar.querySelectorAll('.collapse[id]'));
       const persistSingleOpen = (id) => {
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(id ? [id] : []));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(id ? [id,] : []));
         } catch (err) {
           // Ignore storage failures.
         }
@@ -563,7 +560,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const hideCollapse = (el) => {
         if (!el || !el.classList.contains('show')) return;
         try {
-          bootstrap.Collapse.getOrCreateInstance(el, { toggle: false }).hide();
+          bootstrap.Collapse.getOrCreateInstance(el, { toggle: false, }).hide();
         } catch (err) {
           el.classList.remove('show');
         }
@@ -578,17 +575,17 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       collapses.forEach((current) => {
-        current.addEventListener('show.bs.collapse', function () {
+        current.addEventListener('show.bs.collapse', () => {
           collapses.forEach((other) => {
             if (other !== current) hideCollapse(other);
           });
         });
 
-        current.addEventListener('shown.bs.collapse', function () {
+        current.addEventListener('shown.bs.collapse', () => {
           persistSingleOpen(current.id);
         });
 
-        current.addEventListener('hidden.bs.collapse', function () {
+        current.addEventListener('hidden.bs.collapse', () => {
           const active = collapses.find((el) => el.classList.contains('show'));
           persistSingleOpen(active ? active.id : null);
         });
@@ -618,7 +615,7 @@ runWhenReady(() => {
       ? runWhenReady
       : (fn) => {
         if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', fn, { once: true });
+          document.addEventListener('DOMContentLoaded', fn, { once: true, });
         } else {
           fn();
         }
@@ -650,7 +647,7 @@ runWhenReady(() => {
     }
   };
   const escapeHtml = (text) => {
-    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;', };
     return String(text ?? '').replace(/[&<>"']/g, (char) => map[char]);
   };
 
@@ -792,7 +789,7 @@ runWhenReady(() => {
             return;
           }
           try {
-            const q = new URLSearchParams({ slug: slug });
+            const q = new URLSearchParams({ slug: slug, });
             if (excludeId) q.set('exclude_id', String(excludeId));
             const res = await fetch(`/api/services/check-slug?${q.toString()}`);
             const data = await res.json();
@@ -1056,11 +1053,11 @@ runWhenReady(() => {
       const isChangeForm = inputId.includes('change');
       const prefix = isChangeForm ? 'changePwd' : 'pwd';
 
-      const lengthCheck = byId(prefix + 'Length');
-      const upperCheck = byId(prefix + 'Upper');
-      const lowerCheck = byId(prefix + 'Lower');
-      const numberCheck = byId(prefix + 'Number');
-      const specialCheck = byId(prefix + 'Special');
+      const lengthCheck = byId(`${prefix }Length`);
+      const upperCheck = byId(`${prefix }Upper`);
+      const lowerCheck = byId(`${prefix }Lower`);
+      const numberCheck = byId(`${prefix }Number`);
+      const specialCheck = byId(`${prefix }Special`);
 
       if (lengthCheck) lengthCheck.classList.toggle('valid', password.length >= 8);
       if (upperCheck) upperCheck.classList.toggle('valid', /[A-Z]/.test(password));
@@ -1229,7 +1226,7 @@ runWhenReady(() => {
 
     let currentPage = 1;
     let perPage = 50;
-    let currentSort = { by: 'created_at', order: 'DESC' };
+    const currentSort = { by: 'created_at', order: 'DESC', };
     let totalRecords = 0;
     let totalPages = 1;
     let activityEnabled = tbody.dataset.activityEnabled === 'true';
@@ -1285,7 +1282,7 @@ runWhenReady(() => {
     function renderLog(log) {
       const time = new Date(log.created_at).toLocaleString();
       const statusClass = log.status === 'success' ? 'bg-success' : 'bg-danger';
-      const username = log.username || '#' + (log.user_id || '0');
+      const username = log.username || `#${ log.user_id || '0'}`;
       let browserInfo = 'Unknown';
       if (log.details && log.details._browser) browserInfo = log.details._browser;
       else if (log.user_agent) browserInfo = parseBrowserInfo(log.user_agent);
@@ -1312,14 +1309,14 @@ runWhenReady(() => {
     function showLogDetailsModal(log) {
       const time = new Date(log.created_at).toLocaleString();
       const statusClass = log.status === 'success' ? 'bg-success' : 'bg-danger';
-      const username = log.username || '#' + (log.user_id || '0');
+      const username = log.username || `#${ log.user_id || '0'}`;
       byId('modalLogId').textContent = log.id;
       byId('modalLogTime').textContent = time;
       byId('modalLogUser').textContent = username;
       byId('modalLogRole').textContent = log.role;
       byId('modalLogAction').textContent = log.action;
       byId('modalLogResource').textContent =
-        (log.resource_type || 'N/A') + ' #' + (log.resource_id || 'N/A');
+        `${log.resource_type || 'N/A' } #${ log.resource_id || 'N/A'}`;
       byId('modalLogStatus').innerHTML = `<span class="badge ${statusClass}">${log.status}</span>`;
       byId('modalLogIp').textContent = log.ip_address || 'N/A';
       byId('modalLogAgent').textContent = log.user_agent || 'N/A';
@@ -1421,7 +1418,7 @@ runWhenReady(() => {
       fetchLogs(1);
     });
 
-    ['searchBox', 'filterStatus', 'filterUser', 'filterResource'].forEach((id) => {
+    ['searchBox', 'filterStatus', 'filterUser', 'filterResource',].forEach((id) => {
       byId(id)?.addEventListener('change', () => {
         currentPage = 1;
         fetchLogs(1);
@@ -1449,7 +1446,7 @@ runWhenReady(() => {
       const user = byId('filterUser')?.value?.trim() || '';
       const resource = byId('filterResource')?.value?.trim() || '';
 
-      const params = new URLSearchParams({ format });
+      const params = new URLSearchParams({ format, });
       if (q) params.set('q', q);
       if (status) params.set('status', status);
       if (user) params.set('user_id', user);
@@ -1485,12 +1482,12 @@ runWhenReady(() => {
       try {
         const res = await fetch('/api/log-activity/toggle', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-          body: JSON.stringify({ enabled: target }),
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
+          body: JSON.stringify({ enabled: target, }),
         });
         const data = await res.json();
         if (data.success) {
-          activityEnabled = !!data.enabled;
+          activityEnabled = Boolean(data.enabled);
           byId('toggleActivityLabel').textContent = activityEnabled
             ? 'Activity: ON'
             : 'Activity: OFF';
@@ -1569,15 +1566,15 @@ runWhenReady(() => {
         .then((r) => r.json())
         .then((data) => {
           if (data.success) {
-            byId('previewSubject').innerHTML = '<strong>' + escapeHtml(data.subject) + '</strong>';
+            byId('previewSubject').innerHTML = `<strong>${ escapeHtml(data.subject) }</strong>`;
             byId('previewBody').innerHTML = data.body;
             showToast('Preview updated successfully', 'success');
           } else {
-            showToast('Preview failed: ' + data.message, 'danger');
+            showToast(`Preview failed: ${ data.message}`, 'danger');
           }
         })
         .catch((err) => {
-          showToast('Error: ' + err, 'danger');
+          showToast(`Error: ${ err}`, 'danger');
           console.error('Preview error:', err);
         })
         .finally(() => {
@@ -1601,7 +1598,7 @@ runWhenReady(() => {
       }
       fetch(`${getAdminDir()}/email-templates/${id}/delete`, {
         method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        headers: { 'X-Requested-With': 'XMLHttpRequest', },
       })
         .then((r) => r.json())
         .then((data) => {
@@ -1612,7 +1609,7 @@ runWhenReady(() => {
             showToast(data.message, 'danger');
           }
         })
-        .catch((err) => showToast('Error: ' + err, 'danger'));
+        .catch((err) => showToast(`Error: ${ err}`, 'danger'));
     };
   }
 
@@ -1632,7 +1629,7 @@ runWhenReady(() => {
 
   function initMediaUpload() {
     loadAdminModule('mediaUpload')
-      .then((mediaUpload) => mediaUpload.initMediaUpload({ byId }))
+      .then((mediaUpload) => mediaUpload.initMediaUpload({ byId, }))
       .catch((error) => logModuleError('mediaUpload', error));
   }
 
@@ -1665,7 +1662,7 @@ runWhenReady(() => {
     const csrf = getCsrfToken();
 
     function submitAction(url, body) {
-      return fetch(url, { method: 'POST', body }).then((r) => r.json());
+      return fetch(url, { method: 'POST', body, }).then((r) => r.json());
     }
 
     window.approveApplication = function (appId) {
@@ -1760,8 +1757,8 @@ runWhenReady(() => {
       if (!confirm('Revert application status to pending?')) return;
       fetch(`/api/admin/applications/${appId}/status`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-        body: JSON.stringify({ status: 'pending' }),
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, },
+        body: JSON.stringify({ status: 'pending', }),
       })
         .then((r) => r.json())
         .then((data) => {
@@ -1783,7 +1780,7 @@ runWhenReady(() => {
     const submitBtn = settingsRoot.querySelector('button[type="submit"]');
 
     document.querySelectorAll('.form-control, .form-select, .form-check-input').forEach((input) => {
-      input.addEventListener('change', function () {
+      input.addEventListener('change', () => {
         if (submitBtn) submitBtn.classList.add('btn-warning');
       });
     });
@@ -1791,7 +1788,7 @@ runWhenReady(() => {
     const logoUpload = byId('siteLogoUpload');
     const logoPreview = byId('logoPreview');
     if (logoUpload && logoPreview) {
-      logoUpload.addEventListener('change', function (event) {
+      logoUpload.addEventListener('change', (event) => {
         const file = event.target.files?.[0];
         if (!file) return;
         const url = URL.createObjectURL(file);
@@ -1804,7 +1801,7 @@ runWhenReady(() => {
     const faviconUpload = byId('faviconUpload');
     const faviconPreview = byId('faviconPreview');
     if (faviconUpload && faviconPreview) {
-      faviconUpload.addEventListener('change', function (event) {
+      faviconUpload.addEventListener('change', (event) => {
         const file = event.target.files?.[0];
         if (!file) return;
         const url = URL.createObjectURL(file);
@@ -1813,7 +1810,7 @@ runWhenReady(() => {
       });
     }
 
-    byId('removeLogoBtn')?.addEventListener('click', function () {
+    byId('removeLogoBtn')?.addEventListener('click', () => {
       if (!confirm('Remove site logo? This will clear the saved logo.')) return;
       const hidden = byId('remove_site_logo');
       if (hidden) hidden.value = '1';
@@ -1822,7 +1819,7 @@ runWhenReady(() => {
 
     const testEmailBtn = byId('sendTestEmailBtn');
     if (testEmailBtn) {
-      testEmailBtn.addEventListener('click', async function () {
+      testEmailBtn.addEventListener('click', async () => {
         const recipient = byId('testEmailRecipient')?.value || '';
         const action = `${adminPath}/app-settings/send-test-email-ajax`;
 
@@ -1834,13 +1831,13 @@ runWhenReady(() => {
           const resp = await fetch(action, {
             method: 'POST',
             credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ test_email: recipient }),
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', },
+            body: new URLSearchParams({ test_email: recipient, }),
           });
           const data = await resp.json();
           showTestEmailModal(data.success, data.message || 'No response');
         } catch (err) {
-          showTestEmailModal(false, 'Request failed: ' + (err.message || err));
+          showTestEmailModal(false, `Request failed: ${ err.message || err}`);
         } finally {
           testEmailBtn.disabled = false;
           testEmailBtn.textContent = originalText;
@@ -1876,7 +1873,7 @@ runWhenReady(() => {
       const msgEl = modalEl.querySelector('#testEmailModalMessage');
       if (msgEl) {
         msgEl.textContent = message;
-        msgEl.classList.toggle('text-success', !!success);
+        msgEl.classList.toggle('text-success', Boolean(success));
         msgEl.classList.toggle('text-danger', !success);
       }
 
@@ -1886,7 +1883,7 @@ runWhenReady(() => {
 
     const save2faAdminBtn = byId('save2faAdminBtn');
     if (save2faAdminBtn) {
-      save2faAdminBtn.addEventListener('click', function () {
+      save2faAdminBtn.addEventListener('click', () => {
         const isRequired = byId('require2faAdmin')?.checked;
         const btn = save2faAdminBtn;
         const originalText = btn.innerHTML;
@@ -1921,7 +1918,7 @@ runWhenReady(() => {
               tabPane?.insertBefore(alertDiv, tabPane.firstChild);
               bootstrap.Modal.getInstance(byId('require2faAdminModal'))?.hide();
             } else {
-              alert('Error: ' + data.message);
+              alert(`Error: ${ data.message}`);
             }
           })
           .catch(() => {
@@ -1957,7 +1954,7 @@ runWhenReady(() => {
         return;
       }
       const formData = new FormData(byId('importForm'));
-      fetch('/admin/app-settings/security/import', { method: 'POST', body: formData })
+      fetch('/admin/app-settings/security/import', { method: 'POST', body: formData, })
         .then((res) => res.json())
         .then((data) => {
           bootstrap.Modal.getInstance(byId('importModal'))?.hide();
@@ -1969,7 +1966,7 @@ runWhenReady(() => {
           }
         })
         .catch((err) => {
-          showAlert('Import error: ' + err.message, 'danger');
+          showAlert(`Import error: ${ err.message}`, 'danger');
         });
     });
 
@@ -1978,7 +1975,7 @@ runWhenReady(() => {
       modal.show();
     });
 
-    byId('resetConfirmation')?.addEventListener('input', function (e) {
+    byId('resetConfirmation')?.addEventListener('input', (e) => {
       const confirmBtn = byId('confirmReset');
       if (confirmBtn) confirmBtn.disabled = e.target.value !== 'RESET_ALL_SETTINGS';
     });
@@ -1987,7 +1984,7 @@ runWhenReady(() => {
       const formData = new FormData();
       formData.append('csrf_token', csrfToken);
       formData.append('confirm', 'RESET_ALL_SETTINGS');
-      fetch('/admin/app-settings/security/reset', { method: 'POST', body: formData })
+      fetch('/admin/app-settings/security/reset', { method: 'POST', body: formData, })
         .then((res) => res.json())
         .then((data) => {
           bootstrap.Modal.getInstance(byId('resetModal'))?.hide();
@@ -1999,7 +1996,7 @@ runWhenReady(() => {
           }
         })
         .catch((err) => {
-          showAlert('Reset error: ' + err.message, 'danger');
+          showAlert(`Reset error: ${ err.message}`, 'danger');
         });
     });
 
@@ -2026,14 +2023,14 @@ runWhenReady(() => {
         formData.append('value', value);
         this.disabled = true;
         const originalText = this.innerHTML;
-        fetch('/admin/app-settings/security/update', { method: 'POST', body: formData })
+        fetch('/admin/app-settings/security/update', { method: 'POST', body: formData, })
           .then((res) => res.json())
           .then((data) => {
             if (data.success) showAlert(data.message, 'success');
             else showAlert(data.message || 'Save failed', 'danger');
           })
           .catch((err) => {
-            showAlert('Error: ' + err.message, 'danger');
+            showAlert(`Error: ${ err.message}`, 'danger');
           })
           .finally(() => {
             this.disabled = false;
@@ -2052,7 +2049,7 @@ runWhenReady(() => {
     });
 
     document.querySelectorAll('.reset-single-setting').forEach((btn) => {
-      btn.addEventListener('click', function () {
+      btn.addEventListener('click', () => {
         location.reload();
       });
     });
@@ -2090,25 +2087,25 @@ runWhenReady(() => {
 
   function initRbacUserRoles() {
     loadAdminModule('rbacUsers')
-      .then((rbacUsers) => rbacUsers.initRbacUserRoles({ byId }))
+      .then((rbacUsers) => rbacUsers.initRbacUserRoles({ byId, }))
       .catch((error) => logModuleError('rbacUsers', error));
   }
 
   function initSecurity2FASetup() {
     loadAdminModule('security2fa')
-      .then((security2fa) => security2fa.initSecurity2FASetup({ byId }))
+      .then((security2fa) => security2fa.initSecurity2FASetup({ byId, }))
       .catch((error) => logModuleError('security2fa', error));
   }
 
   function initSecurity2FABackup() {
     loadAdminModule('security2fa')
-      .then((security2fa) => security2fa.initSecurity2FABackup({ byId, getCsrfToken }))
+      .then((security2fa) => security2fa.initSecurity2FABackup({ byId, getCsrfToken, }))
       .catch((error) => logModuleError('security2fa', error));
   }
 
   function initSecurity2FA() {
     loadAdminModule('security2fa')
-      .then((security2fa) => security2fa.initSecurity2FA({ byId, getCsrfToken }))
+      .then((security2fa) => security2fa.initSecurity2FA({ byId, getCsrfToken, }))
       .catch((error) => logModuleError('security2fa', error));
   }
 
@@ -2120,7 +2117,7 @@ runWhenReady(() => {
 
   function initUsersEditUser() {
     loadAdminModule('rbacUsers')
-      .then((rbacUsers) => rbacUsers.initUsersEditUser({ byId }))
+      .then((rbacUsers) => rbacUsers.initUsersEditUser({ byId, }))
       .catch((error) => logModuleError('rbacUsers', error));
   }
 
@@ -2164,7 +2161,7 @@ runWhenReady(() => {
     const removeIconBtn = byId('removeIconBtn');
 
     iconUploadBtn?.addEventListener('click', () => iconUploadInput?.click());
-    iconUploadInput?.addEventListener('change', function (e) {
+    iconUploadInput?.addEventListener('change', (e) => {
       const file = e.target.files?.[0];
       if (file && file.type.startsWith('image/')) {
         const reader = new FileReader();
@@ -2176,7 +2173,7 @@ runWhenReady(() => {
         reader.readAsDataURL(file);
       }
     });
-    removeIconBtn?.addEventListener('click', function () {
+    removeIconBtn?.addEventListener('click', () => {
       if (iconUploadInput) iconUploadInput.value = '';
       if (iconInput) iconInput.value = '';
       iconPreviewContainer?.classList.add('d-none');
@@ -2196,7 +2193,7 @@ runWhenReady(() => {
 
           const reader = new FileReader();
           reader.onload = function (event) {
-            const previewId = 'preview-' + Date.now() + '-' + index;
+            const previewId = `preview-${ Date.now() }-${ index}`;
             const fileKey = `${file.name}::${file.size}::${file.lastModified}`;
             const previewHTML = `
                             <div class="col-md-6 col-lg-12 col-xl-6 mb-3" id="${previewId}-container" data-file-key="${fileKey}">
@@ -2240,24 +2237,24 @@ runWhenReady(() => {
     };
 
     dropZone?.addEventListener('click', () => imageUploadInput?.click());
-    dropZone?.addEventListener('dragover', function (e) {
+    dropZone?.addEventListener('dragover', (e) => {
       e.preventDefault();
       e.stopPropagation();
       dropZone.classList.add('border-primary', 'bg-primary-subtle');
     });
-    dropZone?.addEventListener('dragleave', function (e) {
+    dropZone?.addEventListener('dragleave', (e) => {
       e.preventDefault();
       e.stopPropagation();
       dropZone.classList.remove('border-primary', 'bg-primary-subtle');
     });
-    dropZone?.addEventListener('drop', function (e) {
+    dropZone?.addEventListener('drop', (e) => {
       e.preventDefault();
       e.stopPropagation();
       dropZone.classList.remove('border-primary', 'bg-primary-subtle');
       const files = e.dataTransfer.files;
       handleImageFiles(files);
     });
-    imageUploadInput?.addEventListener('change', function (e) {
+    imageUploadInput?.addEventListener('change', (e) => {
       handleImageFiles(e.target.files);
     });
 
@@ -2265,7 +2262,7 @@ runWhenReady(() => {
       btn.closest('.row')?.remove();
     };
 
-    byId('addMetadataBtn')?.addEventListener('click', function () {
+    byId('addMetadataBtn')?.addEventListener('click', () => {
       const html = `
                 <div class="row g-2 mb-2 align-items-center">
                     <div class="col-md-5">
@@ -2288,7 +2285,7 @@ runWhenReady(() => {
       btn.closest('.form-field-item')?.remove();
     };
 
-    byId('addFormFieldBtn')?.addEventListener('click', function () {
+    byId('addFormFieldBtn')?.addEventListener('click', () => {
       const html = `
                 <div class="admin-panel-card mb-2 border form-field-item">
                     <div class="card-body p-3">
@@ -2342,7 +2339,7 @@ runWhenReady(() => {
     };
 
     const serviceForm = byId('serviceForm');
-    serviceForm?.addEventListener('submit', async function (e) {
+    serviceForm?.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const editor = window.editor_content;
@@ -2426,14 +2423,14 @@ runWhenReady(() => {
         const endpoint = formData.get('service_id')
           ? '/admin/services/update'
           : '/admin/services/create';
-        const response = await fetch(endpoint, { method: 'POST', body: formData });
+        const response = await fetch(endpoint, { method: 'POST', body: formData, });
         const data = await response.json();
         if (data.success) {
           window.showMessage?.(data.message || 'Service saved successfully!', 'success');
           setTimeout(
             () =>
-            (window.location.href =
-              '/admin/services/details/' + (data.service_id || formData.get('service_id'))),
+              (window.location.href =
+              `/admin/services/details/${ data.service_id || formData.get('service_id')}`),
             2000
           );
         } else {
@@ -2460,10 +2457,10 @@ runWhenReady(() => {
       });
     });
 
-    byId('confirmDelete')?.addEventListener('click', function () {
+    byId('confirmDelete')?.addEventListener('click', () => {
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = '/admin/services/details/' + deleteServiceId + '/delete';
+      form.action = `/admin/services/details/${ deleteServiceId }/delete`;
       form.innerHTML = `<input type="hidden" name="csrf_token" value="${csrfToken}">`;
       document.body.appendChild(form);
       form.submit();
@@ -2560,7 +2557,7 @@ runWhenReady(() => {
     }
 
     function getPriorityBadgeClass(priority) {
-      const classes = { low: 'bg-secondary', normal: 'bg-info', high: 'bg-danger' };
+      const classes = { low: 'bg-secondary', normal: 'bg-info', high: 'bg-danger', };
       return classes[priority] || 'bg-secondary';
     }
 
@@ -2649,14 +2646,14 @@ runWhenReady(() => {
                 </div>
 
                 ${app.status === 'rejected' && app.rejection_reason
-          ? `
+    ? `
                     <div class="alert alert-danger rounded-2">
                         <strong>Rejection Reason:</strong>
                         <p class="mb-0">${app.rejection_reason}</p>
                     </div>
                 `
-          : ''
-        }
+    : ''
+  }
 
                 <div class="mb-3">
                     <label class="form-label small text-muted text-uppercase">Admin Notes</label>
@@ -2664,28 +2661,28 @@ runWhenReady(() => {
                 </div>
 
                 ${app.status === 'rejected'
-          ? `
+    ? `
                     <div class="mb-3">
                         <label class="form-label small text-muted text-uppercase">Rejection Reason</label>
                         <input type="text" class="form-control rounded-2" id="appRejectionReason" value="${app.rejection_reason || ''}">
                     </div>
                 `
-          : ''
-        }
+    : ''
+  }
 
                 <div class="mt-4">
                     <h6 class="fw-bold mb-2">Audit Log</h6>
                     <div class="timeline small">
                         ${app.audit_log
-          .map(
-            (log) => `
+    .map(
+      (log) => `
                             <div class="mb-2">
                                 <div class="text-muted"><small>${new Date(log.created_at).toLocaleString()}</small></div>
                                 <div><strong>${log.action_type}</strong>: ${log.description}</div>
                             </div>
                         `
-          )
-          .join('')}
+    )
+    .join('')}
                     </div>
                 </div>
             `;
@@ -2745,16 +2742,16 @@ runWhenReady(() => {
     try {
       const notificationSystem = await import('/assets/firebase/v2/dist/notification-system.js');
       const analytics = await import('/assets/firebase/v2/dist/analytics.js');
-      return { notificationSystem, analytics };
+      return { notificationSystem, analytics, };
     } catch (e) {
-      return { notificationSystem: null, analytics: null };
+      return { notificationSystem: null, analytics: null, };
     }
   }
 
   async function initNotificationsList() {
     const hasAction = document.querySelector('[data-action="resend-notification"]');
     if (!hasAction) return;
-    const { notificationSystem, analytics } = await initNotificationModuleHelpers();
+    const { notificationSystem, analytics, } = await initNotificationModuleHelpers();
     const showSuccess = notificationSystem?.showSuccess || window.showSuccess || window.showMessage;
     const showError = notificationSystem?.showError || window.showError || window.showMessage;
     const trackResend = analytics?.trackAdminNotificationResend;
@@ -2764,10 +2761,10 @@ runWhenReady(() => {
       if (!button) return;
       const notificationId = parseInt(button.dataset.notificationId, 10);
       if (Number.isNaN(notificationId)) return;
-      fetch(`/api/notification/resend`, {
+      fetch('/api/notification/resend', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-        body: JSON.stringify({ notification_id: notificationId, channels: ['push'] }),
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
+        body: JSON.stringify({ notification_id: notificationId, channels: ['push',], }),
       })
         .then((r) => r.json())
         .then((data) => {
@@ -2776,7 +2773,7 @@ runWhenReady(() => {
             showSuccess?.(data.message || 'Notification resent');
             location.reload();
           } else {
-            showError?.('? Error: ' + (data.error || 'Unknown error'));
+            showError?.(`? Error: ${ data.error || 'Unknown error'}`);
           }
         })
         .catch((err) => showError?.(err.message || 'Error resending'));
@@ -2788,7 +2785,7 @@ runWhenReady(() => {
     if (!dataEl) return;
     const notificationId = parseInt(dataEl.dataset.notificationId || '0', 10);
     if (!notificationId) return;
-    const { notificationSystem, analytics } = await initNotificationModuleHelpers();
+    const { notificationSystem, analytics, } = await initNotificationModuleHelpers();
     const showSuccess = notificationSystem?.showSuccess || window.showSuccess || window.showMessage;
     const showError = notificationSystem?.showError || window.showError || window.showMessage;
     const showInfo = notificationSystem?.showInfo || window.showInfo || window.showMessage;
@@ -2799,8 +2796,8 @@ runWhenReady(() => {
       try {
         const response = await fetch('/api/notification/resend', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-          body: JSON.stringify({ notification_id: notificationId, channels: ['push'] }),
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
+          body: JSON.stringify({ notification_id: notificationId, channels: ['push',], }),
         });
         const data = await response.json();
         if (data.success) {
@@ -2808,11 +2805,11 @@ runWhenReady(() => {
           showSuccess?.(data.message || 'Notification resent');
           location.reload();
         } else {
-          showError?.('Error: ' + (data.error || 'Unknown error'));
+          showError?.(`Error: ${ data.error || 'Unknown error'}`);
         }
       } catch (error) {
         console.error('Error:', error);
-        showError?.('Error: ' + error.message);
+        showError?.(`Error: ${ error.message}`);
       }
     }
 
@@ -2970,7 +2967,7 @@ runWhenReady(() => {
       if (!confirm('Do you want to delete this notification?')) return;
       fetch(`/api/notification/${notifId}`, {
         method: 'DELETE',
-        headers: { 'X-CSRF-Token': getCsrfToken() },
+        headers: { 'X-CSRF-Token': getCsrfToken(), },
       })
         .then((res) => res.json())
         .then((data) => {
@@ -3039,7 +3036,7 @@ runWhenReady(() => {
                             </tr>
                         `;
           });
-          html += `</tbody></table>`;
+          html += '</tbody></table>';
           list.innerHTML = html;
         } else {
           list.innerHTML = `
@@ -3074,7 +3071,7 @@ runWhenReady(() => {
         })
         .catch((err) => {
           console.error('Error:', err);
-          showError?.('Error: ' + err.message);
+          showError?.(`Error: ${ err.message}`);
         });
     }
 
@@ -3083,8 +3080,8 @@ runWhenReady(() => {
       try {
         const response = await fetch('/api/notification/delete-draft', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-          body: JSON.stringify({ draft_id: draftId }),
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
+          body: JSON.stringify({ draft_id: draftId, }),
         });
         const data = await response.json();
         if (data.success) {
@@ -3095,7 +3092,7 @@ runWhenReady(() => {
         }
       } catch (error) {
         console.error('Error:', error);
-        showError?.('Error: ' + error.message);
+        showError?.(`Error: ${ error.message}`);
       }
     }
 
@@ -3104,8 +3101,8 @@ runWhenReady(() => {
       try {
         const response = await fetch('/api/notification/send-draft', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-          body: JSON.stringify({ draft_id: draftId }),
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
+          body: JSON.stringify({ draft_id: draftId, }),
         });
         const data = await response.json();
         if (data.success) {
@@ -3115,11 +3112,11 @@ runWhenReady(() => {
             window.location.href = `/admin/notifications/view?id=${data.notification_id}`;
           }, 1500);
         } else {
-          showError?.('Error: ' + (data.error || 'Unknown error'));
+          showError?.(`Error: ${ data.error || 'Unknown error'}`);
         }
       } catch (error) {
         console.error('Error:', error);
-        showError?.('Error: ' + error.message);
+        showError?.(`Error: ${ error.message}`);
       }
     }
 
@@ -3132,13 +3129,13 @@ runWhenReady(() => {
         type: byId('editType').value,
         action_url: byId('editActionUrl').value,
         recipient_type: byId('editRecipientType').value,
-        channels: ['push'],
+        channels: ['push',],
         recipient_ids: [],
       };
       try {
         const response = await fetch('/api/notification/update-draft', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
           body: JSON.stringify(data),
         });
         const result = await response.json();
@@ -3150,7 +3147,7 @@ runWhenReady(() => {
           showError?.('Failed to update draft');
         }
       } catch (error) {
-        showError?.('Error: ' + error.message);
+        showError?.(`Error: ${ error.message}`);
       }
     }
 
@@ -3180,7 +3177,7 @@ runWhenReady(() => {
   async function initNotificationsDashboardRealtime() {
     if (!byId('notificationsDashboardRealtime')) return;
     try {
-      const [scheduledMod, notificationSystemMod, offlineMod] = await Promise.all([
+      const [scheduledMod, notificationSystemMod, offlineMod,] = await Promise.all([
         import('/assets/firebase/v2/dist/scheduled-notifications.js'),
         import('/assets/firebase/v2/dist/notification-system.js'),
         import('/assets/firebase/v2/dist/offline-handler.js'),
@@ -3251,7 +3248,7 @@ runWhenReady(() => {
           const deviceId = escapeHtml(s.device_id ?? '');
           const deviceName = escapeHtml(s.device_name ?? '-');
           const token = String(s.token ?? '');
-          const tokenShort = escapeHtml(token.length > 40 ? token.slice(0, 40) + '...' : token);
+          const tokenShort = escapeHtml(token.length > 40 ? `${token.slice(0, 40) }...` : token);
           const permission = escapeHtml(s.permission ?? 'granted');
           const permClass =
             permission === 'granted'
@@ -3262,7 +3259,7 @@ runWhenReady(() => {
           const type = escapeHtml(s.device_type ?? '-');
           const created = escapeHtml(s.created_at ?? '-');
           const userLabel = s.user_id
-            ? `<strong>${escapeHtml(s.username || s.email || 'UID:' + s.user_id)}</strong>`
+            ? `<strong>${escapeHtml(s.username || s.email || `UID:${ s.user_id}`)}</strong>`
             : '<span class="text-muted">Guest</span>';
 
           return `
@@ -3296,8 +3293,8 @@ runWhenReady(() => {
       if (filters.per_page) q.set('per_page', filters.per_page);
 
       try {
-        const res = await fetch('/api/admin/notification-subscribers?' + q.toString(), {
-          headers: { 'X-CSRF-Token': getCsrfToken() },
+        const res = await fetch(`/api/admin/notification-subscribers?${ q.toString()}`, {
+          headers: { 'X-CSRF-Token': getCsrfToken(), },
         });
         const data = await res.json();
         if (!data || !data.success) {
@@ -3318,7 +3315,7 @@ runWhenReady(() => {
       if (filters.search) q.set('search', filters.search);
       if (filters.permission) q.set('permission', filters.permission);
       if (filters.per_page) q.set('per_page', filters.per_page);
-      window.history.replaceState({}, '', window.location.pathname + '?' + q.toString());
+      window.history.replaceState({}, '', `${window.location.pathname }?${ q.toString()}`);
       reloadSubscribersTable();
     };
 
@@ -3336,8 +3333,8 @@ runWhenReady(() => {
           try {
             const res = await fetch(endpoint, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-              body: JSON.stringify({ device_id: deviceId }),
+              headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
+              body: JSON.stringify({ device_id: deviceId, }),
             });
             data = await res.json();
             if (data && data.success) break;
@@ -3366,8 +3363,8 @@ runWhenReady(() => {
       try {
         const res = await fetch('/api/admin/notification-subscribers/revoke', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-          body: JSON.stringify({ device_id: deviceId, permanent: true }),
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
+          body: JSON.stringify({ device_id: deviceId, permanent: true, }),
         });
         const data = await res.json();
         if (data.success) {
@@ -3397,7 +3394,7 @@ runWhenReady(() => {
       try {
         const res = await fetch('/api/admin/notification-subscribers/revoke-all', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
           body: JSON.stringify({
             recipient: filters.recipient,
             search: filters.search,
@@ -3443,7 +3440,7 @@ runWhenReady(() => {
     function post(url, body) {
       return fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, },
         body: JSON.stringify(body),
       }).then((r) => r.json());
     }
@@ -3459,7 +3456,7 @@ runWhenReady(() => {
         notify('Reason too long (max 500 chars)', 'error');
         return;
       }
-      const res = await post('/api/notification/' + id + '/pause', { reason });
+      const res = await post(`/api/notification/${ id }/pause`, { reason, });
       if (res && res.success) notify(res.message || 'Paused');
       else notify(res.error || 'Failed', 'error');
     });
@@ -3470,7 +3467,7 @@ runWhenReady(() => {
         notify('Provide notification id', 'error');
         return;
       }
-      const res = await post('/api/notification/' + id + '/resume', {});
+      const res = await post(`/api/notification/${ id }/resume`, {});
       if (res && res.success) notify(res.message || 'Resumed');
       else notify(res.error || 'Failed', 'error');
     });
@@ -3490,11 +3487,11 @@ runWhenReady(() => {
 
     async function getLimits() {
       const res = await fetch('/api/notification/admin-rate-limit', {
-        headers: { 'X-CSRF-Token': csrf },
+        headers: { 'X-CSRF-Token': csrf, },
       }).then((r) => r.json());
       if (res.success) {
         const limits = res.limits || {};
-        byId('currentLimits').innerText = 'Current limits: ' + JSON.stringify(limits);
+        byId('currentLimits').innerText = `Current limits: ${ JSON.stringify(limits)}`;
         byId('hourly').value = limits.hourly || '';
         byId('daily').value = limits.daily || '';
       } else {
@@ -3505,7 +3502,7 @@ runWhenReady(() => {
     async function post(url, body) {
       return fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, },
         body: JSON.stringify(body),
       }).then((r) => r.json());
     }
@@ -3590,12 +3587,12 @@ runWhenReady(() => {
       const message = byId('message')?.value || '';
       const res = await fetch('/api/admin/send-by-topic', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, title, message, channels: ['push'] }),
+        headers: { 'Content-Type': 'application/json', },
+        body: JSON.stringify({ topic, title, message, channels: ['push',], }),
       });
       const j = await res.json();
-      if (j.success) alert('Queued: ' + j.notification_id);
-      else alert('Error: ' + (j.error || 'unknown'));
+      if (j.success) alert(`Queued: ${ j.notification_id}`);
+      else alert(`Error: ${ j.error || 'unknown'}`);
     });
 
     loadTopics();
@@ -3628,8 +3625,8 @@ runWhenReady(() => {
       const message = maintenanceMsg.value || '';
       const res = await fetch('/api/admin/notifications/kill-switch', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled, message }),
+        headers: { 'Content-Type': 'application/json', },
+        body: JSON.stringify({ enabled, message, }),
       });
       const j = await res.json();
       if (j.success) alert('Saved');
@@ -3654,10 +3651,10 @@ runWhenReady(() => {
   function initNotificationsAnalytics() {
     loadAdminModule('notificationsAnalytics')
       .then((notificationsAnalytics) => {
-        const runInit = () => notificationsAnalytics.initNotificationsAnalytics({ byId });
+        const runInit = () => notificationsAnalytics.initNotificationsAnalytics({ byId, });
         runInit();
         if (typeof window.Chart === 'undefined') {
-          window.addEventListener('load', runInit, { once: true });
+          window.addEventListener('load', runInit, { once: true, });
         }
       })
       .catch((error) => logModuleError('notificationsAnalytics', error));
@@ -3731,31 +3728,31 @@ runWhenReady(() => {
       indicator.classList.remove('online', 'offline', 'warning', 'checking');
 
       switch (status) {
-        case 'online':
-          indicator.classList.add('online');
-          icon.className = 'bi bi-server';
-          text.textContent = 'Online';
-          indicator.title = 'All systems operational';
-          break;
-        case 'offline':
-          indicator.classList.add('offline');
-          icon.className = 'bi bi-exclamation-triangle';
-          text.textContent = 'Offline';
-          indicator.title = message || 'Server offline';
-          break;
-        case 'warning':
-          indicator.classList.add('warning');
-          icon.className = 'bi bi-exclamation-triangle';
-          text.textContent = 'Warning';
-          indicator.title = message || 'Some services may be degraded';
-          break;
-        case 'checking':
-        default:
-          indicator.classList.add('checking');
-          icon.className = 'bi bi-arrow-repeat';
-          text.textContent = 'Checking...';
-          indicator.title = 'Checking server status...';
-          break;
+      case 'online':
+        indicator.classList.add('online');
+        icon.className = 'bi bi-server';
+        text.textContent = 'Online';
+        indicator.title = 'All systems operational';
+        break;
+      case 'offline':
+        indicator.classList.add('offline');
+        icon.className = 'bi bi-exclamation-triangle';
+        text.textContent = 'Offline';
+        indicator.title = message || 'Server offline';
+        break;
+      case 'warning':
+        indicator.classList.add('warning');
+        icon.className = 'bi bi-exclamation-triangle';
+        text.textContent = 'Warning';
+        indicator.title = message || 'Some services may be degraded';
+        break;
+      case 'checking':
+      default:
+        indicator.classList.add('checking');
+        icon.className = 'bi bi-arrow-repeat';
+        text.textContent = 'Checking...';
+        indicator.title = 'Checking server status...';
+        break;
       }
     };
 
@@ -3805,7 +3802,7 @@ runWhenReady(() => {
 
         if (data.success) {
           // Update individual service statuses
-          const services = ['database', 'cache', 'api', 'nodejs'];
+          const services = ['database', 'cache', 'api', 'nodejs',];
           services.forEach((service) => {
             if (data[service]) {
               const status = data[service].check ? 'online' : 'offline';
@@ -3815,7 +3812,7 @@ runWhenReady(() => {
           });
 
           // Check if all services are operational
-          const { database, cache, api, nodejs } = data;
+          const { database, cache, api, nodejs, } = data;
 
           if (database.check && cache.check && api.check && nodejs.check) {
             updateStatus('online', 'All systems operational');

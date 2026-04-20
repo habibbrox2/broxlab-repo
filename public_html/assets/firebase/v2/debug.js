@@ -4,15 +4,15 @@
 
 /**
  * DEBUG MODES:
- * 
+ *
  * 1. CONSOLE: এক্টিভ করতে: window.__FC_DEBUG = true
  * 2. DEBUG LEVEL সেট করতে: window.__FC_DEBUG_LEVEL = 'error'|'warn'|'info'|'log'|'all'
  * 3. SPECIFIC MODULES চালু করতে: window.__FC_DEBUG_MODULES = ['auth', 'messaging']
- * 
+ *
  * 4. DEBUG ALL (সকল ফিচারের সকল লগ): DebugUtils.enable('all')
  *    - এটি চালু করলে সকল মডিউলের লগ কনসলে আসবে
  *    - বন্ধ করতে: DebugUtils.disable('all')
- * 
+ *
  * USAGE EXAMPLES:
  *   window.__FC_DEBUG = true;                           // Debug mode চালু
  *   window.__FC_DEBUG_LEVEL = 'all';                    // সব লেভেলের লগ দেখান
@@ -57,7 +57,7 @@ const MODULE_DEBUG_MAP = {
   'tokens': false,
   'scheduled': false,
   'remoteConfig': false,
-  'all': false
+  'all': false,
 };
 
 // Initialize module debug flags from window globals
@@ -77,11 +77,11 @@ initializeModuleFlags();
 
 function normalizeLevel(level) {
   const raw = String(level || '').toLowerCase();
-  return ['error', 'warn', 'info', 'log', 'all'].includes(raw) ? raw : DEFAULT_LEVEL;
+  return ['error', 'warn', 'info', 'log', 'all',].includes(raw) ? raw : DEFAULT_LEVEL;
 }
 
 function shouldLog(level) {
-  const levels = { 'error': 0, 'warn': 1, 'info': 2, 'log': 3, 'all': 4 };
+  const levels = { 'error': 0, 'warn': 1, 'info': 2, 'log': 3, 'all': 4, };
   const currentLevel = normalizeLevel(getLevel());
   const requestedLevel = normalizeLevel(level);
   if (currentLevel === 'all') return true;
@@ -132,7 +132,7 @@ export const DebugUtils = {
   },
 
   // Get all module debug states
-  getModuleStates: () => ({ ...MODULE_DEBUG_MAP }),
+  getModuleStates: () => ({ ...MODULE_DEBUG_MAP, }),
 
   // Set module states
   setModuleStates: (states) => {
@@ -152,7 +152,7 @@ export const DebugUtils = {
       debugLevel: debugLevel,
       debugAll: allModulesEnabled,
       enabledModules: enabledModules,
-      allStates: { ...MODULE_DEBUG_MAP }
+      allStates: { ...MODULE_DEBUG_MAP, },
     };
   },
 
@@ -185,7 +185,7 @@ export const DebugUtils = {
     if (DebugUtils.isEnabled(module)) {
       console.error(`[Firebase:v2:${module}:${formatTimestamp()}]`, ...args);
     }
-  }
+  },
 };
 
 export default DebugUtils;

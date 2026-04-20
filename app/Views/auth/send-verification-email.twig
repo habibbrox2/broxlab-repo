@@ -7,14 +7,32 @@
       <div class="auth-card auth-card--shell">
         <div class="auth-card-header auth-shell-header text-center">
           <div class="auth-shell-icon text-white mb-2">
-            <i class="bi bi-envelope-fill"></i>
+            <i class="bi bi-shield-check"></i>
           </div>
-          <h2 class="auth-shell-title mb-2">Resend Verification Email</h2>
-          <p class="auth-shell-subtitle mb-0">We'll send a new verification link to your email address.</p>
+          <h2 class="auth-shell-title mb-2">Verify Your Email</h2>
+          {% if email %}
+            <p class="auth-shell-subtitle mb-0">
+              Complete verification for <strong>{{ email }}</strong>
+            </p>
+          {% else %}
+            <p class="auth-shell-subtitle mb-0">We'll send a verification link to your email address.</p>
+          {% endif %}
         </div>
         <div class="auth-card-body auth-shell-body">
             {% if error %}{{ flash_macros.render_flash({ message: error, type: 'danger' }) }}{% endif %}
             {% if success %}{{ flash_macros.render_flash({ message: success, type: 'success' }) }}{% endif %}
+            
+            <!-- One-time Verification Info -->
+            <div class="alert alert-info mb-4" role="alert">
+              <div class="d-flex">
+                <i class="bi bi-info-circle-fill me-2 mt-1"></i>
+                <div>
+                  <strong>One-time Verification</strong>
+                  <p class="mb-0 small">After verifying your email once, you'll be able to log in to your account.</p>
+                </div>
+              </div>
+            </div>
+
             <form method="POST" action="/resend-verification-email" novalidate>
               <!-- CSRF Token -->
               <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -25,21 +43,67 @@
                        class="form-control form-control-lg"
                        id="email"
                        name="email"
-                       value="{{ old_email }}"
+                       value="{{ email or old_email or '' }}"
                        placeholder="Enter your email address"
-                       required>
-                <div class="form-text">Enter the email address associated with your account.</div>
+                       {% if email %}readonly{% else %}required{% endif %}>
+                <div class="form-text">
+                  {% if email %}
+                    <i class="bi bi-check-circle text-success me-1"></i>
+                    This is the email from your login. A verification link will be sent here.
+                  {% else %}
+                    Enter the email address associated with your account.
+                  {% endif %}
+                </div>
                 <div class="invalid-feedback">Please provide a valid email.</div>
               </div>
               <!-- Submit Button -->
               <button type="submit" class="btn btn-primary w-100 mb-3 btn-lg">
-                <span id="btnText">Send Verification Email</span>
+                <span id="btnText">
+                  {% if email %}
+                    Send Verification Email
+                  {% else %}
+                    Send Verification Email
+                  {% endif %}
+                </span>
                 <span id="spinner"
                       class="spinner-border spinner-border-sm ms-2 auth-hidden"
                       role="status"
                       aria-hidden="true"></span>
               </button>
             </form>
+            
+            <!-- Fallback Token Display (if email failed) -->
+            {% if show_fallback_token and verification_token %}
+            <div class="alert alert-warning mt-4" role="alert">
+              <div class="mb-3">
+                <h6 class="alert-heading mb-2">
+                  <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                  Email Not Received?
+                </h6>
+                <p class="mb-3 small">
+                  If you haven't received a verification email, you can verify your email directly using the token below:
+                </p>
+              </div>
+              
+              <div class="mb-3 p-3 bg-light rounded">
+                <div class="mb-2">
+                  <small class="text-muted d-block mb-1">Your Verification Token:</small>
+                  <code style="font-size: 14px; word-break: break-all; display: block;">{{ verification_token }}</code>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="copyToken(event)">
+                  <i class="bi bi-clipboard me-1"></i> Copy Token
+                </button>
+              </div>
+              
+              <ol class="small mb-0 ps-3">
+                <li>Copy the token above</li>
+                <li>Click "Already have a verification token?" link below</li>
+                <li>Paste the token in the verification form</li>
+                <li>Click "Verify Email"</li>
+              </ol>
+            </div>
+            {% endif %}
+            
             <!-- Divider -->
             <hr class="my-4">
             <!-- Help Links -->
@@ -58,27 +122,70 @@
         </div>
       </div>
       <div class="auth-shell-notes">
+        <div class="alert alert-success auth-shell-note" role="alert">
+          <h6 class="alert-heading">
+            <i class="bi bi-check-circle-fill me-2"></i>After Verification
+          </h6>
+          <ul class="mb-0 ps-3 small">
+            <li>✓ Your email will be verified (one-time only)</li>
+            <li>✓ You'll be able to log in immediately</li>
+            <li>✓ You won't need to verify again</li>
+            <li>✓ Your account will be fully activated</li>
+          </ul>
+        </div>
+        
         <div class="alert alert-info auth-shell-note" role="alert">
           <h6 class="alert-heading">
-            <i class="bi bi-info-circle-fill me-2"></i>What to expect
+            <i class="bi bi-info-circle-fill me-2"></i>How It Works
           </h6>
-          <ol class="mb-0 ps-3">
-            <li>We'll send a verification email to your address</li>
-            <li>Check your email inbox (and spam folder)</li>
-            <li>The email will contain a verification token</li>
-            <li>Use that token to complete your email verification</li>
-            <li>After verification, you can login to your account</li>
+          <ol class="mb-0 ps-3 small">
+            <li>We'll send a verification link to <strong>{{ email or 'your email' }}</strong></li>
+            <li>Click the link in your email (or copy the token)</li>
+            <li>Enter the token to complete verification</li>
+            <li>You're done! Log in to your account</li>
           </ol>
         </div>
+        
         <!-- Security Note -->
         <div class="alert alert-warning auth-shell-note" role="alert">
           <small>
-            <strong>Security:</strong> Verification emails expire after 24 hours.
+            <strong>⏳ Security:</strong> Verification links expire after 24 hours.
             If your link expires, you can request a new one here.
           </small>
         </div>
       </div>
     </div>
   </div>
-  {# Inline script removed - use external JavaScript file instead #}
+
+  <script>
+    function copyToken(event) {
+      const tokenElement = document.querySelector('code');
+      if (!tokenElement) {
+        alert('Token not found on page');
+        return;
+      }
+      
+      const token = tokenElement.textContent.trim();
+      if (!token) {
+        alert('No token to copy');
+        return;
+      }
+      
+      navigator.clipboard.writeText(token).then(() => {
+        const btn = event.target.closest('button');
+        if (btn) {
+          const originalText = btn.innerHTML;
+          btn.innerHTML = '<i class="bi bi-check me-1"></i> Copied!';
+          btn.disabled = true;
+          setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+          }, 2000);
+        }
+      }).catch((err) => {
+        console.error('Copy failed:', err);
+        alert('Failed to copy token. Please copy manually.');
+      });
+    }
+  </script>
 {% endblock %}
