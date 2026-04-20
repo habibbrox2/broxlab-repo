@@ -3,6 +3,7 @@
  * একাধিক child process একই port share করে
  */
 
+// DEPRECATED: legacy compatibility shim for older deployments.
 import cluster from 'cluster';
 import { cpus } from 'os';
 import { createServer } from 'http';

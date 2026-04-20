@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
+import logger from '../utils/logger';
 
-// Mock database interaction - in production, use actual database
 const getMCPSettingsFromDB = async () => {
   return {
     serverUrl: process.env.MCP_SERVER_URL || '',
@@ -20,7 +20,7 @@ export const mcpController = {
       const settings = await getMCPSettingsFromDB();
       reply.send(settings);
     } catch (error) {
-      console.error('Error fetching MCP settings:', error);
+      logger.error('Error fetching MCP settings:', error);
       reply.code(500).send({ error: 'Failed to fetch MCP settings' });
     }
   },
@@ -28,30 +28,29 @@ export const mcpController = {
   saveMCPSettings: async (_req: FastifyRequest, reply: FastifyReply) => {
     try {
       const { serverUrl, apiKey } = _req.body as { serverUrl?: string; apiKey?: string };
-      
-      // Validate server URL
+
       if (!serverUrl) {
         return reply.code(400).send({ error: 'Server URL is required' });
       }
 
       try {
         new URL(serverUrl);
-      } catch (e) {
+      } catch {
         return reply.code(400).send({ error: 'Invalid server URL format' });
       }
 
       await saveMCPSettingsToDB(serverUrl, apiKey || '');
 
-      reply.send({ 
-        success: true, 
+      reply.send({
+        success: true,
         message: 'MCP settings saved successfully',
         settings: {
           serverUrl,
-          apiKey: apiKey ? '••••••••' + apiKey.slice(-4) : '',
-        }
+          apiKey: apiKey ? `********${apiKey.slice(-4)}` : '',
+        },
       });
     } catch (error) {
-      console.error('Error saving MCP settings:', error);
+      logger.error('Error saving MCP settings:', error);
       reply.code(500).send({ error: 'Failed to save MCP settings' });
     }
   },

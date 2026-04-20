@@ -2,6 +2,16 @@ import Redis from 'ioredis';
 import { config } from './index';
 import logger from '../utils/logger';
 
+export function getRedisTarget(): string {
+    return `${config.redis.host}:${config.redis.port}/${config.redis.db}`;
+}
+
+function formatRedisHint(error: unknown): string {
+    const target = getRedisTarget();
+    const details = error instanceof Error ? error.message : 'Unknown error';
+    return `Redis not reachable at ${target}. Check REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, and whether Redis is running. (${details})`;
+}
+
 // Create Redis client
 const redis = new Redis({
     host: config.redis.host,
@@ -40,7 +50,11 @@ export async function testConnection(): Promise<boolean> {
         logger.info('✅ Redis connection established');
         return true;
     } catch (error) {
-        logger.error('❌ Redis connection failed:', error);
+        logger.error('❌ Redis connection failed:', {
+            target: getRedisTarget(),
+            hint: formatRedisHint(error),
+            error,
+        });
         return false;
     }
 }

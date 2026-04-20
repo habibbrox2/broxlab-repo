@@ -13,7 +13,10 @@ class OCRServiceClient
 
     public function __construct(string $baseUrl = null, int $timeout = 30)
     {
-        $this->baseUrl = $baseUrl ?: getenv('OCR_SERVICE_URL') ?: 'http://localhost:8000';
+        $this->baseUrl = rtrim($baseUrl ?: getenv('NODE_SERVICE_URL') ?: getenv('NODE_API_URL') ?: getenv('NODEJS_SERVER_URL') ?: 'http://localhost:3000', '/');
+        if (str_ends_with($this->baseUrl, '/api/ocr')) {
+            $this->baseUrl = substr($this->baseUrl, 0, -8);
+        }
         $this->timeout = $timeout;
         $this->curlHandle = null;
     }
@@ -79,7 +82,7 @@ class OCRServiceClient
      */
     public function healthCheck(): array
     {
-        return $this->makeRequest('GET', '/api/ai/ocr/health');
+        return $this->makeRequest('GET', '/api/ocr/health');
     }
 
     /**
@@ -105,7 +108,7 @@ class OCRServiceClient
             ]
         ];
 
-        return $this->makeRequest('POST', '/api/ai/ocr/image', $payload);
+        return $this->makeRequest('POST', '/api/ocr/image', $payload);
     }
 
     /**
@@ -131,7 +134,7 @@ class OCRServiceClient
             ]
         ];
 
-        return $this->makeRequest('POST', '/api/ai/ocr/pdf', $payload);
+        return $this->makeRequest('POST', '/api/ocr/pdf', $payload);
     }
 
     /**
@@ -159,7 +162,7 @@ class OCRServiceClient
             ]
         ];
 
-        return $this->makeRequest('POST', '/api/ai/ocr/batch', $payload);
+        return $this->makeRequest('POST', '/api/ocr/batch', $payload);
     }
 
     /**

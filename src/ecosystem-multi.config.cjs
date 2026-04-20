@@ -1,3 +1,4 @@
+// DEPRECATED: legacy compatibility shim for older deployments.
 module.exports = {
   apps: [
     {
@@ -10,9 +11,9 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 3002,
       },
-      error_file: './logs/unified-server-3002-error.log',
-      out_file: './logs/unified-server-3002-out.log',
-      log_file: './logs/unified-server-3002.log',
+      error_file: './node/unified-server-3002-error.log',
+      out_file: './node/unified-server-3002-out.log',
+      log_file: './node/unified-server-3002.log',
     },
     {
       name: 'unified-server-3003',
@@ -24,9 +25,9 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 3003,
       },
-      error_file: './logs/unified-server-3003-error.log',
-      out_file: './logs/unified-server-3003-out.log',
-      log_file: './logs/unified-server-3003.log',
+      error_file: './node/unified-server-3003-error.log',
+      out_file: './node/unified-server-3003-out.log',
+      log_file: './node/unified-server-3003.log',
     },
     {
       name: 'ai-assistant-3001',
@@ -39,9 +40,9 @@ module.exports = {
         PORT: 3001,
         AI_ASSISTANT_PORT: 3001,
       },
-      error_file: './logs/ai-assistant-3001-error.log',
-      out_file: './logs/ai-assistant-3001-out.log',
-      log_file: './logs/ai-assistant-3001.log',
+      error_file: './node/ai-assistant-3001-error.log',
+      out_file: './node/ai-assistant-3001-out.log',
+      log_file: './node/ai-assistant-3001.log',
     },
     {
       name: 'ai-assistant-3004',
@@ -54,9 +55,9 @@ module.exports = {
         PORT: 3004,
         AI_ASSISTANT_PORT: 3004,
       },
-      error_file: './logs/ai-assistant-3004-error.log',
-      out_file: './logs/ai-assistant-3004-out.log',
-      log_file: './logs/ai-assistant-3004.log',
+      error_file: './node/ai-assistant-3004-error.log',
+      out_file: './node/ai-assistant-3004-out.log',
+      log_file: './node/ai-assistant-3004.log',
     },
   ],
 };

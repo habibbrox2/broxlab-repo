@@ -11,18 +11,25 @@ class NodeAiClient
 
     public function __construct(array $options = [])
     {
-        $sharedBaseUrl = $options['baseUrl'] ?? (getenv('NODEJS_SERVER_URL') ?: getenv('APP_URL') ?: '');
-        $aiBaseUrl = $options['aiBaseUrl'] ?? (getenv('NODEJS_AI_SERVER_URL') ?: getenv('NODE_API_URL') ?: getenv('APP_URL') ?: '');
-        $ragBaseUrl = $options['ragBaseUrl'] ?? (getenv('NODEJS_RAG_SERVER_URL') ?: getenv('NODE_API_URL') ?: getenv('APP_URL') ?: '');
+        $sharedBaseUrl = $options['baseUrl'] ?? (getenv('NODE_SERVICE_URL') ?: getenv('NODEJS_SERVER_URL') ?: getenv('NODE_API_URL') ?: 'http://localhost:3000');
+        $aiBaseUrl = rtrim((string)($options['aiBaseUrl'] ?? $sharedBaseUrl), '/');
+        $ragBaseUrl = rtrim((string)($options['ragBaseUrl'] ?? $sharedBaseUrl), '/');
 
-        $this->aiBaseUrl = rtrim(
-            (string)($aiBaseUrl ?: ($sharedBaseUrl ?: 'http://localhost:3000/api/ai')),
-            '/'
-        );
-        $this->ragBaseUrl = rtrim(
-            (string)($ragBaseUrl ?: ($sharedBaseUrl ?: 'http://localhost:3000/api/search')),
-            '/'
-        );
+        if (str_ends_with($aiBaseUrl, '/api/ai')) {
+            $aiBaseUrl = substr($aiBaseUrl, 0, -7);
+        }
+        if (str_ends_with($aiBaseUrl, '/api/ocr')) {
+            $aiBaseUrl = substr($aiBaseUrl, 0, -8);
+        }
+        if (str_ends_with($ragBaseUrl, '/api/ai')) {
+            $ragBaseUrl = substr($ragBaseUrl, 0, -7);
+        }
+        if (str_ends_with($ragBaseUrl, '/api/ocr')) {
+            $ragBaseUrl = substr($ragBaseUrl, 0, -8);
+        }
+
+        $this->aiBaseUrl = $aiBaseUrl;
+        $this->ragBaseUrl = $ragBaseUrl;
         $this->timeout = (int)($options['timeout'] ?? 10);
         $this->connectTimeout = (int)($options['connectTimeout'] ?? 5);
     }
@@ -60,7 +67,7 @@ class NodeAiClient
             $payload['sourceName'] = $sourceName;
         }
 
-        return $this->postJson($this->ragBaseUrl . '/api/process/pdf', $payload);
+        return $this->postJson($this->ragBaseUrl . '/api/ocr/pdf/extract', $payload);
     }
 
     public function processImage(string $filePath, ?string $sourceName = null): array
@@ -70,7 +77,7 @@ class NodeAiClient
             $payload['sourceName'] = $sourceName;
         }
 
-        return $this->postJson($this->ragBaseUrl . '/api/process/image', $payload);
+        return $this->postJson($this->ragBaseUrl . '/api/ocr/image', $payload);
     }
 
     private function postJson(string $url, array $payload): array
