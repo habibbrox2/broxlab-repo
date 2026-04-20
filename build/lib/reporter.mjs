@@ -247,8 +247,9 @@ export class BudgetReport extends Report {
     }
 
     addBudgetItem(name, size, budget, status = 'ok') {
-        const percent = (size / budget) * 100;
-        this.budgetItems.push({ name, size, budget, percent, status });
+        const hasBudget = typeof budget === 'number' && budget > 0;
+        const percent = hasBudget ? (size / budget) * 100 : null;
+        this.budgetItems.push({ name, size, budget, percent, status, hasBudget });
         return this;
     }
 
@@ -257,8 +258,13 @@ export class BudgetReport extends Report {
         console.log('\n💾 Budget Analysis:');
         this.budgetItems.forEach(({ name, size, budget, percent, status }) => {
             const icon = getStatusIcon(status);
-            const percentStr = formatPercent(percent / 100);
             console.log(`  ${icon} ${name}`);
+            if (budget == null) {
+                console.log(`     ${formatSize(size)} / No budget set`);
+                return;
+            }
+
+            const percentStr = formatPercent(percent / 100);
             console.log(`     ${formatSize(size)} / ${formatSize(budget)} (${percentStr})`);
         });
     }

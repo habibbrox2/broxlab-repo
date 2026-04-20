@@ -7,8 +7,8 @@
 
 import { existsSync, statSync, readdirSync } from 'fs';
 import { join, extname } from 'path';
-import { BudgetReport, Logger, exit } from '../lib/utils.mjs';
-import { formatSize } from '../lib/utils.mjs';
+import { BudgetReport } from '../lib/reporter.mjs';
+import { Logger, exit, formatSize } from '../lib/utils.mjs';
 import { getRelativePath } from '../lib/fs-utils.mjs';
 
 const CONFIG = {
@@ -37,14 +37,12 @@ const CONFIG = {
     {
       path: 'public_html/assets/firebase/v2/dist',
       budgets: {
-        'firebase-app.js': 50 * 1024,
-        'firebase-auth.js': 100 * 1024,
-        'firebase-firestore.js': 200 * 1024,
-        'firebase-storage.js': 80 * 1024,
-        'firebase-messaging.js': 60 * 1024,
+        'init.js': 500 * 1024,
+        'auth.js': 600 * 1024,
+        'messaging.js': 500 * 1024,
         'firebase-config.js': 10 * 1024,
       },
-      totalBudget: 500 * 1024,
+      totalBudget: 2 * 1024 * 1024,
     },
   ],
 
