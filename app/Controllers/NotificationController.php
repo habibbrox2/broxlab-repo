@@ -1347,6 +1347,34 @@ $router->post('/api/notification/track-click', function () use ($mysqli) {
     echo json_encode(['success' => true]);
 });
 
+// ----- GET USER NOTIFICATIONS API -----
+$router->get('/api/user/notifications', function () use ($mysqli) {
+    header('Content-Type: application/json');
+    $userId = AuthManager::getCurrentUserId();
+    if (!$userId) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        exit;
+    }
+    $notificationModel = new NotificationModel($mysqli);
+    $notifications = $notificationModel->getNotificationsByUser($userId, 10, 0);
+    echo json_encode(['success' => true, 'notifications' => $notifications]);
+});
+
+// ----- GET USER NOTIFICATIONS COUNT API -----
+$router->get('/api/user/notifications/count', function () use ($mysqli) {
+    header('Content-Type: application/json');
+    $userId = AuthManager::getCurrentUserId();
+    if (!$userId) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        exit;
+    }
+    $notificationModel = new NotificationModel($mysqli);
+    $count = $notificationModel->getUnreadCount($userId);
+    echo json_encode(['success' => true, 'count' => $count]);
+});
+
 // ----- TRACK NOTIFICATION DISMISS -----
 $router->post('/api/notification/track-dismiss', function () use ($mysqli) {
     header('Content-Type: application/json');

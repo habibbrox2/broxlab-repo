@@ -297,17 +297,17 @@
                         {% if auth_user is defined and auth_user.is_authenticated %}
                             
                             {# Notification Bell #}
-                            <li class="nav-item brox-nav-item ms-lg-2 brox-notification-wrapper" data-notification-menu>
+                            <li class="nav-item dropdown brox-nav-item ms-lg-2 brox-notification-wrapper" data-notification-menu>
                                 {% set nav_unread_count = unread_count|default(0) %}
                             <a class="nav-link brox-nav-link brox-notification-bell position-relative"
-                               href="#" id="broxNotificationBell" role="button" data-notification-bell
+                               href="#" id="broxNotificationBell" role="button" data-bs-toggle="dropdown" data-notification-bell
                                aria-expanded="false">
                                 <i class="bi bi-bell-fill"></i>
                                 <span id="broxNotificationBadge" data-notification-badge class="brox-notification-badge badge rounded-pill bg-danger {% if nav_unread_count <= 0 %}d-none{% endif %}">
                                     <span id="broxNotificationCount" data-notification-count>{{ nav_unread_count }}</span>
                                 </span>
                             </a>
-                            <div class="brox-notification-dropdown" data-notification-dropdown aria-labelledby="broxNotificationBell">
+                            <div class="dropdown-menu brox-notification-dropdown" data-notification-dropdown aria-labelledby="broxNotificationBell">
                                 <div class="brox-notification-dropdown-header">
                                     <h6 class="mb-0">
                                         <i class="bi bi-bell-fill me-2"></i>Notifications

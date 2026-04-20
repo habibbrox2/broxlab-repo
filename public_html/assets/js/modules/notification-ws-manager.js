@@ -43,7 +43,7 @@ class NotificationWebSocketManager extends EventTarget {
     try {
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsHost = window.location.hostname;
-      const wsPort = 3003; // WebSocket server port
+      const wsPort = 3000; // WebSocket server port (same as main server)
       const wsUrl = `${wsProtocol}//${wsHost}:${wsPort}?userId=${this.userId}`;
 
       this.log('Connecting to WebSocket:', wsUrl);
@@ -203,6 +203,16 @@ class NotificationWebSocketManager extends EventTarget {
       this.ws = null;
     }
     this.isConnected = false;
+  }
+
+  /**
+   * Node.js-style event listener (alias for addEventListener)
+   * Supports: wsManager.on('notification', (message) => {...})
+   */
+  on(eventName, callback) {
+    this.addEventListener(eventName, (event) => {
+      callback(event.detail || event);
+    });
   }
 }
 

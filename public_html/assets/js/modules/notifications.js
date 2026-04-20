@@ -473,7 +473,7 @@ export function adminInitNotificationBell(options = {}) {
       if (state.useWebSocket && typeof WebSocket !== 'undefined') {
         console.log('[Notifications] Attempting to initialize WebSocket for real-time updates');
         const wsManager = await adminInitNotificationWebSocket(context, userId);
-        if (wsManager && wsManager.isConnected()) {
+        if (wsManager && wsManager.isConnected) {
           console.log('[Notifications] WebSocket connected successfully');
           state.wsManager = wsManager;
           state.fallbackToAjax = false;

@@ -19,6 +19,7 @@ const entryPoints = {
   auth: path.join(srcDir, 'auth.js'),
   'auth-ui-handler': path.join(srcDir, 'auth-ui-handler.js'),
   'firebase-config': path.join(srcDir, 'firebase-config.js'),
+  debug: path.join(srcDir, 'debug.js'),
 };
 
 const buildOptions = {
@@ -31,8 +32,7 @@ const buildOptions = {
   minify: isMinify,
   sourcemap: !isMinify,
   target: ['es2020',],
-  format: 'iife',
-  globalName: 'Firebase',
+  format: 'esm',
   outdir: outDir,
   external: [],
 };

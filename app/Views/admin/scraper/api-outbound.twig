@@ -1,0 +1,44 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}API Outbound Integration | Scraper Tools{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-4">
+                <span class="text-muted small me-2">Related pages:</span>
+                <a class="btn btn-sm btn-outline-primary" href="/admin/scraper">Dashboard</a>
+                <a class="btn btn-sm btn-outline-primary" href="/admin/scraper/diagnostics">Diagnostics</a>
+                <a class="btn btn-sm btn-outline-primary" href="/admin/scraper/selector-tester">Selector Tester</a>
+                <a class="btn btn-sm btn-outline-primary" href="/admin/scraper/api-reverse-engineering">API Reverse</a>
+            </div>
+            <h1 class="h3 mb-3">API Outbound Integration</h1>
+            <p class="text-muted mb-4">
+                Manage saved outbound API targets and test them from the scraper admin area.
+            </p>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="p-3 border rounded h-100">
+                        <strong>List endpoints</strong>
+                        <div class="text-muted small">`GET /api/v1/scraper/api-outbound/endpoints`</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 border rounded h-100">
+                        <strong>Save endpoint</strong>
+                        <div class="text-muted small">`POST /api/v1/scraper/api-outbound/save`</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 border rounded h-100">
+                        <strong>Test endpoint</strong>
+                        <div class="text-muted small">`POST /api/v1/scraper/api-outbound/test`</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
