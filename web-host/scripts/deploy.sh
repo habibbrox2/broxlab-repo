@@ -54,6 +54,16 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Recompute derived paths after parsing so --base is applied consistently.
+APP="$BASE/app"
+RELEASES="$APP/releases"
+SHARED="$APP/shared"
+CURRENT="$APP/current"
+LOGS="$BASE/logs"
+STORAGE="$SHARED/storage"
+NEW_RELEASE="$RELEASES/$DATE"
+export BASE_PATH="$BASE"
+
 # ============== COLOR CODES ==============
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -149,7 +159,7 @@ if [[ "$SKIP_DB_BACKUP" == "false" ]]; then
     log_section "DATABASE BACKUP"
     DB_BACKUP_SCRIPT="$BASE/scripts/database-backup.sh"
     if [[ -x "$DB_BACKUP_SCRIPT" ]]; then
-        if "$DB_BACKUP_SCRIPT" 2>&1 | tee -a "$LOG_FILE"; then
+        if BASE_PATH="$BASE" "$DB_BACKUP_SCRIPT" 2>&1 | tee -a "$LOG_FILE"; then
             log_info "✅ Database backup completed"
         else
             log_warn "⚠️  Database backup had warnings — deployment continues"
@@ -166,7 +176,7 @@ if [[ "$SKIP_BACKUP" == "false" ]] && [[ -L "$CURRENT" ]] && [[ -d "$CURRENT" ]]
     log_section "PRE-DEPLOYMENT BACKUP"
     BACKUP_SCRIPT="$BASE/scripts/backup.sh"
     if [[ -x "$BACKUP_SCRIPT" ]]; then
-        if "$BACKUP_SCRIPT" 2>&1 | tee -a "$LOG_FILE"; then
+        if BASE_PATH="$BASE" "$BACKUP_SCRIPT" 2>&1 | tee -a "$LOG_FILE"; then
             log_info "✅ Backup completed"
         else
             log_warn "⚠️  Backup failed — deployment continues"
@@ -580,7 +590,7 @@ if [[ "$SKIP_CLEANUP" == "false" ]]; then
 
     CLEANUP_SCRIPT="$BASE/scripts/cleanup.sh"
     if [[ -x "$CLEANUP_SCRIPT" ]]; then
-        if "$CLEANUP_SCRIPT" --releases "$KEEP_RELEASES" 2>&1 | tee -a "$LOG_FILE"; then
+        if BASE_PATH="$BASE" "$CLEANUP_SCRIPT" --releases "$KEEP_RELEASES" 2>&1 | tee -a "$LOG_FILE"; then
             log_info "✅ Cleanup completed"
         else
             log_warn "⚠️  Cleanup had errors (non-blocking)"
