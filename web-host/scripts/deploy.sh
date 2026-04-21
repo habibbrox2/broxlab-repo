@@ -21,12 +21,17 @@ DB_BACKUPS="$SHARED/backups/database"
 LOGS="$BASE/logs"
 PID_FILE="$SHARED/node-server.pid"
 DEPLOY_LOCK="$SHARED/.deploy.lock"
+<<<<<<< webmaster
 DEPLOY_TIMEOUT=7200
+=======
+DEPLOY_TIMEOUT=7200  # 2 hours
+>>>>>>> main
 
 DATE=$(date +"%Y%m%d_%H%M%S")
 NEW_RELEASE="$RELEASES/$DATE"
 DEPLOYMENT_SUCCESS=false
 DEPLOYMENT_START_TIME=$(date +%s)
+<<<<<<< webmaster
 
 SKIP_BACKUP=false
 SKIP_DB_BACKUP=false
@@ -442,6 +447,8 @@ DATE=$(date +"%Y%m%d_%H%M%S")
 NEW_RELEASE="$RELEASES/$DATE"
 DEPLOYMENT_SUCCESS=false
 DEPLOYMENT_START_TIME=$(date +%s)
+=======
+>>>>>>> main
 
 SKIP_BACKUP=false
 SKIP_DB_BACKUP=false
@@ -676,9 +683,6 @@ fi
 ensure_env_secret "JWT_SECRET"
 ensure_env_secret "CSRF_SECRET"
 ensure_env_secret "NODE_SERVICE_API_KEY"
-
-mkdir -p \
-    "$STORAGE/uploads" \
     "$STORAGE/cache" \
     "$STORAGE/logs" \
     "$STORAGE/tmp" \

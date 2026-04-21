@@ -53,6 +53,11 @@ NC='\033[0m'
 mkdir -p "$BACKUPS" "$LOGS"
 LOG_FILE="$LOGS/backup_$DATE.log"
 
+# Acquire lock before proceeding
+if ! acquire_lock; then
+    exit 1
+fi
+
 log_info() { echo -e "${GREEN}[INFO]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
@@ -82,11 +87,14 @@ cleanup() {
 
 trap cleanup EXIT
 
+<<<<<<< webmaster
 # Acquire lock before proceeding
 if ! acquire_lock; then
     exit 1
 fi
 
+=======
+>>>>>>> main
 if $DRY_RUN; then
     log_info "[DRY-RUN] No files will be modified"
 fi
