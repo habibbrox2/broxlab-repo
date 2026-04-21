@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# BroxLab database backup script for shared hosting.
+# BroxLab database backup script for shared hosting - Production Ready
+# Creates compressed MySQL database backups with validation.
+# Enhanced with error handling and timeout protection.
 
 set -euo pipefail
 
@@ -46,6 +48,14 @@ log_warn() { echo -e "${YELLOW}[WARN]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | 
 log_error() { echo -e "${RED}[ERROR]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
 log_debug() { echo -e "${BLUE}[DEBUG]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
 
+# Cleanup temp files on exit
+cleanup() {
+    local exit_code=$?
+    [[ -f "${TEMP_BACKUP_FILE:-}" ]] && rm -f "$TEMP_BACKUP_FILE" 2>/dev/null || true
+    return $exit_code
+}
+trap cleanup EXIT
+
 parse_env() {
     local key="$1"
     grep -i "^${key}=" "$ENV_FILE" | head -1 | cut -d'=' -f2- | tr -d '"' | tr -d "'" | xargs
@@ -78,15 +88,18 @@ if $DRY_RUN; then
     exit 2
 fi
 
+# Create backup to temporary file first, then move to final location
+TEMP_BACKUP_FILE="$DB_BACKUPS/.database_backup_${TIMESTAMP}.tmp"
+
 if [[ -n "$DB_PASS" ]]; then
-    if ! MYSQL_PWD="$DB_PASS" mysqldump --host="$DB_HOST" --user="$DB_USER" --single-transaction --quick --lock-tables=false "$DB_NAME" | gzip > "$BACKUP_FILE"; then
+    if ! MYSQL_PWD="$DB_PASS" timeout 3600 mysqldump --host="$DB_HOST" --user="$DB_USER" --single-transaction --quick --lock-tables=false "$DB_NAME" | gzip > "$TEMP_BACKUP_FILE"; then
         log_error "MySQL not reachable at ${DB_HOST}:3306/${DB_NAME}"
         log_error "Check DB_HOST, DB_USER, DB_PASS, and DB_NAME"
         rm -f "$BACKUP_FILE"
         exit 1
     fi
 else
-    if ! mysqldump --host="$DB_HOST" --user="$DB_USER" --single-transaction --quick --lock-tables=false "$DB_NAME" | gzip > "$BACKUP_FILE"; then
+    if ! timeout 3600 mysqldump --host="$DB_HOST" --user="$DB_USER" --single-transaction --quick --lock-tables=false "$DB_NAME" | gzip > "$TEMP_BACKUP_FILE"; then
         log_error "MySQL not reachable at ${DB_HOST}:3306/${DB_NAME}"
         log_error "Check DB_HOST, DB_USER, DB_PASS, and DB_NAME"
         rm -f "$BACKUP_FILE"
@@ -94,9 +107,16 @@ else
     fi
 fi
 
-if [[ ! -s "$BACKUP_FILE" ]]; then
+if [[ ! -s "$TEMP_BACKUP_FILE" ]]; then
     log_error "Backup file is empty"
-    rm -f "$BACKUP_FILE"
+    rm -f "$TEMP_BACKUP_FILE"
+    exit 1
+fi
+
+# Move temp file to final location
+if ! mv "$TEMP_BACKUP_FILE" "$BACKUP_FILE"; then
+    log_error "Failed to move backup file to final location"
+    rm -f "$TEMP_BACKUP_FILE"
     exit 1
 fi
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Scraper\Services;
 
 use App\Modules\Scraper\HtmlParserService;
+use App\Modules\Scraper\HttpClientService;
 use Symfony\Component\DomCrawler\Crawler;
 
 class GSMArenaScraperService

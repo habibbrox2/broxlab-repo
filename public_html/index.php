@@ -377,7 +377,15 @@ global $router;
 
 try {
     //error_log("Dispatching: " . $_SERVER['REQUEST_METHOD'] . " " . $_SERVER['REQUEST_URI']);
-    $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);
+    $requestMethod = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+    if ($requestMethod === 'POST') {
+        $overrideMethod = strtoupper(trim((string)($_POST['_method'] ?? $_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'] ?? '')));
+        if (in_array($overrideMethod, ['PUT', 'PATCH', 'DELETE'], true)) {
+            $requestMethod = $overrideMethod;
+        }
+    }
+
+    $router->dispatch($requestMethod, $_SERVER['REQUEST_URI']);
 } catch (Throwable $e) {
     logError('Routing Error: ' . $e->getMessage());
     renderError(500, 'Routing Error');

@@ -46,19 +46,21 @@ class ScraperModel
     public function createSource($data)
     {
         $sql = "INSERT INTO web_scraping_sources
-                (name, url, type, category_id, selectors, advance_config, presets, fetch_interval, content_type, scrape_depth, use_browser, max_pages, delay, pagination_type, pagination_selector, pagination_pattern, proxy_enabled, proxy_provider, proxy_config)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                (name, url, type, category_id, selectors, advance_config, presets, fetch_interval, is_active, content_type, scrape_depth, use_browser, max_pages, delay, pagination_type, pagination_selector, pagination_pattern, proxy_enabled, proxy_provider, proxy_config, ssl_verify, timeout, connect_timeout)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         $stmt = $this->mysqli->prepare($sql);
         $selectors = isset($data['selectors']) ? json_encode($data['selectors']) : null;
         $advance_config = isset($data['advance_config']) ? json_encode($data['advance_config']) : null;
         $presets = isset($data['presets']) ? json_encode($data['presets']) : null;
         $contentType = $this->normalizeSourceContentType($data['content_type'] ?? 'articles');
+        $isActive = isset($data['is_active']) ? (int)$data['is_active'] : 1;
         $sslVerify = (int)($data['ssl_verify'] ?? 1);
         $timeout = (int)($data['timeout'] ?? 30);
+        $connectTimeout = (int)($data['connect_timeout'] ?? 10);
 
         $stmt->bind_param(
-            "sssisssisiiiisssissii",
+            "sssisssiisiiiisssissiii",
             $data['name'],
             $data['url'],
             $data['type'],
@@ -67,6 +69,7 @@ class ScraperModel
             $advance_config,
             $presets,
             $data['fetch_interval'],
+            $isActive,
             $contentType,
             $data['scrape_depth'],
             $data['use_browser'],
@@ -79,7 +82,8 @@ class ScraperModel
             $data['proxy_provider'],
             $data['proxy_config'],
             $sslVerify,
-            $timeout
+            $timeout,
+            $connectTimeout
         );
 
         if ($stmt->execute()) {
@@ -944,7 +948,7 @@ class ScraperModel
                 presets = ?, fetch_interval = ?, content_type = ?, scrape_depth = ?,
                 use_browser = ?, max_pages = ?, delay = ?, pagination_type = ?,
                 pagination_selector = ?, pagination_pattern = ?, proxy_enabled = ?,
-                proxy_provider = ?, proxy_config = ?, ssl_verify = ?, timeout = ?, is_active = ?
+                proxy_provider = ?, proxy_config = ?, ssl_verify = ?, timeout = ?, connect_timeout = ?, is_active = ?
                 WHERE id = ?";
 
         $stmt = $this->mysqli->prepare($sql);
@@ -953,14 +957,15 @@ class ScraperModel
         $presets = isset($data['presets']) ? json_encode($data['presets']) : null;
         $contentType = $this->normalizeSourceContentType($data['content_type'] ?? 'articles');
         $existing = null;
-        if (!array_key_exists('ssl_verify', $data) || !array_key_exists('timeout', $data)) {
+        if (!array_key_exists('ssl_verify', $data) || !array_key_exists('timeout', $data) || !array_key_exists('connect_timeout', $data)) {
             $existing = $this->getSourceById($id) ?: [];
         }
         $sslVerify = isset($data['ssl_verify']) ? (int)$data['ssl_verify'] : (int)($existing['ssl_verify'] ?? 1);
         $timeout = isset($data['timeout']) ? (int)$data['timeout'] : (int)($existing['timeout'] ?? 30);
+        $connectTimeout = isset($data['connect_timeout']) ? (int)$data['connect_timeout'] : (int)($existing['connect_timeout'] ?? 10);
 
         $stmt->bind_param(
-            "sssissssisiiisssissiiii",
+            "sssisssisiiiisssissiiiii",
             $data['name'],
             $data['url'],
             $data['type'],
@@ -982,6 +987,7 @@ class ScraperModel
             $data['proxy_config'],
             $sslVerify,
             $timeout,
+            $connectTimeout,
             $data['is_active'],
             $id
         );
@@ -1015,7 +1021,9 @@ class ScraperModel
         $value = strtolower(trim((string)$value));
 
         return match ($value) {
+            'article', 'articles', 'news', 'blog', 'post', 'posts', 'story', 'stories' => 'articles',
             'page', 'pages' => 'pages',
+            'product', 'products', 'job', 'jobs', 'event', 'events' => 'pages',
             'mobile', 'mobiles', 'device', 'devices' => 'mobiles',
             'service', 'services' => 'services',
             default => 'articles',
@@ -1315,6 +1323,21 @@ class ScraperModel
             'limit' => $limit,
             'pages' => $pages
         ];
+    }
+
+    public function getLogStats()
+    {
+        $sql = "SELECT level, COUNT(*) as count FROM web_scraping_logs GROUP BY level";
+        $stmt = $this->mysqli->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+        $stats = [];
+        foreach ($result as $row) {
+            $stats[$row['level']] = (int)$row['count'];
+        }
+
+        return $stats;
     }
 
     public function deleteOldLogs($days)
@@ -1631,7 +1654,8 @@ class ScraperModel
                 SET name = ?, description = ?, content_type = ?, selectors = ?, advance_config = ?, updated_at = NOW()
                 WHERE id = ?
             ");
-            $stmt->bind_param('sssssi',
+            $stmt->bind_param(
+                'sssssi',
                 $data['name'],
                 $data['description'],
                 $data['content_type'],
@@ -1647,7 +1671,8 @@ class ScraperModel
                 INSERT INTO web_scraping_presets (`key`, `name`, `description`, `content_type`, `selectors`, `advance_config`, `is_default`, `is_active`)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->bind_param('ssssssii',
+            $stmt->bind_param(
+                'ssssssii',
                 $data['key'],
                 $data['name'],
                 $data['description'],
@@ -1684,5 +1709,126 @@ class ScraperModel
     {
         $stmt = $this->mysqli->query("SELECT * FROM web_scraping_presets WHERE is_active = 1 ORDER BY name ASC");
         return $stmt->fetch_all(MYSQLI_ASSOC);
+    }
+
+    /**
+     * Get queue items with pagination
+     *
+     * @param int $page
+     * @param int $limit
+     * @param string $status
+     * @param int|null $sourceId
+     * @return array
+     */
+    public function getQueueItems($page = 1, $limit = 20, $status = '', $sourceId = null)
+    {
+        $page = max(1, (int)$page);
+        $limit = max(10, min(100, (int)$limit));
+        $offset = ($page - 1) * $limit;
+
+        // Get total count
+        $countSql = "SELECT COUNT(*) as total FROM web_scraping_queue WHERE 1=1";
+        $countParams = [];
+        $countTypes = "";
+
+        if ($status) {
+            $countSql .= " AND status = ?";
+            $countParams[] = $status;
+            $countTypes .= "s";
+        }
+
+        if ($sourceId) {
+            $countSql .= " AND source_id = ?";
+            $countParams[] = $sourceId;
+            $countTypes .= "i";
+        }
+
+        $countStmt = $this->mysqli->prepare($countSql);
+        if (!empty($countParams)) {
+            $countStmt->bind_param($countTypes, ...$countParams);
+        }
+        $countStmt->execute();
+        $total = (int)$countStmt->get_result()->fetch_assoc()['total'];
+        $pages = max(1, ceil($total / $limit));
+
+        // Get paginated items
+        $sql = "SELECT q.*, s.name as source_name
+                FROM web_scraping_queue q
+                LEFT JOIN web_scraping_sources s ON q.source_id = s.id
+                WHERE 1=1";
+
+        $params = [];
+        $types = "";
+
+        if ($status) {
+            $sql .= " AND q.status = ?";
+            $params[] = $status;
+            $types .= "s";
+        }
+
+        if ($sourceId) {
+            $sql .= " AND q.source_id = ?";
+            $params[] = $sourceId;
+            $types .= "i";
+        }
+
+        $sql .= " ORDER BY q.priority DESC, q.created_at ASC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+        $types .= "ii";
+
+        $stmt = $this->mysqli->prepare($sql);
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        $items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+        return [
+            'items' => $items,
+            'pagination' => [
+                'total' => (int)$total,
+                'page' => (int)$page,
+                'limit' => (int)$limit,
+                'pages' => (int)$pages,
+                'has_more' => $page < $pages
+            ]
+        ];
+    }
+
+    /**
+     * Get all scraper settings
+     *
+     * @param int $page
+     * @param int $limit
+     * @return array
+     */
+    public function getSettings($page = 1, $limit = 100)
+    {
+        $page = max(1, (int)$page);
+        $limit = max(5, min(200, (int)$limit));
+        $offset = ($page - 1) * $limit;
+
+        // Get total count
+        $countSql = "SELECT COUNT(*) as total FROM web_scraping_settings";
+        $countResult = $this->mysqli->query($countSql);
+        $total = (int)($countResult ? $countResult->fetch_assoc()['total'] : 0);
+        $pages = max(1, ceil($total / $limit));
+
+        // Get paginated settings
+        $sql = "SELECT * FROM web_scraping_settings ORDER BY setting_key ASC LIMIT ? OFFSET ?";
+        $stmt = $this->mysqli->prepare($sql);
+        $stmt->bind_param("ii", $limit, $offset);
+        $stmt->execute();
+        $settings = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+        return [
+            'settings' => $settings,
+            'total' => (int)$total,
+            'page' => (int)$page,
+            'limit' => (int)$limit,
+            'pages' => (int)$pages,
+            'has_more' => $page < $pages
+        ];
     }
 }

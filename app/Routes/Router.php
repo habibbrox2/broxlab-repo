@@ -229,7 +229,59 @@ class Router
             ['method' => $method, 'uri' => $uri]
         );
 
+        // Try to serve static file before 404
+        if ($method === 'GET' && $this->serveStaticFile($uri)) {
+            return;
+        }
+
         return $this->notFound();
+    }
+
+    // ================== STATIC FILE SERVING ==================
+
+    private function serveStaticFile(string $uri): bool
+    {
+        // Get the document root (typically public_html)
+        $documentRoot = $_SERVER['DOCUMENT_ROOT'] ?? dirname(__DIR__, 2) . '/public_html';
+
+        // Sanitize the URI to prevent directory traversal
+        $path = $documentRoot . $uri;
+        $path = realpath($path);
+
+        // Verify the path is within public_html and the file exists
+        if (!$path || !str_starts_with($path, realpath($documentRoot)) || !is_file($path)) {
+            return false;
+        }
+
+        // Serve the file with appropriate headers
+        $mimeTypes = [
+            'js' => 'application/javascript',
+            'css' => 'text/css',
+            'json' => 'application/json',
+            'html' => 'text/html',
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'svg' => 'image/svg+xml',
+            'webp' => 'image/webp',
+            'ico' => 'image/x-icon',
+            'woff' => 'font/woff',
+            'woff2' => 'font/woff2',
+            'ttf' => 'font/ttf',
+            'eot' => 'application/vnd.ms-fontobject',
+        ];
+
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mimeType = $mimeTypes[$ext] ?? 'application/octet-stream';
+
+        http_response_code(200);
+        header('Content-Type: ' . $mimeType);
+        header('Content-Length: ' . filesize($path));
+        header('Cache-Control: public, max-age=3600');
+
+        readfile($path);
+        exit;
     }
 
     // ================== 404 ==================

@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# BroxLab cleanup script for shared hosting.
+# BroxLab cleanup script for shared hosting - Production Ready
+# Safely removes old releases, backups, and logs.
+# Enhanced with safety checks and validation.
 
 set -euo pipefail
 
@@ -60,7 +62,7 @@ cleanup_directory() {
     local keep="$3"
     local type="$4"
 
-    [[ -d "$dir" ]] || return 0
+    [[ -d "$dir" ]] || { log_debug "Directory not found: $dir"; return 0; }
 
     local count=0
     if [[ "$type" == "releases" ]]; then
@@ -70,20 +72,29 @@ cleanup_directory() {
     fi
 
     if [[ "$count" -le "$keep" ]]; then
+        log_debug "$dir: $count item(s), keeping $keep"
         return 0
     fi
 
+    local delete_count=$((count - keep))
     if $DRY_RUN; then
-        log_debug "[DRY-RUN] Would delete $((count - keep)) item(s) from $dir"
+        log_debug "[DRY-RUN] Would delete $delete_count item(s) from $dir"
         return 0
     fi
 
+    log_info "Removing $delete_count old item(s) from $dir"
     if [[ "$type" == "releases" ]]; then
         find "$dir" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null \
-            | sort -rn | tail -n "+$(( keep + 1 ))" | awk '{print $2}' | xargs -r rm -rf || true
+            | sort -rn | tail -n "+$((keep + 1))" | awk '{print $2}' | while read -r item; do
+            log_debug "Removing: $item"
+            rm -rf "$item" 2>/dev/null || log_warn "Failed to remove: $item"
+        done
     else
         find "$dir" -maxdepth 1 -name "$pattern" -type f -printf '%T@ %p\n' 2>/dev/null \
-            | sort -rn | tail -n "+$(( keep + 1 ))" | awk '{print $2}' | xargs -r rm -f || true
+            | sort -rn | tail -n "+$((keep + 1))" | awk '{print $2}' | while read -r item; do
+            log_debug "Removing: $item"
+            rm -f "$item" 2>/dev/null || log_warn "Failed to remove: $item"
+        done
     fi
 }
 

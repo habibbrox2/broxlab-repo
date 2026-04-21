@@ -11,6 +11,7 @@ use App\Modules\Scraper\Presets\GSMArenaBDPreset;
 use App\Modules\Scraper\Presets\MobiledokanPreset;
 use App\Modules\Scraper\Presets\WordPressBlogPreset;
 use App\Modules\Scraper\Presets\LinkedInJobsPreset;
+use App\Modules\Scraper\Presets\IttefaqLatestNewsPreset;
 
 /**
  * PresetRegistry - Registry for all scraper presets
@@ -34,7 +35,8 @@ class PresetRegistry
                 new GSMArenaBDPreset(),
                 new MobiledokanPreset(),
                 new WordPressBlogPreset(),
-                new LinkedInJobsPreset()
+                new LinkedInJobsPreset(),
+                new IttefaqLatestNewsPreset()
             ];
         }
 

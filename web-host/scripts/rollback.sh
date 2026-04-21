@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# BroxLab rollback script for the shared-hosting single Node server flow.
+# BroxLab rollback script - Production Ready
+# For the shared-hosting single Node server flow.
+# Enhanced with comprehensive safety checks and validation.
 
 set -euo pipefail
 
@@ -18,6 +20,8 @@ CODE_BACKUPS="$SHARED/backups/code"
 
 SKIP_DB_RESTORE=false
 SKIP_BACKUP=false
+ROLLBACK_LOCK="$SHARED/.rollback.lock"
+ROLLBACK_TIMEOUT=3600
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -56,6 +60,30 @@ log_info() { echo -e "${GREEN}[INFO]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | t
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$ROLLBACK_LOG"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$ROLLBACK_LOG"; }
 log_debug() { echo -e "${BLUE}[DEBUG]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$ROLLBACK_LOG"; }
+
+# Lock file management
+acquire_rollback_lock() {
+    if [[ -f "$ROLLBACK_LOCK" ]]; then
+        local lock_pid
+        lock_pid=$(cat "$ROLLBACK_LOCK" 2>/dev/null || true)
+        if [[ -n "$lock_pid" ]] && kill -0 "$lock_pid" 2>/dev/null; then
+            log_error "Rollback already in progress (PID: $lock_pid)"
+            return 1
+        fi
+    fi
+    echo $$ > "$ROLLBACK_LOCK"
+    return 0
+}
+
+release_rollback_lock() {
+    rm -f "$ROLLBACK_LOCK"
+}
+
+rollback_cleanup() {
+    release_rollback_lock
+}
+
+trap rollback_cleanup EXIT
 
 ensure_env_secret() {
     local key="$1"
@@ -143,6 +171,11 @@ start_node_server() {
     log_warn "Node server started, but health check timed out"
     return 0
 }
+
+# Acquire rollback lock
+if ! acquire_rollback_lock; then
+    exit 1
+fi
 
 log_info "Starting rollback process"
 $SKIP_DB_RESTORE && log_info "Database restore will be skipped"
