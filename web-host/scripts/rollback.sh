@@ -259,3 +259,4 @@ log_info "Rollback complete"
 log_info "Current release: $(readlink "$CURRENT" 2>/dev/null || echo N/A)"
 log_info "Log: $ROLLBACK_LOG"
 exit 0
+
