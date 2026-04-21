@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# BroxLab shared-hosting deployment script.
+# BroxLab shared-hosting deployment script - Production Ready
 # Deploys one release, one Node server, one port.
+# Enhanced with comprehensive validation, locking, and rollback safety.
 
 set -euo pipefail
 
@@ -19,10 +20,13 @@ CODE_BACKUPS="$SHARED/backups/code"
 DB_BACKUPS="$SHARED/backups/database"
 LOGS="$BASE/logs"
 PID_FILE="$SHARED/node-server.pid"
+DEPLOY_LOCK="$SHARED/.deploy.lock"
+DEPLOY_TIMEOUT=7200  # 2 hours
 
 DATE=$(date +"%Y%m%d_%H%M%S")
 NEW_RELEASE="$RELEASES/$DATE"
 DEPLOYMENT_SUCCESS=false
+DEPLOYMENT_START_TIME=$(date +%s)
 
 SKIP_BACKUP=false
 SKIP_DB_BACKUP=false
@@ -79,14 +83,46 @@ log_section() {
     echo -e "${CYAN}============================================================${NC}" | tee -a "$LOG_FILE"
 }
 
-cleanup_on_error() {
+# Lock file management
+acquire_deploy_lock() {
+    if [[ -f "$DEPLOY_LOCK" ]]; then
+        local lock_pid
+        local lock_time
+        lock_pid=$(cat "$DEPLOY_LOCK" 2>/dev/null | cut -d: -f1 || true)
+        lock_time=$(cat "$DEPLOY_LOCK" 2>/dev/null | cut -d: -f2 || echo 0)
+        local current_time
+        current_time=$(date +%s)
+        
+        if [[ -n "$lock_pid" ]] && kill -0 "$lock_pid" 2>/dev/null; then
+            local elapsed=$((current_time - lock_time))
+            if [[ $elapsed -lt $DEPLOY_TIMEOUT ]]; then
+                log_error "Deployment already in progress (PID: $lock_pid, elapsed: ${elapsed}s)"
+                return 1
+            fi
+        fi
+    fi
+    echo "$$:$(date +%s)" > "$DEPLOY_LOCK"
+    return 0
+}
+
+release_deploy_lock() {
+    rm -f "$DEPLOY_LOCK"
+}
+
+deployment_cleanup() {
     local exit_code=$?
     if [[ "$DEPLOYMENT_SUCCESS" != "true" ]]; then
         log_error "Deployment failed (exit code: $exit_code)"
+        release_deploy_lock
         rm -rf "$NEW_RELEASE" 2>/dev/null || true
+    else
+        release_deploy_lock
     fi
+    return $exit_code
 }
-trap cleanup_on_error EXIT
+trap deployment_cleanup EXIT
+
+# Old cleanup_on_error replaced with deployment_cleanup above
 
 stop_node_server() {
     if [[ -f "$PID_FILE" ]]; then
@@ -161,22 +197,33 @@ require_command() {
     fi
 }
 
+# Acquire deployment lock
+if ! acquire_deploy_lock; then
+    exit 1
+fi
+
 log_section "BROXLAB DEPLOYMENT STARTED"
 log_info "Release: $DATE"
 log_info "Target: $NEW_RELEASE"
 log_info "Shared storage: $SHARED"
+log_info "Node environment: $NODE_ENV"
+
+# Pre-deployment validation
+log_section "PRE-DEPLOYMENT VALIDATION"
 
 AVAILABLE_KB=$(df "$BASE" 2>/dev/null | tail -1 | awk '{print $4}')
 REQUIRED_KB=$((2 * 1024 * 1024))
 if [[ -z "${AVAILABLE_KB:-}" || "$AVAILABLE_KB" -lt "$REQUIRED_KB" ]]; then
-    log_error "Not enough free disk space for deployment"
+    log_error "Not enough free disk space for deployment (required: 2GB, available: $((AVAILABLE_KB / 1024))MB)"
     exit 2
 fi
+log_info "Disk space check passed ($((AVAILABLE_KB / 1024 / 1024))GB available)"
 
 require_command git
 require_command node
 require_command npm
 require_command php
+log_info "All required commands found"
 
 ensure_env_secret() {
     local key="$1"

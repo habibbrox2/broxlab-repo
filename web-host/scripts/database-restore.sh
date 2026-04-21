@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# BroxLab database restore script for shared hosting.
+# BroxLab database restore script for shared hosting - Production Ready
+# Safely restores MySQL database from compressed backups.
+# Enhanced with safety backups, validation, and confirmation.
 
 set -euo pipefail
 
@@ -95,6 +97,15 @@ else
         SAFETY_BACKUP=""
     fi
 fi
+
+# Validate backup integrity before restore
+if ! gzip -t "$BACKUP_FILE" 2>/dev/null; then
+    log_error "Backup file validation failed"
+    exit 1
+fi
+
+BACKUP_SIZE=$(du -h "$BACKUP_FILE" | awk '{print $1}')
+log_info "Backup file size: $BACKUP_SIZE"
 
 if [[ -t 0 ]]; then
     echo ""

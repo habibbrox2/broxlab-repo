@@ -27,4 +27,15 @@ export default class UIEnhancements {
         localStorage.setItem('brox.admin.darkMode', this.darkMode ? 'true' : 'false');
         this.applyInitialTheme();
     }
+
+    addMessageTimestamp(msgElement, date) {
+        const timeEl = document.createElement('span');
+        timeEl.className = 'msg-time';
+        timeEl.textContent = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+        const msgContent = msgElement.querySelector('.msg-content');
+        if (msgContent) {
+            msgContent.appendChild(timeEl);
+        }
+    }
 }

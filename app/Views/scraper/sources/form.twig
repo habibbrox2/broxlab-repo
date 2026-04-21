@@ -67,6 +67,7 @@
         <div class="col-lg-8">
 <form id="sourceForm" method="POST" action="/admin/scraper/sources/save">
                  {% if source %}
+                     <input type="hidden" name="_method" value="PUT">
                      <input type="hidden" name="id" value="{{ source.id }}">
                  {% endif %}
                  <input type="hidden" name="csrf_token" value="{{ csrf_token ?? generateCsrfToken() }}">
@@ -1089,10 +1090,20 @@ if (aiPrefillBtn && sourceForm) {
         aiPrefillBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Analyzing...';
 
         try {
-            const response = await fetch('/admin/scraper/ai/source-prefill', {
-                method: 'POST',
-                body: formData
-            });
+            const prefillEndpoints = [
+                '/admin/scraper/ai/source-prefill',
+                '/api/v1/scraper/ai/source-prefill'
+            ];
+            let response = null;
+            for (const endpoint of prefillEndpoints) {
+                response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (response.ok || response.status !== 404) {
+                    break;
+                }
+            }
 
             const data = await response.json();
             if (data.success) {

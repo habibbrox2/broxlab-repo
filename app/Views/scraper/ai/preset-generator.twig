@@ -356,13 +356,24 @@ async function runLiveAnalyzer() {
         }
 
         try {
-            const response = await fetch('/admin/scraper/ai/source-prefill', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: new FormData(presetGeneratorForm)
-            });
+            const formData = new FormData(presetGeneratorForm);
+            const prefillEndpoints = [
+                '/admin/scraper/ai/source-prefill',
+                '/api/v1/scraper/ai/source-prefill'
+            ];
+            let response = null;
+            for (const endpoint of prefillEndpoints) {
+                response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: formData
+                });
+                if (response.ok || response.status !== 404) {
+                    break;
+                }
+            }
 
             const data = await response.json();
             document.getElementById('loadingState').style.display = 'none';

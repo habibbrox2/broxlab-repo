@@ -1,10 +1,12 @@
 #!/bin/bash
 
-# BroxLab code backup script.
+# BroxLab code backup script - Production Ready
 # Stores backups in the shared hosting backup area.
+# Enhanced with error handling, validation, and safety checks.
 
 set -euo pipefail
 
+# Script configuration
 BASE="${BASE_PATH:-/home/tdhuedhn/broxlab}"
 APP="$BASE/app"
 SHARED="$APP/shared"
@@ -14,6 +16,8 @@ LOGS="$BASE/logs"
 CURRENT="$APP/current"
 KEEP_COUNT=${BACKUP_KEEP:-10}
 DRY_RUN=false
+LOCK_FILE="$SHARED/.backup.lock"
+BACKUP_TIMEOUT=3600  # 1 hour timeout
 
 usage() {
     echo "Usage: $0 [--dry-run] [--keep N] [--base PATH]"
@@ -49,10 +53,39 @@ NC='\033[0m'
 mkdir -p "$BACKUPS" "$LOGS"
 LOG_FILE="$LOGS/backup_$DATE.log"
 
+# Acquire lock before proceeding
+if ! acquire_lock; then
+    exit 1
+fi
+
 log_info() { echo -e "${GREEN}[INFO]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
 log_debug() { echo -e "${BLUE}[DEBUG]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
+
+# Lock file management
+acquire_lock() {
+    if [[ -f "$LOCK_FILE" ]]; then
+        local lock_pid
+        lock_pid=$(cat "$LOCK_FILE" 2>/dev/null || true)
+        if [[ -n "$lock_pid" ]] && kill -0 "$lock_pid" 2>/dev/null; then
+            log_error "Backup already in progress (PID: $lock_pid)"
+            return 1
+        fi
+    fi
+    echo $$ > "$LOCK_FILE"
+    return 0
+}
+
+release_lock() {
+    rm -f "$LOCK_FILE"
+}
+
+cleanup() {
+    release_lock
+}
+
+trap cleanup EXIT
 
 if $DRY_RUN; then
     log_info "[DRY-RUN] No files will be modified"

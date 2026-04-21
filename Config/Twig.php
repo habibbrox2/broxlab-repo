@@ -241,6 +241,16 @@ if (!function_exists('brox_resolve_asset_for_development')) {
                 'commandKey' => 'firebase-v2',
                 'command' => 'npm run build:firebase:v2',
             ],
+            '/ai/dist/' => [
+                'watchRoots' => [
+                    $projectRoot . '/public_html/ai/js',
+                    $projectRoot . '/public_html/ai/css',
+                    $projectRoot . '/build/esbuild-ai.mjs',
+                ],
+                'distRoot' => $projectRoot . '/public_html/ai/dist',
+                'commandKey' => 'ai',
+                'command' => 'npm run build:ai',
+            ],
         ];
 
         foreach ($buildMap as $prefix => $config) {
