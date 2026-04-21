@@ -87,6 +87,14 @@ cleanup() {
 
 trap cleanup EXIT
 
+<<<<<<< webmaster
+# Acquire lock before proceeding
+if ! acquire_lock; then
+    exit 1
+fi
+
+=======
+>>>>>>> main
 if $DRY_RUN; then
     log_info "[DRY-RUN] No files will be modified"
 fi
