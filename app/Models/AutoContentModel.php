@@ -8,10 +8,10 @@ class AutoContentModel
 {
     private $mysqli;
 
-    public function __construct($mysqli = null)
+    public function __construct($db = null)
     {
         global $mysqli;
-        $this->mysqli = $mysqli ?: $mysqli;
+        $this->mysqli = $db ?: $mysqli;
     }
 
     public function getMysqli()
@@ -76,7 +76,21 @@ class AutoContentModel
      */
     public function getActiveSources(): array
     {
-        $stmt = $this->mysqli->prepare("SELECT * FROM web_scraping_sources WHERE is_active = 1 AND content_type = 'articles' ORDER BY last_fetched_at ASC");
+        $stmt = $this->mysqli->prepare("
+            SELECT id, name, url, type, category_id, selectors, advance_config, presets,
+                   fetch_interval, is_active, last_fetched_at, created_at, content_type,
+                   scrape_depth, use_browser, max_pages, delay, pagination_type,
+                   pagination_selector, pagination_pattern, proxy_enabled, proxy_provider,
+                   proxy_config, ssl_verify, timeout, connect_timeout
+            FROM web_scraping_sources
+            WHERE is_active = 1
+              AND content_type = 'articles'
+              AND (
+                    last_fetched_at IS NULL
+                    OR last_fetched_at <= DATE_SUB(NOW(), INTERVAL IFNULL(fetch_interval, 3600) SECOND)
+                  )
+            ORDER BY COALESCE(last_fetched_at, '1970-01-01 00:00:00') ASC
+        ");
         if (!$stmt) {
             return [];
         }
@@ -120,7 +134,7 @@ class AutoContentModel
         $metadataJson = json_encode($data['metadata'] ?? []);
 
         $stmt->bind_param(
-            "sssssss",
+            "issssss",
             $data['source_id'],
             $data['url'],
             $data['title'],

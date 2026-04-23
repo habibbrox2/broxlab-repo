@@ -2549,6 +2549,56 @@ $router->post('/admin/scraper/sources/toggle-all', ['middleware' => ['auth', 'ad
 });
 
 /**
+ * Toggle Source Status (Legacy GET route)
+ *
+ * Supports the legacy link format used by the sources list:
+ *   /admin/scraper/sources/{id}/toggle?status=1&csrf_token=...
+ *
+ * @route GET /admin/scraper/sources/{id}/toggle
+ * @middleware auth, admin_only
+ *
+ * @query status int (0 or 1)
+ * @query csrf_token string (required)
+ */
+$router->get('/admin/scraper/sources/{id}/toggle', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+    $csrfToken = $_GET['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!validateCsrfToken($csrfToken)) {
+        http_response_code(403);
+        echo 'Invalid CSRF token';
+        return;
+    }
+
+    $status = isset($_GET['status']) ? (int)$_GET['status'] : -1;
+    if (!in_array($status, [0, 1], true)) {
+        http_response_code(400);
+        echo 'Invalid status value';
+        return;
+    }
+
+    try {
+        $sourceId = (int)$id;
+        $isActive = $status === 1;
+        $model = new ScraperModel($mysqli);
+        $result = $model->toggleSourceStatus($sourceId, $isActive);
+
+        if ($result) {
+            logActivity('scraper_source_toggled', 'source', $sourceId, [
+                'user_id' => $_SESSION['user_id'] ?? 0,
+                'active' => $isActive,
+                'via' => 'legacy_get_route',
+            ]);
+        }
+
+        header('Location: /admin/scraper/sources', true, 302);
+        exit;
+    } catch (Exception $e) {
+        error_log("Legacy toggle source error: " . $e->getMessage());
+        header('Location: /admin/scraper/sources', true, 302);
+        exit;
+    }
+});
+
+/**
  * Test Source Page
  *
  * Displays a page for testing a scraper source configuration.
@@ -2725,6 +2775,52 @@ $router->post('/admin/scraper/sources/test-live', ['middleware' => ['auth', 'adm
         return jsonResponse($response, 200);
     } catch (Exception $e) {
         error_log("Live source test error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Test Live Source Configuration (API alias)
+ *
+ * Allows the admin UI to call an API endpoint that always returns JSON.
+ *
+ * @route POST /api/v1/scraper/sources/test-live
+ * @middleware auth, admin_only
+ */
+$router->post('/api/v1/scraper/sources/test-live', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $built = buildLiveScraperSourcePayload($_POST);
+        if (!empty($built['errors'])) {
+            return jsonResponse([
+                'success' => false,
+                'error' => implode(' ', $built['errors'])
+            ], 400);
+        }
+
+        $model = new ScraperModel($mysqli);
+        $service = new ScraperService($model);
+        $result = $service->testSourceConfiguration($built['payload'], [
+            'max_items' => (int)($_POST['max_items'] ?? 5),
+            'timeout' => (int)($_POST['timeout'] ?? 30)
+        ]);
+
+        $success = (bool)($result['success'] ?? false);
+        $response = [
+            'success' => $success,
+            'result' => $result
+        ];
+
+        if (!$success) {
+            $response['error'] = $result['errors'][0] ?? $result['error'] ?? 'Live test failed';
+        }
+
+        return jsonResponse($response, 200);
+    } catch (Exception $e) {
+        error_log("Live source test API error: " . $e->getMessage());
         return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
@@ -3256,25 +3352,23 @@ $router->post('/admin/scraper/sources/{id}/run', ['middleware' => ['auth', 'admi
         $id = (int)$id;
         $model = new ScraperModel($mysqli);
         $service = new ScraperService($model);
-        $maxRetries = 3;
-        $error = '';
-        $success = false;
 
-        $maxRetries = 3;
-        $error = '';
-        $success = false;
+        $result = $service->scrapeSource($id, [
+            'job_type' => 'manual',
+            'priority' => 5,
+        ]);
 
-        $result = $service->scrapeSource($id);
+        $stats = is_array($result['stats'] ?? null) ? $result['stats'] : [];
+        $itemsFound = (int)($stats['items_found'] ?? 0);
+        $itemsSaved = (int)($stats['items_saved'] ?? 0);
+        $pagesScraped = (int)($stats['pages_scraped'] ?? 0);
+        $duration = (float)($stats['duration'] ?? 0);
 
-        // Check if scraping was actually successful
-        $scraperSuccess = !empty($result['success']);
-        $overallSuccess = $scraperSuccess; // For now, overall success matches scraper success
+        // Consider a "successful collection" as a successful scrape run that found something.
+        $overallSuccess = !empty($result['success']) && $itemsFound > 0;
 
-        // Get collected data summary
-        $collectedData = [];
-        if ($scraperSuccess && !empty($result['data'])) {
-            $collectedData = array_slice($result['data'], 0, 10); // Show first 10 items
-        }
+        // Preview the latest saved rows (since ScraperService does not return raw items).
+        $collectedData = $model->getLatestArticlesForSource($id, 10);
 
         // Get recent logs for this source
         $recentLogs = $model->getScrapeHistory($id, 5);
@@ -3287,10 +3381,10 @@ $router->post('/admin/scraper/sources/{id}/run', ['middleware' => ['auth', 'admi
             'query_info' => [
                 'total_items' => count($collectedData),
                 'source_id' => $id,
-                'execution_time' => $result['stats']['duration'] ?? 0,
-                'pages_scraped' => $result['stats']['pages_scraped'] ?? 0,
-                'items_found' => $result['stats']['items_found'] ?? 0,
-                'items_saved' => $result['stats']['items_saved'] ?? 0
+                'execution_time' => $duration,
+                'pages_scraped' => $pagesScraped,
+                'items_found' => $itemsFound,
+                'items_saved' => $itemsSaved,
             ]
         ]);
     } catch (Exception $e) {
@@ -3528,7 +3622,7 @@ $router->post('/api/v1/scraper/collect/start', ['middleware' => ['auth', 'admin_
         foreach ($sourcesToRun as $source) {
             $jobId = $model->createJob([
                 'source_id' => $source['id'],
-                'job_type' => 'manual',
+                'job_type' => 'full',
                 'priority' => 1
             ]);
             $jobIds[] = $jobId;

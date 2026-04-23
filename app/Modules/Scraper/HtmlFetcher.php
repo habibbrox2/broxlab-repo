@@ -143,18 +143,17 @@ class HtmlFetcher
             CURLOPT_USERAGENT => $userAgent,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS => (int)($options['max_redirects'] ?? 5),
-            CURLOPT_ENCODING => '', // Accept all encodings
+            CURLOPT_ENCODING => 'gzip, deflate',
 
             // SSL Settings - enabled for production security
             CURLOPT_SSL_VERIFYPEER => (bool)($options['ssl_verify'] ?? true),
             CURLOPT_SSL_VERIFYHOST => (bool)($options['ssl_verify'] ?? true) ? 2 : 0,
-            CURLOPT_CAINFO => __DIR__ . '/../../Config/cacert.pem', // Use system CA bundle
 
             // Browser-like headers
             CURLOPT_HTTPHEADER => [
                 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
                 'Accept-Language: en-US,en;q=0.9,bn;q=0.8',
-                'Accept-Encoding: gzip, deflate, br',
+                'Accept-Encoding: gzip, deflate',
                 'Connection: keep-alive',
                 'Upgrade-Insecure-Requests: 1',
                 'Cache-Control: no-cache',
@@ -168,6 +167,20 @@ class HtmlFetcher
                 'Sec-Ch-Ua-Platform: "Windows"',
             ]
         ]);
+
+        // Optional CA bundle: only set when the file exists (otherwise let libcurl use system defaults).
+        $sslVerify = (bool)($options['ssl_verify'] ?? true);
+        $caInfo = trim((string)($options['ca_info'] ?? ''));
+        if ($caInfo === '') {
+            $fallback = __DIR__ . '/../../Config/cacert.pem';
+            if (is_file($fallback)) {
+                $caInfo = $fallback;
+            }
+        }
+
+        if ($sslVerify && $caInfo !== '' && is_file($caInfo)) {
+            curl_setopt($ch, CURLOPT_CAINFO, $caInfo);
+        }
 
         $html = curl_exec($ch);
         $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);

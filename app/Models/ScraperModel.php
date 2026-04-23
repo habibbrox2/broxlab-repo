@@ -20,11 +20,50 @@ class ScraperModel
     }
 
     // Sources methods
-    public function getAllSources()
+    public function getAllSources(?bool $isActive = null, string $type = ''): array
     {
-        $sql = "SELECT * FROM web_scraping_sources ORDER BY created_at DESC";
-        $result = $this->mysqli->query($sql);
-        return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+        $type = trim((string)$type);
+
+        $sql = "
+            SELECT id, name, url, type, category_id, selectors, advance_config, presets,
+                   fetch_interval, is_active, last_fetched_at, created_at, content_type,
+                   scrape_depth, use_browser, max_pages, delay, pagination_type,
+                   pagination_selector, pagination_pattern, proxy_enabled, proxy_provider,
+                   proxy_config, ssl_verify, timeout, connect_timeout
+            FROM web_scraping_sources
+            WHERE 1=1
+        ";
+
+        if ($isActive !== null) {
+            $sql .= " AND is_active = ?";
+        }
+
+        if ($type !== '') {
+            $sql .= " AND type = ?";
+        }
+
+        $sql .= " ORDER BY created_at DESC";
+
+        $stmt = $this->mysqli->prepare($sql);
+        if (!$stmt) {
+            return [];
+        }
+
+        if ($isActive !== null && $type !== '') {
+            $active = $isActive ? 1 : 0;
+            $stmt->bind_param('is', $active, $type);
+        } elseif ($isActive !== null) {
+            $active = $isActive ? 1 : 0;
+            $stmt->bind_param('i', $active);
+        } elseif ($type !== '') {
+            $stmt->bind_param('s', $type);
+        }
+
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return $rows ?: [];
     }
 
     public function getSourceById($id)
@@ -180,10 +219,70 @@ class ScraperModel
     {
         $sql = "INSERT INTO web_scraping_jobs (source_id, job_type, priority) VALUES (?, ?, ?)";
         $stmt = $this->mysqli->prepare($sql);
+        $jobType = $this->normalizeJobType((string)($data['job_type'] ?? 'full'));
         $priority = $data['priority'] ?? 5;
-        $stmt->bind_param("isi", $data['source_id'], $data['job_type'], $priority);
+        $stmt->bind_param("isi", $data['source_id'], $jobType, $priority);
         $stmt->execute();
         return $this->mysqli->insert_id;
+    }
+
+    private function normalizeJobType(string $jobType): string
+    {
+        $jobType = trim($jobType);
+        if ($jobType === '') {
+            $jobType = 'full';
+        }
+
+        $allowed = $this->getEnumAllowedValues('web_scraping_jobs', 'job_type');
+        if ($allowed === []) {
+            return $jobType;
+        }
+
+        if (in_array($jobType, $allowed, true)) {
+            return $jobType;
+        }
+
+        foreach (['manual', 'full', 'scheduled', 'cron', 'queue', 'test'] as $preferred) {
+            if (in_array($preferred, $allowed, true)) {
+                return $preferred;
+            }
+        }
+
+        return $allowed[0];
+    }
+
+    /**
+     * Returns allowed values for an ENUM column (best-effort).
+     *
+     * @return array<int, string>
+     */
+    private function getEnumAllowedValues(string $table, string $column): array
+    {
+        $table = preg_replace('/[^a-zA-Z0-9_]/', '', $table) ?? '';
+        $column = preg_replace('/[^a-zA-Z0-9_]/', '', $column) ?? '';
+        if ($table === '' || $column === '') {
+            return [];
+        }
+
+        $result = $this->mysqli->query("SHOW COLUMNS FROM `{$table}` LIKE '{$column}'");
+        if (!$result) {
+            return [];
+        }
+
+        $row = $result->fetch_assoc();
+        $result->free();
+
+        $type = (string)($row['Type'] ?? '');
+        if ($type === '') {
+            return [];
+        }
+
+        $allowed = [];
+        if (preg_match_all("/'([^']+)'/", $type, $matches)) {
+            $allowed = $matches[1];
+        }
+
+        return is_array($allowed) ? array_values(array_filter($allowed, static fn ($v) => $v !== '')) : [];
     }
 
     public function updateJobStatus($job_id, $status, $stats = [])
@@ -1032,9 +1131,49 @@ class ScraperModel
 
     public function getActiveSources()
     {
-        $sql = "SELECT * FROM web_scraping_sources WHERE is_active = 1 ORDER BY name ASC";
-        $result = $this->mysqli->query($sql);
-        return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+        $stmt = $this->mysqli->prepare("
+            SELECT id, name, url, type, category_id, selectors, advance_config, presets,
+                   fetch_interval, is_active, last_fetched_at, created_at, content_type,
+                   scrape_depth, use_browser, max_pages, delay, pagination_type,
+                   pagination_selector, pagination_pattern, proxy_enabled, proxy_provider,
+                   proxy_config, ssl_verify, timeout, connect_timeout
+            FROM web_scraping_sources
+            WHERE is_active = 1
+            ORDER BY name ASC
+        ");
+        if (!$stmt) {
+            return [];
+        }
+
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return $rows ?: [];
+    }
+
+    public function getLatestArticlesForSource(int $sourceId, int $limit = 10): array
+    {
+        $sourceId = (int)$sourceId;
+        $limit = max(1, min(50, (int)$limit));
+
+        $stmt = $this->mysqli->prepare("
+            SELECT id, url, title, excerpt, image_url, published_at, status, created_at, updated_at
+            FROM web_scraping_articles
+            WHERE source_id = ?
+            ORDER BY created_at DESC
+            LIMIT ?
+        ");
+        if (!$stmt) {
+            return [];
+        }
+
+        $stmt->bind_param('ii', $sourceId, $limit);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return $rows ?: [];
     }
 
     public function getPendingJobs($limit = 50)

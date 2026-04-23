@@ -62,9 +62,6 @@ class CronWorker
                         $result['errors'] = array_merge($result['errors'], $sourceResult['errors']);
                     }
                     $processed++;
-
-                    // Update last collected time
-                    $this->model->updateSourceLastCollected($source['id']);
                 } catch (Exception $e) {
                     $result['errors'][] = "Source {$source['id']}: " . $e->getMessage();
                 }
@@ -84,9 +81,6 @@ class CronWorker
             'errors' => []
         ];
 
-        // For now, simulate collection
-        // In real implementation, this would scrape the source URL using ScraperService
-
         if ($testMode) {
             // In test mode, create a dummy article
             $articleData = [
@@ -105,18 +99,34 @@ class CronWorker
             } else {
                 $result['duplicates_skipped']++;
             }
+
+            // In test mode we still mark the source as fetched so scheduling behaves realistically.
+            $this->model->updateSourceLastCollected((int)$source['id']);
         } else {
             // Delegate to the scraper service for production workloads
             try {
-                $scrapeResult = $this->scraperService->scrapeSource((int)$source['id']);
-                if (!empty($scrapeResult['success'])) {
-                    $created = max(0, (int)($scrapeResult['items_processed'] ?? 0));
-                    $result['articles_created'] += $created;
-                    $result['duplicates_skipped'] += max(0, (int)($scrapeResult['duplicates_skipped'] ?? 0));
-                } else {
+                $scrapeResult = $this->scraperService->scrapeSource((int)$source['id'], [
+                    'job_type' => 'scheduled',
+                    'priority' => 5,
+                    'max_items' => $maxArticles,
+                ]);
+
+                if (empty($scrapeResult['success'])) {
                     $message = $scrapeResult['error'] ?? 'Unknown scraper error';
                     $result['errors'][] = "Source {$source['id']} ({$source['name']}): {$message}";
+                    return $result;
                 }
+
+                $stats = is_array($scrapeResult['stats'] ?? null) ? $scrapeResult['stats'] : [];
+                $itemsFound = (int)($stats['items_found'] ?? 0);
+                $itemsSaved = (int)($stats['items_saved'] ?? 0);
+                $itemsFailed = (int)($stats['items_failed'] ?? 0);
+
+                $result['articles_created'] += max(0, $itemsSaved);
+                $result['duplicates_skipped'] += max(0, $itemsFound - $itemsSaved - $itemsFailed);
+
+                // Update last collected time only after a successful scrape run.
+                $this->model->updateSourceLastCollected((int)$source['id']);
             } catch (Exception $e) {
                 $result['errors'][] = "Source {$source['id']} ({$source['name']}): " . $e->getMessage();
             }
