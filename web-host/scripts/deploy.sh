@@ -21,12 +21,17 @@ DB_BACKUPS="$SHARED/backups/database"
 LOGS="$BASE/logs"
 PID_FILE="$SHARED/node-server.pid"
 DEPLOY_LOCK="$SHARED/.deploy.lock"
+<<<<<<< webmaster
 DEPLOY_TIMEOUT=7200
+=======
+DEPLOY_TIMEOUT=7200  # 2 hours
+>>>>>>> main
 
 DATE=$(date +"%Y%m%d_%H%M%S")
 NEW_RELEASE="$RELEASES/$DATE"
 DEPLOYMENT_SUCCESS=false
 DEPLOYMENT_START_TIME=$(date +%s)
+<<<<<<< webmaster
 
 SKIP_BACKUP=false
 SKIP_DB_BACKUP=false
@@ -436,12 +441,14 @@ DB_BACKUPS="$SHARED/backups/database"
 LOGS="$BASE/logs"
 PID_FILE="$SHARED/node-server.pid"
 DEPLOY_LOCK="$SHARED/.deploy.lock"
-DEPLOY_TIMEOUT=7200
+DEPLOY_TIMEOUT=7200  # 2 hours
 
 DATE=$(date +"%Y%m%d_%H%M%S")
 NEW_RELEASE="$RELEASES/$DATE"
 DEPLOYMENT_SUCCESS=false
 DEPLOYMENT_START_TIME=$(date +%s)
+=======
+>>>>>>> main
 
 SKIP_BACKUP=false
 SKIP_DB_BACKUP=false
@@ -488,28 +495,17 @@ NC='\033[0m'
 mkdir -p "$LOGS" "$RELEASES" "$CODE_BACKUPS" "$DB_BACKUPS"
 LOG_FILE="$LOGS/deploy_$DATE.log"
 
-log_info() {
-    echo -e "${GREEN}[INFO]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
-}
-
-log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
-}
-
-log_debug() {
-    echo -e "${BLUE}[DEBUG]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
-}
-
+log_info() { echo -e "${GREEN}[INFO]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
+log_warn() { echo -e "${YELLOW}[WARN]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
+log_debug() { echo -e "${BLUE}[DEBUG]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
 log_section() {
     echo -e "${CYAN}============================================================${NC}" | tee -a "$LOG_FILE"
     echo -e "${CYAN}$1${NC}" | tee -a "$LOG_FILE"
     echo -e "${CYAN}============================================================${NC}" | tee -a "$LOG_FILE"
 }
 
+# Lock file management
 acquire_deploy_lock() {
     if [[ -f "$DEPLOY_LOCK" ]]; then
         local lock_pid
@@ -518,7 +514,7 @@ acquire_deploy_lock() {
         lock_time=$(cat "$DEPLOY_LOCK" 2>/dev/null | cut -d: -f2 || echo 0)
         local current_time
         current_time=$(date +%s)
-
+        
         if [[ -n "$lock_pid" ]] && kill -0 "$lock_pid" 2>/dev/null; then
             local elapsed=$((current_time - lock_time))
             if [[ $elapsed -lt $DEPLOY_TIMEOUT ]]; then
@@ -546,8 +542,9 @@ deployment_cleanup() {
     fi
     return $exit_code
 }
-
 trap deployment_cleanup EXIT
+
+# Old cleanup_on_error replaced with deployment_cleanup above
 
 stop_node_server() {
     if [[ -f "$PID_FILE" ]]; then
@@ -622,6 +619,7 @@ require_command() {
     fi
 }
 
+# Acquire deployment lock
 if ! acquire_deploy_lock; then
     exit 1
 fi
@@ -632,6 +630,7 @@ log_info "Target: $NEW_RELEASE"
 log_info "Shared storage: $SHARED"
 log_info "Node environment: $NODE_ENV"
 
+# Pre-deployment validation
 log_section "PRE-DEPLOYMENT VALIDATION"
 
 AVAILABLE_KB=$(df "$BASE" 2>/dev/null | tail -1 | awk '{print $4}')
@@ -684,9 +683,6 @@ fi
 ensure_env_secret "JWT_SECRET"
 ensure_env_secret "CSRF_SECRET"
 ensure_env_secret "NODE_SERVICE_API_KEY"
-
-mkdir -p \
-    "$STORAGE/uploads" \
     "$STORAGE/cache" \
     "$STORAGE/logs" \
     "$STORAGE/tmp" \
