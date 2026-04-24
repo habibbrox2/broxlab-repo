@@ -3,6 +3,7 @@
 namespace App\Modules\Scraper;
 
 use App\Modules\Scraper\ScraperErrorHandler;
+use App\Modules\Scraper\NodeToolsClient;
 
 /**
  * HtmlFetcher - Production-ready HTML fetching with retry logic and rate limit handling
@@ -59,6 +60,19 @@ class HtmlFetcher
         $url = trim($url);
         if ($url === '') {
             throw new \InvalidArgumentException('URL is required to fetch HTML content.');
+        }
+
+        $renderJs = !empty($options['render_js']);
+        if ($renderJs) {
+            try {
+                $rendered = self::fetchViaNodeTools($url, $options);
+                if (trim($rendered) !== '') {
+                    return $rendered;
+                }
+            } catch (\Throwable $e) {
+                // Fall back to curl below; do not fail the fetch just because Node is unavailable.
+                error_log('[HtmlFetcher] Node render failed: ' . $e->getMessage());
+            }
         }
 
         $errorHandler = self::getErrorHandler();
@@ -138,7 +152,7 @@ class HtmlFetcher
 
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => (int)($options['timeout'] ?? 30),
+            CURLOPT_TIMEOUT => (int)($options['timeout'] ?? (isset($options['timeout_ms']) ? max(1, (int)$options['timeout_ms'] / 1000) : 30)),
             CURLOPT_CONNECTTIMEOUT => (int)($options['connect_timeout'] ?? 10),
             CURLOPT_USERAGENT => $userAgent,
             CURLOPT_FOLLOWLOCATION => true,
@@ -221,5 +235,26 @@ class HtmlFetcher
         }
 
         return $html;
+    }
+
+    /**
+     * Optional Node.js rendering via /api/admin/ai-tools/execute -> fetch_url_content tool.
+     */
+    private static function fetchViaNodeTools(string $url, array $options = []): string
+    {
+        $client = new NodeToolsClient([
+            'base_url' => $options['node_base_url'] ?? null,
+            'api_key' => $options['node_api_key'] ?? null,
+            'timeout' => isset($options['timeout_ms']) ? max(5, (int)ceil(((int)$options['timeout_ms']) / 1000)) : 60,
+            'connect_timeout' => $options['connect_timeout'] ?? 10,
+        ]);
+
+        $html = $client->renderHtml($url, [
+            'timeout_ms' => $options['timeout_ms'] ?? 30000,
+            'wait_for_element' => $options['wait_for_element'] ?? '',
+            'user_agent' => $options['user_agent'] ?? 'BroxLab Scraper/1.0',
+        ]);
+
+        return $html ?? '';
     }
 }

@@ -209,7 +209,19 @@ class AdvanceScraper
     private function scrapeWithSelectors(string $url): array
     {
         try {
-            $html = HtmlFetcher::fetch($url);
+            $fetchOptions = [];
+            if (!empty($this->config['extract_dynamic']) || !empty($this->source['use_browser'])) {
+                $fetchOptions['render_js'] = true;
+                $fetchOptions['timeout_ms'] = isset($this->config['timeout']) ? max(5000, (int)$this->config['timeout'] * 1000) : 30000;
+                if (!empty($this->config['user_agent'])) {
+                    $fetchOptions['user_agent'] = (string)$this->config['user_agent'];
+                }
+                if (!empty($this->config['wait_for_element'])) {
+                    $fetchOptions['wait_for_element'] = (string)$this->config['wait_for_element'];
+                }
+            }
+
+            $html = HtmlFetcher::fetch($url, $fetchOptions);
             if (trim($html) === '') {
                 throw new Exception('Empty HTML response');
             }

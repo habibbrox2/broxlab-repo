@@ -363,7 +363,7 @@ $router->get('/admin/scraper/dashboard', ['middleware' => ['auth', 'admin_only']
  *
  * @throws Exception If database query fails or template rendering fails
  */
-$router->get('/admin/scraper/collect', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+$router->get('/admin/scraper/collect', ['middleware' => ['auth', 'admin_or_super_only']], function () use ($twig, $mysqli) {
     try {
         $model = new ScraperModel($mysqli);
         $sources = $model->getAllSources();
@@ -3547,7 +3547,7 @@ $router->post('/api/v1/scraper/queue/clear', ['middleware' => ['auth', 'admin_on
  *
  * @return array Collection status data
  */
-$router->get('/api/v1/scraper/collect/status', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->get('/api/v1/scraper/collect/status', ['middleware' => ['auth', 'admin_or_super_only']], function () use ($mysqli) {
     try {
         $model = new ScraperModel($mysqli);
         $stats = $model->getOverallStats();
@@ -3585,7 +3585,7 @@ $router->get('/api/v1/scraper/collect/status', ['middleware' => ['auth', 'admin_
  *
  * @return array Collection result data
  */
-$router->post('/api/v1/scraper/collect/start', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+$router->post('/api/v1/scraper/collect/start', ['middleware' => ['auth', 'admin_or_super_only']], function () use ($mysqli) {
     if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
@@ -3597,7 +3597,6 @@ $router->post('/api/v1/scraper/collect/start', ['middleware' => ['auth', 'admin_
         $options = $input['options'] ?? [];
 
         $model = new ScraperModel($mysqli);
-        $queueService = new \App\Modules\Scraper\Queue\QueueService($mysqli);
 
         // Get sources based on type
         $sourcesToRun = [];
@@ -3617,39 +3616,68 @@ $router->post('/api/v1/scraper/collect/start', ['middleware' => ['auth', 'admin_
             return jsonResponse(['success' => false, 'error' => 'No sources found for collection'], 400);
         }
 
-        // Create jobs for each source
-        $jobIds = [];
-        foreach ($sourcesToRun as $source) {
-            $jobId = $model->createJob([
-                'source_id' => $source['id'],
-                'job_type' => 'full',
-                'priority' => 1
-            ]);
-            $jobIds[] = $jobId;
+        $maxItems = isset($options['max_items']) ? max(1, min(20, (int)$options['max_items'])) : 5;
+        $dryRun = !empty($options['dry_run']);
+        $enhance = array_key_exists('enhance', $options) ? (bool)$options['enhance'] : true;
+        $publish = array_key_exists('publish', $options) ? (bool)$options['publish'] : true;
+
+        $collectionJobId = (int)$model->createCollectionJob([
+            'type' => (string)$type,
+            'target_ids' => json_encode(array_values($targetIds ?: array_map(fn ($s) => (int)$s['id'], $sourcesToRun)), JSON_UNESCAPED_SLASHES),
+            'options' => json_encode([
+                'max_items' => $maxItems,
+                'dry_run' => $dryRun,
+                'enhance' => $enhance,
+                'publish' => $publish,
+            ], JSON_UNESCAPED_SLASHES),
+            'status' => 'running',
+            'created_by' => (string)($_SESSION['user_id'] ?? '0'),
+        ]);
+
+        $args = [
+            '--type=' . (string)$type,
+            '--max-sources=' . (string)count($sourcesToRun),
+            '--max-items=' . (string)$maxItems,
+            '--collection-job-id=' . (string)$collectionJobId,
+        ];
+
+        if ($type === 'sources' && !empty($targetIds)) {
+            $args[] = '--source-ids=' . implode(',', array_map('intval', (array)$targetIds));
+        }
+        if ($type === 'category' && !empty($targetIds)) {
+            $args[] = '--category-id=' . (string)max(1, (int)($targetIds[0] ?? 0));
+        }
+        if ($dryRun) {
+            $args[] = '--dry-run';
+        }
+        if ($enhance) {
+            $args[] = '--enhance';
+        }
+        if ($publish) {
+            $args[] = '--publish';
         }
 
-        // Trigger queue processing
-        spawnQueueWorker();
+        $spawned = spawnRunPipeline($args);
 
         logActivity('scraper_manual_collection_started', null, null, [
             'user_id' => $_SESSION['user_id'] ?? 0,
-            'job_ids' => $jobIds,
+            'collection_job_id' => $collectionJobId,
             'type' => $type,
             'sources_count' => count($sourcesToRun)
         ]);
 
         return jsonResponse([
             'success' => true,
-            'message' => 'Collection started successfully',
+            'message' => $spawned ? 'Collection pipeline started successfully' : 'Collection pipeline could not be started',
             'data' => [
-                'job_ids' => $jobIds,
+                'collection_job_id' => $collectionJobId,
                 'sources' => array_map(function ($source) {
                     return ['id' => $source['id'], 'name' => $source['name']];
                 }, $sourcesToRun),
                 'total_items' => 0,
                 'results' => []
             ]
-        ]);
+        ], $spawned ? 200 : 500);
     } catch (Exception $e) {
         error_log("Collection start API error: " . $e->getMessage());
         error_log("Exception trace: " . $e->getTraceAsString());
@@ -3667,11 +3695,63 @@ $router->post('/api/v1/scraper/collect/start', ['middleware' => ['auth', 'admin_
 });
 
 /**
+ * Get Collection Job (progress/results)
+ *
+ * @route GET /api/v1/scraper/collect/job
+ * @middleware auth, admin_only
+ */
+$router->get('/api/v1/scraper/collect/job', ['middleware' => ['auth', 'admin_or_super_only']], function () use ($mysqli) {
+    try {
+        $id = isset($_GET['id']) ? max(1, (int)$_GET['id']) : 0;
+        if ($id <= 0) {
+            return jsonResponse(['success' => false, 'error' => 'Missing collection job id'], 400);
+        }
+
+        $model = new ScraperModel($mysqli);
+        $job = $model->getCollectionJobById($id);
+        if (!$job) {
+            return jsonResponse(['success' => false, 'error' => 'Collection job not found'], 404);
+        }
+
+        $job['target_ids'] = json_decode((string)($job['target_ids'] ?? '[]'), true) ?: [];
+        $job['options'] = json_decode((string)($job['options'] ?? '[]'), true) ?: [];
+        $job['results'] = json_decode((string)($job['results'] ?? '[]'), true) ?: [];
+
+        return jsonResponse(['success' => true, 'data' => $job]);
+    } catch (Exception $e) {
+        error_log("Collection job API error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => 'Failed to load collection job'], 500);
+    }
+});
+
+/**
  * Spawn the queue worker in the background via the cron entrypoint.
  */
 function spawnQueueWorker(array $args = []): bool
 {
     $scriptPath = realpath(__DIR__ . '/../..') . '/scripts/cron/scraper-worker.php';
+    if (!$scriptPath || !file_exists($scriptPath)) {
+        return false;
+    }
+
+    $commandParts = array_merge([PHP_BINARY, $scriptPath], $args);
+    $commandLine = implode(' ', array_map('escapeshellarg', $commandParts));
+
+    if (stripos(PHP_OS, 'WIN') === 0) {
+        pclose(popen("cmd /c start \"\" /B $commandLine", 'r'));
+    } else {
+        exec("$commandLine > /dev/null 2>&1 &");
+    }
+
+    return true;
+}
+
+/**
+ * Spawn runpipeline in the background.
+ */
+function spawnRunPipeline(array $args = []): bool
+{
+    $scriptPath = realpath(__DIR__ . '/../..') . '/scripts/cron/scraper-runpipeline.php';
     if (!$scriptPath || !file_exists($scriptPath)) {
         return false;
     }
@@ -4410,6 +4490,138 @@ $router->get('/admin/scraper/jobs/{id}', ['middleware' => ['auth', 'admin_only']
             'pageTitle' => 'Error',
             'message' => 'Failed to load job details.'
         ]);
+    }
+});
+
+/**
+ * Run All Pending Jobs
+ *
+ * Triggers the queue worker to process pending jobs.
+ *
+ * @route POST /admin/scraper/jobs/run-all
+ * @middleware auth, admin_only
+ */
+$router->post('/admin/scraper/jobs/run-all', ['middleware' => ['auth', 'admin_or_super_only']], function () use ($mysqli) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $maxJobs = isset($_POST['max_jobs']) ? max(1, (int)$_POST['max_jobs']) : 10;
+        $sleep = isset($_POST['sleep']) ? max(0, (int)$_POST['sleep']) : 0;
+
+        $args = ['--verbose', "--max-jobs={$maxJobs}"];
+        if ($sleep > 0) {
+            $args[] = "--sleep={$sleep}";
+        }
+
+        $spawned = spawnQueueWorker($args);
+        if ($spawned) {
+            logActivity('scraper_jobs_run_all', null, null, [
+                'user_id' => $_SESSION['user_id'] ?? 0,
+                'max_jobs' => $maxJobs,
+            ]);
+        }
+
+        return jsonResponse([
+            'success' => $spawned,
+            'message' => $spawned ? 'Queue worker triggered' : 'Unable to start worker process',
+        ], $spawned ? 200 : 500);
+    } catch (Exception $e) {
+        error_log("Run-all jobs error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Run a single job by resetting it to pending and triggering the worker once.
+ *
+ * @route POST /admin/scraper/jobs/{id}/run
+ * @middleware auth, admin_only
+ */
+$router->post('/admin/scraper/jobs/{id}/run', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $jobId = max(1, (int)$id);
+        $model = new ScraperModel($mysqli);
+        $ok = $model->resetJobForRun($jobId);
+        if (!$ok) {
+            return jsonResponse(['success' => false, 'error' => 'Unable to queue job'], 500);
+        }
+
+        $spawned = spawnQueueWorker(['--once', '--verbose']);
+        return jsonResponse(['success' => (bool)$spawned]);
+    } catch (Exception $e) {
+        error_log("Run job error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Stop a job (mark cancelled).
+ *
+ * @route POST /admin/scraper/jobs/{id}/stop
+ * @middleware auth, admin_only
+ */
+$router->post('/admin/scraper/jobs/{id}/stop', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $jobId = max(1, (int)$id);
+        $model = new ScraperModel($mysqli);
+        $result = (new \App\Modules\Scraper\Queue\QueueService($mysqli))->cancel($jobId);
+        return jsonResponse(['success' => (bool)($result['success'] ?? false)]);
+    } catch (Exception $e) {
+        error_log("Stop job error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Delete a job.
+ *
+ * @route DELETE /admin/scraper/jobs/{id}
+ * @middleware auth, admin_only
+ */
+$router->delete('/admin/scraper/jobs/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $jobId = max(1, (int)$id);
+        $model = new ScraperModel($mysqli);
+        $ok = $model->deleteJob($jobId);
+        return jsonResponse(['success' => (bool)$ok]);
+    } catch (Exception $e) {
+        error_log("Delete job error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+/**
+ * Clear completed jobs.
+ *
+ * @route POST /admin/scraper/jobs/clear-completed
+ * @middleware auth, admin_only
+ */
+$router->post('/admin/scraper/jobs/clear-completed', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+    }
+
+    try {
+        $model = new ScraperModel($mysqli);
+        $deleted = $model->clearCompletedJobs();
+        return jsonResponse(['success' => true, 'deleted' => $deleted]);
+    } catch (Exception $e) {
+        error_log("Clear completed jobs error: " . $e->getMessage());
+        return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
 

@@ -217,7 +217,22 @@ class ScraperService
 
         $html = '';
         try {
-            $html = HtmlFetcher::fetch((string)($source['url'] ?? ''));
+            $fetchOptions = [];
+            if (!empty($source['use_browser'])) {
+                $config = $this->decodeJsonStringToArray((string)($source['advance_config'] ?? ''));
+                $fetchOptions['render_js'] = true;
+                $fetchOptions['timeout_ms'] = !empty($config['timeout'])
+                    ? max(5000, (int)$config['timeout'] * 1000)
+                    : (!empty($source['timeout']) ? max(5000, (int)$source['timeout'] * 1000) : 30000);
+                if (!empty($config['wait_for_element'])) {
+                    $fetchOptions['wait_for_element'] = (string)$config['wait_for_element'];
+                }
+                if (!empty($config['user_agent'])) {
+                    $fetchOptions['user_agent'] = (string)$config['user_agent'];
+                }
+            }
+
+            $html = HtmlFetcher::fetch((string)($source['url'] ?? ''), $fetchOptions);
             $summary['fetched_html'] = trim($html) !== '';
         } catch (Exception $e) {
             $selectorChecks[] = [
@@ -958,15 +973,25 @@ class ScraperService
                 $savedCount++;
             }
 
-            if (($source['content_type'] ?? 'article') === 'mobile' && $title !== '') {
+            $contentType = strtolower(trim((string)($source['content_type'] ?? '')));
+            $sourceType = strtolower(trim((string)($source['type'] ?? '')));
+            $sourceName = strtolower(trim((string)($source['name'] ?? '')));
+            $isMobileLike = in_array($contentType, ['mobile', 'mobiles'], true)
+                || in_array($sourceType, ['mobile', 'mobiles', 'devices', 'device', 'bd'], true)
+                || (str_contains($sourceName, 'device') || str_contains($sourceName, 'mobile'));
+
+            if ($isMobileLike && $title !== '') {
                 $mobileSaved = $this->model->saveMobile([
                     'source_id' => $sourceId,
                     'source_url' => $url ?: $source['url'],
                     'title' => $title,
+                    'price' => (string)($item['price'] ?? ''),
                     'brand' => $this->extractBrandFromTitle($title),
                     'model' => $this->extractModelFromTitle($title),
                     'image_url' => $imageUrl,
                     'specifications' => $item,
+                    'release_date' => (string)($item['release_date'] ?? $item['released'] ?? ''),
+                    'status' => 'collected',
                 ]);
                 if ($mobileSaved) {
                     $savedCount++;
@@ -1121,6 +1146,9 @@ class ScraperService
         try {
             // Set up the scraper
             $this->advanceScraper->setSource($source);
+            if (isset($options['max_items'])) {
+                $this->advanceScraper->setMaxItems(max(1, min(50, (int)$options['max_items'])));
+            }
 
             // Check for structural changes if selectors are provided
             if (!empty($source['selectors'])) {
@@ -1129,7 +1157,22 @@ class ScraperService
                     // Try to fetch a sample HTML to check selectors
                     try {
                         $sampleUrl = $source['url'];
-                        $sampleHtml = HtmlFetcher::fetch($sampleUrl);
+                        $fetchOptions = [];
+                        if (!empty($source['use_browser'])) {
+                            $config = $this->decodeJsonStringToArray((string)($source['advance_config'] ?? ''));
+                            $fetchOptions['render_js'] = true;
+                            $fetchOptions['timeout_ms'] = !empty($config['timeout'])
+                                ? max(5000, (int)$config['timeout'] * 1000)
+                                : (!empty($source['timeout']) ? max(5000, (int)$source['timeout'] * 1000) : 30000);
+                            if (!empty($config['wait_for_element'])) {
+                                $fetchOptions['wait_for_element'] = (string)$config['wait_for_element'];
+                            }
+                            if (!empty($config['user_agent'])) {
+                                $fetchOptions['user_agent'] = (string)$config['user_agent'];
+                            }
+                        }
+
+                        $sampleHtml = HtmlFetcher::fetch((string)$sampleUrl, $fetchOptions);
                         $structuralIssues = $this->errorHandler->detectStructuralChanges($sampleHtml, $selectors);
 
                         if (!empty($structuralIssues)) {

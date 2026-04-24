@@ -41,6 +41,25 @@ class MobileModel {
 
     }
 
+    public function mobileExists(string $brandName, string $modelName): bool
+    {
+        $brandName = trim($brandName);
+        $modelName = trim($modelName);
+        if ($brandName === '' || $modelName === '') {
+            return false;
+        }
+
+        $stmt = $this->mysqli->prepare("SELECT id FROM mobiles WHERE brand_name = ? AND model_name = ? LIMIT 1");
+        if (!$stmt) {
+            return false;
+        }
+        $stmt->bind_param("ss", $brandName, $modelName);
+        $stmt->execute();
+        $exists = $stmt->get_result()->num_rows > 0;
+        $stmt->close();
+        return (bool)$exists;
+    }
+
     public function fetchAllSpecKeys(): array {
 
         $stmt = $this->mysqli->query("SELECT DISTINCT spec_key FROM mobile_specs ORDER BY spec_key ASC");

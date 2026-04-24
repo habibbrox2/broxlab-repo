@@ -204,7 +204,12 @@ class ContentModel {
 
     private function slugify($text) {
         $text = preg_replace('~[^\pL\d]+~u', '-', $text);
-        $text = iconv('UTF-8', 'ASCII//TRANSLIT', $text);
+        if (function_exists('iconv')) {
+            $converted = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', (string)$text);
+            if ($converted !== false && $converted !== '') {
+                $text = $converted;
+            }
+        }
         $text = preg_replace('~[^-\w]+~', '', $text);
         $text = trim($text, '-');
         $text = preg_replace('~-+~', '-', $text);
@@ -383,6 +388,43 @@ class ContentModel {
         $stmt->bind_param("ssssii", $title, $content, $author, $slug, $published, $reader_indexing);
         $stmt->execute();
         return $this->mysqli->insert_id;
+    }
+
+    /**
+     * Ensure legacy + new status fields are aligned for a published post.
+     */
+    public function markPostPublished(int $postId): bool
+    {
+        $postId = (int)$postId;
+        $stmt = $this->mysqli->prepare("
+            UPDATE posts
+            SET published = 1,
+                status = 'published',
+                published_at = COALESCE(published_at, NOW()),
+                updated_at = NOW()
+            WHERE id = ?
+        ");
+        if (!$stmt) {
+            return false;
+        }
+        $stmt->bind_param("i", $postId);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return (bool)$ok;
+    }
+
+    public function setPostCategoryId(int $postId, int $categoryId): bool
+    {
+        $postId = (int)$postId;
+        $categoryId = (int)$categoryId;
+        $stmt = $this->mysqli->prepare("UPDATE posts SET category_id = ?, updated_at = NOW() WHERE id = ?");
+        if (!$stmt) {
+            return false;
+        }
+        $stmt->bind_param("ii", $categoryId, $postId);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return (bool)$ok;
     }
 
     public function updatePost($id, $title, $content, $slug, $published, $reader_indexing) {
