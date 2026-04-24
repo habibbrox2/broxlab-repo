@@ -281,7 +281,9 @@ async function loadModels() {
       const logMsg = result.fromCache
         ? `[Cache] ${models.length} models loaded${result.isStale ? ' (stale)' : ''}`
         : `[Fresh] ${models.length} models fetched from API`;
-      console.debug(`[ModelCache] ${logMsg} for ${provider}`);
+      if (window.BroxBridgeIntegration?.config?.debugMode) {
+        console.info(`[ModelCache] ${logMsg} for ${provider}`);
+      }
     } else {
       // Fallback models
       const fallbackModels = provider === 'openrouter'
@@ -471,6 +473,11 @@ async function _callOpenRouter(messages, _options = {}) {
 async function _callFireworks(messages, _options = {}) {
   // Redirect to backend API
   return await callAI(messages);
+}
+
+if (typeof window !== 'undefined') {
+  window._callOpenRouter = _callOpenRouter;
+  window._callFireworks = _callFireworks;
 }
 
 /**

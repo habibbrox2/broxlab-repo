@@ -7,13 +7,22 @@
 (function () {
   'use strict';
 
-  console.log('[Integration Bridge] Initializing legacy & modern system bridge...');
-
   const config = {
     enableNewCacheSystem: true,
     enableLegacyFallback: true,
     debugMode: false,
   };
+
+  const debugLog = (...args) => {
+    if (!config.debugMode) return;
+    console.info(...args);
+  };
+
+  const statusLog = (...args) => {
+    console.info(...args);
+  };
+
+  debugLog('[Integration Bridge] Initializing legacy & modern system bridge...');
 
   window.BroxBridgeIntegration = {
     config,
@@ -21,7 +30,7 @@
     modernCache: null,
 
     async init() {
-      console.log('[Integration Bridge] Starting initialization...');
+      debugLog('[Integration Bridge] Starting initialization...');
 
       try {
         if (config.enableNewCacheSystem) {
@@ -32,7 +41,7 @@
           this.setupLegacyFallback();
         }
 
-        console.log('[Integration Bridge] ✓ Initialization complete');
+        debugLog('[Integration Bridge] ✓ Initialization complete');
         return true;
       } catch (err) {
         console.error('[Integration Bridge] Initialization failed:', err);
@@ -44,16 +53,16 @@
       try {
         if (typeof window.__cacheDebug !== 'undefined') {
           this.modernCache = window.__cacheDebug;
-          console.log('[Integration Bridge] ✓ Modern cache system connected');
+          debugLog('[Integration Bridge] ✓ Modern cache system connected');
           return;
         }
 
-        console.debug('[Integration Bridge] Waiting for cache-debug module...');
+        debugLog('[Integration Bridge] Waiting for cache-debug module...');
         await this.waitForModuleLoad('__cacheDebug', 5000);
 
         if (typeof window.__cacheDebug !== 'undefined') {
           this.modernCache = window.__cacheDebug;
-          console.log('[Integration Bridge] ✓ Modern cache system connected');
+          debugLog('[Integration Bridge] ✓ Modern cache system connected');
         } else {
           console.warn('[Integration Bridge] Modern cache not available (timeout)');
         }
@@ -75,7 +84,7 @@
 
     setupLegacyFallback() {
       if (typeof window.BroxAdminCopilot !== 'undefined') {
-        console.log('[Integration Bridge] ✓ Legacy system available');
+        debugLog('[Integration Bridge] ✓ Legacy system available');
       }
     },
 
@@ -86,16 +95,16 @@
         try {
           const result = await this.getModelsFromModernCache(provider, options);
           if (result && result.models && result.models.length > 0) {
-            console.log(`[Integration Bridge] Got ${result.models.length} models from modern cache for ${provider}`);
+            debugLog(`[Integration Bridge] Got ${result.models.length} models from modern cache for ${provider}`);
             return result;
           }
         } catch (err) {
-          console.debug(`[Integration Bridge] Modern cache lookup failed: ${err.message}`);
+          debugLog(`[Integration Bridge] Modern cache lookup failed: ${err.message}`);
         }
       }
 
       if (this.legacyCache[cacheKey]) {
-        console.log(`[Integration Bridge] Using legacy cache for ${provider}`);
+        debugLog(`[Integration Bridge] Using legacy cache for ${provider}`);
         return {
           models: this.legacyCache[cacheKey],
           fromCache: true,
@@ -106,7 +115,7 @@
       return await this.fetchFromAPI(provider, options);
     },
 
-    getModelsFromModernCache(provider, options = {}) {
+    getModelsFromModernCache(provider, _options = {}) {
       if (!this.modernCache || !this.modernCache.getState) {
         return null;
       }
@@ -127,7 +136,7 @@
           }
         }
       } catch (err) {
-        console.debug('[Integration Bridge] Error reading modern cache:', err.message);
+        debugLog('[Integration Bridge] Error reading modern cache:', err.message);
       }
 
       return null;
@@ -173,7 +182,7 @@
         try {
           stats.modernCache = this.modernCache.getStats();
         } catch (err) {
-          console.debug('[Integration Bridge] Could not get modern cache stats:', err.message);
+          debugLog('[Integration Bridge] Could not get modern cache stats:', err.message);
         }
       }
 
@@ -187,11 +196,11 @@
         try {
           this.modernCache.clearAll();
         } catch (err) {
-          console.debug('[Integration Bridge] Could not clear modern cache:', err.message);
+          debugLog('[Integration Bridge] Could not clear modern cache:', err.message);
         }
       }
 
-      console.log('[Integration Bridge] ✓ All caches cleared');
+      debugLog('[Integration Bridge] ✓ All caches cleared');
     },
 
     getReport() {
@@ -214,7 +223,7 @@
 
     debug(enabled = true) {
       config.debugMode = enabled;
-      console.log(`[Integration Bridge] Debug mode: ${enabled ? 'ON' : 'OFF'}`);
+      statusLog(`[Integration Bridge] Debug mode: ${enabled ? 'ON' : 'OFF'}`);
     },
   };
 
@@ -242,24 +251,24 @@
     const originalFetch = window.fetchProviderModels;
 
     window.fetchProviderModels = async function (provider, scope = 'admin') {
-      console.log(`[Integration Bridge] Intercepting fetchProviderModels for ${provider}`);
+      debugLog(`[Integration Bridge] Intercepting fetchProviderModels for ${provider}`);
 
       try {
         const result = await window.BroxBridgeIntegration.getModels(provider, { scope, });
 
         if (result && result.models && result.models.length > 0) {
-          console.log(`[Integration Bridge] ✓ Got models from bridge: ${result.models.length}`);
+          debugLog(`[Integration Bridge] ✓ Got models from bridge: ${result.models.length}`);
           return result.models;
         }
       } catch (err) {
-        console.debug('[Integration Bridge] Bridge fetch failed, falling back:', err.message);
+        debugLog('[Integration Bridge] Bridge fetch failed, falling back:', err.message);
       }
 
       return await originalFetch.call(this, provider, scope);
     };
 
-    console.log('[Integration Bridge] ✓ Patched legacy fetchProviderModels');
+    debugLog('[Integration Bridge] ✓ Patched legacy fetchProviderModels');
   }
 
-  console.log('[Integration Bridge] ✓ Bridge loaded and ready');
+  debugLog('[Integration Bridge] ✓ Bridge loaded and ready');
 })();

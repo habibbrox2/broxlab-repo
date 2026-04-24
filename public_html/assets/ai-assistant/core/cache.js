@@ -15,9 +15,15 @@ export class ModelCache {
     this.ttl = options.ttl || DEFAULT_CACHE_TTL;
     this.storageKey = options.storageKey || 'brox.ai.models.cache';
     this.apiEndpoint = options.apiEndpoint || '/api/ai/models';
+    this.debug = Boolean(options.debug);
     this.cache = new Map();
     this.isRefreshing = new Map();
     this.loadFromStorage();
+  }
+
+  logDebug(...args) {
+    if (!this.debug) return;
+    console.info(...args);
   }
 
   /**
@@ -142,7 +148,7 @@ export class ModelCache {
       const cached = this.get(provider);
       if (cached && cached.length > 0) {
         this.recordHit(provider);
-        console.debug(`[ModelCache] Cache hit for ${provider}: ${cached.length} models`);
+        this.logDebug(`[ModelCache] Cache hit for ${provider}: ${cached.length} models`);
         return {
           models: cached,
           fromCache: true,
@@ -199,7 +205,7 @@ export class ModelCache {
       const ttl = options.cacheTTL || this.ttl;
       this.set(provider, models, ttl);
 
-      console.debug(`[ModelCache] Fetched ${models.length} models for ${provider}`);
+      this.logDebug(`[ModelCache] Fetched ${models.length} models for ${provider}`);
 
       return {
         models,
@@ -213,7 +219,7 @@ export class ModelCache {
       // Fall back to cache even if expired
       const cachedModels = this.cache.get(this.getCacheKey(provider));
       if (cachedModels && cachedModels.models && cachedModels.models.length > 0) {
-        console.debug(`[ModelCache] Using stale cache for ${provider}`);
+        this.logDebug(`[ModelCache] Using stale cache for ${provider}`);
         return {
           models: cachedModels.models,
           fromCache: true,
@@ -362,7 +368,7 @@ export function scheduleInvalidation(provider, delay = DEFAULT_CACHE_TTL) {
   setTimeout(() => {
     const cache = getModelCache();
     cache.clear(provider);
-    console.debug(`[ModelCache] Scheduled invalidation for ${provider}`);
+    cache.logDebug(`[ModelCache] Scheduled invalidation for ${provider}`);
   }, delay);
 }
 
