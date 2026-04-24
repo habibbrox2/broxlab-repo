@@ -16,9 +16,9 @@ LOGS="$BASE/logs"
 LEGACY_CODE_BACKUPS="$BASE/backups"
 
 KEEP_RELEASES=${KEEP_RELEASES:-3}
-KEEP_BACKUPS=${KEEP_BACKUPS:-10}
+KEEP_BACKUPS=${KEEP_BACKUPS:-5}
 KEEP_LOGS_DAYS=${KEEP_LOGS_DAYS:-30}
-KEEP_DB_BACKUPS=${KEEP_DB_BACKUPS:-10}
+KEEP_DB_BACKUPS=${KEEP_DB_BACKUPS:-5}
 DRY_RUN=false
 
 while [[ $# -gt 0 ]]; do
@@ -55,6 +55,27 @@ log_info() { echo -e "${GREEN}[INFO]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | t
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$CLEANUP_LOG"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$CLEANUP_LOG"; }
 log_debug() { echo -e "${BLUE}[DEBUG]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$CLEANUP_LOG"; }
+
+cleanup_old_release_artifacts() {
+    local release_dir="$1"
+    
+    # Aggressively remove large artifacts from old releases
+    if [[ -d "$release_dir/node_modules" ]]; then
+        local size=$(du -sh "$release_dir/node_modules" 2>/dev/null | awk '{print $1}')
+        log_info "Removing node_modules from old release (freed: $size)"
+        rm -rf "$release_dir/node_modules" 2>/dev/null || true
+    fi
+    
+    if [[ -d "$release_dir/vendor" ]]; then
+        local size=$(du -sh "$release_dir/vendor" 2>/dev/null | awk '{print $1}')
+        log_info "Removing vendor directory from old release (freed: $size)"
+        rm -rf "$release_dir/vendor" 2>/dev/null || true
+    fi
+    
+    if [[ -d "$release_dir/.git" ]]; then
+        rm -rf "$release_dir/.git" 2>/dev/null || true
+    fi
+}
 
 cleanup_directory() {
     local dir="$1"
@@ -106,6 +127,14 @@ log_info "Starting cleanup"
 log_debug "Policy: releases=$KEEP_RELEASES backups=$KEEP_BACKUPS logs=${KEEP_LOGS_DAYS}d db-backups=$KEEP_DB_BACKUPS"
 
 cleanup_directory "$RELEASES" "" "$KEEP_RELEASES" "releases"
+# Aggressively clean old release artifacts
+if [[ -d "$RELEASES" ]]; then
+    find "$RELEASES" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null \
+        | sort -rn | tail -n "+$((KEEP_RELEASES + 1))" | awk '{print $2}' | while read -r old_release; do
+        cleanup_old_release_artifacts "$old_release"
+        log_debug "Cleaned up artifacts from: $old_release"
+    done
+fi
 cleanup_directory "$CODE_BACKUPS" "backup_*.tar.gz" "$KEEP_BACKUPS" "files"
 cleanup_directory "$LEGACY_CODE_BACKUPS" "backup_*.tar.gz" "$KEEP_BACKUPS" "files"
 cleanup_directory "$DB_BACKUPS" "database_backup_*.sql.gz" "$KEEP_DB_BACKUPS" "files"
@@ -118,6 +147,10 @@ if [[ -d "$LOGS" ]]; then
         COUNT=$(find "$LOGS" -name '*.log' -type f -mtime +"$KEEP_LOGS_DAYS" 2>/dev/null | wc -l)
         find "$LOGS" -name '*.log' -type f -mtime +"$KEEP_LOGS_DAYS" -delete 2>/dev/null || true
         log_info "Deleted $COUNT log file(s) older than ${KEEP_LOGS_DAYS} days"
+        
+        # Also clean up old Node server logs from today's deployments
+        find "$LOGS" -name 'node-server_*.log' -type f -mtime +7 -delete 2>/dev/null || true
+        find "$LOGS" -name 'service-manager_*.log' -type f -mtime +7 -delete 2>/dev/null || true
     fi
 fi
 

@@ -14,7 +14,7 @@ RELEASES="$APP/releases"
 BACKUPS="$SHARED/backups/code"
 LOGS="$BASE/logs"
 CURRENT="$APP/current"
-KEEP_COUNT=${BACKUP_KEEP:-10}
+KEEP_COUNT=${BACKUP_KEEP:-5}
 DRY_RUN=false
 LOCK_FILE="$SHARED/.backup.lock"
 BACKUP_TIMEOUT=3600  # 1 hour timeout
@@ -87,14 +87,6 @@ cleanup() {
 
 trap cleanup EXIT
 
-<<<<<<< webmaster
-# Acquire lock before proceeding
-if ! acquire_lock; then
-    exit 1
-fi
-
-=======
->>>>>>> main
 if $DRY_RUN; then
     log_info "[DRY-RUN] No files will be modified"
 fi
