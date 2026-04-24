@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Scraper\Publishing;
+namespace App\Modules\Scraper\publishing;
 
 use App\Models\ScraperModel;
 
@@ -300,4 +300,3 @@ class ScrapedContentPublisher
         return [$keys, $values];
     }
 }
-

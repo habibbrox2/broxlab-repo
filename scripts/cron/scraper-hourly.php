@@ -34,7 +34,7 @@ require_once __DIR__ . '/../../app/Models/MobileModel.php';
 use App\Models\ScraperModel;
 use App\Modules\Scraper\ScraperService;
 use App\Modules\AutoContent\AiContentEnhancer;
-use App\Modules\Scraper\Publishing\ScrapedContentPublisher;
+use App\Modules\Scraper\publishing\ScrapedContentPublisher;
 
 $options = getopt('', [
     'max-sources::',
