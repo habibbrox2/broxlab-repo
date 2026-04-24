@@ -12,7 +12,7 @@ SHARED="$APP/shared"
 DB_BACKUPS="$SHARED/backups/database"
 LOGS="$BASE/logs"
 ENV_FILE="$SHARED/.env"
-KEEP_BACKUPS=${KEEP_DB_BACKUPS:-10}
+KEEP_BACKUPS=${KEEP_DB_BACKUPS:-5}
 DRY_RUN=false
 
 while [[ $# -gt 0 ]]; do
