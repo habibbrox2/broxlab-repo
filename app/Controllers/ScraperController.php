@@ -7,6 +7,15 @@ declare(strict_types=1);
 /**
  * ScraperController.php
  * Controller for Web Scraping System - manages scraping sources, queue, logs, and statistics
+ * 
+ * CSRF Protection:
+ * - Standard form submissions require valid CSRF token in POST data or X-CSRF-Token header
+ * - API/web scraping requests can bypass CSRF by providing SCRAPER_API_KEY in:
+ *   - X-Scraper-Api-Key header, OR
+ *   - api_key GET parameter
+ * 
+ * Set SCRAPER_API_KEY environment variable to enable API key authentication.
+ * Example: export SCRAPER_API_KEY="your-secret-key-here"
  */
 
 use App\Models\ScraperModel;
@@ -178,9 +187,14 @@ if (!function_exists('buildLiveScraperSourcePayload')) {
     }
 }
 
-if (!function_exists('ensureCsrfToken')) {
+    if (!function_exists('ensureCsrfToken')) {
     function ensureCsrfToken(): bool
     {
+        // Allow bypass if valid API key is provided (for external/web scraping requests)
+        if (ensureScraperApiKey()) {
+            return true;
+        }
+        
         $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
         if (!validateCsrfToken($token)) {
             jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
@@ -189,29 +203,56 @@ if (!function_exists('ensureCsrfToken')) {
         return true;
     }
 
-    function getScraperApiKeyConfig(): string
-    {
-        return (string)(getenv('SCRAPER_API_KEY') ?: '');
+    if (!function_exists('getScraperApiKeyConfig')) {
+        function getScraperApiKeyConfig(): string
+        {
+            return (string)(getenv('SCRAPER_API_KEY') ?: '');
+        }
     }
 
-    function getScraperApiKeyFromRequest(): string
-    {
-        return $_SERVER['HTTP_X_SCRAPER_API_KEY'] ?? $_GET['api_key'] ?? '';
+    if (!function_exists('getScraperApiKeyFromRequest')) {
+        function getScraperApiKeyFromRequest(): string
+        {
+            return $_SERVER['HTTP_X_SCRAPER_API_KEY'] ?? $_GET['api_key'] ?? '';
+        }
     }
 
-    function ensureScraperApiKey(): bool
-    {
-        $expected = getScraperApiKeyConfig();
-        if ($expected === '') {
-            return false;
-        }
+    if (!function_exists('ensureScraperApiKey')) {
+        function ensureScraperApiKey(): bool
+        {
+            $expected = getScraperApiKeyConfig();
+            if ($expected === '') {
+                return false;
+            }
 
-        $provided = trim(getScraperApiKeyFromRequest());
-        if ($provided === '') {
-            return false;
-        }
+            $provided = trim(getScraperApiKeyFromRequest());
+            if ($provided === '') {
+                return false;
+            }
 
-        return hash_equals($expected, $provided);
+            return hash_equals($expected, $provided);
+        }
+    }
+
+    /**
+     * Validate CSRF token or API key for request
+     * Allows bypass with valid API key for external/web scraping requests
+     */
+    if (!function_exists('validateRequestCsrf')) {
+        function validateRequestCsrf(): bool
+        {
+            // Allow bypass if valid API key is provided (for external/web scraping requests)
+            if (ensureScraperApiKey()) {
+                return true;
+            }
+            
+            $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+            if (!validateCsrfToken($token)) {
+                jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
+                return false;
+            }
+            return true;
+        }
     }
 }
 
@@ -540,7 +581,7 @@ $router->get('/admin/scraper/collected-data', ['middleware' => ['auth', 'admin_o
  */
 $router->delete('/admin/scraper/collected-data/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -573,7 +614,7 @@ $router->delete('/admin/scraper/collected-data/{id}', ['middleware' => ['auth', 
  * @middleware auth, admin_only
  */
 $router->delete('/admin/scraper/articles/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -789,7 +830,7 @@ $router->get('/admin/scraper/articles/{id}/edit', ['middleware' => ['auth', 'adm
  */
 $router->post('/admin/scraper/articles/{id}/edit', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -935,7 +976,7 @@ $router->get('/admin/scraper/ai/preset-generator', ['middleware' => ['auth', 'ad
  */
 $router->post('/admin/scraper/ai/preset-generator/analyze', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -969,7 +1010,7 @@ $router->post('/admin/scraper/ai/preset-generator/analyze', ['middleware' => ['a
  * @middleware auth, admin_only
  */
 $router->post('/admin/scraper/ai/source-prefill', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -1228,7 +1269,7 @@ $router->get('/admin/scraper/presets/{key}/edit', ['middleware' => ['auth', 'adm
  */
 $router->post('/admin/scraper/presets/save', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -1358,7 +1399,7 @@ $router->post('/admin/scraper/presets/save', ['middleware' => ['auth', 'admin_on
  */
 $router->post('/api/v1/scraper/presets/ai-detect', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -1431,7 +1472,7 @@ $router->post('/api/v1/scraper/presets/ai-detect', ['middleware' => ['auth', 'ad
  */
 $router->post('/admin/scraper/presets/{key}/apply', ['middleware' => ['auth', 'admin_only']], function ($key) use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -1520,7 +1561,7 @@ $router->post('/admin/scraper/presets/{key}/apply', ['middleware' => ['auth', 'a
  */
 $router->delete('/admin/scraper/presets/{key}', ['middleware' => ['auth', 'admin_only']], function ($key) use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -1616,7 +1657,7 @@ $router->get('/admin/scraper/ai/analyzer', ['middleware' => ['auth', 'admin_only
  */
 $router->post('/admin/scraper/ai/analyzer/run', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -1715,7 +1756,7 @@ $router->get('/admin/scraper/ai/classifier', ['middleware' => ['auth', 'admin_on
  */
 $router->post('/admin/scraper/ai/classifier/analyze', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -1812,7 +1853,7 @@ $router->get('/admin/scraper/ai/optimizer', ['middleware' => ['auth', 'admin_onl
  */
 $router->post('/admin/scraper/ai/optimizer/analyze', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -2020,7 +2061,7 @@ $router->get('/api/v1/scraper/error-stats', ['middleware' => ['auth', 'admin_onl
  * @example {"success": true, "message": "Error logs cleared successfully"}
  */
 $router->post('/api/v1/scraper/clear-errors', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -2301,7 +2342,7 @@ $router->get('/admin/scraper/sources/{id}', ['middleware' => ['auth', 'admin_onl
  */
 $router->match(['POST', 'PUT'], '/admin/scraper/sources/save', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -2427,7 +2468,7 @@ $router->match(['POST', 'PUT'], '/admin/scraper/sources/save', ['middleware' => 
 $router->post('/admin/scraper/sources/delete', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
     $csrfToken = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (!validateCsrfToken($csrfToken)) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -2476,7 +2517,7 @@ $router->post('/admin/scraper/sources/delete', ['middleware' => ['auth', 'admin_
  */
 $router->post('/admin/scraper/sources/toggle', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -2524,7 +2565,7 @@ $router->post('/admin/scraper/sources/toggle', ['middleware' => ['auth', 'admin_
  */
 $router->post('/admin/scraper/sources/toggle-all', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -2562,7 +2603,7 @@ $router->post('/admin/scraper/sources/toggle-all', ['middleware' => ['auth', 'ad
  */
 $router->get('/admin/scraper/sources/{id}/toggle', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
     $csrfToken = $_GET['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (!validateCsrfToken($csrfToken)) {
+    if (!validateRequestCsrf()) {
         http_response_code(403);
         echo 'Invalid CSRF token';
         return;
@@ -2679,7 +2720,7 @@ $router->post('/admin/scraper/sources/{id}/test', ['middleware' => ['auth', 'adm
     $csrfToken = $input['csrf_token'] ?? '';
 
     // Validate CSRF token
-    if (!validateCsrfToken($csrfToken)) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -2742,7 +2783,7 @@ $router->post('/admin/scraper/sources/{id}/test', ['middleware' => ['auth', 'adm
  * @middleware auth, admin_only
  */
 $router->post('/admin/scraper/sources/test-live', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -2788,7 +2829,7 @@ $router->post('/admin/scraper/sources/test-live', ['middleware' => ['auth', 'adm
  * @middleware auth, admin_only
  */
 $router->post('/api/v1/scraper/sources/test-live', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -3148,7 +3189,7 @@ $router->get('/api/admin/scraper/presets/guess', ['middleware' => ['auth', 'admi
  */
 $router->post('/admin/scraper/sources/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         http_response_code(403);
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
@@ -3268,7 +3309,7 @@ $router->post('/admin/scraper/sources/{id}', ['middleware' => ['auth', 'admin_on
  * @example Error: {"success": false, "error": "Valid URL is required"}
  */
 $router->post('/admin/scraper/advance/test', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -3344,7 +3385,7 @@ $router->post('/admin/scraper/advance/test', ['middleware' => ['auth', 'admin_on
  */
 $router->post('/admin/scraper/sources/{id}/run', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -3475,7 +3516,7 @@ $router->get('/api/v1/scraper/queue/status', ['middleware' => ['auth', 'admin_on
  * @middleware auth, admin_only
  */
 $router->post('/api/v1/scraper/queue/run', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -3516,7 +3557,7 @@ $router->post('/api/v1/scraper/queue/run', ['middleware' => ['auth', 'admin_only
  * @middleware auth, admin_only
  */
 $router->post('/api/v1/scraper/queue/clear', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -3586,7 +3627,7 @@ $router->get('/api/v1/scraper/collect/status', ['middleware' => ['auth', 'admin_
  * @return array Collection result data
  */
 $router->post('/api/v1/scraper/collect/start', ['middleware' => ['auth', 'admin_or_super_only']], function () use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -3791,7 +3832,7 @@ function spawnRunPipeline(array $args = []): bool
  */
 $router->post('/admin/scraper/queue/cancel', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -3838,7 +3879,7 @@ $router->post('/admin/scraper/queue/cancel', ['middleware' => ['auth', 'admin_on
  */
 $router->post('/admin/scraper/queue/retry', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -3881,7 +3922,7 @@ $router->post('/admin/scraper/queue/retry', ['middleware' => ['auth', 'admin_onl
  * @example Error: {"success": false, "error": "Failed to clear queue"}
  */
 $router->post('/admin/scraper/queue/clear', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -3921,7 +3962,7 @@ $router->post('/admin/scraper/queue/clear', ['middleware' => ['auth', 'admin_onl
  */
 $router->post('/admin/scraper/queue/process', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -4090,7 +4131,7 @@ $router->get('/admin/scraper/logs/{id}', ['middleware' => ['auth', 'admin_only']
  */
 $router->post('/admin/scraper/logs/clear', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -4288,7 +4329,7 @@ $router->get('/admin/scraper/categories/{id}/edit', ['middleware' => ['auth', 'a
  */
 $router->post('/admin/scraper/categories/save', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         $_SESSION['error'] = 'Invalid CSRF token';
         header('Location: /admin/scraper/categories');
         exit;
@@ -4351,7 +4392,7 @@ $router->post('/admin/scraper/categories/save', ['middleware' => ['auth', 'admin
  */
 $router->post('/admin/scraper/categories/delete', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         $_SESSION['error'] = 'Invalid CSRF token';
         header('Location: /admin/scraper/categories');
         exit;
@@ -4502,7 +4543,7 @@ $router->get('/admin/scraper/jobs/{id}', ['middleware' => ['auth', 'admin_only']
  * @middleware auth, admin_only
  */
 $router->post('/admin/scraper/jobs/run-all', ['middleware' => ['auth', 'admin_or_super_only']], function () use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -4540,7 +4581,7 @@ $router->post('/admin/scraper/jobs/run-all', ['middleware' => ['auth', 'admin_or
  * @middleware auth, admin_only
  */
 $router->post('/admin/scraper/jobs/{id}/run', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -4567,7 +4608,7 @@ $router->post('/admin/scraper/jobs/{id}/run', ['middleware' => ['auth', 'admin_o
  * @middleware auth, admin_only
  */
 $router->post('/admin/scraper/jobs/{id}/stop', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -4589,7 +4630,7 @@ $router->post('/admin/scraper/jobs/{id}/stop', ['middleware' => ['auth', 'admin_
  * @middleware auth, admin_only
  */
 $router->delete('/admin/scraper/jobs/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -4611,7 +4652,7 @@ $router->delete('/admin/scraper/jobs/{id}', ['middleware' => ['auth', 'admin_onl
  * @middleware auth, admin_only
  */
 $router->post('/admin/scraper/jobs/clear-completed', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -4752,7 +4793,7 @@ $router->get('/admin/scraper/mobiles/{id}', ['middleware' => ['auth', 'admin_onl
  */
 $router->post('/admin/scraper/mobiles/delete', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         $_SESSION['error'] = 'Invalid CSRF token';
         header('Location: /admin/scraper/mobiles');
         exit;
@@ -4858,7 +4899,7 @@ $router->get('/admin/scraper/seen-urls', ['middleware' => ['auth', 'admin_only']
  */
 $router->post('/admin/scraper/seen-urls/delete', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         $_SESSION['error'] = 'Invalid CSRF token';
         header('Location: /admin/scraper/seen-urls');
         exit;
@@ -4955,7 +4996,7 @@ $router->get('/admin/scraper/settings', ['middleware' => ['auth', 'admin_only']]
  */
 $router->post('/admin/scraper/settings/create', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         $_SESSION['error'] = 'Invalid CSRF token';
         header('Location: /admin/scraper/settings');
         exit;
@@ -5034,7 +5075,7 @@ $router->post('/admin/scraper/settings/create', ['middleware' => ['auth', 'admin
  */
 $router->post('/admin/scraper/settings/update', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         $_SESSION['error'] = 'Invalid CSRF token';
         header('Location: /admin/scraper/settings');
         exit;
@@ -5117,7 +5158,7 @@ $router->post('/admin/scraper/settings/update', ['middleware' => ['auth', 'admin
  */
 $router->post('/admin/scraper/settings/delete', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         $_SESSION['error'] = 'Invalid CSRF token';
         header('Location: /admin/scraper/settings');
         exit;
@@ -5259,7 +5300,7 @@ $router->get('/admin/scraper/presets', ['middleware' => ['auth', 'admin_only']],
  */
 $router->post('/admin/scraper/presets/{key}/apply', ['middleware' => ['auth', 'admin_only']], function ($key) use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -5513,7 +5554,7 @@ $router->get('/api/v1/scraper/sources/{id}', ['middleware' => ['auth']], functio
  */
 $router->post('/api/v1/scraper/sources', ['middleware' => ['auth']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -5566,7 +5607,7 @@ $router->post('/api/v1/scraper/sources', ['middleware' => ['auth']], function ()
  */
 $router->put('/api/v1/scraper/sources/{id}', ['middleware' => ['auth']], function ($id) use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -5617,7 +5658,7 @@ $router->put('/api/v1/scraper/sources/{id}', ['middleware' => ['auth']], functio
  */
 $router->delete('/api/v1/scraper/sources/{id}', ['middleware' => ['auth']], function ($id) use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -5669,7 +5710,7 @@ $router->delete('/api/v1/scraper/sources/{id}', ['middleware' => ['auth']], func
  * @example Error: {"success": false, "error": "No selector provided"}
  */
 $router->post('/admin/scraper/selectors/test-css', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -5698,7 +5739,7 @@ $router->post('/admin/scraper/selectors/test-css', ['middleware' => ['auth', 'ad
 });
 
 $router->post('/admin/scraper/selectors/test-xpath', ['middleware' => ['auth', 'admin_only']], function () {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -5725,7 +5766,7 @@ $router->post('/admin/scraper/selectors/test-xpath', ['middleware' => ['auth', '
 });
 
 $router->post('/admin/scraper/selectors/test-attribute', ['middleware' => ['auth', 'admin_only']], function () {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -5757,7 +5798,7 @@ $router->post('/admin/scraper/selectors/test-attribute', ['middleware' => ['auth
 });
 
 $router->post('/admin/scraper/selectors/test-nested', ['middleware' => ['auth', 'admin_only']], function () {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -5789,7 +5830,7 @@ $router->post('/admin/scraper/selectors/test-nested', ['middleware' => ['auth', 
 });
 
 $router->post('/admin/scraper/selectors/validate-batch', ['middleware' => ['auth', 'admin_only']], function () {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -5886,7 +5927,7 @@ $router->get('/admin/scraper/api-reverse-engineering', ['middleware' => ['auth',
  */
 $router->post('/api/v1/scraper/api-reverse-engineering/analyze-endpoint', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -5945,7 +5986,7 @@ $router->post('/api/v1/scraper/api-reverse-engineering/analyze-endpoint', ['midd
  */
 $router->post('/api/v1/scraper/api-reverse-engineering/discover-endpoints', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -6010,7 +6051,7 @@ $router->post('/api/v1/scraper/api-reverse-engineering/discover-endpoints', ['mi
  */
 $router->post('/api/v1/scraper/api-reverse-engineering/test-methods', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     // Validate CSRF token
-    if (!validateCsrfToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -6072,7 +6113,7 @@ $router->get('/admin/scraper/api-outbound', ['middleware' => ['auth', 'admin_onl
  * @middleware auth, admin_only
  */
 $router->get('/api/v1/scraper/api-outbound/endpoints', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -6092,7 +6133,7 @@ $router->get('/api/v1/scraper/api-outbound/endpoints', ['middleware' => ['auth',
  * @middleware auth, admin_only
  */
 $router->get('/api/v1/scraper/api-outbound/endpoint/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
-    if (!validateCsrfToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -6118,7 +6159,7 @@ $router->get('/api/v1/scraper/api-outbound/endpoint/{id}', ['middleware' => ['au
  * @middleware auth, admin_only
  */
 $router->post('/api/v1/scraper/api-outbound/save', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -6148,7 +6189,7 @@ $router->post('/api/v1/scraper/api-outbound/save', ['middleware' => ['auth', 'ad
  * @middleware auth, admin_only
  */
 $router->delete('/api/v1/scraper/api-outbound/delete/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
-    if (!validateCsrfToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -6170,7 +6211,7 @@ $router->delete('/api/v1/scraper/api-outbound/delete/{id}', ['middleware' => ['a
  * @middleware auth, admin_only
  */
 $router->post('/api/v1/scraper/api-outbound/test', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    if (!validateCsrfToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -6196,7 +6237,7 @@ $router->post('/api/v1/scraper/api-outbound/test', ['middleware' => ['auth', 'ad
  * @middleware auth, admin_only
  */
 $router->post('/api/v1/scraper/api-outbound/test/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
-    if (!validateCsrfToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+    if (!validateRequestCsrf()) {
         return jsonResponse(['success' => false, 'error' => 'Invalid CSRF token'], 403);
     }
 
@@ -6828,3 +6869,8 @@ $router->get('/api/v1/scraper/sources/{id}', ['middleware' => ['auth']], functio
         return jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
+
+
+
+
+
