@@ -103,9 +103,9 @@ function init() {
   bindEvents();
   loadProviders();
   applyTheme();
-  
+
   // Initialize model cache
-  initializeModelCache(['openrouter'], {
+  initializeModelCache(['openrouter',], {
     ttl: 24 * 60 * 60 * 1000, // 24 hours
     storageKey: 'brox.admin.models.cache',
   });
@@ -278,25 +278,25 @@ async function loadModels() {
       }
 
       // Log cache status
-      const logMsg = result.fromCache 
+      const logMsg = result.fromCache
         ? `[Cache] ${models.length} models loaded${result.isStale ? ' (stale)' : ''}`
         : `[Fresh] ${models.length} models fetched from API`;
       console.debug(`[ModelCache] ${logMsg} for ${provider}`);
     } else {
       // Fallback models
       const fallbackModels = provider === 'openrouter'
-        ? [{ id: 'openai/gpt-4-turbo', name: 'GPT-4 Turbo', }]
-        : [{ id: 'gpt-4', name: 'GPT-4', }];
-      
+        ? [{ id: 'openai/gpt-4-turbo', name: 'GPT-4 Turbo', },]
+        : [{ id: 'gpt-4', name: 'GPT-4', },];
+
       UI.model.innerHTML = fallbackModels
         .map(m => `<option value="${m.id}">${m.name}</option>`)
         .join('');
-      
+
       UI.model.value = adminPrefs.model || fallbackModels[0].id;
     }
   } catch (err) {
     console.error(t('error_loading_models'), err);
-    
+
     // Always have fallback
     UI.model.innerHTML = '<option value="openai/gpt-4-turbo">GPT-4 Turbo</option>';
     UI.model.value = 'openai/gpt-4-turbo';
@@ -444,7 +444,7 @@ async function callAI(messages) {
           content: data.content,
           role: 'assistant',
         },
-      }],
+      },],
       model: data.meta?.model || model,
       usage: {
         prompt_tokens: 0,
@@ -460,7 +460,7 @@ async function callAI(messages) {
 /**
  * Call OpenRouter API (legacy - kept for compatibility)
  */
-async function callOpenRouter(messages, options = {}) {
+async function _callOpenRouter(messages, _options = {}) {
   // Redirect to backend API
   return await callAI(messages);
 }
@@ -468,7 +468,7 @@ async function callOpenRouter(messages, options = {}) {
 /**
  * Call Fireworks API (legacy - kept for compatibility)
  */
-async function callFireworks(messages, options = {}) {
+async function _callFireworks(messages, _options = {}) {
   // Redirect to backend API
   return await callAI(messages);
 }

@@ -9,360 +9,366 @@ import { getModelCache } from './cache.js';
  * Cache debugging utilities
  */
 export const cacheDebug = {
-    /**
-     * Get current cache state
-     */
-    getState() {
-        const cache = getModelCache();
-        return cache.export();
-    },
+  /**
+   * Get current cache state
+   */
+  getState() {
+    const cache = getModelCache();
+    return cache.export();
+  },
 
-    /**
-     * Log cache statistics to console
-     */
-    logStats() {
-        const cache = getModelCache();
-        const stats = cache.getStats();
+  /**
+   * Log cache statistics to console
+   */
+  logStats() {
+    const cache = getModelCache();
+    const stats = cache.getStats();
 
-        console.group('🔹 Cache Statistics');
-        console.log(`Total cached providers: ${stats.total}`);
+    console.warn('🔹 Cache Statistics');
+    console.info(`Total cached providers: ${stats.total}`);
 
-        stats.entries.forEach(entry => {
-            const status = entry.isExpired ? '❌ EXPIRED' : '✅ VALID';
-            const ttlText = entry.ttlMinutes > 0
-                ? `${entry.ttlMinutes}min`
-                : 'expired';
+    stats.entries.forEach((entry) => {
+      const status = entry.isExpired ? '❌ EXPIRED' : '✅ VALID';
+      const ttlText =
+        entry.ttlMinutes > 0 ? `${entry.ttlMinutes}min` : 'expired';
 
-            console.log(`
+      console.info(`
   ${entry.provider} [${status}]
     • Models: ${entry.modelCount}
     • Cached: ${new Date(entry.cachedAt).toLocaleString()}
     • TTL: ${ttlText}
     • Cache Hits: ${entry.hits}
       `);
+    });
+    console.warn('---');
+  },
+
+  /**
+   * Clear all cache
+   */
+  clearAll() {
+    const cache = getModelCache();
+    cache.clear();
+    console.info('✓ All cache cleared');
+  },
+
+  /**
+   * Clear specific provider cache
+   */
+  clear(provider) {
+    const cache = getModelCache();
+    cache.clear(provider);
+    console.info(`✓ Cache cleared for ${provider}`);
+  },
+
+  /**
+   * Force refresh cache for provider
+   */
+  async refresh(provider) {
+    const cache = getModelCache();
+    try {
+      const result = await cache.fetch(provider, { forceRefresh: true, });
+      console.info(
+        `✓ Refreshed cache for ${provider}: ${result.models.length} models`
+      );
+      return result;
+    } catch (err) {
+      console.error(`✗ Failed to refresh ${provider}:`, err.message);
+      return null;
+    }
+  },
+
+  /**
+   * Compare cache vs API
+   */
+  async compare(provider) {
+    const cache = getModelCache();
+
+    // Get cached models
+    const cached = cache.get(provider);
+
+    // Fetch fresh from API
+    try {
+      const result = await cache.fetchFromAPI(provider, { skipCache: true, });
+      const fresh = result.models || [];
+
+      console.warn(`📊 Cache Comparison for ${provider}`);
+      console.info(`Cached: ${cached?.length || 0} models`);
+      console.info(`Fresh: ${fresh.length} models`);
+
+      if (cached && fresh) {
+        const cachedIds = new Set(cached.map((m) => m.id));
+        const freshIds = new Set(fresh.map((m) => m.id));
+
+        const added = [...freshIds,].filter((id) => !cachedIds.has(id));
+        const removed = [...cachedIds,].filter((id) => !freshIds.has(id));
+
+        if (added.length > 0) {
+          console.info(`Added (${added.length}):`, added.slice(0, 3));
+        }
+        if (removed.length > 0) {
+          console.info(`Removed (${removed.length}):`, removed.slice(0, 3));
+        }
+        if (added.length === 0 && removed.length === 0) {
+          console.info('✓ Cache is up to date');
+        }
+      }
+      console.warn('---');
+
+      return { cached, fresh, };
+    } catch (err) {
+      console.error('Failed to compare:', err.message);
+      return null;
+    }
+  },
+
+  /**
+   * Export cache as JSON
+   */
+  export() {
+    const cache = getModelCache();
+    const data = cache.export();
+    const json = JSON.stringify(data, null, 2);
+
+    console.info('Cache exported (copy below):');
+    console.info(json);
+
+    return json;
+  },
+
+  /**
+   * Import cache from JSON
+   */
+  import(jsonStr) {
+    try {
+      const cache = getModelCache();
+      const data = JSON.parse(jsonStr);
+
+      if (data.data) {
+        Object.entries(data.data).forEach(([key, entry,]) => {
+          cache.cache.set(key, entry);
         });
-        console.groupEnd();
-    },
+        cache.saveToStorage();
+        console.info('✓ Cache imported successfully');
+      }
+    } catch (err) {
+      console.error('✗ Failed to import cache:', err.message);
+    }
+  },
 
-    /**
-     * Clear all cache
-     */
-    clearAll() {
-        const cache = getModelCache();
-        cache.clear();
-        console.log('✓ All cache cleared');
-    },
+  /**
+   * Get cache size in KB
+   */
+  getSize() {
+    try {
+      const cache = getModelCache();
+      const json = JSON.stringify(cache.export());
+      const bytes = new Blob([json,]).size;
+      const kb = (bytes / 1024).toFixed(2);
+      console.info(`Cache size: ${kb} KB`);
+      return kb;
+    } catch (err) {
+      console.error('Failed to get cache size:', err.message);
+      return 0;
+    }
+  },
 
-    /**
-     * Clear specific provider cache
-     */
-    clear(provider) {
-        const cache = getModelCache();
-        cache.clear(provider);
-        console.log(`✓ Cache cleared for ${provider}`);
-    },
+  /**
+   * Monitor cache performance
+   */
+  monitorPerformance() {
+    const cache = getModelCache();
+    const stats = cache.getStats();
 
-    /**
-     * Force refresh cache for provider
-     */
-    async refresh(provider) {
-        const cache = getModelCache();
-        try {
-            const result = await cache.fetch(provider, { forceRefresh: true });
-            console.log(`✓ Refreshed cache for ${provider}: ${result.models.length} models`);
-            return result;
-        } catch (err) {
-            console.error(`✗ Failed to refresh ${provider}:`, err.message);
-            return null;
-        }
-    },
+    console.warn('📈 Performance Analysis');
 
-    /**
-     * Compare cache vs API
-     */
-    async compare(provider) {
-        const cache = getModelCache();
+    let totalHits = 0;
+    stats.entries.forEach((entry) => {
+      totalHits += entry.hits || 0;
+    });
 
-        // Get cached models
-        const cached = cache.get(provider);
+    console.info(`Total cache hits: ${totalHits}`);
+    console.info(`Estimated API calls saved: ${totalHits}`);
+    console.info(`Estimated time saved: ~${(totalHits * 0.45).toFixed(1)}s`);
 
-        // Fetch fresh from API
-        try {
-            const result = await cache.fetchFromAPI(provider, { skipCache: true });
-            const fresh = result.models || [];
+    console.warn('---');
+  },
 
-            console.group(`📊 Cache Comparison for ${provider}`);
-            console.log(`Cached: ${cached?.length || 0} models`);
-            console.log(`Fresh: ${fresh.length} models`);
+  /**
+   * Setup real-time monitoring
+   */
+  startMonitoring(interval = 30000) {
+    console.info('📡 Starting cache monitoring (every 30s)');
 
-            if (cached && fresh) {
-                const cachedIds = new Set(cached.map(m => m.id));
-                const freshIds = new Set(fresh.map(m => m.id));
+    const monitor = setInterval(() => {
+      const cache = getModelCache();
+      const stats = cache.getStats();
 
-                const added = [...freshIds].filter(id => !cachedIds.has(id));
-                const removed = [...cachedIds].filter(id => !freshIds.has(id));
+      stats.entries.forEach((entry) => {
+        const warn = entry.isExpired ? '⚠️' : '✓';
+        console.info(
+          `${warn} ${entry.provider}: ${entry.hits} hits, TTL: ${entry.ttlMinutes}min`
+        );
+      });
+    }, interval);
 
-                if (added.length > 0) {
-                    console.log(`Added (${added.length}):`, added.slice(0, 3));
-                }
-                if (removed.length > 0) {
-                    console.log(`Removed (${removed.length}):`, removed.slice(0, 3));
-                }
-                if (added.length === 0 && removed.length === 0) {
-                    console.log('✓ Cache is up to date');
-                }
-            }
-            console.groupEnd();
-
-            return { cached, fresh };
-        } catch (err) {
-            console.error('Failed to compare:', err.message);
-            return null;
-        }
-    },
-
-    /**
-     * Export cache as JSON
-     */
-    export() {
-        const cache = getModelCache();
-        const data = cache.export();
-        const json = JSON.stringify(data, null, 2);
-
-        console.log('Cache exported (copy below):');
-        console.log(json);
-
-        return json;
-    },
-
-    /**
-     * Import cache from JSON
-     */
-    import(jsonStr) {
-        try {
-            const cache = getModelCache();
-            const data = JSON.parse(jsonStr);
-
-            if (data.data) {
-                Object.entries(data.data).forEach(([key, entry]) => {
-                    cache.cache.set(key, entry);
-                });
-                cache.saveToStorage();
-                console.log('✓ Cache imported successfully');
-            }
-        } catch (err) {
-            console.error('✗ Failed to import cache:', err.message);
-        }
-    },
-
-    /**
-     * Get cache size in KB
-     */
-    getSize() {
-        try {
-            const cache = getModelCache();
-            const json = JSON.stringify(cache.export());
-            const bytes = new Blob([json]).size;
-            const kb = (bytes / 1024).toFixed(2);
-            console.log(`Cache size: ${kb} KB`);
-            return kb;
-        } catch (err) {
-            console.error('Failed to get cache size:', err.message);
-            return 0;
-        }
-    },
-
-    /**
-     * Monitor cache performance
-     */
-    monitorPerformance() {
-        const cache = getModelCache();
-        const stats = cache.getStats();
-
-        console.group('📈 Performance Analysis');
-
-        let totalHits = 0;
-        stats.entries.forEach(entry => {
-            totalHits += entry.hits || 0;
-        });
-
-        console.log(`Total cache hits: ${totalHits}`);
-        console.log(`Estimated API calls saved: ${totalHits}`);
-        console.log(`Estimated time saved: ~${(totalHits * 0.45).toFixed(1)}s`);
-
-        console.groupEnd();
-    },
-
-    /**
-     * Setup real-time monitoring
-     */
-    startMonitoring(interval = 30000) {
-        console.log('📡 Starting cache monitoring (every 30s)');
-
-        const monitor = setInterval(() => {
-            const cache = getModelCache();
-            const stats = cache.getStats();
-
-            stats.entries.forEach(entry => {
-                const warn = entry.isExpired ? '⚠️' : '✓';
-                console.log(`${warn} ${entry.provider}: ${entry.hits} hits, TTL: ${entry.ttlMinutes}min`);
-            });
-        }, interval);
-
-        return () => {
-            clearInterval(monitor);
-            console.log('Monitoring stopped');
-        };
-    },
+    return () => {
+      clearInterval(monitor);
+      console.info('Monitoring stopped');
+    };
+  },
 };
 
 /**
  * Expose cache debug utilities to window for console access
  */
 if (typeof window !== 'undefined') {
-    window.__cacheDebug = cacheDebug;
-    console.log('💡 Cache debug available at window.__cacheDebug');
+  window.__cacheDebug = cacheDebug;
+  console.warn('💡 Cache debug available at window.__cacheDebug');
 }
 
 /**
  * Cache performance tracker
  */
 export class CachePerformanceTracker {
-    constructor() {
-        this.metrics = {
-            cacheHits: 0,
-            cacheMisses: 0,
-            apiCalls: 0,
-            totalTime: 0,
-        };
-    }
+  constructor() {
+    this.metrics = {
+      cacheHits: 0,
+      cacheMisses: 0,
+      apiCalls: 0,
+      totalTime: 0,
+    };
+  }
 
-    recordHit() {
-        this.metrics.cacheHits++;
-    }
+  recordHit() {
+    this.metrics.cacheHits++;
+  }
 
-    recordMiss() {
-        this.metrics.cacheMisses++;
-        this.metrics.apiCalls++;
-    }
+  recordMiss() {
+    this.metrics.cacheMisses++;
+    this.metrics.apiCalls++;
+  }
 
-    recordTime(ms) {
-        this.metrics.totalTime += ms;
-    }
+  recordTime(ms) {
+    this.metrics.totalTime += ms;
+  }
 
-    getMetrics() {
-        const total = this.metrics.cacheHits + this.metrics.cacheMisses;
-        const hitRate = total > 0 ? ((this.metrics.cacheHits / total) * 100).toFixed(2) : 0;
+  getMetrics() {
+    const total = this.metrics.cacheHits + this.metrics.cacheMisses;
+    const hitRate =
+      total > 0 ? ((this.metrics.cacheHits / total) * 100).toFixed(2) : 0;
 
-        return {
-            ...this.metrics,
-            total,
-            hitRate: `${hitRate}%`,
-            averageTime: total > 0 ? (this.metrics.totalTime / total).toFixed(2) : 0,
-        };
-    }
+    return {
+      ...this.metrics,
+      total,
+      hitRate: `${hitRate}%`,
+      averageTime: total > 0 ? (this.metrics.totalTime / total).toFixed(2) : 0,
+    };
+  }
 
-    reset() {
-        this.metrics = {
-            cacheHits: 0,
-            cacheMisses: 0,
-            apiCalls: 0,
-            totalTime: 0,
-        };
-    }
+  reset() {
+    this.metrics = {
+      cacheHits: 0,
+      cacheMisses: 0,
+      apiCalls: 0,
+      totalTime: 0,
+    };
+  }
 
-    printReport() {
-        const metrics = this.getMetrics();
-        console.group('📊 Cache Performance Report');
-        console.table(metrics);
-        console.groupEnd();
-    }
+  printReport() {
+    const metrics = this.getMetrics();
+    console.warn('📊 Cache Performance Report');
+    console.warn(JSON.stringify(metrics, null, 2));
+    console.warn('---');
+  }
 }
 
 /**
  * Cache batch operations helper
  */
 export async function batchFetchWithProgress(providers, options = {}) {
-    const cache = getModelCache();
-    const results = {};
-    let completed = 0;
+  const cache = getModelCache();
+  const results = {};
+  let completed = 0;
 
-    const progressCallback = options.onProgress || (() => { });
+  const progressCallback = options.onProgress || (() => {});
 
-    for (const provider of providers) {
-        try {
-            results[provider] = await cache.fetch(provider, options);
-            completed++;
-            progressCallback({
-                provider,
-                completed,
-                total: providers.length,
-                percentage: Math.round((completed / providers.length) * 100),
-            });
-        } catch (err) {
-            console.warn(`Failed to fetch ${provider}:`, err.message);
-            results[provider] = { error: err.message, models: [] };
-        }
+  for (const provider of providers) {
+    try {
+      results[provider] = await cache.fetch(provider, options);
+      completed++;
+      progressCallback({
+        provider,
+        completed,
+        total: providers.length,
+        percentage: Math.round((completed / providers.length) * 100),
+      });
+    } catch (err) {
+      console.warn(`Failed to fetch ${provider}:`, err.message);
+      results[provider] = { error: err.message, models: [], };
     }
+  }
 
-    return results;
+  return results;
 }
 
 /**
  * Cache warming strategy
  */
-export async function warmCache(providers, options = {}) {
-    console.log('🔥 Warming cache for:', providers);
+export function warmCache(providers, options = {}) {
+  console.info('🔥 Warming cache for:', providers);
 
-    return batchFetchWithProgress(providers, {
-        ...options,
-        skipCache: true,
-        onProgress: (progress) => {
-            console.debug(`Warming... ${progress.completed}/${progress.total} (${progress.percentage}%)`);
-        },
-    });
+  return batchFetchWithProgress(providers, {
+    ...options,
+    skipCache: true,
+    onProgress: (progress) => {
+      console.warn(
+        `Warming... ${progress.completed}/${progress.total} (${progress.percentage}%)`
+      );
+    },
+  });
 }
 
 /**
  * Get cache recommendations
  */
 export function getCacheRecommendations() {
-    const cache = getModelCache();
-    const stats = cache.getStats();
-    const recommendations = [];
+  const cache = getModelCache();
+  const stats = cache.getStats();
+  const recommendations = [];
 
-    stats.entries.forEach(entry => {
-        if (entry.isExpired) {
-            recommendations.push({
-                type: 'warning',
-                provider: entry.provider,
-                message: 'Cache expired, will be refreshed on next access',
-            });
-        }
-
-        if (entry.ttlMinutes < 60) {
-            recommendations.push({
-                type: 'info',
-                provider: entry.provider,
-                message: `Cache expiring soon (${entry.ttlMinutes}min)`,
-            });
-        }
-
-        if (entry.hits < 1) {
-            recommendations.push({
-                type: 'debug',
-                provider: entry.provider,
-                message: 'Low cache hits, consider prefetching',
-            });
-        }
-    });
-
-    if (stats.total === 0) {
-        recommendations.push({
-            type: 'info',
-            message: 'No cached models, prefetch to improve performance',
-        });
+  stats.entries.forEach((entry) => {
+    if (entry.isExpired) {
+      recommendations.push({
+        type: 'warning',
+        provider: entry.provider,
+        message: 'Cache expired, will be refreshed on next access',
+      });
     }
 
-    return recommendations;
+    if (entry.ttlMinutes < 60) {
+      recommendations.push({
+        type: 'info',
+        provider: entry.provider,
+        message: `Cache expiring soon (${entry.ttlMinutes}min)`,
+      });
+    }
+
+    if (entry.hits < 1) {
+      recommendations.push({
+        type: 'debug',
+        provider: entry.provider,
+        message: 'Low cache hits, consider prefetching',
+      });
+    }
+  });
+
+  if (stats.total === 0) {
+    recommendations.push({
+      type: 'info',
+      message: 'No cached models, prefetch to improve performance',
+    });
+  }
+
+  return recommendations;
 }

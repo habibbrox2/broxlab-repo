@@ -8,7 +8,7 @@ import {
 import { createHistoryStore } from '../../core/storage.js';
 import { createLanguageState } from '../../core/i18n.js';
 import { ensurePuterReady, getPuterClient, extractResponseText } from '../../core/puter.js';
-import { getModelCache, initializeModelCache } from '../../core/cache.js';
+import { initializeModelCache } from '../../core/cache.js';
 
 const UI = {
   btn: document.getElementById('publicAssistantBtn'),
@@ -891,7 +891,7 @@ async function init() {
   setStatus(t('assistant_status'));
 
   // Initialize model cache
-  initializeModelCache(['puter-js', 'openrouter'], {
+  initializeModelCache(['puter-js', 'openrouter',], {
     ttl: 24 * 60 * 60 * 1000, // 24 hours
     storageKey: 'brox.public.models.cache',
   });
