@@ -294,7 +294,7 @@ A: App falls back to API calls each time (no caching).
 - **Cache Module**: `/core/cache.js`
 - **Debug Utilities**: `/core/cache-debug.js`
 - **Documentation**: `/docs/CACHE_SYSTEM.md`
-- **Examples**: `/docs/CACHE_EXAMPLES.js`
+- **Examples**: `/docs/cache-examples.js`
 - **Admin Integration**: `/modules/admin/app.js`
 - **Public Integration**: `/modules/public/app.js`
 

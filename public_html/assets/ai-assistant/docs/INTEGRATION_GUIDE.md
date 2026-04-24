@@ -377,7 +377,7 @@ window.__cacheDebug.getCacheRecommendations()
 │   └── INTEGRATION_GUIDE.md (this file)
 │
 └── examples/
-    └── CACHE_EXAMPLES.js
+    └── cache-examples.js
 ```
 
 ---

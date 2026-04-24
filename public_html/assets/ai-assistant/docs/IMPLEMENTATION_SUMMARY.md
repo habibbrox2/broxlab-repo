@@ -42,7 +42,7 @@ Implemented a comprehensive caching mechanism that:
 |------|---------|
 | `CACHE_SYSTEM.md` | Complete technical documentation |
 | `CACHE_QUICK_REFERENCE.md` | Developer quick start guide |
-| `CACHE_EXAMPLES.js` | Code examples & test suite |
+| `cache-examples.js` | Code examples & test suite |
 | `IMPLEMENTATION_SUMMARY.md` | This file |
 
 ---
@@ -304,7 +304,7 @@ The caching system is designed to scale:
 ### For Developers
 1. **CACHE_QUICK_REFERENCE.md** - Start here
 2. **CACHE_SYSTEM.md** - Detailed technical docs
-3. **CACHE_EXAMPLES.js** - Code examples
+3. **cache-examples.js** - Code examples
 
 ### For Debugging
 ```javascript
