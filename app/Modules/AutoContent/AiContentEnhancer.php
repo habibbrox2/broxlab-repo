@@ -118,6 +118,85 @@ class AiContentEnhancer
     }
 
     /**
+     * Process a batch for a specific source (used by runpipeline so the run is scoped).
+     */
+    public function processBatchForSource(int $sourceId, int $batchSize = 5): array
+    {
+        $sourceId = max(1, (int)$sourceId);
+        $processed = 0;
+        $failed = 0;
+        $totalSeoScore = 0;
+        $messages = [];
+
+        try {
+            $stmt = $this->mysqli->prepare("
+                SELECT id, title, content, url, source_id
+                FROM web_scraping_articles
+                WHERE source_id = ?
+                  AND status = 'collected'
+                  AND (enhanced_at IS NULL OR enhanced_at < DATE_SUB(NOW(), INTERVAL 1 HOUR))
+                ORDER BY created_at DESC
+                LIMIT ?
+            ");
+            $stmt->bind_param("ii", $sourceId, $batchSize);
+            $stmt->execute();
+            $result = $stmt->get_result();
+
+            $articles = [];
+            while ($row = $result->fetch_assoc()) {
+                $articles[] = $row;
+            }
+
+            if (empty($articles)) {
+                return [
+                    'success' => true,
+                    'processed' => 0,
+                    'failed' => 0,
+                    'avg_seo_score' => 0,
+                    'message' => 'No articles found for enhancement'
+                ];
+            }
+
+            foreach ($articles as $article) {
+                try {
+                    $enhanced = $this->enhanceArticle($article);
+
+                    if ($enhanced) {
+                        $processed++;
+                        $totalSeoScore += ($enhanced['seo_score'] ?? 0);
+                        $this->updateEnhancedArticle((int)$article['id'], $enhanced);
+                        $messages[] = "Enhanced article {$article['id']}: {$article['title']}";
+                    } else {
+                        $failed++;
+                        $messages[] = "Failed to enhance article {$article['id']}";
+                    }
+                } catch (\Exception $e) {
+                    $failed++;
+                    error_log("AI enhancement failed for article {$article['id']}: " . $e->getMessage());
+                    $messages[] = "Error enhancing article {$article['id']}: " . $e->getMessage();
+                }
+            }
+        } catch (\Exception $e) {
+            error_log("Batch processing error: " . $e->getMessage());
+            return [
+                'success' => false,
+                'processed' => $processed,
+                'failed' => $failed,
+                'avg_seo_score' => $processed > 0 ? round($totalSeoScore / $processed) : 0,
+                'message' => 'Batch processing failed: ' . $e->getMessage()
+            ];
+        }
+
+        return [
+            'success' => true,
+            'processed' => $processed,
+            'failed' => $failed,
+            'avg_seo_score' => $processed > 0 ? round($totalSeoScore / $processed) : 0,
+            'message' => implode('; ', array_slice($messages, 0, 3))
+        ];
+    }
+
+    /**
      * Enhance a single article using AI
      */
     public function enhanceArticle(array $article): ?array
@@ -349,6 +428,14 @@ class AiContentEnhancer
     private function updateEnhancedArticle(int $articleId, array $enhancedData): bool
     {
         try {
+            $enhancedData['title'] = $this->sanitizeUtf8((string)($enhancedData['title'] ?? ''));
+            $enhancedData['content'] = $this->sanitizeUtf8((string)($enhancedData['content'] ?? ''));
+            $enhancedData['summary'] = $this->sanitizeUtf8((string)($enhancedData['summary'] ?? ''));
+            $enhancedData['excerpt'] = $this->sanitizeUtf8((string)($enhancedData['excerpt'] ?? ''));
+            $enhancedData['seo_title'] = $this->sanitizeUtf8((string)($enhancedData['seo_title'] ?? ''));
+            $enhancedData['seo_description'] = $this->sanitizeUtf8((string)($enhancedData['seo_description'] ?? ''));
+            $enhancedData['seo_keywords'] = $this->sanitizeUtf8((string)($enhancedData['seo_keywords'] ?? ''));
+
             $stmt = $this->mysqli->prepare("
                 UPDATE web_scraping_articles
                 SET
@@ -366,7 +453,7 @@ class AiContentEnhancer
                     word_count = ?,
                     enhanced_at = ?,
                     enhancement_version = ?,
-                    status = 'enhanced'
+                    status = 'processed'
                 WHERE id = ?
             ");
 
@@ -397,6 +484,27 @@ class AiContentEnhancer
             error_log("Failed to update enhanced article {$articleId}: " . $e->getMessage());
             return false;
         }
+    }
+
+    private function sanitizeUtf8(string $value): string
+    {
+        if ($value === '') {
+            return '';
+        }
+
+        if (function_exists('mb_check_encoding') && mb_check_encoding($value, 'UTF-8')) {
+            return $value;
+        }
+
+        if (function_exists('iconv')) {
+            $converted = @iconv('UTF-8', 'UTF-8//IGNORE', $value);
+            if (is_string($converted)) {
+                return $converted;
+            }
+        }
+
+        // Last-resort: drop non-printable bytes.
+        return preg_replace('/[^\P{C}\t\r\n]+/u', '', $value) ?? '';
     }
 
     /**

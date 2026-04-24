@@ -396,3 +396,21 @@ All systems have been thoroughly audited and are ready for production deployment
 **Audit Completed**: April 21, 2026  
 **System Status**: 🟢 PRODUCTION READY  
 **Recommendation**: DEPLOY IMMEDIATELY
+
+
+===============================================================================
+NEW (2026-04-24): Production Cron + RunPipeline
+===============================================================================
+
+Hourly cron runner (respects `fetch_interval` + `last_fetched_at`, max 5 items/source, auto-enhance + auto-publish):
+
+  php scripts/cron/scraper-hourly.php
+
+Optional:
+
+  php scripts/cron/scraper-hourly.php --max-sources=50 --max-items=5
+  php scripts/cron/scraper-hourly.php --dry-run
+
+Manual admin run:
+
+  /admin/scraper/collect

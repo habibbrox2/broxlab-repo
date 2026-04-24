@@ -8,6 +8,7 @@ import {
 import { createHistoryStore } from '../../core/storage.js';
 import { createLanguageState } from '../../core/i18n.js';
 import { ensurePuterReady, getPuterClient, extractResponseText } from '../../core/puter.js';
+import { getModelCache, initializeModelCache } from '../../core/cache.js';
 
 const UI = {
   btn: document.getElementById('publicAssistantBtn'),
@@ -673,7 +674,7 @@ async function handleUserMessage() {
 
   const providerOrder =
     providerChain.length > 0
-      ? `${providerChain.map((p) => p.provider_name).join(' → ') } → Puter`
+      ? `${providerChain.map((p) => p.provider_name).join(' → ')} → Puter`
       : 'Puter';
 
   if (providerOrder !== lastProviderChain) {
@@ -888,6 +889,12 @@ async function init() {
   if (userInfo?.name) clearPreChat();
   else showPreChat();
   setStatus(t('assistant_status'));
+
+  // Initialize model cache
+  initializeModelCache(['puter-js', 'openrouter'], {
+    ttl: 24 * 60 * 60 * 1000, // 24 hours
+    storageKey: 'brox.public.models.cache',
+  });
 }
 
 init();

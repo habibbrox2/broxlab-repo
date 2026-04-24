@@ -480,7 +480,11 @@ function startCollection(type, targetIds) {
     const requestData = {
         type: type,
         target_ids: targetIds,
-        options: {},
+        options: {
+            max_items: 5,
+            enhance: true,
+            publish: true
+        },
         csrf_token: getCsrfToken()
     };
 
@@ -495,7 +499,16 @@ function startCollection(type, targetIds) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showCollectionResults(data.data);
+            const jobId = data?.data?.collection_job_id;
+            const sourcesCount = Array.isArray(data?.data?.sources) ? data.data.sources.length : 0;
+            if (!jobId) {
+                updateProgress(100, 'Collection Failed', 'Missing collection job id from server');
+                document.getElementById('progressCircle').className = 'progress-ring danger';
+                return;
+            }
+
+            updateProgress(5, 'Pipeline Started', `Job #${jobId} running...`);
+            pollCollectionJob(jobId, sourcesCount || 1);
         } else {
             updateProgress(100, 'Collection Failed', data.error);
             document.getElementById('progressCircle').className = 'progress-ring danger';
@@ -514,6 +527,57 @@ function startCollection(type, targetIds) {
     }, 1000);
 }
 
+let jobPollInterval = null;
+
+function pollCollectionJob(jobId, expectedSources) {
+    if (jobPollInterval) {
+        clearInterval(jobPollInterval);
+    }
+
+    const pollOnce = () => {
+        fetch(`/api/v1/scraper/collect/job?id=${encodeURIComponent(jobId)}`)
+            .then(r => r.json())
+            .then(resp => {
+                if (!resp?.success || !resp?.data) {
+                    return;
+                }
+
+                const job = resp.data;
+                const results = Array.isArray(job.results) ? job.results : [];
+                const processed = results.length;
+                const pct = Math.min(99, Math.round((processed / Math.max(1, expectedSources)) * 100));
+                const totalItems = job.total_items || 0;
+
+                if (job.status === 'completed') {
+                    updateProgress(100, 'Collection Completed!', `Collected ${totalItems} items`);
+                    document.getElementById('progressCircle').className = 'progress-ring success';
+                    showCollectionResults(job);
+                    clearInterval(jobPollInterval);
+                    jobPollInterval = null;
+                    return;
+                }
+
+                if (job.status === 'failed' || job.status === 'cancelled') {
+                    updateProgress(100, 'Collection Failed', `Collected ${totalItems} items`);
+                    document.getElementById('progressCircle').className = 'progress-ring danger';
+                    showCollectionResults(job);
+                    clearInterval(jobPollInterval);
+                    jobPollInterval = null;
+                    return;
+                }
+
+                updateProgress(pct, 'Collecting...', `${processed}/${expectedSources} sources processed. Collected ${totalItems} items`);
+                showCollectionResults(job);
+            })
+            .catch(() => {
+                // Keep polling; transient errors are expected on some hosts.
+            });
+    };
+
+    pollOnce();
+    jobPollInterval = setInterval(pollOnce, 2000);
+}
+
 function updateProgress(percentage, text, subtext) {
     document.getElementById('progressText').textContent = text;
     document.getElementById('progressSubtext').textContent = subtext;
@@ -530,18 +594,24 @@ function updateProgress(percentage, text, subtext) {
 }
 
 function showCollectionResults(data) {
-    updateProgress(100, 'Collection Completed!', `Collected ${data.total_items} items`);
+    const sources = Array.isArray(data.sources) ? data.sources : [];
+    const results = Array.isArray(data.results) ? data.results : [];
+    const totalItems = data.total_items || 0;
 
-    document.getElementById('sourcesProcessed').textContent = data.sources.length;
-    document.getElementById('itemsCollected').textContent = data.total_items;
+    document.getElementById('sourcesProcessed').textContent = sources.length || results.length || 0;
+    document.getElementById('itemsCollected').textContent = totalItems;
 
-    document.getElementById('progressCircle').className = 'progress-ring success';
+    if (data.status === 'completed') {
+        document.getElementById('progressCircle').className = 'progress-ring success';
+    } else if (data.status === 'failed') {
+        document.getElementById('progressCircle').className = 'progress-ring danger';
+    }
 
     // Show results
     const resultsList = document.getElementById('resultsList');
     resultsList.innerHTML = '';
 
-    data.results.forEach((result, index) => {
+    results.forEach((result, index) => {
         const resultItem = document.createElement('div');
         resultItem.className = `list-group-item source-item ${result.success ? 'list-group-item-success' : 'list-group-item-danger'}`;
         resultItem.style.animationDelay = `${index * 0.1}s`;
@@ -551,11 +621,11 @@ function showCollectionResults(data) {
                 <div>
                     <h6 class="mb-1">${result.source_name}</h6>
                     <p class="mb-1 small text-muted">${result.execution_time}s execution time</p>
-                    ${result.error ? `<p class="mb-0 small text-danger">${result.error}</p>` : ''}
+                    ${Array.isArray(result.errors) && result.errors.length ? `<p class="mb-0 small text-danger">${result.errors[0]}</p>` : (result.error ? `<p class="mb-0 small text-danger">${result.error}</p>` : '')}
                 </div>
                 <div class="text-end">
                     <span class="badge ${result.success ? 'bg-success' : 'bg-danger'}">${result.success ? 'Success' : 'Failed'}</span>
-                    <br><small class="text-muted">${result.items_collected} items</small>
+                    <br><small class="text-muted">${result.items_collected || 0} items</small>
                 </div>
             </div>
         `;
@@ -574,6 +644,10 @@ function showCollectionResults(data) {
 function hideCollectionProgress() {
     document.getElementById('collectionProgress').style.display = 'none';
     clearInterval(collectionInterval);
+    if (jobPollInterval) {
+        clearInterval(jobPollInterval);
+        jobPollInterval = null;
+    }
 }
 
 function showRecentCollections() {

@@ -1016,28 +1016,38 @@ if (!window.BroxAdminInstance) {
           micBtn.style.cursor = 'not-allowed';
         };
 
-        // Best-effort permission probe to avoid repeated blocked prompts.
+        const enableMicUi = () => {
+          micBtn.style.opacity = '';
+          micBtn.style.cursor = '';
+          micBtn.title = 'Voice input';
+        };
+
+        // Listen for permission state changes (after user has made a decision)
         if (navigator.permissions && typeof navigator.permissions.query === 'function') {
           navigator.permissions
             .query({ name: 'microphone' })
             .then((status) => {
-              self._micPermission = status?.state || self._micPermission;
-              if (self._micPermission === 'denied') {
+              // Only block UI if we KNOW it's been explicitly denied before
+              if (status?.state === 'denied' && self._micPermission === 'denied') {
                 setMicBlockedUi(
                   'Microphone permission blocked. Allow it in site settings to use voice input.'
                 );
               }
               try {
                 status.onchange = () => {
-                  self._micPermission = status.state || self._micPermission;
-                  if (self._micPermission === 'denied') {
+                  // Update UI based on permission state change
+                  if (status.state === 'denied') {
+                    self._micPermission = 'denied';
                     setMicBlockedUi(
                       'Microphone permission blocked. Allow it in site settings to use voice input.'
                     );
+                  } else if (status.state === 'granted') {
+                    self._micPermission = 'granted';
+                    enableMicUi();
                   } else {
-                    micBtn.style.opacity = '';
-                    micBtn.style.cursor = '';
-                    micBtn.title = 'Voice input';
+                    // prompt state - let user try clicking
+                    self._micPermission = null;
+                    enableMicUi();
                   }
                 };
               } catch { }
@@ -1051,9 +1061,6 @@ if (!window.BroxAdminInstance) {
           if (!canProbeMic) return true; // Some browsers prompt via SpeechRecognition only
           if (self._micPermission === 'granted') return true;
           if (self._micPermission === 'denied') {
-            setMicBlockedUi(
-              'Microphone permission blocked. Allow it in site settings to use voice input.'
-            );
             const msg =
               'Microphone permission is blocked. Click the lock icon in the address bar → Site settings → Microphone → Allow, then reload the page.';
             if (window.showAlert) {
@@ -1072,6 +1079,7 @@ if (!window.BroxAdminInstance) {
                 stream.getTracks().forEach((t) => t.stop());
               } catch { }
               self._micPermission = 'granted';
+              enableMicUi();
               return true;
             })
             .catch((err) => {
@@ -2714,8 +2722,12 @@ if (!window.BroxAdminInstance) {
         }
 
         // Enhance code blocks with syntax highlighting
-        if (highlighter) {
-          highlighter.processCodeBlocks(contentDiv);
+        if (highlighter && typeof highlighter.processCodeBlocks === 'function') {
+          try {
+            highlighter.processCodeBlocks(contentDiv);
+          } catch (err) {
+            console.debug('[Syntax Highlighter] Error processing code blocks:', err.message);
+          }
         }
       }
 

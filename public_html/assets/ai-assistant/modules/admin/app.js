@@ -7,6 +7,7 @@ import {
   appendAssistant,
   appendMessage
 } from '../../core/render.js';
+import { getModelCache, initializeModelCache } from '../../core/cache.js';
 
 // UI Element References with safe fallbacks
 const UI = {
@@ -102,6 +103,12 @@ function init() {
   bindEvents();
   loadProviders();
   applyTheme();
+  
+  // Initialize model cache
+  initializeModelCache(['openrouter'], {
+    ttl: 24 * 60 * 60 * 1000, // 24 hours
+    storageKey: 'brox.admin.models.cache',
+  });
 }
 
 /**
@@ -209,22 +216,22 @@ async function loadProviders() {
   try {
     if (!UI.provider) return;
 
-    // Fetch providers from backend or use defaults
+    // Fetch providers from backend
     const response = await fetch('/api/ai/providers', {
       credentials: 'same-origin',
     }).catch(() => null);
 
     const providers = response?.ok ? await response.json() : [
       { id: 'openrouter', name: 'OpenRouter', },
-      { id: 'fireworks', name: 'Fireworks', },
-      { id: 'puter-js', name: 'Puter.js', },
     ];
 
     UI.provider.innerHTML = providers
-      .map(p => `<option value="${p.id}">${p.name}</option>`)
+      .map(p => `<option value="${p.id || p.name}">${p.name}</option>`)
       .join('');
 
-    UI.provider.value = adminPrefs.provider;
+    if (UI.provider.value === '') {
+      UI.provider.value = adminPrefs.provider || (providers[0]?.id || providers[0]?.name);
+    }
   } catch (err) {
     console.error('Failed to load providers:', err);
   }
@@ -240,27 +247,59 @@ async function loadModels() {
     const provider = UI.provider.value;
     UI.model.innerHTML = '<option value="">Loading...</option>';
 
-    const response = await fetch(`/api/ai/providers/${provider}/models`, {
-      credentials: 'same-origin',
-    }).catch(() => null);
+    // Get model cache instance
+    const cache = getModelCache();
 
-    let models = [];
-    if (response?.ok) {
-      models = await response.json();
-    } else {
-      // Fallback models
-      models = provider === 'openrouter'
-        ? [{ id: 'openai/gpt-4-turbo', name: 'GPT-4 Turbo', },]
-        : [{ id: 'gpt-4', name: 'GPT-4', },];
+    // Fetch models from cache or API
+    const result = await cache.fetch(provider, {
+      timeout: 10000,
+      cacheTTL: 24 * 60 * 60 * 1000, // 24 hours
+    });
+
+    let models = result.models || [];
+
+    // Ensure models is an array of objects
+    if (!Array.isArray(models)) {
+      models = [];
     }
 
-    UI.model.innerHTML = models
-      .map(m => `<option value="${m.id}">${m.name}</option>`)
-      .join('');
+    // Render models if we have any
+    if (models.length > 0) {
+      UI.model.innerHTML = models
+        .map(m => `<option value="${m.id || m.model || m.name}">${m.name || m.model || m.id}</option>`)
+        .join('');
 
-    UI.model.value = adminPrefs.model;
+      // Set selected model
+      if (adminPrefs.model && UI.model.value !== adminPrefs.model) {
+        UI.model.value = adminPrefs.model;
+      }
+      if (UI.model.value === '') {
+        UI.model.value = adminPrefs.model;
+      }
+
+      // Log cache status
+      const logMsg = result.fromCache 
+        ? `[Cache] ${models.length} models loaded${result.isStale ? ' (stale)' : ''}`
+        : `[Fresh] ${models.length} models fetched from API`;
+      console.debug(`[ModelCache] ${logMsg} for ${provider}`);
+    } else {
+      // Fallback models
+      const fallbackModels = provider === 'openrouter'
+        ? [{ id: 'openai/gpt-4-turbo', name: 'GPT-4 Turbo', }]
+        : [{ id: 'gpt-4', name: 'GPT-4', }];
+      
+      UI.model.innerHTML = fallbackModels
+        .map(m => `<option value="${m.id}">${m.name}</option>`)
+        .join('');
+      
+      UI.model.value = adminPrefs.model || fallbackModels[0].id;
+    }
   } catch (err) {
     console.error(t('error_loading_models'), err);
+    
+    // Always have fallback
+    UI.model.innerHTML = '<option value="openai/gpt-4-turbo">GPT-4 Turbo</option>';
+    UI.model.value = 'openai/gpt-4-turbo';
   }
 }
 
@@ -367,79 +406,71 @@ async function handleUserMessage() {
 }
 
 /**
- * Call selected AI provider
+ * Call selected AI provider via backend API
  */
 async function callAI(messages) {
-  const provider = adminPrefs.provider;
   const model = adminPrefs.model;
 
-  if (provider === 'openrouter') {
-    return await callOpenRouter(messages, { model, });
-  } else if (provider === 'fireworks') {
-    return await callFireworks(messages, { model, });
+  // Call through backend API instead of directly to external APIs
+  const response = await fetch('/api/admin/ai/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify({
+      messages,
+      options: {
+        model,
+        temperature: 0.7,
+        maxTokens: 2000,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`Backend API error: ${errorData.error || response.statusText}`);
   }
 
-  throw new Error(`Unsupported provider: ${provider}`);
+  const data = await response.json();
+
+  // Transform backend response to OpenAI format
+  if (data.success && data.content) {
+    return {
+      choices: [{
+        message: {
+          content: data.content,
+          role: 'assistant',
+        },
+      }],
+      model: data.meta?.model || model,
+      usage: {
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        total_tokens: 0,
+      },
+    };
+  }
+
+  throw new Error(data.error || 'No response from AI provider');
 }
 
 /**
- * Call OpenRouter API
+ * Call OpenRouter API (legacy - kept for compatibility)
  */
 async function callOpenRouter(messages, options = {}) {
-  const apiKey = window.OPENROUTER_API_KEY || '';
-  if (!apiKey) {
-    throw new Error('OpenRouter API key not configured');
-  }
-
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': window.location.origin,
-      'X-OpenRouter-Title': 'BroxBhai Admin Assistant',
-    },
-    body: JSON.stringify({
-      model: options.model || 'openai/gpt-4-turbo',
-      messages,
-      temperature: 0.7,
-      max_tokens: 2000,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`OpenRouter API error: ${response.statusText}`);
-  }
-
-  return await response.json();
+  // Redirect to backend API
+  return await callAI(messages);
 }
 
 /**
- * Call Fireworks API
+ * Call Fireworks API (legacy - kept for compatibility)
  */
 async function callFireworks(messages, options = {}) {
-  const apiKey = window.FIREWORKS_API_KEY || '';
-  if (!apiKey) {
-    throw new Error('Fireworks API key not configured');
-  }
-
-  const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: options.model || 'accounts/fireworks/models/llama-v2-7b-chat',
-      messages,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Fireworks API error: ${response.statusText}`);
-  }
-
-  return await response.json();
+  // Redirect to backend API
+  return await callAI(messages);
 }
 
 /**

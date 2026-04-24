@@ -163,7 +163,12 @@ class ScraperModel
             $tags_json
         );
 
-        return $stmt->execute();
+        $ok = $stmt->execute();
+        if (!$ok) {
+            error_log('[ScraperModel] saveArticle failed: ' . $stmt->error);
+        }
+        $stmt->close();
+        return (bool)$ok;
     }
 
     // Queue methods
@@ -520,7 +525,12 @@ class ScraperModel
             $data['status']
         );
 
-        return $stmt->execute();
+        $ok = $stmt->execute();
+        if (!$ok) {
+            error_log('[ScraperModel] saveMobile failed: ' . $stmt->error);
+        }
+        $stmt->close();
+        return (bool)$ok;
     }
 
     public function getArticles($page = 1, $limit = 20, $status = null, $sourceFilter = null, $search = null, $contentType = null, $categoryFilter = null)
@@ -1113,6 +1123,136 @@ class ScraperModel
         $stmt = $this->mysqli->prepare("UPDATE web_scraping_sources SET is_active = ?");
         $stmt->bind_param("i", $isActive);
         return $stmt->execute();
+    }
+
+    /**
+     * Return due active sources based on fetch_interval/last_fetched_at.
+     */
+    public function getDueActiveSources(int $limit = 50): array
+    {
+        $limit = max(1, min(500, (int)$limit));
+
+        $stmt = $this->mysqli->prepare("
+            SELECT
+                id, name, url, type, category_id, selectors, advance_config, presets,
+                fetch_interval, is_active, last_fetched_at, created_at, content_type,
+                scrape_depth, use_browser, max_pages, delay, pagination_type,
+                pagination_selector, pagination_pattern, proxy_enabled, proxy_provider,
+                proxy_config, ssl_verify, timeout, connect_timeout
+            FROM web_scraping_sources
+            WHERE is_active = 1
+              AND (
+                last_fetched_at IS NULL
+                OR last_fetched_at <= DATE_SUB(NOW(), INTERVAL IFNULL(fetch_interval, 3600) SECOND)
+              )
+            ORDER BY COALESCE(last_fetched_at, '1970-01-01 00:00:00') ASC
+            LIMIT ?
+        ");
+        if (!$stmt) {
+            return [];
+        }
+        $stmt->bind_param('i', $limit);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        return $rows ?: [];
+    }
+
+    public function updateSourceLastFetchedAt(int $sourceId): bool
+    {
+        $sourceId = max(1, (int)$sourceId);
+        $stmt = $this->mysqli->prepare("UPDATE web_scraping_sources SET last_fetched_at = NOW() WHERE id = ?");
+        if (!$stmt) {
+            return false;
+        }
+        $stmt->bind_param('i', $sourceId);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return (bool)$ok;
+    }
+
+    public function setJobStatus(int $jobId, string $status, ?string $errorMessage = null): bool
+    {
+        $jobId = max(1, (int)$jobId);
+        $status = trim($status);
+        if ($status === '') {
+            return false;
+        }
+
+        $setStartedAt = $status === 'running';
+        $setCompletedAt = in_array($status, ['completed', 'failed', 'cancelled'], true);
+
+        $sql = "UPDATE web_scraping_jobs SET status = ?";
+        if ($errorMessage !== null) {
+            $sql .= ", error_message = ?";
+        }
+        if ($setStartedAt) {
+            $sql .= ", started_at = COALESCE(started_at, NOW())";
+        }
+        if ($setCompletedAt) {
+            $sql .= ", completed_at = NOW()";
+        }
+        $sql .= " WHERE id = ?";
+
+        $stmt = $this->mysqli->prepare($sql);
+        if (!$stmt) {
+            return false;
+        }
+
+        if ($errorMessage !== null) {
+            $stmt->bind_param('ssi', $status, $errorMessage, $jobId);
+        } else {
+            $stmt->bind_param('si', $status, $jobId);
+        }
+
+        $ok = $stmt->execute();
+        $stmt->close();
+        return (bool)$ok;
+    }
+
+    public function deleteJob(int $jobId): bool
+    {
+        $jobId = max(1, (int)$jobId);
+        $stmt = $this->mysqli->prepare("DELETE FROM web_scraping_jobs WHERE id = ?");
+        if (!$stmt) {
+            return false;
+        }
+        $stmt->bind_param('i', $jobId);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return (bool)$ok;
+    }
+
+    public function clearCompletedJobs(): int
+    {
+        $stmt = $this->mysqli->prepare("DELETE FROM web_scraping_jobs WHERE status = 'completed'");
+        if (!$stmt) {
+            return 0;
+        }
+        $stmt->execute();
+        $count = $stmt->affected_rows;
+        $stmt->close();
+        return (int)$count;
+    }
+
+    public function resetJobForRun(int $jobId): bool
+    {
+        $jobId = max(1, (int)$jobId);
+        $stmt = $this->mysqli->prepare("
+            UPDATE web_scraping_jobs
+            SET status = 'pending',
+                started_at = NULL,
+                completed_at = NULL,
+                error_message = NULL
+            WHERE id = ?
+        ");
+        if (!$stmt) {
+            return false;
+        }
+        $stmt->bind_param('i', $jobId);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return (bool)$ok;
     }
 
     private function normalizeSourceContentType(?string $value): string
@@ -1765,6 +1905,133 @@ class ScraperModel
         $stmt = $this->mysqli->prepare("UPDATE web_scraping_articles SET status = ?, updated_at = NOW() WHERE id = ?");
         $stmt->bind_param('si', $status, $articleId);
         return $stmt->execute();
+    }
+
+    /**
+     * Fetch a collection job row.
+     */
+    public function getCollectionJobById(int $jobId): ?array
+    {
+        $jobId = max(1, (int)$jobId);
+        $stmt = $this->mysqli->prepare("
+            SELECT id, type, target_ids, options, status, results, total_items, execution_time, created_by, created_at, completed_at
+            FROM collection_jobs
+            WHERE id = ?
+            LIMIT 1
+        ");
+        if (!$stmt) {
+            return null;
+        }
+        $stmt->bind_param('i', $jobId);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        return $row ?: null;
+    }
+
+    /**
+     * Get publishable scraped articles for a source (processed preferred over collected).
+     */
+    public function getPublishableArticlesForSource(int $sourceId, int $limit = 20): array
+    {
+        $sourceId = max(1, (int)$sourceId);
+        $limit = max(1, min(200, (int)$limit));
+
+        $stmt = $this->mysqli->prepare("
+            SELECT
+                id, source_id, url, title, content, excerpt, author, image_url, published_at, status,
+                categories_json, tags_json, categories, tags, summary, seo_title, seo_description, seo_keywords, enhanced_at
+            FROM web_scraping_articles
+            WHERE source_id = ?
+              AND post_id IS NULL
+              AND status IN ('processed', 'collected')
+            ORDER BY (status = 'processed') DESC, created_at DESC
+            LIMIT ?
+        ");
+        if (!$stmt) {
+            return [];
+        }
+
+        $stmt->bind_param('ii', $sourceId, $limit);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return $rows ?: [];
+    }
+
+    /**
+     * Mark a scraped article as published and store post mapping.
+     */
+    public function markArticlePublished(int $articleId, int $postId): bool
+    {
+        $articleId = max(1, (int)$articleId);
+        $postId = max(1, (int)$postId);
+
+        $stmt = $this->mysqli->prepare("
+            UPDATE web_scraping_articles
+            SET status = 'published',
+                post_id = ?,
+                published_at = COALESCE(published_at, NOW()),
+                updated_at = NOW()
+            WHERE id = ?
+        ");
+        if (!$stmt) {
+            return false;
+        }
+        $stmt->bind_param('ii', $postId, $articleId);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return (bool)$ok;
+    }
+
+    /**
+     * Get publishable scraped mobiles for a source (processed preferred over collected).
+     */
+    public function getPublishableMobilesForSource(int $sourceId, int $limit = 20): array
+    {
+        $sourceId = max(1, (int)$sourceId);
+        $limit = max(1, min(200, (int)$limit));
+
+        $stmt = $this->mysqli->prepare("
+            SELECT
+                id, source_id, source_url, title, price, brand, model, image_url, specifications, release_date, status, created_at
+            FROM web_scraping_mobiles
+            WHERE source_id = ?
+              AND status IN ('processed', 'collected')
+            ORDER BY (status = 'processed') DESC, created_at DESC
+            LIMIT ?
+        ");
+        if (!$stmt) {
+            return [];
+        }
+
+        $stmt->bind_param('ii', $sourceId, $limit);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return $rows ?: [];
+    }
+
+    /**
+     * Mark a scraped mobile row as published.
+     */
+    public function markMobilePublished(int $scrapedMobileId): bool
+    {
+        $scrapedMobileId = max(1, (int)$scrapedMobileId);
+        $stmt = $this->mysqli->prepare("
+            UPDATE web_scraping_mobiles
+            SET status = 'published', updated_at = NOW()
+            WHERE id = ?
+        ");
+        if (!$stmt) {
+            return false;
+        }
+        $stmt->bind_param('i', $scrapedMobileId);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return (bool)$ok;
     }
 
     /**
