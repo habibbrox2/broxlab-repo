@@ -106,7 +106,7 @@
       return await this.fetchFromAPI(provider, options);
     },
 
-    async getModelsFromModernCache(provider, options = {}) {
+    getModelsFromModernCache(provider, options = {}) {
       if (!this.modernCache || !this.modernCache.getState) {
         return null;
       }

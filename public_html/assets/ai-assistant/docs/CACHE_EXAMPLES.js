@@ -1,11 +1,10 @@
+/* eslint-disable */
 /**
  * BroxLab AI Assistant - Cache System Examples and Tests
  * Demonstrates cache usage patterns and testing scenarios
  * 
  * Note: This file is documentation with examples. Not all imports or functions
  * are used as intended for reference purposes.
- * 
- * eslint-disable
  */
 
 
