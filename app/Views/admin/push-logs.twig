@@ -1,0 +1,481 @@
+{% extends "admin/layout.twig" %}
+
+{% block title %}Push Logs - {{ parent() }}{% endblock %}
+
+{% block content %}
+<style>
+.push-shell {
+    --push-accent: #0f766e;
+    --push-accent-soft: #ccfbf1;
+    --push-ink: #0f172a;
+    --push-muted: #64748b;
+}
+.push-shell .push-hero {
+    background: radial-gradient(circle at 15% 20%, #134e4a 0%, #0f766e 40%, #0f172a 100%);
+    color: #fff;
+    border-radius: 1.1rem;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 18px 36px rgba(2, 6, 23, 0.22);
+}
+.push-shell .push-hero h1 {
+    font-size: 1.6rem;
+    margin: 0;
+    font-weight: 700;
+}
+.push-shell .push-hero p {
+    margin: 0.35rem 0 0;
+    color: rgba(255, 255, 255, 0.86);
+}
+.push-shell .push-stat {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.9rem;
+    background: #fff;
+    height: 100%;
+}
+.push-shell .push-stat .card-body {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+.push-shell .push-icon {
+    width: 2.7rem;
+    height: 2.7rem;
+    border-radius: 0.7rem;
+    background: var(--push-accent-soft);
+    color: var(--push-accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.push-shell .push-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--push-ink);
+    line-height: 1.2;
+}
+.push-shell .push-label {
+    font-size: 0.8rem;
+    color: var(--push-muted);
+}
+.push-shell .push-panel {
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    overflow: hidden;
+}
+.push-shell .push-panel .card-body {
+    padding: 1.15rem;
+}
+.push-shell .push-panel-title {
+    font-weight: 700;
+    color: var(--push-ink);
+    margin-bottom: 0.25rem;
+}
+.push-shell .push-note {
+    font-size: 0.85rem;
+    color: var(--push-muted);
+}
+.push-shell .push-form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #334155;
+}
+.push-shell .push-table th {
+    white-space: nowrap;
+    font-size: 0.78rem;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.push-shell .push-table td {
+    vertical-align: middle;
+    color: #0f172a;
+}
+.push-shell .push-chip {
+    padding: 0.15rem 0.48rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.push-shell .push-chip-articles {
+    background: #dcfce7;
+    color: #166534;
+}
+.push-shell .push-chip-mobiles {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+@media (max-width: 767.98px) {
+    .push-shell .push-hero {
+        padding: 1.1rem;
+    }
+    .push-shell .push-hero h1 {
+        font-size: 1.35rem;
+    }
+}
+</style>
+
+<div class="push-shell">
+    <div class="push-hero">
+        <h1>Push Logs Control Center</h1>
+        <p>Monitor incoming push events, manage connection headers, and copy endpoint URLs for your scraper clients.</p>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-6">
+            <div class="card push-stat">
+                <div class="card-body">
+                    <span class="push-icon"><i class="bi bi-journal-arrow-down"></i></span>
+                    <div>
+                        <div class="push-value">{{ stats.total_logs }}</div>
+                        <div class="push-label">Total Logs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="card push-stat">
+                <div class="card-body">
+                    <span class="push-icon"><i class="bi bi-file-earmark-text"></i></span>
+                    <div>
+                        <div class="push-value">{{ stats.total_articles }}</div>
+                        <div class="push-label">Article Batches</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="card push-stat">
+                <div class="card-body">
+                    <span class="push-icon"><i class="bi bi-phone"></i></span>
+                    <div>
+                        <div class="push-value">{{ stats.total_mobiles }}</div>
+                        <div class="push-label">Mobile Batches</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="card push-stat">
+                <div class="card-body">
+                    <span class="push-icon"><i class="bi bi-clock-history"></i></span>
+                    <div>
+                        <div class="push-value">{{ stats.last_received ? stats.last_received|date('M d, H:i') : 'N/A' }}</div>
+                        <div class="push-label">Last Received</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card push-panel mb-4">
+        <div class="card-body">
+            <h5 class="push-panel-title">Scraper Push Config</h5>
+            <p class="push-note">Configure your remote scraper server headers and copy the inbound endpoint URLs from here.</p>
+
+            <form id="scraperPushConfigForm" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label push-form-label" for="pushArticlesEndpointUrl">Articles Push URL</label>
+                    <div class="input-group">
+                        <input id="pushArticlesEndpointUrl" type="text" class="form-control" readonly>
+                        <button class="btn btn-outline-secondary copy-btn" type="button" data-copy-target="pushArticlesEndpointUrl">Copy</button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label push-form-label" for="pushMobilesEndpointUrl">Mobiles Push URL</label>
+                    <div class="input-group">
+                        <input id="pushMobilesEndpointUrl" type="text" class="form-control" readonly>
+                        <button class="btn btn-outline-secondary copy-btn" type="button" data-copy-target="pushMobilesEndpointUrl">Copy</button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label push-form-label" for="pushLogsEndpointUrl">Combined Push URL</label>
+                    <div class="input-group">
+                        <input id="pushLogsEndpointUrl" type="text" class="form-control" readonly>
+                        <button class="btn btn-outline-secondary copy-btn" type="button" data-copy-target="pushLogsEndpointUrl">Copy</button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label push-form-label" for="pushLegacyEndpointUrl">Legacy/Fallback Push URL</label>
+                    <div class="input-group">
+                        <input id="pushLegacyEndpointUrl" type="text" class="form-control" readonly>
+                        <button class="btn btn-outline-secondary copy-btn" type="button" data-copy-target="pushLegacyEndpointUrl">Copy</button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label push-form-label" for="scraperBaseUrl">Scraper Base URL</label>
+                    <input id="scraperBaseUrl" type="url" class="form-control" placeholder="https://scrap.example.com" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label push-form-label" for="scraperBearerToken">Authorization Bearer Token</label>
+                    <div class="input-group">
+                        <input id="scraperBearerToken" type="text" class="form-control" placeholder="brox_scraper_push_xxx">
+                        <button id="generateScraperTokenBtn" class="btn btn-outline-secondary" type="button">Generate</button>
+                        <button class="btn btn-outline-secondary copy-btn" type="button" data-copy-target="scraperBearerToken">Copy</button>
+                    </div>
+                    <div class="form-text">When token changes, headers JSON is auto-updated.</div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label push-form-label" for="scraperHeadersJson">Push Headers (JSON)</label>
+                    <textarea id="scraperHeadersJson" class="form-control" rows="3" placeholder='{"Authorization":"Bearer brox_scraper_push_xxx"}'></textarea>
+                </div>
+                <div class="col-12 form-check ms-2">
+                    <input id="scraperRequireAuth" class="form-check-input" type="checkbox">
+                    <label class="form-check-label" for="scraperRequireAuth">Require Bearer token for incoming push APIs</label>
+                </div>
+                <div class="col-12 d-flex align-items-center gap-3 flex-wrap">
+                    <button id="scraperPushConfigSaveBtn" type="submit" class="btn btn-primary">Save Config</button>
+                    <span id="scraperPushConfigStatus" class="text-muted"></span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card push-panel mb-4">
+        <div class="card-body">
+            <form method="get" action="" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label push-form-label">Type</label>
+                    <select name="type" class="form-control">
+                        <option value="">All Types</option>
+                        <option value="articles" {{ filter_type == 'articles' ? 'selected' }}>Articles</option>
+                        <option value="mobiles" {{ filter_type == 'mobiles' ? 'selected' }}>Mobiles</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label push-form-label">Per Page</label>
+                    <select name="limit" class="form-control">
+                        {% for l in [20, 50, 100, 200] %}
+                            <option value="{{ l }}" {{ limit == l ? 'selected' }}>{{ l }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-primary w-100">Apply Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card push-panel">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="push-panel-title mb-0">Received Push Logs ({{ total }})</h5>
+            </div>
+            {% if logs|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-hover push-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Type</th>
+                            <th>Items</th>
+                            <th>IP Address</th>
+                            <th>Received At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td><a href="/admin/push-logs/{{ log.id }}" class="text-decoration-none fw-semibold">#{{ log.id }}</a></td>
+                            <td>
+                                <span class="push-chip {{ log.data_type == 'articles' ? 'push-chip-articles' : 'push-chip-mobiles' }}">{{ log.data_type }}</span>
+                            </td>
+                            <td>{{ log.item_count }} item(s)</td>
+                            <td>{{ log.ip_address|default('-') }}</td>
+                            <td>{{ log.received_at }}</td>
+                            <td><a href="/admin/push-logs/{{ log.id }}" class="btn btn-sm btn-outline-primary">View</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if total_pages > 1 %}
+            <nav aria-label="Push logs page navigation">
+                <ul class="pagination justify-content-center mt-2">
+                    {% if current_page_number > 1 %}
+                    <li class="page-item"><a class="page-link" href="?page={{ current_page_number - 1 }}&type={{ filter_type }}&limit={{ limit }}">&laquo;</a></li>
+                    {% endif %}
+                    {% for p in 1..total_pages %}
+                        {% if p == current_page_number or (p >= current_page_number - 2 and p <= current_page_number + 2) or p == 1 or p == total_pages %}
+                        <li class="page-item {% if p == current_page_number %}active{% endif %}"><a class="page-link" href="?page={{ p }}&type={{ filter_type }}&limit={{ limit }}">{{ p }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if current_page_number < total_pages %}
+                    <li class="page-item"><a class="page-link" href="?page={{ current_page_number + 1 }}&type={{ filter_type }}&limit={{ limit }}">&raquo;</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5">
+                <p class="text-muted mb-0">No push logs received yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+    const form = document.getElementById('scraperPushConfigForm');
+    if (!form) return;
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const baseUrlInput = document.getElementById('scraperBaseUrl');
+    const tokenInput = document.getElementById('scraperBearerToken');
+    const headersInput = document.getElementById('scraperHeadersJson');
+    const requireAuthInput = document.getElementById('scraperRequireAuth');
+    const pushArticlesEndpointUrlInput = document.getElementById('pushArticlesEndpointUrl');
+    const pushMobilesEndpointUrlInput = document.getElementById('pushMobilesEndpointUrl');
+    const pushLogsEndpointUrlInput = document.getElementById('pushLogsEndpointUrl');
+    const pushLegacyEndpointUrlInput = document.getElementById('pushLegacyEndpointUrl');
+    const statusEl = document.getElementById('scraperPushConfigStatus');
+    const saveBtn = document.getElementById('scraperPushConfigSaveBtn');
+    const generateTokenBtn = document.getElementById('generateScraperTokenBtn');
+
+    const setStatus = (message, isError = false) => {
+        statusEl.textContent = message;
+        statusEl.classList.toggle('text-danger', isError);
+        statusEl.classList.toggle('text-success', !isError);
+    };
+
+    const loadConfig = async () => {
+        try {
+            const res = await fetch('/admin/api/scraper-push-config');
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                throw new Error(data.error || 'Failed to load config');
+            }
+
+            const cfg = data.data || {};
+            baseUrlInput.value = cfg.scraper_base_url || '';
+            tokenInput.value = cfg.scraper_push_bearer_token || '';
+            headersInput.value = cfg.scraper_push_headers_json || '';
+            requireAuthInput.checked = String(cfg.scraper_push_require_auth) === '1' || String(cfg.scraper_push_require_auth).toLowerCase() === 'true';
+            setStatus('Config loaded');
+        } catch (error) {
+            setStatus(error.message || 'Failed to load config', true);
+        }
+    };
+
+    const buildHeadersJsonFromToken = (token) => {
+        if (!token) return '{}';
+        return JSON.stringify({ Authorization: `Bearer ${token}` });
+    };
+
+    const setInboundPushEndpointUrls = () => {
+        const base = window.location.origin;
+        pushArticlesEndpointUrlInput.value = `${base}/api/push/articles`;
+        pushMobilesEndpointUrlInput.value = `${base}/api/push/mobiles`;
+        pushLogsEndpointUrlInput.value = `${base}/api/push/logs`;
+        pushLegacyEndpointUrlInput.value = `${base}/api/push/data`;
+    };
+
+    const copyText = async (value) => {
+        if (!value) return false;
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(value);
+                return true;
+            }
+        } catch (_) {}
+
+        const temp = document.createElement('textarea');
+        temp.value = value;
+        temp.setAttribute('readonly', '');
+        temp.style.position = 'absolute';
+        temp.style.left = '-9999px';
+        document.body.appendChild(temp);
+        temp.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(temp);
+        return ok;
+    };
+
+    const generateToken = () => {
+        const randomBytes = new Uint8Array(16);
+        if (window.crypto && window.crypto.getRandomValues) {
+            window.crypto.getRandomValues(randomBytes);
+        } else {
+            for (let i = 0; i < randomBytes.length; i += 1) {
+                randomBytes[i] = Math.floor(Math.random() * 256);
+            }
+        }
+        const randomPart = Array.from(randomBytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+        return `brox_scraper_push_${randomPart}`;
+    };
+
+    if (generateTokenBtn) {
+        generateTokenBtn.addEventListener('click', () => {
+            const token = generateToken();
+            tokenInput.value = token;
+            headersInput.value = buildHeadersJsonFromToken(token);
+            requireAuthInput.checked = true;
+            setStatus('New token generated and headers updated');
+        });
+    }
+
+    tokenInput.addEventListener('change', () => {
+        const token = tokenInput.value.trim();
+        headersInput.value = buildHeadersJsonFromToken(token);
+        if (token) {
+            requireAuthInput.checked = true;
+        }
+    });
+
+    document.querySelectorAll('.copy-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+            const targetId = btn.getAttribute('data-copy-target');
+            const target = targetId ? document.getElementById(targetId) : null;
+            const value = target ? target.value.trim() : '';
+            const ok = await copyText(value);
+            setStatus(ok ? 'Copied to clipboard' : 'Copy failed', !ok);
+        });
+    });
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const payload = {
+            scraper_base_url: baseUrlInput.value.trim(),
+            scraper_push_bearer_token: tokenInput.value.trim(),
+            scraper_push_headers_json: headersInput.value.trim(),
+            scraper_push_require_auth: requireAuthInput.checked
+        };
+
+        saveBtn.disabled = true;
+        setStatus('Saving...');
+
+        try {
+            const res = await fetch('/admin/api/scraper-push-config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                throw new Error(data.error || 'Save failed');
+            }
+
+            setStatus(data.message || 'Saved successfully');
+        } catch (error) {
+            setStatus(error.message || 'Save failed', true);
+        } finally {
+            saveBtn.disabled = false;
+        }
+    });
+
+    setInboundPushEndpointUrls();
+    loadConfig();
+})();
+</script>
+{% endblock %}

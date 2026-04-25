@@ -1,0 +1,186 @@
+{% extends "admin/layout.twig" %}
+
+{% block title %}Push Log #{{ log.id }} - {{ parent() }}{% endblock %}
+
+{% block content %}
+<style>
+.push-detail-wrap {
+    --detail-ink: #0f172a;
+    --detail-muted: #64748b;
+}
+.push-detail-wrap .detail-hero {
+    border-radius: 1rem;
+    background: linear-gradient(145deg, #1d4ed8 0%, #1e293b 100%);
+    color: #fff;
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+}
+.push-detail-wrap .detail-panel {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.9rem;
+}
+.push-detail-wrap .meta-row {
+    display: grid;
+    grid-template-columns: 170px 1fr;
+    gap: 0.8rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px dashed #e2e8f0;
+}
+.push-detail-wrap .meta-row:last-child {
+    border-bottom: 0;
+}
+.push-detail-wrap .meta-key {
+    color: var(--detail-muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+.push-detail-wrap .meta-val {
+    color: var(--detail-ink);
+    font-weight: 600;
+    word-break: break-word;
+}
+.push-detail-wrap .chip {
+    padding: 0.12rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+.push-detail-wrap .chip-articles {
+    background: #dcfce7;
+    color: #166534;
+}
+.push-detail-wrap .chip-mobiles {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+.push-detail-wrap .items-table th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    color: #475569;
+    white-space: nowrap;
+}
+@media (max-width: 767.98px) {
+    .push-detail-wrap .meta-row {
+        grid-template-columns: 1fr;
+        gap: 0.3rem;
+    }
+}
+</style>
+
+<div class="push-detail-wrap">
+    <div class="detail-hero d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="h4 mb-1">Push Log #{{ log.id }}</h1>
+            <p class="mb-0 opacity-75">Detailed snapshot of one incoming push batch.</p>
+        </div>
+        <a href="/admin/push-logs" class="btn btn-light btn-sm">Back to Logs</a>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-8">
+            <div class="card detail-panel h-100">
+                <div class="card-body">
+                    <h5 class="mb-3">Log Metadata</h5>
+                    <div class="meta-row"><span class="meta-key">ID</span><span class="meta-val">#{{ log.id }}</span></div>
+                    <div class="meta-row">
+                        <span class="meta-key">Data Type</span>
+                        <span class="meta-val"><span class="chip {{ log.data_type == 'articles' ? 'chip-articles' : 'chip-mobiles' }}">{{ log.data_type }}</span></span>
+                    </div>
+                    <div class="meta-row"><span class="meta-key">Item Count</span><span class="meta-val">{{ log.item_count }} item(s)</span></div>
+                    <div class="meta-row"><span class="meta-key">Received At</span><span class="meta-val">{{ log.received_at|default('-') }}</span></div>
+                    <div class="meta-row"><span class="meta-key">Pushed At</span><span class="meta-val">{{ log.pushed_at|default('-') }}</span></div>
+                    <div class="meta-row"><span class="meta-key">Source</span><span class="meta-val">{{ log.source|default('-') }}</span></div>
+                    <div class="meta-row"><span class="meta-key">Trigger</span><span class="meta-val">{{ log.trigger_name|default('-') }}</span></div>
+                    <div class="meta-row"><span class="meta-key">IP Address</span><span class="meta-val">{{ log.ip_address|default('-') }}</span></div>
+                    <div class="meta-row"><span class="meta-key">User Agent</span><span class="meta-val">{{ log.user_agent|default('-') }}</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card detail-panel h-100">
+                <div class="card-body">
+                    <h5 class="mb-3">Actions</h5>
+                    <button class="btn btn-danger w-100 mb-2" onclick="deleteLog({{ log.id }})">Delete Log</button>
+                    <a href="/admin/push-logs" class="btn btn-outline-secondary w-100">Back to List</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card detail-panel">
+        <div class="card-body">
+            <h5 class="mb-3">Data Items ({{ log.item_count }})</h5>
+            <div class="table-responsive">
+                <table class="table table-sm items-table align-middle">
+                    <thead>
+                        <tr>
+                            {% if log.data_type == 'mobiles' %}
+                            <th>#</th>
+                            <th>Mobile Number</th>
+                            <th>Carrier</th>
+                            <th>Country</th>
+                            <th>Valid</th>
+                            {% else %}
+                            <th>#</th>
+                            <th>Title</th>
+                            <th>Content Type</th>
+                            <th>Author</th>
+                            <th>Published At</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in log.data_content %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            {% if log.data_type == 'mobiles' %}
+                            <td>{{ item.number|default(item.mobile|default(item.phone|default('-'))) }}</td>
+                            <td>{{ item.carrier|default('-') }}</td>
+                            <td>{{ item.country|default('-') }}</td>
+                            <td>
+                                <span class="badge {{ item.valid ? 'bg-success' : 'bg-danger' }}">{{ item.valid ? 'Yes' : 'No' }}</span>
+                            </td>
+                            {% else %}
+                            <td>{{ item.title|default('-') }}</td>
+                            <td>{{ item.content_type|default(item.type|default('-')) }}</td>
+                            <td>{{ item.author|default('-') }}</td>
+                            <td>{{ item.published_at|default(item.created_at|default('-')) }}</td>
+                            {% endif %}
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No item data available for this log.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function deleteLog(id) {
+    if (confirm('Are you sure you want to delete this log entry? This cannot be undone.')) {
+        fetch('/admin/push-logs/delete/' + id, {
+            method: 'POST',
+            headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content }
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.ok) {
+                window.location.href = '/admin/push-logs';
+            } else {
+                alert(d.message || 'Failed to delete');
+            }
+        })
+        .catch(e => alert('Error: ' + e.message));
+    }
+}
+</script>
+{% endblock %}
