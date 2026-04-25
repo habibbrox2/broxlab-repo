@@ -1,6 +1,6 @@
 {% extends "admin/layout.twig" %}
 
-{% block title %}Push Logs - {{ parent() }}{% endblock %}
+{% block title %}Scrap Control Center - {{ parent() }}{% endblock %}
 
 {% block content %}
 <style>
@@ -118,7 +118,7 @@
 
 <div class="push-shell">
     <div class="push-hero">
-        <h1>Push Logs Control Center</h1>
+        <h1>Scrap Control Center</h1>
         <p>Monitor incoming push events, manage connection headers, and copy endpoint URLs for your scraper clients.</p>
     </div>
 
@@ -234,7 +234,7 @@
 
     <div class="card push-panel mb-4">
         <div class="card-body">
-            <form method="get" action="" class="row g-3 align-items-end">
+            <form method="get" action="" id="scrapControlListingForm" class="row g-3 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label push-form-label">Type</label>
                     <select name="type" class="form-control">
@@ -255,6 +255,48 @@
                     <button type="submit" class="btn btn-outline-primary w-100">Apply Filter</button>
                 </div>
             </form>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 small text-muted">
+                <span>Showing {{ logs|length }} of {{ total }} record(s)</span>
+                <span>Page {{ current_page_number }} of {{ total_pages }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card push-panel mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                    <h5 class="push-panel-title mb-1">Incoming Staging Queue</h5>
+                    <p class="push-note mb-0">`push_incoming_items` queue monitor and publish controls.</p>
+                </div>
+                <a href="{{ route_base|default('/admin/scrap-control-center') }}/incoming" class="btn btn-outline-primary btn-sm">Open Incoming Items</a>
+            </div>
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label push-form-label" for="publishTypeFilter">Type</label>
+                    <select id="publishTypeFilter" class="form-control">
+                        <option value="">All</option>
+                        <option value="articles">Articles</option>
+                        <option value="mobiles">Mobiles</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label push-form-label" for="publishLimit">Batch Limit</label>
+                    <input id="publishLimit" type="number" class="form-control" min="1" max="200" value="20">
+                </div>
+                <div class="col-md-7 d-flex gap-2 flex-wrap">
+                    <button id="runPipelineBtn" type="button" class="btn btn-success">Run Pipeline</button>
+                    <button id="publishPendingBtn" type="button" class="btn btn-primary">Publish Pending</button>
+                    <button id="retryFailedBtn" type="button" class="btn btn-outline-danger">Retry Failed</button>
+                    <span id="publishActionStatus" class="small text-muted align-self-center"></span>
+                </div>
+            </div>
+            <div class="row g-2 mt-3 small">
+                <div class="col-auto"><span class="badge text-bg-secondary">Pending: <span id="incomingPendingCount">{{ incoming_stats.pending|default(0) }}</span></span></div>
+                <div class="col-auto"><span class="badge text-bg-success">Published: <span id="incomingPublishedCount">{{ incoming_stats.published|default(0) }}</span></span></div>
+                <div class="col-auto"><span class="badge text-bg-danger">Failed: <span id="incomingFailedCount">{{ incoming_stats.failed|default(0) }}</span></span></div>
+                <div class="col-auto"><span class="badge text-bg-dark">Total: <span id="incomingTotalCount">{{ incoming_stats.total|default(0) }}</span></span></div>
+            </div>
         </div>
     </div>
 
@@ -278,15 +320,17 @@
                     </thead>
                     <tbody>
                         {% for log in logs %}
+                        {% set logType = (log.data_type|default('')|lower) %}
+                        {% set isMobileLog = logType == 'mobiles' or logType == 'mobile' %}
                         <tr>
-                            <td><a href="/admin/push-logs/{{ log.id }}" class="text-decoration-none fw-semibold">#{{ log.id }}</a></td>
+                            <td><a href="{{ route_base|default('/admin/scrap-control-center') }}/logs/{{ log.id }}" class="text-decoration-none fw-semibold">#{{ log.id }}</a></td>
                             <td>
-                                <span class="push-chip {{ log.data_type == 'articles' ? 'push-chip-articles' : 'push-chip-mobiles' }}">{{ log.data_type }}</span>
+                                <span class="push-chip {{ isMobileLog ? 'push-chip-mobiles' : 'push-chip-articles' }}">{{ log.data_type|default('-') }}</span>
                             </td>
                             <td>{{ log.item_count }} item(s)</td>
                             <td>{{ log.ip_address|default('-') }}</td>
                             <td>{{ log.received_at }}</td>
-                            <td><a href="/admin/push-logs/{{ log.id }}" class="btn btn-sm btn-outline-primary">View</a></td>
+                            <td><a href="{{ route_base|default('/admin/scrap-control-center') }}/logs/{{ log.id }}" class="btn btn-sm btn-outline-primary">Open</a></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -335,13 +379,91 @@
     const pushLogsEndpointUrlInput = document.getElementById('pushLogsEndpointUrl');
     const pushLegacyEndpointUrlInput = document.getElementById('pushLegacyEndpointUrl');
     const statusEl = document.getElementById('scraperPushConfigStatus');
+    const publishStatusEl = document.getElementById('publishActionStatus');
     const saveBtn = document.getElementById('scraperPushConfigSaveBtn');
     const generateTokenBtn = document.getElementById('generateScraperTokenBtn');
+    const publishPendingBtn = document.getElementById('publishPendingBtn');
+    const retryFailedBtn = document.getElementById('retryFailedBtn');
+    const runPipelineBtn = document.getElementById('runPipelineBtn');
+    const publishTypeFilter = document.getElementById('publishTypeFilter');
+    const publishLimitInput = document.getElementById('publishLimit');
+    const listingForm = document.getElementById('scrapControlListingForm');
+    const listingTypeSelect = listingForm ? listingForm.querySelector('select[name="type"]') : null;
+    const listingLimitSelect = listingForm ? listingForm.querySelector('select[name="limit"]') : null;
 
     const setStatus = (message, isError = false) => {
         statusEl.textContent = message;
         statusEl.classList.toggle('text-danger', isError);
         statusEl.classList.toggle('text-success', !isError);
+    };
+
+    const setPublishStatus = (message, isError = false) => {
+        if (!publishStatusEl) return;
+        publishStatusEl.textContent = message;
+        publishStatusEl.classList.toggle('text-danger', isError);
+        publishStatusEl.classList.toggle('text-success', !isError);
+    };
+
+    const updateIncomingStats = (stats) => {
+        if (!stats) return;
+        const set = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = String(val ?? 0);
+        };
+        set('incomingPendingCount', stats.pending);
+        set('incomingPublishedCount', stats.published);
+        set('incomingFailedCount', stats.failed);
+        set('incomingTotalCount', stats.total);
+    };
+
+    const loadIncomingStats = async () => {
+        try {
+            const res = await fetch('/admin/api/scrap-control-center/publish-stats');
+            const data = await res.json();
+            if (res.ok && data.ok) {
+                updateIncomingStats(data.data || {});
+            }
+        } catch (_) {}
+    };
+
+    const buildPublishPayload = () => {
+        const limit = Number.parseInt(publishLimitInput?.value || '20', 10);
+        const type = (publishTypeFilter?.value || '').trim();
+        const payload = { limit: Number.isNaN(limit) ? 20 : Math.min(200, Math.max(1, limit)) };
+        if (type === 'articles' || type === 'mobiles') {
+            payload.type = type;
+        }
+        return payload;
+    };
+
+    const runPublishAction = async (endpoint, button, startMessage) => {
+        if (!button) return;
+        button.disabled = true;
+        setPublishStatus(startMessage);
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify(buildPublishPayload())
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                throw new Error(data.error || data.message || 'Operation failed');
+            }
+            if (data.stats) {
+                updateIncomingStats(data.stats);
+            } else if (data.data && data.data.stats) {
+                updateIncomingStats(data.data.stats);
+            }
+            setPublishStatus(data.message || 'Completed');
+        } catch (error) {
+            setPublishStatus(error.message || 'Operation failed', true);
+        } finally {
+            button.disabled = false;
+        }
     };
 
     const loadConfig = async () => {
@@ -474,8 +596,47 @@
         }
     });
 
+    if (publishPendingBtn) {
+        publishPendingBtn.addEventListener('click', () => {
+            runPublishAction('/admin/api/scrap-control-center/publish-pending', publishPendingBtn, 'Publishing pending items...');
+        });
+    }
+
+    if (runPipelineBtn) {
+        runPipelineBtn.addEventListener('click', () => {
+            runPublishAction('/admin/api/scrap-control-center/run-pipeline', runPipelineBtn, 'Running pipeline now...');
+        });
+    }
+
+    if (retryFailedBtn) {
+        retryFailedBtn.addEventListener('click', () => {
+            runPublishAction('/admin/api/push-publish-retry-failed', retryFailedBtn, 'Retrying failed items...');
+        });
+    }
+
+    if (listingTypeSelect) {
+        listingTypeSelect.addEventListener('change', () => {
+            listingForm?.querySelector('input[name="page"]')?.remove();
+            listingForm?.submit();
+        });
+    }
+
+    if (listingLimitSelect) {
+        listingLimitSelect.addEventListener('change', () => {
+            const pageInput = listingForm?.querySelector('input[name="page"]') || document.createElement('input');
+            pageInput.type = 'hidden';
+            pageInput.name = 'page';
+            pageInput.value = '1';
+            if (!pageInput.isConnected) {
+                listingForm?.appendChild(pageInput);
+            }
+            listingForm?.submit();
+        });
+    }
+
     setInboundPushEndpointUrls();
     loadConfig();
+    loadIncomingStats();
 })();
 </script>
 {% endblock %}

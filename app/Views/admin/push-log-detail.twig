@@ -5,39 +5,45 @@
 {% block content %}
 <style>
 .push-detail-wrap {
-    --detail-ink: #0f172a;
-    --detail-muted: #64748b;
+    --push-ink: #0f172a;
+    --push-muted: #64748b;
+    --push-border: #e2e8f0;
 }
-.push-detail-wrap .detail-hero {
+.push-detail-wrap .hero {
     border-radius: 1rem;
-    background: linear-gradient(145deg, #1d4ed8 0%, #1e293b 100%);
+    background: linear-gradient(145deg, #0f766e 0%, #1d4ed8 100%);
     color: #fff;
-    padding: 1.2rem;
+    padding: 1.25rem;
     margin-bottom: 1rem;
+    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16);
 }
-.push-detail-wrap .detail-panel {
-    border: 1px solid #e2e8f0;
-    border-radius: 0.9rem;
+.push-detail-wrap .panel {
+    border: 1px solid var(--push-border);
+    border-radius: 0.95rem;
+    overflow: hidden;
+}
+.push-detail-wrap .panel .card-body {
+    padding: 1.1rem;
 }
 .push-detail-wrap .meta-row {
     display: grid;
     grid-template-columns: 170px 1fr;
-    gap: 0.8rem;
-    padding: 0.45rem 0;
-    border-bottom: 1px dashed #e2e8f0;
+    gap: 0.85rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed var(--push-border);
 }
 .push-detail-wrap .meta-row:last-child {
     border-bottom: 0;
 }
 .push-detail-wrap .meta-key {
-    color: var(--detail-muted);
-    font-size: 0.8rem;
+    color: var(--push-muted);
+    font-size: 0.78rem;
     text-transform: uppercase;
     font-weight: 700;
     letter-spacing: 0.03em;
 }
 .push-detail-wrap .meta-val {
-    color: var(--detail-ink);
+    color: var(--push-ink);
     font-weight: 600;
     word-break: break-word;
 }
@@ -56,38 +62,157 @@
     background: #dbeafe;
     color: #1d4ed8;
 }
-.push-detail-wrap .items-table th {
-    font-size: 0.78rem;
+.push-detail-wrap .item-card {
+    border: 1px solid var(--push-border);
+    border-radius: 0.95rem;
+    overflow: hidden;
+    background: #fff;
+}
+.push-detail-wrap .item-card + .item-card {
+    margin-top: 1rem;
+}
+.push-detail-wrap .item-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.9rem;
+    align-items: flex-start;
+    padding-bottom: 0.85rem;
+    margin-bottom: 0.85rem;
+    border-bottom: 1px solid var(--push-border);
+}
+.push-detail-wrap .item-title {
+    margin: 0;
+    color: var(--push-ink);
+    font-size: 1.02rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+.push-detail-wrap .item-subtitle {
+    margin: 0.25rem 0 0;
+    color: var(--push-muted);
+    font-size: 0.88rem;
+}
+.push-detail-wrap .item-image {
+    width: 100%;
+    max-width: 160px;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 0.65rem;
+    border: 1px solid var(--push-border);
+    background: #f8fafc;
+}
+.push-detail-wrap .item-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem 1rem;
+}
+.push-detail-wrap .field {
+    padding: 0.75rem;
+    border: 1px solid #edf2f7;
+    border-radius: 0.7rem;
+    background: #f8fafc;
+}
+.push-detail-wrap .field-label {
+    font-size: 0.72rem;
+    font-weight: 700;
     text-transform: uppercase;
-    color: #475569;
-    white-space: nowrap;
+    color: var(--push-muted);
+    margin-bottom: 0.25rem;
+}
+.push-detail-wrap .field-value {
+    color: var(--push-ink);
+    font-weight: 600;
+    word-break: break-word;
+}
+.push-detail-wrap .body-preview {
+    white-space: pre-wrap;
+    color: #334155;
+    line-height: 1.6;
+    max-height: 13rem;
+    overflow: auto;
+}
+.push-detail-wrap .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+.push-detail-wrap .tag {
+    background: #eef2ff;
+    color: #3730a3;
+    border-radius: 999px;
+    padding: 0.18rem 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+.push-detail-wrap .spec-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+}
+.push-detail-wrap .spec-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.65rem;
+    padding: 0.65rem 0.75rem;
+    background: #fff;
+}
+.push-detail-wrap .spec-name {
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--push-muted);
+}
+.push-detail-wrap .spec-value {
+    margin-top: 0.2rem;
+    color: var(--push-ink);
+    font-weight: 600;
+    word-break: break-word;
+}
+.push-detail-wrap .raw-url {
+    word-break: break-word;
+    font-size: 0.9rem;
 }
 @media (max-width: 767.98px) {
     .push-detail-wrap .meta-row {
         grid-template-columns: 1fr;
         gap: 0.3rem;
     }
+    .push-detail-wrap .item-head {
+        flex-direction: column;
+    }
+    .push-detail-wrap .item-image {
+        max-width: 100%;
+    }
+    .push-detail-wrap .item-grid,
+    .push-detail-wrap .spec-list {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
 
+{% set items = log.data_content is iterable ? log.data_content : [] %}
+{% set dataType = (log.data_type|default('')|lower) %}
+{% set isMobileBatch = dataType == 'mobiles' or dataType == 'mobile' %}
+
 <div class="push-detail-wrap">
-    <div class="detail-hero d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="hero d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
             <h1 class="h4 mb-1">Push Log #{{ log.id }}</h1>
             <p class="mb-0 opacity-75">Detailed snapshot of one incoming push batch.</p>
         </div>
-        <a href="/admin/push-logs" class="btn btn-light btn-sm">Back to Logs</a>
+        <a href="{{ route_base|default('/admin/scrap-control-center') }}" class="btn btn-light btn-sm">Back to Logs</a>
     </div>
 
     <div class="row g-3 mb-3">
         <div class="col-lg-8">
-            <div class="card detail-panel h-100">
+            <div class="card panel h-100">
                 <div class="card-body">
                     <h5 class="mb-3">Log Metadata</h5>
                     <div class="meta-row"><span class="meta-key">ID</span><span class="meta-val">#{{ log.id }}</span></div>
                     <div class="meta-row">
                         <span class="meta-key">Data Type</span>
-                        <span class="meta-val"><span class="chip {{ log.data_type == 'articles' ? 'chip-articles' : 'chip-mobiles' }}">{{ log.data_type }}</span></span>
+                        <span class="meta-val">
+                            <span class="chip {{ isMobileBatch ? 'chip-mobiles' : 'chip-articles' }}">{{ log.data_type|default('-') }}</span>
+                        </span>
                     </div>
                     <div class="meta-row"><span class="meta-key">Item Count</span><span class="meta-val">{{ log.item_count }} item(s)</span></div>
                     <div class="meta-row"><span class="meta-key">Received At</span><span class="meta-val">{{ log.received_at|default('-') }}</span></div>
@@ -100,64 +225,212 @@
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card detail-panel h-100">
+            <div class="card panel h-100">
                 <div class="card-body">
                     <h5 class="mb-3">Actions</h5>
                     <button class="btn btn-danger w-100 mb-2" onclick="deleteLog({{ log.id }})">Delete Log</button>
-                    <a href="/admin/push-logs" class="btn btn-outline-secondary w-100">Back to List</a>
+                    <a href="{{ route_base|default('/admin/scrap-control-center') }}" class="btn btn-outline-secondary w-100">Back to List</a>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card detail-panel">
+    <div class="card panel">
         <div class="card-body">
-            <h5 class="mb-3">Data Items ({{ log.item_count }})</h5>
-            <div class="table-responsive">
-                <table class="table table-sm items-table align-middle">
-                    <thead>
-                        <tr>
-                            {% if log.data_type == 'mobiles' %}
-                            <th>#</th>
-                            <th>Mobile Number</th>
-                            <th>Carrier</th>
-                            <th>Country</th>
-                            <th>Valid</th>
-                            {% else %}
-                            <th>#</th>
-                            <th>Title</th>
-                            <th>Content Type</th>
-                            <th>Author</th>
-                            <th>Published At</th>
-                            {% endif %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in log.data_content %}
-                        <tr>
-                            <td>{{ loop.index }}</td>
-                            {% if log.data_type == 'mobiles' %}
-                            <td>{{ item.number|default(item.mobile|default(item.phone|default('-'))) }}</td>
-                            <td>{{ item.carrier|default('-') }}</td>
-                            <td>{{ item.country|default('-') }}</td>
-                            <td>
-                                <span class="badge {{ item.valid ? 'bg-success' : 'bg-danger' }}">{{ item.valid ? 'Yes' : 'No' }}</span>
-                            </td>
-                            {% else %}
-                            <td>{{ item.title|default('-') }}</td>
-                            <td>{{ item.content_type|default(item.type|default('-')) }}</td>
-                            <td>{{ item.author|default('-') }}</td>
-                            <td>{{ item.published_at|default(item.created_at|default('-')) }}</td>
-                            {% endif %}
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4">No item data available for this log.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                    <h5 class="mb-1">Batch Items</h5>
+                    <div class="text-muted">Each item is rendered from the payload we received, so article and mobile batches stay easy to inspect.</div>
+                </div>
+                <span class="badge text-bg-light border">{{ items|length }} record(s)</span>
             </div>
+
+            {% if items|length > 0 %}
+                <div class="accordion" id="pushLogItemsAccordion">
+                {% for item in items %}
+                    {% set itemType = (item.contentType|default(item.content_type|default(item.sourceType|default(item.type|default(''))))|lower) %}
+                    {% set hasMobileFields = item.brand is defined or item.model is defined or item.price is defined or item.keySpecs is defined or item.key_specs is defined %}
+                    {% set isMobileItem = isMobileBatch or itemType == 'mobile' or itemType == 'mobiles' or hasMobileFields %}
+                    {% set imageUrl = item.imageUrl|default(item.image_url|default(item.image|default(null))) %}
+                    {% set imagePath = item.imagePath|default(item.image_path|default(null)) %}
+                    {% set tags = item.tags is iterable ? item.tags : [] %}
+                    {% set keySpecs = item.keySpecs|default(item.key_specs|default({})) %}
+                    {% set specs = item.specs|default({}) %}
+                    {% set collapseId = 'pushLogItemCollapse-' ~ log.id ~ '-' ~ loop.index %}
+                    {% set headingId = 'pushLogItemHeading-' ~ log.id ~ '-' ~ loop.index %}
+                    <div class="accordion-item border rounded-3 overflow-hidden mb-3">
+                        <h2 class="accordion-header" id="{{ headingId }}">
+                            <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#{{ collapseId }}" aria-expanded="false" aria-controls="{{ collapseId }}">
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 w-100 pe-2">
+                                    <div>
+                                        <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
+                                            <span class="chip {{ isMobileItem ? 'chip-mobiles' : 'chip-articles' }}">{{ isMobileItem ? 'mobile' : 'article' }}</span>
+                                            {% if item.category|default('') %}
+                                                <span class="badge text-bg-light border">{{ item.category }}</span>
+                                            {% endif %}
+                                            {% if item.source|default('') %}
+                                                <span class="badge text-bg-light border">{{ item.source }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="fw-bold text-start">{{ item.title|default(item.name|default('Untitled item')) }}</div>
+                                        <div class="small text-muted text-start">
+                                            {% if isMobileItem %}
+                                                {{ item.brand|default('-') }}{% if item.model|default('') %} {{ item.model }}{% endif %}
+                                                {% if item.price|default('') %} - {{ item.price }}{% endif %}
+                                                {% if item.status|default('') %} ({{ item.status }}){% endif %}
+                                            {% else %}
+                                                {{ item.author|default('-') }}
+                                                {% if item.publishedAt|default(item.published_at|default('')) %} - {{ item.publishedAt|default(item.published_at) }}{% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="text-start text-md-end small text-muted">
+                                        {% if item.excerpt|default('') %}
+                                            {{ item.excerpt|slice(0, 120) }}{% if item.excerpt|length > 120 %}...{% endif %}
+                                        {% elseif item.bodyText|default('') %}
+                                            {{ item.bodyText|slice(0, 120) }}{% if item.bodyText|length > 120 %}...{% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="{{ collapseId }}" class="accordion-collapse collapse" aria-labelledby="{{ headingId }}" data-bs-parent="#pushLogItemsAccordion">
+                            <div class="accordion-body">
+                                <div class="row g-3">
+                                    <div class="col-lg-4">
+                                        <div class="field h-100">
+                                            <div class="field-label">Preview</div>
+                                            {% if imageUrl or imagePath %}
+                                                <img
+                                                    class="item-image mb-3"
+                                                    src="{{ imagePath|default(imageUrl) }}"
+                                                    alt="{{ item.title|default('Item image') }}"
+                                                    loading="lazy"
+                                                >
+                                            {% endif %}
+                                            <div class="field mb-2">
+                                                <div class="field-label">Source URL</div>
+                                                <div class="field-value raw-url">
+                                                    {% if item.url|default('') %}
+                                                        <a href="{{ item.url }}" target="_blank" rel="noreferrer">{{ item.url }}</a>
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="field">
+                                                <div class="field-label">Image URL</div>
+                                                <div class="field-value raw-url">
+                                                    {% if imageUrl %}
+                                                        <a href="{{ imageUrl }}" target="_blank" rel="noreferrer">{{ imageUrl }}</a>
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <div class="item-grid mb-3">
+                                            {% if isMobileItem %}
+                                                <div class="field">
+                                                    <div class="field-label">Brand</div>
+                                                    <div class="field-value">{{ item.brand|default('-') }}</div>
+                                                </div>
+                                                <div class="field">
+                                                    <div class="field-label">Model</div>
+                                                    <div class="field-value">{{ item.model|default('-') }}</div>
+                                                </div>
+                                                <div class="field">
+                                                    <div class="field-label">Category</div>
+                                                    <div class="field-value">{{ item.productCategory|default(item.category|default('-')) }}</div>
+                                                </div>
+                                                <div class="field">
+                                                    <div class="field-label">Price / Status</div>
+                                                    <div class="field-value">
+                                                        {{ item.price|default('-') }}
+                                                        {% if item.status|default('') %}
+                                                            <span class="ms-1 text-muted">({{ item.status }})</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            {% else %}
+                                                <div class="field">
+                                                    <div class="field-label">Author</div>
+                                                    <div class="field-value">{{ item.author|default('-') }}</div>
+                                                </div>
+                                                <div class="field">
+                                                    <div class="field-label">Published At</div>
+                                                    <div class="field-value">{{ item.publishedAt|default(item.published_at|default('-')) }}</div>
+                                                </div>
+                                                <div class="field">
+                                                    <div class="field-label">Source Key</div>
+                                                    <div class="field-value">{{ item.sourceKey|default(item.source_key|default('-')) }}</div>
+                                                </div>
+                                                <div class="field">
+                                                    <div class="field-label">Fetch Method</div>
+                                                    <div class="field-value">{{ item.fetchMethod|default(item.fetch_method|default('-')) }}</div>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+
+                                        {% if item.bodyText|default('') %}
+                                            <div class="field mb-3">
+                                                <div class="field-label">Body Preview</div>
+                                                <div class="body-preview">{{ item.bodyText }}</div>
+                                            </div>
+                                        {% endif %}
+
+                                        {% if tags|length > 0 %}
+                                            <div class="mb-3">
+                                                <div class="field-label mb-2">Tags</div>
+                                                <div class="tags">
+                                                    {% for tag in tags %}
+                                                        <span class="tag">{{ tag }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% endif %}
+
+                                        {% if isMobileItem %}
+                                            {% if keySpecs is iterable and keySpecs|length > 0 %}
+                                                <div class="mb-3">
+                                                    <div class="field-label mb-2">Key Specs</div>
+                                                    <div class="spec-list">
+                                                        {% for name, value in keySpecs %}
+                                                            <div class="spec-item">
+                                                                <div class="spec-name">{{ name }}</div>
+                                                                <div class="spec-value">{{ value }}</div>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+
+                                            {% if specs is iterable and specs|length > 0 %}
+                                                <div class="mb-3">
+                                                    <div class="field-label mb-2">Specs</div>
+                                                    <div class="spec-list">
+                                                        {% for name, value in specs %}
+                                                            <div class="spec-item">
+                                                                <div class="spec-name">{{ name }}</div>
+                                                                <div class="spec-value">{{ value }}</div>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center text-muted py-5">No item data available for this log.</div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -167,14 +440,14 @@
 <script>
 function deleteLog(id) {
     if (confirm('Are you sure you want to delete this log entry? This cannot be undone.')) {
-        fetch('/admin/push-logs/delete/' + id, {
+        fetch('{{ route_base|default('/admin/scrap-control-center') }}/logs/delete/' + id, {
             method: 'POST',
             headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content }
         })
         .then(r => r.json())
         .then(d => {
             if (d.ok) {
-                window.location.href = '/admin/push-logs';
+                window.location.href = '{{ route_base|default('/admin/scrap-control-center') }}';
             } else {
                 alert(d.message || 'Failed to delete');
             }

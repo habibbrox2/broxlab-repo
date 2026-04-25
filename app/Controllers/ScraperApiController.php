@@ -3,8 +3,13 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../Models/BroxScrapModel.php';
+require_once __DIR__ . '/../Models/ContentModel.php';
+require_once __DIR__ . '/../Models/MobileModel.php';
+require_once __DIR__ . '/../Models/AIProvider.php';
 
 $broxScrapModel = new BroxScrapModel($mysqli);
+$contentModel = new ContentModel($mysqli);
+$mobileModel = new MobileModel($mysqli);
 
 if (!function_exists('scraperPushSendJson')) {
     function scraperPushSendJson(array $payload, int $status = 200): void
@@ -29,6 +34,137 @@ if (!function_exists('scraperPushReadJsonInput')) {
         }
 
         return [true, $payload, null];
+    }
+}
+
+if (!function_exists('scraperPushNormalizeContentType')) {
+    function scraperPushNormalizeContentType(?string $raw): ?string
+    {
+        $type = strtolower(trim((string) $raw));
+        if ($type === 'article' || $type === 'articles') {
+            return 'articles';
+        }
+        if ($type === 'mobile' || $type === 'mobiles') {
+            return 'mobiles';
+        }
+        return null;
+    }
+}
+
+if (!function_exists('scraperPushResolveIncomingItems')) {
+    function scraperPushResolveIncomingItems(array $payload, ?string $forcedType = null): array
+    {
+        $forcedType = scraperPushNormalizeContentType($forcedType);
+        $payloadType = scraperPushNormalizeContentType(
+            isset($payload['contentType']) ? (string) $payload['contentType'] : (string) ($payload['content_type'] ?? '')
+        );
+        $batches = [];
+
+        $extractItems = static function (array $payload, string $type): array {
+            if (isset($payload['items']) && is_array($payload['items'])) {
+                return array_values($payload['items']);
+            }
+            if (isset($payload[$type]) && is_array($payload[$type])) {
+                return array_values($payload[$type]);
+            }
+
+            $singular = $type === 'articles' ? 'article' : 'mobile';
+            if (isset($payload[$singular]) && is_array($payload[$singular])) {
+                return array_values($payload[$singular]);
+            }
+
+            return [];
+        };
+
+        if ($forcedType !== null) {
+            $items = $extractItems($payload, $forcedType);
+            if ($items !== []) {
+                $batches[] = [
+                    'contentType' => $forcedType,
+                    'items' => $items,
+                ];
+            }
+            return $batches;
+        }
+
+        if ($payloadType !== null && isset($payload['items']) && is_array($payload['items'])) {
+            $items = array_values($payload['items']);
+            if ($items !== []) {
+                return [[
+                    'contentType' => $payloadType,
+                    'items' => $items,
+                ]];
+            }
+        }
+
+        foreach (['articles', 'mobiles'] as $type) {
+            $items = $extractItems($payload, $type);
+            if ($items !== []) {
+                $batches[] = [
+                    'contentType' => $type,
+                    'items' => $items,
+                ];
+            }
+        }
+
+        return $batches;
+    }
+}
+
+if (!function_exists('scraperPushStoreIncomingBatch')) {
+    function scraperPushStoreIncomingBatch(
+        BroxScrapModel $broxScrapModel,
+        string $contentType,
+        array $items,
+        ?string $source,
+        ?string $trigger,
+        ?string $pushedAt
+    ): array {
+        $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+
+        $pendingStageResult = $broxScrapModel->stageIncomingItems($contentType, $items, $ipAddress, $userAgent, $source, $trigger, $pushedAt);
+        $legacyLogResult = $broxScrapModel->addLogBatch($contentType, $items, $ipAddress, $userAgent, $source, $trigger, $pushedAt, 'received');
+        $scrapingResult = $broxScrapModel->saveScrapedItems($contentType, $items, $source, $trigger, $pushedAt, $ipAddress, $userAgent);
+
+        return [
+            'contentType' => $contentType,
+            'items' => $items,
+            'pending_stage' => $pendingStageResult,
+            'scraping' => $scrapingResult,
+            'legacy_logs' => $legacyLogResult,
+        ];
+    }
+}
+
+if (!function_exists('scraperPushDecorateScrapingItem')) {
+    function scraperPushDecorateScrapingItem(array $item): array
+    {
+        foreach ([
+            'tags_json' => 'tags',
+            'key_specs_json' => 'key_specs',
+            'specs_json' => 'specs',
+        ] as $sourceKey => $targetKey) {
+            $decoded = null;
+            $raw = $item[$sourceKey] ?? null;
+            if (is_string($raw) && trim($raw) !== '') {
+                $decoded = json_decode($raw, true);
+            }
+            $item[$targetKey] = is_array($decoded) ? $decoded : [];
+        }
+
+        $type = scraperPushNormalizeContentType((string) ($item['data_type'] ?? '')) ?? (string) ($item['data_type'] ?? '');
+        $item['display_type'] = $type;
+        $item['display_type_label'] = $type === 'mobiles' ? 'Mobile' : ($type === 'articles' ? 'Article' : ucfirst($type));
+        $item['image_src'] = trim((string) ($item['image_path'] ?? $item['image_url'] ?? ''));
+        $summary = trim((string) ($item['excerpt'] ?? $item['body_text'] ?? ''));
+        if ($summary === '') {
+            $summary = trim((string) ($item['published_text'] ?? ''));
+        }
+        $item['summary_text'] = $summary;
+        $item['title_text'] = trim((string) ($item['title'] ?? ''));
+
+        return $item;
     }
 }
 
@@ -64,7 +200,6 @@ if (!function_exists('scraperPushHttpJson')) {
         if ($payload !== null) {
             $encoded = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             if ($encoded === false) {
-                curl_close($ch);
                 return ['ok' => false, 'status' => 0, 'json' => null, 'raw' => '', 'error' => 'Failed to encode JSON payload'];
             }
             $headers[] = 'Content-Type: application/json';
@@ -76,7 +211,6 @@ if (!function_exists('scraperPushHttpJson')) {
         $raw = curl_exec($ch);
         $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
-        curl_close($ch);
 
         if ($raw === false) {
             return ['ok' => false, 'status' => 0, 'json' => null, 'raw' => '', 'error' => $curlError ?: 'Unknown cURL error'];
@@ -329,8 +463,916 @@ if (!function_exists('scraperPushNormalizeItems')) {
     }
 }
 
+if (!function_exists('scraperPushToNullableString')) {
+    function scraperPushToNullableString($value): ?string
+    {
+        if (!is_scalar($value)) {
+            return null;
+        }
+        $str = trim((string) $value);
+        return $str === '' ? null : $str;
+    }
+
+    function scraperPushParsePrice($raw): float
+    {
+        $value = scraperPushToNullableString($raw);
+        if ($value === null) {
+            return 0.0;
+        }
+        $normalized = preg_replace('/[^\d.,]/', '', $value);
+        if (!is_string($normalized) || $normalized === '') {
+            return 0.0;
+        }
+        $normalized = str_replace(',', '', $normalized);
+        return (float) $normalized;
+    }
+
+    function scraperPushNormalizeMobileStatus(?string $raw): string
+    {
+        $status = strtolower(trim((string) $raw));
+        if (in_array($status, ['official', 'available', 'in stock'], true)) {
+            return 'official';
+        }
+        return 'unofficial';
+    }
+
+    function scraperPushExtractBrandAndModel(array $item): array
+    {
+        $brand = scraperPushToNullableString($item['brand'] ?? null);
+        $model = scraperPushToNullableString($item['model'] ?? null);
+        $title = scraperPushToNullableString($item['title'] ?? null) ?? '';
+
+        if ($brand === null && $title !== '') {
+            $parts = preg_split('/\s+/', $title);
+            $brand = isset($parts[0]) ? trim((string) $parts[0]) : null;
+        }
+        if ($model === null && $title !== '') {
+            if ($brand !== null && str_starts_with(strtolower($title), strtolower($brand))) {
+                $model = trim(substr($title, strlen($brand)));
+            } else {
+                $model = $title;
+            }
+        }
+
+        return [
+            scraperPushToNullableString($brand) ?? 'Unknown',
+            scraperPushToNullableString($model) ?? 'Unknown Model',
+        ];
+    }
+
+    function scraperPushNormalizeStringList($value): array
+    {
+        $normalized = [];
+        $appendValue = static function ($item) use (&$normalized, &$appendValue): void {
+            if (is_array($item)) {
+                $assocLabel = $item['name'] ?? $item['title'] ?? $item['label'] ?? null;
+                if (is_scalar($assocLabel)) {
+                    $text = trim((string) $assocLabel);
+                    if ($text !== '') {
+                        $normalized[] = $text;
+                    }
+                    return;
+                }
+
+                foreach ($item as $nested) {
+                    $appendValue($nested);
+                }
+                return;
+            }
+
+            if (!is_scalar($item)) {
+                return;
+            }
+
+            $text = trim((string) $item);
+            if ($text !== '') {
+                $normalized[] = $text;
+            }
+        };
+
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                $appendValue($item);
+            }
+        } elseif (is_string($value)) {
+            $trimmed = trim($value);
+            if ($trimmed === '') {
+                return [];
+            }
+
+            $decoded = json_decode($trimmed, true);
+            if (is_array($decoded)) {
+                foreach ($decoded as $item) {
+                    $appendValue($item);
+                }
+            } else {
+                foreach ((preg_split('/[,|]+/', $trimmed) ?: []) as $item) {
+                    $appendValue($item);
+                }
+            }
+        } elseif (is_scalar($value)) {
+            $appendValue($value);
+        }
+
+        return array_values(array_unique($normalized));
+    }
+
+    function scraperPushFindOrCreateTagIds(ContentModel $contentModel, array $rawTags): array
+    {
+        $tagIds = [];
+        foreach (scraperPushNormalizeStringList($rawTags) as $tagName) {
+            $tagSlug = function_exists('slugify') ? slugify($tagName) : strtolower(trim(preg_replace('/[^a-z0-9]+/i', '-', $tagName), '-'));
+            $existing = $tagSlug !== '' ? $contentModel->getTagBySlug($tagSlug) : null;
+            if (is_array($existing) && (int) ($existing['id'] ?? 0) > 0) {
+                $tagIds[] = (int) $existing['id'];
+                continue;
+            }
+
+            $createdId = (int) $contentModel->createTag($tagName, $tagSlug !== '' ? $tagSlug : null);
+            if ($createdId > 0) {
+                $tagIds[] = $createdId;
+            }
+        }
+
+        return array_values(array_unique(array_filter($tagIds, static fn($id): bool => (int) $id > 0)));
+    }
+
+    function scraperPushFindOrCreateCategoryIds(ContentModel $contentModel, array $rawCategories): array
+    {
+        $categoryIds = [];
+        foreach (scraperPushNormalizeStringList($rawCategories) as $categoryName) {
+            $categorySlug = function_exists('slugify') ? slugify($categoryName) : strtolower(trim(preg_replace('/[^a-z0-9]+/i', '-', $categoryName), '-'));
+            $existing = $categorySlug !== '' ? $contentModel->getCategoryBySlug($categorySlug) : null;
+            if (is_array($existing) && (int) ($existing['id'] ?? 0) > 0) {
+                $categoryIds[] = (int) $existing['id'];
+                continue;
+            }
+
+            $createdId = (int) $contentModel->createCategory($categoryName, $categorySlug !== '' ? $categorySlug : null);
+            if ($createdId > 0) {
+                $categoryIds[] = $createdId;
+            }
+        }
+
+        return array_values(array_unique(array_filter($categoryIds, static fn($id): bool => (int) $id > 0)));
+    }
+
+    function scraperPushCollectImageUrls(array $sources): array
+    {
+        $images = [];
+
+        $collect = static function ($value) use (&$images): void {
+            if (is_array($value)) {
+                foreach ($value as $item) {
+                    if (is_array($item)) {
+                        $nested = $item['url'] ?? $item['image_url'] ?? $item['imageUrl'] ?? $item['path'] ?? $item['image_path'] ?? null;
+                        if (is_scalar($nested)) {
+                            $text = trim((string) $nested);
+                            if ($text !== '') {
+                                $images[] = $text;
+                            }
+                        }
+                        continue;
+                    }
+
+                    if (is_scalar($item)) {
+                        $text = trim((string) $item);
+                        if ($text !== '') {
+                            $images[] = $text;
+                        }
+                    }
+                }
+                return;
+            }
+
+            if (is_scalar($value)) {
+                $text = trim((string) $value);
+                if ($text !== '') {
+                    $images[] = $text;
+                }
+            }
+        };
+
+        foreach ($sources as $source) {
+            $collect($source);
+        }
+
+        return array_values(array_unique($images));
+    }
+
+    function scraperPushNormalizeSpecs($value): array
+    {
+        $normalized = [];
+        if (!is_array($value)) {
+            return $normalized;
+        }
+
+        foreach ($value as $key => $item) {
+            if (is_array($item)) {
+                $specKey = $item['key'] ?? $item['label'] ?? $item['name'] ?? (is_string($key) ? $key : null);
+                $specValue = $item['value'] ?? $item['spec_value'] ?? $item['text'] ?? null;
+            } else {
+                $specKey = is_string($key) ? $key : null;
+                $specValue = $item;
+            }
+
+            $specKey = scraperPushToNullableString($specKey);
+            $specValue = scraperPushToNullableString($specValue);
+            if ($specKey === null || $specValue === null) {
+                continue;
+            }
+
+            $normalized[$specKey] = $specValue;
+        }
+
+        return $normalized;
+    }
+
+    function scraperPushMergeSpecs(...$sources): array
+    {
+        $merged = [];
+        foreach ($sources as $source) {
+            foreach (scraperPushNormalizeSpecs($source) as $key => $value) {
+                $merged[$key] = $value;
+            }
+        }
+
+        return $merged;
+    }
+
+    function scraperPushBuildArticleContent(array $publishPayload, array $row): string
+    {
+        $body = scraperPushToNullableString($publishPayload['bodyText'] ?? null)
+            ?? scraperPushToNullableString($publishPayload['body_text'] ?? null)
+            ?? scraperPushToNullableString($publishPayload['content'] ?? null)
+            ?? '';
+        $excerpt = scraperPushToNullableString($publishPayload['excerpt'] ?? null) ?? scraperPushToNullableString($row['excerpt'] ?? null) ?? '';
+        $sourceUrl = scraperPushToNullableString($publishPayload['url'] ?? null)
+            ?? scraperPushToNullableString($publishPayload['sourceUrl'] ?? null)
+            ?? scraperPushToNullableString($publishPayload['source_url'] ?? null)
+            ?? scraperPushToNullableString($row['source_url'] ?? null)
+            ?? '';
+        $publishedText = scraperPushToNullableString($publishPayload['publishedText'] ?? null)
+            ?? scraperPushToNullableString($publishPayload['published_at'] ?? null)
+            ?? scraperPushToNullableString($publishPayload['publishedAt'] ?? null)
+            ?? scraperPushToNullableString($row['source_published_at'] ?? null)
+            ?? '';
+
+        $images = scraperPushCollectImageUrls([
+            $publishPayload['image'] ?? null,
+            $publishPayload['imageUrl'] ?? null,
+            $publishPayload['image_url'] ?? null,
+            $publishPayload['featured_image_url'] ?? null,
+            $publishPayload['images'] ?? null,
+            $row['image_path'] ?? null,
+            $row['image_url'] ?? null,
+        ]);
+
+        $segments = [];
+        foreach ($images as $imageUrl) {
+            if ($body !== '' && stripos($body, $imageUrl) !== false) {
+                continue;
+            }
+            $segments[] = '<p><img src="' . htmlspecialchars($imageUrl, ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy"></p>';
+        }
+
+        if ($excerpt !== '' && ($body === '' || stripos($body, $excerpt) === false)) {
+            $segments[] = '<p>' . nl2br(htmlspecialchars($excerpt, ENT_QUOTES, 'UTF-8')) . '</p>';
+        }
+
+        if ($body !== '') {
+            $segments[] = $body;
+        }
+
+        if ($publishedText !== '') {
+            $segments[] = '<p><strong>Published:</strong> ' . htmlspecialchars($publishedText, ENT_QUOTES, 'UTF-8') . '</p>';
+        }
+
+        if ($sourceUrl !== '') {
+            $safeUrl = htmlspecialchars($sourceUrl, ENT_QUOTES, 'UTF-8');
+            $segments[] = '<p><strong>Source:</strong> <a href="' . $safeUrl . '" target="_blank" rel="noopener noreferrer">' . $safeUrl . '</a></p>';
+        }
+
+        $content = trim(implode("\n\n", array_filter($segments, static fn($segment): bool => trim((string) $segment) !== '')));
+        if ($content === '') {
+            $content = 'No content body provided by scraper source.';
+        }
+
+        if (function_exists('getPurifier')) {
+            $content = getPurifier()->purify($content);
+        }
+        if (function_exists('watermarkContentImages')) {
+            $content = watermarkContentImages($content);
+        }
+
+        return $content;
+    }
+
+    function scraperPushUpdatePostPublishedAt(mysqli $mysqli, int $postId, ?string $publishedAt): void
+    {
+        $normalized = scraperPushToNullableString($publishedAt);
+        if ($postId <= 0 || $normalized === null) {
+            return;
+        }
+
+        $ts = strtotime($normalized);
+        if ($ts === false) {
+            return;
+        }
+
+        $formatted = date('Y-m-d H:i:s', $ts);
+        $stmt = $mysqli->prepare('UPDATE posts SET published_at = ?, updated_at = NOW() WHERE id = ?');
+        if (!$stmt) {
+            return;
+        }
+        $stmt->bind_param('si', $formatted, $postId);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    function scraperPushUniquePostSlug(mysqli $mysqli, string $title): string
+    {
+        $base = function_exists('slugify') ? slugify($title) : strtolower(trim(preg_replace('/[^a-z0-9]+/i', '-', $title), '-'));
+        if ($base === '') {
+            $base = 'post';
+        }
+
+        $slug = $base;
+        $counter = 2;
+        while (true) {
+            $stmt = $mysqli->prepare('SELECT id FROM posts WHERE slug = ? LIMIT 1');
+            if (!$stmt) {
+                return $slug;
+            }
+            $stmt->bind_param('s', $slug);
+            $stmt->execute();
+            $exists = $stmt->get_result()->num_rows > 0;
+            $stmt->close();
+
+            if (!$exists) {
+                return $slug;
+            }
+
+            $slug = $base . '-' . $counter;
+            $counter++;
+            if ($counter > 10000) {
+                return $base . '-' . time();
+            }
+        }
+    }
+
+    function scraperPushFindMobileId(mysqli $mysqli, string $brand, string $model): int
+    {
+        $stmt = $mysqli->prepare('SELECT id FROM mobiles WHERE brand_name = ? AND model_name = ? LIMIT 1');
+        if (!$stmt) {
+            return 0;
+        }
+        $stmt->bind_param('ss', $brand, $model);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $row = $res ? $res->fetch_assoc() : null;
+        $stmt->close();
+        return (int) ($row['id'] ?? 0);
+    }
+
+    function scraperPushGetProviderModels(AIProvider $aiProvider, string $providerName): array
+    {
+        $provider = $aiProvider->getByName($providerName);
+        $models = [];
+        if ($provider && !empty($provider['supported_models']) && is_array($provider['supported_models'])) {
+            $models = $provider['supported_models'];
+        }
+
+        if ($models === []) {
+            $config = AIProvider::getProviderConfig($providerName);
+            if (!empty($config['models']) && is_array($config['models'])) {
+                $models = $config['models'];
+            }
+        }
+
+        if ($providerName === 'fireworks') {
+            $remote = $aiProvider->fetchRemoteModels($providerName);
+            if (!empty($remote)) {
+                $models = $remote;
+            }
+        }
+
+        return is_array($models) ? $models : [];
+    }
+
+    function scraperPushResolveAiModel(AIProvider $aiProvider, string $providerName, string $selectedModel, string $defaultModel = ''): string
+    {
+        $models = scraperPushGetProviderModels($aiProvider, $providerName);
+        if ($selectedModel !== '' && isset($models[$selectedModel])) {
+            return $selectedModel;
+        }
+        if ($defaultModel !== '' && isset($models[$defaultModel])) {
+            return $defaultModel;
+        }
+        return (string) array_key_first($models);
+    }
+
+    function scraperPushLoadEnhancerPrompt(): string
+    {
+        $promptFile = __DIR__ . '/../../system/prompts/enhancer.md';
+        if (!is_file($promptFile)) {
+            return 'You are a content enhancement assistant. Improve the given content while preserving facts.';
+        }
+
+        $content = file_get_contents($promptFile);
+        if (!is_string($content) || trim($content) === '') {
+            return 'You are a content enhancement assistant. Improve the given content while preserving facts.';
+        }
+
+        return trim($content);
+    }
+
+    function scraperPushParseAiJson(string $response): ?array
+    {
+        $trimmed = trim($response);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        if (preg_match('/```(?:json)?\s*(\{.*\})\s*```/s', $trimmed, $matches)) {
+            $trimmed = trim((string) ($matches[1] ?? $trimmed));
+        }
+
+        $decoded = json_decode($trimmed, true);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        if (preg_match('/\{.*\}/s', $trimmed, $matches)) {
+            $decoded = json_decode((string) $matches[0], true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return null;
+    }
+
+    function scraperPushEnhanceIncomingPayload(mysqli $mysqli, string $dataType, array $payload): array
+    {
+        $aiProvider = new AIProvider($mysqli);
+        $settings = $aiProvider->getSettings();
+        $providerName = trim((string) ($settings['backend_provider'] ?? $settings['default_provider'] ?? $settings['frontend_provider'] ?? ''));
+        if ($providerName === '') {
+            $effective = $aiProvider->getEffectiveProvider();
+            $providerName = (string) ($effective['provider_name'] ?? '');
+        }
+
+        if ($providerName === '') {
+            return ['ok' => false, 'used_ai' => false, 'payload' => $payload, 'meta' => ['reason' => 'No AI provider configured']];
+        }
+
+        $selectedModel = trim((string) ($settings['backend_model'] ?? $settings['default_model'] ?? ''));
+        $effectiveModel = scraperPushResolveAiModel($aiProvider, $providerName, $selectedModel, (string) ($settings['default_model'] ?? ''));
+        if ($effectiveModel === '') {
+            return ['ok' => false, 'used_ai' => false, 'payload' => $payload, 'meta' => ['reason' => 'No AI model available']];
+        }
+
+        $systemPrompt = scraperPushLoadEnhancerPrompt();
+        $payloadJson = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        if (!is_string($payloadJson) || $payloadJson === '') {
+            $payloadJson = '{}';
+        }
+
+        $schema = $dataType === 'mobiles'
+            ? [
+                'title' => 'string',
+                'brand' => 'string',
+                'model' => 'string',
+                'price' => 'string',
+                'status' => 'string',
+                'productCategory' => 'string',
+                'excerpt' => 'string',
+                'bodyText' => 'string',
+                'tags' => ['array of strings'],
+                'keySpecs' => ['object of label => value'],
+                'specs' => ['object of label => value'],
+            ]
+            : [
+                'title' => 'string',
+                'excerpt' => 'string',
+                'bodyText' => 'string',
+                'author' => 'string',
+                'category' => 'string',
+                'tags' => ['array of strings'],
+                'publishedText' => 'string',
+            ];
+
+        $userPrompt = "Clean and enhance the following {$dataType} payload without changing facts. Return valid JSON only. Use this schema as a guide:\n"
+            . json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
+            . "\n\nPayload:\n"
+            . $payloadJson
+            . "\n\nRules:\n"
+            . "- Preserve all factual information.\n"
+            . "- Do not invent missing specs, prices, dates, or claims.\n"
+            . "- Improve wording, formatting, and readability.\n"
+            . "- Keep tags/specs as structured arrays/objects.\n"
+            . "- Output JSON only with no markdown.";
+
+        $response = $aiProvider->callAPI($providerName, $effectiveModel, [
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user', 'content' => $userPrompt],
+        ], [
+            'temperature' => 0.2,
+            'max_tokens' => 2400,
+        ]);
+
+        if (empty($response['success'])) {
+            return ['ok' => false, 'used_ai' => false, 'payload' => $payload, 'meta' => ['provider' => $providerName, 'model' => $effectiveModel, 'error' => $response['error'] ?? 'AI unavailable']];
+        }
+
+        $content = (string) ($response['content'] ?? '');
+        $decoded = scraperPushParseAiJson($content);
+        if (!is_array($decoded)) {
+            return ['ok' => false, 'used_ai' => false, 'payload' => $payload, 'meta' => ['provider' => $providerName, 'model' => $effectiveModel, 'error' => 'AI returned invalid JSON']];
+        }
+
+        $enhancedPayload = array_replace($payload, $decoded);
+        return [
+            'ok' => true,
+            'used_ai' => true,
+            'provider' => $providerName,
+            'model' => $effectiveModel,
+            'payload' => $enhancedPayload,
+            'raw' => $decoded,
+        ];
+    }
+
+    function scraperPushNormalizePublishedDate(?string $value): string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return date('Y-m-d');
+        }
+
+        $ts = strtotime($value);
+        if ($ts === false) {
+            return date('Y-m-d');
+        }
+
+        return date('Y-m-d', $ts);
+    }
+
+    function scraperPushNormalizeFingerprintValue($value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return trim((string) $value);
+        }
+
+        if (is_string($value)) {
+            $value = trim(mb_strtolower(preg_replace('/\s+/u', ' ', $value) ?? $value));
+            return $value;
+        }
+
+        if (is_array($value)) {
+            $normalized = $value;
+            $isAssoc = array_keys($normalized) !== range(0, count($normalized) - 1);
+            if ($isAssoc) {
+                ksort($normalized);
+            }
+            foreach ($normalized as $key => $item) {
+                $normalized[$key] = scraperPushNormalizeFingerprintValue($item);
+            }
+            $json = json_encode($normalized, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            return is_string($json) ? $json : '';
+        }
+
+        return trim((string) $value);
+    }
+
+    function scraperPushBuildContentFingerprint(string $dataType, array $payload): string
+    {
+        $type = scraperPushNormalizeContentType($dataType) ?? strtolower(trim($dataType));
+        $parts = [$type];
+        $parts[] = scraperPushNormalizeFingerprintValue($payload['title'] ?? $payload['name'] ?? null);
+        $parts[] = scraperPushNormalizeFingerprintValue($payload['url'] ?? $payload['sourceUrl'] ?? $payload['source_url'] ?? null);
+        $parts[] = scraperPushNormalizeFingerprintValue($payload['sourceKey'] ?? $payload['source_key'] ?? null);
+        $parts[] = scraperPushNormalizeFingerprintValue($payload['category'] ?? $payload['productCategory'] ?? null);
+        $parts[] = scraperPushNormalizeFingerprintValue($payload['author'] ?? null);
+        $parts[] = scraperPushNormalizeFingerprintValue($payload['excerpt'] ?? null);
+        $parts[] = scraperPushNormalizeFingerprintValue($payload['bodyText'] ?? $payload['body_text'] ?? null);
+
+        if ($type === 'articles') {
+            $parts[] = scraperPushNormalizeFingerprintValue($payload['tags'] ?? []);
+            $parts[] = scraperPushNormalizeFingerprintValue($payload['publishedAt'] ?? $payload['published_at'] ?? null);
+        } elseif ($type === 'mobiles') {
+            $parts[] = scraperPushNormalizeFingerprintValue($payload['brand'] ?? null);
+            $parts[] = scraperPushNormalizeFingerprintValue($payload['model'] ?? null);
+            $parts[] = scraperPushNormalizeFingerprintValue($payload['price'] ?? null);
+            $parts[] = scraperPushNormalizeFingerprintValue($payload['status'] ?? null);
+            $parts[] = scraperPushNormalizeFingerprintValue($payload['keySpecs'] ?? $payload['key_specs'] ?? []);
+            $parts[] = scraperPushNormalizeFingerprintValue($payload['specs'] ?? []);
+        }
+
+        $parts = array_values(array_filter($parts, static fn($value): bool => trim((string) $value) !== ''));
+        return hash('sha256', implode('|', $parts));
+    }
+
+    function scraperPushPublishPendingItems(
+        mysqli $mysqli,
+        BroxScrapModel $broxScrapModel,
+        ContentModel $contentModel,
+        MobileModel $mobileModel,
+        int $limit = 20,
+        ?string $type = null,
+        ?array $rows = null
+    ): array {
+        $pending = is_array($rows) ? $rows : $broxScrapModel->getPendingIncomingItems($limit, $type);
+        $summary = [
+            'fetched' => count($pending),
+            'published' => 0,
+            'failed' => 0,
+            'skipped_duplicates' => 0,
+            'results' => [],
+        ];
+
+        foreach ($pending as $row) {
+            $itemId = (int) ($row['id'] ?? 0);
+            $dataType = strtolower(trim((string) ($row['data_type'] ?? '')));
+            $payload = json_decode((string) ($row['payload_json'] ?? ''), true);
+            if (!is_array($payload)) {
+                $broxScrapModel->markIncomingItemFailed($itemId, 'Invalid payload_json');
+                $summary['failed']++;
+                $summary['results'][] = ['id' => $itemId, 'ok' => false, 'error' => 'Invalid payload_json'];
+                continue;
+            }
+
+            try {
+                $fingerprint = trim((string) ($row['content_fingerprint'] ?? ''));
+                if ($fingerprint === '') {
+                    $fingerprint = scraperPushBuildContentFingerprint($dataType, $payload);
+                }
+
+                $existingPublished = $broxScrapModel->findPublishedIncomingItemByFingerprint($dataType, $fingerprint, $itemId);
+                if (is_array($existingPublished) && (int) ($existingPublished['published_content_id'] ?? 0) > 0) {
+                    $existingPublishedContentId = (int) $existingPublished['published_content_id'];
+                    $broxScrapModel->markIncomingItemPublished($itemId, $existingPublishedContentId, [
+                        'deduped' => true,
+                        'fingerprint' => $fingerprint,
+                        'duplicate_of' => (int) ($existingPublished['id'] ?? 0),
+                    ]);
+                    $summary['published']++;
+                    $summary['skipped_duplicates']++;
+                    $summary['results'][] = [
+                        'id' => $itemId,
+                        'ok' => true,
+                        'data_type' => $dataType,
+                        'published_content_id' => $existingPublishedContentId,
+                        'deduped' => true,
+                    ];
+                    continue;
+                }
+
+                if ($dataType === 'articles') {
+                    $enhancement = scraperPushEnhanceIncomingPayload($mysqli, 'articles', $payload);
+                    $publishPayload = is_array($enhancement['payload'] ?? null) ? $enhancement['payload'] : $payload;
+                    $title = scraperPushToNullableString($publishPayload['title'] ?? null) ?? 'Untitled Article';
+                    $content = scraperPushBuildArticleContent($publishPayload, $row);
+                    $author = scraperPushToNullableString($publishPayload['author'] ?? null)
+                        ?? scraperPushToNullableString($row['author'] ?? null)
+                        ?? scraperPushToNullableString($row['source'] ?? null)
+                        ?? 'Scraper';
+                    $slug = $contentModel->generateUniquePermalink($title);
+                    $categoryIds = scraperPushFindOrCreateCategoryIds($contentModel, [
+                        $publishPayload['category'] ?? null,
+                        $row['category'] ?? null,
+                    ]);
+                    $tagIds = scraperPushFindOrCreateTagIds($contentModel, [
+                        $publishPayload['tags'] ?? null,
+                        $row['tags_json'] ?? null,
+                    ]);
+                    $publishedAt = scraperPushToNullableString($publishPayload['publishedAt'] ?? null)
+                        ?? scraperPushToNullableString($publishPayload['published_at'] ?? null)
+                        ?? scraperPushToNullableString($row['source_published_at'] ?? null);
+
+                    $postId = (int) $contentModel->createPost($title, $content, $author, $slug, 1, 1);
+                    if ($postId <= 0) {
+                        throw new RuntimeException('Failed to create post');
+                    }
+                    $contentModel->markPostPublished($postId);
+                    if ($categoryIds !== []) {
+                        $contentModel->attachCategoriesToContent('post', $postId, $categoryIds);
+                        $contentModel->setPostCategoryId($postId, (int) $categoryIds[0]);
+                    }
+                    if ($tagIds !== []) {
+                        $contentModel->attachTagsToContent('post', $postId, $tagIds);
+                    }
+                    scraperPushUpdatePostPublishedAt($mysqli, $postId, $publishedAt);
+                    $broxScrapModel->markIncomingItemPublished($itemId, $postId, [
+                        'fingerprint' => $fingerprint,
+                        'ai_used' => (bool) ($enhancement['used_ai'] ?? false),
+                        'provider' => $enhancement['provider'] ?? null,
+                        'model' => $enhancement['model'] ?? null,
+                        'slug' => $slug,
+                        'category_ids' => $categoryIds,
+                        'tag_ids' => $tagIds,
+                    ]);
+
+                    $summary['published']++;
+                    $summary['results'][] = [
+                        'id' => $itemId,
+                        'ok' => true,
+                        'data_type' => 'articles',
+                        'published_content_id' => $postId,
+                        'ai_used' => (bool) ($enhancement['used_ai'] ?? false),
+                    ];
+                    continue;
+                }
+
+                if ($dataType === 'mobiles') {
+                    $enhancement = scraperPushEnhanceIncomingPayload($mysqli, 'mobiles', $payload);
+                    $publishPayload = is_array($enhancement['payload'] ?? null) ? $enhancement['payload'] : $payload;
+                    [$brand, $model] = scraperPushExtractBrandAndModel($publishPayload);
+                    $existingId = scraperPushFindMobileId($mysqli, $brand, $model);
+                    if ($existingId > 0) {
+                        $broxScrapModel->markIncomingItemPublished($itemId, $existingId, [
+                            'fingerprint' => $fingerprint,
+                            'deduped' => true,
+                            'brand' => $brand,
+                            'model' => $model,
+                        ]);
+                        $summary['published']++;
+                        $summary['skipped_duplicates']++;
+                        $summary['results'][] = [
+                            'id' => $itemId,
+                            'ok' => true,
+                            'data_type' => 'mobiles',
+                            'published_content_id' => $existingId,
+                            'deduped' => true,
+                            'ai_used' => (bool) ($enhancement['used_ai'] ?? false),
+                        ];
+                        continue;
+                    }
+
+                    $price = scraperPushParsePrice($publishPayload['price'] ?? null);
+                    $status = scraperPushNormalizeMobileStatus(scraperPushToNullableString($publishPayload['status'] ?? null));
+                    $releaseDate = scraperPushNormalizePublishedDate(scraperPushToNullableString($publishPayload['publishedAt'] ?? $publishPayload['published_at'] ?? null));
+                    $createdId = (int) $mobileModel->insertMobile($brand, $model, $price, $price, $status, $releaseDate, 0);
+                    if ($createdId <= 0) {
+                        throw new RuntimeException('Failed to create mobile');
+                    }
+
+                    $mergedSpecs = scraperPushMergeSpecs(
+                        $publishPayload['keySpecs'] ?? $publishPayload['key_specs'] ?? [],
+                        $publishPayload['specs'] ?? [],
+                        json_decode((string) ($row['key_specs_json'] ?? ''), true) ?: [],
+                        json_decode((string) ($row['specs_json'] ?? ''), true) ?: []
+                    );
+                    if ($mergedSpecs !== []) {
+                        $mobileModel->insertSpecifications($createdId, array_keys($mergedSpecs), array_values($mergedSpecs));
+                    }
+
+                    $imageValues = scraperPushCollectImageUrls([
+                        $publishPayload['imageUrl'] ?? null,
+                        $publishPayload['image_url'] ?? null,
+                        $publishPayload['image'] ?? null,
+                        $publishPayload['images'] ?? null,
+                        $row['image_path'] ?? null,
+                        $row['image_url'] ?? null,
+                    ]);
+                    if ($imageValues !== []) {
+                        $mobileModel->insertImages($createdId, $imageValues);
+                    }
+
+                    $mobileTagIds = scraperPushFindOrCreateTagIds($contentModel, [
+                        $publishPayload['tags'] ?? null,
+                        $row['tags_json'] ?? null,
+                    ]);
+                    if ($mobileTagIds !== []) {
+                        $contentModel->attachTagsToContent('mobile', $createdId, $mobileTagIds);
+                    }
+
+                    $mobileCategoryIds = scraperPushFindOrCreateCategoryIds($contentModel, [
+                        $publishPayload['productCategory'] ?? null,
+                        $publishPayload['category'] ?? null,
+                        $row['product_category'] ?? null,
+                        $row['category'] ?? null,
+                    ]);
+                    if ($mobileCategoryIds !== []) {
+                        $contentModel->attachCategoriesToContent('mobile', $createdId, $mobileCategoryIds);
+                    }
+
+                    $broxScrapModel->markIncomingItemPublished($itemId, $createdId, [
+                        'fingerprint' => $fingerprint,
+                        'ai_used' => (bool) ($enhancement['used_ai'] ?? false),
+                        'provider' => $enhancement['provider'] ?? null,
+                        'model' => $enhancement['model'] ?? null,
+                        'brand' => $brand,
+                        'model_name' => $model,
+                        'tag_ids' => $mobileTagIds ?? [],
+                        'category_ids' => $mobileCategoryIds ?? [],
+                    ]);
+                    $summary['published']++;
+                    $summary['results'][] = [
+                        'id' => $itemId,
+                        'ok' => true,
+                        'data_type' => 'mobiles',
+                        'published_content_id' => $createdId,
+                        'ai_used' => (bool) ($enhancement['used_ai'] ?? false),
+                    ];
+                    continue;
+                }
+
+                throw new RuntimeException('Unsupported data_type: ' . $dataType);
+            } catch (Throwable $e) {
+                $broxScrapModel->markIncomingItemFailed($itemId, $e->getMessage());
+                $summary['failed']++;
+                $summary['results'][] = ['id' => $itemId, 'ok' => false, 'error' => $e->getMessage()];
+            }
+        }
+
+        return $summary;
+    }
+}
+
+if (!function_exists('scraperPushSummarizePipelineResults')) {
+    function scraperPushSummarizePipelineResults(array $summary, array $results = []): array
+    {
+        $aiUsedCount = 0;
+        foreach ($results as $result) {
+            if (is_array($result) && !empty($result['ai_used'])) {
+                $aiUsedCount++;
+            }
+        }
+
+        return [
+            'fetched' => (int) ($summary['fetched'] ?? 0),
+            'published' => (int) ($summary['published'] ?? 0),
+            'failed' => (int) ($summary['failed'] ?? 0),
+            'skipped_duplicates' => (int) ($summary['skipped_duplicates'] ?? 0),
+            'ai_used_count' => $aiUsedCount,
+        ];
+    }
+}
+
+if (!function_exists('scraperPushResolvePipelineStatus')) {
+    function scraperPushResolvePipelineStatus(array $summary): string
+    {
+        $published = (int) ($summary['published'] ?? 0);
+        $failed = (int) ($summary['failed'] ?? 0);
+
+        if ($failed > 0 && $published > 0) {
+            return 'partial';
+        }
+        if ($failed > 0) {
+            return 'failed';
+        }
+        return 'success';
+    }
+}
+
+if (!function_exists('scraperPushRecordPipelineRun')) {
+    function scraperPushRecordPipelineRun(BroxScrapModel $broxScrapModel, array $context, array $summary, array $results): int
+    {
+        $startedAt = (string) ($context['started_at'] ?? date('Y-m-d H:i:s'));
+        $finishedAt = (string) ($context['finished_at'] ?? date('Y-m-d H:i:s'));
+        $startedTs = strtotime($startedAt) ?: time();
+        $finishedTs = strtotime($finishedAt) ?: time();
+        $durationMs = max(0, (int) round(($finishedTs - $startedTs) * 1000));
+
+        return $broxScrapModel->savePipelineRun([
+            'action_name' => (string) ($context['action_name'] ?? 'run-pipeline'),
+            'trigger_source' => (string) ($context['trigger_source'] ?? 'manual'),
+            'scope_type' => $context['scope_type'] ?? null,
+            'batch_limit' => (int) ($context['batch_limit'] ?? max(1, (int) ($summary['fetched'] ?? 0))),
+            'status' => $context['status'] ?? scraperPushResolvePipelineStatus($summary),
+            'summary' => scraperPushSummarizePipelineResults($summary, $results),
+            'results' => $results,
+            'ai_available' => $context['ai_available'] ?? null,
+            'provider_name' => $context['provider_name'] ?? null,
+            'model_name' => $context['model_name'] ?? null,
+            'duration_ms' => $durationMs,
+            'started_at' => $startedAt,
+            'finished_at' => $finishedAt,
+            'request_uri' => $context['request_uri'] ?? ($_SERVER['REQUEST_URI'] ?? null),
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            'error_message' => $context['error_message'] ?? null,
+        ]);
+    }
+}
+
 if (!function_exists('scraperPushHandleTypedPayload')) {
-    function scraperPushHandleTypedPayload(mysqli $mysqli, BroxScrapModel $broxScrapModel, string $type): void
+    function scraperPushHandleTypedPayload(
+        mysqli $mysqli,
+        BroxScrapModel $broxScrapModel,
+        ContentModel $contentModel,
+        MobileModel $mobileModel,
+        string $type
+    ): void
     {
         [$allowed, $authError] = scraperPushAuthorize($mysqli);
         if (!$allowed) {
@@ -345,8 +1387,14 @@ if (!function_exists('scraperPushHandleTypedPayload')) {
             return;
         }
 
-        $normalizedType = $type === 'articals' ? 'articles' : $type;
-        $items = scraperPushNormalizeItems($payload, $normalizedType);
+        $normalizedType = scraperPushNormalizeContentType($type);
+        if ($normalizedType === null) {
+            scraperPushSendJson(['success' => false, 'error' => 'Unsupported content type'], 422);
+            return;
+        }
+
+        $batches = scraperPushResolveIncomingItems($payload, $normalizedType);
+        $items = $batches[0]['items'] ?? [];
 
         if ($items === []) {
             scraperPushSendJson([
@@ -360,34 +1408,73 @@ if (!function_exists('scraperPushHandleTypedPayload')) {
         $trigger = isset($payload['trigger']) ? trim((string) $payload['trigger']) : null;
         $pushedAt = isset($payload['pushedAt']) ? trim((string) $payload['pushedAt']) : null;
 
-        $insertId = $broxScrapModel->addLog(
-            $normalizedType,
-            $items,
-            $_SERVER['REMOTE_ADDR'] ?? null,
-            $_SERVER['HTTP_USER_AGENT'] ?? null,
-            $source,
-            $trigger,
-            $pushedAt,
-            'received'
-        );
-
-        if ($insertId <= 0) {
-            scraperPushSendJson(['success' => false, 'error' => 'Failed to save incoming push payload'], 500);
+        $result = scraperPushStoreIncomingBatch($broxScrapModel, $normalizedType, $items, $source, $trigger, $pushedAt);
+        $pendingSavedCount = (int) ($result['pending_stage']['saved_count'] ?? 0);
+        if ($pendingSavedCount <= 0) {
+            scraperPushSendJson([
+                'success' => false,
+                'error' => 'Failed to stage incoming push payload',
+            ], 500);
             return;
+        }
+
+        $pendingFirstId = (int) ($result['pending_stage']['first_id'] ?? 0);
+        $legacyLogFirstId = (int) ($result['legacy_logs']['first_id'] ?? 0);
+        $legacyLogSavedCount = (int) ($result['legacy_logs']['saved_count'] ?? 0);
+        $autoPublishResult = ['fetched' => 0, 'published' => 0, 'failed' => 0, 'skipped_duplicates' => 0, 'results' => []];
+        $autoPublishLogId = 0;
+        if (!empty($result['pending_stage']['item_ids'])) {
+            $stagedRows = $broxScrapModel->getIncomingItemsByIds($result['pending_stage']['item_ids']);
+            if ($stagedRows !== []) {
+                $autoPublishResult = scraperPushPublishPendingItems(
+                    $mysqli,
+                    $broxScrapModel,
+                    $contentModel,
+                    $mobileModel,
+                    count($stagedRows),
+                    $normalizedType,
+                    $stagedRows
+                );
+                $autoPublishLogId = scraperPushRecordPipelineRun(
+                    $broxScrapModel,
+                    [
+                        'action_name' => 'auto-publish',
+                        'trigger_source' => 'auto',
+                        'scope_type' => $normalizedType,
+                        'batch_limit' => count($stagedRows),
+                        'status' => scraperPushResolvePipelineStatus($autoPublishResult),
+                        'started_at' => $pushedAt ?: date('Y-m-d H:i:s'),
+                        'finished_at' => date('Y-m-d H:i:s'),
+                    ],
+                    $autoPublishResult,
+                    $autoPublishResult['results'] ?? []
+                );
+            }
         }
 
         scraperPushSendJson([
             'success' => true,
             'message' => 'Push payload received',
             'data_type' => $normalizedType,
-            'log_id' => $insertId,
-            'saved_count' => count($items),
+            'pending_first_id' => $pendingFirstId,
+            'pending_saved_count' => $pendingSavedCount,
+            'log_id' => $legacyLogFirstId,
+            'log_ids' => $result['legacy_logs']['log_ids'] ?? ($legacyLogFirstId > 0 ? [$legacyLogFirstId] : []),
+            'saved_count' => $pendingSavedCount,
+            'legacy_log_saved_count' => $legacyLogSavedCount,
+            'auto_publish_log_id' => $autoPublishLogId,
+            'auto_publish' => $autoPublishResult,
         ]);
     }
 }
 
 if (!function_exists('scraperPushHandleCombinedPayload')) {
-    function scraperPushHandleCombinedPayload(mysqli $mysqli, BroxScrapModel $broxScrapModel): void
+    function scraperPushHandleCombinedPayload(
+        mysqli $mysqli,
+        BroxScrapModel $broxScrapModel,
+        ContentModel $contentModel,
+        MobileModel $mobileModel
+    ): void
     {
         [$allowed, $authError] = scraperPushAuthorize($mysqli);
         if (!$allowed) {
@@ -402,9 +1489,8 @@ if (!function_exists('scraperPushHandleCombinedPayload')) {
             return;
         }
 
-        $articles = scraperPushNormalizeItems($payload, 'articles');
-        $mobiles = scraperPushNormalizeItems($payload, 'mobiles');
-        if ($articles === [] && $mobiles === []) {
+        $batches = scraperPushResolveIncomingItems($payload, null);
+        if ($batches === []) {
             scraperPushSendJson(['success' => false, 'error' => 'Payload must include articles or mobiles array'], 422);
             return;
         }
@@ -412,78 +1498,122 @@ if (!function_exists('scraperPushHandleCombinedPayload')) {
         $source = isset($payload['source']) ? trim((string) $payload['source']) : null;
         $trigger = isset($payload['trigger']) ? trim((string) $payload['trigger']) : null;
         $pushedAt = isset($payload['pushedAt']) ? trim((string) $payload['pushedAt']) : null;
-        $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
-        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
 
         $insertedLogs = [];
-        $savedCount = 0;
+        $staging = [];
+        $pendingSavedCount = 0;
+        $legacySavedCount = 0;
+        $autoPublish = [];
+        $autoPublishLogIds = [];
 
-        if ($articles !== []) {
-            $id = $broxScrapModel->addLog('articles', $articles, $ipAddress, $userAgent, $source, $trigger, $pushedAt, 'received');
-            if ($id > 0) {
-                $insertedLogs['articles'] = $id;
-                $savedCount += count($articles);
+          foreach ($batches as $batch) {
+              $contentType = scraperPushNormalizeContentType((string) ($batch['contentType'] ?? ''));
+              $batchItems = is_array($batch['items'] ?? null) ? $batch['items'] : [];
+              if ($contentType === null || $batchItems === []) {
+                continue;
+            }
+
+            $batchResult = scraperPushStoreIncomingBatch($broxScrapModel, $contentType, $batchItems, $source, $trigger, $pushedAt);
+            $batchPendingSaved = (int) ($batchResult['pending_stage']['saved_count'] ?? 0);
+            $batchLegacySaved = (int) ($batchResult['legacy_logs']['saved_count'] ?? 0);
+            $batchLegacyStageSaved = $batchPendingSaved;
+
+            if ($batchPendingSaved > 0) {
+                $pendingSavedCount += $batchPendingSaved;
+                $staging[$contentType . '_first_id'] = $batchResult['pending_stage']['first_id'] ?? 0;
+                $staging[$contentType . '_saved_count'] = $batchPendingSaved;
+            }
+              if ($batchLegacyStageSaved > 0) {
+                  $staging['legacy_' . $contentType . '_first_id'] = $batchResult['pending_stage']['first_id'] ?? 0;
+                  $staging['legacy_' . $contentType . '_saved_count'] = $batchLegacyStageSaved;
+                  $stagedRows = $broxScrapModel->getIncomingItemsByIds($batchResult['pending_stage']['item_ids'] ?? []);
+                  if ($stagedRows !== []) {
+                      $autoPublish[$contentType] = scraperPushPublishPendingItems(
+                          $mysqli,
+                          $broxScrapModel,
+                          $contentModel,
+                          $mobileModel,
+                          count($stagedRows),
+                          $contentType,
+                          $stagedRows
+                      );
+                      $autoPublishLogIds[$contentType] = scraperPushRecordPipelineRun(
+                          $broxScrapModel,
+                          [
+                              'action_name' => 'auto-publish',
+                              'trigger_source' => 'auto',
+                              'scope_type' => $contentType,
+                              'batch_limit' => count($stagedRows),
+                              'status' => scraperPushResolvePipelineStatus($autoPublish[$contentType]),
+                              'started_at' => $pushedAt ?: date('Y-m-d H:i:s'),
+                              'finished_at' => date('Y-m-d H:i:s'),
+                          ],
+                          $autoPublish[$contentType],
+                          $autoPublish[$contentType]['results'] ?? []
+                      );
+                  }
+              }
+              if ($batchLegacySaved > 0) {
+                  $legacySavedCount += $batchLegacySaved;
+                  $insertedLogs[$contentType] = $batchResult['legacy_logs']['first_id'] ?? 0;
+                  $insertedLogs[$contentType . '_log_ids'] = $batchResult['legacy_logs']['log_ids'] ?? [];
             }
         }
 
-        if ($mobiles !== []) {
-            $id = $broxScrapModel->addLog('mobiles', $mobiles, $ipAddress, $userAgent, $source, $trigger, $pushedAt, 'received');
-            if ($id > 0) {
-                $insertedLogs['mobiles'] = $id;
-                $savedCount += count($mobiles);
-            }
-        }
-
-        if ($savedCount <= 0) {
-            scraperPushSendJson(['success' => false, 'error' => 'Failed to save incoming push payload'], 500);
+        if ($pendingSavedCount <= 0) {
+            scraperPushSendJson(['success' => false, 'error' => 'Failed to stage incoming push payload'], 500);
             return;
         }
 
         scraperPushSendJson([
             'success' => true,
             'message' => 'Push payload received',
-            'saved_count' => $savedCount,
-            'logs' => $insertedLogs,
-        ]);
-    }
-}
+              'staging' => $staging,
+              'saved_count' => $pendingSavedCount,
+              'legacy_log_saved_count' => $legacySavedCount,
+              'logs' => $insertedLogs,
+              'auto_publish_log_ids' => $autoPublishLogIds,
+              'auto_publish' => $autoPublish,
+          ]);
+      }
+  }
 
 
 
 $pushTypedMethods = ['PUT', 'POST'];
 $pushCombinedMethods = ['PUT', 'POST'];
 
-$router->match($pushTypedMethods, '/api/push/articles', function () use ($mysqli, $broxScrapModel) {
-    scraperPushHandleTypedPayload($mysqli, $broxScrapModel, 'articles');
+$router->match($pushTypedMethods, '/api/push/articles', function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
+    scraperPushHandleTypedPayload($mysqli, $broxScrapModel, $contentModel, $mobileModel, 'articles');
 });
 
-$router->match($pushTypedMethods, '/api/push/articles/', function () use ($mysqli, $broxScrapModel) {
-    scraperPushHandleTypedPayload($mysqli, $broxScrapModel, 'articles');
+$router->match($pushTypedMethods, '/api/push/articles/', function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
+    scraperPushHandleTypedPayload($mysqli, $broxScrapModel, $contentModel, $mobileModel, 'articles');
 });
 
-$router->match($pushTypedMethods, '/api/push/mobiles', function () use ($mysqli, $broxScrapModel) {
-    scraperPushHandleTypedPayload($mysqli, $broxScrapModel, 'mobiles');
+$router->match($pushTypedMethods, '/api/push/mobiles', function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
+    scraperPushHandleTypedPayload($mysqli, $broxScrapModel, $contentModel, $mobileModel, 'mobiles');
 });
 
-$router->match($pushTypedMethods, '/api/push/mobiles/', function () use ($mysqli, $broxScrapModel) {
-    scraperPushHandleTypedPayload($mysqli, $broxScrapModel, 'mobiles');
+$router->match($pushTypedMethods, '/api/push/mobiles/', function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
+    scraperPushHandleTypedPayload($mysqli, $broxScrapModel, $contentModel, $mobileModel, 'mobiles');
 });
 
-$router->match($pushCombinedMethods, '/api/push/logs', function () use ($mysqli, $broxScrapModel) {
-    scraperPushHandleCombinedPayload($mysqli, $broxScrapModel);
+$router->match($pushCombinedMethods, '/api/push/logs', function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
+    scraperPushHandleCombinedPayload($mysqli, $broxScrapModel, $contentModel, $mobileModel);
 });
 
-$router->match($pushCombinedMethods, '/api/push/logs/', function () use ($mysqli, $broxScrapModel) {
-    scraperPushHandleCombinedPayload($mysqli, $broxScrapModel);
+$router->match($pushCombinedMethods, '/api/push/logs/', function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
+    scraperPushHandleCombinedPayload($mysqli, $broxScrapModel, $contentModel, $mobileModel);
 });
 
 // Legacy compatibility alias used by older scraper clients.
-$router->match($pushCombinedMethods, '/api/push/data', function () use ($mysqli, $broxScrapModel) {
-    scraperPushHandleCombinedPayload($mysqli, $broxScrapModel);
+$router->match($pushCombinedMethods, '/api/push/data', function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
+    scraperPushHandleCombinedPayload($mysqli, $broxScrapModel, $contentModel, $mobileModel);
 });
 
-$router->match($pushCombinedMethods, '/api/push/data/', function () use ($mysqli, $broxScrapModel) {
-    scraperPushHandleCombinedPayload($mysqli, $broxScrapModel);
+$router->match($pushCombinedMethods, '/api/push/data/', function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
+    scraperPushHandleCombinedPayload($mysqli, $broxScrapModel, $contentModel, $mobileModel);
 });
 
 $router->get('/push-endpoints', function () use ($twig) {
@@ -503,17 +1633,20 @@ $router->get('/push-endpoints', function () use ($twig) {
     ]);
 });
 
-$router->get('/admin/push-logs', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $broxScrapModel) {
+$renderScrapControlCenter = function () use ($twig, $broxScrapModel) {
     $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 50;
     $filterType = isset($_GET['type']) ? trim((string) $_GET['type']) : null;
 
     $result = $broxScrapModel->getPushLogs($page, $limit, $filterType);
     $stats = $broxScrapModel->getPushStats();
+    $incomingStats = $broxScrapModel->getIncomingPublishStats();
+    $pipelineRuns = $broxScrapModel->getPipelineRuns(1, 5, null);
 
     echo $twig->render('admin/push-logs.twig', [
-        'title' => 'Push Logs',
-        'current_page' => 'push-logs',
+        'title' => 'Scrap Control Center',
+        'current_page' => 'scrap-control-center',
+        'route_base' => '/admin/scrap-control-center',
         'logs' => $result['logs'],
         'total' => $result['total'],
         'total_pages' => $result['total_pages'],
@@ -521,10 +1654,16 @@ $router->get('/admin/push-logs', ['middleware' => ['auth', 'admin_only']], funct
         'limit' => $result['limit'],
         'filter_type' => $filterType,
         'stats' => $stats,
+        'incoming_stats' => $incomingStats,
+        'recent_pipeline_runs' => $pipelineRuns['items'] ?? [],
+        'pipeline_runs_total' => $pipelineRuns['total'] ?? 0,
     ]);
-});
+};
 
-$router->get('/admin/push-logs/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $broxScrapModel) {
+$router->get('/admin/scrap-control-center', ['middleware' => ['auth', 'admin_only']], $renderScrapControlCenter);
+$router->get('/admin/push-logs', ['middleware' => ['auth', 'admin_only']], $renderScrapControlCenter);
+
+$renderScrapLogDetail = function ($id) use ($twig, $broxScrapModel) {
     $logId = (int) $id;
     if ($logId <= 0) {
         renderError(404, 'Push Log Not Found');
@@ -536,13 +1675,124 @@ $router->get('/admin/push-logs/{id}', ['middleware' => ['auth', 'admin_only']], 
     }
 
     echo $twig->render('admin/push-log-detail.twig', [
-        'title' => 'Push Log #' . $logId,
-        'current_page' => 'push-logs',
+        'title' => 'Scrap Log #' . $logId,
+        'current_page' => 'scrap-control-center',
+        'route_base' => '/admin/scrap-control-center',
         'log' => $log,
+    ]);
+};
+
+$router->get('/admin/scrap-control-center/logs/{id}', ['middleware' => ['auth', 'admin_only']], $renderScrapLogDetail);
+$router->get('/admin/push-logs/{id}', ['middleware' => ['auth', 'admin_only']], $renderScrapLogDetail);
+
+$renderPipelineRuns = function () use ($twig, $broxScrapModel) {
+    $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
+    $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 20;
+    $action = isset($_GET['action']) ? trim((string) $_GET['action']) : null;
+
+    $result = $broxScrapModel->getPipelineRuns($page, $limit, $action);
+    echo $twig->render('admin/pipeline-runs.twig', [
+        'title' => 'Pipeline Runs',
+        'current_page' => 'scrap-control-center',
+        'route_base' => '/admin/scrap-control-center',
+        'runs' => $result['items'],
+        'total' => $result['total'],
+        'total_pages' => $result['total_pages'],
+        'current_page_number' => $result['current_page'],
+        'limit' => $result['limit'],
+        'action_filter' => $action,
+    ]);
+};
+
+$router->get('/admin/scrap-control-center/pipeline-runs', ['middleware' => ['auth', 'admin_only']], $renderPipelineRuns);
+$router->get('/admin/push-logs/pipeline-runs', ['middleware' => ['auth', 'admin_only']], $renderPipelineRuns);
+
+$renderPipelineRunDetail = function ($id) use ($twig, $broxScrapModel) {
+    $runId = (int) $id;
+    if ($runId <= 0) {
+        renderError(404, 'Pipeline Run Not Found');
+    }
+
+    $run = $broxScrapModel->getPipelineRun($runId);
+    if (!$run) {
+        renderError(404, 'Pipeline Run Not Found');
+    }
+
+    echo $twig->render('admin/pipeline-run-detail.twig', [
+        'title' => 'Pipeline Run #' . $runId,
+        'current_page' => 'scrap-control-center',
+        'route_base' => '/admin/scrap-control-center',
+        'run' => $run,
+    ]);
+};
+
+$router->get('/admin/scrap-control-center/pipeline-runs/{id}', ['middleware' => ['auth', 'admin_only']], $renderPipelineRunDetail);
+$router->get('/admin/push-logs/pipeline-runs/{id}', ['middleware' => ['auth', 'admin_only']], $renderPipelineRunDetail);
+
+$router->get('/admin/scrap-control-center/incoming', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $broxScrapModel) {
+    $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
+    $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 50;
+    $type = isset($_GET['type']) ? trim((string) $_GET['type']) : null;
+    $result = $broxScrapModel->getScrapingItems($page, $limit, $type);
+    $items = array_map('scraperPushDecorateScrapingItem', $result['items']);
+
+    echo $twig->render('admin/scrap-incoming-list.twig', [
+        'title' => 'Incoming Scrapes',
+        'current_page' => 'scrap-control-center',
+        'items' => $items,
+        'total' => $result['total'],
+        'total_pages' => $result['total_pages'],
+        'current_page_number' => $result['current_page'],
+        'limit' => $result['limit'],
+        'type_filter' => $type,
+        'scraping_stats' => $broxScrapModel->getScrapingStats(),
     ]);
 });
 
-$router->post('/admin/push-logs/delete/{id}', ['middleware' => ['auth', 'admin_only', 'csrf']], function ($id) use ($broxScrapModel) {
+$router->get('/admin/scrap-control-center/incoming/{type}/{id}', ['middleware' => ['auth', 'admin_only']], function ($type, $id) use ($twig, $broxScrapModel) {
+    $itemId = (int) $id;
+    if ($itemId <= 0) {
+        renderError(404, 'Incoming Item Not Found');
+    }
+
+    $resolvedType = scraperPushNormalizeContentType($type);
+    $item = $resolvedType !== null ? $broxScrapModel->getScrapingItem($resolvedType, $itemId) : null;
+    if (!$item && $resolvedType === null) {
+        $item = $broxScrapModel->getScrapingItemById($itemId);
+    }
+    if (!$item) {
+        renderError(404, 'Incoming Item Not Found');
+    }
+
+    $item = scraperPushDecorateScrapingItem($item);
+    echo $twig->render('admin/scrap-incoming-detail.twig', [
+        'title' => 'Incoming Item #' . $itemId,
+        'current_page' => 'scrap-control-center',
+        'item' => $item,
+        'item_type' => $resolvedType ?? ($item['data_type'] ?? null),
+    ]);
+});
+
+$router->get('/admin/scrap-control-center/incoming/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $broxScrapModel) {
+    $itemId = (int) $id;
+    if ($itemId <= 0) {
+        renderError(404, 'Incoming Item Not Found');
+    }
+    $item = $broxScrapModel->getScrapingItemById($itemId);
+    if (!$item) {
+        renderError(404, 'Incoming Item Not Found');
+    }
+
+    $item = scraperPushDecorateScrapingItem($item);
+    echo $twig->render('admin/scrap-incoming-detail.twig', [
+        'title' => 'Incoming Item #' . $itemId,
+        'current_page' => 'scrap-control-center',
+        'item' => $item,
+        'item_type' => $item['data_type'] ?? null,
+    ]);
+});
+
+$deleteScrapLog = function ($id) use ($broxScrapModel) {
     $logId = (int) $id;
     if ($logId <= 0) {
         scraperPushSendJson(['ok' => false, 'message' => 'Invalid log id'], 422);
@@ -556,9 +1806,12 @@ $router->post('/admin/push-logs/delete/{id}', ['middleware' => ['auth', 'admin_o
     }
 
     scraperPushSendJson(['ok' => true, 'message' => 'Log entry deleted successfully']);
-});
+};
 
-$router->post('/admin/push-logs/create-table', ['middleware' => ['auth', 'super_admin_only', 'csrf']], function () use ($broxScrapModel) {
+$router->post('/admin/scrap-control-center/logs/delete/{id}', ['middleware' => ['auth', 'admin_only', 'csrf']], $deleteScrapLog);
+$router->post('/admin/push-logs/delete/{id}', ['middleware' => ['auth', 'admin_only', 'csrf']], $deleteScrapLog);
+
+$createTableRoute = function () use ($broxScrapModel) {
     $created = $broxScrapModel->createTable();
 
     if (!$created) {
@@ -567,23 +1820,238 @@ $router->post('/admin/push-logs/create-table', ['middleware' => ['auth', 'super_
     }
 
     scraperPushSendJson(['ok' => true, 'message' => 'Table created successfully']);
-});
+};
 
-$router->get('/admin/push-logs/check-table', ['middleware' => ['auth', 'admin_only']], function () use ($broxScrapModel) {
+$router->post('/admin/scrap-control-center/create-table', ['middleware' => ['auth', 'super_admin_only', 'csrf']], $createTableRoute);
+$router->post('/admin/push-logs/create-table', ['middleware' => ['auth', 'super_admin_only', 'csrf']], $createTableRoute);
+
+$checkTableRoute = function () use ($broxScrapModel) {
     scraperPushSendJson(['exists' => $broxScrapModel->tableExists()]);
-});
+};
 
-$router->get('/admin/api/push-stats', ['middleware' => ['auth', 'admin_only']], function () use ($broxScrapModel) {
+$router->get('/admin/scrap-control-center/check-table', ['middleware' => ['auth', 'admin_only']], $checkTableRoute);
+$router->get('/admin/push-logs/check-table', ['middleware' => ['auth', 'admin_only']], $checkTableRoute);
+
+$statsRoute = function () use ($broxScrapModel) {
     scraperPushSendJson(['ok' => true, 'data' => $broxScrapModel->getPushStats()]);
-});
+};
 
-$router->get('/admin/api/push-logs', ['middleware' => ['auth', 'admin_only']], function () use ($broxScrapModel) {
+$router->get('/admin/api/scrap-control-center/stats', ['middleware' => ['auth', 'admin_only']], $statsRoute);
+$router->get('/admin/api/push-stats', ['middleware' => ['auth', 'admin_only']], $statsRoute);
+
+$getScrapLogsApi = function () use ($broxScrapModel) {
     $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 50;
     $filterType = isset($_GET['type']) ? trim((string) $_GET['type']) : null;
 
     $result = $broxScrapModel->getPushLogs($page, $limit, $filterType);
     scraperPushSendJson(['ok' => true, 'data' => $result]);
+};
+
+$router->get('/admin/api/scrap-control-center/logs', ['middleware' => ['auth', 'admin_only']], $getScrapLogsApi);
+$router->get('/admin/api/push-logs', ['middleware' => ['auth', 'admin_only']], $getScrapLogsApi);
+
+$router->get('/admin/api/scrap-control-center/incoming', ['middleware' => ['auth', 'admin_only']], function () use ($broxScrapModel) {
+    $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
+    $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 50;
+    $type = isset($_GET['type']) ? trim((string) $_GET['type']) : null;
+    $result = $broxScrapModel->getScrapingItems($page, $limit, $type);
+    $result['items'] = array_map('scraperPushDecorateScrapingItem', $result['items']);
+    scraperPushSendJson(['ok' => true, 'data' => $result]);
+});
+
+$router->get('/admin/api/scrap-control-center/incoming/{type}/{id}', ['middleware' => ['auth', 'admin_only']], function ($type, $id) use ($broxScrapModel) {
+    $itemId = (int) $id;
+    if ($itemId <= 0) {
+        scraperPushSendJson(['ok' => false, 'error' => 'Invalid id'], 422);
+        return;
+    }
+    $resolvedType = scraperPushNormalizeContentType($type);
+    $item = $resolvedType !== null ? $broxScrapModel->getScrapingItem($resolvedType, $itemId) : null;
+    if (!$item) {
+        scraperPushSendJson(['ok' => false, 'error' => 'Incoming item not found'], 404);
+        return;
+    }
+    $item = scraperPushDecorateScrapingItem($item);
+    scraperPushSendJson(['ok' => true, 'data' => $item]);
+});
+
+$router->get('/admin/api/scrap-control-center/incoming/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($broxScrapModel) {
+    $itemId = (int) $id;
+    if ($itemId <= 0) {
+        scraperPushSendJson(['ok' => false, 'error' => 'Invalid id'], 422);
+        return;
+    }
+    $item = $broxScrapModel->getScrapingItemById($itemId);
+    if (!$item) {
+        scraperPushSendJson(['ok' => false, 'error' => 'Incoming item not found'], 404);
+        return;
+    }
+    $item = scraperPushDecorateScrapingItem($item);
+    scraperPushSendJson(['ok' => true, 'data' => $item]);
+});
+
+$getScrapPublishStatsApi = function () use ($broxScrapModel) {
+    scraperPushSendJson([
+        'ok' => true,
+        'data' => $broxScrapModel->getIncomingPublishStats(),
+    ]);
+};
+
+$router->get('/admin/api/scrap-control-center/publish-stats', ['middleware' => ['auth', 'admin_only']], $getScrapPublishStatsApi);
+$router->get('/admin/api/push-publish-stats', ['middleware' => ['auth', 'admin_only']], $getScrapPublishStatsApi);
+
+$publishPendingApi = function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
+    $limit = 20;
+    $type = null;
+    $actionName = str_contains((string) ($_SERVER['REQUEST_URI'] ?? ''), 'run-pipeline') ? 'run-pipeline' : 'publish-pending';
+
+    [$ok, $payload] = scraperPushReadJsonInput();
+    if ($ok && is_array($payload)) {
+        if (isset($payload['limit'])) {
+            $limit = max(1, min((int) $payload['limit'], 200));
+        }
+        if (isset($payload['type'])) {
+            $rawType = strtolower(trim((string) $payload['type']));
+            if (in_array($rawType, ['articles', 'mobiles'], true)) {
+                $type = $rawType;
+            }
+        }
+    } else {
+        if (isset($_POST['limit'])) {
+            $limit = max(1, min((int) $_POST['limit'], 200));
+        }
+        if (isset($_POST['type'])) {
+            $rawType = strtolower(trim((string) $_POST['type']));
+            if (in_array($rawType, ['articles', 'mobiles'], true)) {
+                $type = $rawType;
+            }
+        }
+    }
+
+    $startedAt = date('Y-m-d H:i:s');
+    $result = scraperPushPublishPendingItems($mysqli, $broxScrapModel, $contentModel, $mobileModel, $limit, $type);
+    $finishedAt = date('Y-m-d H:i:s');
+    $pipelineLogId = scraperPushRecordPipelineRun(
+        $broxScrapModel,
+        [
+            'action_name' => $actionName,
+            'trigger_source' => 'manual',
+            'scope_type' => $type,
+            'batch_limit' => $limit,
+            'status' => scraperPushResolvePipelineStatus($result),
+            'started_at' => $startedAt,
+            'finished_at' => $finishedAt,
+        ],
+        $result,
+        $result['results'] ?? []
+    );
+    scraperPushSendJson([
+        'ok' => true,
+        'message' => 'Pending push items processed',
+        'data' => $result,
+        'pipeline_log_id' => $pipelineLogId,
+        'stats' => $broxScrapModel->getIncomingPublishStats(),
+    ]);
+};
+
+$router->post('/admin/api/scrap-control-center/publish-pending', ['middleware' => ['auth', 'admin_only', 'csrf']], $publishPendingApi);
+$router->post('/admin/api/push-publish-pending', ['middleware' => ['auth', 'admin_only', 'csrf']], $publishPendingApi);
+$router->post('/admin/api/scrap-control-center/run-pipeline', ['middleware' => ['auth', 'admin_only', 'csrf']], $publishPendingApi);
+$router->post('/admin/api/push-run-pipeline', ['middleware' => ['auth', 'admin_only', 'csrf']], $publishPendingApi);
+
+$router->post('/admin/api/push-publish-retry-failed', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
+    $limit = 20;
+    $type = null;
+    $startedAt = date('Y-m-d H:i:s');
+
+    [$ok, $payload] = scraperPushReadJsonInput();
+    if ($ok && is_array($payload)) {
+        if (isset($payload['limit'])) {
+            $limit = max(1, min((int) $payload['limit'], 200));
+        }
+        if (isset($payload['type'])) {
+            $rawType = strtolower(trim((string) $payload['type']));
+            if (in_array($rawType, ['articles', 'mobiles'], true)) {
+                $type = $rawType;
+            }
+        }
+    }
+
+    $requeued = $broxScrapModel->requeueFailedIncomingItems($limit, $type);
+    $rows = $broxScrapModel->getIncomingItemsByIds($requeued['ids'] ?? []);
+    $result = scraperPushPublishPendingItems(
+        $mysqli,
+        $broxScrapModel,
+        $contentModel,
+        $mobileModel,
+        $limit,
+        $type,
+        $rows
+    );
+    $finishedAt = date('Y-m-d H:i:s');
+    $pipelineLogId = scraperPushRecordPipelineRun(
+        $broxScrapModel,
+        [
+            'action_name' => 'retry-failed',
+            'trigger_source' => 'manual',
+            'scope_type' => $type,
+            'batch_limit' => $limit,
+            'status' => scraperPushResolvePipelineStatus($result),
+            'started_at' => $startedAt,
+            'finished_at' => $finishedAt,
+        ],
+        $result,
+        $result['results'] ?? []
+    );
+
+    scraperPushSendJson([
+        'ok' => true,
+        'message' => 'Failed items requeued and retried',
+        'requeued' => $requeued,
+        'data' => $result,
+        'pipeline_log_id' => $pipelineLogId,
+        'stats' => $broxScrapModel->getIncomingPublishStats(),
+    ]);
+});
+
+$router->post('/admin/api/scrap-control-center/retry-failed', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
+    $_SERVER['_SCRAP_RETRY_ALIAS'] = '1';
+    $limit = 20;
+    $type = null;
+
+    [$ok, $payload] = scraperPushReadJsonInput();
+    if ($ok && is_array($payload)) {
+        if (isset($payload['limit'])) {
+            $limit = max(1, min((int) $payload['limit'], 200));
+        }
+        if (isset($payload['type'])) {
+            $rawType = strtolower(trim((string) $payload['type']));
+            if (in_array($rawType, ['articles', 'mobiles'], true)) {
+                $type = $rawType;
+            }
+        }
+    }
+
+    $requeued = $broxScrapModel->requeueFailedIncomingItems($limit, $type);
+    $rows = $broxScrapModel->getIncomingItemsByIds($requeued['ids'] ?? []);
+    $result = scraperPushPublishPendingItems(
+        $mysqli,
+        $broxScrapModel,
+        $contentModel,
+        $mobileModel,
+        $limit,
+        $type,
+        $rows
+    );
+
+    scraperPushSendJson([
+        'ok' => true,
+        'message' => 'Failed items requeued and retried',
+        'requeued' => $requeued,
+        'data' => $result,
+        'stats' => $broxScrapModel->getIncomingPublishStats(),
+    ]);
 });
 
 $router->get('/admin/api/scraper-push-config', ['middleware' => ['auth', 'admin_only']], function () {

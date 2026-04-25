@@ -1,0 +1,468 @@
+{% extends "admin/layout.twig" %}
+
+{% block title %}Incoming Item #{{ item.id }} - {{ parent() }}{% endblock %}
+
+{% block content %}
+<style>
+  .incoming-detail-shell {
+    --incoming-ink: #0f172a;
+    --incoming-muted: #64748b;
+    --incoming-line: #e2e8f0;
+    --incoming-soft: #f8fafc;
+    --incoming-accent: #0f766e;
+    --incoming-accent-soft: #ccfbf1;
+  }
+  .incoming-detail-shell .incoming-hero {
+    border: 1px solid var(--incoming-line);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    padding: 1.25rem 1.35rem;
+    margin-bottom: 1rem;
+  }
+  .incoming-detail-shell .incoming-hero h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--incoming-ink);
+    margin-bottom: 0.35rem;
+  }
+  .incoming-detail-shell .incoming-hero p {
+    color: var(--incoming-muted);
+    margin: 0;
+  }
+  .incoming-detail-shell .incoming-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  .incoming-detail-shell .incoming-pill-articles {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .incoming-detail-shell .incoming-pill-mobiles {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+  .incoming-detail-shell .incoming-panel,
+  .incoming-detail-shell .incoming-media-card {
+    border: 1px solid var(--incoming-line);
+    border-radius: 0.95rem;
+  }
+  .incoming-detail-shell .incoming-media {
+    aspect-ratio: 4 / 3;
+    background: #f1f5f9;
+    border-radius: 0.8rem;
+    overflow: hidden;
+    border: 1px solid var(--incoming-line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .incoming-detail-shell .incoming-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .incoming-detail-shell .incoming-media-fallback {
+    color: var(--incoming-muted);
+    font-size: 0.9rem;
+    padding: 0.9rem;
+    text-align: center;
+  }
+  .incoming-detail-shell .meta-list {
+    display: grid;
+    gap: 0.85rem;
+  }
+  .incoming-detail-shell .meta-item {
+    padding-top: 0.05rem;
+  }
+  .incoming-detail-shell .meta-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--incoming-muted);
+    margin-bottom: 0.12rem;
+  }
+  .incoming-detail-shell .meta-value {
+    color: var(--incoming-ink);
+    font-weight: 700;
+    word-break: break-word;
+    line-height: 1.45;
+  }
+  .incoming-detail-shell .section-card {
+    border: 1px solid var(--incoming-line);
+    border-radius: 0.95rem;
+    background: #fff;
+  }
+  .incoming-detail-shell .section-card .card-body {
+    padding: 1rem 1.05rem;
+  }
+  .incoming-detail-shell .section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--incoming-ink);
+    margin-bottom: 0.75rem;
+  }
+  .incoming-detail-shell .summary-text {
+    color: #334155;
+    line-height: 1.7;
+    white-space: pre-wrap;
+  }
+  .incoming-detail-shell .chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  .incoming-detail-shell .chip {
+    background: #e2e8f0;
+    color: #1e293b;
+    font-size: 0.74rem;
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+  .incoming-detail-shell .kv-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+  .incoming-detail-shell .kv-item {
+    border: 1px solid var(--incoming-line);
+    border-radius: 0.75rem;
+    padding: 0.7rem 0.8rem;
+    background: #fff;
+  }
+  .incoming-detail-shell .kv-key {
+    font-size: 0.72rem;
+    color: var(--incoming-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.2rem;
+  }
+  .incoming-detail-shell .kv-value {
+    color: var(--incoming-ink);
+    font-weight: 700;
+    word-break: break-word;
+  }
+  .incoming-detail-shell .text-block {
+    white-space: pre-wrap;
+    line-height: 1.75;
+    color: #334155;
+  }
+  .incoming-detail-shell .link-list a {
+    word-break: break-word;
+  }
+  @media (max-width: 991.98px) {
+    .incoming-detail-shell .kv-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+{% set record_type = item_type|default(item.data_type|default('')) %}
+{% set is_mobile = record_type == 'mobiles' %}
+{% set image_src = item.image_path|default(item.image_url|default('')) %}
+
+<div class="incoming-detail-shell">
+  <div class="incoming-hero">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+      <div>
+        <h1>{{ item.title|default('Incoming Item #' ~ item.id) }}</h1>
+        <p>Structured detail view from the scraping tables.</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-secondary btn-sm" href="/admin/scrap-control-center/incoming">Back to List</a>
+        {% if item.source_url %}
+          <a class="btn btn-outline-primary btn-sm" href="{{ item.source_url }}" target="_blank" rel="noopener">Open Source</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card incoming-media-card h-100">
+        <div class="card-body">
+          <div class="incoming-media mb-3">
+            {% if image_src %}
+              <img src="{{ image_src }}" alt="{{ item.title|default('Incoming item') }}">
+            {% else %}
+              <div class="incoming-media-fallback">
+                <i class="bi bi-image d-block fs-3 mb-2"></i>
+                No preview image available
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="meta-list">
+            <div class="meta-item">
+              <div class="meta-label">Type</div>
+              <div class="meta-value">
+                <span class="incoming-pill {{ is_mobile ? 'incoming-pill-mobiles' : 'incoming-pill-articles' }}">
+                  <i class="bi {{ is_mobile ? 'bi-phone' : 'bi-file-earmark-text' }}"></i>
+                  {{ is_mobile ? 'Mobile' : 'Article' }}
+                </span>
+              </div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Source</div>
+              <div class="meta-value">{{ item.source|default('-') }}</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Source Key</div>
+              <div class="meta-value">{{ item.source_key|default('-') }}</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Source URL</div>
+              <div class="meta-value">
+                {% if item.source_url %}
+                  <a href="{{ item.source_url }}" target="_blank" rel="noopener">{{ item.source_url }}</a>
+                {% else %}
+                  -
+                {% endif %}
+              </div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Received At</div>
+              <div class="meta-value">{{ item.received_at|default('-') }}</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Scraped At</div>
+              <div class="meta-value">{{ item.scraped_at|default('-') }}</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Pushed At</div>
+              <div class="meta-value">{{ item.pushed_at|default('-') }}</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Fetch Method</div>
+              <div class="meta-value">{{ item.fetch_method|default('-') }}</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Trigger</div>
+              <div class="meta-value">{{ item.trigger_name|default('-') }}</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Image URL</div>
+              <div class="meta-value">
+                {% if item.image_url %}
+                  <a href="{{ item.image_url }}" target="_blank" rel="noopener">{{ item.image_url }}</a>
+                {% else %}
+                  -
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card section-card mb-4">
+        <div class="card-body">
+          <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+            <div>
+              <div class="section-title mb-2">{{ item.title|default('Untitled item') }}</div>
+              <div class="d-flex flex-wrap gap-2">
+                {% if item.category %}
+                  <span class="badge text-bg-light border">{{ item.category }}</span>
+                {% endif %}
+                {% if item.brand %}
+                  <span class="badge text-bg-light border">{{ item.brand }}</span>
+                {% endif %}
+                {% if item.model %}
+                  <span class="badge text-bg-light border">{{ item.model }}</span>
+                {% endif %}
+                {% if item.product_category %}
+                  <span class="badge text-bg-light border">{{ item.product_category }}</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="text-end">
+              {% if item.price_text %}
+                <div class="fw-bold">{{ item.price_text }}</div>
+              {% endif %}
+              {% if item.status_text %}
+                <div class="text-muted small">{{ item.status_text }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="summary-text">
+            {{ item.summary_text|default(item.excerpt|default('No summary available.')) }}
+          </div>
+        </div>
+      </div>
+
+      {% if is_mobile %}
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="card section-card">
+              <div class="card-body">
+                <div class="section-title">Quick Specs</div>
+                <div class="kv-grid">
+                  <div class="kv-item">
+                    <div class="kv-key">Brand</div>
+                    <div class="kv-value">{{ item.brand|default('-') }}</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-key">Model</div>
+                    <div class="kv-value">{{ item.model|default('-') }}</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-key">Product Category</div>
+                    <div class="kv-value">{{ item.product_category|default('-') }}</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-key">Price</div>
+                    <div class="kv-value">{{ item.price_text|default('-') }}</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-key">Status</div>
+                    <div class="kv-value">{{ item.status_text|default('-') }}</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-key">Author</div>
+                    <div class="kv-value">{{ item.author|default('-') }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {% if item.key_specs is defined and item.key_specs|length > 0 %}
+            <div class="col-12">
+              <div class="card section-card">
+                <div class="card-body">
+                  <div class="section-title">Key Specs</div>
+                  <div class="kv-grid">
+                    {% for key, value in item.key_specs %}
+                      <div class="kv-item">
+                        <div class="kv-key">{{ key }}</div>
+                        <div class="kv-value">{{ value }}</div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+
+          {% if item.specs is defined and item.specs|length > 0 %}
+            <div class="col-12">
+              <div class="card section-card">
+                <div class="card-body">
+                  <div class="section-title">Specs</div>
+                  <div class="kv-grid">
+                    {% for key, value in item.specs %}
+                      <div class="kv-item">
+                        <div class="kv-key">{{ key }}</div>
+                        <div class="kv-value">{{ value }}</div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="card section-card h-100">
+              <div class="card-body">
+                <div class="section-title">Record Meta</div>
+                <div class="kv-grid">
+                  <div class="kv-item">
+                    <div class="kv-key">Category</div>
+                    <div class="kv-value">{{ item.category|default('-') }}</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-key">Author</div>
+                    <div class="kv-value">{{ item.author|default('-') }}</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-key">Published At</div>
+                    <div class="kv-value">{{ item.published_at|default('-') }}</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-key">Published Text</div>
+                    <div class="kv-value">{{ item.published_text|default('-') }}</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-key">Content Type</div>
+                    <div class="kv-value">{{ item.content_type|default('-') }}</div>
+                  </div>
+                  <div class="kv-item">
+                    <div class="kv-key">Item ID</div>
+                    <div class="kv-value">#{{ item.id }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="card section-card h-100">
+              <div class="card-body">
+                <div class="section-title">Links</div>
+                <div class="link-list d-grid gap-2">
+                  {% if item.source_url %}
+                    <a class="btn btn-outline-primary btn-sm" href="{{ item.source_url }}" target="_blank" rel="noopener">Open Source</a>
+                  {% endif %}
+                  {% if item.image_url %}
+                    <a class="btn btn-outline-secondary btn-sm" href="{{ item.image_url }}" target="_blank" rel="noopener">Open Original Image</a>
+                  {% endif %}
+                  {% if item.image_path %}
+                    <a class="btn btn-outline-secondary btn-sm" href="{{ item.image_path }}" target="_blank" rel="noopener">Open Stored Image</a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="card section-card">
+              <div class="card-body">
+                <div class="section-title">Body Text</div>
+                <div class="text-block">{{ item.body_text|default('No body text available.') }}</div>
+              </div>
+            </div>
+          </div>
+
+          {% if item.excerpt %}
+            <div class="col-12">
+              <div class="card section-card">
+                <div class="card-body">
+                  <div class="section-title">Excerpt</div>
+                  <div class="text-block">{{ item.excerpt }}</div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+
+          {% if item.tags is defined and item.tags|length > 0 %}
+            <div class="col-12">
+              <div class="card section-card">
+                <div class="card-body">
+                  <div class="section-title">Tags</div>
+                  <div class="chip-list">
+                    {% for tag in item.tags %}
+                      <span class="chip">{{ tag }}</span>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

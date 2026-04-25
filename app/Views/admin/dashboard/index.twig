@@ -183,9 +183,9 @@ FILE: templates/blog_dashboard.twig
                         <td>{{ ui.status_badge(post.status) }}</td>
                         <td class="text-muted small">{{ post.published_at|date("d M, Y h:i A") }}</td>
                         <td class="text-end">
-                          <a href="/admin/posts/{{ post.id }}"
+                          <a href="/admin/posts/view?id={{ post.id }}"
                              class="modern-btn btn-sm btn-outline-secondary">View</a>
-                          <a href="/admin/posts/{{ post.id }}/edit"
+                          <a href="/admin/posts/edit?id={{ post.id }}"
                              class="modern-btn btn-sm btn-primary">Edit</a>
                         </td>
                       </tr>
