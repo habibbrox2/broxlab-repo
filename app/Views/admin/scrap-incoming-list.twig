@@ -1,0 +1,411 @@
+{% extends "admin/layout.twig" %}
+
+{% block title %}Incoming Scrapes - {{ parent() }}{% endblock %}
+
+{% block content %}
+<style>
+  .incoming-shell {
+    --incoming-ink: #0f172a;
+    --incoming-muted: #64748b;
+    --incoming-line: #e2e8f0;
+    --incoming-soft: #f8fafc;
+    --incoming-accent: #0f766e;
+    --incoming-accent-soft: #ccfbf1;
+  }
+  .incoming-shell .incoming-hero {
+    border: 1px solid var(--incoming-line);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    padding: 1.25rem 1.35rem;
+    margin-bottom: 1rem;
+  }
+  .incoming-shell .incoming-hero h1 {
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: var(--incoming-ink);
+    margin-bottom: 0.35rem;
+  }
+  .incoming-shell .incoming-hero p {
+    color: var(--incoming-muted);
+    margin: 0;
+  }
+  .incoming-shell .incoming-stat {
+    border: 1px solid var(--incoming-line);
+    border-radius: 0.9rem;
+    background: #fff;
+    height: 100%;
+  }
+  .incoming-shell .incoming-stat .card-body {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+  .incoming-shell .incoming-stat-icon {
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.7rem;
+    background: var(--incoming-accent-soft);
+    color: var(--incoming-accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+  .incoming-shell .incoming-stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--incoming-ink);
+    line-height: 1.1;
+  }
+  .incoming-shell .incoming-stat-label {
+    color: var(--incoming-muted);
+    font-size: 0.8rem;
+  }
+  .incoming-shell .incoming-filter-card,
+  .incoming-shell .incoming-item-card {
+    border: 1px solid var(--incoming-line);
+    border-radius: 0.95rem;
+  }
+  .incoming-shell .incoming-filter-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--incoming-ink);
+  }
+  .incoming-shell .incoming-item-card .card-body {
+    padding: 1rem 1.05rem;
+  }
+  .incoming-shell .incoming-thumb {
+    aspect-ratio: 4 / 3;
+    border-radius: 0.8rem;
+    overflow: hidden;
+    background: #f1f5f9;
+    border: 1px solid var(--incoming-line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .incoming-shell .incoming-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .incoming-shell .incoming-thumb-fallback {
+    font-size: 0.8rem;
+    color: var(--incoming-muted);
+    text-align: center;
+    padding: 0.75rem;
+  }
+  .incoming-shell .incoming-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  .incoming-shell .incoming-pill-articles {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .incoming-shell .incoming-pill-mobiles {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+  .incoming-shell .incoming-title {
+    color: var(--incoming-ink);
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 0.4rem;
+  }
+  .incoming-shell .incoming-meta {
+    color: var(--incoming-muted);
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+  .incoming-shell .incoming-summary {
+    color: #334155;
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+  .incoming-shell .incoming-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  .incoming-shell .incoming-tag {
+    background: #e2e8f0;
+    color: #1e293b;
+    font-size: 0.74rem;
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+  .incoming-shell .incoming-side {
+    border-left: 1px solid var(--incoming-line);
+    padding-left: 1rem;
+    height: 100%;
+  }
+  .incoming-shell .incoming-side-label {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--incoming-muted);
+    margin-bottom: 0.1rem;
+  }
+  .incoming-shell .incoming-side-value {
+    font-weight: 700;
+    color: var(--incoming-ink);
+    word-break: break-word;
+  }
+  @media (max-width: 767.98px) {
+    .incoming-shell .incoming-hero {
+      padding: 1rem;
+    }
+    .incoming-shell .incoming-hero h1 {
+      font-size: 1.3rem;
+    }
+    .incoming-shell .incoming-side {
+      border-left: 0;
+      padding-left: 0;
+      border-top: 1px solid var(--incoming-line);
+      padding-top: 0.85rem;
+      margin-top: 0.85rem;
+    }
+  }
+</style>
+
+{% set incoming_total = scraping_stats.total_items|default(total) %}
+
+<div class="incoming-shell">
+  <div class="incoming-hero">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+      <div>
+        <h1>Incoming Scrapes</h1>
+        <p>Structured records from `scraping_articles` and `scraping_mobiles`.</p>
+      </div>
+      <a class="btn btn-outline-secondary btn-sm" href="/admin/scrap-control-center">Back to Control Center</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-3 col-6">
+      <div class="card incoming-stat">
+        <div class="card-body">
+          <span class="incoming-stat-icon"><i class="bi bi-box-seam"></i></span>
+          <div>
+            <div class="incoming-stat-value">{{ scraping_stats.total_items|default(0) }}</div>
+            <div class="incoming-stat-label">Total Items</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-6">
+      <div class="card incoming-stat">
+        <div class="card-body">
+          <span class="incoming-stat-icon"><i class="bi bi-file-earmark-text"></i></span>
+          <div>
+            <div class="incoming-stat-value">{{ scraping_stats.total_articles|default(0) }}</div>
+            <div class="incoming-stat-label">Articles</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-6">
+      <div class="card incoming-stat">
+        <div class="card-body">
+          <span class="incoming-stat-icon"><i class="bi bi-phone"></i></span>
+          <div>
+            <div class="incoming-stat-value">{{ scraping_stats.total_mobiles|default(0) }}</div>
+            <div class="incoming-stat-label">Mobiles</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-6">
+      <div class="card incoming-stat">
+        <div class="card-body">
+          <span class="incoming-stat-icon"><i class="bi bi-clock-history"></i></span>
+          <div>
+            <div class="incoming-stat-value">{{ scraping_stats.last_received ? scraping_stats.last_received|date('M d, H:i') : 'N/A' }}</div>
+            <div class="incoming-stat-label">Last Received</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card incoming-filter-card mb-4">
+    <div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+          <div class="incoming-filter-title">Filters</div>
+          <div class="text-muted small">Focus the queue by content type or page size.</div>
+        </div>
+      </div>
+
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">Type</label>
+          <select name="type" class="form-control">
+            <option value="">All</option>
+            <option value="articles" {{ type_filter == 'articles' ? 'selected' }}>Articles</option>
+            <option value="mobiles" {{ type_filter == 'mobiles' ? 'selected' }}>Mobiles</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Per Page</label>
+          <select name="limit" class="form-control">
+            {% for l in [12, 24, 50, 100] %}
+              <option value="{{ l }}" {{ limit == l ? 'selected' }}>{{ l }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button class="btn btn-primary w-100" type="submit">Apply Filters</button>
+        </div>
+        <div class="col-md-2">
+          <a class="btn btn-outline-secondary w-100" href="/admin/scrap-control-center/incoming">Reset</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if items|length > 0 %}
+    <div class="row g-3">
+      {% for item in items %}
+        <div class="col-12">
+          <div class="card incoming-item-card">
+            <div class="card-body">
+              <div class="row g-3 align-items-stretch">
+                <div class="col-md-2 col-lg-2">
+                  <div class="incoming-thumb h-100">
+                    {% if item.image_src %}
+                      <img src="{{ item.image_src }}" alt="{{ item.title_text|default('Incoming item') }}">
+                    {% else %}
+                      <div class="incoming-thumb-fallback">
+                        <i class="bi bi-image d-block fs-4 mb-1"></i>
+                        No image
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="col-md-7 col-lg-8">
+                  <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <span class="incoming-pill {{ item.display_type == 'mobiles' ? 'incoming-pill-mobiles' : 'incoming-pill-articles' }}">
+                      <i class="bi {{ item.display_type == 'mobiles' ? 'bi-phone' : 'bi-file-earmark-text' }}"></i>
+                      {{ item.display_type_label|default(item.data_type|default('Item')) }}
+                    </span>
+                    {% if item.category %}
+                      <span class="badge text-bg-light border">{{ item.category }}</span>
+                    {% endif %}
+                    {% if item.brand %}
+                      <span class="badge text-bg-light border">{{ item.brand }}</span>
+                    {% endif %}
+                  </div>
+
+                  <div class="incoming-title">
+                    {{ item.title_text|default(item.title|default('Untitled item')) }}
+                  </div>
+
+                  <div class="incoming-meta mb-2">
+                    <div>
+                      <strong>Source:</strong> {{ item.source|default('-') }}
+                      {% if item.source_url %}
+                        <span class="text-muted">•</span>
+                        <a href="{{ item.source_url }}" target="_blank" rel="noopener">Open source</a>
+                      {% endif %}
+                    </div>
+                    <div>
+                      <strong>Received:</strong> {{ item.received_at|default('-') }}
+                      {% if item.scraped_at %}
+                        <span class="text-muted">•</span>
+                        <strong>Scraped:</strong> {{ item.scraped_at }}
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <div class="incoming-summary mb-3">
+                    {{ item.summary_text|default(item.excerpt|default('No summary available.'))|slice(0, 240) }}
+                  </div>
+
+                  {% if item.tags is defined and item.tags|length > 0 %}
+                    <div class="incoming-tags">
+                      {% for tag in item.tags|slice(0, 6) %}
+                        <span class="incoming-tag">{{ tag }}</span>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-3 col-lg-2">
+                  <div class="incoming-side">
+                    {% if item.author %}
+                      <div class="mb-2">
+                        <div class="incoming-side-label">Author</div>
+                        <div class="incoming-side-value">{{ item.author }}</div>
+                      </div>
+                    {% endif %}
+                    {% if item.price_text %}
+                      <div class="mb-2">
+                        <div class="incoming-side-label">Price</div>
+                        <div class="incoming-side-value">{{ item.price_text }}</div>
+                      </div>
+                    {% endif %}
+                    {% if item.status_text %}
+                      <div class="mb-2">
+                        <div class="incoming-side-label">Status</div>
+                        <div class="incoming-side-value">{{ item.status_text }}</div>
+                      </div>
+                    {% endif %}
+                    {% if item.model %}
+                      <div class="mb-2">
+                        <div class="incoming-side-label">Model</div>
+                        <div class="incoming-side-value">{{ item.model }}</div>
+                      </div>
+                    {% endif %}
+                    <div class="d-grid gap-2 mt-3">
+                      <a class="btn btn-primary btn-sm" href="/admin/scrap-control-center/incoming/{{ item.display_type }}/{{ item.id }}">View Details</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if total_pages > 1 %}
+      <nav aria-label="incoming pagination">
+        <ul class="pagination justify-content-center mt-4">
+          {% if current_page_number > 1 %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ current_page_number - 1 }}&type={{ type_filter }}&limit={{ limit }}">&laquo;</a>
+            </li>
+          {% endif %}
+          {% for p in 1..total_pages %}
+            {% if p == current_page_number or p == 1 or p == total_pages or (p >= current_page_number - 2 and p <= current_page_number + 2) %}
+              <li class="page-item {{ p == current_page_number ? 'active' }}">
+                <a class="page-link" href="?page={{ p }}&type={{ type_filter }}&limit={{ limit }}">{{ p }}</a>
+              </li>
+            {% endif %}
+          {% endfor %}
+          {% if current_page_number < total_pages %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ current_page_number + 1 }}&type={{ type_filter }}&limit={{ limit }}">&raquo;</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="card border-0 shadow-sm">
+      <div class="card-body py-5 text-center">
+        <div class="text-muted">No incoming items found.</div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

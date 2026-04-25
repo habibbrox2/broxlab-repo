@@ -29,6 +29,7 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             $paginationData = [
                 'current_page' => $page,
                 'total_pages' => $totalPages,
+                'limit' => $limit,
                 'per_page' => $limit,
                 'total' => $total,
                 'from' => ($page - 1) * $limit + 1,
@@ -42,7 +43,12 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             echo $twig->render('admin/posts/list.twig', [
             'title' => 'Admin - All Posts',
             'posts' => $posts,
-            'pagination' => $paginationData
+            'pagination' => $paginationData,
+            'search' => $search,
+            'sort' => $sort,
+            'order' => $order,
+            'status' => $status,
+            'limit' => $limit,
             ]);
         }
         );

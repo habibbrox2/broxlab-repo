@@ -3,7 +3,6 @@
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
   <div class="container-fluid py-4">
-    <!-- Page Header -->
     <div class="admin-page-header mb-4">
       <div class="admin-page-title">
         <i class="bi bi-journal-text"></i>
@@ -11,50 +10,57 @@
       </div>
       <div class="admin-page-subtitle">Manage all blog posts and content</div>
     </div>
+
     <div class="d-flex justify-content-end mb-4">
       <a href="/admin/posts/create" class="modern-btn modern-btn-primary">
         <i class="bi bi-plus-circle me-1"></i> Add New Post
       </a>
     </div>
-    <!-- Filter/Search Form -->
+
     <div class="admin-panel-card mb-4">
       <div class="admin-panel-card-body">
-        <form class="row" method="get" action="">
-          <div class="col-md-4">
+        <form class="row g-2" method="get" action="">
+          <div class="col-md-3">
             <div class="input-group">
               <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
               <input type="text"
                      name="search"
-                     value="{{ search|default("") }}"
+                     value="{{ search|default('') }}"
                      class="form-control"
                      placeholder="Search by title...">
             </div>
           </div>
           <div class="col-md-3">
             <select name="sort" class="form-select">
-              <option value="latest" {% if sort == 'latest' %}selected{% endif %}>â†‘ Latest</option>
-              <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>â†“ Oldest</option>
-              <option value="views" {% if sort == 'views' %}selected{% endif %}>ðŸ‘ Most Viewed</option>
-              <option value="impressions" {% if sort == 'impressions' %}selected{% endif %}>ðŸ“Š Most Impressions</option>
+              <option value="created_at" {{ sort|default('created_at') == 'created_at' ? 'selected' : '' }}>Latest</option>
+              <option value="title" {{ sort|default('created_at') == 'title' ? 'selected' : '' }}>Title</option>
+              <option value="views" {{ sort|default('created_at') == 'views' ? 'selected' : '' }}>Most Viewed</option>
+              <option value="impressions" {{ sort|default('created_at') == 'impressions' ? 'selected' : '' }}>Most Impressions</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select name="order" class="form-select">
+              <option value="DESC" {{ order|default('DESC') == 'DESC' ? 'selected' : '' }}>Desc</option>
+              <option value="ASC" {{ order|default('DESC') == 'ASC' ? 'selected' : '' }}>Asc</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select name="limit" class="form-select">
+              <option value="10" {{ limit|default(20) == 10 ? 'selected' : '' }}>10</option>
+              <option value="20" {{ limit|default(20) == 20 ? 'selected' : '' }}>20</option>
+              <option value="50" {{ limit|default(20) == 50 ? 'selected' : '' }}>50</option>
+              <option value="100" {{ limit|default(20) == 100 ? 'selected' : '' }}>100</option>
             </select>
           </div>
           <div class="col-md-2">
             <button type="submit" class="modern-btn modern-btn-primary w-100">
-              <i class="bi bi-funnel-fill me-1"></i>Filter
+              <i class="bi bi-funnel-fill me-1"></i> Filter
             </button>
-          </div>
-          <div class="col-md-1">
-            <select name="limit" class="form-select form-select-sm">
-              <option value="20" selected>20</option>
-              <option value="10">10</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
           </div>
         </form>
       </div>
     </div>
-    <!-- Posts Table -->
+
     {% if posts is not empty %}
       <div class="admin-panel-card">
         <div class="admin-panel-card-body">
@@ -63,32 +69,22 @@
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>
-                    <i class="bi bi-type"></i> Title
-                  </th>
-                  <th>
-                    <i class="bi bi-person"></i> Author
-                  </th>
-                  <th>
-                    <i class="bi bi-link-45deg"></i> Permalink
-                  </th>
-                  <th>
-                    <i class="bi bi-calendar-check"></i> Status
-                  </th>
+                  <th><i class="bi bi-type"></i> Title</th>
+                  <th><i class="bi bi-person"></i> Author</th>
+                  <th><i class="bi bi-link-45deg"></i> Permalink</th>
+                  <th><i class="bi bi-calendar-check"></i> Status</th>
                   <th>
                     <i class="bi bi-bar-chart"></i> Impressions
                     <hr>
                     <i class="bi bi-eye"></i> Views
                   </th>
-                  <th class="text-center">
-                    <i class="bi bi-gear"></i> Actions
-                  </th>
+                  <th class="text-center"><i class="bi bi-gear"></i> Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {% for post in posts %}
                   <tr>
-                    <td class="fw-bold" data-label="#">ID</td>
+                    <td class="fw-bold" data-label="#">{{ post.id }}</td>
                     <td data-label="Title">{{ post.title }}</td>
                     <td data-label="Author">
                       <i class="bi bi-person-circle text-secondary"></i> {{ post.author ?? 'N/A' }}
@@ -97,7 +93,6 @@
                       <code class="text-muted">{{ post.slug }}</code>
                     </td>
                     <td data-label="Status">
-                      {# Status: published=1 means published, published=0 means draft #}
                       <span class="badge {{ post.published ? 'bg-success' : 'bg-warning text-surface-dark' }} rounded-pill">
                         <i class="bi {{ post.published ? 'bi-check2' : 'bi-pencil' }}"></i>
                         {{ post.published ? 'Published' : 'Draft' }}
@@ -133,7 +128,7 @@
           </div>
         </div>
       </div>
-      <!-- Pagination -->
+
       {% include "admin/partials/pagination.twig" %}
     {% else %}
       <div class="alert alert-info">
@@ -142,5 +137,3 @@
     {% endif %}
   </div>
 {% endblock %}
-
-
