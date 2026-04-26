@@ -372,7 +372,7 @@
                 <div class="home-top-card__meta">
                   <span><i class="bi bi-eye-fill"></i> {{ p.views|default(0)|number_format }}</span>
                   <span class="home-top-card__rating"><i class="bi bi-star-fill"></i> {{ p.rating_average|default(0)|number_format(1) }} <small>({{ p.rating_total|default(0)|number_format }})</small></span>
-                  <span><i class="bi bi-clock-history"></i> {{ p.created_at|time_ago }}</span>
+                  <span><i class="bi bi-clock-history"></i> {{ (p.published_at|default(p.created_at))|time_ago }}</span>
                 </div>
               </div>
             </a>
