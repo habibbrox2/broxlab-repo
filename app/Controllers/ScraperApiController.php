@@ -1545,8 +1545,22 @@ if (!function_exists('scraperPushToNullableString')) {
                 }
 
                 if ($dataType === 'articles') {
+                    // Attempt AI enhancement for articles (with retry if needed)
                     $enhancement = scraperPushEnhanceIncomingPayload($mysqli, 'articles', $payload);
+
+                    // If AI enhancement failed but we have data, retry once
+                    if (empty($enhancement['used_ai']) && isset($payload['title'])) {
+                        // Wait briefly before retry to avoid rate limiting
+                        usleep(500000); // 0.5 seconds
+                        $enhancement = scraperPushEnhanceIncomingPayload($mysqli, 'articles', $payload);
+                    }
+
+                    // Use enhanced payload if available, otherwise use original
                     $publishPayload = is_array($enhancement['payload'] ?? null) ? $enhancement['payload'] : $payload;
+                    $aiUsed = (bool) ($enhancement['used_ai'] ?? false);
+                    $aiProvider = $enhancement['provider'] ?? null;
+                    $aiModel = $enhancement['model'] ?? null;
+
                     $title = scraperPushToNullableString($publishPayload['title'] ?? null) ?? 'Untitled Article';
                     $content = scraperPushBuildArticleContent($publishPayload, $row);
                     $author = scraperPushToNullableString($publishPayload['author'] ?? null)
@@ -1580,9 +1594,9 @@ if (!function_exists('scraperPushToNullableString')) {
                     }
                     $broxScrapModel->markIncomingItemPublished($itemId, $postId, [
                         'fingerprint' => $fingerprint,
-                        'ai_used' => (bool) ($enhancement['used_ai'] ?? false),
-                        'provider' => $enhancement['provider'] ?? null,
-                        'model' => $enhancement['model'] ?? null,
+                        'ai_used' => $aiUsed,
+                        'provider' => $aiProvider,
+                        'model' => $aiModel,
                         'slug' => $slug,
                         'category_ids' => $categoryIds,
                         'tag_ids' => $tagIds,
@@ -1597,7 +1611,7 @@ if (!function_exists('scraperPushToNullableString')) {
                         'ok' => true,
                         'data_type' => 'articles',
                         'published_content_id' => $postId,
-                        'ai_used' => (bool) ($enhancement['used_ai'] ?? false),
+                        'ai_used' => $aiUsed,
                     ];
                     continue;
                 }
