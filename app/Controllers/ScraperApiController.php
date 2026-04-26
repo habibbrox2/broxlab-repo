@@ -1832,8 +1832,8 @@ if (!function_exists('scraperPushHandleTypedPayload')) {
             }
         }
 
-        // Trigger pipeline to process and publish remaining incoming items
-        scraperPushTriggerPipelineRun($normalizedType, $pendingSavedCount);
+        // Trigger pipeline to process and publish remaining incoming items (for all types)
+        scraperPushTriggerPipelineRun(null, $pendingSavedCount);
 
         scraperPushSendJson([
             'success' => true,
