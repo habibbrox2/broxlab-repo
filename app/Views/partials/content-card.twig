@@ -245,8 +245,8 @@
     {# ==================== CARD FOOTER ==================== #}
     <div class="cc-footer-section">
       {# Left section: Date #}
-      {% if item.created_at is defined %}
-        <time datetime="{{ item.created_at|date('Y-m-d') }}" class="cc-date">
+      {% if item.created_at is defined and item.created_at %}
+        <time datetime="{{ item.created_at|date('Y-m-d') }}" class="cc-date" title="{{ item.created_at|date('d M, Y H:i') }}">
           <i class="bi bi-clock-history"></i> {{ item.created_at|time_ago }}
         </time>
       {% endif %}

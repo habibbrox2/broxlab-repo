@@ -87,7 +87,7 @@
           subtitle: post.excerpt|default(post.content|default('')|striptags|slice(0, 120) ~ '...'),
           categories: post.categories|default([]),
           tags: post.tags|default([]),
-          created_at: post.created_at|default(''),
+          created_at: post.published_at|default(post.created_at)|default(''),
           url: post.slug|default(post.slug|default(post.id)),
           id: post.id,
           type: 'post',
