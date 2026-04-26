@@ -251,11 +251,13 @@ if (!function_exists('scraperPushStoreIncomingBatch')) {
 if (!function_exists('scraperPushDecorateScrapingItem')) {
     function scraperPushDecorateScrapingItem(array $item): array
     {
-        foreach ([
-            'tags_json' => 'tags',
-            'key_specs_json' => 'key_specs',
-            'specs_json' => 'specs',
-        ] as $sourceKey => $targetKey) {
+        foreach (
+            [
+                'tags_json' => 'tags',
+                'key_specs_json' => 'key_specs',
+                'specs_json' => 'specs',
+            ] as $sourceKey => $targetKey
+        ) {
             $decoded = null;
             $raw = $item[$sourceKey] ?? null;
             if (is_string($raw) && trim($raw) !== '') {
@@ -930,6 +932,52 @@ if (!function_exists('scraperPushToNullableString')) {
         $stmt->bind_param('si', $formatted, $postId);
         $stmt->execute();
         $stmt->close();
+    }
+
+    function scraperPushTriggerPipelineRun(?string $contentType = null, int $limit = 50): bool
+    {
+        $baseUrl = trim((string) ($_ENV['APP_URL'] ?? ''));
+        if ($baseUrl === '') {
+            return false;
+        }
+
+        $url = rtrim($baseUrl, '/') . '/internal/api/scrap-control-center/cron-run-pipeline';
+
+        $payload = ['limit' => $limit];
+        if ($contentType !== null && in_array($contentType, ['articles', 'mobiles'], true)) {
+            $payload['type'] = $contentType;
+        }
+
+        $payloadJson = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if (!is_string($payloadJson)) {
+            return false;
+        }
+
+        $headers = [
+            'Content-Type: application/json',
+            'Accept: application/json',
+        ];
+
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return false;
+        }
+
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_POSTFIELDS => $payloadJson,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_FOLLOWLOCATION => true,
+        ]);
+
+        $raw = curl_exec($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return $httpCode === 200;
     }
 
     function scraperPushUniquePostSlug(mysqli $mysqli, string $title): string
@@ -1705,8 +1753,7 @@ if (!function_exists('scraperPushHandleTypedPayload')) {
         ContentModel $contentModel,
         MobileModel $mobileModel,
         string $type
-    ): void
-    {
+    ): void {
         [$allowed, $authError] = scraperPushAuthorize($mysqli);
         if (!$allowed) {
             $status = in_array($authError, ['Unauthorized', 'Missing Authorization bearer token'], true) ? 401 : 500;
@@ -1785,6 +1832,9 @@ if (!function_exists('scraperPushHandleTypedPayload')) {
             }
         }
 
+        // Trigger pipeline to process and publish remaining incoming items
+        scraperPushTriggerPipelineRun($normalizedType, $pendingSavedCount);
+
         scraperPushSendJson([
             'success' => true,
             'message' => 'Push payload received',
@@ -1807,8 +1857,7 @@ if (!function_exists('scraperPushHandleCombinedPayload')) {
         BroxScrapModel $broxScrapModel,
         ContentModel $contentModel,
         MobileModel $mobileModel
-    ): void
-    {
+    ): void {
         [$allowed, $authError] = scraperPushAuthorize($mysqli);
         if (!$allowed) {
             $status = in_array($authError, ['Unauthorized', 'Missing Authorization bearer token'], true) ? 401 : 500;
@@ -1839,10 +1888,10 @@ if (!function_exists('scraperPushHandleCombinedPayload')) {
         $autoPublish = [];
         $autoPublishLogIds = [];
 
-          foreach ($batches as $batch) {
-              $contentType = scraperPushNormalizeContentType((string) ($batch['contentType'] ?? ''));
-              $batchItems = is_array($batch['items'] ?? null) ? $batch['items'] : [];
-              if ($contentType === null || $batchItems === []) {
+        foreach ($batches as $batch) {
+            $contentType = scraperPushNormalizeContentType((string) ($batch['contentType'] ?? ''));
+            $batchItems = is_array($batch['items'] ?? null) ? $batch['items'] : [];
+            if ($contentType === null || $batchItems === []) {
                 continue;
             }
 
@@ -1856,40 +1905,40 @@ if (!function_exists('scraperPushHandleCombinedPayload')) {
                 $staging[$contentType . '_first_id'] = $batchResult['pending_stage']['first_id'] ?? 0;
                 $staging[$contentType . '_saved_count'] = $batchPendingSaved;
             }
-              if ($batchLegacyStageSaved > 0) {
-                  $staging['legacy_' . $contentType . '_first_id'] = $batchResult['pending_stage']['first_id'] ?? 0;
-                  $staging['legacy_' . $contentType . '_saved_count'] = $batchLegacyStageSaved;
-                  $stagedRows = $broxScrapModel->getIncomingItemsByIds($batchResult['pending_stage']['item_ids'] ?? []);
-                  if ($stagedRows !== []) {
-                      $autoPublish[$contentType] = scraperPushPublishPendingItems(
-                          $mysqli,
-                          $broxScrapModel,
-                          $contentModel,
-                          $mobileModel,
-                          count($stagedRows),
-                          $contentType,
-                          $stagedRows
-                      );
-                      $autoPublishLogIds[$contentType] = scraperPushRecordPipelineRun(
-                          $broxScrapModel,
-                          [
-                              'action_name' => 'auto-publish',
-                              'trigger_source' => 'auto',
-                              'scope_type' => $contentType,
-                              'batch_limit' => count($stagedRows),
-                              'status' => scraperPushResolvePipelineStatus($autoPublish[$contentType]),
-                              'started_at' => $pushedAt ?: date('Y-m-d H:i:s'),
-                              'finished_at' => date('Y-m-d H:i:s'),
-                          ],
-                          $autoPublish[$contentType],
-                          $autoPublish[$contentType]['results'] ?? []
-                      );
-                  }
-              }
-              if ($batchLegacySaved > 0) {
-                  $legacySavedCount += $batchLegacySaved;
-                  $insertedLogs[$contentType] = $batchResult['legacy_logs']['first_id'] ?? 0;
-                  $insertedLogs[$contentType . '_log_ids'] = $batchResult['legacy_logs']['log_ids'] ?? [];
+            if ($batchLegacyStageSaved > 0) {
+                $staging['legacy_' . $contentType . '_first_id'] = $batchResult['pending_stage']['first_id'] ?? 0;
+                $staging['legacy_' . $contentType . '_saved_count'] = $batchLegacyStageSaved;
+                $stagedRows = $broxScrapModel->getIncomingItemsByIds($batchResult['pending_stage']['item_ids'] ?? []);
+                if ($stagedRows !== []) {
+                    $autoPublish[$contentType] = scraperPushPublishPendingItems(
+                        $mysqli,
+                        $broxScrapModel,
+                        $contentModel,
+                        $mobileModel,
+                        count($stagedRows),
+                        $contentType,
+                        $stagedRows
+                    );
+                    $autoPublishLogIds[$contentType] = scraperPushRecordPipelineRun(
+                        $broxScrapModel,
+                        [
+                            'action_name' => 'auto-publish',
+                            'trigger_source' => 'auto',
+                            'scope_type' => $contentType,
+                            'batch_limit' => count($stagedRows),
+                            'status' => scraperPushResolvePipelineStatus($autoPublish[$contentType]),
+                            'started_at' => $pushedAt ?: date('Y-m-d H:i:s'),
+                            'finished_at' => date('Y-m-d H:i:s'),
+                        ],
+                        $autoPublish[$contentType],
+                        $autoPublish[$contentType]['results'] ?? []
+                    );
+                }
+            }
+            if ($batchLegacySaved > 0) {
+                $legacySavedCount += $batchLegacySaved;
+                $insertedLogs[$contentType] = $batchResult['legacy_logs']['first_id'] ?? 0;
+                $insertedLogs[$contentType . '_log_ids'] = $batchResult['legacy_logs']['log_ids'] ?? [];
             }
         }
 
@@ -1898,18 +1947,21 @@ if (!function_exists('scraperPushHandleCombinedPayload')) {
             return;
         }
 
+        // Trigger pipeline to process and publish incoming items
+        scraperPushTriggerPipelineRun(null, $pendingSavedCount);
+
         scraperPushSendJson([
             'success' => true,
             'message' => 'Push payload received',
-              'staging' => $staging,
-              'saved_count' => $pendingSavedCount,
-              'legacy_log_saved_count' => $legacySavedCount,
-              'logs' => $insertedLogs,
-              'auto_publish_log_ids' => $autoPublishLogIds,
-              'auto_publish' => $autoPublish,
-          ]);
-      }
-  }
+            'staging' => $staging,
+            'saved_count' => $pendingSavedCount,
+            'legacy_log_saved_count' => $legacySavedCount,
+            'logs' => $insertedLogs,
+            'auto_publish_log_ids' => $autoPublishLogIds,
+            'auto_publish' => $autoPublish,
+        ]);
+    }
+}
 
 
 
