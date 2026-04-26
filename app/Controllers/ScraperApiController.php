@@ -37,6 +37,117 @@ if (!function_exists('scraperPushReadJsonInput')) {
     }
 }
 
+if (!function_exists('scraperPushExtractCronToken')) {
+    function scraperPushExtractCronToken(): string
+    {
+        $candidates = [];
+
+        foreach (['HTTP_X_SCRAPER_CRON_TOKEN', 'HTTP_X_CRON_TOKEN'] as $key) {
+            if (isset($_SERVER[$key]) && is_string($_SERVER[$key])) {
+                $value = trim($_SERVER[$key]);
+                if ($value !== '') {
+                    $candidates[] = $value;
+                }
+            }
+        }
+
+        if (function_exists('getallheaders')) {
+            $headers = getallheaders();
+            if (is_array($headers)) {
+                foreach ($headers as $name => $value) {
+                    if (!is_string($value)) {
+                        continue;
+                    }
+                    $lname = strtolower((string) $name);
+                    if ($lname === 'x-scraper-cron-token' || $lname === 'x-cron-token') {
+                        $trimmed = trim($value);
+                        if ($trimmed !== '') {
+                            $candidates[] = $trimmed;
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach (['token', 'cron_token'] as $key) {
+            if (isset($_GET[$key]) && is_scalar($_GET[$key])) {
+                $value = trim((string) $_GET[$key]);
+                if ($value !== '') {
+                    $candidates[] = $value;
+                }
+            }
+            if (isset($_POST[$key]) && is_scalar($_POST[$key])) {
+                $value = trim((string) $_POST[$key]);
+                if ($value !== '') {
+                    $candidates[] = $value;
+                }
+            }
+        }
+
+        return $candidates[0] ?? '';
+    }
+
+    function scraperPushAuthorizeCronRun(): array
+    {
+        $requireSetting = trim((string) ($_ENV['SCRAPER_PIPELINE_CRON_REQUIRE_AUTH'] ?? '1'));
+        $requireAuth = in_array(strtolower($requireSetting), ['1', 'true', 'yes', 'on'], true);
+        if (!$requireAuth) {
+            return [true, null];
+        }
+
+        $expectedToken = trim((string) ($_ENV['SCRAPER_PIPELINE_CRON_TOKEN'] ?? ''));
+        if ($expectedToken === '') {
+            return [false, 'Cron token is not configured'];
+        }
+
+        $incomingToken = scraperPushExtractCronToken();
+        if ($incomingToken === '') {
+            return [false, 'Missing cron token'];
+        }
+        if (!hash_equals($expectedToken, $incomingToken)) {
+            return [false, 'Invalid cron token'];
+        }
+
+        return [true, null];
+    }
+
+    function scraperPushAcquirePipelineLock()
+    {
+        $baseDir = defined('TEMP_DIR') ? TEMP_DIR : (sys_get_temp_dir() . DIRECTORY_SEPARATOR);
+        if (!is_string($baseDir) || trim($baseDir) === '') {
+            $baseDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR;
+        }
+        if (!is_dir($baseDir)) {
+            @mkdir($baseDir, 0775, true);
+        }
+
+        $lockPath = rtrim($baseDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'scraper-pipeline.lock';
+        $handle = @fopen($lockPath, 'c+');
+        if (!is_resource($handle)) {
+            return false;
+        }
+        if (!@flock($handle, LOCK_EX | LOCK_NB)) {
+            @fclose($handle);
+            return false;
+        }
+
+        @ftruncate($handle, 0);
+        @fwrite($handle, (string) getmypid() . '|' . date('c'));
+        @fflush($handle);
+
+        return $handle;
+    }
+
+    function scraperPushReleasePipelineLock($handle): void
+    {
+        if (!is_resource($handle)) {
+            return;
+        }
+        @flock($handle, LOCK_UN);
+        @fclose($handle);
+    }
+}
+
 if (!function_exists('scraperPushNormalizeContentType')) {
     function scraperPushNormalizeContentType(?string $raw): ?string
     {
@@ -937,6 +1048,12 @@ if (!function_exists('scraperPushToNullableString')) {
 
         $decoded = json_decode($trimmed, true);
         if (is_array($decoded)) {
+            if (array_keys($decoded) === range(0, count($decoded) - 1)) {
+                $first = $decoded[0] ?? null;
+                if (is_array($first)) {
+                    return $first;
+                }
+            }
             return $decoded;
         }
 
@@ -948,6 +1065,166 @@ if (!function_exists('scraperPushToNullableString')) {
         }
 
         return null;
+    }
+
+    function scraperPushNormalizeAiString($value, int $maxLen = 12000): ?string
+    {
+        if (!is_scalar($value)) {
+            return null;
+        }
+
+        $text = trim((string) $value);
+        if ($text === '') {
+            return null;
+        }
+
+        if (function_exists('mb_substr')) {
+            $text = mb_substr($text, 0, $maxLen);
+        } else {
+            $text = substr($text, 0, $maxLen);
+        }
+
+        return trim($text);
+    }
+
+    function scraperPushNormalizeAiTags($value): array
+    {
+        $tags = [];
+
+        if (is_string($value)) {
+            $parts = preg_split('/[,|#\n\r]+/u', $value) ?: [];
+            foreach ($parts as $part) {
+                $tag = scraperPushNormalizeAiString($part, 80);
+                if ($tag !== null) {
+                    $tags[] = $tag;
+                }
+            }
+        } elseif (is_array($value)) {
+            foreach ($value as $item) {
+                $tag = scraperPushNormalizeAiString($item, 80);
+                if ($tag !== null) {
+                    $tags[] = $tag;
+                }
+            }
+        }
+
+        $unique = [];
+        $seen = [];
+        foreach ($tags as $tag) {
+            $key = function_exists('mb_strtolower') ? mb_strtolower($tag, 'UTF-8') : strtolower($tag);
+            if ($key === '' || isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $unique[] = $tag;
+        }
+
+        return array_slice($unique, 0, 30);
+    }
+
+    function scraperPushNormalizeAiSpecs($value): array
+    {
+        $out = [];
+
+        if (is_string($value)) {
+            $lines = preg_split('/[\r\n]+/u', $value) ?: [];
+            foreach ($lines as $line) {
+                if (!str_contains($line, ':')) {
+                    continue;
+                }
+                [$k, $v] = array_pad(explode(':', $line, 2), 2, '');
+                $key = scraperPushNormalizeAiString($k, 120);
+                $val = scraperPushNormalizeAiString($v, 600);
+                if ($key !== null && $val !== null) {
+                    $out[$key] = $val;
+                }
+            }
+        } elseif (is_array($value)) {
+            foreach ($value as $k => $v) {
+                if (is_array($v) && isset($v['label'], $v['value'])) {
+                    $key = scraperPushNormalizeAiString($v['label'], 120);
+                    $val = scraperPushNormalizeAiString($v['value'], 600);
+                } else {
+                    $key = scraperPushNormalizeAiString($k, 120);
+                    $val = scraperPushNormalizeAiString($v, 600);
+                }
+
+                if ($key !== null && $val !== null) {
+                    $out[$key] = $val;
+                }
+            }
+        }
+
+        return array_slice($out, 0, 80, true);
+    }
+
+    function scraperPushExtractAiPayload(array $decoded): array
+    {
+        if (isset($decoded['payload']) && is_array($decoded['payload'])) {
+            return $decoded['payload'];
+        }
+        if (isset($decoded['data']) && is_array($decoded['data'])) {
+            return $decoded['data'];
+        }
+        return $decoded;
+    }
+
+    function scraperPushNormalizeAiPayload(string $dataType, array $basePayload, array $candidatePayload): array
+    {
+        $normalized = $basePayload;
+        $isMobile = $dataType === 'mobiles';
+
+        $aliasMap = [
+            'body_text' => 'bodyText',
+            'published_text' => 'publishedText',
+            'published_at' => 'publishedAt',
+            'key_specs' => 'keySpecs',
+            'product_category' => 'productCategory',
+            'image_url' => 'imageUrl',
+        ];
+        foreach ($aliasMap as $alias => $target) {
+            if (!isset($candidatePayload[$target]) && isset($candidatePayload[$alias])) {
+                $candidatePayload[$target] = $candidatePayload[$alias];
+            }
+        }
+
+        $stringFields = $isMobile
+            ? ['title', 'brand', 'model', 'price', 'status', 'productCategory', 'excerpt', 'bodyText', 'publishedAt', 'publishedText', 'imageUrl', 'image']
+            : ['title', 'excerpt', 'bodyText', 'author', 'category', 'publishedText', 'publishedAt', 'imageUrl', 'image'];
+
+        foreach ($stringFields as $field) {
+            if (!array_key_exists($field, $candidatePayload)) {
+                continue;
+            }
+            $value = scraperPushNormalizeAiString($candidatePayload[$field]);
+            if ($value !== null) {
+                $normalized[$field] = $value;
+            }
+        }
+
+        if (array_key_exists('tags', $candidatePayload)) {
+            $tags = scraperPushNormalizeAiTags($candidatePayload['tags']);
+            if ($tags !== []) {
+                $normalized['tags'] = $tags;
+            }
+        }
+
+        if ($isMobile) {
+            if (array_key_exists('keySpecs', $candidatePayload)) {
+                $keySpecs = scraperPushNormalizeAiSpecs($candidatePayload['keySpecs']);
+                if ($keySpecs !== []) {
+                    $normalized['keySpecs'] = $keySpecs;
+                }
+            }
+            if (array_key_exists('specs', $candidatePayload)) {
+                $specs = scraperPushNormalizeAiSpecs($candidatePayload['specs']);
+                if ($specs !== []) {
+                    $normalized['specs'] = $specs;
+                }
+            }
+        }
+
+        return $normalized;
     }
 
     function scraperPushEnhanceIncomingPayload(mysqli $mysqli, string $dataType, array $payload): array
@@ -1011,11 +1288,13 @@ if (!function_exists('scraperPushToNullableString')) {
             . "- Keep tags/specs as structured arrays/objects.\n"
             . "- Output JSON only with no markdown.";
 
-        $response = $aiProvider->callAPI($providerName, $effectiveModel, [
+        $messages = [
             ['role' => 'system', 'content' => $systemPrompt],
             ['role' => 'user', 'content' => $userPrompt],
-        ], [
-            'temperature' => 0.2,
+        ];
+
+        $response = $aiProvider->callAPI($providerName, $effectiveModel, $messages, [
+            'temperature' => 0.15,
             'max_tokens' => 2400,
         ]);
 
@@ -1023,20 +1302,38 @@ if (!function_exists('scraperPushToNullableString')) {
             return ['ok' => false, 'used_ai' => false, 'payload' => $payload, 'meta' => ['provider' => $providerName, 'model' => $effectiveModel, 'error' => $response['error'] ?? 'AI unavailable']];
         }
 
-        $content = (string) ($response['content'] ?? '');
-        $decoded = scraperPushParseAiJson($content);
+        $decoded = scraperPushParseAiJson((string) ($response['content'] ?? ''));
         if (!is_array($decoded)) {
-            return ['ok' => false, 'used_ai' => false, 'payload' => $payload, 'meta' => ['provider' => $providerName, 'model' => $effectiveModel, 'error' => 'AI returned invalid JSON']];
+            $retryResponse = $aiProvider->callAPI($providerName, $effectiveModel, [
+                ['role' => 'system', 'content' => $systemPrompt],
+                [
+                    'role' => 'user',
+                    'content' => $userPrompt . "\n\nYour previous reply was invalid. Reply with only one JSON object and no markdown.",
+                ],
+            ], [
+                'temperature' => 0.0,
+                'max_tokens' => 2400,
+            ]);
+
+            if (empty($retryResponse['success'])) {
+                return ['ok' => false, 'used_ai' => false, 'payload' => $payload, 'meta' => ['provider' => $providerName, 'model' => $effectiveModel, 'error' => $retryResponse['error'] ?? 'AI retry unavailable']];
+            }
+
+            $decoded = scraperPushParseAiJson((string) ($retryResponse['content'] ?? ''));
+            if (!is_array($decoded)) {
+                return ['ok' => false, 'used_ai' => false, 'payload' => $payload, 'meta' => ['provider' => $providerName, 'model' => $effectiveModel, 'error' => 'AI returned invalid JSON after retry']];
+            }
         }
 
-        $enhancedPayload = array_replace($payload, $decoded);
+        $candidatePayload = scraperPushExtractAiPayload($decoded);
+        $enhancedPayload = scraperPushNormalizeAiPayload($dataType, $payload, $candidatePayload);
         return [
             'ok' => true,
             'used_ai' => true,
             'provider' => $providerName,
             'model' => $effectiveModel,
             'payload' => $enhancedPayload,
-            'raw' => $decoded,
+            'raw' => $candidatePayload,
         ];
     }
 
@@ -1940,6 +2237,7 @@ $router->get('/admin/api/push-publish-stats', ['middleware' => ['auth', 'admin_o
 $publishPendingApi = function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
     $limit = 20;
     $type = null;
+    $isAuto = false;
     $actionName = str_contains((string) ($_SERVER['REQUEST_URI'] ?? ''), 'run-pipeline') ? 'run-pipeline' : 'publish-pending';
 
     [$ok, $payload] = scraperPushReadJsonInput();
@@ -1953,6 +2251,9 @@ $publishPendingApi = function () use ($mysqli, $broxScrapModel, $contentModel, $
                 $type = $rawType;
             }
         }
+        if (array_key_exists('auto', $payload)) {
+            $isAuto = filter_var($payload['auto'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+        }
     } else {
         if (isset($_POST['limit'])) {
             $limit = max(1, min((int) $_POST['limit'], 200));
@@ -1963,6 +2264,13 @@ $publishPendingApi = function () use ($mysqli, $broxScrapModel, $contentModel, $
                 $type = $rawType;
             }
         }
+        if (isset($_POST['auto'])) {
+            $isAuto = filter_var($_POST['auto'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+        }
+    }
+
+    if ($isAuto && $actionName === 'run-pipeline') {
+        $actionName = 'auto-run-pipeline';
     }
 
     $startedAt = date('Y-m-d H:i:s');
@@ -1972,7 +2280,7 @@ $publishPendingApi = function () use ($mysqli, $broxScrapModel, $contentModel, $
         $broxScrapModel,
         [
             'action_name' => $actionName,
-            'trigger_source' => 'manual',
+            'trigger_source' => $isAuto ? 'auto' : 'manual',
             'scope_type' => $type,
             'batch_limit' => $limit,
             'status' => scraperPushResolvePipelineStatus($result),
@@ -1995,6 +2303,101 @@ $router->post('/admin/api/scrap-control-center/publish-pending', ['middleware' =
 $router->post('/admin/api/push-publish-pending', ['middleware' => ['auth', 'admin_only', 'csrf']], $publishPendingApi);
 $router->post('/admin/api/scrap-control-center/run-pipeline', ['middleware' => ['auth', 'admin_only', 'csrf']], $publishPendingApi);
 $router->post('/admin/api/push-run-pipeline', ['middleware' => ['auth', 'admin_only', 'csrf']], $publishPendingApi);
+
+$cronPipelineApi = function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
+    [$allowed, $authError] = scraperPushAuthorizeCronRun();
+    if (!$allowed) {
+        $status = $authError === 'Cron token is not configured' ? 503 : 401;
+        scraperPushSendJson(['ok' => false, 'error' => $authError], $status);
+        return;
+    }
+
+    $lockHandle = scraperPushAcquirePipelineLock();
+    if (!is_resource($lockHandle)) {
+        scraperPushSendJson([
+            'ok' => false,
+            'error' => 'Pipeline already running',
+        ], 409);
+        return;
+    }
+
+    try {
+        $limit = 20;
+        $type = null;
+
+        [$jsonOk, $jsonPayload] = scraperPushReadJsonInput();
+        if ($jsonOk && is_array($jsonPayload)) {
+            if (isset($jsonPayload['limit'])) {
+                $limit = max(1, min((int) $jsonPayload['limit'], 200));
+            }
+            if (isset($jsonPayload['type'])) {
+                $rawType = strtolower(trim((string) $jsonPayload['type']));
+                if (in_array($rawType, ['articles', 'mobiles'], true)) {
+                    $type = $rawType;
+                }
+            }
+        } else {
+            if (isset($_REQUEST['limit'])) {
+                $limit = max(1, min((int) $_REQUEST['limit'], 200));
+            }
+            if (isset($_REQUEST['type'])) {
+                $rawType = strtolower(trim((string) $_REQUEST['type']));
+                if (in_array($rawType, ['articles', 'mobiles'], true)) {
+                    $type = $rawType;
+                }
+            }
+        }
+
+        $statsBefore = $broxScrapModel->getIncomingPublishStats();
+        $pendingBefore = (int) ($statsBefore['pending'] ?? 0);
+        if ($pendingBefore <= 0) {
+            scraperPushSendJson([
+                'ok' => true,
+                'message' => 'No pending items',
+                'stats' => $statsBefore,
+                'data' => [
+                    'fetched' => 0,
+                    'published' => 0,
+                    'failed' => 0,
+                    'skipped_duplicates' => 0,
+                    'results' => [],
+                ],
+            ]);
+            return;
+        }
+
+        $startedAt = date('Y-m-d H:i:s');
+        $result = scraperPushPublishPendingItems($mysqli, $broxScrapModel, $contentModel, $mobileModel, $limit, $type);
+        $finishedAt = date('Y-m-d H:i:s');
+        $pipelineLogId = scraperPushRecordPipelineRun(
+            $broxScrapModel,
+            [
+                'action_name' => 'cron-run-pipeline',
+                'trigger_source' => 'auto',
+                'scope_type' => $type,
+                'batch_limit' => $limit,
+                'status' => scraperPushResolvePipelineStatus($result),
+                'started_at' => $startedAt,
+                'finished_at' => $finishedAt,
+            ],
+            $result,
+            $result['results'] ?? []
+        );
+
+        scraperPushSendJson([
+            'ok' => true,
+            'message' => 'Cron pipeline executed',
+            'pipeline_log_id' => $pipelineLogId,
+            'stats' => $broxScrapModel->getIncomingPublishStats(),
+            'data' => $result,
+        ]);
+    } finally {
+        scraperPushReleasePipelineLock($lockHandle);
+    }
+};
+
+$router->match(['GET', 'POST'], '/internal/api/scrap-control-center/cron-run-pipeline', $cronPipelineApi);
+$router->match(['GET', 'POST'], '/internal/api/push-run-pipeline', $cronPipelineApi);
 
 $router->post('/admin/api/push-publish-retry-failed', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
     $limit = 20;

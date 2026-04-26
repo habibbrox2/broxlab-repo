@@ -390,6 +390,8 @@
     const listingForm = document.getElementById('scrapControlListingForm');
     const listingTypeSelect = listingForm ? listingForm.querySelector('select[name="type"]') : null;
     const listingLimitSelect = listingForm ? listingForm.querySelector('select[name="limit"]') : null;
+    const autoRunIntervalMs = 60000;
+    let publishActionInFlight = false;
 
     const setStatus = (message, isError = false) => {
         statusEl.textContent = message;
@@ -421,9 +423,12 @@
             const res = await fetch('/admin/api/scrap-control-center/publish-stats');
             const data = await res.json();
             if (res.ok && data.ok) {
-                updateIncomingStats(data.data || {});
+                const stats = data.data || {};
+                updateIncomingStats(stats);
+                return stats;
             }
         } catch (_) {}
+        return null;
     };
 
     const buildPublishPayload = () => {
@@ -436,10 +441,16 @@
         return payload;
     };
 
-    const runPublishAction = async (endpoint, button, startMessage) => {
-        if (!button) return;
-        button.disabled = true;
-        setPublishStatus(startMessage);
+    const runPublishAction = async (endpoint, button, startMessage, options = {}) => {
+        const { silent = false, isAuto = false } = options;
+        if (publishActionInFlight) return;
+        publishActionInFlight = true;
+        if (button) {
+            button.disabled = true;
+        }
+        if (!silent) {
+            setPublishStatus(startMessage);
+        }
         try {
             const res = await fetch(endpoint, {
                 method: 'POST',
@@ -447,7 +458,10 @@
                     'Content-Type': 'application/json',
                     'X-CSRF-Token': csrfToken
                 },
-                body: JSON.stringify(buildPublishPayload())
+                body: JSON.stringify({
+                    ...buildPublishPayload(),
+                    auto: Boolean(isAuto)
+                })
             });
             const data = await res.json();
             if (!res.ok || !data.ok) {
@@ -458,12 +472,40 @@
             } else if (data.data && data.data.stats) {
                 updateIncomingStats(data.data.stats);
             }
-            setPublishStatus(data.message || 'Completed');
+            if (!silent) {
+                setPublishStatus(data.message || 'Completed');
+            }
         } catch (error) {
             setPublishStatus(error.message || 'Operation failed', true);
         } finally {
-            button.disabled = false;
+            if (button) {
+                button.disabled = false;
+            }
+            publishActionInFlight = false;
         }
+    };
+
+    const autoRunPipelineIfPending = async () => {
+        if (document.visibilityState !== 'visible') {
+            return;
+        }
+        if (publishActionInFlight) {
+            return;
+        }
+
+        const stats = await loadIncomingStats();
+        const pending = Number(stats?.pending ?? 0);
+        if (pending <= 0) {
+            return;
+        }
+
+        await runPublishAction(
+            '/admin/api/scrap-control-center/run-pipeline',
+            runPipelineBtn,
+            'Running pipeline now...',
+            { silent: true, isAuto: true }
+        );
+        await loadIncomingStats();
     };
 
     const loadConfig = async () => {
@@ -637,6 +679,8 @@
     setInboundPushEndpointUrls();
     loadConfig();
     loadIncomingStats();
+    autoRunPipelineIfPending();
+    window.setInterval(autoRunPipelineIfPending, autoRunIntervalMs);
 })();
 </script>
 {% endblock %}

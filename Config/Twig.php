@@ -650,8 +650,8 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             }
         }));
 
-        // Relative time (e.g., "2 hours ago")
-        $twig->addFilter(new \Twig\TwigFilter('time_ago', function ($datetime) {
+        // Relative time (e.g., "2 hours ago" or Bengali: "২ ঘন্টা আগে")
+        $twig->addFilter(new \Twig\TwigFilter('time_ago', function ($datetime, $bengali = false) {
             if (empty($datetime)) {
                 return '';
             }
@@ -660,13 +660,43 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
                 $time = is_numeric($datetime) ? $datetime : strtotime($datetime);
                 $diff = time() - $time;
 
-                if ($diff < 60) return 'just now';
-                if ($diff < 3600) return floor($diff / 60) . ' minutes ago';
-                if ($diff < 86400) return floor($diff / 3600) . ' hours ago';
-                if ($diff < 604800) return floor($diff / 86400) . ' days ago';
-                if ($diff < 2592000) return floor($diff / 604800) . ' weeks ago';
-                if ($diff < 31536000) return floor($diff / 2592000) . ' months ago';
-                return floor($diff / 31536000) . ' years ago';
+                $output = '';
+
+                if ($diff < 60) {
+                    $output = $bengali ? 'এখনই' : 'just now';
+                } elseif ($diff < 3600) {
+                    $minutes = (int)floor($diff / 60);
+                    $output = $bengali
+                        ? enToBnDigits((string)$minutes) . ' মিনিট আগে'
+                        : $minutes . ' minute' . ($minutes > 1 ? 's' : '') . ' ago';
+                } elseif ($diff < 86400) {
+                    $hours = (int)floor($diff / 3600);
+                    $output = $bengali
+                        ? enToBnDigits((string)$hours) . ' ঘন্টা আগে'
+                        : $hours . ' hour' . ($hours > 1 ? 's' : '') . ' ago';
+                } elseif ($diff < 604800) {
+                    $days = (int)floor($diff / 86400);
+                    $output = $bengali
+                        ? enToBnDigits((string)$days) . ' দিন আগে'
+                        : $days . ' day' . ($days > 1 ? 's' : '') . ' ago';
+                } elseif ($diff < 2592000) {
+                    $weeks = (int)floor($diff / 604800);
+                    $output = $bengali
+                        ? enToBnDigits((string)$weeks) . ' সপ্তাহ আগে'
+                        : $weeks . ' week' . ($weeks > 1 ? 's' : '') . ' ago';
+                } elseif ($diff < 31536000) {
+                    $months = (int)floor($diff / 2592000);
+                    $output = $bengali
+                        ? enToBnDigits((string)$months) . ' মাস আগে'
+                        : $months . ' month' . ($months > 1 ? 's' : '') . ' ago';
+                } else {
+                    $years = (int)floor($diff / 31536000);
+                    $output = $bengali
+                        ? enToBnDigits((string)$years) . ' বছর আগে'
+                        : $years . ' year' . ($years > 1 ? 's' : '') . ' ago';
+                }
+
+                return $output;
             } catch (Exception $e) {
                 return $datetime;
             }

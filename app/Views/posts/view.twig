@@ -55,9 +55,9 @@
             </div>
             {% if post.created_at %}
               <div class="text-white">
-                <i class="bi bi-calendar-check me-1"></i>
+                <i class="bi bi-clock-history me-1"></i>
                 <time datetime="{{ post.created_at|date("Y-m-d") }}">
-                  {{ post.created_at|date("F d, Y") }}
+                  {{ post.created_at|time_ago }}
                 </time>
               </div>
             {% endif %}
@@ -130,7 +130,7 @@
                   <i class="bi bi-pen me-1"></i>Article Author
                 </p>
                 <p class="text-muted mb-0 small">
-                  Published on <time datetime="{{ post.created_at|date("Y-m-d") }}">{{ post.created_at|date("F d, Y") }}</time>
+                  Published <time datetime="{{ post.created_at|date("Y-m-d") }}">{{ post.created_at|time_ago }}</time>
                 </p>
               </div>
               <div>
@@ -265,7 +265,7 @@
                           <i class="bi bi-eye-fill me-1"></i>{{ pp.views|number_format }}
                         </span>
                         <span>
-                          <i class="bi bi-calendar3 me-1"></i>{{ pp.created_at|date("M d") }}
+                          <i class="bi bi-clock-history me-1"></i>{{ pp.created_at|time_ago }}
                         </span>
                       </div>
                     </li>
