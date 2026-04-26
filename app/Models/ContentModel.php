@@ -203,19 +203,13 @@ class ContentModel {
     }
 
     private function slugify($text) {
-        $text = preg_replace('~[^\pL\d]+~u', '-', $text);
-        if (function_exists('iconv')) {
-            $converted = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', (string)$text);
-            if ($converted !== false && $converted !== '') {
-                $text = $converted;
-            }
+        if (function_exists('slugify')) {
+            return slugify((string) $text);
         }
-        $text = preg_replace('~[^-\w]+~', '', $text);
-        $text = trim($text, '-');
-        $text = preg_replace('~-+~', '-', $text);
-        $text = strtolower($text);
-        return empty($text) ? 'n-a' : $text;
-    } 
+
+        $fallback = strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', (string) $text), '-'));
+        return $fallback !== '' ? $fallback : 'n-a';
+    }
 
     /**
      * Generate unique SEO-friendly permalink
@@ -380,12 +374,29 @@ class ContentModel {
         return $stmt->execute();
     }
 
-    public function createPost($title, $content, $author, $slug, $published = 0, $reader_indexing = null) {
-        $stmt = $this->mysqli->prepare("
-            INSERT INTO posts (title, content, author, slug, published, reader_indexing) 
-            VALUES (?, ?, ?, ?, ?, ?)
-        ");
-        $stmt->bind_param("ssssii", $title, $content, $author, $slug, $published, $reader_indexing);
+    public function createPost($title, $content, $author, $slug, $published = 0, $reader_indexing = null, $published_at = null) {
+        $normalizedPublishedAt = null;
+        if ($published_at !== null && trim((string)$published_at) !== '') {
+            $ts = strtotime((string)$published_at);
+            if ($ts !== false) {
+                $normalizedPublishedAt = date('Y-m-d H:i:s', $ts);
+            }
+        }
+
+        if ($normalizedPublishedAt !== null) {
+            $stmt = $this->mysqli->prepare("
+                INSERT INTO posts (title, content, author, slug, published, reader_indexing, published_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->bind_param("ssssiis", $title, $content, $author, $slug, $published, $reader_indexing, $normalizedPublishedAt);
+        } else {
+            $stmt = $this->mysqli->prepare("
+                INSERT INTO posts (title, content, author, slug, published, reader_indexing) 
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->bind_param("ssssii", $title, $content, $author, $slug, $published, $reader_indexing);
+        }
+
         $stmt->execute();
         return $this->mysqli->insert_id;
     }

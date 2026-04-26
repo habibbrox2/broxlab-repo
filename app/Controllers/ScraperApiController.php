@@ -272,7 +272,13 @@ if (!function_exists('scraperPushExtractBearerToken')) {
 if (!function_exists('scraperPushAuthorize')) {
     function scraperPushLegacyFallbackToken(): string
     {
-        return 'brox_scraper_push_e1ab91756330e90d6be7bfbf39eab9c1';
+        return trim((string) ($_ENV['SCRAPER_PUSH_LEGACY_FALLBACK_TOKEN'] ?? ''));
+    }
+
+    function scraperPushLegacyFallbackEnabled(): bool
+    {
+        $setting = trim((string) ($_ENV['SCRAPER_PUSH_ALLOW_LEGACY_FALLBACK'] ?? '0'));
+        return in_array(strtolower($setting), ['1', 'true', 'yes', 'on'], true);
     }
 
     function scraperPushTokenFingerprint(string $token): string
@@ -305,8 +311,12 @@ if (!function_exists('scraperPushAuthorize')) {
             }
         }
 
-        // Last fallback for compatibility.
-        return scraperPushLegacyFallbackToken();
+        // Optional legacy fallback for temporary compatibility only.
+        if (scraperPushLegacyFallbackEnabled()) {
+            return scraperPushLegacyFallbackToken();
+        }
+
+        return '';
     }
 
     function scraperPushResolveRemoteToken(): string
@@ -347,7 +357,12 @@ if (!function_exists('scraperPushAuthorize')) {
             $tokens[] = $resolved;
         }
 
-        $tokens[] = scraperPushLegacyFallbackToken();
+        if (scraperPushLegacyFallbackEnabled()) {
+            $legacyFallbackToken = scraperPushLegacyFallbackToken();
+            if ($legacyFallbackToken !== '') {
+                $tokens[] = $legacyFallbackToken;
+            }
+        }
 
         // unique + normalized
         $tokens = array_values(array_unique(array_map(static fn($t) => trim((string) $t), $tokens)));
@@ -365,7 +380,7 @@ if (!function_exists('scraperPushAuthorize')) {
 
         $envToken = trim((string) ($_ENV['SCRAPER_PUSH_BEARER_TOKEN'] ?? ''));
         $remoteToken = scraperPushResolveRemoteToken();
-        $fallbackToken = scraperPushLegacyFallbackToken();
+        $fallbackToken = scraperPushLegacyFallbackEnabled() ? scraperPushLegacyFallbackToken() : '';
 
         $acceptedTokens = scraperPushResolveAcceptedTokens();
         if ($acceptedTokens === []) {
@@ -581,7 +596,15 @@ if (!function_exists('scraperPushToNullableString')) {
     {
         $tagIds = [];
         foreach (scraperPushNormalizeStringList($rawTags) as $tagName) {
-            $tagSlug = function_exists('slugify') ? slugify($tagName) : strtolower(trim(preg_replace('/[^a-z0-9]+/i', '-', $tagName), '-'));
+            if (function_exists('slugify_banglish_js_parity_or_empty')) {
+                $tagSlug = slugify_banglish_js_parity_or_empty((string) $tagName);
+            } elseif (function_exists('slugify_banglish_js_parity')) {
+                $tagSlug = slugify_banglish_js_parity((string) $tagName);
+            } elseif (function_exists('slugify')) {
+                $tagSlug = slugify($tagName);
+            } else {
+                $tagSlug = strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', (string) $tagName), '-'));
+            }
             $existing = $tagSlug !== '' ? $contentModel->getTagBySlug($tagSlug) : null;
             if (is_array($existing) && (int) ($existing['id'] ?? 0) > 0) {
                 $tagIds[] = (int) $existing['id'];
@@ -601,7 +624,15 @@ if (!function_exists('scraperPushToNullableString')) {
     {
         $categoryIds = [];
         foreach (scraperPushNormalizeStringList($rawCategories) as $categoryName) {
-            $categorySlug = function_exists('slugify') ? slugify($categoryName) : strtolower(trim(preg_replace('/[^a-z0-9]+/i', '-', $categoryName), '-'));
+            if (function_exists('slugify_banglish_js_parity_or_empty')) {
+                $categorySlug = slugify_banglish_js_parity_or_empty((string) $categoryName);
+            } elseif (function_exists('slugify_banglish_js_parity')) {
+                $categorySlug = slugify_banglish_js_parity((string) $categoryName);
+            } elseif (function_exists('slugify')) {
+                $categorySlug = slugify($categoryName);
+            } else {
+                $categorySlug = strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', (string) $categoryName), '-'));
+            }
             $existing = $categorySlug !== '' ? $contentModel->getCategoryBySlug($categorySlug) : null;
             if (is_array($existing) && (int) ($existing['id'] ?? 0) > 0) {
                 $categoryIds[] = (int) $existing['id'];
@@ -792,7 +823,13 @@ if (!function_exists('scraperPushToNullableString')) {
 
     function scraperPushUniquePostSlug(mysqli $mysqli, string $title): string
     {
-        $base = function_exists('slugify') ? slugify($title) : strtolower(trim(preg_replace('/[^a-z0-9]+/i', '-', $title), '-'));
+        if (function_exists('slugify')) {
+            $base = slugify($title);
+        } elseif (function_exists('slugify_banglish_js_parity')) {
+            $base = slugify_banglish_js_parity((string) $title);
+        } else {
+            $base = strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', (string) $title), '-'));
+        }
         if ($base === '') {
             $base = 'post';
         }
@@ -1158,7 +1195,7 @@ if (!function_exists('scraperPushToNullableString')) {
                         ?? scraperPushToNullableString($publishPayload['published_at'] ?? null)
                         ?? scraperPushToNullableString($row['source_published_at'] ?? null);
 
-                    $postId = (int) $contentModel->createPost($title, $content, $author, $slug, 1, 1);
+                    $postId = (int) $contentModel->createPost($title, $content, $author, $slug, 1, 1, $publishedAt);
                     if ($postId <= 0) {
                         throw new RuntimeException('Failed to create post');
                     }
@@ -1170,7 +1207,6 @@ if (!function_exists('scraperPushToNullableString')) {
                     if ($tagIds !== []) {
                         $contentModel->attachTagsToContent('post', $postId, $tagIds);
                     }
-                    scraperPushUpdatePostPublishedAt($mysqli, $postId, $publishedAt);
                     $broxScrapModel->markIncomingItemPublished($itemId, $postId, [
                         'fingerprint' => $fingerprint,
                         'ai_used' => (bool) ($enhancement['used_ai'] ?? false),
@@ -1627,7 +1663,7 @@ $router->get('/push-endpoints', function () use ($twig) {
         'push_mobiles_url' => $base . '/api/push/mobiles',
         'push_legacy_url' => $base . '/api/push/data',
         'push_headers_json' => json_encode(
-            ['Authorization' => 'Bearer ' . scraperPushLegacyFallbackToken()],
+            ['Authorization' => 'Bearer <YOUR_PUSH_TOKEN>'],
             JSON_UNESCAPED_SLASHES
         ),
     ]);
@@ -2066,7 +2102,7 @@ $router->get('/admin/api/scraper-push-config', ['middleware' => ['auth', 'admin_
             'data' => [
                 'scraper_base_url' => $baseUrl,
                 'scraper_push_bearer_token' => '',
-                'scraper_push_headers_json' => '{"Authorization":"Bearer ' . scraperPushLegacyFallbackToken() . '"}',
+                'scraper_push_headers_json' => '{"Authorization":"Bearer <YOUR_PUSH_TOKEN>"}',
                 'scraper_push_require_auth' => '1',
             ],
         ], 502);
@@ -2088,7 +2124,7 @@ $router->get('/admin/api/scraper-push-config', ['middleware' => ['auth', 'admin_
 
     $headersJson = json_encode($headersObj, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     if (!is_string($headersJson) || $headersJson === '' || $headersJson === '[]') {
-        $headersJson = '{"Authorization":"Bearer ' . scraperPushLegacyFallbackToken() . '"}';
+        $headersJson = '{"Authorization":"Bearer <YOUR_PUSH_TOKEN>"}';
     }
 
     scraperPushSendJson([
