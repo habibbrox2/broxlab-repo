@@ -65,7 +65,7 @@
               </div>
               <div class="application-action">
                 <h6>Application Start Date</h6>
-                <span>{{ job.scraped_at|date('Y-m-d H:i A') }}</span>
+                <span>{{ job.scraped_at|time_ago }}</span>
               </div>
             </div>
             <div class="application-end flex items-center mb-2 sm:mb-0 md:mb-0 lg:mb-0 xl:mb-0 2xl:mb-0">
@@ -76,7 +76,7 @@
               </div>
               <div class="application-action">
                 <h6>Application End Date</h6>
-                <span>{{ job.updated_at|date('Y-m-d H:i A') }}</span>
+                <span>{{ job.updated_at|time_ago }}</span>
               </div>
             </div>
             <div class="app-view flex items-center">
@@ -118,11 +118,11 @@
                   </div>
                   <div class="col-md-6 mb-3">
                     <strong>Posted Date:</strong>
-                    <p>{{ job.scraped_at|date('Y-m-d') }}</p>
+                    <p>{{ job.scraped_at|time_ago }}</p>
                   </div>
                   <div class="col-md-6 mb-3">
                     <strong>Last Updated:</strong>
-                    <p>{{ job.updated_at|date('Y-m-d') }}</p>
+                    <p>{{ job.updated_at|time_ago }}</p>
                   </div>
                 </div>
                 <div class="mt-4">
@@ -152,7 +152,7 @@
               </div>
               <div class="apply-info">
                 <p>Teletalk Job does not charge any fee at any stage of the recruitment process. Please note that Teletalk Job is an equal employment organization. Any form of persuasion will disqualify the candidature.</p>
-                <p class="deadline">Application Deadline: {{ job.updated_at|date('Y-m-d H:i A') }}</p>
+                <p class="deadline">Application Deadline: {{ job.updated_at|time_ago }}</p>
                 <a class="apply-online" href="{{ job.url }}" target="_blank" rel="noopener noreferrer">Apply Online</a>
               </div>
               <div class="organization-info">
