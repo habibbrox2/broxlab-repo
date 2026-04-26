@@ -79,11 +79,16 @@ class PromptLoader
             return [];
         }
 
+        $extension = strtolower((string) pathinfo($path, PATHINFO_EXTENSION));
+        if (in_array($extension, ['md', 'markdown', 'txt'], true)) {
+            return ['system_prompt' => $content];
+        }
+
         // Try YAML parsing first (if extension available)
         if (function_exists('yaml_parse')) {
             try {
                 $data = @yaml_parse($content);
-                if (is_array($data)) {
+                if (is_array($data) && !empty($data)) {
                     return $data;
                 }
             } catch (Throwable $e) {
@@ -117,6 +122,14 @@ class PromptLoader
         if (empty($prompts)) {
             $commonFile = $baseFolder . '/prompts.yaml';
             $prompts = self::loadStructuredFile($commonFile);
+        }
+
+        if (!isset($prompts['system_prompt']) || trim((string) $prompts['system_prompt']) === '') {
+            if ($context === 'admin' && isset($prompts['admin_system_prompt'])) {
+                $prompts['system_prompt'] = (string) $prompts['admin_system_prompt'];
+            } elseif ($context !== 'admin' && isset($prompts['public_system_prompt'])) {
+                $prompts['system_prompt'] = (string) $prompts['public_system_prompt'];
+            }
         }
 
         // 3) fallback to DB setting if still empty or missing system_prompt
@@ -176,6 +189,8 @@ class PromptLoader
             return '';
         }
 
+        $limit = max(1, min($limit, 10));
+
         // First check if the table exists
         $tableCheck = $mysqli->query("SHOW TABLES LIKE 'ai_knowledge_base'");
         if (!$tableCheck || $tableCheck->num_rows === 0) {
@@ -194,25 +209,42 @@ class PromptLoader
         foreach ($words as $w) {
             $w = trim($w);
             if (strlen($w) >= 4) {
-                $keywords[] = $mysqli->real_escape_string($w);
+                $keywords[] = $w;
             }
         }
 
+        $keywords = array_values(array_unique(array_slice($keywords, 0, 10)));
         if (empty($keywords)) {
             return '';
         }
 
-        // Build a simple LIKE-based query across title and content
+        // Build a prepared LIKE query across title and content
         $whereParts = [];
+        $params = [];
         foreach ($keywords as $kw) {
-            $kwLike = "%{$kw}%";
-            $whereParts[] = "(`title` LIKE '" . $kwLike . "' OR `content` LIKE '" . $kwLike . "')";
+            $whereParts[] = '(`title` LIKE ? OR `content` LIKE ?)';
+            $kwLike = '%' . $kw . '%';
+            $params[] = $kwLike;
+            $params[] = $kwLike;
         }
 
         $whereSql = implode(' OR ', $whereParts);
-        $sql = "SELECT `title`,`content`, `category` FROM `ai_knowledge_base` WHERE ({$whereSql}) AND is_active = 1 ORDER BY priority DESC, `created_at` DESC LIMIT " . intval($limit);
+        $sql = "SELECT `title`, `content`, `category`
+                FROM `ai_knowledge_base`
+                WHERE ({$whereSql}) AND `is_active` = 1
+                ORDER BY `priority` DESC, `created_at` DESC
+                LIMIT {$limit}";
 
-        $res = $mysqli->query($sql);
+        $stmt = $mysqli->prepare($sql);
+        if (!$stmt) {
+            return '';
+        }
+        $types = str_repeat('s', count($params));
+        $stmt->bind_param($types, ...$params);
+        if (!$stmt->execute()) {
+            return '';
+        }
+        $res = $stmt->get_result();
         if (!$res) {
             return '';
         }
@@ -223,7 +255,11 @@ class PromptLoader
             $content = trim($row['content'] ?? '');
             $category = trim($row['category'] ?? '');
             // Keep short preview (first 800 chars)
-            $preview = mb_substr(preg_replace('/\s+/', ' ', strip_tags($content)), 0, 800);
+            $previewText = preg_replace('/\s+/', ' ', strip_tags($content));
+            if (!is_string($previewText)) {
+                $previewText = '';
+            }
+            $preview = mb_substr($previewText, 0, 800);
             if ($title) {
                 $catLabel = $category ? " [{$category}]" : "";
                 $snippets[] = "- " . $title . $catLabel . ": " . $preview;

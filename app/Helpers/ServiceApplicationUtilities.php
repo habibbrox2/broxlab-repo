@@ -5,19 +5,116 @@
  * Utility functions for service application system
  */
 
+if (!function_exists('transliterate_bangla_to_banglish')) {
+    /**
+     * Transliterate Bangla digits/letters to Banglish using the same map as admin.js.
+     */
+    function transliterate_bangla_to_banglish(string $text): string {
+        static $bnDigitMap = [
+            '০' => '0', '১' => '1', '২' => '2', '৩' => '3', '৪' => '4',
+            '৫' => '5', '৬' => '6', '৭' => '7', '৮' => '8', '৯' => '9',
+        ];
+        static $bnBasicMap = [
+            'অ' => 'o', 'আ' => 'a', 'ই' => 'i', 'ঈ' => 'i', 'উ' => 'u', 'ঊ' => 'u',
+            'এ' => 'e', 'ঐ' => 'oi', 'ও' => 'o', 'ঔ' => 'ou', 'ক' => 'k', 'খ' => 'kh',
+            'গ' => 'g', 'ঘ' => 'gh', 'ঙ' => 'ng', 'চ' => 'ch', 'ছ' => 'chh', 'জ' => 'j',
+            'ঝ' => 'jh', 'ঞ' => 'n', 'ট' => 't', 'ঠ' => 'th', 'ড' => 'd', 'ঢ' => 'dh',
+            'ণ' => 'n', 'ত' => 't', 'থ' => 'th', 'দ' => 'd', 'ধ' => 'dh', 'ন' => 'n',
+            'প' => 'p', 'ফ' => 'ph', 'ব' => 'b', 'ভ' => 'bh', 'ম' => 'm', 'য' => 'y',
+            'র' => 'r', 'ল' => 'l', 'শ' => 'sh', 'ষ' => 'sh', 'স' => 's', 'হ' => 'h',
+            'া' => 'a', 'ি' => 'i', 'ী' => 'i', 'ু' => 'u', 'ূ' => 'u', 'ে' => 'e',
+            'ৈ' => 'oi', 'ো' => 'o', 'ৌ' => 'ou', 'ং' => 'ng', 'ঃ' => 'h', 'ঁ' => 'n',
+        ];
+
+        $chars = preg_split('//u', (string) $text, -1, PREG_SPLIT_NO_EMPTY);
+        if (!is_array($chars) || $chars === []) {
+            return '';
+        }
+
+        $out = '';
+        foreach ($chars as $ch) {
+            if (isset($bnDigitMap[$ch])) {
+                $out .= $bnDigitMap[$ch];
+            } elseif (isset($bnBasicMap[$ch])) {
+                $out .= $bnBasicMap[$ch];
+            } else {
+                $out .= $ch;
+            }
+        }
+
+        return $out;
+    }
+}
+
+if (!function_exists('slugify_banglish_js_parity')) {
+    /**
+     * JS parity slug generator aligned with window.transliterateAndGenerateSlug.
+     */
+    function slugify_banglish_js_parity(string $text, int $maxLen = 200): string {
+        static $cache = [];
+
+        $input = (string) $text;
+        $limit = max(1, (int) $maxLen);
+        $cacheKey = $input . '|' . $limit;
+        if (isset($cache[$cacheKey])) {
+            return $cache[$cacheKey];
+        }
+
+        $raw = transliterate_bangla_to_banglish($input);
+        $normalized = $raw;
+        if (class_exists('Normalizer')) {
+            $nfkd = \Normalizer::normalize($normalized, \Normalizer::FORM_KD);
+            if (is_string($nfkd)) {
+                $normalized = $nfkd;
+            }
+        } elseif (function_exists('iconv')) {
+            // Best-effort fallback for accent-stripping when intl Normalizer is unavailable.
+            $iconvOut = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $normalized);
+            if ($iconvOut !== false && $iconvOut !== '') {
+                $normalized = (string) $iconvOut;
+            }
+        }
+
+        $slug = preg_replace('/[\x{0300}-\x{036f}]/u', '', $normalized);
+        $slug = is_string($slug) ? $slug : $normalized;
+        $slug = strtolower($slug);
+        $slug = preg_replace('/[^a-z0-9\\s-]/', ' ', $slug);
+        $slug = is_string($slug) ? $slug : '';
+        $slug = preg_replace('/\\s+/', '-', $slug);
+        $slug = is_string($slug) ? $slug : '';
+        $slug = preg_replace('/-+/', '-', $slug);
+        $slug = is_string($slug) ? $slug : '';
+        $slug = trim($slug, '-');
+        $slug = substr($slug, 0, $limit);
+
+        // Keep cache bounded.
+        if (count($cache) >= 512) {
+            array_shift($cache);
+        }
+        $cache[$cacheKey] = $slug;
+        return $slug;
+    }
+}
+
+if (!function_exists('slugify_banglish_js_parity_or_empty')) {
+    /**
+     * Same as slugify_banglish_js_parity, explicitly returns empty string when no slug can be produced.
+     */
+    function slugify_banglish_js_parity_or_empty(string $text, int $maxLen = 200): string {
+        return slugify_banglish_js_parity($text, $maxLen);
+    }
+}
+
 if (!function_exists('slugify')) {
     /**
-     * Convert string to URL-friendly slug
-     * 
-     * @param string $str Input string
-     * @param string $separator Separator character (default: -)
-     * @return string Slugified string
+     * Convert string to URL-friendly slug using JS parity transliteration.
      */
     function slugify($str, $separator = '-') {
-        $str = mb_strtolower($str, 'UTF-8');
-        $str = preg_replace('/[^\p{L}\p{N}]+/u', $separator, $str);
-        $str = trim($str, $separator);
-        return $str;
+        $slug = slugify_banglish_js_parity((string) $str, 200);
+        if ($separator !== '-') {
+            $slug = str_replace('-', (string) $separator, $slug);
+        }
+        return $slug !== '' ? $slug : 'n-a';
     }
 }
 
