@@ -1481,6 +1481,9 @@ if (!function_exists('scraperPushToNullableString')) {
             'results' => [],
         ];
 
+        // Track fingerprints processed in this batch to prevent duplicate publishing within same run
+        $processedFingerprintsInBatch = [];
+
         foreach ($pending as $row) {
             $itemId = (int) ($row['id'] ?? 0);
             $dataType = strtolower(trim((string) ($row['data_type'] ?? '')));
@@ -1496,6 +1499,29 @@ if (!function_exists('scraperPushToNullableString')) {
                 $fingerprint = trim((string) ($row['content_fingerprint'] ?? ''));
                 if ($fingerprint === '') {
                     $fingerprint = scraperPushBuildContentFingerprint($dataType, $payload);
+                }
+
+                // Check if this fingerprint was already processed in this batch
+                $fingerprintKey = $dataType . '|' . $fingerprint;
+                if (isset($processedFingerprintsInBatch[$fingerprintKey])) {
+                    $existingItemIdInBatch = $processedFingerprintsInBatch[$fingerprintKey];
+                    $broxScrapModel->markIncomingItemPublished($itemId, 0, [
+                        'deduped' => true,
+                        'fingerprint' => $fingerprint,
+                        'duplicate_of' => $existingItemIdInBatch,
+                        'note' => 'Duplicate within same batch',
+                    ]);
+                    $summary['published']++;
+                    $summary['skipped_duplicates']++;
+                    $summary['results'][] = [
+                        'id' => $itemId,
+                        'ok' => true,
+                        'data_type' => $dataType,
+                        'published_content_id' => 0,
+                        'deduped' => true,
+                        'batch_duplicate' => true,
+                    ];
+                    continue;
                 }
 
                 $existingPublished = $broxScrapModel->findPublishedIncomingItemByFingerprint($dataType, $fingerprint, $itemId);
@@ -1562,6 +1588,9 @@ if (!function_exists('scraperPushToNullableString')) {
                         'tag_ids' => $tagIds,
                     ]);
 
+                    // Track this fingerprint in batch to prevent duplicates
+                    $processedFingerprintsInBatch[$fingerprintKey] = $itemId;
+
                     $summary['published']++;
                     $summary['results'][] = [
                         'id' => $itemId,
@@ -1585,6 +1614,10 @@ if (!function_exists('scraperPushToNullableString')) {
                             'brand' => $brand,
                             'model' => $model,
                         ]);
+
+                        // Track this fingerprint in batch to prevent duplicates
+                        $processedFingerprintsInBatch[$fingerprintKey] = $itemId;
+
                         $summary['published']++;
                         $summary['skipped_duplicates']++;
                         $summary['results'][] = [
@@ -1656,6 +1689,10 @@ if (!function_exists('scraperPushToNullableString')) {
                         'tag_ids' => $mobileTagIds ?? [],
                         'category_ids' => $mobileCategoryIds ?? [],
                     ]);
+
+                    // Track this fingerprint in batch to prevent duplicates
+                    $processedFingerprintsInBatch[$fingerprintKey] = $itemId;
+
                     $summary['published']++;
                     $summary['results'][] = [
                         'id' => $itemId,
