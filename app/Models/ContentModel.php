@@ -1,171 +1,179 @@
 <?php
 // classes/ContentModel.php
-class ContentModel {
+class ContentModel
+{
     private $mysqli;
 
-    public function __construct(mysqli $mysqli) {
+    public function __construct(mysqli $mysqli)
+    {
         $this->mysqli = $mysqli;
     }
 
     // -----------------Image Extractor -----------------
- private function extractFirstImage($html, $resolve = true) {
-    if (empty($html)) return null;
+    private function extractFirstImage($html, $resolve = true)
+    {
+        if (empty($html)) return null;
 
-    // Decode HTML entities
-    $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        // Decode HTML entities
+        $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
-    libxml_use_internal_errors(true);
-    $dom = new DOMDocument();
-    // Suppress warnings for malformed HTML
-    @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $html);
+        libxml_use_internal_errors(true);
+        $dom = new DOMDocument();
+        // Suppress warnings for malformed HTML
+        @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $html);
 
-    foreach ($dom->getElementsByTagName('img') as $img) {
-        foreach (['src', 'data-src', 'data-original'] as $attr) {
-            if ($img->hasAttribute($attr)) {
-                $val = trim($img->getAttribute($attr));
-                if ($val === '') continue;
-                if ($resolve) {
-                    // Resolve numeric IDs or JSON-encoded structures to usable URLs
-                    $resolved = $this->resolveMaybeMediaReference($val);
-                    if (!empty($resolved)) return $resolved;
-                } else {
-                    // Return raw candidate value (no numeric/JSON resolution)
-                    return $val;
+        foreach ($dom->getElementsByTagName('img') as $img) {
+            foreach (['src', 'data-src', 'data-original'] as $attr) {
+                if ($img->hasAttribute($attr)) {
+                    $val = trim($img->getAttribute($attr));
+                    if ($val === '') continue;
+                    if ($resolve) {
+                        // Resolve numeric IDs or JSON-encoded structures to usable URLs
+                        $resolved = $this->resolveMaybeMediaReference($val);
+                        if (!empty($resolved)) return $resolved;
+                    } else {
+                        // Return raw candidate value (no numeric/JSON resolution)
+                        return $val;
+                    }
                 }
             }
         }
-    }
 
-    // Check for meta tags (og:image / twitter:image)
-    foreach ($dom->getElementsByTagName('meta') as $meta) {
-        if ($meta->hasAttribute('property') && in_array(strtolower($meta->getAttribute('property')), ['og:image', 'twitter:image'])) {
-            $val = trim($meta->getAttribute('content'));
-            if (!empty($val)) {
-                if ($resolve) {
-                    $resolved = $this->resolveMaybeMediaReference($val);
-                    if (!empty($resolved)) return $resolved;
-                } else {
-                    return $val;
+        // Check for meta tags (og:image / twitter:image)
+        foreach ($dom->getElementsByTagName('meta') as $meta) {
+            if ($meta->hasAttribute('property') && in_array(strtolower($meta->getAttribute('property')), ['og:image', 'twitter:image'])) {
+                $val = trim($meta->getAttribute('content'));
+                if (!empty($val)) {
+                    if ($resolve) {
+                        $resolved = $this->resolveMaybeMediaReference($val);
+                        if (!empty($resolved)) return $resolved;
+                    } else {
+                        return $val;
+                    }
+                }
+            }
+            if ($meta->hasAttribute('name') && in_array(strtolower($meta->getAttribute('name')), ['og:image', 'twitter:image'])) {
+                $val = trim($meta->getAttribute('content'));
+                if (!empty($val)) {
+                    if ($resolve) {
+                        $resolved = $this->resolveMaybeMediaReference($val);
+                        if (!empty($resolved)) return $resolved;
+                    } else {
+                        return $val;
+                    }
                 }
             }
         }
-        if ($meta->hasAttribute('name') && in_array(strtolower($meta->getAttribute('name')), ['og:image', 'twitter:image'])) {
-            $val = trim($meta->getAttribute('content'));
-            if (!empty($val)) {
-                if ($resolve) {
-                    $resolved = $this->resolveMaybeMediaReference($val);
-                    if (!empty($resolved)) return $resolved;
-                } else {
-                    return $val;
-                }
-            }
-        }
-    }
 
-    // Fallback: try to extract image URLs by regex (handles encoded/escaped HTML, markdown, raw URLs)
-    $patterns = [
-        '/src=[\"\']([^\"\']+?\.(?:jpe?g|png|gif|webp|svg|avif))(?:[\"\'])/i',
-        '/!\[[^\]]*\]\(([^)]+)\)/i',
-        '/(https?:\/\/[^\s\"\']+?\.(?:jpe?g|png|gif|webp|svg|avif))/i',
-        '/data:image\/[^;]+;base64,[A-Za-z0-9+\/=]+/i'
-    ];
-    foreach ($patterns as $pat) {
-        if (preg_match($pat, $html, $m)) {
-            $candidate = $m[1] ?? $m[0];
-            if ($resolve) {
-                $resolved = $this->resolveMaybeMediaReference($candidate);
-                if (!empty($resolved)) return $resolved;
-            } else {
-                return $candidate;
-            }
-        }
-    }
-
-    return null;
-}  
-
-    private function extractAllImages($html, $resolve = true) {
-    if (empty($html)) return [];
-
-    $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-    libxml_use_internal_errors(true);
-    $dom = new DOMDocument();
-    // Suppress warnings for malformed HTML
-    @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $html);
-
-    $images = [];
-
-    foreach ($dom->getElementsByTagName('img') as $img) {
-        foreach (['src', 'data-src', 'data-original'] as $attr) {
-            if ($img->hasAttribute($attr)) {
-                $val = trim($img->getAttribute($attr));
-                if ($val === '') continue;
-                if ($resolve) {
-                    $resolved = $this->resolveMaybeMediaReference($val);
-                    if (!empty($resolved)) $images[] = $resolved;
-                } else {
-                    $images[] = $val;
-                }
-                break;
-            }
-        }
-    }
-
-    // Fallback: extract urls from HTML / markdown / raw text if DOM found nothing
-    if (empty($images)) {
-        $regexes = [
+        // Fallback: try to extract image URLs by regex (handles encoded/escaped HTML, markdown, raw URLs)
+        $patterns = [
             '/src=[\"\']([^\"\']+?\.(?:jpe?g|png|gif|webp|svg|avif))(?:[\"\'])/i',
             '/!\[[^\]]*\]\(([^)]+)\)/i',
             '/(https?:\/\/[^\s\"\']+?\.(?:jpe?g|png|gif|webp|svg|avif))/i',
             '/data:image\/[^;]+;base64,[A-Za-z0-9+\/=]+/i'
         ];
-        foreach ($regexes as $rx) {
-            if (preg_match_all($rx, $html, $matches)) {
-                foreach ($matches[1] ?? $matches[0] as $m) {
+        foreach ($patterns as $pat) {
+            if (preg_match($pat, $html, $m)) {
+                $candidate = $m[1] ?? $m[0];
+                if ($resolve) {
+                    $resolved = $this->resolveMaybeMediaReference($candidate);
+                    if (!empty($resolved)) return $resolved;
+                } else {
+                    return $candidate;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function extractAllImages($html, $resolve = true)
+    {
+        if (empty($html)) return [];
+
+        $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        libxml_use_internal_errors(true);
+        $dom = new DOMDocument();
+        // Suppress warnings for malformed HTML
+        @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $html);
+
+        $images = [];
+
+        foreach ($dom->getElementsByTagName('img') as $img) {
+            foreach (['src', 'data-src', 'data-original'] as $attr) {
+                if ($img->hasAttribute($attr)) {
+                    $val = trim($img->getAttribute($attr));
+                    if ($val === '') continue;
                     if ($resolve) {
-                        $resolved = $this->resolveMaybeMediaReference($m);
+                        $resolved = $this->resolveMaybeMediaReference($val);
                         if (!empty($resolved)) $images[] = $resolved;
                     } else {
-                        $images[] = $m;
+                        $images[] = $val;
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Fallback: extract urls from HTML / markdown / raw text if DOM found nothing
+        if (empty($images)) {
+            $regexes = [
+                '/src=[\"\']([^\"\']+?\.(?:jpe?g|png|gif|webp|svg|avif))(?:[\"\'])/i',
+                '/!\[[^\]]*\]\(([^)]+)\)/i',
+                '/(https?:\/\/[^\s\"\']+?\.(?:jpe?g|png|gif|webp|svg|avif))/i',
+                '/data:image\/[^;]+;base64,[A-Za-z0-9+\/=]+/i'
+            ];
+            foreach ($regexes as $rx) {
+                if (preg_match_all($rx, $html, $matches)) {
+                    foreach ($matches[1] ?? $matches[0] as $m) {
+                        if ($resolve) {
+                            $resolved = $this->resolveMaybeMediaReference($m);
+                            if (!empty($resolved)) $images[] = $resolved;
+                        } else {
+                            $images[] = $m;
+                        }
                     }
                 }
             }
         }
-    }
 
-    // Normalize uniqueness while preserving order
-    $seen = [];
-    $out = [];
-    foreach ($images as $i) {
-        $i = trim((string)$i);
-        if ($i === '') continue;
-        if (!isset($seen[$i])) {
-            $seen[$i] = true;
-            $out[] = $i;
+        // Normalize uniqueness while preserving order
+        $seen = [];
+        $out = [];
+        foreach ($images as $i) {
+            $i = trim((string)$i);
+            if ($i === '') continue;
+            if (!isset($seen[$i])) {
+                $seen[$i] = true;
+                $out[] = $i;
+            }
         }
-    }
 
-    return $out;
-}  
+        return $out;
+    }
 
     // Public wrappers for controllers to access image extractors
-    public function extractFirstImageFromHtml($html, $resolve = true) {
+    public function extractFirstImageFromHtml($html, $resolve = true)
+    {
         return $this->extractFirstImage($html, $resolve);
     }
 
-    public function extractAllImagesFromHtml($html, $resolve = true) {
+    public function extractAllImagesFromHtml($html, $resolve = true)
+    {
         return $this->extractAllImages($html, $resolve);
     }
 
     /**
      * Public wrapper to resolve media references (numeric IDs, JSON, arrays) into usable URLs
      */
-    public function resolveMediaReference($value) {
+    public function resolveMediaReference($value)
+    {
         return $this->resolveMaybeMediaReference($value);
     }
 
-    private function resolveMaybeMediaReference($value) {
+    private function resolveMaybeMediaReference($value)
+    {
         if (is_array($value)) {
             return (string)($value['url'] ?? $value['path'] ?? $value['thumbnail_path'] ?? reset($value));
         }
@@ -202,12 +210,30 @@ class ContentModel {
         return $val;
     }
 
-    private function slugify($text) {
-        if (function_exists('slugify')) {
-            return slugify((string) $text);
+    private function slugify($text)
+    {
+        $text = (string) $text;
+
+        // Priority 1: Use Banglish conversion for Bengali text (preserves Bengali structure as Banglish)
+        if (function_exists('slugify_banglish_js_parity_or_empty')) {
+            $result = slugify_banglish_js_parity_or_empty($text);
+            if ($result !== '' && $result !== null) {
+                return $result;
+            }
+        } elseif (function_exists('slugify_banglish_js_parity')) {
+            $result = slugify_banglish_js_parity($text);
+            if ($result !== '' && $result !== null) {
+                return $result;
+            }
         }
 
-        $fallback = strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', (string) $text), '-'));
+        // Priority 2: Use global slugify if available
+        if (function_exists('slugify')) {
+            return slugify($text);
+        }
+
+        // Fallback: Basic regex cleanup (handles mixed content)
+        $fallback = strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', $text), '-'));
         return $fallback !== '' ? $fallback : 'n-a';
     }
 
@@ -215,7 +241,8 @@ class ContentModel {
      * Generate unique SEO-friendly permalink
      * If title is empty, generates a unique ID-based permalink
      */
-    public function generateUniquePermalink($title, $excludePostId = null) {
+    public function generateUniquePermalink($title, $excludePostId = null)
+    {
         // If title is empty or null, generate unique ID-based permalink
         if (empty($title)) {
             $baseSlug = 'post-' . uniqid() . '-' . mt_rand(1000, 9999);
@@ -264,7 +291,8 @@ class ContentModel {
     }
 
     // -------------------- PAGES --------------------
-    public function getAllPages() {
+    public function getAllPages()
+    {
         $sql = "SELECT pg.*,
                        (SELECT COUNT(*) FROM views v WHERE v.content_type = 'page' AND v.content_id = pg.id) AS views,
                        (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'page' AND i.content_id = pg.id) AS impressions
@@ -279,7 +307,8 @@ class ContentModel {
         return $rows;
     }
 
-    public function getPageById($id) {
+    public function getPageById($id)
+    {
         $sql = "SELECT pg.*,
                        (SELECT COUNT(*) FROM views v WHERE v.content_type = 'page' AND v.content_id = pg.id) AS views,
                        (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'page' AND i.content_id = pg.id) AS impressions
@@ -294,7 +323,8 @@ class ContentModel {
         return $row;
     }
 
-    public function getPageBySlug($slug) {
+    public function getPageBySlug($slug)
+    {
         $sql = "SELECT p.*, 
                        (SELECT COUNT(*) FROM views v WHERE v.content_type = 'page' AND v.content_id = p.id) AS views,
                        (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'page' AND i.content_id = p.id) AS impressions
@@ -309,7 +339,8 @@ class ContentModel {
     }
 
     // -------------------- POSTS --------------------
-    public function getAllPosts() {
+    public function getAllPosts()
+    {
         $sql = "SELECT p.*,
                        (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = p.id) AS views,
                        (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = p.id) AS impressions
@@ -324,7 +355,8 @@ class ContentModel {
         return $rows;
     }
 
-    public function getPostById($id) {
+    public function getPostById($id)
+    {
         $sql = "SELECT p.*,
                        (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = p.id) AS views,
                        (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = p.id) AS impressions
@@ -339,7 +371,8 @@ class ContentModel {
         return $row;
     }
 
-    public function getPostBySlug($slug) {
+    public function getPostBySlug($slug)
+    {
         $sql = "SELECT p.*,
                        (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = p.id) AS views,
                        (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = p.id) AS impressions
@@ -355,26 +388,30 @@ class ContentModel {
     }
 
     // -------------------- CRUD METHODS --------------------
-    public function createPage($title, $content, $published = 0, $slug = null) {
+    public function createPage($title, $content, $published = 0, $slug = null)
+    {
         $stmt = $this->mysqli->prepare("INSERT INTO pages (title, content, published, slug) VALUES (?, ?, ?, ?)");
         $stmt->bind_param("ssis", $title, $content, $published, $slug);
         $stmt->execute();
         return $this->mysqli->insert_id;
     }
 
-    public function updatePage($id, $title, $content, $published, $slug) {
+    public function updatePage($id, $title, $content, $published, $slug)
+    {
         $stmt = $this->mysqli->prepare("UPDATE pages SET title = ?, content = ?, published = ?, slug = ? WHERE id = ?");
         $stmt->bind_param("ssisi", $title, $content, $published, $slug, $id);
         return $stmt->execute();
     }
 
-    public function deletePage($id) {
+    public function deletePage($id)
+    {
         $stmt = $this->mysqli->prepare("DELETE FROM pages WHERE id = ?");
         $stmt->bind_param("i", $id);
         return $stmt->execute();
     }
 
-    public function createPost($title, $content, $author, $slug, $published = 0, $reader_indexing = null, $published_at = null) {
+    public function createPost($title, $content, $author, $slug, $published = 0, $reader_indexing = null, $published_at = null)
+    {
         $normalizedPublishedAt = null;
         if ($published_at !== null && trim((string)$published_at) !== '') {
             $ts = strtotime((string)$published_at);
@@ -438,7 +475,8 @@ class ContentModel {
         return (bool)$ok;
     }
 
-    public function updatePost($id, $title, $content, $slug, $published, $reader_indexing) {
+    public function updatePost($id, $title, $content, $slug, $published, $reader_indexing)
+    {
         $stmt = $this->mysqli->prepare("
             UPDATE posts 
             SET title = ?, content = ?, slug = ?, published = ?, reader_indexing = ? 
@@ -448,14 +486,16 @@ class ContentModel {
         return $stmt->execute();
     }
 
-    public function deletePost($id) {
+    public function deletePost($id)
+    {
         $stmt = $this->mysqli->prepare("DELETE FROM posts WHERE id = ?");
         $stmt->bind_param("i", $id);
         return $stmt->execute();
     }
 
     // ----------------- Unified tracking -----------------
-    public function addImpression(string $type, int $contentId, string $ip): bool {
+    public function addImpression(string $type, int $contentId, string $ip): bool
+    {
         if (!in_array($type, ['post', 'page', 'service'], true)) {
             return false;
         }
@@ -472,7 +512,8 @@ class ContentModel {
         return (bool)$ok;
     }
 
-    public function addViewIfUnique24h(string $type, int $contentId, string $ip): bool {
+    public function addViewIfUnique24h(string $type, int $contentId, string $ip): bool
+    {
         if (!in_array($type, ['post', 'page', 'service'], true)) {
             return false;
         }
@@ -512,19 +553,23 @@ class ContentModel {
         return (bool)$ok;
     }
 
-    public function addPostImpression($postId, $ip) {
+    public function addPostImpression($postId, $ip)
+    {
         return $this->addImpression('post', (int)$postId, (string)$ip);
     }
 
-    public function addPageImpression($pageId, $ip) {
+    public function addPageImpression($pageId, $ip)
+    {
         return $this->addImpression('page', (int)$pageId, (string)$ip);
     }
 
-    public function addPostView($postId, $ip) {
+    public function addPostView($postId, $ip)
+    {
         return $this->addViewIfUnique24h('post', (int)$postId, (string)$ip);
     }
 
-    public function addPageView($pageId, $ip) {
+    public function addPageView($pageId, $ip)
+    {
         return $this->addViewIfUnique24h('page', (int)$pageId, (string)$ip);
     }
 
@@ -532,7 +577,8 @@ class ContentModel {
     // Legacy draft status methods removed
 
     // ----------------- TAGS FOR POSTS & PAGES -----------------
-    public function attachTagsToContent($type, $contentId, array $tagIds) {
+    public function attachTagsToContent($type, $contentId, array $tagIds)
+    {
         // Remove existing tags
         $stmt = $this->mysqli->prepare("DELETE FROM content_tags WHERE content_type = ? AND content_id = ?");
         $stmt->bind_param("si", $type, $contentId);
@@ -550,7 +596,8 @@ class ContentModel {
         $stmt->close();
     }
 
-    public function getTagsForContent($type, $contentId) {
+    public function getTagsForContent($type, $contentId)
+    {
         $tags = [];
         $stmt = $this->mysqli->prepare("
             SELECT t.id, t.name, t.slug
@@ -576,9 +623,10 @@ class ContentModel {
      * @param array $contentIds Array of content IDs
      * @return array Keyed by content_id => array of categories
      */
-    public function getCategoriesForContentBatch(string $contentType, array $contentIds): array {
+    public function getCategoriesForContentBatch(string $contentType, array $contentIds): array
+    {
         if (empty($contentIds)) return [];
-        
+
         $placeholders = implode(',', array_fill(0, count($contentIds), '?'));
         $sql = "
             SELECT cc.content_id, c.id, c.name, c.slug
@@ -587,27 +635,27 @@ class ContentModel {
             WHERE cc.content_type = ? AND cc.content_id IN ($placeholders)
             ORDER BY c.name ASC
         ";
-        
+
         $stmt = $this->mysqli->prepare($sql);
         $types = 's' . str_repeat('i', count($contentIds));
         $params = array_merge([$contentType], $contentIds);
         $stmt->bind_param($types, ...$params);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         $categories = [];
         while ($row = $result->fetch_assoc()) {
             $categories[$row['content_id']][] = $row;
         }
         $stmt->close();
-        
+
         // Ensure all content IDs have an entry (even if empty)
         foreach ($contentIds as $id) {
             if (!isset($categories[$id])) {
                 $categories[$id] = [];
             }
         }
-        
+
         return $categories;
     }
 
@@ -617,9 +665,10 @@ class ContentModel {
      * @param array $contentIds Array of content IDs
      * @return array Keyed by content_id => array of tags
      */
-    public function getTagsForContentBatch(string $contentType, array $contentIds): array {
+    public function getTagsForContentBatch(string $contentType, array $contentIds): array
+    {
         if (empty($contentIds)) return [];
-        
+
         $placeholders = implode(',', array_fill(0, count($contentIds), '?'));
         $sql = "
             SELECT ct.content_id, t.id, t.name, t.slug
@@ -628,31 +677,32 @@ class ContentModel {
             WHERE ct.content_type = ? AND ct.content_id IN ($placeholders)
             ORDER BY t.name ASC
         ";
-        
+
         $stmt = $this->mysqli->prepare($sql);
         $types = 's' . str_repeat('i', count($contentIds));
         $params = array_merge([$contentType], $contentIds);
         $stmt->bind_param($types, ...$params);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         $tags = [];
         while ($row = $result->fetch_assoc()) {
             $tags[$row['content_id']][] = $row;
         }
         $stmt->close();
-        
+
         // Ensure all content IDs have an entry (even if empty)
         foreach ($contentIds as $id) {
             if (!isset($tags[$id])) {
                 $tags[$id] = [];
             }
         }
-        
+
         return $tags;
     }
 
-    public function createCategory($name, $slug = null) {
+    public function createCategory($name, $slug = null)
+    {
         $slug = $slug ?: $this->slugify($name);
         $stmt = $this->mysqli->prepare("INSERT INTO categories (name, slug) VALUES (?, ?)");
         $stmt->bind_param("ss", $name, $slug);
@@ -660,7 +710,8 @@ class ContentModel {
         return $this->mysqli->insert_id;
     }
 
-    public function createTag($name, $slug = null) {
+    public function createTag($name, $slug = null)
+    {
         $slug = $slug ?: $this->slugify($name);
         $stmt = $this->mysqli->prepare("INSERT INTO tags (name, slug) VALUES (?, ?)");
         $stmt->bind_param("ss", $name, $slug);
@@ -668,15 +719,18 @@ class ContentModel {
         return $this->mysqli->insert_id;
     }
 
-    public function getTagsByPostId($postId) {
+    public function getTagsByPostId($postId)
+    {
         return $this->getTagsForContent('post', $postId);
     }
-    public function getAllCategories() {
+    public function getAllCategories()
+    {
         $result = $this->mysqli->query("SELECT * FROM categories ORDER BY id DESC");
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 
-    public function getCategoryById($id) {
+    public function getCategoryById($id)
+    {
         $stmt = $this->mysqli->prepare("SELECT * FROM categories WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
@@ -684,7 +738,8 @@ class ContentModel {
         return $res->fetch_assoc();
     }
 
-    public function getCategoryBySlug($slug) {
+    public function getCategoryBySlug($slug)
+    {
         $stmt = $this->mysqli->prepare("SELECT * FROM categories WHERE slug = ?");
         $stmt->bind_param("s", $slug);
         $stmt->execute();
@@ -692,26 +747,30 @@ class ContentModel {
         return $res->fetch_assoc();
     }
 
-    public function updateCategory($id, $name, $slug = null) {
+    public function updateCategory($id, $name, $slug = null)
+    {
         $slug = $slug ?: $this->slugify($name);
         $stmt = $this->mysqli->prepare("UPDATE categories SET name = ?, slug = ? WHERE id = ?");
         $stmt->bind_param("ssi", $name, $slug, $id);
         return $stmt->execute();
     }
 
-    public function deleteCategory($id) {
+    public function deleteCategory($id)
+    {
         $stmt = $this->mysqli->prepare("DELETE FROM categories WHERE id = ?");
         $stmt->bind_param("i", $id);
         return $stmt->execute();
     }
 
     // ----------------- Tags -----------------
-    public function getAllTags() {
+    public function getAllTags()
+    {
         $result = $this->mysqli->query("SELECT * FROM tags ORDER BY id DESC");
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 
-    public function getTagById($id) {
+    public function getTagById($id)
+    {
         $stmt = $this->mysqli->prepare("SELECT * FROM tags WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
@@ -719,7 +778,8 @@ class ContentModel {
         return $res->fetch_assoc();
     }
 
-    public function getTagBySlug($slug) {
+    public function getTagBySlug($slug)
+    {
         $stmt = $this->mysqli->prepare("SELECT * FROM tags WHERE slug = ?");
         $stmt->bind_param("s", $slug);
         $stmt->execute();
@@ -727,14 +787,16 @@ class ContentModel {
         return $res->fetch_assoc();
     }
 
-    public function updateTag($id, $name, $slug = null) {
+    public function updateTag($id, $name, $slug = null)
+    {
         $slug = $slug ?: $this->slugify($name);
         $stmt = $this->mysqli->prepare("UPDATE tags SET name = ?, slug = ? WHERE id = ?");
         $stmt->bind_param("ssi", $name, $slug, $id);
         return $stmt->execute();
     }
 
-    public function deleteTag($id) {
+    public function deleteTag($id)
+    {
         $stmt = $this->mysqli->prepare("DELETE FROM tags WHERE id = ?");
         $stmt->bind_param("i", $id);
         return $stmt->execute();
@@ -742,7 +804,8 @@ class ContentModel {
 
 
     // -------------------- POSTS: Pagination, Search, Sort --------------------
-    public function countPosts($search = '') {
+    public function countPosts($search = '')
+    {
         $sql = "SELECT COUNT(*) as cnt FROM posts WHERE 1";
         if ($search) {
             $sql .= " AND (title LIKE ? OR content LIKE ?)";
@@ -763,7 +826,8 @@ class ContentModel {
     // Old getPosts method removed - use new paginated getPosts() method instead
 
     // -------------------- PAGES: Pagination, Search, Sort --------------------
-    public function countPages($search = '') {
+    public function countPages($search = '')
+    {
         $sql = "SELECT COUNT(*) as cnt FROM pages WHERE 1";
         if ($search) {
             $sql .= " AND (title LIKE ? OR content LIKE ?)";
@@ -785,12 +849,14 @@ class ContentModel {
 
 
     // -------------------- Update Content Tags --------------------
-    public function updateContentTags($type, $contentId, array $tagIds) {
+    public function updateContentTags($type, $contentId, array $tagIds)
+    {
         $this->attachTagsToContent($type, $contentId, $tagIds);
     }
 
     // -------------------- Related, Previous, Next --------------------
-    public function getPreviousPost($id) {
+    public function getPreviousPost($id)
+    {
         $stmt = $this->mysqli->prepare(
             "SELECT p.*, p.slug AS url 
             FROM posts p 
@@ -804,7 +870,8 @@ class ContentModel {
         return $result->fetch_assoc();
     }
 
-    public function getNextPost($id) {
+    public function getNextPost($id)
+    {
         $stmt = $this->mysqli->prepare(
             "SELECT p.*, p.slug AS url 
             FROM posts p 
@@ -822,7 +889,8 @@ class ContentModel {
 
 
 
-    public function getPreviousPage($id) {
+    public function getPreviousPage($id)
+    {
         $stmt = $this->mysqli->prepare("SELECT p.*, p.slug AS url FROM pages p WHERE p.id < ? ORDER BY p.id DESC LIMIT 1");
         $stmt->bind_param("i", $id);
         $stmt->execute();
@@ -830,7 +898,8 @@ class ContentModel {
         return $result->fetch_assoc();
     }
 
-    public function getNextPage($id) {
+    public function getNextPage($id)
+    {
         $stmt = $this->mysqli->prepare("SELECT p.*, p.slug AS url FROM pages p WHERE p.id > ? ORDER BY p.id ASC LIMIT 1");
         $stmt->bind_param("i", $id);
         $stmt->execute();
@@ -842,7 +911,8 @@ class ContentModel {
 
 
     // Attach categories to any content type
-    public function attachCategoriesToContent($contentType, $contentId, array $categoryIds) {
+    public function attachCategoriesToContent($contentType, $contentId, array $categoryIds)
+    {
         // 1. Delete existing categories
         $stmt = $this->mysqli->prepare("DELETE FROM content_categories WHERE content_type = ? AND content_id = ?");
         $stmt->bind_param("si", $contentType, $contentId);
@@ -859,7 +929,8 @@ class ContentModel {
     }
 
     // Get categories assigned to a content
-    public function getCategoriesForContent($contentType, $contentId) {
+    public function getCategoriesForContent($contentType, $contentId)
+    {
         $sql = "
             SELECT c.id, c.name, c.slug
             FROM content_categories cc
@@ -875,7 +946,8 @@ class ContentModel {
     /**
      * Get new posts created today
      */
-    public function getNewPostsToday(): int {
+    public function getNewPostsToday(): int
+    {
         $today = date('Y-m-d');
         $sql = "SELECT COUNT(*) as count FROM posts 
                 WHERE published = 1 AND DATE(created_at) = ?";
@@ -890,7 +962,8 @@ class ContentModel {
     /**
      * Get draft count
      */
-    public function getDraftCount(): int {
+    public function getDraftCount(): int
+    {
         $sql = "SELECT COUNT(*) as count FROM posts WHERE published = 0";
         $result = $this->mysqli->query($sql);
         $row = $result->fetch_assoc();
@@ -900,7 +973,8 @@ class ContentModel {
     /**
      * Get recent posts
      */
-    public function getRecentPosts(int $limit = 5): array {
+    public function getRecentPosts(int $limit = 5): array
+    {
         $sql = "SELECT p.id, p.title, 
                        CASE WHEN p.published = 0 THEN 'draft' 
                             WHEN p.published = 1 THEN 'published' 
@@ -920,7 +994,8 @@ class ContentModel {
     /**
      * Get posts on specific date
      */
-    public function getPostsOnDate(string $date): int {
+    public function getPostsOnDate(string $date): int
+    {
         $sql = "SELECT COUNT(*) as count FROM posts 
                 WHERE published = 1 AND DATE(created_at) = ?";
         $stmt = $this->mysqli->prepare($sql);
@@ -932,7 +1007,7 @@ class ContentModel {
     }
 
     // -------------------- TAG-BASED CONTENT VIEW --------------------
-    
+
     /**
      * Get all content by tag slug (posts, pages)
      */
@@ -1030,7 +1105,8 @@ class ContentModel {
     /**
      * Count content by tag slug
      */
-    public function countContentByTagSlug($slug) {
+    public function countContentByTagSlug($slug)
+    {
         $sql = "
             SELECT COUNT(*) as count FROM (
                 SELECT p.id FROM posts p
@@ -1067,16 +1143,17 @@ class ContentModel {
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
         $stmt->close();
-        
+
         return (int)($row['count'] ?? 0);
     }
 
     // -------------------- CATEGORY-BASED CONTENT VIEW --------------------
-    
+
     /**
      * Get all content by category slug (posts, pages)
      */
-    public function getContentByCategorySlug($slug, $limit = 20, $offset = 0) {
+    public function getContentByCategorySlug($slug, $limit = 20, $offset = 0)
+    {
         $sql = "
             SELECT 'post' as type, p.id, p.title, p.slug as url, p.content, p.created_at, p.author, 0 as is_premium, NULL as status,
                 (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = p.id) AS views,
@@ -1135,20 +1212,22 @@ class ContentModel {
         $stmt->bind_param("ssssii", $slug, $slug, $slug, $slug, $limit, $offset);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         $contents = [];
         while ($row = $result->fetch_assoc()) {
             $row['image'] = $this->extractFirstImage($row['content'], false);
             $row['images'] = $this->extractAllImages($row['content'], false);
             $contents[] = $row;
         }
-        
+
         // For services, fetch images from the service_images table so listings (category/tag) show thumbnails
         $serviceModel = new ServiceModel($this->mysqli);
         foreach ($contents as &$c) {
             if (isset($c['type']) && $c['type'] === 'service') {
                 $imagesRaw = $serviceModel->getServiceImages((int)$c['id']);
-                $images = array_values(array_filter(array_map(function($img){ return $img['image_path'] ?? null; }, $imagesRaw ?: [])));
+                $images = array_values(array_filter(array_map(function ($img) {
+                    return $img['image_path'] ?? null;
+                }, $imagesRaw ?: [])));
                 $featured = $serviceModel->getFeaturedImage((int)$c['id']);
                 // Prefer featured image, then first service image, then existing extracted image
                 $c['images'] = !empty($images) ? $images : ($c['images'] ?? []);
@@ -1163,7 +1242,8 @@ class ContentModel {
     /**
      * Count content by category slug
      */
-    public function countContentByCategorySlug($slug) {
+    public function countContentByCategorySlug($slug)
+    {
         $sql = "
             SELECT COUNT(*) as count FROM (
                 SELECT p.id FROM posts p
@@ -1200,31 +1280,32 @@ class ContentModel {
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
         $stmt->close();
-        
+
         return (int)($row['count'] ?? 0);
     }
 
     // ==================== SITEMAP METHODS ====================
-    
+
     /**
      * Get all published posts for sitemap (XML or HTML)
      * Returns: id, slug (slug), updated_at, title (for HTML)
      */
-    public function getSitemapPosts($limit = 500) {
+    public function getSitemapPosts($limit = 500)
+    {
         try {
             $sql = "SELECT id, slug, updated_at, title 
                     FROM posts 
                     WHERE published = 1 
                     ORDER BY updated_at DESC 
                     LIMIT ?";
-            
+
             $stmt = $this->mysqli->prepare($sql);
             $stmt->bind_param("i", $limit);
             $stmt->execute();
             $result = $stmt->get_result();
             $posts = $result->fetch_all(MYSQLI_ASSOC);
             $stmt->close();
-            
+
             return $posts ?: [];
         } catch (Exception $e) {
             logError("ContentModel::getSitemapPosts - " . $e->getMessage());
@@ -1237,15 +1318,16 @@ class ContentModel {
      * Get all categories for sitemap
      * Returns: id, slug, name
      */
-    public function getSitemapCategories() {
+    public function getSitemapCategories()
+    {
         try {
             $sql = "SELECT id, slug, name 
                     FROM categories 
                     ORDER BY name ASC";
-            
+
             $result = $this->mysqli->query($sql);
             $categories = $result->fetch_all(MYSQLI_ASSOC);
-            
+
             return $categories ?: [];
         } catch (Exception $e) {
             logError("ContentModel::getSitemapCategories - " . $e->getMessage());
@@ -1257,15 +1339,16 @@ class ContentModel {
      * Get all tags for sitemap
      * Returns: id, slug, name
      */
-    public function getSitemapTags() {
+    public function getSitemapTags()
+    {
         try {
             $sql = "SELECT id, slug, name 
                     FROM tags 
                     ORDER BY name ASC";
-            
+
             $result = $this->mysqli->query($sql);
             $tags = $result->fetch_all(MYSQLI_ASSOC);
-            
+
             return $tags ?: [];
         } catch (Exception $e) {
             logError("ContentModel::getSitemapTags - " . $e->getMessage());
@@ -1278,25 +1361,26 @@ class ContentModel {
     /**
      * Get paginated, searched, and sorted categories
      */
-    public function getCategories($page = 1, $limit = 20, $search = '', $sort = 'name', $order = 'ASC') {
+    public function getCategories($page = 1, $limit = 20, $search = '', $sort = 'name', $order = 'ASC')
+    {
         $offset = ($page - 1) * $limit;
         $order = strtoupper($order) === 'DESC' ? 'DESC' : 'ASC';
         $allowedSorts = ['id', 'name', 'created_at', 'updated_at'];
         $sort = in_array($sort, $allowedSorts) ? $sort : 'name';
-        
+
         $sql = "SELECT * FROM categories WHERE 1=1";
         $params = [];
         $types = '';
-        
+
         if (!empty($search)) {
             $sql .= " AND (name LIKE ? OR slug LIKE ?)";
             $searchTerm = '%' . $search . '%';
             $params = [$searchTerm, $searchTerm];
             $types = 'ss';
         }
-        
+
         $sql .= " ORDER BY `{$sort}` {$order} LIMIT {$limit} OFFSET {$offset}";
-        
+
         if (!empty($params)) {
             $stmt = $this->mysqli->prepare($sql);
             $stmt->bind_param($types, ...$params);
@@ -1305,16 +1389,17 @@ class ContentModel {
         } else {
             $result = $this->mysqli->query($sql);
         }
-        
+
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
     /**
      * Get total count of categories with optional search filter
      */
-    public function getCategoriesCount($search = '') {
+    public function getCategoriesCount($search = '')
+    {
         $sql = "SELECT COUNT(*) as total FROM categories WHERE 1=1";
-        
+
         if (!empty($search)) {
             $sql .= " AND (name LIKE ? OR slug LIKE ?)";
             $stmt = $this->mysqli->prepare($sql);
@@ -1325,7 +1410,7 @@ class ContentModel {
         } else {
             $result = $this->mysqli->query($sql);
         }
-        
+
         $row = $result->fetch_assoc();
         return (int)($row['total'] ?? 0);
     }
@@ -1333,25 +1418,26 @@ class ContentModel {
     /**
      * Get paginated, searched, and sorted tags
      */
-    public function getTags($page = 1, $limit = 20, $search = '', $sort = 'name', $order = 'ASC') {
+    public function getTags($page = 1, $limit = 20, $search = '', $sort = 'name', $order = 'ASC')
+    {
         $offset = ($page - 1) * $limit;
         $order = strtoupper($order) === 'DESC' ? 'DESC' : 'ASC';
         $allowedSorts = ['id', 'name', 'created_at', 'updated_at'];
         $sort = in_array($sort, $allowedSorts) ? $sort : 'name';
-        
+
         $sql = "SELECT * FROM tags WHERE 1=1";
         $params = [];
         $types = '';
-        
+
         if (!empty($search)) {
             $sql .= " AND (name LIKE ? OR slug LIKE ?)";
             $searchTerm = '%' . $search . '%';
             $params = [$searchTerm, $searchTerm];
             $types = 'ss';
         }
-        
+
         $sql .= " ORDER BY `{$sort}` {$order} LIMIT {$limit} OFFSET {$offset}";
-        
+
         if (!empty($params)) {
             $stmt = $this->mysqli->prepare($sql);
             $stmt->bind_param($types, ...$params);
@@ -1360,16 +1446,17 @@ class ContentModel {
         } else {
             $result = $this->mysqli->query($sql);
         }
-        
+
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
     /**
      * Get total count of tags with optional search filter
      */
-    public function getTagsCount($search = '') {
+    public function getTagsCount($search = '')
+    {
         $sql = "SELECT COUNT(*) as total FROM tags WHERE 1=1";
-        
+
         if (!empty($search)) {
             $sql .= " AND (name LIKE ? OR slug LIKE ?)";
             $stmt = $this->mysqli->prepare($sql);
@@ -1380,7 +1467,7 @@ class ContentModel {
         } else {
             $result = $this->mysqli->query($sql);
         }
-        
+
         $row = $result->fetch_assoc();
         return (int)($row['total'] ?? 0);
     }
@@ -1388,21 +1475,22 @@ class ContentModel {
     /**
      * Get paginated, searched, and sorted posts
      */
-    public function getPosts($page = 1, $limit = 20, $search = '', $sort = 'created_at', $order = 'DESC', $filters = []) {
+    public function getPosts($page = 1, $limit = 20, $search = '', $sort = 'created_at', $order = 'DESC', $filters = [])
+    {
         $page  = max(1, (int)$page);
         $limit = max(1, (int)$limit);
         $offset = ($page - 1) * $limit;
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
         $allowedSorts = ['id', 'title', 'created_at', 'updated_at', 'views', 'impressions'];
         $sort = in_array($sort, $allowedSorts) ? $sort : 'created_at';
-        
+
         $sql = "SELECT p.*,
                (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = p.id) AS views,
                (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = p.id) AS impressions
         FROM posts p WHERE p.published = 1";
         $params = [];
         $types = '';
-        
+
         if (!empty($search)) {
             $sql .= " AND (p.title LIKE ? OR p.content LIKE ?)";
             $searchTerm = '%' . $search . '%';
@@ -1410,17 +1498,17 @@ class ContentModel {
             $params[] = $searchTerm;
             $types .= 'ss';
         }
-        
+
         if (!empty($filters['status']) && in_array($filters['status'], ['published', 'draft'])) {
             $publishedValue = $filters['status'] === 'published' ? 1 : 0;
             $sql .= " AND p.published = ?";
             $params[] = $publishedValue;
             $types .= 'i';
         }
-        
+
         $orderBy = in_array($sort, ['views', 'impressions'], true) ? $sort : "p.`{$sort}`";
         $sql .= " ORDER BY " . $orderBy . " " . $order . " LIMIT " . $limit . " OFFSET " . $offset;
-        
+
         if (!empty($params)) {
             $stmt = $this->mysqli->prepare($sql);
             $stmt->bind_param($types, ...$params);
@@ -1429,7 +1517,7 @@ class ContentModel {
         } else {
             $result = $this->mysqli->query($sql);
         }
-        
+
         $rows = $result->fetch_all(MYSQLI_ASSOC);
         foreach ($rows as &$row) {
             $row['image'] = $this->extractFirstImage($row['content'], false);
@@ -1441,25 +1529,26 @@ class ContentModel {
     /**
      * Get total count of posts with optional search/filter
      */
-    public function getPostsCount($search = '', $filters = []) {
+    public function getPostsCount($search = '', $filters = [])
+    {
         $sql = "SELECT COUNT(*) as total FROM posts WHERE published = 1";
         $params = [];
         $types = '';
-        
+
         if (!empty($search)) {
             $sql .= " AND (title LIKE ? OR content LIKE ?)";
             $searchTerm = '%' . $search . '%';
             $params = [$searchTerm, $searchTerm];
             $types = 'ss';
         }
-        
+
         if (!empty($filters['status']) && in_array($filters['status'], ['published', 'draft'])) {
             $publishedValue = $filters['status'] === 'published' ? 1 : 0;
             $sql .= " AND published = ?";
             $params[] = $publishedValue;
             $types .= 'i';
         }
-        
+
         if (!empty($params)) {
             $stmt = $this->mysqli->prepare($sql);
             $stmt->bind_param($types, ...$params);
@@ -1468,7 +1557,7 @@ class ContentModel {
         } else {
             $result = $this->mysqli->query($sql);
         }
-        
+
         $row = $result->fetch_assoc();
         return (int)($row['total'] ?? 0);
     }
@@ -1476,21 +1565,22 @@ class ContentModel {
     /**
      * Get paginated, searched, and sorted pages
      */
-    public function getPages($page = 1, $limit = 20, $search = '', $sort = 'created_at', $order = 'DESC', $filters = []) {
+    public function getPages($page = 1, $limit = 20, $search = '', $sort = 'created_at', $order = 'DESC', $filters = [])
+    {
         $page  = max(1, (int)$page);
         $limit = max(1, (int)$limit);
         $offset = ($page - 1) * $limit;
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
         $allowedSorts = ['id', 'title', 'created_at', 'updated_at', 'views', 'impressions'];
         $sort = in_array($sort, $allowedSorts) ? $sort : 'created_at';
-        
+
         $sql = "SELECT pg.*,
                (SELECT COUNT(*) FROM views v WHERE v.content_type = 'page' AND v.content_id = pg.id) AS views,
                (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'page' AND i.content_id = pg.id) AS impressions
         FROM pages pg WHERE pg.published = 1";
         $params = [];
         $types = '';
-        
+
         if (!empty($search)) {
             $sql .= " AND (pg.title LIKE ? OR pg.content LIKE ?)";
             $searchTerm = '%' . $search . '%';
@@ -1498,17 +1588,17 @@ class ContentModel {
             $params[] = $searchTerm;
             $types .= 'ss';
         }
-        
+
         if (!empty($filters['status']) && in_array($filters['status'], ['published', 'draft'])) {
             $publishedValue = $filters['status'] === 'published' ? 1 : 0;
             $sql .= " AND pg.published = ?";
             $params[] = $publishedValue;
             $types .= 'i';
         }
-        
+
         $orderBy = in_array($sort, ['views', 'impressions'], true) ? $sort : "pg.`{$sort}`";
         $sql .= " ORDER BY " . $orderBy . " " . $order . " LIMIT " . $limit . " OFFSET " . $offset;
-        
+
         if (!empty($params)) {
             $stmt = $this->mysqli->prepare($sql);
             $stmt->bind_param($types, ...$params);
@@ -1517,7 +1607,7 @@ class ContentModel {
         } else {
             $result = $this->mysqli->query($sql);
         }
-        
+
         $rows = $result->fetch_all(MYSQLI_ASSOC);
         foreach ($rows as &$row) {
             $row['image'] = $this->extractFirstImage($row['content'], false);
@@ -1529,25 +1619,26 @@ class ContentModel {
     /**
      * Get total count of pages with optional search/filter
      */
-    public function getPagesCount($search = '', $filters = []) {
+    public function getPagesCount($search = '', $filters = [])
+    {
         $sql = "SELECT COUNT(*) as total FROM pages WHERE published = 1";
         $params = [];
         $types = '';
-        
+
         if (!empty($search)) {
             $sql .= " AND (title LIKE ? OR content LIKE ?)";
             $searchTerm = '%' . $search . '%';
             $params = [$searchTerm, $searchTerm];
             $types = 'ss';
         }
-        
+
         if (!empty($filters['status']) && in_array($filters['status'], ['published', 'draft'])) {
             $publishedValue = $filters['status'] === 'published' ? 1 : 0;
             $sql .= " AND published = ?";
             $params[] = $publishedValue;
             $types .= 'i';
         }
-        
+
         if (!empty($params)) {
             $stmt = $this->mysqli->prepare($sql);
             $stmt->bind_param($types, ...$params);
@@ -1556,7 +1647,7 @@ class ContentModel {
         } else {
             $result = $this->mysqli->query($sql);
         }
-        
+
         $row = $result->fetch_assoc();
         return (int)($row['total'] ?? 0);
     }
@@ -1566,7 +1657,8 @@ class ContentModel {
     /**
      * Get content by tag ID
      */
-    public function getContentByTag($tagId, $page = 1, $limit = 12, $search = '', $sort = 'latest') {
+    public function getContentByTag($tagId, $page = 1, $limit = 12, $search = '', $sort = 'latest')
+    {
         // Delegate to slug-based mixed-content method
         $tag = $this->getTagById($tagId);
         if (!$tag) return [];
@@ -1577,7 +1669,8 @@ class ContentModel {
     /**
      * Count content by tag
      */
-    public function getContentByTagCount($tagId, $search = '') {
+    public function getContentByTagCount($tagId, $search = '')
+    {
         $tag = $this->getTagById($tagId);
         if (!$tag) return 0;
         return $this->countContentByTagSlug($tag['slug']);
@@ -1586,7 +1679,8 @@ class ContentModel {
     /**
      * Get content by category ID
      */
-    public function getContentByCategory($categoryId, $page = 1, $limit = 12, $search = '', $sort = 'latest') {
+    public function getContentByCategory($categoryId, $page = 1, $limit = 12, $search = '', $sort = 'latest')
+    {
         // Delegate to slug-based mixed-content method
         $category = $this->getCategoryById($categoryId);
         if (!$category) return [];
@@ -1597,7 +1691,8 @@ class ContentModel {
     /**
      * Count content by category
      */
-    public function getContentByCategoryCount($categoryId, $search = '') {
+    public function getContentByCategoryCount($categoryId, $search = '')
+    {
         $category = $this->getCategoryById($categoryId);
         if (!$category) return 0;
         return $this->countContentByCategorySlug($category['slug']);
@@ -1767,6 +1862,4 @@ class ContentModel {
 
         $row['type'] = $type;
     }
-
-
 }

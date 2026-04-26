@@ -982,10 +982,13 @@ if (!function_exists('scraperPushToNullableString')) {
 
     function scraperPushUniquePostSlug(mysqli $mysqli, string $title): string
     {
-        if (function_exists('slugify')) {
-            $base = slugify($title);
+        // Priority 1: Use Banglish conversion for Bengali text
+        if (function_exists('slugify_banglish_js_parity_or_empty')) {
+            $base = slugify_banglish_js_parity_or_empty($title);
         } elseif (function_exists('slugify_banglish_js_parity')) {
             $base = slugify_banglish_js_parity((string) $title);
+        } elseif (function_exists('slugify')) {
+            $base = slugify($title);
         } else {
             $base = strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', (string) $title), '-'));
         }
