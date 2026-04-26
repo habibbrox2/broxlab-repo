@@ -28,8 +28,8 @@ The **Scraper Cron Pipeline** script is a CLI tool that triggers the scraper pip
 
 ### Configuration
 - **Base URL**: Application URL (e.g., `https://example.com`)
-- **Authentication Token**: Optional cron token for security
-- **Environment Variables**: `.env` file support
+- **Authentication Token**: Required token via `--token` parameter
+- **Environment Variables**: `.env` file support for base URL
 
 ---
 
@@ -70,7 +70,7 @@ php scripts/cron/scraper-runpipeline.php --help
 
 ### `--token` (Optional)
 - **Type**: String
-- **Default**: Empty (or `SCRAPER_PIPELINE_CRON_TOKEN` from .env)
+- **Default**: Empty
 - **Description**: Authentication token for API security
 - **Usage**: Added to `X-Scraper-Cron-Token` header
 - **Example**: `--token=abc123xyz789`
@@ -91,7 +91,7 @@ php scripts/cron/scraper-runpipeline.php --help
 
 ### `--timeout` (Optional)
 - **Type**: Integer
-- **Default**: `30` seconds (or `SCRAPER_PIPELINE_CRON_TIMEOUT` from .env)
+- **Default**: `30` seconds
 - **Range**: 5-300 seconds
 - **Description**: cURL request timeout
 - **Example**: `--timeout=60`
@@ -109,12 +109,6 @@ Set these in `.env` file for default values:
 ```bash
 # Application base URL (fallback if --base-url not provided)
 APP_URL=https://example.com
-
-# Cron authentication token (fallback if --token not provided)
-SCRAPER_PIPELINE_CRON_TOKEN=your_secret_token_here
-
-# Request timeout in seconds (fallback if --timeout not provided)
-SCRAPER_PIPELINE_CRON_TIMEOUT=30
 ```
 
 ---

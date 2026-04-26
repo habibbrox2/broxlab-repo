@@ -39,8 +39,8 @@ if ($showHelp) {
 }
 
 $baseUrl = trim((string) ($opts['base-url'] ?? ($_ENV['APP_URL'] ?? 'http://127.0.0.1:8000')));
-$token = trim((string) ($opts['token'] ?? ($_ENV['SCRAPER_PIPELINE_CRON_TOKEN'] ?? '')));
-$timeout = (int) ($opts['timeout'] ?? ($_ENV['SCRAPER_PIPELINE_CRON_TIMEOUT'] ?? 30));
+$token = trim((string) ($opts['token'] ?? ''));
+$timeout = (int) ($opts['timeout'] ?? 30);
 $timeout = max(5, min($timeout, 300));
 
 $limit = (int) ($opts['limit'] ?? 20);
@@ -109,4 +109,3 @@ if ($httpCode >= 200 && $httpCode < 300) {
 
 fwrite(STDERR, "HTTP error: {$httpCode}\n");
 exit(1);
-
