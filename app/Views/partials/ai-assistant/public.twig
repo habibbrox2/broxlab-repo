@@ -144,11 +144,16 @@
             {# Messages injected here by assistant.js #}
         </div>
 
-        {# ── Agentic Status ── #}
-        <div id="publicAssistantAgenticStatus" class="brox-ai-grok-thinking brox-ai-hidden">
-            <span class="brox-ai-grok-thinking-dot"></span>
-            <span class="brox-ai-grok-thinking-text">Thinking...</span>
-            <span class="ai-status-detail"></span>
+        {# ── Modern Thinking Indicator ── #}
+        <div id="publicAssistantThinkingIndicator" class="thinking-indicator brox-ai-hidden">
+            <div class="thinking-content">
+                <span class="thinking-text">Thinking...</span>
+                <div class="thinking-dots">
+                    <span class="thinking-dot"></span>
+                    <span class="thinking-dot"></span>
+                    <span class="thinking-dot"></span>
+                </div>
+            </div>
         </div>
 
         {# ── Footer / Input Area ── #}

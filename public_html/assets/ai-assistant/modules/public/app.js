@@ -295,8 +295,10 @@ function updateOpenRouterKeyStatus() {
 }
 
 function setTyping(active) {
-  UI.loading?.classList.toggle('d-none', !active);
-  UI.loading?.classList.toggle('active', active);
+  const thinkingIndicator = document.getElementById('publicAssistantThinkingIndicator');
+  if (thinkingIndicator) {
+    thinkingIndicator.classList.toggle('brox-ai-hidden', !active);
+  }
 }
 
 function normalizeSuggestions(rawSuggestions) {

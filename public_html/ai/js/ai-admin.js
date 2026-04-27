@@ -4113,12 +4113,18 @@ if (!window.BroxAdminInstance) {
     }
 
     showTypingIndicator() {
-      this.nodes.typingIndicator?.classList.remove('d-none');
+      const thinkingIndicator = document.getElementById('adminAiThinkingIndicator');
+      if (thinkingIndicator) {
+        thinkingIndicator.classList.remove('brox-ai-hidden');
+      }
       this.scrollToBottom();
     }
 
     hideTypingIndicator() {
-      this.nodes.typingIndicator?.classList.add('d-none');
+      const thinkingIndicator = document.getElementById('adminAiThinkingIndicator');
+      if (thinkingIndicator) {
+        thinkingIndicator.classList.add('brox-ai-hidden');
+      }
     }
 
     scrollToBottom() {
