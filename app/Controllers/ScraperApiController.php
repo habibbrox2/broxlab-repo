@@ -1288,6 +1288,102 @@ if (!function_exists('scraperPushToNullableString')) {
         return $normalized;
     }
 
+    function scraperPushAnalyzeContentQuality(mysqli $mysqli, string $dataType, array $payload): array
+    {
+        $aiProvider = new AIProvider($mysqli);
+        $settings = $aiProvider->getSettings();
+        $providerName = trim((string) ($settings['backend_provider'] ?? $settings['default_provider'] ?? $settings['frontend_provider'] ?? ''));
+        if ($providerName === '') {
+            return ['score' => 0, 'quality_level' => 'unknown', 'issues' => []];
+        }
+
+        $selectedModel = trim((string) ($settings['backend_model'] ?? $settings['default_model'] ?? ''));
+        $effectiveModel = scraperPushResolveAiModel($aiProvider, $providerName, $selectedModel, (string) ($settings['default_model'] ?? ''));
+        if ($effectiveModel === '') {
+            return ['score' => 0, 'quality_level' => 'unknown', 'issues' => []];
+        }
+
+        $title = $payload['title'] ?? $payload['name'] ?? 'N/A';
+        $content = $payload['bodyText'] ?? $payload['body_text'] ?? $payload['content'] ?? '';
+        $excerpt = $payload['excerpt'] ?? '';
+
+        $qualityPrompt = "Analyze this content and return a JSON object with:\n"
+            . "- score: integer 0-100\n"
+            . "- quality_level: 'excellent'|'good'|'fair'|'poor'\n"
+            . "- issues: array of strings describing problems\n"
+            . "- suggestions: array of strings for improvements\n\n"
+            . "Content to analyze:\n"
+            . "Title: " . substr((string) $title, 0, 200) . "\n"
+            . "Excerpt: " . substr((string) $excerpt, 0, 200) . "\n"
+            . "Body: " . substr((string) $content, 0, 500) . "\n\n"
+            . "Return ONLY valid JSON with no markdown or explanation.";
+
+        $response = $aiProvider->callAPI($providerName, $effectiveModel, [
+            ['role' => 'system', 'content' => 'You are a content quality analyzer. Respond with JSON only.'],
+            ['role' => 'user', 'content' => $qualityPrompt],
+        ], [
+            'temperature' => 0.3,
+            'max_tokens' => 500,
+        ]);
+
+        if (empty($response['success'])) {
+            return ['score' => 50, 'quality_level' => 'unknown', 'issues' => ['AI analysis unavailable']];
+        }
+
+        $analyzed = scraperPushParseAiJson((string) ($response['content'] ?? ''));
+        if (!is_array($analyzed)) {
+            return ['score' => 50, 'quality_level' => 'unknown', 'issues' => ['Failed to parse AI analysis']];
+        }
+
+        return [
+            'score' => min(100, max(0, (int) ($analyzed['score'] ?? 50))),
+            'quality_level' => (string) ($analyzed['quality_level'] ?? 'unknown'),
+            'issues' => is_array($analyzed['issues'] ?? null) ? $analyzed['issues'] : [],
+            'suggestions' => is_array($analyzed['suggestions'] ?? null) ? $analyzed['suggestions'] : [],
+        ];
+    }
+
+    function scraperPushAiRetryFailedItem(mysqli $mysqli, string $dataType, array $payload, string $errorMessage): ?array
+    {
+        $aiProvider = new AIProvider($mysqli);
+        $settings = $aiProvider->getSettings();
+        $providerName = trim((string) ($settings['backend_provider'] ?? $settings['default_provider'] ?? $settings['frontend_provider'] ?? ''));
+        if ($providerName === '') {
+            return null;
+        }
+
+        $selectedModel = trim((string) ($settings['backend_model'] ?? $settings['default_model'] ?? ''));
+        $effectiveModel = scraperPushResolveAiModel($aiProvider, $providerName, $selectedModel, (string) ($settings['default_model'] ?? ''));
+        if ($effectiveModel === '') {
+            return null;
+        }
+
+        $retryPrompt = "A publishing operation failed with error: " . substr($errorMessage, 0, 200) . "\n"
+            . "Please analyze and fix the payload below to resolve the error.\n"
+            . "Return the corrected JSON with the same structure:\n\n"
+            . json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
+            . "\n\nReturn ONLY valid JSON with no markdown or explanation.";
+
+        $response = $aiProvider->callAPI($providerName, $effectiveModel, [
+            ['role' => 'system', 'content' => 'You are a data repair specialist. Analyze errors and fix invalid data. Respond with JSON only.'],
+            ['role' => 'user', 'content' => $retryPrompt],
+        ], [
+            'temperature' => 0.2,
+            'max_tokens' => 2000,
+        ]);
+
+        if (empty($response['success'])) {
+            return null;
+        }
+
+        $fixed = scraperPushParseAiJson((string) ($response['content'] ?? ''));
+        if (!is_array($fixed)) {
+            return null;
+        }
+
+        return scraperPushNormalizeAiPayload($dataType, $payload, $fixed);
+    }
+
     function scraperPushEnhanceIncomingPayload(mysqli $mysqli, string $dataType, array $payload): array
     {
         $aiProvider = new AIProvider($mysqli);
@@ -1754,9 +1850,80 @@ if (!function_exists('scraperPushToNullableString')) {
 
                 throw new RuntimeException('Unsupported data_type: ' . $dataType);
             } catch (Throwable $e) {
-                $broxScrapModel->markIncomingItemFailed($itemId, $e->getMessage());
+                // Attempt AI-powered error recovery for articles
+                $recoveryAttempted = false;
+                $recoveredPayload = null;
+                
+                if ($dataType === 'articles' && !empty($payload['title'])) {
+                    $recoveredPayload = scraperPushAiRetryFailedItem($mysqli, 'articles', $payload, $e->getMessage());
+                    if (is_array($recoveredPayload)) {
+                        $recoveryAttempted = true;
+                        try {
+                            // Retry with recovered payload
+                            $title = scraperPushToNullableString($recoveredPayload['title'] ?? null) ?? 'Untitled Article';
+                            $content = scraperPushBuildArticleContent($recoveredPayload, $row);
+                            $author = scraperPushToNullableString($recoveredPayload['author'] ?? null)
+                                ?? scraperPushToNullableString($row['author'] ?? null)
+                                ?? 'Scraper';
+                            $slug = $contentModel->generateUniquePermalink($title);
+                            $categoryIds = scraperPushFindOrCreateCategoryIds($contentModel, [
+                                $recoveredPayload['category'] ?? null,
+                                $row['category'] ?? null,
+                            ]);
+                            $tagIds = scraperPushFindOrCreateTagIds($contentModel, [
+                                $recoveredPayload['tags'] ?? null,
+                                $row['tags_json'] ?? null,
+                            ]);
+                            $publishedAt = scraperPushToNullableString($recoveredPayload['publishedAt'] ?? null)
+                                ?? scraperPushToNullableString($recoveredPayload['published_at'] ?? null)
+                                ?? scraperPushToNullableString($row['source_published_at'] ?? null);
+
+                            $postId = (int) $contentModel->createPost($title, $content, $author, $slug, 1, 1, $publishedAt);
+                            if ($postId > 0) {
+                                $contentModel->markPostPublished($postId);
+                                if ($categoryIds !== []) {
+                                    $contentModel->attachCategoriesToContent('post', $postId, $categoryIds);
+                                    $contentModel->setPostCategoryId($postId, (int) $categoryIds[0]);
+                                }
+                                if ($tagIds !== []) {
+                                    $contentModel->attachTagsToContent('post', $postId, $tagIds);
+                                }
+                                $broxScrapModel->markIncomingItemPublished($itemId, $postId, [
+                                    'fingerprint' => $fingerprint,
+                                    'ai_recovery' => true,
+                                    'original_error' => $e->getMessage(),
+                                ]);
+                                $broxScrapModel->deleteIncomingItem($itemId);
+                                $processedFingerprintsInBatch[$fingerprintKey] = $itemId;
+                                $summary['published']++;
+                                $summary['results'][] = [
+                                    'id' => $itemId,
+                                    'ok' => true,
+                                    'data_type' => 'articles',
+                                    'published_content_id' => $postId,
+                                    'ai_recovery' => true,
+                                ];
+                                continue;
+                            }
+                        } catch (Throwable $retryEx) {
+                            // AI recovery attempt failed
+                        }
+                    }
+                }
+                
+                // If recovery wasn't attempted or failed, log the original error
+                $broxScrapModel->markIncomingItemFailed($itemId, 
+                    $recoveryAttempted 
+                        ? 'AI recovery failed: ' . $e->getMessage() 
+                        : $e->getMessage()
+                );
                 $summary['failed']++;
-                $summary['results'][] = ['id' => $itemId, 'ok' => false, 'error' => $e->getMessage()];
+                $summary['results'][] = [
+                    'id' => $itemId,
+                    'ok' => false,
+                    'error' => $e->getMessage(),
+                    'ai_recovery_attempted' => $recoveryAttempted,
+                ];
             }
         }
 
