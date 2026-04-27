@@ -1,5 +1,8 @@
 {% extends "layout.twig" %}
 {% block title %}{{ page.title }} | {{ app_settings.site_name|default("BroxBhai") }}{% endblock %}
+{% block meta_description %}{{ page.excerpt|default(page.content|striptags|slice(0, 160)) }}{% endblock %}
+{% block og_image %}{{ page.featured_image|default(page.image|default(app_settings.site_logo|default(url ~ 'assets/images/default-image.png'))) }}{% endblock %}
+{% block og_type %}website{% endblock %}
 {% set breadcrumbs = [
   { label: 'Pages', url: '/pages', icon: 'file' },
   { label: page.title|slice(0, 40) ~ (page.title|length > 40 ? '...' : ''), icon: 'file-text' }

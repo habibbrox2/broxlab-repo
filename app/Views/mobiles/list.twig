@@ -1,5 +1,7 @@
 {% extends "layout.twig" %}
 {% block title %}Latest Phones & Mobile Devices - {{ app_settings.site_name|default("Mobile Updates") }}{% endblock %}
+{% block meta_description %}Explore the latest mobile phones and devices. View detailed specifications, comparisons, and reviews for your perfect smartphone.{% endblock %}
+{% block og_type %}website{% endblock %}
 {% set breadcrumbs = [{"label": "Mobiles", "url": "/mobiles", "icon": "mobile"}] %}
 {% block content %}
   {# ================= Structured Data ================= #}

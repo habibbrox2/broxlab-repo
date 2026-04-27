@@ -1,5 +1,7 @@
 {% extends "layout.twig" %}
 {% block title %}Pages - {{ app_settings.site_name|default("Site") }}{% endblock %}
+{% block meta_description %}Browse our comprehensive collection of informative pages and resources about mobile technology, services, and helpful guides.{% endblock %}
+{% block og_type %}website{% endblock %}
 {% set breadcrumbs = [{"label": "Pages", "url": "/pages", "icon": "file"}] %}
 {% block content %}
   <!-- Hero Section -->

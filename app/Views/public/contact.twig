@@ -9,6 +9,7 @@
 {% block content %}
 <div class="page-contact public-static-page">
   <script type="application/ld+json">
+[
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
@@ -28,7 +29,23 @@
     }
     {% endfor %}
   ]
+},
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": {{ app_settings.site_name|json_encode }},
+  "url": "{{ url|json }}",
+  "telephone": "{{ app_settings.phone|default('') }}",
+  "email": "{{ app_settings.contact_email|default('') }}",
+  "description": "Contact {{ app_settings.site_name }} for inquiries and support",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "Customer Service",
+    "telephone": "{{ app_settings.phone|default('') }}",
+    "email": "{{ app_settings.contact_email|default('') }}"
+  }
 }
+]
   </script>
 
   <section class="hero-section public-page-hero public-hero--contact position-relative py-5 mb-4 overflow-hidden">

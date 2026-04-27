@@ -1,5 +1,8 @@
 {% extends "layout.twig" %}
 {% block title %}{{ mobile.brand_name }} {{ mobile.model_name }} - Phone Specifications & Reviews{% endblock %}
+{% block meta_description %}Complete specifications and information about {{ mobile.brand_name }} {{ mobile.model_name }} phone{% endblock %}
+{% block og_image %}{{ main_image|default(app_settings.site_logo|default(url ~ 'assets/images/default-image.png')) }}{% endblock %}
+{% block og_type %}product{% endblock %}
 {% set breadcrumbs = [
   { label: 'Mobiles', url: '/mobiles', icon: 'mobile' },
   { label: mobile.brand_name|slice(0, 20), icon: 'phone' }

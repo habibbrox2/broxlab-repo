@@ -1,10 +1,31 @@
 ﻿{% extends 'layout.twig' %}
 {% block title %}{{ service.name }} - Apply for Service{% endblock %}
-{% set breadcrumbs = [
-  { 'label': 'Services', 'url': '/services', 'icon': 'briefcase' },
-  { 'label': service.name, 'icon': 'award' }
-] %}
+{% block meta_description %}{{ service.description|default('Professional ' ~ service.name ~ ' service')|striptags|slice(0, 160) }}{% endblock %}
+{% block og_image %}{{ service.featured_image_url|default(app_settings.site_logo|default(url ~ 'assets/images/default-image.png')) }}{% endblock %}
+{% block og_type %}website{% endblock %}
 {% block content %}
+  {# Structured Data - Service Schema #}
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": {{ service.name|json_encode }},
+  "description": {{ (service.description|default(service.name ~ ' service'))|striptags|slice(0, 160)|json_encode }},
+  "url": "{{ current_url }}",
+  "provider": {
+    "@type": "Organization",
+    "name": {{ app_settings.site_name|json_encode }},
+    "url": "{{ url }}",
+    "logo": "{{ app_settings.site_logo|default(url ~ 'assets/images/default-logo.png') }}"
+  }
+  {% if service.is_premium %},
+  "pricingRange": "{{ app_settings.currency_symbol|default("$") }}{{ service.price|number_format(2, '.', ',') }}"
+  {% endif %}
+  {% if service.status %},
+  "availability": "https://schema.org/{% if service.status == 'active' %}InStock{% else %}OutOfStock{% endif %}"
+  {% endif %}
+}
+  </script>
   <!-- Enhanced Hero Section with Animated Gradient -->
   <div class="hero-section position-relative overflow-hidden py-5 inl-p-0056">
     <!-- Animated Background Elements -->

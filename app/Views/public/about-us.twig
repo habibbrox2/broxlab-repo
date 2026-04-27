@@ -1,6 +1,8 @@
 {% extends 'layout.twig' %}
 
 {% block title %}About {{ app_settings.site_name|default('BroxBhai') }} - Learn Our Story{% endblock %}
+{% block meta_description %}Learn about {{ app_settings.site_name }}, our mission to provide the best mobile reviews, tech insights, and community engagement for gadget enthusiasts.{% endblock %}
+{% block og_type %}website{% endblock %}
 
 {% set breadcrumbs = [
   { label: 'About Us', url: '/about-us', icon: 'info' }
