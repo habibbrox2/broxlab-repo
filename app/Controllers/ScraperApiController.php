@@ -975,7 +975,6 @@ if (!function_exists('scraperPushToNullableString')) {
 
         $raw = curl_exec($ch);
         $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         return $httpCode === 200;
     }
@@ -1328,14 +1327,32 @@ if (!function_exists('scraperPushToNullableString')) {
                 'publishedText' => 'string',
             ];
 
-        $userPrompt = "Clean and enhance the following {$dataType} payload without changing facts. Return valid JSON only. Use this schema as a guide:\n"
+        $userPrompt = "Clean and enhance the following {$dataType} payload. Return valid JSON only. Use this schema as a guide:\n"
             . json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
             . "\n\nPayload:\n"
             . $payloadJson
-            . "\n\nRules:\n"
+            . "\n\nCRITICAL FORMATTING PRESERVATION RULES:\n"
+            . "- PRESERVE all HTML tags exactly as-is (p, br, h1-h6, ul, ol, li, strong, em, img, a, etc.)\n"
+            . "- PRESERVE all paragraph breaks, line breaks, and spacing exactly\n"
+            . "- PRESERVE heading levels and structure (do NOT change h2 to h3 etc.)\n"
+            . "- PRESERVE list formatting (ordered/unordered) exactly\n"
+            . "- PRESERVE all URLs, image paths, and link structures\n"
+            . "- PRESERVE whitespace and indentation patterns\n"
+            . "\nALLOWED enhancements (minimal changes only):\n"
+            . "- Fix spelling errors (typos)\n"
+            . "- Fix grammatical errors\n"
+            . "- Complete incomplete sentences (add missing words only)\n"
+            . "- Improve clarity of awkward phrasing (minimal rewording)\n"
+            . "\nFORBIDDEN changes:\n"
+            . "- Do NOT restructure paragraphs or content flow\n"
+            . "- Do NOT add or remove HTML tags\n"
+            . "- Do NOT change heading levels or hierarchy\n"
+            . "- Do NOT add new content, facts, or opinions\n"
+            . "- Do NOT reformat lists or change list types\n"
+            . "- Do NOT 'improve' formatting (leave formatting exactly as received)\n"
+            . "\nFACTUAL RULES:\n"
             . "- Preserve all factual information.\n"
             . "- Do not invent missing specs, prices, dates, or claims.\n"
-            . "- Improve wording, formatting, and readability.\n"
             . "- Keep tags/specs as structured arrays/objects.\n"
             . "- Output JSON only with no markdown.";
 
@@ -1604,8 +1621,8 @@ if (!function_exists('scraperPushToNullableString')) {
                         'category_ids' => $categoryIds,
                         'tag_ids' => $tagIds,
                     ]);
+                    $broxScrapModel->deleteIncomingItem($itemId);
 
-                    // Track this fingerprint in batch to prevent duplicates
                     $processedFingerprintsInBatch[$fingerprintKey] = $itemId;
 
                     $summary['published']++;
@@ -1651,7 +1668,13 @@ if (!function_exists('scraperPushToNullableString')) {
                     $price = scraperPushParsePrice($publishPayload['price'] ?? null);
                     $status = scraperPushNormalizeMobileStatus(scraperPushToNullableString($publishPayload['status'] ?? null));
                     $releaseDate = scraperPushNormalizePublishedDate(scraperPushToNullableString($publishPayload['publishedAt'] ?? $publishPayload['published_at'] ?? null));
-                    $createdId = (int) $mobileModel->insertMobile($brand, $model, $price, $price, $status, $releaseDate, 0);
+
+                    // Determine official vs unofficial pricing
+                    $isOfficial = $status === 'official' ? 1 : 0;
+                    $officialPrice = $status === 'official' ? $price : null;
+                    $unofficialPrice = $status === 'unofficial' ? $price : null;
+
+                    $createdId = (int) $mobileModel->insertMobile($brand, $model, $officialPrice, $unofficialPrice, $status, $releaseDate, $isOfficial);
                     if ($createdId <= 0) {
                         throw new RuntimeException('Failed to create mobile');
                     }
@@ -1706,11 +1729,8 @@ if (!function_exists('scraperPushToNullableString')) {
                         'tag_ids' => $mobileTagIds ?? [],
                         'category_ids' => $mobileCategoryIds ?? [],
                     ]);
-
-                    // Track this fingerprint in batch to prevent duplicates
-                    $processedFingerprintsInBatch[$fingerprintKey] = $itemId;
-
-                    $summary['published']++;
+                    // Cleanup: remove the incoming item after successful publishing
+                    $broxScrapModel->deleteIncomingItem($itemId);
                     $summary['results'][] = [
                         'id' => $itemId,
                         'ok' => true,
@@ -2168,6 +2188,62 @@ $renderPipelineRunDetail = function ($id) use ($twig, $broxScrapModel) {
 $router->get('/admin/scrap-control-center/pipeline-runs/{id}', ['middleware' => ['auth', 'admin_only']], $renderPipelineRunDetail);
 $router->get('/admin/push-logs/pipeline-runs/{id}', ['middleware' => ['auth', 'admin_only']], $renderPipelineRunDetail);
 
+
+$renderFailedPipelineLogs = function () use ($twig, $broxScrapModel) {
+    $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
+    $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 20;
+    $action = isset($_GET['action']) ? trim((string) $_GET['action']) : null;
+    $range = isset($_GET['range']) ? trim((string) $_GET['range']) : null;
+
+    $result = $broxScrapModel->getPipelineRuns($page, $limit, $action);
+    $failedItems = array_values(array_filter($result['items'] ?? [], static fn($item) => $item['status'] === 'failed'));
+    $totalFailedItems = count($failedItems);
+    $totalRuns = (int) ($result['total'] ?? 0);
+
+    echo $twig->render('admin/pipeline-failed-logs.twig', [
+        'title' => 'Failed Pipeline Logs',
+        'current_page' => 'scrap-control-center',
+        'route_base' => '/admin/scrap-control-center',
+        'failed_runs' => $failedItems,
+        'total' => $totalFailedItems,
+        'total_pages' => (int) ceil($totalFailedItems / $limit),
+        'current_page_number' => $page,
+        'limit' => $limit,
+        'action_filter' => $action,
+        'range_filter' => $range,
+        'total_failed_items' => $totalFailedItems,
+        'total_runs' => $totalRuns,
+    ]);
+};
+
+$router->get('/admin/scrap-control-center/failed-pipeline-logs', ['middleware' => ['auth', 'admin_only']], $renderFailedPipelineLogs);
+$router->get('/admin/push-logs/failed-pipeline-logs', ['middleware' => ['auth', 'admin_only']], $renderFailedPipelineLogs);
+
+$renderAllPipelineLogs = function () use ($twig, $broxScrapModel) {
+    $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
+    $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 20;
+    $action = isset($_GET['action']) ? trim((string) $_GET['action']) : null;
+    $status = isset($_GET['status']) ? trim((string) $_GET['status']) : null;
+
+    $result = $broxScrapModel->getAllPipelineRunsFiltered($page, $limit, $action, $status);
+    echo $twig->render('admin/pipeline-all-logs.twig', [
+        'title' => 'All Pipeline Logs',
+        'current_page' => 'scrap-control-center',
+        'route_base' => '/admin/scrap-control-center',
+        'logs' => $result['items'],
+        'total' => $result['total'],
+        'total_pages' => $result['total_pages'],
+        'current_page_number' => $result['current_page'],
+        'limit' => $result['limit'],
+        'action_filter' => $action,
+        'status_filter' => $status,
+        'stats' => $result['stats'],
+    ]);
+};
+
+$router->get('/admin/scrap-control-center/all-pipeline-logs', ['middleware' => ['auth', 'admin_only']], $renderAllPipelineLogs);
+$router->get('/admin/push-logs/all-pipeline-logs', ['middleware' => ['auth', 'admin_only']], $renderAllPipelineLogs);
+
 $router->get('/admin/scrap-control-center/incoming', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $broxScrapModel) {
     $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 50;
@@ -2250,6 +2326,49 @@ $deleteScrapLog = function ($id) use ($broxScrapModel) {
 $router->post('/admin/scrap-control-center/logs/delete/{id}', ['middleware' => ['auth', 'admin_only', 'csrf']], $deleteScrapLog);
 $router->post('/admin/push-logs/delete/{id}', ['middleware' => ['auth', 'admin_only', 'csrf']], $deleteScrapLog);
 
+// API endpoint for bulk delete via AJAX (no CSRF in URL, relying on header)
+$router->post('/admin/api/scrap-control-center/push-logs/{id}/delete', ['middleware' => ['auth', 'admin_only']], function ($id) use ($broxScrapModel) {
+    $logId = (int) $id;
+    if ($logId <= 0) {
+        http_response_code(422);
+        header('Content-Type: application/json');
+        echo json_encode(['ok' => false, 'error' => 'Invalid log id']);
+        return;
+    }
+
+    $deleted = $broxScrapModel->deletePushLog($logId);
+    if (!$deleted) {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['ok' => false, 'error' => 'Failed to delete log entry']);
+        return;
+    }
+
+    header('Content-Type: application/json');
+    echo json_encode(['ok' => true, 'message' => 'Log entry deleted successfully']);
+});
+
+$router->post('/admin/push-logs/api/push-logs/{id}/delete', ['middleware' => ['auth', 'admin_only']], function ($id) use ($broxScrapModel) {
+    $logId = (int) $id;
+    if ($logId <= 0) {
+        http_response_code(422);
+        header('Content-Type: application/json');
+        echo json_encode(['ok' => false, 'error' => 'Invalid log id']);
+        return;
+    }
+
+    $deleted = $broxScrapModel->deletePushLog($logId);
+    if (!$deleted) {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['ok' => false, 'error' => 'Failed to delete log entry']);
+        return;
+    }
+
+    header('Content-Type: application/json');
+    echo json_encode(['ok' => true, 'message' => 'Log entry deleted successfully']);
+});
+
 $createTableRoute = function () use ($broxScrapModel) {
     $created = $broxScrapModel->createTable();
 
@@ -2329,6 +2448,23 @@ $router->get('/admin/api/scrap-control-center/incoming/{id}', ['middleware' => [
     $item = scraperPushDecorateScrapingItem($item);
     scraperPushSendJson(['ok' => true, 'data' => $item]);
 });
+
+$router->post("/admin/api/scrap-control-center/incoming/delete/{id}", ["middleware" => ["auth", "admin_only", "csrf"]], function ($id) use ($broxScrapModel) {
+    $itemId = (int) $id;
+    if ($itemId <= 0) {
+        scraperPushSendJson(["ok" => false, "error" => "Invalid item id"], 422);
+        return;
+    }
+
+    $deleted = $broxScrapModel->deleteIncomingItem($itemId);
+    if (!$deleted) {
+        scraperPushSendJson(["ok" => false, "error" => "Failed to delete incoming item"], 500);
+        return;
+    }
+
+    scraperPushSendJson(["ok" => true, "message" => "Incoming item deleted successfully"]);
+});
+
 
 $getScrapPublishStatsApi = function () use ($broxScrapModel) {
     scraperPushSendJson([
@@ -2561,7 +2697,6 @@ $router->post('/admin/api/push-publish-retry-failed', ['middleware' => ['auth', 
 });
 
 $router->post('/admin/api/scrap-control-center/retry-failed', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
-    $_SERVER['_SCRAP_RETRY_ALIAS'] = '1';
     $limit = 20;
     $type = null;
 
@@ -2698,5 +2833,43 @@ $router->post('/admin/api/scraper-push-config', ['middleware' => ['auth', 'admin
         'ok' => true,
         'message' => 'Brox Scraper server configuration updated',
         'data' => $remote['json'] ?? null,
+    ]);
+});
+
+// Pipeline runs delete endpoint
+$router->post('/admin/api/scrap-control-center/pipeline-runs/{id}/delete', ['middleware' => ['auth', 'admin_only', 'csrf']], function ($id) use ($broxScrapModel) {
+    $runId = (int) $id;
+    if ($runId <= 0) {
+        scraperPushSendJson(['ok' => false, 'error' => 'Invalid pipeline run id'], 422);
+        return;
+    }
+
+    $deleted = $broxScrapModel->deletePipelineRun($runId);
+    if (!$deleted) {
+        scraperPushSendJson(['ok' => false, 'error' => 'Failed to delete pipeline run'], 500);
+        return;
+    }
+
+    scraperPushSendJson(['ok' => true, 'message' => 'Pipeline run deleted successfully']);
+});
+
+// Pipeline runs retry endpoint
+$router->post('/admin/api/scrap-control-center/pipeline-runs/{id}/retry', ['middleware' => ['auth', 'admin_only', 'csrf']], function ($id) use ($broxScrapModel) {
+    $runId = (int) $id;
+    if ($runId <= 0) {
+        scraperPushSendJson(['ok' => false, 'error' => 'Invalid pipeline run id'], 422);
+        return;
+    }
+
+    $result = $broxScrapModel->requeuePipelineRunItems($runId);
+    if (!$result['success']) {
+        scraperPushSendJson(['ok' => false, 'error' => $result['message'] ?? 'Failed to requeue items'], 500);
+        return;
+    }
+
+    scraperPushSendJson([
+        'ok' => true,
+        'message' => 'Pipeline items requeued for retry',
+        'requeued_count' => $result['requeued_count'],
     ]);
 });

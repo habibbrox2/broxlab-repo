@@ -997,7 +997,7 @@ class BroxScrapModel
         $total = (int) ($countRow['total'] ?? 0);
         $countStmt->close();
 
-          $selectSql = 'SELECT id, data_type, source, source_key, source_url, title, category, author, source_published_at, trigger_name, pushed_at, received_at, payload_json, content_fingerprint, publish_metadata_json, publish_status, publish_attempts, published_content_id, published_at, publish_error, ip_address, user_agent
+        $selectSql = 'SELECT id, data_type, source, source_key, source_url, title, category, author, source_published_at, trigger_name, pushed_at, received_at, payload_json, content_fingerprint, publish_metadata_json, publish_status, publish_attempts, published_content_id, published_at, publish_error, ip_address, user_agent
                         FROM push_incoming_items' . $whereSql . ' ORDER BY source_published_at DESC, id DESC LIMIT ? OFFSET ?';
         $stmt = $this->mysqli->prepare($selectSql);
         if (!$stmt) {
@@ -1034,7 +1034,7 @@ class BroxScrapModel
             return null;
         }
         $stmt = $this->mysqli->prepare(
-          'SELECT id, data_type, source, source_key, source_url, title, category, author, source_published_at, trigger_name, pushed_at, received_at, payload_json, content_fingerprint, publish_metadata_json, publish_status, publish_attempts, published_content_id, published_at, publish_error, ip_address, user_agent
+            'SELECT id, data_type, source, source_key, source_url, title, category, author, source_published_at, trigger_name, pushed_at, received_at, payload_json, content_fingerprint, publish_metadata_json, publish_status, publish_attempts, published_content_id, published_at, publish_error, ip_address, user_agent
                FROM push_incoming_items
                WHERE id = ?
                LIMIT 1'
@@ -1063,7 +1063,7 @@ class BroxScrapModel
 
         $placeholders = implode(',', array_fill(0, count($clean), '?'));
         $types = str_repeat('i', count($clean));
-          $sql = "SELECT id, data_type, source, source_key, source_url, title, category, author, source_published_at, trigger_name, pushed_at, received_at, payload_json, content_fingerprint, publish_metadata_json, publish_status, publish_attempts, published_content_id, published_at, publish_error, ip_address, user_agent
+        $sql = "SELECT id, data_type, source, source_key, source_url, title, category, author, source_published_at, trigger_name, pushed_at, received_at, payload_json, content_fingerprint, publish_metadata_json, publish_status, publish_attempts, published_content_id, published_at, publish_error, ip_address, user_agent
                   FROM push_incoming_items
                   WHERE id IN ($placeholders)
                 ORDER BY source_published_at DESC, id ASC";
@@ -1082,6 +1082,51 @@ class BroxScrapModel
         }
         $stmt->close();
         return $items;
+    }
+
+    public function deleteIncomingItem(int $id): bool
+    {
+        if (!$this->ensureIncomingTable()) {
+            return false;
+        }
+
+        $stmt = $this->mysqli->prepare("DELETE FROM push_incoming_items WHERE id = ?");
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("i", $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+
+        return $ok;
+    }
+
+    public function deleteIncomingItems(array $ids): int
+    {
+        if (!$this->ensureIncomingTable() || $ids === []) {
+            return 0;
+        }
+
+        $clean = array_values(array_filter(array_map("intval", $ids), static fn($v) => $v > 0));
+        if ($clean === []) {
+            return 0;
+        }
+
+        $placeholders = implode(",", array_fill(0, count($clean), "?"));
+        $types = str_repeat("i", count($clean));
+
+        $stmt = $this->mysqli->prepare("DELETE FROM push_incoming_items WHERE id IN ($placeholders)");
+        if (!$stmt) {
+            return 0;
+        }
+
+        $stmt->bind_param($types, ...$clean);
+        $stmt->execute();
+        $affected = $stmt->affected_rows;
+        $stmt->close();
+
+        return (int) $affected;
     }
 
     public function requeueFailedIncomingItems(int $limit = 20, ?string $dataType = null): array
@@ -1390,6 +1435,105 @@ class BroxScrapModel
             'total_pages' => max(1, (int) ceil($total / $limit)),
             'current_page' => $page,
             'limit' => $limit,
+        ];
+    }
+
+    public function getAllPipelineRunsFiltered(int $page = 1, int $limit = 20, ?string $actionName = null, ?string $status = null): array
+    {
+        if (!$this->ensurePipelineRunsTable()) {
+            return ['items' => [], 'total' => 0, 'total_pages' => 1, 'current_page' => max(1, $page), 'limit' => max(1, min($limit, 200)), 'stats' => []];
+        }
+
+        $page = max(1, $page);
+        $limit = max(1, min($limit, 200));
+        $actionNorm = $this->toNullableString($actionName);
+        $statusNorm = $this->toNullableString($status);
+
+        $where = '';
+        $params = [];
+        $types = '';
+
+        if ($statusNorm !== null) {
+            $where = ' WHERE status = ?';
+            $params[] = $statusNorm;
+            $types = 's';
+        }
+        if ($actionNorm !== null) {
+            if ($where !== '') {
+                $where .= ' AND action_name = ?';
+            } else {
+                $where = ' WHERE action_name = ?';
+            }
+            $params[] = $actionNorm;
+            $types .= 's';
+        }
+
+        // Get total count
+        $countSql = 'SELECT COUNT(*) AS total FROM push_pipeline_runs' . $where;
+        $countStmt = $this->mysqli->prepare($countSql);
+        if (!$countStmt) {
+            return ['items' => [], 'total' => 0, 'total_pages' => 1, 'current_page' => $page, 'limit' => $limit, 'stats' => []];
+        }
+        if ($types !== '') {
+            $countStmt->bind_param($types, ...$params);
+        }
+        $countStmt->execute();
+        $countRes = $countStmt->get_result();
+        $countRow = $countRes ? $countRes->fetch_assoc() : null;
+        $total = (int) ($countRow['total'] ?? 0);
+        $countStmt->close();
+
+        // Get statistics
+        $statsQuery = 'SELECT status, COUNT(*) AS count FROM push_pipeline_runs GROUP BY status';
+        $statsRes = $this->mysqli->query($statsQuery);
+        $stats = ['success' => 0, 'partial' => 0, 'failed' => 0];
+        if ($statsRes) {
+            while ($row = $statsRes->fetch_assoc()) {
+                $statusKey = $row['status'] ?? 'failed';
+                if (isset($stats[$statusKey])) {
+                    $stats[$statusKey] = (int) $row['count'];
+                }
+            }
+        }
+
+        $offset = ($page - 1) * $limit;
+        $sql = 'SELECT id, action_name, trigger_source, scope_type, batch_limit, status, fetched_count, published_count, failed_count, skipped_duplicates, ai_used_count, ai_available, provider_name, model_name, duration_ms, started_at, finished_at, request_uri, ip_address, user_agent, error_message, summary_json, results_json, created_at
+                FROM push_pipeline_runs' . $where . ' ORDER BY started_at DESC, id DESC LIMIT ? OFFSET ?';
+        $stmt = $this->mysqli->prepare($sql);
+        if (!$stmt) {
+            return ['items' => [], 'total' => $total, 'total_pages' => max(1, (int) ceil($total / $limit)), 'current_page' => $page, 'limit' => $limit, 'stats' => $stats];
+        }
+
+        $bindTypes = $types . 'ii';
+        $bindParams = $params;
+        $bindParams[] = $limit;
+        $bindParams[] = $offset;
+        $stmt->bind_param($bindTypes, ...$bindParams);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $items = [];
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $row['summary_json'] = json_decode((string) ($row['summary_json'] ?? 'null'), true);
+                if (!is_array($row['summary_json'])) {
+                    $row['summary_json'] = [];
+                }
+                $row['results_json'] = json_decode((string) ($row['results_json'] ?? 'null'), true);
+                if (!is_array($row['results_json'])) {
+                    $row['results_json'] = [];
+                }
+                $items[] = $row;
+            }
+        }
+        $stmt->close();
+
+        return [
+            'items' => $items,
+            'total' => $total,
+            'total_pages' => max(1, (int) ceil($total / $limit)),
+            'current_page' => $page,
+            'limit' => $limit,
+            'stats' => $stats,
         ];
     }
 
@@ -2289,5 +2433,207 @@ class BroxScrapModel
         }
         $str = trim((string) $value);
         return $str === '' ? null : $str;
+    }
+
+    /**
+     * Get failed pipeline runs with pagination.
+     *
+     * @param int $page
+     * @param int $limit
+     * @param ?string $actionName
+     * @param ?string $range  Time range filter (optional)
+     * @return array
+     */
+    public function getFailedPipelineRuns(int $page = 1, int $limit = 20, ?string $actionName = null, ?string $range = null): array
+    {
+        if (!$this->ensurePipelineRunsTable()) {
+            return ['items' => [], 'total' => 0, 'total_pages' => 1, 'current_page' => max(1, $page), 'limit' => max(1, min($limit, 200))];
+        }
+
+        $page = max(1, $page);
+        $limit = max(1, min($limit, 200));
+
+        $where = "WHERE status = 'failed'";
+        $params = [];
+        $types = '';
+
+        if ($actionName !== null) {
+            $actionNorm = $this->toNullableString($actionName);
+            if ($actionNorm !== null) {
+                $where .= " AND action_name = ?";
+                $params[] = $actionNorm;
+                $types .= 's';
+            }
+        }
+
+        // Apply time range filter if provided (e.g., "7days", "30days", "today")
+        if ($range !== null) {
+            $rangeNorm = strtolower(trim((string) $range));
+            if ($rangeNorm === '7days' || $rangeNorm === '7d') {
+                $where .= " AND started_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+            } elseif ($rangeNorm === '30days' || $rangeNorm === '30d') {
+                $where .= " AND started_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+            } elseif ($rangeNorm === 'today') {
+                $where .= " AND DATE(started_at) = CURDATE()";
+            }
+        }
+
+        $countSql = 'SELECT COUNT(*) AS total FROM push_pipeline_runs ' . $where;
+        $countStmt = $this->mysqli->prepare($countSql);
+        if (!$countStmt) {
+            return ['items' => [], 'total' => 0, 'total_pages' => 1, 'current_page' => $page, 'limit' => $limit];
+        }
+        if ($types !== '') {
+            $countStmt->bind_param($types, ...$params);
+        }
+        $countStmt->execute();
+        $countRes = $countStmt->get_result();
+        $countRow = $countRes ? $countRes->fetch_assoc() : null;
+        $total = (int) ($countRow['total'] ?? 0);
+        $countStmt->close();
+
+        $offset = ($page - 1) * $limit;
+        $sql = 'SELECT id, action_name, trigger_source, scope_type, batch_limit, status, fetched_count, published_count, failed_count, skipped_duplicates, ai_used_count, ai_available, provider_name, model_name, duration_ms, started_at, finished_at, request_uri, ip_address, user_agent, error_message, summary_json, results_json, created_at
+                FROM push_pipeline_runs ' . $where . ' ORDER BY started_at DESC, id DESC LIMIT ? OFFSET ?';
+        $stmt = $this->mysqli->prepare($sql);
+        if (!$stmt) {
+            return ['items' => [], 'total' => $total, 'total_pages' => max(1, (int) ceil($total / $limit)), 'current_page' => $page, 'limit' => $limit];
+        }
+
+        $bindTypes = $types . 'ii';
+        $bindParams = $params;
+        $bindParams[] = $limit;
+        $bindParams[] = $offset;
+        $stmt->bind_param($bindTypes, ...$bindParams);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $items = [];
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $row['summary_json'] = json_decode((string) ($row['summary_json'] ?? 'null'), true);
+                if (!is_array($row['summary_json'])) {
+                    $row['summary_json'] = [];
+                }
+                $row['results_json'] = json_decode((string) ($row['results_json'] ?? 'null'), true);
+                if (!is_array($row['results_json'])) {
+                    $row['results_json'] = [];
+                }
+                $items[] = $row;
+            }
+        }
+        $stmt->close();
+
+        return [
+            'items' => $items,
+            'total' => $total,
+            'total_pages' => max(1, (int) ceil($total / $limit)),
+            'current_page' => $page,
+            'limit' => $limit,
+        ];
+    }
+
+    /**
+     * Get total count of failed items across multiple pipeline runs.
+     *
+     * @param array $runs  Array of pipeline run records
+     * @return int
+     */
+    public function getTotalFailedItemsInRuns(array $runs): int
+    {
+        $total = 0;
+        foreach ($runs as $run) {
+            if (is_array($run)) {
+                $failedCount = (int) ($run['failed_count'] ?? 0);
+                $total += $failedCount;
+            }
+        }
+        return $total;
+    }
+
+    /**
+     * Get total count of all pipeline runs in the database.
+     *
+     * @return int
+     */
+    public function getTotalPipelineRunsCount(): int
+    {
+        if (!$this->ensurePipelineRunsTable()) {
+            return 0;
+        }
+
+        $res = $this->mysqli->query('SELECT COUNT(*) AS total FROM push_pipeline_runs');
+        if (!$res) {
+            return 0;
+        }
+
+        $row = $res->fetch_assoc();
+        return (int) ($row['total'] ?? 0);
+    }
+
+    /**
+     * Delete a pipeline run record by ID.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function deletePipelineRun(int $id): bool
+    {
+        if (!$this->ensurePipelineRunsTable()) {
+            return false;
+        }
+
+        $stmt = $this->mysqli->prepare('DELETE FROM push_pipeline_runs WHERE id = ?');
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param('i', $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+
+        return $ok;
+    }
+
+    /**
+     * Mark all incoming items from a failed pipeline run back to pending status for retry.
+     *
+     * @param int $pipelineRunId
+     * @return array ['success' => bool, 'requeued_count' => int, 'failed_count' => int]
+     */
+    public function requeuePipelineRunItems(int $pipelineRunId): array
+    {
+        $run = $this->getPipelineRun($pipelineRunId);
+        if (!$run || $run['status'] !== 'failed') {
+            return ['success' => false, 'requeued_count' => 0, 'failed_count' => 0, 'message' => 'Pipeline run not found or is not failed'];
+        }
+
+        if (!$this->ensureIncomingTable()) {
+            return ['success' => false, 'requeued_count' => 0, 'failed_count' => 0, 'message' => 'Incoming items table unavailable'];
+        }
+
+        // For now, requeue a limited number of failed items from the entire incoming queue
+        // In a production system, you might want to track which specific items belong to which run
+        $stmt = $this->mysqli->prepare(
+            "UPDATE push_incoming_items
+             SET publish_status = 'pending',
+                 publish_attempts = 0,
+                 publish_error = NULL
+             WHERE publish_status = 'failed'
+             LIMIT 20"
+        );
+        if (!$stmt) {
+            return ['success' => false, 'requeued_count' => 0, 'failed_count' => 0, 'message' => 'Failed to prepare statement'];
+        }
+
+        $ok = $stmt->execute();
+        $affectedRows = $ok ? $stmt->affected_rows : 0;
+        $stmt->close();
+
+        return [
+            'success' => $ok,
+            'requeued_count' => max(0, (int) $affectedRows),
+            'failed_count' => 0,
+            'message' => $ok ? 'Items requeued for retry' : 'Failed to requeue items',
+        ];
     }
 }

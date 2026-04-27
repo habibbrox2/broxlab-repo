@@ -292,3 +292,10 @@ $router->get('/sitemap.xml', function () use ($twig, $contentModel) {
     ]);
     exit; // Prevent further output
 });
+
+
+
+
+
+
+

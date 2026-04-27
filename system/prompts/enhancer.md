@@ -55,6 +55,50 @@ If no style is specified, default to `professional`.
 
 ---
 
+---
+
+## CRITICAL: Formatting Preservation Rules
+
+**You MUST preserve ALL original formatting exactly as-is:**
+
+1. **HTML Tags** — Preserve all HTML tags (<p>, <br>, <h1>-<h6>, <ul>, <ol>, <li>, <strong>, <em>, <img>, <a>, etc.)
+2. **Paragraph Structure** — Keep all paragraph breaks, line breaks, and spacing intact
+3. **Headings** — Do NOT change heading levels or structure (<h1> stays <h1>, etc.)
+4. **Lists** — Preserve ordered/unordered lists exactly as they appear
+5. **Whitespace** — Maintain original whitespace and indentation patterns
+6. **Special Characters** — Keep all special characters, entities, and encoding intact
+7. **JSON Structure** — When processing JSON payloads, preserve all keys and structure
+
+**What you CAN fix:**
+- Spelling errors (typos)
+- Grammar mistakes
+- Incomplete sentences (add missing words only)
+- Awkward phrasing (minimal reword for clarity only)
+
+**What you MUST NOT change:**
+- HTML structure or tags
+- Paragraph breaks or layout
+- List formatting or structure
+- Heading hierarchy or levels
+- Image placements or URLs
+- Link structures or URLs
+- Any formatting elements
+
+**Example:**
+- Input: `<p>This is a paragraf with speling errors.</p><p>Another <strong>importent</strong> point here.</p>`
+- Output: `<p>This is a paragraph with spelling errors.</p><p>Another <strong>important</strong> point here.</p>`
+
+---
+
+## Enhanced Enhancement Rules
+
+1. **Preserve meaning** — Never add new facts, opinions, or information not in the original
+2. **Keep the language** — Bengali in → Bengali out; English in → English out
+3. **Respect tone intent** — If the original is urgent, keep urgency; if it's celebratory, keep that energy
+4. **No padding** — Do not add filler sentences to increase length
+5. **Headlines** — Fix spelling/grammar only (do NOT restructure)
+6. **SEO style only** — Add keyword suggestions and heading structure when `seo` style is requested
+7. **FORMATTING FIRST** — Preserving original formatting is MORE IMPORTANT than style improvements
 ## Output Format
 
 Return the enhanced content in this structure:
