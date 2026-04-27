@@ -1,4 +1,5 @@
 <?php
+
 /**
  * controllers\AnalyticsController.php
  * Analytics Controller 
@@ -17,25 +18,25 @@ $analyticsModel = new AnalyticsModel($mysqli);
  */
 $router->get('/admin/analytics', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $analyticsModel) {
     $user = AuthManager::getCurrentUserArray();
-    
+
     // Get summary stats for display
     $stats = $analyticsModel->getSummaryStats();
-    
+
     // Get daily report data
     $daily_stats = $analyticsModel->getDailyStats(1);
     $daily_logins = $analyticsModel->getLoginAudit(date('Y-m-d'), date('Y-m-d'), 100);
-    
+
     // Get weekly report data
     $weekly_stats = $analyticsModel->getDailyStats(7);
     $weekly_pages = $analyticsModel->getTopPages(5);
-    
+
     // Get monthly report data
     $monthly_stats = $analyticsModel->getDailyStats(30);
     $monthly_logins = $analyticsModel->getLoginAudit(date('Y-m-d', strtotime('-30 days')), date('Y-m-d'), 1000);
 
     // Recent client-side events
     $recent_events = $analyticsModel->getRecentEvents(20);
-    
+
     echo $twig->render('admin/dashboard/analytics.twig', [
         'title' => 'Admin Analytics',
         'user' => $user,
@@ -55,11 +56,26 @@ $router->get('/admin/analytics', ['middleware' => ['auth', 'admin_only']], funct
             'total_visitors' => ['unique' => count(array_unique(array_column($monthly_logins, 'ip_address')))],
             'login_stats' => [
                 'total' => count($monthly_logins),
-                'failed' => count(array_filter($monthly_logins, function($l) { return $l['success'] === '0'; })),
+                'failed' => count(array_filter($monthly_logins, function ($l) {
+                    return $l['success'] === '0';
+                })),
             ]
         ],
         'today' => date('F d, Y'),
         'recent_events' => $recent_events,
+    ]);
+});
+
+/**
+ * GET /admin/realtime-monitoring - Real-time Monitoring Dashboard
+ */
+$router->get('/admin/realtime-monitoring', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    $user = AuthManager::getCurrentUserArray();
+
+    echo $twig->render('admin/dashboard/realtime-monitoring.twig', [
+        'title' => 'Real-time Monitoring',
+        'user' => $user,
+        'csrf_token' => generateCsrfToken(),
     ]);
 });
 
@@ -72,7 +88,7 @@ $router->get('/admin/analytics', ['middleware' => ['auth', 'admin_only']], funct
  */
 $router->get('/api/admin/analytics/summary', function () use ($analyticsModel) {
     header('Content-Type: application/json');
-    
+
     try {
         $stats = $analyticsModel->getSummaryStats();
         http_response_code(200);
@@ -95,13 +111,13 @@ $router->get('/api/admin/analytics/summary', function () use ($analyticsModel) {
  */
 $router->get('/api/admin/analytics/visitors', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
     header('Content-Type: application/json');
-    
+
     try {
         $startDate = sanitize_input($_GET['start_date'] ?? null);
         $endDate = sanitize_input($_GET['end_date'] ?? null);
-        
+
         $data = $analyticsModel->getVisitorStats($startDate, $endDate);
-        
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -122,14 +138,14 @@ $router->get('/api/admin/analytics/visitors', ['middleware' => ['auth', 'admin_o
  */
 $router->get('/api/admin/analytics/post-views', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
     header('Content-Type: application/json');
-    
+
     try {
         $startDate = sanitize_input($_GET['start_date'] ?? null);
         $endDate = sanitize_input($_GET['end_date'] ?? null);
         $limit = (int)($_GET['limit'] ?? 10);
-        
+
         $data = $analyticsModel->getPostViews($startDate, $endDate, $limit);
-        
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -150,14 +166,14 @@ $router->get('/api/admin/analytics/post-views', ['middleware' => ['auth', 'admin
  */
 $router->get('/api/admin/analytics/post-impressions', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
     header('Content-Type: application/json');
-    
+
     try {
         $startDate = sanitize_input($_GET['start_date'] ?? null);
         $endDate = sanitize_input($_GET['end_date'] ?? null);
         $limit = (int)($_GET['limit'] ?? 10);
-        
+
         $data = $analyticsModel->getPostImpressions($startDate, $endDate, $limit);
-        
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -178,14 +194,14 @@ $router->get('/api/admin/analytics/post-impressions', ['middleware' => ['auth', 
  */
 $router->get('/api/admin/analytics/page-views', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
     header('Content-Type: application/json');
-    
+
     try {
         $startDate = sanitize_input($_GET['start_date'] ?? null);
         $endDate = sanitize_input($_GET['end_date'] ?? null);
         $limit = (int)($_GET['limit'] ?? 10);
-        
+
         $data = $analyticsModel->getPageViews($startDate, $endDate, $limit);
-        
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -206,14 +222,14 @@ $router->get('/api/admin/analytics/page-views', ['middleware' => ['auth', 'admin
  */
 $router->get('/api/admin/analytics/page-impressions', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
     header('Content-Type: application/json');
-    
+
     try {
         $startDate = sanitize_input($_GET['start_date'] ?? null);
         $endDate = sanitize_input($_GET['end_date'] ?? null);
         $limit = (int)($_GET['limit'] ?? 10);
-        
+
         $data = $analyticsModel->getPageImpressions($startDate, $endDate, $limit);
-        
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -290,14 +306,14 @@ $router->get('/api/admin/analytics/service-impressions', ['middleware' => ['auth
  */
 $router->get('/api/admin/analytics/login-audit', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
     header('Content-Type: application/json');
-    
+
     try {
         $startDate = sanitize_input($_GET['start_date'] ?? null);
         $endDate = sanitize_input($_GET['end_date'] ?? null);
         $limit = (int)($_GET['limit'] ?? 50);
-        
+
         $data = $analyticsModel->getLoginAudit($startDate, $endDate, $limit);
-        
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -318,14 +334,14 @@ $router->get('/api/admin/analytics/login-audit', ['middleware' => ['auth', 'admi
  */
 $router->get('/api/admin/analytics/oauth-audit', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
     header('Content-Type: application/json');
-    
+
     try {
         $startDate = sanitize_input($_GET['start_date'] ?? null);
         $endDate = sanitize_input($_GET['end_date'] ?? null);
         $limit = (int)($_GET['limit'] ?? 50);
-        
+
         $data = $analyticsModel->getOAuthAuditLog($startDate, $endDate, $limit);
-        
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -346,14 +362,14 @@ $router->get('/api/admin/analytics/oauth-audit', ['middleware' => ['auth', 'admi
  */
 $router->get('/api/admin/analytics/activity-logs', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
     header('Content-Type: application/json');
-    
+
     try {
         $startDate = sanitize_input($_GET['start_date'] ?? null);
         $endDate = sanitize_input($_GET['end_date'] ?? null);
         $limit = (int)($_GET['limit'] ?? 50);
-        
+
         $data = $analyticsModel->getActivityLogs($startDate, $endDate, $limit);
-        
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -374,11 +390,11 @@ $router->get('/api/admin/analytics/activity-logs', ['middleware' => ['auth', 'ad
  */
 $router->get('/api/admin/analytics/daily-stats', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
     header('Content-Type: application/json');
-    
+
     try {
         $days = (int)($_GET['days'] ?? 30);
         $data = $analyticsModel->getDailyStats($days);
-        
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -399,11 +415,11 @@ $router->get('/api/admin/analytics/daily-stats', ['middleware' => ['auth', 'admi
  */
 $router->get('/api/admin/analytics/top-pages', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
     header('Content-Type: application/json');
-    
+
     try {
         $limit = (int)($_GET['limit'] ?? 5);
         $data = $analyticsModel->getTopPages($limit);
-        
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -424,13 +440,13 @@ $router->get('/api/admin/analytics/top-pages', ['middleware' => ['auth', 'admin_
  */
 $router->get('/api/admin/analytics/security-alerts', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
     header('Content-Type: application/json');
-    
+
     try {
         $failedLogins = $analyticsModel->getFailedLoginAttempts(24);
         $suspiciousOAuth = $analyticsModel->getSuspiciousOAuthActivity(24);
-        
+
         $alerts = [];
-        
+
         foreach ($failedLogins as $login) {
             $alerts[] = [
                 'type' => 'failed_login',
@@ -440,7 +456,7 @@ $router->get('/api/admin/analytics/security-alerts', ['middleware' => ['auth', '
                 'timestamp' => $login['last_attempt']
             ];
         }
-        
+
         foreach ($suspiciousOAuth as $oauth) {
             $alerts[] = [
                 'type' => 'oauth_failure',
@@ -450,12 +466,12 @@ $router->get('/api/admin/analytics/security-alerts', ['middleware' => ['auth', '
                 'timestamp' => $oauth['last_activity']
             ];
         }
-        
+
         // Sort by timestamp
-        usort($alerts, function($a, $b) {
+        usort($alerts, function ($a, $b) {
             return strtotime($b['timestamp']) - strtotime($a['timestamp']);
         });
-        
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -476,7 +492,7 @@ $router->get('/api/admin/analytics/security-alerts', ['middleware' => ['auth', '
  */
 $router->post('/api/admin/analytics/clear', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
     header('Content-Type: application/json');
-    
+
     if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
         http_response_code(403);
         echo json_encode([
@@ -485,15 +501,15 @@ $router->post('/api/admin/analytics/clear', ['middleware' => ['auth', 'admin_onl
         ]);
         exit;
     }
-    
+
     try {
         $logType = sanitize_input($_POST['log_type'] ?? 'activity');
         $before = sanitize_input($_POST['before'] ?? date('Y-m-d', strtotime('-90 days')));
-        
+
         $result = $analyticsModel->clearLogs($logType, $before);
-        
+
         logActivity("Cleared {$logType} logs", "analytics", AuthManager::getCurrentUserId(), ['log_type' => $logType]);
-        
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -518,17 +534,17 @@ $router->match(['GET', 'POST'], '/api/admin/analytics/export', ['middleware' => 
         $format = sanitize_input($_REQUEST['format'] ?? 'csv');
         $startDate = sanitize_input($_REQUEST['start_date'] ?? null);
         $endDate = sanitize_input($_REQUEST['end_date'] ?? null);
-        
+
         if ($format === 'csv') {
             $csv = $analyticsModel->exportAsCSV($dataType, $startDate, $endDate);
-            
+
             header('Content-Type: text/csv');
             header('Content-Disposition: attachment; filename="analytics_' . date('Y-m-d_H-i-s') . '.csv"');
-            
+
             echo $csv;
         } else if ($format === 'json') {
             header('Content-Type: application/json');
-            
+
             $data = [];
             if ($dataType === 'login_audit' || $dataType === 'all') {
                 $data['login_audit'] = $analyticsModel->getLoginAudit($startDate, $endDate, 10000);
@@ -539,7 +555,7 @@ $router->match(['GET', 'POST'], '/api/admin/analytics/export', ['middleware' => 
             if ($dataType === 'activity' || $dataType === 'all') {
                 $data['activity'] = $analyticsModel->getActivityLogs($startDate, $endDate, 10000);
             }
-            
+
             echo json_encode([
                 'success' => true,
                 'data' => $data
@@ -561,13 +577,13 @@ $router->match(['GET', 'POST'], '/api/admin/analytics/export', ['middleware' => 
  */
 $router->get('/api/admin/analytics/check-alerts', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
     header('Content-Type: application/json');
-    
+
     try {
         $failedLogins = $analyticsModel->getFailedLoginAttempts(1);  // Last 1 hour
         $suspiciousOAuth = $analyticsModel->getSuspiciousOAuthActivity(1);  // Last 1 hour
-        
+
         $alerts = [];
-        
+
         foreach ($failedLogins as $login) {
             $alerts[] = [
                 'type' => 'failed_login',
@@ -576,7 +592,7 @@ $router->get('/api/admin/analytics/check-alerts', ['middleware' => ['auth', 'adm
                 'timestamp' => $login['last_attempt']
             ];
         }
-        
+
         foreach ($suspiciousOAuth as $oauth) {
             $alerts[] = [
                 'type' => 'suspicious_oauth',
@@ -585,7 +601,7 @@ $router->get('/api/admin/analytics/check-alerts', ['middleware' => ['auth', 'adm
                 'timestamp' => $oauth['last_activity']
             ];
         }
-        
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -601,7 +617,6 @@ $router->get('/api/admin/analytics/check-alerts', ['middleware' => ['auth', 'adm
             'error' => $e->getMessage()
         ]);
     }
-
 });
 
 /**
@@ -685,4 +700,140 @@ $router->post('/api/analytics/ingest', ['response' => 'json'], function () use (
     }
 
     return json_response(['success' => false, 'error' => 'Failed to ingest event'], 500);
+});
+
+// ============================================================
+// REAL-TIME MONITORING ENDPOINTS
+// ============================================================
+
+/**
+ * GET /api/admin/analytics/realtime-feed - Get real-time activity feed
+ */
+$router->get('/api/admin/analytics/realtime-feed', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
+    header('Content-Type: application/json');
+
+    try {
+        $limit = (int)($_GET['limit'] ?? 50);
+        $activities = $analyticsModel->getRealtimeActivityFeed($limit);
+
+        http_response_code(200);
+        echo json_encode([
+            'success' => true,
+            'data' => $activities,
+            'timestamp' => date('Y-m-d H:i:s'),
+        ]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+    exit;
+});
+
+/**
+ * GET /api/admin/analytics/active-users - Get currently active users
+ */
+$router->get('/api/admin/analytics/active-users', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
+    header('Content-Type: application/json');
+
+    try {
+        $minutes = (int)($_GET['minutes'] ?? 15);
+        $users = $analyticsModel->getActiveUsers($minutes);
+
+        http_response_code(200);
+        echo json_encode([
+            'success' => true,
+            'data' => $users,
+            'count' => count($users),
+            'timestamp' => date('Y-m-d H:i:s'),
+        ]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+    exit;
+});
+
+/**
+ * GET /api/admin/analytics/system-health - Get system health metrics
+ */
+$router->get('/api/admin/analytics/system-health', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
+    header('Content-Type: application/json');
+
+    try {
+        $health = $analyticsModel->getSystemHealthMetrics();
+
+        http_response_code(200);
+        echo json_encode([
+            'success' => true,
+            'data' => $health,
+        ]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+    exit;
+});
+
+/**
+ * GET /api/admin/analytics/alerts - Get real-time alerts
+ */
+$router->get('/api/admin/analytics/alerts', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
+    header('Content-Type: application/json');
+
+    try {
+        $minutes = (int)($_GET['minutes'] ?? 60);
+        $limit = (int)($_GET['limit'] ?? 20);
+        $alerts = $analyticsModel->getRealtimeAlerts($minutes, $limit);
+
+        http_response_code(200);
+        echo json_encode([
+            'success' => true,
+            'data' => $alerts,
+            'count' => count($alerts),
+            'timestamp' => date('Y-m-d H:i:s'),
+        ]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+    exit;
+});
+
+/**
+ * GET /api/admin/analytics/activity-summary - Get activity summary
+ */
+$router->get('/api/admin/analytics/activity-summary', ['middleware' => ['auth', 'admin_only']], function () use ($analyticsModel) {
+    header('Content-Type: application/json');
+
+    try {
+        $hours = (int)($_GET['hours'] ?? 24);
+        $summary = $analyticsModel->getActivitySummary($hours);
+
+        http_response_code(200);
+        echo json_encode([
+            'success' => true,
+            'data' => $summary,
+            'period' => $hours . ' hours',
+            'timestamp' => date('Y-m-d H:i:s'),
+        ]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+    exit;
 });

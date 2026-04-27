@@ -10,18 +10,21 @@
  * @version 1.0.0
  */
 
-class AnalyticsModel {
+class AnalyticsModel
+{
     private $mysqli;
     private $cacheExpiry = 300; // 5 minutes cache
 
-    public function __construct(mysqli $mysqli) {
+    public function __construct(mysqli $mysqli)
+    {
         $this->mysqli = $mysqli;
     }
 
     /**
      * Get visitor statistics
      */
-    public function getVisitorStats(?string $startDate = null, ?string $endDate = null): array {
+    public function getVisitorStats(?string $startDate = null, ?string $endDate = null): array
+    {
         $startDate = $startDate ?? date('Y-m-d', strtotime('-30 days'));
         $endDate = $endDate ?? date('Y-m-d');
 
@@ -43,11 +46,12 @@ class AnalyticsModel {
     /**
      * Get post views data
      */
-    public function getPostViews(?string $startDate = null, ?string $endDate = null, int $limit = 10): array {
+    public function getPostViews(?string $startDate = null, ?string $endDate = null, int $limit = 10): array
+    {
         try {
             $startDate = $startDate ?? date('Y-m-d', strtotime('-30 days'));
             $endDate = $endDate ?? date('Y-m-d');
-            
+
             // Convert to timestamps for index usage
             $startTs = $startDate . ' 00:00:00';
             $endTs = $endDate . ' 23:59:59';
@@ -67,12 +71,12 @@ class AnalyticsModel {
                 ORDER BY total_views DESC
                 LIMIT ?
             ");
-            
+
             if (!$stmt) {
                 logError('Prepare failed: ' . $this->mysqli->error);
                 return [];
             }
-            
+
             $stmt->bind_param('ssi', $startTs, $endTs, $limit);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -86,11 +90,12 @@ class AnalyticsModel {
     /**
      * Get post impressions data
      */
-    public function getPostImpressions(?string $startDate = null, ?string $endDate = null, int $limit = 10): array {
+    public function getPostImpressions(?string $startDate = null, ?string $endDate = null, int $limit = 10): array
+    {
         try {
             $startDate = $startDate ?? date('Y-m-d', strtotime('-30 days'));
             $endDate = $endDate ?? date('Y-m-d');
-            
+
             $startTs = $startDate . ' 00:00:00';
             $endTs = $endDate . ' 23:59:59';
 
@@ -109,12 +114,12 @@ class AnalyticsModel {
                 ORDER BY total_impressions DESC
                 LIMIT ?
             ");
-            
+
             if (!$stmt) {
                 logError('Prepare failed: ' . $this->mysqli->error);
                 return [];
             }
-            
+
             $stmt->bind_param('ssi', $startTs, $endTs, $limit);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -128,11 +133,12 @@ class AnalyticsModel {
     /**
      * Get page views data
      */
-    public function getPageViews(?string $startDate = null, ?string $endDate = null, int $limit = 10): array {
+    public function getPageViews(?string $startDate = null, ?string $endDate = null, int $limit = 10): array
+    {
         try {
             $startDate = $startDate ?? date('Y-m-d', strtotime('-30 days'));
             $endDate = $endDate ?? date('Y-m-d');
-            
+
             $startTs = $startDate . ' 00:00:00';
             $endTs = $endDate . ' 23:59:59';
 
@@ -151,12 +157,12 @@ class AnalyticsModel {
                 ORDER BY total_views DESC
                 LIMIT ?
             ");
-            
+
             if (!$stmt) {
                 logError('Prepare failed: ' . $this->mysqli->error);
                 return [];
             }
-            
+
             $stmt->bind_param('ssi', $startTs, $endTs, $limit);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -170,11 +176,12 @@ class AnalyticsModel {
     /**
      * Get page impressions data
      */
-    public function getPageImpressions(?string $startDate = null, ?string $endDate = null, int $limit = 10): array {
+    public function getPageImpressions(?string $startDate = null, ?string $endDate = null, int $limit = 10): array
+    {
         try {
             $startDate = $startDate ?? date('Y-m-d', strtotime('-30 days'));
             $endDate = $endDate ?? date('Y-m-d');
-            
+
             $startTs = $startDate . ' 00:00:00';
             $endTs = $endDate . ' 23:59:59';
 
@@ -193,12 +200,12 @@ class AnalyticsModel {
                 ORDER BY total_impressions DESC
                 LIMIT ?
             ");
-            
+
             if (!$stmt) {
                 logError('Prepare failed: ' . $this->mysqli->error);
                 return [];
             }
-            
+
             $stmt->bind_param('ssi', $startTs, $endTs, $limit);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -212,7 +219,8 @@ class AnalyticsModel {
     /**
      * Get service views data
      */
-    public function getServiceViews(?string $startDate = null, ?string $endDate = null, int $limit = 10): array {
+    public function getServiceViews(?string $startDate = null, ?string $endDate = null, int $limit = 10): array
+    {
         try {
             $startDate = $startDate ?? date('Y-m-d', strtotime('-30 days'));
             $endDate = $endDate ?? date('Y-m-d');
@@ -252,7 +260,8 @@ class AnalyticsModel {
     /**
      * Get service impressions data
      */
-    public function getServiceImpressions(?string $startDate = null, ?string $endDate = null, int $limit = 10): array {
+    public function getServiceImpressions(?string $startDate = null, ?string $endDate = null, int $limit = 10): array
+    {
         try {
             $startDate = $startDate ?? date('Y-m-d', strtotime('-30 days'));
             $endDate = $endDate ?? date('Y-m-d');
@@ -292,11 +301,12 @@ class AnalyticsModel {
     /**
      * Get login audit data
      */
-    public function getLoginAudit(?string $startDate = null, ?string $endDate = null, int $limit = 50): array {
+    public function getLoginAudit(?string $startDate = null, ?string $endDate = null, int $limit = 50): array
+    {
         try {
             $startDate = $startDate ?? date('Y-m-d', strtotime('-30 days'));
             $endDate = $endDate ?? date('Y-m-d');
-            
+
             $startTs = $startDate . ' 00:00:00';
             $endTs = $endDate . ' 23:59:59';
 
@@ -313,12 +323,12 @@ class AnalyticsModel {
                 ORDER BY created_at DESC
                 LIMIT ?
             ");
-            
+
             if (!$stmt) {
                 logError('Prepare failed: ' . $this->mysqli->error);
                 return [];
             }
-            
+
             $stmt->bind_param('ssi', $startTs, $endTs, $limit);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -332,7 +342,8 @@ class AnalyticsModel {
     /**
      * Get OAuth audit log data
      */
-    public function getOAuthAuditLog(?string $startDate = null, ?string $endDate = null, int $limit = 50): array {
+    public function getOAuthAuditLog(?string $startDate = null, ?string $endDate = null, int $limit = 50): array
+    {
         try {
             if (!$this->tableExists('auth_audit_log')) {
                 logError('Analytics getOAuthAuditLog error: auth_audit_log table missing');
@@ -341,7 +352,7 @@ class AnalyticsModel {
 
             $startDate = $startDate ?? date('Y-m-d', strtotime('-30 days'));
             $endDate = $endDate ?? date('Y-m-d');
-            
+
             $startTs = $startDate . ' 00:00:00';
             $endTs = $endDate . ' 23:59:59';
 
@@ -359,12 +370,12 @@ class AnalyticsModel {
                 ORDER BY created_at DESC
                 LIMIT ?
             ");
-            
+
             if (!$stmt) {
                 logError('Prepare failed: ' . $this->mysqli->error);
                 return [];
             }
-            
+
             $stmt->bind_param('ssi', $startTs, $endTs, $limit);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -379,7 +390,8 @@ class AnalyticsModel {
      * Ingest client-side analytics event into `analytics_events` table
      * Returns inserted event ID or null on failure
      */
-    public function ingestEvent(string $eventName, array $eventParams = [], ?int $userId = null, ?string $firebaseUid = null, ?string $ip = null, ?string $userAgent = null): ?int {
+    public function ingestEvent(string $eventName, array $eventParams = [], ?int $userId = null, ?string $firebaseUid = null, ?string $ip = null, ?string $userAgent = null): ?int
+    {
         try {
             $paramsJson = empty($eventParams) ? null : json_encode($eventParams);
             $stmt = $this->mysqli->prepare("
@@ -401,7 +413,8 @@ class AnalyticsModel {
     /**
      * Get recent ingested events for admin review
      */
-    public function getRecentEvents(int $limit = 50): array {
+    public function getRecentEvents(int $limit = 50): array
+    {
         try {
             $limit = max(1, min(500, $limit));
             $stmt = $this->mysqli->prepare("SELECT id, user_id, firebase_uid, event_name, event_params, ip_address, user_agent, created_at FROM analytics_events ORDER BY created_at DESC LIMIT ?");
@@ -422,11 +435,12 @@ class AnalyticsModel {
     /**
      * Get activity logs
      */
-    public function getActivityLogs(?string $startDate = null, ?string $endDate = null, int $limit = 50): array {
+    public function getActivityLogs(?string $startDate = null, ?string $endDate = null, int $limit = 50): array
+    {
         try {
             $startDate = $startDate ?? date('Y-m-d', strtotime('-30 days'));
             $endDate = $endDate ?? date('Y-m-d');
-            
+
             $startTs = $startDate . ' 00:00:00';
             $endTs = $endDate . ' 23:59:59';
 
@@ -445,12 +459,12 @@ class AnalyticsModel {
                 ORDER BY created_at DESC
                 LIMIT ?
             ");
-            
+
             if (!$stmt) {
                 logError('Prepare failed: ' . $this->mysqli->error);
                 return [];
             }
-            
+
             $stmt->bind_param('ssi', $startTs, $endTs, $limit);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -464,7 +478,8 @@ class AnalyticsModel {
     /**
      * Get failed login attempts (Security Alert) - Optimized
      */
-    public function getFailedLoginAttempts(int $hours = 24): array {
+    public function getFailedLoginAttempts(int $hours = 24): array
+    {
         try {
             $date = date('Y-m-d H:i:s', strtotime("-{$hours} hours"));
 
@@ -481,12 +496,12 @@ class AnalyticsModel {
                 ORDER BY attempts DESC
                 LIMIT 100
             ");
-            
+
             if (!$stmt) {
                 logError('Prepare failed: ' . $this->mysqli->error);
                 return [];
             }
-            
+
             $stmt->bind_param('s', $date);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -500,7 +515,8 @@ class AnalyticsModel {
     /**
      * Get suspicious OAuth activity (Security Alert) - Optimized
      */
-    public function getSuspiciousOAuthActivity(int $hours = 24): array {
+    public function getSuspiciousOAuthActivity(int $hours = 24): array
+    {
         try {
             if (!$this->tableExists('auth_audit_log')) {
                 logError('Analytics getSuspiciousOAuthActivity error: auth_audit_log table missing');
@@ -523,12 +539,12 @@ class AnalyticsModel {
                 ORDER BY activity_count DESC
                 LIMIT 100
             ");
-            
+
             if (!$stmt) {
                 logError('Prepare failed: ' . $this->mysqli->error);
                 return [];
             }
-            
+
             $stmt->bind_param('s', $date);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -542,10 +558,11 @@ class AnalyticsModel {
     /**
      * Get daily statistics chart data - Optimized single query
      */
-    public function getDailyStats(int $days = 30): array {
+    public function getDailyStats(int $days = 30): array
+    {
         try {
             $startDate = date('Y-m-d', strtotime("-{$days} days")) . ' 00:00:00';
-            
+
             $stmt = $this->mysqli->prepare("
                 SELECT 
                     DATE(created_at) as date,
@@ -563,12 +580,12 @@ class AnalyticsModel {
                 GROUP BY DATE(created_at)
                 ORDER BY date ASC
             ");
-            
+
             if (!$stmt) {
                 logError('Prepare failed: ' . $this->mysqli->error);
                 return [];
             }
-            
+
             $stmt->bind_param('sss', $startDate, $startDate, $startDate);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -582,7 +599,8 @@ class AnalyticsModel {
     /**
      * Get top pages by views - Optimized without sub-queries
      */
-    public function getTopPages(int $limit = 5): array {
+    public function getTopPages(int $limit = 5): array
+    {
         try {
             $stmt = $this->mysqli->prepare("
                 SELECT * FROM (
@@ -626,12 +644,12 @@ class AnalyticsModel {
                 ORDER BY views DESC
                 LIMIT ?
             ");
-            
+
             if (!$stmt) {
                 logError('Prepare failed: ' . $this->mysqli->error);
                 return [];
             }
-            
+
             $stmt->bind_param('i', $limit);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -645,7 +663,8 @@ class AnalyticsModel {
     /**
      * Get summary statistics
      */
-    public function getSummaryStats(): array {
+    public function getSummaryStats(): array
+    {
         $stats = [
             'total_visitors' => 0,
             'total_posts' => 0,
@@ -844,7 +863,8 @@ class AnalyticsModel {
     /**
      * Check if a table exists
      */
-    private function tableExists(string $tableName): bool {
+    private function tableExists(string $tableName): bool
+    {
         try {
             $result = @$this->mysqli->query("SHOW TABLES LIKE '$tableName'");
             return $result && $result->num_rows > 0;
@@ -856,7 +876,8 @@ class AnalyticsModel {
     /**
      * Clear logs (admin function)
      */
-    public function clearLogs(string $logType = 'activity', ?string $before = null): bool {
+    public function clearLogs(string $logType = 'activity', ?string $before = null): bool
+    {
         $before = $before ?? date('Y-m-d', strtotime('-90 days'));
 
         // auth_audit_log holds both login and oauth audit events.
@@ -930,7 +951,8 @@ class AnalyticsModel {
     /**
      * Export data as CSV
      */
-    public function exportAsCSV(string $dataType = 'all', ?string $startDate = null, ?string $endDate = null): string {
+    public function exportAsCSV(string $dataType = 'all', ?string $startDate = null, ?string $endDate = null): string
+    {
         $startDate = $startDate ?? date('Y-m-d', strtotime('-30 days'));
         $endDate = $endDate ?? date('Y-m-d');
 
@@ -978,7 +1000,281 @@ class AnalyticsModel {
     /**
      * Sanitize CSV values
      */
-    private function sanitizeCSV(string $value): string {
+    private function sanitizeCSV(string $value): string
+    {
         return str_replace('"', '""', $value);
+    }
+
+    /**
+     * Get real-time activity feed (last 50 events)
+     */
+    public function getRealtimeActivityFeed(int $limit = 50): array
+    {
+        try {
+            // Combine multiple activity sources
+            $activities = [];
+
+            // Get recent logins
+            $stmt = $this->mysqli->prepare("
+                SELECT 
+                    'login' as activity_type,
+                    CASE WHEN success = '1' THEN 'success' ELSE 'failed' END as status,
+                    user_id,
+                    ip_address,
+                    created_at as timestamp,
+                    user_agent,
+                    NULL as details
+                FROM auth_audit_log
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                ORDER BY created_at DESC
+                LIMIT ?
+            ");
+            $stmt->bind_param('i', $limit);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            while ($row = $result->fetch_assoc()) {
+                $activities[] = $row;
+            }
+
+            // Get recent API calls (if api_calls table exists)
+            $checkTable = $this->mysqli->query("SHOW TABLES LIKE 'api_calls'");
+            if ($checkTable && $checkTable->num_rows > 0) {
+                $stmt = $this->mysqli->prepare("
+                    SELECT 
+                        'api_call' as activity_type,
+                        status_code as status,
+                        user_id,
+                        client_ip as ip_address,
+                        created_at as timestamp,
+                        endpoint as details,
+                        NULL as user_agent
+                    FROM api_calls
+                    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                    ORDER BY created_at DESC
+                    LIMIT ?
+                ");
+                $stmt->bind_param('i', $limit);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                while ($row = $result->fetch_assoc()) {
+                    $activities[] = $row;
+                }
+            }
+
+            // Sort by timestamp descending
+            usort($activities, function ($a, $b) {
+                return strtotime($b['timestamp']) - strtotime($a['timestamp']);
+            });
+
+            return array_slice($activities, 0, $limit);
+        } catch (Exception $e) {
+            logError('Analytics getRealtimeActivityFeed error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get currently active users
+     */
+    public function getActiveUsers(int $minutesThreshold = 15): array
+    {
+        try {
+            $stmt = $this->mysqli->prepare("
+                SELECT 
+                    u.id,
+                    u.username,
+                    u.email,
+                    a.ip_address,
+                    a.created_at as last_activity,
+                    u.avatar_url,
+                    COUNT(DISTINCT a.id) as activity_count
+                FROM users u
+                INNER JOIN auth_audit_log a ON u.id = a.user_id
+                WHERE a.success = '1' 
+                  AND a.created_at >= DATE_SUB(NOW(), INTERVAL ? MINUTE)
+                GROUP BY u.id, a.ip_address
+                ORDER BY a.created_at DESC
+            ");
+            $stmt->bind_param('i', $minutesThreshold);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            return $result->fetch_all(MYSQLI_ASSOC) ?? [];
+        } catch (Exception $e) {
+            logError('Analytics getActiveUsers error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get system health metrics
+     */
+    public function getSystemHealthMetrics(): array
+    {
+        try {
+            $metrics = [
+                'timestamp' => date('Y-m-d H:i:s'),
+                'database' => $this->getDatabaseHealth(),
+                'cache' => $this->getCacheHealth(),
+                'disk_usage' => $this->getDiskUsage(),
+                'php_info' => [
+                    'version' => phpversion(),
+                    'memory_limit' => ini_get('memory_limit'),
+                    'max_execution_time' => ini_get('max_execution_time'),
+                ],
+            ];
+            return $metrics;
+        } catch (Exception $e) {
+            logError('Analytics getSystemHealthMetrics error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get database health status
+     */
+    private function getDatabaseHealth(): array
+    {
+        try {
+            $result = $this->mysqli->query("SHOW STATUS LIKE '%'");
+            $status = [];
+            while ($row = $result->fetch_assoc()) {
+                if (in_array($row['Variable_name'], ['Threads_connected', 'Threads_running', 'Questions', 'Slow_queries'])) {
+                    $status[$row['Variable_name']] = $row['Value'];
+                }
+            }
+
+            $tables = $this->mysqli->query("SELECT COUNT(*) as count FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()");
+            $tableCount = $tables->fetch_assoc()['count'] ?? 0;
+
+            return [
+                'status' => 'healthy',
+                'connected_threads' => (int) ($status['Threads_connected'] ?? 0),
+                'running_threads' => (int) ($status['Threads_running'] ?? 0),
+                'total_queries' => (int) ($status['Questions'] ?? 0),
+                'slow_queries' => (int) ($status['Slow_queries'] ?? 0),
+                'table_count' => $tableCount,
+            ];
+        } catch (Exception $e) {
+            return ['status' => 'error', 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get cache health status
+     */
+    private function getCacheHealth(): array
+    {
+        try {
+            // Check if Redis or Memcached is available
+            if (extension_loaded('redis')) {
+                return ['available' => true, 'type' => 'redis', 'status' => 'enabled'];
+            } elseif (extension_loaded('memcached')) {
+                return ['available' => true, 'type' => 'memcached', 'status' => 'enabled'];
+            } else {
+                return ['available' => false, 'type' => 'none', 'status' => 'file-based'];
+            }
+        } catch (Exception $e) {
+            return ['available' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get disk usage statistics
+     */
+    private function getDiskUsage(): array
+    {
+        try {
+            $rootPath = dirname(dirname(dirname(__DIR__)));
+            $totalSpace = disk_total_space($rootPath);
+            $freeSpace = disk_free_space($rootPath);
+            $usedSpace = $totalSpace - $freeSpace;
+            $usagePercent = ($usedSpace / $totalSpace) * 100;
+
+            return [
+                'total_gb' => round($totalSpace / (1024 ** 3), 2),
+                'used_gb' => round($usedSpace / (1024 ** 3), 2),
+                'free_gb' => round($freeSpace / (1024 ** 3), 2),
+                'usage_percent' => round($usagePercent, 2),
+                'status' => $usagePercent > 80 ? 'warning' : 'healthy',
+            ];
+        } catch (Exception $e) {
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get real-time alerts (critical events)
+     */
+    public function getRealtimeAlerts(int $minutesThreshold = 60, int $limit = 20): array
+    {
+        try {
+            $alerts = [];
+
+            // Failed login attempts
+            $stmt = $this->mysqli->prepare("
+                SELECT 
+                    'failed_login' as alert_type,
+                    'warning' as severity,
+                    COUNT(*) as count,
+                    MAX(created_at) as last_occurrence,
+                    ip_address,
+                    'Multiple failed login attempts' as message
+                FROM auth_audit_log
+                WHERE success = '0' 
+                  AND created_at >= DATE_SUB(NOW(), INTERVAL ? MINUTE)
+                GROUP BY ip_address
+                HAVING count >= 3
+                ORDER BY count DESC
+                LIMIT ?
+            ");
+            $stmt->bind_param('ii', $minutesThreshold, $limit);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            while ($row = $result->fetch_assoc()) {
+                $alerts[] = $row;
+            }
+
+            // Disk usage warning
+            $diskUsage = $this->getDiskUsage();
+            if (isset($diskUsage['usage_percent']) && $diskUsage['usage_percent'] > 80) {
+                $alerts[] = [
+                    'alert_type' => 'disk_usage',
+                    'severity' => $diskUsage['usage_percent'] > 90 ? 'critical' : 'warning',
+                    'message' => 'Disk usage at ' . $diskUsage['usage_percent'] . '%',
+                    'last_occurrence' => date('Y-m-d H:i:s'),
+                ];
+            }
+
+            return array_slice($alerts, 0, $limit);
+        } catch (Exception $e) {
+            logError('Analytics getRealtimeAlerts error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get activity summary statistics
+     */
+    public function getActivitySummary(int $hoursThreshold = 24): array
+    {
+        try {
+            $stmt = $this->mysqli->prepare("
+                SELECT 
+                    COUNT(*) as total_logins,
+                    SUM(CASE WHEN success = '1' THEN 1 ELSE 0 END) as successful_logins,
+                    SUM(CASE WHEN success = '0' THEN 1 ELSE 0 END) as failed_logins,
+                    COUNT(DISTINCT user_id) as unique_users,
+                    COUNT(DISTINCT ip_address) as unique_ips
+                FROM auth_audit_log
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL ? HOUR)
+            ");
+            $stmt->bind_param('i', $hoursThreshold);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            return $result->fetch_assoc() ?? [];
+        } catch (Exception $e) {
+            logError('Analytics getActivitySummary error: ' . $e->getMessage());
+            return [];
+        }
     }
 }

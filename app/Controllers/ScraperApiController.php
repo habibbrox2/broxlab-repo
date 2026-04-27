@@ -1853,7 +1853,7 @@ if (!function_exists('scraperPushToNullableString')) {
                 // Attempt AI-powered error recovery for articles
                 $recoveryAttempted = false;
                 $recoveredPayload = null;
-                
+
                 if ($dataType === 'articles' && !empty($payload['title'])) {
                     $recoveredPayload = scraperPushAiRetryFailedItem($mysqli, 'articles', $payload, $e->getMessage());
                     if (is_array($recoveredPayload)) {
@@ -1910,11 +1910,12 @@ if (!function_exists('scraperPushToNullableString')) {
                         }
                     }
                 }
-                
+
                 // If recovery wasn't attempted or failed, log the original error
-                $broxScrapModel->markIncomingItemFailed($itemId, 
-                    $recoveryAttempted 
-                        ? 'AI recovery failed: ' . $e->getMessage() 
+                $broxScrapModel->markIncomingItemFailed(
+                    $itemId,
+                    $recoveryAttempted
+                        ? 'AI recovery failed: ' . $e->getMessage()
                         : $e->getMessage()
                 );
                 $summary['failed']++;
