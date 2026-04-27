@@ -58,9 +58,10 @@
             </div>
             {% if post.created_at or post.published_at %}
               <div class="text-white">
-                <i class="bi bi-clock-history me-1"></i>
-                <time datetime="{{ (post.published_at|default(post.created_at))|date("Y-m-d") }}">
-                  {{ (post.published_at|default(post.created_at))|time_ago }}
+                <i class="bi bi-calendar-check me-1"></i>
+                <span class="small">Published on</span>
+                <time datetime="{{ (post.published_at|default(post.created_at))|date("Y-m-d") }}" class="fw-semibold">
+                  {{ (post.published_at|default(post.created_at))|date("M j, Y \\a\\t g:i A") }}
                 </time>
               </div>
             {% endif %}
@@ -133,7 +134,7 @@
                   <i class="bi bi-pen me-1"></i>Article Author
                 </p>
                 <p class="text-muted mb-0 small">
-                  Published <time datetime="{{ (post.published_at|default(post.created_at))|date("Y-m-d") }}">{{ (post.published_at|default(post.created_at))|time_ago }}</time>
+                  Published on <time datetime="{{ (post.published_at|default(post.created_at))|date("Y-m-d") }}">{{ (post.published_at|default(post.created_at))|date("M j, Y \\a\\t g:i A") }}</time>
                 </p>
               </div>
               <div>
@@ -268,7 +269,7 @@
                           <i class="bi bi-eye-fill me-1"></i>{{ pp.views|number_format }}
                         </span>
                         <span>
-                          <i class="bi bi-clock-history me-1"></i>{{ (pp.published_at|default(pp.created_at))|time_ago }}
+                          <i class="bi bi-calendar-check me-1"></i>{{ (pp.published_at|default(pp.created_at))|date("M j, Y \\a\\t g:i A") }}
                         </span>
                       </div>
                     </li>
@@ -346,7 +347,7 @@
                     <span class="text-muted small">
                       <i class="bi bi-calendar-check text-info me-1"></i>Published
                     </span>
-                    <span class="fw-bold small">{{ (post.published_at|default(post.created_at))|date("M d, Y") }}</span>
+                    <span class="fw-bold small">{{ (post.published_at|default(post.created_at))|date("M j, Y \\a\\t g:i A") }}</span>
                   </div>
                 {% endif %}
                 <div class="d-flex align-items-center justify-content-between">
@@ -423,3 +424,11 @@
     addReadingProgress();
   </script>
 {% endblock %}
+
+
+
+
+
+
+
+

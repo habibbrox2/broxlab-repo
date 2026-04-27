@@ -719,22 +719,15 @@ if (!function_exists('scraperPushToNullableString')) {
     {
         $tagIds = [];
         foreach (scraperPushNormalizeStringList($rawTags) as $tagName) {
-            if (function_exists('slugify_banglish_js_parity_or_empty')) {
-                $tagSlug = slugify_banglish_js_parity_or_empty((string) $tagName);
-            } elseif (function_exists('slugify_banglish_js_parity')) {
-                $tagSlug = slugify_banglish_js_parity((string) $tagName);
-            } elseif (function_exists('slugify')) {
-                $tagSlug = slugify($tagName);
-            } else {
-                $tagSlug = strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', (string) $tagName), '-'));
-            }
-            $existing = $tagSlug !== '' ? $contentModel->getTagBySlug($tagSlug) : null;
+            // Use ContentModel's slugify method for consistency
+            $tagSlug = $contentModel->slugify($tagName);
+            $existing = $tagSlug !== '' && $tagSlug !== 'n-a' ? $contentModel->getTagBySlug($tagSlug) : null;
             if (is_array($existing) && (int) ($existing['id'] ?? 0) > 0) {
                 $tagIds[] = (int) $existing['id'];
                 continue;
             }
 
-            $createdId = (int) $contentModel->createTag($tagName, $tagSlug !== '' ? $tagSlug : null);
+            $createdId = (int) $contentModel->createTag($tagName, $tagSlug !== '' && $tagSlug !== 'n-a' ? $tagSlug : null);
             if ($createdId > 0) {
                 $tagIds[] = $createdId;
             }
@@ -747,22 +740,15 @@ if (!function_exists('scraperPushToNullableString')) {
     {
         $categoryIds = [];
         foreach (scraperPushNormalizeStringList($rawCategories) as $categoryName) {
-            if (function_exists('slugify_banglish_js_parity_or_empty')) {
-                $categorySlug = slugify_banglish_js_parity_or_empty((string) $categoryName);
-            } elseif (function_exists('slugify_banglish_js_parity')) {
-                $categorySlug = slugify_banglish_js_parity((string) $categoryName);
-            } elseif (function_exists('slugify')) {
-                $categorySlug = slugify($categoryName);
-            } else {
-                $categorySlug = strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', (string) $categoryName), '-'));
-            }
-            $existing = $categorySlug !== '' ? $contentModel->getCategoryBySlug($categorySlug) : null;
+            // Use ContentModel's slugify method for consistency
+            $categorySlug = $contentModel->slugify($categoryName);
+            $existing = $categorySlug !== '' && $categorySlug !== 'n-a' ? $contentModel->getCategoryBySlug($categorySlug) : null;
             if (is_array($existing) && (int) ($existing['id'] ?? 0) > 0) {
                 $categoryIds[] = (int) $existing['id'];
                 continue;
             }
 
-            $createdId = (int) $contentModel->createCategory($categoryName, $categorySlug !== '' ? $categorySlug : null);
+            $createdId = (int) $contentModel->createCategory($categoryName, $categorySlug !== '' && $categorySlug !== 'n-a' ? $categorySlug : null);
             if ($createdId > 0) {
                 $categoryIds[] = $createdId;
             }
@@ -3052,3 +3038,5 @@ $router->post('/admin/api/scrap-control-center/pipeline-runs/{id}/retry', ['midd
         'requeued_count' => $result['requeued_count'],
     ]);
 });
+
+

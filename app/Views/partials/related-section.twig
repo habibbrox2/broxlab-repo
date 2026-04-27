@@ -115,6 +115,9 @@
 
                 <div class="related-item-footer d-flex align-items-center justify-content-between mt-3">
                   <div class="related-item-stats small related-stats-styled">
+                    {% if it.published_at or it.created_at %}
+                      <span class="me-3"><i class="bi bi-calendar-check me-1"></i>{{ (it.published_at|default(it.created_at))|date("M j, Y") }}</span>
+                    {% endif %}
                     <span><i class="bi bi-eye-fill me-1"></i>{{ it.views|default(0) }}</span>
                     <span class="ms-3"><i class="bi bi-bar-chart-line me-1"></i>{{ it.impressions|default(0) }}</span>
                   </div>
@@ -140,3 +143,5 @@
   </div>
 </section>
 {% endif %}
+
+

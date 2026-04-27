@@ -7,7 +7,7 @@ Read first:
 1. `AGENTS.md`
 2. `README.md`
 3. `SECURITY.md`
-4. `system/prompts/INDEX.md` only for prompt work
+4. `/.ai` only for coding agents, not for human instructions
 
 ## Project map
 

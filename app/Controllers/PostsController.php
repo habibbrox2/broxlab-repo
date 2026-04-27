@@ -111,15 +111,20 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             $published = $status === 'published' ? 1 : 0;
             $sendPushNotification = isset($_POST['send_push_notification']) && (string)$_POST['send_push_notification'] === '1';
 
+            $published_at = null;
+            if ($published) {
+                $published_at = date('Y-m-d H:i:s');
+            }
+
             $postId = $contentModel->createPost(
                 $title,
                 $content,
                 $author,
                 $slug,
                 $published,
-                $reader_indexing
+                $reader_indexing,
+                $published_at
             );
-
             if (!$postId) {
                 logActivity("Post Creation Failed", "post", 0, ['title' => $title], 'failure');
                 showMessage('Failed to create post', 'error');
@@ -271,15 +276,20 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             $wasPublished = $previousPost ? ($previousPost['published'] ?? false) : false;
             $previousStatus = $previousPost ? ($previousPost['published'] ? 'published' : 'draft') : 'draft';
 
+            $published_at = null;
+            if ($published && !$wasPublished) {
+                $published_at = date('Y-m-d H:i:s');
+            }
+
             $result = $contentModel->updatePost(
                 $id,
                 $title,
                 $content,
                 $slug,
                 $published,
-                $reader_indexing
+                $reader_indexing,
+                $published_at
             );
-
             if (!$result) {
                 logActivity("Post Update Failed", "post", $id, ['title' => $title], 'failure');
                 showMessage('Failed to update post', 'error');
@@ -426,7 +436,7 @@ $router->post('/api/posts/autosave', ['middleware' => ['auth', 'admin_only']], f
 
     if ($id) {
         // Auto-save with status support
-        $contentModel->updatePost($id, $title, $content, $slug, $published, null);
+        $contentModel->updatePost($id, $title, $content, $slug, $published, null, null);
         $response = ['success' => true, 'message' => 'Post auto-saved', 'status' => $status, 'published' => $published];
     }
     else {

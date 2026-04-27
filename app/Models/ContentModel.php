@@ -475,11 +475,25 @@ class ContentModel
         return (bool)$ok;
     }
 
-    public function updatePost($id, $title, $content, $slug, $published, $reader_indexing)
+    public function updatePost($id, $title, $content, $slug, $published, $reader_indexing, $published_at = null)
     {
+        if ($published_at !== null && trim((string)$published_at) !== '') {
+            $ts = strtotime((string)$published_at);
+            if ($ts !== false) {
+                $normalizedPublishedAt = date('Y-m-d H:i:s', $ts);
+                $stmt = $this->mysqli->prepare("
+                    UPDATE posts
+                    SET title = ?, content = ?, slug = ?, published = ?, reader_indexing = ?, published_at = ?
+                    WHERE id = ?
+                ");
+                $stmt->bind_param("sssiisi", $title, $content, $slug, $published, $reader_indexing, $normalizedPublishedAt, $id);
+                return $stmt->execute();
+            }
+        }
+
         $stmt = $this->mysqli->prepare("
-            UPDATE posts 
-            SET title = ?, content = ?, slug = ?, published = ?, reader_indexing = ? 
+            UPDATE posts
+            SET title = ?, content = ?, slug = ?, published = ?, reader_indexing = ?
             WHERE id = ?
         ");
         $stmt->bind_param("sssiii", $title, $content, $slug, $published, $reader_indexing, $id);
@@ -1811,6 +1825,9 @@ class ContentModel
 
         foreach ($rows as &$row) {
             $this->prepareRelatedItem($row, 'post');
+            // Add tags and categories for related posts
+            $row['tags'] = $this->getTagsForContent('post', $row['id']);
+            $row['categories'] = $this->getCategoriesForContent('post', $row['id']);
         }
         unset($row);
 
@@ -1863,3 +1880,5 @@ class ContentModel
         $row['type'] = $type;
     }
 }
+
+

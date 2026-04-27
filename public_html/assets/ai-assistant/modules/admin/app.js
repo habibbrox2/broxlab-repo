@@ -19,6 +19,7 @@ const UI = {
   input: document.getElementById('adminAiInput'),
   sendBtn: document.getElementById('adminAiSend'),
   loading: document.getElementById('adminAiTypingIndicator'),
+  thinkingIndicator: document.getElementById('adminAiThinking'),
   history: document.getElementById('adminAiHistory'),
   historyEmpty: document.querySelector('.brox-ai-history-empty'),
   title: document.getElementById('adminAiTitle'),
@@ -366,24 +367,17 @@ async function handleUserMessage() {
   if (UI.loading) {
     UI.loading.classList.remove('d-none');
   }
+  if (UI.thinkingIndicator) {
+    UI.thinkingIndicator.classList.remove('brox-ai-hidden');
+  }
 
   try {
-    // Build system prompt
-    const systemPrompt = [
-      'You are Brox, the professional admin assistant for BroxLab.',
-      'Provide clear, actionable guidance for administrative tasks.',
-      'Keep responses concise but comprehensive.',
-      'If uncertain, ask clarifying questions.',
-    ].join('\n');
-
-    // Call AI provider
-    const messages = [
-      { role: 'system', content: systemPrompt, },
-      ...chatHistory.map(msg => ({
-        role: msg.role,
-        content: msg.text,
-      })),
-    ];
+    // System prompt is now handled by the backend PromptLoader
+    // Build messages array with chat history
+    const messages = chatHistory.map(msg => ({
+      role: msg.role,
+      content: msg.text,
+    }));
 
     const response = await callAI(messages);
     const reply = response.choices?.[0]?.message?.content || 'No response';
@@ -403,6 +397,9 @@ async function handleUserMessage() {
   } finally {
     if (UI.loading) {
       UI.loading.classList.add('d-none');
+    }
+    if (UI.thinkingIndicator) {
+      UI.thinkingIndicator.classList.add('brox-ai-hidden');
     }
   }
 }
