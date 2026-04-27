@@ -601,6 +601,16 @@ if (!function_exists('scraperPushToNullableString')) {
         return $str === '' ? null : $str;
     }
 
+    function scraperPushToHtmlPreservingString($value): ?string
+    {
+        if (!is_scalar($value)) {
+            return null;
+        }
+        // Only trim whitespace, but preserve HTML tags and formatting
+        $str = trim((string) $value);
+        return $str === '' ? null : $str;
+    }
+
     function scraperPushParsePrice($raw): float
     {
         $value = scraperPushToNullableString($raw);
@@ -846,9 +856,10 @@ if (!function_exists('scraperPushToNullableString')) {
 
     function scraperPushBuildArticleContent(array $publishPayload, array $row): string
     {
-        $body = scraperPushToNullableString($publishPayload['bodyText'] ?? null)
-            ?? scraperPushToNullableString($publishPayload['body_text'] ?? null)
-            ?? scraperPushToNullableString($publishPayload['content'] ?? null)
+        // Use HTML-preserving function for body text to maintain <p>, <br>, and other formatting
+        $body = scraperPushToHtmlPreservingString($publishPayload['bodyText'] ?? null)
+            ?? scraperPushToHtmlPreservingString($publishPayload['body_text'] ?? null)
+            ?? scraperPushToHtmlPreservingString($publishPayload['content'] ?? null)
             ?? '';
         $excerpt = scraperPushToNullableString($publishPayload['excerpt'] ?? null) ?? scraperPushToNullableString($row['excerpt'] ?? null) ?? '';
         $sourceUrl = scraperPushToNullableString($publishPayload['url'] ?? null)
