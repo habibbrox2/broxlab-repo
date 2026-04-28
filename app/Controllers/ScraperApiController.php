@@ -1008,11 +1008,14 @@ if (!function_exists('scraperPushToNullableString')) {
                 '[PipelineTrigger] Failed to trigger pipeline run',
                 'ERROR',
                 [
-                    'url' => $url,
-                    'http_code' => $httpCode,
-                    'curl_error' => $curlError,
-                    'content_type' => $contentType,
-                    'limit' => $limit,
+                    'data' => [
+                        'url' => $url,
+                        'http_code' => $httpCode,
+                        'curl_error' => $curlError,
+                        'content_type' => $contentType,
+                        'limit' => $limit,
+                        'response_body' => substr($raw, 0, 500) // First 500 chars for debugging
+                    ]
                 ]
             );
         }
