@@ -1,15 +1,15 @@
 <?php
 class HomeModel
 {
-    private $db;
-    private static $hasContentRatingsTable = null;
+    private \mysqli $db;
+    private static ?bool $hasContentRatingsTable = null;
 
-    public function __construct($mysqli)
+    public function __construct(\mysqli $mysqli)
     {
         $this->db = $mysqli;
     }
 
-    private function extractMultipleImages($html, $limit = 3)
+    private function extractMultipleImages(string $html, int $limit = 3): array
     {
         if (empty($html)) return [];
 
@@ -33,7 +33,7 @@ class HomeModel
         return array_unique($images);
     }
     // Get tags for any content type
-    private function getTagsForContent($contentType, $contentId)
+    private function getTagsForContent(string $contentType, int $contentId): array
     {
         $sql = "SELECT t.id, t.name, t.slug
                 FROM content_tags ct
@@ -47,7 +47,7 @@ class HomeModel
     }
 
     // Get categories for any content type
-    private function getCategoriesForContent($contentType, $contentId)
+    private function getCategoriesForContent(string $contentType, int $contentId): array
     {
         $sql = "SELECT c.id, c.name, c.slug
                 FROM content_categories cc
@@ -60,7 +60,7 @@ class HomeModel
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
-    private function hasContentRatingsTable()
+    private function hasContentRatingsTable(): bool
     {
         if (self::$hasContentRatingsTable !== null) {
             return self::$hasContentRatingsTable;
@@ -76,7 +76,7 @@ class HomeModel
     }
 
     // --------------------- EXISTING FUNCTION ---------------------
-    public function getUnifiedContent($page = 1, $limit = 15, $sort = 'latest')
+    public function getUnifiedContent(int $page = 1, int $limit = 15, string $sort = 'latest'): array
     {
         $offset = ($page - 1) * $limit;
 
@@ -107,7 +107,12 @@ class HomeModel
                 0 AS views,
                 0 AS impressions,
                 'mobile' AS type,
-                NULL AS url
+                NULL AS url,
+                m.official_price,
+                m.unofficial_price,
+                m.is_official,
+                m.status,
+                m.release_date
             FROM mobiles m
             LEFT JOIN mobile_images img
                 ON m.id = img.mobile_id
@@ -128,7 +133,12 @@ class HomeModel
                 (SELECT COUNT(*) FROM views v WHERE v.content_type = 'page' AND v.content_id = p.id) AS views,
                 (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'page' AND i.content_id = p.id) AS impressions,
                 'page' AS type,
-                p.slug AS url
+                p.slug AS url,
+                NULL AS official_price,
+                NULL AS unofficial_price,
+                NULL AS is_official,
+                NULL AS status,
+                NULL AS release_date
             FROM pages p
             WHERE p.published IN ('1', 1, '0', 0)
 
@@ -143,7 +153,12 @@ class HomeModel
                 (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = po.id) AS views,
                 (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = po.id) AS impressions,
                 'post' AS type,
-                po.slug AS url
+                po.slug AS url,
+                NULL AS official_price,
+                NULL AS unofficial_price,
+                NULL AS is_official,
+                NULL AS status,
+                NULL AS release_date
             FROM posts po
             WHERE po.published IN ('1', 1, '0', 0)
         ) AS unified
@@ -198,9 +213,59 @@ class HomeModel
     }
 
     /**
+     * Get latest mobiles for the Latest Mobiles section.
+     */
+    public function getLatestMobiles(int $limit = 8): array
+    {
+        $limit = max(1, (int)$limit);
+        $sql = "
+            SELECT
+                m.id,
+                m.brand_name,
+                m.model_name,
+                m.official_price,
+                m.unofficial_price,
+                m.is_official,
+                m.status,
+                m.release_date,
+                m.created_at,
+                COALESCE(
+                    (
+                        SELECT img.image_url
+                        FROM mobile_images img
+                        WHERE img.mobile_id = m.id
+                        ORDER BY img.id ASC
+                        LIMIT 1
+                    ),
+                    NULL
+                ) AS image_path,
+                (SELECT COUNT(*) FROM views v WHERE v.content_type = 'mobile' AND v.content_id = m.id) AS views
+            FROM mobiles m
+            ORDER BY m.created_at DESC
+            LIMIT ?
+        ";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('i', $limit);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC) ?: [];
+        $stmt->close();
+
+        foreach ($rows as &$row) {
+            $row['type'] = 'mobile';
+            $row['views'] = (int)($row['views'] ?? 0);
+            $row['official_price'] = (float)($row['official_price'] ?? 0);
+            $row['unofficial_price'] = (float)($row['unofficial_price'] ?? 0);
+            $row['is_official'] = (int)($row['is_official'] ?? 0);
+        }
+
+        return $rows;
+    }
+
+    /**
      * Get top posts for homepage slider (ranked by views/impressions).
      */
-    public function getTopPosts($limit = 8)
+    public function getTopPosts(int $limit = 8): array
     {
         $limit = max(1, (int)$limit);
         $ratingSelect = $this->hasContentRatingsTable()
@@ -245,7 +310,7 @@ class HomeModel
     /**
      * Get top active services for homepage slider (ranked by views/impressions).
      */
-    public function getTopServices($limit = 8)
+    public function getTopServices(int $limit = 8): array
     {
         $limit = max(1, (int)$limit);
         $ratingSelect = $this->hasContentRatingsTable()
@@ -313,19 +378,19 @@ class HomeModel
     // --------------------- NEW FUNCTIONS ---------------------
 
     // Get contents by tag
-    public function getContentsByTag($tagId, $page = 1, $limit = 15, $sort = 'latest')
+    public function getContentsByTag(int $tagId, int $page = 1, int $limit = 15, string $sort = 'latest'): array
     {
         return $this->getContentsByRelation('tag', $tagId, $page, $limit, $sort);
     }
 
     // Get contents by category
-    public function getContentsByCategory($categoryId, $page = 1, $limit = 15, $sort = 'latest')
+    public function getContentsByCategory(int $categoryId, int $page = 1, int $limit = 15, string $sort = 'latest'): array
     {
         return $this->getContentsByRelation('category', $categoryId, $page, $limit, $sort);
     }
 
     // Internal function (used by tag & category filter)
-    private function getContentsByRelation($type, $relationId, $page, $limit, $sort)
+    private function getContentsByRelation(string $type, int $relationId, int $page, int $limit, string $sort): array
     {
         $offset = ($page - 1) * $limit;
 
@@ -456,7 +521,7 @@ class HomeModel
     /**
      * Get real-time homepage statistics
      */
-    public function getHomepageStats()
+    public function getHomepageStats(): array
     {
         $stats = [];
 

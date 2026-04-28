@@ -7,74 +7,75 @@
 ] %}
 
 {% block content %}
-<div class=\"page-sitemap public-static-page\">
-  <section class=\"public-page-head container py-4 py-lg-5\">
-    <div class=\"row align-items-center g-3\">
-      <div class=\"col-lg-8\">
-        <h1 class=\"h2 fw-bold mb-2\">Sitemap</h1>
-        <p class=\"lead text-muted mb-0\">Browse all pages and major content areas in one place.</p>
+<div class="page-sitemap public-static-page">
+  <section class="public-page-head container py-4 py-lg-5">
+    <div class="row align-items-center g-3">
+      <div class="col-lg-8">
+        <h1 class="h2 fw-bold mb-2">Sitemap</h1>
+        <p class="lead text-muted mb-0">Browse all pages and major content areas in one place.</p>
       </div>
-      <div class=\"col-lg-4 text-lg-end\">
-        <a href=\"/sitemap.xml\" class=\"btn btn-outline-primary rounded-pill\">
-          <i class=\"bi bi-code-slash me-2\"></i>Open XML Sitemap
+      <div class="col-lg-4 text-lg-end">
+        <a href="/sitemap.xml" class="btn btn-outline-primary rounded-pill">
+          <i class="bi bi-code-slash me-2"></i>Open XML Sitemap
         </a>
       </div>
     </div>
   </section>
 
-  <div class=\"container pb-4 pb-lg-5\">
-    <div class=\"row g-4\">
-      <div class=\"col-lg-3 col-md-6\">
-        <div class=\"card public-surface-card border-0 h-100\">
-          <div class=\"card-body\">
-            <h2 class=\"h5 card-title fw-bold mb-3\"><i class=\"bi bi-house-door me-2\"></i>Main Pages</h2>
-            <ul class=\"list-unstyled mb-0\">
-              <li><a href=\"/\" class=\"sitemap-link\">Home</a></li>
+  <div class="container pb-4 pb-lg-5">
+    <div class="row g-4">
+
+      <div class="col-lg-3 col-md-6">
+        <div class="card public-surface-card border-0 h-100">
+          <div class="card-body">
+            <h2 class="h5 card-title fw-bold mb-3"><i class="bi bi-house-door me-2"></i>Main Pages</h2>
+            <ul class="list-unstyled mb-0">
+              <li><a href="/" class="sitemap-link">Home</a></li>
               {% for page in staticPages %}
-              {% if page.group == 'main' %}
-              <li><a href="/{{ page.slug }}" class="sitemap-link">{{ page.title }}</a></li>
-              {% endif %}
+                {% if page.group == 'main' %}
+                  <li><a href="/{{ page.slug }}" class="sitemap-link">{{ page.title }}</a></li>
+                {% endif %}
               {% endfor %}
             </ul>
           </div>
         </div>
       </div>
 
-      <div class=\"col-lg-3 col-md-6\">
-        <div class=\"card public-surface-card border-0 h-100\">
-          <div class=\"card-body\">
-            <h2 class=\"h5 card-title fw-bold mb-3\"><i class=\"bi bi-file-earmark-text me-2\"></i>Legal</h2>
-            <ul class=\"list-unstyled mb-0\">
+      <div class="col-lg-3 col-md-6">
+        <div class="card public-surface-card border-0 h-100">
+          <div class="card-body">
+            <h2 class="h5 card-title fw-bold mb-3"><i class="bi bi-file-earmark-text me-2"></i>Legal</h2>
+            <ul class="list-unstyled mb-0">
               {% for page in staticPages %}
-              {% if page.group == 'legal' %}
-              <li><a href="/{{ page.slug }}" class="sitemap-link">{{ page.title }}</a></li>
-              {% endif %}
-              {% endfor %}
-            </ul>
-          </div>
-        </div>
-      </div>
- 
-      <div class=\"col-lg-3 col-md-6\">
-        <div class=\"card public-surface-card border-0 h-100\">
-          <div class=\"card-body\">
-            <h2 class=\"h5 card-title fw-bold mb-3\"><i class=\"bi bi-phone me-2\"></i>Services</h2>
-            <ul class=\"list-unstyled mb-0 sitemap-scroll\">
-              {% for category in Services %}
-                <li><a href=\"/category/{{ category.slug }}\" class=\"sitemap-link\">{{ category.name }}</a></li>
+                {% if page.group == 'legal' %}
+                  <li><a href="/{{ page.slug }}" class="sitemap-link">{{ page.title }}</a></li>
+                {% endif %}
               {% endfor %}
             </ul>
           </div>
         </div>
       </div>
 
-      <div class=\"col-lg-3 col-md-6\">
-        <div class=\"card public-surface-card border-0 h-100\">
-          <div class=\"card-body\">
-            <h2 class=\"h5 card-title fw-bold mb-3\"><i class=\"bi bi-tags me-2\"></i>Popular Tags</h2>
-            <div class=\"sitemap-scroll\">
+      <div class="col-lg-3 col-md-6">
+        <div class="card public-surface-card border-0 h-100">
+          <div class="card-body">
+            <h2 class="h5 card-title fw-bold mb-3"><i class="bi bi-phone me-2"></i>Services</h2>
+            <ul class="list-unstyled mb-0 sitemap-scroll">
+              {% for category in services %}
+                <li><a href="/category/{{ category.slug }}" class="sitemap-link">{{ category.name }}</a></li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        <div class="card public-surface-card border-0 h-100">
+          <div class="card-body">
+            <h2 class="h5 card-title fw-bold mb-3"><i class="bi bi-tags me-2"></i>Popular Tags</h2>
+            <div class="sitemap-scroll">
               {% for tag in tags %}
-                <a href=\"/tag/{{ tag.slug }}\" class=\"badge bg-primary text-decoration-none me-2 mb-2\">
+                <a href="/tag/{{ tag.slug }}" class="badge bg-primary text-decoration-none me-2 mb-2">
                   {{ tag.name }}
                 </a>
               {% endfor %}
@@ -82,17 +83,18 @@
           </div>
         </div>
       </div>
+
     </div>
 
-    <div class=\"card public-surface-card border-0 mt-4 mt-lg-5 p-4\">
-      <h2 class=\"h5 fw-bold mb-3\"><i class=\"bi bi-newspaper me-2\"></i>Pages</h2>
-      <div class=\"list-group list-group-flush\">
+    <div class="card public-surface-card border-0 mt-4 mt-lg-5 p-4">
+      <h2 class="h5 fw-bold mb-3"><i class="bi bi-newspaper me-2"></i>Pages</h2>
+      <div class="list-group list-group-flush">
         {% for content in contents %}
-          <a href=\"/posts/view/{{ content.slug }}\" class=\"list-group-item list-group-item-action border-0 py-2\">
-            <div class=\"d-flex justify-content-between align-items-start\">
+          <a href="/posts/view/{{ content.slug }}" class="list-group-item list-group-item-action border-0 py-2">
+            <div class="d-flex justify-content-between align-items-start">
               <div>
-                <h3 class=\"h6 mb-1\">{{ content.title }}</h3>
-                <small class=\"text-muted\">{{ content.updated_at|date('F d, Y') }}</small>
+                <h3 class="h6 mb-1">{{ content.title }}</h3>
+                <small class="text-muted">{{ content.updated_at|date('F d, Y') }}</small>
               </div>
             </div>
           </a>
@@ -100,13 +102,14 @@
       </div>
     </div>
 
-    <div class=\"row mt-4\">
-      <div class=\"col-12 text-center\">
-        <p class=\"text-muted mb-0\">
-          For a machine-readable version, visit <a href=\"/sitemap.xml\" class=\"text-primary\">/sitemap.xml</a>
+    <div class="row mt-4">
+      <div class="col-12 text-center">
+        <p class="text-muted mb-0">
+          For a machine-readable version, visit <a href="/sitemap.xml" class="text-primary">/sitemap.xml</a>
         </p>
       </div>
     </div>
+
   </div>
 </div>
 {% endblock %}
