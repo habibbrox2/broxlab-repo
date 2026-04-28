@@ -175,27 +175,27 @@
               <div class="datetime-icon me-3">
                 <i class="bi bi-calendar-event-fill fs-4"></i>
               </div>
-              <h3 class="h5 fw-bold mb-0">à¦¬à¦¾à¦‚à¦²à¦¾ à¦¤à¦¾à¦°à¦¿à¦– à¦“ à¦¸à¦®à§Ÿ</h3>
+              <h3 class="h5 fw-bold mb-0">বাংলা তারিখ ও সময়</h3>
             </div>
 
             <div class="datetime-content">
               <div class="mb-3">
                 <div class="d-flex align-items-center mb-2">
                   <i class="bi bi-calendar-date me-2 opacity-75"></i>
-                  <small class="text-white-50 fw-semibold">à¦¬à¦¾à¦‚à¦²à¦¾ à¦¤à¦¾à¦°à¦¿à¦–</small>
+                  <small class="text-white-50 fw-semibold">বাংলা তারিখ</small>
                 </div>
                 <div class="fs-6 fw-bold" id="bengali-date" style="font-family: 'Noto Sans Bengali', sans-serif;">
-                  à¦²à§‹à¦¡ à¦¹à¦šà§à¦›à§‡...
+                  লোড হচ্ছে...
                 </div>
               </div>
 
               <div class="mb-0">
                 <div class="d-flex align-items-center mb-2">
                   <i class="bi bi-clock-fill me-2 opacity-75"></i>
-                  <small class="text-white-50 fw-semibold">à¦¬à¦¾à¦‚à¦²à¦¾ à¦¸à¦®à§Ÿ</small>
+                  <small class="text-white-50 fw-semibold">বাংলা সময়</small>
                 </div>
                 <div class="fs-5 fw-bold font-monospace" id="bengali-time" style="font-family: 'JetBrains Mono', monospace;">
-                  à¦²à§‹à¦¡ à¦¹à¦šà§à¦›à§‡...
+                  লোড হচ্ছে...
                 </div>
               </div>
             </div>
@@ -533,7 +533,7 @@
   async function loadServices() {
     if (servicesLoaded) return;
     
-    servicesFeed.innerHTML = '<div class="loading-spinner" aria-live="polite"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"><span class="visually-hidden">Loading</span></div>Loading servicesâ€¦</div>';
+    servicesFeed.innerHTML = '<div class="loading-spinner" aria-live="polite"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"><span class="visually-hidden">Loading</span></div>Loading services…</div>';
     
     try {
       // Prefer server-rendered HTML partial for consistent markup (uses content-card.twig)
@@ -827,13 +827,13 @@
                 {% if mobile.official_price %}
                   <div class="mobile-card__price-item official">
                     <span class="mobile-card__price-label">Official:</span>
-                    <span class="mobile-card__price-value">à§³{{ mobile.official_price|number_format(0, '.', ',') }}</span>
+                    <span class="mobile-card__price-value">৳{{ mobile.official_price|number_format(0, '.', ',') }}</span>
                   </div>
                 {% endif %}
                 {% if mobile.unofficial_price %}
                   <div class="mobile-card__price-item unofficial">
                     <span class="mobile-card__price-label">Market:</span>
-                    <span class="mobile-card__price-value">à§³{{ mobile.unofficial_price|number_format(0, '.', ',') }}</span>
+                    <span class="mobile-card__price-value">৳{{ mobile.unofficial_price|number_format(0, '.', ',') }}</span>
                   </div>
                 {% endif %}
               </div>
