@@ -98,6 +98,10 @@
       </div>
       <!-- Pagination -->
       {% if total_pages > 1 %}
+        {# Set pagination URLs for SEO rel="next" and rel="prev" tags #}
+        {% set pagination_prev_url = current_page > 1 ? ("?page=" ~ (current_page - 1) ~ "&search=" ~ search|default("") ~ "&sort=" ~ sort|default("latest") ~ "&order=" ~ order|default("DESC") ~ "&per_page=" ~ per_page|default(12)) : null %}
+        {% set pagination_next_url = current_page < total_pages ? ("?page=" ~ (current_page + 1) ~ "&search=" ~ search|default("") ~ "&sort=" ~ sort|default("latest") ~ "&order=" ~ order|default("DESC") ~ "&per_page=" ~ per_page|default(12)) : null %}
+        
         <div class="pagination-container">
           <div class="pagination">
             {% if current_page > 1 %}

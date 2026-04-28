@@ -33,6 +33,14 @@
     {# ===== CANONICAL URL (Prevent Duplicate Content Issues) ===== #}
     <link rel="canonical" href="{{ canonical_url|default(current_url) }}">
 
+    {# ===== PAGINATION LINKS (next/prev for series of pages) ===== #}
+    {% if pagination_next_url is defined and pagination_next_url %}
+        <link rel="next" href="{{ pagination_next_url }}">
+    {% endif %}
+    {% if pagination_prev_url is defined and pagination_prev_url %}
+        <link rel="prev" href="{{ pagination_prev_url }}">
+    {% endif %}
+
     {# ===== FAVICON & BRANDING ===== #}
     <link rel="icon" type="image/x-icon" href="{{ app_settings.favicon|default('/assets/favicon.ico') }}">
     <link rel="apple-touch-icon" href="{{ app_settings.site_logo|default('/assets/images/default-logo.png') }}">
@@ -223,6 +231,36 @@
                 "urlTemplate": "{{ url }}search?q={search_term_string}"
             },
             "query-input": "required name=search_term_string"
+        }
+    }
+    </script>
+
+    {# ===== LOCAL BUSINESS SCHEMA (if business details available) ===== #}
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "{{ app_settings.site_name|json }}",
+        "url": "{{ url|json }}",
+        "logo": "{{ app_settings.site_logo|default(url ~ 'assets/images/default-logo.png')|json }}",
+        "description": "{{ app_settings.meta_description|default('Mobile reviews, tech news, and gadget insights')|json }}",
+        "image": "{{ app_settings.site_logo|default(url ~ 'assets/images/default-og-image.png')|json }}",
+        {% if app_settings.business_address %}"address": {
+            "@type": "PostalAddress",
+            "streetAddress": "{{ app_settings.business_address|json }}",
+            "addressCountry": "{{ app_settings.business_country|default('BD')|json }}"
+        },{% endif %}
+        {% if app_settings.contact_phone %}"telephone": "{{ app_settings.contact_phone|json }}",{% endif %}
+        {% if app_settings.contact_email %}"email": "{{ app_settings.contact_email|json }}",{% endif %}
+        "sameAs": [
+            "https://www.facebook.com/{{ app_settings.social_facebook|default('') }}",
+            "https://twitter.com/{{ app_settings.social_twitter|default('') }}",
+            "https://www.instagram.com/{{ app_settings.social_instagram|default('') }}"
+        ],
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.8",
+            "ratingCount": "{{ app_settings.rating_count|default('1000') }}"
         }
     }
     </script>

@@ -12,28 +12,47 @@
   <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "NewsArticle",
+  "@type": "BlogPosting",
+  "@id": "{{ canonical_url|default(current_url) }}",
   "headline": {{ post.title|json_encode }},
   "description": {{ post.content|striptags|slice(0, 160)|json_encode }},
-  "image": {{
-    post.featured_image
-      |default(post.image|default(app_settings.site_logo|default(url ~ 'assets/images/default-image.png')))
-      |json_encode
-  }},
+  "articleBody": {{ post.content|striptags|slice(0, 2000)|json_encode }},
+  "wordCount": {{ post.content|striptags|wordcount }},
+  "image": {
+    "@type": "ImageObject",
+    "url": {{ post.featured_image|default(post.image|default(app_settings.site_logo|default(url ~ 'assets/images/default-image.png')))|json_encode }},
+    "width": 1200,
+    "height": 630
+  },
   "datePublished": "{{ (post.published_at|default(post.created_at))|date('Y-m-d\\TH:i:s\\Z') }}",
   {% if post.updated_at %}"dateModified": "{{ post.updated_at|date('Y-m-d\\TH:i:s\\Z') }}",{% endif %}
   "author": {
     "@type": "Person",
-    "name": {{ post.author|json_encode }}
+    "name": {{ post.author|json_encode }},
+    "url": "{{ url|default('https://example.com') }}"
   },
   "publisher": {
     "@type": "Organization",
     "name": {{ app_settings.site_name|json_encode }},
     "logo": {
       "@type": "ImageObject",
-    "url": "{{ app_settings.site_logo|default(url ~ 'assets/images/default-logo.png') }}"
-    }
+      "url": "{{ app_settings.site_logo|default(url ~ 'assets/images/default-logo.png') }}",
+      "width": 250,
+      "height": 100
+    },
+    "url": "{{ url|default('https://example.com') }}"
+  },
+  "mainEntity": {
+    "@type": "Article",
+    "@id": "{{ canonical_url|default(current_url) }}"
+  },
+  "isPartOf": {
+    "@type": "WebSite",
+    "@id": "{{ url|default('https://example.com') }}#website"
   }
+  {% if post.categories and post.categories|length > 0 %}
+  ,"keywords": {{ post.categories|map(attribute='name')|json_encode }}
+  {% endif %}
 }
   </script>
   {# Hero Header Section #}
