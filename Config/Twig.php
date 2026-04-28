@@ -16,7 +16,7 @@ require_once __DIR__ . '/RteCacheConfig.php';
 // ============================================================
 
 if (!function_exists('env')) {
-    function env(string $key, $default = null)
+    function env(string $key, mixed $default = null)
     {
         // 1️⃣ $_ENV check
         if (isset($_ENV[$key])) {
@@ -39,7 +39,7 @@ if (!function_exists('env')) {
 }
 
 if (!function_exists('normalizeEnvValue')) {
-    function normalizeEnvValue($value)
+    function normalizeEnvValue(mixed $value): mixed
     {
         if (!is_string($value)) {
             return $value;
@@ -528,6 +528,16 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             return (int) $default;
         }));
 
+        // Word count filter
+        $twig->addFilter(new \Twig\TwigFilter('wordcount', function ($value) {
+            if (empty($value)) {
+                return 0;
+            }
+            $text = strip_tags((string)$value);
+            $words = preg_split('/\s+/', trim($text), -1, PREG_SPLIT_NO_EMPTY);
+            return count($words);
+        }));
+
         // File size format
         $twig->addFilter(new \Twig\TwigFilter('filesizeformat', function ($bytes, $decimals = 2) {
             $bytes = (float) $bytes;
@@ -537,10 +547,10 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             }
 
             $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
-            $factor = floor((strlen((string) $bytes) - 1) / 3);
+            $factor = (int) floor((strlen((string) $bytes) - 1) / 3);
 
             return sprintf(
-                "%.{$decimals}f %s",
+                "%." . (int)$decimals . "f %s",
                 $bytes / pow(1024, $factor),
                 $units[$factor] ?? 'B'
             );
@@ -838,7 +848,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             if ($bytes == 0) {
                 return "0 B";
             }
-            $i = floor(log($bytes, 1024));
+            $i = (int) floor(log($bytes, 1024));
             return round($bytes / pow(1024, $i), 2) . " " . $sizes[$i];
         }));
 

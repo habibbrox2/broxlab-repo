@@ -7,6 +7,9 @@ require_once __DIR__ . '/../Models/ContentModel.php';
 require_once __DIR__ . '/../Models/MobileModel.php';
 require_once __DIR__ . '/../Models/AIProvider.php';
 
+// Make global variables available to this file
+global $mysqli, $twig, $router;
+
 $broxScrapModel = new BroxScrapModel($mysqli);
 $contentModel = new ContentModel($mysqli);
 $mobileModel = new MobileModel($mysqli);
@@ -719,8 +722,17 @@ if (!function_exists('scraperPushToNullableString')) {
     {
         $tagIds = [];
         foreach (scraperPushNormalizeStringList($rawTags) as $tagName) {
-            // Use ContentModel's slugify method for consistency
-            $tagSlug = $contentModel->slugify($tagName);
+            // Use global slugify functions for consistency
+            $tagSlug = '';
+            if (function_exists('slugify_banglish_js_parity_or_empty')) {
+                $tagSlug = slugify_banglish_js_parity_or_empty($tagName);
+            } elseif (function_exists('slugify_banglish_js_parity')) {
+                $tagSlug = slugify_banglish_js_parity($tagName);
+            } elseif (function_exists('slugify')) {
+                $tagSlug = slugify($tagName);
+            } else {
+                $tagSlug = strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', $tagName), '-'));
+            }
             $existing = $tagSlug !== '' && $tagSlug !== 'n-a' ? $contentModel->getTagBySlug($tagSlug) : null;
             if (is_array($existing) && (int) ($existing['id'] ?? 0) > 0) {
                 $tagIds[] = (int) $existing['id'];
@@ -740,8 +752,17 @@ if (!function_exists('scraperPushToNullableString')) {
     {
         $categoryIds = [];
         foreach (scraperPushNormalizeStringList($rawCategories) as $categoryName) {
-            // Use ContentModel's slugify method for consistency
-            $categorySlug = $contentModel->slugify($categoryName);
+            // Use global slugify functions for consistency
+            $categorySlug = '';
+            if (function_exists('slugify_banglish_js_parity_or_empty')) {
+                $categorySlug = slugify_banglish_js_parity_or_empty($categoryName);
+            } elseif (function_exists('slugify_banglish_js_parity')) {
+                $categorySlug = slugify_banglish_js_parity($categoryName);
+            } elseif (function_exists('slugify')) {
+                $categorySlug = slugify($categoryName);
+            } else {
+                $categorySlug = strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', $categoryName), '-'));
+            }
             $existing = $categorySlug !== '' && $categorySlug !== 'n-a' ? $contentModel->getCategoryBySlug($categorySlug) : null;
             if (is_array($existing) && (int) ($existing['id'] ?? 0) > 0) {
                 $categoryIds[] = (int) $existing['id'];
@@ -955,6 +976,12 @@ if (!function_exists('scraperPushToNullableString')) {
             'Accept: application/json',
         ];
 
+        // Add cron token for authentication
+        $cronToken = trim((string) ($_ENV['SCRAPER_PIPELINE_CRON_TOKEN'] ?? ''));
+        if ($cronToken !== '') {
+            $headers[] = 'X-Scraper-Cron-Token: ' . $cronToken;
+        }
+
         $ch = curl_init($url);
         if ($ch === false) {
             return false;
@@ -972,6 +999,23 @@ if (!function_exists('scraperPushToNullableString')) {
 
         $raw = curl_exec($ch);
         $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        // Log failures for debugging
+        if ($httpCode !== 200 && function_exists('logError')) {
+            logError(
+                '[PipelineTrigger] Failed to trigger pipeline run',
+                'ERROR',
+                [
+                    'url' => $url,
+                    'http_code' => $httpCode,
+                    'curl_error' => $curlError,
+                    'content_type' => $contentType,
+                    'limit' => $limit,
+                ]
+            );
+        }
 
         return $httpCode === 200;
     }
@@ -1608,6 +1652,10 @@ if (!function_exists('scraperPushToNullableString')) {
                 continue;
             }
 
+            // Initialize variables before try block to ensure they're available in catch
+            $fingerprint = '';
+            $fingerprintKey = '';
+
             try {
                 $fingerprint = trim((string) ($row['content_fingerprint'] ?? ''));
                 if ($fingerprint === '') {
@@ -1616,6 +1664,12 @@ if (!function_exists('scraperPushToNullableString')) {
 
                 // Check if this fingerprint was already processed in this batch
                 $fingerprintKey = $dataType . '|' . $fingerprint;
+                if (empty($fingerprint) || empty($fingerprintKey)) {
+                    $broxScrapModel->markIncomingItemFailed($itemId, 'Unable to generate content fingerprint');
+                    $summary['failed']++;
+                    $summary['results'][] = ['id' => $itemId, 'ok' => false, 'error' => 'Unable to generate fingerprint'];
+                    continue;
+                }
                 if (isset($processedFingerprintsInBatch[$fingerprintKey])) {
                     $existingItemIdInBatch = $processedFingerprintsInBatch[$fingerprintKey];
                     $broxScrapModel->markIncomingItemPublished($itemId, 0, [
@@ -2240,7 +2294,8 @@ $router->match($pushCombinedMethods, '/api/push/data/', function () use ($mysqli
     scraperPushHandleCombinedPayload($mysqli, $broxScrapModel, $contentModel, $mobileModel);
 });
 
-$router->get('/push-endpoints', function () use ($twig) {
+$router->get('/push-endpoints', function () {
+    global $twig;
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
     $base = $host !== '' ? ($scheme . '://' . $host) : '';
@@ -2257,7 +2312,8 @@ $router->get('/push-endpoints', function () use ($twig) {
     ]);
 });
 
-$renderScrapControlCenter = function () use ($twig, $broxScrapModel) {
+$renderScrapControlCenter = function () {
+    global $twig, $broxScrapModel;
     $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 50;
     $filterType = isset($_GET['type']) ? trim((string) $_GET['type']) : null;
@@ -2287,7 +2343,8 @@ $renderScrapControlCenter = function () use ($twig, $broxScrapModel) {
 $router->get('/admin/scrap-control-center', ['middleware' => ['auth', 'admin_only']], $renderScrapControlCenter);
 $router->get('/admin/push-logs', ['middleware' => ['auth', 'admin_only']], $renderScrapControlCenter);
 
-$renderScrapLogDetail = function ($id) use ($twig, $broxScrapModel) {
+$renderScrapLogDetail = function ($id) {
+    global $twig, $broxScrapModel;
     $logId = (int) $id;
     if ($logId <= 0) {
         renderError(404, 'Push Log Not Found');
@@ -2309,7 +2366,8 @@ $renderScrapLogDetail = function ($id) use ($twig, $broxScrapModel) {
 $router->get('/admin/scrap-control-center/logs/{id}', ['middleware' => ['auth', 'admin_only']], $renderScrapLogDetail);
 $router->get('/admin/push-logs/{id}', ['middleware' => ['auth', 'admin_only']], $renderScrapLogDetail);
 
-$renderPipelineRuns = function () use ($twig, $broxScrapModel) {
+$renderPipelineRuns = function () {
+    global $twig, $broxScrapModel;
     $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 20;
     $action = isset($_GET['action']) ? trim((string) $_GET['action']) : null;
@@ -2331,7 +2389,8 @@ $renderPipelineRuns = function () use ($twig, $broxScrapModel) {
 $router->get('/admin/scrap-control-center/pipeline-runs', ['middleware' => ['auth', 'admin_only']], $renderPipelineRuns);
 $router->get('/admin/push-logs/pipeline-runs', ['middleware' => ['auth', 'admin_only']], $renderPipelineRuns);
 
-$renderPipelineRunDetail = function ($id) use ($twig, $broxScrapModel) {
+$renderPipelineRunDetail = function ($id) {
+    global $twig, $broxScrapModel;
     $runId = (int) $id;
     if ($runId <= 0) {
         renderError(404, 'Pipeline Run Not Found');
@@ -2354,7 +2413,8 @@ $router->get('/admin/scrap-control-center/pipeline-runs/{id}', ['middleware' => 
 $router->get('/admin/push-logs/pipeline-runs/{id}', ['middleware' => ['auth', 'admin_only']], $renderPipelineRunDetail);
 
 
-$renderFailedPipelineLogs = function () use ($twig, $broxScrapModel) {
+$renderFailedPipelineLogs = function () {
+    global $twig, $broxScrapModel;
     $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 20;
     $action = isset($_GET['action']) ? trim((string) $_GET['action']) : null;
@@ -2384,7 +2444,8 @@ $renderFailedPipelineLogs = function () use ($twig, $broxScrapModel) {
 $router->get('/admin/scrap-control-center/failed-pipeline-logs', ['middleware' => ['auth', 'admin_only']], $renderFailedPipelineLogs);
 $router->get('/admin/push-logs/failed-pipeline-logs', ['middleware' => ['auth', 'admin_only']], $renderFailedPipelineLogs);
 
-$renderAllPipelineLogs = function () use ($twig, $broxScrapModel) {
+$renderAllPipelineLogs = function () {
+    global $twig, $broxScrapModel;
     $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 20;
     $action = isset($_GET['action']) ? trim((string) $_GET['action']) : null;
@@ -2409,7 +2470,8 @@ $renderAllPipelineLogs = function () use ($twig, $broxScrapModel) {
 $router->get('/admin/scrap-control-center/all-pipeline-logs', ['middleware' => ['auth', 'admin_only']], $renderAllPipelineLogs);
 $router->get('/admin/push-logs/all-pipeline-logs', ['middleware' => ['auth', 'admin_only']], $renderAllPipelineLogs);
 
-$router->get('/admin/scrap-control-center/incoming', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $broxScrapModel) {
+$router->get('/admin/scrap-control-center/incoming', ['middleware' => ['auth', 'admin_only']], function () {
+    global $twig, $broxScrapModel;
     $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 50;
     $type = isset($_GET['type']) ? trim((string) $_GET['type']) : null;
@@ -2429,7 +2491,8 @@ $router->get('/admin/scrap-control-center/incoming', ['middleware' => ['auth', '
     ]);
 });
 
-$router->get('/admin/scrap-control-center/incoming/{type}/{id}', ['middleware' => ['auth', 'admin_only']], function ($type, $id) use ($twig, $broxScrapModel) {
+$router->get('/admin/scrap-control-center/incoming/{type}/{id}', ['middleware' => ['auth', 'admin_only']], function ($type, $id) {
+    global $twig, $broxScrapModel;
     $itemId = (int) $id;
     if ($itemId <= 0) {
         renderError(404, 'Incoming Item Not Found');
@@ -2453,7 +2516,8 @@ $router->get('/admin/scrap-control-center/incoming/{type}/{id}', ['middleware' =
     ]);
 });
 
-$router->get('/admin/scrap-control-center/incoming/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $broxScrapModel) {
+$router->get('/admin/scrap-control-center/incoming/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) {
+    global $twig, $broxScrapModel;
     $itemId = (int) $id;
     if ($itemId <= 0) {
         renderError(404, 'Incoming Item Not Found');
@@ -2642,68 +2706,91 @@ $router->get('/admin/api/scrap-control-center/publish-stats', ['middleware' => [
 $router->get('/admin/api/push-publish-stats', ['middleware' => ['auth', 'admin_only']], $getScrapPublishStatsApi);
 
 $publishPendingApi = function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
-    $limit = 20;
-    $type = null;
-    $isAuto = false;
-    $actionName = str_contains((string) ($_SERVER['REQUEST_URI'] ?? ''), 'run-pipeline') ? 'run-pipeline' : 'publish-pending';
+    try {
+        $limit = 20;
+        $type = null;
+        $isAuto = false;
+        $actionName = str_contains((string) ($_SERVER['REQUEST_URI'] ?? ''), 'run-pipeline') ? 'run-pipeline' : 'publish-pending';
 
-    [$ok, $payload] = scraperPushReadJsonInput();
-    if ($ok && is_array($payload)) {
-        if (isset($payload['limit'])) {
-            $limit = max(1, min((int) $payload['limit'], 200));
-        }
-        if (isset($payload['type'])) {
-            $rawType = strtolower(trim((string) $payload['type']));
-            if (in_array($rawType, ['articles', 'mobiles'], true)) {
-                $type = $rawType;
+        [$ok, $payload] = scraperPushReadJsonInput();
+        if ($ok && is_array($payload)) {
+            if (isset($payload['limit'])) {
+                $limit = max(1, min((int) $payload['limit'], 200));
+            }
+            if (isset($payload['type'])) {
+                $rawType = strtolower(trim((string) $payload['type']));
+                if (in_array($rawType, ['articles', 'mobiles'], true)) {
+                    $type = $rawType;
+                }
+            }
+            if (array_key_exists('auto', $payload)) {
+                $isAuto = filter_var($payload['auto'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+            }
+        } else {
+            if (isset($_POST['limit'])) {
+                $limit = max(1, min((int) $_POST['limit'], 200));
+            }
+            if (isset($_POST['type'])) {
+                $rawType = strtolower(trim((string) $_POST['type']));
+                if (in_array($rawType, ['articles', 'mobiles'], true)) {
+                    $type = $rawType;
+                }
+            }
+            if (isset($_POST['auto'])) {
+                $isAuto = filter_var($_POST['auto'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
             }
         }
-        if (array_key_exists('auto', $payload)) {
-            $isAuto = filter_var($payload['auto'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
-        }
-    } else {
-        if (isset($_POST['limit'])) {
-            $limit = max(1, min((int) $_POST['limit'], 200));
-        }
-        if (isset($_POST['type'])) {
-            $rawType = strtolower(trim((string) $_POST['type']));
-            if (in_array($rawType, ['articles', 'mobiles'], true)) {
-                $type = $rawType;
-            }
-        }
-        if (isset($_POST['auto'])) {
-            $isAuto = filter_var($_POST['auto'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
-        }
-    }
 
-    if ($isAuto && $actionName === 'run-pipeline') {
-        $actionName = 'auto-run-pipeline';
-    }
+        if ($isAuto && $actionName === 'run-pipeline') {
+            $actionName = 'auto-run-pipeline';
+        }
 
-    $startedAt = date('Y-m-d H:i:s');
-    $result = scraperPushPublishPendingItems($mysqli, $broxScrapModel, $contentModel, $mobileModel, $limit, $type);
-    $finishedAt = date('Y-m-d H:i:s');
-    $pipelineLogId = scraperPushRecordPipelineRun(
-        $broxScrapModel,
-        [
-            'action_name' => $actionName,
-            'trigger_source' => $isAuto ? 'auto' : 'manual',
-            'scope_type' => $type,
-            'batch_limit' => $limit,
-            'status' => scraperPushResolvePipelineStatus($result),
-            'started_at' => $startedAt,
-            'finished_at' => $finishedAt,
-        ],
-        $result,
-        $result['results'] ?? []
-    );
-    scraperPushSendJson([
-        'ok' => true,
-        'message' => 'Pending push items processed',
-        'data' => $result,
-        'pipeline_log_id' => $pipelineLogId,
-        'stats' => $broxScrapModel->getIncomingPublishStats(),
-    ]);
+        $startedAt = date('Y-m-d H:i:s');
+        $result = scraperPushPublishPendingItems($mysqli, $broxScrapModel, $contentModel, $mobileModel, $limit, $type);
+        $finishedAt = date('Y-m-d H:i:s');
+
+        if (!is_array($result)) {
+            throw new RuntimeException('scraperPushPublishPendingItems returned invalid result');
+        }
+
+        $pipelineLogId = scraperPushRecordPipelineRun(
+            $broxScrapModel,
+            [
+                'action_name' => $actionName,
+                'trigger_source' => $isAuto ? 'auto' : 'manual',
+                'scope_type' => $type,
+                'batch_limit' => $limit,
+                'status' => scraperPushResolvePipelineStatus($result),
+                'started_at' => $startedAt,
+                'finished_at' => $finishedAt,
+            ],
+            $result,
+            $result['results'] ?? []
+        );
+
+        if (!$pipelineLogId || $pipelineLogId <= 0) {
+            throw new RuntimeException('Failed to record pipeline run');
+        }
+
+        scraperPushSendJson([
+            'ok' => true,
+            'message' => 'Pending push items processed',
+            'data' => $result,
+            'pipeline_log_id' => $pipelineLogId,
+            'stats' => $broxScrapModel->getIncomingPublishStats(),
+        ]);
+    } catch (Throwable $e) {
+        error_log('[PublishPendingApi] Error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+        scraperPushSendJson([
+            'ok' => false,
+            'error' => $e->getMessage(),
+            'debug' => [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => explode("\n", $e->getTraceAsString()),
+            ],
+        ], 500);
+    }
 };
 
 $router->post('/admin/api/scrap-control-center/publish-pending', ['middleware' => ['auth', 'admin_only', 'csrf']], $publishPendingApi);
@@ -2776,6 +2863,11 @@ $cronPipelineApi = function () use ($mysqli, $broxScrapModel, $contentModel, $mo
         $startedAt = date('Y-m-d H:i:s');
         $result = scraperPushPublishPendingItems($mysqli, $broxScrapModel, $contentModel, $mobileModel, $limit, $type);
         $finishedAt = date('Y-m-d H:i:s');
+
+        if (!is_array($result)) {
+            throw new RuntimeException('scraperPushPublishPendingItems returned invalid result');
+        }
+
         $pipelineLogId = scraperPushRecordPipelineRun(
             $broxScrapModel,
             [
@@ -2791,6 +2883,10 @@ $cronPipelineApi = function () use ($mysqli, $broxScrapModel, $contentModel, $mo
             $result['results'] ?? []
         );
 
+        if (!$pipelineLogId || $pipelineLogId <= 0) {
+            throw new RuntimeException('Failed to record cron pipeline run');
+        }
+
         scraperPushSendJson([
             'ok' => true,
             'message' => 'Cron pipeline executed',
@@ -2798,6 +2894,16 @@ $cronPipelineApi = function () use ($mysqli, $broxScrapModel, $contentModel, $mo
             'stats' => $broxScrapModel->getIncomingPublishStats(),
             'data' => $result,
         ]);
+    } catch (Throwable $e) {
+        error_log('[CronPipelineApi] Error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+        scraperPushSendJson([
+            'ok' => false,
+            'error' => $e->getMessage(),
+            'debug' => [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ],
+        ], 500);
     } finally {
         scraperPushReleasePipelineLock($lockHandle);
     }
@@ -3038,5 +3144,3 @@ $router->post('/admin/api/scrap-control-center/pipeline-runs/{id}/retry', ['midd
         'requeued_count' => $result['requeued_count'],
     ]);
 });
-
-

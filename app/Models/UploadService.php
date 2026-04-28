@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unified Upload Service Class
  * ============================
@@ -22,7 +23,7 @@ class UploadService
         $this->config = require dirname(__DIR__, 2) . '/Config/Upload.php';
         $this->uploadDir = $this->config['base']['upload_dir'];
         $this->tempDir = $this->config['base']['temp_dir'];
-        
+
         // Ensure directories exist
         $this->ensureDirectories();
     }
@@ -134,7 +135,6 @@ class UploadService
                 'media_id' => $mediaId,
                 'size' => $file['size']
             ];
-
         } catch (Exception $e) {
             logError("Upload failed: " . $e->getMessage(), "FILE_UPLOAD", [
                 'file' => $file['name'] ?? 'unknown',
@@ -190,8 +190,8 @@ class UploadService
 
         // Check type-specific validation
         if ($categoryConfig['type'] !== null) {
-            $allowedTypes = is_array($categoryConfig['type']) 
-                ? $categoryConfig['type'] 
+            $allowedTypes = is_array($categoryConfig['type'])
+                ? $categoryConfig['type']
                 : [$categoryConfig['type']];
 
             $isAllowedType = false;
@@ -335,7 +335,6 @@ class UploadService
                 'width' => $width,
                 'height' => $height
             ]);
-
         } catch (Exception $e) {
             logError("Image processing failed: " . $e->getMessage(), "IMAGE_PROCESS", [
                 'file' => basename($imagePath)
@@ -391,6 +390,12 @@ class UploadService
 
         list($width, $height, $type) = $info;
 
+        // Cap dimensions to prevent memory exhaustion
+        if ($width > 4000 || $height > 4000) {
+            // Skip processing extremely large images
+            return;
+        }
+
         // Calculate new dimensions
         $ratio = $width / $height;
         if ($maxWidth / $maxHeight > $ratio) {
@@ -402,22 +407,38 @@ class UploadService
         }
 
         // Create thumbnail
-        $thumb = imagecreatetruecolor((int)$newWidth, (int)$newHeight);
-
-        switch ($type) {
-            case IMAGETYPE_JPEG:
-                $src = imagecreatefromjpeg($source);
-                imagecopyresampled($thumb, $src, 0, 0, 0, 0, (int)$newWidth, (int)$newHeight, $width, $height);
-                imagejpeg($thumb, $destination, 85);
-                break;
-            case IMAGETYPE_PNG:
-                $src = imagecreatefrompng($source);
-                imagecopyresampled($thumb, $src, 0, 0, 0, 0, (int)$newWidth, (int)$newHeight, $width, $height);
-                imagepng($thumb, $destination);
-                break;
+        $thumb = @imagecreatetruecolor((int)$newWidth, (int)$newHeight);
+        if (!$thumb) {
+            return;
         }
 
-        imagedestroy($thumb);
+        $src = null;
+        try {
+            switch ($type) {
+                case IMAGETYPE_JPEG:
+                    $src = @imagecreatefromjpeg($source);
+                    if ($src) {
+                        imagecopyresampled($thumb, $src, 0, 0, 0, 0, (int)$newWidth, (int)$newHeight, $width, $height);
+                        imagejpeg($thumb, $destination, 85);
+                    }
+                    break;
+                case IMAGETYPE_PNG:
+                    $src = @imagecreatefrompng($source);
+                    if ($src) {
+                        imagecopyresampled($thumb, $src, 0, 0, 0, 0, (int)$newWidth, (int)$newHeight, $width, $height);
+                        imagepng($thumb, $destination);
+                    }
+                    break;
+            }
+        } finally {
+            // Always cleanup resources
+            if ($src && is_resource($src)) {
+                imagedestroy($src);
+            }
+            if ($thumb && is_resource($thumb)) {
+                imagedestroy($thumb);
+            }
+        }
     }
 
     /**
@@ -430,8 +451,7 @@ class UploadService
         string $category,
         array $options = [],
         ?array $resolvedIdentity = null
-    ): ?int
-    {
+    ): ?int {
         try {
             $webPath = $this->toWebPath($filePath);
             $size = $file['size'];
