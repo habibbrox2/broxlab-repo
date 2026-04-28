@@ -529,13 +529,13 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         }));
 
         // Word count filter
-        $twig->addFilter(new \Twig\TwigFilter('wordcount', function ($value) {
+        $twig->addFilter(new \Twig\TwigFilter('wordcount', function ($value): int {
             if (empty($value)) {
                 return 0;
             }
             $text = strip_tags((string)$value);
             $words = preg_split('/\s+/', trim($text), -1, PREG_SPLIT_NO_EMPTY);
-            return count($words);
+            return (int) count($words);
         }));
 
         // File size format
