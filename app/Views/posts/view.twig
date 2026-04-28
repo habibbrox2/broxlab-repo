@@ -29,7 +29,7 @@
   "author": {
     "@type": "Person",
     "name": {{ post.author|json_encode }},
-    "url": "{{ url|default('https://example.com') }}"
+    "url": "{{ url }}"
   },
   "publisher": {
     "@type": "Organization",
@@ -40,7 +40,7 @@
       "width": 250,
       "height": 100
     },
-    "url": "{{ url|default('https://example.com') }}"
+    "url": "{{ url }}"
   },
   "mainEntity": {
     "@type": "Article",
@@ -48,7 +48,7 @@
   },
   "isPartOf": {
     "@type": "WebSite",
-    "@id": "{{ url|default('https://example.com') }}#website"
+    "@id": "{{ url }}#website"
   }
   {% if post.categories and post.categories|length > 0 %}
   ,"keywords": {{ post.categories|map(attribute='name')|json_encode }}

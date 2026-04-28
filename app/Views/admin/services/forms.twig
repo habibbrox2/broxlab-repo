@@ -72,14 +72,14 @@
                       </label>
                       <select class="modern-select form-select-lg" name="status">
                         <option value="active"
-                                {% if service and service.status == 'active' %}selected{% endif %}>âœ“ Active</option>
+                                {% if service and service.status == 'active' %}selected{% endif %}><i class="bi bi-check-circle-fill me-1"></i>Active</option>
                         <option value="inactive"
                                 {% if service and service.status == 'inactive' %}selected{% endif %}>
-                          â¸ Inactive
+                          <i class="bi bi-pause-circle-fill me-1"></i>Inactive
                         </option>
                         <option value="archived"
                                 {% if service and service.status == 'archived' %}selected{% endif %}>
-                          ðŸ“¦ Archived
+                          <i class="bi bi-archive-fill me-1"></i>Archived
                         </option>
                       </select>
                     </div>
