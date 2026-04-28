@@ -1,6 +1,10 @@
 <?php
 // controllers/HomeController.php
 
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+/** @var Router $router */
+
 $homeModel = new HomeModel($mysqli);
 $statisticsModel = new StatisticsModel($mysqli);
 $advertisementModel = new AdvertisementModel($mysqli);
@@ -9,23 +13,55 @@ $advertisementModel = new AdvertisementModel($mysqli);
 $router->get('/', function () use ($twig, $homeModel) {
     $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
     $sort = $_GET['sort'] ?? 'latest';
-    $limit = 15;
+    $limit = 25; // Initial load shows 25 items for better initial page experience
 
     $data = $homeModel->getUnifiedContent($page, $limit, $sort);
     $stats = $homeModel->getHomepageStats();
     $topPosts = $homeModel->getTopPosts(8);
     $topServices = $homeModel->getTopServices(8);
+    $latestMobiles = $homeModel->getLatestMobiles(8);
 
     echo $twig->render('public/home.twig', [
         'contents' => $data['contents'],
         'top_posts' => $topPosts,
         'top_services' => $topServices,
+        'latest_mobiles' => $latestMobiles,
         'total_pages' => $data['total_pages'],
         'current_page' => $page,
         'sort' => $sort,
         'stats' => $stats,
         'title' => 'Home'
     ]);
+});
+
+// ============ API ENDPOINTS FOR INFINITE SCROLL ============
+// Load more feed items via AJAX for infinite scroll pagination
+$router->get('/api/feed/load-more', function () use ($homeModel) {
+    header('Content-Type: application/json');
+
+    $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    $sort = $_GET['sort'] ?? 'latest';
+    $limit = 10; // Fetch 10 items per page for smooth loading
+
+    try {
+        $data = $homeModel->getUnifiedContent($page, $limit, $sort);
+
+        // Return JSON with items and pagination info
+        echo json_encode([
+            'success' => true,
+            'items' => $data['contents'],
+            'current_page' => $page,
+            'total_pages' => $data['total_pages'],
+            'has_more' => $page < $data['total_pages']
+        ], JSON_PRETTY_PRINT);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Failed to load more items',
+            'message' => $e->getMessage()
+        ]);
+    }
 });
 
 // ---------------- STATIC PAGES ----------------

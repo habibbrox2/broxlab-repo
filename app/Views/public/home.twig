@@ -1,4 +1,4 @@
-{% extends "layout.twig" %}
+﻿{% extends "layout.twig" %}
 
 {# ===== SEO Meta Tags ===== #}
 {% block title %}{{ app_settings.meta_title ?: app_settings.site_name ~ ' | Official Website' }}{% endblock %}
@@ -6,6 +6,7 @@
 
 {% block extra_styles %}
   <link rel="stylesheet" href="{{ url }}assets/css/mobiles-grid.css">
+  <link rel="stylesheet" href="{{ asset('assets/css/weather.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -174,27 +175,27 @@
               <div class="datetime-icon me-3">
                 <i class="bi bi-calendar-event-fill fs-4"></i>
               </div>
-              <h3 class="h5 fw-bold mb-0">বাংলা তারিখ ও সময়</h3>
+              <h3 class="h5 fw-bold mb-0">à¦¬à¦¾à¦‚à¦²à¦¾ à¦¤à¦¾à¦°à¦¿à¦– à¦“ à¦¸à¦®à§Ÿ</h3>
             </div>
 
             <div class="datetime-content">
               <div class="mb-3">
                 <div class="d-flex align-items-center mb-2">
                   <i class="bi bi-calendar-date me-2 opacity-75"></i>
-                  <small class="text-white-50 fw-semibold">বাংলা তারিখ</small>
+                  <small class="text-white-50 fw-semibold">à¦¬à¦¾à¦‚à¦²à¦¾ à¦¤à¦¾à¦°à¦¿à¦–</small>
                 </div>
                 <div class="fs-6 fw-bold" id="bengali-date" style="font-family: 'Noto Sans Bengali', sans-serif;">
-                  লোড হচ্ছে...
+                  à¦²à§‹à¦¡ à¦¹à¦šà§à¦›à§‡...
                 </div>
               </div>
 
               <div class="mb-0">
                 <div class="d-flex align-items-center mb-2">
                   <i class="bi bi-clock-fill me-2 opacity-75"></i>
-                  <small class="text-white-50 fw-semibold">বাংলা সময়</small>
+                  <small class="text-white-50 fw-semibold">à¦¬à¦¾à¦‚à¦²à¦¾ à¦¸à¦®à§Ÿ</small>
                 </div>
                 <div class="fs-5 fw-bold font-monospace" id="bengali-time" style="font-family: 'JetBrains Mono', monospace;">
-                  লোড হচ্ছে...
+                  à¦²à§‹à¦¡ à¦¹à¦šà§à¦›à§‡...
                 </div>
               </div>
             </div>
@@ -250,6 +251,10 @@
     </div>
   </div>
 </section>
+
+{# ==================== WEATHER WIDGET SECTION ==================== #}
+{% include 'partials/weather-widget.twig' %}
+
 
 <style>
 @keyframes pulse {
@@ -466,6 +471,24 @@
       {% endfor %}
     </div>
     
+    {# ==================== LOAD MORE / INFINITE SCROLL SECTION ==================== #}
+    <div id="feed-loading-section" class="mt-5 text-center">
+      <button id="load-more-btn" 
+              class="btn btn-primary btn-lg rounded-pill px-5 py-3 shadow-lg fw-bold" 
+              aria-label="Load more items">
+        <i class="bi bi-arrow-down-circle me-2"></i>
+        <span class="load-more-text">Load More</span>
+        <span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
+      </button>
+      <div id="scroll-indicator" class="mt-3 text-muted small" role="status" aria-live="polite">
+        <i class="bi bi-arrow-down me-2"></i>
+        <span>Scroll down or click "Load More" to see more items</span>
+      </div>
+    </div>
+
+    {# Infinite Scroll Observer #}
+    <div id="infinite-scroll-trigger" style="height: 100px;"></div>
+    
     {# ==================== SERVICES FEED (AJAX) ==================== #}
     <div id="services-feed" class="feed-grid d-none" role="feed" aria-label="Services feed">
       <!-- Populated via JavaScript -->
@@ -507,7 +530,7 @@
   async function loadServices() {
     if (servicesLoaded) return;
     
-    servicesFeed.innerHTML = '<div class="loading-spinner" aria-live="polite"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"><span class="visually-hidden">Loading</span></div>Loading services…</div>';
+    servicesFeed.innerHTML = '<div class="loading-spinner" aria-live="polite"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"><span class="visually-hidden">Loading</span></div>Loading servicesâ€¦</div>';
     
     try {
       // Prefer server-rendered HTML partial for consistent markup (uses content-card.twig)
@@ -673,8 +696,150 @@
 
   startAuto();
 })();
+
+{# ==================== INFINITE SCROLL & LOAD MORE ==================== #}
+<script>
+(function(){
+  const feedGrid = document.getElementById('latest-feed');
+  const loadMoreBtn = document.getElementById('load-more-btn');
+  const scrollTrigger = document.getElementById('infinite-scroll-trigger');
+  const loadingSpinner = loadMoreBtn?.querySelector('.spinner-border');
+  const loadMoreText = loadMoreBtn?.querySelector('.load-more-text');
+  const scrollIndicator = document.getElementById('scroll-indicator');
+  
+  let currentPage = {{ current_page|default(1) }};
+  let totalPages = {{ total_pages|default(1) }};
+  let isLoading = false;
+  const sort = '{{ sort|default("latest") }}';
+  
+  // Function to create content card HTML from API response
+  function createContentCardHTML(item) {
+    // This will be populated via fetch, so we'll use a simpler approach
+    // by re-rendering the existing partial via a separate endpoint
+    return `
+      <div class="feed-card-placeholder">
+        <div class="card border-0 shadow-sm h-100 overflow-hidden transition-all hover-lift">
+          <div class="card-img-wrapper position-relative bg-light" style="height: 200px; overflow: hidden;">
+            ${item.image ? `<img src="${item.image}" alt="${item.title}" class="w-100 h-100 object-fit-cover" loading="lazy">` : '<div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted"><i class="bi bi-image fs-1"></i></div>'}
+          </div>
+          <div class="card-body d-flex flex-column">
+            <span class="badge bg-primary-subtle text-primary mb-2 align-self-start">${item.type === 'post' ? 'Post' : item.type === 'service' ? 'Service' : 'Content'}</span>
+            <h5 class="card-title fw-bold flex-grow-1">${item.title}</h5>
+            <p class="card-text text-muted small">${item.excerpt ? item.excerpt.substring(0, 80) + '...' : ''}</p>
+            <div class="d-flex gap-2 flex-wrap">
+              ${item.views !== undefined ? `<span class="small text-muted"><i class="bi bi-eye-fill"></i> ${item.views}</span>` : ''}
+              ${item.comments !== undefined ? `<span class="small text-muted"><i class="bi bi-chat-dots"></i> ${item.comments}</span>` : ''}
+              <span class="small text-muted ms-auto"><i class="bi bi-clock"></i> ${item.time_ago || 'Recently'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Load more items
+  async function loadMoreItems() {
+    if (isLoading || currentPage >= totalPages) return;
+    
+    isLoading = true;
+    if (loadingSpinner) loadingSpinner.classList.remove('d-none');
+    if (loadMoreBtn) loadMoreBtn.disabled = true;
+    if (scrollIndicator) scrollIndicator.textContent = 'Loading more items...';
+    
+    try {
+      const response = await fetch(`/api/feed/load-more?page=${currentPage + 1}&sort=${sort}`);
+      if (!response.ok) throw new Error('Failed to load items');
+      
+      const data = await response.json();
+      
+      if (data.success && data.items && data.items.length > 0) {
+        // Since the API returns structured data, we should render the proper template
+        // For now, we'll use a simple approach by including each item
+        
+        // Create a container for new items
+        const fragment = document.createDocumentFragment();
+        
+        data.items.forEach(item => {
+          // Create a simple card for each item (simplified version)
+          const card = document.createElement('div');
+          card.className = 'feed-card-item';
+          card.innerHTML = `
+            <div class="card border-0 shadow-sm h-100 overflow-hidden transition-all hover-lift">
+              <a href="${item.url || '#'}" class="text-decoration-none text-dark stretched-link" style="position: relative; z-index: 1;">
+                <div class="card-img-wrapper position-relative bg-light" style="height: 200px; overflow: hidden;">
+                  ${item.image ? `<img src="${item.image}" alt="${item.title}" class="w-100 h-100" style="object-fit: cover;" loading="lazy">` : '<div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted"><i class="bi bi-image fs-1"></i></div>'}
+                </div>
+              </a>
+              <div class="card-body d-flex flex-column">
+                <span class="badge bg-primary-subtle text-primary mb-2 align-self-start">${item.type === 'post' ? 'Post' : 'Content'}</span>
+                <h5 class="card-title fw-bold flex-grow-1">${item.title}</h5>
+                <p class="card-text text-muted small">${item.excerpt ? item.excerpt.substring(0, 100) : ''}</p>
+                <div class="d-flex gap-2 flex-wrap small text-muted">
+                  <span><i class="bi bi-eye-fill"></i> ${item.views || 0}</span>
+                  <span><i class="bi bi-chat-dots"></i> ${item.comments || 0}</span>
+                </div>
+              </div>
+            </div>
+          `;
+          fragment.appendChild(card);
+        });
+        
+        feedGrid.appendChild(fragment);
+        currentPage = data.current_page;
+        totalPages = data.total_pages;
+        
+        // Hide load more button if no more pages
+        if (!data.has_more && loadMoreBtn) {
+          loadMoreBtn.style.display = 'none';
+          if (scrollIndicator) scrollIndicator.innerHTML = '<i class="bi bi-check-circle me-2"></i><span>You\'ve reached the end!</span>';
+        }
+      }
+    } catch (error) {
+      console.error('Load more error:', error);
+      if (scrollIndicator) scrollIndicator.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i><span>Failed to load more items</span>';
+    } finally {
+      isLoading = false;
+      if (loadingSpinner) loadingSpinner.classList.add('d-none');
+      if (loadMoreBtn) loadMoreBtn.disabled = false;
+      if (scrollIndicator && currentPage < totalPages) {
+        scrollIndicator.innerHTML = '<i class="bi bi-arrow-down me-2"></i><span>Scroll down or click "Load More" to see more items</span>';
+      }
+    }
+  }
+  
+  // Click handler for Load More button
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      loadMoreItems();
+    });
+  }
+  
+  // Infinite Scroll with Intersection Observer
+  if (scrollTrigger && 'IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !isLoading && currentPage < totalPages) {
+          // Auto-load more when user scrolls near the trigger
+          loadMoreItems();
+        }
+      });
+    }, {
+      rootMargin: '200px', // Start loading 200px before reaching trigger
+      threshold: 0.1
+    });
+    
+    observer.observe(scrollTrigger);
+  }
+  
+  // Hide load more button if already at last page
+  if (currentPage >= totalPages && loadMoreBtn) {
+    loadMoreBtn.style.display = 'none';
+    if (scrollIndicator) scrollIndicator.innerHTML = '<i class="bi bi-check-circle me-2"></i><span>All items loaded!</span>';
+  }
+})();
 </script>
-{# ==================== FEATURED SECTION ==================== #}
+
 <section class="py-5 bg-light home-featured-section" aria-labelledby="featured-title">
   <div class="container home-feed-surface">
     <div class="text-center mb-5">
@@ -750,10 +915,10 @@
       </div>
     </div>
 
-    <div class="mobiles-grid">
+    <div class="mobiles-grid feed-grid">
       {% for mobile in latest_mobiles|default([]) %}
-        <a href="/mobiles/view/{{ mobile.slug|default(mobile.id) }}" class="mobile-card-link" aria-label="View {{ mobile.brand_name }} {{ mobile.model_name }}">
-          <div class="mobile-card">
+        <a href="/mobiles/view/{{ mobile.id }}" class="mobile-card-link" aria-label="View {{ mobile.brand_name }} {{ mobile.model_name }}">
+          <div class="mobile-card cc-card">
             {# Image Section #}
             <div class="mobile-card__image-wrapper">
               {% if mobile.image_path %}
@@ -769,14 +934,14 @@
               {% endif %}
 
               {# Status Badge #}
-              <div class="mobile-card__badge">
+              <div class="mobile-card__badge-top">
                 {% if mobile.is_official %}
-                  <span class="mobile-badge official" title="Official">
+                  <span class="mobile-card__status-badge official" title="Official">
                     <i class="bi bi-check-circle-fill"></i>
                     <span>Official</span>
                   </span>
                 {% else %}
-                  <span class="mobile-badge unofficial" title="Unofficial">
+                  <span class="mobile-card__status-badge unofficial" title="Unofficial">
                     <i class="bi bi-info-circle-fill"></i>
                     <span>Unofficial</span>
                   </span>
@@ -786,55 +951,59 @@
 
             {# Content Section #}
             <div class="mobile-card__content">
-              <div class="mobile-card__brand">
-                {{ mobile.brand_name }}
-              </div>
-              
-              <div class="mobile-card__model">
-                {{ mobile.model_name }}
+              <div class="mobile-card__header">
+                <div class="mobile-card__title">
+                  {{ mobile.brand_name }}
+                </div>
+                
+                <div class="mobile-card__model">
+                  {{ mobile.model_name }}
+                </div>
               </div>
 
               {# Pricing #}
               <div class="mobile-card__pricing">
                 {% if mobile.official_price %}
-                  <div class="price official-price">
-                    <span class="label">Official:</span>
-                    <span class="value">৳{{ mobile.official_price|number_format(0, '.', ',') }}</span>
+                  <div class="mobile-card__price-item official">
+                    <span class="mobile-card__price-label">Official:</span>
+                    <span class="mobile-card__price-value">à§³{{ mobile.official_price|number_format(0, '.', ',') }}</span>
                   </div>
                 {% endif %}
                 {% if mobile.unofficial_price %}
-                  <div class="price unofficial-price">
-                    <span class="label">Market:</span>
-                    <span class="value">৳{{ mobile.unofficial_price|number_format(0, '.', ',') }}</span>
+                  <div class="mobile-card__price-item unofficial">
+                    <span class="mobile-card__price-label">Market:</span>
+                    <span class="mobile-card__price-value">à§³{{ mobile.unofficial_price|number_format(0, '.', ',') }}</span>
                   </div>
                 {% endif %}
               </div>
 
               {# Release Date #}
               {% if mobile.release_date %}
-              <div class="mobile-card__release-date">
+              <div class="mobile-card__release-date" style="font-size: 0.875rem; color: var(--bs-secondary); display: flex; align-items: center; gap: 0.4rem;">
                 <i class="bi bi-calendar-event"></i>
-                {{ mobile.release_date|date('M d, Y') }}
+                <span>{{ mobile.release_date|date('M d, Y') }}</span>
               </div>
               {% endif %}
 
               {# Stats #}
               <div class="mobile-card__stats">
-                <div class="stat">
+                <div class="mobile-card__stat">
                   <i class="bi bi-eye"></i>
                   <span>{{ mobile.views|default(0)|number_format }}</span>
                 </div>
-                <div class="stat">
+                <div class="mobile-card__stat">
                   <i class="bi bi-calendar-plus"></i>
                   <span>{{ mobile.created_at|time_ago }}</span>
                 </div>
               </div>
 
               {# Action Button #}
-              <button class="mobile-card__action-btn" aria-label="View phone details">
-                <span>View Details</span>
-                <i class="bi bi-arrow-right"></i>
-              </button>
+              <div class="mobile-card__footer">
+                <a href="/mobiles/view/{{ mobile.id }}" class="mobile-card__link" aria-label="View phone details">
+                  <span>View Details</span>
+                  <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
             </div>
           </div>
         </a>
@@ -1340,3 +1509,5 @@
 
 {% block extra_scripts %}
 {% endblock %}
+
+
