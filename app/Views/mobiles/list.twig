@@ -3,6 +3,11 @@
 {% block meta_description %}Explore the latest mobile phones and devices. View detailed specifications, comparisons, and reviews for your perfect smartphone.{% endblock %}
 {% block og_type %}website{% endblock %}
 {% set breadcrumbs = [{"label": "Mobiles", "url": "/mobiles", "icon": "mobile"}] %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ asset('/assets/css/mobiles-grid.css') }}">
+{% endblock %}
+
 {% block content %}
   {# ================= Structured Data ================= #}
   <script type="application/ld+json">
@@ -77,32 +82,99 @@
         </div>
       </div>
     </div>
-    {# ================= Mobiles List ================= #}
+    {# ================= Mobiles Grid ================= #}
     {% if mobiles|length > 0 %}
-      <div class="listing-grid">
+      <div class="mobiles-grid">
         {% for mobile in mobiles %}
-          {% include 'partials/content-card.twig' with {
-          item: {
-          images: mobile.images|default([]),
-          image: mobile.image_path|default(mobile.thumbnail_path|default(null)),
-          title: mobile.brand_name ~ ' ' ~ mobile.model_name,
-          subtitle: mobile.subtitle|default(mobile.excerpt|default('')),
-          created_at: mobile.created_at|default(''),
-          id: mobile.id,
-          slug: mobile.slug|default(mobile.id),
-          url: mobile.id,
-          type: 'mobile',
-          is_official: mobile.is_official|default(false),
-          price: mobile.price|default(null),
-          tags: mobile.tags|default([]),
-          categories: mobile.categories|default([]),
-          release_date: mobile.release_date|default(null),
-          description: mobile.description|default(null),
-          views: mobile.views|default(0),
-          impressions: mobile.impressions|default(0)
-          },
-          index: loop.index
-          } %}
+          <div class="mobile-card">
+            {# Card Image with Badge #}
+            <div class="mobile-card__image-wrapper">
+              {% if mobile.thumbnail_path or mobile.image_path %}
+                <img src="{{ mobile.thumbnail_path|default(mobile.image_path) }}" 
+                     alt="{{ mobile.brand_name }} {{ mobile.model_name }}"
+                     class="mobile-card__image"
+                     loading="lazy"
+                     decoding="async">
+              {% else %}
+                <div class="mobile-card__image-placeholder">
+                  <i class="bi bi-phone"></i>
+                </div>
+              {% endif %}
+              
+              {# Official/Unofficial Badge #}
+              <div class="mobile-card__badge-top">
+                <span class="mobile-card__status-badge {% if mobile.is_official %}official{% else %}unofficial{% endif %}">
+                  <i class="bi bi-{{ mobile.is_official ? 'patch-check-fill' : 'info-circle-fill' }}"></i>
+                  <span>{{ mobile.is_official ? 'Official' : 'Unofficial' }}</span>
+                </span>
+              </div>
+
+              {# Release Date Badge #}
+              {% if mobile.release_date %}
+                <div class="mobile-card__badge-bottom">
+                  <span class="mobile-card__date-badge">
+                    <i class="bi bi-calendar3"></i>
+                    <span>{{ mobile.release_date|date('M Y') }}</span>
+                  </span>
+                </div>
+              {% endif %}
+            </div>
+
+            {# Card Content #}
+            <div class="mobile-card__content">
+              {# Brand & Model #}
+              <div class="mobile-card__header">
+                <h3 class="mobile-card__title">
+                  {{ mobile.brand_name }}
+                </h3>
+                <p class="mobile-card__model">
+                  {{ mobile.model_name }}
+                </p>
+              </div>
+
+              {# Pricing #}
+              <div class="mobile-card__pricing">
+                {% if mobile.official_price %}
+                  <div class="mobile-card__price-item official">
+                    <span class="mobile-card__price-label">Official</span>
+                    <span class="mobile-card__price-value">{{ mobile.official_price|number_format(0, '.', ',') }} ৳</span>
+                  </div>
+                {% endif %}
+                {% if mobile.unofficial_price and mobile.unofficial_price != mobile.official_price %}
+                  <div class="mobile-card__price-item unofficial">
+                    <span class="mobile-card__price-label">Market</span>
+                    <span class="mobile-card__price-value">{{ mobile.unofficial_price|number_format(0, '.', ',') }} ৳</span>
+                  </div>
+                {% endif %}
+              </div>
+
+              {# Stats #}
+              <div class="mobile-card__stats">
+                {% if mobile.views is defined %}
+                  <div class="mobile-card__stat">
+                    <i class="bi bi-eye"></i>
+                    <span>{{ mobile.views|default(0)|number_format(0, '.', ',') }}</span>
+                  </div>
+                {% endif %}
+                {% if mobile.created_at %}
+                  <div class="mobile-card__stat">
+                    <i class="bi bi-clock"></i>
+                    <span>{{ mobile.created_at|date('d M Y') }}</span>
+                  </div>
+                {% endif %}
+              </div>
+
+              {# Action Button #}
+              <div class="mobile-card__footer">
+                <a href="/mobiles/view/{{ mobile.id }}" 
+                   class="mobile-card__link"
+                   aria-label="View details for {{ mobile.brand_name }} {{ mobile.model_name }}">
+                  <span>View Details</span>
+                  <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
+            </div>
+          </div>
         {% endfor %}
       </div>
       {# ================= Pagination ================= #}

@@ -1,0 +1,432 @@
+/* ===========================
+   MOBILES GRID STYLING
+   =========================== */
+
+.mobiles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+@media (max-width: 1200px) {
+    .mobiles-grid {
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .mobiles-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .mobiles-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+
+/* ===========================
+   MOBILE CARD
+   =========================== */
+
+.mobile-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--bs-body-bg);
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    border: 1px solid var(--bs-border-color);
+    position: relative;
+}
+
+.mobile-card:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-8px);
+    border-color: var(--bs-primary);
+}
+
+.mobile-card:active {
+    transform: translateY(-4px);
+}
+
+/* ===========================
+   IMAGE WRAPPER
+   =========================== */
+
+.mobile-card__image-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.mobile-card:hover .mobile-card__image {
+    transform: scale(1.08);
+}
+
+.mobile-card__image-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: var(--bs-secondary-bg);
+    color: var(--bs-secondary);
+    font-size: 3rem;
+}
+
+/* ===========================
+   BADGES
+   =========================== */
+
+.mobile-card__badge-top,
+.mobile-card__badge-bottom {
+    position: absolute;
+    display: flex;
+    gap: 0.5rem;
+    z-index: 10;
+}
+
+.mobile-card__badge-top {
+    top: 0.75rem;
+    left: 0.75rem;
+}
+
+.mobile-card__badge-bottom {
+    bottom: 0.75rem;
+    right: 0.75rem;
+}
+
+.mobile-card__status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    backdrop-filter: blur(8px);
+    animation: slideIn 0.3s ease-out;
+}
+
+.mobile-card__status-badge.official {
+    background: rgba(40, 167, 69, 0.95);
+    color: white;
+}
+
+.mobile-card__status-badge.unofficial {
+    background: rgba(255, 193, 7, 0.95);
+    color: #333;
+}
+
+.mobile-card__status-badge i {
+    font-size: 0.9rem;
+}
+
+.mobile-card__date-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.65rem;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===========================
+   CARD CONTENT
+   =========================== */
+
+.mobile-card__content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 1.25rem;
+    gap: 1rem;
+}
+
+.mobile-card__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.mobile-card__title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--bs-body-color);
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.mobile-card__model {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--bs-secondary);
+    line-height: 1.3;
+}
+
+/* ===========================
+   PRICING
+   =========================== */
+
+.mobile-card__pricing {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: var(--bs-secondary-bg);
+    border-radius: 0.5rem;
+}
+
+.mobile-card__price-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mobile-card__price-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--bs-secondary);
+}
+
+.mobile-card__price-item.official .mobile-card__price-label {
+    color: #28a745;
+}
+
+.mobile-card__price-item.unofficial .mobile-card__price-label {
+    color: #ffc107;
+}
+
+.mobile-card__price-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--bs-body-color);
+}
+
+/* ===========================
+   STATS
+   =========================== */
+
+.mobile-card__stats {
+    display: flex;
+    gap: 1rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--bs-border-color);
+    font-size: 0.875rem;
+    color: var(--bs-secondary);
+}
+
+.mobile-card__stat {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.mobile-card__stat i {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+/* ===========================
+   FOOTER / ACTION
+   =========================== */
+
+.mobile-card__footer {
+    margin-top: auto;
+}
+
+.mobile-card__link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, var(--bs-primary) 0%, #0056b3 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.mobile-card__link:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    color: white;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(0, 86, 179, 0.3);
+}
+
+.mobile-card__link i {
+    font-size: 0.85rem;
+    transition: transform 0.3s ease;
+}
+
+.mobile-card__link:hover i {
+    transform: translateX(3px);
+}
+
+/* ===========================
+   RESPONSIVE ADJUSTMENTS
+   =========================== */
+
+@media (max-width: 768px) {
+    .mobile-card__content {
+        padding: 1rem;
+        gap: 0.75rem;
+    }
+
+    .mobile-card__title {
+        font-size: 1.05rem;
+    }
+
+    .mobile-card__model {
+        font-size: 0.9rem;
+    }
+
+    .mobile-card__pricing {
+        padding: 0.65rem;
+    }
+
+    .mobile-card__stats {
+        font-size: 0.8125rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .mobile-card {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 1rem;
+        align-items: start;
+    }
+
+    .mobile-card__image-wrapper {
+        grid-row: 1 / 4;
+        aspect-ratio: 3/4;
+        border-radius: 0.75rem;
+    }
+
+    .mobile-card__content {
+        grid-column: 2;
+        padding: 0;
+        gap: 0.5rem;
+    }
+
+    .mobile-card__pricing {
+        padding: 0.5rem;
+    }
+
+    .mobile-card__title {
+        font-size: 1rem;
+    }
+
+    .mobile-card__model {
+        font-size: 0.85rem;
+    }
+
+    .mobile-card__stats {
+        gap: 0.75rem;
+        font-size: 0.75rem;
+        padding-top: 0.3rem;
+    }
+
+    .mobile-card__footer {
+        grid-column: 2;
+        margin-top: 0;
+    }
+
+    .mobile-card__link {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.85rem;
+        gap: 0.3rem;
+    }
+}
+
+/* ===========================
+   DARK MODE ADJUSTMENTS
+   =========================== */
+
+[data-theme="dark"] .mobile-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .mobile-card:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .mobile-card__date-badge {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+/* ===========================
+   ANIMATION
+   =========================== */
+
+@media (prefers-reduced-motion: no-preference) {
+    .mobile-card {
+        animation: fadeInUp 0.5s ease-out backwards;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Stagger animation for cards */
+.mobile-card:nth-child(1) { animation-delay: 0.05s; }
+.mobile-card:nth-child(2) { animation-delay: 0.1s; }
+.mobile-card:nth-child(3) { animation-delay: 0.15s; }
+.mobile-card:nth-child(4) { animation-delay: 0.2s; }
+.mobile-card:nth-child(5) { animation-delay: 0.25s; }
+.mobile-card:nth-child(6) { animation-delay: 0.3s; }
+.mobile-card:nth-child(n+7) { animation-delay: 0.35s; }
