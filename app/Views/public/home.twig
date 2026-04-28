@@ -4,7 +4,9 @@
 {% block title %}{{ app_settings.meta_title ?: app_settings.site_name ~ ' | Official Website' }}{% endblock %}
 {% block og_type %}website{% endblock %}
 
-{% block extra_styles %}{% endblock %}
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ url }}assets/css/mobiles-grid.css">
+{% endblock %}
 
 {% block content %}
 
@@ -727,6 +729,123 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+{# ==================== LATEST MOBILES SECTION ==================== #}
+<section class="py-5 home-latest-mobiles-section" aria-labelledby="latest-mobiles-title">
+  <div class="container home-feed-surface">
+    <div class="section-header mb-5">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+          <h2 id="latest-mobiles-title" class="fw-bold display-6 display-md-5 mb-2">
+            <span class="text-primary border-bottom border-3 border-primary pb-2">Latest</span> Mobile Phones
+          </h2>
+          <p class="text-muted lead mb-0">Discover the newest smartphones with detailed specifications and pricing</p>
+        </div>
+        <a href="/mobiles" class="btn btn-primary btn-lg rounded-pill px-5" aria-label="View all mobile phones">
+          <i class="bi bi-arrow-right me-2"></i>View All
+        </a>
+      </div>
+    </div>
+
+    <div class="mobiles-grid">
+      {% for mobile in latest_mobiles|default([]) %}
+        <a href="/mobiles/view/{{ mobile.slug|default(mobile.id) }}" class="mobile-card-link" aria-label="View {{ mobile.brand_name }} {{ mobile.model_name }}">
+          <div class="mobile-card">
+            {# Image Section #}
+            <div class="mobile-card__image-wrapper">
+              {% if mobile.image_path %}
+                <img src="{{ mobile.image_path }}" 
+                     alt="{{ mobile.brand_name }} {{ mobile.model_name }}" 
+                     class="mobile-card__image"
+                     loading="lazy"
+                     decoding="async">
+              {% else %}
+                <div class="mobile-card__image-placeholder">
+                  <i class="bi bi-phone"></i>
+                </div>
+              {% endif %}
+
+              {# Status Badge #}
+              <div class="mobile-card__badge">
+                {% if mobile.is_official %}
+                  <span class="mobile-badge official" title="Official">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>Official</span>
+                  </span>
+                {% else %}
+                  <span class="mobile-badge unofficial" title="Unofficial">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <span>Unofficial</span>
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+            {# Content Section #}
+            <div class="mobile-card__content">
+              <div class="mobile-card__brand">
+                {{ mobile.brand_name }}
+              </div>
+              
+              <div class="mobile-card__model">
+                {{ mobile.model_name }}
+              </div>
+
+              {# Pricing #}
+              <div class="mobile-card__pricing">
+                {% if mobile.official_price %}
+                  <div class="price official-price">
+                    <span class="label">Official:</span>
+                    <span class="value">৳{{ mobile.official_price|number_format(0, '.', ',') }}</span>
+                  </div>
+                {% endif %}
+                {% if mobile.unofficial_price %}
+                  <div class="price unofficial-price">
+                    <span class="label">Market:</span>
+                    <span class="value">৳{{ mobile.unofficial_price|number_format(0, '.', ',') }}</span>
+                  </div>
+                {% endif %}
+              </div>
+
+              {# Release Date #}
+              {% if mobile.release_date %}
+              <div class="mobile-card__release-date">
+                <i class="bi bi-calendar-event"></i>
+                {{ mobile.release_date|date('M d, Y') }}
+              </div>
+              {% endif %}
+
+              {# Stats #}
+              <div class="mobile-card__stats">
+                <div class="stat">
+                  <i class="bi bi-eye"></i>
+                  <span>{{ mobile.views|default(0)|number_format }}</span>
+                </div>
+                <div class="stat">
+                  <i class="bi bi-calendar-plus"></i>
+                  <span>{{ mobile.created_at|time_ago }}</span>
+                </div>
+              </div>
+
+              {# Action Button #}
+              <button class="mobile-card__action-btn" aria-label="View phone details">
+                <span>View Details</span>
+                <i class="bi bi-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </a>
+      {% else %}
+        <div class="col-12">
+          <div class="text-center py-5">
+            <i class="bi bi-inbox fs-1 text-muted mb-3 d-block"></i>
+            <p class="text-muted">No mobile phones available at the moment.</p>
+          </div>
+        </div>
+      {% endfor %}
     </div>
   </div>
 </section>
