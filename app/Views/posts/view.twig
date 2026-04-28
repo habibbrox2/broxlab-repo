@@ -51,7 +51,7 @@
     "@id": "{{ url }}#website"
   }
   {% if post.categories and post.categories|length > 0 %}
-  ,"keywords": {{ post.categories|map(attribute='name')|json_encode }}
+  ,"keywords": {{ post.categories|map(item => item.name)|json_encode }}
   {% endif %}
 }
   </script>

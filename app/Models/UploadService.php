@@ -10,11 +10,11 @@
 
 class UploadService
 {
-    private $config;
-    private $mysqli;
-    private $userId;
-    private $uploadDir;
-    private $tempDir;
+    private array $config;
+    private mysqli $mysqli;
+    private int $userId;
+    private string $uploadDir;
+    private string $tempDir;
 
     public function __construct(mysqli $mysqli, int $userId = 0)
     {
@@ -119,7 +119,7 @@ class UploadService
 
             // Step 8: Log success
             $webPath = $this->toWebPath($uploadPath);
-            logDebug("File uploaded successfully", "FILE_UPLOAD", [
+            logDebug("File uploaded successfully", [
                 'filename' => $filename,
                 'category' => $category,
                 'size' => $file['size'],
@@ -330,7 +330,7 @@ class UploadService
                 $this->createThumbnails($imagePath);
             }
 
-            logDebug("Image processed successfully", "IMAGE_PROCESS", [
+            logDebug("Image processed successfully", [
                 'file' => basename($imagePath),
                 'width' => $width,
                 'height' => $height
@@ -353,7 +353,10 @@ class UploadService
             return;
         }
 
-        $watermark = imagecreatefrompng($watermarkPath);
+        $watermark = @imagecreatefrompng($watermarkPath);
+        if ($watermark === false) {
+            return;
+        }
         $wmWidth = imagesx($watermark);
         $wmHeight = imagesy($watermark);
 
@@ -432,10 +435,12 @@ class UploadService
             }
         } finally {
             // Always cleanup resources
-            if ($src && is_resource($src)) {
+            if ($src) {
+                /** @var GdImage $src */
                 imagedestroy($src);
             }
-            if ($thumb && is_resource($thumb)) {
+            if ($thumb) {
+                /** @var GdImage $thumb */
                 imagedestroy($thumb);
             }
         }
@@ -644,7 +649,7 @@ class UploadService
                 }
             }
 
-            logDebug("File deleted", "FILE_DELETE", [
+            logDebug("File deleted", [
                 'file' => basename($filePath),
                 'user_id' => $this->userId
             ]);
