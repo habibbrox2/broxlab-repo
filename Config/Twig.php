@@ -444,6 +444,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             'cache' => $twigCache,
             'debug' => $twigDebug,
             'auto_reload' => true,
+            'cache_busting_key' => 'v20260428-filters', // Increment to force cache invalidation
         ]);
 
         if ($twigDebug) {
