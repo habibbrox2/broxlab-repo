@@ -37,31 +37,40 @@ $router->get('/', function () use ($twig, $homeModel) {
 // ============ API ENDPOINTS FOR INFINITE SCROLL ============
 // Load more feed items via AJAX for infinite scroll pagination
 $router->get('/api/feed/load-more', function () use ($homeModel) {
-    header('Content-Type: application/json');
-
-    $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-    $sort = $_GET['sort'] ?? 'latest';
-    $limit = 10; // Fetch 10 items per page for smooth loading
+    // Set JSON header before any output
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
 
     try {
+        $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+        $sort = isset($_GET['sort']) ? (string)$_GET['sort'] : 'latest';
+        $limit = 10; // Fetch 10 items per page for smooth loading
+
+        // Validate sort parameter
+        if (!in_array($sort, ['latest', 'views', 'impressions'])) {
+            $sort = 'latest';
+        }
+
         $data = $homeModel->getUnifiedContent($page, $limit, $sort);
 
         // Return JSON with items and pagination info
+        http_response_code(200);
         echo json_encode([
             'success' => true,
-            'items' => $data['contents'],
-            'current_page' => $page,
-            'total_pages' => $data['total_pages'],
-            'has_more' => $page < $data['total_pages']
-        ], JSON_PRETTY_PRINT);
-    } catch (Exception $e) {
+            'items' => $data['contents'] ?? [],
+            'current_page' => (int)$page,
+            'total_pages' => (int)($data['total_pages'] ?? 1),
+            'has_more' => $page < ($data['total_pages'] ?? 1)
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    } catch (Throwable $e) {
         http_response_code(500);
         echo json_encode([
             'success' => false,
-            'error' => 'Failed to load more items',
+            'error' => 'Failed to load items',
             'message' => $e->getMessage()
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
     }
+    exit;
 });
 
 // ---------------- STATIC PAGES ----------------
