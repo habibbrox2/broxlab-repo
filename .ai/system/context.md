@@ -1,3 +1,8 @@
+---
+name: context-rules
+description: Context memory and consistency rules for maintaining project awareness across sessions
+---
+
 # CONTEXT MEMORY RULES
 
 ## Project Awareness

@@ -1,3 +1,8 @@
+---
+name: core-agent
+description: Main autonomous coding agent that coordinates all specialized agents and executes development tasks
+---
+
 # CORE CODEX AGENT — Main Brain
 
 ## Role

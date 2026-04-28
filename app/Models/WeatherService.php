@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /**
  * WeatherService - Business Logic Layer for Weather Operations

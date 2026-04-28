@@ -1,0 +1,72 @@
+﻿{# weather/partials/current-conditions.twig #}
+{# Displays current weather conditions card #}
+
+{# Determine unit symbol #}
+{% set unitSymbol = '°C' %}
+{% if units is defined %}
+    {% if units == 'imperial' %}
+        {% set unitSymbol = '°F' %}
+    {% elseif units == 'kelvin' %}
+        {% set unitSymbol = ' K' %}
+    {% else %}
+        {% set unitSymbol = '°C' %}
+    {% endif %}
+{% elseif weather.units is defined %}
+    {% if weather.units == 'imperial' %}
+        {% set unitSymbol = '°F' %}
+    {% elseif weather.units == 'kelvin' %}
+        {% set unitSymbol = ' K' %}
+    {% else %}
+        {% set unitSymbol = '°C' %}
+    {% endif %}
+{% endif %}
+
+{# Map wind degrees to direction #}
+{% set windDir = 'N' %}
+{% if windDeg >= 22.5 and windDeg < 67.5 %}{% set windDir = 'NE' %}
+{% elseif windDeg >= 67.5 and windDeg < 112.5 %}{% set windDir = 'E' %}
+{% elseif windDeg >= 112.5 and windDeg < 157.5 %}{% set windDir = 'SE' %}
+{% elseif windDeg >= 157.5 and windDeg < 202.5 %}{% set windDir = 'S' %}
+{% elseif windDeg >= 202.5 and windDeg < 247.5 %}{% set windDir = 'SW' %}
+{% elseif windDeg >= 247.5 and windDeg < 292.5 %}{% set windDir = 'W' %}
+{% elseif windDeg >= 292.5 and windDeg < 337.5 %}{% set windDir = 'NW' %}
+{% endif %}
+
+<div class="card border-0 shadow-lg overflow-hidden">
+    <div class="card-body p-4">
+        <div class="row align-items-center">
+            {# Weather Icon #}
+            <div class="col-4 text-center">
+                <div class="weather-icon-wrapper mb-2">
+                    <i class="bi bi-{{ icon|replace({'d':'','n':''})|default('cloud-sun') }} fs-1 text-primary"></i>
+                </div>
+                <div class="text-muted small text-uppercase">{{ desc|title }}</div>
+            </div>
+
+            {# Temperature & Location #}
+            <div class="col-5 text-center">
+                <div class="display-3 fw-bold text-dark mb-0" style="font-size: 3rem;">
+                    {{ temp|round|int }}
+                    <small class="fs-5 text-muted">{{ unitSymbol }}</small>
+                </div>
+                <div class="text-muted">Feels like {{ feels|round|int }}{{ unitSymbol }}</div>
+                <h4 class="h5 mt-2">{{ location }}</h4>
+            </div>
+
+            {# Additional Info #}
+            <div class="col-3 text-center">
+                <div class="row g-2 small">
+                    <div class="col-12">
+                        <i class="bi bi-droplet-fill text-primary me-1"></i>{{ humidity }}%
+                    </div>
+                    <div class="col-12">
+                        <i class="bi bi-wind text-success me-1"></i>{{ wind }} m/s {{ windDir }}
+                    </div>
+                    <div class="col-12">
+                        <i class="bi bi-speedometer2 text-warning me-1"></i>{{ pressure }} hPa
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

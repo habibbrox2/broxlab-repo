@@ -1,3 +1,8 @@
+---
+name: reviewer-agent
+description: Code review and quality assurance agent for final quality gates before code shipping
+---
+
 # REVIEWER AGENT — Quality Control
 
 ## Role

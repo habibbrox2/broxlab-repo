@@ -1,3 +1,8 @@
+---
+name: global-rules
+description: Global execution rules and output standards that are always active
+---
+
 # GLOBAL RULES — Always Active
 
 ## Core Execution Rules

@@ -1,3 +1,8 @@
+---
+name: add-feature
+description: Prompt template for implementing new features end-to-end
+---
+
 # PROMPT: Add Feature
 
 Use this prompt to implement a new feature end-to-end.

@@ -154,6 +154,13 @@
     {# ==================== CARD BODY ==================== #}
     <div class="cc-body-section">
       <h3 class="cc-title">{{ item.title }}</h3>
+
+      {# Mobile-specific subtitle (model name) #}
+      {% if item.type == 'mobile' and item.subtitle %}
+        <p class="cc-model-subtitle text-muted small mb-2">
+          <i class="bi bi-phone"></i> {{ item.subtitle }}
+        </p>
+      {% endif %}
       
       {# Service cards keep limited rich snippet; all other types remain plain text #}
       {% if item.type == 'service' %}
@@ -163,7 +170,7 @@
             {{ service_rich_excerpt|raw }}
           </div>
         {% endif %}
-      {% elseif item.subtitle %}
+      {% elseif item.subtitle and item.type != 'mobile' %}
         {% set clean_subtitle = item.subtitle|striptags|trim %}
         <p class="cc-excerpt">
           {% if clean_subtitle|length > 150 %}
@@ -180,6 +187,13 @@
           {% else %}
             {{ clean_description }}
           {% endif %}
+        </p>
+      {% endif %}
+
+      {# Mobile release date #}
+      {% if item.type == 'mobile' and item.release_date %}
+        <p class="cc-mobile-details text-muted small mb-2">
+          <i class="bi bi-calendar-event"></i> Released: {{ item.release_date|date('M d, Y') }}
         </p>
       {% endif %}
 
@@ -264,7 +278,19 @@
       {% endif %}
 
       {# Right section: Price or Number #}
-      {% if item.type == 'service' and item.price %}
+      {% if item.type == 'mobile' and (item.official_price or item.unofficial_price) %}
+        <div class="cc-mobile-pricing" aria-label="Mobile price">
+          {% if item.official_price %}
+            <span class="cc-price cc-price-official" title="Official Price">
+              ৳{{ item.official_price|number_format(0, '.', ',') }}
+            </span>
+          {% elseif item.unofficial_price %}
+            <span class="cc-price cc-price-unofficial" title="Market Price">
+              ৳{{ item.unofficial_price|number_format(0, '.', ',') }}
+            </span>
+          {% endif %}
+        </div>
+      {% elseif item.type == 'service' and item.price %}
         <span class="cc-number inl-c-0002">
           💰 {{ item.price }}
         </span>

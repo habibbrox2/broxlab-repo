@@ -1,3 +1,8 @@
+---
+name: devops-agent
+description: DevOps and infrastructure agent for deployment, servers, CI/CD, and system administration
+---
+
 # DEVOPS AGENT
 
 ## Role

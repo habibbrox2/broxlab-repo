@@ -1,3 +1,9 @@
+---
+name: broxlab-guardrails
+description: AI Agent guardrails, project structure, and guidelines for BroxLab development
+version: 2.2.1
+---
+
 # BroxLab - AI Agent Guardrails
 
 # Version: 2.2.1 | Lean update for lower token cost

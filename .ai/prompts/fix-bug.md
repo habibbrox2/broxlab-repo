@@ -1,3 +1,8 @@
+---
+name: fix-bug
+description: Prompt template for diagnosing and fixing reported bugs
+---
+
 # PROMPT: Fix Bug
 
 Use this prompt when a bug is reported.

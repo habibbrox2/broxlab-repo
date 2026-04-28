@@ -1,3 +1,8 @@
+---
+name: execution-workflow
+description: Standard execution workflow for receiving, analyzing, and routing development tasks
+---
+
 # EXECUTION WORKFLOW
 
 ## Standard Flow

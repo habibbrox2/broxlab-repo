@@ -1,3 +1,8 @@
+---
+name: backend-agent
+description: Backend coding agent for server-side logic including APIs, databases, authentication, and security
+---
+
 # BACKEND AGENT
 
 ## Role

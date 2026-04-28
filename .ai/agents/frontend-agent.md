@@ -1,3 +1,8 @@
+---
+name: frontend-agent
+description: Frontend coding agent for UI, client-side logic, and user experience
+---
+
 # FRONTEND AGENT
 
 ## Role

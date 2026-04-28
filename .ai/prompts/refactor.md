@@ -1,3 +1,8 @@
+---
+name: refactor
+description: Prompt template for refactoring and improving code without changing behavior
+---
+
 # PROMPT: Refactor Code
 
 Use this to clean up and improve existing code without changing behavior.
