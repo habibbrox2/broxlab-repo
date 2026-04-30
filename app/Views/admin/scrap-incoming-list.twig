@@ -201,14 +201,14 @@
   }
 </style>
 
-{% set incoming_total = scraping_stats.total_items|default(total) %}
+{% set incoming_total = scraping_stats.total|default(scraping_stats.total_items|default(total)) %}
 
 <div class="incoming-shell">
   <div class="incoming-hero">
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
       <div>
         <h1>Incoming Scrapes</h1>
-        <p>Structured records from `scraping_articles` and `scraping_mobiles`.</p>
+        <p>Queued records from `push_incoming_items` before or after publish processing.</p>
       </div>
       <a class="btn btn-outline-secondary btn-sm" href="/admin/scrap-control-center">Back to Control Center</a>
     </div>
@@ -220,7 +220,7 @@
         <div class="card-body">
           <span class="incoming-stat-icon"><i class="bi bi-box-seam"></i></span>
           <div>
-            <div class="incoming-stat-value">{{ scraping_stats.total_items|default(0) }}</div>
+            <div class="incoming-stat-value">{{ incoming_total }}</div>
             <div class="incoming-stat-label">Total Items</div>
           </div>
         </div>
@@ -231,8 +231,8 @@
         <div class="card-body">
           <span class="incoming-stat-icon"><i class="bi bi-file-earmark-text"></i></span>
           <div>
-            <div class="incoming-stat-value">{{ scraping_stats.total_articles|default(0) }}</div>
-            <div class="incoming-stat-label">Articles</div>
+            <div class="incoming-stat-value">{{ scraping_stats.pending|default(0) }}</div>
+            <div class="incoming-stat-label">Pending</div>
           </div>
         </div>
       </div>
@@ -242,8 +242,8 @@
         <div class="card-body">
           <span class="incoming-stat-icon"><i class="bi bi-phone"></i></span>
           <div>
-            <div class="incoming-stat-value">{{ scraping_stats.total_mobiles|default(0) }}</div>
-            <div class="incoming-stat-label">Mobiles</div>
+            <div class="incoming-stat-value">{{ scraping_stats.published|default(0) }}</div>
+            <div class="incoming-stat-label">Published</div>
           </div>
         </div>
       </div>
@@ -253,8 +253,8 @@
         <div class="card-body">
           <span class="incoming-stat-icon"><i class="bi bi-clock-history"></i></span>
           <div>
-            <div class="incoming-stat-value">{{ scraping_stats.last_received ? scraping_stats.last_received|date('M d, H:i') : 'N/A' }}</div>
-            <div class="incoming-stat-label">Last Received</div>
+            <div class="incoming-stat-value">{{ scraping_stats.failed|default(0) }}</div>
+            <div class="incoming-stat-label">Failed</div>
           </div>
         </div>
       </div>
@@ -308,6 +308,15 @@
           </select>
         </div>
         <div class="col-md-3">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-control">
+            <option value="">All</option>
+            <option value="pending" {{ status_filter == 'pending' ? 'selected' }}>Pending</option>
+            <option value="published" {{ status_filter == 'published' ? 'selected' }}>Published</option>
+            <option value="failed" {{ status_filter == 'failed' ? 'selected' }}>Failed</option>
+          </select>
+        </div>
+        <div class="col-md-3">
           <label class="form-label">Per Page</label>
           <select name="limit" class="form-control">
             {% for l in [12, 24, 50, 100] %}
@@ -315,10 +324,10 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-1">
           <button class="btn btn-primary w-100" type="submit">Apply Filters</button>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-1">
           <a class="btn btn-outline-secondary w-100" href="/admin/scrap-control-center/incoming">Reset</a>
         </div>
       </form>
@@ -393,6 +402,10 @@
                     </div>
                     <div>
                       <strong>Received:</strong> {{ item.received_at|default('-') }}
+                      {% if item.publish_status %}
+                        <span class="text-muted">•</span>
+                        <strong>Status:</strong> {{ item.publish_status }}
+                      {% endif %}
                       {% if item.scraped_at %}
                         <span class="text-muted">•</span>
                         <strong>Scraped:</strong> {{ item.scraped_at }}
@@ -698,5 +711,3 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 {% endblock %}
-
-

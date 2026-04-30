@@ -52,7 +52,7 @@ function getPurifier(): \HTMLPurifier {
 
     $config->set('HTML.Allowed',
 
-        'p,br,span,div,b,strong,i,em,u,ul,ol,li,a[href|title|target],'
+        'p,br,hr,h1,h2,h3,h4,h5,h6,span,div,b,strong,i,em,u,blockquote,pre,code,ul,ol,li,a[href|title|target],'
 
         .'img[src|alt|width|height],'
 

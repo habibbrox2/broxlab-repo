@@ -124,12 +124,16 @@ $router->get('/api/services', function () use ($serviceModel, $contentModel) {
 });
 
 
-// Server-rendered HTML feed used by the homepage AJAX (returns pre-rendered content cards)
+// Server-rendered HTML feed used by the homepage AJAX (returns paginated content cards + metadata)
 $router->get('/api/services/html', function () use ($serviceModel, $contentModel, $twig) {
-    header('Content-Type: text/html; charset=utf-8');
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
 
     try {
-        $services = $serviceModel->getAllActiveEnriched();
+        $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+        $limit = defined('HOMEPAGE_FEED_LIMIT') ? HOMEPAGE_FEED_LIMIT : 12;
+        $data = $serviceModel->getActiveEnrichedPage($page, $limit);
+        $services = $data['services'] ?? [];
 
         foreach ($services as &$service) {
             $service['categories'] = $contentModel->getCategoriesForContent('service', $service['id']);
@@ -197,10 +201,29 @@ $router->get('/api/services/html', function () use ($serviceModel, $contentModel
             }
         }
 
-        echo $twig->render('partials/services-feed.twig', ['services' => $services]);
+        $html = $twig->render('partials/services-feed.twig', [
+            'services' => $services,
+            'start_index' => (($page - 1) * $limit) + 1,
+            'empty_text' => 'No services found.'
+        ]);
+
+        echo json_encode([
+            'success' => true,
+            'feed' => 'services',
+            'html' => $html,
+            'items' => $services,
+            'current_page' => (int)$page,
+            'total_pages' => (int)($data['total_pages'] ?? 1),
+            'has_more' => $page < ($data['total_pages'] ?? 1)
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     } catch (Throwable $e) {
         http_response_code(500);
-        echo '<div class="feed-empty-state"><div class="empty-state-content text-danger">Failed to load services.</div></div>';
+        echo json_encode([
+            'success' => false,
+            'feed' => 'services',
+            'error' => 'Failed to load services',
+            'message' => $e->getMessage()
+        ], JSON_UNESCAPED_UNICODE);
     }
 });
 

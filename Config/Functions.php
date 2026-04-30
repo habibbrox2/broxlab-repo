@@ -65,6 +65,10 @@ if (!function_exists('getCurrentUrl')) {
 
 if (!function_exists('sanitize_input')) {
 
+    /**
+     * @param mixed $data
+     * @return string
+     */
     function sanitize_input($data)
     {
 
@@ -134,11 +138,11 @@ if (!function_exists('validateCsrfToken')) {
      * @param string|null $token Token to validate
      * @return bool Validation result
      */
-function validateCsrfToken($token)
-{
-    try {
-        $sessionMgr = SessionManager::getInstance();
-        return $sessionMgr->validateCsrfToken($token);
+    function validateCsrfToken($token)
+    {
+        try {
+            $sessionMgr = SessionManager::getInstance();
+            return $sessionMgr->validateCsrfToken($token);
         } catch (Throwable $e) {
             error_log("validateCsrfToken error: " . $e->getMessage());
             // Fallback to direct comparison
@@ -524,6 +528,11 @@ if (!function_exists('getFlashMessage')) {
 
  */
 
+/**
+ * @param string $key
+ * @param mixed $default
+ * @return mixed
+ */
 function getSetting(string $key, $default = null)
 {
 
@@ -549,6 +558,11 @@ function getSetting(string $key, $default = null)
 
  */
 
+/**
+ * @param string $key
+ * @param mixed $value
+ * @return bool
+ */
 function updateSetting(string $key, $value): bool
 {
 
@@ -1033,6 +1047,12 @@ if (!function_exists('getUserId')) {
  * @return mixed The session value or default
  */
 if (!function_exists('getSessionValue')) {
+    /**
+     * @param string $key
+     * @param mixed $default
+     * @param string $type
+     * @return mixed
+     */
     function getSessionValue(string $key, $default = null, string $type = 'string')
     {
         return AuthManager::getSessionValue($key, $default, $type);
@@ -1126,6 +1146,11 @@ if (!function_exists('getUserDetails')) {
  * Helper: JSON Response
  */
 if (!function_exists('json_response')) {
+    /**
+     * @param mixed $data
+     * @param int $statusCode
+     * @return void
+     */
     function json_response($data, $statusCode = 200)
     {
         http_response_code($statusCode);

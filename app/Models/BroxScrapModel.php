@@ -1194,7 +1194,7 @@ class BroxScrapModel
         return ['count' => $affected, 'ids' => $ids];
     }
 
-    public function markIncomingItemPublished(int $id, int $publishedContentId, ?array $metadata = null): bool
+    public function markIncomingItemPublished(int $id, int $publishedContentId, ?array $metadata = null, ?string $publishedAt = null): bool
     {
         if (!$this->ensureIncomingTable()) {
             return false;
@@ -1206,11 +1206,16 @@ class BroxScrapModel
             $metadataJson = is_string($encoded) && $encoded !== '' ? $encoded : null;
         }
 
+        $normalizedPublishedAt = $this->normalizePushedAt($publishedAt);
+        if ($normalizedPublishedAt === null) {
+            $normalizedPublishedAt = date('Y-m-d H:i:s');
+        }
+
         $stmt = $this->mysqli->prepare(
             "UPDATE push_incoming_items
              SET publish_status = 'published',
                  published_content_id = ?,
-                 published_at = NOW(),
+                 published_at = ?,
                  publish_error = NULL,
                  publish_metadata_json = ?,
                  publish_attempts = publish_attempts + 1
@@ -1219,7 +1224,7 @@ class BroxScrapModel
         if (!$stmt) {
             return false;
         }
-        $stmt->bind_param('isi', $publishedContentId, $metadataJson, $id);
+        $stmt->bind_param('issi', $publishedContentId, $normalizedPublishedAt, $metadataJson, $id);
         $ok = $stmt->execute();
         $stmt->close();
         return (bool) $ok;

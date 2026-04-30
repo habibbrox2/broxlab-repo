@@ -9,17 +9,31 @@ $homeModel = new HomeModel($mysqli);
 $statisticsModel = new StatisticsModel($mysqli);
 $advertisementModel = new AdvertisementModel($mysqli);
 
+const HOMEPAGE_FEED_LIMIT = 12;
+
+$normalizeLatestMobileItems = static function (array $mobiles): array {
+    foreach ($mobiles as &$mobile) {
+        $mobile['type'] = 'mobile';
+        $mobile['title'] = trim((string)($mobile['brand_name'] ?? ''));
+        $mobile['subtitle'] = trim((string)($mobile['model_name'] ?? ''));
+        $mobile['image'] = $mobile['image_path'] ?? null;
+        $mobile['images'] = !empty($mobile['image_path']) ? [$mobile['image_path']] : [];
+    }
+
+    return $mobiles;
+};
+
 // ---------------- HOME PAGE ----------------
-$router->get('/', function () use ($twig, $homeModel) {
+$router->get('/', function () use ($twig, $homeModel, $normalizeLatestMobileItems) {
     $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
     $sort = $_GET['sort'] ?? 'latest';
-    $limit = 25; // Initial load shows 25 items for better initial page experience
+    $limit = HOMEPAGE_FEED_LIMIT;
 
     $data = $homeModel->getUnifiedContent($page, $limit, $sort);
     $stats = $homeModel->getHomepageStats();
     $topPosts = $homeModel->getTopPosts(8);
     $topServices = $homeModel->getTopServices(8);
-    $latestMobiles = $homeModel->getLatestMobiles(8);
+    $latestMobiles = $normalizeLatestMobileItems($homeModel->getLatestMobiles(8));
 
     echo $twig->render('public/home.twig', [
         'contents' => $data['contents'],
@@ -28,6 +42,7 @@ $router->get('/', function () use ($twig, $homeModel) {
         'latest_mobiles' => $latestMobiles,
         'total_pages' => $data['total_pages'],
         'current_page' => $page,
+        'homepage_feed_limit' => $limit,
         'sort' => $sort,
         'stats' => $stats,
         'title' => 'Home'
@@ -36,7 +51,7 @@ $router->get('/', function () use ($twig, $homeModel) {
 
 // ============ API ENDPOINTS FOR INFINITE SCROLL ============
 // Load more feed items via AJAX for infinite scroll pagination
-$router->get('/api/feed/load-more', function () use ($homeModel) {
+$router->get('/api/feed/load-more', function () use ($homeModel, $twig) {
     // Set JSON header before any output
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -44,7 +59,7 @@ $router->get('/api/feed/load-more', function () use ($homeModel) {
     try {
         $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
         $sort = isset($_GET['sort']) ? (string)$_GET['sort'] : 'latest';
-        $limit = 10; // Fetch 10 items per page for smooth loading
+        $limit = HOMEPAGE_FEED_LIMIT;
 
         // Validate sort parameter
         if (!in_array($sort, ['latest', 'views', 'impressions'])) {
@@ -52,11 +67,18 @@ $router->get('/api/feed/load-more', function () use ($homeModel) {
         }
 
         $data = $homeModel->getUnifiedContent($page, $limit, $sort);
+        $html = $twig->render('partials/home-feed-items.twig', [
+            'items' => $data['contents'] ?? [],
+            'start_index' => (($page - 1) * $limit) + 1,
+            'empty_text' => 'No content available at the moment.'
+        ]);
 
         // Return JSON with items and pagination info
         http_response_code(200);
         echo json_encode([
             'success' => true,
+            'feed' => 'recent',
+            'html' => $html,
             'items' => $data['contents'] ?? [],
             'current_page' => (int)$page,
             'total_pages' => (int)($data['total_pages'] ?? 1),
@@ -79,8 +101,8 @@ $router->get('/api/feed/load-more', function () use ($homeModel) {
 // Update render paths accordingly when adding new routes.
 
 $router->get('/about', function () use ($twig) {
-    // keep legacy /about route but render the about-us template from the public folder
-    echo $twig->render('public/about-us.twig', ['title' => 'About Us']);
+    // Redirect legacy /about URL to the canonical /about-us URL.
+    redirect('/about-us', 301);
 });
 
 // Show contact page (already exists)

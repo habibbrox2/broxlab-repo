@@ -2,16 +2,11 @@
 <section class="container home-weather-section py-5" id="weather-section">
     <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 class="h3 fw-bold text-primary mb-1">
-                        <i class="bi bi-cloud-sun-fill me-2"></i>Weather Update
-                    </h2>
-                    <p class="text-muted mb-0">Real-time weather for your location</p>
-                </div>
-                <a href="{{ path('weather.home') }}" class="btn btn-outline-primary btn-sm">
-                    <i class="bi bi-arrow-right-circle me-1"></i>View Full Forecast
-                </a>
+            <div class="text-center mb-5">
+                <h2 class="display-6 fw-bold mb-3">
+                    <span class="text-primary">Weather</span> Update
+                </h2>
+                <p class="lead text-muted mb-0">Real-time weather for your location</p>
             </div>
         </div>
     </div>
@@ -20,17 +15,17 @@
     <div class="row mb-4">
         <div class="col-lg-8 mx-auto">
             <form id="home-weather-search-form" class="weather-search-form">
-                <div class="input-group shadow-sm rounded-pill overflow-hidden">
-                    <span class="input-group-text bg-white border-0">
-                        <i class="bi bi-geo-alt-fill text-primary fs-5"></i>
+                <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden hover-lift">
+                    <span class="input-group-text bg-gradient-primary text-white border-0 px-4">
+                        <i class="bi bi-geo-alt-fill fs-4"></i>
                     </span>
                     <input type="text"
                            name="location"
                            id="home-weather-search-input"
-                           class="form-control border-0 py-3 px-4"
+                           class="form-control form-control-lg border-0 py-4 px-4"
                            placeholder="Enter city name or coordinates (e.g., Dhaka, 23.8103,90.4125)"
                            aria-label="Search weather location">
-                    <button class="btn btn-primary px-4" type="submit">
+                    <button class="btn btn-primary px-4 fw-bold" type="submit">
                         <i class="bi bi-search me-2"></i>Check Weather
                     </button>
                 </div>
@@ -43,14 +38,14 @@
         <div class="col-12">
             <div id="weather-widget-container">
                 {# Loading state #}
-                <div class="card border-0 shadow-sm bg-gradient-primary text-white overflow-hidden">
-                    <div class="card-body p-4 p-lg-5 text-center">
-                        <div class="d-flex align-items-center justify-content-center" style="min-height: 200px;">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden hover-lift">
+                    <div class="card-body p-5 text-center">
+                        <div class="d-flex align-items-center justify-content-center" style="min-height: 220px;">
                             <div class="text-center">
-                                <div class="spinner-border text-light mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                <div class="spinner-border text-primary mb-4" role="status" style="width: 3.5rem; height: 3.5rem;">
                                     <span class="visually-hidden">Loading weather...</span>
                                 </div>
-                                <p class="mb-0">Loading weather data...</p>
+                                <p class="mb-0 fw-medium">Fetching latest weather data...</p>
                             </div>
                         </div>
                     </div>
@@ -66,6 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchForm = document.getElementById('home-weather-search-form');
     const searchInput = document.getElementById('home-weather-search-input');
     const container = document.getElementById('weather-widget-container');
+    const weatherDetailsBaseUrl = '{{ path('weather.details') }}';
 
     if (searchForm && container) {
         // Auto-detect user location on page load
@@ -96,23 +92,50 @@ document.addEventListener('DOMContentLoaded', function() {
      * Fetch weather for user's detected location via IP geolocation
      */
     async function loadWeatherForUserLocation() {
-        // Try to get location from browser geolocation or default to Dhaka
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                async function(position) {
-                    const lat = position.coords.latitude.toFixed(4);
-                    const lon = position.coords.longitude.toFixed(4);
-                    loadWeatherData(`${lat},${lon}`);
-                },
-                function() {
-                    // Geolocation denied - default to Dhaka
-                    loadWeatherData('Dhaka');
-                }
-            );
-        } else {
-            // Browser doesn't support geolocation
-            loadWeatherData('Dhaka');
+        const fallbackLocation = 'Dhaka';
+
+        // Permissions Policy or browser settings may block geolocation before prompt.
+        if (!navigator.geolocation) {
+            loadWeatherData(fallbackLocation);
+            return;
         }
+
+        try {
+            const policy = document.permissionsPolicy || document.featurePolicy;
+            if (policy && typeof policy.allowsFeature === 'function' && !policy.allowsFeature('geolocation')) {
+                loadWeatherData(fallbackLocation);
+                return;
+            }
+        } catch (error) {
+            // Ignore feature policy detection failures.
+        }
+
+        try {
+            if (navigator.permissions && typeof navigator.permissions.query === 'function') {
+                const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+                if (permissionStatus.state === 'denied') {
+                    loadWeatherData(fallbackLocation);
+                    return;
+                }
+            }
+        } catch (error) {
+            // Ignore permission query failures and continue with best-effort geolocation.
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude.toFixed(4);
+                const lon = position.coords.longitude.toFixed(4);
+                loadWeatherData(lat + ',' + lon);
+            },
+            function() {
+                loadWeatherData(fallbackLocation);
+            },
+            {
+                timeout: 5000,
+                maximumAge: 600000
+            }
+        );
     }
 
     /**
@@ -123,7 +146,8 @@ document.addEventListener('DOMContentLoaded', function() {
         showLoadingState();
 
         try {
-            const url = new URL('{{ path('weather.details', {location: ''}) }}' + encodeURIComponent(location));
+            const url = new URL(weatherDetailsBaseUrl, window.location.origin);
+            url.searchParams.set('location', location);
             url.searchParams.set('units', 'metric');
             url.searchParams.set('forecast_days', '1');
 
@@ -172,6 +196,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Determine icon class
         const iconClass = getBootstrapIcon(icon);
+        const detailsUrl = weatherDetailsBaseUrl + '?location=' + encodeURIComponent(locationName);
 
         container.innerHTML = `
             <div class="card border-0 shadow-sm bg-gradient-primary text-white overflow-hidden">
@@ -244,10 +269,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="card-footer bg-transparent border-0 text-white-50 small text-center">
                     <i class="bi bi-lightning me-1"></i>
-                    Data updates every 10 minutes | <a href="{{ path('weather.details', {location: ''}) }}${encodeURIComponent(locationName)}" class="text-white text-decoration-underline">Full details</a>
+                    Data updates every 10 minutes | <a href="${detailsUrl}" class="text-white text-decoration-underline">Full details</a>
                 </div>
             </div>
-        );
+        `;
     }
 
     /**
@@ -338,7 +363,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function escapeHtml(str) {
         if (!str) return '';
-        return str.replace(/[&<>"'`=\/]/g, function(m) {
+        return String(str).replace(/[&<>"'`=\/]/g, function(m) {
             return {
                 '&': '&amp;',
                 '<': '&lt;',
@@ -351,5 +376,5 @@ document.addEventListener('DOMContentLoaded', function() {
             }[m];
         });
     }
-    });
 });
+</script>

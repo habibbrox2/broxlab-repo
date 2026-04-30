@@ -15,36 +15,71 @@ class Router
 
     // ================== HTTP METHOD HELPERS ==================
 
+    /**
+     * @param string $pattern
+     * @param callable|array $optionsOrCallback
+     * @param callable|null $maybeCallback
+     */
     public function get($pattern, $optionsOrCallback, $maybeCallback = null)
     {
         return $this->addRoute('GET', $pattern, $optionsOrCallback, $maybeCallback);
     }
 
+    /**
+     * @param string $pattern
+     * @param callable|array $optionsOrCallback
+     * @param callable|null $maybeCallback
+     */
     public function post($pattern, $optionsOrCallback, $maybeCallback = null)
     {
         return $this->addRoute('POST', $pattern, $optionsOrCallback, $maybeCallback);
     }
 
+    /**
+     * @param string $pattern
+     * @param callable|array $optionsOrCallback
+     * @param callable|null $maybeCallback
+     */
     public function put($pattern, $optionsOrCallback, $maybeCallback = null)
     {
         return $this->addRoute('PUT', $pattern, $optionsOrCallback, $maybeCallback);
     }
 
+    /**
+     * @param string $pattern
+     * @param callable|array $optionsOrCallback
+     * @param callable|null $maybeCallback
+     */
     public function patch($pattern, $optionsOrCallback, $maybeCallback = null)
     {
         return $this->addRoute('PATCH', $pattern, $optionsOrCallback, $maybeCallback);
     }
 
+    /**
+     * @param string $pattern
+     * @param callable|array $optionsOrCallback
+     * @param callable|null $maybeCallback
+     */
     public function delete($pattern, $optionsOrCallback, $maybeCallback = null)
     {
         return $this->addRoute('DELETE', $pattern, $optionsOrCallback, $maybeCallback);
     }
 
+    /**
+     * @param string $pattern
+     * @param callable|array $optionsOrCallback
+     * @param callable|null $maybeCallback
+     */
     public function options($pattern, $optionsOrCallback, $maybeCallback = null)
     {
         return $this->addRoute('OPTIONS', $pattern, $optionsOrCallback, $maybeCallback);
     }
 
+    /**
+     * @param string $pattern
+     * @param callable|array $optionsOrCallback
+     * @param callable|null $maybeCallback
+     */
     public function any($pattern, $optionsOrCallback, $maybeCallback = null)
     {
         foreach (['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] as $method) {
@@ -53,6 +88,12 @@ class Router
         return $this;
     }
 
+    /**
+     * @param string[] $methods
+     * @param string $pattern
+     * @param callable|array $optionsOrCallback
+     * @param callable|null $maybeCallback
+     */
     public function match(array $methods, $pattern, $optionsOrCallback, $maybeCallback = null)
     {
         foreach ($methods as $method) {
@@ -63,6 +104,12 @@ class Router
 
     // ================== ROUTE REGISTRATION CORE ==================
 
+    /**
+     * @param string $method
+     * @param string $pattern
+     * @param callable|array $optionsOrCallback
+     * @param callable|null $maybeCallback
+     */
     private function addRoute(string $method, string $pattern, $optionsOrCallback, $maybeCallback)
     {
         $fullPattern = $this->currentGroupPrefix . $pattern;
@@ -77,6 +124,10 @@ class Router
             $callback   = $maybeCallback;
             $middleware = array_merge($middleware, $optionsOrCallback['middleware'] ?? []);
             $name       = $optionsOrCallback['name'] ?? null;
+        } elseif (is_callable($optionsOrCallback) && is_array($maybeCallback)) {
+            $callback   = $optionsOrCallback;
+            $middleware = array_merge($middleware, $maybeCallback['middleware'] ?? []);
+            $name       = $maybeCallback['name'] ?? null;
         } else {
             logError(
                 "Invalid route definition",
@@ -311,6 +362,5 @@ class Router
         return $this->namedRoutes;
     }
 }
-
 // Instantiate router
 $router = new Router();

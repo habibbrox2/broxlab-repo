@@ -2,6 +2,15 @@
 
 // controllers/PageController.php
 
+/**
+ * @var \Twig\Environment $twig
+ * @var mysqli $mysqli
+ * @var ContentModel $contentModel
+ * @var NewsletterModel $newsletterModel
+ * @var StatisticsModel $statisticsModel
+ * @var AdvertisementModel $advertisementModel
+ */
+
 $newsletterModel = new NewsletterModel($mysqli);
 $statisticsModel = new StatisticsModel($mysqli);
 $advertisementModel = new AdvertisementModel($mysqli);
@@ -154,92 +163,9 @@ $router->get('/faq', function () use ($twig) {
     echo $twig->render('public/faq.twig', ['title' => 'Frequently Asked Questions']);
 });
 
-// ==================== TELETALK JOBS LISTING PAGE ====================
+// ==================== JOBS LISTING PAGE ====================
 
-$router->get('/jobs', function () use ($twig, $mysqli) {
-    require_once __DIR__ . '/../Models/TeletalkJobModel.php';
 
-    try {
-        $model = new TeletalkJobModel($mysqli);
-
-        // Get pagination parameters
-        $page = max(1, (int)($_GET['page'] ?? 1));
-        $limit = 20;
-        $offset = ($page - 1) * $limit;
-
-        // Get search and filter parameters
-        $search = trim($_GET['search'] ?? '');
-        $organization = trim($_GET['organization'] ?? '');
-
-        // Fetch jobs
-        if ($search) {
-            $jobs = $model->searchJobs($search, $limit, $offset);
-            $total = count($model->searchJobs($search, 1000, 0));
-        } elseif ($organization) {
-            $jobs = $model->getJobsByOrganization($organization, $limit, $offset);
-            $total = $model->getCountByOrganization($organization);
-        } else {
-            $jobs = $model->getRecentJobs($limit, $offset);
-            $total = $model->getTotalCount();
-        }
-
-        // Get organizations for filter
-        $organizations = $model->getOrganizations();
-
-        // Calculate pagination
-        $totalPages = (int)ceil($total / $limit);
-
-        echo $twig->render('public/jobs.twig', [
-            'jobs' => $jobs,
-            'organizations' => $organizations,
-            'page' => $page,
-            'total_pages' => $totalPages,
-            'total' => $total,
-            'search' => $search,
-            'selected_organization' => $organization,
-            'page_title' => 'Government Jobs - Teletalk'
-        ]);
-    } catch (\Exception $e) {
-        logError("PageController: Jobs listing error: " . $e->getMessage());
-        http_response_code(500);
-        echo $twig->render('error.twig', [
-            'error' => 'Failed to load jobs',
-            'page_title' => 'Error'
-        ]);
-    }
-});
-
-// ==================== TELETALK JOB DETAILS PAGE ====================
-
-$router->get('/jobs/(\d+)', function ($id) use ($twig, $mysqli) {
-    require_once __DIR__ . '/../Models/TeletalkJobModel.php';
-
-    try {
-        $model = new TeletalkJobModel($mysqli);
-        $job = $model->getJobById((int)$id);
-
-        if (!$job) {
-            http_response_code(404);
-            echo $twig->render('error.twig', [
-                'error' => 'Job not found',
-                'page_title' => 'Job Not Found'
-            ]);
-            return;
-        }
-
-        echo $twig->render('public/job-detail.twig', [
-            'job' => $job,
-            'page_title' => $job['title'] . ' - ' . $job['organization']
-        ]);
-    } catch (\Exception $e) {
-        logError("PageController: Job detail error: " . $e->getMessage());
-        http_response_code(500);
-        echo $twig->render('error.twig', [
-            'error' => 'Failed to load job details',
-            'page_title' => 'Error'
-        ]);
-    }
-});
 
 // ==================== RAMADAN 2026 PAGE ====================
 
@@ -292,10 +218,3 @@ $router->get('/sitemap.xml', function () use ($twig, $contentModel) {
     ]);
     exit; // Prevent further output
 });
-
-
-
-
-
-
-
