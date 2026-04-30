@@ -30,7 +30,7 @@
     {# Search Form #}
     <div class="row justify-content-center mb-5">
         <div class="col-lg-8">
-            <form action="{{ path('weather.details', {location: ''}) }}" method="get" class="search-form">
+            <form action="{{ path('weather.details') }}" method="get" class="search-form">
                 <div class="input-group input-group-lg shadow-sm">
                     <span class="input-group-text bg-white border-end-0">
                         <i class="bi bi-search text-primary"></i>
@@ -48,9 +48,9 @@
                 </div>
                 <div class="form-text text-center mt-2">
                     Popular: 
-                    <a href="{{ path('weather.details', {location: ''}) }}?location=London">London</a> | 
-                    <a href="{{ path('weather.details', {location: ''}) }}?location=New York">New York</a> | 
-                    <a href="{{ path('weather.details', {location: ''}) }}?location=Tokyo">Tokyo</a>
+                    <a href="{{ path('weather.details') }}?location=London">London</a> | 
+                    <a href="{{ path('weather.details') }}?location=New%20York">New York</a> | 
+                    <a href="{{ path('weather.details') }}?location=Tokyo">Tokyo</a>
                 </div>
             </form>
         </div>
@@ -77,7 +77,7 @@
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
                 {% for loc in weather_data.popular_locations %}
                     <div class="col">
-                        <a href="{{ path('weather.details', {location: loc.search}) }}" class="text-decoration-none">
+                        <a href="{{ path('weather.details') }}?location={{ loc.search|url_encode }}" class="text-decoration-none">
                             <div class="card h-100 border-0 shadow-sm hover-lift">
                                 <div class="card-body text-center">
                                     <h5 class="card-title">{{ loc.name }}</h5>
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 const location = encodeURIComponent(this.value.trim());
                 if (location) {
-                    window.location.href = '{{ path('weather.details', {location: ''}) }}' + location;
+                    window.location.href = '{{ path('weather.details') }}?location=' + location;
                 }
             }
         });

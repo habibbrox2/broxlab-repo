@@ -17,15 +17,15 @@
 {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    "@id": "{{ canonical_url|default(url) }}",
-    "name": "{{ app_settings.meta_title ?: app_settings.site_name|json }}",
-    "description": "{{ app_settings.meta_description ?: 'Welcome to ' ~ app_settings.site_name|json }}",
-    "url": "{{ url|json }}",
-    "image": "{{ app_settings.site_logo ?: url ~ 'assets/images/default-logo.png'|json }}",
+    "@id": {{ canonical_url|default(url)|json_encode }},
+    "name": {{ (app_settings.meta_title ?: app_settings.site_name)|json_encode }},
+    "description": {{ (app_settings.meta_description ?: 'Welcome to ' ~ app_settings.site_name)|json_encode }},
+    "url": {{ url|json_encode }},
+    "image": {{ (app_settings.site_logo ?: url ~ 'assets/images/default-logo.png')|json_encode }},
     "isPartOf": {
         "@type": "WebSite",
-        "@id": "{{ url|json }}",
-        "name": "{{ app_settings.site_name|json }}"
+        "@id": {{ url|json_encode }},
+        "name": {{ app_settings.site_name|json_encode }}
     },
     "datePublished": "{{ 'now'|date('c') }}",
     "dateModified": "{{ 'now'|date('c') }}"
@@ -459,42 +459,34 @@
 
     {# ==================== CONTENT CARDS SECTION ==================== #}
     <div id="latest-feed" class="feed-grid" role="feed" aria-label="Latest content feed">
-      {% for item in contents %}
-        {% include 'partials/content-card.twig' with { item: item, index: loop.index } %}
-      {% else %}
-        <div class="feed-empty-state">
-          <div class="empty-state-content" role="status" aria-label="No content available">
-            <i class="bi bi-box-seam empty-icon" aria-hidden="true"></i>
-            <p class="empty-text">No content available at the moment.</p>
-          </div>
-        </div>
-      {% endfor %}
+      {% include 'partials/home-feed-items.twig' with {
+        items: contents,
+        start_index: ((current_page - 1) * homepage_feed_limit) + 1,
+        empty_text: 'No content available at the moment.'
+      } %}
     </div>
-    
-    {# ==================== LOAD MORE PAGINATION ==================== #}
-    {% if current_page < total_pages %}
-    <div id="feed-loading-section" class="mt-5 text-center">
-      <button id="load-more-btn" 
-              class="btn btn-primary btn-lg rounded-pill px-5 py-3 shadow-lg fw-bold" 
-              onclick="window.location.href='/?page={{ current_page + 1 }}&sort={{ sort }}'">
-        <i class="bi bi-arrow-down-circle me-2"></i>
-        <span>Load More Items</span>
-      </button>
-      <div class="mt-3 text-muted small">
-        <i class="bi bi-info-circle me-2"></i>
-        <span>Page {{ current_page }} of {{ total_pages }}</span>
-      </div>
-    </div>
-    {% else %}
-    <div class="mt-5 text-center text-muted">
-      <i class="bi bi-check-circle fs-3 text-success mb-2 d-block"></i>
-      <span>You've reached the end!</span>
-    </div>
-    {% endif %}
-    
+
     {# ==================== SERVICES FEED (AJAX) ==================== #}
     <div id="services-feed" class="feed-grid d-none" role="feed" aria-label="Services feed">
       <!-- Populated via JavaScript -->
+    </div>
+
+    {# ==================== SHARED LOAD MORE PAGINATION ==================== #}
+    <div id="feed-loading-section" class="mt-5 text-center">
+      <button id="load-more-btn"
+              type="button"
+              class="btn btn-primary btn-lg rounded-pill px-5 py-3 shadow-lg fw-bold">
+        <i class="bi bi-arrow-down-circle me-2"></i>
+        <span id="load-more-btn-text">Load More Items</span>
+      </button>
+      <div class="mt-3 text-muted small">
+        <i class="bi bi-info-circle me-2"></i>
+        <span id="feed-page-status">Page {{ current_page }} of {{ total_pages }}</span>
+      </div>
+      <div id="feed-end-message" class="mt-3 text-center text-muted d-none">
+        <i class="bi bi-check-circle fs-3 text-success mb-2 d-block"></i>
+        <span>You've reached the end!</span>
+      </div>
     </div>
 </div>
 
@@ -508,13 +500,42 @@
   const latestFeed = document.getElementById('latest-feed');
   const servicesFeed = document.getElementById('services-feed');
   const rotateTimerEl = document.getElementById('rotate-timer');
-  
-  let servicesLoaded = false;
+  const loadMoreSection = document.getElementById('feed-loading-section');
+  const loadMoreBtn = document.getElementById('load-more-btn');
+  const loadMoreBtnText = document.getElementById('load-more-btn-text');
+  const feedPageStatus = document.getElementById('feed-page-status');
+  const feedEndMessage = document.getElementById('feed-end-message');
+
   let currentFeed = 'recent';
-  let autoRotateTimer = null;
   let countdownTimer = null;
   let countdownValue = 15;
   let isTransitioning = false;
+  const rotateAfterSeconds = 15;
+
+  const feedStates = {
+    recent: {
+      name: 'recent',
+      endpoint: '/api/feed/load-more?sort={{ sort|url_encode }}',
+      container: latestFeed,
+      buttonLabel: 'Load More Items',
+      loadingLabel: 'Loading recent items...',
+      currentPage: {{ current_page|default(1) }},
+      totalPages: {{ total_pages|default(1) }},
+      loadedOnce: true,
+      isLoading: false
+    },
+    services: {
+      name: 'services',
+      endpoint: '/api/services/html',
+      container: servicesFeed,
+      buttonLabel: 'Load More Services',
+      loadingLabel: 'Loading services...',
+      currentPage: 0,
+      totalPages: 1,
+      loadedOnce: false,
+      isLoading: false
+    }
+  };
 
   function setActiveTab(tabName) {
     if (tabName === 'recent') {
@@ -530,26 +551,94 @@
     }
   }
 
-  async function loadServices() {
-    if (servicesLoaded) return;
-    
-    servicesFeed.innerHTML = '<div class="loading-spinner" aria-live="polite"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"><span class="visually-hidden">Loading</span></div>Loading services…</div>';
-    
+  function getActiveState() {
+    return feedStates[currentFeed];
+  }
+
+  function setButtonLoading(isLoading, label) {
+    if (!loadMoreBtn || !loadMoreBtnText) return;
+
+    loadMoreBtn.disabled = !!isLoading;
+    loadMoreBtnText.textContent = label;
+  }
+
+  function updateLoadMoreUi() {
+    const state = getActiveState();
+    if (!state || !loadMoreSection || !loadMoreBtn || !feedPageStatus || !feedEndMessage) {
+      return;
+    }
+
+    const hasMore = state.currentPage < state.totalPages;
+    const showButton = state.isLoading || hasMore;
+
+    loadMoreSection.classList.remove('d-none');
+    loadMoreBtn.classList.toggle('d-none', !showButton);
+    feedPageStatus.classList.toggle('d-none', !state.loadedOnce);
+    feedEndMessage.classList.toggle('d-none', showButton || !state.loadedOnce);
+
+    if (state.loadedOnce) {
+      feedPageStatus.textContent = 'Page ' + Math.max(state.currentPage, 1) + ' of ' + Math.max(state.totalPages, 1);
+    } else {
+      feedPageStatus.textContent = 'Preparing feed...';
+    }
+
+    setButtonLoading(state.isLoading, state.isLoading ? state.loadingLabel : state.buttonLabel);
+  }
+
+  function setFeedLoading(feedName, isLoading) {
+    const state = feedStates[feedName];
+    if (!state) return;
+
+    state.isLoading = isLoading;
+    if (currentFeed === feedName) {
+      updateLoadMoreUi();
+    }
+  }
+
+  async function fetchFeedPage(feedName, page, options = {}) {
+    const state = feedStates[feedName];
+    if (!state || state.isLoading) return;
+
+    const shouldReplace = options.replace === true;
+    setFeedLoading(feedName, true);
+
+    if (shouldReplace && state.container) {
+      state.container.innerHTML = '<div class="loading-spinner" aria-live="polite"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"><span class="visually-hidden">Loading</span></div>' + escapeHtml(state.loadingLabel) + '</div>';
+    }
+
     try {
-      // Prefer server-rendered HTML partial for consistent markup (uses content-card.twig)
-      const res = await fetch('/api/services/html');
-      if (!res.ok) throw new Error('Failed to load services');
-      const html = await res.text();
-      servicesFeed.innerHTML = html || '<div class="feed-empty-state"><div class="empty-state-content">No services found.</div></div>';
-      servicesLoaded = true;
+      const separator = state.endpoint.includes('?') ? '&' : '?';
+      const res = await fetch(state.endpoint + separator + 'page=' + page, {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+      if (!res.ok) throw new Error('Failed to load ' + feedName + ' feed');
+
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || ('Failed to load ' + feedName + ' feed'));
+
+      if (shouldReplace) {
+        state.container.innerHTML = data.html || '';
+      } else {
+        state.container.insertAdjacentHTML('beforeend', data.html || '');
+      }
+
+      state.currentPage = Number(data.current_page || page);
+      state.totalPages = Number(data.total_pages || 1);
+      state.loadedOnce = true;
     } catch (err) {
-      servicesFeed.innerHTML = '<div class="feed-empty-state"><div class="empty-state-content text-danger">Failed to load services.</div></div>';
+      if (shouldReplace && state.container) {
+        state.container.innerHTML = '<div class="feed-empty-state"><div class="empty-state-content text-danger">' + escapeHtml(err.message || 'Failed to load feed.') + '</div></div>';
+      }
       console.error(err);
+    } finally {
+      setFeedLoading(feedName, false);
     }
   }
 
   function resetCountdown() {
-    countdownValue = 15;
+    countdownValue = rotateAfterSeconds;
     if (rotateTimerEl) rotateTimerEl.textContent = countdownValue;
   }
 
@@ -576,40 +665,35 @@
     if (isTransitioning) return;
     
     if (currentFeed === 'recent') {
-      showServices();
+      showFeed('services');
     } else {
-      showRecent();
+      showFeed('recent');
     }
   }
 
-  function showServices() {
-    if (isTransitioning) return;
-    isTransitioning = true;
-    
-    latestFeed.classList.add('fade-out');
-    setTimeout(() => {
-      latestFeed.classList.add('d-none');
-      latestFeed.classList.remove('fade-out');
-      servicesFeed.classList.remove('d-none');
-      currentFeed = 'services';
-      setActiveTab('services');
-      loadServices();
-      startCountdown();
-      isTransitioning = false;
-    }, 600);
-  }
+  function showFeed(feedName) {
+    if (isTransitioning || currentFeed === feedName) return;
 
-  function showRecent() {
-    if (isTransitioning) return;
+    const currentState = getActiveState();
+    const nextState = feedStates[feedName];
+    if (!currentState || !nextState) return;
+
     isTransitioning = true;
-    
-    servicesFeed.classList.add('fade-out');
-    setTimeout(() => {
-      servicesFeed.classList.add('d-none');
-      servicesFeed.classList.remove('fade-out');
-      latestFeed.classList.remove('d-none');
-      currentFeed = 'recent';
-      setActiveTab('recent');
+    currentState.container.classList.add('fade-out');
+
+    setTimeout(async () => {
+      currentState.container.classList.add('d-none');
+      currentState.container.classList.remove('fade-out');
+      nextState.container.classList.remove('d-none');
+      currentFeed = feedName;
+      setActiveTab(feedName);
+      updateLoadMoreUi();
+
+      if (!nextState.loadedOnce) {
+        await fetchFeedPage(feedName, 1, { replace: true });
+      }
+
+      updateLoadMoreUi();
       startCountdown();
       isTransitioning = false;
     }, 600);
@@ -627,7 +711,11 @@
     servicesTabBtn.addEventListener('click', function(e){
       e.preventDefault();
       stopCountdown();
-      if (currentFeed !== 'services') showServices();
+      if (currentFeed !== 'services') {
+        showFeed('services');
+      } else {
+        startCountdown();
+      }
     });
   }
 
@@ -635,12 +723,33 @@
     recentTabBtn.addEventListener('click', function(e){
       e.preventDefault();
       stopCountdown();
-      if (currentFeed !== 'recent') showRecent();
+      if (currentFeed !== 'recent') {
+        showFeed('recent');
+      } else {
+        startCountdown();
+      }
+    });
+  }
+
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', function() {
+      const state = getActiveState();
+      if (!state || state.isLoading || state.currentPage >= state.totalPages) {
+        updateLoadMoreUi();
+        return;
+      }
+
+      stopCountdown();
+      fetchFeedPage(currentFeed, state.currentPage + 1).finally(() => {
+        updateLoadMoreUi();
+        startCountdown();
+      });
     });
   }
 
   // Start auto-rotate
   window.addEventListener('load', function() {
+    updateLoadMoreUi();
     setTimeout(() => startCountdown(), 1000);
   });
 })();
@@ -776,106 +885,12 @@
       </div>
     </div>
 
-    <div class="mobiles-grid feed-grid">
-      {% for mobile in latest_mobiles|default([]) %}
-        <a href="/mobiles/view/{{ mobile.id }}" class="mobile-card-link" aria-label="View {{ mobile.brand_name }} {{ mobile.model_name }}">
-          <div class="mobile-card cc-card">
-            {# Image Section #}
-            <div class="mobile-card__image-wrapper">
-              {% if mobile.image_path %}
-                <img src="{{ mobile.image_path }}" 
-                     alt="{{ mobile.brand_name }} {{ mobile.model_name }}" 
-                     class="mobile-card__image"
-                     loading="lazy"
-                     decoding="async">
-              {% else %}
-                <div class="mobile-card__image-placeholder">
-                  <i class="bi bi-phone"></i>
-                </div>
-              {% endif %}
-
-              {# Status Badge #}
-              <div class="mobile-card__badge-top">
-                {% if mobile.is_official %}
-                  <span class="mobile-card__status-badge official" title="Official">
-                    <i class="bi bi-check-circle-fill"></i>
-                    <span>Official</span>
-                  </span>
-                {% else %}
-                  <span class="mobile-card__status-badge unofficial" title="Unofficial">
-                    <i class="bi bi-info-circle-fill"></i>
-                    <span>Unofficial</span>
-                  </span>
-                {% endif %}
-              </div>
-            </div>
-
-            {# Content Section #}
-            <div class="mobile-card__content">
-              <div class="mobile-card__header">
-                <div class="mobile-card__title">
-                  {{ mobile.brand_name }}
-                </div>
-                
-                <div class="mobile-card__model">
-                  {{ mobile.model_name }}
-                </div>
-              </div>
-
-              {# Pricing #}
-              <div class="mobile-card__pricing">
-                {% if mobile.official_price %}
-                  <div class="mobile-card__price-item official">
-                    <span class="mobile-card__price-label">Official:</span>
-                    <span class="mobile-card__price-value">৳{{ mobile.official_price|number_format(0, '.', ',') }}</span>
-                  </div>
-                {% endif %}
-                {% if mobile.unofficial_price %}
-                  <div class="mobile-card__price-item unofficial">
-                    <span class="mobile-card__price-label">Market:</span>
-                    <span class="mobile-card__price-value">৳{{ mobile.unofficial_price|number_format(0, '.', ',') }}</span>
-                  </div>
-                {% endif %}
-              </div>
-
-              {# Release Date #}
-              {% if mobile.release_date %}
-              <div class="mobile-card__release-date" style="font-size: 0.875rem; color: var(--bs-secondary); display: flex; align-items: center; gap: 0.4rem;">
-                <i class="bi bi-calendar-event"></i>
-                <span>{{ mobile.release_date|date('M d, Y') }}</span>
-              </div>
-              {% endif %}
-
-              {# Stats #}
-              <div class="mobile-card__stats">
-                <div class="mobile-card__stat">
-                  <i class="bi bi-eye"></i>
-                  <span>{{ mobile.views|default(0)|number_format }}</span>
-                </div>
-                <div class="mobile-card__stat">
-                  <i class="bi bi-calendar-plus"></i>
-                  <span>{{ mobile.created_at|time_ago }}</span>
-                </div>
-              </div>
-
-              {# Action Button #}
-              <div class="mobile-card__footer">
-                <a href="/mobiles/view/{{ mobile.id }}" class="mobile-card__link" aria-label="View phone details">
-                  <span>View Details</span>
-                  <i class="bi bi-arrow-right"></i>
-                </a>
-              </div>
-            </div>
-          </div>
-        </a>
-      {% else %}
-        <div class="col-12">
-          <div class="text-center py-5">
-            <i class="bi bi-inbox fs-1 text-muted mb-3 d-block"></i>
-            <p class="text-muted">No mobile phones available at the moment.</p>
-          </div>
-        </div>
-      {% endfor %}
+    <div class="feed-grid" role="feed" aria-label="Latest mobiles feed">
+      {% include 'partials/home-feed-items.twig' with {
+        items: latest_mobiles|default([]),
+        start_index: 1,
+        empty_text: 'No mobile phones available at the moment.'
+      } %}
     </div>
   </div>
 </section>
@@ -1370,5 +1385,3 @@
 
 {% block extra_scripts %}
 {% endblock %}
-
-

@@ -6,12 +6,15 @@
     'type': 'service',
     'rich_excerpt_html': s.rich_excerpt_html|default(s.description|default(''))
   }) %}
-  {% include 'partials/content-card.twig' with { item: item, index: loop.index } %}
+  {% include 'partials/content-card.twig' with {
+    item: item,
+    index: (start_index|default(1)) + loop.index0
+  } %}
 {% else %}
   <div class="feed-empty-state">
     <div class="empty-state-content" role="status" aria-label="No services available">
       <i class="bi bi-box-seam empty-icon" aria-hidden="true"></i>
-      <p class="empty-text">No services found.</p>
+      <p class="empty-text">{{ empty_text|default('No services found.') }}</p>
     </div>
   </div>
 {% endfor %}

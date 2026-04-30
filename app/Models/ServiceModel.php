@@ -906,6 +906,75 @@ class ServiceModel {
     }
 
     /**
+     * Get one homepage-safe page of active services with enriched image/meta data.
+     * @param int $page
+     * @param int $limit
+     * @return array{services: array, total_pages: int, total_items: int}
+     */
+    public function getActiveEnrichedPage(int $page = 1, int $limit = 12): array {
+        $page = max(1, $page);
+        $limit = max(1, $limit);
+        $offset = ($page - 1) * $limit;
+
+        $stmt = $this->mysqli->prepare("
+            SELECT s.*,
+                   COALESCE(v.views, 0) AS views,
+                   COALESCE(i.impressions, 0) AS impressions
+            FROM services s
+            LEFT JOIN (
+                SELECT content_id, COUNT(*) AS views
+                FROM views
+                WHERE content_type = 'service'
+                GROUP BY content_id
+            ) v ON v.content_id = s.id
+            LEFT JOIN (
+                SELECT content_id, COUNT(*) AS impressions
+                FROM impressions
+                WHERE content_type = 'service'
+                GROUP BY content_id
+            ) i ON i.content_id = s.id
+            WHERE s.status = 'active'
+              AND s.deleted_at IS NULL
+            ORDER BY s.created_at DESC
+            LIMIT ? OFFSET ?
+        ");
+        $stmt->bind_param('ii', $limit, $offset);
+        $stmt->execute();
+        $services = $stmt->get_result()->fetch_all(MYSQLI_ASSOC) ?: [];
+        $stmt->close();
+
+        $countStmt = $this->mysqli->prepare("
+            SELECT COUNT(*) AS count
+            FROM services
+            WHERE status = 'active'
+              AND deleted_at IS NULL
+        ");
+        $countStmt->execute();
+        $countRow = $countStmt->get_result()->fetch_assoc() ?: [];
+        $countStmt->close();
+
+        $totalItems = (int)($countRow['count'] ?? 0);
+        $totalPages = max(1, (int)ceil($totalItems / $limit));
+
+        $services = array_map(function($service) {
+            $service['metadata'] = $service['metadata'] ? json_decode($service['metadata'], true) : [];
+            $service['form_fields'] = $service['form_fields'] ? json_decode($service['form_fields'], true) : [];
+            $service = $this->applyLegacyDerivedFields($service);
+            $service['images'] = $this->getServiceImages((int)$service['id']);
+            $service['image_urls'] = $this->getServiceImageUrls((int)$service['id']);
+            $service['featured_image'] = $this->getFeaturedImage((int)$service['id']);
+            $service['featured_image_url'] = $this->getFeaturedImageUrl((int)$service['id']);
+            return $service;
+        }, $services);
+
+        return [
+            'services' => $services,
+            'total_pages' => $totalPages,
+            'total_items' => $totalItems,
+        ];
+    }
+
+    /**
      * Count services
      * @return int
      */

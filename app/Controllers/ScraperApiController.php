@@ -284,6 +284,73 @@ if (!function_exists('scraperPushDecorateScrapingItem')) {
     }
 }
 
+if (!function_exists('scraperPushDecorateIncomingQueueItem')) {
+    function scraperPushDecorateIncomingQueueItem(array $item): array
+    {
+        $payload = json_decode((string) ($item['payload_json'] ?? ''), true);
+        if (!is_array($payload)) {
+            $payload = [];
+        }
+
+        foreach (
+            [
+                'title' => ['title', 'name'],
+                'category' => ['category', 'productCategory'],
+                'author' => ['author'],
+                'brand' => ['brand'],
+                'model' => ['model'],
+                'product_category' => ['productCategory', 'category'],
+                'price_text' => ['price', 'priceText'],
+                'status_text' => ['status', 'availability'],
+                'excerpt' => ['excerpt'],
+                'body_text' => ['bodyText', 'body_text', 'content'],
+                'published_text' => ['publishedText', 'published_text'],
+                'source_url' => ['url', 'sourceUrl', 'source_url'],
+                'image_url' => ['imageUrl', 'image_url'],
+            ] as $targetKey => $sourceKeys
+        ) {
+            if (!empty($item[$targetKey])) {
+                continue;
+            }
+
+            foreach ($sourceKeys as $sourceKey) {
+                $value = $payload[$sourceKey] ?? null;
+                if (is_scalar($value) && trim((string) $value) !== '') {
+                    $item[$targetKey] = trim((string) $value);
+                    break;
+                }
+            }
+        }
+
+        if (empty($item['image_url'])) {
+            $images = scraperPushCollectImageUrls([
+                $payload['image'] ?? null,
+                $payload['imageUrl'] ?? null,
+                $payload['image_url'] ?? null,
+                $payload['images'] ?? null,
+            ]);
+            if ($images !== []) {
+                $item['image_url'] = $images[0];
+            }
+        }
+
+        $item['tags'] = scraperPushNormalizeStringList($payload['tags'] ?? []);
+        $item['key_specs'] = scraperPushNormalizeSpecs($payload['keySpecs'] ?? $payload['key_specs'] ?? []);
+        $item['specs'] = scraperPushNormalizeSpecs($payload['specs'] ?? []);
+        $item['display_type'] = scraperPushNormalizeContentType((string) ($item['data_type'] ?? '')) ?? (string) ($item['data_type'] ?? '');
+        $item['display_type_label'] = $item['display_type'] === 'mobiles' ? 'Mobile' : ($item['display_type'] === 'articles' ? 'Article' : ucfirst((string) $item['display_type']));
+        $item['image_src'] = trim((string) ($item['image_path'] ?? $item['image_url'] ?? ''));
+        $summary = trim((string) ($item['excerpt'] ?? $item['body_text'] ?? ''));
+        if ($summary === '') {
+            $summary = trim((string) ($item['published_text'] ?? ''));
+        }
+        $item['summary_text'] = $summary;
+        $item['title_text'] = trim((string) ($item['title'] ?? ''));
+
+        return $item;
+    }
+}
+
 if (!function_exists('scraperPushDefaultControlBaseUrl')) {
     function scraperPushDefaultControlBaseUrl(): string
     {
@@ -631,10 +698,84 @@ if (!function_exists('scraperPushToNullableString')) {
     function scraperPushNormalizeMobileStatus(?string $raw): string
     {
         $status = strtolower(trim((string) $raw));
+        if ($status === 'both') {
+            return 'both';
+        }
         if (in_array($status, ['official', 'available', 'in stock'], true)) {
             return 'official';
         }
         return 'unofficial';
+    }
+
+    function scraperPushExtractHtmlTagSignature(string $html): array
+    {
+        if (trim($html) === '' || !preg_match_all('/<\s*(\/?)\s*([a-z0-9]+)(?:\s[^>]*)?>/i', $html, $matches, PREG_SET_ORDER)) {
+            return [];
+        }
+
+        $signature = [];
+        foreach ($matches as $match) {
+            $tagName = strtolower((string) ($match[2] ?? ''));
+            if ($tagName === '') {
+                continue;
+            }
+            $isClosing = (($match[1] ?? '') === '/');
+            $isSelfClosing = preg_match('/\/\s*>$/', (string) ($match[0] ?? '')) === 1
+                || in_array($tagName, ['br', 'hr', 'img', 'source'], true);
+            $signature[] = $isSelfClosing ? $tagName . ':self' : ($tagName . ':' . ($isClosing ? 'close' : 'open'));
+        }
+
+        return $signature;
+    }
+
+    function scraperPushShouldPreserveOriginalHtmlBody(array $basePayload, array $candidatePayload): bool
+    {
+        $originalBody = scraperPushToHtmlPreservingString($basePayload['bodyText'] ?? $basePayload['body_text'] ?? $basePayload['content'] ?? null);
+        $candidateBody = scraperPushToHtmlPreservingString($candidatePayload['bodyText'] ?? $candidatePayload['body_text'] ?? $candidatePayload['content'] ?? null);
+
+        if ($originalBody === null || $candidateBody === null) {
+            return false;
+        }
+
+        $originalSignature = scraperPushExtractHtmlTagSignature($originalBody);
+        if ($originalSignature === []) {
+            return false;
+        }
+
+        $candidateSignature = scraperPushExtractHtmlTagSignature($candidateBody);
+        if ($candidateSignature === []) {
+            return true;
+        }
+
+        return $originalSignature !== $candidateSignature;
+    }
+
+    function scraperPushFindMobileRecord(mysqli $mysqli, string $brand, string $model): ?array
+    {
+        $brand = trim($brand);
+        $model = trim($model);
+        if ($brand === '' || $model === '') {
+            return null;
+        }
+
+        $sql = 'SELECT id, brand_name, model_name, official_price, unofficial_price, status, release_date, is_official
+                FROM mobiles
+                WHERE LOWER(TRIM(brand_name)) = LOWER(TRIM(?))
+                  AND LOWER(TRIM(model_name)) = LOWER(TRIM(?))
+                ORDER BY id DESC
+                LIMIT 1';
+        $stmt = $mysqli->prepare($sql);
+        if (!$stmt) {
+            return null;
+        }
+
+        $stmt->bind_param('ss', $brand, $model);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $row = $res ? $res->fetch_assoc() : null;
+        $stmt->close();
+
+        return is_array($row) ? $row : null;
     }
 
     function scraperPushExtractBrandAndModel(array $item): array
@@ -928,6 +1069,37 @@ if (!function_exists('scraperPushToNullableString')) {
         }
 
         return $content;
+    }
+
+    function scraperPushResolveArticlePublishTimestamp(array $publishPayload, array $row): string
+    {
+        $now = date('Y-m-d H:i:s');
+
+        $pushPublishedAt = scraperPushToNullableString($row['published_at'] ?? null);
+        if ($pushPublishedAt !== null) {
+            $ts = strtotime($pushPublishedAt);
+            if ($ts !== false) {
+                return date('Y-m-d H:i:s', $ts);
+            }
+        }
+
+        $pushMarkedAt = scraperPushToNullableString($row['pushed_at'] ?? null);
+        if ($pushMarkedAt !== null) {
+            $ts = strtotime($pushMarkedAt);
+            if ($ts !== false) {
+                return date('Y-m-d H:i:s', $ts);
+            }
+        }
+
+        $receivedAt = scraperPushToNullableString($row['received_at'] ?? null);
+        if ($receivedAt !== null) {
+            $ts = strtotime($receivedAt);
+            if ($ts !== false) {
+                return date('Y-m-d H:i:s', $ts);
+            }
+        }
+
+        return $now;
     }
 
     function scraperPushUpdatePostPublishedAt(mysqli $mysqli, int $postId, ?string $publishedAt): void
@@ -1293,6 +1465,16 @@ if (!function_exists('scraperPushToNullableString')) {
             $value = scraperPushNormalizeAiString($candidatePayload[$field]);
             if ($value !== null) {
                 $normalized[$field] = $value;
+            }
+        }
+
+        if (!$isMobile && scraperPushShouldPreserveOriginalHtmlBody($basePayload, $candidatePayload)) {
+            if (isset($basePayload['bodyText'])) {
+                $normalized['bodyText'] = (string) $basePayload['bodyText'];
+            } elseif (isset($basePayload['body_text'])) {
+                $normalized['bodyText'] = (string) $basePayload['body_text'];
+            } elseif (isset($basePayload['content'])) {
+                $normalized['bodyText'] = (string) $basePayload['content'];
             }
         }
 
@@ -1746,9 +1928,10 @@ if (!function_exists('scraperPushToNullableString')) {
                         $publishPayload['tags'] ?? null,
                         $row['tags_json'] ?? null,
                     ]);
-                    $publishedAt = scraperPushToNullableString($publishPayload['publishedAt'] ?? null)
+                    $sourcePublishedAt = scraperPushToNullableString($publishPayload['publishedAt'] ?? null)
                         ?? scraperPushToNullableString($publishPayload['published_at'] ?? null)
                         ?? scraperPushToNullableString($row['source_published_at'] ?? null);
+                    $publishedAt = scraperPushResolveArticlePublishTimestamp($publishPayload, $row);
 
                     $postId = (int) $contentModel->createPost($title, $content, $author, $slug, 1, 1, $publishedAt);
                     if ($postId <= 0) {
@@ -1770,7 +1953,8 @@ if (!function_exists('scraperPushToNullableString')) {
                         'slug' => $slug,
                         'category_ids' => $categoryIds,
                         'tag_ids' => $tagIds,
-                    ]);
+                        'source_published_at' => $sourcePublishedAt,
+                    ], $publishedAt);
                     $broxScrapModel->deleteIncomingItem($itemId);
 
                     $processedFingerprintsInBatch[$fingerprintKey] = $itemId;
@@ -1790,18 +1974,51 @@ if (!function_exists('scraperPushToNullableString')) {
                     $enhancement = scraperPushEnhanceIncomingPayload($mysqli, 'mobiles', $payload);
                     $publishPayload = is_array($enhancement['payload'] ?? null) ? $enhancement['payload'] : $payload;
                     [$brand, $model] = scraperPushExtractBrandAndModel($publishPayload);
-                    $existingId = scraperPushFindMobileId($mysqli, $brand, $model);
-                    if ($existingId > 0) {
+                    $price = scraperPushParsePrice($publishPayload['price'] ?? null);
+                    $status = scraperPushNormalizeMobileStatus(scraperPushToNullableString($publishPayload['status'] ?? null));
+                    $releaseDate = scraperPushNormalizePublishedDate(scraperPushToNullableString($publishPayload['publishedAt'] ?? $publishPayload['published_at'] ?? null));
+                    $existingMobile = scraperPushFindMobileRecord($mysqli, $brand, $model);
+                    if (is_array($existingMobile) && (int) ($existingMobile['id'] ?? 0) > 0) {
+                        $existingId = (int) $existingMobile['id'];
+                        $existingOfficialPrice = (float) ($existingMobile['official_price'] ?? 0);
+                        $existingUnofficialPrice = (float) ($existingMobile['unofficial_price'] ?? 0);
+                        $incomingOfficialPrice = $status === 'official' ? $price : ($status === 'both' ? $price : 0.0);
+                        $incomingUnofficialPrice = $status === 'unofficial' ? $price : ($status === 'both' ? $price : 0.0);
+
+                        $mergedOfficialPrice = $incomingOfficialPrice > 0 ? $incomingOfficialPrice : $existingOfficialPrice;
+                        $mergedUnofficialPrice = $incomingUnofficialPrice > 0 ? $incomingUnofficialPrice : $existingUnofficialPrice;
+
+                        $mergedStatus = 'unofficial';
+                        if ($mergedOfficialPrice > 0 && $mergedUnofficialPrice > 0) {
+                            $mergedStatus = 'both';
+                        } elseif ($mergedOfficialPrice > 0) {
+                            $mergedStatus = 'official';
+                        }
+
+                        $mergedReleaseDate = $releaseDate !== '' ? $releaseDate : (string) ($existingMobile['release_date'] ?? '');
+                        $updated = $mobileModel->updateMobile(
+                            $existingId,
+                            (string) ($existingMobile['brand_name'] ?? $brand),
+                            (string) ($existingMobile['model_name'] ?? $model),
+                            $mergedOfficialPrice,
+                            $mergedUnofficialPrice,
+                            $mergedStatus,
+                            $mergedReleaseDate,
+                            $mergedOfficialPrice > 0 ? 1 : 0
+                        );
+                        if (!$updated) {
+                            throw new RuntimeException('Failed to merge mobile with existing entry');
+                        }
+
                         $broxScrapModel->markIncomingItemPublished($itemId, $existingId, [
                             'fingerprint' => $fingerprint,
-                            'deduped' => true,
+                            'merged_existing' => true,
                             'brand' => $brand,
                             'model' => $model,
+                            'status' => $mergedStatus,
                         ]);
 
-                        // Track this fingerprint in batch to prevent duplicates
                         $processedFingerprintsInBatch[$fingerprintKey] = $itemId;
-
                         $summary['published']++;
                         $summary['skipped_duplicates']++;
                         $summary['results'][] = [
@@ -1810,19 +2027,16 @@ if (!function_exists('scraperPushToNullableString')) {
                             'data_type' => 'mobiles',
                             'published_content_id' => $existingId,
                             'deduped' => true,
+                            'merged_existing' => true,
                             'ai_used' => (bool) ($enhancement['used_ai'] ?? false),
                         ];
                         continue;
                     }
 
-                    $price = scraperPushParsePrice($publishPayload['price'] ?? null);
-                    $status = scraperPushNormalizeMobileStatus(scraperPushToNullableString($publishPayload['status'] ?? null));
-                    $releaseDate = scraperPushNormalizePublishedDate(scraperPushToNullableString($publishPayload['publishedAt'] ?? $publishPayload['published_at'] ?? null));
-
                     // Determine official vs unofficial pricing
-                    $isOfficial = $status === 'official' ? 1 : 0;
-                    $officialPrice = $status === 'official' ? $price : null;
-                    $unofficialPrice = $status === 'unofficial' ? $price : null;
+                    $isOfficial = in_array($status, ['official', 'both'], true) ? 1 : 0;
+                    $officialPrice = in_array($status, ['official', 'both'], true) ? $price : null;
+                    $unofficialPrice = in_array($status, ['unofficial', 'both'], true) ? $price : null;
 
                     $createdId = (int) $mobileModel->insertMobile($brand, $model, $officialPrice, $unofficialPrice, $status, $releaseDate, $isOfficial);
                     if ($createdId <= 0) {
@@ -1917,9 +2131,10 @@ if (!function_exists('scraperPushToNullableString')) {
                                 $recoveredPayload['tags'] ?? null,
                                 $row['tags_json'] ?? null,
                             ]);
-                            $publishedAt = scraperPushToNullableString($recoveredPayload['publishedAt'] ?? null)
+                            $sourcePublishedAt = scraperPushToNullableString($recoveredPayload['publishedAt'] ?? null)
                                 ?? scraperPushToNullableString($recoveredPayload['published_at'] ?? null)
                                 ?? scraperPushToNullableString($row['source_published_at'] ?? null);
+                            $publishedAt = scraperPushResolveArticlePublishTimestamp($recoveredPayload, $row);
 
                             $postId = (int) $contentModel->createPost($title, $content, $author, $slug, 1, 1, $publishedAt);
                             if ($postId > 0) {
@@ -1935,7 +2150,8 @@ if (!function_exists('scraperPushToNullableString')) {
                                     'fingerprint' => $fingerprint,
                                     'ai_recovery' => true,
                                     'original_error' => $e->getMessage(),
-                                ]);
+                                    'source_published_at' => $sourcePublishedAt,
+                                ], $publishedAt);
                                 $broxScrapModel->deleteIncomingItem($itemId);
                                 $processedFingerprintsInBatch[$fingerprintKey] = $itemId;
                                 $summary['published']++;
@@ -2478,8 +2694,9 @@ $router->get('/admin/scrap-control-center/incoming', ['middleware' => ['auth', '
     $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 50;
     $type = isset($_GET['type']) ? trim((string) $_GET['type']) : null;
-    $result = $broxScrapModel->getScrapingItems($page, $limit, $type);
-    $items = array_map('scraperPushDecorateScrapingItem', $result['items']);
+    $status = isset($_GET['status']) ? trim((string) $_GET['status']) : null;
+    $result = $broxScrapModel->getIncomingItems($page, $limit, $status, $type);
+    $items = array_map('scraperPushDecorateIncomingQueueItem', $result['items']);
 
     echo $twig->render('admin/scrap-incoming-list.twig', [
         'title' => 'Incoming Scrapes',
@@ -2490,7 +2707,8 @@ $router->get('/admin/scrap-control-center/incoming', ['middleware' => ['auth', '
         'current_page_number' => $result['current_page'],
         'limit' => $result['limit'],
         'type_filter' => $type,
-        'scraping_stats' => $broxScrapModel->getScrapingStats(),
+        'status_filter' => $status,
+        'scraping_stats' => $broxScrapModel->getIncomingPublishStats(),
     ]);
 });
 
@@ -2502,15 +2720,15 @@ $router->get('/admin/scrap-control-center/incoming/{type}/{id}', ['middleware' =
     }
 
     $resolvedType = scraperPushNormalizeContentType($type);
-    $item = $resolvedType !== null ? $broxScrapModel->getScrapingItem($resolvedType, $itemId) : null;
-    if (!$item && $resolvedType === null) {
-        $item = $broxScrapModel->getScrapingItemById($itemId);
+    $item = $broxScrapModel->getIncomingItem($itemId);
+    if ($item && $resolvedType !== null && ($item['data_type'] ?? null) !== $resolvedType) {
+        $item = null;
     }
     if (!$item) {
         renderError(404, 'Incoming Item Not Found');
     }
 
-    $item = scraperPushDecorateScrapingItem($item);
+    $item = scraperPushDecorateIncomingQueueItem($item);
     echo $twig->render('admin/scrap-incoming-detail.twig', [
         'title' => 'Incoming Item #' . $itemId,
         'current_page' => 'scrap-control-center',
@@ -2525,12 +2743,12 @@ $router->get('/admin/scrap-control-center/incoming/{id}', ['middleware' => ['aut
     if ($itemId <= 0) {
         renderError(404, 'Incoming Item Not Found');
     }
-    $item = $broxScrapModel->getScrapingItemById($itemId);
+    $item = $broxScrapModel->getIncomingItem($itemId);
     if (!$item) {
         renderError(404, 'Incoming Item Not Found');
     }
 
-    $item = scraperPushDecorateScrapingItem($item);
+    $item = scraperPushDecorateIncomingQueueItem($item);
     echo $twig->render('admin/scrap-incoming-detail.twig', [
         'title' => 'Incoming Item #' . $itemId,
         'current_page' => 'scrap-control-center',
@@ -2645,8 +2863,9 @@ $router->get('/admin/api/scrap-control-center/incoming', ['middleware' => ['auth
     $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 50;
     $type = isset($_GET['type']) ? trim((string) $_GET['type']) : null;
-    $result = $broxScrapModel->getScrapingItems($page, $limit, $type);
-    $result['items'] = array_map('scraperPushDecorateScrapingItem', $result['items']);
+    $status = isset($_GET['status']) ? trim((string) $_GET['status']) : null;
+    $result = $broxScrapModel->getIncomingItems($page, $limit, $status, $type);
+    $result['items'] = array_map('scraperPushDecorateIncomingQueueItem', $result['items']);
     scraperPushSendJson(['ok' => true, 'data' => $result]);
 });
 
@@ -2657,12 +2876,15 @@ $router->get('/admin/api/scrap-control-center/incoming/{type}/{id}', ['middlewar
         return;
     }
     $resolvedType = scraperPushNormalizeContentType($type);
-    $item = $resolvedType !== null ? $broxScrapModel->getScrapingItem($resolvedType, $itemId) : null;
+    $item = $broxScrapModel->getIncomingItem($itemId);
+    if ($item && $resolvedType !== null && ($item['data_type'] ?? null) !== $resolvedType) {
+        $item = null;
+    }
     if (!$item) {
         scraperPushSendJson(['ok' => false, 'error' => 'Incoming item not found'], 404);
         return;
     }
-    $item = scraperPushDecorateScrapingItem($item);
+    $item = scraperPushDecorateIncomingQueueItem($item);
     scraperPushSendJson(['ok' => true, 'data' => $item]);
 });
 
@@ -2672,12 +2894,12 @@ $router->get('/admin/api/scrap-control-center/incoming/{id}', ['middleware' => [
         scraperPushSendJson(['ok' => false, 'error' => 'Invalid id'], 422);
         return;
     }
-    $item = $broxScrapModel->getScrapingItemById($itemId);
+    $item = $broxScrapModel->getIncomingItem($itemId);
     if (!$item) {
         scraperPushSendJson(['ok' => false, 'error' => 'Incoming item not found'], 404);
         return;
     }
-    $item = scraperPushDecorateScrapingItem($item);
+    $item = scraperPushDecorateIncomingQueueItem($item);
     scraperPushSendJson(['ok' => true, 'data' => $item]);
 });
 

@@ -67,10 +67,51 @@ if (!function_exists('brox_is_development_env')) {
             return true;
         }
 
-        $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+        $host = strtolower((string)(brox_get_request_host() ?? ''));
         $host = preg_replace('/:\d+$/', '', $host) ?? $host;
 
         return in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+    }
+}
+
+if (!function_exists('brox_get_request_protocol')) {
+    function brox_get_request_protocol(): string
+    {
+        $httpsServer = strtolower(trim((string)($_SERVER['HTTPS'] ?? '')));
+        $forwardedProto = strtolower(trim((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')));
+        $forwardedSsl = strtolower(trim((string)($_SERVER['HTTP_X_FORWARDED_SSL'] ?? '')));
+        $serverPort = (int)($_SERVER['SERVER_PORT'] ?? 0);
+
+        if ($httpsServer !== '' && $httpsServer !== 'off' && $httpsServer !== '0') {
+            return 'https';
+        }
+
+        if ($forwardedProto === 'https' || $forwardedSsl === 'on') {
+            return 'https';
+        }
+
+        if ($serverPort === 443) {
+            return 'https';
+        }
+
+        return 'http';
+    }
+}
+
+if (!function_exists('brox_get_request_host')) {
+    function brox_get_request_host(): ?string
+    {
+        if (!empty($_SERVER['HTTP_X_FORWARDED_HOST'])) {
+            // Trust the first host in the forwarded host chain when behind a reverse proxy.
+            $hosts = explode(',', $_SERVER['HTTP_X_FORWARDED_HOST']);
+            return trim((string)$hosts[0]);
+        }
+
+        if (!empty($_SERVER['HTTP_HOST'])) {
+            return trim((string)$_SERVER['HTTP_HOST']);
+        }
+
+        return $_SERVER['SERVER_NAME'] ?? null;
     }
 }
 
@@ -1213,11 +1254,34 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         // ============================================================
 
         // 1. Determine base URL (protocol + host)
-        $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
-            (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
-        $protocol = $isHttps ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $baseUrl = $protocol . '://' . $host;
+        $protocol = brox_get_request_protocol();
+        $host = brox_get_request_host() ?? 'localhost';
+
+        // Prefer a configured canonical URL first, then APP_URL, then current request host.
+        $preferredSiteUrl = trim((string)($appSettings['site_url'] ?? ''));
+        if (empty($preferredSiteUrl)) {
+            $preferredSiteUrl = trim((string)env('APP_URL', ''));
+        }
+        if (empty($preferredSiteUrl)) {
+            $preferredSiteUrl = 'https://broxlab.online';
+        }
+
+        $baseUrl = rtrim($preferredSiteUrl, '/');
+
+        // Redirect to the preferred domain/protocol if the request is not already using it.
+        if (PHP_SAPI !== 'cli' && !brox_is_development_env()) {
+            $currentBaseUrl = strtolower($protocol . '://' . preg_replace('/:\d+$/', '', $host));
+            $normalizedBaseUrl = strtolower($baseUrl);
+            if ($currentBaseUrl !== $normalizedBaseUrl) {
+                $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
+                $redirectUrl = $normalizedBaseUrl . $requestUri;
+                if (!headers_sent()) {
+                    header('HTTP/1.1 301 Moved Permanently');
+                    header('Location: ' . $redirectUrl);
+                    exit;
+                }
+            }
+        }
 
         // 2. Get current path (without query string)
         $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);

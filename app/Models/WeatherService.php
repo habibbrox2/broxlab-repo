@@ -74,7 +74,7 @@ class WeatherService
             }
         }
 
-        $result["popular_locations"] = CacheHelper::remember(
+        $result["popular_locations"] = \App\Helpers\CacheHelper::remember(
             "weather_popular_locations",
             fn() => $this->getDefaultPopularLocations(),
             3600

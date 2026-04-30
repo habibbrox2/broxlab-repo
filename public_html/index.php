@@ -167,7 +167,7 @@ spl_autoload_register(function (string $className): void {
 // ============================================================================
 // Recursive PHP Loader (preserved)
 // ============================================================================
-function requireAllPhpFiles($dir)
+function requireAllPhpFiles(string $dir): void
 {
     if (!is_dir($dir)) {
         logError("Directory not found: {$dir}");
@@ -194,9 +194,16 @@ require_once BASE_PATH . 'Config/Db.php';
 require_once BASE_PATH . 'Config/Twig.php';
 require_once BASE_PATH . 'app/Routes/Router.php';
 
+/** @var mysqli $mysqli */
+
 // Other configs
 require_once BASE_PATH . 'Config/Functions.php';
 require_once BASE_PATH . 'Config/UploadConfig.php';
+
+if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
+    logError('Database connection handle was not initialized by Config/Db.php');
+    renderError(500, 'Database initialization error');
+}
 
 // ============================================================================
 // Load Helpers (Recursive)
