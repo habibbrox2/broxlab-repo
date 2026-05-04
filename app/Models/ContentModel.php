@@ -410,15 +410,36 @@ class ContentModel
         return $stmt->execute();
     }
 
+    private function normalizePublishedAtValue($published_at): ?string
+    {
+        $raw = trim((string) $published_at);
+        if ($raw === '') {
+            return null;
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $raw) === 1) {
+            return $raw;
+        }
+
+        if (preg_match('/^\d{10}$/', $raw) === 1) {
+            return date('Y-m-d H:i:s', (int) $raw);
+        }
+
+        if (preg_match('/^\d{13}$/', $raw) === 1) {
+            return date('Y-m-d H:i:s', (int) floor((int) $raw / 1000));
+        }
+
+        try {
+            $dt = new DateTimeImmutable($raw);
+            return $dt->format('Y-m-d H:i:s');
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
     public function createPost($title, $content, $author, $slug, $published = 0, $reader_indexing = null, $published_at = null)
     {
-        $normalizedPublishedAt = null;
-        if ($published_at !== null && trim((string)$published_at) !== '') {
-            $ts = strtotime((string)$published_at);
-            if ($ts !== false) {
-                $normalizedPublishedAt = date('Y-m-d H:i:s', $ts);
-            }
-        }
+        $normalizedPublishedAt = $this->normalizePublishedAtValue($published_at);
 
         if ($normalizedPublishedAt !== null) {
             $stmt = $this->mysqli->prepare("
@@ -477,18 +498,15 @@ class ContentModel
 
     public function updatePost($id, $title, $content, $slug, $published, $reader_indexing, $published_at = null)
     {
-        if ($published_at !== null && trim((string)$published_at) !== '') {
-            $ts = strtotime((string)$published_at);
-            if ($ts !== false) {
-                $normalizedPublishedAt = date('Y-m-d H:i:s', $ts);
-                $stmt = $this->mysqli->prepare("
-                    UPDATE posts
-                    SET title = ?, content = ?, slug = ?, published = ?, reader_indexing = ?, published_at = ?
-                    WHERE id = ?
-                ");
-                $stmt->bind_param("sssiisi", $title, $content, $slug, $published, $reader_indexing, $normalizedPublishedAt, $id);
-                return $stmt->execute();
-            }
+        $normalizedPublishedAt = $this->normalizePublishedAtValue($published_at);
+        if ($normalizedPublishedAt !== null) {
+            $stmt = $this->mysqli->prepare("
+                UPDATE posts
+                SET title = ?, content = ?, slug = ?, published = ?, reader_indexing = ?, published_at = ?
+                WHERE id = ?
+            ");
+            $stmt->bind_param("sssiisi", $title, $content, $slug, $published, $reader_indexing, $normalizedPublishedAt, $id);
+            return $stmt->execute();
         }
 
         $stmt = $this->mysqli->prepare("

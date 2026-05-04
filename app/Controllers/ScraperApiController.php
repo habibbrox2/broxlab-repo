@@ -681,6 +681,33 @@ if (!function_exists('scraperPushToNullableString')) {
         return $str === '' ? null : $str;
     }
 
+    function scraperPushParsePublishedAt(?string $value): ?string
+    {
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return null;
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $raw) === 1) {
+            return $raw;
+        }
+
+        if (preg_match('/^\d{10}$/', $raw) === 1) {
+            return date('Y-m-d H:i:s', (int) $raw);
+        }
+
+        if (preg_match('/^\d{13}$/', $raw) === 1) {
+            return date('Y-m-d H:i:s', (int) floor((int) $raw / 1000));
+        }
+
+        try {
+            $dt = new DateTimeImmutable($raw);
+            return $dt->format('Y-m-d H:i:s');
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
     function scraperPushParsePrice($raw): float
     {
         $value = scraperPushToNullableString($raw);
@@ -1095,43 +1122,43 @@ if (!function_exists('scraperPushToNullableString')) {
         // First priority: publishedAt from payload
         $payloadPublishedAt = scraperPushToNullableString($publishPayload['publishedAt'] ?? $publishPayload['published_at'] ?? null);
         if ($payloadPublishedAt !== null) {
-            $ts = strtotime($payloadPublishedAt);
-            if ($ts !== false) {
-                return date('Y-m-d H:i:s', $ts);
+            $normalized = scraperPushParsePublishedAt($payloadPublishedAt);
+            if ($normalized !== null) {
+                return $normalized;
             }
         }
 
         // Second priority: publishedText from payload (try to parse as date)
         $payloadPublishedText = scraperPushToNullableString($publishPayload['publishedText'] ?? null);
         if ($payloadPublishedText !== null) {
-            $ts = strtotime($payloadPublishedText);
-            if ($ts !== false) {
-                return date('Y-m-d H:i:s', $ts);
+            $normalized = scraperPushParsePublishedAt($payloadPublishedText);
+            if ($normalized !== null) {
+                return $normalized;
             }
         }
 
         // Fallback to existing logic
         $pushPublishedAt = scraperPushToNullableString($row['published_at'] ?? null);
         if ($pushPublishedAt !== null) {
-            $ts = strtotime($pushPublishedAt);
-            if ($ts !== false) {
-                return date('Y-m-d H:i:s', $ts);
+            $normalized = scraperPushParsePublishedAt($pushPublishedAt);
+            if ($normalized !== null) {
+                return $normalized;
             }
         }
 
         $pushMarkedAt = scraperPushToNullableString($row['pushed_at'] ?? null);
         if ($pushMarkedAt !== null) {
-            $ts = strtotime($pushMarkedAt);
-            if ($ts !== false) {
-                return date('Y-m-d H:i:s', $ts);
+            $normalized = scraperPushParsePublishedAt($pushMarkedAt);
+            if ($normalized !== null) {
+                return $normalized;
             }
         }
 
         $receivedAt = scraperPushToNullableString($row['received_at'] ?? null);
         if ($receivedAt !== null) {
-            $ts = strtotime($receivedAt);
-            if ($ts !== false) {
-                return date('Y-m-d H:i:s', $ts);
+            $normalized = scraperPushParsePublishedAt($receivedAt);
+            if ($normalized !== null) {
+                return $normalized;
             }
         }
 
@@ -1140,22 +1167,16 @@ if (!function_exists('scraperPushToNullableString')) {
 
     function scraperPushUpdatePostPublishedAt(mysqli $mysqli, int $postId, ?string $publishedAt): void
     {
-        $normalized = scraperPushToNullableString($publishedAt);
+        $normalized = scraperPushParsePublishedAt(scraperPushToNullableString($publishedAt));
         if ($postId <= 0 || $normalized === null) {
             return;
         }
 
-        $ts = strtotime($normalized);
-        if ($ts === false) {
-            return;
-        }
-
-        $formatted = date('Y-m-d H:i:s', $ts);
         $stmt = $mysqli->prepare('UPDATE posts SET published_at = ?, updated_at = NOW() WHERE id = ?');
         if (!$stmt) {
             return;
         }
-        $stmt->bind_param('si', $formatted, $postId);
+        $stmt->bind_param('si', $normalized, $postId);
         $stmt->execute();
         $stmt->close();
     }
