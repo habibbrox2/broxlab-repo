@@ -51,7 +51,7 @@
     {# ===== GOOGLE FONTS (Preconnect for faster loading) ===== #}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+Bengali:wght@100..900&display=swap" rel="stylesheet">
+
 
     {# ===== OPEN GRAPH META TAGS (Facebook, LinkedIn, Pinterest) ===== #}
     <meta property="og:title" content="{{ block('title')|striptags|default(app_settings.site_name) }}">
@@ -328,8 +328,7 @@
                             {'label': 'Articles', 'url': '/posts', 'icon': 'bi-newspaper', 'match': '/posts'},
                             {'label': 'Services', 'url': '/services', 'icon': 'bi-award-fill', 'match': '/services'},
                             {'label': 'Studio', 'url': '/studio', 'icon': 'bi-palette-fill', 'match': '/studio'},
-                            {'label': 'Jobs', 'url': '/jobs', 'icon': 'bi-briefcase-fill', 'match': '/jobs'}
-
+                            {'label': 'Bangla Converter', 'url': '/bangla-converter', 'icon': 'bi-translate', 'match': '/bangla-converter'},
                         ] %}
                         {# Add Dashboard link for authenticated users #}
                         {% if auth_user is defined and auth_user.is_authenticated %}

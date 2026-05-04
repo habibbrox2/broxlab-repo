@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /**
  * Weather Controller

@@ -169,6 +169,14 @@ $router->get('/faq', function () use ($twig) {
 
 
 
+// ==================== BANGLA CONVERTER PAGE ====================
+
+$router->get('/bangla-converter', function () use ($twig) {
+    echo $twig->render('public/bangla-converter.twig', [
+        'title' => 'Bangla Unicode to Bijoy Converter'
+    ]);
+});
+
 // ==================== RAMADAN 2026 PAGE ====================
 
 $router->get('/ramadan-2026', function () use ($twig) {
@@ -199,6 +207,7 @@ $router->get('/sitemap', function () use ($twig, $contentModel, $serviceModel) {
         ['slug' => 'faq', 'title' => 'Frequently Asked Questions', 'group' => 'main'],
         ['slug' => 'ramadan-2026', 'title' => 'Ramadan Calendar 2026', 'group' => 'main'],
         ['slug' => 'newsletter', 'title' => 'Newsletter', 'group' => 'main'],
+        ['slug' => 'bangla-converter', 'title' => 'Bangla Converter', 'group' => 'main'],
         ['slug' => 'terms', 'title' => 'Terms of Service', 'group' => 'legal'],
         ['slug' => 'privacy', 'title' => 'Privacy Policy', 'group' => 'legal'],
     ];

@@ -49,7 +49,7 @@ const DEFAULT_PREFS = {
   providers: [],
 };
 
-const assistantPrefs = { ...DEFAULT_PREFS };
+const assistantPrefs = { ...DEFAULT_PREFS, };
 
 async function loadAssistantPrefs() {
   try {
