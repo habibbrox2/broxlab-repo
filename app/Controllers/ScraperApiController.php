@@ -1009,7 +1009,10 @@ if (!function_exists('scraperPushToNullableString')) {
             ?? scraperPushToHtmlPreservingString($publishPayload['body_text'] ?? null)
             ?? scraperPushToHtmlPreservingString($publishPayload['content'] ?? null)
             ?? '';
+        $body = scraperPushCleanCorruptedText($body);
+
         $excerpt = scraperPushToNullableString($publishPayload['excerpt'] ?? null) ?? scraperPushToNullableString($row['excerpt'] ?? null) ?? '';
+        $excerpt = scraperPushCleanCorruptedText($excerpt);
         $sourceUrl = scraperPushToNullableString($publishPayload['url'] ?? null)
             ?? scraperPushToNullableString($publishPayload['sourceUrl'] ?? null)
             ?? scraperPushToNullableString($publishPayload['source_url'] ?? null)
@@ -1071,10 +1074,43 @@ if (!function_exists('scraperPushToNullableString')) {
         return $content;
     }
 
+    function scraperPushCleanCorruptedText(string $text): string
+    {
+        // Remove common corrupted UTF-8 sequences like '���'
+        $text = preg_replace('/�+/', '', $text);
+
+        // Remove other common corruption patterns
+        $text = preg_replace('/[^\x{0009}\x{000A}\x{000D}\x{0020}-\x{D7FF}\x{E000}-\x{FFFD}\x{10000}-\x{10FFFF}]/u', '', $text);
+
+        // Clean up multiple spaces
+        $text = preg_replace('/\s+/', ' ', $text);
+
+        return trim($text);
+    }
+
     function scraperPushResolveArticlePublishTimestamp(array $publishPayload, array $row): string
     {
         $now = date('Y-m-d H:i:s');
 
+        // First priority: publishedAt from payload
+        $payloadPublishedAt = scraperPushToNullableString($publishPayload['publishedAt'] ?? $publishPayload['published_at'] ?? null);
+        if ($payloadPublishedAt !== null) {
+            $ts = strtotime($payloadPublishedAt);
+            if ($ts !== false) {
+                return date('Y-m-d H:i:s', $ts);
+            }
+        }
+
+        // Second priority: publishedText from payload (try to parse as date)
+        $payloadPublishedText = scraperPushToNullableString($publishPayload['publishedText'] ?? null);
+        if ($payloadPublishedText !== null) {
+            $ts = strtotime($payloadPublishedText);
+            if ($ts !== false) {
+                return date('Y-m-d H:i:s', $ts);
+            }
+        }
+
+        // Fallback to existing logic
         $pushPublishedAt = scraperPushToNullableString($row['published_at'] ?? null);
         if ($pushPublishedAt !== null) {
             $ts = strtotime($pushPublishedAt);
@@ -1914,11 +1950,14 @@ if (!function_exists('scraperPushToNullableString')) {
                     $aiModel = $enhancement['model'] ?? null;
 
                     $title = scraperPushToNullableString($publishPayload['title'] ?? null) ?? 'Untitled Article';
+                    $title = scraperPushCleanCorruptedText($title);
                     $content = scraperPushBuildArticleContent($publishPayload, $row);
+                    $content = scraperPushCleanCorruptedText($content);
                     $author = scraperPushToNullableString($publishPayload['author'] ?? null)
                         ?? scraperPushToNullableString($row['author'] ?? null)
                         ?? scraperPushToNullableString($row['source'] ?? null)
                         ?? 'Scraper';
+                    $author = scraperPushCleanCorruptedText($author);
                     $slug = $contentModel->generateUniquePermalink($title);
                     $categoryIds = scraperPushFindOrCreateCategoryIds($contentModel, [
                         $publishPayload['category'] ?? null,

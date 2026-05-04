@@ -26,7 +26,11 @@ $normalizeLatestMobileItems = static function (array $mobiles): array {
 // ---------------- HOME PAGE ----------------
 $router->get('/', function () use ($twig, $homeModel, $normalizeLatestMobileItems) {
     $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-    $sort = $_GET['sort'] ?? 'latest';
+    $sort = trim((string)($_GET['sort'] ?? ''));
+    $allowedSorts = ['latest', 'views', 'impressions'];
+    if ($sort === '' || !in_array($sort, $allowedSorts, true)) {
+        $sort = 'latest';
+    }
     $limit = HOMEPAGE_FEED_LIMIT;
 
     $data = $homeModel->getUnifiedContent($page, $limit, $sort);
@@ -43,6 +47,7 @@ $router->get('/', function () use ($twig, $homeModel, $normalizeLatestMobileItem
         'total_pages' => $data['total_pages'],
         'current_page' => $page,
         'homepage_feed_limit' => $limit,
+        'sort' => $sort,
         'sort' => $sort,
         'stats' => $stats,
         'title' => 'Home'
