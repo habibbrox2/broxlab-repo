@@ -30,11 +30,11 @@ if (!window.BroxAssistantLoaded) {
     };
 
     // ── BroxCrypto: Encryption utility using Web Crypto API (AES-GCM) ───────────────
-    const BroxCrypto = (function() {
+    const BroxCrypto = (function () {
         // Generate or retrieve a device-specific encryption key
         async function getKey() {
             let keyData = localStorage.getItem(CONFIG.cryptoKeyId);
-            
+
             if (keyData) {
                 // Import existing key from stored bytes
                 const keyBytes = Uint8Array.from(atob(keyData), c => c.charCodeAt(0));
@@ -46,20 +46,20 @@ if (!window.BroxAssistantLoaded) {
                     ['encrypt', 'decrypt']
                 );
             }
-            
+
             // Generate new key if none exists
             const key = await crypto.subtle.generateKey(
                 { name: 'AES-GCM', length: 256 },
                 true,
                 ['encrypt', 'decrypt']
             );
-            
+
             // Export and store the key bytes
             const exported = await crypto.subtle.exportKey('raw', key);
             const bytes = new Uint8Array(exported);
             keyData = btoa(String.fromCharCode(...bytes));
             localStorage.setItem(CONFIG.cryptoKeyId, keyData);
-            
+
             return key;
         }
 
@@ -68,23 +68,23 @@ if (!window.BroxAssistantLoaded) {
             async encrypt(plaintext) {
                 try {
                     if (!plaintext) return null;
-                    
+
                     const key = await getKey();
                     const iv = crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV for GCM
                     const encoder = new TextEncoder();
                     const data = encoder.encode(plaintext);
-                    
+
                     const ciphertext = await crypto.subtle.encrypt(
                         { name: 'AES-GCM', iv: iv },
                         key,
                         data
                     );
-                    
+
                     // Combine IV + ciphertext and base64 encode
                     const combined = new Uint8Array(iv.length + ciphertext.byteLength);
                     combined.set(iv, 0);
                     combined.set(new Uint8Array(ciphertext), iv.length);
-                    
+
                     return btoa(String.fromCharCode(...combined));
                 } catch (e) {
                     console.warn('[BroxCrypto] Encryption failed:', e);
@@ -96,18 +96,18 @@ if (!window.BroxAssistantLoaded) {
             async decrypt(encryptedBase64) {
                 try {
                     if (!encryptedBase64) return null;
-                    
+
                     const key = await getKey();
                     const combined = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
                     const iv = combined.slice(0, 12);
                     const ciphertext = combined.slice(12);
-                    
+
                     const decrypted = await crypto.subtle.decrypt(
                         { name: 'AES-GCM', iv: iv },
                         key,
                         ciphertext
                     );
-                    
+
                     const decoder = new TextDecoder();
                     return decoder.decode(decrypted);
                 } catch (e) {
@@ -212,9 +212,10 @@ if (!window.BroxAssistantLoaded) {
             // Return fallback models for public assistant with better names
             return {
                 models: [
-                    { id: 'claude-3-haiku', name: 'Claude 3 Haiku', default: true },
+                    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', default: true },
                     { id: 'gemini-pro-1.5', name: 'Gemini Pro 1.5' },
-                    { id: 'gpt-4o-mini', name: 'GPT-4o Mini' }
+                    { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
+                    { id: 'claude-3-haiku', name: 'Claude 3 Haiku' }
                 ],
                 source: 'fallback'
             };
@@ -245,7 +246,7 @@ if (!window.BroxAssistantLoaded) {
             this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             this.isThinking = false;
             this.currentModel = null;    // will be set after model list loads
-            this.frontendProvider = 'openrouter';
+            this.frontendProvider = 'puter';
             this.frontendModel = '';
             this.recognition = null;     // Speech recognition instance
             this.idleTimer = null;
@@ -332,7 +333,7 @@ if (!window.BroxAssistantLoaded) {
             this.nodes.quickActions?.classList.remove('brox-ai-hidden');
             this.isChatActive = true;
             this.nodes.body.innerHTML = '';
-            
+
             // Add greeting if no history
             if (this.history.length === 0 && this.user) {
                 const greeting = (this.lang === 'bn' ? `হ্যালো ${this.user.name}! ` : `Hello ${this.user.name}! `) + this.t('welcome');
@@ -409,15 +410,11 @@ if (!window.BroxAssistantLoaded) {
 
         async bootstrapFrontendSettings() {
             const data = await fetchFrontendSettings();
-            this.frontendProvider = data?.provider || 'openrouter';
-            this.frontendModel = data?.frontend_model || data?.model || '';
+            this.frontendProvider = data?.provider || 'puter';
+            this.frontendModel = data?.frontend_model || data?.model || 'gemini-2.0-flash';
 
             // Set initial model name immediately to show it's loading
-            if (this.frontendModel) {
-                this.currentModel = this.frontendModel;
-            } else {
-                this.currentModel = 'claude-3-haiku'; // Default fallback
-            }
+            this.currentModel = this.frontendModel;
             this.updateModelLabel();
 
             this.loadProviderModels(this.frontendProvider, this.frontendModel);
@@ -619,7 +616,7 @@ if (!window.BroxAssistantLoaded) {
             if (!this.nodes.prechat || !this.nodes.body || !this.nodes.footer) return;
             this.isChatActive = false;
             this.nodes.body.innerHTML = '';
-            
+
             if (this.user) {
                 // User exists - show chat interface
                 this.nodes.prechat.classList.add('brox-ai-hidden');
@@ -629,7 +626,7 @@ if (!window.BroxAssistantLoaded) {
                 this.nodes.quickActions?.classList.remove('brox-ai-hidden');
                 this.isChatActive = true;
                 this.applyUserProfileToForm();
-                
+
                 // Add greeting if no history
                 if (this.history.length === 0) {
                     const greeting = (this.lang === 'bn' ? `হ্যালো ${this.user.name}! ` : `Hello ${this.user.name}! `) + this.t('welcome');
@@ -640,7 +637,7 @@ if (!window.BroxAssistantLoaded) {
                 this.renderHistorySidebar();
                 return;
             }
-            
+
             // No user - show prechat form
             this.nodes.prechat.classList.remove('brox-ai-hidden');
             this.nodes.body.classList.add('brox-ai-hidden');
@@ -1118,14 +1115,14 @@ if (!window.BroxAssistantLoaded) {
                 // Create actions container for feedback + copy + timestamp
                 const actions = document.createElement('div');
                 actions.className = 'brox-ai-msg-actions';
-                
+
                 const feedback = document.createElement('div');
                 feedback.className = 'brox-ai-feedback';
                 feedback.innerHTML = `
                     <button class="brox-ai-feedback-btn" data-rating="1" title="Poor"><i class="bi bi-hand-thumbs-down"></i></button>
                     <button class="brox-ai-feedback-btn" data-rating="5" title="Excellent"><i class="bi bi-hand-thumbs-up"></i></button>
                 `;
-                
+
                 // Add copy button
                 const copyBtn = document.createElement('button');
                 copyBtn.className = 'brox-ai-copy-btn';
@@ -1142,10 +1139,10 @@ if (!window.BroxAssistantLoaded) {
                         console.error('Copy failed', e);
                     }
                 });
-                
+
                 // Move meta to actions container (beside feedback + copy)
                 meta.style.marginTop = '0';
-                
+
                 // Append all to actions container
                 actions.appendChild(feedback);
                 actions.appendChild(copyBtn);
@@ -1192,13 +1189,13 @@ if (!window.BroxAssistantLoaded) {
         isResponseIncomplete(text) {
             if (!text || typeof text !== 'string') return false;
             const trimmed = text.trim();
-            
+
             // Check if ends with incomplete numbered list (e.g., "3." or "3)" or "3 -")
             if (/\d+[.)\-\s]*$/i.test(trimmed)) return true;
-            
+
             // Check if ends with incomplete bullet point
             if (/[-*•]\s*$/.test(trimmed)) return true;
-            
+
             // Check if ends with incomplete sentence (no period, question mark, or exclamation)
             const lastChar = trimmed.slice(-1);
             if (!/[.?!]$/.test(lastChar) && trimmed.length > 50) {
@@ -1208,10 +1205,10 @@ if (!window.BroxAssistantLoaded) {
                     return true;
                 }
             }
-            
+
             // Check if response is suspiciously short for a complex query
             if (trimmed.length < 20) return true;
-            
+
             return false;
         }
 
@@ -1390,29 +1387,29 @@ if (!window.BroxAssistantLoaded) {
             // Get last user message for analysis
             const lastMsg = this.history.filter(m => m.role === 'user').pop();
             if (!lastMsg?.content) return;
-            
+
             const text = lastMsg.content.toLowerCase();
             const wordCount = text.split(/\s+/).length;
-            
+
             // Check if user has manually selected a model (via future UI)
             // For now, auto-select based on query complexity
-            
+
             // Simple queries → fast model, Complex queries → smart model
-            const isSimple = wordCount < 10 
+            const isSimple = wordCount < 10
                 || /^(hi|hello|hey|help|thanks|thank|what is|how are|who are|contact|email|phone|address|location|price|cost|free|buy|purchase|order|book|reserve)/i.test(text);
-            
-            const isComplex = wordCount > 50 
+
+            const isComplex = wordCount > 50
                 || /\b(explain|analyze|compare|write|create|generate|translate|summary|detailed|comprehensive|research|write code|programming|debug|fix|error|problem|issue)\b/i.test(text);
-            
+
             // Model priorities: fast response vs quality
             const fastModel = 'anthropic/claude-3-haiku:free';
             const smartModel = 'anthropic/claude-3-5-sonnet-20241002:free';
-            
+
             let selectedModel = fastModel;
             if (isComplex) {
                 selectedModel = smartModel;
             }
-            
+
             // Apply auto-selected model if different from current
             if (selectedModel && selectedModel !== this.currentModel) {
                 this.currentModel = selectedModel;
@@ -1609,7 +1606,7 @@ if (!window.BroxAssistantLoaded) {
                 this.isThinking = false;
                 this.updateLangUI();
                 this.updateAgenticStatus(null);
-                
+
                 // Check if response is incomplete and offer continue option
                 if (fullReply) {
                     const isIncomplete = !isComplete || this.isResponseIncomplete(fullReply);
@@ -1642,7 +1639,7 @@ if (!window.BroxAssistantLoaded) {
                 </button>
             `;
             this.nodes.body.appendChild(buttonContainer);
-            
+
             const continueBtn = document.getElementById('brox-ai-continue-btn');
             if (continueBtn) {
                 continueBtn.onclick = () => this.continueResponse();
@@ -1680,7 +1677,7 @@ if (!window.BroxAssistantLoaded) {
             this.updateModelStatus('offline', 'Fallback (Puter)');
             let msgBubble = null;
             let msgWrapper = null;
-            let clearThinking = () => {};
+            let clearThinking = () => { };
             try {
                 const puter = await loadPuter();
                 const lastMsg = this.history.filter(m => m.role === 'user').pop();
@@ -1776,7 +1773,7 @@ if (!window.BroxAssistantLoaded) {
                 }
                 this.updateResponseMeta(msgBubble, t0);
             } catch (fallbackErr) {
-                try { clearThinking(); } catch (e) {}
+                try { clearThinking(); } catch (e) { }
                 if (msgWrapper) msgWrapper.classList.remove('brox-ai-thinking-msg');
                 if (msgBubble) {
                     this.renderMarkdown(msgBubble, this.t('err_conn'));
