@@ -31,7 +31,7 @@ const UI = {
 };
 
 // Enable public-only mode to skip sign-in requirements
-// Puter.js is only used as fallback when backend AI is unavailable.
+// Puter.js is the frontend fallback provider when other AI backends are unavailable.
 window.PUTER_PROXY_PUBLIC_ONLY = true;
 window.PUTER_DISABLED = false; // Allow Puter.js fallback when needed
 
@@ -44,11 +44,12 @@ const INACTIVITY_LIMIT_MS = 60 * 60 * 1000; // 1 hour
 const ASSISTANT_SITE_URL = 'https://broxlab.online';
 
 const DEFAULT_PREFS = {
-  provider: 'puter-js',
+  provider: 'puter',
   model: 'gemini-2.0-flash',
+  providers: [],
 };
 
-const assistantPrefs = { ...DEFAULT_PREFS, };
+const assistantPrefs = { ...DEFAULT_PREFS };
 
 async function loadAssistantPrefs() {
   try {
