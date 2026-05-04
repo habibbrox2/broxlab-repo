@@ -259,9 +259,9 @@
     {# ==================== CARD FOOTER ==================== #}
     <div class="cc-footer-section">
       {# Left section: Date #}
-      {% if item.created_at is defined and item.created_at %}
-        <time datetime="{{ item.created_at|date('Y-m-d') }}" class="cc-date" title="{{ item.created_at|date('d M, Y H:i') }}">
-          <i class="bi bi-clock-history"></i> {{ item.created_at|time_ago }}
+      {% if item.published_at is defined and item.published_at %}
+        <time datetime="{{ item.published_at|date('Y-m-d') }}" class="cc-date" title="{{ item.published_at|date('d M, Y H:i') }}">
+          <i class="bi bi-clock-history"></i> {{ item.published_at|time_ago }}
         </time>
       {% endif %}
 
@@ -277,7 +277,7 @@
         </div>
       {% endif %}
 
-      {# Right section: Price or Number #}
+      {# Right section: Price only #}
       {% if item.type == 'mobile' and (item.official_price or item.unofficial_price) %}
         <div class="cc-mobile-pricing" aria-label="Mobile price">
           {% if item.official_price %}
@@ -294,10 +294,10 @@
         <span class="cc-number inl-c-0002">
           💰 {{ item.price }}
         </span>
-      {% else %}
-        <div class="cc-number" aria-label="Item number {{ index }}">#{{ index }}</div>
       {% endif %}
     </div>
 
   </article>
 </div>
+
+

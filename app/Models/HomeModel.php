@@ -88,7 +88,7 @@ class HomeModel
                 $orderBy = 'impressions DESC';
                 break;
             default:
-                $orderBy = 'created_at DESC';
+                $orderBy = 'published_at DESC';
         }
 
         // Test query: Get posts only first
@@ -104,6 +104,7 @@ class HomeModel
                 m.model_name AS subtitle,
                 img.image_url AS image,
                 m.created_at,
+                m.created_at AS published_at,
                 0 AS views,
                 0 AS impressions,
                 'mobile' AS type,
@@ -130,6 +131,7 @@ class HomeModel
                 p.content AS subtitle,
                 NULL AS image,
                 p.created_at,
+                p.created_at AS published_at,
                 (SELECT COUNT(*) FROM views v WHERE v.content_type = 'page' AND v.content_id = p.id) AS views,
                 (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'page' AND i.content_id = p.id) AS impressions,
                 'page' AS type,
@@ -149,7 +151,8 @@ class HomeModel
                 po.title,
                 po.content AS subtitle,
                 NULL AS image,
-                po.created_at,
+                COALESCE(po.published_at, po.created_at) AS created_at,
+                COALESCE(po.published_at, po.created_at) AS published_at,
                 (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = po.id) AS views,
                 (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = po.id) AS impressions,
                 'post' AS type,
@@ -284,7 +287,7 @@ class HomeModel
                 {$ratingSelect}
             FROM posts p
             WHERE p.published = 1
-            ORDER BY views DESC, impressions DESC, p.created_at DESC
+            ORDER BY views DESC, impressions DESC, COALESCE(p.published_at, p.created_at) DESC
             LIMIT ?
         ";
 
@@ -402,7 +405,7 @@ class HomeModel
                 $orderBy = 'impressions DESC';
                 break;
             default:
-                $orderBy = 'created_at DESC';
+                $orderBy = 'published_at DESC';
         }
 
         $relationTable = $type === 'tag' ? 'content_tags' : 'content_categories';
@@ -416,6 +419,7 @@ class HomeModel
             m.model_name AS subtitle,
             img.image_url AS image,
             m.created_at,
+            m.created_at AS published_at,
             0 AS views,
             0 AS impressions,
             'mobile' AS type,
@@ -437,6 +441,7 @@ class HomeModel
             p.content AS subtitle,
             NULL AS image,
             p.created_at,
+            p.created_at AS published_at,
             (SELECT COUNT(*) FROM views v WHERE v.content_type = 'page' AND v.content_id = p.id),
             (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'page' AND i.content_id = p.id),
             'page' AS type,
@@ -454,7 +459,8 @@ class HomeModel
             po.title,
             po.content AS subtitle,
             NULL AS image,
-            po.created_at,
+            COALESCE(po.published_at, po.created_at) AS created_at,
+            COALESCE(po.published_at, po.created_at) AS published_at,
             (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = po.id),
             (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = po.id),
             'post' AS type,

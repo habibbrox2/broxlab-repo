@@ -9,11 +9,13 @@
  * @var NewsletterModel $newsletterModel
  * @var StatisticsModel $statisticsModel
  * @var AdvertisementModel $advertisementModel
+ * @var ServiceModel $serviceModel
  */
 
 $newsletterModel = new NewsletterModel($mysqli);
 $statisticsModel = new StatisticsModel($mysqli);
 $advertisementModel = new AdvertisementModel($mysqli);
+$serviceModel = new ServiceModel($mysqli);
 
 // ==================== NEWSLETTER ROUTES ====================
 
@@ -187,19 +189,32 @@ $router->get('/ramadan', function () {
 
 // ==================== SITEMAP (HTML VERSION) ====================
 
-$router->get('/sitemap', function () use ($twig, $contentModel) {
+$router->get('/sitemap', function () use ($twig, $contentModel, $serviceModel) {
     $contents = $contentModel->getSitemapPosts(500);
     $categories = $contentModel->getSitemapCategories();
     $tags = $contentModel->getSitemapTags();
+    $services = $serviceModel->getAllActive();
+    $staticPages = [
+        ['slug' => 'about-us', 'title' => 'About Us', 'group' => 'main'],
+        ['slug' => 'faq', 'title' => 'Frequently Asked Questions', 'group' => 'main'],
+        ['slug' => 'ramadan-2026', 'title' => 'Ramadan Calendar 2026', 'group' => 'main'],
+        ['slug' => 'newsletter', 'title' => 'Newsletter', 'group' => 'main'],
+        ['slug' => 'terms', 'title' => 'Terms of Service', 'group' => 'legal'],
+        ['slug' => 'privacy', 'title' => 'Privacy Policy', 'group' => 'legal'],
+    ];
 
     echo $twig->render('public/sitemap-html.twig', [
         'title' => 'Sitemap',
         'contents' => $contents,
         'categories' => $categories,
-        'tags' => $tags
+        'tags' => $tags,
+        'services' => $services,
+        'staticPages' => $staticPages
     ]);
 });
-// ==================== SITEMAP ====================
+
+
+
 
 $router->get('/sitemap.xml', function () use ($twig, $contentModel) {
     // Set header BEFORE any output
@@ -213,7 +228,6 @@ $router->get('/sitemap.xml', function () use ($twig, $contentModel) {
     // Render and output sitemap
     echo $twig->render('public/sitemap.twig', [
         'contents' => $contents,
-        'categories' => $categories,
         'tags' => $tags
     ]);
     exit; // Prevent further output

@@ -9,7 +9,7 @@ $homeModel = new HomeModel($mysqli);
 $statisticsModel = new StatisticsModel($mysqli);
 $advertisementModel = new AdvertisementModel($mysqli);
 
-const HOMEPAGE_FEED_LIMIT = 12;
+const HOMEPAGE_FEED_LIMIT = 10;
 
 $normalizeLatestMobileItems = static function (array $mobiles): array {
     foreach ($mobiles as &$mobile) {
