@@ -1555,15 +1555,13 @@ if (!window.BroxAdminInstance) {
       }
 
       // Show toast for important status updates
-      if (window.broxUIModules && window.broxUIModules.ui) {
-        const ui = window.broxUIModules.ui;
-
+      if (typeof window.showToast === 'function') {
         if (status === 'error') {
-          ui.showToast(text || 'An error occurred', 'error', 4000);
+          window.showToast(text || 'An error occurred', 'error', 4000);
         } else if (status === 'success') {
-          ui.showToast(text || 'Success', 'success', 3000);
+          window.showToast(text || 'Success', 'success', 3000);
         } else if (status === 'warning') {
-          ui.showToast(text || 'Warning', 'warning', 3000);
+          window.showToast(text || 'Warning', 'warning', 3000);
         }
       }
     }
