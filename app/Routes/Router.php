@@ -341,6 +341,14 @@ class Router
     {
         http_response_code(404);
 
+        // Prevent caching of 404 pages
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        // SEO headers for 404 pages
+        header('X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex');
+
         if (function_exists('renderError')) {
             renderError(404, '404 Not Found');
         } else {

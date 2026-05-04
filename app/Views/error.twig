@@ -3,114 +3,364 @@
 
 {% block title %}{% if code %}{{ code }}{% endif %} Error - {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
 
+{% block head %}
+{{ parent() }}
+
+{# ===== SEO: Prevent indexing of error pages ===== #}
+{% if code == 404 %}
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+{% endif %}
+{% endblock %}
+
 {% block content %}
 
 <style>
-  @keyframes float-icon { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
-  .error-icon-float { animation: float-icon 4s ease-in-out infinite; }
-  .error-card-hover:hover { transform: translateY(-5px); transition: transform 0.3s ease; }
+/* ===== MODERN 404 PAGE STYLES ===== */
+:root {
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --glass-bg: rgba(255, 255, 255, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --shadow-soft: 0 8px 32px rgba(31, 38, 135, 0.37);
+  --shadow-glow: 0 0 30px rgba(102, 126, 234, 0.3);
+}
+
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-10px) rotate(1deg); }
+  66% { transform: translateY(-5px) rotate(-1deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: var(--shadow-soft); }
+  50% { box-shadow: var(--shadow-glow); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bounce-in {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.error-page {
+  min-height: 100vh;
+  background: var(--primary-gradient);
+  background-size: 400% 400%;
+  animation: gradient-shift 15s ease infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.error-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.15)"/><circle cx="90" cy="40" r="0.5" fill="rgba(255,255,255,0.15)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  pointer-events: none;
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  box-shadow: var(--shadow-soft);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-glow);
+}
+
+.error-icon {
+  font-size: 8rem;
+  animation: float-gentle 6s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+}
+
+.error-code {
+  font-size: 6rem;
+  font-weight: 900;
+  background: var(--secondary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  animation: bounce-in 1s ease-out;
+}
+
+.btn-modern {
+  border: none;
+  border-radius: 50px;
+  padding: 12px 32px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn-modern:hover::before {
+  left: 100%;
+}
+
+.btn-primary-modern {
+  background: var(--primary-gradient);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary-modern:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+}
+
+.btn-outline-modern {
+  background: transparent;
+  color: rgba(255,255,255,0.9);
+  border: 2px solid rgba(255,255,255,0.3);
+}
+
+.btn-outline-modern:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.6);
+  color: white;
+}
+
+.search-container {
+  position: relative;
+  animation: slide-up 0.8s ease-out 0.5s both;
+}
+
+.search-input {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 50px;
+  padding: 16px 20px 16px 60px;
+  font-size: 1.1rem;
+  color: white;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.search-input::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: rgba(255,255,255,0.5);
+  box-shadow: 0 0 20px rgba(255,255,255,0.3);
+}
+
+.search-icon {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255,255,255,0.7);
+  font-size: 1.2rem;
+}
+
+.popular-links {
+  animation: slide-up 0.8s ease-out 0.7s both;
+}
+
+.link-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.link-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255,255,255,0.4);
+  box-shadow: var(--shadow-glow);
+}
+
+.link-card i {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.link-card span {
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+}
+
+@media (max-width: 768px) {
+  .error-icon { font-size: 6rem; }
+  .error-code { font-size: 4rem; }
+  .glass-card { margin: 20px; }
+}
 </style>
 
-{% set c = code|default(500) %}
-{% set family = ( (c is iterable) ? 5 : ( (c / 100)|round(0, 'floor') ) ) %}
+<div class="error-page d-flex align-items-center">
+  <div class="container-fluid">
+    <div class="row justify-content-center">
+      <div class="col-xl-10 col-lg-11 col-md-12">
 
-{# Common presets #}
-{% set presets = {
-  400: { title: 'Bad Request',           desc: 'The request cannot be processed.',             icon: 'exclamation-triangle-fill', color: 'warning' },
-  401: { title: 'Unauthorized',          desc: 'Authentication required or failed.',          icon: 'shield-lock-fill',          color: 'warning' },
-  403: { title: 'Forbidden',             desc: 'You do not have permission to view this.',     icon: 'hand-thumbs-down-fill',     color: 'warning' },
-  404: { title: 'Not Found',             desc: 'We could not find what you asked for.',        icon: 'search-heart',               color: 'info' },
-  405: { title: 'Method Not Allowed',    desc: 'This route does not accept that method.',      icon: 'signpost-2-fill',           color: 'warning' },
-  419: { title: 'Page Expired',          desc: 'The page has expired. Try again.',            icon: 'clock-history',              color: 'warning' },
-  429: { title: 'Too Many Requests',     desc: 'Rate limit exceeded. Slow down.',             icon: 'speedometer2',               color: 'warning' },
-  500: { title: 'Internal Server Error', desc: 'Something went wrong on our side.',           icon: 'server',                     color: 'danger' },
-  503: { title: 'Service Unavailable',   desc: 'The service is temporarily unavailable.',     icon: 'router-fill',                color: 'danger' }
-} %}
-
-{% set fallback = {
-  title: family == 4 ? 'Client Error' : 'Server Error',
-  desc:  family == 4 ? 'There is an issue with the request.' : 'There is an issue on the server.',
-  icon:  family == 4 ? 'exclamation-triangle-fill' : 'bug-fill',
-  color: family == 4 ? 'warning' : 'danger'
-} %}
-
-{% set meta = presets[c]|default(fallback) %}
-
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-10">
-      {# Error Hero Section #}
-      <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4 error-card-hover">
-        <div class="card-body p-0">
-          <div class="row g-0">
-            <div class="col-md-5 bg-{{ meta.color }} bg-opacity-10 d-flex align-items-center justify-content-center p-5">
-              <div class="text-center">
-                <div class="display-1 fw-bold text-{{ meta.color }} mb-0 error-icon-float">
-                    <i class="bi bi-{{ meta.icon }}"></i>
-                </div>
-                <h2 class="h4 fw-bold text-{{ meta.color }} mt-3">HTTP {{ c }}</h2>
+        {# ===== MAIN ERROR CARD ===== #}
+        <div class="glass-card mb-5" style="animation: slide-up 0.8s ease-out 0.2s both;">
+          <div class="row g-0 align-items-center">
+            {# Left Side - Visual #}
+            <div class="col-lg-6 p-5 text-center">
+              <div class="error-icon text-white mb-4">
+                <i class="bi bi-{{ meta.icon }}"></i>
+              </div>
+              <div class="error-code mb-3">{{ c }}</div>
+              <div class="badge bg-white bg-opacity-20 text-white px-3 py-2 rounded-pill">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ meta.title }}
               </div>
             </div>
-            <div class="col-md-7 p-5 d-flex align-items-center">
-              <div>
-                <h1 class="fw-bold mb-3">{{ meta.title }}</h1>
-                <p class="lead text-muted mb-4">{{ message|default(meta.desc) }}</p>
-                
-                {% if details is defined and details %}
-                  <div class="alert alert-light border rounded-3 mb-4">
-                    <div class="d-flex">
-                        <i class="bi bi-info-circle-fill text-{{ meta.color }} me-2 mt-1"></i>
-                        <div>
-                            <small class="text-muted d-block fw-bold">Error Details:</small>
-                            <span class="small">{{ details }}</span>
-                        </div>
-                    </div>
-                  </div>
-                {% endif %}
 
-                <div class="d-flex flex-wrap gap-2">
-                  <a href="{{ home_url|default('/') }}" class="btn btn-primary rounded-pill px-4">
-                    <i class="bi bi-house-door-fill me-2"></i>Home
-                  </a>
-                  <a href="javascript:history.back()" class="btn btn-outline-secondary rounded-pill px-4">
-                    <i class="bi bi-arrow-left me-2"></i>Back
-                  </a>
+            {# Right Side - Content #}
+            <div class="col-lg-6 p-5">
+              <h1 class="display-4 fw-bold text-white mb-4">{{ meta.title }}</h1>
+              <p class="lead text-white-50 mb-4">{{ message|default(meta.desc) }}</p>
+
+              {% if details is defined and details %}
+              <div class="alert alert-warning bg-opacity-10 border-warning border-opacity-25 text-warning-emphasis rounded-4 mb-4">
+                <div class="d-flex align-items-start">
+                  <i class="bi bi-info-circle-fill me-3 mt-1"></i>
+                  <div>
+                    <strong class="d-block mb-1">Error Details:</strong>
+                    <small>{{ details }}</small>
+                  </div>
                 </div>
+              </div>
+              {% endif %}
+
+              <div class="d-flex flex-wrap gap-3 mb-4">
+                <a href="{{ home_url|default('/') }}" class="btn btn-primary-modern btn-modern">
+                  <i class="bi bi-house-door-fill me-2"></i>Go Home
+                </a>
+                <button onclick="history.back()" class="btn btn-outline-modern btn-modern">
+                  <i class="bi bi-arrow-left me-2"></i>Go Back
+                </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {# Search or Help Section for 404 #}
-      {% if c == 404 %}
-      <div class="text-center mt-5">
-        <h3 class="h5 fw-bold mb-3">Looking for something else?</h3>
+        {# ===== 404 SPECIFIC CONTENT ===== #}
+        {% if c == 404 %}
         <div class="row justify-content-center">
-            <div class="col-md-6">
+          <div class="col-lg-8">
+
+            {# Search Section #}
+            <div class="glass-card p-4 mb-4 text-center">
+              <h3 class="h4 fw-bold text-white mb-4">
+                <i class="bi bi-search me-2"></i>Can't find what you're looking for?
+              </h3>
+
+              <div class="search-container">
                 <form action="/search" method="get" class="position-relative">
-                    <input type="text" name="q" class="form-control form-control-lg rounded-pill ps-5" placeholder="Search...">
-                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                    <button type="submit" class="btn btn-primary rounded-pill position-absolute top-0 end-0 m-1">Search</button>
+                  <i class="bi bi-search search-icon"></i>
+                  <input type="text" name="q" class="search-input" placeholder="Search our website..." aria-label="Search">
+                  <button type="submit" class="btn btn-primary-modern position-absolute end-0 top-0 m-2">
+                    <i class="bi bi-search"></i>
+                  </button>
                 </form>
+              </div>
             </div>
+
+            {# Popular Links #}
+            <div class="popular-links">
+              <h4 class="h5 fw-bold text-white text-center mb-4">Explore Popular Pages</h4>
+              <div class="row g-3">
+                <div class="col-md-3 col-6">
+                  <a href="/" class="link-card text-decoration-none">
+                    <i class="bi bi-house-door-fill text-primary"></i>
+                    <span>Home</span>
+                  </a>
+                </div>
+                <div class="col-md-3 col-6">
+                  <a href="/contact" class="link-card text-decoration-none">
+                    <i class="bi bi-envelope-fill text-success"></i>
+                    <span>Contact</span>
+                  </a>
+                </div>
+                <div class="col-md-3 col-6">
+                  <a href="/about-us" class="link-card text-decoration-none">
+                    <i class="bi bi-info-circle-fill text-info"></i>
+                    <span>About</span>
+                  </a>
+                </div>
+                <div class="col-md-3 col-6">
+                  <a href="/sitemap" class="link-card text-decoration-none">
+                    <i class="bi bi-map-fill text-warning"></i>
+                    <span>Sitemap</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
+        {% endif %}
+
       </div>
-      {% endif %}
-
-      {# Stack Trace for Debugging #}
-      {% if show_trace|default(false) and trace is defined and trace %}
-        <div class="card border-0 shadow-sm rounded-4 mt-5">
-            <div class="card-header bg-danger bg-opacity-10 border-0 py-3">
-                <h6 class="mb-0 text-danger fw-bold"><i class="bi bi-bug-fill me-2"></i>Stack Trace (Debug Mode)</h6>
-            </div>
-            <div class="card-body bg-dark rounded-bottom-4">
-                <pre class="text-light small mb-0 overflow-auto" style="max-height: 400px;"><code>{{ trace }}</code></pre>
-            </div>
-        </div>
-      {% endif %}
-
     </div>
   </div>
 </div>
+
+{# ===== DEBUG SECTION (only in debug mode) ===== #}
+{% if show_trace|default(false) and trace is defined and trace %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card border-danger bg-dark text-light">
+        <div class="card-header bg-danger bg-opacity-25 border-danger">
+          <h6 class="mb-0 text-danger fw-bold">
+            <i class="bi bi-bug-fill me-2"></i>Debug Information (Development Mode)
+          </h6>
+        </div>
+        <div class="card-body">
+          <pre class="mb-0" style="max-height: 400px; overflow: auto;"><code>{{ trace }}</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}
