@@ -237,16 +237,14 @@ if (!function_exists('scraperPushStoreIncomingBatch')) {
         $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
 
+        // Optimized: Only store in incoming_items table, eliminate redundant scraping tables
         $pendingStageResult = $broxScrapModel->stageIncomingItems($contentType, $items, $ipAddress, $userAgent, $source, $trigger, $pushedAt);
-        $legacyLogResult = $broxScrapModel->addLogBatch($contentType, $items, $ipAddress, $userAgent, $source, $trigger, $pushedAt, 'received');
-        $scrapingResult = $broxScrapModel->saveScrapedItems($contentType, $items, $source, $trigger, $pushedAt, $ipAddress, $userAgent);
 
         return [
             'contentType' => $contentType,
             'items' => $items,
             'pending_stage' => $pendingStageResult,
-            'scraping' => $scrapingResult,
-            'legacy_logs' => $legacyLogResult,
+            // Removed legacy_logs and scraping results to reduce storage
         ];
     }
 }
@@ -681,6 +679,30 @@ if (!function_exists('scraperPushToNullableString')) {
         return $str === '' ? null : $str;
     }
 
+    function scraperPushIsHtmlText(string $text): bool
+    {
+        return preg_match('/<\s*\/?\s*[a-zA-Z][^>]*>/', $text) === 1;
+    }
+
+    function scraperPushConvertPlainTextBodyToHtml(string $text): string
+    {
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
+        $paragraphs = preg_split('/\n\s*\n/', trim($text));
+        $html = [];
+        foreach ($paragraphs as $paragraph) {
+            $trimmed = trim($paragraph);
+            if ($trimmed === '') {
+                continue;
+            }
+            $escaped = htmlspecialchars($trimmed, ENT_QUOTES, 'UTF-8');
+            if (strpos($trimmed, "\n") !== false) {
+                $escaped = nl2br($escaped);
+            }
+            $html[] = '<p>' . $escaped . '</p>';
+        }
+        return implode("\n", $html);
+    }
+
     function scraperPushParsePublishedAt(?string $value): ?string
     {
         $raw = trim((string) $value);
@@ -702,6 +724,9 @@ if (!function_exists('scraperPushToNullableString')) {
 
         try {
             $dt = new DateTimeImmutable($raw);
+            // Convert to default timezone before formatting
+            $defaultTz = new DateTimeZone(date_default_timezone_get());
+            $dt = $dt->setTimezone($defaultTz);
             return $dt->format('Y-m-d H:i:s');
         } catch (Throwable $e) {
             return null;
@@ -1036,6 +1061,9 @@ if (!function_exists('scraperPushToNullableString')) {
             ?? scraperPushToHtmlPreservingString($publishPayload['body_text'] ?? null)
             ?? scraperPushToHtmlPreservingString($publishPayload['content'] ?? null)
             ?? '';
+        if ($body !== '' && !scraperPushIsHtmlText($body)) {
+            $body = scraperPushConvertPlainTextBodyToHtml($body);
+        }
         $body = scraperPushCleanCorruptedText($body);
 
         $excerpt = scraperPushToNullableString($publishPayload['excerpt'] ?? null) ?? scraperPushToNullableString($row['excerpt'] ?? null) ?? '';
@@ -1724,7 +1752,8 @@ if (!function_exists('scraperPushToNullableString')) {
             . "\n\nPayload:\n"
             . $payloadJson
             . "\n\nCRITICAL FORMATTING PRESERVATION RULES:\n"
-            . "- PRESERVE all HTML tags exactly as-is (p, br, h1-h6, ul, ol, li, strong, em, img, a, etc.)\n"
+            . "- PRESERVE all HTML tags exactly as-is if the content already contains valid HTML (p, br, h1-h6, ul, ol, li, strong, em, img, a, etc.)\n"
+            . "- If bodyText is plain text, wrap paragraphs in <p> tags and use <br> only for intentional line breaks within paragraphs\n"
             . "- PRESERVE all paragraph breaks, line breaks, and spacing exactly\n"
             . "- PRESERVE heading levels and structure (do NOT change h2 to h3 etc.)\n"
             . "- PRESERVE list formatting (ordered/unordered) exactly\n"
@@ -1735,13 +1764,15 @@ if (!function_exists('scraperPushToNullableString')) {
             . "- Fix grammatical errors\n"
             . "- Complete incomplete sentences (add missing words only)\n"
             . "- Improve clarity of awkward phrasing (minimal rewording)\n"
+            . "- Add paragraph wrappers (<p>) for plain text bodyText paragraphs and convert line breaks within paragraphs to <br> where appropriate\n"
             . "\nFORBIDDEN changes:\n"
             . "- Do NOT restructure paragraphs or content flow\n"
-            . "- Do NOT add or remove HTML tags\n"
+            . "- Do NOT change existing HTML tags or hierarchy when content already contains valid HTML\n"
             . "- Do NOT change heading levels or hierarchy\n"
             . "- Do NOT add new content, facts, or opinions\n"
             . "- Do NOT reformat lists or change list types\n"
-            . "- Do NOT 'improve' formatting (leave formatting exactly as received)\n"
+            . "- Do NOT add or remove HTML tags from already formatted HTML content\n"
+            . "- Do NOT 'improve' formatting beyond making the article easier to read\n"
             . "\nFACTUAL RULES:\n"
             . "- Preserve all factual information.\n"
             . "- Do not invent missing specs, prices, dates, or claims.\n"
@@ -2452,8 +2483,6 @@ if (!function_exists('scraperPushHandleTypedPayload')) {
         }
 
         $pendingFirstId = (int) ($result['pending_stage']['first_id'] ?? 0);
-        $legacyLogFirstId = (int) ($result['legacy_logs']['first_id'] ?? 0);
-        $legacyLogSavedCount = (int) ($result['legacy_logs']['saved_count'] ?? 0);
         $autoPublishResult = ['fetched' => 0, 'published' => 0, 'failed' => 0, 'skipped_duplicates' => 0, 'results' => []];
         $autoPublishLogId = 0;
         if (!empty($result['pending_stage']['item_ids'])) {
@@ -2494,10 +2523,7 @@ if (!function_exists('scraperPushHandleTypedPayload')) {
             'data_type' => $normalizedType,
             'pending_first_id' => $pendingFirstId,
             'pending_saved_count' => $pendingSavedCount,
-            'log_id' => $legacyLogFirstId,
-            'log_ids' => $result['legacy_logs']['log_ids'] ?? ($legacyLogFirstId > 0 ? [$legacyLogFirstId] : []),
             'saved_count' => $pendingSavedCount,
-            'legacy_log_saved_count' => $legacyLogSavedCount,
             'auto_publish_log_id' => $autoPublishLogId,
             'auto_publish' => $autoPublishResult,
         ]);
@@ -2534,10 +2560,8 @@ if (!function_exists('scraperPushHandleCombinedPayload')) {
         $trigger = isset($payload['trigger']) ? trim((string) $payload['trigger']) : null;
         $pushedAt = isset($payload['pushedAt']) ? trim((string) $payload['pushedAt']) : null;
 
-        $insertedLogs = [];
         $staging = [];
         $pendingSavedCount = 0;
-        $legacySavedCount = 0;
         $autoPublish = [];
         $autoPublishLogIds = [];
 
@@ -2550,17 +2574,11 @@ if (!function_exists('scraperPushHandleCombinedPayload')) {
 
             $batchResult = scraperPushStoreIncomingBatch($broxScrapModel, $contentType, $batchItems, $source, $trigger, $pushedAt);
             $batchPendingSaved = (int) ($batchResult['pending_stage']['saved_count'] ?? 0);
-            $batchLegacySaved = (int) ($batchResult['legacy_logs']['saved_count'] ?? 0);
-            $batchLegacyStageSaved = $batchPendingSaved;
 
             if ($batchPendingSaved > 0) {
                 $pendingSavedCount += $batchPendingSaved;
                 $staging[$contentType . '_first_id'] = $batchResult['pending_stage']['first_id'] ?? 0;
                 $staging[$contentType . '_saved_count'] = $batchPendingSaved;
-            }
-            if ($batchLegacyStageSaved > 0) {
-                $staging['legacy_' . $contentType . '_first_id'] = $batchResult['pending_stage']['first_id'] ?? 0;
-                $staging['legacy_' . $contentType . '_saved_count'] = $batchLegacyStageSaved;
                 $stagedRows = $broxScrapModel->getIncomingItemsByIds($batchResult['pending_stage']['item_ids'] ?? []);
                 if ($stagedRows !== []) {
                     $autoPublish[$contentType] = scraperPushPublishPendingItems(
@@ -2588,11 +2606,6 @@ if (!function_exists('scraperPushHandleCombinedPayload')) {
                     );
                 }
             }
-            if ($batchLegacySaved > 0) {
-                $legacySavedCount += $batchLegacySaved;
-                $insertedLogs[$contentType] = $batchResult['legacy_logs']['first_id'] ?? 0;
-                $insertedLogs[$contentType . '_log_ids'] = $batchResult['legacy_logs']['log_ids'] ?? [];
-            }
         }
 
         if ($pendingSavedCount <= 0) {
@@ -2608,8 +2621,6 @@ if (!function_exists('scraperPushHandleCombinedPayload')) {
             'message' => 'Push payload received',
             'staging' => $staging,
             'saved_count' => $pendingSavedCount,
-            'legacy_log_saved_count' => $legacySavedCount,
-            'logs' => $insertedLogs,
             'auto_publish_log_ids' => $autoPublishLogIds,
             'auto_publish' => $autoPublish,
         ]);
@@ -2625,9 +2636,7 @@ $router->match($pushTypedMethods, '/api/push/articles', function () use ($mysqli
     scraperPushHandleTypedPayload($mysqli, $broxScrapModel, $contentModel, $mobileModel, 'articles');
 });
 
-$router->match($pushTypedMethods, '/api/push/articles/', function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
-    scraperPushHandleTypedPayload($mysqli, $broxScrapModel, $contentModel, $mobileModel, 'articles');
-});
+
 
 $router->match($pushTypedMethods, '/api/push/mobiles', function () use ($mysqli, $broxScrapModel, $contentModel, $mobileModel) {
     scraperPushHandleTypedPayload($mysqli, $broxScrapModel, $contentModel, $mobileModel, 'mobiles');
