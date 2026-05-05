@@ -431,6 +431,9 @@ class ContentModel
 
         try {
             $dt = new DateTimeImmutable($raw);
+            // Convert to default timezone before formatting
+            $defaultTz = new DateTimeZone(date_default_timezone_get());
+            $dt = $dt->setTimezone($defaultTz);
             return $dt->format('Y-m-d H:i:s');
         } catch (Throwable $e) {
             return null;
@@ -1890,10 +1893,22 @@ class ContentModel
         $row['images'] = array_slice($images, 0, 5);
         $row['image']  = $row['images'][0] ?? null;
 
-        // Ensure slug is set
+        // Ensure slug/url fields are available for related item links
         $row['slug'] = $row['slug']
             ?? $row['url']
             ?? ($type . '-' . ($row['id'] ?? 'n-a'));
+        $row['url'] = $row['url']
+            ?? $row['slug'];
+
+        // Use excerpt or content text as description so related cards show meaningful copy
+        $rawDescription = trim((string) ($row['description'] ?? ''));
+        if ($rawDescription === '') {
+            $rawDescription = trim((string) ($row['excerpt'] ?? ''));
+        }
+        if ($rawDescription === '' && !empty($content)) {
+            $rawDescription = trim(strip_tags($content));
+        }
+        $row['description'] = $rawDescription;
 
         $row['type'] = $type;
     }

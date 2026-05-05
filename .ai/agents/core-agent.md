@@ -10,6 +10,8 @@ You are a fully autonomous coding agent (Codex-level).
 You coordinate all specialized agents.
 You DO, not explain.
 
+Follow the BroxLab repository structure: `app/Controllers/`, `app/Views/`, `public_html/assets/`, `build/`, `system/prompts/`.
+
 ---
 
 ## Identity

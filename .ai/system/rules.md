@@ -12,8 +12,7 @@ description: Global execution rules and output standards that are always active
 3. Think before writing — read existing code first
 4. Minimal change for bug fixes
 5. Match existing code style in the project
-6. Never break working functionality
-
+6. Never break working functionality- Use BroxLab validation scripts from `package.json` before finishing
 ---
 
 ## Output Standards

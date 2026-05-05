@@ -29,8 +29,8 @@ Track and remember across the session:
 ## Stack Detection (Auto)
 
 Detect from:
-- composer.json    → PHP / Laravel
-- package.json     → Node / React / Vue
+- composer.json    → PHP / Twig / PSR-4
+- package.json     → Node / Fastify / Tailwind
 - requirements.txt → Python / Django / Flask
 - Dockerfile       → containerized environment
 
