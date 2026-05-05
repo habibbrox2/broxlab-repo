@@ -9,6 +9,43 @@ function getCsrfToken() {
   return document.querySelector('meta[name="csrf-token"]')?.content || '';
 }
 
+async function parseJsonResponse(response) {
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { success: false, error: 'Invalid server response', };
+  }
+}
+
+function createBlobFromCanvas(canvas, type = 'image/png') {
+  return new Promise((resolve, reject) => {
+    if (!canvas.toBlob) {
+      try {
+        const dataUrl = canvas.toDataURL(type);
+        const byteString = atob(dataUrl.split(',')[1]);
+        const arrayBuffer = new ArrayBuffer(byteString.length);
+        const intArray = new Uint8Array(arrayBuffer);
+        for (let i = 0; i < byteString.length; i += 1) {
+          intArray[i] = byteString.charCodeAt(i);
+        }
+        resolve(new Blob([arrayBuffer,], { type, }));
+      } catch (error) {
+        reject(new Error('Failed to create image blob'));
+      }
+      return;
+    }
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('Failed to create image blob'));
+        return;
+      }
+      resolve(blob);
+    }, type);
+  });
+}
+
 class PhotoStudio {
   constructor() {
     this.canvas = document.getElementById('photoCanvas');
@@ -1139,7 +1176,7 @@ class PhotoStudio {
         method: 'POST',
         body: formData,
       });
-      const result = await response.json();
+      const result = await parseJsonResponse(response);
 
       if (!response.ok || !result.success) {
         throw new Error(result.error || 'Background removal failed');
@@ -1161,7 +1198,7 @@ class PhotoStudio {
 
   getForegroundBlob() {
     const snapshot = this.createForegroundSnapshot();
-    return new Promise((resolve) => snapshot.toBlob(resolve, 'image/png'));
+    return createBlobFromCanvas(snapshot, 'image/png');
   }
 
   setTint(color) {
@@ -1299,7 +1336,7 @@ class PhotoStudio {
       method: 'POST',
       body: formData,
     });
-    const result = await response.json();
+    const result = await parseJsonResponse(response);
 
     if (!response.ok || !result.success) {
       throw new Error(result.error || 'Failed to persist current composition');
@@ -1318,7 +1355,7 @@ class PhotoStudio {
 
   getCompositeBlob() {
     const snapshot = this.createRenderSnapshot();
-    return new Promise((resolve) => snapshot.toBlob(resolve, 'image/png'));
+    return createBlobFromCanvas(snapshot, 'image/png');
   }
 
   async saveImage(format = 'png') {
@@ -1341,7 +1378,7 @@ class PhotoStudio {
         method: 'POST',
         body: formData,
       });
-      const result = await response.json();
+      const result = await parseJsonResponse(response);
 
       if (!response.ok || !result.success) {
         throw new Error(result.error || 'Save failed');
@@ -1453,6 +1490,11 @@ class PhotoStudio {
   }
 
   openPrintSheetModal() {
+    if (this.trayImages.length === 0) {
+      this.showToast('Add images before generating a print sheet', 'info');
+      return;
+    }
+
     const modal = document.getElementById('printSheetModal');
     const list = document.getElementById('printSheetImageList');
     list.innerHTML = '';
@@ -1460,7 +1502,8 @@ class PhotoStudio {
     this.trayImages.forEach((image, index) => {
       const item = document.createElement('button');
       item.type = 'button';
-      item.className = `tray-item ${index === this.activeImageIndex ? 'active selected' : 'selected'}`;
+      const isSelected = index === this.activeImageIndex;
+      item.className = `tray-item${isSelected ? ' active selected' : ''}`;
       item.dataset.printImage = 'true';
       item.dataset.url = image.url;
       item.innerHTML = `<img src="${image.url}" alt="${image.original_name || `Image ${index + 1}`}">`;
@@ -1507,7 +1550,7 @@ class PhotoStudio {
           csrf_token: getCsrfToken(),
         }),
       });
-      const result = await response.json();
+      const result = await parseJsonResponse(response);
 
       if (!response.ok || !result.success) {
         throw new Error(result.error || 'Print generation failed');
