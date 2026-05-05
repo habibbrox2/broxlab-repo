@@ -24,8 +24,8 @@
     "width": 1200,
     "height": 630
   },
-  "datePublished": "{{ (post.published_at|default(post.created_at))|date('Y-m-d\\TH:i:s\\Z') }}",
-  {% if post.updated_at %}"dateModified": "{{ post.updated_at|date('Y-m-d\\TH:i:s\\Z') }}",{% endif %}
+  "datePublished": "{{ (post.published_at|default(post.created_at))|date('c') }}",
+  {% if post.updated_at %}"dateModified": "{{ post.updated_at|date('c') }}",{% endif %}
   "author": {
     "@type": "Person",
     "name": {{ post.author|json_encode }},
