@@ -409,28 +409,58 @@ async function handleUserMessage() {
  */
 async function callAI(messages) {
   const model = adminPrefs.model;
-
-  // Call through backend API instead of directly to external APIs
-  const response = await fetch('/api/admin/ai/chat', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest',
+  const requestBody = {
+    messages,
+    options: {
+      model,
+      temperature: 0.7,
+      maxTokens: 2000,
     },
-    credentials: 'same-origin',
-    body: JSON.stringify({
-      messages,
-      options: {
-        model,
-        temperature: 0.7,
-        maxTokens: 2000,
+  };
+
+  if (UI.advancedJson?.value) {
+    try {
+      Object.assign(requestBody, JSON.parse(UI.advancedJson.value));
+    } catch (err) {
+      throw new Error(`Advanced request JSON invalid: ${err.message}`);
+    }
+  }
+
+  let response;
+  try {
+    response = await fetch('/api/admin/ai/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
       },
-    }),
-  });
+      credentials: 'same-origin',
+      body: JSON.stringify(requestBody),
+    });
+  } catch (networkError) {
+    console.error('Network error sending AI request:', networkError, requestBody);
+    throw new Error(`Network error while sending chat request: ${networkError.message}`);
+  }
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(`Backend API error: ${errorData.error || response.statusText}`);
+    const rawText = await response.text();
+    let errorDetails = rawText;
+    try {
+      const parsed = JSON.parse(rawText);
+      errorDetails = parsed.error || JSON.stringify(parsed, null, 2);
+    } catch (err) {
+      errorDetails = rawText.trim() || `${response.status} ${response.statusText}`;
+    }
+
+    console.error('AI backend request failed', {
+      status: response.status,
+      statusText: response.statusText,
+      requestBody,
+      responseText: rawText,
+      errorDetails,
+    });
+
+    throw new Error(`Backend API error: ${errorDetails}`);
   }
 
   const data = await response.json();

@@ -147,6 +147,12 @@ function renderError(int $code, string $message): void
 secureSession();
 
 // ============================================================================
+// Language Detection
+// ============================================================================
+require_once BASE_PATH . "app/Helpers/LanguageHelper.php";
+LanguageHelper::getCurrentLang(); // This sets the session if needed
+
+// ============================================================================
 // Class Autoload (fallback – preserved)
 // ============================================================================
 spl_autoload_register(function (string $className): void {
@@ -402,3 +408,4 @@ try {
 if (ob_get_level() > 0) {
     ob_end_flush();
 }
+

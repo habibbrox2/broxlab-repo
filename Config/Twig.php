@@ -6,6 +6,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../Config/Constants.php';
 require_once __DIR__ . '/../app/Helpers/ErrorLogging.php';
 require_once __DIR__ . '/../app/Helpers/BreadcrumbHelper.php';
+require_once __DIR__ . '/../app/Helpers/LanguageHelper.php';
 require_once __DIR__ . '/../app/Models/UserModel.php';
 require_once __DIR__ . '/../app/Models/AppSettings.php';
 require_once __DIR__ . '/Functions.php';
@@ -1329,6 +1330,10 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         $twig->addGlobal('is_logged_in', $user['is_authenticated']);
 
         // App settings
+        // Language support
+        $twig->addGlobal('current_lang', LanguageHelper::getCurrentLang());
+        $twig->addGlobal('available_languages', LanguageHelper::getAvailableLanguages());
+
         $twig->addGlobal('app_settings', $appSettings);
         $twig->addGlobal('is_dev_env', brox_is_development_env());
         $publicNavItems = [];
@@ -1359,6 +1364,14 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         $twig->addGlobal('request_method', $_SERVER['REQUEST_METHOD'] ?? 'GET');
         $twig->addGlobal('is_ajax', !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
             strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+
+        $twig->addFunction(new \Twig\TwigFunction('translate', function ($text, $from = 'en', $to = null) {
+            return LanguageHelper::translate((string) $text, $from, $to);
+        }));
+
+        $twig->addFilter(new \Twig\TwigFilter('trans', function ($text, $from = 'en', $to = null) {
+            return LanguageHelper::translate((string) $text, $from, $to);
+        }));
 
         return $twig;
     } catch (Throwable $e) {
@@ -1396,3 +1409,7 @@ try {
     renderError(500, 'Template engine initialization failed');
     exit;
 }
+// Translate function
+$twig->addFunction(new \Twig\TwigFunction('translate', function ($text, $from = 'en', $to = null) {
+    return LanguageHelper::translate($text, $from, $to);
+}));

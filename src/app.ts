@@ -77,13 +77,28 @@ export async function createApp() {
   });
 
   app.setErrorHandler((error, request, reply) => {
-    const err = error as Error & { statusCode?: number };
+    const err = error as Error & { statusCode?: number; code?: string };
     logger.error('Unhandled error:', {
       error: err.message,
+      code: err.code,
       stack: err.stack,
       path: request.url,
       method: request.method,
     });
+
+    if (
+      err instanceof SyntaxError ||
+      err.code === 'FST_ERR_BAD_BODY' ||
+      err.code === 'FST_ERR_CTP_INVALID_MEDIA_TYPE' ||
+      err.code === 'FST_ERR_CTP_EMPTY_MEDIA_TYPE' ||
+      err.code === 'FST_ERR_CTP_INVALID_MEDIA_TYPE'
+    ) {
+      reply.status(400).send({
+        success: false,
+        error: 'Invalid JSON payload. Please send a valid JSON body with Content-Type: application/json.',
+      });
+      return;
+    }
 
     reply.status(err.statusCode || 500).send({
       success: false,

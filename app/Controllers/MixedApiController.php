@@ -25,7 +25,36 @@ $router->group('/api', ['middleware' => ['rate_limit']], function($router) {
         echo json_encode($response);
     });
 
+    // POST /api/translate - Translate text dynamically
+    $router->post('/translate', function() {
+        $data = json_decode(file_get_contents('php://input'), true);
+        $text = trim($data['text'] ?? '');
+        $from = trim($data['from'] ?? 'en');
+        $to = trim($data['to'] ?? LanguageHelper::getCurrentLang());
 
+        if (!$text) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(422);
+            echo json_encode(['error' => 'Text is required']);
+            exit;
+        }
+
+        try {
+            $translated = LanguageHelper::translate($text, $from, $to);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'success' => true,
+                'original' => $text,
+                'translated' => $translated,
+                'from' => $from,
+                'to' => $to
+            ]);
+        } catch (Exception $e) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(500);
+            echo json_encode(['error' => 'Translation failed: ' . $e->getMessage()]);
+        }
+    });
 
 });
 

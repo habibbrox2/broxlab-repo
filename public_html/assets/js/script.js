@@ -17,6 +17,73 @@ const NAV_DROPDOWN_OPEN_EVENT = 'brox:navbar-dropdown-open';
 const NAV_DROPDOWN_CLOSE_EVENT = 'brox:navbar-dropdown-close';
 
 
+const SITE_LANG = document.documentElement?.dataset.lang || 'en';
+const SITE_TRANSLATIONS = window.__broxSiteTranslations || {};
+
+function getCurrentSiteLanguage() {
+  return document.documentElement?.dataset.lang || SITE_LANG || 'en';
+}
+
+function translateSiteText(key, defaultValue = key) {
+  const lang = getCurrentSiteLanguage();
+  const translations = SITE_TRANSLATIONS[lang] || {};
+  return key && typeof key === 'string' ? (translations[key] ?? defaultValue) : defaultValue;
+}
+
+function applySiteTranslations(root = document) {
+  if (!root || typeof root.querySelectorAll !== 'function') return;
+
+  root.querySelectorAll('[data-i18n]').forEach((el) => {
+    const key = el.getAttribute('data-i18n') || '';
+    if (!key) return;
+    const defaultText = el.dataset.i18nDefault || el.textContent.trim();
+    el.textContent = translateSiteText(key, defaultText);
+  });
+
+  root.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-placeholder') || '';
+    if (!key) return;
+    const defaultText = el.dataset.i18nPlaceholderDefault || el.getAttribute('placeholder') || '';
+    el.setAttribute('placeholder', translateSiteText(key, defaultText));
+  });
+
+  root.querySelectorAll('[data-i18n-title]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-title') || '';
+    if (!key) return;
+    const defaultText = el.dataset.i18nTitleDefault || el.getAttribute('title') || '';
+    el.setAttribute('title', translateSiteText(key, defaultText));
+  });
+
+  root.querySelectorAll('[data-i18n-aria-label]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-aria-label') || '';
+    if (!key) return;
+    const defaultText = el.dataset.i18nAriaLabelDefault || el.getAttribute('aria-label') || '';
+    el.setAttribute('aria-label', translateSiteText(key, defaultText));
+  });
+}
+
+function registerSiteTranslations(lang, messages = {}) {
+  SITE_TRANSLATIONS[lang] = Object.assign({}, SITE_TRANSLATIONS[lang] || {}, messages);
+}
+
+function setSiteLanguage(lang) {
+  if (!lang) return;
+  document.documentElement.dataset.lang = lang;
+}
+
+window.broxI18n = Object.assign(window.broxI18n || {}, {
+  getCurrentLanguage: getCurrentSiteLanguage,
+  translate: translateSiteText,
+  apply: applySiteTranslations,
+  registerTranslations: registerSiteTranslations,
+  setLanguage: setSiteLanguage,
+  messages: SITE_TRANSLATIONS,
+});
+
+runWhenReady(() => {
+  window.broxI18n.apply();
+});
+
 /* ===== Inlined Notification Runtime ===== */
 const coreState = new Map();
 const bellState = new Map();
@@ -392,10 +459,10 @@ function showNotificationPermissionPopup(options = {}) {
   if (document.getElementById(PERMISSION_POPUP_ID)) return true;
 
   ensurePermissionPopupStyles();
-  const title = options.title || 'Enable Push Notifications';
-  const message = options.message || 'Stay updated with instant alerts and important updates.';
-  const enableLabel = options.enableLabel || 'Enable';
-  const laterLabel = options.laterLabel || 'Later';
+  const title = options.title || translateSiteText('Enable Push Notifications');
+  const message = options.message || translateSiteText('Stay updated with instant alerts and important updates.');
+  const enableLabel = options.enableLabel || translateSiteText('Enable');
+  const laterLabel = options.laterLabel || translateSiteText('Later');
 
   const popup = document.createElement('div');
   popup.id = PERMISSION_POPUP_ID;
@@ -881,10 +948,10 @@ async function initializeNotificationRuntime() {
       permissionScope: notificationContext,
       requestPermissionOnLoad: false,
       userId: getUserId(),
-      permissionTitle: 'Enable Push Notifications',
-      permissionMessage: 'Stay updated with instant alerts and important updates.',
-      permissionEnableLabel: 'Enable',
-      permissionLaterLabel: 'Later',
+      permissionTitle: translateSiteText('Enable Push Notifications'),
+      permissionMessage: translateSiteText('Stay updated with instant alerts and important updates.'),
+      permissionEnableLabel: translateSiteText('Enable'),
+      permissionLaterLabel: translateSiteText('Later'),
       showPermissionPopup: globalNotificationConfig.permissionPopupEnabled !== false,
     });
 
@@ -948,10 +1015,10 @@ async function requestNotificationPermission() {
     context: 'public',
     permissionScope: 'public',
     force: true,
-    title: 'Enable Push Notifications',
-    message: 'Stay updated with instant alerts and important updates.',
-    enableLabel: 'Enable',
-    laterLabel: 'Later',
+    title: translateSiteText('Enable Push Notifications'),
+    message: translateSiteText('Stay updated with instant alerts and important updates.'),
+    enableLabel: translateSiteText('Enable'),
+    laterLabel: translateSiteText('Later'),
     onGranted: async () => {
       await maybeSyncFcmToken();
     },

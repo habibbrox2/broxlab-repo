@@ -1,8 +1,8 @@
 ﻿{% extends "layout.twig" %}
 
-{% block title %}Weather Winget - Home{% endblock %}
+{% block title %}{{ 'Weather Winget - Home'|trans }}{% endblock %}
 
-{% block meta_description %}Get current weather conditions and forecasts for cities worldwide. Check temperature, humidity, wind speed, and more.{% endblock %}
+{% block meta_description %}{{ 'Get current weather conditions and forecasts for cities worldwide. Check temperature, humidity, wind speed, and more.'|trans }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ asset('assets/css/weather.css') }}">
@@ -13,8 +13,8 @@
     {# Breadcrumb #}
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ url }}">Home</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Weather</li>
+            <li class="breadcrumb-item"><a href="{{ url }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Weather'|trans }}</li>
         </ol>
     </nav>
 
@@ -23,7 +23,7 @@
             <i class="bi bi-cloud-sun-fill me-2"></i>Weather Winget
         </h1>
         <p class="lead text-muted">
-            Real-time weather data and forecasts for any location worldwide.
+            {{ 'Real-time weather data and forecasts for any location worldwide.'|trans }}
         </p>
     </div>
 
@@ -43,7 +43,7 @@
                            aria-label="Search location"
                            required>
                     <button class="btn btn-primary px-4" type="submit">
-                        Get Weather
+                        {{ 'Get Weather'|trans }}
                     </button>
                 </div>
                 <div class="form-text text-center mt-2">
@@ -96,10 +96,10 @@
         <div class="col-md-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-info-circle me-2 text-primary"></i>About This Service</h5>
+                    <h5 class="card-title"><i class="bi bi-info-circle me-2 text-primary"></i>{{ 'About This Service'|trans }}</h5>
                     <p class="text-muted">
-                        Weather Winget provides accurate, real-time weather data from trusted meteorological sources.
-                        Get temperature, humidity, wind speed, pressure, UV index, and multi-day forecasts.
+                        {{ 'Weather Winget provides accurate, real-time weather data from trusted meteorological sources.'|trans }}
+                        {{ 'Get temperature, humidity, wind speed, pressure, UV index, and multi-day forecasts.'|trans }}
                     </p>
                 </div>
             </div>

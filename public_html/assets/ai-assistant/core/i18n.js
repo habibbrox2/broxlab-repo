@@ -199,6 +199,10 @@ export function detectLanguage() {
   if (browserLang.startsWith('bn')) return 'bn';
   if (browserLang.startsWith('en')) return 'en';
 
+  // Check for site's current language from data-lang attribute
+  const siteLang = document.documentElement.getAttribute('data-lang');
+  if (siteLang && (siteLang === 'bn' || siteLang === 'en')) return siteLang;
+
   // Check for meta tag
   const metaLang = document.querySelector('meta[lang]')?.getAttribute('lang');
   if (metaLang) return metaLang;

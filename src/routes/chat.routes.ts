@@ -5,6 +5,30 @@ import logger from '../utils/logger';
 import { aiModelService } from '../services/ai-models.service';
 import { generateEmbedding } from '../services/embedding.service';
 
+const chatBodySchema = {
+    type: 'object',
+    required: ['messages'],
+    properties: {
+        messages: {
+            type: 'array',
+            minItems: 1,
+            items: {
+                type: 'object',
+                required: ['role', 'content'],
+                properties: {
+                    role: { type: 'string', enum: ['user', 'assistant', 'system'] },
+                    content: { type: 'string', minLength: 1 },
+                },
+                additionalProperties: false,
+            },
+        },
+        options: { type: 'object', additionalProperties: true },
+        context: { type: 'object', additionalProperties: true },
+        stream: { type: 'boolean' },
+    },
+    additionalProperties: false,
+};
+
 export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
     const chatService = new ChatService();
 
@@ -26,6 +50,7 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
      * POST /api/admin/ai/chat
      */
     fastify.post('/api/admin/ai/chat', {
+        schema: { body: chatBodySchema },
         preHandler: async (request, reply) => {
             await adminMiddleware(request, reply);
         },
@@ -33,6 +58,7 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
         logger.info('Admin chat request', {
             ip: request.ip,
             userId: (request as any).user?.userId,
+            body: request.body,
         });
 
         await chatService.handleChat(request, reply, true);
@@ -43,12 +69,14 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
      * POST /api/ai-system/chat
      */
     fastify.post('/api/ai-system/chat', {
+        schema: { body: chatBodySchema },
         preHandler: async (request, reply) => {
             await adminMiddleware(request, reply);
         },
     }, async (request, reply) => {
         logger.info('Legacy admin chat request', {
             ip: request.ip,
+            body: request.body,
         });
 
         await chatService.handleChat(request, reply, true);
