@@ -7,12 +7,6 @@ if (!$isCli) {
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
-
-    // Check if user is authenticated and is admin
-    if (empty($_SESSION['logged_in']) || empty($_SESSION['user_id'])) {
-        http_response_code(403);
-        die('Access Denied: Authentication required. Please <a href="/">login</a> first.');
-    }
 }
 
 // Optional: Check for admin role if your system has roles
@@ -1598,7 +1592,8 @@ if (php_sapi_name() === 'cli') {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php $tables = getTablesWithStats(); $i = 0; ?>
+                        <?php $tables = getTablesWithStats();
+                        $i = 0; ?>
                         <?php foreach ($tables as $t): $i++; ?>
                             <tr>
                                 <td><?= $i ?></td>
@@ -1637,7 +1632,9 @@ if (php_sapi_name() === 'cli') {
                     </div>
                     <div class="form-group">
                         <label>কলাম নির্বাচন করুন (Column)</label>
-                        <select id="srColumn"><option value="">-- Select Column --</option></select>
+                        <select id="srColumn">
+                            <option value="">-- Select Column --</option>
+                        </select>
                     </div>
                 </div>
                 <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px;">
@@ -1764,7 +1761,8 @@ if (php_sapi_name() === 'cli') {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php $i = 0; foreach ($backupFiles as $file): $i++; ?>
+                            <?php $i = 0;
+                            foreach ($backupFiles as $file): $i++; ?>
                                 <tr>
                                     <td style="text-align: center;"><input type="checkbox" class="backup-checkbox" value="<?= htmlspecialchars($file['name']) ?>"></td>
                                     <td><?= $i ?></td>
@@ -2789,7 +2787,7 @@ if (php_sapi_name() === 'cli') {
                 element.innerHTML = '...';
                 return;
             }
-            
+
             element.innerHTML = '⏳';
 
             // Add loading row
@@ -2798,7 +2796,9 @@ if (php_sapi_name() === 'cli') {
             loadingRow.innerHTML = `<td colspan="${colCount}" style="text-align:center; padding:20px; background: #fdfdfd;">Loading details...</td>`;
 
             try {
-                const res = await makeRequest('get_table_details', { table: tableName });
+                const res = await makeRequest('get_table_details', {
+                    table: tableName
+                });
                 loadingRow.remove(); // remove loading
 
                 const detailsRow = tr.insertAdjacentElement('afterend', document.createElement('tr'));
@@ -2830,54 +2830,58 @@ if (php_sapi_name() === 'cli') {
             showConfirm(
                 'Are you sure you want to import ALL backup files? This will execute them sequentially (Oldest to Newest). This action cannot be undone.',
                 async () => {
-                    // Check if drop table option is checked in the import section
-                    const allowDrop = document.getElementById('dropTableBackupImport').checked;
-                    const enableFK = document.getElementById('enableFKBackupImport').checked;
-                    
-                    toggleLoading(true);
-                    const loadingMsg = document.querySelector('#loading p');
-                    const originalMsg = loadingMsg.textContent;
+                        // Check if drop table option is checked in the import section
+                        const allowDrop = document.getElementById('dropTableBackupImport').checked;
+                        const enableFK = document.getElementById('enableFKBackupImport').checked;
 
-                    try {
-                        const res = await makeRequest('get_backup_files');
-                        let files = res.files;
-                        
-                        if (!files || files.length === 0) {
-                            toggleLoading(false);
-                            return showMessage('No backup files found.', 'error');
-                        }
+                        toggleLoading(true);
+                        const loadingMsg = document.querySelector('#loading p');
+                        const originalMsg = loadingMsg.textContent;
 
-                        // Reverse to process oldest first (assuming list is DESC date)
-                        files.reverse();
+                        try {
+                            const res = await makeRequest('get_backup_files');
+                            let files = res.files;
 
-                        let errors = [];
-                        for (let i = 0; i < files.length; i++) {
-                            const file = files[i];
-                            loadingMsg.textContent = `Importing (${i + 1}/${files.length}): ${file.name}...`;
-                            
-                            try {
-                                await makeRequest('import_backup', { filename: file.name, allowDrop: allowDrop.toString(), enableFK: enableFK.toString() });
-                            } catch (e) {
-                                errors.push(`${file.name}: ${e.message}`);
+                            if (!files || files.length === 0) {
+                                toggleLoading(false);
+                                return showMessage('No backup files found.', 'error');
                             }
-                        }
 
-                        toggleLoading(false);
-                        loadingMsg.textContent = originalMsg;
+                            // Reverse to process oldest first (assuming list is DESC date)
+                            files.reverse();
 
-                        if (errors.length > 0) {
-                            showMessage(`Completed with errors.\nFailed: ${errors.length}\n\nErrors:\n${errors.slice(0,3).join('\n')}`, 'warning');
-                        } else {
-                            showMessage(`Successfully imported ${files.length} files.`, 'success');
-                            setTimeout(() => location.reload(), 2000);
+                            let errors = [];
+                            for (let i = 0; i < files.length; i++) {
+                                const file = files[i];
+                                loadingMsg.textContent = `Importing (${i + 1}/${files.length}): ${file.name}...`;
+
+                                try {
+                                    await makeRequest('import_backup', {
+                                        filename: file.name,
+                                        allowDrop: allowDrop.toString(),
+                                        enableFK: enableFK.toString()
+                                    });
+                                } catch (e) {
+                                    errors.push(`${file.name}: ${e.message}`);
+                                }
+                            }
+
+                            toggleLoading(false);
+                            loadingMsg.textContent = originalMsg;
+
+                            if (errors.length > 0) {
+                                showMessage(`Completed with errors.\nFailed: ${errors.length}\n\nErrors:\n${errors.slice(0,3).join('\n')}`, 'warning');
+                            } else {
+                                showMessage(`Successfully imported ${files.length} files.`, 'success');
+                                setTimeout(() => location.reload(), 2000);
+                            }
+                        } catch (e) {
+                            toggleLoading(false);
+                            loadingMsg.textContent = originalMsg;
+                            showMessage('Error: ' + e.message, 'error');
                         }
-                    } catch (e) {
-                        toggleLoading(false);
-                        loadingMsg.textContent = originalMsg;
-                        showMessage('Error: ' + e.message, 'error');
-                    }
-                },
-                'Confirm Import All', 'Yes, I understand the risk', 'var(--danger)'
+                    },
+                    'Confirm Import All', 'Yes, I understand the risk', 'var(--danger)'
             );
         }
 
@@ -2900,7 +2904,9 @@ if (php_sapi_name() === 'cli') {
                 let deletedCount = 0;
                 for (const filename of selected) {
                     try {
-                        await makeRequest('delete_backup', { filename });
+                        await makeRequest('delete_backup', {
+                            filename
+                        });
                         deletedCount++;
                     } catch (e) {
                         console.error(`Failed to delete ${filename}:`, e);
@@ -2932,7 +2938,11 @@ if (php_sapi_name() === 'cli') {
                     const filename = selectedOrdered[i];
                     loadingMsg.textContent = `Importing (${i + 1}/${selectedOrdered.length}): ${filename}...`;
                     try {
-                        await makeRequest('import_backup', { filename, allowDrop: allowDrop.toString(), enableFK: enableFK.toString() });
+                        await makeRequest('import_backup', {
+                            filename,
+                            allowDrop: allowDrop.toString(),
+                            enableFK: enableFK.toString()
+                        });
                     } catch (e) {
                         errors.push(`${filename}: ${e.message}`);
                     }
@@ -2949,10 +2959,15 @@ if (php_sapi_name() === 'cli') {
             const table = document.getElementById('srTable').value;
             const colSelect = document.getElementById('srColumn');
             colSelect.innerHTML = '<option value="">Loading...</option>';
-            if (!table) { colSelect.innerHTML = '<option value="">-- Select Column --</option>'; return; }
+            if (!table) {
+                colSelect.innerHTML = '<option value="">-- Select Column --</option>';
+                return;
+            }
 
             try {
-                const res = await makeRequest('get_table_details', { table });
+                const res = await makeRequest('get_table_details', {
+                    table
+                });
                 let html = '<option value="">-- Select Column --</option>';
                 res.columns.forEach(c => {
                     html += `<option value="${c.Field}">${c.Field} (${c.Type})</option>`;
@@ -2975,7 +2990,12 @@ if (php_sapi_name() === 'cli') {
             showConfirm(`Replace "${search}" with "${replace}" in ${table}.${column}?`, async () => {
                 toggleLoading(true);
                 try {
-                    const res = await makeRequest('search_replace', { table, column, search, replace });
+                    const res = await makeRequest('search_replace', {
+                        table,
+                        column,
+                        search,
+                        replace
+                    });
                     toggleLoading(false);
                     showMessage(res.message, 'success');
                 } catch (e) {

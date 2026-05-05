@@ -12,12 +12,11 @@ Handle all server-side logic: APIs, databases, auth, security.
 
 ## Tech Stack
 
-- PHP (Core + Laravel)
-- Node.js / Express
-- REST API design
-- MySQL / PostgreSQL
-- Redis (caching)
-- JWT / Session Auth
+- PHP (PSR-4, Twig templating, App namespace)
+- Node.js / Fastify / Express
+- REST API design and server-side routes
+- MySQL / Redis / Firebase
+- JWT / session auth / CSRF protection
 
 ---
 

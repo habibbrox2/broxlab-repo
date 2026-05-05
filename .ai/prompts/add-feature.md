@@ -27,7 +27,8 @@ Execute in this order:
 3. Update or create frontend (form, component, page)
 4. Ensure frontend and backend are connected
 5. Check for security issues (auth, validation)
-6. Show all changed/created files
+6. Rebuild assets if frontend or Node code changed
+7. Show all changed/created files
 ```
 
 ---
