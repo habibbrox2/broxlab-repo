@@ -1,5 +1,5 @@
 <?php
-global $mysqli;
+global $mysqli, $twig;
 
 if (!function_exists('studioCreateImageFromBinary')) {
     /**
@@ -28,6 +28,9 @@ if (!function_exists('studioEnsureDirectory')) {
 }
 
 if (!function_exists('studioSavePng')) {
+    /**
+     * @param GdImage|resource $image
+     */
     function studioSavePng($image, string $path): bool
     {
         imagealphablending($image, false);
@@ -38,6 +41,7 @@ if (!function_exists('studioSavePng')) {
 
 if (!function_exists('studioAverageBorderColor')) {
     /**
+     * @param GdImage|resource $image
      * @return array{0:int,1:int,2:int}
      */
     function studioAverageBorderColor($image, int $width, int $height): array
@@ -230,13 +234,14 @@ $router->post('/studio/upload', ['middleware' => ['csrf']], function () {
     }
 
     $file = $_FILES['image'];
+    $imageInfo = @getimagesize($file['tmp_name']);
+    $mime = (string)($imageInfo['mime'] ?? '');
     $allowed = [
         'image/jpeg' => 'jpg',
         'image/png' => 'png',
         'image/gif' => 'gif',
         'image/webp' => 'webp',
     ];
-    $mime = (string)($file['type'] ?? '');
 
     if (!isset($allowed[$mime])) {
         json_response(['error' => 'Invalid file type'], 400);
@@ -266,13 +271,14 @@ $router->post('/studio/save', ['middleware' => ['csrf']], function () {
     }
 
     $file = $_FILES['image'];
+    $imageInfo = @getimagesize($file['tmp_name']);
+    $mime = (string)($imageInfo['mime'] ?? '');
     $allowed = [
         'image/jpeg' => 'jpg',
         'image/png' => 'png',
         'image/gif' => 'gif',
         'image/webp' => 'webp',
     ];
-    $mime = (string)($file['type'] ?? '');
 
     if (!isset($allowed[$mime])) {
         json_response(['error' => 'Invalid file type'], 400);

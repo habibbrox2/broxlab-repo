@@ -437,22 +437,22 @@ class ContentModel
         }
     }
 
-    public function createPost($title, $content, $author, $slug, $published = 0, $reader_indexing = null, $published_at = null)
+    public function createPost($title, $content, $author, $slug, $published = 0, $reader_indexing = null, $published_at = null, $source_url = null)
     {
         $normalizedPublishedAt = $this->normalizePublishedAtValue($published_at);
 
         if ($normalizedPublishedAt !== null) {
             $stmt = $this->mysqli->prepare("
-                INSERT INTO posts (title, content, author, slug, published, reader_indexing, published_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO posts (title, content, author, slug, published, reader_indexing, published_at, source_url)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->bind_param("ssssiis", $title, $content, $author, $slug, $published, $reader_indexing, $normalizedPublishedAt);
+            $stmt->bind_param("ssssiiss", $title, $content, $author, $slug, $published, $reader_indexing, $normalizedPublishedAt, $source_url);
         } else {
             $stmt = $this->mysqli->prepare("
-                INSERT INTO posts (title, content, author, slug, published, reader_indexing) 
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO posts (title, content, author, slug, published, reader_indexing, source_url)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->bind_param("ssssii", $title, $content, $author, $slug, $published, $reader_indexing);
+            $stmt->bind_param("ssssiss", $title, $content, $author, $slug, $published, $reader_indexing, $source_url);
         }
 
         $stmt->execute();
@@ -1898,5 +1898,3 @@ class ContentModel
         $row['type'] = $type;
     }
 }
-
-

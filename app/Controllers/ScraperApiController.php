@@ -141,7 +141,7 @@ if (!function_exists('scraperPushExtractCronToken')) {
         return $handle;
     }
 
-    function scraperPushReleasePipelineLock($handle): void
+    function scraperPushReleasePipelineLock(mixed $handle): void
     {
         if (!is_resource($handle)) {
             return;
@@ -662,7 +662,7 @@ if (!function_exists('scraperPushNormalizeItems')) {
 }
 
 if (!function_exists('scraperPushToNullableString')) {
-    function scraperPushToNullableString($value): ?string
+    function scraperPushToNullableString(mixed $value): ?string
     {
         if (!is_scalar($value)) {
             return null;
@@ -671,7 +671,7 @@ if (!function_exists('scraperPushToNullableString')) {
         return $str === '' ? null : $str;
     }
 
-    function scraperPushToHtmlPreservingString($value): ?string
+    function scraperPushToHtmlPreservingString(mixed $value): ?string
     {
         if (!is_scalar($value)) {
             return null;
@@ -708,7 +708,7 @@ if (!function_exists('scraperPushToNullableString')) {
         }
     }
 
-    function scraperPushParsePrice($raw): float
+    function scraperPushParsePrice(mixed $raw): float
     {
         $value = scraperPushToNullableString($raw);
         if ($value === null) {
@@ -829,7 +829,7 @@ if (!function_exists('scraperPushToNullableString')) {
         ];
     }
 
-    function scraperPushNormalizeStringList($value): array
+    function scraperPushNormalizeStringList(mixed $value): array
     {
         $normalized = [];
         $appendValue = static function ($item) use (&$normalized, &$appendValue): void {
@@ -989,7 +989,7 @@ if (!function_exists('scraperPushToNullableString')) {
         return array_values(array_unique($images));
     }
 
-    function scraperPushNormalizeSpecs($value): array
+    function scraperPushNormalizeSpecs(mixed $value): array
     {
         $normalized = [];
         if (!is_array($value)) {
@@ -1017,7 +1017,7 @@ if (!function_exists('scraperPushToNullableString')) {
         return $normalized;
     }
 
-    function scraperPushMergeSpecs(...$sources): array
+    function scraperPushMergeSpecs(mixed ...$sources): array
     {
         $merged = [];
         foreach ($sources as $source) {
@@ -1294,16 +1294,29 @@ if (!function_exists('scraperPushToNullableString')) {
 
     function scraperPushFindMobileId(mysqli $mysqli, string $brand, string $model): int
     {
-        $stmt = $mysqli->prepare('SELECT id FROM mobiles WHERE brand_name = ? AND model_name = ? LIMIT 1');
+        $brand = trim($brand);
+        $model = trim($model);
+        if ($brand === '' || $model === '') {
+            return 0;
+        }
+
+        $sql = 'SELECT id FROM mobiles WHERE LOWER(TRIM(brand_name)) = LOWER(TRIM(?)) AND LOWER(TRIM(model_name)) = LOWER(TRIM(?)) ORDER BY id DESC LIMIT 1';
+        $stmt = $mysqli->prepare($sql);
         if (!$stmt) {
             return 0;
         }
+
         $stmt->bind_param('ss', $brand, $model);
         $stmt->execute();
-        $res = $stmt->get_result();
-        $row = $res ? $res->fetch_assoc() : null;
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $stmt->close();
+            return (int) ($row['id'] ?? 0);
+        }
+
         $stmt->close();
-        return (int) ($row['id'] ?? 0);
+        return 0;
     }
 
     function scraperPushGetProviderModels(AIProvider $aiProvider, string $providerName): array
@@ -1390,7 +1403,7 @@ if (!function_exists('scraperPushToNullableString')) {
         return null;
     }
 
-    function scraperPushNormalizeAiString($value, int $maxLen = 12000): ?string
+    function scraperPushNormalizeAiString(mixed $value, int $maxLen = 12000): ?string
     {
         if (!is_scalar($value)) {
             return null;
@@ -1410,7 +1423,7 @@ if (!function_exists('scraperPushToNullableString')) {
         return trim($text);
     }
 
-    function scraperPushNormalizeAiTags($value): array
+    function scraperPushNormalizeAiTags(mixed $value): array
     {
         $tags = [];
 
@@ -1858,8 +1871,48 @@ if (!function_exists('scraperPushToNullableString')) {
             $parts[] = scraperPushNormalizeFingerprintValue($payload['specs'] ?? []);
         }
 
-        $parts = array_values(array_filter($parts, static fn($value): bool => trim((string) $value) !== ''));
         return hash('sha256', implode('|', $parts));
+    }
+
+    function scraperPushFindDuplicateArticle(mysqli $mysqli, string $title, ?string $sourceUrl): int
+    {
+        if (empty($title) && empty($sourceUrl)) {
+            return 0;
+        }
+
+        // First check by source URL if available
+        if (!empty($sourceUrl)) {
+            $stmt = $mysqli->prepare('SELECT id FROM posts WHERE source_url = ? AND published = 1 LIMIT 1');
+            if ($stmt) {
+                $stmt->bind_param('s', $sourceUrl);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                if ($result->num_rows > 0) {
+                    $row = $result->fetch_assoc();
+                    $stmt->close();
+                    return (int) ($row['id'] ?? 0);
+                }
+                $stmt->close();
+            }
+        }
+
+        // Then check by title (exact match)
+        if (!empty($title)) {
+            $stmt = $mysqli->prepare('SELECT id FROM posts WHERE title = ? AND published = 1 LIMIT 1');
+            if ($stmt) {
+                $stmt->bind_param('s', $title);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                if ($result->num_rows > 0) {
+                    $row = $result->fetch_assoc();
+                    $stmt->close();
+                    return (int) ($row['id'] ?? 0);
+                }
+                $stmt->close();
+            }
+        }
+
+        return 0;
     }
 
     function scraperPushPublishPendingItems(
@@ -1993,7 +2046,34 @@ if (!function_exists('scraperPushToNullableString')) {
                         ?? scraperPushToNullableString($row['source_published_at'] ?? null);
                     $publishedAt = scraperPushResolveArticlePublishTimestamp($publishPayload, $row);
 
-                    $postId = (int) $contentModel->createPost($title, $content, $author, $slug, 1, 1, $publishedAt);
+                    // Check for duplicate articles by title or URL to prevent multiple publications
+                    $sourceUrl = scraperPushToNullableString($publishPayload['url'] ?? $publishPayload['sourceUrl'] ?? $publishPayload['source_url'] ?? null);
+                    $existingPostId = scraperPushFindDuplicateArticle($mysqli, $title, $sourceUrl);
+                    if ($existingPostId > 0) {
+                        // Mark as published but link to existing post
+                        $broxScrapModel->markIncomingItemPublished($itemId, $existingPostId, [
+                            'fingerprint' => $fingerprint,
+                            'deduped' => true,
+                            'duplicate_of_post' => $existingPostId,
+                            'note' => 'Duplicate article found by title/URL',
+                        ], $publishedAt);
+                        $broxScrapModel->deleteIncomingItem($itemId);
+
+                        $processedFingerprintsInBatch[$fingerprintKey] = $itemId;
+
+                        $summary['published']++;
+                        $summary['skipped_duplicates']++;
+                        $summary['results'][] = [
+                            'id' => $itemId,
+                            'ok' => true,
+                            'data_type' => 'articles',
+                            'published_content_id' => $existingPostId,
+                            'deduped' => true,
+                        ];
+                        continue;
+                    }
+
+                    $postId = (int) $contentModel->createPost($title, $content, $author, $slug, 1, 1, $publishedAt, $sourceUrl);
                     if ($postId <= 0) {
                         throw new RuntimeException('Failed to create post');
                     }
@@ -2195,8 +2275,9 @@ if (!function_exists('scraperPushToNullableString')) {
                                 ?? scraperPushToNullableString($recoveredPayload['published_at'] ?? null)
                                 ?? scraperPushToNullableString($row['source_published_at'] ?? null);
                             $publishedAt = scraperPushResolveArticlePublishTimestamp($recoveredPayload, $row);
+                            $sourceUrl = scraperPushToNullableString($recoveredPayload['url'] ?? $recoveredPayload['sourceUrl'] ?? $recoveredPayload['source_url'] ?? null);
 
-                            $postId = (int) $contentModel->createPost($title, $content, $author, $slug, 1, 1, $publishedAt);
+                            $postId = (int) $contentModel->createPost($title, $content, $author, $slug, 1, 1, $publishedAt, $sourceUrl);
                             if ($postId > 0) {
                                 $contentModel->markPostPublished($postId);
                                 if ($categoryIds !== []) {
