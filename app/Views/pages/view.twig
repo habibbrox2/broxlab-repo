@@ -17,8 +17,8 @@
   "description": {{ page.content|striptags|slice(0, 160)|json_encode }},
   "url": "{{ current_url }}",
     "image": {{ (page.featured_image|default(page.image|default(app_settings.site_logo|default(url ~ 'assets/images/default-image.png')))) | json_encode }},
-  "datePublished": "{{ page.created_at|date('Y-m-d\\TH:i:s\\Z') }}",
-  {% if page.updated_at %}"dateModified": "{{ page.updated_at|date('Y-m-d\\TH:i:s\\Z') }}",{% endif %}
+  "datePublished": "{{ page.created_at|date('c') }}",
+  {% if page.updated_at %}"dateModified": "{{ page.updated_at|date('c') }}",{% endif %}
   "publisher": {
     "@type": "Organization",
     "name": {{ app_settings.site_name|json_encode }},
