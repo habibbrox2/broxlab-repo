@@ -30,7 +30,7 @@
       permissionPopupEnabled: true,
     },
     ai: {
-      nodeServerUrl: window.__APP_JS_CONFIG_OVERRIDES?.ai?.nodeServerUrl || 'http://localhost:3000',
+      nodeServerUrl: window.__APP_JS_CONFIG_OVERRIDES?.ai?.nodeServerUrl || window.location.origin || 'http://localhost:3000',
       useNodeServer: window.__APP_JS_CONFIG_OVERRIDES?.ai?.useNodeServer || false,
     },
   };

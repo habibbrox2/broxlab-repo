@@ -18,7 +18,7 @@ class OCRService
         $this->ocrSpaceApiKey = $apiKey ?: getenv('OCR_SPACE_API_KEY') ?: 'K81289438988957'; // Paid tier API key
         $this->timeout = $timeout;
         // Prefer the unified Node service URL and keep legacy fallbacks for compatibility
-        $nodeBaseUrl = $nodeOcrUrl ?: (getenv('NODE_SERVICE_URL') ?: (getenv('OCR_SERVICE_URL') ?: (getenv('OCR_API_URL') ?: 'http://localhost:3000')));
+        $nodeBaseUrl = $nodeOcrUrl ?: (getenv('NODE_SERVICE_URL') ?: (getenv('OCR_SERVICE_URL') ?: (getenv('OCR_API_URL') ?: (getenv('APP_URL') ?: 'http://localhost:3000'))));
         $nodeBaseUrl = rtrim($nodeBaseUrl, '/');
         if (str_ends_with($nodeBaseUrl, '/api/ocr')) {
             $nodeBaseUrl = substr($nodeBaseUrl, 0, -8);

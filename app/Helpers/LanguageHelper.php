@@ -128,7 +128,15 @@ class LanguageHelper
 // AI Client class
 class AIClient
 {
-    private $nodeUrl = 'http://localhost:3000'; // Adjust as needed
+    private $nodeUrl;
+
+    public function __construct(?string $nodeUrl = null)
+    {
+        $this->nodeUrl = rtrim(
+            $nodeUrl ?? (getenv('NODE_SERVICE_URL') ?: getenv('NODEJS_SERVER_URL') ?: getenv('NODE_API_URL') ?: getenv('APP_URL') ?: 'http://localhost:3000'),
+            '/'
+        );
+    }
 
     public function translate(string $text, string $from, string $to): ?string
     {
@@ -138,7 +146,7 @@ class AIClient
             'messages' => [
                 ['role' => 'user', 'content' => $prompt]
             ],
-            'options' => ['model' => 'openrouter/gpt-4o'] // Use a good translation model
+            'options' => ['model' => 'openrouter/auto'] // Use openrouter auto-selection for translations
         ];
 
         $ch = curl_init($this->nodeUrl . '/api/ai/chat');

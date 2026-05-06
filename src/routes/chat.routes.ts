@@ -23,6 +23,7 @@ const chatBodySchema = {
             },
         },
         options: { type: 'object', additionalProperties: true },
+        system: { type: 'string' },
         context: { type: 'object', additionalProperties: true },
         stream: { type: 'boolean' },
     },
@@ -139,7 +140,7 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
     fastify.post('/api/ai/test', async (request, reply) => {
         try {
             const body = request.body as any;
-            const model = body.model || 'openrouter/gpt-4o';
+            const model = body.model || 'openrouter/auto';
 
             reply.send({
                 success: true,

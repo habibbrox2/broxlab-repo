@@ -319,7 +319,7 @@
         return;
       }
 
-      const reqId = `${Date.now() }_${ Math.random().toString(36).slice(2, 8)}`;
+      const reqId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       selectEl.dataset.reqId = reqId;
       setRefreshState(refreshBtn, selectEl, true);
       buildLoadingOption(selectEl, 'Loading models...');
@@ -375,7 +375,7 @@
           msg = 'No chat-capable Hugging Face models available for /v1/responses.';
         } else if (usedFallback) {
           msg = fetchError
-            ? `Remote models unavailable (${ fetchError }). No config models found.`
+            ? `Remote models unavailable (${fetchError}). No config models found.`
             : 'Remote models unavailable. No config models found.';
         } else {
           msg = 'No models available for this provider.';
@@ -423,7 +423,7 @@
         warningEl.classList.remove('d-none');
       } else if (usedFallback) {
         warningEl.textContent = fetchError
-          ? `Remote fetch failed (${ fetchError }). Using config model list.`
+          ? `Remote fetch failed (${fetchError}). Using config model list.`
           : 'Remote fetch failed. Using config model list.';
         warningEl.classList.remove('text-danger');
         warningEl.classList.add('text-warning');
@@ -475,7 +475,7 @@
 
   // Get Node.js server URL from config
   function getAIServerUrl() {
-    return window.AppConfig?.get('ai.nodeServerUrl') || 'http://localhost:3000';
+    return window.AppConfig?.get('ai.nodeServerUrl') || window.location.origin || 'http://localhost:3000';
   }
 
   // Fetch provider models from API (use PHP fallback if Node.js fails)
@@ -489,7 +489,7 @@
 
     // Try Node.js server first, fallback to PHP API
     try {
-      const nodeUrl = `${getAIServerUrl() }/api/ai/models?${ params.toString()}`;
+      const nodeUrl = `${getAIServerUrl()}/api/ai/models?${params.toString()}`;
       const res = await fetch(nodeUrl, {
         credentials: 'same-origin',
         signal: AbortSignal.timeout(3000), // 3 second timeout
@@ -517,19 +517,19 @@
         }
         return data.models;
       } else {
-        throw new Error(`HTTP ${ res.status}`);
+        throw new Error(`HTTP ${res.status}`);
       }
     } catch (nodeError) {
       console.warn('[AI Models] Node.js server unavailable, trying PHP API', providerName, nodeError.message);
       // Fallback to PHP API
-      const phpUrl = `/api/ai/models?${ params.toString()}`;
+      const phpUrl = `/api/ai/models?${params.toString()}`;
       const res = await fetch(phpUrl, {
         credentials: 'same-origin',
       });
 
       if (!res.ok) {
         console.warn('[AI Models] PHP API fetch also failed', providerName, res.status);
-        throw new Error(`HTTP ${ res.status}`);
+        throw new Error(`HTTP ${res.status}`);
       }
 
       const raw = await res.text();
@@ -796,7 +796,7 @@
           }
           if (warningDiv) {
             const errMsg = e && e.message ? e.message : 'fetch failed';
-            warningDiv.textContent = `Remote models unavailable (${ errMsg }). Using fallback list.`;
+            warningDiv.textContent = `Remote models unavailable (${errMsg}). Using fallback list.`;
             warningDiv.classList.remove('d-none');
           }
         });
@@ -864,7 +864,7 @@
 
     try {
       const csrfTokenValue = csrfToken ? csrfToken.value : '';
-      const response = await fetch(`${getAIServerUrl() }/api/ai/test`, {
+      const response = await fetch(`${getAIServerUrl()}/api/ai/test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({
@@ -879,15 +879,15 @@
       if (data.success) {
         if (window.showAlert) {
           await window.showAlert(
-            `<strong>Model:</strong> ${ data.model }<br><br><strong>Response:</strong> ${ data.response || 'OK'}`,
+            `<strong>Model:</strong> ${data.model}<br><br><strong>Response:</strong> ${data.response || 'OK'}`,
             'Connection Successful!',
             'success',
             { allowHtml: true, }
           );
         } else {
-          alert(`Connection successful!\n\nModel: ${ data.model }\nResponse: ${ data.response || 'OK'}`);
+          alert(`Connection successful!\n\nModel: ${data.model}\nResponse: ${data.response || 'OK'}`);
         }
-        handleTestResult(provider.provider_name, 'success', `Response: ${ data.response || 'OK'}`);
+        handleTestResult(provider.provider_name, 'success', `Response: ${data.response || 'OK'}`);
       } else {
         if (window.showAlert) {
           await window.showAlert(
@@ -896,7 +896,7 @@
             'error'
           );
         } else {
-          alert(`Connection failed: ${ data.error || 'Unknown error'}`);
+          alert(`Connection failed: ${data.error || 'Unknown error'}`);
         }
         handleTestResult(provider.provider_name, 'error', data.error || 'Unknown error occurred');
       }
@@ -904,9 +904,9 @@
       // ensure health badge and summary are up to date (helper already handles this)
     } catch (e) {
       if (window.showAlert) {
-        await window.showAlert(`Network error: ${ e.message}`, 'Error', 'error');
+        await window.showAlert(`Network error: ${e.message}`, 'Error', 'error');
       } else {
-        alert(`Network error: ${ e.message}`);
+        alert(`Network error: ${e.message}`);
       }
       handleTestResult(provider.provider_name, 'error', e.message || 'Network error');
     } finally {
@@ -925,7 +925,7 @@
     inputEl.disabled = true;
 
     try {
-      const res = await fetch(`${getAIServerUrl() }/api/admin/ai/toggle-provider`, {
+      const res = await fetch(`${getAIServerUrl()}/api/admin/ai/toggle-provider`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({ id: parseInt(id, 10), active, }),
@@ -993,7 +993,7 @@
       // Update badge text
       const badge = rowEl?.querySelector('td[data-label="Multimodal"] .badge');
       if (badge) {
-        badge.className = `badge ${ enabled ? 'bg-success' : 'bg-secondary'}`;
+        badge.className = `badge ${enabled ? 'bg-success' : 'bg-secondary'}`;
         badge.textContent = enabled ? 'Yes' : 'No';
       }
 
@@ -1020,7 +1020,7 @@
 
     const badge = rowEl.querySelector('td[data-label="Status"] .badge');
     if (badge) {
-      badge.className = `badge bg-${ isActive ? 'success' : 'secondary'}`;
+      badge.className = `badge bg-${isActive ? 'success' : 'secondary'}`;
       badge.textContent = isActive ? 'Active' : 'Inactive';
     }
 
@@ -1036,7 +1036,7 @@
 
   // Status pills functions
   function getLastTested(providerName) {
-    const raw = localStorage.getItem(`brox.ai.last_tested.${ providerName}`) || '';
+    const raw = localStorage.getItem(`brox.ai.last_tested.${providerName}`) || '';
     if (!raw) return 'Not tested';
     const date = new Date(raw);
     if (Number.isNaN(date.getTime())) return 'Not tested';
@@ -1044,7 +1044,7 @@
   }
 
   function setLastTested(providerName) {
-    localStorage.setItem(`brox.ai.last_tested.${ providerName}`, new Date().toISOString());
+    localStorage.setItem(`brox.ai.last_tested.${providerName}`, new Date().toISOString());
   }
 
   function updateStatusPills(providerName) {
@@ -1059,23 +1059,23 @@
     if (!provider) return;
 
     if (apiKeyPill) {
-      apiKeyPill.className = `badge ${ provider.has_api_key ? 'bg-success' : 'bg-warning text-dark'}`;
+      apiKeyPill.className = `badge ${provider.has_api_key ? 'bg-success' : 'bg-warning text-dark'}`;
       apiKeyPill.textContent = provider.has_api_key ? 'API Key: Present' : 'API Key: Missing';
     }
 
     if (activePill) {
-      activePill.className = `badge ${ provider.is_active ? 'bg-success' : 'bg-secondary'}`;
+      activePill.className = `badge ${provider.is_active ? 'bg-success' : 'bg-secondary'}`;
       activePill.textContent = provider.is_active ? 'Provider: Active' : 'Provider: Inactive';
     }
 
     if (testedPill) {
       testedPill.className = 'badge bg-info text-dark';
-      testedPill.textContent = `Last tested: ${ getLastTested(providerName)}`;
+      testedPill.textContent = `Last tested: ${getLastTested(providerName)}`;
     }
   }
 
   function getHealthStorageKey(providerName) {
-    return `brox.ai.health.${ providerName}`;
+    return `brox.ai.health.${providerName}`;
   }
 
   function getProviderHealth(providerName) {
@@ -1102,19 +1102,19 @@
     const diff = Date.now() - date.getTime();
     if (diff < 60000) return 'Just now';
     const minutes = Math.floor(diff / 60000);
-    if (minutes < 60) return `${minutes }m ago`;
+    if (minutes < 60) return `${minutes}m ago`;
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours }h ago`;
+    if (hours < 24) return `${hours}h ago`;
     const days = Math.floor(hours / 24);
-    return `${days }d ago`;
+    return `${days}d ago`;
   }
 
   function renderHealthPill(providerName) {
     if (!providerName) return;
-    const row = document.querySelector(`tr[data-provider-name="${ providerName }"]`);
+    const row = document.querySelector(`tr[data-provider-name="${providerName}"]`);
     if (!row) return;
-    const pill = row.querySelector(`.provider-health-pill[data-provider-name="${ providerName }"]`);
-    const timestamp = row.querySelector(`.provider-health-timestamp[data-provider-name="${ providerName }"]`);
+    const pill = row.querySelector(`.provider-health-pill[data-provider-name="${providerName}"]`);
+    const timestamp = row.querySelector(`.provider-health-timestamp[data-provider-name="${providerName}"]`);
     if (!pill || !timestamp) return;
 
     const health = getProviderHealth(providerName);
@@ -1439,7 +1439,7 @@
     fetchProviderModels('ollama')
       .then((models) => {
         const online = Array.isArray(models) && models.length > 0;
-        ollamaStatusEl.className = `badge ${ online ? 'bg-success' : 'bg-secondary' } ms-2`;
+        ollamaStatusEl.className = `badge ${online ? 'bg-success' : 'bg-secondary'} ms-2`;
         ollamaStatusEl.textContent = online ? 'Online' : 'Offline';
       })
       .catch(() => {

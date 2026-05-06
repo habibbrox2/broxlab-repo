@@ -12,7 +12,7 @@ class NodeOCRClient
 
     public function __construct(?string $baseUrl = null, int $timeout = 60)
     {
-        $nodeBaseUrl = $baseUrl ?? (getenv('NODE_SERVICE_URL') ?: getenv('NODE_API_URL') ?: getenv('NODEJS_SERVER_URL') ?: 'http://localhost:3000');
+        $nodeBaseUrl = $baseUrl ?? (getenv('NODE_SERVICE_URL') ?: getenv('NODE_API_URL') ?: getenv('NODEJS_SERVER_URL') ?: getenv('APP_URL') ?: 'http://localhost:3000');
         $nodeBaseUrl = rtrim($nodeBaseUrl, '/');
         if (str_ends_with($nodeBaseUrl, '/api/ocr')) {
             $nodeBaseUrl = substr($nodeBaseUrl, 0, -8);

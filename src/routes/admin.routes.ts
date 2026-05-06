@@ -143,7 +143,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
         reply.send({
             success: true,
             provider: 'openrouter',
-            model: 'openrouter/gpt-4o',
+            model: 'openrouter/auto',
         });
     });
 
@@ -385,7 +385,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
             success: true,
             defaults: {
                 provider: 'openrouter',
-                model: 'openrouter/gpt-4o',
+                model: 'openrouter/auto',
                 temperature: 0.7,
                 maxTokens: 4000,
                 systemPrompt: 'You are a helpful AI assistant.',
@@ -438,7 +438,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
 
             const plugins = [
                 {
-                    id: 'web-search',
+                    id: 'web',
                     web: webConfig,
                 },
             ];
@@ -454,7 +454,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
                     'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json',
                     'HTTP-Referer': config.appUrl,
-                    'X-Title': 'BroxLab Admin',
+                    'X-OpenRouter-Title': 'BroxLab Admin',
                 },
                 body: JSON.stringify({
                     model: modelName,
@@ -550,7 +550,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
                     'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json',
                     'HTTP-Referer': config.appUrl,
-                    'X-Title': 'BroxLab Admin',
+                    'X-OpenRouter-Title': 'BroxLab Admin',
                 },
                 body: JSON.stringify({
                     model: model || 'openai/gpt-4o-mini',
@@ -661,7 +661,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
                     'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json',
                     'HTTP-Referer': config.appUrl,
-                    'X-Title': 'BroxLab Admin',
+                    'X-OpenRouter-Title': 'BroxLab Admin',
                 },
                 body: JSON.stringify({
                     model: model || 'openai/gpt-4o-mini',

@@ -38,7 +38,7 @@ class KBSelfHealer
         // Configuration
         $this->useNodeJs = $options['useNodeJs'] ?? (getenv('KB_USE_NODEJS') === 'true');
         $nodeJsUrl = rtrim(
-            (string)($options['nodeJsUrl'] ?? (getenv('NODE_SERVICE_URL') ?: (getenv('NODEJS_AI_SERVER_URL') ?: (getenv('NODE_API_URL') ?: 'http://localhost:3000')))),
+            (string)($options['nodeJsUrl'] ?? getenv('NODE_SERVICE_URL') ?? getenv('NODEJS_AI_SERVER_URL') ?? getenv('NODE_API_URL') ?? getenv('APP_URL') ?? 'http://localhost:3000'),
             '/'
         );
         if (str_ends_with($nodeJsUrl, '/api/ai')) {

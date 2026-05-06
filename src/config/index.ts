@@ -39,8 +39,8 @@ const envSchema = z.object({
     // Default AI Settings
     DEFAULT_PROVIDER: z.string().default('openrouter'),
     DEFAULT_MODEL: z.string().default('openrouter/auto'),
-    FRONTEND_MODEL: z.string().default('openrouter/gpt-4o'),
-    BACKEND_MODEL: z.string().default('openrouter/gpt-4o'),
+    FRONTEND_MODEL: z.string().default('openrouter/auto'),
+    BACKEND_MODEL: z.string().default('openrouter/auto'),
     MAX_TOKENS: z.string().default('4000'),
     TEMPERATURE: z.string().default('0.7'),
 

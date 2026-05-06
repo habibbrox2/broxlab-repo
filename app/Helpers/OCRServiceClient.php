@@ -13,7 +13,7 @@ class OCRServiceClient
 
     public function __construct(string $baseUrl = null, int $timeout = 30)
     {
-        $this->baseUrl = rtrim($baseUrl ?: getenv('NODE_SERVICE_URL') ?: getenv('NODE_API_URL') ?: getenv('NODEJS_SERVER_URL') ?: 'http://localhost:3000', '/');
+        $this->baseUrl = rtrim($baseUrl ?: getenv('NODE_SERVICE_URL') ?: getenv('NODE_API_URL') ?: getenv('NODEJS_SERVER_URL') ?: getenv('APP_URL') ?: 'http://localhost:3000', '/');
         if (str_ends_with($this->baseUrl, '/api/ocr')) {
             $this->baseUrl = substr($this->baseUrl, 0, -8);
         }

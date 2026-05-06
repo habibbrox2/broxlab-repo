@@ -43,7 +43,7 @@ class NotificationWebSocketManager extends EventTarget {
     try {
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsHost = window.location.hostname;
-      const wsPort = 3000; // WebSocket server port (same as main server)
+      const wsPort = window.location.port || '3000'; // Use current port or fallback to 3000
       const wsUrl = `${wsProtocol}//${wsHost}:${wsPort}?userId=${this.userId}`;
 
       this.log('Connecting to WebSocket:', wsUrl);

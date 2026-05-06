@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -34,7 +35,8 @@ $securityManager = new SecurityManager($mysqli);
 ===================================================== */
 
 if (!function_exists('isIpBypassRateLimit')) {
-    function isIpBypassRateLimit(string $ip): bool {
+    function isIpBypassRateLimit(string $ip): bool
+    {
         $bypassIps = getenv('RATELIMIT_BYPASS_IPS');
         if (!$bypassIps) {
             return false;
@@ -44,7 +46,8 @@ if (!function_exists('isIpBypassRateLimit')) {
 }
 
 if (!function_exists('getMiddlewareTempDir')) {
-    function getMiddlewareTempDir(): string {
+    function getMiddlewareTempDir(): string
+    {
         $base = defined('TEMP_DIR') ? TEMP_DIR : sys_get_temp_dir();
         $dir = rtrim($base, '/\\') . DIRECTORY_SEPARATOR . 'middleware';
 
@@ -56,7 +59,8 @@ if (!function_exists('getMiddlewareTempDir')) {
 }
 
 if (!function_exists('getLoginRedirectTargetPath')) {
-    function getLoginRedirectTargetPath(): string {
+    function getLoginRedirectTargetPath(): string
+    {
         $requestUri = (string)($_SERVER['REQUEST_URI'] ?? '/');
         $requestUri = trim($requestUri);
         if ($requestUri === '') {
@@ -78,7 +82,8 @@ if (!function_exists('getLoginRedirectTargetPath')) {
 }
 
 if (!function_exists('redirectToLoginWithReturn')) {
-    function redirectToLoginWithReturn(): void {
+    function redirectToLoginWithReturn(): void
+    {
         $target = getLoginRedirectTargetPath();
         if ($target !== '' && $target !== '/') {
             redirect('/login?redirect=' . rawurlencode($target));
@@ -306,8 +311,10 @@ register_middleware('auth', function (array $ctx = []) {
     /* ---------- ROLE CHECK ---------- */
     if (!empty($ctx['roles'])) {
 
-        if (!$userModel->isSuperAdmin($userId)
-            && !$userModel->hasAnyRole($userId, $ctx['roles'])) {
+        if (
+            !$userModel->isSuperAdmin($userId)
+            && !$userModel->hasAnyRole($userId, $ctx['roles'])
+        ) {
 
             logMiddlewareReject(
                 'auth',
@@ -326,8 +333,10 @@ register_middleware('auth', function (array $ctx = []) {
     /* ---------- PERMISSION CHECK ---------- */
     if (!empty($ctx['permissions'])) {
 
-        if (!$userModel->isSuperAdmin($userId)
-            && !$userModel->hasAnyPermission($userId, $ctx['permissions'])) {
+        if (
+            !$userModel->isSuperAdmin($userId)
+            && !$userModel->hasAnyPermission($userId, $ctx['permissions'])
+        ) {
 
             logMiddlewareReject(
                 'auth',
@@ -441,7 +450,7 @@ register_middleware('user_dashboard_only', function (array $ctx = []) {
  * Verifies incoming Authorization: Bearer <idToken> for API routes.
  * On success sets $_SERVER['FIREBASE_UID'] and $GLOBALS['firebase_claims']
  */
-register_middleware('firebase_bearer', function(array $ctx = []) {
+register_middleware('firebase_bearer', function (array $ctx = []) {
     // Only used for APIs
     $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
     $idToken = null;
@@ -577,7 +586,7 @@ register_middleware('csrf', function (array $ctx) {
 register_middleware('activity_log', function (array $ctx) {
     // Check if user is authenticated
     $userId = AuthManager::getCurrentUserId();
-    
+
     if (!AuthManager::isUserAuthenticated() || !$userId) {
         return true;
     }

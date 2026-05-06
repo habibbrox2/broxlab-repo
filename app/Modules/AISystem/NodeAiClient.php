@@ -11,7 +11,7 @@ class NodeAiClient
 
     public function __construct(array $options = [])
     {
-        $sharedBaseUrl = $options['baseUrl'] ?? (getenv('NODE_SERVICE_URL') ?: getenv('NODEJS_SERVER_URL') ?: getenv('NODE_API_URL') ?: 'http://localhost:3000');
+        $sharedBaseUrl = $options['baseUrl'] ?? (getenv('NODE_SERVICE_URL') ?: getenv('NODEJS_SERVER_URL') ?: getenv('NODE_API_URL') ?: getenv('APP_URL') ?: 'http://localhost:3000');
         $aiBaseUrl = rtrim((string)($options['aiBaseUrl'] ?? $sharedBaseUrl), '/');
         $ragBaseUrl = rtrim((string)($options['ragBaseUrl'] ?? $sharedBaseUrl), '/');
 
@@ -47,7 +47,7 @@ class NodeAiClient
         return $this->postJson($this->aiBaseUrl . '/api/ai/embed', $payload);
     }
 
-    public function chat(array $messages, ?string $provider = null, $system = null): array
+    public function chat(array $messages, ?string $provider = null, $system = null, array $options = []): array
     {
         $payload = ['messages' => $messages];
         if (!empty($provider)) {
@@ -55,6 +55,9 @@ class NodeAiClient
         }
         if ($system !== null) {
             $payload['system'] = $system;
+        }
+        if (!empty($options)) {
+            $payload['options'] = $options;
         }
 
         return $this->postJson($this->aiBaseUrl . '/api/ai/chat', $payload);

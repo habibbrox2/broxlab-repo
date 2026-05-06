@@ -790,14 +790,28 @@ class AIProvider
      */
     private function getAPIKey(string $providerName): string
     {
-        // For OpenRouter, we only use the stored DB key (do not read from env vars)
+        // For OpenRouter, prefer the stored DB key, but allow environment fallback.
         if ($providerName === 'openrouter') {
-            return $this->getSetting('openrouter_api_key', '') ?: '';
+            $key = $this->getSetting('openrouter_api_key', '') ?: '';
+            if (!empty($key)) {
+                return $key;
+            }
+
+            $envKey = 'OPENROUTER_API_KEY';
+            $key = getenv($envKey) ?: '';
+            if (empty($key) && isset($_ENV[$envKey])) {
+                $key = $_ENV[$envKey];
+            }
+
+            return $key ?: '';
         }
 
         // For other providers, allow environment override (legacy behavior)
         $envKey = strtoupper($providerName) . '_API_KEY';
         $key = getenv($envKey);
+        if (empty($key) && isset($_ENV[$envKey])) {
+            $key = $_ENV[$envKey];
+        }
 
         if (!$key) {
             // Check ai_settings table
@@ -1486,13 +1500,20 @@ class AIProvider
      */
     public function getEffectiveProvider(): ?array
     {
-        // Check if default provider is set and active
+        // Prefer default provider when it is active and has valid credentials.
         $default = $this->getDefault();
-        if ($default && $default['is_active']) {
+        if ($default && !empty($default['is_active']) && $this->hasApiKey($default['provider_name'] ?? '')) {
             return $default;
         }
 
-        // Get first active provider
+        // Fallback to first active provider with an API key configured.
+        foreach ($this->getActive() as $provider) {
+            if ($this->hasApiKey((string)($provider['provider_name'] ?? ''))) {
+                return $provider;
+            }
+        }
+
+        // Last resort: first active provider regardless of key presence.
         $active = $this->getActive();
         return !empty($active) ? $active[0] : null;
     }

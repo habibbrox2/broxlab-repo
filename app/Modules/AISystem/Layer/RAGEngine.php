@@ -512,7 +512,7 @@ class RAGEngine
             $embedding = $this->generateEmbeddingMultiProvider($text, $preferredProvider);
 
             if ($embedding !== null) {
-                $this->knowledgeModel->updateEmbedding($item['id'], $embedding);
+                $this->knowledgeModel->updateEmbedding($item['id'], json_encode($embedding));
                 $success++;
             } else {
                 $errors[] = 'Failed to generate embedding for item #' . $item['id'];
@@ -543,7 +543,7 @@ class RAGEngine
             // Call Node.js embedding service
             $ch = curl_init();
             curl_setopt_array($ch, [
-                CURLOPT_URL => (getenv('NODE_SERVICE_URL') ?: getenv('OCR_SERVICE_URL') ?: getenv('OCR_API_URL') ?: 'http://localhost:3000') . '/api/ocr/embedding/generate',
+                CURLOPT_URL => (getenv('NODE_SERVICE_URL') ?: getenv('OCR_SERVICE_URL') ?: getenv('OCR_API_URL') ?: getenv('APP_URL') ?: 'http://localhost:3000') . '/api/ocr/embedding/generate',
                 CURLOPT_POST => true,
                 CURLOPT_POSTFIELDS => json_encode($payload),
                 CURLOPT_RETURNTRANSFER => true,
@@ -838,7 +838,7 @@ class RAGEngine
             // Call Node.js PDF extraction service
             $ch = curl_init();
             curl_setopt_array($ch, [
-                CURLOPT_URL => (getenv('NODE_SERVICE_URL') ?: getenv('OCR_SERVICE_URL') ?: getenv('OCR_API_URL') ?: 'http://localhost:3000') . '/api/ocr/pdf/extract',
+                CURLOPT_URL => (getenv('NODE_SERVICE_URL') ?: getenv('OCR_SERVICE_URL') ?: getenv('OCR_API_URL') ?: getenv('APP_URL') ?: 'http://localhost:3000') . '/api/ocr/pdf/extract',
                 CURLOPT_POST => true,
                 CURLOPT_POSTFIELDS => json_encode($payload),
                 CURLOPT_RETURNTRANSFER => true,

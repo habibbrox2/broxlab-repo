@@ -15,6 +15,7 @@ export interface ChatRequest {
     maxTokens?: number;
   };
   context?: Record<string, any>;
+  system?: string;
   visitorToken?: string;
 }
 
@@ -50,7 +51,7 @@ export class ChatService {
    */
   async handleChat(request: FastifyRequest, reply: FastifyReply, isAdmin: boolean): Promise<void> {
     const body = request.body as ChatRequest;
-    const { messages, stream, options, context } = body;
+    const { messages, stream, options, context, system } = body;
 
     // Normalize messages
     const normalizedMessages = this.normalizeMessages(messages);
@@ -62,8 +63,17 @@ export class ChatService {
       return;
     }
 
+    // Ensure AI provider is configured
+    if (!config.ai.openrouter.apiKey) {
+      reply.code(500).send({
+        success: false,
+        error: 'OpenRouter API key is not configured. Please set OPENROUTER_API_KEY in the environment.',
+      });
+      return;
+    }
+
     // Build system prompt
-    const systemPrompt = await this.buildSystemPrompt(isAdmin, context);
+    const systemPrompt = await this.buildSystemPrompt(isAdmin, context, system);
 
     // Handle streaming or non-streaming
     if (stream) {
@@ -101,11 +111,15 @@ export class ChatService {
    */
   private async buildSystemPrompt(
     isAdmin: boolean,
-    context?: Record<string, any>
+    context?: Record<string, any>,
+    overrideSystem?: string
   ): Promise<string> {
-    let prompt = isAdmin
-      ? 'You are an AI assistant for BroxLab admin panel. Help administrators manage their website efficiently.'
-      : 'You are a helpful AI assistant for BroxLab. Provide accurate and helpful responses to users.';
+    const isAdminContext = isAdmin || context?.isAdmin === true || context?.admin === true;
+    let prompt = overrideSystem && overrideSystem.trim() !== ''
+      ? overrideSystem.trim()
+      : isAdminContext
+        ? 'You are an AI assistant for BroxLab admin panel. Help administrators manage their website efficiently.'
+        : 'You are a helpful AI assistant for BroxLab. Provide accurate and helpful responses to users.';
 
     // Add context if provided
     if (context && Object.keys(context).length > 0) {
@@ -121,6 +135,18 @@ export class ChatService {
   }
 
   /**
+   * Normalize model IDs for OpenRouter compatibility
+   */
+  private normalizeModel(model?: string): string {
+    const normalized = (model || config.ai.frontendModel).trim();
+    const modelMap: Record<string, string> = {
+      'openrouter/gpt-4o': 'openrouter/auto',
+    };
+
+    return modelMap[normalized] ?? normalized;
+  }
+
+  /**
    * Handle non-streaming chat
    */
   private async handleNonStreamingChat(
@@ -131,9 +157,10 @@ export class ChatService {
   ): Promise<void> {
     try {
       const startTime = Date.now();
+      const model = this.normalizeModel(options?.model || config.ai.frontendModel);
 
       const response = await this.provider.chat(systemPrompt, messages, {
-        model: options?.model || config.ai.frontendModel,
+        model,
         temperature: options?.temperature || config.ai.temperature,
         maxTokens: options?.maxTokens || config.ai.maxTokens,
       });
@@ -188,6 +215,7 @@ export class ChatService {
       Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
     });
+    reply.raw.flushHeaders?.();
 
     try {
       const startTime = Date.now();
@@ -195,7 +223,7 @@ export class ChatService {
       let model = '';
 
       for await (const chunk of this.provider.streamChat(systemPrompt, messages, {
-        model: options?.model || config.ai.frontendModel,
+        model: this.normalizeModel(options?.model || config.ai.frontendModel),
         temperature: options?.temperature || config.ai.temperature,
         maxTokens: options?.maxTokens || config.ai.maxTokens,
       })) {
