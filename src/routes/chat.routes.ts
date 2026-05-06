@@ -17,7 +17,32 @@ const chatBodySchema = {
                 required: ['role', 'content'],
                 properties: {
                     role: { type: 'string', enum: ['user', 'assistant', 'system'] },
-                    content: { type: 'string', minLength: 1 },
+                    content: {
+                        oneOf: [
+                            { type: 'string', minLength: 1 },
+                            {
+                                type: 'array',
+                                minItems: 1,
+                                items: {
+                                    type: 'object',
+                                    required: ['type'],
+                                    properties: {
+                                        type: { type: 'string', enum: ['text', 'image_url'] },
+                                        text: { type: 'string' },
+                                        image_url: {
+                                            type: 'object',
+                                            required: ['url'],
+                                            properties: {
+                                                url: { type: 'string', minLength: 1 }
+                                            },
+                                            additionalProperties: false
+                                        }
+                                    },
+                                    additionalProperties: false
+                                }
+                            }
+                        ]
+                    },
                 },
                 additionalProperties: false,
             },

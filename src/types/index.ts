@@ -1,9 +1,23 @@
 // Global type definitions
 import { z } from 'zod';
 
+export interface MessageContentText {
+    type: 'text';
+    text: string;
+}
+
+export interface MessageContentImage {
+    type: 'image_url';
+    image_url: {
+        url: string;
+    };
+}
+
+export type MessageContent = MessageContentText | MessageContentImage;
+
 export interface Message {
     role: 'system' | 'user' | 'assistant';
-    content: string;
+    content: string | MessageContent[];
 }
 
 export interface ChatRequest {

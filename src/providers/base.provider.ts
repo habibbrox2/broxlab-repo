@@ -40,13 +40,25 @@ export abstract class BaseAIProvider {
         systemPrompt: string,
         messages: Message[]
     ): OpenAI.Chat.ChatCompletionMessageParam[] {
-        return [
+        const result: OpenAI.Chat.ChatCompletionMessageParam[] = [
             { role: 'system', content: systemPrompt },
-            ...messages.map((m) => ({
-                role: m.role as 'user' | 'assistant',
-                content: m.content,
-            })),
         ];
+
+        for (const m of messages) {
+            if (m.role === 'assistant') {
+                result.push({
+                    role: 'assistant',
+                    content: m.content as string, // Assistant messages should always be strings
+                });
+            } else if (m.role === 'user') {
+                result.push({
+                    role: 'user',
+                    content: m.content, // Can be string or vision content array
+                });
+            }
+        }
+
+        return result;
     }
 
     /**

@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { OpenRouterProvider } from '../providers/openrouter.provider';
 import { config } from '../config/index';
 import { query, queryOne } from '../config/database';
-import { Message } from '../types/index';
+import { Message, MessageContent } from '../types/index';
 import logger from '../utils/logger';
 import { metrics } from '../utils/metrics';
 
@@ -94,16 +94,55 @@ export class ChatService {
     // Limit messages
     const limited = messages.slice(-this.maxMessages);
 
-    // Validate each message
-    const valid = limited.filter((msg) => {
-      if (!msg || typeof msg !== 'object') return false;
-      if (!['user', 'assistant', 'system'].includes(msg.role)) return false;
-      if (typeof msg.content !== 'string') return false;
-      if (msg.content.length > this.maxChars) return false;
-      return true;
-    });
+    // Validate and normalize each message
+    const valid: Message[] = [];
 
-    return valid;
+    for (const msg of limited) {
+      if (!msg || typeof msg !== 'object') continue;
+      if (!['user', 'assistant', 'system'].includes(msg.role)) continue;
+
+      // Handle content normalization
+      let normalizedContent: string | MessageContent[];
+
+      if (typeof msg.content === 'string') {
+        // Simple text message
+        if (msg.content.length === 0 || msg.content.length > this.maxChars) continue;
+        normalizedContent = msg.content;
+      } else if (Array.isArray(msg.content)) {
+        // Vision message with content parts
+        const normalizedParts: MessageContent[] = [];
+
+        for (const part of msg.content) {
+          if (part.type === 'text' && typeof part.text === 'string' && part.text.length > 0) {
+            normalizedParts.push({
+              type: 'text',
+              text: part.text.length > this.maxChars ? part.text.substring(0, this.maxChars) : part.text
+            });
+          } else if (part.type === 'image_url' && part.image_url && typeof part.image_url.url === 'string') {
+            // Only include url, remove extra fields like name, mime, size
+            normalizedParts.push({
+              type: 'image_url',
+              image_url: {
+                url: part.image_url.url
+              }
+            });
+          }
+        }
+
+        if (normalizedParts.length === 0) continue;
+        normalizedContent = normalizedParts;
+      } else {
+        // Invalid content type
+        continue;
+      }
+
+      valid.push({
+        role: msg.role,
+        content: normalizedContent
+      });
+    }
+
+    return valid.length > 0 ? valid : null;
   }
 
   /**
