@@ -219,7 +219,7 @@ class AppSettings {
             'site_name' => 'BroxBhai',
             'site_logo' => '/assets/logo/logo.png',
             'favicon' => '/assets/logo/favicon.ico',
-            'default_language' => 'en',
+            'default_language' => 'bn',
             'timezone' => 'Asia/Dhaka',
             'maintenance_mode' => 0,
             'public_nav_json' => null,

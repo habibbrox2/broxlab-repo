@@ -8,7 +8,10 @@ require_once __DIR__ . '/../Models/MobileModel.php';
 require_once __DIR__ . '/../Models/AIProvider.php';
 
 // Make global variables available to this file
-global $mysqli, $twig, $router;
+
+/** @var Router $router */
+/** @var \mysqli $mysqli */
+/** @var \Twig\Environment $twig */
 
 $broxScrapModel = new BroxScrapModel($mysqli);
 $contentModel = new ContentModel($mysqli);
@@ -2677,8 +2680,7 @@ $router->match($pushCombinedMethods, '/api/push/data/', function () use ($mysqli
     scraperPushHandleCombinedPayload($mysqli, $broxScrapModel, $contentModel, $mobileModel);
 });
 
-$router->get('/push-endpoints', function () {
-    global $twig;
+$router->get('/push-endpoints', function () use ($twig) {
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
     $base = $host !== '' ? ($scheme . '://' . $host) : '';
@@ -2695,8 +2697,7 @@ $router->get('/push-endpoints', function () {
     ]);
 });
 
-$renderScrapControlCenter = function () {
-    global $twig, $broxScrapModel;
+$renderScrapControlCenter = function () use ($twig, $broxScrapModel) {
     $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 50;
     $filterType = isset($_GET['type']) ? trim((string) $_GET['type']) : null;
@@ -2726,8 +2727,7 @@ $renderScrapControlCenter = function () {
 $router->get('/admin/scrap-control-center', ['middleware' => ['auth', 'admin_only']], $renderScrapControlCenter);
 $router->get('/admin/push-logs', ['middleware' => ['auth', 'admin_only']], $renderScrapControlCenter);
 
-$renderScrapLogDetail = function ($id) {
-    global $twig, $broxScrapModel;
+$renderScrapLogDetail = function ($id) use ($twig, $broxScrapModel) {
     $logId = (int) $id;
     if ($logId <= 0) {
         renderError(404, 'Push Log Not Found');
@@ -2749,8 +2749,7 @@ $renderScrapLogDetail = function ($id) {
 $router->get('/admin/scrap-control-center/logs/{id}', ['middleware' => ['auth', 'admin_only']], $renderScrapLogDetail);
 $router->get('/admin/push-logs/{id}', ['middleware' => ['auth', 'admin_only']], $renderScrapLogDetail);
 
-$renderPipelineRuns = function () {
-    global $twig, $broxScrapModel;
+$renderPipelineRuns = function () use ($twig, $broxScrapModel) {
     $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 20;
     $action = isset($_GET['action']) ? trim((string) $_GET['action']) : null;
@@ -2772,8 +2771,7 @@ $renderPipelineRuns = function () {
 $router->get('/admin/scrap-control-center/pipeline-runs', ['middleware' => ['auth', 'admin_only']], $renderPipelineRuns);
 $router->get('/admin/push-logs/pipeline-runs', ['middleware' => ['auth', 'admin_only']], $renderPipelineRuns);
 
-$renderPipelineRunDetail = function ($id) {
-    global $twig, $broxScrapModel;
+$renderPipelineRunDetail = function ($id) use ($twig, $broxScrapModel) {
     $runId = (int) $id;
     if ($runId <= 0) {
         renderError(404, 'Pipeline Run Not Found');
@@ -2796,8 +2794,7 @@ $router->get('/admin/scrap-control-center/pipeline-runs/{id}', ['middleware' => 
 $router->get('/admin/push-logs/pipeline-runs/{id}', ['middleware' => ['auth', 'admin_only']], $renderPipelineRunDetail);
 
 
-$renderFailedPipelineLogs = function () {
-    global $twig, $broxScrapModel;
+$renderFailedPipelineLogs = function () use ($twig, $broxScrapModel) {
     $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 20;
     $action = isset($_GET['action']) ? trim((string) $_GET['action']) : null;
@@ -2827,8 +2824,7 @@ $renderFailedPipelineLogs = function () {
 $router->get('/admin/scrap-control-center/failed-pipeline-logs', ['middleware' => ['auth', 'admin_only']], $renderFailedPipelineLogs);
 $router->get('/admin/push-logs/failed-pipeline-logs', ['middleware' => ['auth', 'admin_only']], $renderFailedPipelineLogs);
 
-$renderAllPipelineLogs = function () {
-    global $twig, $broxScrapModel;
+$renderAllPipelineLogs = function () use ($twig, $broxScrapModel) {
     $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 20;
     $action = isset($_GET['action']) ? trim((string) $_GET['action']) : null;
@@ -2853,8 +2849,7 @@ $renderAllPipelineLogs = function () {
 $router->get('/admin/scrap-control-center/all-pipeline-logs', ['middleware' => ['auth', 'admin_only']], $renderAllPipelineLogs);
 $router->get('/admin/push-logs/all-pipeline-logs', ['middleware' => ['auth', 'admin_only']], $renderAllPipelineLogs);
 
-$router->get('/admin/scrap-control-center/incoming', ['middleware' => ['auth', 'admin_only']], function () {
-    global $twig, $broxScrapModel;
+$router->get('/admin/scrap-control-center/incoming', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $broxScrapModel) {
     $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 50;
     $type = isset($_GET['type']) ? trim((string) $_GET['type']) : null;
@@ -2876,8 +2871,7 @@ $router->get('/admin/scrap-control-center/incoming', ['middleware' => ['auth', '
     ]);
 });
 
-$router->get('/admin/scrap-control-center/incoming/{type}/{id}', ['middleware' => ['auth', 'admin_only']], function ($type, $id) {
-    global $twig, $broxScrapModel;
+$router->get('/admin/scrap-control-center/incoming/{type}/{id}', ['middleware' => ['auth', 'admin_only']], function ($type, $id) use ($twig, $broxScrapModel) {
     $itemId = (int) $id;
     if ($itemId <= 0) {
         renderError(404, 'Incoming Item Not Found');
@@ -2901,8 +2895,7 @@ $router->get('/admin/scrap-control-center/incoming/{type}/{id}', ['middleware' =
     ]);
 });
 
-$router->get('/admin/scrap-control-center/incoming/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) {
-    global $twig, $broxScrapModel;
+$router->get('/admin/scrap-control-center/incoming/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $broxScrapModel) {
     $itemId = (int) $id;
     if ($itemId <= 0) {
         renderError(404, 'Incoming Item Not Found');

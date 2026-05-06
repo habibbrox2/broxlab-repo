@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+
 // Load vendor autoload and environment variables
 require_once __DIR__ . '/../../vendor/autoload.php';
 

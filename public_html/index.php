@@ -147,6 +147,12 @@ function renderError(int $code, string $message): void
 secureSession();
 
 // ============================================================================
+// Language Detection
+// ============================================================================
+require_once BASE_PATH . "app/Helpers/LanguageHelper.php";
+LanguageHelper::getCurrentLang(); // This sets the session if needed
+
+// ============================================================================
 // Class Autoload (fallback – preserved)
 // ============================================================================
 spl_autoload_register(function (string $className): void {
@@ -392,7 +398,8 @@ try {
         }
     }
 
-    $router->dispatch($requestMethod, $_SERVER['REQUEST_URI']);
+    $requestUri = $_SERVER['REQUEST_URI'] ?? $_SERVER['PHP_SELF'] ?? '/';
+    $router->dispatch($requestMethod, $requestUri);
 } catch (Throwable $e) {
     logError('Routing Error: ' . $e->getMessage());
     renderError(500, 'Routing Error');

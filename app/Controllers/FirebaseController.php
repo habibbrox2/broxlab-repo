@@ -17,6 +17,9 @@
  * @version 2.0.0
  */
 
+/** @var Router $router */
+/** @var \mysqli $mysqli */
+
 require_once __DIR__ . '/../Helpers/FirebaseHelper.php';
 require_once __DIR__ . '/../Models/FirebaseModel.php';
 require_once __DIR__ . '/../Models/NotificationModel.php';
@@ -35,7 +38,8 @@ $authManager = null;
 $securityManager = null;
 
 // Make database connection available
-global $mysqli;
+
+/** @var \mysqli $mysqli */
 
 try {
     $firebaseModel = new \Firebase\FirebaseModel(require __DIR__ . '/../../Config/Firebase.php');

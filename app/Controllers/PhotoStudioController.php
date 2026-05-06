@@ -1,4 +1,8 @@
 <?php
+
+/** @var Router $router */
+/** @var \mysqli $mysqli */
+/** @var \Twig\Environment $twig */
 global $mysqli, $twig;
 
 if (!function_exists('studioCreateImageFromBinary')) {

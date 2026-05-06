@@ -12,7 +12,8 @@
 return;
 
 // Make $router available within this controller
-global $router;
+
+/** @var Router $router */
 
 $proxyPuterHandler = function () {
     try {

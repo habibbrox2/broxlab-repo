@@ -377,7 +377,6 @@
                 <span class="home-top-card__type">Post</span>
                 <h4 class="home-top-card__title">{{ p.title }}</h4>
                 <div class="home-top-card__meta">
-                  <span><i class="bi bi-eye-fill"></i> {{ p.views|default(0)|number_format }}</span>
                   <span class="home-top-card__rating"><i class="bi bi-star-fill"></i> {{ p.rating_average|default(0)|number_format(1) }} <small>({{ p.rating_total|default(0)|number_format }})</small></span>
                   {% if p.published_at is defined and p.published_at %}
                     <span><i class="bi bi-clock-history"></i> {{ p.published_at|time_ago }}</span>
@@ -400,7 +399,6 @@
                 <span class="home-top-card__type">Service</span>
                 <h4 class="home-top-card__title">{{ s.title|default(s.name) }}</h4>
                 <div class="home-top-card__meta">
-                  <span><i class="bi bi-eye-fill"></i> {{ s.views|default(0)|number_format }}</span>
                   <span class="home-top-card__rating"><i class="bi bi-star-fill"></i> {{ s.rating_average|default(0)|number_format(1) }} <small>({{ s.rating_total|default(0)|number_format }})</small></span>
                   {% if s.published_at is defined and s.published_at %}
                     <span><i class="bi bi-clock-history"></i> {{ s.published_at|time_ago }}</span>

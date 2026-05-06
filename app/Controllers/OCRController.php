@@ -6,6 +6,9 @@
  * Web hosting compatible - no system dependencies
  */
 
+/** @var Router $router */
+/** @var \mysqli $mysqli */
+
 require_once __DIR__ . '/../Helpers/OCRService.php';
 require_once __DIR__ . '/../Models/AppSettings.php';
 

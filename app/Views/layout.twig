@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="{{ current_lang }}" data-lang="{{ current_lang }}" data-theme="light">
 {% import '_macros/flash.twig' as flash_macros %}
 
 {# ===== HEAD SECTION (SEO & Metadata) ===== #}
@@ -348,13 +348,13 @@
                                         {% if item.icon|default('') %}
                                             <i class="bi {{ item.icon }} me-2"></i>
                                         {% endif %}
-                                        <span>{{ item.label|default('Link') }}</span>
+                                        <span data-i18n="{{ item.label|default('Link') }}">{{ item.label|default('Link')|trans }}</span>
                                     </a>
                                 </li>
                             {% endif %}
                         {% endfor %}
+{# Authenticated User Section #}
 
-                        {# Authenticated User Section #}
                         {% if auth_user is defined and auth_user.is_authenticated %}
                             
                             {# Notification Bell #}
@@ -391,7 +391,7 @@
                                                                 <button type="button"
                                                                         class="btn btn-sm btn-outline-primary"
                                                                         data-action="mark-read"
-                                                                        data-notification-id="{{ notif.id }}">Read</button>
+                                                                        data-notification-id="{{ notif.id }}"><span data-i18n="Read">{{ 'Read'|trans }}</span></button>
                                                             {% endif %}
                                                         </div>
                                                     </div>
@@ -399,7 +399,7 @@
                                             {% else %}
                                                 <div class="text-center py-4 text-muted">
                                                     <i class="bi bi-inbox fs-4"></i>
-                                                    <p class="mb-0 mt-2 small">No new notifications</p>
+                                                    <p class="mb-0 mt-2 small"><span data-i18n="No new notifications">{{ 'No new notifications'|trans }}</span></p>
                                                 </div>
                                             {% endif %}
                                         </div>
@@ -407,7 +407,7 @@
                                 <div class="dropdown-divider brox-dropdown-divider"></div>
                                 <div>
                                     <a class="brox-dropdown-item brox-dropdown-item text-center" href="/user/notifications">
-                                        <i class="bi bi-arrow-right me-1"></i>View all
+                                        <i class="bi bi-arrow-right me-1"></i><span data-i18n="View all">{{ 'View all'|trans }}</span>
                                     </a>
                                 </div>
                             </div>
@@ -432,7 +432,7 @@
                                             {% if auth_user.roles is defined and auth_user.roles is not empty %}
                                                 {{ auth_user.roles|join(', ')|title }}
                                             {% else %}
-                                                User
+                                                <span data-i18n="User">{{ 'User'|trans }}</span>
                                             {% endif %}
                                         </span>
                                     </li>
@@ -440,10 +440,10 @@
                                     
                                     {# Admin Menu #}
                                     {% if (auth_user.is_super_admin is defined and auth_user.is_super_admin) or (auth_user.role is defined and auth_user.role == 'admin') %}
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/profile"><i class="bi bi-person-circle me-2"></i>Profile</a></li>
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/my/notifications"><i class="bi bi-bell me-2"></i>Notifications</a></li>
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/account-settings"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/profile"><i class="bi bi-person-circle me-2"></i><span data-i18n="Profile">{{ 'Profile'|trans }}</span></a></li>
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i><span data-i18n="Dashboard">{{ 'Dashboard'|trans }}</span></a></li>
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/my/notifications"><i class="bi bi-bell me-2"></i><span data-i18n="Notifications">{{ 'Notifications'|trans }}</span></a></li>
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/account-settings"><i class="bi bi-gear me-2"></i><span data-i18n="Settings">{{ 'Settings'|trans }}</span></a></li>
                                         
                                         {% if auth_user.is_super_admin is defined and auth_user.is_super_admin %}
                                             <li><hr class="dropdown-divider brox-dropdown-divider"></li>
@@ -453,14 +453,14 @@
                                     
                                     {# User Menu #}
                                     {% else %}
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/profile"><i class="bi bi-person-circle me-2"></i>Profile</a></li>
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/user/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/user/notifications"><i class="bi bi-bell me-2"></i>Notifications</a></li>
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/user/settings"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/profile"><i class="bi bi-person-circle me-2"></i><span data-i18n="Profile">{{ 'Profile'|trans }}</span></a></li>
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/user/dashboard"><i class="bi bi-speedometer2 me-2"></i><span data-i18n="Dashboard">{{ 'Dashboard'|trans }}</span></a></li>
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/user/notifications"><i class="bi bi-bell me-2"></i><span data-i18n="Notifications">{{ 'Notifications'|trans }}</span></a></li>
+                                        <li><a class="dropdown-item brox-dropdown-item" href="/user/settings"><i class="bi bi-gear me-2"></i><span data-i18n="Settings">{{ 'Settings'|trans }}</span></a></li>
                                     {% endif %}
                                     
                                     <li><hr class="dropdown-divider brox-dropdown-divider"></li>
-                                    <li><a class="dropdown-item brox-dropdown-item text-danger" href="/logout" data-unified-logout><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                                    <li><a class="dropdown-item brox-dropdown-item text-danger" href="/logout" data-unified-logout><i class="bi bi-box-arrow-right me-2"></i><span data-i18n="Logout">{{ 'Logout'|trans }}</span></a></li>
                                 </ul>
                             </li>
 
@@ -469,24 +469,42 @@
                             <li class="nav-item brox-nav-item ms-lg-1">
                                 <a class="nav-link brox-nav-link" href="/login">
                                     <i class="bi bi-box-arrow-in-right me-2"></i>
-                                    <span>Login</span>
+                                    <span data-i18n="Login">{{ 'Login'|trans }}</span>
                                 </a>
                             </li>
                             <li class="nav-item brox-nav-item">
                                 <a class="btn btn-primary btn-sm rounded-pill px-3 px-md-4 ms-lg-2" href="/register">
                                     <i class="bi bi-person-plus-fill me-2"></i>
-                                    <span>Join Now</span>
+                                    <span data-i18n="Join Now">{{ 'Join Now'|trans }}</span>
                                 </a>
                             </li>
                         {% endif %}
 
                         {# Theme Toggle #}
                         <li class="nav-item brox-nav-item ms-lg-2">
-                            <button class="brox-theme-toggle" id="broxThemeToggle" type="button" title="Toggle theme">
+                            <button class="brox-theme-toggle" id="broxThemeToggle" type="button" title="{{ 'Toggle theme'|trans }}" aria-label="{{ 'Toggle theme'|trans }}" data-i18n-title="Toggle theme" data-i18n-aria-label="Toggle theme">
                                 <i class="bi bi-moon-fill"></i>
                                 <i class="bi bi-sun-fill"></i>
                             </button>
                         </li>
+
+                        {# Language Toggle #}
+                        {% if available_languages is defined and available_languages|length > 1 %}
+                        <li class="nav-item dropdown brox-nav-item ms-lg-2">
+                            <a class="nav-link dropdown-toggle brox-nav-link brox-language-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span data-i18n="{{ current_lang == 'bn' ? 'Bangla' : 'English' }}">{{ current_lang == 'bn' ? 'বাংলা'|trans : 'EN'|trans }}</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
+                                {% for langCode, langName in available_languages %}
+                                    <li>
+                                        <a class="dropdown-item {% if current_lang == langCode %}active{% endif %}" href="?lang={{ langCode }}">
+                                            <span data-i18n="{{ langCode == 'bn' ? 'Bangla' : 'English' }}">{{ langName|trans }}</span>
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </li>
+                        {% endif %}
                     </ul>
                 </div>
             </nav>
@@ -509,7 +527,7 @@
                 <ol class="breadcrumb mb-0 small" itemscope itemtype="https://schema.org/BreadcrumbList">
                     <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
                         <a href="/" itemprop="item" title="Home">
-                            <i class="bi bi-house-door-fill me-1" aria-hidden="true"></i><span itemprop="name">Home</span>
+                            <i class="bi bi-house-door-fill me-1" aria-hidden="true"></i><span itemprop="name">{{ 'Home'|trans }}</span>
                         </a>
                         <meta itemprop="position" content="1">
                     </li>
@@ -523,7 +541,8 @@
                             </a>
                             <meta itemprop="position" content="{{ position }}">
                         </li>
-                        {% else %}
+                        {% endif %}
+                        {% if loop.last %}
                         <li class="breadcrumb-item active" aria-current="page" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
                             <span itemprop="item">
                                 {% if crumb.icon %}<i class="bi bi-{{ crumb.icon }} me-1" aria-hidden="true"></i>{% endif %}
@@ -557,13 +576,13 @@
     {% include 'partials/footer.twig' %}
 
     {# ===== SCROLL TO TOP BUTTON ===== #}
-    <button id="scrollTopBtn" type="button" title="Scroll to top" aria-label="Scroll to top of page" style="position: fixed; bottom: 140px; right: 20px; z-index: 1998; width: 48px; height: 48px; border: none; border-radius: 50%; background: var(--bs-primary); color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
+    <button id="scrollTopBtn" type="button" title="{{ 'Scroll to top of page'|trans }}" aria-label="{{ 'Scroll to top of page'|trans }}" data-i18n-title="Scroll to top of page" data-i18n-aria-label="Scroll to top of page" style="position: fixed; bottom: 140px; right: 20px; z-index: 1998; width: 48px; height: 48px; border: none; border-radius: 50%; background: var(--bs-primary); color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
         <i class="bi bi-arrow-up-short" aria-hidden="true" style="font-size: 1.4rem;"></i>
     </button>
 
 
     {# ===== NOTIFICATION PERMISSION BUTTON (For All Users) ===== #}
-    <button id="enableNotificationsBtn" title="Enable push notifications" aria-label="Enable notifications" style="position: fixed; bottom: 20px; right: 70px; z-index: 998; padding: 10px 12px; border: none; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all 0.3s ease; font-size: 14px; display: none; animation: pulse 2s infinite;">
+    <button id="enableNotificationsBtn" title="{{ 'Enable push notifications'|trans }}" aria-label="{{ 'Enable notifications'|trans }}" data-i18n-title="Enable push notifications" data-i18n-aria-label="Enable notifications" style="position: fixed; bottom: 20px; right: 70px; z-index: 998; padding: 10px 12px; border: none; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all 0.3s ease; font-size: 14px; display: none; animation: pulse 2s infinite;">
         🔔
     </button>
 
@@ -611,6 +630,34 @@
 
     
     {# ===== STEP 2: Load Application Core Scripts ===== #}
+    <script>
+        window.__broxSiteLang = '{{ current_lang }}';
+        window.__broxSiteTranslations = window.__broxSiteTranslations || {};
+        window.__broxSiteTranslations['{{ current_lang }}'] = Object.assign(
+            window.__broxSiteTranslations['{{ current_lang }}'] || {},
+            {
+                'Enable Push Notifications': {{ 'Enable Push Notifications'|trans|json_encode|raw }},
+                'Enable push notifications': {{ 'Enable push notifications'|trans|json_encode|raw }},
+                'Enable notifications': {{ 'Enable notifications'|trans|json_encode|raw }},
+                'Enable': {{ 'Enable'|trans|json_encode|raw }},
+                'Later': {{ 'Later'|trans|json_encode|raw }},
+                'Stay updated with instant alerts and important updates.': {{ 'Stay updated with instant alerts and important updates.'|trans|json_encode|raw }},
+                'Notification': {{ 'Notification'|trans|json_encode|raw }},
+                'Scroll to top of page': {{ 'Scroll to top of page'|trans|json_encode|raw }},
+                'Switch to light mode': {{ 'Switch to light mode'|trans|json_encode|raw }},
+                'Switch to dark mode': {{ 'Switch to dark mode'|trans|json_encode|raw }},
+                'Toggle theme': {{ 'Toggle theme'|trans|json_encode|raw }},
+                'Login': {{ 'Login'|trans|json_encode|raw }},
+                'Join Now': {{ 'Join Now'|trans|json_encode|raw }},
+                'Logout': {{ 'Logout'|trans|json_encode|raw }},
+                'Profile': {{ 'Profile'|trans|json_encode|raw }},
+                'Dashboard': {{ 'Dashboard'|trans|json_encode|raw }},
+                'Notifications': {{ 'Notifications'|trans|json_encode|raw }},
+                'Settings': {{ 'Settings'|trans|json_encode|raw }},
+                'Home': {{ 'Home'|trans|json_encode|raw }}
+            }
+        );
+    </script>
     <script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}"></script>
     <script type="module" src="{{ asset('/assets/js/dist/script.js') }}"></script>
 
@@ -661,6 +708,154 @@
 {% include 'partials/ai-assistant/script.twig' %}
     {% endif %}
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle language toggle clicks
+    const languageLinks = document.querySelectorAll('a[href*=\"?lang=\"]');
+    languageLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = new URL(this.href, window.location.origin);
+            const newLang = url.searchParams.get('lang');
+            if (!newLang) return;
+
+            // Perform dynamic translation instead of page reload
+            translatePageToLanguage(newLang).then(() => {
+                // Update URL without reload
+                const currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set('lang', newLang);
+                window.history.pushState({}, '', currentUrl.toString());
+
+                // Sync site and chat language if available
+                if (window.broxI18n?.setLanguage) {
+                    window.broxI18n.setLanguage(newLang);
+                }
+                if (window.syncChatLanguage) {
+                    window.syncChatLanguage(newLang);
+                }
+
+                // Update language display
+                updateLanguageDisplay(newLang);
+            }).catch(error => {
+                console.error('Translation failed:', error);
+                // Fallback to page reload
+                window.location.href = this.href;
+            });
+        });
+    });
+
+    // Function to dynamically translate the page
+    async function translatePageToLanguage(targetLang) {
+        // Collect all translatable elements
+        const translatableElements = document.querySelectorAll('[data-i18n], [data-i18n-title], [data-i18n-aria-label]');
+        if (translatableElements.length === 0) {
+            return; // No elements to translate
+        }
+
+        // Collect texts to translate
+        const textsToTranslate = [];
+        translatableElements.forEach(el => {
+            // Handle data-i18n for text content
+            if (el.hasAttribute('data-i18n')) {
+                const originalText = el.getAttribute('data-i18n');
+                if (originalText && originalText.trim()) {
+                    textsToTranslate.push({
+                        element: el,
+                        text: originalText.trim(),
+                        attribute: 'textContent'
+                    });
+                }
+            }
+            // Handle data-i18n-title for title attribute
+            if (el.hasAttribute('data-i18n-title')) {
+                const originalText = el.getAttribute('data-i18n-title');
+                if (originalText && originalText.trim()) {
+                    textsToTranslate.push({
+                        element: el,
+                        text: originalText.trim(),
+                        attribute: 'title'
+                    });
+                }
+            }
+            // Handle data-i18n-aria-label for aria-label attribute
+            if (el.hasAttribute('data-i18n-aria-label')) {
+                const originalText = el.getAttribute('data-i18n-aria-label');
+                if (originalText && originalText.trim()) {
+                    textsToTranslate.push({
+                        element: el,
+                        text: originalText.trim(),
+                        attribute: 'ariaLabel'
+                    });
+                }
+            }
+        });
+
+        if (textsToTranslate.length === 0) {
+            return;
+        }
+
+        // Batch translate texts
+        const batchSize = 10; // Translate in batches to avoid rate limits
+        for (let i = 0; i < textsToTranslate.length; i += batchSize) {
+            const batch = textsToTranslate.slice(i, i + batchSize);
+            const promises = batch.map(async (item) => {
+                try {
+                    const response = await fetch('/api/translate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            text: item.text,
+                            from: 'en', // Assuming original texts are in English
+                            to: targetLang
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    if (result.success && result.translated) {
+                        if (item.attribute === 'textContent') {
+                            item.element.textContent = result.translated;
+                        } else if (item.attribute === 'title') {
+                            item.element.setAttribute('title', result.translated);
+                        } else if (item.attribute === 'ariaLabel') {
+                            item.element.setAttribute('aria-label', result.translated);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Failed to translate:', item.text, error);
+                    // Keep original text on failure
+                }
+            });
+
+            await Promise.all(promises);
+        }
+    }
+
+    // Function to update language display in the dropdown
+    function updateLanguageDisplay(lang) {
+        const langDisplay = document.querySelector('.brox-language-toggle .dropdown-toggle');
+        if (langDisplay) {
+            langDisplay.innerHTML = lang === 'bn' ? 'বাংলা' : 'EN';
+        }
+    }
+});
+</script>
+
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
 

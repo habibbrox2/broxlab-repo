@@ -2,6 +2,9 @@
 // app/Controllers/AdminLogsController.php
 // API endpoints for the AI assistant log monitoring feature
 
+/** @var Router $router */
+/** @var \mysqli $mysqli */
+
 /**
  * GET /api/admin/logs
  * List all available log files

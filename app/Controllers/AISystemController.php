@@ -6,6 +6,10 @@
  * All database operations are handled by AIProvider model.
  */
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+
 $aiProviderPath = realpath(__DIR__ . '/../Models/AIProvider.php');
 require_once $aiProviderPath ?: (__DIR__ . '/../Models/AIProvider.php');
 require_once __DIR__ . '/../Models/AppSettings.php';

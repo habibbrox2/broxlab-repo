@@ -1,7 +1,9 @@
 <?php
 // controllers/ProfileController.php
 
-global $mysqli;
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
 
 $userModel = new UserModel($mysqli);
 
@@ -94,18 +96,15 @@ $removeOldProfileImageIfLocal = static function (?string $oldPic): void {
     if (strpos($path, $uploadsBaseUrl . '/profile/') === 0 || strpos($path, $uploadsBaseUrl . '/profiles/') === 0) {
         $relativePath = ltrim(substr($path, strlen($uploadsBaseUrl . '/')), '/');
         $candidates[] = rtrim($uploadsRoot, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
-    }
-    elseif (strpos($path, ltrim($uploadsBaseUrl, '/') . '/profile/') === 0 || strpos($path, ltrim($uploadsBaseUrl, '/') . '/profiles/') === 0) {
+    } elseif (strpos($path, ltrim($uploadsBaseUrl, '/') . '/profile/') === 0 || strpos($path, ltrim($uploadsBaseUrl, '/') . '/profiles/') === 0) {
         $relativePath = ltrim(substr($path, strlen(ltrim($uploadsBaseUrl, '/') . '/')), '/');
         $candidates[] = rtrim($uploadsRoot, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
-    }
-    elseif (strpos($path, '/') === false) {
+    } elseif (strpos($path, '/') === false) {
         $file = basename($path);
         foreach ($allowedDirs as $dir) {
             $candidates[] = $dir . DIRECTORY_SEPARATOR . $file;
         }
-    }
-    else {
+    } else {
         return;
     }
 
@@ -129,33 +128,46 @@ $removeOldProfileImageIfLocal = static function (?string $oldPic): void {
 };
 
 // ------------------ USER PROFILE GROUP ------------------
-$router->group('/profile', ['middleware' => ['auth']], function ($router) use ($twig, $userModel, $mysqli, $normalizeDob, $normalizeGender, $normalizeOptionalUrl, $removeOldProfileImageIfLocal
+$router->group('/profile', ['middleware' => ['auth']], function ($router) use (
+    $twig,
+    $userModel,
+    $mysqli,
+    $normalizeDob,
+    $normalizeGender,
+    $normalizeOptionalUrl,
+    $removeOldProfileImageIfLocal
 ) {
     // View profile
-    $router->get('', function () use ($twig) {
+    $router->get(
+        '',
+        function () use ($twig) {
             $user = AuthManager::getCurrentUserArray();
             echo $twig->render('user/profile.twig', [
-            'title' => 'Your Profile',
-            'header_title' => 'Profile Details',
-            'user' => $user,
+                'title' => 'Your Profile',
+                'header_title' => 'Profile Details',
+                'user' => $user,
             ]);
         }
-        );
+    );
 
-        // Edit profile form
-        $router->get('/edit', function () use ($twig) {
+    // Edit profile form
+    $router->get(
+        '/edit',
+        function () use ($twig) {
             $user = AuthManager::getCurrentUserArray();
             echo $twig->render('user/profile_edit.twig', [
-            'title' => 'Edit Profile',
-            'header_title' => 'Update Your Information',
-            'user' => $user,
-            'csrf_token' => generateCsrfToken(),
+                'title' => 'Edit Profile',
+                'header_title' => 'Update Your Information',
+                'user' => $user,
+                'csrf_token' => generateCsrfToken(),
             ]);
         }
-        );
+    );
 
-        // Update profile
-        $router->post('/edit', function () use ($mysqli, $userModel, $normalizeDob, $normalizeGender, $normalizeOptionalUrl, $removeOldProfileImageIfLocal) {
+    // Update profile
+    $router->post(
+        '/edit',
+        function () use ($mysqli, $userModel, $normalizeDob, $normalizeGender, $normalizeOptionalUrl, $removeOldProfileImageIfLocal) {
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
@@ -209,17 +221,61 @@ $router->group('/profile', ['middleware' => ['auth']], function ($router) use ($
 
             // Reserved usernames
             $reservedUsernames = [
-                'admin', 'administrator', 'root', 'superadmin', 'sysadmin',
-                'system', 'operator', 'support', 'owner', 'master',
-                'admin1', 'admin01', 'admin123', 'admin2024', 'admin2025',
-                'root1', 'root123', 'superuser', 'supervisor', 'manager1',
-                'cmsadmin', 'siteadmin', 'webadmin', 'portaladmin', 'mainadmin',
-                'control', 'dashboard', 'panel', 'controlpanel', 'moderator',
-                'manager', 'usermanager', 'itadmin', 'dbadmin', 'netadmin',
-                'devadmin', 'sysop', 'hostmaster', 'webmaster', 'security',
-                'john_admin', 'alice_admin', 'mike_admin', 'admin_mary', 'super_jane',
-                'testadmin', 'demo_admin', 'qa_admin', 'defaultadmin', 'guestadmin',
-                'service', 'rootadmin', 'adm', 'adm1', 'systemadmin'
+                'admin',
+                'administrator',
+                'root',
+                'superadmin',
+                'sysadmin',
+                'system',
+                'operator',
+                'support',
+                'owner',
+                'master',
+                'admin1',
+                'admin01',
+                'admin123',
+                'admin2024',
+                'admin2025',
+                'root1',
+                'root123',
+                'superuser',
+                'supervisor',
+                'manager1',
+                'cmsadmin',
+                'siteadmin',
+                'webadmin',
+                'portaladmin',
+                'mainadmin',
+                'control',
+                'dashboard',
+                'panel',
+                'controlpanel',
+                'moderator',
+                'manager',
+                'usermanager',
+                'itadmin',
+                'dbadmin',
+                'netadmin',
+                'devadmin',
+                'sysop',
+                'hostmaster',
+                'webmaster',
+                'security',
+                'john_admin',
+                'alice_admin',
+                'mike_admin',
+                'admin_mary',
+                'super_jane',
+                'testadmin',
+                'demo_admin',
+                'qa_admin',
+                'defaultadmin',
+                'guestadmin',
+                'service',
+                'rootadmin',
+                'adm',
+                'adm1',
+                'systemadmin'
             ];
 
             if (in_array(strtolower($data['username']), $reservedUsernames, true)) {
@@ -280,10 +336,10 @@ $router->group('/profile', ['middleware' => ['auth']], function ($router) use ($
                     'Profile Updated',
                     'Your profile was updated successfully.',
                     'update',
-                [
-                    'user_id' => $currentUserId,
-                    'channels' => ['push', 'in_app', 'email']
-                ]
+                    [
+                        'user_id' => $currentUserId,
+                        'channels' => ['push', 'in_app', 'email']
+                    ]
                 );
                 if ($notifId) {
                     $notificationModel->logDelivery(
@@ -301,7 +357,7 @@ $router->group('/profile', ['middleware' => ['auth']], function ($router) use ($
                     "User Profile Updated",
                     "user",
                     (int)$user['id'],
-                ['username' => $data['username'], 'email' => $data['email']],
+                    ['username' => $data['username'], 'email' => $data['email']],
                     'success'
                 );
                 showMessage("Profile updated successfully", "success");
@@ -313,33 +369,39 @@ $router->group('/profile', ['middleware' => ['auth']], function ($router) use ($
                 "User Profile Update Failed",
                 "user",
                 (int)$user['id'],
-            ['username' => $data['username']],
+                ['username' => $data['username']],
                 'failure'
             );
             showMessage("Failed to update profile", "error");
             header("Location: /profile/edit");
             exit;
         }
-        );
+    );
 
-        // Legacy compatibility route -> canonical user security route
-        $router->get('/2fa', function () {
+    // Legacy compatibility route -> canonical user security route
+    $router->get(
+        '/2fa',
+        function () {
             header("Location: /user/security/2fa", true, 302);
             exit;
         }
-        );
+    );
 
-        // Change password
-        $router->get('/password', function () use ($twig) {
+    // Change password
+    $router->get(
+        '/password',
+        function () use ($twig) {
             echo $twig->render('user/profile_password.twig', [
-            'title' => 'Change Password',
-            'header_title' => 'Update Password',
-            'csrf_token' => generateCsrfToken(),
+                'title' => 'Change Password',
+                'header_title' => 'Update Password',
+                'csrf_token' => generateCsrfToken(),
             ]);
         }
-        );
+    );
 
-        $router->post('/password', function () use ($userModel) {
+    $router->post(
+        '/password',
+        function () use ($userModel) {
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
@@ -379,12 +441,22 @@ $router->group('/profile', ['middleware' => ['auth']], function ($router) use ($
             header('Location: /profile/password');
             exit;
         }
-        );    });
+    );
+});
 
 // ------------------ ADMIN PROFILE GROUP ------------------
-$router->group('/admin/profile', ['middleware' => ['auth', 'admin_or_super_only']], function ($router) use ($twig, $userModel, $mysqli, $normalizeDob, $normalizeGender, $normalizeOptionalUrl, $removeOldProfileImageIfLocal
+$router->group('/admin/profile', ['middleware' => ['auth', 'admin_or_super_only']], function ($router) use (
+    $twig,
+    $userModel,
+    $mysqli,
+    $normalizeDob,
+    $normalizeGender,
+    $normalizeOptionalUrl,
+    $removeOldProfileImageIfLocal
 ) {
-    $router->get('', function () use ($twig, $userModel) {
+    $router->get(
+        '',
+        function () use ($twig, $userModel) {
             $user = AuthManager::getCurrentUserArray();
             $userId = (int)($user['id'] ?? 0);
 
@@ -398,25 +470,29 @@ $router->group('/admin/profile', ['middleware' => ['auth', 'admin_or_super_only'
             }
 
             echo $twig->render('admin/profile/view.twig', [
-            'title' => 'Admin Profile',
-            'header_title' => 'Admin Profile Details',
-            'user' => $user,
+                'title' => 'Admin Profile',
+                'header_title' => 'Admin Profile Details',
+                'user' => $user,
             ]);
         }
-        );
+    );
 
-        $router->get('/edit', function () use ($twig) {
+    $router->get(
+        '/edit',
+        function () use ($twig) {
             $user = AuthManager::getCurrentUserArray();
             echo $twig->render('admin/profile/edit.twig', [
-            'title' => 'Edit Admin Profile',
-            'header_title' => 'Update Admin Info',
-            'user' => $user,
-            'csrf_token' => generateCsrfToken(),
+                'title' => 'Edit Admin Profile',
+                'header_title' => 'Update Admin Info',
+                'user' => $user,
+                'csrf_token' => generateCsrfToken(),
             ]);
         }
-        );
+    );
 
-        $router->post('/edit', function () use ($mysqli, $userModel, $normalizeDob, $normalizeGender, $normalizeOptionalUrl, $removeOldProfileImageIfLocal) {
+    $router->post(
+        '/edit',
+        function () use ($mysqli, $userModel, $normalizeDob, $normalizeGender, $normalizeOptionalUrl, $removeOldProfileImageIfLocal) {
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
@@ -520,25 +596,31 @@ $router->group('/admin/profile', ['middleware' => ['auth', 'admin_or_super_only'
             header("Location: /admin/profile/edit");
             exit;
         }
-        );
+    );
 
-        // Legacy compatibility route -> canonical admin security route
-        $router->get('/2fa', function () {
+    // Legacy compatibility route -> canonical admin security route
+    $router->get(
+        '/2fa',
+        function () {
             header("Location: /admin/security/2fa", true, 302);
             exit;
         }
-        );
+    );
 
-        $router->get('/password', function () use ($twig) {
+    $router->get(
+        '/password',
+        function () use ($twig) {
             echo $twig->render('admin/profile/password.twig', [
-            'title' => 'Change Admin Password',
-            'header_title' => 'Update Password',
-            'csrf_token' => generateCsrfToken(),
+                'title' => 'Change Admin Password',
+                'header_title' => 'Update Password',
+                'csrf_token' => generateCsrfToken(),
             ]);
         }
-        );
+    );
 
-        $router->post('/password', function () use ($userModel) {
+    $router->post(
+        '/password',
+        function () use ($userModel) {
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
@@ -578,4 +660,5 @@ $router->group('/admin/profile', ['middleware' => ['auth', 'admin_or_super_only'
             header('Location: /admin/profile/password');
             exit;
         }
-        );    });
+    );
+});

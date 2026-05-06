@@ -901,3 +901,14 @@ async function init() {
 }
 
 init();
+// Global function for site language sync
+window.syncChatLanguage = function (newLang) {
+  if (newLang === 'bn' || newLang === 'en') {
+    currentLang = newLang;
+    setLanguage(newLang);
+    applyLanguage();
+    renderHistory();
+    updateLangButtons();
+  }
+};
+

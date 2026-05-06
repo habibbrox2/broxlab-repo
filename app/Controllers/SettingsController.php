@@ -9,7 +9,9 @@
 
 declare(strict_types=1);
 
-global $mysqli;
+/** @var Router $router */
+/** @var \mysqli $mysqli */
+/** @var \Twig\Environment $twig */
 
 
 // ========= SETTINGS MANAGEMENT - Redirect /admin/settings to /admin/app-settings =========

@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../Config/Constants.php';
 require_once __DIR__ . '/../app/Helpers/ErrorLogging.php';
-require_once __DIR__ . '/../app/Helpers/BreadcrumbHelper.php';
+require_once __DIR__ . '/../app/Helpers/LanguageHelper.php';
 require_once __DIR__ . '/../app/Models/UserModel.php';
 require_once __DIR__ . '/../app/Models/AppSettings.php';
 require_once __DIR__ . '/Functions.php';
@@ -485,6 +485,8 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             'cache' => $twigCache,
             'debug' => $twigDebug,
             'auto_reload' => true,
+            'autoescape' => 'html',
+            'strict_variables' => false,
             'cache_busting_key' => 'v20260428-filters', // Increment to force cache invalidation
         ]);
 
@@ -924,20 +926,18 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
 
         // Asset URL helper (with version/cache busting)
         $twig->addFunction(new \Twig\TwigFunction('asset', function ($path, $version = true) {
-            // Clean path (ensure it starts with /)
             $url = '/' . ltrim($path, '/');
             $url = brox_resolve_asset_for_development($url);
 
-            // Add cache-busting version if file exists
             if ($version) {
-                // Get document root safely
-                $documentRoot = $_SERVER['DOCUMENT_ROOT'] ?? dirname(__DIR__);
+                $documentRoot = $_SERVER['DOCUMENT_ROOT'] ?? realpath(dirname(__DIR__) . '/public_html');
                 $fullPath = $documentRoot . $url;
 
                 if (file_exists($fullPath)) {
                     $filemtime = @filemtime($fullPath);
                     if ($filemtime !== false) {
-                        $url .= '?v=' . $filemtime;
+                        $separator = strpos($url, '?') === false ? '?' : '&';
+                        $url .= $separator . 'v=' . $filemtime;
                     }
                 }
             }
@@ -948,7 +948,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         // Route URL generator
         $twig->addFunction(new \Twig\TwigFunction('route', function ($name, $params = []) {
             global $router;
-            if (isset($router) && method_exists($router, 'route')) {
+            if (isset($router) && is_object($router) && is_callable([$router, 'route'])) {
                 return $router->route($name, $params);
             }
             return '#';
@@ -957,7 +957,7 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         // Path function (alias for route)
         $twig->addFunction(new \Twig\TwigFunction('path', function ($name, $params = []) {
             global $router;
-            if (isset($router) && method_exists($router, 'route')) {
+            if (isset($router) && is_object($router) && is_callable([$router, 'route'])) {
                 return $router->route($name, $params);
             }
             return '#';
@@ -1236,7 +1236,8 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         }));
 
         $twig->addFunction(new \Twig\TwigFunction('auto_admin_breadcrumbs', function () {
-            return autoAdminBreadcrumbs();
+            $generator = new BreadcrumbGenerator();
+            return $generator->generateAutoAdmin();
         }));
 
         // RTE (Rich Text Editor) functions
@@ -1329,6 +1330,10 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         $twig->addGlobal('is_logged_in', $user['is_authenticated']);
 
         // App settings
+        // Language support
+        $twig->addGlobal('current_lang', LanguageHelper::getCurrentLang());
+        $twig->addGlobal('available_languages', LanguageHelper::getAvailableLanguages());
+
         $twig->addGlobal('app_settings', $appSettings);
         $twig->addGlobal('is_dev_env', brox_is_development_env());
         $publicNavItems = [];
@@ -1359,6 +1364,14 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
         $twig->addGlobal('request_method', $_SERVER['REQUEST_METHOD'] ?? 'GET');
         $twig->addGlobal('is_ajax', !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
             strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+
+        $twig->addFunction(new \Twig\TwigFunction('translate', function ($text, $from = 'en', $to = null) {
+            return LanguageHelper::translate((string) $text, $from, $to);
+        }));
+
+        $twig->addFilter(new \Twig\TwigFilter('trans', function ($text, $from = 'en', $to = null) {
+            return LanguageHelper::translate((string) $text, $from, $to);
+        }));
 
         return $twig;
     } catch (Throwable $e) {

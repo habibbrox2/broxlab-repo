@@ -1,9 +1,13 @@
 <?php
+
 /**
  * TelegramSettingsController.php
  * Handles Telegram bot configuration in the Admin Panel using database settings.
  */
-global $mysqli, $router, $twig;
+
+/** @var Router $router */
+/** @var \mysqli $mysqli */
+/** @var \Twig\Environment $twig */
 class TelegramSettingsController
 {
     private mysqli $mysqli;
@@ -222,16 +226,22 @@ class TelegramSettingsController
 $telegramSettingsController = new TelegramSettingsController($mysqli);
 
 $router->group('/admin/telegram-settings', ['middleware' => ['auth', 'super_admin_only']], function ($router) use ($telegramSettingsController, $twig) {
-    $router->get('', function () use ($telegramSettingsController, $router, $twig) {
+    $router->get(
+        '',
+        function () use ($telegramSettingsController, $router, $twig) {
             $telegramSettingsController->index($router, $twig);
         }
-        );
-        $router->post('/update', function () use ($telegramSettingsController) {
+    );
+    $router->post(
+        '/update',
+        function () use ($telegramSettingsController) {
             $telegramSettingsController->update();
         }
-        );
-        $router->post('/set-webhook', function () use ($telegramSettingsController) {
+    );
+    $router->post(
+        '/set-webhook',
+        function () use ($telegramSettingsController) {
             $telegramSettingsController->setWebhook();
         }
-        );
-    });
+    );
+});

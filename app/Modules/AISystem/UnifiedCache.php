@@ -11,6 +11,8 @@
  * - Unified API for both basic and enhanced caching
  */
 
+namespace App\Modules\AISystem;
+
 class UnifiedCache
 {
     private $baseCacheDir;
@@ -23,6 +25,7 @@ class UnifiedCache
     const CATEGORY_RESPONSE = 'responses';
     const CATEGORY_CHAT = 'chat';
     const CATEGORY_RATE_LIMIT = 'rate-limits';
+    const CATEGORY_WEATHER = 'weather';
 
     // Singleton instance
     private static $instance = null;
@@ -50,6 +53,7 @@ class UnifiedCache
         $this->ensureDirectory($this->baseCacheDir . '/' . self::CATEGORY_MODEL);
         $this->ensureDirectory($this->baseCacheDir . '/' . self::CATEGORY_RESPONSE);
         $this->ensureDirectory($this->baseCacheDir . '/' . self::CATEGORY_CHAT);
+        $this->ensureDirectory($this->baseCacheDir . '/' . self::CATEGORY_WEATHER);
 
         // Load encryption settings
         $this->loadEncryptionSettings();
@@ -178,7 +182,7 @@ class UnifiedCache
             $count = $this->clearDirectory($dir);
         } else {
             // Clear all categories
-            foreach ([self::CATEGORY_MODEL, self::CATEGORY_RESPONSE, self::CATEGORY_CHAT] as $cat) {
+            foreach ([self::CATEGORY_MODEL, self::CATEGORY_RESPONSE, self::CATEGORY_CHAT, self::CATEGORY_WEATHER] as $cat) {
                 $dir = $this->baseCacheDir . '/' . $cat;
                 $count += $this->clearDirectory($dir);
             }

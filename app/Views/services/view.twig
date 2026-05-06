@@ -71,16 +71,6 @@
                 <i class="bi bi-check-circle text-success me-1"></i> Active Now
               </span>
             {% endif %}
-            {% if service.impressions is defined %}
-              <span class="badge bg-white text-surface-dark px-3 py-2 rounded-pill inl-p-0068">
-                <i class="bi bi-bar-chart-line text-info me-1"></i> {{ service.impressions|number_format }} Impressions
-              </span>
-            {% endif %}
-            {% if service.views is defined %}
-              <span class="badge bg-white text-surface-dark px-3 py-2 rounded-pill inl-p-0068">
-                <i class="bi bi-eye-fill text-success me-1"></i> {{ service.views|number_format }} Views
-              </span>
-            {% endif %}
           </div>
         </div>
       </div>

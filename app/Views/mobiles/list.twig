@@ -150,12 +150,6 @@
 
               {# Stats #}
               <div class="mobile-card__stats">
-                {% if mobile.views is defined %}
-                  <div class="mobile-card__stat">
-                    <i class="bi bi-eye"></i>
-                    <span>{{ mobile.views|default(0)|number_format(0, '.', ',') }}</span>
-                  </div>
-                {% endif %}
                 {% if mobile.created_at %}
                   <div class="mobile-card__stat">
                     <i class="bi bi-clock"></i>

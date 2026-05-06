@@ -11,7 +11,9 @@
  * - Preview rendered templates
  */
 
-global $router, $twig, $mysqli;
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
 
 require_once BASE_PATH . 'app/Models/NotificationTemplate.php';
 require_once BASE_PATH . 'app/Models/NotificationModel.php';

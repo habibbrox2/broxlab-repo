@@ -1,6 +1,9 @@
 <?php
 // controllers/ActivityModel.php
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
 
 // Admin: View logs page
 $router->get('/admin/log-activity', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
@@ -99,19 +102,19 @@ $router->get('/api/log-activity', ['middleware' => ['auth', 'admin_only']], func
  */
 $router->get('/api/log-activity/latest', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     header('Content-Type: application/json');
-    
+
     try {
         $lastId = isset($_GET['last_id']) ? (int) $_GET['last_id'] : 0;
         $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 50;
-        
+
         $logger = new ActivityModel($mysqli);
         $new = $logger->getLatestSince($lastId, $limit);
-        
+
         $maxId = $lastId;
         foreach ($new as $row) {
             $maxId = max($maxId, (int)$row['id']);
         }
-        
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -138,7 +141,7 @@ $router->post('/api/log-activity/clear', ['middleware' => ['auth', 'csrf']], fun
     try {
         // Get current user properly
         $userId = AuthManager::getCurrentUserId();
-        
+
         // Verify user is authenticated
         if (!$userId) {
             header('Content-Type: application/json; charset=utf-8');
@@ -152,7 +155,7 @@ $router->post('/api/log-activity/clear', ['middleware' => ['auth', 'csrf']], fun
 
         // Verify using UserModel: superadmin or admin may clear all logs
         $userModel = new UserModel($mysqli);
-        
+
         // Get user data first
         $user = $userModel->findById($userId);
         if (!$user) {
@@ -164,18 +167,18 @@ $router->post('/api/log-activity/clear', ['middleware' => ['auth', 'csrf']], fun
             ], JSON_UNESCAPED_UNICODE);
             exit;
         }
-        
+
         // Check if user is superadmin
         $isSuperAdmin = $userModel->isSuperAdmin($userId);
-        
+
         // Check if user has admin role
         $isAdmin = $userModel->hasRole($userId, 'admin');
-        
+
         // Also check for alternative admin role naming
         if (!$isAdmin) {
             $isAdmin = $userModel->hasRole($userId, 'Admin');
         }
-        
+
         // Deny access if neither superadmin nor admin
         if (!$isSuperAdmin && !$isAdmin) {
             header('Content-Type: application/json; charset=utf-8');
@@ -187,7 +190,7 @@ $router->post('/api/log-activity/clear', ['middleware' => ['auth', 'csrf']], fun
             ], JSON_UNESCAPED_UNICODE);
             exit;
         }
-        
+
         $logger = new ActivityModel($mysqli);
         $totalBefore = $logger->getTotalCount();
 
@@ -199,8 +202,8 @@ $router->post('/api/log-activity/clear', ['middleware' => ['auth', 'csrf']], fun
                 'cleared_by' => $user['username'] ?? 'Unknown',
                 'cleared_at' => date('Y-m-d H:i:s')
             ];
-            
-        $logger->log(
+
+            $logger->log(
                 'All Activity Logs Cleared',
                 'activity_logs',
                 null,
@@ -343,7 +346,7 @@ $router->get('/api/log-activity/export', ['middleware' => ['auth', 'admin_only']
 
         $output = fopen('php://output', 'w');
         // BOM for UTF-8
-        fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
         // Header row
         fputcsv($output, ['ID', 'User', 'Role', 'Action', 'Resource Type', 'Resource ID', 'Status', 'IP Address', 'Timestamp', 'Details']);

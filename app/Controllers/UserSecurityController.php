@@ -2,8 +2,13 @@
 // controllers/UserSecurityController.php
 // ইউজার সেলফ-সার্ভিস 2FA ম্যানেজমেন্ট
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
+
 require_once __DIR__ . '/../Helpers/AuthAndSecurityHelper.php';
 
 $userModel = new UserModel($mysqli);
@@ -12,7 +17,9 @@ $securityManager = new SecurityManager($mysqli);
 // ==================== ইউজার 2FA ম্যানেজমেন্ট গ্রুপ ====================
 $router->group('/user/security', ['middleware' => ['auth']], function ($router) use ($twig, $userModel, $securityManager) {
     // GET /user/security/2fa - 2FA স্ট্যাটাস এবং ম্যানেজমেন্ট অপশন দেখান
-    $router->get('/2fa', function () use ($twig, $securityManager) {
+    $router->get(
+        '/2fa',
+        function () use ($twig, $securityManager) {
             if (session_status() === PHP_SESSION_NONE)
                 session_start();
 
@@ -26,19 +33,21 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
             $security = $securityManager->get2FAStatus($user['id']);
 
             echo $twig->render('user/security_2fa.twig', [
-            'title' => 'Two-Factor Authentication',
-            'header_title' => '2FA সেটিংস',
-            'user' => $user,
-            'twofa_enabled' => $security['enabled'],
-            'twofa_created' => $security['created_at'] ?? null,
-            'csrf_token' => generateCsrfToken(),
+                'title' => 'Two-Factor Authentication',
+                'header_title' => '2FA সেটিংস',
+                'user' => $user,
+                'twofa_enabled' => $security['enabled'],
+                'twofa_created' => $security['created_at'] ?? null,
+                'csrf_token' => generateCsrfToken(),
             ]);
         }
-        );
+    );
 
-        // ==================== 2FA সেটআপ শুরু করুন ====================
-        // GET /user/security/2fa/setup - QR কোড এবং সেটআপ ফর্ম দেখুন
-        $router->get('/2fa/setup', function () use ($twig) {
+    // ==================== 2FA সেটআপ শুরু করুন ====================
+    // GET /user/security/2fa/setup - QR কোড এবং সেটআপ ফর্ম দেখুন
+    $router->get(
+        '/2fa/setup',
+        function () use ($twig) {
             if (session_status() === PHP_SESSION_NONE)
                 session_start();
 
@@ -65,26 +74,27 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
                 $writer = new PngWriter();
                 $result = $writer->write($qrCode);
                 $qrImage = 'data:image/png;base64,' . base64_encode($result->getString());
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 $qrImage = null;
             }
 
             echo $twig->render('user/security_2fa_setup.twig', [
-            'title' => 'Setup Two-Factor Authentication',
-            'header_title' => '2FA সেটআপ করুন',
-            'user' => $user,
-            'secret' => $secret,
-            'qr_image' => $qrImage,
-            'totp_uri' => $totp_uri,
-            'csrf_token' => generateCsrfToken(),
+                'title' => 'Setup Two-Factor Authentication',
+                'header_title' => '2FA সেটআপ করুন',
+                'user' => $user,
+                'secret' => $secret,
+                'qr_image' => $qrImage,
+                'totp_uri' => $totp_uri,
+                'csrf_token' => generateCsrfToken(),
             ]);
         }
-        );
+    );
 
-        // ==================== 2FA সেটআপ যাচাই করুন ====================
-        // POST /user/security/2fa/verify - ইউজার এর কোড যাচাই এবং সক্ষম করুন
-        $router->post('/2fa/verify', function () use ($twig, $securityManager) {
+    // ==================== 2FA সেটআপ যাচাই করুন ====================
+    // POST /user/security/2fa/verify - ইউজার এর কোড যাচাই এবং সক্ষম করুন
+    $router->post(
+        '/2fa/verify',
+        function () use ($twig, $securityManager) {
             if (session_status() === PHP_SESSION_NONE)
                 session_start();
 
@@ -138,11 +148,13 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
             header("Location: /user/security/2fa/backup");
             exit;
         }
-        );
+    );
 
-        // ==================== ব্যাকআপ কোড দেখুন ====================
-        // GET /user/security/2fa/backup - ব্যাকআপ কোড ডাউনলোড/দেখুন
-        $router->get('/2fa/backup', function () use ($twig, $securityManager) {
+    // ==================== ব্যাকআপ কোড দেখুন ====================
+    // GET /user/security/2fa/backup - ব্যাকআপ কোড ডাউনলোড/দেখুন
+    $router->get(
+        '/2fa/backup',
+        function () use ($twig, $securityManager) {
             if (session_status() === PHP_SESSION_NONE)
                 session_start();
 
@@ -162,18 +174,20 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
             }
 
             echo $twig->render('user/security_2fa_backup.twig', [
-            'title' => 'Backup Codes',
-            'header_title' => 'ব্যাকআপ কোডগুলি সংরক্ষণ করুন',
-            'user' => $user,
-            'backup_codes' => $backupCodes,
-            'csrf_token' => generateCsrfToken(),
+                'title' => 'Backup Codes',
+                'header_title' => 'ব্যাকআপ কোডগুলি সংরক্ষণ করুন',
+                'user' => $user,
+                'backup_codes' => $backupCodes,
+                'csrf_token' => generateCsrfToken(),
             ]);
         }
-        );
+    );
 
-        // ==================== 2FA নিষ্ক্রিয় করুন ====================
-        // POST /user/security/2fa/disable - পাসওয়ার্ড যাচাইয়ের পরে নিষ্ক্রিয় করুন
-        $router->post('/2fa/disable', function () use ($twig, $userModel, $securityManager) {
+    // ==================== 2FA নিষ্ক্রিয় করুন ====================
+    // POST /user/security/2fa/disable - পাসওয়ার্ড যাচাইয়ের পরে নিষ্ক্রিয় করুন
+    $router->post(
+        '/2fa/disable',
+        function () use ($twig, $userModel, $securityManager) {
             if (session_status() === PHP_SESSION_NONE)
                 session_start();
 
@@ -212,8 +226,8 @@ $router->group('/user/security', ['middleware' => ['auth']], function ($router) 
             header("Location: /user/security/2fa");
             exit;
         }
-        );
-    });
+    );
+});
 
 // ==================== সহায়ক ফাংশনগুলি ====================
 
@@ -276,8 +290,8 @@ $router->post('/user/change-password', ['middleware' => ['auth'], 'response' => 
         if (!($hasUppercase && $hasLowercase && $hasNumber && $hasSpecial)) {
             http_response_code(400);
             echo json_encode([
-            'success' => false,
-            'error' => 'Password must contain uppercase, lowercase, number, and special character'
+                'success' => false,
+                'error' => 'Password must contain uppercase, lowercase, number, and special character'
             ]);
             exit;
         }
@@ -299,22 +313,19 @@ $router->post('/user/change-password', ['middleware' => ['auth'], 'response' => 
             logActivity("Password Changed Successfully", "auth", $userId, [], 'success');
             http_response_code(200);
             echo json_encode([
-            'success' => true,
-            'message' => 'Password changed successfully'
+                'success' => true,
+                'message' => 'Password changed successfully'
             ]);
-        }
-        else {
+        } else {
             logActivity("Password Change Failed - Database Error", "auth", $userId, [], 'error');
             http_response_code(500);
             echo json_encode([
-            'success' => false,
-            'error' => 'Failed to change password'
+                'success' => false,
+                'error' => 'Failed to change password'
             ]);
         }
         exit;
-
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         logActivity("Password Change Error: " . $e->getMessage(), "auth", AuthManager::getCurrentUserId(), [], 'error');
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => 'Internal server error']);
@@ -344,13 +355,11 @@ $router->post('/api/auth/skip-password-setup', ['middleware' => ['auth'], 'respo
 
         http_response_code(200);
         echo json_encode([
-        'success' => true,
-        'message' => 'Password setup skipped'
+            'success' => true,
+            'message' => 'Password setup skipped'
         ]);
         exit;
-
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         logActivity("Skip Password Setup Error: " . $e->getMessage(), "auth", AuthManager::getCurrentUserId(), [], 'error');
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => 'Internal server error']);

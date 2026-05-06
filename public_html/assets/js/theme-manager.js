@@ -172,16 +172,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateButtonState = () => {
       const currentTheme = window.themeManager.getCurrentTheme();
       const isDark = currentTheme === 'dark';
-      const icon = themeToggleBtn.querySelector('i');
+      const themeToggleText = isDark
+        ? window.broxI18n?.translate('Switch to light mode') || 'Switch to light mode'
+        : window.broxI18n?.translate('Switch to dark mode') || 'Switch to dark mode';
 
       themeToggleBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
-      themeToggleBtn.setAttribute('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
-      themeToggleBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
-
-      if (icon) {
-        icon.classList.remove('bi-circle-half', 'bi-moon-stars-fill', 'bi-sun-fill');
-        icon.classList.add(isDark ? 'bi-sun-fill' : 'bi-moon-stars-fill');
-      }
+      themeToggleBtn.setAttribute('title', themeToggleText);
+      themeToggleBtn.setAttribute('aria-label', themeToggleText);
     };
 
     themeToggleBtn.addEventListener('click', () => {

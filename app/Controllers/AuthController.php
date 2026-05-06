@@ -15,6 +15,10 @@
  * @version 2.0.0
  */
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+
 require_once __DIR__ . '/../../Config/Functions.php';
 require_once __DIR__ . '/../Helpers/FirebaseHelper.php';
 require_once __DIR__ . '/../Helpers/AuthAndSecurityHelper.php';

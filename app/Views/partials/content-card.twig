@@ -265,18 +265,6 @@
         </time>
       {% endif %}
 
-      {# Middle section: Stats #}
-      {% if item.impressions is defined or item.views is defined %}
-        <div class="cc-stats">
-          {% if item.impressions is defined %}
-            <span title="Impressions"><i class="bi bi-bar-chart-line text-info"></i> {{ item.impressions|number_format }}</span>
-          {% endif %}
-          {% if item.views is defined %}
-            <span title="Views"><i class="bi bi-eye-fill text-success"></i> {{ item.views|number_format }}</span>
-          {% endif %}
-        </div>
-      {% endif %}
-
       {# Right section: Price only #}
       {% if item.type == 'mobile' and (item.official_price or item.unofficial_price) %}
         <div class="cc-mobile-pricing" aria-label="Mobile price">

@@ -2,14 +2,20 @@
 
 // controllers/PagesController.php - For managing pages (list/create/edit/delete)
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+
 $contentModel = new ContentModel($mysqli);
 $commentModel = new commentModel($mysqli);
 
 // -------------------- ADMIN ROUTES --------------------
-$router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($router) use ($twig, $contentModel, $commentModel) {
+$router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($router) use ($twig, $contentModel, $commentModel, $mysqli) {
 
     // -------------------- PAGES --------------------
-    $router->get('/pages', function () use ($twig, $contentModel) {
+    $router->get(
+        '/pages',
+        function () use ($twig, $contentModel) {
             $page = max(1, (int)($_GET['page'] ?? 1));
             $limit = max(5, min(100, (int)($_GET['limit'] ?? 20)));
             $search = sanitize_input($_GET['search'] ?? '');
@@ -40,32 +46,36 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             ];
 
             echo $twig->render('admin/pages/list.twig', [
-            'title' => 'Admin - All Pages',
-            'pages' => $pages,
-            'pagination' => $paginationData
+                'title' => 'Admin - All Pages',
+                'pages' => $pages,
+                'pagination' => $paginationData
             ]);
         }
-        );
+    );
 
-        $router->get('/pages/create', function () use ($twig, $contentModel) {
+    $router->get(
+        '/pages/create',
+        function () use ($twig, $contentModel) {
             $categories = $contentModel->getAllCategories();
             $allTags = $contentModel->getAllTags();
             echo $twig->render('admin/content/form.twig', [
-            'title' => 'Add New Page',
-            'type' => 'pages',
-            'item' => null,
-            'categories' => $categories,
-            'allTags' => $allTags,
-            'selectedTags' => [],
-            'selectedCategories' => [],
-            'status' => 'published', // default checked for create
-            'isCreate' => true,
-            'flash' => getFlashMessage()
+                'title' => 'Add New Page',
+                'type' => 'pages',
+                'item' => null,
+                'categories' => $categories,
+                'allTags' => $allTags,
+                'selectedTags' => [],
+                'selectedCategories' => [],
+                'status' => 'published', // default checked for create
+                'isCreate' => true,
+                'flash' => getFlashMessage()
             ]);
         }
-        );
+    );
 
-        $router->post('/pages/create', function () use ($contentModel) {
+    $router->post(
+        '/pages/create',
+        function () use ($contentModel) {
             global $mysqli;
             $title = sanitize_input($_POST['title'] ?? '');
             $purifier = getPurifier();
@@ -100,14 +110,12 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
                 foreach ((array)$tagInput as $t) {
                     if (is_numeric($t)) {
                         $tagIds[] = intval($t);
-                    }
-                    else {
+                    } else {
                         $slug = slugify($t);
                         $existingTag = $contentModel->getTagBySlug($slug);
                         if ($existingTag) {
                             $tagIds[] = $existingTag['id'];
-                        }
-                        else {
+                        } else {
                             $tagIds[] = $contentModel->createTag($t);
                         }
                     }
@@ -142,8 +150,7 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
                         $pushResult = sendContentCreatedPush($mysqli, 'page', (int)$pageId, $title, $pageSlug, $adminId);
                         logError('[ContentPush][PageCreate] ' . json_encode($pushResult, JSON_UNESCAPED_UNICODE));
                     }
-                }
-                catch (Throwable $e) {
+                } catch (Throwable $e) {
                     logError('[ContentPush][PageCreate] Failed: ' . $e->getMessage());
                 }
             }
@@ -153,9 +160,11 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             header("Location: /admin/pages");
             exit;
         }
-        );
+    );
 
-        $router->get('/pages/edit', function () use ($twig, $contentModel) {
+    $router->get(
+        '/pages/edit',
+        function () use ($twig, $contentModel) {
             $id = sanitize_input($_GET['id'] ?? null);
             $page = $contentModel->getPageById($id);
             $pageTags = $contentModel->getTagsForContent('page', $id);
@@ -171,21 +180,23 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             }
 
             echo $twig->render('admin/content/form.twig', [
-            'title' => 'Edit Page',
-            'type' => 'pages',
-            'item' => $page,
-            'allTags' => $contentModel->getAllTags(),
-            'categories' => $contentModel->getAllCategories(),
-            'selectedTags' => $pageTags,
-            'selectedCategories' => $pageCategories,
-            'status' => $status,
-            'isCreate' => false,
-            'flash' => getFlashMessage()
+                'title' => 'Edit Page',
+                'type' => 'pages',
+                'item' => $page,
+                'allTags' => $contentModel->getAllTags(),
+                'categories' => $contentModel->getAllCategories(),
+                'selectedTags' => $pageTags,
+                'selectedCategories' => $pageCategories,
+                'status' => $status,
+                'isCreate' => false,
+                'flash' => getFlashMessage()
             ]);
         }
-        );
+    );
 
-        $router->post('/pages/edit', function () use ($contentModel) {
+    $router->post(
+        '/pages/edit',
+        function () use ($contentModel) {
             $id = sanitize_input($_POST['id'] ?? null);
             $title = sanitize_input($_POST['title'] ?? '');
             $purifier = getPurifier();
@@ -219,14 +230,12 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
                 foreach ((array)$tagInput as $t) {
                     if (is_numeric($t)) {
                         $tagIds[] = intval($t);
-                    }
-                    else {
+                    } else {
                         $slug = slugify($t);
                         $existingTag = $contentModel->getTagBySlug($slug);
                         if ($existingTag) {
                             $tagIds[] = $existingTag['id'];
-                        }
-                        else {
+                        } else {
                             $tagIds[] = $contentModel->createTag($t);
                         }
                     }
@@ -252,9 +261,11 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             header("Location: /admin/pages/edit?id={$id}");
             exit;
         }
-        );
+    );
 
-        $router->get('/pages/view/{slug}', function ($slug = null) use ($twig, $contentModel, $commentModel) {
+    $router->get(
+        '/pages/view/{slug}',
+        function ($slug = null) use ($twig, $contentModel, $commentModel) {
             $slug = sanitize_input($slug ?? $_GET['slug'] ?? null);
             if (!$slug)
                 renderError(404, "Page slug missing");
@@ -262,14 +273,6 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             $page = $contentModel->getPageBySlug($slug);
             if (!$page)
                 renderError(404, "Page not found");
-
-            $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-            if ($contentModel->addPageImpression((int)$page['id'], $ip)) {
-                $page['impressions'] = (int)($page['impressions'] ?? 0) + 1;
-            }
-            if ($contentModel->addPageView((int)$page['id'], $ip)) {
-                $page['views'] = (int)($page['views'] ?? 0) + 1;
-            }
 
             $previousPage = $contentModel->getPreviousPage($page['id']);
             $nextPage = $contentModel->getNextPage($page['id']);
@@ -311,17 +314,19 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             $page['categories'] = $contentModel->getCategoriesForContent('page', $page['id']);
 
             echo $twig->render('admin/pages/view.twig', [
-            'title' => $page['title'],
-            'page' => $page,
-            'previousPage' => $previousPage,
-            'nextPage' => $nextPage,
-            'relatedPages' => $relatedPages,
-            'comments' => $comments
+                'title' => $page['title'],
+                'page' => $page,
+                'previousPage' => $previousPage,
+                'nextPage' => $nextPage,
+                'relatedPages' => $relatedPages,
+                'comments' => $comments
             ]);
         }
-        );
+    );
 
-        $router->get('/pages/delete', function () use ($contentModel) {
+    $router->get(
+        '/pages/delete',
+        function () use ($contentModel) {
             $id = sanitize_input($_GET['id'] ?? null);
 
             if (!$id) {
@@ -351,7 +356,8 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             header("Location: /admin/pages");
             exit;
         }
-        );    });
+    );
+});
 
 // -------------------- AJAX API --------------------
 
@@ -365,8 +371,7 @@ $router->get('/api/pages/check_url', ['middleware' => ['auth', 'admin_only']], f
         $page = $contentModel->getPageBySlug($slug);
         if ($page && $excludeId && $page['id'] == $excludeId) {
             $available = true;
-        }
-        elseif ($page) {
+        } elseif ($page) {
             $available = false;
         }
     }
@@ -393,8 +398,7 @@ $router->post('/api/pages/autosave', ['middleware' => ['auth', 'admin_only']], f
         // Auto-save with status support
         $contentModel->updatePage($id, $title, $content, $published, $slug);
         $response = ['success' => true, 'message' => 'Page auto-saved', 'status' => $status, 'published' => $published];
-    }
-    else {
+    } else {
         $response = ['success' => false, 'message' => 'Page ID missing'];
     }
 
@@ -420,31 +424,34 @@ $router->get('/pages', function () use ($twig, $contentModel) {
     $pages = $contentModel->getPages($page, $perPage, $search, $sort, $order, []);
 
     if ($category) {
-        $pages = array_filter($pages, function ($page) use ($contentModel, $category) {
-                    $categories = $contentModel->getCategoriesForContent('page', $page['id']);
-                    foreach ($categories as $cat) {
-                        if ($cat['slug'] === $category)
-                            return true;
-                    }
-                    return false;
+        $pages = array_filter(
+            $pages,
+            function ($page) use ($contentModel, $category) {
+                $categories = $contentModel->getCategoriesForContent('page', $page['id']);
+                foreach ($categories as $cat) {
+                    if ($cat['slug'] === $category)
+                        return true;
                 }
-                );
-                $pages = array_values($pages);
+                return false;
             }
+        );
+        $pages = array_values($pages);
+    }
 
-            echo $twig->render('pages/list.twig', [
-            'title' => 'Pages',
-            'pages' => $pages,
-            'search' => $search,
-            'category' => $category,
-            'sort' => $sort,
-            'order' => $order,
-            'current_page' => $page,
-            'total_pages' => $totalPages,
-            'per_page' => $perPage,
-            'total_pages_count' => $totalPageCount,
-            'available_per_page' => [6, 12, 18, 24, 36, 60]
-            ]);        });
+    echo $twig->render('pages/list.twig', [
+        'title' => 'Pages',
+        'pages' => $pages,
+        'search' => $search,
+        'category' => $category,
+        'sort' => $sort,
+        'order' => $order,
+        'current_page' => $page,
+        'total_pages' => $totalPages,
+        'per_page' => $perPage,
+        'total_pages_count' => $totalPageCount,
+        'available_per_page' => [6, 12, 18, 24, 36, 60]
+    ]);
+});
 
 
 // Public Pages by slug
@@ -462,15 +469,6 @@ $router->get('/pages/view/{slug}', function ($slug = null) use ($twig, $contentM
     if (empty($page)) {
         renderError(404, "Page not found");
         return;
-    }
-
-    // ------------------ Track Impression & View ------------------
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-    if ($contentModel->addPageImpression((int)$page['id'], $ip)) {
-        $page['impressions'] = (int)($page['impressions'] ?? 0) + 1;
-    }
-    if ($contentModel->addPageView((int)$page['id'], $ip)) {
-        $page['views'] = (int)($page['views'] ?? 0) + 1;
     }
 
     // ------------------ Navigation ------------------
@@ -494,11 +492,11 @@ $router->get('/pages/view/{slug}', function ($slug = null) use ($twig, $contentM
 
     // ------------------ Render ------------------
     echo $twig->render('pages/view.twig', [
-    'title' => $page['title'] ?? '',
-    'page' => $page,
-    'previousPage' => $previousPage,
-    'nextPage' => $nextPage,
-    'relatedPages' => $relatedPages,
-    'comments' => $comments
+        'title' => $page['title'] ?? '',
+        'page' => $page,
+        'previousPage' => $previousPage,
+        'nextPage' => $nextPage,
+        'relatedPages' => $relatedPages,
+        'comments' => $comments
     ]);
 });

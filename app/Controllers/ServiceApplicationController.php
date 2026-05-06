@@ -10,6 +10,10 @@
  * - Receive notifications
  */
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+
 $serviceModel = new ServiceModel($mysqli);
 $appModel = new ServiceApplicationModel($mysqli);
 $userModel = new UserModel($mysqli);
@@ -308,18 +312,6 @@ $router->get('/services/{slug}', function ($slug) use ($mysqli, $twig, $serviceM
             header('Location: ' . $redirectUrl, true, 302);
             return;
         }
-    }
-
-    // Track service detail analytics (impressions always, views unique per IP in last 24h)
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-    $impressionTracked = $serviceModel->addServiceImpression((int)$service['id'], $ip);
-    $viewInserted = $serviceModel->addServiceViewIfUnique24h((int)$service['id'], $ip);
-
-    if ($impressionTracked) {
-        $service['impressions'] = (int)($service['impressions'] ?? 0) + 1;
-    }
-    if ($viewInserted) {
-        $service['views'] = (int)($service['views'] ?? 0) + 1;
     }
 
     // Ensure primary image and image arrays are normalized for the card view

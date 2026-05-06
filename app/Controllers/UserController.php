@@ -1,6 +1,10 @@
 <?php
 // controllers/UserController.php
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+
 $userModel = new UserModel($mysqli);
 $roleModel = new RoleModel($mysqli);
 
@@ -40,9 +44,9 @@ $router->get('/admin/users', ['middleware' => ['auth', 'admin_only']], function 
     ];
 
     echo $twig->render('admin/users/list.twig', [
-    'users' => $users,
-    'pagination' => $paginationData,
-    'page_title' => 'Manage Users'
+        'users' => $users,
+        'pagination' => $paginationData,
+        'page_title' => 'Manage Users'
     ]);
 });
 
@@ -50,8 +54,8 @@ $router->get('/admin/users', ['middleware' => ['auth', 'admin_only']], function 
 $router->get('/admin/users/create', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $roleModel) {
     $roles = $roleModel->getAll();
     echo $twig->render('admin/users/add_user.twig', [
-    'roles' => $roles,
-    'page_title' => 'Create New User'
+        'roles' => $roles,
+        'page_title' => 'Create New User'
     ]);
 });
 
@@ -116,11 +120,11 @@ $router->get('/admin/users/edit', ['middleware' => ['auth', 'admin_only']], func
     $userRoleIds = array_map(fn($r) => $r['id'], $userRoles);
 
     echo $twig->render('admin/users/edit_user.twig', [
-    'user' => $user,
-    'roles' => $allRoles,
-    'userRoles' => $userRoles,
-    'userRoleIds' => $userRoleIds,
-    'page_title' => 'Edit User: ' . $user['username']
+        'user' => $user,
+        'roles' => $allRoles,
+        'userRoles' => $userRoles,
+        'userRoleIds' => $userRoleIds,
+        'page_title' => 'Edit User: ' . $user['username']
     ]);
 });
 
@@ -159,8 +163,7 @@ $router->post('/admin/users/edit', ['middleware' => ['auth', 'admin_only']], fun
     if (!empty($_POST['roles']) && is_array($_POST['roles'])) {
         $roleIds = array_map('intval', $_POST['roles']);
         $userModel->assignRoles($id, $roleIds);
-    }
-    else {
+    } else {
         // Remove all roles if none selected
         $userModel->assignRoles($id, []);
     }
@@ -181,8 +184,7 @@ $router->post('/admin/users/delete', ['middleware' => ['auth', 'admin_only']], f
     if ($userModel->deleteUser($id)) {
         logActivity("User Deleted", "user", $id, ['username' => $user['username'] ?? 'Unknown', 'email' => $user['email'] ?? 'Unknown'], 'success');
         showMessage("User deleted successfully", "success");
-    }
-    else {
+    } else {
         logActivity("User Deletion Failed", "user", $id, [], 'failure');
         showMessage("Failed to delete user", "danger");
     }
@@ -196,7 +198,9 @@ $router->post('/admin/users/delete', ['middleware' => ['auth', 'admin_only']], f
 $router->group('/api/admin/users', ['middleware' => ['auth', 'admin_only']], function ($router) use ($userModel, $roleModel, $mysqli) {
 
     // Create new user (API)
-    $router->post('/create', function () use ($userModel, $roleModel, $mysqli) {
+    $router->post(
+        '/create',
+        function () use ($userModel, $roleModel, $mysqli) {
             header('Content-Type: application/json');
 
             $data = [
@@ -235,10 +239,12 @@ $router->group('/api/admin/users', ['middleware' => ['auth', 'admin_only']], fun
             echo json_encode(['success' => true, 'message' => 'User created successfully', 'user_id' => $userId]);
             exit;
         }
-        );
+    );
 
-        // Delete user (API)
-        $router->post('/delete', function () use ($userModel) {
+    // Delete user (API)
+    $router->post(
+        '/delete',
+        function () use ($userModel) {
             header('Content-Type: application/json');
             $id = (int)($_POST['id'] ?? 0);
 
@@ -252,12 +258,11 @@ $router->group('/api/admin/users', ['middleware' => ['auth', 'admin_only']], fun
             if ($userModel->deleteUser($id)) {
                 logActivity("User Deleted (API)", "user", $id, ['username' => $user['username'] ?? 'Unknown'], 'success');
                 echo json_encode(['success' => true, 'message' => 'User deleted successfully']);
-            }
-            else {
+            } else {
                 http_response_code(500);
                 echo json_encode(['success' => false, 'error' => 'Failed to delete user']);
             }
             exit;
         }
-        );
-    });
+    );
+});

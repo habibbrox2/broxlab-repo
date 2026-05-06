@@ -1,4 +1,5 @@
 <?php
+
 /**
  * controllers/CommentController.php
  * 
@@ -7,10 +8,11 @@
  * - Admin comment management (API + Template rendering)
  */
 
-declare(strict_types = 1)
-;
+declare(strict_types=1);
 
-global $mysqli, $twig;
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
 
 $commentModel = new CommentModel($mysqli);
 $purifier = getPurifier();
@@ -18,13 +20,16 @@ $purifier = getPurifier();
 // =====================================================================
 // ROUTE GROUP: /comment (User Comment Operations - API)
 // =====================================================================
-$router->group('/comment', [], function ($router) use ($commentModel, $purifier) {
+$router->group('/comment', [], function ($router) use ($commentModel, $purifier, $twig, $mysqli) {
 
     /**
      * POST /comment/add
      * Add a new comment
      */
-    $router->post('/add', ['middleware' => ['api_headers']], function () use ($commentModel, $purifier) {
+    $router->post(
+        '/add',
+        ['middleware' => ['api_headers']],
+        function () use ($commentModel, $purifier) {
             header('Content-Type: application/json');
 
             try {
@@ -112,28 +117,29 @@ $router->group('/comment', [], function ($router) use ($commentModel, $purifier)
                     ], 'success');
 
                     return json_response([
-                    'success' => true,
-                    'message' => 'Comment posted successfully',
-                    'id' => $comment_id,
-                    'timestamp' => date('Y-m-d H:i:s')
+                        'success' => true,
+                        'message' => 'Comment posted successfully',
+                        'id' => $comment_id,
+                        'timestamp' => date('Y-m-d H:i:s')
                     ], 201);
-                }
-                else {
+                } else {
                     throw new Exception('Failed to insert comment');
                 }
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logActivity("Comment Add Failed", "comment", 0, ['error' => $e->getMessage()], 'failure');
                 return json_response(['success' => false, 'message' => 'Failed to add comment'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * POST /comment/like
      * Like/Unlike a comment
      */
-        $router->post('/like', ['middleware' => ['api_headers']], function () use ($commentModel) {
+    $router->post(
+        '/like',
+        ['middleware' => ['api_headers']],
+        function () use ($commentModel) {
             header('Content-Type: application/json');
 
             try {
@@ -181,18 +187,20 @@ $router->group('/comment', [], function ($router) use ($commentModel, $purifier)
                 logActivity("Comment Liked", "comment", $comment_id, ['by_user_id' => $user_id ?? 'guest'], 'success');
 
                 return json_response(['success' => true, 'likes' => $likes], 200);
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 return json_response(['success' => false, 'message' => 'Failed to like comment'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * POST /comment/edit
      * Edit user's own comment
      */
-        $router->post('/edit', ['middleware' => ['api_headers']], function () use ($commentModel, $purifier) {
+    $router->post(
+        '/edit',
+        ['middleware' => ['api_headers']],
+        function () use ($commentModel, $purifier) {
             header('Content-Type: application/json');
 
             try {
@@ -216,22 +224,23 @@ $router->group('/comment', [], function ($router) use ($commentModel, $purifier)
                 if ($success) {
                     logActivity("Comment Edited", "comment", $comment_id, ['editor_id' => $user_id], 'success');
                     return json_response(['success' => true, 'message' => 'Comment updated'], 200);
-                }
-                else {
+                } else {
                     return json_response(['success' => false, 'message' => 'Failed to edit comment'], 403);
                 }
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 return json_response(['success' => false, 'message' => 'Error editing comment'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * POST /comment/delete
      * Delete user's own comment
      */
-        $router->post('/delete', ['middleware' => ['api_headers']], function () use ($commentModel) {
+    $router->post(
+        '/delete',
+        ['middleware' => ['api_headers']],
+        function () use ($commentModel) {
             header('Content-Type: application/json');
 
             try {
@@ -253,22 +262,23 @@ $router->group('/comment', [], function ($router) use ($commentModel, $purifier)
                 if ($success) {
                     logActivity("Comment Deleted", "comment", $comment_id, ['deleter_id' => $user_id], 'success');
                     return json_response(['success' => true, 'message' => 'Comment deleted'], 200);
-                }
-                else {
+                } else {
                     return json_response(['success' => false, 'message' => 'Failed to delete comment'], 403);
                 }
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 return json_response(['success' => false, 'message' => 'Error deleting comment'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * POST /comment/reply/add
      * Add a reply to a comment
      */
-        $router->post('/reply/add', ['middleware' => ['api_headers']], function () use ($commentModel, $purifier) {
+    $router->post(
+        '/reply/add',
+        ['middleware' => ['api_headers']],
+        function () use ($commentModel, $purifier) {
             header('Content-Type: application/json');
 
             try {
@@ -295,22 +305,23 @@ $router->group('/comment', [], function ($router) use ($commentModel, $purifier)
                 if ($reply_id) {
                     logActivity("Reply Added", "comment", $reply_id, ['parent_id' => $parent_id], 'success');
                     return json_response(['success' => true, 'reply_id' => $reply_id, 'timestamp' => date('Y-m-d H:i:s')], 201);
-                }
-                else {
+                } else {
                     throw new Exception('Failed to insert reply');
                 }
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 return json_response(['success' => false, 'message' => 'Failed to add reply'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * POST /comment/react
      * Add a reaction to a comment (emoji reactions like 👍❤️🔥😂😮😢)
      */
-        $router->post('/react', ['middleware' => ['api_headers']], function () use ($commentModel) {
+    $router->post(
+        '/react',
+        ['middleware' => ['api_headers']],
+        function () use ($commentModel) {
             header('Content-Type: application/json');
 
             try {
@@ -345,24 +356,25 @@ $router->group('/comment', [], function ($router) use ($commentModel, $purifier)
                 logActivity("Comment Reacted", "comment", $comment_id, ['reaction' => $reaction, 'by_user_id' => $user_id ?? 'guest'], 'success');
 
                 return json_response([
-                'success' => true,
-                'message' => 'Reaction added',
-                'reactions' => $result['reactions']
+                    'success' => true,
+                    'message' => 'Reaction added',
+                    'reactions' => $result['reactions']
                 ], 200);
-
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError("React error: " . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
                 return json_response(['success' => false, 'message' => 'Failed to add reaction'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * GET /comment/all
      * Get all comments for a content item (nested structure)
      */
-        $router->get('/all', ['middleware' => ['api_headers']], function () use ($commentModel) {
+    $router->get(
+        '/all',
+        ['middleware' => ['api_headers']],
+        function () use ($commentModel) {
             header('Content-Type: application/json');
 
             try {
@@ -376,18 +388,20 @@ $router->group('/comment', [], function ($router) use ($commentModel, $purifier)
                 $comments = $commentModel->getComments($content_type, $content_id);
 
                 return json_response(['success' => true, 'comments' => $comments], 200);
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 return json_response(['success' => false, 'message' => 'Failed to fetch comments'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * GET /comment/top
      * Get top comments by reply count
      */
-        $router->get('/top', ['middleware' => ['api_headers']], function () use ($commentModel) {
+    $router->get(
+        '/top',
+        ['middleware' => ['api_headers']],
+        function () use ($commentModel) {
             header('Content-Type: application/json');
 
             try {
@@ -402,18 +416,20 @@ $router->group('/comment', [], function ($router) use ($commentModel, $purifier)
                 $comments = $commentModel->getTopComments($content_type, $content_id, $limit);
 
                 return json_response(['success' => true, 'comments' => $comments], 200);
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 return json_response(['success' => false, 'message' => 'Failed to fetch top comments'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * GET /comment/{id}/replies
      * Get all replies for a specific comment
      */
-        $router->get('/{id}/replies', ['middleware' => ['api_headers']], function ($id) use ($commentModel) {
+    $router->get(
+        '/{id}/replies',
+        ['middleware' => ['api_headers']],
+        function ($id) use ($commentModel) {
             header('Content-Type: application/json');
 
             try {
@@ -425,27 +441,26 @@ $router->group('/comment', [], function ($router) use ($commentModel, $purifier)
                 $replies = $commentModel->getReplies($id);
 
                 return json_response(['success' => true, 'replies' => $replies], 200);
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 return json_response(['success' => false, 'message' => 'Failed to fetch replies'], 500);
             }
         }
-        );
-    });
+    );
+});
 
 // =====================================================================
 // ROUTE GROUP: /admin/comments (Admin Comment Management)
 // =====================================================================
-$router->group('/admin/comments', ['middleware' => ['admin_only', 'activity_log']], function ($router) use ($commentModel, $purifier) {
+$router->group('/admin/comments', ['middleware' => ['admin_only', 'activity_log']], function ($router) use ($commentModel, $purifier, $twig, $mysqli) {
 
     /**
      * GET /admin/comments
      * List all comments with pagination
      */
-    $router->get('', function () use ($commentModel) {
+    $router->get(
+        '',
+        function () use ($commentModel, $twig) {
             try {
-                global $twig;
-
                 $page = max(1, (int)($_GET['page'] ?? 1));
                 $limit = max(5, min(100, (int)($_GET['limit'] ?? 20)));
                 $search = sanitize_input($_GET['search'] ?? '');
@@ -485,22 +500,23 @@ $router->group('/admin/comments', ['middleware' => ['admin_only', 'activity_log'
 
                 echo $twig->render('comments/admin_comments_manager.twig', $data);
                 logActivity("View Comments List", "comment_management", 0, ['page' => $page, 'status' => $status], 'success');
-
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError("Admin Comments Error: " . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
                 echo $twig->render('error.twig', ['error' => 'Failed to load comments', 'details' => $e->getMessage()]);
             }
         }
-        );
+    );
 
         // ========== STATIC ROUTES (MUST BE BEFORE :id ROUTES) ==========
-    
-        /**
+
+    /**
      * GET /admin/comments/dashboard
      * Admin dashboard stats
      */
-        $router->get('/dashboard', ['middleware' => ['api_headers']], function () use ($commentModel) {
+    $router->get(
+        '/dashboard',
+        ['middleware' => ['api_headers']],
+        function () use ($commentModel) {
             header('Content-Type: application/json');
 
             try {
@@ -513,19 +529,21 @@ $router->group('/admin/comments', ['middleware' => ['admin_only', 'activity_log'
                 ];
 
                 return json_response(['success' => true, 'data' => $stats], 200);
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError("Dashboard Stats Error: " . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
                 return json_response(['success' => false, 'message' => 'Failed to load dashboard stats'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * GET /admin/comments/detail
      * Get single comment detail (for modal)
      */
-        $router->get('/detail', ['middleware' => ['api_headers']], function () use ($commentModel) {
+    $router->get(
+        '/detail',
+        ['middleware' => ['api_headers']],
+        function () use ($commentModel) {
             header('Content-Type: application/json');
 
             try {
@@ -554,19 +572,21 @@ $router->group('/admin/comments', ['middleware' => ['admin_only', 'activity_log'
                 ];
 
                 return json_response($response, 200);
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError("Comment Detail Error: " . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
                 return json_response(['success' => false, 'message' => 'Failed to load comment'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * POST /admin/comments/bulk-action
      * Bulk actions on comments
      */
-        $router->post('/bulk-action', ['middleware' => ['api_headers']], function () use ($commentModel) {
+    $router->post(
+        '/bulk-action',
+        ['middleware' => ['api_headers']],
+        function () use ($commentModel) {
             header('Content-Type: application/json');
 
             try {
@@ -590,16 +610,13 @@ $router->group('/admin/comments', ['middleware' => ['admin_only', 'activity_log'
                     if ($action === 'approve') {
                         if ($commentModel->approveComment($id, $admin_id)) {
                             $success_count++;
-                        }
-                        else {
+                        } else {
                             $failed_count++;
                         }
-                    }
-                    elseif ($action === 'delete') {
+                    } elseif ($action === 'delete') {
                         if ($commentModel->deleteCommentWithReplies($id)) {
                             $success_count++;
-                        }
-                        else {
+                        } else {
                             $failed_count++;
                         }
                     }
@@ -613,27 +630,28 @@ $router->group('/admin/comments', ['middleware' => ['admin_only', 'activity_log'
                 ], 'success');
 
                 return json_response([
-                'success' => true,
-                'message' => "{$success_count} comments processed successfully",
-                'success_count' => $success_count,
-                'failed_count' => $failed_count
+                    'success' => true,
+                    'message' => "{$success_count} comments processed successfully",
+                    'success_count' => $success_count,
+                    'failed_count' => $failed_count
                 ], 200);
-
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError("Bulk Action Error: " . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
                 return json_response(['success' => false, 'message' => 'Error processing bulk action'], 500);
             }
         }
-        );
+    );
 
         // ========== DYNAMIC ROUTES BY ID (AFTER STATIC ROUTES) ==========
-    
-        /**
+
+    /**
      * POST /admin/comments/{id}/approve
      * Approve a comment
      */
-        $router->post('/{id}/approve', ['middleware' => ['api_headers']], function ($id) use ($commentModel) {
+    $router->post(
+        '/{id}/approve',
+        ['middleware' => ['api_headers']],
+        function ($id) use ($commentModel) {
             header('Content-Type: application/json');
 
             try {
@@ -649,23 +667,24 @@ $router->group('/admin/comments', ['middleware' => ['admin_only', 'activity_log'
                 if ($success) {
                     logActivity("Comment Approved", "comment_management", $id, ['approved_by' => $admin_id], 'success');
                     return json_response(['success' => true, 'message' => 'Comment approved successfully'], 200);
-                }
-                else {
+                } else {
                     return json_response(['success' => false, 'message' => 'Failed to approve comment'], 500);
                 }
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError("Approve Comment Error: " . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
                 return json_response(['success' => false, 'message' => 'Error approving comment'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * POST /admin/comments/{id}/reject
      * Reject a comment
      */
-        $router->post('/{id}/reject', ['middleware' => ['api_headers']], function ($id) use ($commentModel) {
+    $router->post(
+        '/{id}/reject',
+        ['middleware' => ['api_headers']],
+        function ($id) use ($commentModel) {
             header('Content-Type: application/json');
 
             try {
@@ -682,23 +701,24 @@ $router->group('/admin/comments', ['middleware' => ['admin_only', 'activity_log'
                 if ($success) {
                     logActivity("Comment Rejected", "comment_management", $id, ['rejected_by' => $admin_id, 'reason' => $reason], 'success');
                     return json_response(['success' => true, 'message' => 'Comment rejected successfully'], 200);
-                }
-                else {
+                } else {
                     return json_response(['success' => false, 'message' => 'Failed to reject comment'], 500);
                 }
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError("Reject Comment Error: " . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
                 return json_response(['success' => false, 'message' => 'Error rejecting comment'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * POST /admin/comments/{id}/edit
      * Admin can edit any comment (admin can edit any comment, not just their own)
      */
-        $router->post('/{id}/edit', ['middleware' => ['api_headers']], function ($id) use ($commentModel, $purifier) {
+    $router->post(
+        '/{id}/edit',
+        ['middleware' => ['api_headers']],
+        function ($id) use ($commentModel, $purifier) {
             header('Content-Type: application/json');
 
             try {
@@ -719,23 +739,24 @@ $router->group('/admin/comments', ['middleware' => ['admin_only', 'activity_log'
                 if ($success) {
                     logActivity("Comment Edited by Admin", "comment_management", $id, ['edited_by' => $admin_id, 'new_content' => substr($new_content, 0, 100)], 'success');
                     return json_response(['success' => true, 'message' => 'Comment edited successfully'], 200);
-                }
-                else {
+                } else {
                     return json_response(['success' => false, 'message' => 'Failed to edit comment'], 500);
                 }
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError("Edit Comment Error: " . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
                 return json_response(['success' => false, 'message' => 'Error editing comment'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * POST /admin/comments/{id}/hide
      * Admin can hide a comment (status = 'hidden')
      */
-        $router->post('/{id}/hide', ['middleware' => ['api_headers']], function ($id) use ($commentModel) {
+    $router->post(
+        '/{id}/hide',
+        ['middleware' => ['api_headers']],
+        function ($id) use ($commentModel) {
             header('Content-Type: application/json');
 
             try {
@@ -752,23 +773,24 @@ $router->group('/admin/comments', ['middleware' => ['admin_only', 'activity_log'
                 if ($success) {
                     logActivity("Comment Hidden by Admin", "comment_management", $id, ['hidden_by' => $admin_id, 'reason' => $reason], 'success');
                     return json_response(['success' => true, 'message' => 'Comment hidden successfully'], 200);
-                }
-                else {
+                } else {
                     return json_response(['success' => false, 'message' => 'Failed to hide comment'], 500);
                 }
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError("Hide Comment Error: " . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
                 return json_response(['success' => false, 'message' => 'Error hiding comment'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * POST /admin/comments/{id}/unhide
      * Admin can unhide a previously hidden comment
      */
-        $router->post('/{id}/unhide', ['middleware' => ['api_headers']], function ($id) use ($commentModel) {
+    $router->post(
+        '/{id}/unhide',
+        ['middleware' => ['api_headers']],
+        function ($id) use ($commentModel) {
             header('Content-Type: application/json');
 
             try {
@@ -784,23 +806,24 @@ $router->group('/admin/comments', ['middleware' => ['admin_only', 'activity_log'
                 if ($success) {
                     logActivity("Comment Unhidden by Admin", "comment_management", $id, ['unhidden_by' => $admin_id], 'success');
                     return json_response(['success' => true, 'message' => 'Comment unhidden successfully'], 200);
-                }
-                else {
+                } else {
                     return json_response(['success' => false, 'message' => 'Failed to unhide comment'], 500);
                 }
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError("Unhide Comment Error: " . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
                 return json_response(['success' => false, 'message' => 'Error unhiding comment'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * POST /admin/comments/{id}/reply
      * Admin can reply to any comment (reply is marked as admin reply)
      */
-        $router->post('/{id}/reply', ['middleware' => ['api_headers']], function ($id) use ($commentModel, $purifier) {
+    $router->post(
+        '/{id}/reply',
+        ['middleware' => ['api_headers']],
+        function ($id) use ($commentModel, $purifier) {
             header('Content-Type: application/json');
 
             try {
@@ -827,23 +850,24 @@ $router->group('/admin/comments', ['middleware' => ['admin_only', 'activity_log'
                 if ($reply_id) {
                     logActivity("Admin Reply Added", "comment_management", $reply_id, ['parent_id' => $parent_id, 'by_admin' => $admin_id], 'success');
                     return json_response(['success' => true, 'message' => 'Admin reply posted successfully', 'reply_id' => $reply_id], 201);
-                }
-                else {
+                } else {
                     throw new Exception('Failed to insert admin reply');
                 }
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError("Admin Reply Error: " . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
                 return json_response(['success' => false, 'message' => 'Failed to add admin reply'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * POST /admin/comments/{id}/delete
      * Delete a comment permanently
      */
-        $router->post('/{id}/delete', ['middleware' => ['api_headers']], function ($id) use ($commentModel) {
+    $router->post(
+        '/{id}/delete',
+        ['middleware' => ['api_headers']],
+        function ($id) use ($commentModel) {
             header('Content-Type: application/json');
 
             try {
@@ -859,25 +883,24 @@ $router->group('/admin/comments', ['middleware' => ['admin_only', 'activity_log'
                 if ($success) {
                     logActivity("Comment Deleted by Admin", "comment_management", $id, ['deleted_by' => $admin_id], 'success');
                     return json_response(['success' => true, 'message' => 'Comment deleted successfully'], 200);
-                }
-                else {
+                } else {
                     return json_response(['success' => false, 'message' => 'Failed to delete comment'], 500);
                 }
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError("Delete Comment Error: " . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
                 return json_response(['success' => false, 'message' => 'Error deleting comment'], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * GET /admin/comments/{id}
      * View single comment detail
      */
-        $router->get('/{id}', function ($id) use ($commentModel) {
+    $router->get(
+        '/{id}',
+        function ($id) use ($commentModel, $twig) {
             try {
-                global $twig;
                 $id = (int)$id;
 
                 if ($id <= 0) {
@@ -909,15 +932,10 @@ $router->group('/admin/comments', ['middleware' => ['admin_only', 'activity_log'
 
                 echo $twig->render('comments/admin_comment_detail.twig', $data);
                 logActivity("View Comment Detail", "comment_management", $id, [], 'success');
-
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 logError("Admin Comment Detail Error: " . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
                 echo $twig->render('error.twig', ['error' => 'Failed to load comment']);
             }
         }
-        );
-
-
-
-    });
+    );
+});

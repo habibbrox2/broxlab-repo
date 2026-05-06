@@ -2,31 +2,37 @@
 
 // controllers/ContentController.php
 
+/** @var Router $router */
+/** @var \mysqli $mysqli */
+
 $contentModel = new ContentModel($mysqli);
 $commentModel = new commentModel($mysqli);
 
 
 
 // -------------------- TAGS & CATEGORIES API --------------------
-$router->get('/api/tags/list-json', function() use ($contentModel){
+$router->get('/api/tags/list-json', function () use ($contentModel) {
     header('Content-Type: application/json');
     echo json_encode($contentModel->getAllTags());
 });
 
-$router->get('/api/categories/list-json', function() use ($contentModel){
+$router->get('/api/categories/list-json', function () use ($contentModel) {
     header('Content-Type: application/json');
     echo json_encode($contentModel->getAllCategories());
 });
 
-$router->post('/api/tags/create', function() use ($contentModel){
+$router->post('/api/tags/create', function () use ($contentModel) {
     $name = sanitize_input($_POST['name'] ?? '');
     $slug = sanitize_input($_POST['slug'] ?? '');
-    if(!$name) { echo json_encode(['success'=>false,'error'=>'Name cannot be empty']); return; }
+    if (!$name) {
+        echo json_encode(['success' => false, 'error' => 'Name cannot be empty']);
+        return;
+    }
     $id = $contentModel->createTag($name, $slug);
-    echo json_encode(['success'=>true,'id'=>$id,'name'=>$name]);
+    echo json_encode(['success' => true, 'id' => $id, 'name' => $name]);
 });
 
-$router->post('/api/categories/create', function() use ($contentModel){
+$router->post('/api/categories/create', function () use ($contentModel) {
     header('Content-Type: application/json');
 
     $name = sanitize_input($_POST['name'] ?? '');
@@ -81,7 +87,7 @@ $router->post('/api/categories/create', function() use ($contentModel){
 // -------------------- AJAX API --------------------
 
 // Check Category slug availability
-$router->get('/api/categories/check_slug', function() use ($contentModel) {
+$router->get('/api/categories/check_slug', function () use ($contentModel) {
     $slug = sanitize_input($_GET['slug'] ?? '');
     $excludeId = isset($_GET['exclude_id']) ? (int)$_GET['exclude_id'] : null;
     $available = true;
@@ -102,7 +108,7 @@ $router->get('/api/categories/check_slug', function() use ($contentModel) {
 });
 
 // Check Tag slug availability
-$router->get('/api/tags/check_slug', function() use ($contentModel) {
+$router->get('/api/tags/check_slug', function () use ($contentModel) {
     $slug = sanitize_input($_GET['slug'] ?? '');
     $excludeId = isset($_GET['exclude_id']) ? (int)$_GET['exclude_id'] : null;
     $available = true;
@@ -121,6 +127,3 @@ $router->get('/api/tags/check_slug', function() use ($contentModel) {
     echo json_encode(['available' => $available, 'success' => $available]);
     exit;
 });
-
-
-
