@@ -12,6 +12,10 @@
  * - View audit logs
  */
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+
 $appModel = new ServiceApplicationModel($mysqli);
 $serviceModel = new ServiceModel($mysqli);
 $userModel = new UserModel($mysqli);
@@ -399,4 +403,3 @@ $router->get('/admin/applications/export/csv', ['middleware' => ['auth', 'admin_
 
     fclose($output);
 });
-

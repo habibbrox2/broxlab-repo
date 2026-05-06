@@ -74,11 +74,13 @@ class WeatherService
             }
         }
 
-        $result["popular_locations"] = \App\Helpers\CacheHelper::remember(
-            "weather_popular_locations",
-            fn() => $this->getDefaultPopularLocations(),
-            3600
-        );
+        $cache = \App\Modules\AISystem\UnifiedCache::getInstance();
+        $key = "weather_popular_locations";
+        if (!$cache->has($key, \App\Modules\AISystem\UnifiedCache::CATEGORY_WEATHER)) {
+            $value = $this->getDefaultPopularLocations();
+            $cache->set($key, $value, \App\Modules\AISystem\UnifiedCache::CATEGORY_WEATHER, 3600);
+        }
+        $result["popular_locations"] = $cache->get($key, \App\Modules\AISystem\UnifiedCache::CATEGORY_WEATHER);
 
         $result["suggested_cities"] = $this->getSuggestedCities();
         $result["trends"]           = [];

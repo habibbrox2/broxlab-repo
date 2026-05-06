@@ -76,9 +76,7 @@
             count: tag.count|default(0),
             categories: [],
             tags: [],
-            created_at: 'now'|date('Y-m-d H:i:s'),
-            views: tag.count|default(0),
-            impressions: 0
+            created_at: 'now'|date('Y-m-d H:i:s')
         }, index: loop.index } %}
       {% endfor %}
     </div>

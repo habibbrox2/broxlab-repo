@@ -1,11 +1,14 @@
 <?php
 // controllers/MixedApiController.php
 
+/** @var Router $router */
+/** @var \mysqli $mysqli */
+
 // ---------------- API Group: Public (rate-limited only) ----------------
-$router->group('/api', ['middleware' => ['rate_limit']], function($router) {
+$router->group('/api', ['middleware' => ['rate_limit']], function ($router) {
 
     // GET /api/public/time
-    $router->get('/public/time', function() {
+    $router->get('/public/time', function () {
         $response = [
             'server_time' => date('Y-m-d H:i:s'),
             'timezone' => date_default_timezone_get()
@@ -15,7 +18,7 @@ $router->group('/api', ['middleware' => ['rate_limit']], function($router) {
     });
 
     // GET /api/public/info
-    $router->get('/public/info', function() {
+    $router->get('/public/info', function () {
         $response = [
             'app_name' => 'Demo API',
             'version' => '1.0',
@@ -26,7 +29,7 @@ $router->group('/api', ['middleware' => ['rate_limit']], function($router) {
     });
 
     // POST /api/translate - Translate text dynamically
-    $router->post('/translate', function() {
+    $router->post('/translate', function () {
         $data = json_decode(file_get_contents('php://input'), true);
         $text = trim($data['text'] ?? '');
         $from = trim($data['from'] ?? 'en');
@@ -55,15 +58,14 @@ $router->group('/api', ['middleware' => ['rate_limit']], function($router) {
             echo json_encode(['error' => 'Translation failed: ' . $e->getMessage()]);
         }
     });
-
 });
 
 // ---------------- API Group: Authenticated User (auth + rate-limit) ----------------
-$router->group('/api', ['middleware' => ['auth', 'rate_limit']], function($router) use ($userModel) {
+$router->group('/api', ['middleware' => ['auth', 'rate_limit']], function ($router) use ($userModel) {
 
 
     // GET /api/user/profile
-    $router->get('/user/profile', function() use ($userModel) {
+    $router->get('/user/profile', function () use ($userModel) {
         $userId = AuthManager::getCurrentUserId();
 
         if (!$userId) {
@@ -95,7 +97,7 @@ $router->group('/api', ['middleware' => ['auth', 'rate_limit']], function($route
     });
 
     // POST /api/user/update
-    $router->post('/user/update', function() use ($userModel) {
+    $router->post('/user/update', function () use ($userModel) {
         $userId = AuthManager::getCurrentUserId();
 
         if (!$userId) {
@@ -134,7 +136,7 @@ $router->group('/api', ['middleware' => ['auth', 'rate_limit']], function($route
     });
 
     // GET /api/user/linked-emails - Get all linked recovery emails
-    $router->get('/user/linked-emails', function() use ($userModel) {
+    $router->get('/user/linked-emails', function () use ($userModel) {
         $userId = AuthManager::getCurrentUserId();
 
         if (!$userId) {
@@ -154,7 +156,7 @@ $router->group('/api', ['middleware' => ['auth', 'rate_limit']], function($route
     });
 
     // POST /api/user/linked-emails - Link new recovery email
-    $router->post('/user/linked-emails', function() use ($userModel) {
+    $router->post('/user/linked-emails', function () use ($userModel) {
         $userId = AuthManager::getCurrentUserId();
 
         if (!$userId) {
@@ -188,7 +190,7 @@ $router->group('/api', ['middleware' => ['auth', 'rate_limit']], function($route
             $verifyUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/verify-email?token=' . $result['verification_token'];
             $subject = 'Verify Your Recovery Email - BroxBhai';
             $body = "Hello,\n\nPlease verify your recovery email by clicking the link below:\n\n{$verifyUrl}\n\nThis link will expire in 24 hours.\n\nIf you did not request this, please ignore this email.\n\nBest regards,\nBroxBhai Team";
-            
+
             if (class_exists('EmailHelper')) {
                 try {
                     $emailHelper = new EmailHelper();
@@ -198,7 +200,7 @@ $router->group('/api', ['middleware' => ['auth', 'rate_limit']], function($route
                 }
             }
         }
-        
+
         logActivity("Recovery email added", "user", $userId, ['email' => $email], 'success');
 
         header('Content-Type: application/json; charset=utf-8');
@@ -210,7 +212,7 @@ $router->group('/api', ['middleware' => ['auth', 'rate_limit']], function($route
     });
 
     // DELETE /api/user/linked-emails/{email} - Remove linked email
-    $router->delete('/user/linked-emails/{email}', function($email) use ($userModel) {
+    $router->delete('/user/linked-emails/{email}', function ($email) use ($userModel) {
         $userId = AuthManager::getCurrentUserId();
 
         if (!$userId) {
@@ -246,7 +248,7 @@ $router->group('/api', ['middleware' => ['auth', 'rate_limit']], function($route
     });
 
     // PATCH /api/user/linked-emails/{email}/primary - Set as primary recovery email
-    $router->patch('/user/linked-emails/{email}/primary', function($email) use ($userModel) {
+    $router->patch('/user/linked-emails/{email}/primary', function ($email) use ($userModel) {
         $userId = AuthManager::getCurrentUserId();
 
         if (!$userId) {
@@ -280,58 +282,56 @@ $router->group('/api', ['middleware' => ['auth', 'rate_limit']], function($route
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['success' => true, 'message' => 'Primary email updated']);
     });
-
 });
 
 // ==================== TAGS & CATEGORIES API ENDPOINTS ====================
 
 // GET /api/tags - Get all or related tags
-$router->get('/api/tags', function() {
+$router->get('/api/tags', function () {
     $exclude = $_GET['exclude'] ?? '';
     $limit = min((int)($_GET['limit'] ?? 10), 50);
-    
+
     $query = "SELECT id, name, slug FROM tags WHERE 1=1";
-    
+
     if ($exclude) {
         $exclude = $GLOBALS['mysqli']->real_escape_string($exclude);
         $query .= " AND slug != '$exclude'";
     }
-    
+
     $query .= " ORDER BY name ASC LIMIT $limit";
-    
+
     $result = $GLOBALS['mysqli']->query($query);
     $tags = [];
-    
+
     while ($row = $result->fetch_assoc()) {
         $tags[] = $row;
     }
-    
+
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['tags' => $tags]);
 });
 
 // GET /api/categories - Get all or related categories
-$router->get('/api/categories', function() {
+$router->get('/api/categories', function () {
     $exclude = $_GET['exclude'] ?? '';
     $limit = min((int)($_GET['limit'] ?? 10), 50);
-    
+
     $query = "SELECT id, name, slug FROM categories WHERE 1=1";
-    
+
     if ($exclude) {
         $exclude = $GLOBALS['mysqli']->real_escape_string($exclude);
         $query .= " AND slug != '$exclude'";
     }
-    
+
     $query .= " ORDER BY name ASC LIMIT $limit";
-    
+
     $result = $GLOBALS['mysqli']->query($query);
     $categories = [];
-    
+
     while ($row = $result->fetch_assoc()) {
         $categories[] = $row;
     }
-    
+
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['categories' => $categories]);
 });
-

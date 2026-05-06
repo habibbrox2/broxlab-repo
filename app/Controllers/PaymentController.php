@@ -8,6 +8,10 @@
  * - Admin payment receipts list/export
  */
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+
 $paymentApplicationModel = new ServiceApplicationModel($mysqli);
 $paymentServiceModel = new ServiceModel($mysqli);
 $paymentUserModel = new UserModel($mysqli);
@@ -169,14 +173,16 @@ $router->get('/admin/applications/receipts/{id}/download', ['middleware' => ['au
 
     $applicationData = is_array($receipt['application_data'] ?? null) ? $receipt['application_data'] : [];
     $paymentInfo = [];
-    foreach ([
-        $applicationData['_payment'] ?? null,
-        $applicationData['_Payment'] ?? null,
-        $applicationData['payment'] ?? null,
-        $applicationData['Payment'] ?? null,
-        $applicationData['payment_info'] ?? null,
-        $applicationData['PaymentInfo'] ?? null,
-    ] as $candidatePayment) {
+    foreach (
+        [
+            $applicationData['_payment'] ?? null,
+            $applicationData['_Payment'] ?? null,
+            $applicationData['payment'] ?? null,
+            $applicationData['Payment'] ?? null,
+            $applicationData['payment_info'] ?? null,
+            $applicationData['PaymentInfo'] ?? null,
+        ] as $candidatePayment
+    ) {
         if (is_array($candidatePayment)) {
             $paymentInfo = $candidatePayment;
             break;

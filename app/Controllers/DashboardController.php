@@ -9,6 +9,10 @@
 
 declare(strict_types=1);
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+
 // ========= ADMIN DASHBOARD ==========
 
 /**

@@ -398,7 +398,6 @@
             <div class="cv-view-meta">
                 <span><i class="bi bi-calendar"></i> Created {{ cv.created_at|date('M j, Y')|default('Recently') }}</span>
                 <span><i class="bi bi-clock"></i> Updated {{ cv.updated_at|date('M j, Y')|default('Recently') }}</span>
-                <span><i class="bi bi-eye"></i> {{ cv.views|default(0) }} views</span>
             </div>
 
             <div class="cv-view-actions">

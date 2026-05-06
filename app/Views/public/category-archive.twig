@@ -112,9 +112,7 @@
                         created_at: category.created_at|default('now'),
                         count: category.count|default(0),
                         categories: [],
-                        tags: [],
-                        views: category.count|default(0),
-                        impressions: 0
+                        tags: []
                     }, index: loop.index } %}
                 {% endfor %}
             </div>

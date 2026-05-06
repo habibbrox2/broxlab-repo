@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Media Manager Routes - Updated with Enhanced Error Handling
  * 
@@ -17,7 +18,9 @@
  * - GET /api/media/stats â†’ JSON statistics
  */
 
-global $router, $twig, $mysqli;
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
 
 // Initialize models and services
 $mediaModel = new MediaModel($mysqli);
@@ -27,13 +30,15 @@ $uploadsPublicUrl = defined('UPLOADS_PUBLIC_URL') ? '/' . trim((string)UPLOADS_P
 // WEB ROUTES - Media Administration Interface
 // ============================================================================
 
-$router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']], function ($router) use ($twig, $mediaModel, $mediaManager, $uploadsPublicUrl) {
+$router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']], function ($router) use ($twig, $mediaModel, $mediaManager, $uploadsPublicUrl, $mysqli) {
 
     /**
      * GET /admin/media
      * Display media library with pagination and filters
      */
-    $router->get('', function () use ($twig, $mediaModel) {
+    $router->get(
+        '',
+        function () use ($twig, $mediaModel) {
             $page = (int)($_GET['page'] ?? 1);
             $page = max(1, $page);
 
@@ -50,38 +55,42 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
             $typeStats = $mediaModel->getByMediaType();
 
             echo $twig->render('admin/media/library.twig', [
-            'media' => $data['media'],
-            'pagination' => [
-            'current' => $page,
-            'total' => $data['pages'],
-            'per_page' => $data['limit'],
-            'total_items' => $data['total']
-            ],
-            'filters' => $_GET,
-            'stats' => $stats,
-            'type_stats' => $typeStats
+                'media' => $data['media'],
+                'pagination' => [
+                    'current' => $page,
+                    'total' => $data['pages'],
+                    'per_page' => $data['limit'],
+                    'total_items' => $data['total']
+                ],
+                'filters' => $_GET,
+                'stats' => $stats,
+                'type_stats' => $typeStats
             ]);
         }
-        );
+    );
 
-        /**
+    /**
      * GET /admin/media/upload
      * Display upload form
      */
-        $router->get('/upload', function () use ($twig) {
+    $router->get(
+        '/upload',
+        function () use ($twig) {
             echo $twig->render('admin/media/upload.twig', [
-            'max_file_size' => formatFileSize(52428800),
-            'max_file_size_bytes' => 52428800
+                'max_file_size' => formatFileSize(52428800),
+                'max_file_size_bytes' => 52428800
             ]);
         }
-        );
+    );
 
-        /**
+    /**
      * POST /admin/media/upload
      * Handle file upload using unified UploadService
      * Returns JSON for AJAX requests, redirects for regular form submissions
      */
-        $router->post('/upload', function () use ($mediaModel, $twig) {
+    $router->post(
+        '/upload',
+        function () use ($mediaModel, $twig) {
             $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
                 strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 
@@ -144,10 +153,10 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                     header('Content-Type: application/json');
                     http_response_code(200);
                     echo json_encode([
-                    'success' => true,
-                    'message' => 'মিডিয়া সফলভাবে আপলোড করা হয়েছে! (Media uploaded successfully!)',
-                    'media_id' => $result['media_id'],
-                    'redirect' => '/admin/media'
+                        'success' => true,
+                        'message' => 'মিডিয়া সফলভাবে আপলোড করা হয়েছে! (Media uploaded successfully!)',
+                        'media_id' => $result['media_id'],
+                        'redirect' => '/admin/media'
                     ]);
                     exit;
                 }
@@ -155,9 +164,7 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                 showMessage('মিডিয়া সফলভাবে আপলোড করা হয়েছে! (Media uploaded successfully!)', 'success');
                 header('Location: /admin/media');
                 exit;
-
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 $errorMsg = $e->getMessage();
                 $uploadTime = round((microtime(true) - $uploadStartTime) * 1000, 2);
 
@@ -167,7 +174,7 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                     'Media Upload Failed',
                     'media',
                     null,
-                ['error' => $errorMsg, 'file' => $_FILES['file']['name'] ?? 'unknown', 'user_id' => $userId],
+                    ['error' => $errorMsg, 'file' => $_FILES['file']['name'] ?? 'unknown', 'user_id' => $userId],
                     'failure'
                 );
 
@@ -175,9 +182,9 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                     header('Content-Type: application/json');
                     http_response_code(400);
                     echo json_encode([
-                    'success' => false,
-                    'error' => $errorMsg,
-                    'file' => $_FILES['file']['name'] ?? 'unknown'
+                        'success' => false,
+                        'error' => $errorMsg,
+                        'file' => $_FILES['file']['name'] ?? 'unknown'
                     ]);
                     exit;
                 }
@@ -187,13 +194,15 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                 exit;
             }
         }
-        );
+    );
 
-        /**
+    /**
      * GET /admin/media/{id}
      * View media details with error handling
      */
-        $router->get('/{id}', function ($id) use ($twig, $mediaModel, $uploadsPublicUrl) {
+    $router->get(
+        '/{id}',
+        function ($id) use ($twig, $mediaModel, $uploadsPublicUrl) {
             try {
                 $mediaId = (int)$id;
 
@@ -208,24 +217,25 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                 }
 
                 echo $twig->render('admin/media/detail.twig', [
-                'media' => $media,
-                'media_url' => $uploadsPublicUrl . '/media/' . $media['file_path'],
-                'thumbnail_url' => $media['thumbnail_path'] ? $uploadsPublicUrl . '/media/' . $media['thumbnail_path'] : null
+                    'media' => $media,
+                    'media_url' => $uploadsPublicUrl . '/media/' . $media['file_path'],
+                    'thumbnail_url' => $media['thumbnail_path'] ? $uploadsPublicUrl . '/media/' . $media['thumbnail_path'] : null
                 ]);
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 showMessage('ত্রুটি: ' . $e->getMessage(), 'error');
                 header('Location: /admin/media');
                 exit;
             }
         }
-        );
+    );
 
-        /**
+    /**
      * POST /admin/media/{id}/update
      * Update media title and description with error handling
      */
-        $router->post('/{id}/update', function ($id) use ($mediaModel) {
+    $router->post(
+        '/{id}/update',
+        function ($id) use ($mediaModel) {
             try {
                 $user = AuthManager::isUserAuthenticated();
                 $userId = AuthManager::getCurrentUserId();
@@ -262,8 +272,7 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                 $data['_performed_by'] = $userId;
                 logActivity('Media Updated', 'media', $mediaId, $data, 'success');
                 showMessage('মিডিয়া সফলভাবে আপডেট করা হয়েছে! (Media updated successfully!)', 'success');
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 $failureDetails = ['error' => $e->getMessage(), 'user_id' => $userId ?? null];
                 logActivity('Update Media Failed', 'media', $mediaId ?? 0, $failureDetails, 'failure');
                 showMessage('আপডেট ব্যর্থ: ' . $e->getMessage(), 'error');
@@ -272,13 +281,15 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
             header('Location: /admin/media/' . ($mediaId ?? 0));
             exit;
         }
-        );
+    );
 
-        /**
+    /**
      * POST /admin/media/{id}/delete
      * Soft delete media with error handling
      */
-        $router->post('/{id}/delete', function ($id) use ($mediaModel) {
+    $router->post(
+        '/{id}/delete',
+        function ($id) use ($mediaModel) {
             try {
                 $user = AuthManager::isUserAuthenticated();
                 $userId = AuthManager::getCurrentUserId();
@@ -303,8 +314,7 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                 $details = ['action' => 'soft_delete', '_performed_by' => $userId];
                 logActivity('Media Deleted', 'media', $mediaId, $details, 'success');
                 showMessage('মিডিয়া সফলভাবে মুছে দেওয়া হয়েছে! (Media deleted successfully!)', 'success');
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 $failureDetails = ['error' => $e->getMessage(), 'user_id' => $userId ?? null];
                 logActivity('Delete Media Failed', 'media', $mediaId ?? 0, $failureDetails, 'failure');
                 showMessage('মুছতে ব্যর্থ: ' . $e->getMessage(), 'error');
@@ -313,8 +323,8 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
             header('Location: /admin/media');
             exit;
         }
-        );
-    });
+    );
+});
 
 // ============================================================================
 // API ROUTES - JSON Media Endpoints
@@ -327,7 +337,9 @@ $router->group('/api/media', ['middleware' => ['auth', 'admin_only']], function 
      * JSON list of media with pagination and filtering
      * Query params: page, limit, type, search
      */
-    $router->get('', function () use ($mediaModel) {
+    $router->get(
+        '',
+        function () use ($mediaModel) {
             try {
                 $page = (int)($_GET['page'] ?? 1);
                 $limit = min((int)($_GET['limit'] ?? 20), 100);
@@ -352,38 +364,39 @@ $router->group('/api/media', ['middleware' => ['auth', 'admin_only']], function 
                 $data = $mediaModel->getAll($page, $limit, $filters);
 
                 return json_response([
-                'success' => true,
-                'media' => $data['media'],
-                'pagination' => [
-                'page' => $data['page'],
-                'limit' => $data['limit'],
-                'total' => $data['total'],
-                'pages' => $data['pages']
-                ]
+                    'success' => true,
+                    'media' => $data['media'],
+                    'pagination' => [
+                        'page' => $data['page'],
+                        'limit' => $data['limit'],
+                        'total' => $data['total'],
+                        'pages' => $data['pages']
+                    ]
                 ]);
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 return json_response([
-                'success' => false,
-                'error' => 'ডেটা পুনরুদ্ধার ব্যর্থ। (Failed to retrieve data)',
-                'message' => $e->getMessage()
+                    'success' => false,
+                    'error' => 'ডেটা পুনরুদ্ধার ব্যর্থ। (Failed to retrieve data)',
+                    'message' => $e->getMessage()
                 ], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * GET /api/media/{id}
      * Get single media details with error handling
      */
-        $router->get('/{id}', function ($id) use ($mediaModel, $uploadsPublicUrl) {
+    $router->get(
+        '/{id}',
+        function ($id) use ($mediaModel, $uploadsPublicUrl) {
             try {
                 $mediaId = (int)$id;
 
                 if ($mediaId <= 0) {
                     return json_response([
-                    'success' => false,
-                    'error' => 'অবৈধ মিডিয়া আইডি। (Invalid media ID)'
+                        'success' => false,
+                        'error' => 'অবৈধ মিডিয়া আইডি। (Invalid media ID)'
                     ], 400);
                 }
 
@@ -391,33 +404,34 @@ $router->group('/api/media', ['middleware' => ['auth', 'admin_only']], function 
 
                 if (!$media) {
                     return json_response([
-                    'success' => false,
-                    'error' => 'মিডিয়া পাওয়া যায়নি। (Media not found)'
+                        'success' => false,
+                        'error' => 'মিডিয়া পাওয়া যায়নি। (Media not found)'
                     ], 404);
                 }
 
                 return json_response([
-                'success' => true,
-                'media' => $media,
-                'media_url' => $uploadsPublicUrl . '/media/' . $media['file_path'],
-                'thumbnail_url' => $media['thumbnail_path'] ? $uploadsPublicUrl . '/media/' . $media['thumbnail_path'] : null
+                    'success' => true,
+                    'media' => $media,
+                    'media_url' => $uploadsPublicUrl . '/media/' . $media['file_path'],
+                    'thumbnail_url' => $media['thumbnail_path'] ? $uploadsPublicUrl . '/media/' . $media['thumbnail_path'] : null
                 ]);
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 return json_response([
-                'success' => false,
-                'error' => 'মিডিয়া পুনরুদ্ধার ব্যর্থ। (Failed to retrieve media)',
-                'message' => $e->getMessage()
+                    'success' => false,
+                    'error' => 'মিডিয়া পুনরুদ্ধার ব্যর্থ। (Failed to retrieve media)',
+                    'message' => $e->getMessage()
                 ], 500);
             }
         }
-        );
+    );
 
-        /**
+    /**
      * GET /api/media/stats
      * Get media statistics with error handling
      */
-        $router->get('/stats', function () use ($mediaModel) {
+    $router->get(
+        '/stats',
+        function () use ($mediaModel) {
             try {
                 $stats = $mediaModel->getStats();
                 $typeStats = $mediaModel->getByMediaType();
@@ -427,18 +441,17 @@ $router->group('/api/media', ['middleware' => ['auth', 'admin_only']], function 
                 }
 
                 return json_response([
-                'success' => true,
-                'stats' => $stats,
-                'by_type' => $typeStats
+                    'success' => true,
+                    'stats' => $stats,
+                    'by_type' => $typeStats
                 ]);
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 return json_response([
-                'success' => false,
-                'error' => 'পরিসংখ্যান পুনরুদ্ধার ব্যর্থ। (Failed to retrieve statistics)',
-                'message' => $e->getMessage()
+                    'success' => false,
+                    'error' => 'পরিসংখ্যান পুনরুদ্ধার ব্যর্থ। (Failed to retrieve statistics)',
+                    'message' => $e->getMessage()
                 ], 500);
             }
         }
-        );
-    });
+    );
+});

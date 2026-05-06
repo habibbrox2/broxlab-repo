@@ -172,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateButtonState = () => {
       const currentTheme = window.themeManager.getCurrentTheme();
       const isDark = currentTheme === 'dark';
-      const icon = themeToggleBtn.querySelector('i');
       const themeToggleText = isDark
         ? window.broxI18n?.translate('Switch to light mode') || 'Switch to light mode'
         : window.broxI18n?.translate('Switch to dark mode') || 'Switch to dark mode';

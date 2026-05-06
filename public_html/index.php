@@ -398,7 +398,8 @@ try {
         }
     }
 
-    $router->dispatch($requestMethod, $_SERVER['REQUEST_URI']);
+    $requestUri = $_SERVER['REQUEST_URI'] ?? $_SERVER['PHP_SELF'] ?? '/';
+    $router->dispatch($requestMethod, $requestUri);
 } catch (Throwable $e) {
     logError('Routing Error: ' . $e->getMessage());
     renderError(500, 'Routing Error');
@@ -408,4 +409,3 @@ try {
 if (ob_get_level() > 0) {
     ob_end_flush();
 }
-

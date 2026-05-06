@@ -1,9 +1,13 @@
 <?php
+
 /**
  * SimRoutingController.php
  * Admin routes for managing SIM Routing rules.
  */
-global $router, $mysqli, $twig;
+
+/** @var Router $router */
+/** @var \mysqli $mysqli */
+/** @var \Twig\Environment $twig */
 
 if (!isset($router, $mysqli, $twig)) {
     return;

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Weather Service
  * Handles weather API calls with caching
@@ -8,7 +9,7 @@
 
 namespace App\Services;
 
-use App\Helpers\CacheHelper;
+use App\Modules\AISystem\UnifiedCache;
 use Exception;
 
 class WeatherService
@@ -20,7 +21,7 @@ class WeatherService
     {
         // Config and cache are loaded on-demand in methods
     }
-    
+
     private function getConfig()
     {
         static $config = null;
@@ -29,12 +30,12 @@ class WeatherService
         }
         return $config;
     }
-    
+
     private function getCache()
     {
         static $cache = null;
         if ($cache === null) {
-            $cache = new \App\Helpers\CacheHelper();
+            $cache = \App\Modules\AISystem\UnifiedCache::getInstance();
         }
         return $cache;
     }
@@ -51,7 +52,7 @@ class WeatherService
     {
         $config = $this->getConfig();
         $cache = $this->getCache();
-        
+
         // Generate cache key
         $cacheKey = $config['cache']['prefix'] . md5($location . $units . $forecastDays);
 
@@ -79,7 +80,6 @@ class WeatherService
             }
 
             return $weatherData;
-
         } catch (Exception $e) {
             error_log('Weather API Error: ' . $e->getMessage());
             return [
@@ -95,7 +95,7 @@ class WeatherService
     private function fetchByCity(string $city, string $units, int $forecastDays): array
     {
         $config = $this->getConfig()['openweathermap'];
-        
+
         // First, geocode the city name
         $geoUrl = $config['geocoding_url'] . '/direct?' . http_build_query([
             'q' => $city,
@@ -104,7 +104,7 @@ class WeatherService
         ]);
 
         $geoData = $this->makeApiCall($geoUrl);
-        
+
         if (empty($geoData) || !isset($geoData[0])) {
             return ['success' => false, 'error' => 'Location not found. Please check the city name.'];
         }
@@ -122,7 +122,7 @@ class WeatherService
     private function fetchByCoordinates(float $lat, float $lon, string $units, int $forecastDays, string $locationName = null): array
     {
         $config = $this->getConfig()['openweathermap'];
-        
+
         // Current weather
         $currentUrl = $config['base_url'] . '/weather?' . http_build_query([
             'lat' => $lat,
@@ -170,7 +170,7 @@ class WeatherService
             ]);
 
             $forecastData = $this->makeApiCall($forecastUrl);
-            
+
             if (isset($forecastData['list'])) {
                 $result['data']['forecast'] = $this->processForecast($forecastData['list'], $forecastDays);
             }
@@ -201,7 +201,7 @@ class WeatherService
 
             $temps = array_column(array_column($items, 'main'), 'temp');
             $humidity = array_column(array_column($items, 'main'), 'humidity');
-            
+
             $dailyForecasts[] = [
                 'date' => $date,
                 'day_name' => date('l', strtotime($date)),
@@ -231,13 +231,13 @@ class WeatherService
         ]);
 
         $response = @file_get_contents($url, false, $context);
-        
+
         if ($response === false) {
             throw new Exception('API request failed');
         }
 
         $data = json_decode($response, true);
-        
+
         if (isset($data['cod']) && $data['cod'] != 200) {
             throw new Exception($data['message'] ?? 'API error');
         }

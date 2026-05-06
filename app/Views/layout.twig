@@ -541,7 +541,8 @@
                             </a>
                             <meta itemprop="position" content="{{ position }}">
                         </li>
-                        {% else %}
+                        {% endif %}
+                        {% if loop.last %}
                         <li class="breadcrumb-item active" aria-current="page" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
                             <span itemprop="item">
                                 {% if crumb.icon %}<i class="bi bi-{{ crumb.icon }} me-1" aria-hidden="true"></i>{% endif %}
@@ -635,25 +636,25 @@
         window.__broxSiteTranslations['{{ current_lang }}'] = Object.assign(
             window.__broxSiteTranslations['{{ current_lang }}'] || {},
             {
-                'Enable Push Notifications': {{ 'Enable Push Notifications'|trans|json_encode }},
-                'Enable push notifications': {{ 'Enable push notifications'|trans|json_encode }},
-                'Enable notifications': {{ 'Enable notifications'|trans|json_encode }},
-                'Enable': {{ 'Enable'|trans|json_encode }},
-                'Later': {{ 'Later'|trans|json_encode }},
-                'Stay updated with instant alerts and important updates.': {{ 'Stay updated with instant alerts and important updates.'|trans|json_encode }},
-                'Notification': {{ 'Notification'|trans|json_encode }},
-                'Scroll to top of page': {{ 'Scroll to top of page'|trans|json_encode }},
-                'Switch to light mode': {{ 'Switch to light mode'|trans|json_encode }},
-                'Switch to dark mode': {{ 'Switch to dark mode'|trans|json_encode }},
-                'Toggle theme': {{ 'Toggle theme'|trans|json_encode }},
-                'Login': {{ 'Login'|trans|json_encode }},
-                'Join Now': {{ 'Join Now'|trans|json_encode }},
-                'Logout': {{ 'Logout'|trans|json_encode }},
-                'Profile': {{ 'Profile'|trans|json_encode }},
-                'Dashboard': {{ 'Dashboard'|trans|json_encode }},
-                'Notifications': {{ 'Notifications'|trans|json_encode }},
-                'Settings': {{ 'Settings'|trans|json_encode }},
-                'Home': {{ 'Home'|trans|json_encode }}
+                'Enable Push Notifications': {{ 'Enable Push Notifications'|trans|json_encode|raw }},
+                'Enable push notifications': {{ 'Enable push notifications'|trans|json_encode|raw }},
+                'Enable notifications': {{ 'Enable notifications'|trans|json_encode|raw }},
+                'Enable': {{ 'Enable'|trans|json_encode|raw }},
+                'Later': {{ 'Later'|trans|json_encode|raw }},
+                'Stay updated with instant alerts and important updates.': {{ 'Stay updated with instant alerts and important updates.'|trans|json_encode|raw }},
+                'Notification': {{ 'Notification'|trans|json_encode|raw }},
+                'Scroll to top of page': {{ 'Scroll to top of page'|trans|json_encode|raw }},
+                'Switch to light mode': {{ 'Switch to light mode'|trans|json_encode|raw }},
+                'Switch to dark mode': {{ 'Switch to dark mode'|trans|json_encode|raw }},
+                'Toggle theme': {{ 'Toggle theme'|trans|json_encode|raw }},
+                'Login': {{ 'Login'|trans|json_encode|raw }},
+                'Join Now': {{ 'Join Now'|trans|json_encode|raw }},
+                'Logout': {{ 'Logout'|trans|json_encode|raw }},
+                'Profile': {{ 'Profile'|trans|json_encode|raw }},
+                'Dashboard': {{ 'Dashboard'|trans|json_encode|raw }},
+                'Notifications': {{ 'Notifications'|trans|json_encode|raw }},
+                'Settings': {{ 'Settings'|trans|json_encode|raw }},
+                'Home': {{ 'Home'|trans|json_encode|raw }}
             }
         );
     </script>
@@ -706,11 +707,6 @@
 {% include 'partials/ai-assistant/admin.twig' %}
 {% include 'partials/ai-assistant/script.twig' %}
     {% endif %}
-
-</body>
-</html>
-
-
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -849,6 +845,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+</body>
+</html>
 
 
 

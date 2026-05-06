@@ -2,14 +2,20 @@
 
 // controllers/PostsController.php
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+
 $contentModel = new ContentModel($mysqli);
 $commentModel = new commentModel($mysqli);
 
 // -------------------- ADMIN ROUTES --------------------
-$router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($router) use ($twig, $contentModel, $commentModel) {
+$router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($router) use ($twig, $contentModel, $commentModel, $mysqli) {
 
     // -------------------- POSTS --------------------
-    $router->get('/posts', function () use ($twig, $contentModel) {
+    $router->get(
+        '/posts',
+        function () use ($twig, $contentModel) {
             $page = max(1, (int)($_GET['page'] ?? 1));
             $limit = max(5, min(100, (int)($_GET['limit'] ?? 20)));
             $search = sanitize_input($_GET['search'] ?? '');
@@ -41,19 +47,21 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             ];
 
             echo $twig->render('admin/posts/list.twig', [
-            'title' => 'Admin - All Posts',
-            'posts' => $posts,
-            'pagination' => $paginationData,
-            'search' => $search,
-            'sort' => $sort,
-            'order' => $order,
-            'status' => $status,
-            'limit' => $limit,
+                'title' => 'Admin - All Posts',
+                'posts' => $posts,
+                'pagination' => $paginationData,
+                'search' => $search,
+                'sort' => $sort,
+                'order' => $order,
+                'status' => $status,
+                'limit' => $limit,
             ]);
         }
-        );
+    );
 
-        $router->get('/posts/view', function () use ($twig, $contentModel) {
+    $router->get(
+        '/posts/view',
+        function () use ($twig, $contentModel) {
             $id = sanitize_input($_GET['id'] ?? null);
             if (!$id) {
                 echo $twig->render('error.twig', ['message' => 'Post ID not specified']);
@@ -63,32 +71,36 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             $post['tags'] = $contentModel->getTagsForContent('post', $id);
             $post['categories'] = $contentModel->getCategoriesForContent('post', $id);
             echo $twig->render('admin/posts/view.twig', [
-            'title' => $post['title'],
-            'post' => $post,
+                'title' => $post['title'],
+                'post' => $post,
             ]);
         }
-        );
+    );
 
-        // ---------------- CREATE POST ----------------
-        $router->get('/posts/create', function () use ($twig, $contentModel) {
+    // ---------------- CREATE POST ----------------
+    $router->get(
+        '/posts/create',
+        function () use ($twig, $contentModel) {
             $categories = $contentModel->getAllCategories();
             $allTags = $contentModel->getAllTags();
             echo $twig->render('admin/content/form.twig', [
-            'title' => 'Add New Post',
-            'type' => 'posts',
-            'item' => null,
-            'categories' => $categories,
-            'allTags' => $allTags,
-            'selectedTags' => [],
-            'selectedCategories' => [],
-            'status' => 'published', // default for create
-            'isCreate' => true,
-            'flash' => getFlashMessage()
+                'title' => 'Add New Post',
+                'type' => 'posts',
+                'item' => null,
+                'categories' => $categories,
+                'allTags' => $allTags,
+                'selectedTags' => [],
+                'selectedCategories' => [],
+                'status' => 'published', // default for create
+                'isCreate' => true,
+                'flash' => getFlashMessage()
             ]);
         }
-        );
+    );
 
-        $router->post('/posts/create', function () use ($contentModel) {
+    $router->post(
+        '/posts/create',
+        function () use ($contentModel) {
             global $mysqli;
 
             $title = sanitize_input($_POST['title'] ?? '');
@@ -139,14 +151,12 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
                 foreach ((array)$tagInput as $t) {
                     if (is_numeric($t)) {
                         $tagIds[] = intval($t);
-                    }
-                    else {
+                    } else {
                         $slug = slugify($t);
                         $existingTag = $contentModel->getTagBySlug($slug);
                         if ($existingTag) {
                             $tagIds[] = $existingTag['id'];
-                        }
-                        else {
+                        } else {
                             $tagIds[] = $contentModel->createTag($t);
                         }
                     }
@@ -181,8 +191,7 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
                         $pushResult = sendContentCreatedPush($mysqli, 'post', (int)$postId, $title, $postSlug, $adminId);
                         logError('[ContentPush][PostCreate] ' . json_encode($pushResult, JSON_UNESCAPED_UNICODE));
                     }
-                }
-                catch (Throwable $e) {
+                } catch (Throwable $e) {
                     logError('[ContentPush][PostCreate] Failed: ' . $e->getMessage());
                 }
             }
@@ -206,8 +215,7 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
                             logActivity("Post Notification Sent", "post", $postId, ['author_id' => $postAuthorId], 'success');
                         }
                     }
-                }
-                catch (Exception $e) {
+                } catch (Exception $e) {
                     logError('[PostApprovalNotif] Error sending notification on post creation: ' . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
                 }
             }
@@ -217,10 +225,12 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             header("Location: /admin/posts");
             exit;
         }
-        );
+    );
 
-        // ---------------- EDIT POST ----------------
-        $router->get('/posts/edit', function () use ($twig, $contentModel) {
+    // ---------------- EDIT POST ----------------
+    $router->get(
+        '/posts/edit',
+        function () use ($twig, $contentModel) {
             $id = sanitize_input($_GET['id'] ?? null);
             $post = $contentModel->getPostById($id);
 
@@ -238,21 +248,23 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             }
 
             echo $twig->render('admin/content/form.twig', [
-            'title' => 'Edit Post',
-            'type' => 'posts',
-            'item' => $post,
-            'categories' => $categories,
-            'allTags' => $allTags,
-            'selectedTags' => $postTags,
-            'selectedCategories' => $postCategories,
-            'status' => $status,
-            'isCreate' => false,
-            'flash' => getFlashMessage()
+                'title' => 'Edit Post',
+                'type' => 'posts',
+                'item' => $post,
+                'categories' => $categories,
+                'allTags' => $allTags,
+                'selectedTags' => $postTags,
+                'selectedCategories' => $postCategories,
+                'status' => $status,
+                'isCreate' => false,
+                'flash' => getFlashMessage()
             ]);
         }
-        );
+    );
 
-        $router->post('/posts/edit', function () use ($contentModel) {
+    $router->post(
+        '/posts/edit',
+        function () use ($contentModel) {
             global $mysqli;
 
             $id = sanitize_input($_POST['id'] ?? null);
@@ -304,14 +316,12 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
                 foreach ((array)$tagInput as $t) {
                     if (is_numeric($t)) {
                         $tagIds[] = intval($t);
-                    }
-                    else {
+                    } else {
                         $slug = slugify($t);
                         $existingTag = $contentModel->getTagBySlug($slug);
                         if ($existingTag) {
                             $tagIds[] = $existingTag['id'];
-                        }
-                        else {
+                        } else {
                             $tagIds[] = $contentModel->createTag($t);
                         }
                     }
@@ -353,8 +363,7 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
                             logActivity("Post Notification Sent", "post", $id, ['author_id' => $postAuthorId], 'success');
                         }
                     }
-                }
-                catch (Exception $e) {
+                } catch (Exception $e) {
                     logError('[PostApprovalNotif] Error sending notification: ' . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
                 }
             }
@@ -364,9 +373,11 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             header("Location: /admin/posts/edit?id={$id}");
             exit;
         }
-        );
+    );
 
-        $router->get('/posts/delete', function () use ($contentModel) {
+    $router->get(
+        '/posts/delete',
+        function () use ($contentModel) {
             $id = sanitize_input($_GET['id'] ?? null);
 
             if (!$id) {
@@ -396,7 +407,8 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             header("Location: /admin/posts");
             exit;
         }
-        );    });
+    );
+});
 
 // -------------------- AJAX API --------------------
 
@@ -410,8 +422,7 @@ $router->get('/api/posts/check_permalink', ['middleware' => ['auth', 'admin_only
         $post = $contentModel->getPostBySlug($slug);
         if ($post && $excludeId && $post['id'] == $excludeId) {
             $available = true;
-        }
-        elseif ($post) {
+        } elseif ($post) {
             $available = false;
         }
     }
@@ -438,8 +449,7 @@ $router->post('/api/posts/autosave', ['middleware' => ['auth', 'admin_only']], f
         // Auto-save with status support
         $contentModel->updatePost($id, $title, $content, $slug, $published, null, null);
         $response = ['success' => true, 'message' => 'Post auto-saved', 'status' => $status, 'published' => $published];
-    }
-    else {
+    } else {
         $response = ['success' => false, 'message' => 'Post ID missing'];
     }
 
@@ -465,31 +475,34 @@ $router->get('/posts', function () use ($twig, $contentModel) {
     $posts = $contentModel->getPosts($page, $perPage, $search, $sort, $order, []);
 
     if ($category) {
-        $posts = array_filter($posts, function ($post) use ($contentModel, $category) {
-                    $categories = $contentModel->getCategoriesForContent('post', $post['id']);
-                    foreach ($categories as $cat) {
-                        if ($cat['slug'] === $category)
-                            return true;
-                    }
-                    return false;
+        $posts = array_filter(
+            $posts,
+            function ($post) use ($contentModel, $category) {
+                $categories = $contentModel->getCategoriesForContent('post', $post['id']);
+                foreach ($categories as $cat) {
+                    if ($cat['slug'] === $category)
+                        return true;
                 }
-                );
-                $posts = array_values($posts);
+                return false;
             }
+        );
+        $posts = array_values($posts);
+    }
 
-            echo $twig->render('posts/list.twig', [
-            'title' => 'Articles',
-            'posts' => $posts,
-            'search' => $search,
-            'category' => $category,
-            'sort' => $sort,
-            'order' => $order,
-            'current_page' => $page,
-            'total_pages' => $totalPages,
-            'per_page' => $perPage,
-            'total_posts' => $totalPosts,
-            'available_per_page' => [6, 12, 18, 24, 36, 60]
-            ]);        });
+    echo $twig->render('posts/list.twig', [
+        'title' => 'Articles',
+        'posts' => $posts,
+        'search' => $search,
+        'category' => $category,
+        'sort' => $sort,
+        'order' => $order,
+        'current_page' => $page,
+        'total_pages' => $totalPages,
+        'per_page' => $perPage,
+        'total_posts' => $totalPosts,
+        'available_per_page' => [6, 12, 18, 24, 36, 60]
+    ]);
+});
 
 // Posts by slug
 $router->get('/posts/view/{slug}', function ($slug = null) use ($twig, $contentModel, $commentModel) {
@@ -500,14 +513,6 @@ $router->get('/posts/view/{slug}', function ($slug = null) use ($twig, $contentM
     $post = $contentModel->getPostBySlug($slug);
     if (!$post)
         renderError(404, "Post not found");
-
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-    if ($contentModel->addPostImpression((int)$post['id'], $ip)) {
-        $post['impressions'] = (int)($post['impressions'] ?? 0) + 1;
-    }
-    if ($contentModel->addPostView((int)$post['id'], $ip)) {
-        $post['views'] = (int)($post['views'] ?? 0) + 1;
-    }
 
     $previousPost = $contentModel->getPreviousPost($post['id']);
     $nextPost = $contentModel->getNextPost($post['id']);
@@ -525,11 +530,11 @@ $router->get('/posts/view/{slug}', function ($slug = null) use ($twig, $contentM
     $post['categories'] = $contentModel->getCategoriesForContent('post', $post['id']);
 
     echo $twig->render('posts/view.twig', [
-    'title' => $post['title'],
-    'post' => $post,
-    'previousPost' => $previousPost,
-    'nextPost' => $nextPost,
-    'relatedPosts' => $relatedPosts,
-    'comments' => $comments,
+        'title' => $post['title'],
+        'post' => $post,
+        'previousPost' => $previousPost,
+        'nextPost' => $nextPost,
+        'relatedPosts' => $relatedPosts,
+        'comments' => $comments,
     ]);
 });

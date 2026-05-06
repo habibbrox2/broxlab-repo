@@ -1,6 +1,10 @@
 <?php
 // controllers/TagsCategoriesController.php
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+
 $model = new ContentModel($mysqli);
 
 // Admin route group
@@ -9,7 +13,9 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
     // ------------------ Categories ------------------
 
     // List all categories
-    $router->get('/categories', function () use ($twig, $model) {
+    $router->get(
+        '/categories',
+        function () use ($twig, $model) {
             $page = max(1, (int)($_GET['page'] ?? 1));
             $limit = max(5, min(100, (int)($_GET['limit'] ?? 20)));
             $search = sanitize_input($_GET['search'] ?? '');
@@ -33,27 +39,33 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             ];
 
             echo $twig->render('admin/categories/list.twig', [
-            'categories' => $categories,
-            'pagination' => $paginationData
+                'categories' => $categories,
+                'pagination' => $paginationData
             ]);
         }
-        );
+    );
 
-        // Show single category
-        $router->get('/categories/view/{id}', function ($id) use ($twig, $model) {
+    // Show single category
+    $router->get(
+        '/categories/view/{id}',
+        function ($id) use ($twig, $model) {
             $category = $model->getCategoryById($id);
             echo $twig->render('admin/categories/view.twig', ['category' => $category]);
         }
-        );
+    );
 
-        // Create category (form)
-        $router->get('/categories/create', function () use ($twig, $model) {
+    // Create category (form)
+    $router->get(
+        '/categories/create',
+        function () use ($twig, $model) {
             echo $twig->render('admin/categories/create.twig');
         }
-        );
+    );
 
-        // Create category (submit)
-        $router->post('/categories/create', function () use ($twig, $model) {
+    // Create category (submit)
+    $router->post(
+        '/categories/create',
+        function () use ($twig, $model) {
             $name = $_POST['name'] ?? '';
             $slug = $_POST['slug'] ?? null;
 
@@ -70,17 +82,21 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             header("Location: /admin/categories");
             exit;
         }
-        );
+    );
 
-        // Edit category (form)
-        $router->get('/categories/edit/{id}', function ($id) use ($twig, $model) {
+    // Edit category (form)
+    $router->get(
+        '/categories/edit/{id}',
+        function ($id) use ($twig, $model) {
             $category = $model->getCategoryById($id);
             echo $twig->render('admin/categories/edit.twig', ['category' => $category]);
         }
-        );
+    );
 
-        // Update category (submit)
-        $router->post('/categories/edit/{id}', function ($id) use ($twig, $model) {
+    // Update category (submit)
+    $router->post(
+        '/categories/edit/{id}',
+        function ($id) use ($twig, $model) {
             $name = $_POST['name'] ?? '';
             $slug = $_POST['slug'] ?? null;
 
@@ -97,10 +113,12 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             header("Location: /admin/categories");
             exit;
         }
-        );
+    );
 
-        // Delete category
-        $router->get('/categories/delete/{id}', function ($id) use ($twig, $model) {
+    // Delete category
+    $router->get(
+        '/categories/delete/{id}',
+        function ($id) use ($twig, $model) {
             $category = $model->getCategoryById($id);
 
             if (!$category) {
@@ -123,12 +141,14 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             header("Location: /admin/categories");
             exit;
         }
-        );
+    );
 
-        // ------------------ Tags ------------------
-    
-        // List all tags
-        $router->get('/tags', function () use ($twig, $model) {
+    // ------------------ Tags ------------------
+
+    // List all tags
+    $router->get(
+        '/tags',
+        function () use ($twig, $model) {
             $page = max(1, (int)($_GET['page'] ?? 1));
             $limit = max(5, min(100, (int)($_GET['limit'] ?? 20)));
             $search = sanitize_input($_GET['search'] ?? '');
@@ -152,27 +172,33 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             ];
 
             echo $twig->render('admin/tags/list.twig', [
-            'tags' => $tags,
-            'pagination' => $paginationData
+                'tags' => $tags,
+                'pagination' => $paginationData
             ]);
         }
-        );
+    );
 
-        // Show single tag
-        $router->get('/tags/view/{id}', function ($id) use ($twig, $model) {
+    // Show single tag
+    $router->get(
+        '/tags/view/{id}',
+        function ($id) use ($twig, $model) {
             $tag = $model->getTagById($id);
             echo $twig->render('admin/tags/view.twig', ['tag' => $tag]);
         }
-        );
+    );
 
-        // Create tag (form)
-        $router->get('/tags/create', function () use ($twig, $model) {
+    // Create tag (form)
+    $router->get(
+        '/tags/create',
+        function () use ($twig, $model) {
             echo $twig->render('admin/tags/create.twig');
         }
-        );
+    );
 
-        // Create tag (submit)
-        $router->post('/tags/create', function () use ($twig, $model) {
+    // Create tag (submit)
+    $router->post(
+        '/tags/create',
+        function () use ($twig, $model) {
             $name = $_POST['name'] ?? '';
             $slug = $_POST['slug'] ?? null;
 
@@ -189,17 +215,21 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             header("Location: /admin/tags");
             exit;
         }
-        );
+    );
 
-        // Edit tag (form)
-        $router->get('/tags/edit/{id}', function ($id) use ($twig, $model) {
+    // Edit tag (form)
+    $router->get(
+        '/tags/edit/{id}',
+        function ($id) use ($twig, $model) {
             $tag = $model->getTagById($id);
             echo $twig->render('admin/tags/edit.twig', ['tag' => $tag]);
         }
-        );
+    );
 
-        // Update tag (submit)
-        $router->post('/tags/edit/{id}', function ($id) use ($twig, $model) {
+    // Update tag (submit)
+    $router->post(
+        '/tags/edit/{id}',
+        function ($id) use ($twig, $model) {
             $name = $_POST['name'] ?? '';
             $slug = $_POST['slug'] ?? null;
 
@@ -216,10 +246,12 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             header("Location: /admin/tags");
             exit;
         }
-        );
+    );
 
-        // Delete tag
-        $router->get('/tags/delete/{id}', function ($id) use ($twig, $model) {
+    // Delete tag
+    $router->get(
+        '/tags/delete/{id}',
+        function ($id) use ($twig, $model) {
             $tag = $model->getTagById($id);
 
             if (!$tag) {
@@ -242,8 +274,8 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             header("Location: /admin/tags");
             exit;
         }
-        );
-    });
+    );
+});
 
 // ==================== PUBLIC ROUTES ====================
 
@@ -264,13 +296,13 @@ $router->get('/tags', function () use ($twig, $model) {
     $total_pages = ceil($total / $per_page);
 
     echo $twig->render('public/tag-list.twig', [
-    'tags' => $tags,
-    'total_tags' => $total,
-    'current_page' => $page,
-    'total_pages' => $total_pages,
-    'per_page' => $per_page,
-    'search' => $search,
-    'sort' => $sort
+        'tags' => $tags,
+        'total_tags' => $total,
+        'current_page' => $page,
+        'total_pages' => $total_pages,
+        'per_page' => $per_page,
+        'search' => $search,
+        'sort' => $sort
     ]);
 });
 
@@ -286,8 +318,7 @@ $router->get('/tag/{slug}', function ($slug) use ($twig, $model) {
     // Legacy compatibility: support order hint even when sort is omitted.
     if ($order === 'ASC' && (!isset($_GET['sort']) || $sort === 'latest')) {
         $sort = 'oldest';
-    }
-    elseif ($order === 'DESC' && $sort === 'oldest') {
+    } elseif ($order === 'DESC' && $sort === 'oldest') {
         $sort = 'latest';
     }
 
@@ -297,9 +328,9 @@ $router->get('/tag/{slug}', function ($slug) use ($twig, $model) {
     if (!$tag) {
         http_response_code(404);
         echo $twig->render('public/error.twig', [
-        'code' => 404,
-        'title' => 'Tag Not Found',
-        'message' => 'Tag not found'
+            'code' => 404,
+            'title' => 'Tag Not Found',
+            'message' => 'Tag not found'
         ]);
         exit;
     }
@@ -316,32 +347,35 @@ $router->get('/tag/{slug}', function ($slug) use ($twig, $model) {
         // normalize image fields to string/array as expected by content-card
         if (!empty($c['images']) && is_array($c['images'])) {
             // normalize images array to string URLs/paths (prefer thumbnail -> image -> url/path)
-            $c['images'] = array_values(array_filter(array_map(function ($img) {
-                            if (is_array($img))
-                                return $img['thumbnail_path'] ?? $img['image_path'] ?? $img['url'] ?? $img['path'] ?? null;
-                            return $img;
-                        }
-                            , $c['images'])));
-                    }
-                    if (!empty($c['image'])) {
-                        if (is_array($c['image'])) {
-                            // prefer thumbnail_path, then image_path, then url/path
-                            $c['image'] = $c['image']['thumbnail_path'] ?? $c['image']['image_path'] ?? $c['image']['url'] ?? $c['image']['path'] ?? reset($c['image']);
-                        }
-                    }
-                }
+            $c['images'] = array_values(array_filter(array_map(
+                function ($img) {
+                    if (is_array($img))
+                        return $img['thumbnail_path'] ?? $img['image_path'] ?? $img['url'] ?? $img['path'] ?? null;
+                    return $img;
+                },
+                $c['images']
+            )));
+        }
+        if (!empty($c['image'])) {
+            if (is_array($c['image'])) {
+                // prefer thumbnail_path, then image_path, then url/path
+                $c['image'] = $c['image']['thumbnail_path'] ?? $c['image']['image_path'] ?? $c['image']['url'] ?? $c['image']['path'] ?? reset($c['image']);
+            }
+        }
+    }
 
-                echo $twig->render('public/tag-archive.twig', [
-                'tag' => $tag,
-                'contents' => $contents,
-                'total_count' => $total,
-                'current_page' => $page,
-                'total_pages' => $total_pages,
-                'per_page' => $per_page,
-                'search' => $search,
-                'sort' => $sort,
-                'order' => $order
-                ]);            });
+    echo $twig->render('public/tag-archive.twig', [
+        'tag' => $tag,
+        'contents' => $contents,
+        'total_count' => $total,
+        'current_page' => $page,
+        'total_pages' => $total_pages,
+        'per_page' => $per_page,
+        'search' => $search,
+        'sort' => $sort,
+        'order' => $order
+    ]);
+});
 
 // Public: List all categories
 $router->get('/categories', function () use ($twig, $model) {
@@ -359,13 +393,13 @@ $router->get('/categories', function () use ($twig, $model) {
     $total_pages = ceil($total / $per_page);
 
     echo $twig->render('public/category-list.twig', [
-    'categories' => $categories,
-    'total_categories' => $total,
-    'current_page' => $page,
-    'total_pages' => $total_pages,
-    'per_page' => $per_page,
-    'search' => $search,
-    'sort' => $sort
+        'categories' => $categories,
+        'total_categories' => $total,
+        'current_page' => $page,
+        'total_pages' => $total_pages,
+        'per_page' => $per_page,
+        'search' => $search,
+        'sort' => $sort
     ]);
 });
 
@@ -381,8 +415,7 @@ $router->get('/category/{slug}', function ($slug) use ($twig, $model) {
     // Legacy compatibility: support order hint even when sort is omitted.
     if ($order === 'ASC' && (!isset($_GET['sort']) || $sort === 'latest')) {
         $sort = 'oldest';
-    }
-    elseif ($order === 'DESC' && $sort === 'oldest') {
+    } elseif ($order === 'DESC' && $sort === 'oldest') {
         $sort = 'latest';
     }
 
@@ -392,9 +425,9 @@ $router->get('/category/{slug}', function ($slug) use ($twig, $model) {
     if (!$category) {
         http_response_code(404);
         echo $twig->render('public/error.twig', [
-        'code' => 404,
-        'title' => 'Category Not Found',
-        'message' => 'Category not found'
+            'code' => 404,
+            'title' => 'Category Not Found',
+            'message' => 'Category not found'
         ]);
         exit;
     }
@@ -409,31 +442,34 @@ $router->get('/category/{slug}', function ($slug) use ($twig, $model) {
         $c['categories'] = $model->getCategoriesForContent($c['type'], $c['id']);
         $c['tags'] = $model->getTagsForContent($c['type'], $c['id']);
         if (!empty($c['images']) && is_array($c['images'])) {
-            $c['images'] = array_values(array_filter(array_map(function ($img) {
-                            if (is_array($img))
-                                return $img['thumbnail_path'] ?? $img['image_path'] ?? $img['url'] ?? $img['path'] ?? null;
-                            return $img;
-                        }
-                            , $c['images'])));
-                    }
-                    if (!empty($c['image'])) {
-                        if (is_array($c['image'])) {
-                            $c['image'] = $c['image']['thumbnail_path'] ?? $c['image']['image_path'] ?? $c['image']['url'] ?? $c['image']['path'] ?? reset($c['image']);
-                        }
-                    }
-                }
+            $c['images'] = array_values(array_filter(array_map(
+                function ($img) {
+                    if (is_array($img))
+                        return $img['thumbnail_path'] ?? $img['image_path'] ?? $img['url'] ?? $img['path'] ?? null;
+                    return $img;
+                },
+                $c['images']
+            )));
+        }
+        if (!empty($c['image'])) {
+            if (is_array($c['image'])) {
+                $c['image'] = $c['image']['thumbnail_path'] ?? $c['image']['image_path'] ?? $c['image']['url'] ?? $c['image']['path'] ?? reset($c['image']);
+            }
+        }
+    }
 
-                echo $twig->render('public/category-archive.twig', [
-                'category' => $category,
-                'contents' => $contents,
-                'total_count' => $total,
-                'current_page' => $page,
-                'total_pages' => $total_pages,
-                'per_page' => $per_page,
-                'search' => $search,
-                'sort' => $sort,
-                'order' => $order
-                ]);            });
+    echo $twig->render('public/category-archive.twig', [
+        'category' => $category,
+        'contents' => $contents,
+        'total_count' => $total,
+        'current_page' => $page,
+        'total_pages' => $total_pages,
+        'per_page' => $per_page,
+        'search' => $search,
+        'sort' => $sort,
+        'order' => $order
+    ]);
+});
 
 // ==================== ALIAS ROUTES ====================
 

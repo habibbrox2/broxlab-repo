@@ -69,8 +69,6 @@
             <select name="sort" class="filter-select" onchange="this.form.submit()">
               <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Latest</option>
               <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest</option>
-              <option value="views" {% if sort == 'views' %}selected{% endif %}>Most Views</option>
-              <option value="impressions" {% if sort == 'impressions' %}selected{% endif %}>Most Impressions</option>
             </select>
           </form>
         </div>
@@ -90,9 +88,7 @@
           created_at: post.published_at|default(post.created_at)|default(''),
           url: post.slug|default(post.slug|default(post.id)),
           id: post.id,
-          type: 'post',
-          impressions: post.impressions|default(0),
-          views: post.views|default(0)
+          type: 'post'
           }, index: loop.index } %}
         {% endfor %}
       </div>

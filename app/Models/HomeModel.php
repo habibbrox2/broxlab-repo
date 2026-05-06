@@ -80,16 +80,7 @@ class HomeModel
     {
         $offset = ($page - 1) * $limit;
 
-        switch ($sort) {
-            case 'views':
-                $orderBy = 'views DESC';
-                break;
-            case 'impressions':
-                $orderBy = 'impressions DESC';
-                break;
-            default:
-                $orderBy = 'published_at DESC';
-        }
+        $orderBy = 'published_at DESC';
 
         // Test query: Get posts only first
         $testSql = "SELECT id, title, published FROM posts LIMIT 5";
@@ -105,8 +96,6 @@ class HomeModel
                 img.image_url AS image,
                 m.created_at,
                 m.created_at AS published_at,
-                0 AS views,
-                0 AS impressions,
                 'mobile' AS type,
                 NULL AS url,
                 m.official_price,
@@ -132,8 +121,6 @@ class HomeModel
                 NULL AS image,
                 p.created_at,
                 p.created_at AS published_at,
-                (SELECT COUNT(*) FROM views v WHERE v.content_type = 'page' AND v.content_id = p.id) AS views,
-                (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'page' AND i.content_id = p.id) AS impressions,
                 'page' AS type,
                 p.slug AS url,
                 NULL AS official_price,
@@ -153,8 +140,6 @@ class HomeModel
                 NULL AS image,
                 COALESCE(po.published_at, po.created_at) AS created_at,
                 COALESCE(po.published_at, po.created_at) AS published_at,
-                (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = po.id) AS views,
-                (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = po.id) AS impressions,
                 'post' AS type,
                 po.slug AS url,
                 NULL AS official_price,
@@ -241,8 +226,7 @@ class HomeModel
                         LIMIT 1
                     ),
                     NULL
-                ) AS image_path,
-                (SELECT COUNT(*) FROM views v WHERE v.content_type = 'mobile' AND v.content_id = m.id) AS views
+                ) AS image_path
             FROM mobiles m
             ORDER BY m.created_at DESC
             LIMIT ?
@@ -256,7 +240,6 @@ class HomeModel
 
         foreach ($rows as &$row) {
             $row['type'] = 'mobile';
-            $row['views'] = (int)($row['views'] ?? 0);
             $row['official_price'] = (float)($row['official_price'] ?? 0);
             $row['unofficial_price'] = (float)($row['unofficial_price'] ?? 0);
             $row['is_official'] = (int)($row['is_official'] ?? 0);
@@ -266,7 +249,7 @@ class HomeModel
     }
 
     /**
-     * Get top posts for homepage slider (ranked by views/impressions).
+     * Get top posts for homepage slider.
      */
     public function getTopPosts(int $limit = 8): array
     {
@@ -282,12 +265,10 @@ class HomeModel
                 p.slug,
                 p.content,
                 p.created_at,
-                (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = p.id) AS views,
-                (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = p.id) AS impressions,
                 {$ratingSelect}
             FROM posts p
             WHERE p.published = 1
-            ORDER BY views DESC, impressions DESC, COALESCE(p.published_at, p.created_at) DESC
+            ORDER BY rating_average DESC, rating_total DESC, COALESCE(p.published_at, p.created_at) DESC
             LIMIT ?
         ";
 
@@ -301,8 +282,6 @@ class HomeModel
             $images = $this->extractMultipleImages($row['content'] ?? '', 1);
             $row['image'] = $images[0] ?? '';
             $row['type'] = 'post';
-            $row['views'] = (int)($row['views'] ?? 0);
-            $row['impressions'] = (int)($row['impressions'] ?? 0);
             $row['rating_average'] = (float)($row['rating_average'] ?? 0);
             $row['rating_total'] = (int)($row['rating_total'] ?? 0);
         }
@@ -311,7 +290,7 @@ class HomeModel
     }
 
     /**
-     * Get top active services for homepage slider (ranked by views/impressions).
+     * Get top active services for homepage slider.
      */
     public function getTopServices(int $limit = 8): array
     {
@@ -344,12 +323,10 @@ class HomeModel
                         LIMIT 1
                     )
                 ) AS image,
-                (SELECT COUNT(*) FROM views v WHERE v.content_type = 'service' AND v.content_id = s.id) AS views,
-                (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'service' AND i.content_id = s.id) AS impressions,
                 {$ratingSelect}
             FROM services s
             WHERE s.status = 'active' AND s.deleted_at IS NULL
-            ORDER BY views DESC, impressions DESC, s.created_at DESC
+            ORDER BY rating_average DESC, rating_total DESC, s.created_at DESC
             LIMIT ?
         ";
 
@@ -369,8 +346,6 @@ class HomeModel
             }
             $row['image'] = $img;
             $row['type'] = 'service';
-            $row['views'] = (int)($row['views'] ?? 0);
-            $row['impressions'] = (int)($row['impressions'] ?? 0);
             $row['rating_average'] = (float)($row['rating_average'] ?? 0);
             $row['rating_total'] = (int)($row['rating_total'] ?? 0);
         }
@@ -397,16 +372,7 @@ class HomeModel
     {
         $offset = ($page - 1) * $limit;
 
-        switch ($sort) {
-            case 'views':
-                $orderBy = 'views DESC';
-                break;
-            case 'impressions':
-                $orderBy = 'impressions DESC';
-                break;
-            default:
-                $orderBy = 'published_at DESC';
-        }
+        $orderBy = 'published_at DESC';
 
         $relationTable = $type === 'tag' ? 'content_tags' : 'content_categories';
         $relationField = $type === 'tag' ? 'tag_id' : 'category_id';
@@ -420,8 +386,6 @@ class HomeModel
             img.image_url AS image,
             m.created_at,
             m.created_at AS published_at,
-            0 AS views,
-            0 AS impressions,
             'mobile' AS type,
             NULL AS url
         FROM mobiles m
@@ -442,8 +406,6 @@ class HomeModel
             NULL AS image,
             p.created_at,
             p.created_at AS published_at,
-            (SELECT COUNT(*) FROM views v WHERE v.content_type = 'page' AND v.content_id = p.id),
-            (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'page' AND i.content_id = p.id),
             'page' AS type,
             p.slug AS url
         FROM pages p
@@ -461,8 +423,6 @@ class HomeModel
             NULL AS image,
             COALESCE(po.published_at, po.created_at) AS created_at,
             COALESCE(po.published_at, po.created_at) AS published_at,
-            (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = po.id),
-            (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = po.id),
             'post' AS type,
             po.slug AS url
         FROM posts po

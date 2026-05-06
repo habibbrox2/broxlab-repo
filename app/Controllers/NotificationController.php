@@ -7,6 +7,10 @@
  * All database operations are delegated to NotificationModel
  */
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+
 require_once __DIR__ . '/../Models/NotificationModel.php';
 require_once __DIR__ . '/../Models/NotificationTemplate.php';
 require_once __DIR__ . '/../Models/ScheduledNotificationModel.php';

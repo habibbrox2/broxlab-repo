@@ -1,6 +1,10 @@
 <?php
 // controllers/RBACController.php
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+
 // Initialize Models
 $roleModel = new RoleModel($mysqli);
 $permissionModel = new PermissionModel($mysqli);
@@ -12,7 +16,9 @@ $userModel = new UserModel($mysqli);
 $router->group('/admin/roles', ['middleware' => ['auth', 'admin_only']], function ($router) use ($twig, $roleModel, $permissionModel, $userModel) {
 
     // List all roles
-    $router->get('', function () use ($twig, $roleModel) {
+    $router->get(
+        '',
+        function () use ($twig, $roleModel) {
             $page = max(1, (int)($_GET['page'] ?? 1));
             $limit = max(5, min(100, (int)($_GET['limit'] ?? 20)));
             $search = sanitize_input($_GET['search'] ?? '');
@@ -36,25 +42,29 @@ $router->group('/admin/roles', ['middleware' => ['auth', 'admin_only']], functio
             ];
 
             echo $twig->render('admin/rbac/roles/list.twig', [
-            'roles' => $roles,
-            'pagination' => $paginationData,
-            'page_title' => 'Manage Roles'
+                'roles' => $roles,
+                'pagination' => $paginationData,
+                'page_title' => 'Manage Roles'
             ]);
         }
-        );
+    );
 
-        // Show create form
-        $router->get('/create', function () use ($twig, $permissionModel) {
+    // Show create form
+    $router->get(
+        '/create',
+        function () use ($twig, $permissionModel) {
             $permissions = $permissionModel->getAllGroupedByModule();
             echo $twig->render('admin/rbac/roles/create.twig', [
-            'permissions' => $permissions,
-            'page_title' => 'Create New Role'
+                'permissions' => $permissions,
+                'page_title' => 'Create New Role'
             ]);
         }
-        );
+    );
 
-        // Store new role
-        $router->post('/store', function () use ($twig, $roleModel, $permissionModel) {
+    // Store new role
+    $router->post(
+        '/store',
+        function () use ($twig, $roleModel, $permissionModel) {
             $rawData = $_POST;
             $data = array_map('sanitize_input', $rawData);
 
@@ -91,10 +101,12 @@ $router->group('/admin/roles', ['middleware' => ['auth', 'admin_only']], functio
             header("Location: /admin/roles");
             exit;
         }
-        );
+    );
 
-        // Show edit form
-        $router->get('/{id}/edit', function ($id) use ($twig, $roleModel, $permissionModel) {
+    // Show edit form
+    $router->get(
+        '/{id}/edit',
+        function ($id) use ($twig, $roleModel, $permissionModel) {
             $role = $roleModel->getById($id);
 
             if (!$role) {
@@ -108,16 +120,18 @@ $router->group('/admin/roles', ['middleware' => ['auth', 'admin_only']], functio
             $rolePermissionIds = array_map(fn($p) => $p['id'], $rolePermissions);
 
             echo $twig->render('admin/rbac/roles/edit.twig', [
-            'role' => $role,
-            'permissions' => $permissions,
-            'rolePermissionIds' => $rolePermissionIds,
-            'page_title' => 'Edit Role: ' . $role['name']
+                'role' => $role,
+                'permissions' => $permissions,
+                'rolePermissionIds' => $rolePermissionIds,
+                'page_title' => 'Edit Role: ' . $role['name']
             ]);
         }
-        );
+    );
 
-        // Update role
-        $router->post('/{id}/update', function ($id) use ($roleModel) {
+    // Update role
+    $router->post(
+        '/{id}/update',
+        function ($id) use ($roleModel) {
             $role = $roleModel->getById($id);
 
             if (!$role) {
@@ -145,8 +159,7 @@ $router->group('/admin/roles', ['middleware' => ['auth', 'admin_only']], functio
             if (!empty($_POST['permissions']) && is_array($_POST['permissions'])) {
                 $permissions = array_map('intval', $_POST['permissions']);
                 $roleModel->attachPermissions($id, $permissions);
-            }
-            else {
+            } else {
                 $roleModel->attachPermissions($id, []);
             }
 
@@ -157,10 +170,12 @@ $router->group('/admin/roles', ['middleware' => ['auth', 'admin_only']], functio
             header("Location: /admin/roles");
             exit;
         }
-        );
+    );
 
-        // Delete role
-        $router->post('/{id}/delete', function ($id) use ($roleModel) {
+    // Delete role
+    $router->post(
+        '/{id}/delete',
+        function ($id) use ($roleModel) {
             $role = $roleModel->getById($id);
 
             if (!$role) {
@@ -189,10 +204,12 @@ $router->group('/admin/roles', ['middleware' => ['auth', 'admin_only']], functio
             header("Location: /admin/roles");
             exit;
         }
-        );
+    );
 
-        // View role details
-        $router->get('/{id}', function ($id) use ($twig, $roleModel) {
+    // View role details
+    $router->get(
+        '/{id}',
+        function ($id) use ($twig, $roleModel) {
             $role = $roleModel->getById($id);
 
             if (!$role) {
@@ -202,12 +219,12 @@ $router->group('/admin/roles', ['middleware' => ['auth', 'admin_only']], functio
             }
 
             echo $twig->render('admin/rbac/roles/view.twig', [
-            'role' => $role,
-            'page_title' => 'Role: ' . $role['name']
+                'role' => $role,
+                'page_title' => 'Role: ' . $role['name']
             ]);
         }
-        );
-    });
+    );
+});
 
 // ====================================
 // PERMISSION MANAGEMENT ROUTES
@@ -215,28 +232,34 @@ $router->group('/admin/roles', ['middleware' => ['auth', 'admin_only']], functio
 $router->group('/admin/permissions', ['middleware' => ['auth', 'admin_only']], function ($router) use ($twig, $permissionModel) {
 
     // List all permissions
-    $router->get('', function () use ($twig, $permissionModel) {
+    $router->get(
+        '',
+        function () use ($twig, $permissionModel) {
             $permissions = $permissionModel->getAll();
             echo $twig->render('admin/rbac/permissions/list.twig', [
-            'permissions' => $permissions,
-            'total' => count($permissions),
-            'page_title' => 'Manage Permissions'
+                'permissions' => $permissions,
+                'total' => count($permissions),
+                'page_title' => 'Manage Permissions'
             ]);
         }
-        );
+    );
 
-        // Show create form
-        $router->get('/create', function () use ($twig, $permissionModel) {
+    // Show create form
+    $router->get(
+        '/create',
+        function () use ($twig, $permissionModel) {
             $modules = $permissionModel->getModules();
             echo $twig->render('admin/rbac/permissions/create.twig', [
-            'modules' => $modules,
-            'page_title' => 'Create New Permission'
+                'modules' => $modules,
+                'page_title' => 'Create New Permission'
             ]);
         }
-        );
+    );
 
-        // Store new permission
-        $router->post('/store', function () use ($twig, $permissionModel) {
+    // Store new permission
+    $router->post(
+        '/store',
+        function () use ($twig, $permissionModel) {
             $rawData = $_POST;
             $data = array_map('sanitize_input', $rawData);
 
@@ -266,10 +289,12 @@ $router->group('/admin/permissions', ['middleware' => ['auth', 'admin_only']], f
             header("Location: /admin/permissions");
             exit;
         }
-        );
+    );
 
-        // Show edit form
-        $router->get('/{id}/edit', function ($id) use ($twig, $permissionModel) {
+    // Show edit form
+    $router->get(
+        '/{id}/edit',
+        function ($id) use ($twig, $permissionModel) {
             $permission = $permissionModel->getById($id);
 
             if (!$permission) {
@@ -280,15 +305,17 @@ $router->group('/admin/permissions', ['middleware' => ['auth', 'admin_only']], f
 
             $modules = $permissionModel->getModules();
             echo $twig->render('admin/rbac/permissions/edit.twig', [
-            'permission' => $permission,
-            'modules' => $modules,
-            'page_title' => 'Edit Permission: ' . $permission['name']
+                'permission' => $permission,
+                'modules' => $modules,
+                'page_title' => 'Edit Permission: ' . $permission['name']
             ]);
         }
-        );
+    );
 
-        // Update permission
-        $router->post('/{id}/update', function ($id) use ($permissionModel) {
+    // Update permission
+    $router->post(
+        '/{id}/update',
+        function ($id) use ($permissionModel) {
             $permission = $permissionModel->getById($id);
 
             if (!$permission) {
@@ -314,10 +341,12 @@ $router->group('/admin/permissions', ['middleware' => ['auth', 'admin_only']], f
             header("Location: /admin/permissions");
             exit;
         }
-        );
+    );
 
-        // Delete permission
-        $router->post('/{id}/delete', function ($id) use ($permissionModel) {
+    // Delete permission
+    $router->post(
+        '/{id}/delete',
+        function ($id) use ($permissionModel) {
             $permission = $permissionModel->getById($id);
 
             if (!$permission) {
@@ -339,10 +368,12 @@ $router->group('/admin/permissions', ['middleware' => ['auth', 'admin_only']], f
             header("Location: /admin/permissions");
             exit;
         }
-        );
+    );
 
-        // View permission details
-        $router->get('/{id}', function ($id) use ($twig, $permissionModel) {
+    // View permission details
+    $router->get(
+        '/{id}',
+        function ($id) use ($twig, $permissionModel) {
             $permission = $permissionModel->getById($id);
 
             if (!$permission) {
@@ -352,12 +383,12 @@ $router->group('/admin/permissions', ['middleware' => ['auth', 'admin_only']], f
             }
 
             echo $twig->render('admin/rbac/permissions/view.twig', [
-            'permission' => $permission,
-            'page_title' => 'Permission: ' . $permission['name']
+                'permission' => $permission,
+                'page_title' => 'Permission: ' . $permission['name']
             ]);
         }
-        );
-    });
+    );
+});
 
 // ====================================
 // USER ROLE ASSIGNMENT ROUTES (API)
@@ -365,17 +396,21 @@ $router->group('/admin/permissions', ['middleware' => ['auth', 'admin_only']], f
 $router->group('/api/user-roles', ['middleware' => ['auth', 'admin_only']], function ($router) use ($userModel) {
 
     // Get user roles
-    $router->get('/{userId}', function ($userId) use ($userModel) {
+    $router->get(
+        '/{userId}',
+        function ($userId) use ($userModel) {
             $roles = $userModel->getRoles($userId);
             json_response([
                 'success' => true,
                 'data' => $roles
             ]);
         }
-        );
+    );
 
-        // Assign role to user
-        $router->post('/{userId}/assign/{roleId}', function ($userId, $roleId) use ($userModel) {
+    // Assign role to user
+    $router->post(
+        '/{userId}/assign/{roleId}',
+        function ($userId, $roleId) use ($userModel) {
             if (!$userModel->assignRole($userId, $roleId)) {
                 json_response(['error' => 'Failed to assign role'], 400);
             }
@@ -385,10 +420,12 @@ $router->group('/api/user-roles', ['middleware' => ['auth', 'admin_only']], func
                 'message' => 'Role assigned successfully'
             ]);
         }
-        );
+    );
 
-        // Remove role from user
-        $router->post('/{userId}/remove/{roleId}', function ($userId, $roleId) use ($userModel) {
+    // Remove role from user
+    $router->post(
+        '/{userId}/remove/{roleId}',
+        function ($userId, $roleId) use ($userModel) {
             if (!$userModel->removeRole($userId, $roleId)) {
                 json_response(['error' => 'Failed to remove role'], 400);
             }
@@ -398,10 +435,12 @@ $router->group('/api/user-roles', ['middleware' => ['auth', 'admin_only']], func
                 'message' => 'Role removed successfully'
             ]);
         }
-        );
+    );
 
-        // Assign multiple roles to user
-        $router->post('/{userId}/assign-roles', function ($userId) use ($userModel) {
+    // Assign multiple roles to user
+    $router->post(
+        '/{userId}/assign-roles',
+        function ($userId) use ($userModel) {
             $roleIds = $_POST['roles'] ?? [];
 
             if (empty($roleIds)) {
@@ -419,8 +458,8 @@ $router->group('/api/user-roles', ['middleware' => ['auth', 'admin_only']], func
                 'message' => 'Roles assigned successfully'
             ]);
         }
-        );
-    });
+    );
+});
 
 // ====================================
 // RBAC INFO API ENDPOINTS
@@ -428,37 +467,45 @@ $router->group('/api/user-roles', ['middleware' => ['auth', 'admin_only']], func
 $router->group('/api/rbac', [], function ($router) use ($twig, $roleModel, $permissionModel, $userModel) {
 
     // Get all roles (API)
-    $router->get('/roles', function () use ($roleModel) {
+    $router->get(
+        '/roles',
+        function () use ($roleModel) {
             $roles = $roleModel->getAll();
             json_response([
                 'success' => true,
                 'data' => $roles
             ]);
         }
-        );
+    );
 
-        // Get all permissions (API)
-        $router->get('/permissions', function () use ($permissionModel) {
+    // Get all permissions (API)
+    $router->get(
+        '/permissions',
+        function () use ($permissionModel) {
             $permissions = $permissionModel->getAll();
             json_response([
                 'success' => true,
                 'data' => $permissions
             ]);
         }
-        );
+    );
 
-        // Get permissions grouped by module
-        $router->get('/permissions/grouped', function () use ($permissionModel) {
+    // Get permissions grouped by module
+    $router->get(
+        '/permissions/grouped',
+        function () use ($permissionModel) {
             $permissions = $permissionModel->getAllGroupedByModule();
             json_response([
                 'success' => true,
                 'data' => $permissions
             ]);
         }
-        );
+    );
 
-        // Check user permission
-        $router->get('/check-permission/{userId}/{permission}', function ($userId, $permission) use ($userModel) {
+    // Check user permission
+    $router->get(
+        '/check-permission/{userId}/{permission}',
+        function ($userId, $permission) use ($userModel) {
             $has = $userModel->hasPermission($userId, $permission);
             json_response([
                 'success' => true,
@@ -466,10 +513,13 @@ $router->group('/api/rbac', [], function ($router) use ($twig, $roleModel, $perm
                 'has_permission' => $has
             ]);
         }
-        );
+    );
 
-        // Get current user info with roles and permissions
-        $router->get('/current-user', ['middleware' => ['auth']], function () use ($twig, $userModel) {
+    // Get current user info with roles and permissions
+    $router->get(
+        '/current-user',
+        ['middleware' => ['auth']],
+        function () use ($twig, $userModel) {
             $userId = AuthManager::getCurrentUserId();
 
             if (!$userId) {
@@ -485,8 +535,8 @@ $router->group('/api/rbac', [], function ($router) use ($twig, $roleModel, $perm
                 'permissions' => $permissions
             ]);
         }
-        );
-    });
+    );
+});
 
 
 
@@ -497,7 +547,9 @@ $router->group('/api/rbac', [], function ($router) use ($twig, $roleModel, $perm
 $router->group('/api/admin/roles', ['middleware' => ['auth', 'admin_only']], function ($router) use ($roleModel, $permissionModel) {
 
     // Create new role (API)
-    $router->post('/create', function () use ($roleModel, $permissionModel) {
+    $router->post(
+        '/create',
+        function () use ($roleModel, $permissionModel) {
             header('Content-Type: application/json');
 
             $data = [
@@ -535,10 +587,12 @@ $router->group('/api/admin/roles', ['middleware' => ['auth', 'admin_only']], fun
             echo json_encode(['success' => true, 'message' => 'Role created successfully', 'role_id' => $roleId]);
             exit;
         }
-        );
+    );
 
-        // Delete role (API)
-        $router->post('/delete', function () use ($roleModel) {
+    // Delete role (API)
+    $router->post(
+        '/delete',
+        function () use ($roleModel) {
             header('Content-Type: application/json');
             $id = (int)($_POST['id'] ?? 0);
 
@@ -564,12 +618,11 @@ $router->group('/api/admin/roles', ['middleware' => ['auth', 'admin_only']], fun
             if ($roleModel->delete($id)) {
                 logActivity("Role Deleted (API)", "role", $id, ['name' => $role['name']], 'success');
                 echo json_encode(['success' => true, 'message' => 'Role deleted successfully']);
-            }
-            else {
+            } else {
                 http_response_code(500);
                 echo json_encode(['success' => false, 'error' => 'Failed to delete role']);
             }
             exit;
         }
-        );
-    });
+    );
+});

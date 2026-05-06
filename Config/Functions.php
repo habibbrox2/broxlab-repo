@@ -9,7 +9,9 @@
 
 // ==================== LOAD HELPER FILES ====================
 require_once __DIR__ . '/../app/Helpers/NotificationHelper.php';
-require_once __DIR__ . '/../app/Helpers/BreadcrumbHelper.php';
+require_once __DIR__ . '/../app/Helpers/BreadcrumbGenerator.php';
+require_once __DIR__ . '/../app/Helpers/UrlHelper.php';
+require_once __DIR__ . '/../app/Helpers/ClientInfoHelper.php';
 require_once __DIR__ . '/../app/Helpers/PurifierHelper.php';
 
 
@@ -27,20 +29,8 @@ require_once __DIR__ . '/../app/Helpers/PurifierHelper.php';
 if (!function_exists('getCanonicalUrl')) {
     function getCanonicalUrl()
     {
-        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
-        $scheme = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-        $path = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/';
-
-        // Remove query string and fragment
-        $path = strtok($path, '?#');
-
-        // Remove trailing slash if not root
-        $path = rtrim($path, '/');
-        if (empty($path)) {
-            $path = '/';
-        }
-
-        return $scheme . '://' . $host . $path;
+        $helper = new UrlHelper();
+        return $helper->getCanonical();
     }
 }
 
@@ -52,10 +42,35 @@ if (!function_exists('getCanonicalUrl')) {
 if (!function_exists('getCurrentUrl')) {
     function getCurrentUrl()
     {
-        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
-        $scheme = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-        $url = $scheme . '://' . $host . (isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/');
-        return $url;
+        $helper = new UrlHelper();
+        return $helper->getCurrent();
+    }
+}
+
+if (!function_exists('bootstrap_controller')) {
+    /**
+     * Load shared controller dependencies from the global scope.
+     *
+     * @param array<int, string> $dependencies
+     * @return array<string, mixed>
+     */
+    function bootstrap_controller(array $dependencies): array
+    {
+        $resolved = [];
+
+        foreach ($dependencies as $dependency) {
+            if (!is_string($dependency)) {
+                continue;
+            }
+
+            if (!array_key_exists($dependency, $GLOBALS)) {
+                throw new RuntimeException("Controller dependency '{$dependency}' is not available in global scope");
+            }
+
+            $resolved[$dependency] = $GLOBALS[$dependency];
+        }
+
+        return $resolved;
     }
 }
 
@@ -765,44 +780,8 @@ if (!function_exists('getClientIpAddress')) {
 
     function getClientIpAddress(): string
     {
-
-        // Check for IP from a shared internet connection
-
-        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-
-            $ip = $_SERVER['HTTP_CLIENT_IP'];
-        }
-
-        // Check for IP passed from shared internet connection
-
-        elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-
-            // Use the first IP if multiple IPs are present
-
-            $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-
-            $ip = trim($ips[0]);
-        }
-
-        // Check for remote address
-
-        else {
-
-            $ip = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
-        }
-
-
-
-        // Validate IP address
-
-        if (filter_var($ip, FILTER_VALIDATE_IP)) {
-
-            return $ip;
-        }
-
-
-
-        return 'UNKNOWN';
+        $helper = new ClientInfoHelper();
+        return $helper->getIp();
     }
 }
 
@@ -820,120 +799,8 @@ if (!function_exists('getBrowserInfo')) {
 
     function getBrowserInfo(): string
     {
-
-        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'UNKNOWN';
-
-
-
-        if ($user_agent === 'UNKNOWN') {
-
-            return 'UNKNOWN';
-        }
-
-
-
-        $browser = 'UNKNOWN';
-
-        $os = 'UNKNOWN';
-
-        $version = '';
-
-
-
-        // Detect Browser
-
-        if (preg_match('/MSIE (\d+)/i', $user_agent, $matches)) {
-
-            $browser = 'Internet Explorer';
-
-            $version = $matches[1];
-        } elseif (preg_match('/Trident.*rv:(\d+)/i', $user_agent, $matches)) {
-
-            $browser = 'Internet Explorer';
-
-            $version = $matches[1];
-        } elseif (preg_match('/Edge\/(\d+)/i', $user_agent, $matches)) {
-
-            $browser = 'Edge';
-
-            $version = $matches[1];
-        } elseif (preg_match('/Chrome\/(\d+)/i', $user_agent, $matches)) {
-
-            $browser = 'Chrome';
-
-            $version = $matches[1];
-        } elseif (preg_match('/Safari\/(\d+)/i', $user_agent, $matches)) {
-
-            if (preg_match('/Version\/(\d+)/i', $user_agent, $vmatches)) {
-
-                $browser = 'Safari';
-
-                $version = $vmatches[1];
-            }
-        } elseif (preg_match('/Firefox\/(\d+)/i', $user_agent, $matches)) {
-
-            $browser = 'Firefox';
-
-            $version = $matches[1];
-        } elseif (preg_match('/Opera.*Version\/(\d+)/i', $user_agent, $matches)) {
-
-            $browser = 'Opera';
-
-            $version = $matches[1];
-        }
-
-
-
-        // Detect Operating System
-
-        if (preg_match('/windows|win32|win64/i', $user_agent)) {
-
-            if (preg_match('/Windows NT 10\.0/i', $user_agent)) {
-
-                $os = 'Windows 10/11';
-            } elseif (preg_match('/Windows NT 6\.3/i', $user_agent)) {
-
-                $os = 'Windows 8.1';
-            } elseif (preg_match('/Windows NT 6\.2/i', $user_agent)) {
-
-                $os = 'Windows 8';
-            } elseif (preg_match('/Windows NT 6\.1/i', $user_agent)) {
-
-                $os = 'Windows 7';
-            } else {
-
-                $os = 'Windows';
-            }
-        } elseif (preg_match('/macintosh|mac os x/i', $user_agent)) {
-
-            $os = 'macOS';
-        } elseif (preg_match('/linux/i', $user_agent)) {
-
-            $os = 'Linux';
-        } elseif (preg_match('/iphone|ipad|ipod/i', $user_agent)) {
-
-            $os = 'iOS';
-        } elseif (preg_match('/android/i', $user_agent)) {
-
-            $os = 'Android';
-        }
-
-
-
-        // Build info string
-
-        $info = $browser;
-
-        if ($version) {
-
-            $info .= " {$version}";
-        }
-
-        $info .= " ({$os})";
-
-
-
-        return $info;
+        $helper = new ClientInfoHelper();
+        return $helper->getBrowser();
     }
 }
 
@@ -943,29 +810,121 @@ if (!function_exists('getAppUrl')) {
 
     function getAppUrl()
     {
-
-        $appUrl = getenv('APP_URL');
-
-
-
-        if ($appUrl) {
-
-            return rtrim($appUrl, '/');
-        }
-
-
-
-        // Fallback: construct from HTTP_HOST
-
-        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
-
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-
-        return $protocol . $host;
+        $helper = new UrlHelper();
+        return $helper->getBase();
     }
 }
 
 
+
+if (!function_exists('getBreadcrumbsForType')) {
+    function getBreadcrumbsForType(string $type, array $params = []): array
+    {
+        $generator = new BreadcrumbGenerator();
+        return $generator->generate($type, $params);
+    }
+}
+
+if (!function_exists('getBreadcrumbsForPost')) {
+    function getBreadcrumbsForPost($category = null, $postTitle = null)
+    {
+        return getBreadcrumbsForType('post', [
+            'category' => $category,
+            'item' => $postTitle,
+        ]);
+    }
+}
+
+if (!function_exists('getBreadcrumbsForPage')) {
+    function getBreadcrumbsForPage($pageTitle = null)
+    {
+        return getBreadcrumbsForType('page', [
+            'item' => $pageTitle,
+        ]);
+    }
+}
+
+if (!function_exists('getBreadcrumbsForMobile')) {
+    function getBreadcrumbsForMobile($brand = null, $model = null)
+    {
+        return getBreadcrumbsForType('mobile', [
+            'brand' => $brand,
+            'item' => $model,
+        ]);
+    }
+}
+
+if (!function_exists('getBreadcrumbsForCategory')) {
+    function getBreadcrumbsForCategory($categoryName = null)
+    {
+        return getBreadcrumbsForType('category', [
+            'item' => $categoryName,
+        ]);
+    }
+}
+
+if (!function_exists('getBreadcrumbsForTag')) {
+    function getBreadcrumbsForTag($tagName = null)
+    {
+        return getBreadcrumbsForType('tag', [
+            'item' => $tagName,
+        ]);
+    }
+}
+
+if (!function_exists('getBreadcrumbsForSearch')) {
+    function getBreadcrumbsForSearch($query = null)
+    {
+        return getBreadcrumbsForType('search', [
+            'item' => $query,
+        ]);
+    }
+}
+
+if (!function_exists('getBreadcrumbsForContact')) {
+    function getBreadcrumbsForContact()
+    {
+        return getBreadcrumbsForType('contact');
+    }
+}
+
+if (!function_exists('getBreadcrumbsForAbout')) {
+    function getBreadcrumbsForAbout()
+    {
+        return getBreadcrumbsForType('about');
+    }
+}
+
+if (!function_exists('getAdminBreadcrumbs')) {
+    function getAdminBreadcrumbs($page = null, $subpage = null, $item = null)
+    {
+        $generator = new BreadcrumbGenerator();
+        return $generator->generateAdmin($page, $subpage, $item);
+    }
+}
+
+if (!function_exists('autoAdminBreadcrumbs')) {
+    function autoAdminBreadcrumbs(string $requestUri = null): array
+    {
+        $generator = new BreadcrumbGenerator();
+        return $generator->generateAutoAdmin($requestUri);
+    }
+}
+
+if (!function_exists('sanitizeBreadcrumbs')) {
+    function sanitizeBreadcrumbs(array $breadcrumbs, string $baseUrl = null): array
+    {
+        $generator = new BreadcrumbGenerator();
+        return $generator->sanitize($breadcrumbs, $baseUrl);
+    }
+}
+
+if (!function_exists('sanitizeBreadcrumbsForTwig')) {
+    function sanitizeBreadcrumbsForTwig(array $breadcrumbs): array
+    {
+        return sanitizeBreadcrumbs($breadcrumbs);
+    }
+}
 
 if (!function_exists('json_response')) {
 
@@ -1130,35 +1089,11 @@ if (!function_exists('enToBnMonth')) {
 if (!function_exists('getUserDetails')) {
     function getUserDetails()
     {
-        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
-        $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
-        $referer = $_SERVER['HTTP_REFERER'] ?? 'Unknown';
-
-        return [
-            'ip_address' => $ipAddress,
-            'user_agent' => $userAgent,
-            'referer' => $referer,
-        ];
+        $helper = new ClientInfoHelper();
+        return $helper->getDetails();
     }
 }
 
-/**
- * Helper: JSON Response
- */
-if (!function_exists('json_response')) {
-    /**
-     * @param mixed $data
-     * @param int $statusCode
-     * @return void
-     */
-    function json_response($data, $statusCode = 200)
-    {
-        http_response_code($statusCode);
-        header('Content-Type: application/json');
-        echo json_encode($data);
-        exit;
-    }
-}
 
 // OAuth audit logging helper
 if (!function_exists('logOAuthAudit')) {

@@ -1,5 +1,8 @@
 <?php
 
+/** @var Router $router */
+/** @var \mysqli $mysqli */
+
 $contentRatingModel = new ContentRatingModel($mysqli);
 
 $router->get('/api/ratings/summary', ['middleware' => ['api_headers']], function () use ($contentRatingModel) {
@@ -45,4 +48,3 @@ $router->post('/api/ratings/submit', ['middleware' => ['api_headers']], function
         'user_rating' => $result['user_rating'],
     ]);
 });
-

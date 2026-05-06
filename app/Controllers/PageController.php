@@ -3,6 +3,7 @@
 // controllers/PageController.php
 
 /**
+ * @var Router $router
  * @var \Twig\Environment $twig
  * @var mysqli $mysqli
  * @var ContentModel $contentModel

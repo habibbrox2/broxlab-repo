@@ -45,6 +45,9 @@
                     <button class="btn btn-primary px-4" type="submit">
                         {{ 'Get Weather'|trans }}
                     </button>
+                    <button class="btn btn-outline-secondary px-4 ms-2" type="button" id="useCurrentLocationBtn">
+                        <i class="bi bi-geo-alt-fill me-1"></i>{{ 'Use My Location'|trans }}
+                    </button>
                 </div>
                 <div class="form-text text-center mt-2">
                     Popular: 
@@ -124,9 +127,44 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.querySelector('input[name="location"]');
-    if (searchInput) {
-        searchInput.addEventListener('keydown', function(e) {
+    const locationInput = document.querySelector('input[name="location"]');
+    const currentBtn = document.getElementById('useCurrentLocationBtn');
+    const redirectToCurrentLocation = function(latitude, longitude) {
+        const lat = latitude.toFixed(6);
+        const lon = longitude.toFixed(6);
+        window.location.href = '{{ path('weather.home') }}?lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lon);
+    };
+
+    const fetchCurrentLocationWeather = function() {
+        if (!navigator.geolocation) {
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(function(position) {
+            redirectToCurrentLocation(position.coords.latitude, position.coords.longitude);
+        }, function() {
+            // User denied or unavailable; keep the page visible
+        }, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000
+        });
+    };
+
+    if (currentBtn) {
+        currentBtn.addEventListener('click', function(event) {
+            event.preventDefault();
+            fetchCurrentLocationWeather();
+        });
+    }
+
+    const hasLocationQuery = new URLSearchParams(window.location.search).has('lat') || new URLSearchParams(window.location.search).has('lon') || new URLSearchParams(window.location.search).has('location');
+    if (locationInput && !locationInput.value.trim() && !hasLocationQuery) {
+        fetchCurrentLocationWeather();
+    }
+
+    if (locationInput) {
+        locationInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 const location = encodeURIComponent(this.value.trim());

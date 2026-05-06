@@ -16,9 +16,11 @@
  * @version 2.0.0
  */
 
+use App\Modules\AISystem\UnifiedCache;
+
+/** @var Router $router */
 /** @var \Twig\Environment $twig */
 /** @var \mysqli $mysqli */
-/** @var Router $router */
 
 // Use proper path resolution
 $basePath = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2) . DIRECTORY_SEPARATOR;
@@ -33,25 +35,29 @@ if (file_exists($weatherServiceFile)) {
 }
 
 // Initialize WeatherService (from Models - more advanced)
+$weatherService = null;
+$cache = null;
 try {
     $weatherService = new WeatherService($mysqli);
-    $cacheHelper = new \App\Helpers\CacheHelper();
+    $cache = UnifiedCache::getInstance();
 } catch (Throwable $e) {
     logError("WeatherService init failed: " . $e->getMessage(), 'WEATHER_ERROR');
-    $weatherService = null;
-    $cacheHelper = null;
 }
 
 // =============================================================================
 // ROUTE: Weather Home Page (Advanced with caching and features)
 // =============================================================================
-$router->get('/weather', ['middleware' => [], 'name' => 'weather.home'], function () use ($twig, $weatherService, $cacheHelper) {
+$router->get('/weather', ['middleware' => [], 'name' => 'weather.home'], function () use ($twig, $weatherService, $cache) {
     $startTime = microtime(true);
     $requestId = bin2hex(random_bytes(8));
 
     $city = sanitize_input($_GET['city'] ?? '');
     $lat  = isset($_GET['lat']) ? (float)$_GET['lat'] : null;
     $lon  = isset($_GET['lon']) ? (float)$_GET['lon'] : null;
+    $searchCity = $city;
+    if ($searchCity === '' && $lat !== null && $lon !== null) {
+        $searchCity = sprintf('%.6f,%.6f', $lat, $lon);
+    }
     $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 
     try {
@@ -63,19 +69,22 @@ $router->get('/weather', ['middleware' => [], 'name' => 'weather.home'], functio
         $cacheKey = sprintf('weather_home_%s', $locationHash);
 
         // Check cache first
-        $data = $cacheHelper ? $cacheHelper->get($cacheKey) : null;
-        if ($data === null) {
+        $data = $cache ? $cache->get($cacheKey, \App\Modules\AISystem\UnifiedCache::CATEGORY_WEATHER) : null;
+        if ($data === null || $data === false) {
             $result = $weatherService->getHomePageData($city, $lat, $lon);
+            if (!is_array($result)) {
+                $result = [];
+            }
             $data = [
                 'popular_locations' => $result['popular_locations'] ?? [],
                 'featured_weather'  => $result['featured_weather'] ?? null,
-                'search_city'       => $city,
+                'search_city'       => $searchCity,
                 'suggested_cities'  => $result['suggested_cities'] ?? [],
                 'weather_trends'    => $result['trends'] ?? [],
                 'last_updated'      => time()
             ];
-            if ($cacheHelper) {
-                $cacheHelper->set($cacheKey, $data, 900);
+            if ($cache) {
+                $cache->set($cacheKey, $data, \App\Modules\AISystem\UnifiedCache::CATEGORY_WEATHER, 900);
             }
         }
 
@@ -117,7 +126,7 @@ $router->get('/weather', ['middleware' => [], 'name' => 'weather.home'], functio
 // =============================================================================
 // ROUTE: Weather Details Page (with query params)
 // =============================================================================
-$router->get('/weather/details', ['middleware' => [], 'name' => 'weather.details'], function () use ($twig, $weatherService, $cacheHelper) {
+$router->get('/weather/details', ['middleware' => [], 'name' => 'weather.details'], function () use ($twig, $weatherService, $cache) {
     $startTime = microtime(true);
     $requestId = bin2hex(random_bytes(8));
 
@@ -140,15 +149,15 @@ $router->get('/weather/details', ['middleware' => [], 'name' => 'weather.details
         $cacheTtl = ($forecastDays > 3) ? 1800 : 600;
 
         // Check cache first
-        $data = $cacheHelper ? $cacheHelper->get($cacheKey) : null;
-        if ($data === null) {
+        $data = $cache ? $cache->get($cacheKey, \App\Modules\AISystem\UnifiedCache::CATEGORY_WEATHER) : null;
+        if ($data === null || $data === false) {
             $result = $weatherService->getLocationWeather($location, $units, $forecastDays);
-            if (!isset($result['success']) || !$result['success']) {
-                throw new RuntimeException($result['error'] ?? 'Failed to fetch weather data');
+            if (!is_array($result) || !isset($result['success']) || !$result['success']) {
+                throw new RuntimeException(is_array($result) ? ($result['error'] ?? 'Failed to fetch weather data') : 'Failed to fetch weather data');
             }
             $data = $result['data'] ?? [];
-            if ($cacheHelper) {
-                $cacheHelper->set($cacheKey, $data, $cacheTtl);
+            if ($cache) {
+                $cache->set($cacheKey, $data, \App\Modules\AISystem\UnifiedCache::CATEGORY_WEATHER, $cacheTtl);
             }
         }
 
@@ -209,7 +218,7 @@ $router->get('/weather/details', ['middleware' => [], 'name' => 'weather.details
 // =============================================================================
 // ROUTE: Weather Details Page (with path params)
 // =============================================================================
-$router->get('/weather/details/{location}', ['middleware' => [], 'name' => 'weather.details.location'], function ($location) use ($twig, $weatherService, $cacheHelper) {
+$router->get('/weather/details/{location}', ['middleware' => [], 'name' => 'weather.details.location'], function ($location) use ($twig, $weatherService, $cache) {
     $startTime = microtime(true);
     $requestId = bin2hex(random_bytes(8));
 
@@ -246,15 +255,15 @@ $router->get('/weather/details/{location}', ['middleware' => [], 'name' => 'weat
         $cacheTtl = ($forecastDays > 3 || $includeHourly) ? 1800 : 600;
 
         // Check cache first
-        $data = $cacheHelper ? $cacheHelper->get($cacheKey) : null;
-        if ($data === null) {
+        $data = $cache ? $cache->get($cacheKey, \App\Modules\AISystem\UnifiedCache::CATEGORY_WEATHER) : null;
+        if ($data === null || $data === false) {
             $result = $weatherService->getLocationWeather($location, $units, $forecastDays, $includeHourly, $includeAlerts);
-            if (!isset($result['success']) || !$result['success']) {
-                throw new RuntimeException($result['error'] ?? 'Failed to fetch weather data');
+            if (!is_array($result) || !isset($result['success']) || !$result['success']) {
+                throw new RuntimeException(is_array($result) ? ($result['error'] ?? 'Failed to fetch weather data') : 'Failed to fetch weather data');
             }
             $data = $result['data'] ?? [];
-            if ($cacheHelper) {
-                $cacheHelper->set($cacheKey, $data, $cacheTtl);
+            if ($cache) {
+                $cache->set($cacheKey, $data, \App\Modules\AISystem\UnifiedCache::CATEGORY_WEATHER, $cacheTtl);
             }
         }
 
@@ -369,6 +378,9 @@ $router->get('/weather/current', ['middleware' => [], 'name' => 'weather.api.cur
         }
 
         $result = $weatherService->getLocationWeather($location, 'metric', 1);
+        if (!is_array($result) || !isset($result['success']) || !$result['success']) {
+            throw new RuntimeException(is_array($result) ? ($result['error'] ?? 'Failed to fetch weather data') : 'Failed to fetch weather data');
+        }
 
         // Add IP info for debugging
         $result['ip_address'] = $ipAddress;
@@ -392,7 +404,7 @@ $router->get('/weather/current', ['middleware' => [], 'name' => 'weather.api.cur
 // =============================================================================
 
 if (!function_exists('weather_validateUnits')) {
-    function weather_validateUnits($units): string
+    function weather_validateUnits(string $units): string
     {
         $allowed = ['metric', 'imperial', 'kelvin', 'default'];
         $unit    = strtolower(trim((string)$units));
@@ -435,7 +447,7 @@ if (!function_exists('weather_handleError')) {
         string $userMessage,
         string $errorCode,
         string $requestId,
-        $twig,
+        \Twig\Environment $twig,
         array $context = []
     ): void {
         $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';

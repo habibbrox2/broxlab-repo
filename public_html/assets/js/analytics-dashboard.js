@@ -108,9 +108,6 @@
     await Promise.all([
       loadSummaryStats(),
       loadSecurityAlerts(),
-      loadPostViews(),
-      loadPageViews(),
-      loadServiceViews(),
       loadLoginAudit(),
       loadOAuthAudit(),
       loadActivityLogs(),
@@ -235,144 +232,6 @@
     });
 
     container.innerHTML = html;
-  }
-
-  /**
-     * Load post views
-     */
-  async function loadPostViews() {
-    try {
-      console.info('Loading post views...');
-      const data = await safeFetchJson(`${API_BASE}/post-views?limit=10`);
-      console.info('Post views data:', data);
-
-      if (data && data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
-        console.info('Post views found:', data.data.length);
-        updatePostViewsDOM(data.data);
-      } else {
-        console.info('No post views data');
-        updatePostViewsDOM([]);
-      }
-    } catch (error) {
-      console.error('Error loading post views:', error);
-      updatePostViewsDOM([]);
-    }
-  }
-
-  /**
-     * Update post views DOM
-     */
-  function updatePostViewsDOM(posts) {
-    const tbody = document.querySelector('#postViewsBody');
-    if (!tbody) return;
-
-    if (!posts || posts.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data available</td></tr>';
-      return;
-    }
-
-    let html = '';
-    posts.forEach(post => {
-      html += `
-                <tr>
-                    <td>${post.post_title || 'N/A'}</td>
-                    <td><strong>${(post.total_views || 0).toLocaleString()}</strong></td>
-                    <td>${(post.unique_viewers || 0).toLocaleString()}</td>
-                    <td><small class="text-muted">${formatDate(post.last_viewed)}</small></td>
-                </tr>
-            `;
-    });
-    tbody.innerHTML = html;
-  }
-
-  /**
-     * Load page views
-     */
-  async function loadPageViews() {
-    try {
-      const data = await safeFetchJson(`${API_BASE}/page-views?limit=10`);
-      console.info('Page views data:', data);
-
-      if (data && data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
-        updatePageViewsDOM(data.data);
-      } else {
-        updatePageViewsDOM([]);
-      }
-    } catch (error) {
-      console.error('Error loading page views:', error);
-      updatePageViewsDOM([]);
-    }
-  }
-
-  /**
-     * Update page views DOM
-     */
-  function updatePageViewsDOM(pages) {
-    const tbody = document.querySelector('#pageViewsBody');
-    if (!tbody) return;
-
-    if (!pages || pages.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data available</td></tr>';
-      return;
-    }
-
-    let html = '';
-    pages.forEach(page => {
-      html += `
-                <tr>
-                    <td>${page.page_title || 'N/A'}</td>
-                    <td><strong>${(page.total_views || 0).toLocaleString()}</strong></td>
-                    <td>${(page.unique_viewers || 0).toLocaleString()}</td>
-                    <td><small class="text-muted">${formatDate(page.last_viewed)}</small></td>
-                </tr>
-            `;
-    });
-    tbody.innerHTML = html;
-  }
-
-  /**
-     * Load service views
-     */
-  async function loadServiceViews() {
-    try {
-      const data = await safeFetchJson(`${API_BASE}/service-views?limit=10`);
-      console.info('Service views data:', data);
-
-      if (data && data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
-        updateServiceViewsDOM(data.data);
-      } else {
-        updateServiceViewsDOM([]);
-      }
-    } catch (error) {
-      console.error('Error loading service views:', error);
-      updateServiceViewsDOM([]);
-    }
-  }
-
-  /**
-     * Update service views DOM
-     */
-  function updateServiceViewsDOM(services) {
-    const tbody = document.querySelector('#serviceViewsBody');
-    if (!tbody) return;
-
-    if (!services || services.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data available</td></tr>';
-      return;
-    }
-
-    let html = '';
-    services.forEach(service => {
-      html += `
-                <tr>
-                    <td>${service.service_title || 'N/A'}</td>
-                    <td><strong>${(service.total_views || 0).toLocaleString()}</strong></td>
-                    <td>${(service.unique_viewers || 0).toLocaleString()}</td>
-                    <td><small class="text-muted">${formatDate(service.last_viewed)}</small></td>
-                </tr>
-            `;
-    });
-    tbody.innerHTML = html;
   }
 
   /**
@@ -751,9 +610,6 @@
         await Promise.all([
           loadSummaryStats(),
           loadSecurityAlerts(),
-          loadPostViews(),
-          loadPageViews(),
-          loadServiceViews(),
           loadLoginAudit(),
           loadOAuthAudit(),
           loadActivityLogs(),
@@ -825,27 +681,6 @@
     }
 
     // Setup Tab Listeners for Data Tables
-    const postViewsTab = document.getElementById('post-views-tab');
-    if (postViewsTab) {
-      postViewsTab.addEventListener('shown.bs.tab', () => {
-        deferNonCritical(loadPostViews, 100);
-      });
-    }
-
-    const pageViewsTab = document.getElementById('page-views-tab');
-    if (pageViewsTab) {
-      pageViewsTab.addEventListener('shown.bs.tab', () => {
-        deferNonCritical(loadPageViews, 100);
-      });
-    }
-
-    const serviceViewsTab = document.getElementById('service-views-tab');
-    if (serviceViewsTab) {
-      serviceViewsTab.addEventListener('shown.bs.tab', () => {
-        deferNonCritical(loadServiceViews, 100);
-      });
-    }
-
     const loginAuditTab = document.getElementById('login-audit-tab');
     if (loginAuditTab) {
       loginAuditTab.addEventListener('shown.bs.tab', () => {
@@ -887,10 +722,10 @@
         alert('Logs cleared successfully!');
         location.reload();
       } else {
-        alert(`Error: ${ data?.error || 'Unknown error'}`);
+        alert(`Error: ${data?.error || 'Unknown error'}`);
       }
     } catch (error) {
-      alert(`Error clearing logs: ${ error.message}`);
+      alert(`Error clearing logs: ${error.message}`);
     }
   }
 
@@ -948,7 +783,7 @@
      */
   function truncateText(text, length = 20) {
     if (!text) return '';
-    return text.length > length ? `${text.substring(0, length) }...` : text;
+    return text.length > length ? `${text.substring(0, length)}...` : text;
   }
 
   /**

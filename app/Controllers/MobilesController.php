@@ -1,14 +1,17 @@
 <?php
 // controllers/MobilesController.php
 
-global $mysqli;
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
 
 $mobileModel  = new MobileModel($mysqli);
 $commentModel = new CommentModel($mysqli);
 $taxonomyModel = new ContentModel($mysqli);
 
 if (!function_exists('normalizeMobileStatus')) {
-    function normalizeMobileStatus($rawStatus, $isOfficial = null) {
+    function normalizeMobileStatus($rawStatus, $isOfficial = null)
+    {
         $status = strtolower(trim((string)$rawStatus));
 
         $map = [
@@ -89,7 +92,7 @@ $router->group('/admin/mobiles', ['middleware' => ['auth', 'admin_only']], funct
         if (!empty($_GET)) {
             $params = $_GET;
             // keep only mobile fields we care about
-            $allowed = ['brand_name','model_name','official_price','unofficial_price','status','release_date','is_official','tags'];
+            $allowed = ['brand_name', 'model_name', 'official_price', 'unofficial_price', 'status', 'release_date', 'is_official', 'tags'];
             $cleaned = [];
             foreach ($allowed as $k) {
                 if (isset($params[$k])) {
@@ -249,7 +252,7 @@ $router->group('/admin/mobiles', ['middleware' => ['auth', 'admin_only']], funct
 
         // allow query params to override mobile fields for prefilling
         if (!empty($_GET)) {
-            $allowed = ['brand_name','model_name','official_price','unofficial_price','status','release_date','is_official','tags'];
+            $allowed = ['brand_name', 'model_name', 'official_price', 'unofficial_price', 'status', 'release_date', 'is_official', 'tags'];
             foreach ($allowed as $k) {
                 if (isset($_GET[$k])) {
                     $mobile[$k] = $_GET[$k];

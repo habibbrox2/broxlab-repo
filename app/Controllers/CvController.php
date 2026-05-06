@@ -1,8 +1,15 @@
 <?php
-// app/Controllers/CvController.php
 
-// Initialize models (use global mysqli)
-global $mysqli;
+/**
+ * app/Controllers/CvController.php
+ * 
+ * CV Management Controller
+ * Handles CV CRUD operations, sections, items, versions, sharing
+ */
+
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
 $cvModel = new CvModel($mysqli);
 $cvSectionModel = new CvSectionModel($mysqli);
 $cvItemModel = new CvItemModel($mysqli);

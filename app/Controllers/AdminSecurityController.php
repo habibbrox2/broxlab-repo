@@ -1,12 +1,18 @@
 <?php
+
 /**
  * controllers/AdminSecurityController.php
  * Admin-specific security and 2FA management routes
  * Separate from user self-service 2FA routes
  */
 
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+/** @var \mysqli $mysqli */
+
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
+
 require_once __DIR__ . '/../Helpers/AuthAndSecurityHelper.php';
 $userModel = new UserModel($mysqli);
 $securityManager = new SecurityManager($mysqli);
@@ -15,25 +21,26 @@ $securityManager = new SecurityManager($mysqli);
 $router->group('/admin/security', ['middleware' => ['auth', 'admin_or_super_only']], function ($router) use ($twig, $userModel, $securityManager) {
 
     $canManageAdminSecurity = function (?array $user, int $userId) use ($userModel): bool {
-            if (!$user || $userId <= 0) {
-                return false;
-            }
-
-            if ($userModel->isSuperAdmin($userId)) {
-                return true;
-            }
-
-            if ($userModel->hasRole($userId, 'admin')) {
-                return true;
-            }
-
-            return strtolower((string)($user['role'] ?? '')) === 'admin';
+        if (!$user || $userId <= 0) {
+            return false;
         }
-            ;
 
-        // ==================== ADMIN 2FA DASHBOARD ====================
-        // GET /admin/security/2fa - Admin view for managing 2FA settings
-        $router->get('/2fa', function () use ($twig, $securityManager, $canManageAdminSecurity) {
+        if ($userModel->isSuperAdmin($userId)) {
+            return true;
+        }
+
+        if ($userModel->hasRole($userId, 'admin')) {
+            return true;
+        }
+
+        return strtolower((string)($user['role'] ?? '')) === 'admin';
+    };
+
+    // ==================== ADMIN 2FA DASHBOARD ====================
+    // GET /admin/security/2fa - Admin view for managing 2FA settings
+    $router->get(
+        '/2fa',
+        function () use ($twig, $securityManager, $canManageAdminSecurity) {
             try {
                 $userId = AuthManager::getCurrentUserId();
                 if (!$userId) {
@@ -52,27 +59,31 @@ $router->group('/admin/security', ['middleware' => ['auth', 'admin_or_super_only
                 $twoFAStatus = $securityManager->get2FAStatus($userId);
 
                 echo $twig->render('admin/security/2fa.twig', [
-                'title' => 'Two-Factor Authentication',
-                'page_title' => 'Admin Two-Factor Authentication',
-                'user' => $user,
-                'twofa_enabled' => $twoFAStatus['enabled'],
-                'twofa_method' => $twoFAStatus['method'] ?? 'totp',
-                'csrf_token' => generateCsrfToken(),
+                    'title' => 'Two-Factor Authentication',
+                    'page_title' => 'Admin Two-Factor Authentication',
+                    'user' => $user,
+                    'twofa_enabled' => $twoFAStatus['enabled'],
+                    'twofa_method' => $twoFAStatus['method'] ?? 'totp',
+                    'csrf_token' => generateCsrfToken(),
                 ]);
-            }
-            catch (Throwable $e) {
-                logError("Admin 2FA Dashboard Error: " . $e->getMessage(), "ERROR",
-                ['file' => $e->getFile(), 'line' => $e->getLine()]);
+            } catch (Throwable $e) {
+                logError(
+                    "Admin 2FA Dashboard Error: " . $e->getMessage(),
+                    "ERROR",
+                    ['file' => $e->getFile(), 'line' => $e->getLine()]
+                );
                 showMessage("Failed to load 2FA settings", "danger");
                 header('Location: /admin/dashboard');
                 exit;
             }
         }
-        );
+    );
 
-        // ==================== ADMIN 2FA SETUP ====================
-        // GET /admin/security/2fa/setup - Setup 2FA for admin
-        $router->get('/2fa/setup', function () use ($twig, $canManageAdminSecurity) {
+    // ==================== ADMIN 2FA SETUP ====================
+    // GET /admin/security/2fa/setup - Setup 2FA for admin
+    $router->get(
+        '/2fa/setup',
+        function () use ($twig, $canManageAdminSecurity) {
             try {
                 $userId = AuthManager::getCurrentUserId();
                 if (!$userId) {
@@ -103,34 +114,38 @@ $router->group('/admin/security', ['middleware' => ['auth', 'admin_or_super_only
                     $writer = new PngWriter();
                     $result = $writer->write($qrCode);
                     $qrImage = 'data:image/png;base64,' . base64_encode($result->getString());
-                }
-                catch (Exception $e) {
+                } catch (Exception $e) {
                     $qrImage = null;
                 }
 
                 echo $twig->render('admin/security/2fa_setup.twig', [
-                'title' => 'Setup Two-Factor Authentication',
-                'page_title' => 'Setup 2FA for Admin',
-                'user' => $user,
-                'secret' => $secret,
-                'qr_image' => $qrImage,
-                'totp_uri' => $totp_uri,
-                'csrf_token' => generateCsrfToken(),
+                    'title' => 'Setup Two-Factor Authentication',
+                    'page_title' => 'Setup 2FA for Admin',
+                    'user' => $user,
+                    'secret' => $secret,
+                    'qr_image' => $qrImage,
+                    'totp_uri' => $totp_uri,
+                    'csrf_token' => generateCsrfToken(),
                 ]);
-            }
-            catch (Throwable $e) {
-                logError("Admin 2FA Setup Error: " . $e->getMessage(), "ERROR",
-                ['file' => $e->getFile(), 'line' => $e->getLine()]);
+            } catch (Throwable $e) {
+                logError(
+                    "Admin 2FA Setup Error: " . $e->getMessage(),
+                    "ERROR",
+                    ['file' => $e->getFile(), 'line' => $e->getLine()]
+                );
                 showMessage("Failed to setup 2FA", "danger");
                 header('Location: /admin/security/2fa');
                 exit;
             }
         }
-        );
+    );
 
-        // ==================== ADMIN 2FA VERIFY SETUP ====================
-        // POST /admin/security/2fa/verify - Verify and enable 2FA
-        $router->post('/2fa/verify', ['middleware' => ['auth', 'admin_or_super_only', 'csrf']], function () use ($securityManager, $canManageAdminSecurity) {
+    // ==================== ADMIN 2FA VERIFY SETUP ====================
+    // POST /admin/security/2fa/verify - Verify and enable 2FA
+    $router->post(
+        '/2fa/verify',
+        ['middleware' => ['auth', 'admin_or_super_only', 'csrf']],
+        function () use ($securityManager, $canManageAdminSecurity) {
             try {
                 if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
                     showMessage("Invalid CSRF token", "error");
@@ -178,27 +193,31 @@ $router->group('/admin/security', ['middleware' => ['auth', 'admin_or_super_only
                     showMessage("Two-Factor Authentication has been enabled successfully!", "success");
                     header("Location: /admin/security/2fa");
                     exit;
-                }
-                else {
+                } else {
                     logActivity("Admin 2FA Setup Failed - Database Error", "security", $userId, [], 'error');
                     showMessage("Failed to enable 2FA. Please try again.", "error");
                     header("Location: /admin/security/2fa");
                     exit;
                 }
-            }
-            catch (Throwable $e) {
-                logError("Admin 2FA Verify Error: " . $e->getMessage(), "ERROR",
-                ['file' => $e->getFile(), 'line' => $e->getLine()]);
+            } catch (Throwable $e) {
+                logError(
+                    "Admin 2FA Verify Error: " . $e->getMessage(),
+                    "ERROR",
+                    ['file' => $e->getFile(), 'line' => $e->getLine()]
+                );
                 showMessage("An error occurred. Please try again.", "danger");
                 header('Location: /admin/security/2fa/setup');
                 exit;
             }
         }
-        );
+    );
 
-        // ==================== ADMIN 2FA DISABLE ====================
-        // POST /admin/security/2fa/disable - Disable 2FA for admin
-        $router->post('/2fa/disable', ['middleware' => ['auth', 'admin_or_super_only', 'csrf']], function () use ($securityManager, $canManageAdminSecurity) {
+    // ==================== ADMIN 2FA DISABLE ====================
+    // POST /admin/security/2fa/disable - Disable 2FA for admin
+    $router->post(
+        '/2fa/disable',
+        ['middleware' => ['auth', 'admin_or_super_only', 'csrf']],
+        function () use ($securityManager, $canManageAdminSecurity) {
             try {
                 header('Content-Type: application/json');
 
@@ -238,36 +257,39 @@ $router->group('/admin/security', ['middleware' => ['auth', 'admin_or_super_only
                     logActivity("Admin 2FA Disabled", "security", $userId, [], 'success');
                     http_response_code(200);
                     echo json_encode([
-                    'success' => true,
-                    'message' => '2FA has been disabled'
+                        'success' => true,
+                        'message' => '2FA has been disabled'
                     ]);
-                }
-                else {
+                } else {
                     logActivity("Admin 2FA Disable Failed", "security", $userId, [], 'error');
                     http_response_code(500);
                     echo json_encode([
-                    'success' => false,
-                    'error' => 'Failed to disable 2FA'
+                        'success' => false,
+                        'error' => 'Failed to disable 2FA'
                     ]);
                 }
                 exit;
-            }
-            catch (Throwable $e) {
-                logError("Admin 2FA Disable Error: " . $e->getMessage(), "ERROR",
-                ['file' => $e->getFile(), 'line' => $e->getLine()]);
+            } catch (Throwable $e) {
+                logError(
+                    "Admin 2FA Disable Error: " . $e->getMessage(),
+                    "ERROR",
+                    ['file' => $e->getFile(), 'line' => $e->getLine()]
+                );
                 http_response_code(500);
                 echo json_encode([
-                'success' => false,
-                'error' => 'Internal server error'
+                    'success' => false,
+                    'error' => 'Internal server error'
                 ]);
                 exit;
             }
         }
-        );
+    );
 
-        // ==================== ADMIN 2FA BACKUP CODES VIEW ====================
-        // GET /admin/security/2fa/backup-codes - View backup codes after setup
-        $router->get('/2fa/backup-codes', function () use ($twig, $securityManager, $canManageAdminSecurity) {
+    // ==================== ADMIN 2FA BACKUP CODES VIEW ====================
+    // GET /admin/security/2fa/backup-codes - View backup codes after setup
+    $router->get(
+        '/2fa/backup-codes',
+        function () use ($twig, $securityManager, $canManageAdminSecurity) {
             try {
                 $userId = AuthManager::getCurrentUserId();
                 if (!$userId) {
@@ -292,26 +314,31 @@ $router->group('/admin/security', ['middleware' => ['auth', 'admin_or_super_only
                 }
 
                 echo $twig->render('admin/security/2fa_backup.twig', [
-                'title' => 'Backup Codes',
-                'page_title' => 'Your 2FA Backup Codes',
-                'user' => $user,
-                'backup_codes' => $backupCodes,
-                'csrf_token' => generateCsrfToken(),
+                    'title' => 'Backup Codes',
+                    'page_title' => 'Your 2FA Backup Codes',
+                    'user' => $user,
+                    'backup_codes' => $backupCodes,
+                    'csrf_token' => generateCsrfToken(),
                 ]);
-            }
-            catch (Throwable $e) {
-                logError("Admin Backup Codes View Error: " . $e->getMessage(), "ERROR",
-                ['file' => $e->getFile(), 'line' => $e->getLine()]);
+            } catch (Throwable $e) {
+                logError(
+                    "Admin Backup Codes View Error: " . $e->getMessage(),
+                    "ERROR",
+                    ['file' => $e->getFile(), 'line' => $e->getLine()]
+                );
                 showMessage("Failed to load backup codes", "danger");
                 header('Location: /admin/security/2fa');
                 exit;
             }
         }
-        );
+    );
 
-        // ==================== ADMIN 2FA REGENERATE BACKUP CODES ====================
-        // POST /admin/security/2fa/backup-codes/regenerate - Generate new backup codes
-        $router->post('/2fa/backup-codes/regenerate', ['middleware' => ['auth', 'admin_or_super_only', 'csrf']], function () use ($securityManager, $canManageAdminSecurity) {
+    // ==================== ADMIN 2FA REGENERATE BACKUP CODES ====================
+    // POST /admin/security/2fa/backup-codes/regenerate - Generate new backup codes
+    $router->post(
+        '/2fa/backup-codes/regenerate',
+        ['middleware' => ['auth', 'admin_or_super_only', 'csrf']],
+        function () use ($securityManager, $canManageAdminSecurity) {
             try {
                 header('Content-Type: application/json');
 
@@ -366,26 +393,27 @@ $router->group('/admin/security', ['middleware' => ['auth', 'admin_or_super_only
                     logActivity("Admin Backup Codes Regenerated", "security", $userId, [], 'success');
                     http_response_code(200);
                     echo json_encode([
-                    'success' => true,
-                    'message' => 'New backup codes generated',
-                    'codes' => $backupCodes
+                        'success' => true,
+                        'message' => 'New backup codes generated',
+                        'codes' => $backupCodes
                     ]);
-                }
-                else {
+                } else {
                     logActivity("Admin Backup Codes Regenerate Failed", "security", $userId, [], 'error');
                     http_response_code(500);
                     echo json_encode(['success' => false, 'error' => 'Failed to generate codes']);
                 }
                 $stmt->close();
                 exit;
-            }
-            catch (Throwable $e) {
-                logError("Admin Backup Codes Regenerate Error: " . $e->getMessage(), "ERROR",
-                ['file' => $e->getFile(), 'line' => $e->getLine()]);
+            } catch (Throwable $e) {
+                logError(
+                    "Admin Backup Codes Regenerate Error: " . $e->getMessage(),
+                    "ERROR",
+                    ['file' => $e->getFile(), 'line' => $e->getLine()]
+                );
                 http_response_code(500);
                 echo json_encode(['success' => false, 'error' => 'Internal server error']);
                 exit;
             }
         }
-        );
-    });
+    );
+});

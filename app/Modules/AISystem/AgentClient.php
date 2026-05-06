@@ -1,10 +1,9 @@
 <?php
 // Path: /app/Modules/AISystem/AgentClient.php
 
-require_once __DIR__ . '/Cache.php';
-require_once __DIR__ . '/EnhancedCache.php';
+use App\Modules\AISystem\UnifiedCache;
+
 require_once __DIR__ . '/RateLimiter.php';
-require_once __DIR__ . '/UnifiedCache.php';
 require_once __DIR__ . '/FreeApiOptimizer.php';
 $aiProviderPath = realpath(__DIR__ . '/../../Models/AIProvider.php');
 require_once $aiProviderPath ?: (__DIR__ . '/../../Models/AIProvider.php');
@@ -13,18 +12,14 @@ require_once __DIR__ . '/Layer/ModelRouter.php';
 
 class AgentClient
 {
-    private $cache;
     private $rateLimiter;
     private $aiProvider;
-    private $enhancedCache;
     private $modelRouter;
     private $unifiedCache;
     private $freeOptimizer;
 
     public function __construct(mysqli $mysqli)
     {
-        $this->cache = new Cache();
-        $this->enhancedCache = new EnhancedCache();
         $this->rateLimiter = new RateLimiter();
         $this->aiProvider = new AIProvider($mysqli);
         $this->unifiedCache = UnifiedCache::getInstance();
@@ -47,10 +42,8 @@ class AgentClient
      */
     public function warmModelCache(string $provider, array $modelNames): void
     {
-        // Use EnhancedCache to preload model metadata.
-        foreach ($modelNames as $model) {
-            $this->enhancedCache->getModelMetadata($provider, $model);
-        }
+        // Warm provider model cache by loading the provider model list.
+        $this->getAvailableModels($provider);
     }
 
     public function chat(array $messages, ?string $provider = null, ?string $model = null)
@@ -62,7 +55,7 @@ class AgentClient
         $cacheKey = $freeOptimizer->generateCacheKey($messages, $provider . $model);
 
         // Try to get from cache first (with extended TTL for free tier)
-        if ($cached = $this->cache->get($cacheKey)) {
+        if ($cached = $this->unifiedCache->get($cacheKey, UnifiedCache::CATEGORY_CHAT)) {
             $cached['from_cache'] = true;
             return $cached;
         }
@@ -101,7 +94,7 @@ class AgentClient
         if ($result && !empty($result['success'])) {
             // Use extended cache TTL for free tier
             $ttl = $freeOptimizer->shouldUseAggressiveCaching() ? 7200 : 3600;
-            $this->cache->set($cacheKey, $result, $ttl);
+            $this->unifiedCache->set($cacheKey, $result, UnifiedCache::CATEGORY_CHAT, $ttl);
             return $result;
         }
 
@@ -135,8 +128,8 @@ class AgentClient
     // New method to get available models with caching
     private function getAvailableModels(string $providerName): array
     {
-        // Try to get from enhanced cache first (model cache type)
-        $cachedModels = $this->enhancedCache->get("models-{$providerName}", 'model');
+        $cacheKey = "models-{$providerName}";
+        $cachedModels = $this->unifiedCache->get($cacheKey, UnifiedCache::CATEGORY_MODEL);
         if ($cachedModels) {
             return $cachedModels;
         }
@@ -144,8 +137,8 @@ class AgentClient
         // Fetch from AIProvider (which has its own caching)
         $models = $this->aiProvider->fetchRemoteModels($providerName);
 
-        // Cache the models for 30 minutes
-        $this->enhancedCache->set("models-{$providerName}", $models, 'model', 1800);
+        // Cache the models for 30 minutes and tag by provider.
+        $this->unifiedCache->set($cacheKey, $models, UnifiedCache::CATEGORY_MODEL, 1800, ["provider-{$providerName}"]);
 
         return $models;
     }
@@ -153,15 +146,14 @@ class AgentClient
     // Method to clear cache for a specific provider
     public function clearProviderCache(string $providerName): bool
     {
-        $this->enhancedCache->clearModelCache($providerName);
+        $this->unifiedCache->clearByTag("provider-{$providerName}");
         return true;
     }
 
     // Method to clear all cache
     public function clearAllCache(): bool
     {
-        $this->cache->clearAll();
-        $this->enhancedCache->clearResponseCache();
+        $this->unifiedCache->clearCategory();
         return true;
     }
 
@@ -169,8 +161,6 @@ class AgentClient
     public function getCacheStats(): array
     {
         return [
-            'chat_cache' => $this->cache->getStats(),
-            'enhanced_cache' => $this->enhancedCache->getStats(),
             'unified_cache' => $this->unifiedCache->getStats(),
             'rate_limiter' => $this->rateLimiter->getRateLimitInfo()
         ];
@@ -195,7 +185,7 @@ class AgentClient
         $freeOptimizer = $this->freeOptimizer;
         $cacheKey = $freeOptimizer->generateCacheKey($messages, ($provider ?? 'default') . $model . json_encode($context));
 
-        if ($cached = $this->cache->get($cacheKey)) {
+        if ($cached = $this->unifiedCache->get($cacheKey, UnifiedCache::CATEGORY_CHAT)) {
             $cached['from_cache'] = true;
             return $cached;
         }
@@ -242,7 +232,7 @@ class AgentClient
 
         if ($result && !empty($result['success'])) {
             $ttl = $freeOptimizer->shouldUseAggressiveCaching() ? 7200 : 3600;
-            $this->cache->set($cacheKey, $result, $ttl);
+            $this->unifiedCache->set($cacheKey, $result, UnifiedCache::CATEGORY_CHAT, $ttl);
             return $result;
         }
 
