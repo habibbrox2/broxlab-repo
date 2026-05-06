@@ -617,29 +617,15 @@
   {# JavaScript #}
   <script>
     // Smooth scroll for anchor links
-                    <span class="text-muted small">
-                      <i class="bi bi-calendar-check text-info me-1"></i>Published
-                    </span>
-                    <span class="fw-bold small">{{ (post.published_at|default(post.created_at))|date("M j, Y \\a\\t g:i A") }}</span>
-                  </div>
-                {% endif %}
-                <div class="d-flex align-items-center justify-content-between">
-                  <span class="text-muted small">
-                    <i class="bi bi-clock-fill text-warning me-1"></i>Read Time
-                  </span>
-                  <span class="fw-bold small">{{ ((post.content|striptags|length / 1000)|round)|default(1) }} min</span>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-      </aside>
-    </div>
-  </div>
-  {# JavaScript #}
-  <script>
-    // Smooth scroll for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const targetId = this.getAttribute('href');
+            if (targetId === '#') return;
+
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                e.preventDefault();
+                targetElement.scrollIntoView({
         anchor.addEventListener('click', function (e) {
             const targetId = this.getAttribute('href');
             if (targetId === '#') return;
