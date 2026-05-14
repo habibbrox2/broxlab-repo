@@ -17,6 +17,9 @@ import { getAppSettingsTool } from './system/settings.tool';
 import { summarizeTextTool } from './content/summarize.tool';
 import { getContentStatsTool } from './content/content-stats.tool';
 import { fetchUrlContentTool } from './content/fetch-url.tool';
+import { fileReaderTool } from './content/file-reader.tool';
+import { imageAnalysisTool } from './content/image-analysis.tool';
+import { webSearchTool } from './content/web-search.tool';
 
 // Knowledge base tools
 import { searchKnowledgeBaseTool } from './knowledge/search.tool';
@@ -42,6 +45,9 @@ export {
     summarizeTextTool,
     getContentStatsTool,
     fetchUrlContentTool,
+    fileReaderTool,
+    imageAnalysisTool,
+    webSearchTool,
     searchKnowledgeBaseTool,
     reindexKnowledgeBaseTool,
     listToolsTool,
@@ -68,6 +74,9 @@ export function registerAllTools(registry: ToolRegistry): void {
     registry.register(summarizeTextTool);
     registry.register(getContentStatsTool);
     registry.register(fetchUrlContentTool);
+    registry.register(fileReaderTool);
+    registry.register(imageAnalysisTool);
+    registry.register(webSearchTool);
 
     // Knowledge base tools
     registry.register(searchKnowledgeBaseTool);

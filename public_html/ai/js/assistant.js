@@ -19,10 +19,12 @@ if (!window.BroxAssistantLoaded) {
 
     const CONFIG = {
         chatKey: 'brox.ai.history',
+        sessionStateKey: 'brox.ai.session',
         userKey: 'brox.ai.visitor',
         langKey: 'brox.ai.lang',
         tokenKey: 'brox.ai.visitor_token',
         proxyUrl: '/api/ai/chat',
+        sessionBootstrapUrl: '/api/ai/session',
         modelsUrl: '/api/ai/models',
         frontendSettingsUrl: '/api/ai-system/frontend',
         puterCdn: 'https://js.puter.com/v2/',     // Puter.js CDN (fallback only)
@@ -239,10 +241,12 @@ if (!window.BroxAssistantLoaded) {
         constructor() {
             this.lang = localStorage.getItem(CONFIG.langKey) || 'bn';
             this.history = this.loadHistory();
+            this.sessionState = this.loadSessionState();
             // User profile persists, chat history is session-only
             this.user = this.loadUserProfile();
             this.visitorToken = this.getVisitorToken();
-            this.conversationId = null;
+            this.conversationId = this.sessionState.conversationId || null;
+            this.sessionKey = this.sessionState.sessionKey || this.generateSessionKey();
             this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             this.isThinking = false;
             this.currentModel = null;    // will be set after model list loads
@@ -263,6 +267,8 @@ if (!window.BroxAssistantLoaded) {
                 this.initSpeechRecognition();
                 this.renderInitialState();
                 this.bootstrapFrontendSettings();
+                this.saveSessionState();
+                this.bootstrapConversationSession();
             }
 
             window.addEventListener('popstate', (event) => this.handlePopState(event));
@@ -280,15 +286,105 @@ if (!window.BroxAssistantLoaded) {
         }
 
         loadHistory() {
-            // Session-only chat: do not persist between reloads
-            return [];
+            try {
+                const raw = sessionStorage.getItem(CONFIG.chatKey);
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
         }
 
         saveHistory() {
             try {
-                localStorage.setItem(CONFIG.chatKey, JSON.stringify(this.history));
+                sessionStorage.setItem(CONFIG.chatKey, JSON.stringify(this.history));
             } catch (e) {
                 console.warn('[BroxAssistant] Failed to save history:', e);
+            }
+        }
+
+        generateSessionKey() {
+            return `public_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+        }
+
+        loadSessionState() {
+            try {
+                const raw = sessionStorage.getItem(CONFIG.sessionStateKey);
+                if (!raw) return {};
+                const parsed = JSON.parse(raw);
+                return parsed && typeof parsed === 'object' ? parsed : {};
+            } catch {
+                return {};
+            }
+        }
+
+        saveSessionState() {
+            try {
+                sessionStorage.setItem(CONFIG.sessionStateKey, JSON.stringify({
+                    sessionKey: this.sessionKey || this.generateSessionKey(),
+                    conversationId: this.conversationId || null,
+                    updatedAt: Date.now()
+                }));
+            } catch (e) { }
+        }
+
+        resetConversationSession() {
+            this.conversationId = null;
+            this.sessionKey = this.generateSessionKey();
+            this.saveSessionState();
+            try {
+                sessionStorage.removeItem(CONFIG.chatKey);
+            } catch (e) { }
+        }
+
+        async bootstrapConversationSession() {
+            if (!this.sessionKey) {
+                this.sessionKey = this.generateSessionKey();
+                this.saveSessionState();
+            }
+
+            try {
+                const resp = await fetch(CONFIG.sessionBootstrapUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        visitorToken: this.visitorToken,
+                        session_key: this.sessionKey,
+                        conversation_id: this.conversationId || null
+                    })
+                });
+                if (!resp.ok) return;
+
+                const data = await resp.json();
+                if (!data?.success) return;
+
+                if (data.session_key) {
+                    this.sessionKey = String(data.session_key);
+                }
+                if (data.conversation_id) {
+                    this.conversationId = Number(data.conversation_id);
+                }
+
+                if (Array.isArray(data.messages) && this.user) {
+                    const serverHistory = data.messages
+                        .map(msg => ({
+                            role: msg.role,
+                            content: msg.content,
+                            timestamp: msg.created_at || msg.timestamp || undefined
+                        }))
+                        .filter(msg => ['system', 'user', 'assistant'].includes(msg.role));
+
+                    if (serverHistory.length && (this.history.length === 0 || serverHistory.length > this.history.length)) {
+                        this.history = serverHistory;
+                        this.saveHistory();
+                        this.renderInitialState();
+                    }
+                }
+
+                this.saveSessionState();
+            } catch (e) {
+                // non-critical bootstrap failure
             }
         }
 
@@ -516,6 +612,7 @@ if (!window.BroxAssistantLoaded) {
         resetSessionToTopics() {
             this.isChatActive = false;
             this.history = [];
+            this.resetConversationSession();
             this.nodes.body.innerHTML = '';
             this.isChatActive = true;
             this.resetIdleTimer();
@@ -530,7 +627,7 @@ if (!window.BroxAssistantLoaded) {
             fetch('/api/ai/clear-image-context', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ visitorToken: this.visitorToken })
+                body: JSON.stringify({ visitorToken: this.visitorToken, session_key: this.sessionKey })
             }).catch(() => {
                 // non-critical
             });
@@ -1001,7 +1098,7 @@ if (!window.BroxAssistantLoaded) {
             fetch('/api/ai/clear-image-context', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ visitorToken: this.visitorToken })
+                body: JSON.stringify({ visitorToken: this.visitorToken, session_key: this.sessionKey })
             }).catch(() => {
                 // non-critical
             });
@@ -1020,6 +1117,7 @@ if (!window.BroxAssistantLoaded) {
 
             this.user = { name, email, phone, topics: selected };
             this.saveUserProfile(this.user);
+            this.resetConversationSession();
 
             this.renderChatMode();
         }
@@ -1041,6 +1139,7 @@ if (!window.BroxAssistantLoaded) {
             this.history = [];
             this.history.push({ role: 'user', content: this.user.name, timestamp: new Date().toISOString() });
             this.saveHistory();
+            this.saveSessionState();
 
             this.renderHistorySidebar();
             this.renderQuickActions();
@@ -1372,6 +1471,66 @@ if (!window.BroxAssistantLoaded) {
             }
         }
 
+        extractToolNamesFromMeta(autoToolCalls) {
+            if (!Array.isArray(autoToolCalls)) return [];
+            const names = [];
+            autoToolCalls.forEach((round) => {
+                const calls = Array.isArray(round?.calls) ? round.calls : [];
+                calls.forEach((call) => {
+                    const name = String(call?.name || '').trim();
+                    if (name && !names.includes(name)) names.push(name);
+                });
+            });
+            return names;
+        }
+
+        describeToolUsage(toolNames) {
+            const map = this.lang === 'bn'
+                ? {
+                    web_search: { label: 'Searching', detail: 'ওয়েব থেকে তথ্য খোঁজা হচ্ছে...' },
+                    read_file: { label: 'Reading File', detail: 'লোকাল ফাইল পড়া হচ্ছে...' },
+                    analyze_image: { label: 'Analyzing Image', detail: 'ছবি বিশ্লেষণ করা হচ্ছে...' },
+                    fetch_url_content: { label: 'Browsing URL', detail: 'ওয়েবপেজ কনটেন্ট আনা হচ্ছে...' },
+                    search_knowledge_base: { label: 'Searching KB', detail: 'নলেজ বেসে খোঁজা হচ্ছে...' },
+                }
+                : {
+                    web_search: { label: 'Searching Web', detail: 'Looking up web results...' },
+                    read_file: { label: 'Reading File', detail: 'Reading local project files...' },
+                    analyze_image: { label: 'Analyzing Image', detail: 'Inspecting the image and OCR text...' },
+                    fetch_url_content: { label: 'Browsing URL', detail: 'Fetching page content...' },
+                    search_knowledge_base: { label: 'Searching KB', detail: 'Searching the knowledge base...' },
+                };
+            const primary = toolNames.find((name) => map[name]) || toolNames[0] || '';
+            const meta = map[primary] || (this.lang === 'bn'
+                ? { label: 'Calling Tools', detail: 'সহায়ক টুল চালানো হচ্ছে...' }
+                : { label: 'Calling Tools', detail: 'Running assistant tools...' });
+            return {
+                label: meta.label,
+                detail: meta.detail,
+                summary: toolNames.map((name) => name.replace(/_/g, ' ')).join(', '),
+            };
+        }
+
+        applyLiveToolStatus(autoToolCalls, thinkingWrap = null) {
+            const toolNames = this.extractToolNamesFromMeta(autoToolCalls);
+            if (!toolNames.length) return;
+            const meta = this.describeToolUsage(toolNames);
+            try { this.updateAgenticStatus(meta.label, meta.detail); } catch { }
+            if (thinkingWrap) {
+                const label = thinkingWrap.querySelector('[data-brox-ai-stage-label]');
+                const sub = thinkingWrap.querySelector('[data-brox-ai-stage-sub]');
+                const icon = thinkingWrap.querySelector('[data-brox-ai-stage-icon]');
+                if (label) label.textContent = meta.label;
+                if (sub) sub.textContent = `${meta.detail} ${meta.summary ? `(${meta.summary})` : ''}`.trim();
+                if (icon) icon.className = 'bi bi-gear';
+                thinkingWrap.dataset.stage = 'calling';
+            }
+            const statusText = this.lang === 'bn'
+                ? `Using tools: ${meta.summary}`
+                : `Using tools: ${meta.summary}`;
+            this.updateStatus('thinking', statusText);
+        }
+
         showTyping() {
             if (!this.nodes.body) return null;
             const div = document.createElement('div');
@@ -1529,6 +1688,8 @@ if (!window.BroxAssistantLoaded) {
                 const payload = {
                     messages: this.history,
                     visitorToken: this.visitorToken,
+                    conversation_id: this.conversationId || null,
+                    session_key: this.sessionKey,
                     context: this.user,
                     stream: true,
                     csrf_token: this.csrfToken || ''
@@ -1582,11 +1743,19 @@ if (!window.BroxAssistantLoaded) {
                             if (obj && obj.meta) {
                                 const meta = obj.meta || {};
                                 if (meta.conversation_id) {
-                                    this.conversationId = String(meta.conversation_id);
+                                    this.conversationId = Number(meta.conversation_id);
+                                }
+                                if (meta.session_key) {
+                                    this.sessionKey = String(meta.session_key);
                                 }
                                 if (meta.message_id && msgWrapper) {
                                     msgWrapper.dataset.messageId = String(meta.message_id);
                                 }
+                                if (Array.isArray(meta.auto_tool_calls)) {
+                                    const wrap = msgBubble?.querySelector('.brox-ai-thinking-wrap');
+                                    this.applyLiveToolStatus(meta.auto_tool_calls, wrap);
+                                }
+                                this.saveSessionState();
                                 continue;
                             }
                             if (obj.content) {
@@ -1613,6 +1782,7 @@ if (!window.BroxAssistantLoaded) {
                     if (isIncomplete) this.addContinueButton();
                     this.history.push({ role: 'assistant', content: fullReply, timestamp: new Date().toISOString() });
                     this.saveHistory();
+                    this.saveSessionState();
                     this.renderQuickActions();
                     this.markActivity();
                 }

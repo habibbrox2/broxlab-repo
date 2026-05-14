@@ -5,6 +5,7 @@ import {
   parseResponseConfig,
   typeMessage
 } from '../../core/render.js';
+import { createThinkingIndicator } from '../../core/thinking.js';
 import { createHistoryStore } from '../../core/storage.js';
 import { createLanguageState } from '../../core/i18n.js';
 import { ensurePuterReady, getPuterClient, extractResponseText } from '../../core/puter.js';
@@ -21,6 +22,7 @@ const UI = {
   statusIndicator: document.getElementById('publicAssistantStatusIndicator'),
   status: document.getElementById('publicAssistantStatusText'),
   openRouterKeyStatus: document.getElementById('publicAssistantOpenRouterKeyStatus'),
+  thinkingIndicator: document.getElementById('publicAssistantThinkingIndicator'),
   fallbackBadge: document.getElementById('publicAssistantFallbackBadge'),
   langBnBtn: document.getElementById('publicAssistantLangBn'),
   langEnBtn: document.getElementById('publicAssistantLangEn'),
@@ -88,6 +90,11 @@ const I18N = {
     assistant_title: 'ব্রক্স সহকারী',
     assistant_status: 'বার্তা পাঠালে সংযুক্ত হবে',
     status_thinking: 'ভাবছে...',
+    thinking_understanding: 'অনুরোধ বুঝছে...',
+    thinking_planning: 'উত্তর পরিকল্পনা করছে...',
+    thinking_calling: 'প্রোভাইডারকে কল করছে...',
+    thinking_fallback: 'ব্যর্থ হলে বিকল্প প্রোভাইডারে যাচ্ছে...',
+    thinking_generating: 'চূড়ান্ত উত্তর তৈরি করছে...',
     default_greeting: 'হ্যালো, আমি আপনার BroxLab সহকারী। কীভাবে সাহায্য করতে পারি?',
     close_label: 'বন্ধ করুন',
     chat_input_placeholder: 'আপনার প্রশ্ন লিখুন...',
@@ -117,6 +124,11 @@ const I18N = {
     assistant_title: 'Brox Assistant',
     assistant_status: 'Will connect on first message',
     status_thinking: 'Thinking...',
+    thinking_understanding: 'Understanding request...',
+    thinking_planning: 'Planning response...',
+    thinking_calling: 'Calling provider...',
+    thinking_fallback: 'Falling back to fallback provider...',
+    thinking_generating: 'Generating final answer...',
     default_greeting: 'Hello, I am your Brox assistant. How can I help you today?',
     close_label: 'Close',
     chat_input_placeholder: 'Ask your question...',
@@ -169,6 +181,7 @@ const { getLanguage, setLanguage, } = createLanguageState({
 let currentLang = getLanguage();
 let lastProviderUsed = null;
 let lastProviderChain = null;
+let publicThinking = null;
 const historyStore = createHistoryStore({
   storage: window.localStorage,
   chatKey: CHAT_STORAGE_KEY,
@@ -296,9 +309,12 @@ function updateOpenRouterKeyStatus() {
 }
 
 function setTyping(active) {
-  const thinkingIndicator = document.getElementById('publicAssistantThinkingIndicator');
-  if (thinkingIndicator) {
-    thinkingIndicator.classList.toggle('brox-ai-hidden', !active);
+  if (publicThinking) {
+    if (active) {
+      publicThinking.show().setStep(0).setStatus(t('thinking_understanding') || 'Understanding request...');
+    } else {
+      publicThinking.hide();
+    }
   }
 }
 
@@ -652,8 +668,14 @@ async function handleUserMessage() {
   }
 
   setTyping(true);
+  if (publicThinking) {
+    publicThinking.show().setStep(0).setStatus(t('thinking_understanding') || 'Understanding request...');
+  }
   setStatus(t('status_thinking'));
   setFallbackBadge(false);
+  if (publicThinking) {
+    publicThinking.setStep(1).setStatus(t('thinking_planning') || 'Planning response...');
+  }
   const started = performance.now();
 
   let usedModel;
@@ -703,6 +725,9 @@ async function handleUserMessage() {
         let model = assistantPrefs.model;
         let response;
 
+        if (publicThinking) {
+          publicThinking.setStep(2).setStatus(`Calling ${prov.provider_name}...`);
+        }
         if (prov.provider_name === 'openrouter') {
           model = model && model.includes('/') ? model : 'openrouter/free';
           response = await callOpenRouterAI(apiMessages, { stream: false, model, });
@@ -784,6 +809,9 @@ async function handleUserMessage() {
   // If we get here, all providers failed; fall back to Puter.js.
   if (providerChain.length > 0) {
     const lastUsed = lastProviderUsed ? ` (last used: ${lastProviderUsed})` : '';
+    if (publicThinking) {
+      publicThinking.setStep(2).setStatus(t('thinking_fallback') || 'Falling back to fallback provider...');
+    }
     await appendAssistant(
       UI.messages,
       `All configured providers failed, falling back to Puter.js${lastUsed}.`,
@@ -816,6 +844,9 @@ async function handleUserMessage() {
     const response = await puter.ai.chat(apiMessages, { model: model, stream: false, });
     const reply = extractResponseText(response) || t('fallback_error');
 
+    if (publicThinking) {
+      publicThinking.setStep(3).setStatus(t('thinking_generating') || 'Generating final answer...');
+    }
     const assistantMsg = await appendAssistant(UI.messages, reply, {
       animate: true,
       model: usedModel,
@@ -840,6 +871,9 @@ async function handleUserMessage() {
     const msg = String(puterErr?.message || t('fallback_error'));
     await appendAssistant(UI.messages, msg, { animate: true, });
     setStatus(msg);
+  }
+  if (publicThinking) {
+    publicThinking.hide();
   }
   setTyping(false);
   historyStore.updateActivity();
@@ -885,6 +919,10 @@ async function init() {
   chatHistory = history;
   historyExpired = expired;
   applyLanguage();
+  publicThinking = createThinkingIndicator(UI.thinkingIndicator, {
+    aiName: 'Brox Assistant',
+    initialStatus: t('status_thinking'),
+  });
   renderHistory();
   if (historyExpired) appendAssistant(UI.messages, t('session_expired_notice'));
   bindEvents();

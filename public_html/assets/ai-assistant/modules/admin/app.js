@@ -5,8 +5,10 @@
 
 import {
   appendAssistant,
-  appendMessage
+  appendMessage,
+  sanitizeHtml
 } from '../../core/render.js';
+import { createThinkingIndicator } from '../../core/thinking.js';
 import { getModelCache, initializeModelCache } from '../../core/cache.js';
 
 // UI Element References with safe fallbacks
@@ -19,7 +21,7 @@ const UI = {
   input: document.getElementById('adminAiInput'),
   sendBtn: document.getElementById('adminAiSend'),
   loading: document.getElementById('adminAiTypingIndicator'),
-  thinkingIndicator: document.getElementById('adminAiThinking'),
+  thinkingIndicator: document.getElementById('adminAiThinkingIndicator'),
   history: document.getElementById('adminAiHistory'),
   historyEmpty: document.querySelector('.brox-ai-history-empty'),
   title: document.getElementById('adminAiTitle'),
@@ -65,6 +67,7 @@ const DEFAULT_PREFS = {
 
 let adminPrefs = { ...DEFAULT_PREFS, };
 let chatHistory = [];
+let adminThinking = null;
 
 let currentLang = 'en';
 
@@ -74,6 +77,9 @@ const I18N = {
     assistant_title: 'ব্রক্স এডমিন সহকারী',
     typing_text: 'টাইপ করছে...',
     chat_input_placeholder: 'আপনার বার্তা লিখুন...',
+    thinking_understanding: 'অনুরোধ বুঝছে...',
+    thinking_planning: 'উত্তর পরিকল্পনা করছে...',
+    thinking_generating: 'চূড়ান্ত উত্তর তৈরি করছে...',
     no_history: 'কোন চ্যাট ইতিহাস নেই',
     new_chat: 'নতুন চ্যাট',
     clear_history_confirm: 'ইতিহাস সাফ করতে নিশ্চিত?',
@@ -84,6 +90,9 @@ const I18N = {
     assistant_title: 'Brox Admin Assistant',
     typing_text: 'Typing...',
     chat_input_placeholder: 'Type your message...',
+    thinking_understanding: 'Understanding request...',
+    thinking_planning: 'Planning response...',
+    thinking_generating: 'Generating final answer...',
     no_history: 'No chat history',
     new_chat: 'New Chat',
     clear_history_confirm: 'Are you sure you want to clear history?',
@@ -100,6 +109,10 @@ function init() {
   loadHistory();
   loadLanguage();
   applyLanguage();
+  adminThinking = createThinkingIndicator(UI.thinkingIndicator, {
+    aiName: 'Brox Admin',
+    initialStatus: t('thinking_understanding') || 'Thinking...',
+  });
   renderHistory();
   bindEvents();
   loadProviders();
@@ -346,6 +359,34 @@ function clearHistory() {
   renderHistory();
 }
 
+function applyThinkingEvent(event) {
+  if (!adminThinking || !event || typeof event !== 'object') return;
+  if (typeof event.step === 'number') {
+    adminThinking.setStep(event.step);
+  }
+  if (event.status) {
+    adminThinking.setStatus(event.status);
+  }
+  if (event.toolLabel) {
+    adminThinking.setToolLabel(event.toolLabel);
+  }
+  if (event.toolName) {
+    adminThinking.setToolLabel(`${event.toolName}${event.status ? `: ${event.status}` : ''}`);
+  }
+}
+
+function renderAssistantText(text) {
+  return sanitizeHtml(text || '').replace(/\n/g, '<br>');
+}
+
+function updateAssistantText(element, text) {
+  if (!element) return;
+  element.textContent = text;
+  if (UI.messages) {
+    UI.messages.scrollTop = UI.messages.scrollHeight;
+  }
+}
+
 /**
  * Handle user message submission
  */
@@ -367,20 +408,40 @@ async function handleUserMessage() {
   if (UI.loading) {
     UI.loading.classList.remove('d-none');
   }
-  if (UI.thinkingIndicator) {
-    UI.thinkingIndicator.classList.remove('brox-ai-hidden');
+  if (adminThinking) {
+    adminThinking.show().setStep(0).setStatus(t('thinking_understanding') || 'Understanding request...');
   }
 
-  try {
-    // System prompt is now handled by the backend PromptLoader
-    // Build messages array with chat history
-    const messages = chatHistory.map(msg => ({
-      role: msg.role,
-      content: msg.text,
-    }));
+  if (adminThinking) {
+    adminThinking.setStep(1).setStatus(t('thinking_planning') || 'Planning response...');
+  }
+  // System prompt is now handled by the backend PromptLoader
+  // Build messages array with chat history
+  const messages = chatHistory.map(msg => ({
+    role: msg.role,
+    content: msg.text,
+  }));
 
-    const response = await callAI(messages);
-    const reply = response.choices?.[0]?.message?.content || 'No response';
+  const assistantMessage = appendAssistant(UI.messages, '', { animate: false, });
+  const assistantTextEl = assistantMessage?.querySelector('.brox-ai-message-text');
+  let finalReply = '';
+
+  try {
+    const response = await callAI(messages, (event) => {
+      if (!event) return;
+      if (event.event === 'content' && typeof event.content === 'string') {
+        finalReply += event.content;
+        updateAssistantText(assistantTextEl, finalReply);
+        return;
+      }
+
+      applyThinkingEvent(event);
+    });
+
+    const reply = finalReply || response.content || 'No response';
+    if (assistantTextEl) {
+      assistantTextEl.innerHTML = renderAssistantText(reply);
+    }
 
     // Add response to history
     const responseTs = new Date().toISOString();
@@ -388,18 +449,20 @@ async function handleUserMessage() {
     chatHistory.push({ role: 'assistant', text: reply, ts: responseTs, responseMs, });
     saveHistory();
 
-    // Display response with animation
-    await appendAssistant(UI.messages, reply, { animate: true, });
-
+    if (adminThinking) {
+      adminThinking.setStep(3).setStatus(t('thinking_generating') || 'Generating final answer...');
+    }
   } catch (err) {
     console.error('Error calling AI:', err);
-    await appendAssistant(UI.messages, `Error: ${err.message}`, { animate: true, });
+    if (assistantTextEl) {
+      assistantTextEl.textContent = `Error: ${err?.message || err}`;
+    }
   } finally {
     if (UI.loading) {
       UI.loading.classList.add('d-none');
     }
-    if (UI.thinkingIndicator) {
-      UI.thinkingIndicator.classList.add('brox-ai-hidden');
+    if (adminThinking) {
+      adminThinking.hide();
     }
   }
 }
@@ -407,7 +470,7 @@ async function handleUserMessage() {
 /**
  * Call selected AI provider via backend API
  */
-async function callAI(messages) {
+async function callAI(messages, onEvent = () => { }) {
   const model = adminPrefs.model;
   const requestBody = {
     messages,
@@ -416,6 +479,7 @@ async function callAI(messages) {
       temperature: 0.7,
       maxTokens: 2000,
     },
+    stream: true,
   };
 
   if (UI.advancedJson?.value) {
@@ -463,27 +527,90 @@ async function callAI(messages) {
     throw new Error(`Backend API error: ${errorDetails}`);
   }
 
-  const data = await response.json();
-
-  // Transform backend response to OpenAI format
-  if (data.success && data.content) {
-    return {
-      choices: [{
-        message: {
-          content: data.content,
-          role: 'assistant',
-        },
-      },],
-      model: data.meta?.model || model,
-      usage: {
-        prompt_tokens: 0,
-        completion_tokens: 0,
-        total_tokens: 0,
-      },
-    };
+  if (!response.body) {
+    throw new Error('Stream response body is empty');
   }
 
-  throw new Error(data.error || 'No response from AI provider');
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  let fullText = '';
+  let done = false;
+  let finalMeta = null;
+
+  while (!done) {
+    const { value, done: streamDone, } = await reader.read();
+    if (streamDone) break;
+    buffer += decoder.decode(value, { stream: true, });
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop();
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line || !line.startsWith('data:')) continue;
+      const payload = line.slice(5).trim();
+
+      if (payload === '[DONE]') {
+        done = true;
+        break;
+      }
+
+      let eventData;
+      try {
+        eventData = JSON.parse(payload);
+      } catch (err) {
+        console.warn('Could not parse SSE payload:', payload, err);
+        continue;
+      }
+
+      if (eventData.error) {
+        throw new Error(eventData.error);
+      }
+
+      if (eventData.content) {
+        fullText += eventData.content;
+        onEvent({ event: 'content', content: eventData.content, fullText, });
+        continue;
+      }
+
+      if (eventData.event || eventData.step !== undefined || eventData.status || eventData.toolName || eventData.toolLabel) {
+        onEvent(eventData);
+        continue;
+      }
+
+      if (eventData.done) {
+        done = true;
+        finalMeta = eventData.meta || null;
+      }
+    }
+  }
+
+  if (buffer.trim()) {
+    const trimmed = buffer.trim();
+    if (trimmed.startsWith('data:')) {
+      const payload = trimmed.slice(5).trim();
+      if (payload !== '[DONE]') {
+        try {
+          const eventData = JSON.parse(payload);
+          if (eventData.content) {
+            fullText += eventData.content;
+            onEvent({ event: 'content', content: eventData.content, fullText, });
+          } else if (eventData.event || eventData.step !== undefined || eventData.status || eventData.toolName || eventData.toolLabel) {
+            onEvent(eventData);
+          } else if (eventData.done) {
+            finalMeta = eventData.meta || null;
+          }
+        } catch {
+          // ignore incomplete buffer
+        }
+      }
+    }
+  }
+
+  return {
+    content: fullText,
+    meta: finalMeta,
+  };
 }
 
 /**

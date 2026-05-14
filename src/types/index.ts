@@ -54,10 +54,17 @@ export interface ResponseMeta {
 }
 
 export interface StreamChunk {
-    type: 'content' | 'meta' | 'error';
+    type?: 'content' | 'meta' | 'error' | 'status' | 'step' | 'tool';
+    event?: 'status' | 'step' | 'tool' | 'content' | 'meta';
     content?: string;
+    done?: boolean;
     meta?: ResponseMeta;
     error?: string;
+    step?: number;
+    status?: string;
+    toolName?: string;
+    toolLabel?: string;
+    steps?: Array<{ id: string; label: string }>;
 }
 
 export interface ToolContext {

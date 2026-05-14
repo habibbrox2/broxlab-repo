@@ -4,6 +4,8 @@
 class AIChatModel
 {
     private mysqli $db;
+    private const DEFAULT_CONTEXT = 'public';
+    private const ALLOWED_CONTEXTS = ['public', 'admin'];
 
     public function __construct(mysqli $mysqli)
     {
@@ -24,17 +26,22 @@ class AIChatModel
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id INT NULL,
                     guest_token VARCHAR(100) NULL,
+                    session_key VARCHAR(100) NULL,
+                    context VARCHAR(20) NOT NULL DEFAULT 'public',
                     ip_address VARCHAR(45) NULL,
                     device VARCHAR(100) NULL,
                     location VARCHAR(255) NULL,
                     user_agent TEXT NULL,
                     status ENUM('open', 'closed') DEFAULT 'open',
+                    title VARCHAR(255) NULL,
                     last_message_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     INDEX idx_user_id (user_id),
                     INDEX idx_guest_token (guest_token),
-                    INDEX idx_status (status)
+                    INDEX idx_status (status),
+                    INDEX idx_session_key (session_key),
+                    INDEX idx_context_status (context, status)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ");
         } else {
@@ -51,6 +58,13 @@ class AIChatModel
             if ($result && $result->num_rows === 0) {
                 $this->db->query("ALTER TABLE ai_conversations ADD COLUMN last_message_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP AFTER status");
             }
+
+            $this->ensureConversationColumn("session_key", "ALTER TABLE ai_conversations ADD COLUMN session_key VARCHAR(100) NULL AFTER guest_token");
+            $this->ensureConversationColumn("context", "ALTER TABLE ai_conversations ADD COLUMN context VARCHAR(20) NOT NULL DEFAULT 'public' AFTER session_key");
+            $this->ensureConversationColumn("title", "ALTER TABLE ai_conversations ADD COLUMN title VARCHAR(255) NULL AFTER status");
+
+            $this->ensureConversationIndex('idx_session_key', "ALTER TABLE ai_conversations ADD INDEX idx_session_key (session_key)");
+            $this->ensureConversationIndex('idx_context_status', "ALTER TABLE ai_conversations ADD INDEX idx_context_status (context, status)");
         }
         
         // Fix ai_messages table
@@ -77,41 +91,190 @@ class AIChatModel
         }
     }
 
+    private function ensureConversationColumn(string $column, string $sql): void
+    {
+        $result = $this->db->query("SHOW COLUMNS FROM ai_conversations LIKE '" . $this->db->real_escape_string($column) . "'");
+        if ($result && $result->num_rows === 0) {
+            $this->db->query($sql);
+        }
+    }
+
+    private function ensureConversationIndex(string $index, string $sql): void
+    {
+        $escaped = $this->db->real_escape_string($index);
+        $result = $this->db->query("SHOW INDEX FROM ai_conversations WHERE Key_name = '{$escaped}'");
+        if ($result && $result->num_rows === 0) {
+            $this->db->query($sql);
+        }
+    }
+
+    private function normalizeContext(?string $context): string
+    {
+        $normalized = strtolower(trim((string)$context));
+        return in_array($normalized, self::ALLOWED_CONTEXTS, true) ? $normalized : self::DEFAULT_CONTEXT;
+    }
+
+    private function buildActorWhereClause(?int $userId, ?string $guestToken): array
+    {
+        if ($userId) {
+            return [
+                'sql' => 'user_id = ?',
+                'types' => 'i',
+                'params' => [$userId],
+            ];
+        }
+
+        if ($guestToken !== null && $guestToken !== '') {
+            return [
+                'sql' => 'guest_token = ?',
+                'types' => 's',
+                'params' => [$guestToken],
+            ];
+        }
+
+        return [
+            'sql' => '1 = 0',
+            'types' => '',
+            'params' => [],
+        ];
+    }
+
+    private function bindParams(mysqli_stmt $stmt, string $types, array $params): void
+    {
+        if ($types === '' || empty($params)) {
+            return;
+        }
+
+        $bind = [$types];
+        foreach ($params as $idx => $value) {
+            $bind[] = &$params[$idx];
+        }
+
+        call_user_func_array([$stmt, 'bind_param'], $bind);
+    }
+
     /**
      * Get or create a conversation for a guest/user
      */
-    public function getOrCreateConversation(?int $userId = null, ?string $guestToken = null, ?string $ipAddress = null, ?string $device = null, ?string $location = null, ?string $userAgent = null)
+    public function getOrCreateConversation(
+        ?int $userId = null,
+        ?string $guestToken = null,
+        ?string $ipAddress = null,
+        ?string $device = null,
+        ?string $location = null,
+        ?string $userAgent = null,
+        ?string $sessionKey = null,
+        string $context = 'public'
+    )
     {
-        if ($userId) {
-            $stmt = $this->db->prepare("SELECT id FROM ai_conversations WHERE user_id = ? AND status = 'open' LIMIT 1");
-            $stmt->bind_param("i", $userId);
-        } else if ($guestToken) {
-            $stmt = $this->db->prepare("SELECT id FROM ai_conversations WHERE guest_token = ? AND status = 'open' LIMIT 1");
-            $stmt->bind_param("s", $guestToken);
-        } else {
+        $context = $this->normalizeContext($context);
+        $actor = $this->buildActorWhereClause($userId, $guestToken);
+        if ($actor['sql'] === '1 = 0') {
             return null;
         }
 
+        $conditions = ["context = ?", "status = 'open'", $actor['sql']];
+        $types = 's' . $actor['types'];
+        $params = array_merge([$context], $actor['params']);
+
+        if ($sessionKey !== null && trim($sessionKey) !== '') {
+            array_unshift($conditions, 'session_key = ?');
+            $types = 's' . $types;
+            array_unshift($params, trim($sessionKey));
+        }
+
+        $sql = "SELECT id FROM ai_conversations WHERE " . implode(' AND ', $conditions) . " ORDER BY id DESC LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $this->bindParams($stmt, $types, $params);
         $stmt->execute();
         $res = $stmt->get_result();
         $row = $res->fetch_assoc();
         $stmt->close();
 
-        if ($row) return $row['id'];
+        if ($row) {
+            return (int)$row['id'];
+        }
 
         // Create new conversation with visitor info
         if ($userId) {
-            $stmt = $this->db->prepare("INSERT INTO ai_conversations (user_id, ip_address, device, location, user_agent) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("issss", $userId, $ipAddress, $device, $location, $userAgent);
+            $stmt = $this->db->prepare("INSERT INTO ai_conversations (user_id, session_key, context, ip_address, device, location, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $cleanSessionKey = $sessionKey !== null ? trim($sessionKey) : null;
+            $stmt->bind_param("issssss", $userId, $cleanSessionKey, $context, $ipAddress, $device, $location, $userAgent);
         } else {
-            $stmt = $this->db->prepare("INSERT INTO ai_conversations (guest_token, ip_address, device, location, user_agent) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssss", $guestToken, $ipAddress, $device, $location, $userAgent);
+            $stmt = $this->db->prepare("INSERT INTO ai_conversations (guest_token, session_key, context, ip_address, device, location, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $cleanGuestToken = $guestToken !== null ? trim($guestToken) : null;
+            $cleanSessionKey = $sessionKey !== null ? trim($sessionKey) : null;
+            $stmt->bind_param("sssssss", $cleanGuestToken, $cleanSessionKey, $context, $ipAddress, $device, $location, $userAgent);
         }
         $stmt->execute();
         $id = $stmt->insert_id;
         $stmt->close();
 
         return $id;
+    }
+
+    public function getConversationForSession(
+        ?int $userId = null,
+        ?string $guestToken = null,
+        ?string $sessionKey = null,
+        string $context = 'public'
+    ): ?array
+    {
+        $context = $this->normalizeContext($context);
+        $actor = $this->buildActorWhereClause($userId, $guestToken);
+        if ($actor['sql'] === '1 = 0') {
+            return null;
+        }
+
+        $conditions = ["context = ?", $actor['sql']];
+        $types = 's' . $actor['types'];
+        $params = array_merge([$context], $actor['params']);
+
+        if ($sessionKey !== null && trim($sessionKey) !== '') {
+            array_unshift($conditions, 'session_key = ?');
+            $types = 's' . $types;
+            array_unshift($params, trim($sessionKey));
+        }
+
+        $sql = "SELECT * FROM ai_conversations WHERE " . implode(' AND ', $conditions) . " ORDER BY id DESC LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $this->bindParams($stmt, $types, $params);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $row = $res->fetch_assoc() ?: null;
+        $stmt->close();
+
+        return $row;
+    }
+
+    public function getConversationByIdForActor(
+        int $conversationId,
+        ?int $userId = null,
+        ?string $guestToken = null,
+        string $context = 'public'
+    ): ?array
+    {
+        if ($conversationId <= 0) {
+            return null;
+        }
+
+        $context = $this->normalizeContext($context);
+        $actor = $this->buildActorWhereClause($userId, $guestToken);
+        if ($actor['sql'] === '1 = 0') {
+            return null;
+        }
+
+        $sql = "SELECT * FROM ai_conversations WHERE id = ? AND context = ? AND " . $actor['sql'] . " LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $types = 'is' . $actor['types'];
+        $params = array_merge([$conversationId, $context], $actor['params']);
+        $this->bindParams($stmt, $types, $params);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $row = $res->fetch_assoc() ?: null;
+        $stmt->close();
+
+        return $row;
     }
 
     /**
@@ -131,7 +294,31 @@ class AIChatModel
         $stmt2->execute();
         $stmt2->close();
 
+        if ($role === 'user') {
+            $title = $this->summarizeTitle($content);
+            if ($title !== '') {
+                $stmt3 = $this->db->prepare("UPDATE ai_conversations SET title = COALESCE(NULLIF(title, ''), ?) WHERE id = ?");
+                $stmt3->bind_param("si", $title, $conversationId);
+                $stmt3->execute();
+                $stmt3->close();
+            }
+        }
+
         return $messageId;
+    }
+
+    private function summarizeTitle(string $content): string
+    {
+        $title = trim(preg_replace('/\s+/', ' ', strip_tags($content)));
+        if ($title === '') {
+            return '';
+        }
+
+        if (function_exists('mb_substr')) {
+            return mb_substr($title, 0, 120, 'UTF-8');
+        }
+
+        return substr($title, 0, 120);
     }
 
     /**

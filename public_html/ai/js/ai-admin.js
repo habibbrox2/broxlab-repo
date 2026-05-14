@@ -45,8 +45,10 @@ import CommandMenu from './modules/command-menu.js';
 // ── Configuration ─────────────────────────────────────────────────────────────
 const ADMIN_CONFIG = {
   chatKey: 'brox.admin.history',
+  sessionStateKey: 'brox.admin.session',
   optionsKey: 'brox.admin.request.options',
   proxyUrl: '/api/admin/ai/chat',
+  sessionBootstrapUrl: '/api/admin/ai/session',
   logUrl: '/api/admin/logs/errors',
   modelsUrl: '/api/ai/models', // Fixed: was /api/ai-system/models
   defaultProviderUrl: '/api/ai/default-provider',
@@ -503,10 +505,12 @@ if (!window.BroxAdminInstance) {
   class BroxAdminCopilot {
     constructor() {
       this.history = this.loadHistory();
+      this.sessionState = this.loadSessionState();
       this.advancedOptions = this.loadAdvancedOptions();
       this.isThinking = false;
       this.csrfToken = csrfToken;
-      this.conversationId = null;
+      this.conversationId = this.sessionState.conversationId || null;
+      this.sessionKey = this.sessionState.sessionKey || this.generateSessionKey();
       this.pendingAutoFill = false;
       this.autoFillRetryUsed = false;
       this.currentModel = null;
@@ -536,6 +540,8 @@ if (!window.BroxAdminInstance) {
       this.updateContext();
       this.startInactivityTimer();
       this.initResizer();
+      this.saveSessionState();
+      this.bootstrapConversationSession();
 
       window.addEventListener('popstate', (event) => this.handlePopState(event));
 
@@ -728,6 +734,160 @@ if (!window.BroxAdminInstance) {
       }
     }
 
+    generateSessionKey() {
+      return `admin_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    }
+
+    loadSessionState() {
+      try {
+        const raw = localStorage.getItem(ADMIN_CONFIG.sessionStateKey);
+        if (!raw) return {};
+        const parsed = safeParseJSON(raw);
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+
+    saveSessionState() {
+      try {
+        localStorage.setItem(
+          ADMIN_CONFIG.sessionStateKey,
+          JSON.stringify({
+            sessionKey: this.sessionKey || this.generateSessionKey(),
+            conversationId: this.conversationId || null,
+            updatedAt: Date.now(),
+          })
+        );
+      } catch {
+        // ignore storage failures
+      }
+    }
+
+    resetConversationSession() {
+      this.conversationId = null;
+      this.sessionKey = this.generateSessionKey();
+      this.saveSessionState();
+    }
+
+    async bootstrapConversationSession() {
+      if (!this.sessionKey) {
+        this.sessionKey = this.generateSessionKey();
+        this.saveSessionState();
+      }
+
+      try {
+        const resp = await fetch(ADMIN_CONFIG.sessionBootstrapUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': getCsrfToken() || '',
+          },
+          body: JSON.stringify({
+            session_key: this.sessionKey,
+            conversation_id: this.conversationId || null,
+          }),
+        });
+
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (!data?.success) return;
+
+        if (data.session_key) {
+          this.sessionKey = String(data.session_key);
+        }
+        if (data.conversation_id) {
+          this.conversationId = Number(data.conversation_id);
+        }
+
+        if (Array.isArray(data.messages)) {
+          const serverHistory = data.messages
+            .map((msg) => ({
+              role: msg.role,
+              content: msg.content,
+              timestamp: msg.created_at || msg.timestamp || undefined,
+            }))
+            .filter((msg) => ['system', 'user', 'assistant'].includes(msg.role));
+
+          if (
+            serverHistory.length &&
+            (this.history.length === 0 || serverHistory.length > this.history.length)
+          ) {
+            this.history = serverHistory;
+            this.renderHistory();
+          }
+        }
+
+        this.saveSessionState();
+      } catch {
+        // non-critical bootstrap failure
+      }
+    }
+
+    sanitizeMessageContentForStorage(content) {
+      if (typeof content === 'string') {
+        return content;
+      }
+
+      if (!Array.isArray(content)) {
+        return '';
+      }
+
+      const normalized = [];
+      content.forEach((part) => {
+        if (!part || typeof part !== 'object') return;
+
+        if (part.type === 'text' && typeof part.text === 'string') {
+          normalized.push({ type: 'text', text: part.text });
+          return;
+        }
+
+        if (part.type === 'image_url' && part.image_url && typeof part.image_url.url === 'string') {
+          const image = { url: part.image_url.url };
+          if (typeof part.image_url.name === 'string' && part.image_url.name.trim()) {
+            image.name = part.image_url.name.trim();
+          }
+          if (typeof part.image_url.mime === 'string' && part.image_url.mime.trim()) {
+            image.mime = part.image_url.mime.trim();
+          }
+          if (Number.isFinite(Number(part.image_url.size))) {
+            image.size = Number(part.image_url.size);
+          }
+          normalized.push({ type: 'image_url', image_url: image });
+          return;
+        }
+
+        if (part.type === 'file' && part.file) {
+          normalized.push({
+            type: 'file',
+            file: {
+              filename: String(part.file.filename || part.file.name || 'attachment'),
+              mime: String(part.file.mime || ''),
+              size: Number(part.file.size || 0),
+            },
+          });
+        }
+      });
+
+      return normalized;
+    }
+
+    buildHistorySnapshot(history = this.history) {
+      return (Array.isArray(history) ? history : [])
+        .map((msg) => {
+          if (!msg || typeof msg !== 'object') return null;
+          if (!['system', 'user', 'assistant'].includes(msg.role)) return null;
+
+          return {
+            role: msg.role,
+            content: this.sanitizeMessageContentForStorage(msg.content),
+            timestamp: msg.timestamp || undefined,
+            annotations: Array.isArray(msg.annotations) ? msg.annotations : undefined,
+          };
+        })
+        .filter(Boolean);
+    }
+
     saveHistory() {
       try {
         const trimmed = this.history.slice(-ADMIN_CONFIG.maxHistory);
@@ -758,9 +918,10 @@ if (!window.BroxAdminInstance) {
     }
 
     persistHistory(trimmed) {
+      const snapshot = this.buildHistorySnapshot(trimmed);
       for (const storage of this.getHistoryStorages()) {
         try {
-          storage.setItem(ADMIN_CONFIG.chatKey, JSON.stringify(trimmed));
+          storage.setItem(ADMIN_CONFIG.chatKey, JSON.stringify(snapshot));
         } catch {
           // Ignore write failures (privacy mode, quota)
         }
@@ -1566,6 +1727,55 @@ if (!window.BroxAdminInstance) {
       }
     }
 
+    extractToolNamesFromMeta(autoToolCalls) {
+      if (!Array.isArray(autoToolCalls)) return [];
+      const names = [];
+      autoToolCalls.forEach((round) => {
+        const calls = Array.isArray(round?.calls) ? round.calls : [];
+        calls.forEach((call) => {
+          const name = String(call?.name || '').trim();
+          if (name && !names.includes(name)) names.push(name);
+        });
+      });
+      return names;
+    }
+
+    describeToolUsage(toolNames) {
+      const map = {
+        web_search: { label: 'Searching Web', detail: 'Looking up live web results...' },
+        read_file: { label: 'Reading File', detail: 'Reading local project files...' },
+        analyze_image: { label: 'Analyzing Image', detail: 'Inspecting image details and OCR...' },
+        fetch_url_content: { label: 'Browsing URL', detail: 'Fetching page content...' },
+        search_knowledge_base: {
+          label: 'Searching KB',
+          detail: 'Searching the knowledge base...',
+        },
+      };
+      const primary = toolNames.find((name) => map[name]) || toolNames[0] || '';
+      const meta = map[primary] || {
+        label: 'Calling Tools',
+        detail: 'Running assistant tools...',
+      };
+      return {
+        label: meta.label,
+        detail: meta.detail,
+        summary: toolNames.map((name) => name.replace(/_/g, ' ')).join(', '),
+      };
+    }
+
+    applyLiveToolStatus(autoToolCalls, thinkingWrap = null) {
+      const toolNames = this.extractToolNamesFromMeta(autoToolCalls);
+      if (!toolNames.length) return;
+      const meta = this.describeToolUsage(toolNames);
+      this.updateStatus('thinking', `Using tools: ${meta.summary}`);
+      if (thinkingWrap) {
+        const label = thinkingWrap.querySelector('.brox-ai-thinking-text');
+        const sub = thinkingWrap.querySelector('.brox-ai-progress-sub');
+        if (label) label.textContent = meta.label;
+        if (sub) sub.textContent = `${meta.detail} (${meta.summary})`;
+      }
+    }
+
     // ── Event Binding ───────────────────────────────────────────────────────
     bindEvents() {
       if (!this.nodes.btn) return;
@@ -2074,6 +2284,7 @@ if (!window.BroxAdminInstance) {
 
       this.history = [];
       this.clearStoredHistory();
+      this.resetConversationSession();
 
       if (this.nodes.body) {
         this.nodes.body.innerHTML = '';
@@ -2085,7 +2296,7 @@ if (!window.BroxAdminInstance) {
       fetch('/api/ai/clear-image-context', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ session_key: this.sessionKey }),
       }).catch(() => {
         // non-critical
       });
@@ -2333,6 +2544,12 @@ if (!window.BroxAdminInstance) {
           setTimeout(() => this.updateStatus('ready', 'Ready'), 3000);
           return;
         }
+        let requestUrl = this.normalizeImageUrlForProvider(attachment.uploaded.url);
+        try {
+          requestUrl = await this.fileToDataUrl(attachment.file);
+        } catch {
+          // Fall back to the uploaded URL when local conversion fails.
+        }
         messageContent = [];
         if (sanitized) {
           messageContent.push({ type: 'text', text: sanitized });
@@ -2341,6 +2558,7 @@ if (!window.BroxAdminInstance) {
           type: 'image_url',
           image_url: {
             url: attachment.uploaded.url,
+            request_url: requestUrl,
             name: attachment.uploaded.name || attachment.file.name,
             mime: attachment.uploaded.mime || attachment.file.type,
             size: attachment.uploaded.size || attachment.file.size,
@@ -2409,6 +2627,117 @@ if (!window.BroxAdminInstance) {
           .join('\n');
       }
       return '';
+    }
+
+    normalizeImageUrlForProvider(url) {
+      if (typeof url !== 'string') return '';
+      const trimmed = url.trim();
+      if (!trimmed) return '';
+      if (/^(data:|https?:\/\/)/i.test(trimmed)) {
+        return trimmed;
+      }
+      if (trimmed.startsWith('//')) {
+        return `${window.location.protocol}${trimmed}`;
+      }
+      if (trimmed.startsWith('/')) {
+        return `${window.location.origin}${trimmed}`;
+      }
+      return trimmed;
+    }
+
+    sanitizeMessageContentForRequest(content) {
+      if (typeof content === 'string') {
+        const text = content.trim();
+        return text ? text : null;
+      }
+
+      if (!Array.isArray(content)) {
+        return null;
+      }
+
+      const normalized = [];
+      content.forEach((part) => {
+        if (!part || typeof part !== 'object') return;
+
+        if (part.type === 'text' && typeof part.text === 'string') {
+          const text = part.text.trim();
+          if (text) {
+            normalized.push({ type: 'text', text });
+          }
+          return;
+        }
+
+        if (part.type === 'image_url' && part.image_url && typeof part.image_url.url === 'string') {
+          const url = this.normalizeImageUrlForProvider(
+            part.image_url.request_url || part.image_url.url
+          );
+          if (url) {
+            const imagePart = {
+              type: 'image_url',
+              image_url: { url },
+            };
+            if (
+              typeof part.image_url.detail === 'string' &&
+              ['low', 'high', 'auto', 'original'].includes(part.image_url.detail)
+            ) {
+              imagePart.image_url.detail = part.image_url.detail;
+            }
+            normalized.push(imagePart);
+          }
+          return;
+        }
+
+        if (part.type === 'file' && part.file) {
+          const filename = String(part.file.filename || part.file.name || 'attachment').trim();
+          const fileData = typeof part.file.file_data === 'string' ? part.file.file_data.trim() : '';
+          const fileId = typeof part.file.file_id === 'string' ? part.file.file_id.trim() : '';
+          if (filename && fileData) {
+            normalized.push({
+              type: 'file',
+              file: {
+                filename,
+                file_data: fileData,
+              },
+            });
+            return;
+          }
+          if (filename && fileId) {
+            normalized.push({
+              type: 'file',
+              file: {
+                filename,
+                file_id: fileId,
+              },
+            });
+            return;
+          }
+          if (filename) {
+            normalized.push({
+              type: 'text',
+              text: `Attached file: ${filename}`,
+            });
+          }
+        }
+      });
+
+      return normalized.length ? normalized : null;
+    }
+
+    buildRequestMessages() {
+      return this.history
+        .map((msg) => {
+          if (!msg || typeof msg !== 'object') return null;
+          if (!['system', 'user', 'assistant'].includes(msg.role)) return null;
+
+          const content = this.sanitizeMessageContentForRequest(msg.content);
+          if (!content) return null;
+
+          return {
+            role: msg.role,
+            content,
+          };
+        })
+        .filter(Boolean);
     }
 
     async copyTextToClipboard(text) {
@@ -4317,7 +4646,7 @@ if (!window.BroxAdminInstance) {
       const conversation = {
         id: Date.now(),
         timestamp: new Date().toISOString(),
-        messages: this.history.slice(),
+        messages: this.buildHistorySnapshot(this.history),
       };
 
       // Keep only last 10 archived conversations
@@ -4331,6 +4660,7 @@ if (!window.BroxAdminInstance) {
       this.saveHistory();
       this.renderHistory();
       this.updateContext();
+      this.resetConversationSession();
 
       // Reset inactivity timer
       this.lastActivity = Date.now();
@@ -4359,13 +4689,19 @@ if (!window.BroxAdminInstance) {
 
       const ctx = this.getCurrentContext();
       const payload = {
-        messages: this.history,
-        isAdmin: true,
+        messages: this.buildRequestMessages(),
+        conversation_id: this.conversationId || null,
+        session_key: this.sessionKey,
         context: ctx,
         stream: true,
-        csrf_token: getCsrfToken() || '',
       };
       const requestOptions = this.buildRequestOptions();
+      if (this.currentProvider && !requestOptions.provider) {
+        requestOptions.provider = this.currentProvider;
+      }
+      if (this.currentModel && !requestOptions.model) {
+        requestOptions.model = this.currentModel;
+      }
       const lastUser = [...this.history].reverse().find((m) => m.role === 'user');
       const hasPdfAttachment =
         Array.isArray(lastUser?.content) &&
@@ -4391,8 +4727,6 @@ if (!window.BroxAdminInstance) {
       if (Object.keys(requestOptions).length > 0) {
         payload.options = requestOptions;
       }
-      if (this.currentProvider) payload.provider = this.currentProvider;
-      if (this.currentModel) payload.model = this.currentModel;
 
       const msgIndex = this.history.length;
       const msgBubble = this.createEmptyMessage('assistant', msgIndex);
@@ -4460,11 +4794,15 @@ if (!window.BroxAdminInstance) {
             throw new Error(norm.error || 'AI error');
           }
           if (json && json.conversation_id) {
-            this.conversationId = String(json.conversation_id);
+            this.conversationId = Number(json.conversation_id);
+          }
+          if (json && json.session_key) {
+            this.sessionKey = String(json.session_key);
           }
           if (json && json.message_id && msgBubble?.parentElement) {
             msgBubble.parentElement.dataset.messageId = String(json.message_id);
           }
+          this.saveSessionState();
           if (Array.isArray(json?.annotations)) {
             responseAnnotations = json.annotations;
           }
@@ -4512,7 +4850,10 @@ if (!window.BroxAdminInstance) {
             if (obj && obj.meta) {
               const meta = obj.meta || {};
               if (meta.conversation_id) {
-                this.conversationId = String(meta.conversation_id);
+                this.conversationId = Number(meta.conversation_id);
+              }
+              if (meta.session_key) {
+                this.sessionKey = String(meta.session_key);
               }
               if (meta.message_id && msgBubble?.parentElement) {
                 msgBubble.parentElement.dataset.messageId = String(meta.message_id);
@@ -4520,6 +4861,11 @@ if (!window.BroxAdminInstance) {
               if (Array.isArray(meta.annotations)) {
                 responseAnnotations = meta.annotations;
               }
+              if (Array.isArray(meta.auto_tool_calls)) {
+                const wrap = msgBubble?.querySelector('.brox-ai-thinking-wrap');
+                this.applyLiveToolStatus(meta.auto_tool_calls, wrap);
+              }
+              this.saveSessionState();
               continue;
             }
 

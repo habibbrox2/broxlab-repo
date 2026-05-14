@@ -671,7 +671,7 @@ ToolRegistry::register('list_tools', function(array $args, ?mysqli $mysqli) {
             'namespace' => [
                 'type' => 'string',
                 'description' => 'Optional namespace to filter tools (e.g., "database", "system", "content", "users")',
-                'enum' => ['database', 'system', 'content', 'users']
+                'enum' => ['database', 'system', 'content', 'users', 'knowledge']
             ]
         ],
         'required' => [],
@@ -679,7 +679,7 @@ ToolRegistry::register('list_tools', function(array $args, ?mysqli $mysqli) {
     ],
     'strict' => true,
     'examples' => [
-        ['input' => '/list_tools', 'output' => '9 tools available across 4 namespaces: database, system, content, users']
+        ['input' => '/list_tools', 'output' => '17 tools available across 5 namespaces: database, system, content, users, knowledge']
     ]
 ]);
 
@@ -786,7 +786,350 @@ ToolRegistry::register('list_storage_files', function(array $args, ?mysqli $mysq
     ]
 ]);
 
-// 12. Get App Settings Tool
+// 12. Safe File Reader Tool
+ToolRegistry::register('read_file', function(array $args, ?mysqli $mysqli) {
+    $projectRoot = realpath(dirname(__DIR__, 2));
+    $inputPath = trim((string)($args['path'] ?? $args['file_path'] ?? $args['file'] ?? ''));
+    $mode = strtolower((string)($args['mode'] ?? 'auto'));
+    $maxChars = min(max((int)($args['max_chars'] ?? $args['maxChars'] ?? 12000), 100), 50000);
+
+    if ($inputPath === '') {
+        throw new InvalidArgumentException('File path is required');
+    }
+
+    $normalized = str_replace('\\', '/', $inputPath);
+    if (str_starts_with($normalized, '/uploads/')) {
+        $normalized = 'public_html' . $normalized;
+    } else {
+        $normalized = ltrim($normalized, '/');
+    }
+
+    $candidate = $projectRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $normalized);
+    $realPath = realpath($candidate);
+    if (!$realPath || !is_file($realPath)) {
+        throw new RuntimeException('File not found');
+    }
+
+    $rootNorm = str_replace('\\', '/', $projectRoot);
+    $pathNorm = str_replace('\\', '/', $realPath);
+    if ($pathNorm !== $rootNorm && !str_starts_with($pathNorm, $rootNorm . '/')) {
+        throw new RuntimeException('File path is outside the project workspace');
+    }
+
+    $relativePath = ltrim(substr($pathNorm, strlen($rootNorm)), '/');
+    $segments = array_values(array_filter(explode('/', $relativePath), fn($segment) => $segment !== ''));
+    foreach ($segments as $segment) {
+        if (in_array($segment, ['.git', 'node_modules'], true)) {
+            throw new RuntimeException("Access to '{$segment}' is not allowed");
+        }
+    }
+
+    $fileName = strtolower((string)basename($realPath));
+    if (in_array($fileName, ['.env', '.env.local', '.env.production', '.env.development', '.env.test'], true)) {
+        throw new RuntimeException("Access to '{$fileName}' is not allowed");
+    }
+
+    $sizeBytes = filesize($realPath) ?: 0;
+    if ($sizeBytes > 15 * 1024 * 1024) {
+        throw new RuntimeException('File is too large to read safely (max 15 MB)');
+    }
+
+    $extension = strtolower((string)pathinfo($realPath, PATHINFO_EXTENSION));
+    if ($mode === 'auto') {
+        if ($extension === 'pdf') {
+            $mode = 'pdf';
+        } elseif (in_array($extension, ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tiff'], true)) {
+            $mode = 'image';
+        } elseif ($extension === 'json') {
+            $mode = 'json';
+        } elseif (in_array($extension, ['html', 'htm'], true)) {
+            $mode = 'html';
+        } elseif (in_array($extension, ['md', 'markdown'], true)) {
+            $mode = 'markdown';
+        } elseif ($extension === 'csv') {
+            $mode = 'csv';
+        } elseif (in_array($extension, ['txt', 'ts', 'tsx', 'js', 'jsx', 'php', 'css', 'xml', 'yml', 'yaml', 'sql', 'log'], true)) {
+            $mode = 'text';
+        } else {
+            $mode = 'binary';
+        }
+    }
+
+    $result = [
+        'path' => $relativePath,
+        'mode' => $mode,
+        'metadata' => [
+            'extension' => $extension ?: 'none',
+            'size_bytes' => $sizeBytes,
+            'mime_type' => function_exists('mime_content_type') ? @mime_content_type($realPath) : null,
+        ]
+    ];
+
+    if ($mode === 'binary') {
+        $result['content'] = null;
+        $result['note'] = 'Binary file detected. Metadata only returned.';
+        return $result;
+    }
+
+    if ($mode === 'pdf') {
+        require_once __DIR__ . '/OCRService.php';
+        $ocr = new OCRService();
+        $pdfData = base64_encode((string)file_get_contents($realPath));
+        $pdfResult = $ocr->extractTextFromPDF($pdfData, ['language' => 'eng']);
+        $text = trim((string)($pdfResult['text'] ?? ''));
+        $result['content'] = mb_substr($text, 0, $maxChars);
+        $result['pages'] = $pdfResult['pages'] ?? null;
+        return $result;
+    }
+
+    if ($mode === 'image') {
+        require_once __DIR__ . '/OCRService.php';
+        $ocr = new OCRService();
+        $imageData = base64_encode((string)file_get_contents($realPath));
+        $ocrResult = $ocr->extractTextFromImage($imageData, ['language' => 'eng']);
+        $text = trim((string)($ocrResult['text'] ?? ''));
+        $result['content'] = mb_substr($text, 0, $maxChars);
+        $result['ocr'] = [
+            'confidence' => $ocrResult['confidence'] ?? null,
+            'engine' => $ocrResult['engine'] ?? null,
+        ];
+        return $result;
+    }
+
+    $content = (string)file_get_contents($realPath);
+    if ($mode === 'json') {
+        $decoded = json_decode($content, true);
+        $content = json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: $content;
+    } elseif ($mode === 'html') {
+        $title = null;
+        if (preg_match('/<title[^>]*>(.*?)<\/title>/is', $content, $matches)) {
+            $title = trim(strip_tags($matches[1]));
+        }
+        $content = trim(preg_replace('/\s+/u', ' ', strip_tags($content)));
+        $result['title'] = $title;
+    }
+
+    $result['content'] = mb_substr($content, 0, $maxChars);
+    $result['preview'] = mb_substr((string)$result['content'], 0, min($maxChars, 1000));
+    return $result;
+}, [
+    'name' => 'Read File',
+    'description' => 'Read a local project file safely with bounded output. Supports text, HTML, JSON, CSV, PDF, and image OCR.',
+    'namespace' => 'content',
+    'parameters' => [
+        'type' => 'object',
+        'properties' => [
+            'path' => ['type' => 'string', 'description' => 'Project-relative file path'],
+            'mode' => ['type' => 'string', 'description' => 'Read mode', 'enum' => ['auto', 'text', 'json', 'markdown', 'html', 'csv', 'pdf', 'image', 'binary'], 'default' => 'auto'],
+            'max_chars' => ['type' => 'integer', 'description' => 'Maximum characters to return', 'default' => 12000, 'minimum' => 100, 'maximum' => 50000]
+        ],
+        'required' => ['path'],
+        'additionalProperties' => false
+    ],
+    'strict' => true,
+    'examples' => [
+        ['input' => '/read_file path="README.md"', 'output' => 'Returns bounded file contents and metadata']
+    ]
+]);
+
+// 13. Image Analysis Tool
+ToolRegistry::register('analyze_image', function(array $args, ?mysqli $mysqli) {
+    $path = trim((string)($args['path'] ?? $args['image_path'] ?? ''));
+    $imageInput = trim((string)($args['image'] ?? ''));
+    $includeOcr = !array_key_exists('include_ocr', $args) || (bool)$args['include_ocr'];
+    $language = (string)($args['language'] ?? 'eng');
+
+    if ($path === '' && $imageInput === '') {
+        throw new InvalidArgumentException('path or image is required');
+    }
+
+    $binary = null;
+    $source = 'inline-base64';
+
+    if ($path !== '') {
+        $projectRoot = realpath(dirname(__DIR__, 2));
+        $normalized = str_replace('\\', '/', $path);
+        if (str_starts_with($normalized, '/uploads/')) {
+            $normalized = 'public_html' . $normalized;
+        } else {
+            $normalized = ltrim($normalized, '/');
+        }
+        $candidate = $projectRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $normalized);
+        $realPath = realpath($candidate);
+        if (!$realPath || !is_file($realPath)) {
+            throw new RuntimeException('Image file not found');
+        }
+        $binary = (string)file_get_contents($realPath);
+        $source = ltrim(str_replace('\\', '/', substr($realPath, strlen($projectRoot))), '/');
+    } else {
+        if (preg_match('/^data:[^;]+;base64,(.+)$/i', $imageInput, $matches)) {
+            $imageInput = $matches[1];
+        }
+        $binary = base64_decode(preg_replace('/\s+/', '', $imageInput), true);
+        if ($binary === false || $binary === '') {
+            throw new RuntimeException('Invalid base64 image data');
+        }
+    }
+
+    if (strlen($binary) > 12 * 1024 * 1024) {
+        throw new RuntimeException('Image is too large to analyze safely (max 12 MB)');
+    }
+
+    $imageInfo = @getimagesizefromstring($binary) ?: null;
+    $result = [
+        'source' => $source,
+        'metadata' => [
+            'width' => $imageInfo[0] ?? null,
+            'height' => $imageInfo[1] ?? null,
+            'mime_type' => $imageInfo['mime'] ?? null,
+            'bits' => $imageInfo['bits'] ?? null,
+            'channels' => $imageInfo['channels'] ?? null,
+            'size_bytes' => strlen($binary),
+        ],
+    ];
+
+    if (function_exists('imagecreatefromstring')) {
+        $gd = @imagecreatefromstring($binary);
+        if ($gd !== false) {
+            $width = imagesx($gd);
+            $height = imagesy($gd);
+            $sampleX = max(1, (int)floor($width / 12));
+            $sampleY = max(1, (int)floor($height / 12));
+            $red = 0;
+            $green = 0;
+            $blue = 0;
+            $count = 0;
+            for ($x = 0; $x < $width; $x += $sampleX) {
+                for ($y = 0; $y < $height; $y += $sampleY) {
+                    $rgb = imagecolorat($gd, $x, $y);
+                    $red += ($rgb >> 16) & 0xFF;
+                    $green += ($rgb >> 8) & 0xFF;
+                    $blue += $rgb & 0xFF;
+                    $count++;
+                }
+            }
+            if ($count > 0) {
+                $result['color_profile'] = [
+                    'average_red' => (int)round($red / $count),
+                    'average_green' => (int)round($green / $count),
+                    'average_blue' => (int)round($blue / $count),
+                ];
+            }
+            imagedestroy($gd);
+        }
+    }
+
+    if ($includeOcr) {
+        require_once __DIR__ . '/OCRService.php';
+        $ocr = new OCRService();
+        $ocrResult = $ocr->extractTextFromImage(base64_encode($binary), ['language' => $language]);
+        $result['ocr'] = [
+            'text' => trim((string)($ocrResult['text'] ?? '')),
+            'confidence' => $ocrResult['confidence'] ?? null,
+            'engine' => $ocrResult['engine'] ?? null,
+        ];
+    }
+
+    return $result;
+}, [
+    'name' => 'Analyze Image',
+    'description' => 'Inspect an image and return metadata plus OCR text when possible.',
+    'namespace' => 'content',
+    'parameters' => [
+        'type' => 'object',
+        'properties' => [
+            'path' => ['type' => 'string', 'description' => 'Local project file path to the image'],
+            'image' => ['type' => 'string', 'description' => 'Base64 image data or data URL'],
+            'include_ocr' => ['type' => 'boolean', 'description' => 'Whether to run OCR on the image', 'default' => true],
+            'language' => ['type' => 'string', 'description' => 'OCR language code', 'default' => 'eng']
+        ],
+        'required' => [],
+        'additionalProperties' => false
+    ],
+    'examples' => [
+        ['input' => '/analyze_image path="public_html/uploads/example.jpg"', 'output' => 'Returns image metadata and OCR text']
+    ]
+]);
+
+// 14. Web Search Tool
+ToolRegistry::register('web_search', function(array $args, ?mysqli $mysqli) {
+    $query = trim((string)($args['query'] ?? ''));
+    $limit = min(max((int)($args['limit'] ?? 5), 1), 10);
+
+    if ($query === '') {
+        throw new InvalidArgumentException('Search query is required');
+    }
+
+    $searchUrl = 'https://html.duckduckgo.com/html/?q=' . urlencode($query) . '&limit=' . $limit;
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $searchUrl,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_HTTPHEADER => [
+            'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language: en-US,en;q=0.9',
+        ],
+    ]);
+    $html = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200 || empty($html)) {
+        throw new RuntimeException("Search failed (HTTP {$httpCode})");
+    }
+
+    $results = [];
+    preg_match_all('/<a class="result__a" href="([^"]+)"[^>]*>(.+?)<\/a>/', $html, $links, PREG_SET_ORDER);
+    preg_match_all('/<a class="result__snippet"[^>]*>(.+?)<\/a>/', $html, $snippets, PREG_SET_ORDER);
+    preg_match_all('/<a class="result__a"[^>]*>(.+?)<\/a>/', $html, $titles, PREG_SET_ORDER);
+
+    for ($i = 0; $i < min(count($links), $limit); $i++) {
+        $title = isset($titles[$i][1]) ? trim(strip_tags(html_entity_decode($titles[$i][1]))) : '';
+        $url = isset($links[$i][1]) ? html_entity_decode($links[$i][1]) : '';
+        if (str_contains($url, 'uddg=')) {
+            parse_str((string)parse_url($url, PHP_URL_QUERY), $params);
+            $url = $params['uddg'] ?? $url;
+        }
+        $snippet = isset($snippets[$i][1]) ? trim(strip_tags(html_entity_decode($snippets[$i][1]))) : '';
+
+        if ($title !== '' && $url !== '') {
+            $results[] = [
+                'title' => $title,
+                'url' => $url,
+                'snippet' => $snippet
+            ];
+        }
+    }
+
+    return [
+        'query' => $query,
+        'count' => count($results),
+        'results' => $results
+    ];
+}, [
+    'name' => 'Web Search',
+    'description' => 'Search the public web and return resolved URLs, titles, and snippets for the query.',
+    'namespace' => 'content',
+    'parameters' => [
+        'type' => 'object',
+        'properties' => [
+            'query' => ['type' => 'string', 'description' => 'Search query text'],
+            'limit' => ['type' => 'integer', 'description' => 'Maximum number of search results', 'default' => 5, 'minimum' => 1, 'maximum' => 10]
+        ],
+        'required' => ['query'],
+        'additionalProperties' => false
+    ],
+    'strict' => true,
+    'examples' => [
+        ['input' => '/web_search query="latest AI news"', 'output' => 'Returns titles, URLs, and snippets']
+    ]
+]);
+
+// 15. Get App Settings Tool
 ToolRegistry::register('get_app_settings', function(array $args, ?mysqli $mysqli) {
     if (!$mysqli) throw new RuntimeException('Database connection not available');
     

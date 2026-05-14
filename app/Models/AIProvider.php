@@ -936,16 +936,33 @@ class AIProvider
             if (!is_array($msg) || !isset($msg['role']) || !array_key_exists('content', $msg)) {
                 continue;
             }
+            $role = (string)($msg['role'] ?? 'user');
             $content = $this->normalizeMessageContentForProvider($providerName, $msg['content']);
-            if ($content === '' || $content === null) {
+            $toolCalls = null;
+            if (
+                $role === 'assistant' &&
+                isset($msg['tool_calls']) &&
+                is_array($msg['tool_calls']) &&
+                !empty($msg['tool_calls'])
+            ) {
+                $toolCalls = $this->normalizeToolCallsForProvider($msg['tool_calls']);
+            }
+
+            if (($content === '' || $content === null) && empty($toolCalls) && $role !== 'tool') {
                 continue;
             }
             $message = [
-                'role' => $msg['role'],
+                'role' => $role,
                 'content' => $content
             ];
+            if ($role === 'tool' && !empty($msg['tool_call_id']) && is_string($msg['tool_call_id'])) {
+                $message['tool_call_id'] = trim($msg['tool_call_id']);
+            }
+            if (!empty($toolCalls)) {
+                $message['tool_calls'] = $toolCalls;
+            }
             if (
-                ($msg['role'] ?? '') === 'assistant' &&
+                $role === 'assistant' &&
                 isset($msg['annotations']) &&
                 is_array($msg['annotations']) &&
                 !empty($msg['annotations'])
@@ -989,6 +1006,39 @@ class AIProvider
         }
 
         return $request;
+    }
+
+    private function normalizeToolCallsForProvider(array $toolCalls): array
+    {
+        $normalized = [];
+        foreach ($toolCalls as $call) {
+            if (!is_array($call)) {
+                continue;
+            }
+            $function = $call['function'] ?? [];
+            $name = is_array($function) ? ($function['name'] ?? '') : '';
+            if (!is_string($name) || trim($name) === '') {
+                continue;
+            }
+            $arguments = is_array($function) ? ($function['arguments'] ?? '{}') : '{}';
+            if (is_array($arguments)) {
+                $arguments = json_encode($arguments, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+            if (!is_string($arguments) || trim($arguments) === '') {
+                $arguments = '{}';
+            }
+
+            $normalized[] = [
+                'id' => (string)($call['id'] ?? ('call_' . bin2hex(random_bytes(8)))),
+                'type' => 'function',
+                'function' => [
+                    'name' => trim($name),
+                    'arguments' => $arguments,
+                ],
+            ];
+        }
+
+        return $normalized;
     }
 
     private function applyAdvancedRequestOptions(array $request, array $options): array
@@ -1119,10 +1169,12 @@ class AIProvider
     private function normalizeMessageContentForProvider(string $providerName, $content)
     {
         if (!is_array($content)) {
-            return is_string($content) ? $content : '';
+            return is_string($content) ? trim($content) : '';
         }
 
+        $supportsRichContent = $this->supportsRichContent($providerName);
         $parts = [];
+        $fallbackLines = [];
         foreach ($content as $part) {
             if (!is_array($part)) {
                 continue;
@@ -1133,24 +1185,45 @@ class AIProvider
                 if (!is_string($text) || trim($text) === '') {
                     continue;
                 }
+                $text = trim($text);
                 $parts[] = ['type' => 'text', 'text' => $text];
+                $fallbackLines[] = $text;
             } elseif ($type === 'image_url') {
                 $image = $part['image_url'] ?? [];
                 $url = $image['url'] ?? '';
                 if (!is_string($url) || trim($url) === '') {
                     continue;
                 }
-                $artifact = ['url' => trim($url)];
+                $url = trim($url);
+                $label = 'Image';
                 if (!empty($image['name']) && is_string($image['name'])) {
-                    $artifact['name'] = trim($image['name']);
+                    $label = trim($image['name']);
                 }
+                $meta = [];
                 if (!empty($image['mime']) && is_string($image['mime'])) {
-                    $artifact['mime'] = trim($image['mime']);
+                    $meta[] = trim($image['mime']);
                 }
                 if (isset($image['size']) && (is_int($image['size']) || is_numeric($image['size']))) {
-                    $artifact['size'] = (int)$image['size'];
+                    $meta[] = (int)$image['size'] . ' bytes';
                 }
-                $parts[] = ['type' => 'image_url', 'image_url' => $artifact];
+
+                $line = $label . ': ' . $url;
+                if (!empty($meta)) {
+                    $line .= ' (' . implode(', ', $meta) . ')';
+                }
+                $fallbackLines[] = $line;
+
+                if ($supportsRichContent) {
+                    $artifact = ['url' => $url];
+                    $detail = $image['detail'] ?? null;
+                    if (is_string($detail)) {
+                        $detail = trim($detail);
+                        if (in_array($detail, ['low', 'high', 'auto', 'original'], true)) {
+                            $artifact['detail'] = $detail;
+                        }
+                    }
+                    $parts[] = ['type' => 'image_url', 'image_url' => $artifact];
+                }
             } elseif ($type === 'file') {
                 $file = $part['file'] ?? [];
                 if (!is_array($file)) {
@@ -1162,59 +1235,33 @@ class AIProvider
                 if (!is_string($filename) || trim($filename) === '') {
                     $filename = 'attachment';
                 }
-                $artifact = ['filename' => trim($filename)];
-                if (is_string($fileData) && trim($fileData) !== '') {
-                    $artifact['file_data'] = trim($fileData);
-                } elseif (is_string($fileId) && trim($fileId) !== '') {
-                    $artifact['file_id'] = trim($fileId);
-                } else {
-                    continue;
+
+                $text = 'Attached file: ' . trim($filename);
+                $fallbackLines[] = $text;
+                if ($supportsRichContent) {
+                    $artifact = ['filename' => trim($filename)];
+                    if (is_string($fileData) && trim($fileData) !== '') {
+                        $artifact['file_data'] = trim($fileData);
+                    } elseif (is_string($fileId) && trim($fileId) !== '') {
+                        $artifact['file_id'] = trim($fileId);
+                    } else {
+                        $parts[] = ['type' => 'text', 'text' => $text];
+                        continue;
+                    }
+                    $parts[] = ['type' => 'file', 'file' => $artifact];
                 }
-                $parts[] = ['type' => 'file', 'file' => $artifact];
             }
         }
 
-        if (empty($parts)) {
-            return '';
-        }
-
-        if ($this->supportsRichContent($providerName)) {
+        if ($supportsRichContent && !empty($parts)) {
             return $parts;
         }
 
-        $lines = [];
-        foreach ($parts as $part) {
-            if ($part['type'] === 'text') {
-                $lines[] = (string)$part['text'];
-            } elseif ($part['type'] === 'image_url') {
-                $image = $part['image_url'] ?? [];
-                $url = $image['url'] ?? '';
-                $label = 'Image';
-                if (!empty($image['name']) && is_string($image['name'])) {
-                    $label = $image['name'];
-                }
-                $meta = [];
-                if (!empty($image['mime'])) {
-                    $meta[] = $image['mime'];
-                }
-                if (!empty($image['size'])) {
-                    $meta[] = $image['size'] . ' bytes';
-                }
-                $line = $label . ': ' . $url;
-                if (!empty($meta)) {
-                    $line .= ' (' . implode(', ', $meta) . ')';
-                }
-                $lines[] = $line;
-            } elseif ($part['type'] === 'file') {
-                $file = $part['file'] ?? [];
-                $filename = $file['filename'] ?? 'attachment';
-                if (!is_string($filename) || trim($filename) === '') {
-                    $filename = 'attachment';
-                }
-                $lines[] = 'File: ' . trim($filename);
-            }
+        if (empty($fallbackLines)) {
+            return '';
         }
-        return trim(implode("\n", array_filter($lines, fn($l) => $l !== '')));
+
+        return trim(implode("\n", array_filter($fallbackLines, fn($line) => $line !== '')));
     }
 
     /**
@@ -1352,13 +1399,15 @@ class AIProvider
                 return ['success' => false, 'error' => $errorMsg];
             }
             // Standard chat completions response format (choices array)
-            if (isset($data['choices'][0]['message']['content'])) {
+            if (isset($data['choices'][0]['message'])) {
                 $annotations = $data['choices'][0]['message']['annotations'] ?? null;
                 return [
                     'success' => true,
-                    'content' => $data['choices'][0]['message']['content'],
+                    'content' => $data['choices'][0]['message']['content'] ?? '',
                     'usage' => $data['usage'] ?? [],
-                    'annotations' => is_array($annotations) ? $annotations : null
+                    'annotations' => is_array($annotations) ? $annotations : null,
+                    'tool_calls' => $data['choices'][0]['message']['tool_calls'] ?? null,
+                    'finish_reason' => $data['choices'][0]['finish_reason'] ?? null
                 ];
             }
             return ['success' => false, 'error' => 'Unexpected Fireworks response format', 'raw' => $data];
@@ -1381,13 +1430,15 @@ class AIProvider
                 }
                 break;
             default:
-                if (isset($data['choices'][0]['message']['content'])) {
+                if (isset($data['choices'][0]['message'])) {
                     $annotations = $data['choices'][0]['message']['annotations'] ?? null;
                     return [
                         'success' => true,
-                        'content' => $data['choices'][0]['message']['content'],
+                        'content' => $data['choices'][0]['message']['content'] ?? '',
                         'usage' => $data['usage'] ?? [],
-                        'annotations' => is_array($annotations) ? $annotations : null
+                        'annotations' => is_array($annotations) ? $annotations : null,
+                        'tool_calls' => $data['choices'][0]['message']['tool_calls'] ?? null,
+                        'finish_reason' => $data['choices'][0]['finish_reason'] ?? null
                     ];
                 }
         }

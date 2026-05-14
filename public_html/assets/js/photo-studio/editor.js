@@ -1,9 +1,4 @@
-/**
- * Brox Studio - Photo Editor
- * Mobile-first editor with quick tools, perspective crop, background cutout, and print export.
- */
-
-/* exported setTool, rotateImage, flipImage, applyFilter, applyAllFilters, resetFilters, undo, redo, zoomIn, zoomOut, resetZoom, setTint, openFiltersPanel, bgRemove, downloadImage, openPrintSheetModal, closePrintSheetModal, generatePrintSheet, deleteCurrentImage, toggleToolsPanel, applyPerspectiveCrop, resetPerspectiveCrop, clearBackgroundLayer, setBackgroundColor, setBackgroundPreset, setCropPreset, updateCustomCropSize, placeCustomCrop, toggleCropAspectLock */
+/* exported setTool, rotateImage, flipImage, applyFilter, applyAllFilters, resetFilters, undo, redo, zoomIn, zoomOut, resetZoom, bgRemove, downloadImage, openPrintSheetModal, closePrintSheetModal, generatePrintSheet, deleteCurrentImage, toggleToolsPanel, preparePrintReady, fitToGuide, centerSubject, clearBackgroundLayer, setBackgroundColor, toggleGuides, applyCrop */
 
 function getCsrfToken() {
   return document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -18,141 +13,291 @@ async function parseJsonResponse(response) {
   }
 }
 
-function createBlobFromCanvas(canvas, type = 'image/png') {
+function createBlobFromCanvas(canvas, type = 'image/png', quality = 0.92) {
   return new Promise((resolve, reject) => {
-    if (!canvas.toBlob) {
-      try {
-        const dataUrl = canvas.toDataURL(type);
-        const byteString = atob(dataUrl.split(',')[1]);
-        const arrayBuffer = new ArrayBuffer(byteString.length);
-        const intArray = new Uint8Array(arrayBuffer);
-        for (let i = 0; i < byteString.length; i += 1) {
-          intArray[i] = byteString.charCodeAt(i);
-        }
-        resolve(new Blob([arrayBuffer,], { type, }));
-      } catch (error) {
-        reject(new Error('Failed to create image blob'));
-      }
-      return;
-    }
-
     canvas.toBlob((blob) => {
       if (!blob) {
         reject(new Error('Failed to create image blob'));
         return;
       }
       resolve(blob);
-    }, type);
+    }, type, quality);
   });
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }
 
 class PhotoStudio {
   constructor() {
+    this.config = this.readConfig();
     this.canvas = document.getElementById('photoCanvas');
-    this.ctx = this.canvas.getContext('2d', { willReadFrequently: true, });
+    this.ctx = this.canvas.getContext('2d');
     this.container = document.getElementById('canvasContainer');
     this.placeholder = document.getElementById('uploadPlaceholder');
     this.app = document.getElementById('studioApp');
+    this.scrollArea = document.getElementById('canvasScroll');
     this.modeBadge = document.getElementById('canvasModeBadge');
     this.toolHint = document.getElementById('toolHint');
+    this.sessionMeta = document.getElementById('sessionMeta');
+    this.imageInfo = document.getElementById('imageInfo');
+    this.zoomLevel = document.getElementById('zoomLevel');
+    this.printPreview = document.getElementById('printSheetPreview');
+    this.cropHandleSize = 16;
 
-    this.currentImage = null;
-    this.cutoutImage = null;
-    this.history = [];
-    this.historyIndex = -1;
-    this.maxHistory = 60;
-
-    this.state = this.getDefaultState();
-    this.currentTool = 'select';
-    this.isPointerDown = false;
-    this.lastPos = null;
-    this.dragHandleIndex = -1;
-    this.cropStart = null;
-    this.cropRect = null;
-    this.shapeStart = null;
-    this.shapeRect = null;
-    this.textSettings = {
-      color: '#ffffff',
-      size: 42,
-    };
-    this.brushSize = 20;
-
+    this.baseImage = null;
+    this.foregroundCanvas = null;
+    this.foregroundCtx = null;
+    this.currentSourceUrl = null;
+    this.remoteCutoutUrl = null;
     this.trayImages = [];
     this.activeImageIndex = -1;
+    this.history = [];
+    this.historyIndex = -1;
+    this.maxHistory = 50;
 
+    this.currentTool = 'select';
+    this.isPointerDown = false;
+    this.dragMode = null;
+    this.pointerStart = null;
+    this.lastPointer = null;
+    this.cropStart = null;
+    this.cropHandle = null;
+    this.cropDragOrigin = null;
+    this.shapeDraft = null;
+    this.selectedOverlayId = null;
+
+    this.state = this.createDefaultState();
+
+    this.initializeUi();
     this.initializeEventListeners();
     this.loadSavedState();
+    this.applyPreset(this.state.activePresetId, false);
     this.updateUndoRedoButtons();
-    this.updateStatus();
     this.updateToolUi();
+    this.updateStatus();
+    this.renderTray();
   }
 
-  getDefaultState() {
+  readConfig() {
+    try {
+      const raw = document.getElementById('studioConfigData')?.textContent || '{}';
+      return JSON.parse(raw);
+    } catch {
+      return {
+        default_preset: 'bd_passport',
+        presets: [],
+        page_sizes: [],
+        background_presets: [],
+        default_print: {
+          page_size: 'A4',
+          orientation: 'portrait',
+          layout: 'center',
+          spacing_mm: 4,
+        },
+      };
+    }
+  }
+
+  createDefaultState() {
     return {
+      activePresetId: this.config.default_preset || 'bd_passport',
       brightness: 0,
       contrast: 0,
       saturation: 0,
-      tint: null,
       zoom: 1,
-      cropMode: 'rect',
-      cropPreset: 'free',
-      cropAspectRatio: null,
-      cropAspectLocked: false,
-      customCropWidth: 400,
-      customCropHeight: 400,
-      perspectivePoints: null,
+      guidesVisible: true,
+      guideOpacity: 0.76,
+      cropRect: null,
       background: {
-        mode: 'transparent',
+        mode: 'color',
         color: '#ffffff',
-        preset: null,
+        preset: 'white',
+      },
+      foreground: {
+        x: 0,
+        y: 0,
+        scale: 1,
+        rotation: 0,
+        flipX: 1,
+        flipY: 1,
+      },
+      overlays: [],
+      print: {
+        page_size: this.config.default_print?.page_size || 'A4',
+        orientation: this.config.default_print?.orientation || 'portrait',
+        layout: this.config.default_print?.layout || 'center',
+        spacing_mm: this.config.default_print?.spacing_mm || 4,
       },
     };
   }
 
+  getPresetById(presetId) {
+    return this.config.presets.find((preset) => preset.id === presetId) || this.config.presets[0] || {
+      id: 'custom',
+      label: 'Custom',
+      width_mm: 35,
+      height_mm: 45,
+      output_width: 413,
+      output_height: 531,
+      safe_area: { left: 0.1, right: 0.1, top: 0.1, bottom: 0.1, },
+      head_box: { x: 0.24, y: 0.16, width: 0.52, height: 0.58, },
+      background_default: '#ffffff',
+      description: 'Custom preset',
+    };
+  }
+
+  getActivePreset() {
+    return this.getPresetById(this.state.activePresetId);
+  }
+
+  initializeUi() {
+    this.populatePresetControls();
+    this.populateBackgroundPresets();
+    this.populatePageSizeOptions();
+    this.syncControls();
+  }
+
   initializeEventListeners() {
     const fileInput = document.getElementById('imageUploadInput');
-    fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+    fileInput.addEventListener('change', (event) => {
+      this.handleFiles(event.target.files);
+      event.target.value = '';
+    });
 
     const canvasArea = document.getElementById('canvasArea');
-    canvasArea.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      canvasArea.style.borderColor = 'rgba(249, 115, 22, 0.35)';
+    canvasArea.addEventListener('dragover', (event) => {
+      event.preventDefault();
     });
-    canvasArea.addEventListener('dragleave', (e) => {
-      e.preventDefault();
-      canvasArea.style.borderColor = '';
-    });
-    canvasArea.addEventListener('drop', (e) => {
-      e.preventDefault();
-      canvasArea.style.borderColor = '';
-      this.handleFiles(e.dataTransfer.files);
+    canvasArea.addEventListener('drop', (event) => {
+      event.preventDefault();
+      this.handleFiles(event.dataTransfer.files);
     });
 
-    this.canvas.addEventListener('mousedown', (e) => this.handlePointerDown(e));
-    this.canvas.addEventListener('mousemove', (e) => this.handlePointerMove(e));
+    this.canvas.addEventListener('mousedown', (event) => this.handlePointerDown(event));
+    this.canvas.addEventListener('mousemove', (event) => this.handlePointerMove(event));
     this.canvas.addEventListener('mouseup', () => void this.handlePointerUp());
     this.canvas.addEventListener('mouseleave', () => void this.handlePointerUp());
-
-    this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false, });
-    this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false, });
+    this.canvas.addEventListener('touchstart', (event) => this.handleTouchStart(event), { passive: false, });
+    this.canvas.addEventListener('touchmove', (event) => this.handleTouchMove(event), { passive: false, });
     this.canvas.addEventListener('touchend', () => void this.handlePointerUp());
 
-    document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+    document.addEventListener('keydown', (event) => this.handleKeyDown(event));
+
+    document.getElementById('presetSelect').addEventListener('change', (event) => {
+      this.applyPreset(event.target.value, true);
+    });
+    document.getElementById('brushSizeSlider').addEventListener('input', () => this.updateStatus());
+    document.getElementById('brushColorPicker').addEventListener('input', () => this.updateStatus());
+    document.getElementById('foregroundScaleSlider').addEventListener('input', (event) => {
+      this.state.foreground.scale = clamp(parseInt(event.target.value, 10) / 100, 0.4, 2.2);
+      this.render();
+      this.persistState();
+      this.updateStatus();
+    });
+    document.getElementById('guideOpacitySlider').addEventListener('input', (event) => {
+      this.state.guideOpacity = clamp(parseInt(event.target.value, 10) / 100, 0.1, 1);
+      this.render();
+      this.persistState();
+    });
+    document.getElementById('backgroundColorPicker').addEventListener('input', (event) => {
+      this.setBackgroundColor(event.target.value);
+    });
 
     ['brightness', 'contrast', 'saturation',].forEach((prop) => {
       const slider = document.getElementById(`${prop}Slider`);
-      const valueEl = document.getElementById(`${prop}Value`);
       slider.addEventListener('input', () => {
-        valueEl.textContent = slider.value;
         this.state[prop] = parseInt(slider.value, 10);
         this.render();
+        this.persistState();
+      });
+    });
+
+    ['printPageSize', 'printOrientation', 'printLayout', 'printSpacing',].forEach((id) => {
+      document.getElementById(id).addEventListener('input', () => {
+        this.state.print.page_size = document.getElementById('printPageSize').value;
+        this.state.print.orientation = document.getElementById('printOrientation').value;
+        this.state.print.layout = document.getElementById('printLayout').value;
+        this.state.print.spacing_mm = parseFloat(document.getElementById('printSpacing').value) || 4;
+        this.persistState();
+        this.renderPrintPreview();
       });
     });
   }
 
-  handleFileSelect(e) {
-    this.handleFiles(e.target.files);
-    e.target.value = '';
+  populatePresetControls() {
+    const select = document.getElementById('presetSelect');
+    const chipGrid = document.getElementById('presetChipGrid');
+    select.innerHTML = '';
+    chipGrid.innerHTML = '';
+
+    this.config.presets.forEach((preset) => {
+      const option = document.createElement('option');
+      option.value = preset.id;
+      option.textContent = `${preset.label} (${preset.width_mm}x${preset.height_mm}mm)`;
+      select.appendChild(option);
+
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'studio-chip';
+      chip.dataset.presetChip = preset.id;
+      chip.innerHTML = `<span>${preset.label}</span><small>${preset.category} • ${preset.width_mm}x${preset.height_mm}mm</small>`;
+      chip.addEventListener('click', () => this.applyPreset(preset.id, true));
+      chipGrid.appendChild(chip);
+    });
+  }
+
+  populateBackgroundPresets() {
+    const grid = document.getElementById('backgroundPresetGrid');
+    grid.innerHTML = '';
+    this.config.background_presets.forEach((preset) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'studio-swatch';
+      button.dataset.backgroundPreset = preset.label;
+      if (preset.mode === 'gradient') {
+        button.style.background = `linear-gradient(135deg, ${preset.value[0]}, ${preset.value[1]})`;
+      } else {
+        button.style.background = preset.value;
+      }
+      button.title = preset.label;
+      button.addEventListener('click', () => this.setBackgroundPreset(preset));
+      grid.appendChild(button);
+    });
+  }
+
+  populatePageSizeOptions() {
+    const pageSizeSelect = document.getElementById('printPageSize');
+    pageSizeSelect.innerHTML = '';
+    this.config.page_sizes.forEach((pageSize) => {
+      const option = document.createElement('option');
+      option.value = pageSize.label;
+      option.textContent = pageSize.label;
+      pageSizeSelect.appendChild(option);
+    });
+  }
+
+  syncControls() {
+    const preset = this.getActivePreset();
+    document.getElementById('presetSelect').value = this.state.activePresetId;
+    document.getElementById('brightnessSlider').value = this.state.brightness;
+    document.getElementById('contrastSlider').value = this.state.contrast;
+    document.getElementById('saturationSlider').value = this.state.saturation;
+    document.getElementById('backgroundColorPicker').value = this.state.background.color || preset.background_default || '#ffffff';
+    document.getElementById('foregroundScaleSlider').value = String(Math.round(this.state.foreground.scale * 100));
+    document.getElementById('guideOpacitySlider').value = String(Math.round(this.state.guideOpacity * 100));
+    document.getElementById('printPageSize').value = this.state.print.page_size;
+    document.getElementById('printOrientation').value = this.state.print.orientation;
+    document.getElementById('printLayout').value = this.state.print.layout;
+    document.getElementById('printSpacing').value = String(this.state.print.spacing_mm);
+
+    document.querySelectorAll('[data-preset-chip]').forEach((chip) => {
+      chip.classList.toggle('active', chip.dataset.presetChip === this.state.activePresetId);
+    });
+
+    document.getElementById('guideToggleLabel').textContent = this.state.guidesVisible ? 'Hide Guides' : 'Show Guides';
+    this.applyZoom();
   }
 
   async handleFiles(files) {
@@ -163,12 +308,10 @@ class PhotoStudio {
         this.showToast(`Invalid file: ${file.name}`, 'error');
         continue;
       }
-
       if (file.size > 10 * 1024 * 1024) {
-        this.showToast(`File too large: ${file.name} (max 10MB)`, 'error');
+        this.showToast(`File too large: ${file.name}`, 'error');
         continue;
       }
-
       await this.uploadAndLoadImage(file);
     }
   }
@@ -179,12 +322,12 @@ class PhotoStudio {
     formData.append('csrf_token', getCsrfToken());
 
     try {
-      this.showToast('Uploading...', 'info');
+      this.showToast('Uploading portrait...', 'info');
       const response = await fetch('/studio/upload', {
         method: 'POST',
         body: formData,
       });
-      const data = await response.json();
+      const data = await parseJsonResponse(response);
 
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Upload failed');
@@ -194,6 +337,7 @@ class PhotoStudio {
         filename: data.image.filename,
         url: data.image.url,
         original_name: data.image.original_name || file.name,
+        variant: data.image.variant || 'upload',
       };
 
       this.trayImages.push(imageMeta);
@@ -201,307 +345,270 @@ class PhotoStudio {
       await this.loadImage(imageMeta.url);
       this.persistState();
       this.renderTray();
-      this.showToast('Image uploaded successfully', 'success');
+      this.showToast('Portrait uploaded', 'success');
     } catch (error) {
-      console.error('Upload error:', error);
-      this.showToast(error.message || 'Failed to upload image', 'error');
+      this.showToast(error.message || 'Upload failed', 'error');
     }
   }
 
-  loadImage(src) {
-    return new Promise((resolve, reject) => {
-      const image = new Image();
-      image.crossOrigin = 'anonymous';
-      image.onload = () => {
-        this.currentImage = image;
-        this.cutoutImage = null;
-        this.state = this.getDefaultState();
-        this.syncControls();
-        this.canvas.width = image.naturalWidth || image.width;
-        this.canvas.height = image.naturalHeight || image.height;
-        this.container.style.display = 'block';
-        this.placeholder.style.display = 'none';
-        this.history = [];
-        this.historyIndex = -1;
-        this.render();
-        this.saveToHistory();
-        this.updateStatus();
-        this.updateToolUi();
-        resolve(image);
-      };
-      image.onerror = reject;
-      image.src = src;
-    });
+  async loadImage(src) {
+    const image = await this.loadImageFromUrl(src);
+    this.baseImage = image;
+    this.currentSourceUrl = src;
+    this.remoteCutoutUrl = null;
+    this.prepareForegroundCanvas(image);
+    this.resetCompositionForPreset();
+    this.container.style.display = 'block';
+    this.placeholder.style.display = 'none';
+    this.render();
+    this.saveToHistory();
+    this.updateStatus();
+    this.persistState();
   }
 
-  render(showOverlays = true) {
-    if (!this.currentImage) {
+  prepareForegroundCanvas(image) {
+    this.foregroundCanvas = document.createElement('canvas');
+    this.foregroundCanvas.width = image.naturalWidth || image.width;
+    this.foregroundCanvas.height = image.naturalHeight || image.height;
+    this.foregroundCtx = this.foregroundCanvas.getContext('2d');
+    this.foregroundCtx.clearRect(0, 0, this.foregroundCanvas.width, this.foregroundCanvas.height);
+    this.foregroundCtx.drawImage(image, 0, 0);
+  }
+
+  resetCompositionForPreset() {
+    const preset = this.getActivePreset();
+    this.canvas.width = preset.output_width;
+    this.canvas.height = preset.output_height;
+    this.state.cropRect = null;
+    this.state.foreground.rotation = 0;
+    this.state.foreground.flipX = 1;
+    this.state.foreground.flipY = 1;
+    this.state.overlays = [];
+    this.state.background.color = this.state.background.color || preset.background_default || '#ffffff';
+    this.fitImageToCanvas();
+    this.syncControls();
+  }
+
+  fitImageToCanvas() {
+    if (!this.foregroundCanvas) {
       return;
     }
 
-    const foreground = this.getActiveForeground();
-    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    const fitScale = Math.min(this.canvas.width / this.foregroundCanvas.width, this.canvas.height / this.foregroundCanvas.height);
+    this.state.foreground.scale = clamp(fitScale, 0.4, 2.2);
+    this.state.foreground.x = this.canvas.width / 2;
+    this.state.foreground.y = this.canvas.height / 2;
+    document.getElementById('foregroundScaleSlider').value = String(Math.round(this.state.foreground.scale * 100));
+  }
 
-    this.drawBackgroundLayer(this.ctx, this.canvas.width, this.canvas.height);
-    this.drawForeground(this.ctx, foreground, this.canvas.width, this.canvas.height);
+  loadImageFromUrl(url) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = url;
+    });
+  }
 
-    if (showOverlays) {
-      if (this.currentTool === 'crop' && this.cropRect) {
-        this.drawRectCropOverlay();
-      }
-
-      if (this.currentTool === 'perspective' && this.state.perspectivePoints) {
-        this.drawPerspectiveOverlay();
-      }
-
-      if (this.currentTool === 'shape' && this.shapeRect) {
-        this.drawShapeOverlay();
-      }
+  applyPreset(presetId, saveHistory = true) {
+    this.state.activePresetId = presetId;
+    const preset = this.getActivePreset();
+    document.getElementById('presetTitle').textContent = preset.label;
+    document.getElementById('presetDescription').textContent = preset.description || 'Preset ready';
+    if (this.baseImage) {
+      this.resetCompositionForPreset();
     }
-
+    this.syncControls();
+    this.render();
+    if (saveHistory && this.baseImage) {
+      this.saveToHistory();
+      this.persistState();
+    }
+    this.renderPrintPreview();
     this.updateStatus();
   }
 
-  getActiveForeground() {
-    return this.cutoutImage || this.currentImage;
-  }
-
-  drawBackgroundLayer(ctx, width, height) {
-    const { background, } = this.state;
-
-    if (background.mode === 'color') {
-      ctx.fillStyle = background.color;
-      ctx.fillRect(0, 0, width, height);
-      return;
-    }
-
-    if (background.mode === 'preset') {
-      const gradient = ctx.createLinearGradient(0, 0, width, height);
-      const preset = background.preset || 'mint';
-      const map = {
-        mint: ['#d1fae5', '#0f766e',],
-        sunset: ['#ffedd5', '#fb7185',],
-        sky: ['#dbeafe', '#2563eb',],
-        slate: ['#e2e8f0', '#334155',],
-      };
-      const [start, end,] = map[preset] || map.mint;
-      gradient.addColorStop(0, start);
-      gradient.addColorStop(1, end);
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
-    }
-  }
-
-  drawForeground(ctx, image, width, height) {
-    ctx.drawImage(image, 0, 0, width, height);
-    this.applyCanvasFilters(ctx, width, height);
-
-    if (this.state.tint) {
-      ctx.fillStyle = `rgba(${this.state.tint.join(',')}, 0.2)`;
-      ctx.fillRect(0, 0, width, height);
-    }
-  }
-
-  applyCanvasFilters(ctx, width, height) {
-    const { brightness, contrast, saturation, } = this.state;
-    if (brightness === 0 && contrast === 0 && saturation === 0) {
-      return;
-    }
-
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const { data, } = imageData;
-
-    for (let i = 0; i < data.length; i += 4) {
-      let r = data[i];
-      let g = data[i + 1];
-      let b = data[i + 2];
-
-      if (brightness !== 0) {
-        const adjust = brightness * 2.55;
-        r += adjust;
-        g += adjust;
-        b += adjust;
-      }
-
-      if (contrast !== 0) {
-        const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
-        r = factor * (r - 128) + 128;
-        g = factor * (g - 128) + 128;
-        b = factor * (b - 128) + 128;
-      }
-
-      if (saturation !== 0) {
-        const gray = 0.2989 * r + 0.5870 * g + 0.114 * b;
-        const satFactor = 1 + saturation / 100;
-        r = gray + satFactor * (r - gray);
-        g = gray + satFactor * (g - gray);
-        b = gray + satFactor * (b - gray);
-      }
-
-      data[i] = Math.max(0, Math.min(255, r));
-      data[i + 1] = Math.max(0, Math.min(255, g));
-      data[i + 2] = Math.max(0, Math.min(255, b));
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-  }
-
-  drawRectCropOverlay() {
-    const { x, y, width, height, } = this.cropRect;
-    this.ctx.save();
-    this.ctx.fillStyle = 'rgba(2, 6, 23, 0.5)';
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    const snapshot = this.createRenderSnapshot();
-    this.ctx.drawImage(snapshot, x, y, width, height, x, y, width, height);
-    this.ctx.strokeStyle = '#f97316';
-    this.ctx.lineWidth = 2;
-    this.ctx.setLineDash([6, 6,]);
-    this.ctx.strokeRect(x, y, width, height);
-    this.ctx.restore();
-  }
-
-  drawPerspectiveOverlay() {
-    const points = this.state.perspectivePoints;
-    this.ctx.save();
-    this.ctx.fillStyle = 'rgba(2, 6, 23, 0.35)';
-    this.ctx.beginPath();
-    this.ctx.rect(0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.moveTo(points[0].x, points[0].y);
-    points.slice(1).forEach((point) => this.ctx.lineTo(point.x, point.y));
-    this.ctx.closePath();
-    this.ctx.fill('evenodd');
-
-    this.ctx.strokeStyle = '#f97316';
-    this.ctx.lineWidth = 2;
-    this.ctx.setLineDash([8, 6,]);
-    this.ctx.beginPath();
-    this.ctx.moveTo(points[0].x, points[0].y);
-    points.slice(1).forEach((point) => this.ctx.lineTo(point.x, point.y));
-    this.ctx.closePath();
-    this.ctx.stroke();
-    this.ctx.setLineDash([]);
-
-    points.forEach((point, index) => {
-      this.ctx.beginPath();
-      this.ctx.fillStyle = '#0f172a';
-      this.ctx.arc(point.x, point.y, 10, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.strokeStyle = '#f8fafc';
-      this.ctx.lineWidth = 2;
-      this.ctx.stroke();
-      this.ctx.fillStyle = '#f8fafc';
-      this.ctx.font = '12px sans-serif';
-      this.ctx.fillText(String(index + 1), point.x - 3, point.y + 4);
+  updateToolUi() {
+    document.querySelectorAll('[data-tool-button]').forEach((button) => {
+      button.classList.toggle('active', button.dataset.toolButton === this.currentTool);
     });
-    this.ctx.restore();
+
+    const messages = {
+      select: ['Select Tool', 'Drag the photo to align the face inside the guide box.',],
+      crop: ['Crop Tool', 'Drag a crop box, then use the handles for cleaner framing.',],
+      brush: ['Brush Tool', 'Retouch directly on the active portrait layer.',],
+      eraser: ['Eraser Tool', 'Refine subject edges or remove stray pixels.',],
+      text: ['Text Tool', 'Tap once to place a studio note or label.',],
+      shape: ['Shape Tool', 'Drag to place a rectangle or circle overlay.',],
+    };
+
+    const [badge, hint,] = messages[this.currentTool] || messages.select;
+    this.modeBadge.textContent = badge;
+    this.toolHint.textContent = hint;
+    this.canvas.style.cursor = this.currentTool === 'select' ? 'grab' : 'crosshair';
   }
 
-  drawShapeOverlay() {
-    const { x, y, width, height, } = this.shapeRect;
-    this.ctx.save();
-    this.ctx.strokeStyle = '#38bdf8';
-    this.ctx.lineWidth = 3;
-    this.ctx.setLineDash([8, 5,]);
-    this.ctx.strokeRect(x, y, width, height);
-    this.ctx.restore();
+  setTool(tool) {
+    if (!this.baseImage && tool !== 'select') {
+      this.showToast('Upload a portrait first', 'info');
+      return;
+    }
+
+    this.currentTool = tool;
+    if (tool !== 'crop') {
+      this.state.cropRect = null;
+    }
+    this.updateToolUi();
+    this.render();
+  }
+
+  getPointerPosition(event) {
+    const rect = this.canvas.getBoundingClientRect();
+    const scaleX = this.canvas.width / rect.width;
+    const scaleY = this.canvas.height / rect.height;
+    return {
+      x: clamp((event.clientX - rect.left) * scaleX, 0, this.canvas.width),
+      y: clamp((event.clientY - rect.top) * scaleY, 0, this.canvas.height),
+    };
+  }
+
+  getImageBounds() {
+    if (!this.foregroundCanvas) {
+      return null;
+    }
+
+    const scale = this.state.foreground.scale;
+    const width = this.foregroundCanvas.width * scale;
+    const height = this.foregroundCanvas.height * scale;
+    return {
+      x: this.state.foreground.x - width / 2,
+      y: this.state.foreground.y - height / 2,
+      width,
+      height,
+    };
   }
 
   handlePointerDown(event) {
-    if (!this.currentImage) {
+    if (!this.baseImage) {
       return;
     }
 
-    const pos = this.getMousePos(event);
+    const pos = this.getPointerPosition(event);
+    this.pointerStart = pos;
+    this.lastPointer = pos;
     this.isPointerDown = true;
 
-    if (this.currentTool === 'perspective') {
-      this.ensurePerspectivePoints();
-      this.dragHandleIndex = this.findPerspectiveHandle(pos);
-      if (this.dragHandleIndex === -1) {
-        this.dragHandleIndex = 0;
+    if (this.currentTool === 'crop') {
+      const handle = this.getCropHandleAtPoint(pos);
+      if (handle) {
+        this.dragMode = 'crop-resize';
+        this.cropHandle = handle;
+        this.cropDragOrigin = { ...this.state.cropRect, };
+        return;
       }
-      return;
-    }
 
-    switch (this.currentTool) {
-    case 'crop':
+      if (this.state.cropRect && this.isPointInRect(pos, this.state.cropRect)) {
+        this.dragMode = 'crop-move';
+        this.cropDragOrigin = { ...this.state.cropRect, };
+        return;
+      }
+
+      this.dragMode = 'crop-create';
       this.cropStart = pos;
-      this.cropRect = { x: pos.x, y: pos.y, width: 0, height: 0, };
-      break;
-    case 'brush':
-    case 'eraser':
-      this.lastPos = pos;
-      this.drawStroke(pos);
-      break;
-    case 'shape':
-      this.shapeStart = pos;
-      this.shapeRect = { x: pos.x, y: pos.y, width: 0, height: 0, };
-      break;
-    case 'text':
-      void this.addTextAtPosition(pos);
-      this.isPointerDown = false;
-      break;
-    default:
-      break;
-    }
-  }
-
-  handlePointerMove(event) {
-    if (!this.currentImage || !this.isPointerDown) {
-      return;
-    }
-
-    const pos = this.getMousePos(event);
-
-    if (this.currentTool === 'perspective' && this.dragHandleIndex >= 0) {
-      this.state.perspectivePoints[this.dragHandleIndex] = pos;
+      this.state.cropRect = { x: pos.x, y: pos.y, width: 0, height: 0, };
       this.render();
       return;
     }
 
-    if (this.currentTool === 'crop' && this.cropStart) {
-      this.cropRect = this.buildCropRect(this.cropStart, pos);
-      this.render();
-      return;
-    }
-
-    if (this.currentTool === 'shape' && this.shapeStart) {
-      this.shapeRect = {
-        x: Math.min(this.shapeStart.x, pos.x),
-        y: Math.min(this.shapeStart.y, pos.y),
-        width: Math.abs(pos.x - this.shapeStart.x),
-        height: Math.abs(pos.y - this.shapeStart.y),
-      };
-      this.render();
+    if (this.currentTool === 'select') {
+      this.dragMode = 'move-subject';
       return;
     }
 
     if (this.currentTool === 'brush' || this.currentTool === 'eraser') {
-      this.drawStroke(pos);
-      this.lastPos = pos;
+      this.dragMode = this.currentTool;
+      this.drawRetouchStroke(pos);
+      return;
+    }
+
+    if (this.currentTool === 'shape') {
+      this.dragMode = 'shape';
+      this.shapeDraft = { x: pos.x, y: pos.y, width: 0, height: 0, };
+      return;
+    }
+
+    if (this.currentTool === 'text') {
+      this.placeTextOverlay(pos);
+      this.isPointerDown = false;
     }
   }
 
-  async handlePointerUp() {
+  handlePointerMove(event) {
+    if (!this.baseImage || !this.isPointerDown) {
+      return;
+    }
+
+    const pos = this.getPointerPosition(event);
+    const dx = pos.x - this.lastPointer.x;
+    const dy = pos.y - this.lastPointer.y;
+
+    if (this.dragMode === 'move-subject') {
+      this.state.foreground.x += dx;
+      this.state.foreground.y += dy;
+      this.render();
+    } else if (this.dragMode === 'crop-create' && this.cropStart) {
+      this.state.cropRect = this.buildCropRect(this.cropStart, pos);
+      this.render();
+    } else if (this.dragMode === 'crop-move' && this.cropDragOrigin) {
+      this.state.cropRect = this.clampRect({
+        x: this.cropDragOrigin.x + (pos.x - this.pointerStart.x),
+        y: this.cropDragOrigin.y + (pos.y - this.pointerStart.y),
+        width: this.cropDragOrigin.width,
+        height: this.cropDragOrigin.height,
+      });
+      this.render();
+    } else if (this.dragMode === 'crop-resize' && this.cropHandle) {
+      this.resizeCropRect(pos);
+      this.render();
+    } else if (this.dragMode === 'brush' || this.dragMode === 'eraser') {
+      this.drawRetouchStroke(pos);
+    } else if (this.dragMode === 'shape' && this.shapeDraft) {
+      this.shapeDraft = {
+        x: Math.min(this.pointerStart.x, pos.x),
+        y: Math.min(this.pointerStart.y, pos.y),
+        width: Math.abs(pos.x - this.pointerStart.x),
+        height: Math.abs(pos.y - this.pointerStart.y),
+      };
+      this.render();
+    }
+
+    this.lastPointer = pos;
+  }
+
+  handlePointerUp() {
     if (!this.isPointerDown) {
       return;
     }
 
-    if (this.currentTool === 'crop' && this.cropRect && this.cropRect.width > 20 && this.cropRect.height > 20) {
-      await this.applyRectCrop();
-    } else if (this.currentTool === 'shape' && this.shapeRect && this.shapeRect.width > 10 && this.shapeRect.height > 10) {
-      await this.commitShape();
-    } else if (this.currentTool === 'brush' || this.currentTool === 'eraser') {
-      await this.commitForegroundFromCanvas();
-      this.showToast(this.currentTool === 'brush' ? 'Brush applied' : 'Erase applied', 'success');
+    if (this.dragMode === 'brush' || this.dragMode === 'eraser') {
+      this.saveToHistory();
+      this.persistState();
+    }
+
+    if (this.dragMode === 'shape' && this.shapeDraft && this.shapeDraft.width > 8 && this.shapeDraft.height > 8) {
+      this.commitShapeOverlay();
     }
 
     this.isPointerDown = false;
-    this.lastPos = null;
-    this.dragHandleIndex = -1;
+    this.dragMode = null;
+    this.cropHandle = null;
+    this.cropDragOrigin = null;
     this.cropStart = null;
-    this.shapeStart = null;
+    this.pointerStart = null;
+    this.lastPointer = null;
+    this.shapeDraft = null;
+    this.render();
+    this.updateStatus();
   }
 
   handleTouchStart(event) {
@@ -511,10 +618,7 @@ class PhotoStudio {
     }
 
     const touch = event.touches[0];
-    this.handlePointerDown({
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-    });
+    this.handlePointerDown({ clientX: touch.clientX, clientY: touch.clientY, });
   }
 
   handleTouchMove(event) {
@@ -524,10 +628,7 @@ class PhotoStudio {
     }
 
     const touch = event.touches[0];
-    this.handlePointerMove({
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-    });
+    this.handlePointerMove({ clientX: touch.clientX, clientY: touch.clientY, });
   }
 
   handleKeyDown(event) {
@@ -535,610 +636,586 @@ class PhotoStudio {
       return;
     }
 
-    switch (event.key.toLowerCase()) {
-    case 'v':
-      this.setTool('select');
-      break;
-    case 'c':
-      this.setTool('crop');
-      break;
-    case 'p':
-      this.setTool('perspective');
-      break;
-    case 'b':
-      this.setTool('brush');
-      break;
-    case 'e':
-      this.setTool('eraser');
-      break;
-    case 'z':
-      if (event.ctrlKey || event.metaKey) {
-        event.preventDefault();
-        if (event.shiftKey) {
-          void this.redo();
-        } else {
-          void this.undo();
-        }
-      }
-      break;
-    case 'y':
-      if (event.ctrlKey || event.metaKey) {
-        event.preventDefault();
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+      event.preventDefault();
+      if (event.shiftKey) {
         void this.redo();
+      } else {
+        void this.undo();
       }
-      break;
-    default:
-      break;
+      return;
     }
-  }
 
-  getMousePos(event) {
-    const rect = this.canvas.getBoundingClientRect();
-    const scaleX = this.canvas.width / rect.width;
-    const scaleY = this.canvas.height / rect.height;
-
-    return {
-      x: Math.max(0, Math.min(this.canvas.width, (event.clientX - rect.left) * scaleX)),
-      y: Math.max(0, Math.min(this.canvas.height, (event.clientY - rect.top) * scaleY)),
+    const toolMap = {
+      v: 'select',
+      c: 'crop',
+      b: 'brush',
+      e: 'eraser',
+      t: 'text',
+      s: 'shape',
     };
-  }
 
-  drawStroke(pos) {
-    this.ctx.lineWidth = this.brushSize;
-    this.ctx.lineCap = 'round';
-    this.ctx.lineJoin = 'round';
-
-    if (this.currentTool === 'eraser') {
-      this.ctx.globalCompositeOperation = 'destination-out';
-      this.ctx.strokeStyle = 'rgba(0, 0, 0, 1)';
-    } else {
-      this.ctx.globalCompositeOperation = 'source-over';
-      this.ctx.strokeStyle = '#f97316';
+    const tool = toolMap[event.key.toLowerCase()];
+    if (tool) {
+      this.setTool(tool);
     }
 
-    if (this.lastPos) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(this.lastPos.x, this.lastPos.y);
-      this.ctx.lineTo(pos.x, pos.y);
-      this.ctx.stroke();
+    if (event.key === 'Enter' && this.currentTool === 'crop' && this.state.cropRect) {
+      event.preventDefault();
+      void this.applyRectCrop();
     }
-
-    this.ctx.globalCompositeOperation = 'source-over';
-  }
-
-  async addTextAtPosition(pos) {
-    if (!this.currentImage) {
-      return;
-    }
-
-    const text = window.prompt('Enter text for the canvas');
-    if (!text) {
-      return;
-    }
-
-    this.render(false);
-    this.ctx.save();
-    this.ctx.fillStyle = this.textSettings.color;
-    this.ctx.font = `700 ${this.textSettings.size}px "Plus Jakarta Sans", sans-serif`;
-    this.ctx.textBaseline = 'top';
-    this.ctx.strokeStyle = 'rgba(2, 6, 23, 0.45)';
-    this.ctx.lineWidth = 6;
-    this.ctx.strokeText(text, pos.x, pos.y);
-    this.ctx.fillText(text, pos.x, pos.y);
-    this.ctx.restore();
-
-    await this.commitForegroundFromCanvas();
-    this.showToast('Text added', 'success');
-  }
-
-  async commitShape() {
-    this.render(false);
-    const { x, y, width, height, } = this.shapeRect;
-    this.ctx.save();
-    this.ctx.strokeStyle = '#38bdf8';
-    this.ctx.lineWidth = 6;
-    this.ctx.strokeRect(x, y, width, height);
-    this.ctx.fillStyle = 'rgba(56, 189, 248, 0.16)';
-    this.ctx.fillRect(x, y, width, height);
-    this.ctx.restore();
-
-    this.shapeRect = null;
-    await this.commitForegroundFromCanvas();
-    this.showToast('Shape added', 'success');
-  }
-
-  createRenderSnapshot() {
-    const snapshot = document.createElement('canvas');
-    snapshot.width = this.canvas.width;
-    snapshot.height = this.canvas.height;
-    const snapshotCtx = snapshot.getContext('2d');
-    this.drawBackgroundLayer(snapshotCtx, snapshot.width, snapshot.height);
-    this.drawForeground(snapshotCtx, this.getActiveForeground(), snapshot.width, snapshot.height);
-    return snapshot;
-  }
-
-  createForegroundSnapshot() {
-    const snapshot = document.createElement('canvas');
-    snapshot.width = this.canvas.width;
-    snapshot.height = this.canvas.height;
-    const snapshotCtx = snapshot.getContext('2d');
-    snapshotCtx.drawImage(this.getActiveForeground(), 0, 0, snapshot.width, snapshot.height);
-    this.applyCanvasFilters(snapshotCtx, snapshot.width, snapshot.height);
-
-    if (this.state.tint) {
-      snapshotCtx.fillStyle = `rgba(${this.state.tint.join(',')}, 0.2)`;
-      snapshotCtx.fillRect(0, 0, snapshot.width, snapshot.height);
-    }
-
-    return snapshot;
   }
 
   buildCropRect(start, end) {
-    let width = Math.abs(end.x - start.x);
-    let height = Math.abs(end.y - start.y);
-    const directionX = end.x >= start.x ? 1 : -1;
-    const directionY = end.y >= start.y ? 1 : -1;
-    const ratio = this.getActiveCropRatio();
+    return this.clampRect({
+      x: Math.min(start.x, end.x),
+      y: Math.min(start.y, end.y),
+      width: Math.abs(end.x - start.x),
+      height: Math.abs(end.y - start.y),
+    });
+  }
 
-    if (ratio) {
-      if (width === 0 && height === 0) {
-        width = this.state.customCropWidth;
-        height = this.state.customCropHeight;
-      } else if (width / Math.max(height, 1) > ratio) {
-        height = width / ratio;
-      } else {
-        width = height * ratio;
-      }
-    }
-
-    width = Math.min(width, this.canvas.width);
-    height = Math.min(height, this.canvas.height);
-
-    const rect = {
-      x: directionX === 1 ? start.x : start.x - width,
-      y: directionY === 1 ? start.y : start.y - height,
+  clampRect(rect) {
+    const width = clamp(rect.width, 20, this.canvas.width);
+    const height = clamp(rect.height, 20, this.canvas.height);
+    return {
+      x: clamp(rect.x, 0, this.canvas.width - width),
+      y: clamp(rect.y, 0, this.canvas.height - height),
       width,
       height,
     };
-
-    return this.clampCropRect(rect);
   }
 
-  clampCropRect(rect) {
-    const width = Math.max(20, Math.min(rect.width, this.canvas.width));
-    const height = Math.max(20, Math.min(rect.height, this.canvas.height));
-    const x = Math.max(0, Math.min(rect.x, this.canvas.width - width));
-    const y = Math.max(0, Math.min(rect.y, this.canvas.height - height));
-
-    return { x, y, width, height, };
-  }
-
-  getActiveCropRatio() {
-    if (this.currentTool !== 'crop' || !this.state.cropAspectLocked) {
-      return null;
+  getCropHandles() {
+    if (!this.state.cropRect) {
+      return [];
     }
 
-    if (this.state.cropAspectRatio) {
-      return this.state.cropAspectRatio;
-    }
-
-    const width = Math.max(1, this.state.customCropWidth);
-    const height = Math.max(1, this.state.customCropHeight);
-    return width / height;
-  }
-
-  async commitForegroundFromCanvas() {
-    const source = this.currentTool === 'eraser' || this.currentTool === 'brush' || this.currentTool === 'shape' || this.currentTool === 'text'
-      ? this.canvas
-      : this.createForegroundSnapshot();
-
-    const dataUrl = source.toDataURL('image/png');
-    const image = await this.loadImageFromUrl(dataUrl);
-    this.currentImage = image;
-    this.cutoutImage = null;
-    this.state.brightness = 0;
-    this.state.contrast = 0;
-    this.state.saturation = 0;
-    this.state.tint = null;
-    this.syncControls();
-    this.render();
-    this.saveToHistory();
-    this.persistState();
-  }
-
-  loadImageFromUrl(dataUrl) {
-    return new Promise((resolve, reject) => {
-      const image = new Image();
-      image.onload = () => resolve(image);
-      image.onerror = reject;
-      image.src = dataUrl;
-    });
-  }
-
-  setTool(tool) {
-    if (!this.currentImage && tool !== 'select') {
-      this.showToast('Upload an image first', 'info');
-      return;
-    }
-
-    this.currentTool = tool;
-    this.state.cropMode = tool === 'perspective' ? 'perspective' : tool === 'crop' ? 'rect' : this.state.cropMode;
-
-    if (tool === 'perspective') {
-      this.ensurePerspectivePoints();
-    }
-
-    if (tool !== 'crop') {
-      this.cropRect = null;
-    }
-
-    if (tool !== 'shape') {
-      this.shapeRect = null;
-    }
-
-    this.updateToolUi();
-    this.render();
-  }
-
-  updateToolUi() {
-    document.querySelectorAll('[data-tool-button]').forEach((button) => {
-      button.classList.toggle('active', button.dataset.toolButton === this.currentTool);
-    });
-
-    const messages = {
-      select: ['Select tool', 'No special overlay. Use quick actions on the right panel.',],
-      crop: ['Rectangle crop', 'Drag on the canvas to crop a clean rectangle.',],
-      perspective: ['Perspective crop', 'Drag the four handles, then press Apply in the Quick Tools section.',],
-      brush: ['Brush mode', 'Drag on the image to draw highlight strokes.',],
-      eraser: ['Eraser mode', 'Drag on the image to erase pixels and keep transparency.',],
-      text: ['Text tool', 'Tap once on the canvas to place text.',],
-      shape: ['Shape tool', 'Drag on the canvas to draw a rectangle overlay.',],
-    };
-
-    const [badge, hint,] = messages[this.currentTool] || messages.select;
-    this.modeBadge.textContent = badge;
-    this.toolHint.textContent = hint;
-    document.getElementById('perspectiveActions').classList.toggle('active', this.currentTool === 'perspective');
-    document.getElementById('cropActions').classList.toggle('active', this.currentTool === 'crop');
-    this.canvas.style.cursor = ['crop', 'perspective', 'brush', 'eraser', 'shape',].includes(this.currentTool) ? 'crosshair' : 'default';
-  }
-
-  setCropPreset(preset) {
-    this.state.cropPreset = preset;
-
-    const presetMap = {
-      '1:1': [1, 1,],
-      '4:5': [4, 5,],
-      '16:9': [16, 9,],
-      '40x50': [40, 50,],
-      '50x40': [50, 40,],
-    };
-
-    if (preset === 'free') {
-      this.state.cropAspectLocked = false;
-      this.state.cropAspectRatio = null;
-    } else if (preset === 'custom') {
-      this.state.cropAspectLocked = true;
-      this.state.cropAspectRatio = Math.max(1, this.state.customCropWidth) / Math.max(1, this.state.customCropHeight);
-    } else if (presetMap[preset]) {
-      const [width, height,] = presetMap[preset];
-      this.state.cropAspectLocked = true;
-      this.state.cropAspectRatio = width / height;
-      this.state.customCropWidth = width * 100;
-      this.state.customCropHeight = height * 100;
-    }
-
-    this.syncCropControls();
-  }
-
-  updateCustomCropSize() {
-    const widthInput = document.getElementById('customCropWidth');
-    const heightInput = document.getElementById('customCropHeight');
-    this.state.customCropWidth = Math.max(20, parseInt(widthInput.value, 10) || 400);
-    this.state.customCropHeight = Math.max(20, parseInt(heightInput.value, 10) || 400);
-
-    widthInput.value = String(this.state.customCropWidth);
-    heightInput.value = String(this.state.customCropHeight);
-
-    if (this.state.cropPreset === 'custom' || this.state.cropAspectLocked) {
-      this.state.cropAspectRatio = this.state.customCropWidth / this.state.customCropHeight;
-    }
-  }
-
-  toggleCropAspectLock() {
-    this.state.cropAspectLocked = !this.state.cropAspectLocked;
-    if (this.state.cropAspectLocked) {
-      this.updateCustomCropSize();
-      this.state.cropAspectRatio = this.state.customCropWidth / this.state.customCropHeight;
-    } else if (this.state.cropPreset === 'free') {
-      this.state.cropAspectRatio = null;
-    }
-    this.syncCropControls();
-  }
-
-  placeCustomCrop() {
-    if (!this.currentImage) {
-      this.showToast('Upload an image first', 'info');
-      return;
-    }
-
-    this.setTool('crop');
-    this.updateCustomCropSize();
-
-    const ratio = this.getActiveCropRatio() || (this.state.customCropWidth / this.state.customCropHeight);
-    let width = Math.min(this.state.customCropWidth, this.canvas.width);
-    let height = Math.min(this.state.customCropHeight, this.canvas.height);
-
-    if (ratio) {
-      if (width / height > ratio) {
-        width = height * ratio;
-      } else {
-        height = width / ratio;
-      }
-    }
-
-    if (width > this.canvas.width) {
-      width = this.canvas.width;
-      height = width / Math.max(ratio, 1);
-    }
-
-    if (height > this.canvas.height) {
-      height = this.canvas.height;
-      width = height * Math.max(ratio, 1);
-    }
-
-    this.cropRect = this.clampCropRect({
-      x: (this.canvas.width - width) / 2,
-      y: (this.canvas.height - height) / 2,
-      width,
-      height,
-    });
-    this.render();
-  }
-
-  syncCropControls() {
-    const preset = document.getElementById('cropPreset');
-    const widthInput = document.getElementById('customCropWidth');
-    const heightInput = document.getElementById('customCropHeight');
-    const toggle = document.getElementById('cropRatioToggle');
-
-    if (preset) {
-      preset.value = this.state.cropPreset;
-    }
-    if (widthInput) {
-      widthInput.value = String(this.state.customCropWidth);
-    }
-    if (heightInput) {
-      heightInput.value = String(this.state.customCropHeight);
-    }
-    if (toggle) {
-      toggle.innerHTML = this.state.cropAspectLocked
-        ? '<i class="bi bi-link-45deg"></i><span>Ratio Locked</span>'
-        : '<i class="bi bi-unlink"></i><span>Free Ratio</span>';
-    }
-  }
-
-  ensurePerspectivePoints() {
-    if (this.state.perspectivePoints) {
-      return;
-    }
-
-    const insetX = this.canvas.width * 0.12;
-    const insetY = this.canvas.height * 0.12;
-    this.state.perspectivePoints = [
-      { x: insetX, y: insetY, },
-      { x: this.canvas.width - insetX, y: insetY, },
-      { x: this.canvas.width - insetX, y: this.canvas.height - insetY, },
-      { x: insetX, y: this.canvas.height - insetY, },
+    const { x, y, width, height, } = this.state.cropRect;
+    return [
+      { key: 'nw', x, y, },
+      { key: 'ne', x: x + width, y, },
+      { key: 'sw', x, y: y + height, },
+      { key: 'se', x: x + width, y: y + height, },
     ];
   }
 
-  findPerspectiveHandle(pos) {
-    const points = this.state.perspectivePoints || [];
-    return points.findIndex((point) => Math.hypot(point.x - pos.x, point.y - pos.y) <= 18);
+  getCropHandleAtPoint(pos) {
+    return this.getCropHandles().find((handle) => Math.hypot(handle.x - pos.x, handle.y - pos.y) <= this.cropHandleSize);
   }
 
-  resetPerspectiveCrop() {
-    this.state.perspectivePoints = null;
-    if (this.currentTool === 'perspective') {
-      this.ensurePerspectivePoints();
-      this.render();
-    }
-  }
-
-  async applyPerspectiveCrop() {
-    if (!this.currentImage) {
+  resizeCropRect(pos) {
+    const origin = this.cropDragOrigin;
+    if (!origin || !this.cropHandle) {
       return;
     }
 
-    this.ensurePerspectivePoints();
-    const quad = this.state.perspectivePoints;
-    const destinationWidth = Math.max(60, Math.round((this.distance(quad[0], quad[1]) + this.distance(quad[3], quad[2])) / 2));
-    const destinationHeight = Math.max(60, Math.round((this.distance(quad[0], quad[3]) + this.distance(quad[1], quad[2])) / 2));
+    const rect = { ...origin, };
+    if (this.cropHandle.key.includes('n')) {
+      const bottom = origin.y + origin.height;
+      rect.y = clamp(pos.y, 0, bottom - 20);
+      rect.height = bottom - rect.y;
+    }
+    if (this.cropHandle.key.includes('s')) {
+      rect.height = clamp(pos.y - origin.y, 20, this.canvas.height - origin.y);
+    }
+    if (this.cropHandle.key.includes('w')) {
+      const right = origin.x + origin.width;
+      rect.x = clamp(pos.x, 0, right - 20);
+      rect.width = right - rect.x;
+    }
+    if (this.cropHandle.key.includes('e')) {
+      rect.width = clamp(pos.x - origin.x, 20, this.canvas.width - origin.x);
+    }
+    this.state.cropRect = this.clampRect(rect);
+  }
 
-    const source = this.createForegroundSnapshot();
-    const output = document.createElement('canvas');
-    output.width = destinationWidth;
-    output.height = destinationHeight;
-    const outputCtx = output.getContext('2d');
+  isPointInRect(pos, rect) {
+    return pos.x >= rect.x && pos.x <= rect.x + rect.width && pos.y >= rect.y && pos.y <= rect.y + rect.height;
+  }
 
-    const steps = Math.max(20, Math.round(destinationWidth / 18));
-    for (let i = 0; i < steps; i += 1) {
-      const t0 = i / steps;
-      const t1 = (i + 1) / steps;
-      const sourceTopLeft = this.interpolatePoint(quad[0], quad[1], t0);
-      const sourceTopRight = this.interpolatePoint(quad[0], quad[1], t1);
-      const sourceBottomLeft = this.interpolatePoint(quad[3], quad[2], t0);
-      const sourceBottomRight = this.interpolatePoint(quad[3], quad[2], t1);
-
-      const destX = t0 * destinationWidth;
-      const nextDestX = t1 * destinationWidth;
-      const stripWidth = Math.max(1, nextDestX - destX);
-
-      const patch = this.extractPerspectiveStrip(
-        source,
-        sourceTopLeft,
-        sourceTopRight,
-        sourceBottomLeft,
-        sourceBottomRight,
-        stripWidth,
-        destinationHeight
-      );
-
-      outputCtx.drawImage(patch, destX, 0, stripWidth, destinationHeight);
+  drawRetouchStroke(pos) {
+    if (!this.foregroundCtx || !this.foregroundCanvas) {
+      return;
     }
 
-    this.canvas.width = output.width;
-    this.canvas.height = output.height;
-    this.currentImage = await this.loadImageFromUrl(output.toDataURL('image/png'));
-    this.cutoutImage = null;
-    this.state.perspectivePoints = null;
-    this.state.brightness = 0;
-    this.state.contrast = 0;
-    this.state.saturation = 0;
-    this.state.tint = null;
-    this.syncControls();
+    const bounds = this.getImageBounds();
+    if (!bounds) {
+      return;
+    }
+
+    const brushSize = parseInt(document.getElementById('brushSizeSlider').value, 10) || 20;
+    const imagePoint = this.canvasToImagePoint(pos, bounds);
+    const previousPoint = this.lastPointer ? this.canvasToImagePoint(this.lastPointer, bounds) : imagePoint;
+
+    this.foregroundCtx.save();
+    this.foregroundCtx.lineCap = 'round';
+    this.foregroundCtx.lineJoin = 'round';
+    this.foregroundCtx.lineWidth = brushSize / Math.max(this.state.foreground.scale, 0.01);
+
+    if (this.currentTool === 'eraser') {
+      this.foregroundCtx.globalCompositeOperation = 'destination-out';
+      this.foregroundCtx.strokeStyle = 'rgba(0,0,0,1)';
+    } else {
+      this.foregroundCtx.globalCompositeOperation = 'source-over';
+      this.foregroundCtx.strokeStyle = document.getElementById('brushColorPicker').value;
+    }
+
+    this.foregroundCtx.beginPath();
+    this.foregroundCtx.moveTo(previousPoint.x, previousPoint.y);
+    this.foregroundCtx.lineTo(imagePoint.x, imagePoint.y);
+    this.foregroundCtx.stroke();
+    this.foregroundCtx.restore();
     this.render();
-    this.saveToHistory();
-    this.showToast('Perspective crop applied', 'success');
   }
 
-  extractPerspectiveStrip(sourceCanvas, topLeft, topRight, bottomLeft, bottomRight, width, height) {
-    const strip = document.createElement('canvas');
-    strip.width = Math.max(1, Math.round(width));
-    strip.height = Math.max(1, Math.round(height));
-    const stripCtx = strip.getContext('2d');
-
-    for (let y = 0; y < strip.height; y += 1) {
-      const ty = strip.height <= 1 ? 0 : y / (strip.height - 1);
-      const start = this.interpolatePoint(topLeft, bottomLeft, ty);
-      const end = this.interpolatePoint(topRight, bottomRight, ty);
-      const sourceX = Math.min(start.x, end.x);
-      const sourceY = Math.min(start.y, end.y);
-      const sampleWidth = Math.max(1, Math.abs(end.x - start.x));
-      const sampleHeight = Math.max(1, Math.abs(end.y - start.y));
-
-      stripCtx.drawImage(
-        sourceCanvas,
-        sourceX,
-        sourceY,
-        sampleWidth,
-        sampleHeight,
-        0,
-        y,
-        strip.width,
-        1
-      );
-    }
-
-    return strip;
-  }
-
-  interpolatePoint(a, b, t) {
+  canvasToImagePoint(pos, bounds) {
+    const normalizedX = (pos.x - bounds.x) / Math.max(bounds.width, 1);
+    const normalizedY = (pos.y - bounds.y) / Math.max(bounds.height, 1);
     return {
-      x: a.x + (b.x - a.x) * t,
-      y: a.y + (b.y - a.y) * t,
+      x: clamp(normalizedX * this.foregroundCanvas.width, 0, this.foregroundCanvas.width),
+      y: clamp(normalizedY * this.foregroundCanvas.height, 0, this.foregroundCanvas.height),
     };
   }
 
-  distance(a, b) {
-    return Math.hypot(b.x - a.x, b.y - a.y);
+  placeTextOverlay(pos) {
+    const text = document.getElementById('textInputValue').value.trim() || 'ID PHOTO';
+    const size = clamp(parseInt(document.getElementById('textSizeInput').value, 10) || 36, 16, 120);
+    const color = document.getElementById('textColorPicker').value || '#ffffff';
+
+    this.state.overlays.push({
+      id: `overlay_${Date.now()}`,
+      type: 'text',
+      text,
+      color,
+      size,
+      x: pos.x,
+      y: pos.y,
+    });
+    this.saveToHistory();
+    this.persistState();
+    this.render();
+    this.showToast('Text overlay added', 'success');
+  }
+
+  commitShapeOverlay() {
+    this.state.overlays.push({
+      id: `overlay_${Date.now()}`,
+      type: 'shape',
+      shape: document.getElementById('shapeTypeSelect').value,
+      color: document.getElementById('shapeColorPicker').value,
+      rect: { ...this.shapeDraft, },
+    });
+    this.saveToHistory();
+    this.persistState();
+    this.render();
+    this.showToast('Shape overlay added', 'success');
+  }
+
+  createAdjustedForegroundCanvas() {
+    const temp = document.createElement('canvas');
+    temp.width = this.foregroundCanvas.width;
+    temp.height = this.foregroundCanvas.height;
+    const tempCtx = temp.getContext('2d');
+    tempCtx.drawImage(this.foregroundCanvas, 0, 0);
+    this.applyAdjustmentsToContext(tempCtx, temp.width, temp.height);
+    return temp;
+  }
+
+  applyAdjustmentsToContext(ctx, width, height) {
+    if (this.state.brightness === 0 && this.state.contrast === 0 && this.state.saturation === 0) {
+      return;
+    }
+
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const { data, } = imageData;
+    for (let index = 0; index < data.length; index += 4) {
+      let r = data[index];
+      let g = data[index + 1];
+      let b = data[index + 2];
+
+      if (this.state.brightness !== 0) {
+        const adjust = this.state.brightness * 2.55;
+        r += adjust;
+        g += adjust;
+        b += adjust;
+      }
+
+      if (this.state.contrast !== 0) {
+        const factor = (259 * (this.state.contrast + 255)) / (255 * (259 - this.state.contrast));
+        r = factor * (r - 128) + 128;
+        g = factor * (g - 128) + 128;
+        b = factor * (b - 128) + 128;
+      }
+
+      if (this.state.saturation !== 0) {
+        const gray = 0.2989 * r + 0.587 * g + 0.114 * b;
+        const satFactor = 1 + this.state.saturation / 100;
+        r = gray + satFactor * (r - gray);
+        g = gray + satFactor * (g - gray);
+        b = gray + satFactor * (b - gray);
+      }
+
+      data[index] = clamp(Math.round(r), 0, 255);
+      data[index + 1] = clamp(Math.round(g), 0, 255);
+      data[index + 2] = clamp(Math.round(b), 0, 255);
+    }
+    ctx.putImageData(imageData, 0, 0);
+  }
+
+  drawBackground() {
+    const width = this.canvas.width;
+    const height = this.canvas.height;
+    if (this.state.background.mode === 'transparent') {
+      this.ctx.clearRect(0, 0, width, height);
+      return;
+    }
+
+    if (this.state.background.mode === 'gradient' && Array.isArray(this.state.background.gradient)) {
+      const gradient = this.ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, this.state.background.gradient[0]);
+      gradient.addColorStop(1, this.state.background.gradient[1]);
+      this.ctx.fillStyle = gradient;
+    } else {
+      this.ctx.fillStyle = this.state.background.color || '#ffffff';
+    }
+    this.ctx.fillRect(0, 0, width, height);
+  }
+
+  drawForeground() {
+    if (!this.foregroundCanvas) {
+      return;
+    }
+
+    const renderCanvas = this.createAdjustedForegroundCanvas();
+    const bounds = this.getImageBounds();
+
+    this.ctx.save();
+    this.ctx.translate(this.state.foreground.x, this.state.foreground.y);
+    this.ctx.rotate((this.state.foreground.rotation * Math.PI) / 180);
+    this.ctx.scale(this.state.foreground.flipX * this.state.foreground.scale, this.state.foreground.flipY * this.state.foreground.scale);
+    this.ctx.drawImage(renderCanvas, -this.foregroundCanvas.width / 2, -this.foregroundCanvas.height / 2);
+    this.ctx.restore();
+
+    if (this.currentTool === 'select' && bounds) {
+      this.ctx.save();
+      this.ctx.strokeStyle = 'rgba(14, 165, 233, 0.88)';
+      this.ctx.lineWidth = 2;
+      this.ctx.setLineDash([8, 6,]);
+      this.ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+      this.ctx.restore();
+    }
+  }
+
+  drawGuides() {
+    if (!this.state.guidesVisible) {
+      return;
+    }
+
+    const preset = this.getActivePreset();
+    const safe = preset.safe_area || { left: 0.1, right: 0.1, top: 0.1, bottom: 0.1, };
+    const headBox = preset.head_box || { x: 0.22, y: 0.16, width: 0.56, height: 0.6, };
+    const alpha = this.state.guideOpacity;
+
+    this.ctx.save();
+    this.ctx.lineWidth = 1.5;
+    this.ctx.strokeStyle = `rgba(34, 197, 94, ${alpha})`;
+    this.ctx.setLineDash([10, 6,]);
+    this.ctx.strokeRect(
+      this.canvas.width * safe.left,
+      this.canvas.height * safe.top,
+      this.canvas.width * (1 - safe.left - safe.right),
+      this.canvas.height * (1 - safe.top - safe.bottom)
+    );
+
+    this.ctx.strokeStyle = `rgba(249, 115, 22, ${alpha})`;
+    this.ctx.strokeRect(
+      this.canvas.width * headBox.x,
+      this.canvas.height * headBox.y,
+      this.canvas.width * headBox.width,
+      this.canvas.height * headBox.height
+    );
+
+    this.ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.72})`;
+    this.ctx.beginPath();
+    this.ctx.moveTo(this.canvas.width / 2, 0);
+    this.ctx.lineTo(this.canvas.width / 2, this.canvas.height);
+    this.ctx.moveTo(0, this.canvas.height / 2);
+    this.ctx.lineTo(this.canvas.width, this.canvas.height / 2);
+    this.ctx.stroke();
+    this.ctx.restore();
+  }
+
+  drawCropOverlay() {
+    if (!this.state.cropRect) {
+      return;
+    }
+
+    const { x, y, width, height, } = this.state.cropRect;
+    this.ctx.save();
+    this.ctx.fillStyle = 'rgba(2, 6, 23, 0.48)';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.clearRect(x, y, width, height);
+    this.ctx.strokeStyle = '#f97316';
+    this.ctx.lineWidth = 2.5;
+    this.ctx.setLineDash([9, 6,]);
+    this.ctx.strokeRect(x, y, width, height);
+    this.ctx.setLineDash([]);
+    this.getCropHandles().forEach((handle) => {
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.beginPath();
+      this.ctx.arc(handle.x, handle.y, 6, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.strokeStyle = '#0ea5e9';
+      this.ctx.lineWidth = 2;
+      this.ctx.stroke();
+    });
+    this.ctx.restore();
+  }
+
+  drawOverlays() {
+    this.state.overlays.forEach((overlay) => {
+      if (overlay.type === 'text') {
+        this.ctx.save();
+        this.ctx.font = `700 ${overlay.size}px "Plus Jakarta Sans", sans-serif`;
+        this.ctx.textBaseline = 'top';
+        this.ctx.strokeStyle = 'rgba(2, 6, 23, 0.55)';
+        this.ctx.lineWidth = Math.max(2, overlay.size * 0.12);
+        this.ctx.strokeText(overlay.text, overlay.x, overlay.y);
+        this.ctx.fillStyle = overlay.color;
+        this.ctx.fillText(overlay.text, overlay.x, overlay.y);
+        this.ctx.restore();
+      }
+
+      if (overlay.type === 'shape') {
+        const { rect, } = overlay;
+        this.ctx.save();
+        this.ctx.strokeStyle = overlay.color;
+        this.ctx.fillStyle = `${overlay.color}33`;
+        this.ctx.lineWidth = 4;
+        if (overlay.shape === 'circle') {
+          this.ctx.beginPath();
+          this.ctx.ellipse(rect.x + rect.width / 2, rect.y + rect.height / 2, rect.width / 2, rect.height / 2, 0, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.stroke();
+        } else {
+          this.ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+          this.ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+        }
+        this.ctx.restore();
+      }
+    });
+
+    if (this.shapeDraft) {
+      this.ctx.save();
+      this.ctx.strokeStyle = '#38bdf8';
+      this.ctx.lineWidth = 3;
+      this.ctx.setLineDash([8, 5,]);
+      this.ctx.strokeRect(this.shapeDraft.x, this.shapeDraft.y, this.shapeDraft.width, this.shapeDraft.height);
+      this.ctx.restore();
+    }
+  }
+
+  render() {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.drawBackground();
+    this.drawForeground();
+    this.drawGuides();
+    this.drawOverlays();
+    if (this.currentTool === 'crop' && this.state.cropRect) {
+      this.drawCropOverlay();
+    }
+  }
+
+  saveToHistory() {
+    if (!this.foregroundCanvas) {
+      return;
+    }
+
+    const snapshot = {
+      sourceUrl: this.currentSourceUrl,
+      foreground: this.foregroundCanvas.toDataURL('image/png'),
+      trayImages: JSON.parse(JSON.stringify(this.trayImages)),
+      activeImageIndex: this.activeImageIndex,
+      state: JSON.parse(JSON.stringify(this.state)),
+    };
+
+    this.history = this.history.slice(0, this.historyIndex + 1);
+    this.history.push(snapshot);
+    if (this.history.length > this.maxHistory) {
+      this.history.shift();
+    }
+    this.historyIndex = this.history.length - 1;
+    this.updateUndoRedoButtons();
+  }
+
+  async restoreSnapshot(snapshot) {
+    if (!snapshot) {
+      return;
+    }
+
+    this.trayImages = Array.isArray(snapshot.trayImages) ? snapshot.trayImages : [];
+    this.activeImageIndex = snapshot.activeImageIndex ?? -1;
+    this.state = snapshot.state || this.createDefaultState();
+    this.syncControls();
+
+    if (snapshot.sourceUrl) {
+      this.currentSourceUrl = snapshot.sourceUrl;
+      this.baseImage = await this.loadImageFromUrl(snapshot.sourceUrl);
+    }
+
+    if (snapshot.foreground) {
+      const foregroundImage = await this.loadImageFromUrl(snapshot.foreground);
+      this.prepareForegroundCanvas(foregroundImage);
+    }
+
+    const preset = this.getActivePreset();
+    this.canvas.width = preset.output_width;
+    this.canvas.height = preset.output_height;
+    this.container.style.display = 'block';
+    this.placeholder.style.display = 'none';
+    this.renderTray();
+    this.render();
+    this.updateStatus();
+    this.persistState();
+  }
+
+  async undo() {
+    if (this.historyIndex <= 0) {
+      return;
+    }
+    this.historyIndex -= 1;
+    await this.restoreSnapshot(this.history[this.historyIndex]);
+    this.updateUndoRedoButtons();
+  }
+
+  async redo() {
+    if (this.historyIndex >= this.history.length - 1) {
+      return;
+    }
+    this.historyIndex += 1;
+    await this.restoreSnapshot(this.history[this.historyIndex]);
+    this.updateUndoRedoButtons();
+  }
+
+  updateUndoRedoButtons() {
+    document.getElementById('undoBtn').disabled = this.historyIndex <= 0;
+    document.getElementById('redoBtn').disabled = this.historyIndex >= this.history.length - 1;
+  }
+
+  zoomIn() {
+    this.state.zoom = clamp(this.state.zoom * 1.15, 0.2, 5);
+    this.applyZoom();
+    this.persistState();
+  }
+
+  zoomOut() {
+    this.state.zoom = clamp(this.state.zoom / 1.15, 0.2, 5);
+    this.applyZoom();
+    this.persistState();
+  }
+
+  resetZoom() {
+    this.state.zoom = 1;
+    this.applyZoom();
+    this.persistState();
+  }
+
+  applyZoom() {
+    this.container.style.transform = `scale(${this.state.zoom})`;
+    this.zoomLevel.textContent = `${Math.round(this.state.zoom * 100)}%`;
   }
 
   async applyRectCrop() {
-    this.render(false);
-    const { x, y, width, height, } = this.cropRect;
-    const source = this.createForegroundSnapshot();
-    const output = document.createElement('canvas');
-    output.width = width;
-    output.height = height;
-    output.getContext('2d').drawImage(source, x, y, width, height, 0, 0, width, height);
+    if (!this.state.cropRect || !this.foregroundCanvas) {
+      return;
+    }
 
-    this.canvas.width = output.width;
-    this.canvas.height = output.height;
-    this.currentImage = await this.loadImageFromUrl(output.toDataURL('image/png'));
-    this.cutoutImage = null;
-    this.cropRect = null;
-    this.syncControls();
-    this.render();
+    const exportCanvas = this.createCompositeCanvas();
+    const { x, y, width, height, } = this.state.cropRect;
+    const cropped = document.createElement('canvas');
+    cropped.width = width;
+    cropped.height = height;
+    cropped.getContext('2d').drawImage(exportCanvas, x, y, width, height, 0, 0, width, height);
+
+    const croppedImage = await this.loadImageFromUrl(cropped.toDataURL('image/png'));
+    this.prepareForegroundCanvas(croppedImage);
+    this.canvas.width = width;
+    this.canvas.height = height;
+    this.state.cropRect = null;
+    this.fitImageToCanvas();
     this.saveToHistory();
-    this.showToast('Image cropped', 'success');
+    this.persistState();
+    this.render();
+    this.showToast('Crop applied', 'success');
+  }
+
+  async applyAllFilters() {
+    if (!this.foregroundCanvas) {
+      this.showToast('No image to edit', 'error');
+      return;
+    }
+
+    const adjusted = this.createAdjustedForegroundCanvas();
+    const adjustedImage = await this.loadImageFromUrl(adjusted.toDataURL('image/png'));
+    this.prepareForegroundCanvas(adjustedImage);
+    this.state.brightness = 0;
+    this.state.contrast = 0;
+    this.state.saturation = 0;
+    this.syncControls();
+    this.saveToHistory();
+    this.persistState();
+    this.render();
+    this.showToast('Preview applied to portrait', 'success');
   }
 
   applyFilter() {
     this.render();
   }
 
-  async applyAllFilters() {
-    if (!this.currentImage) {
-      this.showToast('No image to edit', 'error');
-      return;
-    }
-
-    const snapshot = this.createForegroundSnapshot();
-    this.currentImage = await this.loadImageFromUrl(snapshot.toDataURL('image/png'));
-    this.cutoutImage = null;
-    this.state.brightness = 0;
-    this.state.contrast = 0;
-    this.state.saturation = 0;
-    this.state.tint = null;
-    this.syncControls();
-    this.render();
-    this.saveToHistory();
-    this.showToast('Filters applied', 'success');
-  }
-
   resetFilters() {
-    if (!this.currentImage) {
-      return;
-    }
-
     this.state.brightness = 0;
     this.state.contrast = 0;
     this.state.saturation = 0;
-    this.state.tint = null;
     this.syncControls();
     this.render();
+    this.persistState();
     this.showToast('Adjustment preview reset', 'info');
   }
 
   async rotateImage(angle = 90) {
-    if (!this.currentImage) {
-      this.showToast('No image to rotate', 'error');
+    if (!this.foregroundCanvas) {
       return;
     }
 
-    const source = this.createForegroundSnapshot();
     const radians = (angle * Math.PI) / 180;
     const swap = Math.abs(angle) % 180 === 90;
     const output = document.createElement('canvas');
-    output.width = swap ? source.height : source.width;
-    output.height = swap ? source.width : source.height;
+    output.width = swap ? this.foregroundCanvas.height : this.foregroundCanvas.width;
+    output.height = swap ? this.foregroundCanvas.width : this.foregroundCanvas.height;
     const outputCtx = output.getContext('2d');
 
     outputCtx.translate(output.width / 2, output.height / 2);
     outputCtx.rotate(radians);
-    outputCtx.drawImage(source, -source.width / 2, -source.height / 2);
+    outputCtx.drawImage(this.foregroundCanvas, -this.foregroundCanvas.width / 2, -this.foregroundCanvas.height / 2);
 
-    this.currentImage = await this.loadImageFromUrl(output.toDataURL('image/png'));
-    this.cutoutImage = null;
-    this.canvas.width = output.width;
-    this.canvas.height = output.height;
-    this.render();
+    const rotatedImage = await this.loadImageFromUrl(output.toDataURL('image/png'));
+    this.prepareForegroundCanvas(rotatedImage);
+    this.fitImageToCanvas();
     this.saveToHistory();
-    this.showToast(`Rotated ${angle}\u00B0`, 'success');
+    this.persistState();
+    this.render();
+    this.showToast(`Rotated ${angle} degrees`, 'success');
   }
 
   async flipImage(direction) {
-    if (!this.currentImage) {
-      this.showToast('No image to flip', 'error');
+    if (!this.foregroundCanvas) {
       return;
     }
 
-    const source = this.createForegroundSnapshot();
     const output = document.createElement('canvas');
-    output.width = source.width;
-    output.height = source.height;
+    output.width = this.foregroundCanvas.width;
+    output.height = this.foregroundCanvas.height;
     const outputCtx = output.getContext('2d');
 
     outputCtx.save();
@@ -1149,25 +1226,26 @@ class PhotoStudio {
       outputCtx.translate(0, output.height);
       outputCtx.scale(1, -1);
     }
-    outputCtx.drawImage(source, 0, 0);
+    outputCtx.drawImage(this.foregroundCanvas, 0, 0);
     outputCtx.restore();
 
-    this.currentImage = await this.loadImageFromUrl(output.toDataURL('image/png'));
-    this.cutoutImage = null;
-    this.render();
+    const flippedImage = await this.loadImageFromUrl(output.toDataURL('image/png'));
+    this.prepareForegroundCanvas(flippedImage);
     this.saveToHistory();
-    this.showToast(direction === 'horizontal' ? 'Flipped horizontally' : 'Flipped vertically', 'success');
+    this.persistState();
+    this.render();
+    this.showToast('Flip applied', 'success');
   }
 
   async bgRemove() {
-    if (!this.currentImage) {
-      this.showToast('No image to edit', 'error');
+    if (!this.foregroundCanvas) {
+      this.showToast('No image to isolate', 'error');
       return;
     }
 
     try {
       this.showToast('Removing background...', 'info');
-      const blob = await this.getForegroundBlob();
+      const blob = await createBlobFromCanvas(this.foregroundCanvas, 'image/png');
       const formData = new FormData();
       formData.append('image', blob, 'foreground.png');
       formData.append('csrf_token', getCsrfToken());
@@ -1182,154 +1260,167 @@ class PhotoStudio {
         throw new Error(result.error || 'Background removal failed');
       }
 
-      this.cutoutImage = await this.loadImageFromUrl(result.cutout_url);
-      this.state.background.mode = this.state.background.mode === 'transparent' ? 'color' : this.state.background.mode;
-      if (this.state.background.mode === 'color' && !this.state.background.color) {
-        this.state.background.color = '#ffffff';
-      }
-      this.render();
+      const cutout = await this.loadImageFromUrl(result.cutout_url);
+      this.remoteCutoutUrl = result.cutout_url;
+      this.prepareForegroundCanvas(cutout);
+      this.state.background.mode = 'color';
+      this.state.background.color = '#ffffff';
       this.saveToHistory();
-      this.showToast('Subject isolated with transparent background', 'success');
+      this.persistState();
+      this.render();
+      this.showToast(`Cutout ready with ${result.processing?.engine || 'studio engine'}`, 'success');
     } catch (error) {
-      console.error('Background remove error:', error);
       this.showToast(error.message || 'Background removal failed', 'error');
     }
   }
 
-  getForegroundBlob() {
-    const snapshot = this.createForegroundSnapshot();
-    return createBlobFromCanvas(snapshot, 'image/png');
-  }
-
-  setTint(color) {
-    this.state.tint = Array.isArray(color) ? color : null;
-    document.querySelectorAll('.studio-swatch[data-color]').forEach((swatch) => {
-      swatch.classList.toggle('active', swatch.dataset.color === (color ? color.join(',') : 'none'));
+  setBackgroundPreset(preset) {
+    if (preset.mode === 'gradient') {
+      this.state.background.mode = 'gradient';
+      this.state.background.gradient = preset.value;
+    } else {
+      this.state.background.mode = 'color';
+      this.state.background.color = preset.value;
+      this.state.background.gradient = null;
+    }
+    this.state.background.preset = preset.label;
+    document.querySelectorAll('[data-background-preset]').forEach((swatch) => {
+      swatch.classList.toggle('active', swatch.dataset.backgroundPreset === preset.label);
     });
     this.render();
+    this.persistState();
   }
 
   setBackgroundColor(color) {
     this.state.background.mode = 'color';
     this.state.background.color = color;
-    this.state.background.preset = null;
-    document.querySelectorAll('[data-background-preset]').forEach((button) => button.classList.remove('active'));
-    this.render();
-    this.persistState();
-  }
-
-  setBackgroundPreset(preset) {
-    this.state.background.mode = 'preset';
-    this.state.background.preset = preset;
-    document.querySelectorAll('[data-background-preset]').forEach((button) => {
-      button.classList.toggle('active', button.dataset.backgroundPreset === preset);
-    });
+    this.state.background.gradient = null;
     this.render();
     this.persistState();
   }
 
   clearBackgroundLayer() {
     this.state.background.mode = 'transparent';
-    this.state.background.preset = null;
+    this.state.background.gradient = null;
     this.render();
-    document.querySelectorAll('[data-background-preset]').forEach((button) => button.classList.remove('active'));
+    this.persistState();
   }
 
-  saveToHistory() {
-    if (!this.currentImage) {
-      return;
-    }
-
-    const snapshot = {
-      foreground: this.currentImage.src,
-      cutout: this.cutoutImage?.src || null,
-      state: JSON.parse(JSON.stringify(this.state)),
-    };
-
-    this.history = this.history.slice(0, this.historyIndex + 1);
-    this.history.push(snapshot);
-    if (this.history.length > this.maxHistory) {
-      this.history.shift();
-    } else {
-      this.historyIndex += 1;
-    }
-    this.updateUndoRedoButtons();
-  }
-
-  async undo() {
-    if (this.historyIndex <= 0) {
-      return;
-    }
-
-    this.historyIndex -= 1;
-    await this.restoreSnapshot(this.history[this.historyIndex]);
-  }
-
-  async redo() {
-    if (this.historyIndex >= this.history.length - 1) {
-      return;
-    }
-
-    this.historyIndex += 1;
-    await this.restoreSnapshot(this.history[this.historyIndex]);
-  }
-
-  async restoreSnapshot(snapshot) {
-    this.currentImage = await this.loadImageFromUrl(snapshot.foreground);
-    this.cutoutImage = snapshot.cutout ? await this.loadImageFromUrl(snapshot.cutout) : null;
-    this.state = snapshot.state;
-    this.canvas.width = this.currentImage.naturalWidth || this.currentImage.width;
-    this.canvas.height = this.currentImage.naturalHeight || this.currentImage.height;
+  toggleGuides() {
+    this.state.guidesVisible = !this.state.guidesVisible;
     this.syncControls();
     this.render();
-    this.updateUndoRedoButtons();
+    this.persistState();
   }
 
-  updateUndoRedoButtons() {
-    const undoDisabled = this.historyIndex <= 0;
-    const redoDisabled = this.historyIndex >= this.history.length - 1;
-    document.getElementById('undoBtn').disabled = undoDisabled;
-    document.getElementById('redoBtn').disabled = redoDisabled;
+  fitToGuide() {
+    const preset = this.getActivePreset();
+    const headBox = preset.head_box;
+    if (!headBox || !this.foregroundCanvas) {
+      return;
+    }
+
+    const targetWidth = this.canvas.width * headBox.width;
+    this.state.foreground.scale = clamp(targetWidth / this.foregroundCanvas.width, 0.4, 2.2);
+    this.state.foreground.x = this.canvas.width / 2;
+    this.state.foreground.y = this.canvas.height * (headBox.y + (headBox.height / 2));
+    this.syncControls();
+    this.render();
+    this.persistState();
+    this.showToast('Subject fitted to guide box', 'success');
   }
 
-  zoomIn() {
-    this.state.zoom = Math.min(this.state.zoom * 1.2, 5);
-    this.applyZoom();
+  centerSubject() {
+    this.state.foreground.x = this.canvas.width / 2;
+    this.state.foreground.y = this.canvas.height / 2;
+    this.render();
+    this.persistState();
+    this.showToast('Subject centered', 'success');
   }
 
-  zoomOut() {
-    this.state.zoom = Math.max(this.state.zoom / 1.2, 0.15);
-    this.applyZoom();
+  async preparePrintReady() {
+    if (!this.foregroundCanvas) {
+      this.showToast('No active portrait to prepare', 'error');
+      return;
+    }
+
+    this.fitToGuide();
+    if (this.state.background.mode === 'transparent') {
+      this.state.background.mode = 'color';
+      this.state.background.color = '#ffffff';
+    }
+    this.render();
+    await this.persistActiveImageToTray('print_ready');
+    this.showToast('Print-ready version prepared', 'success');
   }
 
-  resetZoom() {
-    this.state.zoom = 1;
-    this.applyZoom();
+  createCompositeCanvas() {
+    const output = document.createElement('canvas');
+    output.width = this.canvas.width;
+    output.height = this.canvas.height;
+    const outputCtx = output.getContext('2d');
+
+    if (this.state.background.mode === 'transparent') {
+      outputCtx.clearRect(0, 0, output.width, output.height);
+    } else if (this.state.background.mode === 'gradient' && Array.isArray(this.state.background.gradient)) {
+      const gradient = outputCtx.createLinearGradient(0, 0, output.width, output.height);
+      gradient.addColorStop(0, this.state.background.gradient[0]);
+      gradient.addColorStop(1, this.state.background.gradient[1]);
+      outputCtx.fillStyle = gradient;
+      outputCtx.fillRect(0, 0, output.width, output.height);
+    } else {
+      outputCtx.fillStyle = this.state.background.color || '#ffffff';
+      outputCtx.fillRect(0, 0, output.width, output.height);
+    }
+
+    if (this.foregroundCanvas) {
+      const renderCanvas = this.createAdjustedForegroundCanvas();
+      outputCtx.save();
+      outputCtx.translate(this.state.foreground.x, this.state.foreground.y);
+      outputCtx.rotate((this.state.foreground.rotation * Math.PI) / 180);
+      outputCtx.scale(this.state.foreground.flipX * this.state.foreground.scale, this.state.foreground.flipY * this.state.foreground.scale);
+      outputCtx.drawImage(renderCanvas, -this.foregroundCanvas.width / 2, -this.foregroundCanvas.height / 2);
+      outputCtx.restore();
+    }
+
+    this.state.overlays.forEach((overlay) => {
+      if (overlay.type === 'text') {
+        outputCtx.font = `700 ${overlay.size}px "Plus Jakarta Sans", sans-serif`;
+        outputCtx.textBaseline = 'top';
+        outputCtx.strokeStyle = 'rgba(2, 6, 23, 0.55)';
+        outputCtx.lineWidth = Math.max(2, overlay.size * 0.12);
+        outputCtx.strokeText(overlay.text, overlay.x, overlay.y);
+        outputCtx.fillStyle = overlay.color;
+        outputCtx.fillText(overlay.text, overlay.x, overlay.y);
+      } else if (overlay.type === 'shape') {
+        const { rect, } = overlay;
+        outputCtx.strokeStyle = overlay.color;
+        outputCtx.fillStyle = `${overlay.color}33`;
+        outputCtx.lineWidth = 4;
+        if (overlay.shape === 'circle') {
+          outputCtx.beginPath();
+          outputCtx.ellipse(rect.x + rect.width / 2, rect.y + rect.height / 2, rect.width / 2, rect.height / 2, 0, 0, Math.PI * 2);
+          outputCtx.fill();
+          outputCtx.stroke();
+        } else {
+          outputCtx.fillRect(rect.x, rect.y, rect.width, rect.height);
+          outputCtx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+        }
+      }
+    });
+
+    return output;
   }
 
-  applyZoom() {
-    this.container.style.transform = `scale(${this.state.zoom})`;
-    document.getElementById('zoomLevel').textContent = `${Math.round(this.state.zoom * 100)}%`;
-  }
-
-  toggleToolsPanel(forceOpen) {
-    const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !this.app.classList.contains('sidebar-open');
-    this.app.classList.toggle('sidebar-open', shouldOpen);
-  }
-
-  openFiltersPanel() {
-    document.getElementById('adjustmentsPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start', });
-    this.toggleToolsPanel(true);
-  }
-
-  async persistActiveImageToTray() {
-    if (this.activeImageIndex < 0 || !this.currentImage) {
+  async persistActiveImageToTray(variant = 'edit') {
+    if (this.activeImageIndex < 0) {
       return null;
     }
 
-    const blob = await this.getCompositeBlob();
+    const blob = await createBlobFromCanvas(this.createCompositeCanvas(), 'image/png');
     const formData = new FormData();
-    formData.append('image', blob, 'studio-composition.png');
+    formData.append('image', blob, `${variant}.png`);
+    formData.append('variant', variant);
     formData.append('csrf_token', getCsrfToken());
 
     const response = await fetch('/studio/save', {
@@ -1337,9 +1428,8 @@ class PhotoStudio {
       body: formData,
     });
     const result = await parseJsonResponse(response);
-
     if (!response.ok || !result.success) {
-      throw new Error(result.error || 'Failed to persist current composition');
+      throw new Error(result.error || 'Failed to save composition');
     }
 
     const active = this.trayImages[this.activeImageIndex];
@@ -1347,31 +1437,25 @@ class PhotoStudio {
       ...active,
       filename: result.image.filename,
       url: result.image.url,
+      variant: result.image.variant,
     };
     this.persistState();
     this.renderTray();
     return result.image.url;
   }
 
-  getCompositeBlob() {
-    const snapshot = this.createRenderSnapshot();
-    return createBlobFromCanvas(snapshot, 'image/png');
-  }
-
   async saveImage(format = 'png') {
-    if (!this.currentImage) {
-      this.showToast('No image to download', 'error');
+    if (!this.foregroundCanvas) {
+      this.showToast('No active portrait to export', 'error');
       return null;
     }
 
-    const mime = format === 'jpg' ? 'image/jpeg' : 'image/png';
-    const snapshot = this.createRenderSnapshot();
-    const dataUrl = snapshot.toDataURL(mime, 0.92);
-    const blob = await (await fetch(dataUrl)).blob();
-
+    const type = format === 'jpg' ? 'image/jpeg' : 'image/png';
+    const blob = await createBlobFromCanvas(this.createCompositeCanvas(), type);
     try {
       const formData = new FormData();
       formData.append('image', blob, `studio-export.${format}`);
+      formData.append('variant', 'final');
       formData.append('csrf_token', getCsrfToken());
 
       const response = await fetch('/studio/save', {
@@ -1379,43 +1463,36 @@ class PhotoStudio {
         body: formData,
       });
       const result = await parseJsonResponse(response);
-
       if (!response.ok || !result.success) {
         throw new Error(result.error || 'Save failed');
       }
 
       const link = document.createElement('a');
       link.href = result.image.url;
-      link.download = `brox-studio-${Date.now()}.${format}`;
+      link.download = `brox-studio-${this.state.activePresetId}.${format}`;
       link.click();
-      this.showToast('Image downloaded', 'success');
+      this.showToast('Export downloaded', 'success');
       return result.image.url;
     } catch (error) {
-      console.error('Save error:', error);
       const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = `brox-studio-${Date.now()}.${format}`;
+      link.href = URL.createObjectURL(blob);
+      link.download = `brox-studio-${this.state.activePresetId}.${format}`;
       link.click();
-      this.showToast('Image downloaded locally', 'info');
-      return dataUrl;
+      this.showToast(error.message || 'Export saved locally', 'info');
+      return null;
     }
   }
 
   async loadFromTray(index) {
-    if (index < 0 || index >= this.trayImages.length) {
+    const imageMeta = this.trayImages[index];
+    if (!imageMeta) {
       return;
     }
 
     this.activeImageIndex = index;
-    const imageMeta = this.trayImages[index];
-    try {
-      await this.loadImage(imageMeta.url);
-      this.persistState();
-      this.renderTray();
-    } catch (error) {
-      console.error('Tray load error:', error);
-      this.showToast('Saved tray image could not be loaded', 'error');
-    }
+    await this.loadImage(imageMeta.url);
+    this.renderTray();
+    this.renderPrintPreview();
   }
 
   renderTray() {
@@ -1423,7 +1500,7 @@ class PhotoStudio {
     tray.innerHTML = '';
 
     if (this.trayImages.length === 0) {
-      tray.innerHTML = '<p class="studio-helper-text">No uploaded images yet.</p>';
+      tray.innerHTML = '<p class="studio-helper">No portraits uploaded yet.</p>';
       return;
     }
 
@@ -1431,26 +1508,26 @@ class PhotoStudio {
       const item = document.createElement('button');
       item.type = 'button';
       item.className = `tray-item ${index === this.activeImageIndex ? 'active' : ''}`;
-      item.onclick = () => void this.loadFromTray(index);
       item.innerHTML = `<img src="${image.url}" alt="${image.original_name || `Image ${index + 1}`}">`;
+      item.addEventListener('click', () => void this.loadFromTray(index));
 
-      const removeBtn = document.createElement('button');
-      removeBtn.type = 'button';
-      removeBtn.className = 'tray-item-remove';
-      removeBtn.innerHTML = '<i class="bi bi-x"></i>';
-      removeBtn.onclick = (event) => {
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'tray-item-remove';
+      removeButton.innerHTML = '<i class="bi bi-x"></i>';
+      removeButton.addEventListener('click', (event) => {
         event.stopPropagation();
         void this.deleteTrayImage(index);
-      };
+      });
 
-      item.appendChild(removeBtn);
+      item.appendChild(removeButton);
       tray.appendChild(item);
     });
   }
 
   async deleteTrayImage(index) {
     const imageMeta = this.trayImages[index];
-    if (!imageMeta || !window.confirm('Delete this image?')) {
+    if (!imageMeta || !window.confirm('Delete this image from the tray?')) {
       return;
     }
 
@@ -1463,35 +1540,36 @@ class PhotoStudio {
         },
         body: JSON.stringify({ filename: imageMeta.filename, }),
       });
-    } catch (error) {
-      console.warn('Delete endpoint warning:', error);
+    } catch (_error) {
+      // Ignore endpoint cleanup failures and continue with local state.
     }
 
     this.trayImages.splice(index, 1);
     if (this.trayImages.length === 0) {
       this.activeImageIndex = -1;
-      this.currentImage = null;
-      this.cutoutImage = null;
+      this.baseImage = null;
+      this.foregroundCanvas = null;
+      this.foregroundCtx = null;
       this.container.style.display = 'none';
       this.placeholder.style.display = 'flex';
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.history = [];
       this.historyIndex = -1;
       this.updateUndoRedoButtons();
-      this.updateStatus();
     } else {
-      this.activeImageIndex = Math.min(index, this.trayImages.length - 1);
+      this.activeImageIndex = Math.max(0, Math.min(index, this.trayImages.length - 1));
       await this.loadFromTray(this.activeImageIndex);
     }
 
     this.persistState();
     this.renderTray();
-    this.showToast('Image deleted', 'success');
+    this.renderPrintPreview();
+    this.showToast('Tray image deleted', 'success');
   }
 
   openPrintSheetModal() {
     if (this.trayImages.length === 0) {
-      this.showToast('Add images before generating a print sheet', 'info');
+      this.showToast('Add portraits before printing', 'info');
       return;
     }
 
@@ -1502,28 +1580,59 @@ class PhotoStudio {
     this.trayImages.forEach((image, index) => {
       const item = document.createElement('button');
       item.type = 'button';
-      const isSelected = index === this.activeImageIndex;
-      item.className = `tray-item${isSelected ? ' active selected' : ''}`;
+      item.className = `tray-item ${index === this.activeImageIndex ? 'active selected' : 'selected'}`;
       item.dataset.printImage = 'true';
       item.dataset.url = image.url;
       item.innerHTML = `<img src="${image.url}" alt="${image.original_name || `Image ${index + 1}`}">`;
-      item.onclick = () => {
+      item.addEventListener('click', () => {
         item.classList.toggle('selected');
-      };
+        this.renderPrintPreview();
+      });
       list.appendChild(item);
     });
 
     modal.style.display = 'flex';
+    this.renderPrintPreview();
   }
 
   closePrintSheetModal() {
     document.getElementById('printSheetModal').style.display = 'none';
   }
 
+  renderPrintPreview() {
+    if (!this.printPreview) {
+      return;
+    }
+
+    const preset = this.getActivePreset();
+    const selected = Array.from(document.querySelectorAll('[data-print-image].selected'));
+    const count = Math.max(1, selected.length || this.trayImages.length || 1);
+    this.printPreview.innerHTML = '';
+
+    const boxWidth = Math.max(48, preset.width_mm * 2.1);
+    const boxHeight = Math.max(58, preset.height_mm * 2.1);
+    const gap = clamp((parseFloat(document.getElementById('printSpacing').value) || 4) * 2.4, 4, 24);
+    const maxCols = Math.max(1, Math.floor((this.printPreview.clientWidth || 620) / (boxWidth + gap)));
+    const previewImages = selected.length > 0 ? selected : this.trayImages.map((image) => ({ dataset: { url: image.url, }, }));
+
+    previewImages.slice(0, Math.min(count, 12)).forEach((item, index) => {
+      const col = index % maxCols;
+      const row = Math.floor(index / maxCols);
+      const cell = document.createElement('div');
+      cell.className = 'studio-preview-photo';
+      cell.style.width = `${boxWidth}px`;
+      cell.style.height = `${boxHeight}px`;
+      cell.style.left = `${12 + col * (boxWidth + gap)}px`;
+      cell.style.top = `${12 + row * (boxHeight + gap)}px`;
+      cell.style.backgroundImage = `url('${item.dataset.url}')`;
+      this.printPreview.appendChild(cell);
+    });
+  }
+
   async generatePrintSheet() {
     try {
-      if (this.activeImageIndex >= 0 && this.currentImage) {
-        await this.persistActiveImageToTray();
+      if (this.activeImageIndex >= 0) {
+        await this.persistActiveImageToTray('print_ready');
       }
 
       const selectedImages = Array.from(document.querySelectorAll('[data-print-image].selected'))
@@ -1531,7 +1640,7 @@ class PhotoStudio {
         .filter(Boolean);
 
       if (selectedImages.length === 0) {
-        this.showToast('Select at least one image for printing', 'error');
+        this.showToast('Select at least one portrait', 'error');
         return;
       }
 
@@ -1546,87 +1655,107 @@ class PhotoStudio {
           page_size: document.getElementById('printPageSize').value,
           orientation: document.getElementById('printOrientation').value,
           layout: document.getElementById('printLayout').value,
-          size: document.getElementById('printSize').value,
+          spacing_mm: parseFloat(document.getElementById('printSpacing').value) || 4,
+          photo_preset: this.state.activePresetId,
           csrf_token: getCsrfToken(),
         }),
       });
       const result = await parseJsonResponse(response);
-
       if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Print generation failed');
+        throw new Error(result.error || 'Print sheet generation failed');
       }
 
       window.open(result.download_url, '_blank', 'noopener');
       this.closePrintSheetModal();
-      this.showToast('Print sheet generated', 'success');
+      this.showToast('Print sheet PDF generated', 'success');
     } catch (error) {
-      console.error('Print sheet error:', error);
-      this.showToast(error.message || 'Print sheet generation failed', 'error');
+      this.showToast(error.message || 'Print generation failed', 'error');
     }
   }
 
   updateStatus() {
-    const text = this.currentImage
-      ? `${this.canvas.width} x ${this.canvas.height} px`
+    const preset = this.getActivePreset();
+    this.imageInfo.textContent = this.baseImage
+      ? `${this.canvas.width} x ${this.canvas.height}px • ${preset.width_mm}x${preset.height_mm}mm`
       : 'No image loaded';
-    document.getElementById('imageInfo').textContent = text;
+
+    const toolName = this.currentTool.charAt(0).toUpperCase() + this.currentTool.slice(1);
+    const scale = `${Math.round(this.state.foreground.scale * 100)}%`;
+    this.sessionMeta.textContent = this.baseImage
+      ? `${toolName} • ${preset.label} • Subject scale ${scale}`
+      : 'Preset ready for export';
   }
 
-  syncControls() {
-    document.getElementById('brightnessSlider').value = this.state.brightness;
-    document.getElementById('brightnessValue').textContent = String(this.state.brightness);
-    document.getElementById('contrastSlider').value = this.state.contrast;
-    document.getElementById('contrastValue').textContent = String(this.state.contrast);
-    document.getElementById('saturationSlider').value = this.state.saturation;
-    document.getElementById('saturationValue').textContent = String(this.state.saturation);
-    document.getElementById('backgroundColorPicker').value = this.state.background.color || '#ffffff';
-    this.setTint(this.state.tint);
-    this.syncCropControls();
-    this.applyZoom();
+  toggleToolsPanel(forceOpen) {
+    const open = typeof forceOpen === 'boolean' ? forceOpen : !this.app.classList.contains('sidebar-open');
+    this.app.classList.toggle('sidebar-open', open);
   }
 
   persistState() {
     const payload = {
-      version: 2,
+      version: 3,
       trayImages: this.trayImages,
       activeImageIndex: this.activeImageIndex,
-      background: this.state.background,
-      lastTool: this.currentTool,
+      state: this.state,
+      sourceUrl: this.currentSourceUrl,
+      foregroundDataUrl: this.foregroundCanvas ? this.foregroundCanvas.toDataURL('image/png') : null,
     };
-    window.localStorage.setItem('broxstudio_state', JSON.stringify(payload));
+    window.localStorage.setItem('broxstudio_session', JSON.stringify(payload));
   }
 
   loadSavedState() {
-    const saved = window.localStorage.getItem('broxstudio_state');
+    const saved = window.localStorage.getItem('broxstudio_session');
     if (!saved) {
-      this.renderTray();
       return;
     }
 
     try {
       const payload = JSON.parse(saved);
-      if (Array.isArray(payload)) {
-        this.trayImages = payload.filter((item) => item?.url && item?.filename);
-      } else {
-        this.trayImages = Array.isArray(payload.trayImages) ? payload.trayImages.filter((item) => item?.url && item?.filename) : [];
-      }
+      this.trayImages = Array.isArray(payload.trayImages) ? payload.trayImages : [];
+      this.activeImageIndex = typeof payload.activeImageIndex === 'number' ? payload.activeImageIndex : -1;
+      this.state = payload.state ? {
+        ...this.createDefaultState(),
+        ...payload.state,
+        background: {
+          ...this.createDefaultState().background,
+          ...(payload.state.background || {}),
+        },
+        foreground: {
+          ...this.createDefaultState().foreground,
+          ...(payload.state.foreground || {}),
+        },
+        print: {
+          ...this.createDefaultState().print,
+          ...(payload.state.print || {}),
+        },
+      } : this.createDefaultState();
+      this.currentSourceUrl = payload.sourceUrl || null;
+      this.syncControls();
 
-      if (this.trayImages.length > 0) {
-        this.activeImageIndex = Math.max(0, Math.min(payload.activeImageIndex || 0, this.trayImages.length - 1));
-        if (payload.background) {
-          this.state.background = {
-            ...this.state.background,
-            ...payload.background,
-          };
-        }
-        this.currentTool = payload.lastTool || 'select';
-        void this.loadFromTray(this.activeImageIndex);
-      } else {
-        this.renderTray();
+      if (payload.foregroundDataUrl) {
+        void this.restoreSavedForeground(payload.foregroundDataUrl);
       }
-    } catch (_error) {
-      window.localStorage.removeItem('broxstudio_state');
+    } catch {
+      window.localStorage.removeItem('broxstudio_session');
+    }
+  }
+
+  async restoreSavedForeground(foregroundDataUrl) {
+    try {
+      const restored = await this.loadImageFromUrl(foregroundDataUrl);
+      this.baseImage = restored;
+      this.prepareForegroundCanvas(restored);
+      const preset = this.getActivePreset();
+      this.canvas.width = preset.output_width;
+      this.canvas.height = preset.output_height;
+      this.container.style.display = 'block';
+      this.placeholder.style.display = 'none';
+      this.render();
       this.renderTray();
+      this.renderPrintPreview();
+      this.updateStatus();
+    } catch {
+      // Ignore invalid saved foreground data.
     }
   }
 
@@ -1636,10 +1765,7 @@ class PhotoStudio {
     toast.className = `toast ${type}`;
     toast.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
     container.appendChild(toast);
-
-    window.setTimeout(() => {
-      toast.remove();
-    }, 3200);
+    window.setTimeout(() => toast.remove(), 3200);
   }
 }
 
@@ -1658,8 +1784,6 @@ document.addEventListener('DOMContentLoaded', () => {
   window.zoomIn = () => window.studioInstance.zoomIn();
   window.zoomOut = () => window.studioInstance.zoomOut();
   window.resetZoom = () => window.studioInstance.resetZoom();
-  window.setTint = (color) => window.studioInstance.setTint(color);
-  window.openFiltersPanel = () => window.studioInstance.openFiltersPanel();
   window.bgRemove = () => void window.studioInstance.bgRemove();
   window.downloadImage = () => void window.studioInstance.saveImage('png');
   window.openPrintSheetModal = () => window.studioInstance.openPrintSheetModal();
@@ -1671,13 +1795,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
   window.toggleToolsPanel = (forceOpen) => window.studioInstance.toggleToolsPanel(forceOpen);
-  window.applyPerspectiveCrop = () => void window.studioInstance.applyPerspectiveCrop();
-  window.resetPerspectiveCrop = () => window.studioInstance.resetPerspectiveCrop();
+  window.preparePrintReady = () => void window.studioInstance.preparePrintReady();
+  window.fitToGuide = () => window.studioInstance.fitToGuide();
+  window.centerSubject = () => window.studioInstance.centerSubject();
   window.clearBackgroundLayer = () => window.studioInstance.clearBackgroundLayer();
   window.setBackgroundColor = (color) => window.studioInstance.setBackgroundColor(color);
-  window.setBackgroundPreset = (preset) => window.studioInstance.setBackgroundPreset(preset);
-  window.setCropPreset = (preset) => window.studioInstance.setCropPreset(preset);
-  window.updateCustomCropSize = () => window.studioInstance.updateCustomCropSize();
-  window.placeCustomCrop = () => window.studioInstance.placeCustomCrop();
-  window.toggleCropAspectLock = () => window.studioInstance.toggleCropAspectLock();
+  window.toggleGuides = () => window.studioInstance.toggleGuides();
+  window.applyCrop = () => void window.studioInstance.applyRectCrop();
 });

@@ -6,16 +6,16 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <style>
 :root {
-    --broxstudio-primary: #0f766e;
-    --broxstudio-secondary: #14b8a6;
-    --broxstudio-accent: #f97316;
-    --broxstudio-surface: rgba(15, 23, 42, 0.86);
-    --broxstudio-panel: rgba(15, 23, 42, 0.92);
-    --broxstudio-line: rgba(148, 163, 184, 0.18);
-    --broxstudio-text: #e2e8f0;
-    --broxstudio-muted: #94a3b8;
-    --broxstudio-danger: #ef4444;
-    --broxstudio-success: #22c55e;
+    --studio-ink: #08111d;
+    --studio-panel: rgba(5, 17, 31, 0.92);
+    --studio-surface: rgba(8, 18, 33, 0.84);
+    --studio-line: rgba(148, 163, 184, 0.18);
+    --studio-muted: #94a3b8;
+    --studio-text: #e2e8f0;
+    --studio-accent: #0ea5e9;
+    --studio-accent-2: #22c55e;
+    --studio-warm: #f97316;
+    --studio-danger: #ef4444;
 }
 
 * {
@@ -30,9 +30,9 @@ footer {
 body {
     margin: 0;
     background:
-        radial-gradient(circle at top left, rgba(20, 184, 166, 0.18), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(249, 115, 22, 0.14), transparent 32%),
-        #020617;
+        radial-gradient(circle at top left, rgba(14, 165, 233, 0.18), transparent 26%),
+        radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.12), transparent 24%),
+        linear-gradient(180deg, #020617 0%, #07111d 48%, #02060f 100%);
 }
 
 #main-content {
@@ -40,35 +40,21 @@ body {
 }
 
 .studio-app {
-    position: relative;
     min-height: 100vh;
-    overflow: hidden;
-    color: var(--broxstudio-text);
+    color: var(--studio-text);
     font-family: "Plus Jakarta Sans", "Noto Sans Bengali", system-ui, sans-serif;
 }
 
-.studio-backdrop {
-    position: absolute;
-    inset: 0;
-    background:
-        radial-gradient(circle at 15% 15%, rgba(20, 184, 166, 0.24), transparent 30%),
-        radial-gradient(circle at 85% 25%, rgba(14, 165, 233, 0.14), transparent 22%),
-        radial-gradient(circle at 65% 80%, rgba(249, 115, 22, 0.18), transparent 25%);
-    pointer-events: none;
-}
-
 .studio-shell {
-    position: relative;
-    z-index: 1;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-columns: minmax(0, 1fr) 390px;
     min-height: 100vh;
 }
 
 .studio-main {
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    min-width: 0;
 }
 
 .studio-topbar {
@@ -77,68 +63,100 @@ body {
     justify-content: space-between;
     gap: 1rem;
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--broxstudio-line);
-    background: rgba(2, 6, 23, 0.72);
-    backdrop-filter: blur(20px);
+    background: rgba(2, 6, 23, 0.75);
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid var(--studio-line);
 }
 
 .studio-brand {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 0.75rem;
-    color: white;
+    gap: 0.85rem;
+    color: #fff;
     text-decoration: none;
 }
 
 .studio-brand-mark {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
+    border-radius: 16px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 14px;
-    background: linear-gradient(135deg, var(--broxstudio-primary), var(--broxstudio-accent));
-    box-shadow: 0 12px 24px rgba(15, 118, 110, 0.28);
-    font-size: 1.2rem;
+    background: linear-gradient(135deg, #0284c7, #22c55e);
+    box-shadow: 0 14px 34px rgba(14, 165, 233, 0.3);
 }
 
-.studio-brand-copy strong {
+.studio-brand-copy strong,
+.studio-panel-heading strong {
     display: block;
-    font-size: 1rem;
-    letter-spacing: 0.01em;
+    font-size: 0.98rem;
 }
 
-.studio-brand-copy span {
-    display: block;
-    color: var(--broxstudio-muted);
+.studio-brand-copy span,
+.studio-panel-heading span,
+.studio-meta,
+.studio-helper {
+    color: var(--studio-muted);
     font-size: 0.82rem;
 }
 
-.studio-topbar-actions {
+.studio-top-actions,
+.studio-stack,
+.studio-grid,
+.studio-inline {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    gap: 0.65rem;
     flex-wrap: wrap;
-    justify-content: flex-end;
 }
 
+.studio-stack {
+    flex-direction: column;
+}
+
+.studio-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.studio-btn,
 .studio-icon-btn,
-.studio-action-btn,
-.studio-pill-btn {
+.studio-chip,
+.studio-tool-card {
     border: 1px solid rgba(255, 255, 255, 0.08);
-    color: white;
     background: rgba(255, 255, 255, 0.06);
-    border-radius: 14px;
+    color: #fff;
+    border-radius: 16px;
     cursor: pointer;
-    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+    transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
 }
 
+.studio-btn:hover,
 .studio-icon-btn:hover,
-.studio-action-btn:hover,
-.studio-pill-btn:hover {
+.studio-chip:hover,
+.studio-tool-card:hover {
     transform: translateY(-1px);
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.11);
+}
+
+.studio-btn,
+.studio-chip {
+    padding: 0.82rem 1rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.studio-btn.primary {
+    background: linear-gradient(135deg, #0284c7, #22c55e);
+    border-color: transparent;
+}
+
+.studio-btn.warm {
+    background: linear-gradient(135deg, #f97316, #fb7185);
+    border-color: transparent;
 }
 
 .studio-icon-btn {
@@ -146,60 +164,80 @@ body {
     height: 42px;
 }
 
-.studio-action-btn,
-.studio-pill-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    padding: 0.75rem 1rem;
-    font-weight: 600;
+.studio-chip {
+    padding: 0.72rem 0.92rem;
+    text-align: left;
+    width: 100%;
 }
 
-.studio-action-btn.primary {
-    background: linear-gradient(135deg, var(--broxstudio-primary), var(--broxstudio-secondary));
-    border-color: transparent;
+.studio-chip.active,
+.studio-tool-card.active,
+.studio-swatch.active {
+    border-color: rgba(14, 165, 233, 0.9);
+    background: rgba(14, 165, 233, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.28);
 }
 
-.studio-main-workspace {
+.studio-chip small {
+    display: block;
+    color: var(--studio-muted);
+    font-weight: 500;
+}
+
+.studio-workspace {
     flex: 1;
-    display: flex;
-    align-items: stretch;
     min-height: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+}
+
+.studio-ribbon {
+    padding: 1rem 1.25rem 0;
+}
+
+.studio-ribbon-card {
+    padding: 1rem;
+    border: 1px solid var(--studio-line);
+    border-radius: 24px;
+    background: rgba(5, 17, 31, 0.78);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+}
+
+.studio-ribbon-copy h2 {
+    margin: 0 0 0.35rem;
+    font-size: 1.15rem;
 }
 
 .studio-canvas-wrap {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     padding: 1.25rem;
+    min-height: 0;
 }
 
 .studio-canvas-stage {
     position: relative;
-    width: 100%;
     height: 100%;
-    min-height: 62vh;
-    border: 1px solid var(--broxstudio-line);
+    min-height: 60vh;
     border-radius: 28px;
+    border: 1px solid var(--studio-line);
     background:
-        linear-gradient(45deg, rgba(148, 163, 184, 0.14) 25%, transparent 25%),
-        linear-gradient(-45deg, rgba(148, 163, 184, 0.14) 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, rgba(148, 163, 184, 0.14) 75%),
-        linear-gradient(-45deg, transparent 75%, rgba(148, 163, 184, 0.14) 75%),
-        rgba(15, 23, 42, 0.55);
-    background-size: 24px 24px;
-    background-position: 0 0, 0 12px, 12px -12px, -12px 0;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 24px 60px rgba(2, 6, 23, 0.5);
+        linear-gradient(45deg, rgba(148, 163, 184, 0.1) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(148, 163, 184, 0.1) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(148, 163, 184, 0.1) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(148, 163, 184, 0.1) 75%),
+        rgba(15, 23, 42, 0.68);
+    background-size: 28px 28px;
+    background-position: 0 0, 0 14px, 14px -14px, -14px 0;
     overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 32px 70px rgba(2, 6, 23, 0.42);
 }
 
 .canvas-scroll {
     position: absolute;
     inset: 0;
     overflow: auto;
-    padding: 1.5rem;
+    padding: 2rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -208,429 +246,299 @@ body {
 .canvas-container {
     position: relative;
     transform-origin: center center;
-    border-radius: 18px;
-    overflow: visible;
 }
 
 #photoCanvas {
     display: block;
     max-width: 100%;
     height: auto;
-    border-radius: 18px;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+    border-radius: 22px;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.42);
+    background: #fff;
+    touch-action: none;
 }
 
 .canvas-placeholder {
     position: absolute;
     inset: 1.5rem;
+    border-radius: 24px;
+    border: 1.5px dashed rgba(255, 255, 255, 0.18);
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.6rem;
-    border: 1.5px dashed rgba(255, 255, 255, 0.18);
-    border-radius: 24px;
-    color: rgba(226, 232, 240, 0.68);
-    cursor: pointer;
-    background: rgba(15, 23, 42, 0.35);
     text-align: center;
+    cursor: pointer;
+    padding: 1.5rem;
+    background: rgba(5, 17, 31, 0.34);
+}
+
+.canvas-placeholder-inner {
+    max-width: 360px;
 }
 
 .canvas-placeholder i {
     font-size: 3.5rem;
+    color: #7dd3fc;
 }
 
-.canvas-placeholder h3 {
-    margin: 0;
-    font-size: 1.3rem;
+.canvas-placeholder h3,
+.studio-section h3 {
+    margin: 0 0 0.35rem;
 }
 
-.canvas-placeholder p {
-    margin: 0;
-}
-
-.canvas-hud {
+.studio-canvas-hud {
     position: absolute;
-    left: 1.25rem;
-    right: 1.25rem;
-    bottom: 1.25rem;
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
+    gap: 1rem;
     flex-wrap: wrap;
-    padding: 0.9rem 1rem;
+    pointer-events: none;
+}
+
+.studio-hud-pill,
+.studio-statusbar {
+    padding: 0.72rem 0.95rem;
     border-radius: 18px;
+    background: rgba(2, 6, 23, 0.72);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(2, 6, 23, 0.74);
     backdrop-filter: blur(16px);
 }
 
-.canvas-hud-group {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    flex-wrap: wrap;
-}
-
-.canvas-hud-text {
-    color: var(--broxstudio-muted);
-    font-size: 0.88rem;
-}
-
-.studio-sidebar {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    background: var(--broxstudio-panel);
-    border-left: 1px solid var(--broxstudio-line);
-    backdrop-filter: blur(20px);
-    max-height: 100vh;
-}
-
-.studio-sidebar-header {
+.studio-statusbar {
+    margin: 0 1.25rem 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
-    padding: 1rem 1rem 0.75rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    gap: 0.8rem;
+    flex-wrap: wrap;
 }
 
-.studio-sidebar-title strong {
-    display: block;
-    font-size: 1rem;
-}
-
-.studio-sidebar-title span {
-    color: var(--broxstudio-muted);
-    font-size: 0.82rem;
-}
-
-.studio-sidebar-body {
-    flex: 1;
-    overflow-y: auto;
+.studio-sidebar {
+    border-left: 1px solid var(--studio-line);
+    background: var(--studio-panel);
     padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+    overflow: auto;
+}
+
+.studio-panel-card,
+.studio-section,
+.studio-modal-card {
+    background: rgba(15, 23, 42, 0.74);
+    border: 1px solid var(--studio-line);
+    border-radius: 22px;
+}
+
+.studio-panel-card {
+    padding: 1rem;
 }
 
 .studio-section {
     padding: 1rem;
-    border-radius: 22px;
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: 0.95rem;
 }
 
-.studio-section h3 {
-    margin: 0 0 0.25rem;
-    font-size: 0.96rem;
-}
-
-.studio-section p {
-    margin: 0 0 0.85rem;
-    color: var(--broxstudio-muted);
-    font-size: 0.84rem;
-    line-height: 1.5;
+.studio-panel-heading {
+    margin-bottom: 0.8rem;
 }
 
 .studio-tool-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.65rem;
+    gap: 0.7rem;
 }
 
 .studio-tool-card {
-    min-height: 74px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.35rem;
-    padding: 0.85rem;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.04);
-    color: white;
-    cursor: pointer;
+    padding: 0.95rem 0.9rem;
     text-align: left;
 }
 
-.studio-tool-card.active {
-    border-color: transparent;
-    background: linear-gradient(135deg, rgba(15, 118, 110, 0.9), rgba(20, 184, 166, 0.85));
-}
-
-.studio-tool-card[disabled] {
-    opacity: 0.45;
-    cursor: not-allowed;
-}
-
-.studio-tool-card i {
-    font-size: 1.1rem;
-}
-
 .studio-tool-card strong {
-    font-size: 0.9rem;
+    display: block;
+    margin-top: 0.35rem;
 }
 
 .studio-tool-card span {
-    font-size: 0.76rem;
-    color: rgba(226, 232, 240, 0.78);
-}
-
-.studio-upload-actions,
-.studio-inline-actions,
-.studio-background-picks,
-.studio-export-grid {
-    display: grid;
-    gap: 0.65rem;
-}
-
-.studio-upload-actions {
-    grid-template-columns: 1fr;
-}
-
-.studio-inline-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.studio-export-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: block;
+    color: var(--studio-muted);
+    font-size: 0.78rem;
+    margin-top: 0.15rem;
 }
 
 .studio-field {
-    display: flex;
-    flex-direction: column;
+    display: grid;
     gap: 0.45rem;
+    margin-top: 0.78rem;
 }
 
 .studio-field label {
     font-size: 0.84rem;
-    color: rgba(226, 232, 240, 0.88);
+    color: var(--studio-muted);
 }
 
 .studio-field input[type="range"],
+.studio-field input[type="number"],
+.studio-field input[type="text"],
+.studio-field input[type="color"],
 .studio-field select,
-.studio-field input[type="color"] {
+.studio-textarea {
     width: 100%;
-}
-
-.studio-slider-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.studio-slider-value,
-.studio-badge {
-    min-width: 48px;
-    padding: 0.3rem 0.5rem;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
-    color: white;
-    font-size: 0.78rem;
-    text-align: center;
-}
-
-.studio-swatches,
-.studio-presets {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.studio-swatch,
-.studio-preset {
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
     border-radius: 14px;
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
-    cursor: pointer;
-    transition: transform 0.18s ease, border-color 0.18s ease;
+    padding: 0.8rem 0.9rem;
 }
 
-.studio-swatch:hover,
-.studio-preset:hover {
-    transform: translateY(-1px);
+.studio-inline {
+    align-items: center;
 }
 
-.studio-swatch.active,
-.studio-preset.active {
-    border-color: var(--broxstudio-accent);
-    box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35);
+.studio-inline.spread {
+    justify-content: space-between;
+}
+
+.studio-swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.55rem;
+    margin-top: 0.85rem;
 }
 
 .studio-swatch {
-    width: 38px;
-    height: 38px;
-}
-
-.studio-preset {
-    padding: 0.65rem 0.75rem;
-    font-size: 0.8rem;
+    height: 44px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    cursor: pointer;
 }
 
 .studio-tray {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.55rem;
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+    gap: 0.7rem;
 }
 
 .tray-item {
     position: relative;
-    min-height: 78px;
     padding: 0;
+    aspect-ratio: 1;
+    border-radius: 18px;
     overflow: hidden;
-    border-radius: 16px;
-    border: 2px solid transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.05);
     cursor: pointer;
 }
 
-.tray-item.active,
-.tray-item.selected {
-    border-color: var(--broxstudio-accent);
+.tray-item.active {
+    border-color: rgba(14, 165, 233, 0.8);
+    box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.24);
+}
+
+.tray-item.selected::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 2px solid #22c55e;
+    border-radius: 18px;
 }
 
 .tray-item img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
 }
 
 .tray-item-remove {
     position: absolute;
-    top: 0.3rem;
-    right: 0.3rem;
+    top: 0.35rem;
+    right: 0.35rem;
     width: 24px;
     height: 24px;
-    border: 0;
-    border-radius: 50%;
-    background: rgba(2, 6, 23, 0.8);
-    color: white;
-}
-
-.studio-perspective-actions {
-    display: none;
-    gap: 0.6rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.studio-perspective-actions.active {
-    display: grid;
-}
-
-.studio-crop-actions {
-    display: none;
-    gap: 0.75rem;
-}
-
-.studio-crop-actions.active {
-    display: grid;
-}
-
-.studio-helper-text {
-    color: var(--broxstudio-muted);
-    font-size: 0.78rem;
-    line-height: 1.45;
-}
-
-.studio-canvas-message {
-    position: absolute;
-    top: 1.25rem;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 0.65rem 0.9rem;
     border-radius: 999px;
-    background: rgba(2, 6, 23, 0.7);
-    color: white;
-    font-size: 0.8rem;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    pointer-events: none;
-}
-
-.studio-mobile-toggle {
-    position: fixed;
-    right: 1rem;
-    bottom: 1rem;
-    z-index: 1200;
-    display: none;
-    width: 58px;
-    height: 58px;
     border: 0;
-    border-radius: 50%;
-    color: white;
-    background: linear-gradient(135deg, var(--broxstudio-primary), var(--broxstudio-accent));
-    box-shadow: 0 16px 40px rgba(2, 6, 23, 0.4);
+    background: rgba(2, 6, 23, 0.72);
+    color: #fff;
+    cursor: pointer;
 }
 
-.modal-overlay {
+.studio-modal {
     position: fixed;
     inset: 0;
+    padding: 1rem;
     display: none;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
-    z-index: 1300;
-    background: rgba(2, 6, 23, 0.76);
+    background: rgba(2, 6, 23, 0.7);
+    z-index: 60;
 }
 
-.modal-card {
-    width: min(620px, 100%);
-    border-radius: 28px;
-    background: #0f172a;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 1.35rem;
+.studio-modal-card {
+    width: min(760px, 100%);
+    padding: 1.15rem;
 }
 
-.modal-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.9rem;
+.studio-preview-box {
+    min-height: 160px;
+    border-radius: 18px;
+    border: 1px dashed rgba(255, 255, 255, 0.14);
+    background: rgba(2, 6, 23, 0.35);
+    padding: 0.9rem;
+    margin-top: 0.85rem;
 }
 
-.modal-actions {
-    margin-top: 1rem;
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
+.studio-preview-sheet {
+    width: 100%;
+    min-height: 118px;
+    border-radius: 16px;
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+}
+
+.studio-preview-photo {
+    position: absolute;
+    border: 1px solid #cbd5e1;
+    background-size: cover;
+    background-position: center;
 }
 
 .toast-container {
     position: fixed;
     right: 1rem;
-    bottom: 5.5rem;
-    z-index: 1500;
-    display: flex;
-    flex-direction: column;
+    bottom: 1rem;
+    z-index: 80;
+    display: grid;
     gap: 0.6rem;
 }
 
 .toast {
-    max-width: 320px;
-    padding: 0.9rem 1rem;
+    padding: 0.85rem 1rem;
     border-radius: 16px;
-    background: rgba(15, 23, 42, 0.95);
-    border-left: 3px solid var(--broxstudio-accent);
-    color: white;
-    box-shadow: 0 18px 32px rgba(2, 6, 23, 0.35);
+    background: rgba(2, 6, 23, 0.92);
+    border-left: 4px solid #38bdf8;
+    color: #fff;
+    min-width: 240px;
 }
 
 .toast.success {
-    border-left-color: var(--broxstudio-success);
+    border-left-color: #22c55e;
 }
 
 .toast.error {
-    border-left-color: var(--broxstudio-danger);
+    border-left-color: #ef4444;
 }
 
-#imageUploadInput {
+.studio-mobile-toggle {
     display: none;
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 50;
 }
 
-@media (max-width: 992px) {
+@media (max-width: 1180px) {
     .studio-shell {
         grid-template-columns: minmax(0, 1fr);
     }
@@ -640,11 +548,10 @@ body {
         top: 0;
         right: 0;
         bottom: 0;
-        width: min(92vw, 360px);
-        z-index: 1250;
+        width: min(430px, 100%);
         transform: translateX(100%);
-        transition: transform 0.22s ease;
-        box-shadow: -18px 0 40px rgba(2, 6, 23, 0.45);
+        transition: transform 0.2s ease;
+        z-index: 55;
     }
 
     .studio-app.sidebar-open .studio-sidebar {
@@ -653,55 +560,33 @@ body {
 
     .studio-mobile-toggle {
         display: inline-flex;
-        align-items: center;
-        justify-content: center;
+    }
+}
+
+@media (max-width: 720px) {
+    .studio-topbar,
+    .studio-ribbon-card,
+    .studio-statusbar {
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
 
-    .studio-app.sidebar-open .studio-mobile-toggle {
-        opacity: 0;
-        pointer-events: none;
+    .studio-ribbon-card,
+    .studio-statusbar {
+        grid-template-columns: 1fr;
     }
 
-    .studio-main {
-        min-height: 100vh;
+    .studio-grid,
+    .studio-tool-grid {
+        grid-template-columns: 1fr;
     }
 
     .studio-canvas-wrap {
         padding: 1rem;
-        padding-bottom: 6rem;
-    }
-}
-
-@media (max-width: 768px) {
-    .studio-topbar {
-        align-items: flex-start;
-        flex-direction: column;
     }
 
-    .studio-topbar-actions {
-        width: 100%;
-        justify-content: flex-start;
-    }
-
-    .studio-action-btn span,
-    .studio-pill-btn span {
-        display: none;
-    }
-
-    .studio-tool-grid,
-    .studio-inline-actions,
-    .studio-export-grid,
-    .studio-perspective-actions,
-    .modal-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .studio-tray {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .canvas-hud {
-        inset: auto 0.9rem 0.9rem;
+    .canvas-scroll {
+        padding: 1rem;
     }
 }
 </style>
@@ -710,389 +595,286 @@ body {
 {% block content %}
 {% set studio_link = studio_header_url|default('/studio') %}
 <div class="studio-app" id="studioApp">
-    <div class="studio-backdrop"></div>
-
-    <button type="button" class="studio-mobile-toggle" id="mobileToolsToggle" onclick="toggleToolsPanel(true)" aria-label="Open tools">
+    <button type="button" class="studio-btn primary studio-mobile-toggle" onclick="toggleToolsPanel(true)">
         <i class="bi bi-sliders"></i>
+        <span>Tools</span>
     </button>
 
     <div class="studio-shell">
         <div class="studio-main">
             <div class="studio-topbar">
                 <a href="{{ studio_link }}" class="studio-brand">
-                    <span class="studio-brand-mark"><i class="bi bi-bezier"></i></span>
+                    <span class="studio-brand-mark"><i class="bi bi-camera2"></i></span>
                     <span class="studio-brand-copy">
-                        <strong>Brox Studio</strong>
-                        <span>Mobile-friendly photo editor</span>
+                        <strong>Brox Studio ID Photo Pro</strong>
+                        <span>Passport, visa, job, exam, and print-ready photo workflow</span>
                     </span>
                 </a>
 
-                <div class="studio-topbar-actions">
-                    <button type="button" class="studio-icon-btn" onclick="undo()" id="undoBtn" disabled title="Undo">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                    </button>
-                    <button type="button" class="studio-icon-btn" onclick="redo()" id="redoBtn" disabled title="Redo">
-                        <i class="bi bi-arrow-clockwise"></i>
-                    </button>
-                    <button type="button" class="studio-action-btn" onclick="downloadImage()" title="Download">
-                        <i class="bi bi-download"></i>
-                        <span>Download</span>
-                    </button>
-                    <button type="button" class="studio-action-btn primary" onclick="openPrintSheetModal()" title="Print Sheet">
-                        <i class="bi bi-printer"></i>
-                        <span>Print Sheet</span>
-                    </button>
-                    <button type="button" class="studio-icon-btn" onclick="toggleToolsPanel(true)" title="Tools">
-                        <i class="bi bi-layout-sidebar-inset"></i>
-                    </button>
+                <div class="studio-top-actions">
+                    <button type="button" class="studio-icon-btn" onclick="undo()" id="undoBtn" title="Undo" disabled><i class="bi bi-arrow-counterclockwise"></i></button>
+                    <button type="button" class="studio-icon-btn" onclick="redo()" id="redoBtn" title="Redo" disabled><i class="bi bi-arrow-clockwise"></i></button>
+                    <button type="button" class="studio-btn" onclick="document.getElementById('imageUploadInput').click()"><i class="bi bi-upload"></i><span>Upload</span></button>
+                    <button type="button" class="studio-btn" onclick="preparePrintReady()"><i class="bi bi-stars"></i><span>Prepare</span></button>
+                    <button type="button" class="studio-btn primary" onclick="downloadImage()"><i class="bi bi-download"></i><span>Export</span></button>
+                    <button type="button" class="studio-btn warm" onclick="openPrintSheetModal()"><i class="bi bi-printer"></i><span>Print Sheet</span></button>
                 </div>
             </div>
 
-            <div class="studio-main-workspace">
+            <div class="studio-workspace">
+                <div class="studio-ribbon">
+                    <div class="studio-ribbon-card">
+                        <div class="studio-ribbon-copy">
+                            <h2 id="presetTitle">Bangladesh Passport</h2>
+                            <p class="studio-helper" id="presetDescription">Choose a preset, align the face inside the guide box, then export or place on a print sheet.</p>
+                        </div>
+                        <div class="studio-inline">
+                            <button type="button" class="studio-btn" onclick="toggleGuides()"><i class="bi bi-bounding-box"></i><span id="guideToggleLabel">Hide Guides</span></button>
+                            <button type="button" class="studio-btn" onclick="fitToGuide()"><i class="bi bi-person-bounding-box"></i><span>Fit To Guide</span></button>
+                            <button type="button" class="studio-btn" onclick="centerSubject()"><i class="bi bi-distribute-horizontal"></i><span>Center</span></button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="studio-canvas-wrap">
                     <div class="studio-canvas-stage" id="canvasArea">
-                        <div class="canvas-scroll">
-                            <div class="canvas-container" id="canvasContainer" style="display: none;">
+                        <div class="canvas-scroll" id="canvasScroll">
+                            <div class="canvas-container" id="canvasContainer" style="display:none;">
                                 <canvas id="photoCanvas"></canvas>
                             </div>
                         </div>
 
                         <div class="canvas-placeholder" id="uploadPlaceholder" onclick="document.getElementById('imageUploadInput').click()">
-                            <i class="bi bi-cloud-arrow-up"></i>
-                            <h3>Drop or upload your images</h3>
-                            <p>Perspective crop, subject cutout, background presets, and print-ready export.</p>
-                            <p class="studio-helper-text">Supports JPG, PNG, GIF, WebP up to 10MB.</p>
+                            <div class="canvas-placeholder-inner">
+                                <i class="bi bi-cloud-arrow-up"></i>
+                                <h3>Drop or upload a portrait photo</h3>
+                                <p class="studio-helper">Supports JPG, PNG, GIF, and WebP up to 10MB. Then choose a preset and align it like a real studio app.</p>
+                            </div>
                         </div>
 
-                        <div class="studio-canvas-message" id="canvasModeBadge">Select tool</div>
-
-                        <div class="canvas-hud">
-                            <div class="canvas-hud-group">
-                                <span class="canvas-hud-text" id="imageInfo">No image loaded</span>
-                                <span class="studio-badge" id="zoomLevel">100%</span>
+                        <div class="studio-canvas-hud">
+                            <div class="studio-hud-pill">
+                                <strong id="canvasModeBadge">Select Tool</strong>
+                                <div class="studio-helper" id="toolHint">Move and align the subject inside the face guide.</div>
                             </div>
-                            <div class="canvas-hud-group">
-                                <button type="button" class="studio-icon-btn" onclick="zoomOut()" title="Zoom out"><i class="bi bi-dash"></i></button>
-                                <button type="button" class="studio-icon-btn" onclick="zoomIn()" title="Zoom in"><i class="bi bi-plus"></i></button>
-                                <button type="button" class="studio-icon-btn" onclick="resetZoom()" title="Reset zoom"><i class="bi bi-arrows-fullscreen"></i></button>
-                                <button type="button" class="studio-icon-btn" onclick="document.getElementById('imageUploadInput').click()" title="Upload"><i class="bi bi-upload"></i></button>
+                            <div class="studio-hud-pill">
+                                <strong id="zoomLevel">100%</strong>
+                                <div class="studio-helper" id="imageInfo">No image loaded</div>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div class="studio-statusbar">
+                    <div class="studio-inline">
+                        <button type="button" class="studio-icon-btn" onclick="zoomOut()" title="Zoom out"><i class="bi bi-dash"></i></button>
+                        <button type="button" class="studio-icon-btn" onclick="zoomIn()" title="Zoom in"><i class="bi bi-plus"></i></button>
+                        <button type="button" class="studio-icon-btn" onclick="resetZoom()" title="Reset zoom"><i class="bi bi-arrows-fullscreen"></i></button>
+                        <button type="button" class="studio-icon-btn" onclick="rotateImage()" title="Rotate 90 degrees"><i class="bi bi-arrow-repeat"></i></button>
+                        <button type="button" class="studio-icon-btn" onclick="flipImage('horizontal')" title="Flip horizontal"><i class="bi bi-symmetry-horizontal"></i></button>
+                        <button type="button" class="studio-icon-btn" onclick="flipImage('vertical')" title="Flip vertical"><i class="bi bi-symmetry-vertical"></i></button>
+                    </div>
+                    <div class="studio-meta" id="sessionMeta">Preset ready for export</div>
                 </div>
             </div>
         </div>
 
         <aside class="studio-sidebar" id="studioSidebar">
-            <div class="studio-sidebar-header">
-                <div class="studio-sidebar-title">
-                    <strong>Quick Tools</strong>
-                    <span>All main editing controls live here.</span>
+            <div class="studio-panel-card">
+                <div class="studio-panel-heading">
+                    <strong>Studio Session</strong>
+                    <span>Preset, tray, tools, adjustments, background, and print settings live here.</span>
                 </div>
-                <button type="button" class="studio-icon-btn" onclick="toggleToolsPanel(false)" title="Close tools">
-                    <i class="bi bi-x-lg"></i>
-                </button>
+
+                <div class="studio-field">
+                    <label for="presetSelect">ID Photo Preset</label>
+                    <select id="presetSelect"></select>
+                </div>
+
+                <div class="studio-field">
+                    <label>Preset Details</label>
+                    <div class="studio-grid" id="presetChipGrid"></div>
+                </div>
             </div>
 
-            <div class="studio-sidebar-body">
-                <div class="studio-section">
-                    <h3>Upload & Tray</h3>
-                    <p>Keep multiple images ready for edit and print.</p>
-                    <input type="file" id="imageUploadInput" accept="image/*" multiple>
-                    <div class="studio-upload-actions">
-                        <button type="button" class="studio-action-btn primary" onclick="document.getElementById('imageUploadInput').click()">
-                            <i class="bi bi-upload"></i>
-                            <span>Choose Images</span>
-                        </button>
-                    </div>
-                    <div class="studio-tray" id="imageTray" style="margin-top: 0.9rem;"></div>
+            <div class="studio-section">
+                <h3>Image Tray</h3>
+                <p class="studio-helper">Keep multiple portraits and switch between them while preserving the current session.</p>
+                <div class="studio-inline">
+                    <button type="button" class="studio-btn primary" onclick="document.getElementById('imageUploadInput').click()"><i class="bi bi-images"></i><span>Add Photo</span></button>
+                    <button type="button" class="studio-btn" onclick="deleteCurrentImage()"><i class="bi bi-trash3"></i><span>Delete Active</span></button>
+                </div>
+                <div class="studio-tray" id="imageTray" style="margin-top: 0.9rem;"></div>
+            </div>
+
+            <div class="studio-section">
+                <h3>Editing Tools</h3>
+                <p class="studio-helper">Select, crop, retouch, annotate, and isolate the subject with a more studio-like workflow.</p>
+                <div class="studio-tool-grid">
+                    <button type="button" class="studio-tool-card active" data-tool-button="select" onclick="setTool('select')"><i class="bi bi-cursor-fill"></i><strong>Select</strong><span>Move and scale</span></button>
+                    <button type="button" class="studio-tool-card" data-tool-button="crop" onclick="setTool('crop')"><i class="bi bi-crop"></i><strong>Crop</strong><span>Drag box with handles</span></button>
+                    <button type="button" class="studio-tool-card" data-tool-button="brush" onclick="setTool('brush')"><i class="bi bi-brush"></i><strong>Brush</strong><span>Retouch and highlight</span></button>
+                    <button type="button" class="studio-tool-card" data-tool-button="eraser" onclick="setTool('eraser')"><i class="bi bi-eraser"></i><strong>Eraser</strong><span>Refine edges</span></button>
+                    <button type="button" class="studio-tool-card" data-tool-button="text" onclick="setTool('text')"><i class="bi bi-fonts"></i><strong>Text</strong><span>Add label</span></button>
+                    <button type="button" class="studio-tool-card" data-tool-button="shape" onclick="setTool('shape')"><i class="bi bi-bounding-box-circles"></i><strong>Shape</strong><span>Rectangle or circle</span></button>
+                    <button type="button" class="studio-tool-card" onclick="bgRemove()"><i class="bi bi-magic"></i><strong>Cutout</strong><span>Remove background</span></button>
+                    <button type="button" class="studio-tool-card" onclick="openPrintSheetModal()"><i class="bi bi-grid-3x3-gap-fill"></i><strong>Print</strong><span>Live sheet preview</span></button>
                 </div>
 
-                <div class="studio-section">
-                    <h3>Quick Tools</h3>
-                    <p>Select a tool or trigger an instant transform.</p>
-                    <div class="studio-tool-grid">
-                        <button type="button" class="studio-tool-card active" data-tool-button="select" onclick="setTool('select')">
-                            <i class="bi bi-cursor"></i>
-                            <strong>Select</strong>
-                            <span>Basic pointer mode</span>
-                        </button>
-                        <button type="button" class="studio-tool-card" data-tool-button="crop" onclick="setTool('crop')">
-                            <i class="bi bi-crop"></i>
-                            <strong>Crop</strong>
-                            <span>Rectangle crop</span>
-                        </button>
-                        <button type="button" class="studio-tool-card" data-tool-button="perspective" onclick="setTool('perspective')">
-                            <i class="bi bi-bounding-box-circles"></i>
-                            <strong>Perspective</strong>
-                            <span>4-point crop</span>
-                        </button>
-                        <button type="button" class="studio-tool-card" onclick="rotateImage()">
-                            <i class="bi bi-arrow-repeat"></i>
-                            <strong>Rotate</strong>
-                            <span>Rotate 90 degrees</span>
-                        </button>
-                        <button type="button" class="studio-tool-card" onclick="flipImage('horizontal')">
-                            <i class="bi bi-symmetry-horizontal"></i>
-                            <strong>Flip H</strong>
-                            <span>Mirror left-right</span>
-                        </button>
-                        <button type="button" class="studio-tool-card" onclick="flipImage('vertical')">
-                            <i class="bi bi-symmetry-vertical"></i>
-                            <strong>Flip V</strong>
-                            <span>Mirror top-bottom</span>
-                        </button>
-                        <button type="button" class="studio-tool-card" data-tool-button="brush" onclick="setTool('brush')">
-                            <i class="bi bi-brush"></i>
-                            <strong>Brush</strong>
-                            <span>Draw highlight</span>
-                        </button>
-                        <button type="button" class="studio-tool-card" data-tool-button="eraser" onclick="setTool('eraser')">
-                            <i class="bi bi-eraser"></i>
-                            <strong>Eraser</strong>
-                            <span>Erase pixels</span>
-                        </button>
-                        <button type="button" class="studio-tool-card" data-tool-button="text" onclick="setTool('text')">
-                            <i class="bi bi-type"></i>
-                            <strong>Text</strong>
-                            <span>Tap to add text</span>
-                        </button>
-                        <button type="button" class="studio-tool-card" data-tool-button="shape" onclick="setTool('shape')">
-                            <i class="bi bi-square"></i>
-                            <strong>Shape</strong>
-                            <span>Draw a rectangle</span>
-                        </button>
-                        <button type="button" class="studio-tool-card" onclick="openFiltersPanel()">
-                            <i class="bi bi-sliders"></i>
-                            <strong>Filters</strong>
-                            <span>Jump to adjustments</span>
-                        </button>
-                        <button type="button" class="studio-tool-card" onclick="bgRemove()">
-                            <i class="bi bi-image-alt"></i>
-                            <strong>BG Remove</strong>
-                            <span>Keep subject only</span>
-                        </button>
-                    </div>
-
-                    <div class="studio-perspective-actions" id="perspectiveActions" style="margin-top: 0.85rem;">
-                        <button type="button" class="studio-action-btn primary" onclick="applyPerspectiveCrop()">
-                            <i class="bi bi-check2-circle"></i>
-                            <span>Apply</span>
-                        </button>
-                        <button type="button" class="studio-action-btn" onclick="resetPerspectiveCrop()">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                            <span>Reset</span>
-                        </button>
-                    </div>
-                    <div class="studio-crop-actions" id="cropActions" style="margin-top: 0.85rem;">
-                        <div class="studio-field">
-                            <label for="cropPreset">Crop Size</label>
-                            <select id="cropPreset" onchange="setCropPreset(this.value)">
-                                <option value="free">Free Crop</option>
-                                <option value="1:1">Square 1:1</option>
-                                <option value="4:5">Portrait 4:5</option>
-                                <option value="16:9">Wide 16:9</option>
-                                <option value="40x50">40 x 50</option>
-                                <option value="50x40">50 x 40</option>
-                                <option value="custom">Custom Size</option>
-                            </select>
-                        </div>
-                        <div class="studio-inline-actions">
-                            <div class="studio-field">
-                                <label for="customCropWidth">Width</label>
-                                <input type="number" id="customCropWidth" min="20" step="1" value="400" onchange="updateCustomCropSize()">
-                            </div>
-                            <div class="studio-field">
-                                <label for="customCropHeight">Height</label>
-                                <input type="number" id="customCropHeight" min="20" step="1" value="400" onchange="updateCustomCropSize()">
-                            </div>
-                        </div>
-                        <div class="studio-inline-actions">
-                            <button type="button" class="studio-action-btn" id="cropRatioToggle" onclick="toggleCropAspectLock()">
-                                <i class="bi bi-link-45deg"></i>
-                                <span>Ratio Locked</span>
-                            </button>
-                            <button type="button" class="studio-action-btn primary" onclick="placeCustomCrop()">
-                                <i class="bi bi-bounding-box"></i>
-                                <span>Place Crop Box</span>
-                            </button>
-                        </div>
-                    </div>
-                    <p class="studio-helper-text" id="toolHint">Use the active tool on the canvas. Perspective crop lets you drag four corner points.</p>
+                <div class="studio-field">
+                    <label for="brushSizeSlider">Brush / Eraser Size</label>
+                    <input id="brushSizeSlider" type="range" min="4" max="80" value="22">
                 </div>
-
-                <div class="studio-section" id="adjustmentsPanel">
-                    <h3>Adjustments</h3>
-                    <p>Live preview filters that can be applied into the working image.</p>
-
+                <div class="studio-grid">
                     <div class="studio-field">
-                        <label for="brightnessSlider">Brightness</label>
-                        <div class="studio-slider-row">
-                            <input type="range" id="brightnessSlider" min="-100" max="100" value="0" oninput="applyFilter()">
-                            <span class="studio-slider-value" id="brightnessValue">0</span>
-                        </div>
+                        <label for="brushColorPicker">Brush Color</label>
+                        <input id="brushColorPicker" type="color" value="#f97316">
                     </div>
-
-                    <div class="studio-field" style="margin-top: 0.85rem;">
-                        <label for="contrastSlider">Contrast</label>
-                        <div class="studio-slider-row">
-                            <input type="range" id="contrastSlider" min="-100" max="100" value="0" oninput="applyFilter()">
-                            <span class="studio-slider-value" id="contrastValue">0</span>
-                        </div>
-                    </div>
-
-                    <div class="studio-field" style="margin-top: 0.85rem;">
-                        <label for="saturationSlider">Saturation</label>
-                        <div class="studio-slider-row">
-                            <input type="range" id="saturationSlider" min="-100" max="100" value="0" oninput="applyFilter()">
-                            <span class="studio-slider-value" id="saturationValue">0</span>
-                        </div>
-                    </div>
-
-                    <div class="studio-field" style="margin-top: 0.85rem;">
-                        <label>Tint</label>
-                        <div class="studio-swatches">
-                            <button type="button" class="studio-swatch active" data-color="none" style="background: linear-gradient(135deg, transparent 45%, #64748b 45%, #64748b 55%, transparent 55%);" onclick="setTint(null)" title="None"></button>
-                            <button type="button" class="studio-swatch" data-color="239,68,68" style="background: #ef4444;" onclick="setTint([239, 68, 68])"></button>
-                            <button type="button" class="studio-swatch" data-color="249,115,22" style="background: #f97316;" onclick="setTint([249, 115, 22])"></button>
-                            <button type="button" class="studio-swatch" data-color="34,197,94" style="background: #22c55e;" onclick="setTint([34, 197, 94])"></button>
-                            <button type="button" class="studio-swatch" data-color="59,130,246" style="background: #3b82f6;" onclick="setTint([59, 130, 246])"></button>
-                            <button type="button" class="studio-swatch" data-color="168,85,247" style="background: #a855f7;" onclick="setTint([168, 85, 247])"></button>
-                        </div>
-                    </div>
-
-                    <div class="studio-inline-actions" style="margin-top: 0.95rem;">
-                        <button type="button" class="studio-action-btn primary" onclick="applyAllFilters()">
-                            <i class="bi bi-check-circle"></i>
-                            <span>Apply</span>
-                        </button>
-                        <button type="button" class="studio-action-btn" onclick="resetFilters()">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                            <span>Reset</span>
-                        </button>
+                    <div class="studio-field">
+                        <label for="foregroundScaleSlider">Subject Scale</label>
+                        <input id="foregroundScaleSlider" type="range" min="40" max="220" value="100">
                     </div>
                 </div>
+                <div class="studio-inline">
+                    <button type="button" class="studio-btn" onclick="applyCrop()"><i class="bi bi-check2-square"></i><span>Apply Crop</span></button>
+                </div>
+            </div>
 
-                <div class="studio-section">
-                    <h3>Background</h3>
-                    <p>Remove the background, keep the subject transparent, then place a clean color or preset behind it.</p>
-
-                    <div class="studio-inline-actions">
-                        <button type="button" class="studio-action-btn primary" onclick="bgRemove()">
-                            <i class="bi bi-magic"></i>
-                            <span>Remove BG</span>
-                        </button>
-                        <button type="button" class="studio-action-btn" onclick="clearBackgroundLayer()">
-                            <i class="bi bi-transparency"></i>
-                            <span>Transparent</span>
-                        </button>
+            <div class="studio-section">
+                <h3>Text & Shape</h3>
+                <div class="studio-field">
+                    <label for="textInputValue">Text Content</label>
+                    <input id="textInputValue" type="text" value="ID PHOTO">
+                </div>
+                <div class="studio-grid">
+                    <div class="studio-field">
+                        <label for="textSizeInput">Text Size</label>
+                        <input id="textSizeInput" type="number" min="16" max="120" value="36">
                     </div>
-
-                    <div class="studio-field" style="margin-top: 0.9rem;">
-                        <label>Solid Background</label>
-                        <div class="studio-slider-row">
-                            <input type="color" id="backgroundColorPicker" value="#ffffff" onchange="setBackgroundColor(this.value)">
-                            <button type="button" class="studio-pill-btn" onclick="setBackgroundColor(document.getElementById('backgroundColorPicker').value)">
-                                <i class="bi bi-palette"></i>
-                                <span>Apply Color</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="studio-field" style="margin-top: 0.9rem;">
-                        <label>Preset Backgrounds</label>
-                        <div class="studio-presets">
-                            <button type="button" class="studio-preset" data-background-preset="mint" onclick="setBackgroundPreset('mint')">Mint Fade</button>
-                            <button type="button" class="studio-preset" data-background-preset="sunset" onclick="setBackgroundPreset('sunset')">Sunset</button>
-                            <button type="button" class="studio-preset" data-background-preset="sky" onclick="setBackgroundPreset('sky')">Sky</button>
-                            <button type="button" class="studio-preset" data-background-preset="slate" onclick="setBackgroundPreset('slate')">Slate</button>
-                        </div>
+                    <div class="studio-field">
+                        <label for="textColorPicker">Text Color</label>
+                        <input id="textColorPicker" type="color" value="#ffffff">
                     </div>
                 </div>
-
-                <div class="studio-section">
-                    <h3>Export & Print</h3>
-                    <p>Save the current composition or build a print sheet with more page sizes.</p>
-
-                    <div class="studio-export-grid">
-                        <button type="button" class="studio-action-btn" onclick="downloadImage()">
-                            <i class="bi bi-download"></i>
-                            <span>Download PNG</span>
-                        </button>
-                        <button type="button" class="studio-action-btn primary" onclick="openPrintSheetModal()">
-                            <i class="bi bi-printer"></i>
-                            <span>Open Print</span>
-                        </button>
-                        <button type="button" class="studio-action-btn" onclick="deleteCurrentImage()">
-                            <i class="bi bi-trash3"></i>
-                            <span>Delete</span>
-                        </button>
-                        <button type="button" class="studio-action-btn" onclick="resetZoom()">
-                            <i class="bi bi-aspect-ratio"></i>
-                            <span>Reset View</span>
-                        </button>
+                <div class="studio-grid">
+                    <div class="studio-field">
+                        <label for="shapeTypeSelect">Shape Type</label>
+                        <select id="shapeTypeSelect">
+                            <option value="rect">Rectangle</option>
+                            <option value="circle">Circle</option>
+                        </select>
                     </div>
+                    <div class="studio-field">
+                        <label for="shapeColorPicker">Shape Color</label>
+                        <input id="shapeColorPicker" type="color" value="#38bdf8">
+                    </div>
+                </div>
+            </div>
+
+            <div class="studio-section">
+                <h3>Adjustments</h3>
+                <div class="studio-field">
+                    <label for="brightnessSlider">Brightness</label>
+                    <input id="brightnessSlider" type="range" min="-100" max="100" value="0">
+                </div>
+                <div class="studio-field">
+                    <label for="contrastSlider">Contrast</label>
+                    <input id="contrastSlider" type="range" min="-100" max="100" value="0">
+                </div>
+                <div class="studio-field">
+                    <label for="saturationSlider">Saturation</label>
+                    <input id="saturationSlider" type="range" min="-100" max="100" value="0">
+                </div>
+                <div class="studio-inline">
+                    <button type="button" class="studio-btn primary" onclick="applyAllFilters()"><i class="bi bi-check2"></i><span>Apply Preview</span></button>
+                    <button type="button" class="studio-btn" onclick="resetFilters()"><i class="bi bi-arrow-counterclockwise"></i><span>Reset</span></button>
+                </div>
+            </div>
+
+            <div class="studio-section">
+                <h3>Background & Guides</h3>
+                <div class="studio-grid">
+                    <div class="studio-field">
+                        <label for="backgroundColorPicker">Solid Background</label>
+                        <input id="backgroundColorPicker" type="color" value="#ffffff">
+                    </div>
+                    <div class="studio-field">
+                        <label for="guideOpacitySlider">Guide Opacity</label>
+                        <input id="guideOpacitySlider" type="range" min="10" max="100" value="76">
+                    </div>
+                </div>
+                <div class="studio-swatch-grid" id="backgroundPresetGrid"></div>
+                <div class="studio-inline">
+                    <button type="button" class="studio-btn" onclick="clearBackgroundLayer()"><i class="bi bi-layers-half"></i><span>Transparent</span></button>
+                    <button type="button" class="studio-btn" onclick="setBackgroundColor(document.getElementById('backgroundColorPicker').value)"><i class="bi bi-palette"></i><span>Use Color</span></button>
+                </div>
+            </div>
+
+            <div class="studio-section">
+                <h3>Export & Print</h3>
+                <div class="studio-field">
+                    <label for="printPageSize">Paper Size</label>
+                    <select id="printPageSize"></select>
+                </div>
+                <div class="studio-grid">
+                    <div class="studio-field">
+                        <label for="printOrientation">Orientation</label>
+                        <select id="printOrientation">
+                            <option value="portrait">Portrait</option>
+                            <option value="landscape">Landscape</option>
+                        </select>
+                    </div>
+                    <div class="studio-field">
+                        <label for="printLayout">Layout</label>
+                        <select id="printLayout">
+                            <option value="center">Centered Grid</option>
+                            <option value="wide">Wide Fit</option>
+                            <option value="compact">Compact</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="studio-field">
+                    <label for="printSpacing">Spacing (mm)</label>
+                    <input id="printSpacing" type="number" min="0" max="12" step="0.5" value="4">
+                </div>
+                <div class="studio-inline">
+                    <button type="button" class="studio-btn primary" onclick="downloadImage()"><i class="bi bi-download"></i><span>Download Active</span></button>
+                    <button type="button" class="studio-btn warm" onclick="openPrintSheetModal()"><i class="bi bi-file-earmark-pdf"></i><span>Generate PDF</span></button>
                 </div>
             </div>
         </aside>
     </div>
 
-    <div class="modal-overlay" id="printSheetModal">
-        <div class="modal-card">
-            <h3 style="margin-top: 0;">Generate Print Sheet</h3>
-            <p class="studio-helper-text" style="margin-bottom: 1rem;">Choose images, paper size, orientation, and photo layout before creating the PDF.</p>
-
-            <div class="studio-tray" id="printSheetImageList" style="margin-bottom: 1rem;"></div>
-
-            <div class="modal-grid">
-                <div class="studio-field">
-                    <label for="printPageSize">Paper Size</label>
-                    <select id="printPageSize">
-                        <option value="A4">A4</option>
-                        <option value="Legal">Legal</option>
-                        <option value="Letter">Letter</option>
-                        <option value="A5">A5</option>
-                        <option value="B5">B5</option>
-                        <option value="Tabloid">Tabloid</option>
-                    </select>
+    <div class="studio-modal" id="printSheetModal">
+        <div class="studio-modal-card">
+            <div class="studio-inline spread">
+                <div>
+                    <h3 style="margin:0;">Print Sheet Preview</h3>
+                    <p class="studio-helper" style="margin:0.35rem 0 0;">Select tray images, confirm paper settings, then generate a PDF.</p>
                 </div>
-                <div class="studio-field">
-                    <label for="printOrientation">Orientation</label>
-                    <select id="printOrientation">
-                        <option value="portrait">Portrait</option>
-                        <option value="landscape">Landscape</option>
-                    </select>
-                </div>
-                <div class="studio-field">
-                    <label for="printLayout">Layout</label>
-                    <select id="printLayout">
-                        <option value="center">Centered Grid</option>
-                        <option value="wide">Wide Fit</option>
-                    </select>
-                </div>
-                <div class="studio-field">
-                    <label for="printSize">Photo Size</label>
-                    <select id="printSize">
-                        <option value="40x50">40x50mm</option>
-                        <option value="50x40">50x40mm</option>
-                        <option value="35x45">35x45mm</option>
-                        <option value="45x60">45x60mm</option>
-                    </select>
-                </div>
+                <button type="button" class="studio-icon-btn" onclick="closePrintSheetModal()"><i class="bi bi-x-lg"></i></button>
             </div>
 
-            <div class="modal-actions">
-                <button type="button" class="studio-action-btn" onclick="closePrintSheetModal()">Cancel</button>
-                <button type="button" class="studio-action-btn primary" onclick="generatePrintSheet()">
-                    <i class="bi bi-download"></i>
-                    <span>Generate PDF</span>
-                </button>
+            <div class="studio-preview-box">
+                <div class="studio-preview-sheet" id="printSheetPreview"></div>
+            </div>
+
+            <div class="studio-field">
+                <label>Selected Images</label>
+                <div class="studio-tray" id="printSheetImageList"></div>
+            </div>
+
+            <div class="studio-inline" style="justify-content:flex-end; margin-top: 1rem;">
+                <button type="button" class="studio-btn" onclick="closePrintSheetModal()">Cancel</button>
+                <button type="button" class="studio-btn primary" onclick="generatePrintSheet()"><i class="bi bi-download"></i><span>Generate PDF</span></button>
             </div>
         </div>
     </div>
-</div>
 
-<div class="toast-container" id="toastContainer"></div>
+    <input id="imageUploadInput" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple hidden>
+    <script id="studioConfigData" type="application/json">{{ studio_config_json|raw }}</script>
+    <div class="toast-container" id="toastContainer"></div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}

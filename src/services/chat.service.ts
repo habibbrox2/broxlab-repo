@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { OpenRouterProvider } from '../providers/openrouter.provider';
+import { StreamService } from './stream.service';
 import { config } from '../config/index';
 import { query, queryOne } from '../config/database';
 import { Message, MessageContent } from '../types/index';
@@ -248,18 +249,22 @@ export class ChatService {
     messages: Message[],
     options?: ChatRequest['options']
   ): Promise<void> {
-    reply.raw.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-      'X-Accel-Buffering': 'no',
-    });
-    reply.raw.flushHeaders?.();
+    StreamService.initSSE(reply);
 
     try {
       const startTime = Date.now();
       let fullContent = '';
       let model = '';
+      let finalMeta: any = null;
+
+      // Step 0: Understanding request
+      StreamService.sendStatus(reply, 'Understanding request...', 0);
+
+      // Step 1: Planning response
+      StreamService.sendStatus(reply, 'Planning response...', 1);
+
+      // Step 2: Calling AI provider
+      StreamService.sendStatus(reply, 'Calling AI provider...', 2);
 
       for await (const chunk of this.provider.streamChat(systemPrompt, messages, {
         model: this.normalizeModel(options?.model || config.ai.frontendModel),
@@ -267,24 +272,23 @@ export class ChatService {
         maxTokens: options?.maxTokens || config.ai.maxTokens,
       })) {
         if (chunk.content) {
+          // Step 3: Generating response (only send once when content starts)
+          if (fullContent === '') {
+            StreamService.sendStatus(reply, 'Generating final answer...', 3);
+          }
           fullContent += chunk.content;
-          reply.raw.write(`data: ${JSON.stringify({ content: chunk.content })}\n\n`);
+          StreamService.sendChunk(reply, { content: chunk.content });
         }
 
         if (chunk.meta) {
           model = chunk.meta.model;
           const executionTime = Date.now() - startTime;
+          finalMeta = {
+            ...chunk.meta,
+            executionTimeMs: executionTime,
+          };
 
-          // Send final meta
-          reply.raw.write(
-            `data: ${JSON.stringify({
-              done: true,
-              meta: {
-                ...chunk.meta,
-                executionTimeMs: executionTime,
-              },
-            })}\n\n`
-          );
+          StreamService.sendDone(reply, finalMeta);
 
           // Record metrics
           metrics.aiRequestsTotal.labels(chunk.meta.provider, chunk.meta.model, 'true').inc();
@@ -307,6 +311,16 @@ export class ChatService {
         }
       }
 
+      if (!finalMeta) {
+        const executionTime = Date.now() - startTime;
+        const normalizedModel = this.normalizeModel(options?.model || config.ai.frontendModel);
+        StreamService.sendDone(reply, {
+          model: normalizedModel,
+          provider: 'openrouter',
+          executionTimeMs: executionTime,
+        });
+      }
+
       reply.raw.end();
     } catch (error: any) {
       logger.error('Streaming chat error:', error);
@@ -314,7 +328,7 @@ export class ChatService {
       // Record failed request metric
       metrics.aiRequestsTotal.labels('unknown', 'unknown', 'false').inc();
 
-      reply.raw.write(`data: ${JSON.stringify({ error: error.message || 'Stream error' })}\n\n`);
+      StreamService.sendError(reply, error.message || 'Stream error');
       reply.raw.end();
     }
   }

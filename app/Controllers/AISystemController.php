@@ -912,6 +912,163 @@ function aiChatExtractOCRForAdmin(array $imageRefs): string
     return implode("\n\n", $ocrTexts);
 }
 
+function aiChatResolveSessionState(array $input, bool $isAdmin): array
+{
+    $context = $isAdmin ? 'admin' : 'public';
+    $userId = $isAdmin ? (AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null)) : null;
+    $guestToken = !$isAdmin ? (string)($input['visitorToken'] ?? '') : '';
+    $guestToken = $guestToken !== '' ? $guestToken : null;
+    $sessionKey = trim((string)($input['session_key'] ?? $input['sessionKey'] ?? ''));
+    if ($sessionKey === '') {
+        $sessionKey = null;
+    }
+
+    $sessionImageKey = null;
+    if ($sessionKey !== null) {
+        $sessionImageKey = $context . '_session_' . $sessionKey;
+    } elseif ($userId) {
+        $sessionImageKey = $context . '_user_' . (int)$userId;
+    } elseif ($guestToken !== null) {
+        $sessionImageKey = $context . '_visitor_' . $guestToken;
+    }
+
+    return [
+        'context' => $context,
+        'user_id' => $userId ? (int)$userId : null,
+        'guest_token' => $guestToken,
+        'session_key' => $sessionKey,
+        'image_context_key' => $sessionImageKey,
+    ];
+}
+
+function aiChatBuildSessionPayload(AIChatModel $chatModel, array $sessionState, ?int $conversationId = null): array
+{
+    $conversation = null;
+    $context = (string)($sessionState['context'] ?? 'public');
+    $userId = isset($sessionState['user_id']) ? (int)$sessionState['user_id'] : null;
+    $guestToken = $sessionState['guest_token'] ?? null;
+    $sessionKey = $sessionState['session_key'] ?? null;
+
+    if ($conversationId) {
+        $conversation = $chatModel->getConversationByIdForActor($conversationId, $userId, $guestToken, $context);
+    }
+
+    if (!$conversation && $sessionKey !== null) {
+        $conversation = $chatModel->getConversationForSession($userId, $guestToken, $sessionKey, $context);
+    }
+
+    $messages = [];
+    if ($conversation && !empty($conversation['id'])) {
+        $messages = $chatModel->getMessages((int)$conversation['id']);
+    }
+
+    return [
+        'success' => true,
+        'session_key' => $sessionKey,
+        'conversation' => $conversation,
+        'conversation_id' => $conversation['id'] ?? null,
+        'status' => $conversation['status'] ?? null,
+        'title' => $conversation['title'] ?? null,
+        'messages' => $messages,
+    ];
+}
+
+function aiChatProviderSupportsAutoTools(string $providerName): bool
+{
+    return in_array($providerName, ['openai', 'openrouter', 'ollama', 'fireworks', 'kilo'], true);
+}
+
+function aiChatGetAllowedToolDefinitions(bool $isAdmin): array
+{
+    $allTools = ToolRegistry::getToolsForAPI();
+    if ($isAdmin) {
+        return $allTools;
+    }
+
+    $allowedToolIds = array_map(
+        static fn(array $tool): string => (string)($tool['id'] ?? ''),
+        PromptLoader::getToolsForRole('public')
+    );
+    $allowedToolIds = array_values(array_filter($allowedToolIds, static fn(string $id): bool => $id !== ''));
+    if (empty($allowedToolIds)) {
+        return [];
+    }
+
+    return array_values(array_filter($allTools, static function (array $tool) use ($allowedToolIds): bool {
+        $function = $tool['function'] ?? [];
+        $name = is_array($function) ? (string)($function['name'] ?? '') : '';
+        return $name !== '' && in_array($name, $allowedToolIds, true);
+    }));
+}
+
+function aiChatExecuteAutoToolLoop(
+    AIProvider $aiProvider,
+    string $provider,
+    string $model,
+    array $messages,
+    array $options,
+    mysqli $mysqli
+): array {
+    $response = $aiProvider->callAPI($provider, $model, $messages, $options);
+    if (empty($response['success'])) {
+        return $response;
+    }
+
+    $maxRounds = 4;
+    $round = 0;
+    $executedToolCalls = [];
+
+    while ($round < $maxRounds) {
+        $toolCalls = $response['tool_calls'] ?? null;
+        if (!is_array($toolCalls) || empty($toolCalls)) {
+            break;
+        }
+
+        $assistantMessage = [
+            'role' => 'assistant',
+            'content' => (string)($response['content'] ?? ''),
+            'tool_calls' => $toolCalls,
+        ];
+        if (!empty($response['annotations']) && is_array($response['annotations'])) {
+            $assistantMessage['annotations'] = $response['annotations'];
+        }
+        $messages[] = $assistantMessage;
+
+        $results = ToolRegistry::processStreamingToolCalls($toolCalls, $mysqli, [
+            'stream' => false,
+        ]);
+        $toolMessages = ToolRegistry::buildToolResultMessages($results);
+        foreach ($toolMessages as $toolMessage) {
+            $messages[] = $toolMessage;
+        }
+
+        $executedToolCalls[] = [
+            'round' => $round + 1,
+            'calls' => array_map(static function (array $call): array {
+                $function = $call['function'] ?? [];
+                return [
+                    'id' => (string)($call['id'] ?? ''),
+                    'name' => is_array($function) ? (string)($function['name'] ?? '') : '',
+                ];
+            }, $toolCalls),
+        ];
+
+        $response = $aiProvider->callAPI($provider, $model, $messages, $options);
+        if (empty($response['success'])) {
+            $response['auto_tool_calls'] = $executedToolCalls;
+            return $response;
+        }
+
+        $round++;
+    }
+
+    if (!empty($executedToolCalls)) {
+        $response['auto_tool_calls'] = $executedToolCalls;
+    }
+
+    return $response;
+}
+
 function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $allowOverrides): void
 {
     $aiProvider = new AIProvider($mysqli);
@@ -928,19 +1085,11 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         return;
     }
 
-    // Track image context across a session so the assistant can reference previous images
-    $sessionImageKey = null;
-    if ($isAdmin) {
-        $userId = AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null);
-        if ($userId) {
-            $sessionImageKey = 'user_' . (int)$userId;
-        }
-    } else {
-        $visitorToken = $input['visitorToken'] ?? null;
-        if ($visitorToken) {
-            $sessionImageKey = 'visitor_' . (string)$visitorToken;
-        }
-    }
+    $sessionState = aiChatResolveSessionState($input, $isAdmin);
+    $sessionImageKey = $sessionState['image_context_key'];
+    $sessionKey = $sessionState['session_key'];
+    $actorUserId = $sessionState['user_id'];
+    $actorGuestToken = $sessionState['guest_token'];
 
     // Determine retention threshold (number of messages before clearing stored images)
     $maxMessages = (int)($settings['image_context_max_messages'] ?? 10);
@@ -992,7 +1141,7 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     $hasImageContent = !empty($imageRefs);
 
     $stream = !empty($input['stream']);
-    $contextType = $isAdmin ? 'admin' : 'public';
+    $contextType = $sessionState['context'];
     $contextData = $input['context'] ?? null;
 
     $systemPrompt = PromptLoader::getSystemPrompt($contextType, $mysqli);
@@ -1211,13 +1360,32 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         ? (float)$options['temperature']
         : (float)($settings['temperature'] ?? 0.7);
 
+    $autoToolDefinitions = [];
+    $autoToolCallingEnabled = !$cmd;
+    if ($autoToolCallingEnabled) {
+        if (!array_key_exists('tools', $options) || !is_array($options['tools'])) {
+            $autoToolDefinitions = aiChatGetAllowedToolDefinitions($isAdmin);
+            if (!empty($autoToolDefinitions)) {
+                $options['tools'] = $autoToolDefinitions;
+            }
+        } else {
+            $autoToolDefinitions = is_array($options['tools']) ? $options['tools'] : [];
+        }
+
+        if (!empty($autoToolDefinitions) && !array_key_exists('tool_choice', $options)) {
+            $options['tool_choice'] = 'auto';
+        }
+        if (!empty($autoToolDefinitions) && !array_key_exists('parallel_tool_calls', $options)) {
+            $options['parallel_tool_calls'] = true;
+        }
+    }
+
     $startTime = microtime(true);
     $convId = null;
     $userMessageId = null;
     $assistantMessageId = null;
     if (!$isAdmin) {
-        $visitorToken = $input['visitorToken'] ?? null;
-        if ($visitorToken) {
+        if ($actorGuestToken) {
             // Get visitor info
             $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
             $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
@@ -1231,14 +1399,22 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
             // Simple location (can be enhanced with geo-ip service)
             $location = 'Unknown';
 
-            $convId = $chatModel->getOrCreateConversation(null, $visitorToken, $ipAddress, $device, $location, $userAgent);
+            $requestedConvId = isset($input['conversation_id']) ? (int)$input['conversation_id'] : 0;
+            if ($requestedConvId > 0) {
+                $conversation = $chatModel->getConversationByIdForActor($requestedConvId, null, $actorGuestToken, $contextType);
+                if ($conversation && ($conversation['status'] ?? 'open') === 'open') {
+                    $convId = (int)$conversation['id'];
+                }
+            }
+            if (!$convId) {
+                $convId = $chatModel->getOrCreateConversation(null, $actorGuestToken, $ipAddress, $device, $location, $userAgent, $sessionKey, $contextType);
+            }
             if ($convId && $lastUserMessage !== '') {
                 $userMessageId = $chatModel->addMessage($convId, 'user', $lastUserMessage);
             }
         }
     } else {
-        $userId = AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null);
-        if ($userId) {
+        if ($actorUserId) {
             $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
             $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
             $device = 'Desktop';
@@ -1250,7 +1426,16 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
             }
             $location = 'Unknown';
 
-            $convId = $chatModel->getOrCreateConversation((int)$userId, null, $ipAddress, $device, $location, $userAgent);
+            $requestedConvId = isset($input['conversation_id']) ? (int)$input['conversation_id'] : 0;
+            if ($requestedConvId > 0) {
+                $conversation = $chatModel->getConversationByIdForActor($requestedConvId, (int)$actorUserId, null, $contextType);
+                if ($conversation && ($conversation['status'] ?? 'open') === 'open') {
+                    $convId = (int)$conversation['id'];
+                }
+            }
+            if (!$convId) {
+                $convId = $chatModel->getOrCreateConversation((int)$actorUserId, null, $ipAddress, $device, $location, $userAgent, $sessionKey, $contextType);
+            }
             if ($convId && $lastUserMessage !== '') {
                 $userMessageId = $chatModel->addMessage($convId, 'user', $lastUserMessage);
             }
@@ -1260,9 +1445,10 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     $enableFallback = $settings['enable_fallback'] ?? true;
     $fallbackUsed = false;
     $response = null;
+    $hasAutoTools = !empty($autoToolDefinitions) || (!empty($options['tools']) && is_array($options['tools']));
 
     $nodeServiceUrl = aiChatGetNodeServiceUrl();
-    if (!$stream && $nodeServiceUrl !== null) {
+    if (!$stream && !$hasAutoTools && $nodeServiceUrl !== null) {
         $response = aiChatCallNodeService($messages, $systemPrompt, $options, $isAdmin);
         if (!empty($response['success'])) {
             $provider = $provider;
@@ -1342,7 +1528,16 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         if ($name !== $primaryProvider) {
             $fallbackUsed = true;
         }
-        $response = $aiProvider->callAPI($provider, $model, $messages, $options);
+        $providerOptions = $options;
+        if ($hasAutoTools && !aiChatProviderSupportsAutoTools($provider)) {
+            unset($providerOptions['tools'], $providerOptions['tool_choice'], $providerOptions['parallel_tool_calls']);
+        }
+
+        if (!empty($providerOptions['tools']) && aiChatProviderSupportsAutoTools($provider)) {
+            $response = aiChatExecuteAutoToolLoop($aiProvider, $provider, $model, $messages, $providerOptions, $mysqli);
+        } else {
+            $response = $aiProvider->callAPI($provider, $model, $messages, $providerOptions);
+        }
 
         if (!empty($response['success'])) {
             break;
@@ -1385,7 +1580,7 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     }
 
     $latencyMs = (int)round((microtime(true) - $startTime) * 1000);
-    $userId = AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null);
+    $userId = $actorUserId;
     $usage = $response['usage'] ?? [];
     $status = !empty($response['success']) ? 'success' : 'failed';
     $errorMessage = $response['error'] ?? null;
@@ -1409,9 +1604,11 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         }
         aiChatStreamContent($response['content'] ?? '', [
             'conversation_id' => $convId,
+            'session_key' => $sessionKey,
             'message_id' => $assistantMessageId,
             'user_message_id' => $userMessageId,
-            'annotations' => $response['annotations'] ?? null
+            'annotations' => $response['annotations'] ?? null,
+            'auto_tool_calls' => $response['auto_tool_calls'] ?? null
         ]);
         return;
     }
@@ -1421,9 +1618,11 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
             'success' => true,
             'content' => $response['content'] ?? '',
             'conversation_id' => $convId,
+            'session_key' => $sessionKey,
             'message_id' => $assistantMessageId,
             'usage' => $response['usage'] ?? [],
-            'annotations' => $response['annotations'] ?? null
+            'annotations' => $response['annotations'] ?? null,
+            'auto_tool_calls' => $response['auto_tool_calls'] ?? null
         ]);
         return;
     }
@@ -2189,15 +2388,8 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
             $input = [];
         }
 
-        $sessionKey = null;
-        if (!empty($input['visitorToken'])) {
-            $sessionKey = 'visitor_' . (string)$input['visitorToken'];
-        } else {
-            $userId = AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null);
-            if ($userId) {
-                $sessionKey = 'user_' . (int)$userId;
-            }
-        }
+        $sessionState = aiChatResolveSessionState($input, !empty(AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null)) && empty($input['visitorToken']));
+        $sessionKey = $sessionState['image_context_key'];
 
         if ($sessionKey && isset($_SESSION['ai_image_context'][$sessionKey])) {
             unset($_SESSION['ai_image_context'][$sessionKey]);
@@ -2205,6 +2397,28 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
 
         header('Content-Type: application/json');
         echo json_encode(['success' => true]);
+    });
+
+    $bootstrapSessionHandler = function (bool $isAdmin) use ($mysqli) {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = [];
+        }
+
+        $chatModel = new AIChatModel($mysqli);
+        $sessionState = aiChatResolveSessionState($input, $isAdmin);
+        $conversationId = isset($input['conversation_id']) ? (int)$input['conversation_id'] : 0;
+
+        header('Content-Type: application/json');
+        echo json_encode(aiChatBuildSessionPayload($chatModel, $sessionState, $conversationId));
+    };
+
+    $router->post('/api/ai/session', function () use ($bootstrapSessionHandler) {
+        $bootstrapSessionHandler(false);
+    });
+
+    $router->post('/api/admin/ai/session', ['middleware' => ['auth', 'admin_only']], function () use ($bootstrapSessionHandler) {
+        $bootstrapSessionHandler(true);
     });
 
     // POST /api/admin/ai/upload (Admin-only image upload for copilot)

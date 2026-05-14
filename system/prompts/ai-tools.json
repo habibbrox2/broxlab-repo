@@ -438,6 +438,114 @@
                     "language_detected": "string"
                 }
             }
+        },
+        {
+            "id": "web_search",
+            "name": "Web Search",
+            "description": "Search the public web and return resolved URLs, titles, and snippets for the query.",
+            "enabled": true,
+            "category": "information",
+            "parameters": {
+                "query": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Search query text",
+                    "max_length": 500
+                },
+                "limit": {
+                    "type": "number",
+                    "required": false,
+                    "default": 5,
+                    "min": 1,
+                    "max": 10,
+                    "description": "Maximum number of search results"
+                },
+                "safe_search": {
+                    "type": "string",
+                    "required": false,
+                    "options": ["strict", "moderate", "off"],
+                    "default": "moderate",
+                    "description": "Safe search mode"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "fields": {
+                    "count": "number",
+                    "results": "array"
+                }
+            }
+        },
+        {
+            "id": "analyze_image",
+            "name": "Analyze Image",
+            "description": "Inspect an image and return metadata plus OCR text when possible.",
+            "enabled": true,
+            "category": "content",
+            "requires_auth": true,
+            "parameters": {
+                "path": {
+                    "type": "string",
+                    "required": false,
+                    "description": "Local project file path to the image"
+                },
+                "image": {
+                    "type": "string",
+                    "required": false,
+                    "description": "Base64 image data or data URL"
+                },
+                "include_ocr": {
+                    "type": "boolean",
+                    "required": false,
+                    "default": true,
+                    "description": "Whether to run OCR on the image"
+                },
+                "language": {
+                    "type": "string",
+                    "required": false,
+                    "default": "eng",
+                    "description": "OCR language code"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "description": "Image metadata, visual statistics, and OCR output"
+            }
+        },
+        {
+            "id": "read_file",
+            "name": "Read File",
+            "description": "Read a local project file safely with bounded output. Supports text, HTML, JSON, CSV, PDF, and image OCR.",
+            "enabled": true,
+            "category": "development",
+            "requires_admin": true,
+            "security_note": "Only reads files inside the project workspace and blocks sensitive env files.",
+            "parameters": {
+                "path": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Project-relative file path"
+                },
+                "mode": {
+                    "type": "string",
+                    "required": false,
+                    "options": ["auto", "text", "json", "markdown", "html", "csv", "pdf", "image", "binary"],
+                    "default": "auto",
+                    "description": "How to interpret the file"
+                },
+                "max_chars": {
+                    "type": "number",
+                    "required": false,
+                    "default": 12000,
+                    "min": 100,
+                    "max": 50000,
+                    "description": "Maximum characters to return"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "description": "File content, metadata, and previews"
+            }
         }
     ],
     "tool_permissions": {
@@ -446,7 +554,8 @@
             "get_content_summary",
             "translate_text",
             "search_content",
-            "create_ticket"
+            "create_ticket",
+            "web_search"
         ],
         "authenticated": [
             "search_knowledge_base",
@@ -455,7 +564,9 @@
             "translate_text",
             "generate_code",
             "search_content",
-            "create_ticket"
+            "create_ticket",
+            "web_search",
+            "analyze_image"
         ],
         "admin": [
             "search_knowledge_base",
@@ -467,7 +578,10 @@
             "send_notification",
             "get_analytics",
             "search_content",
-            "create_ticket"
+            "create_ticket",
+            "web_search",
+            "analyze_image",
+            "read_file"
         ]
     },
     "rate_limits": {

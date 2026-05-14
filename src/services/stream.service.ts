@@ -1,6 +1,8 @@
 import { FastifyReply } from 'fastify';
 
 export interface StreamChunk {
+    type?: 'content' | 'meta' | 'error' | 'status' | 'step' | 'tool';
+    event?: 'status' | 'step' | 'tool' | 'content' | 'meta';
     content?: string;
     done?: boolean;
     meta?: {
@@ -8,8 +10,14 @@ export interface StreamChunk {
         provider: string;
         finishReason?: string;
         tokensUsed?: number;
+        executionTimeMs?: number;
     };
     error?: string;
+    step?: number;
+    status?: string;
+    toolName?: string;
+    toolLabel?: string;
+    steps?: Array<{ id: string; label: string }>;
 }
 
 export class StreamService {
@@ -41,6 +49,19 @@ export class StreamService {
     static sendError(reply: FastifyReply, error: string): void {
         const chunk: StreamChunk = {
             error,
+        };
+        this.sendChunk(reply, chunk);
+    }
+
+    /**
+     * Send SSE status update
+     */
+    static sendStatus(reply: FastifyReply, status: string, step?: number, toolLabel?: string): void {
+        const chunk: StreamChunk = {
+            event: 'status',
+            status,
+            step,
+            toolLabel,
         };
         this.sendChunk(reply, chunk);
     }
