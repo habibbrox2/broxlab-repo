@@ -772,6 +772,80 @@ function aiSystemResolveModel(AIProvider $aiProvider, string $providerName, stri
 
     return (string)array_key_first($models);
 }
+
+function aiSystemBuildModelCandidates(
+    AIProvider $aiProvider,
+    string $providerName,
+    string $selectedModel,
+    array $providers,
+    string $defaultModel = ''
+): array {
+    $candidates = [];
+    $resolvedSelected = trim(aiSystemResolveModel($aiProvider, $providerName, $selectedModel, $providers, $defaultModel));
+    $resolvedDefault = trim(aiSystemResolveModel($aiProvider, $providerName, $defaultModel, $providers, $defaultModel));
+
+    foreach ([$resolvedSelected, $resolvedDefault, $selectedModel, $defaultModel] as $candidate) {
+        $candidate = trim((string)$candidate);
+        if ($candidate !== '') {
+            $candidates[] = $candidate;
+        }
+    }
+
+    $models = aiSystemGetProviderModels($aiProvider, $providerName, $providers);
+    foreach (array_keys($models) as $candidate) {
+        $candidate = trim((string)$candidate);
+        if ($candidate !== '') {
+            $candidates[] = $candidate;
+        }
+    }
+
+    $unique = [];
+    foreach ($candidates as $candidate) {
+        if (!in_array($candidate, $unique, true)) {
+            $unique[] = $candidate;
+        }
+    }
+
+    return $unique;
+}
+
+function aiSystemBuildProviderOrder(array $providers, string $primaryProvider): array
+{
+    $ordered = [];
+    $primaryProvider = trim($primaryProvider);
+    if ($primaryProvider !== '') {
+        $ordered[] = $primaryProvider;
+    }
+
+    foreach ($providers as $provider) {
+        $name = trim((string)($provider['provider_name'] ?? ''));
+        if ($name === '' || in_array($name, $ordered, true)) {
+            continue;
+        }
+        $ordered[] = $name;
+    }
+
+    return $ordered;
+}
+
+function aiSystemAnnotateFallbackMeta(
+    array $response,
+    string $selectedProvider,
+    string $selectedModel,
+    string $finalProvider,
+    string $finalModel
+): array {
+    $response['selected_provider'] = $selectedProvider;
+    $response['selected_model'] = $selectedModel;
+    $response['provider'] = $finalProvider;
+    $response['model'] = $finalModel;
+    $response['fallback_used'] = $finalProvider !== $selectedProvider || $finalModel !== $selectedModel;
+    if ($response['fallback_used']) {
+        $response['fallback_provider'] = $finalProvider;
+        $response['fallback_model'] = $finalModel;
+    }
+    return $response;
+}
 function aiChatNormalizeAdvancedOptions(array $inputOptions): array
 {
     $normalized = [];
@@ -1310,6 +1384,8 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
             $model = $input['model'];
         }
     }
+    $selectedProvider = $provider;
+    $selectedModel = $model;
 
     $options = [];
     if ($allowOverrides && isset($input['options']) && is_array($input['options'])) {
@@ -1447,27 +1523,9 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     $response = null;
     $hasAutoTools = !empty($autoToolDefinitions) || (!empty($options['tools']) && is_array($options['tools']));
 
-    $nodeServiceUrl = aiChatGetNodeServiceUrl();
-    if (!$stream && !$hasAutoTools && $nodeServiceUrl !== null) {
-        $response = aiChatCallNodeService($messages, $systemPrompt, $options, $isAdmin);
-        if (!empty($response['success'])) {
-            $provider = $provider;
-            $fallbackUsed = false;
-        } else {
-            $fallbackUsed = true;
-        }
-    }
-
-    $orderedProviders = [];
-    if (!empty($provider)) {
-        $orderedProviders[] = $provider;
-    }
-    foreach ($providers as $p) {
-        $name = $p['provider_name'] ?? '';
-        if ($name === '' || in_array($name, $orderedProviders, true)) {
-            continue;
-        }
-        $orderedProviders[] = $name;
+    $orderedProviders = aiSystemBuildProviderOrder($providers, $provider);
+    if (!$enableFallback && !empty($orderedProviders)) {
+        $orderedProviders = array_slice($orderedProviders, 0, 1);
     }
 
     // Determine multimodal capability per provider/model when images are present.
@@ -1502,50 +1560,74 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     $lastError = null;
     $primaryProvider = $provider;
     $primaryModel = $model;
+    $selectedProvider = $provider;
+    $selectedModel = $model;
+    $finalProvider = $provider;
+    $finalModel = $model;
+    $responseModelWasSwitched = false;
 
     foreach ($orderedProviders as $name) {
         if (!$aiProvider->hasApiKey($name)) {
             continue;
         }
-        $selectedModel = '';
-        if ($name === $primaryProvider) {
-            $selectedModel = $primaryModel;
-        }
-        $resolvedModel = aiSystemResolveModel(
+        $modelCandidates = aiSystemBuildModelCandidates(
             $aiProvider,
             $name,
-            (string)$selectedModel,
+            $name === $primaryProvider ? $primaryModel : '',
             $providers,
             (string)($settings['default_model'] ?? '')
         );
-        if ($resolvedModel === '') {
+        if (empty($modelCandidates)) {
             continue;
         }
 
         $hasUsableProvider = true;
-        $provider = $name;
-        $model = $resolvedModel;
-        if ($name !== $primaryProvider) {
-            $fallbackUsed = true;
-        }
-        $providerOptions = $options;
-        if ($hasAutoTools && !aiChatProviderSupportsAutoTools($provider)) {
-            unset($providerOptions['tools'], $providerOptions['tool_choice'], $providerOptions['parallel_tool_calls']);
+        foreach ($modelCandidates as $candidateModel) {
+            $provider = $name;
+            $model = $candidateModel;
+            $providerOptions = $options;
+            if ($hasAutoTools && !aiChatProviderSupportsAutoTools($provider)) {
+                unset($providerOptions['tools'], $providerOptions['tool_choice'], $providerOptions['parallel_tool_calls']);
+            }
+
+            if (!empty($providerOptions['tools']) && aiChatProviderSupportsAutoTools($provider)) {
+                $response = aiChatExecuteAutoToolLoop($aiProvider, $provider, $model, $messages, $providerOptions, $mysqli);
+            } else {
+                $response = $aiProvider->callAPI($provider, $model, $messages, $providerOptions);
+            }
+
+            if (!empty($response['success'])) {
+                $finalProvider = $provider;
+                $finalModel = $model;
+                $responseModelWasSwitched = ($finalProvider !== $primaryProvider) || ($finalModel !== $primaryModel);
+                if ($responseModelWasSwitched) {
+                    $fallbackUsed = true;
+                }
+                break 2;
+            }
+
+            $lastError = $response['error'] ?? 'AI error';
         }
 
-        if (!empty($providerOptions['tools']) && aiChatProviderSupportsAutoTools($provider)) {
-            $response = aiChatExecuteAutoToolLoop($aiProvider, $provider, $model, $messages, $providerOptions, $mysqli);
-        } else {
-            $response = $aiProvider->callAPI($provider, $model, $messages, $providerOptions);
-        }
-
-        if (!empty($response['success'])) {
-            break;
-        }
-
-        $lastError = $response['error'] ?? 'AI error';
         if (!$enableFallback) {
             break;
+        }
+    }
+
+    $nodeServiceUrl = aiChatGetNodeServiceUrl();
+    if (empty($response['success']) && !$stream && !$hasAutoTools && $nodeServiceUrl !== null) {
+        $nodeResponse = aiChatCallNodeService($messages, $systemPrompt, $options, $isAdmin);
+        if (!empty($nodeResponse['success'])) {
+            $response = aiSystemAnnotateFallbackMeta(
+                $nodeResponse,
+                $selectedProvider,
+                $selectedModel,
+                $provider,
+                $model
+            );
+            $response['fallback_used'] = true;
+            $response['fallback_source'] = 'node_service';
+            $fallbackUsed = true;
         }
     }
 
@@ -1571,6 +1653,15 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
             aiChatSendJson($errorPayload, $status);
             return;
         }
+    }
+    if (!empty($response['success'])) {
+        $response = aiSystemAnnotateFallbackMeta(
+            $response,
+            $selectedProvider,
+            $selectedModel,
+            $finalProvider,
+            $finalModel
+        );
     }
     if ($convId && !empty($response['success'])) {
         $aiText = $response['content'] ?? '';
@@ -1607,6 +1698,14 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
             'session_key' => $sessionKey,
             'message_id' => $assistantMessageId,
             'user_message_id' => $userMessageId,
+            'selected_provider' => $response['selected_provider'] ?? $selectedProvider,
+            'selected_model' => $response['selected_model'] ?? $selectedModel,
+            'provider' => $response['provider'] ?? $provider,
+            'model' => $response['model'] ?? $model,
+            'fallback_used' => $response['fallback_used'] ?? false,
+            'fallback_provider' => $response['fallback_provider'] ?? null,
+            'fallback_model' => $response['fallback_model'] ?? null,
+            'fallback_source' => $response['fallback_source'] ?? null,
             'annotations' => $response['annotations'] ?? null,
             'auto_tool_calls' => $response['auto_tool_calls'] ?? null
         ]);
@@ -1620,6 +1719,14 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
             'conversation_id' => $convId,
             'session_key' => $sessionKey,
             'message_id' => $assistantMessageId,
+            'selected_provider' => $response['selected_provider'] ?? $selectedProvider,
+            'selected_model' => $response['selected_model'] ?? $selectedModel,
+            'provider' => $response['provider'] ?? $provider,
+            'model' => $response['model'] ?? $model,
+            'fallback_used' => $response['fallback_used'] ?? false,
+            'fallback_provider' => $response['fallback_provider'] ?? null,
+            'fallback_model' => $response['fallback_model'] ?? null,
+            'fallback_source' => $response['fallback_source'] ?? null,
             'usage' => $response['usage'] ?? [],
             'annotations' => $response['annotations'] ?? null,
             'auto_tool_calls' => $response['auto_tool_calls'] ?? null

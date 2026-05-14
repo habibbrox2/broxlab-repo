@@ -864,7 +864,7 @@
 
     try {
       const csrfTokenValue = csrfToken ? csrfToken.value : '';
-      const response = await fetch(`${getAIServerUrl()}/api/ai/test`, {
+      const response = await fetch('/api/ai-system/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({
@@ -925,7 +925,7 @@
     inputEl.disabled = true;
 
     try {
-      const res = await fetch(`${getAIServerUrl()}/api/admin/ai/toggle-provider`, {
+      const res = await fetch('/api/ai-system/toggle-provider', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({ id: parseInt(id, 10), active, }),
@@ -1399,7 +1399,7 @@
     const csrfInput = document.querySelector('input[name="csrf_token"]');
 
     try {
-      const res = await fetch('/admin/ai-system/delete-provider', {
+      const res = await fetch('/api/ai-system/delete-provider', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({

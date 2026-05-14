@@ -516,6 +516,8 @@ if (!window.BroxAdminInstance) {
       this.currentModel = null;
       this.currentProvider = 'openrouter';
       this.preferredModel = '';
+      this.defaultModel = '';
+      this.cachedModels = [];
       this.puterDisabled = false;
       this.fileHandler = null;
       this.modelBarOpen = false;
@@ -942,12 +944,9 @@ if (!window.BroxAdminInstance) {
       const defaults = {
         webPlugin: false,
         webMaxResults: 3,
-        responseHealing: false,
         pdfPlugin: false,
         pdfEngine: 'pdf-text',
         reasoningEffort: '',
-        responseFormat: 'text',
-        rawJson: '',
       };
       try {
         const stored = localStorage.getItem(ADMIN_CONFIG.optionsKey);
@@ -979,9 +978,6 @@ if (!window.BroxAdminInstance) {
           max_results: Math.min(Math.max(maxResults, 1), 10),
         });
       }
-      if (advanced.responseHealing) {
-        plugins.push({ id: 'response-healing' });
-      }
       if (advanced.pdfPlugin) {
         plugins.push({
           id: 'file-parser',
@@ -996,18 +992,6 @@ if (!window.BroxAdminInstance) {
 
       if (advanced.reasoningEffort) {
         options.reasoning_effort = advanced.reasoningEffort;
-      }
-      if (advanced.responseFormat && advanced.responseFormat !== 'text') {
-        options.response_format = { type: advanced.responseFormat };
-      }
-
-      if (advanced.rawJson && typeof advanced.rawJson === 'string') {
-        const parsed = safeParseJSON(advanced.rawJson.trim());
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          Object.assign(options, parsed);
-        } else if (advanced.rawJson.trim() !== '') {
-          this.updateStatus('warning', 'Advanced JSON is invalid; ignoring custom options.');
-        }
       }
 
       return options;
@@ -1049,13 +1033,10 @@ if (!window.BroxAdminInstance) {
         slashMenu: document.getElementById('adminAiSlashMenu'),
         suggestionPanel: document.getElementById('adminAiSuggestionPanel'),
         suggestionList: document.getElementById('adminAiSuggestionList'),
-        typingIndicator: document.getElementById('adminAiTypingIndicator'),
         providerSel: document.getElementById('adminAiProvider'),
         modelSel: document.getElementById('adminAiModel'),
         modelBadge: document.getElementById('adminAiCurrentModel'),
         modelStatusIndicator: document.getElementById('adminAiModelStatusIndicator'),
-        refreshModels: document.getElementById('adminAiRefreshModels'),
-        statusDot: document.getElementById('adminAiStatusDot'),
         statusText: document.getElementById('adminAiStatusText'),
         historySidebar: document.getElementById('adminAiSidebar'),
         historyList: document.getElementById('adminAiHistory'),
@@ -1065,12 +1046,9 @@ if (!window.BroxAdminInstance) {
         mic: document.getElementById('adminAiMic'),
         webPluginToggle: document.getElementById('adminAiWebPluginToggle'),
         webPluginMaxResults: document.getElementById('adminAiWebMaxResults'),
-        responseHealingToggle: document.getElementById('adminAiResponseHealingToggle'),
         pdfPluginToggle: document.getElementById('adminAiPdfPluginToggle'),
         pdfEngineSel: document.getElementById('adminAiPdfEngine'),
         reasoningEffortSel: document.getElementById('adminAiReasoningEffort'),
-        responseFormatSel: document.getElementById('adminAiResponseFormat'),
-        advancedRawJson: document.getElementById('adminAiAdvancedOptionsJson'),
       };
 
       // Initialize file handler
@@ -1110,9 +1088,6 @@ if (!window.BroxAdminInstance) {
         this.nodes.webPluginMaxResults.value = String(options.webMaxResults || 3);
         this.nodes.webPluginMaxResults.disabled = !options.webPlugin;
       }
-      if (this.nodes.responseHealingToggle) {
-        this.nodes.responseHealingToggle.classList.toggle('active', !!options.responseHealing);
-      }
       if (this.nodes.pdfPluginToggle) {
         this.nodes.pdfPluginToggle.classList.toggle('active', !!options.pdfPlugin);
       }
@@ -1122,12 +1097,6 @@ if (!window.BroxAdminInstance) {
       }
       if (this.nodes.reasoningEffortSel) {
         this.nodes.reasoningEffortSel.value = options.reasoningEffort || '';
-      }
-      if (this.nodes.responseFormatSel) {
-        this.nodes.responseFormatSel.value = options.responseFormat || 'text';
-      }
-      if (this.nodes.advancedRawJson) {
-        this.nodes.advancedRawJson.value = options.rawJson || '';
       }
     }
 
@@ -1404,6 +1373,7 @@ if (!window.BroxAdminInstance) {
       const defaults = await fetchAdminDefaults();
       const defaultProvider = defaults.provider || (await fetchDefaultProvider());
       this.preferredModel = defaults.model || '';
+      this.defaultModel = defaults.model || '';
       const providerMap = await fetchProviderMap();
 
       this.providerMeta = providerMap.providerMeta || {};
@@ -1446,8 +1416,6 @@ if (!window.BroxAdminInstance) {
     }
 
     async loadProviderModels(provider = 'openrouter', preferredModel = '', refresh = false) {
-      if (!this.nodes.modelSel) return;
-
       this.currentProvider = provider;
       if (this.nodes.providerSel) {
         this.nodes.providerSel.value = provider;
@@ -1458,6 +1426,11 @@ if (!window.BroxAdminInstance) {
       const result = await fetchModels(provider, { refresh });
       const models = result.models || [];
       this.lastModelMeta = result.meta || null;
+      this.cachedModels = models.map((m) => ({
+        id: String(m.id || ''),
+        short: this.getShortModelLabel(m.id, m.name).toLowerCase(),
+        default: !!m.default,
+      }));
 
       if (!models.length) {
         // Use fallback models if API fails
@@ -1471,28 +1444,36 @@ if (!window.BroxAdminInstance) {
         this._modelChangeHandler = null;
       }
 
-      this.nodes.modelSel.innerHTML = '';
       let hasPreferred = false;
-      models.forEach((m) => {
-        const opt = document.createElement('option');
-        opt.value = m.id;
-        const shortLabel = this.getShortModelLabel(m.id, m.name);
-        const isMulti = Boolean(m.supports_multimodal);
-        opt.textContent =
-          shortLabel + (m.id.endsWith(':free') ? ' (Free)' : '') + (isMulti ? ' (Multimodal)' : '');
-        if (preferredModel && preferredModel === m.id) {
-          opt.selected = true;
-          hasPreferred = true;
-        } else if (m.default && !hasPreferred) {
-          opt.selected = true;
-        }
-        this.nodes.modelSel.appendChild(opt);
-      });
+      if (this.nodes.modelSel) {
+        this.nodes.modelSel.innerHTML = '';
+        models.forEach((m) => {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          const shortLabel = this.getShortModelLabel(m.id, m.name);
+          const isMulti = Boolean(m.supports_multimodal);
+          opt.textContent =
+            shortLabel +
+            (m.id.endsWith(':free') ? ' (Free)' : '') +
+            (isMulti ? ' (Multimodal)' : '');
+          if (preferredModel && preferredModel === m.id) {
+            opt.selected = true;
+            hasPreferred = true;
+          } else if (m.default && !hasPreferred) {
+            opt.selected = true;
+          }
+          this.nodes.modelSel.appendChild(opt);
+        });
+      } else {
+        hasPreferred = models.some((m) => preferredModel && preferredModel === m.id);
+      }
 
       const def = hasPreferred
         ? models.find((m) => m.id === preferredModel)
         : models.find((m) => m.default);
-      this.currentModel = def ? def.id : models[0].id;
+      this.currentModel =
+        (hasPreferred && preferredModel) || def?.id || this.currentModel || models[0].id;
+      this.defaultModel = this.defaultModel || this.currentModel;
 
       this.updateModelLabel();
 
@@ -1506,14 +1487,16 @@ if (!window.BroxAdminInstance) {
       this.updateStatus('ready', statusLabel);
 
       // Track selection changes (idempotent)
-      this._modelChangeHandler = () => {
-        const newModel = this.nodes.modelSel.value;
-        if (newModel && newModel !== this.currentModel) {
-          this.currentModel = newModel;
-          this.updateModelLabel();
-        }
-      };
-      this.nodes.modelSel.addEventListener('change', this._modelChangeHandler);
+      if (this.nodes.modelSel) {
+        this._modelChangeHandler = () => {
+          const newModel = this.nodes.modelSel.value;
+          if (newModel && newModel !== this.currentModel) {
+            this.currentModel = newModel;
+            this.updateModelLabel();
+          }
+        };
+        this.nodes.modelSel.addEventListener('change', this._modelChangeHandler);
+      }
 
       if (!hasPreferred && preferredModel) {
         this.updateStatus('warning', 'Model not available, using default');
@@ -1529,7 +1512,6 @@ if (!window.BroxAdminInstance) {
     }
 
     async refreshProviderModelsInBackground(provider, preferredModel) {
-      if (!this.nodes.modelSel) return;
       if (this._bgModelsRefresh?.provider === provider) return;
 
       const token = ++this._bgModelsRefreshToken;
@@ -1539,7 +1521,6 @@ if (!window.BroxAdminInstance) {
         const result = await fetchModels(provider, { refresh: true });
         if (this._bgModelsRefreshToken !== token) return;
         if (this.currentProvider !== provider) return;
-        if (!this.nodes.modelSel) return;
 
         if (result?.meta?.cache_source && result.meta.cache_source !== 'remote') {
           return;
@@ -1547,16 +1528,23 @@ if (!window.BroxAdminInstance) {
 
         const models = result.models || [];
         if (!models.length) return;
+        this.cachedModels = models.map((m) => ({
+          id: String(m.id || ''),
+          short: this.getShortModelLabel(m.id, m.name).toLowerCase(),
+          default: !!m.default,
+        }));
 
-        const keepSelected = this.nodes.modelSel.value || this.currentModel || '';
+        const keepSelected = this.nodes.modelSel?.value || this.currentModel || '';
 
         // Rebuild select while preserving the current selection if possible
-        if (this._modelChangeHandler) {
+        if (this._modelChangeHandler && this.nodes.modelSel) {
           this.nodes.modelSel.removeEventListener('change', this._modelChangeHandler);
           this._modelChangeHandler = null;
         }
 
-        this.nodes.modelSel.innerHTML = '';
+        if (this.nodes.modelSel) {
+          this.nodes.modelSel.innerHTML = '';
+        }
         const ids = new Set(models.map((m) => m.id));
 
         const preferredAvailable = preferredModel && ids.has(preferredModel);
@@ -1570,20 +1558,22 @@ if (!window.BroxAdminInstance) {
               ? def.id
               : models[0].id;
 
-        models.forEach((m) => {
-          const opt = document.createElement('option');
-          opt.value = m.id;
-          const shortLabel = this.getShortModelLabel(m.id, m.name);
-          const isMulti = Boolean(m.supports_multimodal);
-          opt.textContent =
-            shortLabel +
-            (m.id.endsWith(':free') ? ' (Free)' : '') +
-            (isMulti ? ' (Multimodal)' : '');
-          if (m.id === selectedId) {
-            opt.selected = true;
-          }
-          this.nodes.modelSel.appendChild(opt);
-        });
+        if (this.nodes.modelSel) {
+          models.forEach((m) => {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            const shortLabel = this.getShortModelLabel(m.id, m.name);
+            const isMulti = Boolean(m.supports_multimodal);
+            opt.textContent =
+              shortLabel +
+              (m.id.endsWith(':free') ? ' (Free)' : '') +
+              (isMulti ? ' (Multimodal)' : '');
+            if (m.id === selectedId) {
+              opt.selected = true;
+            }
+            this.nodes.modelSel.appendChild(opt);
+          });
+        }
 
         this.currentModel = selectedId;
         this.lastModelMeta = result.meta || this.lastModelMeta;
@@ -1604,24 +1594,31 @@ if (!window.BroxAdminInstance) {
         { id: 'openai/gpt-4o-mini:free', name: 'GPT-4o Mini (Free)' },
       ];
 
-      if (!this.nodes.modelSel) return;
+      this.cachedModels = fallbackModels.map((m) => ({
+        id: String(m.id || ''),
+        short: this.getShortModelLabel(m.id, m.name).toLowerCase(),
+        default: !!m.default,
+      }));
 
-      if (this._modelChangeHandler) {
+      if (this._modelChangeHandler && this.nodes.modelSel) {
         this.nodes.modelSel.removeEventListener('change', this._modelChangeHandler);
         this._modelChangeHandler = null;
       }
 
-      this.nodes.modelSel.innerHTML = '';
-      fallbackModels.forEach((m) => {
-        const opt = document.createElement('option');
-        opt.value = m.id;
-        const shortLabel = this.getShortModelLabel(m.id, m.name);
-        opt.textContent = shortLabel + (m.id.endsWith(':free') ? ' (Free)' : '');
-        if (m.default) opt.selected = true;
-        this.nodes.modelSel.appendChild(opt);
-      });
+      if (this.nodes.modelSel) {
+        this.nodes.modelSel.innerHTML = '';
+        fallbackModels.forEach((m) => {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          const shortLabel = this.getShortModelLabel(m.id, m.name);
+          opt.textContent = shortLabel + (m.id.endsWith(':free') ? ' (Free)' : '');
+          if (m.default) opt.selected = true;
+          this.nodes.modelSel.appendChild(opt);
+        });
+      }
 
       this.currentModel = fallbackModels[0].id;
+      this.defaultModel = this.defaultModel || this.currentModel;
 
       this.updateModelLabel();
 
@@ -1629,14 +1626,16 @@ if (!window.BroxAdminInstance) {
       // Set model as offline when using fallback
       this.updateModelStatus('offline');
       // Track selection changes (idempotent)
-      this._modelChangeHandler = () => {
-        const newModel = this.nodes.modelSel.value;
-        if (newModel && newModel !== this.currentModel) {
-          this.currentModel = newModel;
-          this.updateModelLabel();
-        }
-      };
-      this.nodes.modelSel.addEventListener('change', this._modelChangeHandler);
+      if (this.nodes.modelSel) {
+        this._modelChangeHandler = () => {
+          const newModel = this.nodes.modelSel.value;
+          if (newModel && newModel !== this.currentModel) {
+            this.currentModel = newModel;
+            this.updateModelLabel();
+          }
+        };
+        this.nodes.modelSel.addEventListener('change', this._modelChangeHandler);
+      }
     }
 
     updateModelLabel() {
@@ -1665,6 +1664,46 @@ if (!window.BroxAdminInstance) {
       }
       // Set model as online after loading
       this.updateModelStatus('online');
+    }
+
+    async applyBackendSelectionMeta(meta = {}) {
+      if (!meta || typeof meta !== 'object') return;
+
+      const nextProvider = String(meta.selected_provider || meta.provider || '').trim();
+      const nextModel = String(meta.selected_model || meta.model || '').trim();
+      const providerChanged = Boolean(nextProvider) && nextProvider !== this.currentProvider;
+
+      if (providerChanged) {
+        this.currentProvider = nextProvider;
+        if (this.nodes.providerSel) {
+          this.nodes.providerSel.value = nextProvider;
+        }
+        await this.loadProviderModels(
+          nextProvider,
+          nextModel || this.currentModel || this.preferredModel || '',
+          false
+        );
+        return;
+      }
+
+      if (nextProvider && this.nodes.providerSel && this.nodes.providerSel.value !== nextProvider) {
+        this.nodes.providerSel.value = nextProvider;
+      }
+
+      if (nextModel && nextModel !== this.currentModel) {
+        this.currentModel = nextModel;
+        if (this.nodes.modelSel) {
+          this.nodes.modelSel.value = nextModel;
+        }
+        this.updateModelLabel();
+        return;
+      }
+
+      if (nextModel && this.nodes.modelSel && this.nodes.modelSel.value !== nextModel) {
+        this.nodes.modelSel.value = nextModel;
+      }
+
+      this.updateModelLabel();
     }
 
     updateModelStatus(status) {
@@ -1708,9 +1747,6 @@ if (!window.BroxAdminInstance) {
 
     // ── Status Management ──────────────────────────────────────────────────
     updateStatus(status, text) {
-      if (this.nodes.statusDot) {
-        this.nodes.statusDot.className = 'brox-ai-status-indicator ' + status;
-      }
       if (this.nodes.statusText) {
         this.nodes.statusText.textContent = text;
       }
@@ -1774,6 +1810,22 @@ if (!window.BroxAdminInstance) {
         if (label) label.textContent = meta.label;
         if (sub) sub.textContent = `${meta.detail} (${meta.summary})`;
       }
+    }
+
+    findAvailableModel(candidates = []) {
+      const inventory = Array.isArray(this.cachedModels) ? this.cachedModels : [];
+      if (!inventory.length) return null;
+      for (const candidate of candidates) {
+        const target = String(candidate || '').trim().toLowerCase();
+        if (!target) continue;
+        const match = inventory.find((item) => {
+          const id = String(item.id || '').toLowerCase();
+          const short = String(item.short || '').toLowerCase();
+          return id === target || short === target || id.includes(target) || short.includes(target);
+        });
+        if (match?.id) return match.id;
+      }
+      return null;
     }
 
     // ── Event Binding ───────────────────────────────────────────────────────
@@ -1892,13 +1944,6 @@ if (!window.BroxAdminInstance) {
           this.saveAdvancedOptions();
         };
       }
-      if (this.nodes.responseHealingToggle) {
-        this.nodes.responseHealingToggle.onclick = () => {
-          this.advancedOptions.responseHealing = !this.advancedOptions.responseHealing;
-          this.syncAdvancedOptionsUI();
-          this.saveAdvancedOptions();
-        };
-      }
       if (this.nodes.pdfPluginToggle) {
         this.nodes.pdfPluginToggle.onclick = () => {
           this.advancedOptions.pdfPlugin = !this.advancedOptions.pdfPlugin;
@@ -1917,18 +1962,6 @@ if (!window.BroxAdminInstance) {
           this.advancedOptions.reasoningEffort = this.nodes.reasoningEffortSel.value || '';
           this.saveAdvancedOptions();
         };
-      }
-      if (this.nodes.responseFormatSel) {
-        this.nodes.responseFormatSel.onchange = () => {
-          this.advancedOptions.responseFormat = this.nodes.responseFormatSel.value || 'text';
-          this.saveAdvancedOptions();
-        };
-      }
-      if (this.nodes.advancedRawJson) {
-        this.nodes.advancedRawJson.addEventListener('blur', () => {
-          this.advancedOptions.rawJson = this.nodes.advancedRawJson.value || '';
-          this.saveAdvancedOptions();
-        });
       }
 
       // Collect page form data
@@ -4591,23 +4624,22 @@ if (!window.BroxAdminInstance) {
 
       if (isSimple && !hasComplexTask) {
         // Use fast model for simple queries
-        selectedModel = fastModels[0];
+        selectedModel = this.findAvailableModel(fastModels);
       } else if (isMedium || hasComplexTask) {
         // Use medium model for medium complexity
-        selectedModel = mediumModels[0];
+        selectedModel = this.findAvailableModel(mediumModels);
       } else if (isComplex) {
         // Use slow model for complex queries
-        selectedModel = slowModels[0];
+        selectedModel = this.findAvailableModel(slowModels);
       }
 
       // Apply auto-selected model if different from current
       if (selectedModel && selectedModel !== this.currentModel) {
-        // Check if model is available
-        const availableModels = this.cachedModels || [];
-        if (availableModels.includes(selectedModel)) {
-          this.currentModel = selectedModel;
-          this.updateModelLabel();
+        this.currentModel = selectedModel;
+        if (this.nodes.modelSel) {
+          this.nodes.modelSel.value = selectedModel;
         }
+        this.updateModelLabel();
       }
     }
 
@@ -4793,6 +4825,7 @@ if (!window.BroxAdminInstance) {
           if (!norm.success) {
             throw new Error(norm.error || 'AI error');
           }
+          await this.applyBackendSelectionMeta(json);
           if (json && json.conversation_id) {
             this.conversationId = Number(json.conversation_id);
           }
@@ -4849,6 +4882,7 @@ if (!window.BroxAdminInstance) {
 
             if (obj && obj.meta) {
               const meta = obj.meta || {};
+              await this.applyBackendSelectionMeta(meta);
               if (meta.conversation_id) {
                 this.conversationId = Number(meta.conversation_id);
               }

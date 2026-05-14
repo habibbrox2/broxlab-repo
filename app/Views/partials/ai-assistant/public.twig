@@ -19,6 +19,7 @@
             <div class="brox-ai-grok-title">
                 <span id="publicAssistantTitle">Brox AI</span>
                 <span class="brox-ai-grok-badge" id="publicAssistantModelName">AI</span>
+                <span class="brox-ai-status-indicator brox-ai-connecting" id="publicAssistantModelStatusIndicator"></span>
                 <span class="brox-ai-status-indicator brox-ai-online" id="publicAssistantStatusIndicator"></span>
             </div>
             <div class="brox-ai-grok-controls">
@@ -48,6 +49,11 @@
         </div>
 
         {# ── Sidebar (Chat History) ── #}
+        <div id="publicAssistantAgenticStatus" class="brox-ai-agentic-status brox-ai-hidden">
+            <span class="brox-ai-status-pill">Thinking</span>
+            <span class="ai-status-detail"></span>
+        </div>
+
         <div id="publicAssistantSidebar" class="brox-ai-sidebar brox-ai-collapsed">
             <div class="brox-ai-sidebar-header">
                 <span>Chat History</span>

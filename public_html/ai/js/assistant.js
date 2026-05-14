@@ -754,6 +754,10 @@ if (!window.BroxAssistantLoaded) {
             this.updateModelStatus('connecting');
             const result = await fetchModels(provider);
             const models = result?.models || [];
+            if (this._modelChangeHandler) {
+                this.nodes.modelSel.removeEventListener('change', this._modelChangeHandler);
+                this._modelChangeHandler = null;
+            }
             if (!models.length) {
                 this.nodes.modelSel.classList.add('brox-ai-hidden');
                 // Try to use frontend model as fallback
@@ -788,16 +792,18 @@ if (!window.BroxAssistantLoaded) {
                 ? models.find(m => m.id === preferredModel)
                 : models.find(m => m.default);
             this.currentModel = defaultOpt ? defaultOpt.id : models[0].id;
+            this.ensureModelOption(this.currentModel);
             this.nodes.modelSel.classList.remove('d-none');
             this.nodes.modelSel.classList.remove('brox-ai-hidden');
             this.updateModelLabel();
 
             this.updateModelStatus(result?.source === 'fallback' ? 'offline' : 'online');
 
-            this.nodes.modelSel.addEventListener('change', () => {
+            this._modelChangeHandler = () => {
                 this.currentModel = this.nodes.modelSel.value;
                 this.updateModelLabel();
-            });
+            };
+            this.nodes.modelSel.addEventListener('change', this._modelChangeHandler);
         }
 
         // ── Speech Recognition ─────────────────────────────────────────────────
@@ -1742,6 +1748,7 @@ if (!window.BroxAssistantLoaded) {
                             const obj = JSON.parse(raw);
                             if (obj && obj.meta) {
                                 const meta = obj.meta || {};
+                                this.applyBackendSelectionMeta(meta);
                                 if (meta.conversation_id) {
                                     this.conversationId = Number(meta.conversation_id);
                                 }
@@ -2012,6 +2019,40 @@ if (!window.BroxAssistantLoaded) {
             if (this.nodes.modelLabel) {
                 this.nodes.modelLabel.textContent = label || 'AI';
             }
+        }
+
+        applyBackendSelectionMeta(meta = {}) {
+            if (!meta || typeof meta !== 'object') return;
+
+            const nextModel = String(meta.selected_model || meta.model || '').trim();
+            if (!nextModel) return;
+
+            if (nextModel !== this.currentModel) {
+                this.currentModel = nextModel;
+                this.ensureModelOption(nextModel);
+                if (this.nodes.modelSel) {
+                    this.nodes.modelSel.value = nextModel;
+                }
+                this.updateModelLabel();
+                return;
+            }
+
+            if (this.nodes.modelSel && this.nodes.modelSel.value !== nextModel) {
+                this.nodes.modelSel.value = nextModel;
+            }
+            this.updateModelLabel();
+        }
+
+        ensureModelOption(modelId) {
+            if (!this.nodes.modelSel || !modelId) return;
+            const exists = Array.from(this.nodes.modelSel.options || []).some((opt) => opt.value === modelId);
+            if (exists) return;
+
+            const opt = document.createElement('option');
+            opt.value = modelId;
+            opt.textContent = this.mapModelLabel(modelId, modelId);
+            opt.selected = true;
+            this.nodes.modelSel.appendChild(opt);
         }
 
         mapModelLabel(modelId, fallbackLabel) {

@@ -611,6 +611,23 @@ class AIProvider
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+        $responseHeaders = [];
+        curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($ch, $headerLine) use (&$responseHeaders) {
+            $trimmed = trim($headerLine);
+            if ($trimmed === '' || strpos($trimmed, ':') === false) {
+                return strlen($headerLine);
+            }
+            [$name, $value] = explode(':', $trimmed, 2);
+            $name = strtolower(trim($name));
+            $value = trim($value);
+            if ($name !== '') {
+                if (!isset($responseHeaders[$name])) {
+                    $responseHeaders[$name] = [];
+                }
+                $responseHeaders[$name][] = $value;
+            }
+            return strlen($headerLine);
+        });
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -637,13 +654,58 @@ class AIProvider
         }
 
         if ($httpCode !== 200) {
+            if ($httpCode === 429) {
+                $retryAfter = $this->extractRetryAfterSeconds($responseHeaders);
+                $alreadyRetried = !empty($options['_rate_limit_retry']);
+                if (!$alreadyRetried && $retryAfter !== null && $retryAfter > 0 && $retryAfter <= 5) {
+                    usleep($retryAfter * 1000000);
+                    return $this->callAPI($providerName, $model, $prompt, array_merge($options, ['_rate_limit_retry' => true]));
+                }
+            }
             // Try to parse OpenAI-style error payloads so we can show a cleaner message.
             $errorMessage = $this->parseHttpError($providerName, $httpCode, $response);
-            return ['success' => false, 'error' => $errorMessage, 'error_type' => 'http', 'http_code' => $httpCode];
+            $errorPayload = [
+                'success' => false,
+                'error' => $errorMessage,
+                'error_type' => 'http',
+                'http_code' => $httpCode
+            ];
+            if ($httpCode === 429) {
+                $errorPayload['error_code'] = 'rate_limit_exceeded';
+                $retryAfter = $this->extractRetryAfterSeconds($responseHeaders);
+                if ($retryAfter !== null) {
+                    $errorPayload['retry_after'] = $retryAfter;
+                }
+            }
+            return $errorPayload;
         }
 
         // Parse response
         return $this->parseResponse($providerName, $response);
+    }
+
+    private function extractRetryAfterSeconds(array $headers): ?int
+    {
+        $values = $headers['retry-after'] ?? [];
+        if (empty($values)) {
+            return null;
+        }
+
+        $raw = trim((string)$values[0]);
+        if ($raw === '') {
+            return null;
+        }
+
+        if (ctype_digit($raw)) {
+            return max(0, (int)$raw);
+        }
+
+        $timestamp = strtotime($raw);
+        if ($timestamp === false) {
+            return null;
+        }
+
+        return max(0, $timestamp - time());
     }
 
     /**
@@ -777,7 +839,7 @@ class AIProvider
         } elseif ($httpCode === 403) {
             $errorMessage .= ' - Access forbidden';
         } elseif ($httpCode === 429) {
-            $errorMessage .= ' - Rate limit exceeded';
+            $errorMessage .= ' - Rate limit exceeded. The assistant will retry or switch providers when possible';
         } elseif ($httpCode >= 500) {
             $errorMessage .= ' - Provider server error';
         }

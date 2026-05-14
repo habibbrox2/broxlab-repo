@@ -49,6 +49,9 @@
                 {# Settings Tab Panel #}
                 <div id="brox-ai-settings-tab" class="brox-ai-tabs-panel" role="tabpanel">
                     <div class="brox-ai-settings-content">
+                        <p class="brox-ai-settings-note">
+                            Copilot manages provider, model, and tool orchestration automatically. Use these controls only when you want to adjust browsing, document parsing, or reasoning behavior.
+                        </p>
                         <div class="brox-ai-setting-item">
                             <label class="brox-ai-setting-label">Dark Mode</label>
                             <button class="brox-ai-toggle-switch" id="adminAiDarkModeToggle" title="Toggle dark mode" data-feature="dark-mode">
@@ -83,12 +86,6 @@
                             </div>
                         </div>
                         <div class="brox-ai-setting-item">
-                            <label class="brox-ai-setting-label">Response Healing</label>
-                            <button class="brox-ai-toggle-switch" id="adminAiResponseHealingToggle" title="Auto-fix malformed JSON">
-                                <span class="brox-ai-toggle-slider"></span>
-                            </button>
-                        </div>
-                        <div class="brox-ai-setting-item">
                             <label class="brox-ai-setting-label">PDF Parser</label>
                             <div class="brox-ai-setting-inline">
                                 <select id="adminAiPdfEngine" class="brox-ai-setting-select" title="PDF parser engine">
@@ -112,18 +109,6 @@
                                 <option value="high">high</option>
                                 <option value="xhigh">xhigh</option>
                             </select>
-                        </div>
-                        <div class="brox-ai-setting-item">
-                            <label class="brox-ai-setting-label">Response Format</label>
-                            <select id="adminAiResponseFormat" class="brox-ai-setting-select" title="Response format">
-                                <option value="text">text</option>
-                                <option value="json_object">json_object</option>
-                                <option value="json_schema">json_schema</option>
-                            </select>
-                        </div>
-                        <div class="brox-ai-setting-item brox-ai-setting-item-block">
-                            <label class="brox-ai-setting-label" for="adminAiAdvancedOptionsJson">Advanced Request JSON</label>
-                            <textarea id="adminAiAdvancedOptionsJson" class="brox-ai-setting-json" rows="4" placeholder='{"tools":[...],"tool_choice":"auto","metadata":{"source":"admin"}}'></textarea>
                         </div>
                     </div>
                 </div>
