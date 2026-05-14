@@ -15,6 +15,9 @@ class StorageCleanupHelper
 {
     private static $basePath;
     private static $logFile;
+    private static $lastRunFile;
+    private static $lockFile;
+    private static $echoLogs = false;
 
     // Retention policies (in days)
     private static $retentionPolicies = [
@@ -28,15 +31,18 @@ class StorageCleanupHelper
     /**
      * Initialize cleanup helper
      */
-    public static function init($basePath = null)
+    public static function init($basePath = null, ?bool $echoLogs = null)
     {
         self::$basePath = $basePath ?? dirname(__DIR__, 2);
         self::$logFile = self::$basePath . '/storage/logs/cleanup.log';
+        self::$lastRunFile = self::$basePath . '/storage/logs/cleanup.last_run';
+        self::$lockFile = self::$basePath . '/storage/tmp/storage_cleanup.lock';
+        self::$echoLogs = $echoLogs ?? (PHP_SAPI === 'cli');
 
-        // Ensure log directory exists
-        $logDir = dirname(self::$logFile);
-        if (!is_dir($logDir)) {
-            @mkdir($logDir, 0755, true);
+        foreach ([dirname(self::$logFile), dirname(self::$lockFile)] as $dir) {
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0755, true);
+            }
         }
     }
 
@@ -53,7 +59,35 @@ class StorageCleanupHelper
         $logMessage = "[$timestamp] [$level] $message\n";
 
         error_log($logMessage, 3, self::$logFile);
-        echo $logMessage;
+        if (self::$echoLogs) {
+            echo $logMessage;
+        }
+    }
+
+    /**
+     * Control whether cleanup logs should also be echoed to output.
+     */
+    public static function setEchoLogs(bool $echoLogs): void
+    {
+        self::$echoLogs = $echoLogs;
+    }
+
+    public static function getLastRunFilePath(): string
+    {
+        if (!self::$basePath) {
+            self::init();
+        }
+
+        return self::$lastRunFile;
+    }
+
+    public static function getLockFilePath(): string
+    {
+        if (!self::$basePath) {
+            self::init();
+        }
+
+        return self::$lockFile;
     }
 
     /**
@@ -62,6 +96,120 @@ class StorageCleanupHelper
     public static function setRetentionPolicy($directory, $days)
     {
         self::$retentionPolicies[$directory] = (int)$days;
+    }
+
+    /**
+     * Apply retention policies from environment variables when available.
+     */
+    public static function applyEnvironmentPolicies(): void
+    {
+        $policyMap = [
+            'logs' => 'STORAGE_LOG_RETENTION_DAYS',
+            'cache' => 'STORAGE_CACHE_RETENTION_DAYS',
+            'temp' => 'STORAGE_TEMP_RETENTION_DAYS',
+            'tmp' => 'STORAGE_TMP_RETENTION_DAYS',
+            'uploads' => 'STORAGE_UPLOADS_RETENTION_DAYS',
+        ];
+
+        foreach ($policyMap as $directory => $envKey) {
+            $value = $_ENV[$envKey] ?? getenv($envKey);
+            if ($value === false || $value === null || $value === '') {
+                continue;
+            }
+
+            $days = (int)$value;
+            if ($days > 0) {
+                self::setRetentionPolicy($directory, $days);
+            }
+        }
+    }
+
+    /**
+     * Run cleanup automatically if the configured interval has elapsed.
+     *
+     * @return array<string, mixed>
+     */
+    public static function runAutomaticCleanupIfDue(?int $intervalSeconds = null): array
+    {
+        if (!self::$basePath) {
+            self::init();
+        }
+
+        self::applyEnvironmentPolicies();
+
+        $intervalSeconds = $intervalSeconds
+            ?? (int)($_ENV['STORAGE_CLEANUP_INTERVAL_SECONDS'] ?? getenv('STORAGE_CLEANUP_INTERVAL_SECONDS') ?: 21600);
+
+        if ($intervalSeconds <= 0) {
+            return [
+                'ran' => false,
+                'reason' => 'disabled',
+            ];
+        }
+
+        $handle = @fopen(self::$lockFile, 'c+');
+        if ($handle === false) {
+            self::log('Failed to open storage cleanup lock file.', 'ERROR');
+            return [
+                'ran' => false,
+                'reason' => 'lock_open_failed',
+            ];
+        }
+
+        try {
+            if (!@flock($handle, LOCK_EX | LOCK_NB)) {
+                return [
+                    'ran' => false,
+                    'reason' => 'locked',
+                ];
+            }
+
+            clearstatcache(true, self::$lastRunFile);
+            $lastRun = is_file(self::$lastRunFile) ? (int)@filemtime(self::$lastRunFile) : 0;
+            $now = time();
+
+            if ($lastRun > 0 && ($now - $lastRun) < $intervalSeconds) {
+                return [
+                    'ran' => false,
+                    'reason' => 'not_due',
+                    'next_run_in' => $intervalSeconds - ($now - $lastRun),
+                ];
+            }
+
+            $summary = self::cleanupAllDirectories();
+            @touch(self::$lastRunFile, $now);
+
+            return [
+                'ran' => true,
+                'reason' => 'completed',
+                'summary' => $summary,
+            ];
+        } finally {
+            @flock($handle, LOCK_UN);
+            @fclose($handle);
+        }
+    }
+
+    /**
+     * Run cleanup immediately and update the last-run marker.
+     *
+     * @return array<string, mixed>
+     */
+    public static function runCleanupNow(): array
+    {
+        if (!self::$basePath) {
+            self::init();
+        }
+
+        self::applyEnvironmentPolicies();
+        $summary = self::cleanupAllDirectories();
+        @touch(self::$lastRunFile, time());
+
+        return [
+            'ran' => true,
+            'reason' => 'completed',
+            'summary' => $summary,
+        ];
     }
 
     /**
@@ -136,57 +284,50 @@ class StorageCleanupHelper
         $dirName = basename($dirPath);
 
         try {
-            $files = @scandir($dirPath);
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($dirPath, FilesystemIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::CHILD_FIRST
+            );
 
-            if ($files === false) {
-                self::log("Failed to read directory: $dirPath", 'ERROR');
-                $result['errors'][] = "Failed to read directory";
-                return $result;
-            }
+            foreach ($iterator as $item) {
+                $filePath = $item->getPathname();
 
-            foreach ($files as $file) {
-                if ($file === '.' || $file === '..') {
-                    continue;
-                }
-
-                $filePath = $dirPath . '/' . $file;
-
-                if (!file_exists($filePath)) {
+                if (self::isProtectedPath($filePath)) {
                     continue;
                 }
 
                 $fileTime = @filemtime($filePath);
-
                 if ($fileTime === false) {
                     continue;
                 }
 
-                // Delete if file is older than retention period
+                $relativePath = ltrim(str_replace('\\', '/', substr($filePath, strlen($dirPath))), '/');
+                $label = $dirName . ($relativePath !== '' ? '/' . $relativePath : '');
+
+                if ($item->isDir()) {
+                    if ($fileTime < $cutoffTime && self::isDirectoryEmpty($filePath)) {
+                        if (@rmdir($filePath)) {
+                            $result['files_deleted']++;
+                            self::log("Deleted old directory: $label (0 B)");
+                        } else {
+                            $result['errors'][] = "Failed to delete: $filePath";
+                            self::log("Failed to delete: $label", 'ERROR');
+                        }
+                    }
+
+                    continue;
+                }
+
                 if ($fileTime < $cutoffTime) {
-                    if (is_dir($filePath)) {
-                        // Recursively delete directory
-                        $size = self::getDirectorySize($filePath);
+                    $size = @filesize($filePath);
 
-                        if (self::deleteDirectory($filePath)) {
-                            $result['files_deleted']++;
-                            $result['size_freed'] += $size;
-                            self::log("Deleted old directory: $dirName/$file (" . self::formatBytes($size) . ")");
-                        } else {
-                            $result['errors'][] = "Failed to delete: $filePath";
-                            self::log("Failed to delete: $dirName/$file", 'ERROR');
-                        }
+                    if (@unlink($filePath)) {
+                        $result['files_deleted']++;
+                        $result['size_freed'] += $size ?: 0;
+                        self::log("Deleted old file: $label (" . self::formatBytes($size ?: 0) . ")");
                     } else {
-                        // Delete file
-                        $size = @filesize($filePath);
-
-                        if (@unlink($filePath)) {
-                            $result['files_deleted']++;
-                            $result['size_freed'] += $size ?: 0;
-                            self::log("Deleted old file: $dirName/$file (" . self::formatBytes($size ?: 0) . ")");
-                        } else {
-                            $result['errors'][] = "Failed to delete: $filePath";
-                            self::log("Failed to delete: $dirName/$file", 'ERROR');
-                        }
+                        $result['errors'][] = "Failed to delete: $filePath";
+                        self::log("Failed to delete: $label", 'ERROR');
                     }
                 }
             }
@@ -199,39 +340,35 @@ class StorageCleanupHelper
     }
 
     /**
-     * Delete directory recursively
+     * Check whether a path should never be removed by storage cleanup.
      */
-    private static function deleteDirectory($dir)
+    private static function isProtectedPath(string $path): bool
+    {
+        $normalizedPath = str_replace('\\', '/', $path);
+        $protectedPaths = [
+            str_replace('\\', '/', self::$logFile),
+            str_replace('\\', '/', self::$lastRunFile),
+            str_replace('\\', '/', self::$lockFile),
+        ];
+
+        return in_array($normalizedPath, $protectedPaths, true);
+    }
+
+    /**
+     * Check if a directory is empty.
+     */
+    private static function isDirectoryEmpty(string $dir): bool
     {
         if (!is_dir($dir)) {
             return false;
         }
 
         $files = @scandir($dir);
-
         if ($files === false) {
             return false;
         }
 
-        foreach ($files as $file) {
-            if ($file === '.' || $file === '..') {
-                continue;
-            }
-
-            $path = $dir . '/' . $file;
-
-            if (is_dir($path)) {
-                if (!self::deleteDirectory($path)) {
-                    return false;
-                }
-            } else {
-                if (!@unlink($path)) {
-                    return false;
-                }
-            }
-        }
-
-        return @rmdir($dir);
+        return count($files) === 2;
     }
 
     /**

@@ -289,31 +289,13 @@ function cleanCache(AppSettings $settingsModel): void
     }
 }
 
-// remove old temp and log files based on retention setting
-function cleanStorage(AppSettings $settingsModel): void
-{
-    // retention in seconds (default 7 days)
-    $retention = (int)$settingsModel->get('storage_retention_seconds', 604800);
-    if ($retention <= 0) {
-        return;
-    }
-    $now = time();
-    foreach ([TEMP_DIR, LOG_DIR] as $dir) {
-        if (!is_dir($dir)) continue;
-        foreach (glob($dir . '*') as $file) {
-            if (is_file($file) && ($now - filemtime($file)) > $retention) {
-                @unlink($file);
-            }
-        }
-    }
-}
-
 if (isset($appSettings) && $appSettings instanceof AppSettings) {
     cleanCache($appSettings);
-    // periodically remove old files from temporary and log directories
-    if (function_exists('cleanStorage')) {
-        cleanStorage($appSettings);
-    }
+}
+
+if (class_exists('StorageCleanupHelper')) {
+    StorageCleanupHelper::setEchoLogs(false);
+    StorageCleanupHelper::runAutomaticCleanupIfDue();
 }
 
 // ============================================================================

@@ -31,21 +31,45 @@ if (file_exists($baseDir . '/Config/Db.php')) {
     }
 }
 
-// Load necessary files
-require_once $baseDir . '/Config/Db.php';
+// Load dependencies and environment without requiring a database connection.
+require_once $baseDir . '/vendor/autoload.php';
+$dotenv = Dotenv\Dotenv::createUnsafeImmutable($baseDir);
+$dotenv->safeLoad();
 require_once $baseDir . '/app/Helpers/StorageCleanupHelper.php';
 
 // Initialize
-StorageCleanupHelper::init($baseDir);
+StorageCleanupHelper::init($baseDir, true);
+$forceRun = in_array('--force', $argv ?? [], true);
 
 // Run cleanup
 echo "\n=== Storage Cleanup Task Started at " . date('Y-m-d H:i:s') . " ===\n\n";
 
-$summary = StorageCleanupHelper::cleanupAllDirectories();
+$result = $forceRun
+    ? StorageCleanupHelper::runCleanupNow()
+    : StorageCleanupHelper::runAutomaticCleanupIfDue();
+
+if (!($result['ran'] ?? false)) {
+    echo "Cleanup skipped: " . ($result['reason'] ?? 'unknown') . "\n";
+    if (($result['reason'] ?? '') === 'not_due' && isset($result['next_run_in'])) {
+        echo "Next eligible run in: " . formatDuration((int)$result['next_run_in']) . "\n";
+    }
+    echo "Last run marker: " . StorageCleanupHelper::getLastRunFilePath() . "\n";
+    echo "Lock file: " . StorageCleanupHelper::getLockFilePath() . "\n";
+    echo "\nTask completed at " . date('Y-m-d H:i:s') . "\n\n";
+    exit(0);
+}
+
+$summary = $result['summary'] ?? [
+    'total_files_deleted' => 0,
+    'total_size_freed' => 0,
+    'errors' => [],
+];
 
 echo "\n=== Summary ===\n";
 echo "Files deleted: " . $summary['total_files_deleted'] . "\n";
 echo "Size freed: " . formatBytes($summary['total_size_freed']) . "\n";
+echo "Last run marker: " . StorageCleanupHelper::getLastRunFilePath() . "\n";
+echo "Lock file: " . StorageCleanupHelper::getLockFilePath() . "\n";
 
 if (!empty($summary['errors'])) {
     echo "\nErrors encountered:\n";
@@ -68,4 +92,14 @@ function formatBytes($bytes)
     $bytes /= (1 << (10 * $pow));
 
     return round($bytes, 2) . ' ' . $units[$pow];
+}
+
+function formatDuration(int $seconds): string
+{
+    $seconds = max(0, $seconds);
+    $hours = intdiv($seconds, 3600);
+    $minutes = intdiv($seconds % 3600, 60);
+    $remainingSeconds = $seconds % 60;
+
+    return sprintf('%02dh %02dm %02ds', $hours, $minutes, $remainingSeconds);
 }
