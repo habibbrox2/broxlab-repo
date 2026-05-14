@@ -252,7 +252,7 @@ ToolRegistry::register('analyze_error_logs', function(array $args, ?mysqli $mysq
 
 // 5. Summarize Tool
 ToolRegistry::register('summarize_text', function(array $args, ?mysqli $mysqli) {
-    $input = $args['input'] ?? '';
+    $input = $args['text'] ?? $args['input'] ?? '';
     if (empty($input)) throw new InvalidArgumentException('Text content is required for summarization');
     $input = trim((string)$input);
 

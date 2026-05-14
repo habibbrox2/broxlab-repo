@@ -5,9 +5,12 @@ import { config } from '../../config/index';
 import logger from '../../utils/logger';
 
 const summarizeSchema = z.object({
-    text: z.string().min(10).max(10000),
+    text: z.string().min(10).max(10000).optional(),
+    input: z.string().min(10).max(10000).optional(),
     maxLength: z.number().int().positive().optional().default(500),
     format: z.enum(['paragraph', 'bullets', 'auto']).optional().default('auto'),
+}).refine((value) => Boolean(value.text || value.input), {
+    message: 'text or input is required',
 });
 
 export const summarizeTextTool: ToolDefinition = {
@@ -20,7 +23,8 @@ export const summarizeTextTool: ToolDefinition = {
     timeout: 30000,
     maxRetries: 2,
     execute: async (args: any, _context: ToolContext): Promise<ToolResult> => {
-        const { text, maxLength, format } = args;
+        const text = String(args.text ?? args.input ?? '').trim();
+        const { maxLength, format } = args;
 
         try {
             // Initialize provider
