@@ -35,7 +35,7 @@ $router->group('/api', ['middleware' => ['rate_limit']], function ($router) {
         $from = trim($data['from'] ?? 'en');
         $to = trim($data['to'] ?? LanguageHelper::getCurrentLang());
 
-        if (!$text) {
+        if (!$text && !isset($data['texts'])) {
             header('Content-Type: application/json; charset=utf-8');
             http_response_code(422);
             echo json_encode(['error' => 'Text is required']);
@@ -43,7 +43,24 @@ $router->group('/api', ['middleware' => ['rate_limit']], function ($router) {
         }
 
         try {
-            $translated = LanguageHelper::translate($text, $from, $to);
+            if (!empty($data['texts']) && is_array($data['texts'])) {
+                $originals = array_values(array_unique(array_filter(array_map('trim', $data['texts']), fn($item) => $item !== '')));
+                $translations = [];
+                foreach ($originals as $original) {
+                    $translations[$original] = LanguageHelper::translate($original, $from, $to, true);
+                }
+
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'success' => true,
+                    'translations' => $translations,
+                    'from' => $from,
+                    'to' => $to
+                ]);
+                return;
+            }
+
+            $translated = LanguageHelper::translate($text, $from, $to, true);
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode([
                 'success' => true,

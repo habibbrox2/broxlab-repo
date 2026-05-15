@@ -101,7 +101,7 @@ $router->get('/weather', ['middleware' => [], 'name' => 'weather.home'], functio
         ], 'success');
 
         if ($isAjax || ($_GET['format'] ?? '') === 'json') {
-            header('Content-Type: application/json');
+            header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['success' => true, 'data' => $data]);
             return;
         }
@@ -177,7 +177,7 @@ $router->get('/weather/details', ['middleware' => [], 'name' => 'weather.details
         ], 'success');
 
         if ($isAjax || ($_GET['format'] ?? '') === 'json') {
-            header('Content-Type: application/json');
+            header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['success' => true, 'data' => $data], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
             return;
         }
@@ -283,7 +283,7 @@ $router->get('/weather/details/{location}', ['middleware' => [], 'name' => 'weat
         ], 'success');
 
         if ($isAjax || ($_GET['format'] ?? '') === 'json') {
-            header('Content-Type: application/json');
+            header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['success' => true, 'data' => $data], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
             return;
         }
@@ -348,7 +348,7 @@ $router->get('/weather/{location}', ['middleware' => [], 'name' => 'weather.api.
 
         $result = $weatherService->getLocationWeather($location, $units, $forecastDays);
 
-        header('Content-Type: application/json');
+        header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-cache, must-revalidate');
         header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
 
@@ -385,7 +385,7 @@ $router->get('/weather/current', ['middleware' => [], 'name' => 'weather.api.cur
         // Add IP info for debugging
         $result['ip_address'] = $ipAddress;
 
-        header('Content-Type: application/json');
+        header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-cache, must-revalidate');
         header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
 
@@ -468,7 +468,7 @@ if (!function_exists('weather_handleError')) {
         http_response_code($httpCode);
 
         if ($isAjax || ($_GET['format'] ?? '') === 'json') {
-            header('Content-Type: application/json');
+            header('Content-Type: application/json; charset=utf-8');
             echo json_encode([
                 'success'    => false,
                 'error'      => $userMessage,
