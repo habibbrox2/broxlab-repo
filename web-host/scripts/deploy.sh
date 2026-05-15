@@ -33,8 +33,6 @@ SKIP_DB_BACKUP=false
 SKIP_CLEANUP=false
 SKIP_BUILD=false
 KEEP_RELEASES=3
-USE_HTTPS=false
-GIT_CLONE_RETRIES=3
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -45,11 +43,9 @@ while [[ $# -gt 0 ]]; do
         --keep) KEEP_RELEASES="$2"; shift 2 ;;
         --base) BASE="$2"; shift 2 ;;
         --no-node-start) START_NODE_SERVER=false; shift ;;
-        --use-https) USE_HTTPS=true; shift ;;
-        --git-retries) GIT_CLONE_RETRIES="$2"; shift 2 ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [--skip-backup] [--skip-db-backup] [--skip-cleanup] [--skip-build] [--keep N] [--base PATH] [--no-node-start] [--use-https] [--git-retries N]"
+            echo "Usage: $0 [--skip-backup] [--skip-db-backup] [--skip-cleanup] [--skip-build] [--keep N] [--base PATH] [--no-node-start]"
             exit 1
             ;;
     esac
@@ -97,76 +93,6 @@ log_section() {
     echo -e "${CYAN}============================================================${NC}" | tee -a "$LOG_FILE"
     echo -e "${CYAN}$1${NC}" | tee -a "$LOG_FILE"
     echo -e "${CYAN}============================================================${NC}" | tee -a "$LOG_FILE"
-}
-
-check_network_connectivity() {
-    local retry_count=0
-    local max_retries=3
-    
-    log_info "Checking network connectivity..."
-    
-    # Try to resolve DNS
-    if ! command -v nslookup >/dev/null 2>&1 && ! command -v dig >/dev/null 2>&1; then
-        log_debug "DNS tools not available, skipping DNS check"
-    else
-        if command -v nslookup >/dev/null 2>&1; then
-            if ! nslookup github.com >/dev/null 2>&1; then
-                log_error "DNS resolution failed for github.com"
-                log_error "Check /etc/resolv.conf or network configuration"
-                return 1
-            fi
-        fi
-    fi
-    
-    # Try curl/wget to github.com
-    while [[ $retry_count -lt $max_retries ]]; do
-        if command -v curl >/dev/null 2>&1; then
-            if curl -fsS --connect-timeout 10 https://github.com >/dev/null 2>&1; then
-                log_info "Network connectivity check passed"
-                return 0
-            fi
-        elif command -v wget >/dev/null 2>&1; then
-            if wget -q --timeout=10 -O- https://github.com >/dev/null 2>&1; then
-                log_info "Network connectivity check passed"
-                return 0
-            fi
-        fi
-        
-        retry_count=$((retry_count + 1))
-        if [[ $retry_count -lt $max_retries ]]; then
-            log_warn "Network check attempt $((retry_count + 1))/$max_retries failed, retrying..."
-            sleep 2
-        fi
-    done
-    
-    log_warn "Network connectivity check failed. Deployment may fail."
-    return 0
-}
-
-git_clone_with_retry() {
-    local repo_url="$1"
-    local target_dir="$2"
-    local retry=0
-    
-    while [[ $retry -lt $GIT_CLONE_RETRIES ]]; do
-        log_info "Git clone attempt $((retry + 1))/$GIT_CLONE_RETRIES"
-        log_debug "Repository: $repo_url"
-        log_debug "Target: $target_dir"
-        
-        if git clone --depth=1 "$repo_url" "$target_dir" 2>&1 | tee -a "$LOG_FILE"; then
-            log_info "Git clone successful"
-            return 0
-        fi
-        
-        retry=$((retry + 1))
-        if [[ $retry -lt $GIT_CLONE_RETRIES ]]; then
-            log_warn "Git clone failed, attempt $retry/$GIT_CLONE_RETRIES. Retrying in $((retry * 5)) seconds..."
-            sleep $((retry * 5))
-        fi
-    done
-    
-    log_error "Git clone failed after $GIT_CLONE_RETRIES attempts"
-    return 1
 }
 
 acquire_deploy_lock() {
@@ -371,39 +297,10 @@ if [[ "$SKIP_BACKUP" == "false" && -L "$CURRENT" ]]; then
 fi
 
 log_section "FETCHING RELEASE"
-
-# Check network before attempting clone
-check_network_connectivity || log_warn "Network check had issues, proceeding with git clone..."
-
 mkdir -p "$NEW_RELEASE"
-
-# Determine git repository URL
-GIT_URL="$GIT_REPO"
-if [[ "$USE_HTTPS" == "true" ]]; then
-    # Convert SSH URL to HTTPS
-    GIT_URL=$(echo "$GIT_REPO" | sed 's|git@github.com:|https://github.com/|')
-    log_info "Using HTTPS URL: $GIT_URL"
-fi
-
-# Attempt clone with retry logic
-if ! git_clone_with_retry "$GIT_URL" "$NEW_RELEASE"; then
-    # If SSH failed and not already using HTTPS, try HTTPS fallback
-    if [[ "$USE_HTTPS" == "false" ]] && [[ "$GIT_REPO" == git@* ]]; then
-        log_warn "SSH clone failed, attempting HTTPS fallback..."
-        HTTPS_URL=$(echo "$GIT_REPO" | sed 's|git@github.com:|https://github.com/|')
-        rm -rf "$NEW_RELEASE" 2>/dev/null || true
-        mkdir -p "$NEW_RELEASE"
-        
-        if git_clone_with_retry "$HTTPS_URL" "$NEW_RELEASE"; then
-            log_info "HTTPS fallback succeeded"
-        else
-            log_error "Failed to clone repository (both SSH and HTTPS failed)"
-            exit 1
-        fi
-    else
-        log_error "Failed to clone repository"
-        exit 1
-    fi
+if ! git clone --depth=1 "$GIT_REPO" "$NEW_RELEASE" 2>&1 | tee -a "$LOG_FILE"; then
+    log_error "Failed to clone repository"
+    exit 1
 fi
 
 if [[ -d "$NEW_RELEASE/web-host/scripts" ]]; then
