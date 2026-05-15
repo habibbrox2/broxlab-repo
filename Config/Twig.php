@@ -1375,11 +1375,11 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
 
         $twig->addFunction(new \Twig\TwigFunction('translate', function ($text, $from = 'en', $to = null) {
-            return LanguageHelper::translate((string) $text, $from, $to);
+            return LanguageHelper::translate((string) $text, $from, $to, false);
         }));
 
         $twig->addFilter(new \Twig\TwigFilter('trans', function ($text, $from = 'en', $to = null) {
-            return LanguageHelper::translate((string) $text, $from, $to);
+            return LanguageHelper::translate((string) $text, $from, $to, false);
         }));
 
         return $twig;

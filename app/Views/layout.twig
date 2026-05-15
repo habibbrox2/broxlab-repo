@@ -746,93 +746,103 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to dynamically translate the page
     async function translatePageToLanguage(targetLang) {
+        const translationCache = window.__broxClientTranslationCache = window.__broxClientTranslationCache || {};
+
         // Collect all translatable elements
         const translatableElements = document.querySelectorAll('[data-i18n], [data-i18n-title], [data-i18n-aria-label]');
         if (translatableElements.length === 0) {
             return; // No elements to translate
         }
 
-        // Collect texts to translate
-        const textsToTranslate = [];
+        const itemsByText = {};
+        const originalItems = [];
+
+        const applyTranslation = (item, translated) => {
+            if (item.attribute === 'textContent') {
+                item.element.textContent = translated;
+            } else if (item.attribute === 'title') {
+                item.element.setAttribute('title', translated);
+            } else if (item.attribute === 'ariaLabel') {
+                item.element.setAttribute('aria-label', translated);
+            }
+        };
+
+        const buildCacheKey = (text) => `${targetLang}::${text}`;
+
         translatableElements.forEach(el => {
-            // Handle data-i18n for text content
             if (el.hasAttribute('data-i18n')) {
                 const originalText = el.getAttribute('data-i18n');
                 if (originalText && originalText.trim()) {
-                    textsToTranslate.push({
-                        element: el,
-                        text: originalText.trim(),
-                        attribute: 'textContent'
-                    });
+                    originalItems.push({ element: el, text: originalText.trim(), attribute: 'textContent' });
                 }
             }
-            // Handle data-i18n-title for title attribute
             if (el.hasAttribute('data-i18n-title')) {
                 const originalText = el.getAttribute('data-i18n-title');
                 if (originalText && originalText.trim()) {
-                    textsToTranslate.push({
-                        element: el,
-                        text: originalText.trim(),
-                        attribute: 'title'
-                    });
+                    originalItems.push({ element: el, text: originalText.trim(), attribute: 'title' });
                 }
             }
-            // Handle data-i18n-aria-label for aria-label attribute
             if (el.hasAttribute('data-i18n-aria-label')) {
                 const originalText = el.getAttribute('data-i18n-aria-label');
                 if (originalText && originalText.trim()) {
-                    textsToTranslate.push({
-                        element: el,
-                        text: originalText.trim(),
-                        attribute: 'ariaLabel'
-                    });
+                    originalItems.push({ element: el, text: originalText.trim(), attribute: 'ariaLabel' });
                 }
             }
         });
 
+        if (originalItems.length === 0) {
+            return;
+        }
+
+        originalItems.forEach(item => {
+            const cacheKey = buildCacheKey(item.text);
+            if (translationCache[cacheKey]) {
+                applyTranslation(item, translationCache[cacheKey]);
+            } else {
+                itemsByText[item.text] = itemsByText[item.text] || [];
+                itemsByText[item.text].push(item);
+            }
+        });
+
+        const textsToTranslate = Object.keys(itemsByText);
         if (textsToTranslate.length === 0) {
             return;
         }
 
-        // Batch translate texts
-        const batchSize = 10; // Translate in batches to avoid rate limits
+        const batchSize = 10;
         for (let i = 0; i < textsToTranslate.length; i += batchSize) {
             const batch = textsToTranslate.slice(i, i + batchSize);
-            const promises = batch.map(async (item) => {
-                try {
-                    const response = await fetch('/api/translate', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            text: item.text,
-                            from: 'en', // Assuming original texts are in English
-                            to: targetLang
-                        })
-                    });
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
+            try {
+                const response = await fetch('/api/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        texts: batch,
+                        from: 'en',
+                        to: targetLang
+                    })
+                });
 
-                    const result = await response.json();
-                    if (result.success && result.translated) {
-                        if (item.attribute === 'textContent') {
-                            item.element.textContent = result.translated;
-                        } else if (item.attribute === 'title') {
-                            item.element.setAttribute('title', result.translated);
-                        } else if (item.attribute === 'ariaLabel') {
-                            item.element.setAttribute('aria-label', result.translated);
-                        }
-                    }
-                } catch (error) {
-                    console.warn('Failed to translate:', item.text, error);
-                    // Keep original text on failure
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
                 }
-            });
 
-            await Promise.all(promises);
+                const result = await response.json();
+                if (result.success && result.translations) {
+                    batch.forEach(original => {
+                        const translated = result.translations[original] || original;
+                        const cacheKey = buildCacheKey(original);
+                        translationCache[cacheKey] = translated;
+                        const items = itemsByText[original] || [];
+                        items.forEach(item => applyTranslation(item, translated));
+                    });
+                }
+            } catch (error) {
+                console.warn('Failed to translate batch:', batch, error);
+            }
         }
     }
 
