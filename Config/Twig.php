@@ -582,6 +582,15 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             return (int) count($words);
         }));
 
+        // Regex find filter (returns array of matches)
+        $twig->addFilter(new \Twig\TwigFilter('regex_find', function ($pattern, $subject) {
+            if (!is_string($subject) || !is_string($pattern)) {
+                return [];
+            }
+            preg_match_all($pattern, $subject, $matches);
+            return $matches[0] ?? [];
+        }));
+
         // File size format
         $twig->addFilter(new \Twig\TwigFilter('filesizeformat', function ($bytes, $decimals = 2) {
             $bytes = (float) $bytes;

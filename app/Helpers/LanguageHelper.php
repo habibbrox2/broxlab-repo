@@ -157,12 +157,19 @@ class AIClient
                 'Content-Type: application/json',
             ],
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 30,
+            CURLOPT_TIMEOUT => 10, // Reduced from 30 to 10 seconds
+            CURLOPT_CONNECTTIMEOUT => 5, // Add connect timeout
         ]);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
         curl_close($ch);
+
+        if ($error) {
+            error_log('AI Translation curl error: ' . $error);
+            return null;
+        }
 
         if ($httpCode === 200 && $response) {
             $result = json_decode($response, true);
