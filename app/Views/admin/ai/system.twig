@@ -951,18 +951,6 @@
                                             <small class="d-block text-muted">Use other providers if the default fails</small>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Image Context Retention (messages)</label>
-                                        <input type="number" name="image_context_max_messages" class="form-control"
-                                               value="{{ settings.image_context_max_messages|default(10) }}"
-                                               min="1" max="100" step="1">
-                                        <small class="text-muted">Clear stored image context after this many messages.</small>
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">Default Author</label>
-                                        <input type="text" name="default_author" class="form-control"
-                                               value="{{ settings.default_author|default('BroxBhai AI') }}">
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -993,12 +981,6 @@
                                         <textarea name="public_system_prompt" class="form-control" rows="5"
                                                   placeholder="You are a helpful AI assistant for website visitors...">{{ settings.public_system_prompt|default('You are a helpful AI assistant for BroxBhai website visitors. You can answer questions about the website content, services, and provide general information.') }}</textarea>
                                         <small class="text-muted">Instructions for the Public AI Assistant (used on website)</small>
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">Custom Skills & Instructions</label>
-                                        <textarea name="custom_instructions" class="form-control" rows="8"
-                                                  placeholder="Your custom skills, instructions, or knowledge...">{{ settings.custom_instructions|default('') }}</textarea>
-                                        <small class="text-muted">Add custom skills, knowledge, or special instructions for the AI</small>
                                     </div>
                                 </div>
                             </div>

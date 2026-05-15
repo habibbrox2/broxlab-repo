@@ -40,11 +40,7 @@ class AIChatManager {
             activeStatus: document.getElementById('activeStatus'),
             statusText: document.getElementById('statusText'),
             sideUserId: document.getElementById('sideUserId'),
-            sideToken: document.getElementById('sideToken'),
             sideStatus: document.getElementById('sideStatus'),
-            sideIp: document.getElementById('sideIp'),
-            sideDevice: document.getElementById('sideDevice'),
-            sideLocation: document.getElementById('sideLocation'),
             sideMsgCount: document.getElementById('sideMsgCount'),
             sideLastActivity: document.getElementById('sideLastActivity'),
             suggestionContainer: document.getElementById('suggestionContainer'),
@@ -181,22 +177,27 @@ class AIChatManager {
         // Load metadata
         const conv = this.conversations.find(c => c.id == id);
         if (conv) {
-            this.nodes.sideUserId.textContent = conv.user_id || 'Guest';
-            this.nodes.sideToken.textContent = conv.visitor_token || '---';
+            if (this.nodes.sideUserId) {
+                this.nodes.sideUserId.textContent = conv.user_id || 'Guest';
+            }
 
             // Update status display
             const isActive = conv.status === 'open';
             this.updateStatusDisplay(isActive);
 
-            // Update side panel with more visitor info
-            this.nodes.sideIp.textContent = conv.ip_address || 'Unknown';
-            this.nodes.sideDevice.textContent = conv.device || 'Unknown';
-            this.nodes.sideLocation.textContent = conv.location || 'Unknown';
-            this.nodes.sideMsgCount.textContent = conv.message_count || '0';
-            this.nodes.sideLastActivity.textContent = conv.updated_at ? new Date(conv.updated_at).toLocaleString() : '---';
+            if (this.nodes.sideMsgCount) {
+                this.nodes.sideMsgCount.textContent = conv.message_count || '0';
+            }
+            if (this.nodes.sideLastActivity) {
+                this.nodes.sideLastActivity.textContent = conv.updated_at ? new Date(conv.updated_at).toLocaleString() : '---';
+            }
 
-            this.nodes.activeTitle.textContent = `Visitor #${conv.id}`;
-            this.nodes.activeAvatar.textContent = (conv.visitor_token || 'V').substring(0, 1).toUpperCase();
+            if (this.nodes.activeTitle) {
+                this.nodes.activeTitle.textContent = `Visitor #${conv.id}`;
+            }
+            if (this.nodes.activeAvatar) {
+                this.nodes.activeAvatar.textContent = (conv.visitor_token || 'V').substring(0, 1).toUpperCase();
+            }
 
             // Show/hide End Session button based on status
             if (this.nodes.btnEndSession) {
