@@ -489,6 +489,28 @@ $router->get('/posts', function () use ($twig, $contentModel) {
         $posts = array_values($posts);
     }
 
+    // Build pagination URLs for SEO (rel="next" and rel="prev")
+    $paginationNextUrl = '';
+    $paginationPrevUrl = '';
+    
+    if ($page < $totalPages) {
+        $nextPage = $page + 1;
+        $paginationNextUrl = '/posts?page=' . $nextPage;
+        if ($search) $paginationNextUrl .= '&search=' . urlencode($search);
+        if ($category) $paginationNextUrl .= '&category=' . urlencode($category);
+        if ($sort !== 'latest') $paginationNextUrl .= '&sort=' . urlencode($sort);
+        if ($order !== 'DESC') $paginationNextUrl .= '&order=' . urlencode($order);
+    }
+    
+    if ($page > 1) {
+        $prevPage = $page - 1;
+        $paginationPrevUrl = '/posts' . ($prevPage > 1 ? '?page=' . $prevPage : '');
+        if ($search) $paginationPrevUrl .= ($prevPage > 1 ? '&' : '?') . 'search=' . urlencode($search);
+        if ($category) $paginationPrevUrl .= '&category=' . urlencode($category);
+        if ($sort !== 'latest') $paginationPrevUrl .= '&sort=' . urlencode($sort);
+        if ($order !== 'DESC') $paginationPrevUrl .= '&order=' . urlencode($order);
+    }
+
     echo $twig->render('posts/list.twig', [
         'title' => 'Articles',
         'posts' => $posts,
@@ -500,7 +522,9 @@ $router->get('/posts', function () use ($twig, $contentModel) {
         'total_pages' => $totalPages,
         'per_page' => $perPage,
         'total_posts' => $totalPosts,
-        'available_per_page' => [6, 12, 18, 24, 36, 60]
+        'available_per_page' => [6, 12, 18, 24, 36, 60],
+        'pagination_next_url' => $paginationNextUrl,
+        'pagination_prev_url' => $paginationPrevUrl
     ]);
 });
 

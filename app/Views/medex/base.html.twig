@@ -11,11 +11,6 @@
 
 {% block content %}
 <div class="container py-4">
-    {# Breadcrumbs #}
-    {% if breadcrumbs is defined and breadcrumbs|length > 0 %}
-        {% include 'partials/breadcrumb.twig' with { breadcrumbs: breadcrumbs } only %}
-    {% endif %}
-
     {# Page Header #}
     <div class="row mb-4">
         <div class="col-12">

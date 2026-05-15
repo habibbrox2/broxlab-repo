@@ -99,6 +99,19 @@ log_section() {
     echo -e "${CYAN}============================================================${NC}" | tee -a "$LOG_FILE"
 }
 
+git_url_to_https() {
+    local url="$1"
+    if [[ "$url" == git@github.com:* ]]; then
+        echo "$url" | sed 's|^git@github.com:|https://github.com/|'
+    else
+        echo "$url"
+    fi
+}
+
+is_ssh_git_url() {
+    [[ "$1" == git@github.com:* ]]
+}
+
 check_network_connectivity() {
     local retry_count=0
     local max_retries=3
@@ -140,7 +153,7 @@ check_network_connectivity() {
     done
     
     log_warn "Network connectivity check failed. Deployment may fail."
-    return 0
+    return 1
 }
 
 git_clone_with_retry() {
@@ -379,25 +392,22 @@ mkdir -p "$NEW_RELEASE"
 
 # Determine git repository URL
 GIT_URL="$GIT_REPO"
+GIT_URL_HTTPS="$(git_url_to_https "$GIT_REPO")"
 if [[ "$USE_HTTPS" == "true" ]]; then
-    # Convert SSH URL to HTTPS
-    GIT_URL=$(echo "$GIT_REPO" | sed 's|git@github.com:|https://github.com/|')
+    GIT_URL="$GIT_URL_HTTPS"
     log_info "Using HTTPS URL: $GIT_URL"
 fi
 
 # Attempt clone with retry logic
 if ! git_clone_with_retry "$GIT_URL" "$NEW_RELEASE"; then
-    # If SSH failed and not already using HTTPS, try HTTPS fallback
-    if [[ "$USE_HTTPS" == "false" ]] && [[ "$GIT_REPO" == git@* ]]; then
-        log_warn "SSH clone failed, attempting HTTPS fallback..."
-        HTTPS_URL=$(echo "$GIT_REPO" | sed 's|git@github.com:|https://github.com/|')
+    if [[ "$GIT_URL" != "$GIT_URL_HTTPS" ]] && is_ssh_git_url "$GIT_URL"; then
+        log_warn "Clone failed with SSH URL, attempting HTTPS fallback..."
         rm -rf "$NEW_RELEASE" 2>/dev/null || true
         mkdir -p "$NEW_RELEASE"
-        
-        if git_clone_with_retry "$HTTPS_URL" "$NEW_RELEASE"; then
-            log_info "HTTPS fallback succeeded"
+        if git_clone_with_retry "$GIT_URL_HTTPS" "$NEW_RELEASE"; then
+            log_info "HTTPS fallback clone succeeded"
         else
-            log_error "Failed to clone repository (both SSH and HTTPS failed)"
+            log_error "Failed to clone repository using both SSH and HTTPS URLs"
             exit 1
         fi
     else

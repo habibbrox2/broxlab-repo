@@ -484,6 +484,26 @@ $router->group('/mobiles', [], function ($router) use ($twig, $mobileModel, $tax
 
         $mobiles = $mobileModel->fetchMobiles($perPage, $offset, $sort, $order);
 
+        // Build pagination URLs for SEO (rel="next" and rel="prev")
+        $paginationNextUrl = '';
+        $paginationPrevUrl = '';
+
+        if ($page < $totalPages) {
+            $nextPage = $page + 1;
+            $paginationNextUrl = '/mobiles?page=' . $nextPage;
+            if ($search) $paginationNextUrl .= '&search=' . urlencode($search);
+            if ($sort !== 'id') $paginationNextUrl .= '&sort=' . urlencode($sort);
+            if ($order !== 'DESC') $paginationNextUrl .= '&order=' . urlencode($order);
+        }
+
+        if ($page > 1) {
+            $prevPage = $page - 1;
+            $paginationPrevUrl = '/mobiles' . ($prevPage > 1 ? '?page=' . $prevPage : '');
+            if ($search) $paginationPrevUrl .= ($prevPage > 1 ? '&' : '?') . 'search=' . urlencode($search);
+            if ($sort !== 'id') $paginationPrevUrl .= '&sort=' . urlencode($sort);
+            if ($order !== 'DESC') $paginationPrevUrl .= '&order=' . urlencode($order);
+        }
+
         echo $twig->render('mobiles/list.twig', [
             'mobiles' => $mobiles,
             'search' => $search,
@@ -493,7 +513,9 @@ $router->group('/mobiles', [], function ($router) use ($twig, $mobileModel, $tax
             'total_mobiles' => $total,
             'sort' => $sort,
             'order' => $order,
-            'available_per_page' => [6, 12, 18, 24, 36, 48]
+            'available_per_page' => [6, 12, 18, 24, 36, 48],
+            'pagination_next_url' => $paginationNextUrl,
+            'pagination_prev_url' => $paginationPrevUrl
         ]);
     });
 

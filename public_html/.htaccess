@@ -123,7 +123,18 @@ FileETag None
 </IfModule>
 
 # ============================================
-# Serve precompressed assets if available
+# Trailing Slash Handling (Canonical URLs)
+# ============================================
+<IfModule mod_rewrite.c>
+    # Remove trailing slashes (except for root and directories)
+    # This ensures canonical URL consistency
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} /$
+    RewriteRule ^(.+)/$ /$1 [R=301,L]
+</IfModule>
+
+# ============================================
+# CDN & Routing
 # ============================================
 <IfModule mod_rewrite.c>
     # Rewrite /cdn/ to /assets/cdn/

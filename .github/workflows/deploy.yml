@@ -24,6 +24,7 @@ jobs:
           command_timeout: 25m
           script: |
             cd /home/tdhuedhn/broxlab
+            export USE_HTTPS=true
             bash scripts/deploy.sh
 
       - name: Post-Deployment Status

@@ -1,4 +1,5 @@
 ﻿<?php
+
 /**
  * MedEx Controller
  * Handles all routes for herbal pharmaceutical companies data
@@ -38,6 +39,7 @@
 $router->get("/medex", function () use ($twig) {
     try {
         $medexService = new \App\Services\MedexDataService();
+        $medexService->refreshDataIfStale();
     } catch (Exception $e) {
         logError("MedEx service error: " . $e->getMessage());
         renderError(500, "MedEx database is currently unavailable.");
@@ -60,6 +62,7 @@ $router->get("/medex", function () use ($twig) {
         "companies"       => $companies,
         "pagination"      => $pagination,
         "total_companies" => $medexService->getTotalCompanies(),
+        "total_brands"    => $medexService->getTotalBrands(),
         "last_updated"    => $medexService->getLastUpdated(),
         "breadcrumbs"     => $breadcrumbs,
         "current_page"    => $page,
@@ -189,6 +192,7 @@ $router->get("/medex/brand/{id}", function ($id) use ($twig) {
 $router->get("/api/medex/companies", function () {
     try {
         $medexService = new \App\Services\MedexDataService();
+        $medexService->refreshDataIfStale();
     } catch (Exception $e) {
         logError("MedEx service error: " . $e->getMessage());
         http_response_code(500);
@@ -206,6 +210,39 @@ $router->get("/api/medex/companies", function () {
         "count"        => $data["pagination"]["total"],
         "last_updated" => $medexService->getLastUpdated(),
         "companies"    => $data["companies"],
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+});
+
+// API: refresh MedEx cache if stale or requested manually
+$router->get("/api/medex/refresh", function () {
+    header("Content-Type: application/json; charset=utf-8");
+
+    $expectedToken = trim((string)($_ENV["MEDEX_REFRESH_TOKEN"] ?? ""));
+    if ($expectedToken !== "") {
+        $providedToken = trim((string)($_GET["token"] ?? ""));
+        if (!hash_equals($expectedToken, $providedToken)) {
+            http_response_code(401);
+            echo json_encode(["success" => false, "error" => "Unauthorized"]);
+            exit;
+        }
+    }
+
+    try {
+        $medexService = new \App\Services\MedexDataService();
+        $refreshed = $medexService->refreshDataFromSource();
+    } catch (Exception $e) {
+        logError("MedEx service refresh error: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(["success" => false, "error" => "Refresh failed"]);
+        exit;
+    }
+
+    echo json_encode([
+        "success"      => true,
+        "refreshed"    => $refreshed,
+        "last_updated" => $medexService->getLastUpdated(),
+        "age_seconds"  => $medexService->getDataFileAgeSeconds(),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 });

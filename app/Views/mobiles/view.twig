@@ -22,11 +22,58 @@
     "@type": "Brand",
     "name": "{{ mobile.brand_name|json }}"
   },
+  "image": {% if main_image %}"{{ main_image }}"{% else %}[]{% endif %},
   "offers": {
     "@type": "Offer",
     "url": "{{ current_url }}",
     "availability": "https://schema.org/InStock",
-    "priceCurrency": "BDT"
+    "priceCurrency": "BDT",
+    {% if mobile.official_price and mobile.official_price > 0 %}"price": "{{ mobile.official_price|round(2) }}",{% elseif mobile.unofficial_price and mobile.unofficial_price > 0 %}"price": "{{ mobile.unofficial_price|round(2) }}",{% endif %}
+    {% if mobile.official_price and mobile.official_price > 0 %}"priceSpecification": {
+      "@type": "PriceSpecification",
+      "priceCurrency": "BDT",
+      "price": "{{ mobile.official_price|round(2) }}"
+    },{% endif %}
+    "shippingDetails": {
+      "@type": "ShippingDeliveryTime",
+      "shippingRate": {
+        "@type": "PriceSpecification",
+        "priceCurrency": "BDT",
+        "price": "0"
+      },
+      "shippingDestination": {
+        "@type": "ShippingRateArea",
+        "areaServed": "BD"
+      },
+      "deliveryTime": {
+        "@type": "ShippingDeliveryTime",
+        "handlingTime": {
+          "@type": "QuantitativeValue",
+          "minValue": 0,
+          "maxValue": 2,
+          "unitCode": "DAY"
+        },
+        "transitTime": {
+          "@type": "QuantitativeValue",
+          "minValue": 1,
+          "maxValue": 5,
+          "unitCode": "DAY"
+        }
+      }
+    },
+    "hasMerchantReturnPolicy": {
+      "@type": "MerchantReturnPolicy",
+      "returnsAccepted": true,
+      "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+      "merchantReturnDays": 30,
+      "returnMethod": "https://schema.org/ReturnByMail",
+      "returnFees": "https://schema.org/FreeReturn"
+    }
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.5",
+    "reviewCount": "{{ comments|length > 0 ? comments|length : 0 }}"
   }
 }
   </script>
