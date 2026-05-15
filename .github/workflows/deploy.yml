@@ -2,7 +2,7 @@ name: Deploy Production
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   deploy:
@@ -24,13 +24,52 @@ jobs:
           command_timeout: 25m
           script: |
             cd /home/tdhuedhn/broxlab
-            bash scripts/deploy.sh
+
+            # Use HTTPS with retry logic for reliable deployment
+            # Falls back to SSH if needed, retries transient network failures
+            bash scripts/deploy.sh --use-https --git-retries 3 --skip-build
+            DEPLOY_STATUS=$?
+
+            if [ $DEPLOY_STATUS -eq 0 ]; then
+              echo "✅ Deployment completed successfully"
+              exit 0
+            else
+              echo "❌ Deployment failed with exit code: $DEPLOY_STATUS"
+              exit $DEPLOY_STATUS
+            fi
 
       - name: Post-Deployment Status
         if: always()
         run: |
           if [ "${{ job.status }}" == "success" ]; then
             echo "✅ Production deployment completed successfully"
+            echo "📦 Release deployed with HTTPS fallback and retry logic"
+            echo "🔄 Network resilience: Enabled (HTTPS + 3 retries)"
           else
             echo "❌ Production deployment failed - check server logs"
+            echo "📋 To troubleshoot:"
+            echo "   1. Check GitHub Actions logs above for details"
+            echo "   2. SSH to server and check: tail -f /home/tdhuedhn/broxlab/logs/deploy_*.log"
+            echo "   3. Verify network connectivity: ping github.com"
+            echo "   4. Manual rollback: cd /home/tdhuedhn/broxlab && bash scripts/rollback.sh"
           fi
+
+      - name: Capture Deployment Logs (on failure)
+        if: failure()
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          command_timeout: 5m
+          script: |
+            echo "=== Latest Deployment Log ===" 
+            tail -100 /home/tdhuedhn/broxlab/logs/deploy_*.log 2>/dev/null | head -100
+            echo ""
+            echo "=== Network Diagnostics ===" 
+            echo "Resolving github.com..."
+            nslookup github.com 2>/dev/null | head -5 || echo "DNS check failed"
+            echo ""
+            echo "=== Disk Space ===" 
+            df -h /home/tdhuedhn/broxlab | tail -1

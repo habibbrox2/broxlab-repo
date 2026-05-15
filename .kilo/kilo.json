@@ -1,0 +1,18 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "mcp": {
+    "n8n-mcp": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "n8n-mcp@2.12.2"
+      ],
+      "environment": {
+        "MCP_MODE": "stdio",
+        "LOG_LEVEL": "error",
+        "DISABLE_CONSOLE_OUTPUT": "true"
+      }
+    }
+  }
+}
