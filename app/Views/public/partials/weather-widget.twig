@@ -1,4 +1,4 @@
-﻿{# ==================== WEATHER WIDGET SECTION ==================== #}
+{# ==================== WEATHER WIDGET SECTION ==================== #}
 <section class="container home-weather-section py-5" id="weather-section">
     <div class="row">
         <div class="col-12">
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Weather data not available');
             }
 
-            const result = await response.json();
+            const result = await parseJsonResponse(response);
 
             if (result.success && result.data) {
                 renderWeatherWidget(result.data);
@@ -178,6 +178,21 @@ document.addEventListener('DOMContentLoaded', function() {
      * Render weather widget with data
      * @param object data - Weather data from API
      */
+    async function parseJsonResponse(response) {
+        const text = await response.text();
+        const cleanText = text.replace(/^\uFEFF/, '').trim();
+        if (!cleanText) {
+            return {};
+        }
+
+        try {
+            return JSON.parse(cleanText);
+        } catch (error) {
+            console.error('Failed to parse weather JSON response:', {error, text});
+            return {};
+        }
+    }
+
     function renderWeatherWidget(data) {
         const current = data.current || {};
         const locationName = current.location_name || 'Selected Location';

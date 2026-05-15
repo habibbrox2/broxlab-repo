@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // app/Helpers/LanguageHelper.php
 
 class LanguageHelper
@@ -6,6 +6,7 @@ class LanguageHelper
     private static $currentLang = null;
     private static $translations = [];
     private static $aiClient = null;
+    private static $cacheTableInitialized = false;
 
     /**
      * Get current language
@@ -32,7 +33,7 @@ class LanguageHelper
     /**
      * Translate text
      */
-    public static function translate(string $text, string $from = 'en', string $to = null): string
+    public static function translate(string $text, string $from = 'en', string $to = null, bool $useAI = true): string
     {
         if ($to === null) {
             $to = self::getCurrentLang();
@@ -54,15 +55,17 @@ class LanguageHelper
             return $cached;
         }
 
-        // Use AI for translation
-        $translated = self::translateWithAI($text, $from, $to);
-        if ($translated) {
-            self::cacheTranslation($text, $translated, $from, $to);
-            self::$translations[$key] = $translated;
-            return $translated;
+        if ($useAI) {
+            $translated = self::translateWithAI($text, $from, $to);
+            if ($translated) {
+                self::cacheTranslation($text, $translated, $from, $to);
+                self::$translations[$key] = $translated;
+                return $translated;
+            }
         }
 
-        // Fallback to original
+        // Fallback to original text. Also cache fallback for this request.
+        self::$translations[$key] = $text;
         return $text;
     }
 
@@ -71,8 +74,29 @@ class LanguageHelper
      */
     private static function getCachedTranslation(string $text, string $from, string $to): ?string
     {
-        // TODO: Implement database caching
-        // For now, return null
+        $mysqli = self::getDatabase();
+        if (!$mysqli) {
+            return null;
+        }
+
+        self::ensureTranslationCacheTableExists($mysqli);
+
+        $sourceHash = md5($text . $from . $to);
+        $stmt = $mysqli->prepare('SELECT translated_text FROM ai_translation_cache WHERE source_hash = ? LIMIT 1');
+        if (!$stmt) {
+            return null;
+        }
+
+        $stmt->bind_param('s', $sourceHash);
+        $stmt->execute();
+        $stmt->bind_result($translated);
+
+        if ($stmt->fetch()) {
+            $stmt->close();
+            return $translated;
+        }
+
+        $stmt->close();
         return null;
     }
 
@@ -81,7 +105,62 @@ class LanguageHelper
      */
     private static function cacheTranslation(string $original, string $translated, string $from, string $to): void
     {
-        // TODO: Store in database
+        $mysqli = self::getDatabase();
+        if (!$mysqli) {
+            return;
+        }
+
+        self::ensureTranslationCacheTableExists($mysqli);
+
+        $sourceHash = md5($original . $from . $to);
+        $stmt = $mysqli->prepare(
+            'INSERT INTO ai_translation_cache (source_hash, source_text, from_lang, to_lang, translated_text) ' .
+                'VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE translated_text = VALUES(translated_text)'
+        );
+
+        if (!$stmt) {
+            return;
+        }
+
+        $stmt->bind_param('sssss', $sourceHash, $original, $from, $to, $translated);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    /**
+     * Get a mysqli database connection if available
+     */
+    private static function getDatabase(): ?mysqli
+    {
+        global $mysqli;
+        return ($mysqli instanceof mysqli) ? $mysqli : null;
+    }
+
+    private static function ensureTranslationCacheTableExists(mysqli $mysqli): void
+    {
+        if (self::$cacheTableInitialized) {
+            return;
+        }
+
+        $sql = "CREATE TABLE IF NOT EXISTS `ai_translation_cache` (
+            `id` int unsigned NOT NULL AUTO_INCREMENT,
+            `source_hash` varchar(64) NOT NULL,
+            `source_text` text NOT NULL,
+            `from_lang` varchar(10) NOT NULL,
+            `to_lang` varchar(10) NOT NULL,
+            `translated_text` text NOT NULL,
+            `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `idx_source_hash` (`source_hash`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+        try {
+            $mysqli->query($sql);
+        } catch (Throwable $e) {
+            error_log('Translation cache table creation skipped: ' . $e->getMessage());
+        }
+
+        self::$cacheTableInitialized = true;
     }
 
     /**
