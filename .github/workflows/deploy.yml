@@ -10,55 +10,50 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Prepare SSH private key
         run: |
           mkdir -p ~/.ssh
           if [ -z "${{ secrets.SSH_KEY_BASE64 }}" ]; then
-            echo 'Error: SSH_KEY_BASE64 secret is required.' >&2
+            echo "SSH_KEY_BASE64 is required." >&2
             exit 1
           fi
-          echo "${{ secrets.SSH_KEY_BASE64 }}" | base64 --decode > /tmp/broxlab_action
-          chmod 600 /tmp/broxlab_action
+          echo "${{ secrets.SSH_KEY_BASE64 }}" | base64 --decode > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
         shell: bash
 
-      - name: Deploy to server (run simple_deploy.sh via HTTPS clone)
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
-          key_path: /tmp/broxlab_action
-          passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
-          port: 22
-          timeout: 60s
-          command_timeout: 25m
-          script: |
-            set -euo pipefail
-            # Determine repo and ref. Optionally set secrets.REPO_URL to override default.
-            GIT_REPO="${{ secrets.REPO_URL }}"
-            if [ -z "$GIT_REPO" ]; then
-              GIT_REPO="https://github.com/habibbrox2/broxlab-repo.git"
-            fi
-            REF="${{ github.ref_name }}"
-            if [ -z "$REF" ]; then
-              REF="main"
-            fi
-            # Ensure base dir exists
+      - name: Deploy to production server
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY_BASE64 }}" | base64 --decode > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          export REMOTE_BASE="${{ secrets.REMOTE_BASE }}"
+          if [ -z "$REMOTE_BASE" ]; then
             REMOTE_BASE="/home/${{ secrets.USER }}/broxlab"
-            mkdir -p "$REMOTE_BASE"
-            cd "$REMOTE_BASE" || exit 1
-            # Run the simple deploy script on the server which will clone via HTTPS
-            bash scripts/simple_deploy.sh --repo "$GIT_REPO" --ref "$REF" --base "$REMOTE_BASE"
+          fi
+          export REMOTE_USER="${{ secrets.USER }}"
+          export REMOTE_HOST="${{ secrets.HOST }}"
+          export REMOTE_PORT="${{ secrets.SSH_PORT }}"
+          if [ -z "$REMOTE_PORT" ]; then
+            REMOTE_PORT=22
+          fi
+          bash scripts/local_deploy.sh \
+            -u "$REMOTE_USER" \
+            -h "$REMOTE_HOST" \
+            -k ~/.ssh/deploy_key \
+            -b "$REMOTE_BASE" \
+            -p "$REMOTE_PORT" \
+            --no-build
+        shell: bash
 
-
-
-      - name: Post-Deployment Status
+      - name: Deployment result
         if: always()
         run: |
-          if [ "${{ job.status }}" == "success" ]; then
+          if [ "${{ job.status }}" = "success" ]; then
             echo "✅ Production deployment completed successfully"
           else
             echo "❌ Production deployment failed - check server logs"
+            exit 1
           fi

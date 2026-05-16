@@ -127,59 +127,64 @@ done
 log "Syncing changes to remote release"
 rsync -az --delete -e "ssh ${SSH_OPTS[*]}" "${RSYNC_EXCLUDES[@]}" ./ "$USER@$HOST:$REMOTE_RELEASE/"
 
-log "Activating remote release"
-ssh "${SSH_OPTS[@]}" "$USER@$HOST" bash -s <<'REMOTE'
-set -euo pipefail
-BASE="$REMOTE_BASE"
-RELEASE="$REMOTE_RELEASE"
-SHARED="$REMOTE_SHARED"
-LOGS="$REMOTE_LOGS"
-PID_FILE="$REMOTE_PID"
+REMOTE_APP="$REMOTE_BASE/app"
 
-if [[ ! -f "$SHARED/.env" ]]; then
-  echo "[remote] Missing $SHARED/.env" >&2
+log "Activating remote release"
+ssh "${SSH_OPTS[@]}" "$USER@$HOST" bash -s <<EOF
+set -euo pipefail
+BASE='$REMOTE_BASE'
+RELEASE='$REMOTE_RELEASE'
+SHARED='$REMOTE_SHARED'
+LOGS='$REMOTE_LOGS'
+PID_FILE='$REMOTE_PID'
+REMOTE_APP='$REMOTE_APP'
+RELEASE_TS='$RELEASE_TS'
+NO_BUILD='$NO_BUILD'
+
+if [[ ! -f "\$SHARED/.env" ]]; then
+  echo "[remote] Missing \$SHARED/.env" >&2
   exit 1
 fi
-mkdir -p "$SHARED/storage/uploads" "$SHARED/backups/code" "$SHARED/backups/database" "$LOGS"
-ln -sfn "$SHARED/.env" "$RELEASE/.env"
-mkdir -p "$RELEASE/public_html"
-ln -sfn "$SHARED/storage/uploads" "$RELEASE/public_html/uploads"
-ln -sfn "$SHARED/storage" "$RELEASE/storage"
+mkdir -p "\$SHARED/storage/uploads" "\$SHARED/backups/code" "\$SHARED/backups/database" "\$LOGS"
+ln -sfn "\$SHARED/.env" "\$RELEASE/.env"
+mkdir -p "\$RELEASE/public_html"
+ln -sfn "\$SHARED/storage/uploads" "\$RELEASE/public_html/uploads"
+ln -sfn "\$SHARED/storage" "\$RELEASE/storage"
 
-if [[ -f "$RELEASE/composer.json" && command -v composer >/dev/null 2>&1 ]]; then
+if [[ -f "\$RELEASE/composer.json" && command -v composer >/dev/null 2>&1 ]]; then
   echo "[remote] Installing PHP dependencies"
-  (cd "$RELEASE" && composer install --no-dev --optimize-autoloader --no-interaction --no-progress)
+  (cd "\$RELEASE" && composer install --no-dev --optimize-autoloader --no-interaction --no-progress)
 fi
 
-if [[ -f "$RELEASE/package.json" && command -v npm >/dev/null 2>&1 ]]; then
+if [[ -f "\$RELEASE/package.json" && command -v npm >/dev/null 2>&1 ]]; then
   echo "[remote] Installing Node dependencies"
-  (cd "$RELEASE" && npm ci --include=dev)
-  if [[ "$NO_BUILD" != "true" ]]; then
-    if npm run --prefix "$RELEASE" build:prod >/dev/null 2>&1; then
-      (cd "$RELEASE" && npm run build:prod)
-    elif npm run --prefix "$RELEASE" build >/dev/null 2>&1; then
-      (cd "$RELEASE" && npm run build)
+  (cd "\$RELEASE" && npm ci --include=dev)
+  if [[ "\$NO_BUILD" != "true" ]]; then
+    if npm run --prefix "\$RELEASE" build:prod >/dev/null 2>&1; then
+      (cd "\$RELEASE" && npm run build:prod)
+    elif npm run --prefix "\$RELEASE" build >/dev/null 2>&1; then
+      (cd "\$RELEASE" && npm run build)
     fi
   fi
 fi
 
-if [[ -f "$PID_FILE" ]]; then
-  pid=$(cat "$PID_FILE" 2>/dev/null || true)
-  if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
-    echo "[remote] Stopping existing Node process $pid"
-    kill "$pid" || true
+if [[ -f "\$PID_FILE" ]]; then
+  pid=$(cat "\$PID_FILE" 2>/dev/null || true)
+  if [[ -n "\$pid" ]] && kill -0 "\$pid" 2>/dev/null; then
+    echo "[remote] Stopping existing Node process \$pid"
+    kill "\$pid" || true
     sleep 2
   fi
-  rm -f "$PID_FILE"
+  rm -f "\$PID_FILE"
 fi
 
-ln -sfn "$RELEASE" "$REMOTE_APP/current"
-rm -rf "$REMOTE_BASE/public_html"
-ln -sfn "$RELEASE/public_html" "$REMOTE_BASE/public_html"
+ln -sfn "\$RELEASE" "\$REMOTE_APP/current"
+rm -rf "\$REMOTE_BASE/public_html"
+ln -sfn "\$RELEASE/public_html" "\$REMOTE_BASE/public_html"
 
-if [[ "$NO_START" != "true" ]]; then
+if [[ "\$NO_START" != "true" ]]; then
   echo "[remote] Starting Node server"
-  nohup env NODE_ENV=production bash -lc "cd '$RELEASE' && npm start" > "$LOGS/node-server_$RELEASE_TS.log" 2>&1 &
-  echo $! > "$PID_FILE"
+  nohup env NODE_ENV=production bash -lc "cd '\$RELEASE' && npm start" > "\$LOGS/node-server_\$RELEASE_TS.log" 2>&1 &
+  echo $! > "\$PID_FILE"
 fi
-REMOTE
+EOF
