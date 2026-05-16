@@ -34,7 +34,9 @@ SKIP_CLEANUP=false
 SKIP_BUILD=false
 KEEP_RELEASES=3
 USE_HTTPS=false
+DRY_RUN=false
 GIT_CLONE_RETRIES=3
+GITHUB_SSH_IP_FALLBACKS=("140.82.112.4" "140.82.112.3" "140.82.113.3")
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -46,10 +48,11 @@ while [[ $# -gt 0 ]]; do
         --base) BASE="$2"; shift 2 ;;
         --no-node-start) START_NODE_SERVER=false; shift ;;
         --use-https) USE_HTTPS=true; shift ;;
+        --dry-run) DRY_RUN=true; shift ;;
         --git-retries) GIT_CLONE_RETRIES="$2"; shift 2 ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [--skip-backup] [--skip-db-backup] [--skip-cleanup] [--skip-build] [--keep N] [--base PATH] [--no-node-start] [--use-https] [--git-retries N]"
+            echo "Usage: $0 [--skip-backup] [--skip-db-backup] [--skip-cleanup] [--skip-build] [--keep N] [--base PATH] [--no-node-start] [--use-https] [--dry-run] [--git-retries N]"
             exit 1
             ;;
     esac
@@ -159,6 +162,7 @@ check_network_connectivity() {
 git_clone_with_retry() {
     local repo_url="$1"
     local target_dir="$2"
+    local ssh_command="${3:-}"
     local retry=0
     
     while [[ $retry -lt $GIT_CLONE_RETRIES ]]; do
@@ -166,7 +170,13 @@ git_clone_with_retry() {
         log_debug "Repository: $repo_url"
         log_debug "Target: $target_dir"
         
-        if git clone --depth=1 "$repo_url" "$target_dir" 2>&1 | tee -a "$LOG_FILE"; then
+        if [[ -n "$ssh_command" ]]; then
+            GIT_SSH_COMMAND="$ssh_command" git clone --depth=1 "$repo_url" "$target_dir" 2>&1 | tee -a "$LOG_FILE"
+        else
+            git clone --depth=1 "$repo_url" "$target_dir" 2>&1 | tee -a "$LOG_FILE"
+        fi
+        
+        if [[ ${PIPESTATUS[0]} -eq 0 ]]; then
             log_info "Git clone successful"
             return 0
         fi
@@ -179,6 +189,20 @@ git_clone_with_retry() {
     done
     
     log_error "Git clone failed after $GIT_CLONE_RETRIES attempts"
+    return 1
+}
+
+git_clone_ssh_ip_fallback() {
+    local repo_url="$1"
+    local target_dir="$2"
+    local ssh_ip="$3"
+    local fallback_url
+    fallback_url=$(echo "$repo_url" | sed "s|^git@github.com:|ssh://git@${ssh_ip}/|")
+    log_warn "Attempting GitHub SSH IP fallback via $ssh_ip"
+    if git_clone_with_retry "$fallback_url" "$target_dir" 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'; then
+        log_info "Git clone succeeded using GitHub IP fallback"
+        return 0
+    fi
     return 1
 }
 
@@ -388,7 +412,13 @@ log_section "FETCHING RELEASE"
 # Check network before attempting clone
 check_network_connectivity || log_warn "Network check had issues, proceeding with git clone..."
 
+# Prepare new release dir. If CI already uploaded contents into this dir, skip cloning.
 mkdir -p "$NEW_RELEASE"
+clone_success=false
+if [[ -n "$(ls -A "$NEW_RELEASE" 2>/dev/null)" ]]; then
+    log_info "Release directory $NEW_RELEASE already populated; skipping git clone."
+    clone_success=true
+fi
 
 # Determine git repository URL
 GIT_URL="$GIT_REPO"
@@ -399,21 +429,35 @@ if [[ "$USE_HTTPS" == "true" ]]; then
 fi
 
 # Attempt clone with retry logic
-if ! git_clone_with_retry "$GIT_URL" "$NEW_RELEASE"; then
+clone_success=false
+if git_clone_with_retry "$GIT_URL" "$NEW_RELEASE"; then
+    clone_success=true
+else
     if [[ "$GIT_URL" != "$GIT_URL_HTTPS" ]] && is_ssh_git_url "$GIT_URL"; then
         log_warn "Clone failed with SSH URL, attempting HTTPS fallback..."
         rm -rf "$NEW_RELEASE" 2>/dev/null || true
         mkdir -p "$NEW_RELEASE"
         if git_clone_with_retry "$GIT_URL_HTTPS" "$NEW_RELEASE"; then
             log_info "HTTPS fallback clone succeeded"
-        else
-            log_error "Failed to clone repository using both SSH and HTTPS URLs"
-            exit 1
+            clone_success=true
         fi
-    else
-        log_error "Failed to clone repository"
-        exit 1
     fi
+fi
+
+if [[ "$clone_success" != "true" ]]; then
+    rm -rf "$NEW_RELEASE" 2>/dev/null || true
+    mkdir -p "$NEW_RELEASE"
+    for ip in "${GITHUB_SSH_IP_FALLBACKS[@]}"; do
+        if git_clone_ssh_ip_fallback "$GIT_REPO" "$NEW_RELEASE" "$ip"; then
+            clone_success=true
+            break
+        fi
+    done
+fi
+
+if [[ "$clone_success" != "true" ]]; then
+    log_error "Failed to clone repository using SSH, HTTPS, and GitHub IP fallback"
+    exit 1
 fi
 
 if [[ -d "$NEW_RELEASE/web-host/scripts" ]]; then

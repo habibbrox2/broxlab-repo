@@ -138,7 +138,7 @@ GitHub repository সিক্রেটস:
 ```bash
 cd /home/tdhuedhn/broxlab
 export USE_HTTPS=true
-bash scripts/deploy.sh
+bash web-host/scripts/deploy.sh
 ```
 
 এটি GitHub SSH ক্লোন সমস্যা থাকলে HTTPS ফallback সক্ষম করে।
@@ -158,13 +158,13 @@ bash scripts/deploy.sh
 
 ```bash
 cd /home/tdhuedhn/broxlab
-bash scripts/deploy.sh
+bash web-host/scripts/deploy.sh
 ```
 
 ### 8.3 ট্রায়াল মোড
 
 ```bash
-bash scripts/deploy.sh --dry-run
+bash web-host/scripts/deploy.sh --dry-run
 ```
 
 ## 9. GitHub ক্লোন সমস্যা সমাধান
@@ -177,12 +177,17 @@ bash scripts/deploy.sh --dry-run
 
 ### সমাধান
 
+- নিশ্চিত করুন যে আপনার পাসফ্রেজ-প্রোটেক্টেড কী যদি ব্যবহার করেন, তাহলে `SSH_KEY_PASSPHRASE` গিটহাব সিক্রেটস-এ সেট করা আছে।
+- যদি সার্ভার `publickey` অস্বীকার করে এবং পরবর্তীতে `password` প্রম্পট করে, তাহলে `~/.ssh/authorized_keys`-এ সঠিক পাবলিক কী আছে কিনা এবং ফাইল অনুমতিগুলি সঠিক কিনা তা চেক করুন।
+
 ```bash
 nslookup github.com
 ping -c 1 github.com
 ```
 
 `deploy.sh` এখন HTTPS ফallback সমর্থন করে। যদি SSH ক্লোন ব্যর্থ হয়, তাহলে এটি HTTPS URL এ পুনরায় চেষ্টা করবে।
+
+- যদি সার্ভার `github.com` DNS রেজোলভিং করতে না পারে, স্ক্রিপ্ট এখন GitHub SSH IP ফallback চেষ্টা করবে।
 
 > যদি সার্ভার `github.com` রেজোলভই না করতে পারে, তাহলে প্রথমে DNS ও নেটওয়ার্ক ঠিক করতে হবে।
 
@@ -191,19 +196,19 @@ ping -c 1 github.com
 ### 10.1 কোড ব্যাকআপ
 
 ```bash
-bash scripts/backup.sh --keep 5
+bash web-host/scripts/backup.sh --keep 5
 ```
 
 ### 10.2 ডাটাবেস ব্যাকআপ
 
 ```bash
-bash scripts/database-backup.sh --keep 5
+bash web-host/scripts/database-backup.sh --keep 5
 ```
 
 ### 10.3 রোলব্যাক
 
 ```bash
-bash scripts/rollback.sh
+bash web-host/scripts/rollback.sh
 ```
 
 ## 11. সাধারণ সমস্যা ও সমাধান
