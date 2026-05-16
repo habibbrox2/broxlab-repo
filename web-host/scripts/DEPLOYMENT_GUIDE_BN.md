@@ -61,6 +61,14 @@ web-host/scripts/deploy.sh --base /home/deploy/broxlab --repo git@github.com:you
 - `.github/workflows/deploy.yml` ওয়ার্কফ্লো পুশে SSH ব্যবহার করে রিমোটে `deploy.sh` কল করতে পারে।
 - ওয়ার্কফ্লো-তে সিক্রেটস: `HOST`, `USER`, `SSH_KEY_BASE64` ইত্যাদি থাকতে হবে।
 
+## ডিপ্লয় সিক্রেট চেকলিস্ট
+- `HOST`: রিমোট সার্ভার এক্সেস করার হোস্ট বা IP
+- `USER`: SSH লগইন ইউজার
+- `SSH_KEY_BASE64`: base64-এ এনকোড করা SSH প্রাইভেট কী
+- `REMOTE_BASE`: রিমোট বেস পাথ (ডিফল্ট `/home/$USER/broxlab`)
+- `SSH_PORT`: SSH পোর্ট (ডিফল্ট `22`)
+- `KEEP_RELEASES`: সার্ভারে রাখতে চান রিলিজের সংখ্যা
+
 ## সহজ চেকলিস্ট
 - [ ] shared/.env কনফিগার করা আছে
 - [ ] Node ও PHP প্রয়োজনীয়তা ইনস্টল করা আছে

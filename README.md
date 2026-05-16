@@ -44,6 +44,27 @@ BroxLab is a full-stack PHP app with Twig views and one unified Node.js service 
 - Point `DB_HOST` to the actual MySQL host provided by the host, not `localhost` unless MySQL is local
 - Use the same single Node process for AI, OCR, and tool routes
 
+## Remote Deploy
+
+GitHub Actions can deploy directly to the remote server using SSH and the remote `deploy.sh` helper.
+
+Required secrets for remote deploy:
+- `HOST` – remote server host or IP
+- `USER` – SSH username
+- `SSH_KEY_BASE64` – base64-encoded SSH private key
+- `REMOTE_BASE` – remote deployment base path (default `/home/$USER/broxlab`)
+- `SSH_PORT` – SSH port (default `22`)
+- `KEEP_RELEASES` – number of releases to keep on the server
+
+Remote server checklist:
+- `app/releases/` exists for release timestamps
+- `app/current` is a symlink to the active release
+- `app/shared/.env` exists
+- `app/shared/storage/uploads` exists
+- `public_html` symlinks to `app/current/public_html`
+- `logs/` is writable and stores `node-server_<timestamp>.log`
+- `deploy.sh` and `rollback.sh` are present and executable
+
 ## Verify
 
 - `npm run lint`

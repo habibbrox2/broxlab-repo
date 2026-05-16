@@ -26,9 +26,8 @@ jobs:
 
       - name: Deploy to production server
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY_BASE64 }}" | base64 --decode > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
+          set -euo pipefail
+
           export REMOTE_BASE="${{ secrets.REMOTE_BASE }}"
           if [ -z "$REMOTE_BASE" ]; then
             REMOTE_BASE="/home/${{ secrets.USER }}/broxlab"
@@ -39,13 +38,32 @@ jobs:
           if [ -z "$REMOTE_PORT" ]; then
             REMOTE_PORT=22
           fi
-          bash scripts/local_deploy.sh \
-            -u "$REMOTE_USER" \
-            -h "$REMOTE_HOST" \
-            -k ~/.ssh/deploy_key \
-            -b "$REMOTE_BASE" \
-            -p "$REMOTE_PORT" \
-            --no-build
+          export KEEP_RELEASES="${{ secrets.KEEP_RELEASES }}"
+          if [ -z "$KEEP_RELEASES" ]; then
+            KEEP_RELEASES=3
+          fi
+
+          export GIT_REPO="${{ secrets.GIT_REPO }}"
+          if [ -z "$GIT_REPO" ]; then
+            GIT_REPO="git@github.com:${{ github.repository }}.git"
+          fi
+          export REF="main"
+
+          SSH_OPTS=( -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p "$REMOTE_PORT" )
+
+          echo "Creating remote directories"
+          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" "mkdir -p '$REMOTE_BASE/web-host/scripts' '$REMOTE_BASE/app/shared' '$REMOTE_BASE/logs'"
+
+          echo "Copying deploy helper scripts to remote"
+          rsync -az -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p $REMOTE_PORT" \
+            web-host/scripts/deploy.sh web-host/scripts/rollback.sh web-host/scripts/DEPLOYMENT_GUIDE_BN.md web-host/scripts/DEPLOYMENT_GUIDE.md \
+            "$REMOTE_USER@$REMOTE_HOST:$REMOTE_BASE/web-host/scripts/"
+
+          echo "Ensuring remote deploy scripts are executable"
+          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" bash -lc "chmod +x '$REMOTE_BASE/web-host/scripts/deploy.sh' '$REMOTE_BASE/web-host/scripts/rollback.sh'"
+
+          echo "Invoking remote web-host deploy script"
+          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" bash -lc "cd '$REMOTE_BASE' && bash web-host/scripts/deploy.sh --base '$REMOTE_BASE' --repo '$GIT_REPO' --ref '$REF' --keep '$KEEP_RELEASES'"
         shell: bash
 
       - name: Deployment result
