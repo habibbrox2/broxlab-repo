@@ -50,9 +50,10 @@ jobs:
           export REF="main"
 
           SSH_OPTS=( -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p "$REMOTE_PORT" )
+          REMOTE_WORKFLOW_DIR="/home/$REMOTE_USER/.github/workflows"
 
           echo "Creating remote directories"
-          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" "mkdir -p '$REMOTE_BASE/scripts' '$REMOTE_BASE/app/shared' '$REMOTE_BASE/logs' '$HOME/.github/workflows'"
+          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" "mkdir -p '$REMOTE_BASE/scripts' '$REMOTE_BASE/app/shared' '$REMOTE_BASE/logs' '$REMOTE_WORKFLOW_DIR'"
 
           echo "Copying deploy helper scripts to remote"
           rsync -az -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p $REMOTE_PORT" \
@@ -61,7 +62,7 @@ jobs:
 
           echo "Copying workflow file to remote home path"
           rsync -az -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p $REMOTE_PORT" \
-            .github/workflows/deploy.yml "$REMOTE_USER@$REMOTE_HOST:$HOME/.github/workflows/deploy.yml"
+            .github/workflows/deploy.yml "$REMOTE_USER@$REMOTE_HOST:$REMOTE_WORKFLOW_DIR/deploy.yml"
 
           echo "Ensuring remote deploy scripts are executable"
           ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" bash -lc 'chmod +x "$0" "$1"' -- "$REMOTE_BASE/scripts/deploy.sh" "$REMOTE_BASE/scripts/rollback.sh"
