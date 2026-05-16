@@ -14,14 +14,21 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare SSH private key
+        id: prepare
         run: |
           mkdir -p ~/.ssh
           if [ -n "${{ secrets.SSH_KEY_BASE64 }}" ]; then
             echo "${{ secrets.SSH_KEY_BASE64 }}" | base64 --decode > /tmp/broxlab_action
-          else
+          elif [ -n "${{ secrets.SSH_KEY }}" ]; then
             printf '%s' "${{ secrets.SSH_KEY }}" > /tmp/broxlab_action
+          else
+            echo 'Error: SSH_KEY_BASE64 or SSH_KEY secret is required.' >&2
+            exit 1
           fi
           chmod 600 /tmp/broxlab_action
+          echo 'ssh_key<<EOF' >> $GITHUB_OUTPUT
+          cat /tmp/broxlab_action >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Deploy to server
@@ -29,7 +36,7 @@ jobs:
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
-          key_path: /tmp/broxlab_action
+          key: ${{ steps.prepare.outputs.ssh_key }}
           port: 22
           timeout: 60s
           command_timeout: 25m
