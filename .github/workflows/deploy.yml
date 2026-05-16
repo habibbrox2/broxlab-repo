@@ -2,7 +2,7 @@ name: Deploy Production
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   deploy:
@@ -10,73 +10,27 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Prepare SSH private key
-        run: |
-          mkdir -p ~/.ssh
-          if [ -z "${{ secrets.SSH_KEY_BASE64 }}" ]; then
-            echo "SSH_KEY_BASE64 is required." >&2
-            exit 1
-          fi
-          echo "${{ secrets.SSH_KEY_BASE64 }}" | base64 --decode > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-        shell: bash
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          timeout: 60s
+          command_timeout: 25m
+          script: |
+            cd /home/tdhuedhn/broxlab
+            bash scripts/deploy.sh
 
-      - name: Deploy to production server
-        run: |
-          set -euo pipefail
-
-          export REMOTE_BASE="${{ secrets.REMOTE_BASE }}"
-          if [ -z "$REMOTE_BASE" ]; then
-            REMOTE_BASE="/home/${{ secrets.USER }}/broxlab"
-          fi
-          export REMOTE_USER="${{ secrets.USER }}"
-          export REMOTE_HOST="${{ secrets.HOST }}"
-          export REMOTE_PORT="${{ secrets.SSH_PORT }}"
-          if [ -z "$REMOTE_PORT" ]; then
-            REMOTE_PORT=22
-          fi
-          export KEEP_RELEASES="${{ secrets.KEEP_RELEASES }}"
-          if [ -z "$KEEP_RELEASES" ]; then
-            KEEP_RELEASES=3
-          fi
-
-          export GIT_REPO="${{ secrets.GIT_REPO }}"
-          if [ -z "$GIT_REPO" ]; then
-            GIT_REPO="git@github.com:${{ github.repository }}.git"
-          fi
-          export REF="main"
-
-          SSH_OPTS=( -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p "$REMOTE_PORT" )
-          REMOTE_WORKFLOW_DIR="/home/$REMOTE_USER/.github/workflows"
-
-          echo "Creating remote directories"
-          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" "mkdir -p '$REMOTE_BASE/scripts' '$REMOTE_BASE/app/shared' '$REMOTE_BASE/logs' '$REMOTE_WORKFLOW_DIR'"
-
-          echo "Copying deploy helper scripts to remote"
-          rsync -az -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p $REMOTE_PORT" \
-            web-host/scripts/deploy.sh web-host/scripts/rollback.sh \
-            "$REMOTE_USER@$REMOTE_HOST:$REMOTE_BASE/scripts/"
-
-          echo "Copying workflow file to remote home path"
-          rsync -az -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p $REMOTE_PORT" \
-            .github/workflows/deploy.yml "$REMOTE_USER@$REMOTE_HOST:$REMOTE_WORKFLOW_DIR/deploy.yml"
-
-          echo "Ensuring remote deploy scripts are executable"
-          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" bash -lc "chmod +x '$REMOTE_BASE/scripts/deploy.sh' '$REMOTE_BASE/scripts/rollback.sh'"
-
-          echo "Invoking remote deploy script"
-          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" bash -lc "cd '$REMOTE_BASE' && bash '$REMOTE_BASE/scripts/deploy.sh' --base '$REMOTE_BASE' --repo '$GIT_REPO' --ref '$REF' --keep '$KEEP_RELEASES'"
-        shell: bash
-
-      - name: Deployment result
+      - name: Post-Deployment Status
         if: always()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
+          if [ "${{ job.status }}" == "success" ]; then
             echo "✅ Production deployment completed successfully"
           else
             echo "❌ Production deployment failed - check server logs"
-            exit 1
           fi

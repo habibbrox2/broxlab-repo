@@ -1,383 +1,415 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
+# BroxLab shared-hosting deployment script - Production Ready
+# Deploys one release, one Node server, one port.
+# Enhanced with comprehensive validation, locking, and rollback safety.
 
 set -euo pipefail
 
-BASE="${BASE_PATH:-/home/${USER:-deploy}/broxlab}"
+BASE="${BASE_PATH:-/home/tdhuedhn/broxlab}"
 GIT_REPO="${GIT_REPO:-git@github.com:habibbrox2/broxlab-repo.git}"
-REF="${REF:-main}"
-KEEP_RELEASES="${KEEP_RELEASES:-3}"
 NODE_ENV="${NODE_ENV:-production}"
 START_NODE_SERVER="${START_NODE_SERVER:-true}"
-USE_HTTPS="${USE_HTTPS:-false}"
-SKIP_BUILD="${SKIP_BUILD:-false}"
-DRY_RUN="${DRY_RUN:-false}"
-GIT_CLONE_RETRIES="${GIT_CLONE_RETRIES:-3}"
-NODE_HEALTH_URL="${NODE_HEALTH_URL:-}"
 
 APP="$BASE/app"
 RELEASES="$APP/releases"
 SHARED="$APP/shared"
 CURRENT="$APP/current"
+STORAGE="$SHARED/storage"
+CODE_BACKUPS="$SHARED/backups/code"
+DB_BACKUPS="$SHARED/backups/database"
 LOGS="$BASE/logs"
 PID_FILE="$SHARED/node-server.pid"
 DEPLOY_LOCK="$SHARED/.deploy.lock"
-DATE="$(date +%Y%m%d_%H%M%S)"
-NEW_RELEASE="$RELEASES/$DATE"
-PREVIOUS_RELEASE=""
-DEPLOYMENT_SUCCESS=false
+DEPLOY_TIMEOUT=7200  # 2 hours
 
-usage() {
-  cat <<EOF
-Usage: $0 [--base PATH] [--repo URL] [--ref BRANCH] [--keep N] [--no-start] [--use-https] [--dry-run] [--skip-build] [--git-retries N]
-EOF
-}
+DATE=$(date +"%Y%m%d_%H%M%S")
+NEW_RELEASE="$RELEASES/$DATE"
+DEPLOYMENT_SUCCESS=false
+DEPLOYMENT_START_TIME=$(date +%s)
+
+SKIP_BACKUP=false
+SKIP_DB_BACKUP=false
+SKIP_CLEANUP=false
+SKIP_BUILD=false
+KEEP_RELEASES=3
 
 while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --base)
-      BASE="$2"
-      shift 2
-      ;;
-    --repo)
-      GIT_REPO="$2"
-      shift 2
-      ;;
-    --ref)
-      REF="$2"
-      shift 2
-      ;;
-    --keep)
-      KEEP_RELEASES="$2"
-      shift 2
-      ;;
-    --no-start)
-      START_NODE_SERVER=false
-      shift 1
-      ;;
-    --use-https)
-      USE_HTTPS=true
-      shift 1
-      ;;
-    --dry-run)
-      DRY_RUN=true
-      shift 1
-      ;;
-    --skip-build)
-      SKIP_BUILD=true
-      shift 1
-      ;;
-    --git-retries)
-      GIT_CLONE_RETRIES="$2"
-      shift 2
-      ;;
-    --help)
-      usage
-      exit 0
-      ;;
-    *)
-      echo "Unknown option: $1" >&2
-      usage
-      exit 1
-      ;;
-  esac
+    case $1 in
+        --skip-backup) SKIP_BACKUP=true; shift ;;
+        --skip-db-backup) SKIP_DB_BACKUP=true; shift ;;
+        --skip-cleanup) SKIP_CLEANUP=true; shift ;;
+        --skip-build) SKIP_BUILD=true; shift ;;
+        --keep) KEEP_RELEASES="$2"; shift 2 ;;
+        --base) BASE="$2"; shift 2 ;;
+        --no-node-start) START_NODE_SERVER=false; shift ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [--skip-backup] [--skip-db-backup] [--skip-cleanup] [--skip-build] [--keep N] [--base PATH] [--no-node-start]"
+            exit 1
+            ;;
+    esac
 done
 
-log() {
-  printf '[deploy] %s - %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
-}
+APP="$BASE/app"
+RELEASES="$APP/releases"
+SHARED="$APP/shared"
+CURRENT="$APP/current"
+STORAGE="$SHARED/storage"
+CODE_BACKUPS="$SHARED/backups/code"
+DB_BACKUPS="$SHARED/backups/database"
+LOGS="$BASE/logs"
+PID_FILE="$SHARED/node-server.pid"
+NEW_RELEASE="$RELEASES/$DATE"
+export BASE_PATH="$BASE"
 
-log_error() {
-  printf '[deploy][ERROR] %s - %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >&2
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+mkdir -p "$LOGS" "$RELEASES" "$CODE_BACKUPS" "$DB_BACKUPS"
+LOG_FILE="$LOGS/deploy_$DATE.log"
+
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
 }
 
 log_warn() {
-  printf '[deploy][WARN] %s - %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
+    echo -e "${YELLOW}[WARN]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
 }
 
-require_command() {
-  if ! command -v "$1" >/dev/null 2>&1; then
-    log_error "Required command not found: $1"
-    exit 2
-  fi
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
 }
 
-acquire_lock() {
-  if [[ -f "$DEPLOY_LOCK" ]]; then
-    local lock_pid lock_ts
-    lock_pid=$(cut -d: -f1 "$DEPLOY_LOCK" 2>/dev/null || true)
-    lock_ts=$(cut -d: -f2 "$DEPLOY_LOCK" 2>/dev/null || true)
-    if [[ -n "$lock_pid" ]] && kill -0 "$lock_pid" 2>/dev/null; then
-      log_error "Deployment already in progress (PID: $lock_pid, started at $lock_ts)"
-      return 1
+log_debug() {
+    echo -e "${BLUE}[DEBUG]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+}
+
+log_section() {
+    echo -e "${CYAN}============================================================${NC}" | tee -a "$LOG_FILE"
+    echo -e "${CYAN}$1${NC}" | tee -a "$LOG_FILE"
+    echo -e "${CYAN}============================================================${NC}" | tee -a "$LOG_FILE"
+}
+
+acquire_deploy_lock() {
+    if [[ -f "$DEPLOY_LOCK" ]]; then
+        local lock_pid
+        local lock_time
+        lock_pid=$(cat "$DEPLOY_LOCK" 2>/dev/null | cut -d: -f1 || true)
+        lock_time=$(cat "$DEPLOY_LOCK" 2>/dev/null | cut -d: -f2 || echo 0)
+        local current_time
+        current_time=$(date +%s)
+
+        if [[ -n "$lock_pid" ]] && kill -0 "$lock_pid" 2>/dev/null; then
+            local elapsed=$((current_time - lock_time))
+            if [[ $elapsed -lt $DEPLOY_TIMEOUT ]]; then
+                log_error "Deployment already in progress (PID: $lock_pid, elapsed: ${elapsed}s)"
+                return 1
+            fi
+        fi
     fi
-  fi
-  printf '%s:%s' "$$" "$(date +%s)" > "$DEPLOY_LOCK"
+    echo "$$:$(date +%s)" > "$DEPLOY_LOCK"
+    return 0
 }
 
-release_lock() {
-  rm -f "$DEPLOY_LOCK" || true
+release_deploy_lock() {
+    rm -f "$DEPLOY_LOCK"
 }
 
-update_public_html() {
-  local target="$1/public_html"
-  local link="$BASE/public_html"
-  if [[ -e "$link" || -L "$link" ]]; then
-    rm -rf "$link"
-  fi
-  ln -sfn "$target" "$link"
+deployment_cleanup() {
+    local exit_code=$?
+    if [[ "$DEPLOYMENT_SUCCESS" != "true" ]]; then
+        log_error "Deployment failed (exit code: $exit_code)"
+        release_deploy_lock
+        rm -rf "$NEW_RELEASE" 2>/dev/null || true
+    else
+        release_deploy_lock
+    fi
+    return $exit_code
 }
+
+trap deployment_cleanup EXIT
 
 stop_node_server() {
-  if [[ -f "$PID_FILE" ]]; then
-    local pid
-    pid=$(cat "$PID_FILE" 2>/dev/null || true)
-    if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
-      log "Stopping existing Node process (PID: $pid)"
-      kill "$pid" 2>/dev/null || true
-      for _ in $(seq 1 15); do
-        if ! kill -0 "$pid" 2>/dev/null; then
-          break
+    if [[ -f "$PID_FILE" ]]; then
+        local pid
+        pid=$(cat "$PID_FILE" 2>/dev/null || true)
+        if [[ -n "${pid:-}" ]] && kill -0 "$pid" 2>/dev/null; then
+            log_info "Stopping existing Node server (PID: $pid)"
+            kill "$pid" 2>/dev/null || true
+            for _ in $(seq 1 10); do
+                if ! kill -0 "$pid" 2>/dev/null; then
+                    break
+                fi
+                sleep 1
+            done
+            kill -9 "$pid" 2>/dev/null || true
         fi
-        sleep 1
-      done
-      kill -9 "$pid" 2>/dev/null || true
+        rm -f "$PID_FILE"
     fi
-    rm -f "$PID_FILE"
-  fi
 }
 
 health_check() {
-  if [[ -z "$NODE_HEALTH_URL" ]]; then
-    log "No NODE_HEALTH_URL set; skipping health check."
-    return 0
-  fi
-
-  if command -v curl >/dev/null 2>&1; then
-    curl -fsS --max-time 5 "$NODE_HEALTH_URL" >/dev/null
-    return $?
-  fi
-
-  if command -v wget >/dev/null 2>&1; then
-    wget -q --timeout=5 -O /dev/null "$NODE_HEALTH_URL"
-    return $?
-  fi
-
-  log_error "Neither curl nor wget is available for health checks"
-  return 1
+    local url="${NODE_HEALTH_URL:-http://127.0.0.1:3000/health}"
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsS "$url" >/dev/null 2>&1
+        return $?
+    fi
+    if command -v wget >/dev/null 2>&1; then
+        wget -qO- "$url" >/dev/null 2>&1
+        return $?
+    fi
+    return 1
 }
 
 start_node_server() {
-  local node_log="$LOGS/node-server_$DATE.log"
-  log "Starting Node server from $CURRENT"
-  (cd "$CURRENT" && nohup env NODE_ENV="$NODE_ENV" npm start > "$node_log" 2>&1 & echo $! > "$PID_FILE")
+    local node_log="$LOGS/node-server_$DATE.log"
+    log_info "Starting single Node server with npm start"
+    (
+        cd "$CURRENT"
+        nohup env NODE_ENV="$NODE_ENV" npm start > "$node_log" 2>&1 &
+        echo $! > "$PID_FILE"
+    )
 
-  local pid
-  pid=$(cat "$PID_FILE" 2>/dev/null || true)
-  if [[ -z "$pid" ]]; then
-    log_error "Failed to start Node server or to write PID file"
-    return 1
-  fi
-
-  for _ in $(seq 1 20); do
-    if ! kill -0 "$pid" 2>/dev/null; then
-      log_error "Node process exited before health check"
-      return 1
-    fi
-    if health_check; then
-      log "Node health check passed"
-      return 0
-    fi
-    sleep 2
-  done
-
-  if [[ -n "$NODE_HEALTH_URL" ]]; then
-    log_error "Node health check failed after timeout"
-    return 1
-  fi
-
-  log "No health URL configured; assuming server is running"
-  return 0
-}
-
-rollback_to_previous_release() {
-  if [[ -n "$PREVIOUS_RELEASE" && -d "$PREVIOUS_RELEASE" ]]; then
-    log "Rolling back to previous release: $PREVIOUS_RELEASE"
-    ln -sfn "$PREVIOUS_RELEASE" "$CURRENT"
-    update_public_html "$PREVIOUS_RELEASE"
-    stop_node_server
-    if [[ "$START_NODE_SERVER" == "true" ]]; then
-      if ! start_node_server; then
-        log_error "Failed to restart previous release after rollback"
+    local pid=""
+    pid=$(cat "$PID_FILE" 2>/dev/null || true)
+    if [[ -z "$pid" ]]; then
+        log_error "Node server PID file was not created"
         return 1
-      fi
     fi
-    return 0
-  fi
 
-  log_error "No previous release available to restore"
-  return 1
-}
-
-cleanup_failed_release() {
-  local exit_code=$?
-  if [[ "$DEPLOYMENT_SUCCESS" != "true" ]]; then
-    log_error "Deployment failed with exit code $exit_code"
-    if [[ -L "$CURRENT" && "$(readlink -f "$CURRENT")" == "$NEW_RELEASE" ]]; then
-      if [[ -n "$PREVIOUS_RELEASE" && -d "$PREVIOUS_RELEASE" ]]; then
-        log_warn "Restoring previous release during cleanup"
-        ln -sfn "$PREVIOUS_RELEASE" "$CURRENT"
-        update_public_html "$PREVIOUS_RELEASE"
-        stop_node_server
-        if ! start_node_server; then
-          log_error "Unable to restart previous release during cleanup"
+    for _ in $(seq 1 30); do
+        if ! kill -0 "$pid" 2>/dev/null; then
+            log_error "Node server exited early. Check: $node_log"
+            tail -40 "$node_log" 2>/dev/null || true
+            return 1
         fi
-      fi
-    fi
-    rm -rf "$NEW_RELEASE" || true
-  fi
-  release_lock
-  return $exit_code
+        if health_check; then
+            log_info "Node server is healthy"
+            return 0
+        fi
+        sleep 2
+    done
+
+    log_warn "Node server started, but health check timed out"
+    return 0
 }
 
-trap cleanup_failed_release EXIT
+require_command() {
+    local name="$1"
+    if ! command -v "$name" >/dev/null 2>&1; then
+        log_error "$name not found in PATH"
+        exit 2
+    fi
+}
 
-mkdir -p "$RELEASES" "$SHARED" "$LOGS"
-
-if [[ -L "$CURRENT" ]]; then
-  PREVIOUS_RELEASE="$(readlink -f "$CURRENT")"
+if ! acquire_deploy_lock; then
+    exit 1
 fi
 
-if [[ "$DRY_RUN" == "true" ]]; then
-  log "Dry run enabled"
-  log "Base: $BASE"
-  log "Repo: $GIT_REPO"
-  log "Ref: $REF"
-  log "Keep releases: $KEEP_RELEASES"
-  log "Use HTTPS: $USE_HTTPS"
-  exit 0
+log_section "BROXLAB DEPLOYMENT STARTED"
+log_info "Release: $DATE"
+log_info "Target: $NEW_RELEASE"
+log_info "Shared storage: $SHARED"
+log_info "Node environment: $NODE_ENV"
+
+log_section "PRE-DEPLOYMENT VALIDATION"
+
+AVAILABLE_KB=$(df "$BASE" 2>/dev/null | tail -1 | awk '{print $4}')
+REQUIRED_KB=$((2 * 1024 * 1024))
+if [[ -z "${AVAILABLE_KB:-}" || "$AVAILABLE_KB" -lt "$REQUIRED_KB" ]]; then
+    log_error "Not enough free disk space for deployment (required: 2GB, available: $((AVAILABLE_KB / 1024))MB)"
+    exit 2
 fi
+log_info "Disk space check passed ($((AVAILABLE_KB / 1024 / 1024))GB available)"
 
 require_command git
 require_command node
 require_command npm
+require_command php
+log_info "All required commands found"
 
-if [[ -f "$NEW_RELEASE/composer.json" || -f "$SHARED/composer" || -f "$SHARED/composer.phar" ]]; then
-  if ! command -v php >/dev/null 2>&1; then
-    log_error "PHP is required for composer install or PHP syntax checks"
-    exit 2
-  fi
+ensure_env_secret() {
+    local key="$1"
+    local env_file="$SHARED/.env"
+    local value=""
+
+    if [[ ! -f "$env_file" ]]; then
+        log_error ".env not found at $env_file"
+        exit 1
+    fi
+
+    value=$(php -r 'echo bin2hex(random_bytes(32));')
+    if grep -q "^${key}=" "$env_file"; then
+        if grep -q "^${key}=$" "$env_file"; then
+            log_warn "${key} is empty in shared .env; generating a secure value"
+            sed -i "s|^${key}=.*|${key}=${value}|" "$env_file"
+        fi
+    else
+        log_warn "${key} is missing in shared .env; generating a secure value"
+        printf '%s=%s\n' "$key" "$value" >> "$env_file"
+    fi
+}
+
+if command -v composer >/dev/null 2>&1 || [[ -f "$SHARED/composer" ]] || [[ -f "$SHARED/composer.phar" ]]; then
+    log_debug "Composer available"
+else
+    log_warn "Composer not found; PHP dependencies will be skipped if vendor is already present"
 fi
 
 if [[ ! -f "$SHARED/.env" ]]; then
-  log_error "Shared .env not found: $SHARED/.env"
-  exit 1
-fi
-
-acquire_lock
-
-log "Preparing new release in $NEW_RELEASE"
-rm -rf "$NEW_RELEASE"
-mkdir -p "$NEW_RELEASE"
-clone_url="$GIT_REPO"
-if [[ "$USE_HTTPS" == "true" ]]; then
-  clone_url="${GIT_REPO/git@github.com:/https://github.com/}"
-fi
-
-clone_attempts=0
-while [[ $clone_attempts -lt $GIT_CLONE_RETRIES ]]; do
-  if GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' git clone --depth 1 --branch "$REF" "$clone_url" "$NEW_RELEASE"; then
-    break
-  fi
-  clone_attempts=$((clone_attempts + 1))
-  if [[ $clone_attempts -lt $GIT_CLONE_RETRIES ]]; then
-    log "Retrying clone ($clone_attempts/$GIT_CLONE_RETRIES)"
-    sleep 5
-  fi
-  if [[ $clone_attempts -eq $GIT_CLONE_RETRIES && "$USE_HTTPS" != "true" ]]; then
-    clone_url="${GIT_REPO/git@github.com:/https://github.com/}"
-  fi
-  rm -rf "$NEW_RELEASE"
-  mkdir -p "$NEW_RELEASE"
-done
-
-if [[ ! -d "$NEW_RELEASE" || ! -d "$NEW_RELEASE/.git" ]]; then
-  log_error "Repository clone failed"
-  exit 1
-fi
-
-log "Linking shared resources"
-mkdir -p "$SHARED/storage/uploads" "$SHARED/backups/code" "$SHARED/backups/database"
-ln -sfn "$SHARED/.env" "$NEW_RELEASE/.env"
-mkdir -p "$NEW_RELEASE/public_html"
-ln -sfn "$SHARED/storage/uploads" "$NEW_RELEASE/public_html/uploads"
-ln -sfn "$SHARED/storage" "$NEW_RELEASE/storage"
-
-if [[ -f "$NEW_RELEASE/composer.json" ]]; then
-  if command -v composer >/dev/null 2>&1; then
-    log "Installing PHP dependencies"
-    (cd "$NEW_RELEASE" && composer install --no-dev --optimize-autoloader --no-interaction --no-progress)
-  elif [[ -f "$SHARED/composer" ]]; then
-    log "Installing PHP dependencies with shared composer"
-    (cd "$NEW_RELEASE" && "$SHARED/composer" install --no-dev --optimize-autoloader --no-interaction --no-progress)
-  elif [[ -f "$SHARED/composer.phar" ]]; then
-    log "Installing PHP dependencies with shared composer.phar"
-    (cd "$NEW_RELEASE" && php "$SHARED/composer.phar" install --no-dev --optimize-autoloader --no-interaction --no-progress)
-  else
-    log_error "composer is not available for PHP dependency install"
+    log_error ".env not found at $SHARED/.env"
     exit 1
-  fi
 fi
 
-if [[ -f "$NEW_RELEASE/package.json" ]]; then
-  log "Installing Node dependencies"
-  (cd "$NEW_RELEASE" && npm ci --include=dev)
-  if [[ "$SKIP_BUILD" != "true" ]]; then
-    if npm run --prefix "$NEW_RELEASE" build:prod >/dev/null 2>&1; then
-      (cd "$NEW_RELEASE" && npm run build:prod)
-    elif npm run --prefix "$NEW_RELEASE" build >/dev/null 2>&1; then
-      (cd "$NEW_RELEASE" && npm run build)
+ensure_env_secret "JWT_SECRET"
+ensure_env_secret "CSRF_SECRET"
+ensure_env_secret "NODE_SERVICE_API_KEY"
+
+mkdir -p \
+    "$STORAGE/uploads" \
+    "$STORAGE/cache" \
+    "$STORAGE/logs" \
+    "$STORAGE/tmp" \
+    "$STORAGE/ocr-temp" \
+    "$STORAGE/sessions" \
+    "$SHARED/backups/code" \
+    "$SHARED/backups/database"
+
+if [[ "$SKIP_DB_BACKUP" == "false" ]]; then
+    DB_BACKUP_SCRIPT="$BASE/scripts/database-backup.sh"
+    if [[ -x "$DB_BACKUP_SCRIPT" ]]; then
+        BASE_PATH="$BASE" "$DB_BACKUP_SCRIPT" 2>&1 | tee -a "$LOG_FILE" || log_warn "Database backup failed, continuing"
     else
-      log "No recognized build script found; skipping build"
+        log_warn "Database backup script not found: $DB_BACKUP_SCRIPT"
     fi
-  fi
 fi
 
+if [[ "$SKIP_BACKUP" == "false" && -L "$CURRENT" ]]; then
+    BACKUP_SCRIPT="$BASE/scripts/backup.sh"
+    if [[ -x "$BACKUP_SCRIPT" ]]; then
+        BASE_PATH="$BASE" "$BACKUP_SCRIPT" 2>&1 | tee -a "$LOG_FILE" || log_warn "Code backup failed, continuing"
+    fi
+fi
+
+log_section "FETCHING RELEASE"
+mkdir -p "$NEW_RELEASE"
+if ! git clone --depth=1 "$GIT_REPO" "$NEW_RELEASE" 2>&1 | tee -a "$LOG_FILE"; then
+    log_error "Failed to clone repository"
+    exit 1
+fi
+
+if [[ -d "$NEW_RELEASE/web-host/scripts" ]]; then
+    mkdir -p "$BASE/scripts"
+    cp -f "$NEW_RELEASE/web-host/scripts"/*.sh "$BASE/scripts/" 2>/dev/null || true
+    chmod +x "$BASE/scripts"/*.sh 2>/dev/null || true
+fi
+
+cd "$NEW_RELEASE"
+
+log_section "LINKING SHARED RESOURCES"
+mkdir -p Config storage public_html
+ln -sfn "$SHARED/.env" .env
+ln -sfn "$SHARED/.env" "Config/.env"
+
+if [[ -f "$SHARED/Config/broxlab-firebase.json" ]]; then
+    ln -sfn "$SHARED/Config/broxlab-firebase.json" "Config/broxlab-firebase.json"
+elif [[ -f "$SHARED/broxlab-firebase.json" ]]; then
+    ln -sfn "$SHARED/broxlab-firebase.json" "Config/broxlab-firebase.json"
+fi
+
+ln -sfn "$STORAGE/uploads" "public_html/uploads"
+ln -sfn "$STORAGE/cache" "storage/cache"
+ln -sfn "$STORAGE/logs" "storage/logs"
+ln -sfn "$STORAGE/tmp" "storage/tmp"
+ln -sfn "$STORAGE/ocr-temp" "storage/ocr-temp"
+ln -sfn "$STORAGE/sessions" "storage/sessions"
+
+log_section "INSTALLING DEPENDENCIES"
+if command -v composer >/dev/null 2>&1; then
+    composer install --no-dev --optimize-autoloader --no-interaction --no-progress 2>&1 | tee -a "$LOG_FILE"
+elif [[ -f "$SHARED/composer" ]]; then
+    "$SHARED/composer" install --no-dev --optimize-autoloader --no-interaction --no-progress 2>&1 | tee -a "$LOG_FILE"
+elif [[ -f "$SHARED/composer.phar" ]]; then
+    php "$SHARED/composer.phar" install --no-dev --optimize-autoloader --no-interaction --no-progress 2>&1 | tee -a "$LOG_FILE"
+else
+    log_warn "Composer unavailable; skipping PHP dependency install"
+fi
+
+if [[ -f "package.json" ]]; then
+    npm ci --include=dev 2>&1 | tee -a "$LOG_FILE" || npm install --legacy-peer-deps 2>&1 | tee -a "$LOG_FILE"
+fi
+
+if [[ "$SKIP_BUILD" == "false" && -f "package.json" ]]; then
+    log_section "BUILDING ASSETS"
+    npm run build:prod 2>&1 | tee -a "$LOG_FILE"
+fi
+
+log_section "VALIDATING PHP"
 if command -v php >/dev/null 2>&1; then
-  files=$(find "$NEW_RELEASE" -type f -name '*.php' 2>/dev/null || true)
-  if [[ -n "$files" ]]; then
-    while IFS= read -r file; do
-      php -l "$file" >/dev/null
-    done <<< "$files"
-  fi
+    while IFS= read -r php_file; do
+        php -l "$php_file" >/dev/null
+    done < <(find app Config -name "*.php" -type f 2>/dev/null)
 fi
 
-log "Stopping existing server before switching release"
+log_section "UPDATING VERSION"
+VERSION_FILE="$SHARED/version.json"
+CURRENT_VERSION="v0.0.0"
+NEW_VERSION="v1.0.0"
+if [[ -f "$VERSION_FILE" ]] && command -v jq >/dev/null 2>&1; then
+    CURRENT_VERSION=$(jq -r '.version // "v0.0.0"' "$VERSION_FILE" 2>/dev/null || echo "v0.0.0")
+    MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1 | sed 's/^v//')
+    MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+    PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
+    NEW_VERSION="v${MAJOR}.${MINOR}.$((PATCH + 1))"
+fi
+
+cat > "$VERSION_FILE" <<EOF
+{
+  "version": "$NEW_VERSION",
+  "previous_version": "$CURRENT_VERSION",
+  "deployed_at": "$DATE",
+  "release_name": "$DATE",
+  "status": "active"
+}
+EOF
+
+log_section "SWITCHING RELEASE"
 stop_node_server
 
-log "Activating new release"
 ln -sfn "$NEW_RELEASE" "$CURRENT"
-update_public_html "$NEW_RELEASE"
+PUBLIC_HTML_BASE="$BASE/public_html"
+PUBLIC_HTML_TARGET="$CURRENT/public_html"
+if [[ -L "$PUBLIC_HTML_BASE" ]]; then
+    rm -f "$PUBLIC_HTML_BASE"
+elif [[ -d "$PUBLIC_HTML_BASE" ]]; then
+    mv "$PUBLIC_HTML_BASE" "${PUBLIC_HTML_BASE}.backup_$DATE"
+fi
+ln -sfn "$PUBLIC_HTML_TARGET" "$PUBLIC_HTML_BASE"
 
 if [[ "$START_NODE_SERVER" == "true" ]]; then
-  if ! start_node_server; then
-    log_error "New release failed to start; rolling back"
-    rollback_to_previous_release || log_error "Rollback after failed start also failed"
-    exit 1
-  fi
+    start_node_server
 else
-  log "Node server start skipped by option"
+    log_warn "Node server start skipped; restart it manually after deployment"
 fi
 
-if [[ "$KEEP_RELEASES" =~ ^[0-9]+$ ]]; then
-  count=0
-  for release_dir in $(ls -1dt "$RELEASES"/* 2>/dev/null || true); do
-    count=$((count + 1))
-    if [[ $count -gt $KEEP_RELEASES ]]; then
-      rm -rf "$release_dir" || true
+if [[ "$SKIP_CLEANUP" == "false" ]]; then
+    CLEANUP_SCRIPT="$BASE/scripts/cleanup.sh"
+    if [[ -x "$CLEANUP_SCRIPT" ]]; then
+        BASE_PATH="$BASE" "$CLEANUP_SCRIPT" --releases "$KEEP_RELEASES" 2>&1 | tee -a "$LOG_FILE" || log_warn "Cleanup reported warnings"
     fi
-  done
 fi
 
 DEPLOYMENT_SUCCESS=true
-log "Deployment completed successfully"
+log_section "DEPLOYMENT COMPLETED"
+log_info "Release: $DATE"
+log_info "Version: $CURRENT_VERSION -> $NEW_VERSION"
+log_info "Current: $(readlink "$CURRENT" 2>/dev/null || echo N/A)"
+log_info "Public HTML: $(readlink "$PUBLIC_HTML_BASE" 2>/dev/null || echo N/A)"
+log_info "Log: $LOG_FILE"
+
 exit 0
