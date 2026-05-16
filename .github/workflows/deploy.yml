@@ -13,12 +13,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Prepare SSH private key
+        run: |
+          mkdir -p ~/.ssh
+          if [ -n "${{ secrets.SSH_KEY_BASE64 }}" ]; then
+            echo "${{ secrets.SSH_KEY_BASE64 }}" | base64 --decode > /tmp/broxlab_action
+          else
+            printf '%s' "${{ secrets.SSH_KEY }}" > /tmp/broxlab_action
+          fi
+          chmod 600 /tmp/broxlab_action
+        shell: bash
+
       - name: Deploy to server
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
-          key: ${{ secrets.SSH_KEY }}
+          key_path: /tmp/broxlab_action
           port: 22
           timeout: 60s
           command_timeout: 25m
