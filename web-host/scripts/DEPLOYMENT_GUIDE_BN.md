@@ -1,42 +1,42 @@
 # Broxlab ডিপ্লয়মেন্ট গাইড (বাংলা)
 
 ## উদ্দেশ্য
-এই নথি `web-host/scripts/deploy.sh` স্ক্রিপ্টের ব্যবহার ও প্রয়োজনীয় ধাপগুলো বাংলা ভাষায় বর্ণনা করে — নতুন রিলিজ তৈরি, শেয়ার্ড রিসোর্স লিংক, ডিপেনডেন্সি ইনস্টল, অ্যাসেট বিল্ড, নোড সার্ভার পুনরায় চালু, হেলথ-চেক এবং অটো-রোলব্যাক।
+এই নথি `scripts/deploy.sh` স্ক্রিপ্টের ব্যবহার ও প্রয়োজনীয় ধাপগুলো বাংলা ভাষায় বর্ণনা করে — নতুন রিলিজ তৈরি, শেয়ার্ড রিসোর্স লিংক, ডিপেনডেন্সি ইনস্টল, অ্যাসেট বিল্ড, নোড সার্ভার পুনরায় চালু, হেলথ-চেক এবং অটো-রোলব্যাক।
 
 ## পূর্বপ্রয়োজনীয়তা
 - রিমোট সার্ভারে Git, Node.js, npm ইনস্টল থাকতে হবে।
 - যদি প্রজেক্টে PHP থাকে: `php` এবং `composer` থাকা প্রয়োজন।
 - `shared/.env` ফাইল তৈরি ও কনফিগার করা থাকতে হবে (`$BASE/app/shared/.env`)।
-- `web-host/scripts/deploy.sh` এ `GIT_REPO`, `REF`, `NODE_HEALTH_URL` ইত্যাদি environment ভ্যারিয়েবল কনফিগার করা যাবে।
+- `scripts/deploy.sh` এ `GIT_REPO`, `REF`, `NODE_HEALTH_URL` ইত্যাদি environment ভ্যারিয়েবল কনফিগার করা যাবে।
 
 ## কিভাবে চালাবেন
 1. সার্ভারে লগইন করুন এবং ডিরেক্টরিতে যান:
 
 ```bash
-cd /home/deploy/broxlab
+cd /home/tdhuedhn/broxlab
 ```
 
 2. ডিপ্লয় স্ক্রিপ্ট চালান (ডিফল্ট: `main` ব্রাঞ্চ):
 
 ```bash
-web-host/scripts/deploy.sh --base /home/deploy/broxlab --repo git@github.com:yourorg/yourrepo.git --ref main
+scripts/deploy.sh --base /home/tdhuedhn/broxlab --repo git@github.com:yourorg/yourrepo.git --ref main
 ```
 
 - ড্রাই-রান:
   ```bash
-  web-host/scripts/deploy.sh --dry-run
+  scripts/deploy.sh --dry-run
   ```
 - HTTPS ক্লোন করতে:
   ```bash
-  web-host/scripts/deploy.sh --use-https
+  scripts/deploy.sh --use-https
   ```
 - যদি আপনি সার্ভার স্বয়ংক্রিয়ভাবে শুরু করতে না চান:
   ```bash
-  web-host/scripts/deploy.sh --no-start
+  scripts/deploy.sh --no-start
   ```
 
 ## গুরুত্বপূর্ণ পরিবেশ ভ্যারিয়েবল
-- BASE (ডিফল্ট: /home/deploy/broxlab)
+- BASE (ডিফল্ট: /home/tdhuedhn/broxlab)
 - GIT_REPO (গিট রিপোজিটরি URL)
 - REF (ব্রাঞ্চ বা শা: ডিফল্ট main)
 - KEEP_RELEASES (সংখ্যা, ডিফল্ট 3)

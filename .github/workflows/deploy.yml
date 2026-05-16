@@ -52,18 +52,22 @@ jobs:
           SSH_OPTS=( -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p "$REMOTE_PORT" )
 
           echo "Creating remote directories"
-          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" "mkdir -p '$REMOTE_BASE/web-host/scripts' '$REMOTE_BASE/app/shared' '$REMOTE_BASE/logs'"
+          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" "mkdir -p '$REMOTE_BASE/scripts' '$REMOTE_BASE/app/shared' '$REMOTE_BASE/logs' '$HOME/.github/workflows'"
 
           echo "Copying deploy helper scripts to remote"
           rsync -az -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p $REMOTE_PORT" \
-            web-host/scripts/deploy.sh web-host/scripts/rollback.sh web-host/scripts/DEPLOYMENT_GUIDE_BN.md web-host/scripts/DEPLOYMENT_GUIDE.md \
-            "$REMOTE_USER@$REMOTE_HOST:$REMOTE_BASE/web-host/scripts/"
+            web-host/scripts/deploy.sh web-host/scripts/rollback.sh \
+            "$REMOTE_USER@$REMOTE_HOST:$REMOTE_BASE/scripts/"
+
+          echo "Copying workflow file to remote home path"
+          rsync -az -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p $REMOTE_PORT" \
+            .github/workflows/deploy.yml "$REMOTE_USER@$REMOTE_HOST:$HOME/.github/workflows/deploy.yml"
 
           echo "Ensuring remote deploy scripts are executable"
-          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" bash -lc "chmod +x '$REMOTE_BASE/web-host/scripts/deploy.sh' '$REMOTE_BASE/web-host/scripts/rollback.sh'"
+          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" bash -lc "chmod +x '$REMOTE_BASE/scripts/deploy.sh' '$REMOTE_BASE/scripts/rollback.sh'"
 
-          echo "Invoking remote web-host deploy script"
-          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" bash -lc "cd '$REMOTE_BASE' && bash web-host/scripts/deploy.sh --base '$REMOTE_BASE' --repo '$GIT_REPO' --ref '$REF' --keep '$KEEP_RELEASES'"
+          echo "Invoking remote deploy script"
+          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" bash -lc "cd '$REMOTE_BASE' && bash scripts/deploy.sh --base '$REMOTE_BASE' --repo '$GIT_REPO' --ref '$REF' --keep '$KEEP_RELEASES'"
         shell: bash
 
       - name: Deployment result
