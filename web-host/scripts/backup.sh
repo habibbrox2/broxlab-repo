@@ -42,7 +42,7 @@ CURRENT="$APP/current"
 export BASE_PATH="$BASE"
 
 DATE=$(date +"%Y%m%d_%H%M%S")
-BACKUP_FILE="$BACKUPS/backup_$DATE.tar.gz"
+BACKUP_FILE="$BACKUPS/backup_$DATE"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -109,37 +109,38 @@ REQUIRED_SPACE=$(( CURRENT_SIZE * 2 ))
 AVAILABLE_SPACE=$(df "$BACKUPS" | tail -1 | awk '{print $4 * 1024}')
 
 if [[ "$AVAILABLE_SPACE" -lt "$REQUIRED_SPACE" ]]; then
-    log_warn "Low disk space, cleaning old backups first"
-    find "$BACKUPS" -maxdepth 1 -name "backup_*.tar.gz" -type f -printf '%T@ %p\n' 2>/dev/null \
-        | sort -rn | tail -n "+$(( KEEP_COUNT + 1 ))" | awk '{print $2}' | xargs -r rm -f || true
+    log_warn "Low disk space, cleaning old backup directories first"
+    find "$BACKUPS" -maxdepth 1 -name "backup_*" -type d -printf '%T@ %p\n' 2>/dev/null \
+        | sort -rn | tail -n "+$(( KEEP_COUNT + 1 ))" | awk '{print $2}' | xargs -r rm -rf || true
 fi
 
 if $DRY_RUN; then
-    log_debug "Would create: $BACKUP_FILE"
+    log_debug "[DRY-RUN] Would create backup directory: $BACKUP_FILE"
     exit 2
 fi
 
-if tar \
+log_info "Creating backup directory: $BACKUP_FILE"
+mkdir -p "$BACKUPS"
+if rsync -a --delete \
     --exclude='node_modules' \
     --exclude='vendor' \
     --exclude='storage/cache' \
     --exclude='.git' \
     --exclude='.env' \
     --exclude='.gitignore' \
-    -czf "$BACKUP_FILE" -C "$RELEASES" "$CURRENT_RELEASE_NAME"
-then
-    BACKUP_SIZE=$(du -h "$BACKUP_FILE" | awk '{print $1}')
+    "$CURRENT_RELEASE/" "$BACKUP_FILE/"; then
+    BACKUP_SIZE=$(du -sh "$BACKUP_FILE" 2>/dev/null | awk '{print $1}')
     log_info "Backup completed: $BACKUP_SIZE -> $(basename "$BACKUP_FILE")"
 else
     log_error "Backup failed"
-    rm -f "$BACKUP_FILE"
+    rm -rf "$BACKUP_FILE"
     exit 1
 fi
 
-BACKUP_COUNT=$(find "$BACKUPS" -maxdepth 1 -name "backup_*.tar.gz" -type f 2>/dev/null | wc -l)
+BACKUP_COUNT=$(find "$BACKUPS" -maxdepth 1 -name "backup_*" -type d 2>/dev/null | wc -l)
 if [[ "$BACKUP_COUNT" -gt "$KEEP_COUNT" ]]; then
-    find "$BACKUPS" -maxdepth 1 -name "backup_*.tar.gz" -type f -printf '%T@ %p\n' 2>/dev/null \
-        | sort -rn | tail -n "+$(( KEEP_COUNT + 1 ))" | awk '{print $2}' | xargs -r rm -f || true
+    find "$BACKUPS" -maxdepth 1 -name "backup_*" -type d -printf '%T@ %p\n' 2>/dev/null \
+        | sort -rn | tail -n "+$(( KEEP_COUNT + 1 ))" | awk '{print $2}' | xargs -r rm -rf || true
 fi
 
 log_info "Backup script completed successfully"

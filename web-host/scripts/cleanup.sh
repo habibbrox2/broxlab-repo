@@ -88,6 +88,8 @@ cleanup_directory() {
     local count=0
     if [[ "$type" == "releases" ]]; then
         count=$(find "$dir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+    elif [[ "$type" == "dirs" ]]; then
+        count=$(find "$dir" -maxdepth 1 -name "$pattern" -type d 2>/dev/null | wc -l)
     else
         count=$(find "$dir" -maxdepth 1 -name "$pattern" -type f 2>/dev/null | wc -l)
     fi
@@ -106,6 +108,12 @@ cleanup_directory() {
     log_info "Removing $delete_count old item(s) from $dir"
     if [[ "$type" == "releases" ]]; then
         find "$dir" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null \
+            | sort -rn | tail -n "+$((keep + 1))" | awk '{print $2}' | while read -r item; do
+            log_debug "Removing: $item"
+            rm -rf "$item" 2>/dev/null || log_warn "Failed to remove: $item"
+        done
+    elif [[ "$type" == "dirs" ]]; then
+        find "$dir" -maxdepth 1 -name "$pattern" -type d -printf '%T@ %p\n' 2>/dev/null \
             | sort -rn | tail -n "+$((keep + 1))" | awk '{print $2}' | while read -r item; do
             log_debug "Removing: $item"
             rm -rf "$item" 2>/dev/null || log_warn "Failed to remove: $item"
@@ -135,8 +143,8 @@ if [[ -d "$RELEASES" ]]; then
         log_debug "Cleaned up artifacts from: $old_release"
     done
 fi
-cleanup_directory "$CODE_BACKUPS" "backup_*.tar.gz" "$KEEP_BACKUPS" "files"
-cleanup_directory "$LEGACY_CODE_BACKUPS" "backup_*.tar.gz" "$KEEP_BACKUPS" "files"
+cleanup_directory "$CODE_BACKUPS" "backup_*" "$KEEP_BACKUPS" "dirs"
+cleanup_directory "$LEGACY_CODE_BACKUPS" "backup_*" "$KEEP_BACKUPS" "dirs"
 cleanup_directory "$DB_BACKUPS" "database_backup_*.sql.gz" "$KEEP_DB_BACKUPS" "files"
 
 if [[ -d "$LOGS" ]]; then

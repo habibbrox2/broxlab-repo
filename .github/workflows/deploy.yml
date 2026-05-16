@@ -24,23 +24,7 @@ jobs:
           chmod 600 /tmp/broxlab_action
         shell: bash
 
-      - name: Create release archive
-        run: |
-          RELEASE_TS=$(date +"%Y%m%d_%H%M%S")
-          echo "RELEASE_TS=$RELEASE_TS" >> $GITHUB_ENV
-          # create a tarball of the repo (exclude git metadata to keep size down)
-          tar --exclude='.git' -czf release_${RELEASE_TS}.tar.gz .
-        shell: bash
-
-      - name: Upload release archive to server
-        run: |
-          mkdir -p /tmp
-          REMOTE_DIR="/home/${{ secrets.USER }}/broxlab/app/releases/${RELEASE_TS}"
-          ssh -i /tmp/broxlab_action -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.USER }}@${{ secrets.HOST }} "mkdir -p '${REMOTE_DIR}'"
-          scp -i /tmp/broxlab_action -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null release_${RELEASE_TS}.tar.gz ${{ secrets.USER }}@${{ secrets.HOST }}:"${REMOTE_DIR}/"
-        shell: bash
-
-      - name: Deploy to server (extract uploaded release + run deploy)
+      - name: Deploy to server (run simple_deploy.sh via HTTPS clone)
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.HOST }}
@@ -52,22 +36,23 @@ jobs:
           command_timeout: 25m
           script: |
             set -euo pipefail
-            # Use the release timestamp produced earlier by the runner
-            RELEASE_TS="${RELEASE_TS:-}"
-            if [ -z "$RELEASE_TS" ]; then
-              RELEASE_TS=$(date +"%Y%m%d_%H%M%S")
+            # Determine repo and ref. Optionally set secrets.REPO_URL to override default.
+            GIT_REPO="${{ secrets.REPO_URL }}"
+            if [ -z "$GIT_REPO" ]; then
+              GIT_REPO="https://github.com/habibbrox2/broxlab-repo.git"
             fi
-            REMOTE_DIR="/home/${{ secrets.USER }}/broxlab/app/releases/${RELEASE_TS}"
-            cd /home/${{ secrets.USER }}/broxlab || exit 1
-            # If archive exists on remote, extract it into the release dir
-            if [ -f "${REMOTE_DIR}/release_${RELEASE_TS}.tar.gz" ]; then
-              echo "Extracting release_${RELEASE_TS}.tar.gz into ${REMOTE_DIR}..."
-              tar -xzf "${REMOTE_DIR}/release_${RELEASE_TS}.tar.gz" -C "${REMOTE_DIR}" || true
-              rm -f "${REMOTE_DIR}/release_${RELEASE_TS}.tar.gz" || true
+            REF="${{ github.ref_name }}"
+            if [ -z "$REF" ]; then
+              REF="main"
             fi
-            # Run the server-side deploy script (it will detect pre-populated release and skip git clone)
-            export USE_HTTPS=false
-            bash scripts/deploy.sh --base /home/${{ secrets.USER }}/broxlab
+            # Ensure base dir exists
+            REMOTE_BASE="/home/${{ secrets.USER }}/broxlab"
+            mkdir -p "$REMOTE_BASE"
+            cd "$REMOTE_BASE" || exit 1
+            # Run the simple deploy script on the server which will clone via HTTPS
+            bash scripts/simple_deploy.sh --repo "$GIT_REPO" --ref "$REF" --base "$REMOTE_BASE"
+
+
 
       - name: Post-Deployment Status
         if: always()

@@ -220,9 +220,12 @@ fi
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 if [[ "$SKIP_BACKUP" == "false" ]]; then
-    BACKUP_FILE="$CODE_BACKUPS/rollback_backup_$TIMESTAMP.tar.gz"
-    log_info "Creating safety backup: $BACKUP_FILE"
-    tar --exclude='node_modules' --exclude='vendor' --exclude='.git' -czf "$BACKUP_FILE" -C "$RELEASES" "$(basename "$CURRENT_RELEASE")"
+    BACKUP_FILE="$CODE_BACKUPS/rollback_backup_$TIMESTAMP"
+    log_info "Creating safety backup directory: $BACKUP_FILE"
+    mkdir -p "$CODE_BACKUPS"
+    if ! rsync -a --delete --exclude='node_modules' --exclude='vendor' --exclude='.git' "$CURRENT_RELEASE/" "$BACKUP_FILE/"; then
+        log_warn "Safety backup (rsync) failed, continuing without backup"
+    fi
 fi
 
 stop_node_server

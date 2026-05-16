@@ -76,8 +76,8 @@ id_dsa*
 /backups/
 /app/backups/
 /app/shared/backups/
-backup_*.tar.gz
-rollback_backup_*.tar.gz
+backup_*
+rollback_backup_*
 
 # ─────────────────────────────────────────────────────────────────
 #  5. LOGS & CACHE - SENSITIVE DATA
