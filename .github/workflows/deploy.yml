@@ -64,10 +64,10 @@ jobs:
             .github/workflows/deploy.yml "$REMOTE_USER@$REMOTE_HOST:$HOME/.github/workflows/deploy.yml"
 
           echo "Ensuring remote deploy scripts are executable"
-          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" bash -lc "chmod +x '$REMOTE_BASE/scripts/deploy.sh' '$REMOTE_BASE/scripts/rollback.sh'"
+          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" bash -lc 'chmod +x "$0" "$1"' -- "$REMOTE_BASE/scripts/deploy.sh" "$REMOTE_BASE/scripts/rollback.sh"
 
           echo "Invoking remote deploy script"
-          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" bash -lc "cd '$REMOTE_BASE' && bash scripts/deploy.sh --base '$REMOTE_BASE' --repo '$GIT_REPO' --ref '$REF' --keep '$KEEP_RELEASES'"
+          ssh "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" bash -lc 'cd "$0" && bash "$1" --base "$0" --repo "$2" --ref "$3" --keep "$4"' -- "$REMOTE_BASE" "$REMOTE_BASE/scripts/deploy.sh" "$GIT_REPO" "$REF" "$KEEP_RELEASES"
         shell: bash
 
       - name: Deployment result
