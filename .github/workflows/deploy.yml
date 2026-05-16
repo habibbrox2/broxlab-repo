@@ -16,14 +16,11 @@ jobs:
       - name: Prepare SSH private key
         run: |
           mkdir -p ~/.ssh
-          if [ -n "${{ secrets.SSH_KEY_BASE64 }}" ]; then
-            echo "${{ secrets.SSH_KEY_BASE64 }}" | base64 --decode > /tmp/broxlab_action
-          elif [ -n "${{ secrets.SSH_KEY }}" ]; then
-            printf '%s' "${{ secrets.SSH_KEY }}" > /tmp/broxlab_action
-          else
-            echo 'Error: SSH_KEY_BASE64 or SSH_KEY secret is required.' >&2
+          if [ -z "${{ secrets.SSH_KEY_BASE64 }}" ]; then
+            echo 'Error: SSH_KEY_BASE64 secret is required.' >&2
             exit 1
           fi
+          echo "${{ secrets.SSH_KEY_BASE64 }}" | base64 --decode > /tmp/broxlab_action
           chmod 600 /tmp/broxlab_action
         shell: bash
 
