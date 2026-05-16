@@ -33,6 +33,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key_path: /tmp/broxlab_action
+          passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
           port: 22
           timeout: 60s
           command_timeout: 25m
