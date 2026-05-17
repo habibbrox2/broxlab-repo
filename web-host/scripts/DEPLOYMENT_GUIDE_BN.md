@@ -5,7 +5,6 @@
 
 ## পূর্বপ্রয়োজনীয়তা
 - রিমোট সার্ভারে Git, Node.js, npm ইনস্টল থাকতে হবে।
-- রিমোট সার্ভারে `rsync` ইনস্টল থাকতে হবে যাতে শুধুমাত্র পরিবর্তিত ফাইলগুলো আপলোড করা যায়।
 - যদি প্রজেক্টে PHP থাকে: `php` এবং `composer` থাকা প্রয়োজন।
 - `shared/.env` ফাইল তৈরি ও কনফিগার করা থাকতে হবে (`$BASE/app/shared/.env`)।
 - `scripts/deploy.sh` এ `GIT_REPO`, `REF`, `NODE_HEALTH_URL` ইত্যাদি environment ভ্যারিয়েবল কনফিগার করা যাবে।
@@ -17,15 +16,11 @@
 cd /home/tdhuedhn/broxlab
 ```
 
-2. অ্যাকশনটি `rsync` ব্যবহার করে শুধুমাত্র পরিবর্তিত ফাইলগুলো স্টেজিং পাথ-এ আপলোড করে।
-
-3. ডিপ্লয় স্ক্রিপ্ট চালান (ডিফল্ট: `main` ব্রাঞ্চ):
+2. ডিপ্লয় স্ক্রিপ্ট চালান (ডিফল্ট: `main` ব্রাঞ্চ):
 
 ```bash
-web-host/scripts/deploy.sh --source-dir /home/tdhuedhn/broxlab/build_source/<timestamp>
+scripts/deploy.sh --base /home/tdhuedhn/broxlab --repo git@github.com:yourorg/yourrepo.git --ref main
 ```
-
-আরও সাধারণভাবে, GitHub Actions থেকে `scripts/deploy.sh --source-dir ...` ব্যবহার করে স্বয়ংক্রিয় ডিপ্লয় করুন।
 
 - ড্রাই-রান:
   ```bash

@@ -33,7 +33,6 @@ SKIP_DB_BACKUP=false
 SKIP_CLEANUP=false
 SKIP_BUILD=false
 KEEP_RELEASES=3
-SOURCE_DIR=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -43,11 +42,10 @@ while [[ $# -gt 0 ]]; do
         --skip-build) SKIP_BUILD=true; shift ;;
         --keep) KEEP_RELEASES="$2"; shift 2 ;;
         --base) BASE="$2"; shift 2 ;;
-        --source-dir) SOURCE_DIR="$2"; shift 2 ;;
         --no-node-start) START_NODE_SERVER=false; shift ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [--skip-backup] [--skip-db-backup] [--skip-cleanup] [--skip-build] [--keep N] [--base PATH] [--source-dir PATH] [--no-node-start]"
+            echo "Usage: $0 [--skip-backup] [--skip-db-backup] [--skip-cleanup] [--skip-build] [--keep N] [--base PATH] [--no-node-start]"
             exit 1
             ;;
     esac
@@ -168,42 +166,6 @@ health_check() {
     return 1
 }
 
-copy_source_dir() {
-    local src="$1"
-    local dest="$2"
-
-    if [[ ! -d "$src" ]]; then
-        log_error "Source directory not found: $src"
-        exit 1
-    fi
-
-    log_section "IMPORTING SOURCE FROM $src"
-    mkdir -p "$dest"
-
-    if ! rsync -a --delete \
-        --exclude='.git' \
-        --exclude='.github' \
-        --exclude='node_modules' \
-        --exclude='vendor' \
-        --exclude='.env' \
-        --exclude='storage/cache' \
-        --exclude='storage/logs' \
-        --exclude='storage/tmp' \
-        --exclude='storage/ocr-temp' \
-        --exclude='storage/sessions' \
-        "$src"/ "$dest"/ 2>&1 | tee -a "$LOG_FILE"; then
-        log_error "Failed to import source from $src"
-        exit 1
-    fi
-}
-
-cleanup_source_dir() {
-    local src="$1"
-    if [[ -n "$src" && "$src" != "$NEW_RELEASE" && "$src" == "${BASE}"* ]]; then
-        rm -rf "$src" 2>/dev/null || log_warn "Failed to remove source staging directory: $src"
-    fi
-}
-
 start_node_server() {
     local node_log="$LOGS/node-server_$DATE.log"
     log_info "Starting single Node server with npm start"
@@ -269,9 +231,6 @@ require_command git
 require_command node
 require_command npm
 require_command php
-if [[ -n "$SOURCE_DIR" ]]; then
-    require_command rsync
-fi
 log_info "All required commands found"
 
 ensure_env_secret() {
@@ -339,13 +298,9 @@ fi
 
 log_section "FETCHING RELEASE"
 mkdir -p "$NEW_RELEASE"
-if [[ -n "$SOURCE_DIR" ]]; then
-    copy_source_dir "$SOURCE_DIR" "$NEW_RELEASE"
-else
-    if ! git clone --depth=1 "$GIT_REPO" "$NEW_RELEASE" 2>&1 | tee -a "$LOG_FILE"; then
-        log_error "Failed to clone repository"
-        exit 1
-    fi
+if ! git clone --depth=1 "$GIT_REPO" "$NEW_RELEASE" 2>&1 | tee -a "$LOG_FILE"; then
+    log_error "Failed to clone repository"
+    exit 1
 fi
 
 if [[ -d "$NEW_RELEASE/web-host/scripts" ]]; then
@@ -428,7 +383,7 @@ stop_node_server
 
 ln -sfn "$NEW_RELEASE" "$CURRENT"
 PUBLIC_HTML_BASE="$BASE/public_html"
-PUBLIC_HTML_TARGET="${CURRENT}/public_html"
+PUBLIC_HTML_TARGET="$CURRENT/public_html"
 if [[ -L "$PUBLIC_HTML_BASE" ]]; then
     rm -f "$PUBLIC_HTML_BASE"
 elif [[ -d "$PUBLIC_HTML_BASE" ]]; then
@@ -447,10 +402,6 @@ if [[ "$SKIP_CLEANUP" == "false" ]]; then
     if [[ -x "$CLEANUP_SCRIPT" ]]; then
         BASE_PATH="$BASE" "$CLEANUP_SCRIPT" --releases "$KEEP_RELEASES" 2>&1 | tee -a "$LOG_FILE" || log_warn "Cleanup reported warnings"
     fi
-fi
-
-if [[ -n "$SOURCE_DIR" ]]; then
-    cleanup_source_dir "$SOURCE_DIR"
 fi
 
 DEPLOYMENT_SUCCESS=true
