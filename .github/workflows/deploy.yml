@@ -24,6 +24,34 @@ jobs:
           chmod 600 /tmp/ssh/deploy_key
         shell: bash
 
+      - name: Define remote source path
+        run: |
+          echo "REMOTE_SOURCE=/home/${{ secrets.USER }}/broxlab/build_source/$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Sync changed files to remote
+        env:
+          HOST: ${{ secrets.HOST }}
+          USER: ${{ secrets.USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          SSH_PORT="${SSH_PORT:-22}"
+          REMOTE_BASE="/home/${USER}/broxlab"
+          ssh -i /tmp/ssh/deploy_key -o StrictHostKeyChecking=no -p "$SSH_PORT" "$USER@$HOST" "mkdir -p '$REMOTE_BASE/build_source'"
+          rsync -az --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='node_modules' \
+            --exclude='vendor' \
+            --exclude='.env' \
+            --exclude='storage/cache' \
+            --exclude='storage/logs' \
+            --exclude='storage/tmp' \
+            --exclude='storage/ocr-temp' \
+            --exclude='storage/sessions' \
+            ./ "$USER@$HOST:$REMOTE_SOURCE"
+        shell: bash
+
       - name: Deploy to server
         uses: appleboy/ssh-action@v1
         with:
@@ -34,8 +62,8 @@ jobs:
           timeout: 60s
           command_timeout: 25m
           script: |
-            cd /home/tdhuedhn/broxlab
-            bash scripts/deploy.sh
+            cd /home/${{ secrets.USER }}/broxlab
+            bash web-host/scripts/deploy.sh --source-dir "$REMOTE_SOURCE"
 
       - name: Post-Deployment Status
         if: always()
