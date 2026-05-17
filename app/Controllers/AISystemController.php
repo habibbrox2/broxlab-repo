@@ -2506,6 +2506,44 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
         echo json_encode(['success' => true]);
     });
 
+    // POST /api/ai/feedback — collect thumbs-up / thumbs-down feedback on AI replies
+    $router->post('/api/ai/feedback', function () use ($mysqli) {
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $conversationId = (int)($input['conversation_id'] ?? 0);
+        $messageId       = (int)($input['message_id'] ?? 0);
+        $rating          = isset($input['rating']) ? (int)$input['rating'] : 0;
+        $csrfToken       = (string)($input['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+
+        if ($rating <= 0 || $rating > 5) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Invalid rating (1-5)']);
+            return;
+        }
+        if ($messageId <= 0 || $conversationId <= 0) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'conversation_id and message_id are required']);
+            return;
+        }
+        if (!empty($csrfToken) && function_exists('validateCsrfToken') && !validateCsrfToken($csrfToken)) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Invalid CSRF token', 'error_code' => 'csrf_token_invalid']);
+            return;
+        }
+
+        $userId = AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null);
+        $userId = $userId ? (int)$userId : null;
+
+        require_once __DIR__ . '/../Models/AIFeedback.php';
+        $feedbackModel = new AIFeedback($mysqli);
+        $ok = $feedbackModel->saveFeedback($conversationId, $messageId, $rating, null, $userId);
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $ok]);
+    });
+
     $bootstrapSessionHandler = function (bool $isAdmin) use ($mysqli) {
         $input = json_decode(file_get_contents('php://input'), true);
         if (!is_array($input)) {

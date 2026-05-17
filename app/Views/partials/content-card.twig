@@ -233,7 +233,7 @@
             <span>View Specs</span><i class="bi bi-arrow-right"></i>
           </a>
         {% elseif item.type == 'post' %}
-          <a href="/posts/view/{{ item.slug|default(item.url|default(item.id)) }}" class="cc-btn cc-btn-post" aria-label="Read article: {{ item.title }}">
+          <a href="/posts/view/{{ (item.slug|default(item.url|default(item.id)))|url_encode }}" class="cc-btn cc-btn-post" aria-label="Read article: {{ item.title }}">
             <span>Read Article</span><i class="bi bi-arrow-right"></i>
           </a>
         {% elseif item.type == 'service' %}

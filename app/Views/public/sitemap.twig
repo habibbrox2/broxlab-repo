@@ -20,7 +20,7 @@
   {# Content pages #}
   {% for content in contents %}
   <url>
-    <loc>{{ base_url() }}posts/view/{{ content.slug }}</loc>
+    <loc>{{ base_url() }}posts/view/{{ content.slug|url_encode }}</loc>
     <lastmod>{{ content.updated_at|date('Y-m-d') }}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>

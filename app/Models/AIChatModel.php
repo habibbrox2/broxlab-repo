@@ -14,7 +14,7 @@ class AIChatModel
     }
 
     /**
-     * Ensure the ai_conversations and ai_messages tables exist with correct schema
+     * Ensure the ai_conversations, ai_messages, and ai_feedback tables exist with correct schema
      */
     private function ensureTableExists(): void
     {
@@ -88,6 +88,30 @@ class AIChatModel
                 // Fix: Add AUTO_INCREMENT to id column
                 $this->db->query("ALTER TABLE ai_messages MODIFY COLUMN id INT AUTO_INCREMENT PRIMARY KEY");
             }
+        }
+
+        // Ensure ai_feedback table exists
+        $this->ensureFeedbackTable();
+    }
+
+    private function ensureFeedbackTable(): void
+    {
+        $result = $this->db->query("SHOW TABLES LIKE 'ai_feedback'");
+        if ($result && $result->num_rows === 0) {
+            $this->db->query("
+                CREATE TABLE IF NOT EXISTS ai_feedback (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    conversation_id VARCHAR(255) NOT NULL,
+                    message_id INT NOT NULL,
+                    rating TINYINT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+                    comment TEXT,
+                    user_id INT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_conversation (conversation_id),
+                    INDEX idx_message (message_id),
+                    INDEX idx_created (created_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
         }
     }
 

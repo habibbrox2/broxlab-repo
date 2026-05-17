@@ -23,7 +23,7 @@ class AIFeedback
             INSERT INTO ai_feedback (conversation_id, message_id, rating, comment, user_id, created_at)
             VALUES (?, ?, ?, ?, ?, NOW())
         ");
-        $stmt->bind_param("siiss", $conversationId, $messageId, $rating, $comment, $userId);
+        $stmt->bind_param("iiiss", $conversationId, $messageId, $rating, $comment, $userId);
         $result = $stmt->execute();
         $stmt->close();
         return $result;

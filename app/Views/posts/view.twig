@@ -412,7 +412,7 @@
             <div class="row g-2">
               <div class="col-6">
                 {% if previousPost %}
-                  <a href="/posts/view/{{ previousPost.url }}"
+                  <a href="/posts/view/{{ previousPost.url|url_encode }}"
                      class="btn btn-outline-primary w-100 rounded-pill"
                      aria-label="Previous post: {{ previousPost.title }}">
                     <i class="bi bi-arrow-left me-2"></i>
@@ -427,7 +427,7 @@
               </div>
               <div class="col-6">
                 {% if nextPost %}
-                  <a href="/posts/view/{{ nextPost.url }}"
+                  <a href="/posts/view/{{ nextPost.url|url_encode }}"
                      class="btn btn-outline-primary w-100 rounded-pill"
                      aria-label="Next post: {{ nextPost.title }}">
                     <span class="d-none d-md-inline">Next</span>
@@ -511,7 +511,7 @@
                 <ul class="list-unstyled mb-0">
                   {% for pp in popularPosts|slice(0, 5) %}
                     <li class="mb-3 {% if not loop.last %}pb-3 border-bottom{% endif %}">
-                      <a href="/posts/view/{{ pp.url }}"
+                      <a href="/posts/view/{{ pp.url|url_encode }}"
                          class="text-decoration-none text-theme-strong hover-text-primary d-block"
                          aria-label="Read popular article: {{ pp.title }}">
                         <h3 class="h6 fw-semibold mb-1 line-clamp-2">{{ pp.title }}</h3>

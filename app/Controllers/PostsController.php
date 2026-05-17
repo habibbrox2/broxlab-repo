@@ -492,7 +492,7 @@ $router->get('/posts', function () use ($twig, $contentModel) {
     // Build pagination URLs for SEO (rel="next" and rel="prev")
     $paginationNextUrl = '';
     $paginationPrevUrl = '';
-    
+
     if ($page < $totalPages) {
         $nextPage = $page + 1;
         $paginationNextUrl = '/posts?page=' . $nextPage;
@@ -501,7 +501,7 @@ $router->get('/posts', function () use ($twig, $contentModel) {
         if ($sort !== 'latest') $paginationNextUrl .= '&sort=' . urlencode($sort);
         if ($order !== 'DESC') $paginationNextUrl .= '&order=' . urlencode($order);
     }
-    
+
     if ($page > 1) {
         $prevPage = $page - 1;
         $paginationPrevUrl = '/posts' . ($prevPage > 1 ? '?page=' . $prevPage : '');
@@ -528,7 +528,41 @@ $router->get('/posts', function () use ($twig, $contentModel) {
     ]);
 });
 
-// Posts by slug
+// Posts by slug (query fallback support)
+$router->get('/posts/view', function () use ($twig, $contentModel, $commentModel) {
+    $slug = sanitize_input($_GET['slug'] ?? '');
+    if (!$slug) {
+        renderError(404, "Post slug missing");
+    }
+
+    $post = $contentModel->getPostBySlug($slug);
+    if (!$post) {
+        renderError(404, "Post not found");
+    }
+
+    $previousPost = $contentModel->getPreviousPost($post['id']);
+    $nextPost = $contentModel->getNextPost($post['id']);
+    $relatedPosts = $contentModel->getRelatedPosts($post['id']);
+
+    if (!empty($relatedPosts) && is_array($relatedPosts)) {
+        $relatedPosts = array_slice($relatedPosts, 0, 3);
+    }
+
+    $comments = $commentModel->getComments('post', $post['id']);
+
+    $post['tags'] = $contentModel->getTagsForContent('post', $post['id']);
+    $post['categories'] = $contentModel->getCategoriesForContent('post', $post['id']);
+
+    echo $twig->render('posts/view.twig', [
+        'title' => $post['title'],
+        'post' => $post,
+        'previousPost' => $previousPost,
+        'nextPost' => $nextPost,
+        'relatedPosts' => $relatedPosts,
+        'comments' => $comments,
+    ]);
+});
+
 $router->get('/posts/view/{slug}', function ($slug = null) use ($twig, $contentModel, $commentModel) {
     $slug = sanitize_input($slug);
     if (!$slug)

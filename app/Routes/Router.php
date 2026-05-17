@@ -224,6 +224,10 @@ class Router
     public function dispatch(string $method, string $uri)
     {
         $uri = strtok($uri, '?');
+        $uri = rtrim($uri, '/');
+        if ($uri === '') {
+            $uri = '/';
+        }
 
         if (!isset($this->routes[$method])) {
             logDebug(

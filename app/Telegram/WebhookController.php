@@ -113,64 +113,6 @@ class WebhookController
     }
 
     /**
-     * Test rate limiting functionality
-     */
-    public function testRateLimiting(): void
-    {
-        $ipHash = 'test_ip_hash';
-        $currentTime = time();
-
-        // Test rate limit check
-        $rateLimit = $this->checkRateLimit();
-        echo "Initial rate limit check: " . ($rateLimit ? "Blocked\n" : "Allowed\n");
-
-        // Test adding rate limit entries
-        $this->addRateLimitEntry($ipHash, $currentTime);
-        $rateLimit = $this->checkRateLimit();
-        echo "After adding entry: " . ($rateLimit ? "Blocked\n" : "Allowed\n");
-
-        // Test cleanup
-        $this->cleanupRateLimitEntries($currentTime - 3600);
-        $rateLimit = $this->checkRateLimit();
-        echo "After cleanup: " . ($rateLimit ? "Blocked\n" : "Allowed\n");
-    }
-
-    /**
-     * Test security features
-     */
-    public function testSecurityFeatures(): void
-    {
-        // Test IP verification
-        $validIps = [
-            '103.20.112.0/22', // Cloudflare IP range
-            '172.16.0.0/12',  // Private network (should be blocked)
-            '192.168.0.0/16', // Private network (should be blocked)
-            '10.0.0.0/8',     // Private network (should be blocked)
-            '172.16.0.1',     // Specific private IP (should be blocked)
-            '103.20.112.1'    // Valid IP (should be allowed)
-        ];
-
-        foreach ($validIps as $ip) {
-            $result = $this->verifyWebhookIP($ip);
-            echo "IP verification for {$ip}: " . ($result ? "Allowed\n" : "Blocked\n");
-        }
-
-        // Test input sanitization
-        $testInputs = [
-            "Normal text",
-            "Text with <script>alert('xss')</script>",
-            "Text with null byte\0",
-            "Text with control chars\x01\x02",
-            "Very long text " . str_repeat("a", 5000)
-        ];
-
-        foreach ($testInputs as $input) {
-            $sanitized = $this->sanitizeInput($input);
-            echo "Input sanitization: " . (mb_strlen($sanitized) < 100 ? $sanitized : "Length: " . mb_strlen($sanitized)) . "\n";
-        }
-    }
-
-    /**
      * Verify the secret token from Telegram header
      */
     private function verifySecretToken(): bool

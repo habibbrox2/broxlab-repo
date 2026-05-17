@@ -68,6 +68,12 @@ class AIKnowledge
                 $this->mysqli->query("ALTER TABLE ai_knowledge_base ADD COLUMN embedding JSON DEFAULT NULL");
             }
 
+            // Check and add source_url column
+            $result = $this->mysqli->query("SHOW COLUMNS FROM ai_knowledge_base LIKE 'source_url'");
+            if (!$result || $result->num_rows === 0) {
+                $this->mysqli->query("ALTER TABLE ai_knowledge_base ADD COLUMN source_url VARCHAR(512) DEFAULT NULL AFTER content");
+            }
+
             return true;
         } catch (Throwable $e) {
             // Log error but don't throw - table operations should be resilient
@@ -124,7 +130,7 @@ class AIKnowledge
             return null;
         }
 
-        $stmt = $this->mysqli->prepare("SELECT id, title, content, category, source_type, is_active, priority, created_at, updated_at FROM ai_knowledge_base WHERE id = ? LIMIT 1");
+        $stmt = $this->mysqli->prepare("SELECT id, title, content, source_url, category, source_type, is_active, priority, created_at, updated_at FROM ai_knowledge_base WHERE id = ? LIMIT 1");
         $stmt->bind_param('i', $id);
         $stmt->execute();
         $res = $stmt->get_result();
@@ -141,13 +147,14 @@ class AIKnowledge
 
         $title = $data['title'] ?? '';
         $content = $data['content'] ?? '';
+        $sourceUrl = $data['source_url'] ?? null;
         $category = $data['category'] ?? null;
         $sourceType = $data['source_type'] ?? 'text';
         $isActive = isset($data['is_active']) ? ($data['is_active'] ? 1 : 0) : 1;
         $priority = $data['priority'] ?? 0;
 
-        $stmt = $this->mysqli->prepare("INSERT INTO ai_knowledge_base (title, content, category, source_type, is_active, priority, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())");
-        $stmt->bind_param('sssiis', $title, $content, $category, $sourceType, $isActive, $priority);
+        $stmt = $this->mysqli->prepare("INSERT INTO ai_knowledge_base (title, content, source_url, category, source_type, is_active, priority, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+        $stmt->bind_param('ssssiis', $title, $content, $sourceUrl, $category, $sourceType, $isActive, $priority);
         $stmt->execute();
         $id = $stmt->insert_id;
         $stmt->close();
@@ -162,13 +169,14 @@ class AIKnowledge
 
         $title = $data['title'] ?? '';
         $content = $data['content'] ?? '';
+        $sourceUrl = $data['source_url'] ?? null;
         $category = $data['category'] ?? null;
         $sourceType = $data['source_type'] ?? 'text';
         $isActive = isset($data['is_active']) ? ($data['is_active'] ? 1 : 0) : 1;
         $priority = $data['priority'] ?? 0;
 
-        $stmt = $this->mysqli->prepare("UPDATE ai_knowledge_base SET title = ?, content = ?, category = ?, source_type = ?, is_active = ?, priority = ?, updated_at = NOW() WHERE id = ?");
-        $stmt->bind_param('sssiisi', $title, $content, $category, $sourceType, $isActive, $priority, $id);
+        $stmt = $this->mysqli->prepare("UPDATE ai_knowledge_base SET title = ?, content = ?, source_url = ?, category = ?, source_type = ?, is_active = ?, priority = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->bind_param('ssssiisi', $title, $content, $sourceUrl, $category, $sourceType, $isActive, $priority, $id);
         $res = $stmt->execute();
         $stmt->close();
         return $res;
