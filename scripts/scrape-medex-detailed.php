@@ -1,10 +1,11 @@
 ﻿<?php
+
 /**
  * MedEx Scraper - Detailed Medicine Information Extractor
  * Fetches detailed information for all brands of herbal companies
  * Supports both English and Bengali versions of brand detail pages
  * 
- * Usage: php scrape_medex_detailed.php [OPTIONS]
+ * Usage: php scrape-medex-detailed.php [OPTIONS]
  * 
  * Options:
  *   --start=INDEX          Start from company index (default: 0)
@@ -15,8 +16,8 @@
  *   --rate=SECONDS         Delay between requests in seconds (default: 0.75)
  * 
  * Examples:
- *   php scrape_medex_detailed.php --limit=10 --brands-limit=5
- *   php scrape_medex_detailed.php --resume --rate=1.0
+ *   php scrape-medex-detailed.php --limit=10 --brands-limit=5
+ *   php scrape-medex-detailed.php --resume --rate=1.0
  */
 
 // CLI options with defaults
@@ -64,9 +65,10 @@ try {
 /**
  * Parse command line arguments
  */
-function parse_command_line_arguments(&$options) {
+function parse_command_line_arguments(&$options)
+{
     global $argv;
-    
+
     foreach ($argv as $arg) {
         if (strpos($arg, "--start=") === 0) {
             $options["start"] = (int)substr($arg, 7);
@@ -82,7 +84,7 @@ function parse_command_line_arguments(&$options) {
             $options["resume"] = true;
         }
     }
-    
+
     echo "Scraper Configuration:" . PHP_EOL;
     echo "  Start index: " . $options["start"] . PHP_EOL;
     echo "  Company limit: " . ($options["limit"] ?? "all") . PHP_EOL;
@@ -96,20 +98,21 @@ function parse_command_line_arguments(&$options) {
 /**
  * Main execution function
  */
-function main($options, $bnSectionKeys) {
+function main($options, $bnSectionKeys)
+{
     $startTime = microtime(true);
-    
+
     // Load input data
     echo "Loading input data..." . PHP_EOL;
     if (!file_exists(INPUT_FILE)) {
         throw new Exception("Input file not found: " . INPUT_FILE);
     }
-    
+
     $inputData = json_decode(file_get_contents(INPUT_FILE), true);
     if ($inputData === null) {
         throw new Exception("Failed to parse input JSON");
     }
-    
+
     // Ensure we have an array
     if (!isset($inputData["companies"]) && isset($inputData[0])) {
         $companies = $inputData;
@@ -118,30 +121,30 @@ function main($options, $bnSectionKeys) {
     } else {
         throw new Exception("Invalid JSON structure");
     }
-    
+
     echo "Loaded " . count($companies) . " companies." . PHP_EOL;
-    
+
     // Apply start and limit
     $startIndex = $options["start"];
     $limit = $options["limit"];
     $totalCompanies = count($companies);
-    
+
     if ($startIndex >= $totalCompanies) {
         echo "Start index exceeds total companies." . PHP_EOL;
         return;
     }
-    
+
     $endIndex = $limit ? min($startIndex + $limit, $totalCompanies) : $totalCompanies;
     $companiesToProcess = array_slice($companies, $startIndex, $endIndex - $startIndex);
-    
+
     echo "Processing companies {$startIndex} to " . ($endIndex - 1) . " (" . count($companiesToProcess) . " companies)." . PHP_EOL;
     echo str_repeat("=", 60) . PHP_EOL . PHP_EOL;
-    
+
     // Load or initialize output/progress
     $outputFile = $options["output"];
     $progress = [];
     $results = [];
-    
+
     if ($options["resume"]) {
         if (file_exists(PROGRESS_FILE)) {
             echo "Resuming from checkpoint..." . PHP_EOL;
@@ -150,7 +153,7 @@ function main($options, $bnSectionKeys) {
             echo "Resume data loaded. " . (isset($progress["last_index"]) ? "Last processed: company #" . $progress["last_index"] : "No previous progress") . PHP_EOL;
             echo PHP_EOL;
         }
-        
+
         // Load existing output if exists
         if (file_exists($outputFile)) {
             echo "Loading existing output..." . PHP_EOL;
@@ -161,31 +164,30 @@ function main($options, $bnSectionKeys) {
             }
         }
     }
-    
+
     // Process each company
     foreach ($companiesToProcess as $index => $company) {
         $globalIndex = $startIndex + $index;
-        
+
         // Skip if already processed in resume mode
         if ($options["resume"] && isset($progress["last_index"]) && $globalIndex <= $progress["last_index"]) {
             echo "[SKIP] Company #{$globalIndex}: " . $company["name"] . " already processed." . PHP_EOL;
             continue;
         }
-        
+
         $elapsed = microtime(true) - $startTime;
         echo "[" . format_time($elapsed) . "] Processing company #{$globalIndex}: " . $company["name"] . PHP_EOL;
-        
+
         try {
             $companyData = process_company($company, $options, $bnSectionKeys);
             $results[] = $companyData;
-            
+
             // Save progress every 5 companies
             if (($index + 1) % 5 === 0) {
                 save_progress($globalIndex, $progress);
                 save_output($results, $outputFile);
                 echo "  [PROGRESS] Saved after company #{$globalIndex}" . PHP_EOL;
             }
-            
         } catch (Exception $e) {
             echo "  [ERROR] Failed to process company #{$globalIndex}: " . $e->getMessage() . PHP_EOL;
             // Save what we have so far
@@ -194,17 +196,17 @@ function main($options, $bnSectionKeys) {
             // Continue with next company
             continue;
         }
-        
+
         // Rate limiting
         if ($index < count($companiesToProcess) - 1) {
             usleep((int)($options["rate"] * 1000000));
         }
     }
-    
+
     // Final save
     save_output($results, $outputFile);
     save_progress($endIndex - 1, $progress);
-    
+
     $elapsed = microtime(true) - $startTime;
     echo PHP_EOL . str_repeat("=", 60) . PHP_EOL;
     echo "Scraping completed!" . PHP_EOL;
@@ -217,35 +219,36 @@ function main($options, $bnSectionKeys) {
 /**
  * Process a single company
  */
-function process_company($company, $options, $bnSectionKeys) {
+function process_company($company, $options, $bnSectionKeys)
+{
     // Fetch brand list page
     $companyUrl = $company["url"] ?? "";
     if (empty($companyUrl)) {
         throw new Exception("No company URL provided");
     }
-    
+
     echo "  Fetching brand list: {$companyUrl}" . PHP_EOL;
     $html = fetch_page($companyUrl);
     if ($html === false) {
         throw new Exception("Failed to fetch brand list page");
     }
-    
+
     // Get ALL brand links (including pagination)
     $brandLinks = extract_all_brand_links($html, $companyUrl);
     echo "  Found " . count($brandLinks) . " brands." . PHP_EOL;
-    
+
     // Apply brands limit if set
     if ($options["brands_limit"] !== null) {
         $brandLinks = array_slice($brandLinks, 0, $options["brands_limit"]);
         echo "  Limited to " . $options["brands_limit"] . " brands." . PHP_EOL;
     }
-    
+
     // Process each brand
     $brandsDetails = [];
     foreach ($brandLinks as $brandIndex => $brandLink) {
         $brandName = $brandLink["name"] ?? "Unknown";
         echo "    Brand " . ($brandIndex + 1) . "/" . count($brandLinks) . ": {$brandName}" . PHP_EOL;
-        
+
         try {
             $brandDetails = process_brand($brandLink, $bnSectionKeys);
             if ($brandDetails !== null) {
@@ -255,13 +258,13 @@ function process_company($company, $options, $bnSectionKeys) {
             echo "      [WARN] Failed to process brand: " . $e->getMessage() . PHP_EOL;
             continue;
         }
-        
+
         // Rate limiting between brands
         if ($brandIndex < count($brandLinks) - 1) {
             usleep((int)($options["rate"] * 1000000));
         }
     }
-    
+
     // Build company data structure
     $companyData = [
         "name" => $company["name"],
@@ -272,14 +275,14 @@ function process_company($company, $options, $bnSectionKeys) {
         ],
         "brands_details" => $brandsDetails,
     ];
-    
+
     // Copy any additional fields from original company data
     foreach ($company as $key => $value) {
         if (!in_array($key, ["name", "url", "id", "herbal", "top_brands"]) && !isset($companyData["company_info"][$key])) {
             $companyData["company_info"][$key] = $value;
         }
     }
-    
+
     echo "  Completed: " . count($brandsDetails) . " brands extracted." . PHP_EOL;
     return $companyData;
 }
@@ -287,17 +290,18 @@ function process_company($company, $options, $bnSectionKeys) {
 /**
  * Process a single brand (fetch en + bn, parse details)
  */
-function process_brand($brandLink, $bnSectionKeys) {
+function process_brand($brandLink, $bnSectionKeys)
+{
     $brandUrl = $brandLink["url"];
-    
+
     // Fetch English version
     $htmlEn = fetch_page($brandUrl);
     if ($htmlEn === false) {
         throw new Exception("Failed to fetch English page");
     }
-    
+
     $detailsEn = parse_brand_detail_page($htmlEn);
-    
+
     // Build Bengali URL
     $urlParts = parse_url($brandUrl);
     $path = $urlParts["path"];
@@ -307,7 +311,7 @@ function process_brand($brandLink, $bnSectionKeys) {
     } else {
         $brandUrlBn = $brandUrl;
     }
-    
+
     // Fetch Bengali version
     $htmlBn = fetch_page($brandUrlBn);
     $detailsBn = [];
@@ -322,7 +326,7 @@ function process_brand($brandLink, $bnSectionKeys) {
     } else {
         echo "      [WARN] Failed to fetch Bengali page: {$brandUrlBn}" . PHP_EOL;
     }
-    
+
     return [
         "brand_name" => $brandLink["name"] ?? $detailsEn["brand_name"] ?? "",
         "generic_name" => $brandLink["generic"] ?? $detailsEn["generic_name"] ?? "",
@@ -340,9 +344,10 @@ function process_brand($brandLink, $bnSectionKeys) {
 /**
  * Fetch a web page with cURL
  */
-function fetch_page($url, $maxRetries = 3) {
+function fetch_page($url, $maxRetries = 3)
+{
     $attempt = 0;
-    
+
     while ($attempt < $maxRetries) {
         $ch = curl_init();
         curl_setopt_array($ch, [
@@ -360,23 +365,23 @@ function fetch_page($url, $maxRetries = 3) {
                 "Accept-Language: en-US,en;q=0.9,bn;q=0.8",
             ],
         ]);
-        
+
         $response = curl_exec($ch);
         $err = curl_error($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        
+
         if ($response !== false && $code >= 200 && $code < 300) {
             return $response;
         }
-        
+
         $attempt++;
         if ($attempt < $maxRetries) {
             $wait = pow(2, $attempt); // Exponential backoff
             sleep($wait);
         }
     }
-    
+
     error_log("Fetch failed after {$maxRetries} attempts: {$url} (HTTP {$code})");
     return false;
 }
@@ -384,14 +389,15 @@ function fetch_page($url, $maxRetries = 3) {
 /**
  * Extract all brand links from company brand page (with pagination)
  */
-function extract_all_brand_links($html, $baseUrl) {
+function extract_all_brand_links($html, $baseUrl)
+{
     $links = [];
     $dom = new DOMDocument();
     libxml_use_internal_errors(true);
     $dom->loadHTML(mb_convert_encoding($html, "HTML-ENTITIES", "UTF-8"));
     libxml_clear_errors();
     $xpath = new DOMXPath($dom);
-    
+
     // Extract initial brand links
     $nodes = $xpath->query('//a[contains(@class,"hoverable-block")]');
     foreach ($nodes as $node) {
@@ -400,7 +406,7 @@ function extract_all_brand_links($html, $baseUrl) {
         $name = $nameNode ? trim($nameNode->textContent) : "";
         $genericNode = $xpath->query('.//span[contains(@class,"text-muted")]', $node)->item(0);
         $generic = $genericNode ? trim($genericNode->textContent) : "";
-        
+
         if ($href && $name) {
             $links[] = [
                 "name" => clean_text($name),
@@ -409,29 +415,29 @@ function extract_all_brand_links($html, $baseUrl) {
             ];
         }
     }
-    
+
     // Find pagination links (A-Z)
     $alphaLinks = $xpath->query('//ul[contains(@class,"pagination")]//a[contains(@href,"/brands?alpha=")]');
     $seen = [];
     foreach ($links as $l) $seen[$l["url"]] = true;
-    
+
     foreach ($alphaLinks as $pageLink) {
         $href = $pageLink->getAttribute("href");
         if (strpos($href, "/brands?alpha=") === false) continue;
-        
+
         $pageUrl = ensure_absolute_url($href, $baseUrl);
         if (isset($seen[$pageUrl])) continue;
-        
+
         echo "    Fetching pagination: {$pageUrl}" . PHP_EOL;
         $pageHtml = fetch_page($pageUrl);
         if ($pageHtml === false) continue;
-        
+
         $domP = new DOMDocument();
         libxml_use_internal_errors(true);
         $domP->loadHTML(mb_convert_encoding($pageHtml, "HTML-ENTITIES", "UTF-8"));
         libxml_clear_errors();
         $xpP = new DOMXPath($domP);
-        
+
         $pageNodes = $xpP->query('//a[contains(@class,"hoverable-block")]');
         foreach ($pageNodes as $node) {
             $href = $node->getAttribute("href");
@@ -439,7 +445,7 @@ function extract_all_brand_links($html, $baseUrl) {
             $name = $nameNode ? trim($nameNode->textContent) : "";
             $genericNode = $xpP->query('.//span[contains(@class,"text-muted")]', $node)->item(0);
             $generic = $genericNode ? trim($genericNode->textContent) : "";
-            
+
             if ($href && $name) {
                 $abs = ensure_absolute_url($href, $baseUrl);
                 if (!isset($seen[$abs])) {
@@ -453,44 +459,45 @@ function extract_all_brand_links($html, $baseUrl) {
             }
         }
     }
-    
+
     return $links;
 }
 
 /**
  * Parse brand detail page
  */
-function parse_brand_detail_page($html) {
+function parse_brand_detail_page($html)
+{
     $dom = new DOMDocument();
     libxml_use_internal_errors(true);
     $dom->loadHTML(mb_convert_encoding($html, "HTML-ENTITIES", "UTF-8"));
     libxml_clear_errors();
     $xpath = new DOMXPath($dom);
-    
+
     $data = [];
-    
+
     // Brand name
     $brandNode = $xpath->query('//h1[contains(@class,"brand")]')->item(0);
     $data["brand_name"] = $brandNode ? clean_text($brandNode->textContent) : "";
-    
+
     // Generic name
     $genericNode = $xpath->query('//div[@title="Generic Name"]//a')->item(0);
     if (!$genericNode) {
         $genericNode = $xpath->query('//div[@title="Generic Name"]')->item(0);
     }
     $data["generic_name"] = $genericNode ? clean_text($genericNode->textContent) : "";
-    
+
     // Strength
     $strengthNode = $xpath->query('//div[@title="Strength"]')->item(0);
     $data["strength"] = $strengthNode ? clean_text($strengthNode->textContent) : "";
-    
+
     // Dosage form
     $formNode = $xpath->query('//div[@title="Dosage Form"]')->item(0);
     if (!$formNode) {
         $formNode = $xpath->query('//span[contains(@class,"inline-dosage-form")]')->item(0);
     }
     $data["dosage_form"] = $formNode ? clean_text($formNode->textContent) : "";
-    
+
     // Prices
     $priceNodes = $xpath->query('//span[@class="package-pricing"]');
     $data["unit_price"] = ($priceNodes->length > 0) ? clean_text($priceNodes->item(0)->textContent) : "";
@@ -501,7 +508,7 @@ function parse_brand_detail_page($html) {
         $pkgNode = $xpath->query('//div[@class="package-container"]//span[contains(@class,"text-right")]')->item(0);
         $data["strip_price"] = $pkgNode ? clean_text($pkgNode->textContent) : "";
     }
-    
+
     // Detailed sections
     $sectionMap = [
         "indications" => "indications",
@@ -516,19 +523,20 @@ function parse_brand_detail_page($html) {
         "drug_classes" => "therapeutic_class",
         "storage_conditions" => "storage",
     ];
-    
+
     foreach ($sectionMap as $sectionId => $field) {
         $sectionNode = $xpath->query('//div[@id="' . $sectionId . '"]//div[contains(@class,"ac-body")]')->item(0);
         $data[$field] = $sectionNode ? clean_text($sectionNode->textContent) : "";
     }
-    
+
     return $data;
 }
 
 /**
  * Clean text content
  */
-function clean_text($text) {
+function clean_text($text)
+{
     if ($text === null) return "";
     $text = trim($text);
     $text = preg_replace("/\s+/", " ", $text);
@@ -539,7 +547,8 @@ function clean_text($text) {
 /**
  * Ensure URL is absolute
  */
-function ensure_absolute_url($url, $baseUrl) {
+function ensure_absolute_url($url, $baseUrl)
+{
     if (strpos($url, "http") === 0) {
         return $url;
     }
@@ -551,7 +560,8 @@ function ensure_absolute_url($url, $baseUrl) {
 /**
  * Save progress checkpoint
  */
-function save_progress($lastIndex, $progress) {
+function save_progress($lastIndex, $progress)
+{
     $progress["last_index"] = $lastIndex;
     $progress["timestamp"] = date("c");
     file_put_contents(PROGRESS_FILE, json_encode($progress, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
@@ -560,18 +570,18 @@ function save_progress($lastIndex, $progress) {
 /**
  * Save output JSON
  */
-function save_output($data, $filename) {
+function save_output($data, $filename)
+{
     file_put_contents($filename, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 }
 
 /**
  * Format time in human readable format
  */
-function format_time($seconds) {
+function format_time($seconds)
+{
     $hours = floor($seconds / 3600);
     $minutes = floor(($seconds % 3600) / 60);
     $secs = floor($seconds % 60);
     return sprintf("%02dh %02dm %02ds", $hours, $minutes, $secs);
 }
-
-?>

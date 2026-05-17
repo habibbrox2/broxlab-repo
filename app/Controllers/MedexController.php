@@ -25,7 +25,7 @@
  *
  * SETUP:
  * 1. Place the JSON data file at: <?php echo BASE_PATH; ?>medex_herbal_companies.json
- * 2. Optional: run `php scrape_medex_detailed.php` to generate enriched data
+ * 2. Optional: run `php scrape-medex-detailed.php` to generate enriched data
  *
  * @package BroxLab
  */
