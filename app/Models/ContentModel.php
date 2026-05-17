@@ -3,10 +3,53 @@
 class ContentModel
 {
     private $mysqli;
+    private array $tableExistsCache = [];
 
     public function __construct(mysqli $mysqli)
     {
         $this->mysqli = $mysqli;
+    }
+
+    /**
+     * Check whether a database table exists.
+     */
+    private function tableExists(string $tableName): bool
+    {
+        if (array_key_exists($tableName, $this->tableExistsCache)) {
+            return $this->tableExistsCache[$tableName];
+        }
+
+        try {
+            $safeTable = $this->mysqli->real_escape_string($tableName);
+            $result = @$this->mysqli->query("SHOW TABLES LIKE '{$safeTable}'");
+            $exists = (bool)($result && $result->num_rows > 0);
+        } catch (Throwable $e) {
+            $exists = false;
+        }
+
+        $this->tableExistsCache[$tableName] = $exists;
+        return $exists;
+    }
+
+    /**
+     * Build engagement count SQL fragments for content lists and detail pages.
+     */
+    private function buildEngagementSelect(string $alias, string $contentType): string
+    {
+        return "0 AS views, 0 AS impressions";
+    }
+
+    /**
+     * Build engagement join SQL fragments for related-item queries.
+     *
+     * @return array{select:string, joins:string}
+     */
+    private function buildEngagementJoins(string $alias, string $contentType): array
+    {
+        return [
+            'select' => '0 AS views, 0 AS impressions',
+            'joins' => '',
+        ];
     }
 
     // -----------------Image Extractor -----------------
@@ -293,9 +336,7 @@ class ContentModel
     // -------------------- PAGES --------------------
     public function getAllPages()
     {
-        $sql = "SELECT pg.*,
-                       (SELECT COUNT(*) FROM views v WHERE v.content_type = 'page' AND v.content_id = pg.id) AS views,
-                       (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'page' AND i.content_id = pg.id) AS impressions
+        $sql = "SELECT pg.*, " . $this->buildEngagementSelect('pg.id', 'page') . "
                 FROM pages pg
                 ORDER BY pg.created_at DESC";
         $result = $this->mysqli->query($sql);
@@ -309,9 +350,7 @@ class ContentModel
 
     public function getPageById($id)
     {
-        $sql = "SELECT pg.*,
-                       (SELECT COUNT(*) FROM views v WHERE v.content_type = 'page' AND v.content_id = pg.id) AS views,
-                       (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'page' AND i.content_id = pg.id) AS impressions
+        $sql = "SELECT pg.*, " . $this->buildEngagementSelect('pg.id', 'page') . "
                 FROM pages pg
                 WHERE pg.id = ?";
         $stmt = $this->mysqli->prepare($sql);
@@ -325,9 +364,7 @@ class ContentModel
 
     public function getPageBySlug($slug)
     {
-        $sql = "SELECT p.*, 
-                       (SELECT COUNT(*) FROM views v WHERE v.content_type = 'page' AND v.content_id = p.id) AS views,
-                       (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'page' AND i.content_id = p.id) AS impressions
+        $sql = "SELECT p.*, " . $this->buildEngagementSelect('p.id', 'page') . "
                 FROM pages p WHERE p.slug = ?";
         $stmt = $this->mysqli->prepare($sql);
         $stmt->bind_param("s", $slug);
@@ -341,9 +378,7 @@ class ContentModel
     // -------------------- POSTS --------------------
     public function getAllPosts()
     {
-        $sql = "SELECT p.*,
-                       (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = p.id) AS views,
-                       (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = p.id) AS impressions
+        $sql = "SELECT p.*, " . $this->buildEngagementSelect('p.id', 'post') . "
                 FROM posts p
                 ORDER BY p.created_at DESC";
         $result = $this->mysqli->query($sql);
@@ -357,9 +392,7 @@ class ContentModel
 
     public function getPostById($id)
     {
-        $sql = "SELECT p.*,
-                       (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = p.id) AS views,
-                       (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = p.id) AS impressions
+        $sql = "SELECT p.*, " . $this->buildEngagementSelect('p.id', 'post') . "
                 FROM posts p
                 WHERE p.id = ?";
         $stmt = $this->mysqli->prepare($sql);
@@ -373,9 +406,7 @@ class ContentModel
 
     public function getPostBySlug($slug)
     {
-        $sql = "SELECT p.*,
-                       (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = p.id) AS views,
-                       (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = p.id) AS impressions
+        $sql = "SELECT p.*, " . $this->buildEngagementSelect('p.id', 'post') . "
                 FROM posts p
                 WHERE p.slug = ?";
         $stmt = $this->mysqli->prepare($sql);
@@ -971,8 +1002,7 @@ class ContentModel
         $sql = "
             SELECT 'post' AS type, p.id, p.title, p.slug AS url,
                 p.content, p.created_at, p.author, 0 AS is_premium, NULL AS status,
-                (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = p.id) AS views,
-                (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = p.id) AS impressions
+                " . $this->buildEngagementSelect('p.id', 'post') . "
             FROM posts p
             INNER JOIN content_tags ct ON ct.content_id = p.id AND ct.content_type = 'post'
             INNER JOIN tags t ON t.id = ct.tag_id
@@ -982,8 +1012,7 @@ class ContentModel
 
             SELECT 'page' AS type, pg.id, pg.title, pg.slug AS url,
                 pg.content, pg.created_at, NULL AS author, 0 AS is_premium, NULL AS status,
-                (SELECT COUNT(*) FROM views v WHERE v.content_type = 'page' AND v.content_id = pg.id) AS views,
-                (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'page' AND i.content_id = pg.id) AS impressions
+                " . $this->buildEngagementSelect('pg.id', 'page') . "
             FROM pages pg
             INNER JOIN content_tags ct2 ON ct2.content_id = pg.id AND ct2.content_type = 'page'
             INNER JOIN tags t2 ON t2.id = ct2.tag_id
@@ -1013,8 +1042,7 @@ class ContentModel
                 CONCAT('/services/', s.slug) AS url,
                 COALESCE(s.description, '') AS content,
                 s.created_at, NULL AS author, s.is_premium, s.status,
-                (SELECT COUNT(*) FROM views v WHERE v.content_type = 'service' AND v.content_id = s.id) AS views,
-                (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'service' AND i.content_id = s.id) AS impressions
+                " . $this->buildEngagementSelect('s.id', 'service') . "
             FROM services s
             INNER JOIN content_tags ct4 ON ct4.content_id = s.id AND ct4.content_type = 'service'
             INNER JOIN tags t4 ON t4.id = ct4.tag_id
@@ -1111,8 +1139,7 @@ class ContentModel
     {
         $sql = "
             SELECT 'post' as type, p.id, p.title, p.slug as url, p.content, p.created_at, p.author, 0 as is_premium, NULL as status,
-                (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = p.id) AS views,
-                (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = p.id) AS impressions
+                " . $this->buildEngagementSelect('p.id', 'post') . "
             FROM posts p
             INNER JOIN content_categories cc ON cc.content_id = p.id AND cc.content_type = 'post'
             INNER JOIN categories c ON c.id = cc.category_id
@@ -1121,8 +1148,7 @@ class ContentModel
             UNION
 
             SELECT 'page' as type, pg.id, pg.title, pg.slug as url, pg.content, pg.created_at, NULL as author, 0 as is_premium, NULL as status,
-                (SELECT COUNT(*) FROM views v WHERE v.content_type = 'page' AND v.content_id = pg.id) AS views,
-                (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'page' AND i.content_id = pg.id) AS impressions
+                " . $this->buildEngagementSelect('pg.id', 'page') . "
             FROM pages pg
             INNER JOIN content_categories cc2 ON cc2.content_id = pg.id AND cc2.content_type = 'page'
             INNER JOIN categories c2 ON c2.id = cc2.category_id
@@ -1152,8 +1178,7 @@ class ContentModel
             UNION
 
             SELECT 'service' as type, s.id, s.name as title, CONCAT('/services/', s.slug) as url, COALESCE(s.description, '') as content, s.created_at, NULL as author, s.is_premium, s.status,
-                (SELECT COUNT(*) FROM views v WHERE v.content_type = 'service' AND v.content_id = s.id) AS views,
-                (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'service' AND i.content_id = s.id) AS impressions
+                " . $this->buildEngagementSelect('s.id', 'service') . "
             FROM services s
             INNER JOIN content_categories cc4 ON cc4.content_id = s.id AND cc4.content_type = 'service'
             INNER JOIN categories c4 ON c4.id = cc4.category_id
@@ -1436,12 +1461,10 @@ class ContentModel
         $limit = max(1, (int)$limit);
         $offset = ($page - 1) * $limit;
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
-        $allowedSorts = ['id', 'title', 'created_at', 'updated_at', 'views', 'impressions'];
+        $allowedSorts = ['id', 'title', 'created_at', 'updated_at'];
         $sort = in_array($sort, $allowedSorts) ? $sort : 'created_at';
 
-        $sql = "SELECT p.*,
-               (SELECT COUNT(*) FROM views v WHERE v.content_type = 'post' AND v.content_id = p.id) AS views,
-               (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'post' AND i.content_id = p.id) AS impressions
+        $sql = "SELECT p.*, " . $this->buildEngagementSelect('p.id', 'post') . "
         FROM posts p WHERE p.published = 1";
         $params = [];
         $types = '';
@@ -1461,8 +1484,7 @@ class ContentModel
             $types .= 'i';
         }
 
-        $orderBy = in_array($sort, ['views', 'impressions'], true) ? $sort : "p.`{$sort}`";
-        $sql .= " ORDER BY " . $orderBy . " " . $order . " LIMIT " . $limit . " OFFSET " . $offset;
+        $sql .= " ORDER BY p.`{$sort}` " . $order . " LIMIT " . $limit . " OFFSET " . $offset;
 
         if (!empty($params)) {
             $stmt = $this->mysqli->prepare($sql);
@@ -1526,12 +1548,10 @@ class ContentModel
         $limit = max(1, (int)$limit);
         $offset = ($page - 1) * $limit;
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
-        $allowedSorts = ['id', 'title', 'created_at', 'updated_at', 'views', 'impressions'];
+        $allowedSorts = ['id', 'title', 'created_at', 'updated_at'];
         $sort = in_array($sort, $allowedSorts) ? $sort : 'created_at';
 
-        $sql = "SELECT pg.*,
-               (SELECT COUNT(*) FROM views v WHERE v.content_type = 'page' AND v.content_id = pg.id) AS views,
-               (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'page' AND i.content_id = pg.id) AS impressions
+        $sql = "SELECT pg.*, " . $this->buildEngagementSelect('pg.id', 'page') . "
         FROM pages pg WHERE pg.published = 1";
         $params = [];
         $types = '';
@@ -1551,8 +1571,7 @@ class ContentModel
             $types .= 'i';
         }
 
-        $orderBy = in_array($sort, ['views', 'impressions'], true) ? $sort : "pg.`{$sort}`";
-        $sql .= " ORDER BY " . $orderBy . " " . $order . " LIMIT " . $limit . " OFFSET " . $offset;
+        $sql .= " ORDER BY pg.`{$sort}` " . $order . " LIMIT " . $limit . " OFFSET " . $offset;
 
         if (!empty($params)) {
             $stmt = $this->mysqli->prepare($sql);
@@ -1656,24 +1675,12 @@ class ContentModel
     // -------------------- Pages --------------------
     public function getRelatedPages(int $pageId, int $limit = 5): array
     {
+        $engagement = $this->buildEngagementJoins('p.id', 'page');
         $sql = "
             SELECT 
-                p.*,
-                COALESCE(v.views, 0) AS views,
-                COALESCE(i.impressions, 0) AS impressions
+                p.*, {$engagement['select']}
             FROM pages p
-            LEFT JOIN (
-                SELECT content_id, COUNT(*) AS views
-                FROM views
-                WHERE content_type = 'page'
-                GROUP BY content_id
-            ) v ON v.content_id = p.id
-            LEFT JOIN (
-                SELECT content_id, COUNT(*) AS impressions
-                FROM impressions
-                WHERE content_type = 'page'
-                GROUP BY content_id
-            ) i ON i.content_id = p.id
+            {$engagement['joins']}
             WHERE p.published = 1
               AND p.id != ?
               AND p.id >= (
@@ -1707,7 +1714,7 @@ class ContentModel
     private function getRelatedPagesFallback(int $pageId, int $limit): array
     {
         $sql = "
-            SELECT p.*, 0 AS views, 0 AS impressions
+            SELECT p.*, " . $this->buildEngagementSelect('p.id', 'page') . "
             FROM pages p
             WHERE p.published = 1
               AND p.id != ?
@@ -1725,24 +1732,12 @@ class ContentModel
     // -------------------- Posts --------------------
     public function getRelatedPosts(int $postId, int $limit = 5): array
     {
+        $engagement = $this->buildEngagementJoins('p.id', 'post');
         $sql = "
             SELECT 
-                p.*,
-                COALESCE(v.views, 0) AS views,
-                COALESCE(i.impressions, 0) AS impressions
+                p.*, {$engagement['select']}
             FROM posts p
-            LEFT JOIN (
-                SELECT content_id, COUNT(*) AS views
-                FROM views
-                WHERE content_type = 'post'
-                GROUP BY content_id
-            ) v ON v.content_id = p.id
-            LEFT JOIN (
-                SELECT content_id, COUNT(*) AS impressions
-                FROM impressions
-                WHERE content_type = 'post'
-                GROUP BY content_id
-            ) i ON i.content_id = p.id
+            {$engagement['joins']}
             WHERE p.published = 1
               AND p.id != ?
               AND p.id >= (
@@ -1778,7 +1773,7 @@ class ContentModel
     private function getRelatedPostsFallback(int $postId, int $limit): array
     {
         $sql = "
-            SELECT p.*, 0 AS views, 0 AS impressions
+            SELECT p.*, " . $this->buildEngagementSelect('p.id', 'post') . "
             FROM posts p
             WHERE p.published = 1
               AND p.id != ?

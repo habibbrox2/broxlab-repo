@@ -353,10 +353,9 @@ class AnalyticsModel
                         p.id,
                         p.title AS title,
                         'page' AS content_type,
-                        COUNT(v.id) AS views,
-                        COUNT(DISTINCT v.viewer_ip) AS unique_viewers
+                        0 AS views,
+                        0 AS unique_viewers
                     FROM pages p
-                    LEFT JOIN views v ON p.id = v.content_id AND v.content_type = 'page'
                     WHERE p.published = 1
                     GROUP BY p.id, p.title
 
@@ -366,10 +365,9 @@ class AnalyticsModel
                         po.id,
                         po.title AS title,
                         'post' AS content_type,
-                        COUNT(v.id) AS views,
-                        COUNT(DISTINCT v.viewer_ip) AS unique_viewers
+                        0 AS views,
+                        0 AS unique_viewers
                     FROM posts po
-                    LEFT JOIN views v ON po.id = v.content_id AND v.content_type = 'post'
                     WHERE po.published = 1
                     GROUP BY po.id, po.title
 
@@ -379,10 +377,9 @@ class AnalyticsModel
                         s.id,
                         s.name AS title,
                         'service' AS content_type,
-                        COUNT(v.id) AS views,
-                        COUNT(DISTINCT v.viewer_ip) AS unique_viewers
+                        0 AS views,
+                        0 AS unique_viewers
                     FROM services s
-                    LEFT JOIN views v ON s.id = v.content_id AND v.content_type = 'service'
                     WHERE s.deleted_at IS NULL AND s.status IN ('active', 'archived')
                     GROUP BY s.id, s.name
                 ) t
@@ -535,9 +532,7 @@ class AnalyticsModel
         // Map table names to their date columns
         $tableColumnMap = [
             'activity_logs' => 'created_at',
-            'auth_audit_log' => 'created_at',
-            'views' => 'viewed_at',
-            'impressions' => 'impression_at'
+            'auth_audit_log' => 'created_at'
         ];
 
         $tablesToClear = [];
@@ -546,8 +541,6 @@ class AnalyticsModel
             $tablesToClear = array_keys($tableColumnMap);
         } elseif ($logType === 'activity') {
             $tablesToClear = ['activity_logs'];
-        } elseif ($logType === 'views') {
-            $tablesToClear = ['views', 'impressions'];
         }
 
         // Clear each table using its appropriate date column

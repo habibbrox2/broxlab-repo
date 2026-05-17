@@ -34,8 +34,6 @@
             <select name="sort" class="form-select">
               <option value="created_at" {{ sort|default('created_at') == 'created_at' ? 'selected' : '' }}>Latest</option>
               <option value="title" {{ sort|default('created_at') == 'title' ? 'selected' : '' }}>Title</option>
-              <option value="views" {{ sort|default('created_at') == 'views' ? 'selected' : '' }}>Most Viewed</option>
-              <option value="impressions" {{ sort|default('created_at') == 'impressions' ? 'selected' : '' }}>Most Impressions</option>
             </select>
           </div>
           <div class="col-md-2">
@@ -73,11 +71,6 @@
                   <th><i class="bi bi-person"></i> Author</th>
                   <th><i class="bi bi-link-45deg"></i> Permalink</th>
                   <th><i class="bi bi-calendar-check"></i> Status</th>
-                  <th>
-                    <i class="bi bi-bar-chart"></i> Impressions
-                    <hr>
-                    <i class="bi bi-eye"></i> Views
-                  </th>
                   <th class="text-center"><i class="bi bi-gear"></i> Actions</th>
                 </tr>
               </thead>
@@ -97,11 +90,6 @@
                         <i class="bi {{ post.published ? 'bi-check2' : 'bi-pencil' }}"></i>
                         {{ post.published ? 'Published' : 'Draft' }}
                       </span>
-                    </td>
-                    <td data-label="Stats">
-                      <i class="bi bi-bar-chart text-info me-1"></i>{{ post.impressions }}
-                      <hr>
-                      <i class="bi bi-eye text-success me-1"></i>{{ post.views }}
                     </td>
                     <td class="text-center" data-label="Actions">
                       <a href="/admin/posts/view?id={{ post.id }}"

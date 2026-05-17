@@ -112,8 +112,6 @@ $router->get('/api/services', function () use ($serviceModel, $contentModel) {
                 'status' => $s['status'] ?? 'inactive',
                 'requires_documents' => !empty($s['requires_documents']) ? true : false,
                 'requires_approval' => !empty($s['requires_approval']) ? true : false,
-                'views' => (int)($s['views'] ?? 0),
-                'impressions' => (int)($s['impressions'] ?? 0),
                 'created_at' => $s['created_at'] ?? null,
                 'categories' => $categories,
                 'tags' => $tags,

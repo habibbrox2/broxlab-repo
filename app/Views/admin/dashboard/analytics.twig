@@ -108,7 +108,7 @@
         <div class="admin-panel-card">
           <div class="admin-panel-card-header bg-light">
             <h6 class="mb-0">
-              <i class="bi bi-file-earmark-text"></i> Page Statistics
+              <i class="bi bi-file-earmark-text"></i> Content Tracking
             </h6>
           </div>
           <div class="admin-panel-card-body">
@@ -116,19 +116,19 @@
               <table class="table table-sm">
                 <tbody>
                   <tr>
-                    <td>Total Impressions</td>
+                    <td>Total Content Events</td>
                     <td class="text-right">
                       <strong id="pageImpressions">0</strong>
                     </td>
                   </tr>
                   <tr>
-                    <td>Unique Impressions</td>
+                    <td>Unique Content Events</td>
                     <td class="text-right">
                       <strong id="pageUniqueImpressions">0</strong>
                     </td>
                   </tr>
                   <tr>
-                    <td>Top Page</td>
+                    <td>Top Content</td>
                     <td class="text-right small" id="topPage">N/A</td>
                   </tr>
                 </tbody>
@@ -141,7 +141,7 @@
         <div class="admin-panel-card">
           <div class="admin-panel-card-header bg-light">
             <h6 class="mb-0">
-              <i class="bi bi-bookmark-fill"></i> Post Statistics
+              <i class="bi bi-bookmark-fill"></i> Content Tracking
             </h6>
           </div>
           <div class="admin-panel-card-body">
@@ -149,19 +149,19 @@
               <table class="table table-sm">
                 <tbody>
                   <tr>
-                    <td>Total Impressions</td>
+                    <td>Total Content Events</td>
                     <td class="text-right">
                       <strong id="postImpressions">0</strong>
                     </td>
                   </tr>
                   <tr>
-                    <td>Unique Impressions</td>
+                    <td>Unique Content Events</td>
                     <td class="text-right">
                       <strong id="postUniqueImpressions">0</strong>
                     </td>
                   </tr>
                   <tr>
-                    <td>Top Post</td>
+                    <td>Top Content</td>
                     <td class="text-right small" id="topPost">N/A</td>
                   </tr>
                 </tbody>
@@ -174,7 +174,7 @@
         <div class="admin-panel-card">
           <div class="admin-panel-card-header bg-light">
             <h6 class="mb-0">
-              <i class="bi bi-briefcase-fill"></i> Service Statistics
+              <i class="bi bi-briefcase-fill"></i> Content Tracking
             </h6>
           </div>
           <div class="admin-panel-card-body">
@@ -182,19 +182,19 @@
               <table class="table table-sm">
                 <tbody>
                   <tr>
-                    <td>Total Impressions</td>
+                    <td>Total Content Events</td>
                     <td class="text-right">
                       <strong id="serviceImpressions">0</strong>
                     </td>
                   </tr>
                   <tr>
-                    <td>Unique Impressions</td>
+                    <td>Unique Content Events</td>
                     <td class="text-right">
                       <strong id="serviceUniqueImpressions">0</strong>
                     </td>
                   </tr>
                   <tr>
-                    <td>Top Service</td>
+                    <td>Top Content</td>
                     <td class="text-right small" id="topService">N/A</td>
                   </tr>
                 </tbody>
@@ -351,7 +351,7 @@
                         <thead>
                           <tr>
                             <th>Page/Post</th>
-                            <th class="text-right">Views</th>
+                            <th class="text-right">Score</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -359,7 +359,7 @@
                             {% for page in weekly_report.top_pages|slice(0, 3) %}
                               <tr>
                                 <td>{{ page.title|truncate(30) }}</td>
-                                <td class="text-right">{{ page.views }}</td>
+                                <td class="text-right">Tracked</td>
                               </tr>
                             {% endfor %}
                           {% endif %}

@@ -27,10 +27,7 @@ $normalizeLatestMobileItems = static function (array $mobiles): array {
 $router->get('/', function () use ($twig, $homeModel, $normalizeLatestMobileItems) {
     $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
     $sort = trim((string)($_GET['sort'] ?? ''));
-    $allowedSorts = ['latest', 'views', 'impressions'];
-    if ($sort === '' || !in_array($sort, $allowedSorts, true)) {
-        $sort = 'latest';
-    }
+    $sort = 'latest';
     $limit = HOMEPAGE_FEED_LIMIT;
 
     $data = $homeModel->getUnifiedContent($page, $limit, $sort);
@@ -67,9 +64,7 @@ $router->get('/api/feed/load-more', function () use ($homeModel, $twig) {
         $limit = HOMEPAGE_FEED_LIMIT;
 
         // Validate sort parameter
-        if (!in_array($sort, ['latest', 'views', 'impressions'])) {
-            $sort = 'latest';
-        }
+        $sort = 'latest';
 
         $data = $homeModel->getUnifiedContent($page, $limit, $sort);
         $html = $twig->render('partials/home-feed-items.twig', [

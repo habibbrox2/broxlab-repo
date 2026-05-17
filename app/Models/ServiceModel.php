@@ -10,9 +10,37 @@ class ServiceModel {
 
     private $mysqli;
     private ?array $serviceColumns = null;
+    private array $tableExistsCache = [];
 
     public function __construct(mysqli $mysqli) {
         $this->mysqli = $mysqli;
+    }
+
+    /**
+     * Check whether a database table exists.
+     */
+    private function tableExists(string $tableName): bool {
+        if (array_key_exists($tableName, $this->tableExistsCache)) {
+            return $this->tableExistsCache[$tableName];
+        }
+
+        try {
+            $safeTable = $this->mysqli->real_escape_string($tableName);
+            $result = @$this->mysqli->query("SHOW TABLES LIKE '{$safeTable}'");
+            $exists = (bool)($result && $result->num_rows > 0);
+        } catch (Throwable $e) {
+            $exists = false;
+        }
+
+        $this->tableExistsCache[$tableName] = $exists;
+        return $exists;
+    }
+
+    /**
+     * Build engagement SQL fragments for service queries.
+     */
+    private function buildEngagementSelect(string $alias): string {
+        return "0 AS views, 0 AS impressions";
     }
 
     /**
@@ -84,22 +112,8 @@ class ServiceModel {
      */
     public function getAllActive(): array {
         $stmt = $this->mysqli->prepare("
-            SELECT s.*,
-                   COALESCE(v.views, 0) AS views,
-                   COALESCE(i.impressions, 0) AS impressions
+            SELECT s.*, " . $this->buildEngagementSelect('s.id') . "
             FROM services s
-            LEFT JOIN (
-                SELECT content_id, COUNT(*) AS views
-                FROM views
-                WHERE content_type = 'service'
-                GROUP BY content_id
-            ) v ON v.content_id = s.id
-            LEFT JOIN (
-                SELECT content_id, COUNT(*) AS impressions
-                FROM impressions
-                WHERE content_type = 'service'
-                GROUP BY content_id
-            ) i ON i.content_id = s.id
             WHERE s.status IN ('active', 'archived')
             AND s.deleted_at IS NULL
             ORDER BY s.created_at DESC
@@ -117,22 +131,8 @@ class ServiceModel {
      */
     public function getAllServices(int $limit = 20, int $offset = 0): array {
         $stmt = $this->mysqli->prepare("
-            SELECT s.*,
-                   COALESCE(v.views, 0) AS views,
-                   COALESCE(i.impressions, 0) AS impressions
+            SELECT s.*, " . $this->buildEngagementSelect('s.id') . "
             FROM services s
-            LEFT JOIN (
-                SELECT content_id, COUNT(*) AS views
-                FROM views
-                WHERE content_type = 'service'
-                GROUP BY content_id
-            ) v ON v.content_id = s.id
-            LEFT JOIN (
-                SELECT content_id, COUNT(*) AS impressions
-                FROM impressions
-                WHERE content_type = 'service'
-                GROUP BY content_id
-            ) i ON i.content_id = s.id
             WHERE s.deleted_at IS NULL
             ORDER BY s.created_at DESC
             LIMIT ? OFFSET ?
@@ -149,9 +149,7 @@ class ServiceModel {
      */
     public function findById(int $id): ?array {
         $stmt = $this->mysqli->prepare("
-            SELECT s.*,
-                   (SELECT COUNT(*) FROM views v WHERE v.content_type = 'service' AND v.content_id = s.id) AS views,
-                   (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'service' AND i.content_id = s.id) AS impressions
+            SELECT s.*, " . $this->buildEngagementSelect('s.id') . "
             FROM services s
             WHERE id = ? AND deleted_at IS NULL
             LIMIT 1
@@ -168,9 +166,7 @@ class ServiceModel {
      */
     public function findBySlug(string $slug): ?array {
         $stmt = $this->mysqli->prepare("
-            SELECT s.*,
-                   (SELECT COUNT(*) FROM views v WHERE v.content_type = 'service' AND v.content_id = s.id) AS views,
-                   (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'service' AND i.content_id = s.id) AS impressions
+            SELECT s.*, " . $this->buildEngagementSelect('s.id') . "
             FROM services s
             WHERE slug = ? AND deleted_at IS NULL
             LIMIT 1
@@ -917,22 +913,8 @@ class ServiceModel {
         $offset = ($page - 1) * $limit;
 
         $stmt = $this->mysqli->prepare("
-            SELECT s.*,
-                   COALESCE(v.views, 0) AS views,
-                   COALESCE(i.impressions, 0) AS impressions
+            SELECT s.*, " . $this->buildEngagementSelect('s.id') . "
             FROM services s
-            LEFT JOIN (
-                SELECT content_id, COUNT(*) AS views
-                FROM views
-                WHERE content_type = 'service'
-                GROUP BY content_id
-            ) v ON v.content_id = s.id
-            LEFT JOIN (
-                SELECT content_id, COUNT(*) AS impressions
-                FROM impressions
-                WHERE content_type = 'service'
-                GROUP BY content_id
-            ) i ON i.content_id = s.id
             WHERE s.status = 'active'
               AND s.deleted_at IS NULL
             ORDER BY s.created_at DESC
@@ -996,9 +978,7 @@ class ServiceModel {
     public function search(string $query, int $limit = 20): array {
         $searchTerm = "%{$query}%";
         $stmt = $this->mysqli->prepare("
-            SELECT s.*,
-                   (SELECT COUNT(*) FROM views v WHERE v.content_type = 'service' AND v.content_id = s.id) AS views,
-                   (SELECT COUNT(*) FROM impressions i WHERE i.content_type = 'service' AND i.content_id = s.id) AS impressions
+            SELECT s.*, " . $this->buildEngagementSelect('s.id') . "
             FROM services s
             WHERE (name LIKE ? OR description LIKE ?) 
             AND status = 'active' AND deleted_at IS NULL

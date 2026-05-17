@@ -42,17 +42,33 @@ $securityManager = null;
 /** @var \mysqli $mysqli */
 
 try {
-    $firebaseModel = new \Firebase\FirebaseModel(require __DIR__ . '/../../Config/Firebase.php');
+    $firebaseConfig = require __DIR__ . '/../../Config/Firebase.php';
+    $serviceAccountResolved = function_exists('resolve_firebase_service_account')
+        ? resolve_firebase_service_account()
+        : null;
+
+    if ($serviceAccountResolved && class_exists('Kreait\\Firebase\\Factory')) {
+        $firebaseModel = new \Firebase\FirebaseModel($firebaseConfig);
+    } else {
+        // Firebase is optional at runtime; keep the controller loaded even when
+        // credentials are not deployed yet so public routes can continue serving.
+        $firebaseModel = null;
+    }
+
     $notificationModel = new NotificationModel($mysqli);
     $userModel = new UserModel($mysqli);
     $authManager = new AuthManager($mysqli);
     $securityManager = new SecurityManager($mysqli);
 } catch (Exception $e) {
-    logError('Firebase initialization error: ' . $e->getMessage(), 'ERROR', [
-        'file' => $e->getFile(),
-        'line' => $e->getLine(),
-        'code' => $e->getCode()
-    ]);
+    // Only log unexpected initialization failures. Missing credentials are handled
+    // as a normal "Firebase unavailable" state by the routes below.
+    if (stripos($e->getMessage(), 'service account not found') === false) {
+        logError('Firebase initialization error: ' . $e->getMessage(), 'ERROR', [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'code' => $e->getCode()
+        ]);
+    }
 }
 
 // Make $router accessible in this controller
@@ -434,6 +450,10 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
         session_start();
     }
 
+    if ($firebaseModel === null) {
+        return json_response(['success' => false, 'error' => 'Firebase is not configured'], 503);
+    }
+
     $input = json_decode(file_get_contents('php://input'), true) ?: [];
     $idToken = $input['idToken'] ?? '';
     $provider = $input['provider'] ?? null;
@@ -741,6 +761,10 @@ $router->post('/api/firebase/diagnostic', ['response' => 'json'], function () us
         return json_response(['error' => 'Not available in production'], 403);
     }
 
+    if ($firebaseModel === null) {
+        return json_response(['success' => false, 'error' => 'Firebase is not configured'], 503);
+    }
+
     $input = json_decode(file_get_contents('php://input'), true) ?: [];
     $idToken = $input['idToken'] ?? '';
 
@@ -783,6 +807,10 @@ $router->post('/api/firebase/verify-token', ['response' => 'json'], function () 
 
     if (empty($idToken)) {
         return json_response(['success' => false, 'message' => 'Missing idToken'], 400);
+    }
+
+    if ($firebaseModel === null) {
+        return json_response(['success' => false, 'message' => 'Firebase is not configured'], 503);
     }
 
     try {
@@ -850,6 +878,10 @@ $router->post('/api/firebase/verify-token', ['response' => 'json'], function () 
 $router->post('/api/firebase/link', ['middleware' => ['auth'], 'response' => 'json'], function () use ($firebaseModel, $userModel, $securityManager) {
     if (session_status() === PHP_SESSION_NONE) session_start();
     $userId = AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null);
+
+    if ($firebaseModel === null) {
+        return json_response(['success' => false, 'error' => 'Firebase is not configured', 'error_code' => 'firebase_not_configured'], 503);
+    }
 
     logError("Firebase /api/firebase/link called - userId: " . ($userId ?? 'NONE'));
 
@@ -1096,6 +1128,10 @@ if ($debugEnabled) {
             return;
         }
 
+        if ($firebaseModel === null) {
+            return json_response(['success' => false, 'error' => 'Firebase is not configured'], 503);
+        }
+
         $knownProviders = ['google', 'facebook', 'github'];
         $liveProviders = $firebaseModel->getEnabledOAuthProvidersLive();
         $enabledProviders = (array)($liveProviders['providers'] ?? []);
@@ -1165,6 +1201,10 @@ if ($debugEnabled) {
             http_response_code(404);
             echo 'Not Found';
             return;
+        }
+
+        if ($firebaseModel === null) {
+            return json_response(['success' => false, 'error' => 'Firebase is not configured'], 503);
         }
 
         $config = $firebaseModel->getFirebaseConfig();
