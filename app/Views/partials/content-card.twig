@@ -25,9 +25,9 @@
             {% for img in item.images %}
               <div class="carousel-item {% if loop.first %}active{% endif %}">
                 <div class="cc-image-wrapper">
-                  <img src="{{ img }}"
+                  <img src="{{ img|absolute_url }}"
                        class="cc-image"
-                       alt="{{ item.title }} - Image {{ loop.index }}"
+                       alt="{{ item.title|striptags }} - Image {{ loop.index }} of {{ item.images|length }}"
                        loading="lazy"
                        decoding="async">
                 </div>
@@ -62,7 +62,7 @@
           {% endif %}
         {% endif %}
         <div class="cc-image-wrapper">
-          <img src="{{ image_src }}" class="cc-image" alt="{{ item.title }}" loading="lazy" decoding="async">
+          <img src="{{ image_src|absolute_url }}" class="cc-image" alt="Featured image for {{ item.title|striptags }}" loading="lazy" decoding="async">
         </div>
 
       {% else %}
@@ -233,7 +233,7 @@
             <span>View Specs</span><i class="bi bi-arrow-right"></i>
           </a>
         {% elseif item.type == 'post' %}
-          <a href="/posts/view/{{ (item.slug|default(item.url|default(item.id)))|url_encode }}" class="cc-btn cc-btn-post" aria-label="Read article: {{ item.title }}">
+          <a href="{{ item.id ? '/posts/' ~ item.id ~ '/' ~ ((item.slug|default(item.url|default(item.id)))|url_encode) : '/posts/view/' ~ ((item.slug|default(item.url|default(item.id)))|url_encode) }}" class="cc-btn cc-btn-post" aria-label="Read article: {{ item.title }}">
             <span>Read Article</span><i class="bi bi-arrow-right"></i>
           </a>
         {% elseif item.type == 'service' %}

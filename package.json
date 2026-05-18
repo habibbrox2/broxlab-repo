@@ -108,6 +108,8 @@
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@types/node": "^20.11.24",
+    "@typescript-eslint/eslint-plugin": "^8.59.3",
+    "@typescript-eslint/parser": "^8.59.3",
     "esbuild": "^0.27.3",
     "eslint": "^9.0.0",
     "globals": "^15.14.0",

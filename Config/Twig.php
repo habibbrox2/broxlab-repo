@@ -895,6 +895,24 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             return '/uploads/media/' . ltrim($thumbnailPath, '/');
         }));
 
+        // Absolute URL filter - converts relative paths to absolute URLs for SEO
+        $twig->addFilter(new \Twig\TwigFilter('absolute_url', function ($path) {
+            if (empty($path)) {
+                return '';
+            }
+            // If already absolute URL, return as is
+            if (preg_match('~^https?://~i', $path)) {
+                return $path;
+            }
+            // Get base URL
+            $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+                (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+            $protocol = $isHttps ? 'https' : 'http';
+            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $baseUrl = $protocol . '://' . $host;
+            return $baseUrl . '/' . ltrim($path, '/');
+        }));
+
         // Format file size
         $twig->addFunction(new \Twig\TwigFunction('format_file_size', function ($bytes) {
             $sizes = ["B", "KB", "MB", "GB", "TB"];

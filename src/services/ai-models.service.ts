@@ -41,12 +41,12 @@ function parseJsonValue<T>(value: unknown, fallback: T): T {
     return fallback;
 }
 
-function normalizeModels(models: Record<string, string> | unknown): ProviderModel[] {
-    const normalized = parseJsonValue<Record<string, string>>(models, {});
+function normalizeModels(models: Record<string, any> | unknown): ProviderModel[] {
+    const normalized = parseJsonValue<Record<string, any>>(models, {});
 
     const list: ProviderModel[] = Object.entries(normalized).map(([id, name]) => ({
         id: String(id),
-        name: String(name),
+        name: typeof name === 'string' && name.trim() !== '' ? name : String(id),
     }));
 
     if (list.length > 0) {
@@ -54,6 +54,23 @@ function normalizeModels(models: Record<string, string> | unknown): ProviderMode
     }
 
     return list;
+}
+
+function extractFallbackModels(extraSettings: unknown): ProviderModel[] {
+    const extra = parseJsonValue<Record<string, any>>(extraSettings, {});
+
+    const candidateKeys = ['model_multimodal', 'supported_models', 'models'];
+    for (const key of candidateKeys) {
+        const value = extra?.[key];
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+            const models = normalizeModels(value);
+            if (models.length > 0) {
+                return models;
+            }
+        }
+    }
+
+    return [];
 }
 
 function parseMultimodalFlag(extraSettings: unknown): boolean {
@@ -78,7 +95,11 @@ export class AIModelService {
                 continue;
             }
 
-            const models = normalizeModels(row.supported_models);
+            let models = normalizeModels(row.supported_models);
+            if (models.length === 0) {
+                models = extractFallbackModels(row.extra_settings);
+            }
+
             response.providers[providerName] = models;
             response.providerMeta[providerName] = {
                 supports_multimodal: parseMultimodalFlag(row.extra_settings),
@@ -99,12 +120,9 @@ export class AIModelService {
             return null;
         }
 
-        const models = normalizeModels(provider.supported_models);
+        let models = normalizeModels(provider.supported_models);
         if (models.length === 0) {
-            return {
-                models,
-                supportsMultimodal: parseMultimodalFlag(provider.extra_settings),
-            };
+            models = extractFallbackModels(provider.extra_settings);
         }
 
         return {

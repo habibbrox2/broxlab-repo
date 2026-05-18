@@ -1,6 +1,14 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { OpenRouterProvider } from '../providers/openrouter.provider';
+import { OllamaProvider } from '../providers/ollama.provider';
+import { OpenAIProvider } from '../providers/openai.provider';
+import { AnthropicProvider } from '../providers/anthropic.provider';
+import { GeminiProvider } from '../providers/gemini.provider';
+import { KiloProvider } from '../providers/kilo.provider';
+import { BaseAIProvider } from '../providers/base.provider';
 import { StreamService } from './stream.service';
+import aiProviderService from './ai-provider.service';
+import { aiModelService, ProviderModel } from './ai-models.service';
 import { config } from '../config/index';
 import { query, queryOne } from '../config/database';
 import { Message, MessageContent } from '../types/index';
@@ -11,6 +19,7 @@ export interface ChatRequest {
   messages: Message[];
   stream?: boolean;
   options?: {
+    provider?: string;
     model?: string;
     temperature?: number;
     maxTokens?: number;
@@ -34,15 +43,10 @@ export interface ChatResponse {
 }
 
 export class ChatService {
-  private provider: OpenRouterProvider;
   private maxMessages: number;
   private maxChars: number;
 
   constructor() {
-    this.provider = new OpenRouterProvider(
-      config.ai.openrouter.apiKey || '',
-      config.ai.defaultModel
-    );
     this.maxMessages = 20;
     this.maxChars = 4000;
   }
@@ -60,15 +64,6 @@ export class ChatService {
       reply.code(400).send({
         success: false,
         error: 'Invalid messages format',
-      });
-      return;
-    }
-
-    // Ensure AI provider is configured
-    if (!config.ai.openrouter.apiKey) {
-      reply.code(500).send({
-        success: false,
-        error: 'OpenRouter API key is not configured. Please set OPENROUTER_API_KEY in the environment.',
       });
       return;
     }
@@ -186,6 +181,148 @@ export class ChatService {
     return modelMap[normalized] ?? normalized;
   }
 
+  private normalizeProviderName(provider?: string): string {
+    return (provider || '').trim().toLowerCase();
+  }
+
+  private getProviderApiKey(providerName: string, apiKey: string | null): string {
+    if (providerName === 'openrouter') {
+      return apiKey || config.ai.openrouter.apiKey || '';
+    }
+
+    if (providerName === 'openai') {
+      return apiKey || config.ai.openai.apiKey || '';
+    }
+
+    if (providerName === 'anthropic') {
+      return apiKey || config.ai.anthropic.apiKey || '';
+    }
+
+    if (providerName === 'google' || providerName === 'gemini') {
+      return apiKey || config.ai.google.apiKey || '';
+    }
+
+    if (providerName === 'kilo') {
+      return apiKey || config.ai.kilo.apiKey || '';
+    }
+
+    if (providerName === 'ollama') {
+      return apiKey || process.env.OLLAMA_API_KEY || '';
+    }
+
+    return apiKey || '';
+  }
+
+  private createProviderInstance(
+    providerName: string,
+    apiKey: string,
+    model: string
+  ): BaseAIProvider | null {
+    switch (providerName) {
+      case 'openrouter':
+        return new OpenRouterProvider(apiKey, model);
+      case 'openai':
+        return new OpenAIProvider(apiKey, model);
+      case 'anthropic':
+        return new AnthropicProvider(apiKey, model);
+      case 'google':
+      case 'gemini':
+        return new GeminiProvider(apiKey, model);
+      case 'kilo':
+        return new KiloProvider(apiKey, model);
+      case 'ollama':
+        return new OllamaProvider(apiKey, model);
+      default:
+        return null;
+    }
+  }
+
+  private determineModelForProvider(
+    providerName: string,
+    requestedModel?: string,
+    supportedModels: ProviderModel[] = []
+  ): string {
+    const normalizedRequest = (requestedModel || '').trim();
+    if (normalizedRequest) {
+      if (
+        supportedModels.some((model) => model.id === normalizedRequest) ||
+        normalizedRequest.startsWith(`${providerName}/`) ||
+        providerName === 'openrouter'
+      ) {
+        return this.normalizeModel(normalizedRequest);
+      }
+
+      return normalizedRequest;
+    }
+
+    const defaultModel =
+      supportedModels.find((model) => model.default)?.id ||
+      supportedModels[0]?.id ||
+      (providerName === 'openrouter'
+        ? config.ai.defaultModel
+        : providerName === 'ollama'
+          ? 'llama2'
+          : config.ai.defaultModel);
+
+    return this.normalizeModel(defaultModel);
+  }
+
+  private isProviderFallbackError(error: any): boolean {
+    const message = String(error?.message || '').toLowerCase();
+    return /insufficient credits|402|quota|rate limit|invalid api key|unauthorized|forbidden|authentication|account never purchased|insufficient balance/.test(message);
+  }
+
+  private async getCandidateProviders(
+    preferredProvider?: string
+  ): Promise<Array<{ providerName: string; apiKey: string; models: ProviderModel[] }>> {
+    const allProviders = await aiModelService.getActiveProviderModels();
+    const providerNames = Object.keys(allProviders.providers);
+    const orderedProviders = new Set<string>();
+    const preferred = this.normalizeProviderName(preferredProvider);
+    const defaultProvider = this.normalizeProviderName(config.ai.defaultProvider);
+
+    if (preferred && providerNames.includes(preferred)) {
+      orderedProviders.add(preferred);
+    }
+
+    if (defaultProvider && providerNames.includes(defaultProvider)) {
+      orderedProviders.add(defaultProvider);
+    }
+
+    for (const providerName of providerNames) {
+      orderedProviders.add(providerName);
+    }
+
+    const candidates: Array<{ providerName: string; apiKey: string; models: ProviderModel[] }> = [];
+
+    for (const providerName of orderedProviders) {
+      const apiKey = this.getProviderApiKey(
+        providerName,
+        await aiProviderService.getAPIKey(providerName)
+      );
+
+      if (!apiKey && providerName !== 'ollama') {
+        continue;
+      }
+
+      candidates.push({
+        providerName,
+        apiKey,
+        models: allProviders.providers[providerName] || [],
+      });
+    }
+
+    if (candidates.length === 0 && config.ai.openrouter.apiKey) {
+      candidates.push({
+        providerName: 'openrouter',
+        apiKey: config.ai.openrouter.apiKey,
+        models: allProviders.providers['openrouter'] || [],
+      });
+    }
+
+    return candidates;
+  }
+
   /**
    * Handle non-streaming chat
    */
@@ -195,49 +332,90 @@ export class ChatService {
     messages: Message[],
     options?: ChatRequest['options']
   ): Promise<void> {
-    try {
-      const startTime = Date.now();
-      const model = this.normalizeModel(options?.model || config.ai.frontendModel);
+    const allProviders = await aiModelService.getActiveProviderModels();
+    const candidateProviders = await this.getCandidateProviders(options?.provider);
 
-      const response = await this.provider.chat(systemPrompt, messages, {
-        model,
-        temperature: options?.temperature || config.ai.temperature,
-        maxTokens: options?.maxTokens || config.ai.maxTokens,
-      });
-
-      const executionTime = Date.now() - startTime;
-
-      // Record metrics
-      metrics.aiRequestsTotal.labels(response.meta.provider, response.meta.model, 'true').inc();
-
-      if (response.meta.tokensUsed) {
-        metrics.aiTokensUsed
-          .labels(response.meta.provider, response.meta.model)
-          .inc(response.meta.tokensUsed);
-      }
-
-      // Log usage
-      await this.logUsage(response.meta, executionTime);
-
-      reply.send({
-        success: true,
-        content: response.content,
-        meta: {
-          ...response.meta,
-          executionTimeMs: executionTime,
-        },
-      });
-    } catch (error: any) {
-      logger.error('Chat error:', error);
-
-      // Record failed request metric
-      metrics.aiRequestsTotal.labels('unknown', 'unknown', 'false').inc();
+    if (candidateProviders.length === 0) {
+      const activeProviderNames = Object.keys(allProviders.providers);
+      const providerHint = activeProviderNames.length > 0
+        ? ` Active providers configured: ${activeProviderNames.join(', ')}.`
+        : '';
 
       reply.code(500).send({
         success: false,
-        error: error.message || 'Failed to process chat request',
+        error: `No active AI providers are configured or API key(s) are missing.${providerHint} Provide the provider API key via ai_settings (for example openrouter_api_key) or set api_key_env on the ai_providers row for environment-based key lookup.`,
       });
+      return;
     }
+
+    let lastError: any = null;
+
+    for (const candidate of candidateProviders) {
+      const model = this.determineModelForProvider(
+        candidate.providerName,
+        options?.model,
+        candidate.models
+      );
+      const providerInstance = this.createProviderInstance(
+        candidate.providerName,
+        candidate.apiKey,
+        model
+      );
+
+      if (!providerInstance) {
+        continue;
+      }
+
+      try {
+        const startTime = Date.now();
+        const response = await providerInstance.chat(systemPrompt, messages, {
+          model,
+          temperature: options?.temperature || config.ai.temperature,
+          maxTokens: options?.maxTokens || config.ai.maxTokens,
+        });
+
+        const executionTime = Date.now() - startTime;
+
+        metrics.aiRequestsTotal.labels(response.meta.provider, response.meta.model, 'true').inc();
+
+        if (response.meta.tokensUsed) {
+          metrics.aiTokensUsed
+            .labels(response.meta.provider, response.meta.model)
+            .inc(response.meta.tokensUsed);
+        }
+
+        await this.logUsage(response.meta, executionTime);
+
+        reply.send({
+          success: true,
+          content: response.content,
+          meta: {
+            ...response.meta,
+            executionTimeMs: executionTime,
+          },
+        });
+        return;
+      } catch (error: any) {
+        lastError = error;
+        logger.warn('AI provider failed, trying next provider if available', {
+          provider: candidate.providerName,
+          model,
+          error: error?.message || error,
+        });
+
+        if (!this.isProviderFallbackError(error)) {
+          logger.error('Non-retryable AI provider failure:', error);
+          break;
+        }
+      }
+    }
+
+    metrics.aiRequestsTotal.labels('unknown', 'unknown', 'false').inc();
+    reply.code(500).send({
+      success: false,
+      error:
+        lastError?.message || 'Failed to process chat request with any available provider.',
+    });
   }
 
   /**
@@ -266,57 +444,107 @@ export class ChatService {
       // Step 2: Calling AI provider
       StreamService.sendStatus(reply, 'Calling AI provider...', 2);
 
-      for await (const chunk of this.provider.streamChat(systemPrompt, messages, {
-        model: this.normalizeModel(options?.model || config.ai.frontendModel),
-        temperature: options?.temperature || config.ai.temperature,
-        maxTokens: options?.maxTokens || config.ai.maxTokens,
-      })) {
-        if (chunk.content) {
-          // Step 3: Generating response (only send once when content starts)
-          if (fullContent === '') {
-            StreamService.sendStatus(reply, 'Generating final answer...', 3);
-          }
-          fullContent += chunk.content;
-          StreamService.sendChunk(reply, { content: chunk.content });
+      const candidateProviders = await this.getCandidateProviders(options?.provider);
+      if (candidateProviders.length === 0) {
+        throw new Error('No active AI providers are configured.');
+      }
+
+      let lastError: any = null;
+      let usedProviderName = 'openrouter';
+      let usedModel = this.normalizeModel(options?.model || config.ai.frontendModel);
+      let providerInstance: BaseAIProvider | null = null;
+
+      for (const candidate of candidateProviders) {
+        const candidateModel = this.determineModelForProvider(
+          candidate.providerName,
+          options?.model,
+          candidate.models
+        );
+
+        const instance = this.createProviderInstance(
+          candidate.providerName,
+          candidate.apiKey,
+          candidateModel
+        );
+
+        if (!instance) {
+          continue;
         }
 
-        if (chunk.meta) {
-          model = chunk.meta.model;
-          const executionTime = Date.now() - startTime;
-          finalMeta = {
-            ...chunk.meta,
-            executionTimeMs: executionTime,
-          };
+        providerInstance = instance;
+        usedProviderName = candidate.providerName;
+        usedModel = candidateModel;
 
-          StreamService.sendDone(reply, finalMeta);
+        try {
+          for await (const chunk of providerInstance.streamChat(systemPrompt, messages, {
+            model: usedModel,
+            temperature: options?.temperature || config.ai.temperature,
+            maxTokens: options?.maxTokens || config.ai.maxTokens,
+          })) {
+            if (chunk.content) {
+              if (fullContent === '') {
+                StreamService.sendStatus(reply, 'Generating final answer...', 3);
+              }
+              fullContent += chunk.content;
+              StreamService.sendChunk(reply, { content: chunk.content });
+            }
 
-          // Record metrics
-          metrics.aiRequestsTotal.labels(chunk.meta.provider, chunk.meta.model, 'true').inc();
+            if (chunk.meta) {
+              model = chunk.meta.model;
+              const executionTime = Date.now() - startTime;
+              finalMeta = {
+                ...chunk.meta,
+                executionTimeMs: executionTime,
+              };
 
-          if (chunk.meta.tokensUsed) {
-            metrics.aiTokensUsed
-              .labels(chunk.meta.provider, chunk.meta.model)
-              .inc(chunk.meta.tokensUsed);
+              StreamService.sendDone(reply, finalMeta);
+
+              metrics.aiRequestsTotal.labels(chunk.meta.provider, chunk.meta.model, 'true').inc();
+
+              if (chunk.meta.tokensUsed) {
+                metrics.aiTokensUsed
+                  .labels(chunk.meta.provider, chunk.meta.model)
+                  .inc(chunk.meta.tokensUsed);
+              }
+
+              await this.logUsage(
+                {
+                  model,
+                  provider: chunk.meta.provider,
+                  finishReason: chunk.meta.finishReason,
+                },
+                executionTime
+              );
+            }
           }
 
-          // Log usage
-          await this.logUsage(
-            {
-              model,
-              provider: chunk.meta.provider,
-              finishReason: chunk.meta.finishReason,
-            },
-            executionTime
-          );
+          break;
+        } catch (error: any) {
+          lastError = error;
+          logger.warn('AI streaming provider failed, trying next provider if available', {
+            provider: candidate.providerName,
+            model: usedModel,
+            error: error?.message || error,
+          });
+
+          if (!this.isProviderFallbackError(error)) {
+            throw error;
+          }
+
+          providerInstance = null;
+          continue;
         }
+      }
+
+      if (!providerInstance) {
+        throw lastError || new Error('Failed to start stream with any available provider.');
       }
 
       if (!finalMeta) {
         const executionTime = Date.now() - startTime;
-        const normalizedModel = this.normalizeModel(options?.model || config.ai.frontendModel);
         StreamService.sendDone(reply, {
-          model: normalizedModel,
-          provider: 'openrouter',
+          model: usedModel,
+          provider: usedProviderName,
           executionTimeMs: executionTime,
         });
       }

@@ -26,7 +26,7 @@
         <p class="small mb-2">
           <span class="badge bg-secondary">
             <i class="bi bi-link me-1"></i>
-            <a href="/posts/{{ post.slug }}" target="_blank" class="text-white text-decoration-underline">{{ post.slug }}</a>
+            <a href="/posts/{{ post.id }}/{{ post.slug|url_encode }}" target="_blank" class="text-white text-decoration-underline">{{ post.slug }}</a>
           </span>
         </p>
         {% if post.categories is defined and post.categories|length > 0 %}
@@ -67,7 +67,7 @@
         <p class="mb-0">
           <small class="text-muted">
             <i class="bi bi-people me-1"></i>Users can post comments on the public post page at:
-            <a href="/posts/{{ post.slug }}" target="_blank" class="text-primary">/posts/{{ post.slug }}</a>
+            <a href="/posts/{{ post.id }}/{{ post.slug|url_encode }}" target="_blank" class="text-primary">/posts/{{ post.id }}/{{ post.slug }}</a>
           </small>
         </p>
       </div>

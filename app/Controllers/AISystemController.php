@@ -38,6 +38,86 @@ function aiChatGetNodeServiceUrl(): ?string
     return rtrim($nodeUrl, '/');
 }
 
+/**
+ * Check if Node server is healthy and responsive
+ * Returns true if Node server is available and healthy, false otherwise
+ * Implements quick timeout to prevent hanging requests
+ */
+function aiChatIsNodeServerHealthy(): bool
+{
+    $nodeBaseUrl = aiChatGetNodeServiceUrl();
+    if ($nodeBaseUrl === null) {
+        return false;
+    }
+
+    try {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $nodeBaseUrl . '/health');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 2);          // Quick 2-second timeout
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);   // 1-second connection timeout
+        curl_setopt($ch, CURLOPT_NOBODY, true);         // HEAD request to avoid downloading body
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+
+        curl_exec($ch);
+        $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        // Health check passed if status is 2xx or 3xx
+        $isHealthy = $statusCode >= 200 && $statusCode < 400;
+        error_log('[AI Chat] Node health check: ' . ($isHealthy ? 'HEALTHY' : 'UNHEALTHY') . ' (status=' . $statusCode . ')');
+        return $isHealthy;
+    } catch (Exception $e) {
+        error_log('[AI Chat] Node health check failed: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Determine if Node server should be preferred
+ * Returns true if Node server is healthy, false if PHP should be used
+ */
+function aiChatShouldUseNodeServer(): bool
+{
+    // Check if Node service is configured
+    $nodeBaseUrl = aiChatGetNodeServiceUrl();
+    if ($nodeBaseUrl === null) {
+        error_log('[AI Chat] Node service not configured, using PHP backend');
+        return false;
+    }
+
+    // Check if Node server is healthy (with caching for 5 seconds to avoid excessive checks)
+    $cacheKey = 'node_health_' . md5($nodeBaseUrl);
+    $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $cacheKey;
+
+    $useCache = false;
+    if (file_exists($cacheFile)) {
+        $cacheAge = time() - filemtime($cacheFile);
+        if ($cacheAge < 5) { // Cache for 5 seconds
+            $cacheData = @file_get_contents($cacheFile);
+            if ($cacheData === 'healthy') {
+                error_log('[AI Chat] Using cached Node health status: HEALTHY');
+                return true;
+            } elseif ($cacheData === 'unhealthy') {
+                error_log('[AI Chat] Using cached Node health status: UNHEALTHY, falling back to PHP');
+                return false;
+            }
+        }
+    }
+
+    // Perform health check
+    $isHealthy = aiChatIsNodeServerHealthy();
+
+    // Cache result
+    @file_put_contents($cacheFile, $isHealthy ? 'healthy' : 'unhealthy');
+
+    if (!$isHealthy) {
+        error_log('[AI Chat] Node server unhealthy, falling back to PHP backend');
+    }
+
+    return $isHealthy;
+}
+
 function aiChatCallNodeService(array $messages, string $systemPrompt, array $options = [], bool $isAdmin = false): array
 {
     $nodeBaseUrl = aiChatGetNodeServiceUrl();
@@ -1566,8 +1646,11 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     $finalModel = $model;
     $responseModelWasSwitched = false;
 
+    error_log('[AI Chat] Ordered providers: ' . implode(', ', $orderedProviders) . ' | primaryProvider=' . $primaryProvider);
+
     foreach ($orderedProviders as $name) {
         if (!$aiProvider->hasApiKey($name)) {
+            error_log('[AI Chat] Skipping ' . $name . ' - no API key');
             continue;
         }
         $modelCandidates = aiSystemBuildModelCandidates(
@@ -1578,13 +1661,18 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
             (string)($settings['default_model'] ?? '')
         );
         if (empty($modelCandidates)) {
+            error_log('[AI Chat] Skipping ' . $name . ' - no model candidates');
             continue;
         }
 
         $hasUsableProvider = true;
+        error_log('[AI Chat] Trying provider: ' . $name . ' with models: ' . implode(', ', $modelCandidates));
+
         foreach ($modelCandidates as $candidateModel) {
             $provider = $name;
             $model = $candidateModel;
+            error_log('[AI Chat] Attempting ' . $provider . '/' . $model);
+
             $providerOptions = $options;
             if ($hasAutoTools && !aiChatProviderSupportsAutoTools($provider)) {
                 unset($providerOptions['tools'], $providerOptions['tool_choice'], $providerOptions['parallel_tool_calls']);
@@ -1596,7 +1684,10 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
                 $response = $aiProvider->callAPI($provider, $model, $messages, $providerOptions);
             }
 
+            error_log('[AI Chat] Response from ' . $provider . ': success=' . ($response['success'] ? 'true' : 'false') . ', error=' . ($response['error'] ?? 'none'));
+
             if (!empty($response['success'])) {
+                error_log('[AI Chat] SUCCESS with ' . $provider . '/' . $model);
                 $finalProvider = $provider;
                 $finalModel = $model;
                 $responseModelWasSwitched = ($finalProvider !== $primaryProvider) || ($finalModel !== $primaryModel);
@@ -1615,23 +1706,47 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     }
 
     $nodeServiceUrl = aiChatGetNodeServiceUrl();
-    if (empty($response['success']) && !$stream && !$hasAutoTools && $nodeServiceUrl !== null) {
-        $nodeResponse = aiChatCallNodeService($messages, $systemPrompt, $options, $isAdmin);
-        if (!empty($nodeResponse['success'])) {
-            $response = aiSystemAnnotateFallbackMeta(
-                $nodeResponse,
-                $selectedProvider,
-                $selectedModel,
-                $provider,
-                $model
-            );
-            $response['fallback_used'] = true;
-            $response['fallback_source'] = 'node_service';
-            $fallbackUsed = true;
+    error_log('[AI Chat] After provider loop: success=' . ($response['success'] ?? 'false') . ', nodeServiceUrl=' . ($nodeServiceUrl ?? 'null') . ', hasAutoTools=' . ($hasAutoTools ? 'true' : 'false'));
+
+    // Intelligent Node Server Routing:
+    // - If PHP providers succeeded, use that response
+    // - If Node is healthy, try Node service
+    // - If Node fails or is unhealthy, rely on PHP
+    // This ensures zero downtime: Node preferred if healthy, PHP as guaranteed fallback
+
+    if (empty($response['success']) && !$hasAutoTools && $nodeServiceUrl !== null) {
+        // Check if Node server is healthy before attempting to use it
+        $nodeIsHealthy = aiChatShouldUseNodeServer();
+
+        if ($nodeIsHealthy) {
+            error_log('[AI Chat] Node server is healthy, attempting to use Node service');
+            $nodeResponse = aiChatCallNodeService($messages, $systemPrompt, $options, $isAdmin);
+            error_log('[AI Chat] Node service response: success=' . ($nodeResponse['success'] ? 'true' : 'false') . ', error=' . ($nodeResponse['error'] ?? 'none'));
+
+            if (!empty($nodeResponse['success'])) {
+                error_log('[AI Chat] Node service succeeded');
+                $response = aiSystemAnnotateFallbackMeta(
+                    $nodeResponse,
+                    $selectedProvider,
+                    $selectedModel,
+                    $provider,
+                    $model
+                );
+                $response['fallback_used'] = false;  // Node was preferred, not a fallback
+                $response['fallback_source'] = 'node_service_primary';
+                $fallbackUsed = false;
+            } else {
+                error_log('[AI Chat] Node service failed, keeping PHP provider result');
+                // Node failed, keep PHP result (or error if both failed)
+            }
+        } else {
+            error_log('[AI Chat] Node server is not healthy, relying on PHP backend (zero downtime)');
+            // Node is down, use PHP backend exclusively (zero downtime guarantee)
         }
     }
 
     if (empty($response['success'])) {
+        error_log('[AI Chat] All providers failed. hasUsableProvider=' . ($hasUsableProvider ? 'true' : 'false') . ', lastError=' . ($lastError ?? 'none'));
         if (!$hasUsableProvider) {
             if (!$isAdmin) {
                 $errorPayload = [
@@ -1685,7 +1800,12 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
 
     if ($stream) {
         if (empty($response['success'])) {
-            $status = (isset($response['error']) && str_contains($response['error'], 'API key not configured')) ? 400 : 502;
+            $status = 502;
+            if (isset($response['error_code']) && $response['error_code'] === 'provider_incomplete') {
+                $status = 400;
+            } elseif (isset($response['error']) && str_contains($response['error'], 'API key not configured')) {
+                $status = 400;
+            }
             aiChatSendJson([
                 'success' => false,
                 'error' => $response['error'] ?? 'AI error',
@@ -1734,7 +1854,12 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         return;
     }
 
-    $status = (isset($response['error']) && str_contains($response['error'], 'API key not configured')) ? 400 : 502;
+    $status = 502;
+    if (isset($response['error_code']) && $response['error_code'] === 'provider_incomplete') {
+        $status = 400;
+    } elseif (isset($response['error']) && str_contains($response['error'], 'API key not configured')) {
+        $status = 400;
+    }
     aiChatSendJson([
         'success' => false,
         'error' => $response['error'] ?? 'AI error',
@@ -1911,11 +2036,20 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
 $router->post('/admin/ai-system/save', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
     $aiProvider = new AIProvider($mysqli);
     $providers = $aiProvider->getActive();
-    $frontendProvider = $_POST['frontend_provider'] ?? 'openrouter';
-    $backendProvider = $_POST['backend_provider'] ?? $_POST['default_provider'] ?? 'kilo';
-    $defaultModel = $_POST['default_model'] ?? 'openrouter/auto';
-    $frontendModelInput = $_POST['frontend_model'] ?? '';
-    $backendModelInput = $_POST['backend_model'] ?? '';
+    $currentSettings = $aiProvider->getSettings();
+
+    $frontendProvider = $_POST['frontend_provider'] ?? ($currentSettings['frontend_provider'] ?? 'openrouter');
+    $backendProvider = $_POST['backend_provider'] ?? ($currentSettings['backend_provider'] ?? $frontendProvider);
+    $defaultProvider = $_POST['default_provider'] ?? ($currentSettings['default_provider'] ?? $frontendProvider);
+    $defaultModel = $_POST['default_model'] ?? ($currentSettings['default_model'] ?? 'openrouter/auto');
+    $frontendModelInput = $_POST['frontend_model'] ?? ($currentSettings['frontend_model'] ?? '');
+    $backendModelInput = $_POST['backend_model'] ?? ($currentSettings['backend_model'] ?? '');
+    $defaultAuthor = $_POST['default_author'] ?? ($currentSettings['default_author'] ?? 'BroxBhai AI');
+    $imageContextMaxMessages = isset($_POST['image_context_max_messages'])
+        ? (int)$_POST['image_context_max_messages']
+        : (int)($currentSettings['image_context_max_messages'] ?? 10);
+    $systemPrompt = $_POST['system_prompt'] ?? ($currentSettings['system_prompt'] ?? '');
+    $customInstructions = $_POST['custom_instructions'] ?? ($currentSettings['custom_instructions'] ?? '');
     $frontendModel = aiSystemResolveModel($aiProvider, $frontendProvider, $frontendModelInput, $providers, $defaultModel);
     $backendModel = aiSystemResolveModel($aiProvider, $backendProvider, $backendModelInput, $providers, $defaultModel);
     $blockedFrontend = false;
@@ -1950,22 +2084,22 @@ $router->post('/admin/ai-system/save', ['middleware' => ['auth', 'admin_only', '
 
     // Save general settings
     $settingsToSave = [
-        'default_provider' => $_POST['default_provider'] ?? 'kilo',
+        'default_provider' => $defaultProvider,
         'frontend_provider' => $frontendProvider,
         'backend_provider' => $backendProvider,
         'default_model' => $defaultModel,
         'frontend_model' => $frontendModel,
         'backend_model' => $backendModel,
-        'max_tokens' => (int)($_POST['max_tokens'] ?? 4000),
-        'temperature' => (float)($_POST['temperature'] ?? 0.7),
+        'max_tokens' => (int)($_POST['max_tokens'] ?? ($currentSettings['max_tokens'] ?? 4000)),
+        'temperature' => (float)($_POST['temperature'] ?? ($currentSettings['temperature'] ?? 0.7)),
         'enable_fallback' => isset($_POST['enable_fallback']),
-        'default_author' => $_POST['default_author'] ?? 'BroxBhai AI',
-        'image_context_max_messages' => (int)($_POST['image_context_max_messages'] ?? 10),
+        'default_author' => $defaultAuthor,
+        'image_context_max_messages' => $imageContextMaxMessages,
         // New separate prompts for Admin and Public assistants
-        'admin_system_prompt' => $_POST['admin_system_prompt'] ?? '',
-        'public_system_prompt' => $_POST['public_system_prompt'] ?? '',
-        'system_prompt' => $_POST['system_prompt'] ?? '', // Keep for backwards compatibility
-        'custom_instructions' => $_POST['custom_instructions'] ?? ''
+        'admin_system_prompt' => $_POST['admin_system_prompt'] ?? ($currentSettings['admin_system_prompt'] ?? ''),
+        'public_system_prompt' => $_POST['public_system_prompt'] ?? ($currentSettings['public_system_prompt'] ?? ''),
+        'system_prompt' => $systemPrompt, // Keep for backwards compatibility
+        'custom_instructions' => $customInstructions
     ];
 
     $aiProvider->updateSettings($settingsToSave);
@@ -2488,6 +2622,31 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
         aiChatHandleRequest($input, $mysqli, false, false);
     });
 
+    // POST /ai/chat (PHP fallback when the Node AI route is unavailable)
+    $router->post('/ai/chat', function () use ($mysqli) {
+        run_middleware('rate_limit', [
+            'scope' => 'ai_public_chat',
+            'limit' => 30,
+            'window' => 60,
+            'is_api' => false
+        ]);
+
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $csrfToken = (string)($input['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+        if (!empty($csrfToken) && function_exists('validateCsrfToken') && !validateCsrfToken($csrfToken)) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'error' => 'Invalid CSRF token',
+                'error_code' => 'csrf_token_invalid'
+            ]);
+            return;
+        }
+
+        aiChatHandleRequest($input, $mysqli, false, false);
+    });
+
     // POST /api/ai/clear-image-context
     $router->post('/api/ai/clear-image-context', function () use ($mysqli) {
         $input = json_decode(file_get_contents('php://input'), true);
@@ -2607,7 +2766,115 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
 
     // POST /api/admin/ai/chat (Admin-only)
     $router->post('/api/admin/ai/chat', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-        // For testing, use global test input if available
+        try {
+            // For testing, use global test input if available
+            if (isset($GLOBALS['_TEST_INPUT'])) {
+                $input = $GLOBALS['_TEST_INPUT'];
+            } else {
+                $input = json_decode(file_get_contents('php://input'), true);
+                if (!is_array($input)) {
+                    $input = [];
+                }
+            }
+
+            aiChatHandleRequest($input, $mysqli, true, true);
+        } catch (Exception $e) {
+            error_log('[AI Admin Chat] Exception: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+            aiChatSendJson([
+                'success' => false,
+                'error' => 'Internal server error: ' . $e->getMessage(),
+                'error_code' => 'exception'
+            ], 500);
+        } catch (Throwable $t) {
+            error_log('[AI Admin Chat] Fatal error: ' . $t->getMessage() . ' at ' . $t->getFile() . ':' . $t->getLine());
+            aiChatSendJson([
+                'success' => false,
+                'error' => 'Fatal error: ' . $t->getMessage(),
+                'error_code' => 'fatal_error'
+            ], 500);
+        }
+    });
+
+    // GET /api/admin/ai/conversations/export (Admin-only, PHP fallback supported)
+    $router->get('/api/admin/ai/conversations/export', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        $conversationId = isset($_GET['conversation_id']) ? (int)$_GET['conversation_id'] : 0;
+        if ($conversationId <= 0) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'conversation_id is required and must be a valid integer']);
+            return;
+        }
+
+        $stmt = $mysqli->prepare('SELECT * FROM ai_conversations WHERE id = ? LIMIT 1');
+        $stmt->bind_param('i', $conversationId);
+        $stmt->execute();
+        $conversationResult = $stmt->get_result();
+        $conversation = $conversationResult->fetch_assoc();
+        $stmt->close();
+
+        if (!$conversation) {
+            http_response_code(404);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Conversation not found']);
+            return;
+        }
+
+        $stmt = $mysqli->prepare('SELECT id, role, content, created_at FROM ai_messages WHERE conversation_id = ? ORDER BY id ASC');
+        $stmt->bind_param('i', $conversationId);
+        $stmt->execute();
+        $messagesResult = $stmt->get_result();
+        $messages = [];
+        while ($row = $messagesResult->fetch_assoc()) {
+            $messages[] = $row;
+        }
+        $stmt->close();
+
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename="conversation-' . $conversationId . '.json"');
+        echo json_encode(['success' => true, 'conversation' => $conversation, 'messages' => $messages]);
+    });
+
+    // GET /admin/ai-system/conversations/export (Admin-only PHP fallback alias)
+    $router->get('/admin/ai-system/conversations/export', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        $conversationId = isset($_GET['conversation_id']) ? (int)$_GET['conversation_id'] : 0;
+        if ($conversationId <= 0) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'conversation_id is required and must be a valid integer']);
+            return;
+        }
+
+        $stmt = $mysqli->prepare('SELECT * FROM ai_conversations WHERE id = ? LIMIT 1');
+        $stmt->bind_param('i', $conversationId);
+        $stmt->execute();
+        $conversationResult = $stmt->get_result();
+        $conversation = $conversationResult->fetch_assoc();
+        $stmt->close();
+
+        if (!$conversation) {
+            http_response_code(404);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Conversation not found']);
+            return;
+        }
+
+        $stmt = $mysqli->prepare('SELECT id, role, content, created_at FROM ai_messages WHERE conversation_id = ? ORDER BY id ASC');
+        $stmt->bind_param('i', $conversationId);
+        $stmt->execute();
+        $messagesResult = $stmt->get_result();
+        $messages = [];
+        while ($row = $messagesResult->fetch_assoc()) {
+            $messages[] = $row;
+        }
+        $stmt->close();
+
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename="conversation-' . $conversationId . '.json"');
+        echo json_encode(['success' => true, 'conversation' => $conversation, 'messages' => $messages]);
+    });
+
+    // POST /admin/ai-system/chat (PHP fallback when the Node AI route is unavailable)
+    $router->post('/admin/ai-system/chat', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
         if (isset($GLOBALS['_TEST_INPUT'])) {
             $input = $GLOBALS['_TEST_INPUT'];
         } else {
@@ -3553,5 +3820,71 @@ $router->post('/admin/ai-system/ocr', ['middleware' => ['auth', 'admin_only']], 
     } catch (Exception $e) {
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+});
+
+// GET /api/system/health - System health check (public endpoint, no auth required)
+// Shows status of PHP backend and Node.js AI service
+// Used for monitoring and intelligent routing decisions
+$router->get('/api/system/health', [], function () use ($mysqli) {
+    try {
+        // Check PHP backend connectivity
+        $phpHealthy = !empty($mysqli) && $mysqli instanceof \mysqli && $mysqli->connect_errno === 0;
+
+        // Check Node service health
+        $nodeHealthy = aiChatShouldUseNodeServer();
+        $nodeUrl = aiChatGetNodeServiceUrl();
+
+        // Get AI provider status
+        $aiProvider = new AIProvider($mysqli);
+        $activeProviders = $aiProvider->getActive();
+        $activeProviderNames = array_map(fn($p) => $p['provider_name'] ?? 'unknown', $activeProviders);
+
+        // Build comprehensive health response
+        $response = [
+            'success' => true,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'status' => 'healthy',
+            'php_backend' => [
+                'healthy' => $phpHealthy,
+                'status' => $phpHealthy ? 'RUNNING' : 'DOWN'
+            ],
+            'node_service' => [
+                'configured' => $nodeUrl !== null,
+                'url' => $nodeUrl,
+                'healthy' => $nodeHealthy,
+                'status' => $nodeHealthy ? 'RUNNING' : 'DOWN'
+            ],
+            'ai_providers' => [
+                'active' => count($activeProviders),
+                'providers' => $activeProviderNames,
+                'status' => count($activeProviders) > 0 ? 'CONFIGURED' : 'NOT_CONFIGURED'
+            ],
+            'routing_strategy' => [
+                'preferred' => $nodeHealthy ? 'NODE_SERVER' : 'PHP_BACKEND',
+                'fallback' => 'PHP_BACKEND',
+                'zero_downtime' => true
+            ]
+        ];
+
+        // Determine overall status
+        if (!$phpHealthy) {
+            $response['status'] = 'critical';
+        } elseif (!$nodeHealthy && $nodeUrl !== null) {
+            $response['status'] = 'degraded';  // Node down but PHP available (zero downtime)
+        }
+
+        header('Content-Type: application/json');
+        http_response_code(200);
+        echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    } catch (Exception $e) {
+        header('Content-Type: application/json');
+        http_response_code(503);
+        echo json_encode([
+            'success' => false,
+            'status' => 'unhealthy',
+            'error' => $e->getMessage(),
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
     }
 });

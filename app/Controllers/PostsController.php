@@ -596,3 +596,69 @@ $router->get('/posts/view/{slug}', function ($slug = null) use ($twig, $contentM
         'comments' => $comments,
     ]);
 });
+
+$router->get('/posts/{id}/{slug}', function ($id = null, $slug = null) use ($twig, $contentModel, $commentModel) {
+    $id = sanitize_input($id);
+    if (!$id || !ctype_digit($id)) {
+        renderError(404, "Post not found");
+    }
+
+    $post = $contentModel->getPostById((int) $id);
+    if (!$post) {
+        renderError(404, "Post not found");
+    }
+
+    $previousPost = $contentModel->getPreviousPost($post['id']);
+    $nextPost = $contentModel->getNextPost($post['id']);
+    $relatedPosts = $contentModel->getRelatedPosts($post['id']);
+
+    if (!empty($relatedPosts) && is_array($relatedPosts)) {
+        $relatedPosts = array_slice($relatedPosts, 0, 3);
+    }
+
+    $comments = $commentModel->getComments('post', $post['id']);
+    $post['tags'] = $contentModel->getTagsForContent('post', $post['id']);
+    $post['categories'] = $contentModel->getCategoriesForContent('post', $post['id']);
+
+    echo $twig->render('posts/view.twig', [
+        'title' => $post['title'],
+        'post' => $post,
+        'previousPost' => $previousPost,
+        'nextPost' => $nextPost,
+        'relatedPosts' => $relatedPosts,
+        'comments' => $comments,
+    ]);
+});
+
+$router->get('/posts/{id}', function ($id = null) use ($twig, $contentModel, $commentModel) {
+    $id = sanitize_input($id);
+    if (!$id || !ctype_digit($id)) {
+        renderError(404, "Post not found");
+    }
+
+    $post = $contentModel->getPostById((int) $id);
+    if (!$post) {
+        renderError(404, "Post not found");
+    }
+
+    $previousPost = $contentModel->getPreviousPost($post['id']);
+    $nextPost = $contentModel->getNextPost($post['id']);
+    $relatedPosts = $contentModel->getRelatedPosts($post['id']);
+
+    if (!empty($relatedPosts) && is_array($relatedPosts)) {
+        $relatedPosts = array_slice($relatedPosts, 0, 3);
+    }
+
+    $comments = $commentModel->getComments('post', $post['id']);
+    $post['tags'] = $contentModel->getTagsForContent('post', $post['id']);
+    $post['categories'] = $contentModel->getCategoriesForContent('post', $post['id']);
+
+    echo $twig->render('posts/view.twig', [
+        'title' => $post['title'],
+        'post' => $post,
+        'previousPost' => $previousPost,
+        'nextPost' => $nextPost,
+        'relatedPosts' => $relatedPosts,
+        'comments' => $comments,
+    ]);
+});

@@ -2,17 +2,28 @@ import OpenAI from 'openai';
 import { Message, ChatOptions, ResponseMeta } from '../types/index';
 
 export abstract class BaseAIProvider {
-    protected client: OpenAI;
+    protected client: any;
     protected modelName: string;
     protected providerName: string;
+    protected config: {
+        apiKey: string;
+        baseURL?: string;
+        model: string;
+        name: string;
+        useClient?: boolean;
+    };
 
-    constructor(config: { apiKey: string; baseURL: string; model: string; name: string }) {
-        this.client = new OpenAI({
-            apiKey: config.apiKey,
-            baseURL: config.baseURL,
-        });
+    constructor(config: { apiKey: string; baseURL?: string; model: string; name: string; useClient?: boolean }) {
+        this.config = config;
         this.modelName = config.model;
         this.providerName = config.name;
+
+        if (config.useClient !== false) {
+            this.client = new OpenAI({
+                apiKey: config.apiKey,
+                baseURL: config.baseURL,
+            });
+        }
     }
 
     /**

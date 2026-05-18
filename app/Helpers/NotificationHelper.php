@@ -223,7 +223,7 @@ if (!function_exists('notifyPostApproval')) {
                 'post_id' => (string)$postId,
                 'post_title' => $postTitle,
                 'approver' => $approverName,
-                'action_url' => '/posts/view/' . urlSlug($postTitle, $postId)
+                'action_url' => '/posts/' . $postId . '/' . urlSlug($postTitle, $postId)
             ];
 
             // Send push notification to post author
@@ -790,7 +790,6 @@ function sendTemplateNotification(
         $result['notification_id'] = $notificationId;
 
         return $result;
-
     } catch (Throwable $e) {
         $result['message'] = 'Error: ' . $e->getMessage();
         error_log('sendTemplateNotification exception: ' . $e->getMessage());

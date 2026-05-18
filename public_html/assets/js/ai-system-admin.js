@@ -174,17 +174,31 @@
   function initEventListeners() {
     // Toggle provider switches
     document.querySelectorAll('.toggle-provider').forEach((inputEl) => {
-      inputEl.addEventListener('change', function () {
-        toggleProviderActive(this);
+      inputEl.addEventListener('change', () => {
+        toggleProviderActive(inputEl);
       });
     });
 
     // Toggle multimodal support per provider
     document.querySelectorAll('.toggle-multimodal').forEach((inputEl) => {
-      inputEl.addEventListener('change', function () {
-        toggleProviderMultimodal(this);
+      inputEl.addEventListener('change', () => {
+        toggleProviderMultimodal(inputEl);
       });
     });
+
+    // Set default provider buttons
+    const providersTable = document.getElementById('providersTable');
+    if (providersTable) {
+      providersTable.addEventListener('click', (event) => {
+        const button = event.target.closest('.set-default-btn');
+        if (!button) return;
+        event.preventDefault();
+        const id = button.getAttribute('data-provider-id');
+        if (id) {
+          setDefaultProvider(id, button);
+        }
+      });
+    }
 
     // Test connection buttons
     document.querySelectorAll('[data-action="test-connection"]').forEach((btn) => {
@@ -475,7 +489,10 @@
 
   // Get Node.js server URL from config
   function getAIServerUrl() {
-    return window.AppConfig?.get('ai.nodeServerUrl') || window.location.origin || 'http://localhost:3000';
+    return window.AppConfig?.get('ai.nodeServerUrl') ||
+      (['localhost', '127.0.0.1',].includes(window.location.hostname)
+        ? 'http://localhost:3000'
+        : window.location.origin || 'http://localhost:3000');
   }
 
   // Fetch provider models from API (use PHP fallback if Node.js fails)
@@ -1030,6 +1047,70 @@
     if (defaultBtn) {
       defaultBtn.disabled = !isActive;
     }
+
+    updateSidebarSummaryFromRows();
+  }
+
+  async function setDefaultProvider(providerId, buttonEl) {
+    if (!buttonEl) return;
+    buttonEl.disabled = true;
+
+    try {
+      const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+      const res = await fetch('/admin/ai-system/update-provider', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'set_default',
+          provider_id: parseInt(providerId, 10),
+          csrf_token: csrfToken,
+        }),
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to set default provider');
+      }
+
+      refreshDefaultProviderRows(providerId);
+      if (window.showAlert) {
+        await window.showAlert('Default provider updated successfully.', 'Success', 'success');
+      }
+    } catch (error) {
+      console.warn('Failed to set default provider', error);
+      if (window.showAlert) {
+        await window.showAlert(error.message || 'Failed to set default provider', 'Error', 'error');
+      } else {
+        alert(error.message || 'Failed to set default provider');
+      }
+    } finally {
+      buttonEl.disabled = false;
+    }
+  }
+
+  function refreshDefaultProviderRows(defaultProviderId) {
+    providersData = providersData.map((provider) => ({
+      ...provider,
+      is_default: String(provider.id) === String(defaultProviderId),
+    }));
+
+    const rows = document.querySelectorAll('#providersTable tbody tr[data-provider-id]');
+    rows.forEach((row) => {
+      const rowId = row.getAttribute('data-provider-id');
+      const defaultCell = row.querySelector('td[data-label="Default"]');
+      const isActive = row.dataset.isActive === '1';
+
+      if (!defaultCell || !rowId) return;
+
+      if (String(rowId) === String(defaultProviderId)) {
+        defaultCell.innerHTML = '<span class="badge bg-primary"><i class="bi bi-check-circle me-1"></i>Default</span>';
+      } else {
+        const disabledAttr = isActive ? '' : 'disabled';
+        defaultCell.innerHTML = `<button class="btn btn-outline-primary btn-sm set-default-btn" data-provider-id="${rowId}" ${disabledAttr}>Set as Default</button>`;
+      }
+    });
 
     updateSidebarSummaryFromRows();
   }

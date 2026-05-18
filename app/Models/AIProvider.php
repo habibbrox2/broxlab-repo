@@ -67,6 +67,26 @@ class AIProvider
             'supports_streaming' => true,
             'models' => []
         ],
+        'google' => [
+            'name' => 'Google AI',
+            'endpoint' => 'https://generativelanguage.googleapis.com/v1beta/models',
+            'auth_type' => 'bearer',
+            'supports_streaming' => false,
+            'uses_google_format' => true,
+            'models' => [],
+            // NOTE: Google Gemini API uses different request/response format than OpenAI
+            // Full support requires custom buildRequest and response parsing.
+            // For now, this allows system to recognize the provider and fall back to others.
+        ],
+        'gemini' => [
+            'name' => 'Google Gemini',
+            'endpoint' => 'https://generativelanguage.googleapis.com/v1beta/models',
+            'auth_type' => 'bearer',
+            'supports_streaming' => false,
+            'uses_google_format' => true,
+            'models' => [],
+            // Alias support so the assistant can select Gemini explicitly when configured.
+        ],
         'huggingface' => [
             'name' => 'Hugging Face',
             'endpoint' => 'https://router.huggingface.co/v1/responses',
@@ -558,6 +578,7 @@ class AIProvider
         if (!is_string($prompt) && !is_array($prompt)) {
             return ['success' => false, 'error' => 'Prompt must be a string or array of messages'];
         }
+
         $provider = $this->getByName($providerName);
         if (!$provider) {
             return ['success' => false, 'error' => 'Provider not found'];
@@ -570,6 +591,10 @@ class AIProvider
 
         // Build endpoint URL
         $endpoint = $provider['api_endpoint'] ?? $config['endpoint'];
+
+        if ($providerName === 'google') {
+            $endpoint = rtrim($endpoint, '/') . '/' . rawurlencode($model) . ':generate';
+        }
 
         // Kilo.ai uses /chat/completions path
         if ($providerName === 'kilo') {
@@ -910,6 +935,30 @@ class AIProvider
             return $this->buildRequestFromMessages($providerName, $model, $prompt, $options, $maxTokens, $temperature);
         }
 
+        if ($providerName === 'google') {
+            $messages = [
+                [
+                    'author' => 'user',
+                    'content' => [
+                        [
+                            'type' => 'text',
+                            'text' => (string)$prompt,
+                        ],
+                    ],
+                ],
+            ];
+
+            $request = [
+                'prompt' => [
+                    'messages' => $messages,
+                ],
+                'temperature' => (float)$temperature,
+                'maxOutputTokens' => (int)$maxTokens,
+            ];
+
+            return $this->applyAdvancedRequestOptions($request, $options);
+        }
+
         // Otherwise, build request from string prompt (legacy behavior)
         // Hugging Face uses /v1/responses endpoint with instructions and input
         if ($providerName === 'huggingface') {
@@ -1056,6 +1105,32 @@ class AIProvider
         if ($providerName === 'anthropic' && $systemPrompt !== '') {
             $request['system'] = $systemPrompt;
         }
+
+        if ($providerName === 'google') {
+            $googleMessages = [];
+            foreach ($formattedMessages as $message) {
+                $author = $message['role'] === 'system' ? 'system' : ($message['role'] === 'assistant' ? 'bot' : 'user');
+                $googleMessages[] = [
+                    'author' => $author,
+                    'content' => [
+                        [
+                            'type' => 'text',
+                            'text' => (string)$message['content'],
+                        ],
+                    ],
+                ];
+            }
+            $request = [
+                'prompt' => [
+                    'messages' => $googleMessages,
+                ],
+                'temperature' => (float)$temperature,
+                'maxOutputTokens' => (int)$maxTokens,
+            ];
+            $request = $this->applyAdvancedRequestOptions($request, $options);
+            return $request;
+        }
+
         if ($providerName === 'fireworks') {
             // Fireworks expects accounts/fireworks/models/xxx format
             if (strpos($model, 'accounts/') !== 0) {
@@ -1491,6 +1566,35 @@ class AIProvider
                     ];
                 }
                 break;
+            case 'google':
+                if (!empty($data['candidates'][0]['content']) && is_array($data['candidates'][0]['content'])) {
+                    $content = '';
+                    foreach ($data['candidates'][0]['content'] as $item) {
+                        if (isset($item['text'])) {
+                            $content .= $item['text'];
+                        } elseif (isset($item['type'], $item['text']) && $item['type'] === 'text') {
+                            $content .= $item['text'];
+                        }
+                    }
+                    if ($content !== '') {
+                        return ['success' => true, 'content' => $content, 'usage' => $data['usage'] ?? []];
+                    }
+                }
+                if (!empty($data['output'][0]['content']) && is_array($data['output'][0]['content'])) {
+                    $content = '';
+                    foreach ($data['output'][0]['content'] as $item) {
+                        if (!empty($item['text'])) {
+                            $content .= $item['text'];
+                        }
+                    }
+                    if ($content !== '') {
+                        return ['success' => true, 'content' => $content, 'usage' => $data['usage'] ?? []];
+                    }
+                }
+                if (!empty($data['output_text'])) {
+                    return ['success' => true, 'content' => $data['output_text'], 'usage' => $data['usage'] ?? []];
+                }
+                break;
             default:
                 if (isset($data['choices'][0]['message'])) {
                     $annotations = $data['choices'][0]['message']['annotations'] ?? null;
@@ -1685,11 +1789,18 @@ class AIProvider
     {
         if ($providerName === 'kilo') {
             $url = 'https://api.kilo.ai/api/gateway/models';
+            $apiKey = $this->getAPIKey('kilo');
+            if (empty($apiKey)) {
+                $this->logRemoteFetchStatus($providerName, 'missing_api_key');
+                return [];
+            }
+
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_HTTPGET, true);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Content-Type: application/json'
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $apiKey
             ]);
             curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 

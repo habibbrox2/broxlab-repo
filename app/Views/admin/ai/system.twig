@@ -782,6 +782,12 @@
 
             <form action="/admin/ai-system/save" method="POST" id="aiSettingsForm" class="card ai-panel">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="default_provider" value="{{ settings.default_provider|default('openrouter')|e('html_attr') }}">
+                <input type="hidden" name="default_model" value="{{ settings.default_model|default('openrouter/auto')|e('html_attr') }}">
+                <input type="hidden" name="default_author" value="{{ settings.default_author|default('BroxBhai AI')|e('html_attr') }}">
+                <input type="hidden" name="image_context_max_messages" value="{{ settings.image_context_max_messages|default(10)|e('html_attr') }}">
+                <input type="hidden" name="system_prompt" value="{{ settings.system_prompt|default('')|e('html_attr') }}">
+                <input type="hidden" name="custom_instructions" value="{{ settings.custom_instructions|default('')|e('html_attr') }}">
                 <div class="card-header py-3">
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
                         <div>
@@ -1332,8 +1338,7 @@
      data-settings='{{ {
         "frontend_model": settings.frontend_model|default(""),
         "backend_model": settings.backend_model|default(""),
-        "default_model": settings.default_model|default(""),
-        "csrf_token": csrf_token
+        "default_model": settings.default_model|default("")
      }|json_encode|e("html_attr") }}'></div>
 <script src="{{ base_url }}/assets/js/ai-system-admin.js"></script>
 {% endblock %}

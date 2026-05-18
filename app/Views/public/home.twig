@@ -365,10 +365,10 @@
       <div class="home-top-slider__viewport">
         <div class="home-top-slider__track" data-top-track role="list" aria-label="Top posts and services">
           {% for p in top_posts|default([]) %}
-            <a href="/posts/view/{{ p.slug|url_encode }}" class="home-top-card is-post" role="listitem" aria-label="Top post: {{ p.title }}">
+            <a href="{{ ('/posts/' ~ p.id ~ '/' ~ (p.slug|default(p.id)|url_encode))|absolute_url }}" class="home-top-card is-post" role="listitem" aria-label="Top post: {{ p.title }}">
               <div class="home-top-card__media">
                 {% if p.image %}
-                  <img src="{{ p.image }}" alt="{{ p.title }}" loading="lazy" decoding="async">
+                  <img src="{{ p.image|absolute_url }}" alt="{{ p.title|striptags }}" loading="lazy" decoding="async">
                 {% else %}
                   <span class="home-top-card__placeholder"><i class="bi bi-newspaper"></i></span>
                 {% endif %}

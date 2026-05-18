@@ -111,6 +111,8 @@ class NodeAiClient
         curl_close($ch);
 
         if ($response === false) {
+            // Log cURL-level failures for debugging upstream (timeouts, connection refused, etc.)
+            error_log(sprintf('[NodeAiClient] cURL request failed: url=%s http_code=%s error=%s', $url, $httpCode, $error ?: 'unknown'));
             return [
                 'success' => false,
                 'error' => $error ?: 'Request failed',
@@ -120,6 +122,9 @@ class NodeAiClient
 
         $decoded = json_decode($response, true);
         if (!is_array($decoded)) {
+            // Log invalid JSON bodies for troubleshooting (include truncated body)
+            $snippet = is_string($response) ? substr($response, 0, 2000) : '';
+            error_log(sprintf('[NodeAiClient] Invalid JSON response from %s (http=%s) body_snippet=%s', $url, $httpCode, $snippet));
             return [
                 'success' => false,
                 'error' => 'Invalid JSON response',
@@ -128,9 +133,13 @@ class NodeAiClient
         }
 
         if ($httpCode < 200 || $httpCode >= 300) {
+            // Log upstream 4xx/5xx responses with a helpful snippet for diagnosing 502/5xx
+            $errMsg = $decoded['error'] ?? $decoded['message'] ?? ('HTTP ' . $httpCode);
+            $snippet = is_string($response) ? substr($response, 0, 2000) : '';
+            error_log(sprintf('[NodeAiClient] Upstream error: url=%s http=%s error=%s response_snippet=%s', $url, $httpCode, $errMsg, $snippet));
             return [
                 'success' => false,
-                'error' => $decoded['error'] ?? $decoded['message'] ?? ('HTTP ' . $httpCode),
+                'error' => $errMsg,
                 'http_code' => $httpCode,
                 'data' => $decoded
             ];

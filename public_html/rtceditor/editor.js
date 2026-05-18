@@ -1047,7 +1047,12 @@ if (_RTE_shouldDefine) {
             };
 
             sizeSelect.addEventListener('change', handleSize);
-            sizeSelect.addEventListener('input', handleSize);
+            sizeSelect.addEventListener('blur', handleSize);
+            sizeSelect.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    handleSize(e);
+                }
+            });
 
             // blur the size control whenever the editor gets focus so typing isn't captured
             this.editor.addEventListener('focus', () => {

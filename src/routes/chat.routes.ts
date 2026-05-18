@@ -3,12 +3,16 @@ import { ChatService } from '../services/chat.service';
 import { adminMiddleware } from '../middleware/auth.middleware';
 import logger from '../utils/logger';
 import { aiModelService } from '../services/ai-models.service';
+import aiProviderService from '../services/ai-provider.service';
 import { generateEmbedding } from '../services/embedding.service';
+import { query, queryOne } from '../config/database';
 
 const chatBodySchema = {
     type: 'object',
     required: ['messages'],
     properties: {
+        conversation_id: { type: ['integer', 'number', 'string', 'null'] },
+        session_key: { type: ['string', 'null'] },
         messages: {
             type: 'array',
             minItems: 1,
@@ -178,6 +182,98 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
             reply.code(500).send({
                 success: false,
                 error: error.message || 'AI connection test failed',
+            });
+        }
+    });
+
+    /**
+     * Get active AI providers
+     * GET /api/ai/providers
+     */
+    fastify.get('/api/ai/providers', async (request, reply) => {
+        try {
+            const rows = await aiProviderService.getActiveProviders();
+            const providerNames: Record<string, string> = {
+                openrouter: 'OpenRouter',
+                openai: 'OpenAI',
+                anthropic: 'Anthropic',
+                google: 'Google Gemini',
+                ollama: 'Ollama',
+                fireworks: 'Fireworks',
+                huggingface: 'Hugging Face',
+                kilo: 'Kilo',
+            };
+
+            const providers = rows.map((row) => ({
+                id: row.provider_name,
+                name: providerNames[row.provider_name] || row.provider_name,
+            }));
+
+            reply.send({
+                success: true,
+                providers,
+            });
+        } catch (error: any) {
+            logger.error('Failed to fetch providers:', error);
+            reply.code(500).send({
+                success: false,
+                error: error.message || 'Failed to fetch providers',
+            });
+        }
+    });
+
+    /**
+     * Export chat conversation history for admin review
+     * GET /api/admin/ai/conversations/export?conversation_id=123
+     */
+    fastify.get('/api/admin/ai/conversations/export', {
+        preHandler: async (request, reply) => {
+            await adminMiddleware(request, reply);
+        },
+    }, async (request, reply) => {
+        try {
+            const queryParams = request.query as { conversation_id?: string };
+            const conversationId = Number(queryParams.conversation_id || 0);
+
+            if (!Number.isInteger(conversationId) || conversationId <= 0) {
+                reply.code(400).send({
+                    success: false,
+                    error: 'conversation_id is required and must be a valid integer',
+                });
+                return;
+            }
+
+            const conversation = await queryOne<any>(
+                'SELECT * FROM ai_conversations WHERE id = ?',
+                [conversationId]
+            );
+
+            if (!conversation) {
+                reply.code(404).send({
+                    success: false,
+                    error: 'Conversation not found',
+                });
+                return;
+            }
+
+            const messages = await query<any>(
+                'SELECT id, role, content, created_at FROM ai_messages WHERE conversation_id = ? ORDER BY id ASC',
+                [conversationId]
+            );
+
+            reply
+                .header('Content-Type', 'application/json')
+                .header('Content-Disposition', `attachment; filename="conversation-${conversationId}.json"`)
+                .send({
+                    success: true,
+                    conversation,
+                    messages,
+                });
+        } catch (error: any) {
+            logger.error('Failed to export conversation:', error);
+            reply.code(500).send({
+                success: false,
+                error: error.message || 'Failed to export conversation',
             });
         }
     });

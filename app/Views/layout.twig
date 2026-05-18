@@ -42,9 +42,9 @@
     {% endif %}
 
     {# ===== FAVICON & BRANDING ===== #}
-    <link rel="icon" type="image/x-icon" href="{{ app_settings.favicon|default('/assets/favicon.ico') }}">
-    <link rel="apple-touch-icon" href="{{ app_settings.site_logo|default('/assets/images/default-logo.png') }}">
-    <link rel="shortcut icon" href="{{ app_settings.favicon|default('/assets/favicon.ico') }}">
+    <link rel="icon" type="image/x-icon" href="{{ app_settings.favicon|default('/assets/favicon.ico')|absolute_url }}">
+    <link rel="apple-touch-icon" href="{{ app_settings.site_logo|default('/assets/images/default-logo.png')|absolute_url }}">
+    <link rel="shortcut icon" href="{{ app_settings.favicon|default('/assets/favicon.ico')|absolute_url }}">
     <meta name="theme-color" content="#0d6efd">
     <meta name="msapplication-TileColor" content="#0d6efd">
 
@@ -57,7 +57,7 @@
     <meta property="og:title" content="{{ block('title')|striptags|default(app_settings.site_name) }}">
     <meta property="og:description" content="{{ app_settings.meta_description|default('Welcome to ' ~ app_settings.site_name) }}">
     <meta property="og:site_name" content="{{ app_settings.site_name }}">
-    <meta property="og:image" content="{% block og_image %}{{ app_settings.site_logo|default('/assets/images/default-og-image.png') }}{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ app_settings.site_logo|default('/assets/images/default-og-image.png')|absolute_url }}{% endblock %}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:type" content="image/png">
@@ -73,7 +73,7 @@
   "@type": "Organization",
   "name": {{ app_settings.site_name|json_encode }},
   "url": {{ url|json_encode }},
-  "logo": {{ app_settings.site_logo|default(url ~ 'assets/images/default-logo.png')|json_encode }},
+  "logo": {{ app_settings.site_logo|default(url ~ 'assets/images/default-logo.png')|absolute_url|json_encode }},
   "description": {{ (app_settings.meta_description|default('Mobile reviews, tech news, and gadget insights'))|json_encode }},
   "sameAs": [
     "https://www.facebook.com/{{ app_settings.facebook_handle|default('') }}",
@@ -92,7 +92,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ block('title')|striptags|default(app_settings.site_name) }}">
     <meta name="twitter:description" content="{{ app_settings.meta_description|default('Welcome to ' ~ app_settings.site_name) }}">
-    <meta name="twitter:image" content="{{ app_settings.site_logo|default('/assets/images/default-og-image.png') }}">
+    <meta name="twitter:image" content="{{ app_settings.site_logo|default('/assets/images/default-og-image.png')|absolute_url }}">
     {% if app_settings.twitter_handle %}<meta name="twitter:creator" content="@{{ app_settings.twitter_handle }}">{% endif %}
     {% if app_settings.twitter_site %}<meta name="twitter:site" content="@{{ app_settings.twitter_site }}">{% endif %}
 
@@ -156,7 +156,7 @@
         "description": {{ app_settings.meta_description|json_encode }},
         "image": {
             "@type": "ImageObject",
-            "url": {{ app_settings.site_logo|default('/assets/images/default-og-image.png')|json_encode }},
+            "url": {{ app_settings.site_logo|default('/assets/images/default-og-image.png')|absolute_url|json_encode }},
             "width": 1200,
             "height": 630
         },
@@ -174,7 +174,7 @@
             "name": {{ app_settings.site_name|json_encode }},
             "logo": {
                 "@type": "ImageObject",
-                "url": {{ app_settings.site_logo|default('/assets/images/default-logo.png')|json_encode }}
+                "url": {{ app_settings.site_logo|default('/assets/images/default-logo.png')|absolute_url|json_encode }}
             }
         },
         "mainEntity": {
@@ -203,7 +203,7 @@
         ],
         "logo": {
             "@type": "ImageObject",
-            "url": {{ (app_settings.site_logo ?: '/assets/images/default-logo.png')|json_encode }},
+            "url": {{ (app_settings.site_logo ?: '/assets/images/default-logo.png')|absolute_url|json_encode }},
             "width": 250,
             "height": 100
         },
@@ -242,9 +242,10 @@
         "@type": "LocalBusiness",
         "name": {{ app_settings.site_name|json_encode }},
         "url": {{ url|json_encode }},
-        "logo": {{ app_settings.site_logo|default(url ~ 'assets/images/default-logo.png')|json_encode }},
+        "logo": {{ app_settings.site_logo|default(url ~ 'assets/images/default-logo.png')|absolute_url|json_encode }},
         "description": {{ app_settings.meta_description|default('Mobile reviews, tech news, and gadget insights')|json_encode }},
-        "image": {{ app_settings.site_logo|default(url ~ 'assets/images/default-og-image.png')|json_encode }},
+        "image": {{ app_settings.site_logo|default(url ~ 'assets/images/default-og-image.png')|absolute_url|json_encode }},
+
         {% if app_settings.business_address %}"address": {
             "@type": "PostalAddress",
             "streetAddress": {{ app_settings.business_address|json_encode }},
@@ -302,7 +303,7 @@
                 {# Brand / Logo #}
                 <a class="navbar-brand brox-brand-link" href="{{ studio_header_url|default('/studio') }}" title="Studio">
                     {% if app_settings.site_logo is defined and app_settings.site_logo %}
-                        <img src="{{ app_settings.site_logo }}" alt="{{ app_settings.site_name }}" class="brox-brand-logo me-2" loading="lazy" decoding="async">
+                        <img src="{{ app_settings.site_logo|absolute_url }}" alt="{{ app_settings.site_name }}" class="brox-brand-logo me-2" loading="lazy" decoding="async">
                     {% else %}
                         <div class="bg-primary rounded-3 p-2 me-2 shadow-sm brox-brand-icon">
                             <i class="bi bi-phone-fill text-white"></i> <span class="brox-brand-text">{{ app_settings.site_name }}</span>
@@ -420,9 +421,9 @@
                                    href="#" id="broxNavbarUser" role="button" 
                                    data-bs-toggle="dropdown" aria-expanded="false">
                                     {% if auth_user.profile_pic is defined and auth_user.profile_pic %}
-                                        <img src="{{ auth_user.profile_pic }}" class="rounded-circle me-2 brox-user-avatar" alt="{{ auth_user.username }}" loading="lazy" decoding="async">
+                                        <img src="{{ auth_user.profile_pic|absolute_url }}" class="rounded-circle me-2 brox-user-avatar" alt="{{ auth_user.username }}" loading="lazy" decoding="async">
                                     {% else %}
-                                        <img src="/assets/images/default-avatar.png" class="rounded-circle me-2 brox-user-avatar" alt="User" loading="lazy" decoding="async">
+                                        <img src="{{ '/assets/images/default-avatar.png'|absolute_url }}" class="rounded-circle me-2 brox-user-avatar" alt="User avatar" loading="lazy" decoding="async">
                                     {% endif %}
                                     <span class="brox-user-dropdown-username d-none d-lg-inline">{{ auth_user.username }}</span>
                                 </a>

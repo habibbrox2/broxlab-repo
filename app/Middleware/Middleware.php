@@ -187,6 +187,17 @@ register_middleware('auth', function (array $ctx = []) {
             ]
         );
 
+        // Check if this is an API request
+        $currentPath = strtolower((string)($ctx['uri'] ?? (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/')));
+        $accept = strtolower((string)($_SERVER['HTTP_ACCEPT'] ?? ''));
+        $isApiRequest = (strpos($currentPath, '/api/') === 0)
+            || (strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest')
+            || (strpos($accept, 'application/json') !== false);
+
+        if ($isApiRequest) {
+            json_response(['success' => false, 'error' => 'Not authenticated'], 401);
+        }
+
         showMessage('Please log in.', 'danger');
         redirectToLoginWithReturn();
     }
@@ -362,7 +373,7 @@ register_middleware('auth', function (array $ctx = []) {
    ADMIN / SUPER ADMIN ONLY
 ===================================================== */
 
-register_middleware('admin_only', function () {
+register_middleware('admin_only', function (array $ctx = []) {
     global $userModel;
 
     // Check if user is authenticated
@@ -374,6 +385,17 @@ register_middleware('admin_only', function () {
             'admin_only',
             'NOT_AUTHENTICATED'
         );
+
+        // Check if this is an API request
+        $currentPath = strtolower((string)($ctx['uri'] ?? (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/')));
+        $accept = strtolower((string)($_SERVER['HTTP_ACCEPT'] ?? ''));
+        $isApiRequest = (strpos($currentPath, '/api/') === 0)
+            || (strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest')
+            || (strpos($accept, 'application/json') !== false);
+
+        if ($isApiRequest) {
+            json_response(['success' => false, 'error' => 'Not authenticated'], 401);
+        }
 
         redirectToLoginWithReturn();
     }
@@ -387,6 +409,17 @@ register_middleware('admin_only', function () {
                 'user_id' => $userId
             ]
         );
+
+        // Check if this is an API request
+        $currentPath = strtolower((string)($ctx['uri'] ?? (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/')));
+        $accept = strtolower((string)($_SERVER['HTTP_ACCEPT'] ?? ''));
+        $isApiRequest = (strpos($currentPath, '/api/') === 0)
+            || (strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest')
+            || (strpos($accept, 'application/json') !== false);
+
+        if ($isApiRequest) {
+            json_response(['success' => false, 'error' => 'Admin access required'], 403);
+        }
 
         showMessage('Super admin only.', 'danger');
         redirect('/');

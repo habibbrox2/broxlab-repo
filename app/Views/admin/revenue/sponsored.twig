@@ -51,7 +51,7 @@
           <tr>
             <td class="px-4"><span class="badge bg-secondary">#{{ sp.id }}</span></td>
             <td>
-              <a href="/posts/view/{{ sp.post_slug|url_encode }}" target="_blank" class="fw-semibold text-decoration-none">
+              <a href="/posts/{{ sp.post_id }}/{{ sp.post_slug|url_encode }}" target="_blank" class="fw-semibold text-decoration-none">
                 {{ sp.post_title|default('Post #' ~ sp.post_id) }}
                 <i class="bi bi-box-arrow-up-right small text-muted"></i>
               </a>

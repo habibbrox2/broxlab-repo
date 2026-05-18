@@ -49,6 +49,7 @@ class AIChatManager {
             btnDraft: document.getElementById('btnDraft'),
             refreshList: document.getElementById('refreshList'),
             chatSearch: document.getElementById('chatSearch'),
+            btnExportConversation: document.getElementById('btnExportConversation'),
             btnEndSession: document.getElementById('btnEndSession'),
             btnBackToList: document.getElementById('btnBackToList')
         };
@@ -69,6 +70,10 @@ class AIChatManager {
 
         if (this.nodes.chatSearch) {
             this.nodes.chatSearch.oninput = (e) => this.handleSearch(e.target.value);
+        }
+
+        if (this.nodes.btnExportConversation) {
+            this.nodes.btnExportConversation.onclick = () => this.handleExportConversation();
         }
 
         if (this.nodes.btnEndSession) {
@@ -118,7 +123,7 @@ class AIChatManager {
         this.nodes.convList.innerHTML = '';
         this.filteredConversations.forEach(conv => {
             const item = document.createElement('div');
-            item.className = `chat-item ${this.currentChatId == conv.id ? 'active' : ''}`;
+            item.className = `chat-item ${this.currentChatId === conv.id ? 'active' : ''}`;
             item.onclick = () => this.selectConversation(conv.id);
 
             const initial = conv.visitor_token ? conv.visitor_token.substring(0, 1).toUpperCase() : 'V';
@@ -175,7 +180,7 @@ class AIChatManager {
         this.toggleMobileView(true);
 
         // Load metadata
-        const conv = this.conversations.find(c => c.id == id);
+        const conv = this.conversations.find(c => c.id === id);
         if (conv) {
             if (this.nodes.sideUserId) {
                 this.nodes.sideUserId.textContent = conv.user_id || 'Guest';
@@ -269,6 +274,16 @@ class AIChatManager {
         }
     }
 
+    async handleExportConversation() {
+        if (!this.currentChatId) {
+            await window.showAlert('Please select a conversation to export.', 'No conversation selected', 'warning');
+            return;
+        }
+
+        const exportUrl = `/api/admin/ai/conversations/export?conversation_id=${encodeURIComponent(this.currentChatId)}`;
+        window.open(exportUrl, '_blank');
+    }
+
     async handleEndSession() {
         if (!this.currentChatId) return;
 
@@ -288,7 +303,7 @@ class AIChatManager {
             const data = await resp.json();
             if (data.success) {
                 // Update local status
-                const conv = this.conversations.find(c => c.id == this.currentChatId);
+                const conv = this.conversations.find(c => c.id === this.currentChatId);
                 if (conv) {
                     conv.status = 'closed';
                 }

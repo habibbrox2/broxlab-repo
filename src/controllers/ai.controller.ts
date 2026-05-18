@@ -6,7 +6,18 @@ import logger from '../utils/logger';
 const getSettingsFromDB = async () => {
   return {
     provider: config.ai.defaultProvider || 'openrouter',
-    apiKey: config.ai.openrouter.apiKey || '',
+    apiKey:
+      config.ai.defaultProvider === 'openai'
+        ? config.ai.openai.apiKey || ''
+        : config.ai.defaultProvider === 'anthropic'
+          ? config.ai.anthropic.apiKey || ''
+          : config.ai.defaultProvider === 'google' || config.ai.defaultProvider === 'gemini'
+            ? config.ai.google.apiKey || ''
+            : config.ai.defaultProvider === 'openrouter'
+              ? config.ai.openrouter.apiKey || ''
+              : config.ai.defaultProvider === 'ollama'
+                ? process.env.OLLAMA_API_KEY || ''
+                : '',
     model: config.ai.defaultModel || 'openrouter/auto',
     availableProviders: Object.keys(providers),
   };
@@ -17,6 +28,18 @@ const saveSettingsToDB = async (provider: string, apiKey: string, model: string)
     process.env.OPENROUTER_API_KEY = apiKey;
     process.env.AI_PROVIDER = 'openrouter';
     process.env.AI_MODEL = model || 'openrouter/auto';
+  } else if (provider === 'openai') {
+    process.env.OPENAI_API_KEY = apiKey;
+    process.env.AI_PROVIDER = 'openai';
+    process.env.AI_MODEL = model || 'gpt-4o';
+  } else if (provider === 'anthropic') {
+    process.env.ANTHROPIC_API_KEY = apiKey;
+    process.env.AI_PROVIDER = 'anthropic';
+    process.env.AI_MODEL = model || 'claude-3.0';
+  } else if (provider === 'google' || provider === 'gemini') {
+    process.env.GOOGLE_API_KEY = apiKey;
+    process.env.AI_PROVIDER = 'google';
+    process.env.AI_MODEL = model || 'gemini-pro';
   } else if (provider === 'ollama') {
     process.env.OLLAMA_API_KEY = apiKey;
     process.env.AI_PROVIDER = 'ollama';

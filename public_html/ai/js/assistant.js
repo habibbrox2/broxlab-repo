@@ -24,6 +24,7 @@ if (!window.BroxAssistantLoaded) {
         langKey: 'brox.ai.lang',
         tokenKey: 'brox.ai.visitor_token',
         proxyUrl: '/api/ai/chat',
+        phpFallbackUrl: '/ai/chat',
         sessionBootstrapUrl: '/api/ai/session',
         modelsUrl: '/api/ai/models',
         frontendSettingsUrl: '/api/ai-system/frontend',
@@ -1701,11 +1702,27 @@ if (!window.BroxAssistantLoaded) {
                     csrf_token: this.csrfToken || ''
                 };
                 if (this.currentModel) payload.model = this.currentModel;
-                const resp = await fetch(CONFIG.proxyUrl, {
+                const shouldTryPhpFallback = (status, error) => {
+                    if (error) return true;
+                    return status >= 500;
+                };
+                const fetchChat = async (url) => fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+                const fetchChatWithFallback = async () => {
+                    try {
+                        const primaryResp = await fetchChat(CONFIG.proxyUrl);
+                        if (primaryResp.ok || !shouldTryPhpFallback(primaryResp.status, null)) {
+                            return primaryResp;
+                        }
+                        return await fetchChat(CONFIG.phpFallbackUrl);
+                    } catch (error) {
+                        return await fetchChat(CONFIG.phpFallbackUrl);
+                    }
+                };
+                const resp = await fetchChatWithFallback();
                 this.updateAgenticStatus('Agentic', 'উত্তর জেনারেট করছি...');
                 if (!resp.ok) {
                     this.updateAgenticStatus(null);

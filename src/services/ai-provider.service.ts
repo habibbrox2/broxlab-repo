@@ -4,7 +4,7 @@ import logger from '../utils/logger';
 export interface AIProvider {
     id: number;
     provider_name: string;
-    api_key: string;
+    api_key_env?: string;
     is_active: boolean;
     extra_settings: Record<string, any>;
 }
@@ -27,7 +27,7 @@ export class AIProviderService {
     async getProviderByName(providerName: string): Promise<AIProvider | null> {
         try {
             const provider = await queryOne<AIProvider>(
-                `SELECT id, provider_name, api_key, is_active, extra_settings 
+                `SELECT id, provider_name, api_key_env, is_active, extra_settings 
                  FROM ai_providers 
                  WHERE provider_name = ? AND is_active = 1`,
                 [providerName]
@@ -47,7 +47,41 @@ export class AIProviderService {
         if (!provider) {
             return null;
         }
-        return provider.api_key || null;
+
+        if (provider.api_key_env && provider.api_key_env.trim() !== '') {
+            const envKey = process.env[provider.api_key_env];
+            if (envKey && envKey.trim() !== '') {
+                return envKey;
+            }
+        }
+
+        const settingKey = providerName === 'openrouter'
+            ? 'openrouter_api_key'
+            : `${providerName}_api_key`;
+
+        const dbKey = await this.getProviderSetting(settingKey);
+        if (dbKey && typeof dbKey === 'string' && dbKey.trim() !== '') {
+            return dbKey;
+        }
+
+        return null;
+    }
+
+    async getProviderSetting(key: string): Promise<string | null> {
+        try {
+            const row = await queryOne<{ setting_value: string }>(
+                'SELECT setting_value FROM ai_settings WHERE setting_key = ? LIMIT 1',
+                [key]
+            );
+
+            if (row && typeof row.setting_value === 'string') {
+                return row.setting_value;
+            }
+        } catch (error) {
+            logger.error(`Failed to fetch AI setting ${key}:`, error);
+        }
+
+        return null;
     }
 
     /**
@@ -74,7 +108,7 @@ export class AIProviderService {
     async getActiveProviders(): Promise<AIProvider[]> {
         try {
             const providers = await query<AIProvider>(
-                `SELECT id, provider_name, api_key, is_active, extra_settings 
+                `SELECT id, provider_name, api_key_env, is_active, extra_settings 
                  FROM ai_providers 
                  WHERE is_active = 1`
             );

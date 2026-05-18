@@ -48,6 +48,7 @@ const ADMIN_CONFIG = {
   sessionStateKey: 'brox.admin.session',
   optionsKey: 'brox.admin.request.options',
   proxyUrl: '/api/admin/ai/chat',
+  phpFallbackUrl: '/admin/ai-system/chat',
   sessionBootstrapUrl: '/api/admin/ai/session',
   logUrl: '/api/admin/logs/errors',
   modelsUrl: '/api/ai/models', // Fixed: was /api/ai-system/models
@@ -4798,16 +4799,53 @@ if (!window.BroxAdminInstance) {
 
       const maxRetries = 2;
       const baseDelay = 1000;
-
-      const attemptStream = async () => {
-        const resp = await fetch(ADMIN_CONFIG.proxyUrl, {
+      const shouldTryPhpFallback = (status, error) => {
+        if (error) {
+          return true;
+        }
+        return status >= 500;
+      };
+      const fetchChat = async (url) =>
+        fetch(url, {
           method: 'POST',
+          credentials: 'same-origin',
           headers: {
             'Content-Type': 'application/json',
             'X-CSRF-Token': getCsrfToken() || '',
           },
           body: JSON.stringify(payload),
         });
+      const fetchChatWithFallback = async () => {
+        try {
+          const primaryResp = await fetchChat(ADMIN_CONFIG.proxyUrl);
+          if (primaryResp.ok || !shouldTryPhpFallback(primaryResp.status, null)) {
+            return primaryResp;
+          }
+
+          // Capture raw body for telemetry when primary returns 5xx/502
+          let rawPrimaryBody = '';
+          try {
+            rawPrimaryBody = await primaryResp.text();
+          } catch (e) {
+            rawPrimaryBody = '';
+          }
+          reportTelemetry('primary_ai_proxy_error', {
+            status: primaryResp.status,
+            url: ADMIN_CONFIG.proxyUrl,
+            body_snippet: String(rawPrimaryBody).substring(0, 1024),
+          });
+
+          const fallbackResp = await fetchChat(ADMIN_CONFIG.phpFallbackUrl);
+          return fallbackResp;
+        } catch (error) {
+          reportTelemetry('primary_ai_proxy_exception', { error: String(error) });
+          const fallbackResp = await fetchChat(ADMIN_CONFIG.phpFallbackUrl);
+          return fallbackResp;
+        }
+      };
+
+      const attemptStream = async () => {
+        const resp = await fetchChatWithFallback();
 
         if (!resp.ok) {
           const raw = await resp.text();

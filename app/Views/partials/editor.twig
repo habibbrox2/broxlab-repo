@@ -23,7 +23,7 @@
 <div class="rte-container view-compose {{ editorClass }} {{ darkMode ? 'rte-dark-mode' : 'rte-light-mode' }} {{ rtl ? 'rte-rtl' : 'rte-ltr' }} {{ debugMode ? 'rte-debug-mode' : '' }}" id="{{ editorId }}-wrapper" data-rtl="{{ rtl ? 'true' : 'false' }}" data-auto-grow="{{ autoGrow ? 'true' : 'false' }}" data-min-height="{{ minHeight }}" data-max-height="{{ maxHeight }}" data-upload-url="{{ uploadUrl|e('html_attr') }}" data-disabled-buttons="{{ disabledButtons|join(',')|e('html_attr') }}">
     
     <!-- Hidden input to store final HTML content for form submission -->
-    <input type="hidden" name="{{ editorName }}" id="{{ editorId }}-input" class="rte-hidden-input" value="{{ initialContent }}">
+    <input type="hidden" name="{{ editorName|e('html_attr') }}" id="{{ editorId|e('html_attr') }}-input" class="rte-hidden-input" value="{{ initialContent|e('html_attr') }}">
     
     <!-- Editor Area -->
     <div class="rte-editor-wrapper">

@@ -35,6 +35,7 @@ const envSchema = z.object({
     FIREWORKS_API_KEY: z.string().optional(),
     HUGGINGFACE_API_KEY: z.string().optional(),
     KILO_API_KEY: z.string().optional(),
+    GOOGLE_API_KEY: z.string().optional(),
 
     // Default AI Settings
     DEFAULT_PROVIDER: z.string().default('openrouter'),
@@ -186,6 +187,9 @@ export const config = {
         },
         kilo: {
             apiKey: env.data.KILO_API_KEY,
+        },
+        google: {
+            apiKey: env.data.GOOGLE_API_KEY,
         },
         defaultProvider: env.data.DEFAULT_PROVIDER,
         defaultModel: env.data.DEFAULT_MODEL,

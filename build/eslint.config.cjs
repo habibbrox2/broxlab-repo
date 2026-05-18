@@ -5,6 +5,8 @@
 
 const js = require('@eslint/js');
 const globals = require('globals');
+const typescriptParser = require('@typescript-eslint/parser');
+const tsEslint = require('@typescript-eslint/eslint-plugin');
 
 module.exports = [
   {
@@ -71,9 +73,12 @@ module.exports = [
   {
     files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
-      ecmaVersion: 2020,
-      sourceType: 'module',
+      parser: typescriptParser,
       parserOptions: {
+        ecmaVersion: 2020,
+        sourceType: 'module',
+        project: './tsconfig.json',
+        tsconfigRootDir: __dirname,
         ecmaFeatures: {
           jsx: true,
         },
@@ -83,8 +88,12 @@ module.exports = [
         ...globals.node,
       },
     },
+    plugins: {
+      '@typescript-eslint': tsEslint,
+    },
     rules: {
       ...js.configs.recommended.rules,
+      ...tsEslint.configs.recommended.rules,
       'no-unused-vars': 'off', // Handled by TypeScript
     },
   },
