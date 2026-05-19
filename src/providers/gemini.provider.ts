@@ -6,7 +6,7 @@ import logger from '../utils/logger';
 export class GeminiProvider extends BaseAIProvider {
     private modelClient: GenerativeModel;
 
-    constructor(apiKey: string, model: string = 'gemini-pro') {
+    constructor(apiKey: string, model: string = 'gemini-1.5-flash') {
         super({ apiKey, model, name: 'google', useClient: false });
         const genAI = new GoogleGenerativeAI(apiKey || '');
         this.modelClient = genAI.getGenerativeModel({ model: this.config.model || model });

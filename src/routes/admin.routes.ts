@@ -23,7 +23,35 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
     fastify.get('/api/ai/models/list', async (_request, reply) => {
         try {
             // Return available models from providers
+            // Free models prioritized at top
             const models = [
+                {
+                    id: 'meta-llama/llama-3-8b-instruct:free',
+                    name: 'Llama 3.8B (FREE)',
+                    provider: 'openrouter',
+                    description: 'Meta Llama 3.8B Instruct - Free tier on OpenRouter',
+                    supportsVision: false,
+                    maxTokens: 8000,
+                    isFree: true,
+                },
+                {
+                    id: 'google/gemini-2.0-flash-exp:free',
+                    name: 'Gemini 2.0 Flash (FREE)',
+                    provider: 'openrouter',
+                    description: 'Google Gemini 2.0 Flash - Free experimental tier on OpenRouter',
+                    supportsVision: true,
+                    maxTokens: 32000,
+                    isFree: true,
+                },
+                {
+                    id: 'google/gemma-2-9b-it:free',
+                    name: 'Gemma 2.9B (FREE)',
+                    provider: 'openrouter',
+                    description: 'Google Gemma 2.9B Instruct-tuned - Free tier on OpenRouter',
+                    supportsVision: false,
+                    maxTokens: 8000,
+                    isFree: true,
+                },
                 {
                     id: 'openrouter/gpt-4o',
                     name: 'GPT-4o',
@@ -31,6 +59,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
                     description: 'OpenAI GPT-4o via OpenRouter',
                     supportsVision: true,
                     maxTokens: 128000,
+                    isFree: false,
                 },
                 {
                     id: 'openrouter/gpt-4o-mini',
@@ -39,6 +68,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
                     description: 'OpenAI GPT-4o Mini via OpenRouter',
                     supportsVision: true,
                     maxTokens: 128000,
+                    isFree: false,
                 },
                 {
                     id: 'openrouter/claude-3.5-sonnet',
@@ -47,6 +77,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
                     description: 'Anthropic Claude 3.5 Sonnet via OpenRouter',
                     supportsVision: true,
                     maxTokens: 200000,
+                    isFree: false,
                 },
             ];
 

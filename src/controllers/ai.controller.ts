@@ -31,15 +31,15 @@ const saveSettingsToDB = async (provider: string, apiKey: string, model: string)
   } else if (provider === 'openai') {
     process.env.OPENAI_API_KEY = apiKey;
     process.env.AI_PROVIDER = 'openai';
-    process.env.AI_MODEL = model || 'gpt-4o';
+    process.env.AI_MODEL = model || 'gpt-3.5-turbo';
   } else if (provider === 'anthropic') {
     process.env.ANTHROPIC_API_KEY = apiKey;
     process.env.AI_PROVIDER = 'anthropic';
-    process.env.AI_MODEL = model || 'claude-3.0';
+    process.env.AI_MODEL = model || 'claude-3-haiku';
   } else if (provider === 'google' || provider === 'gemini') {
     process.env.GOOGLE_API_KEY = apiKey;
     process.env.AI_PROVIDER = 'google';
-    process.env.AI_MODEL = model || 'gemini-pro';
+    process.env.AI_MODEL = model || 'gemini-1.5-flash';
   } else if (provider === 'ollama') {
     process.env.OLLAMA_API_KEY = apiKey;
     process.env.AI_PROVIDER = 'ollama';

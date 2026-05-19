@@ -7,7 +7,7 @@ export class GeminiProvider extends BaseAIProvider {
   constructor(config: AIProviderConfig) {
     super(config);
     const genAI = new GoogleGenerativeAI(config.apiKey);
-    this.model = genAI.getGenerativeModel({ model: config.model || 'gemini-pro' });
+    this.model = genAI.getGenerativeModel({ model: config.model || 'gemini-1.5-flash' });
   }
 
   async generate(messages: AIMessage[], options: AIOptions = {}): Promise<AIResponse> {

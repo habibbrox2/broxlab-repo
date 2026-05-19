@@ -3,7 +3,7 @@ import { BaseAIProvider } from './base.provider';
 import logger from '../utils/logger';
 
 export class OpenAIProvider extends BaseAIProvider {
-    constructor(apiKey: string, model: string = 'gpt-4o') {
+    constructor(apiKey: string, model: string = 'gpt-3.5-turbo') {
         super({ apiKey, model, name: 'openai', baseURL: 'https://api.openai.com/v1' });
     }
 

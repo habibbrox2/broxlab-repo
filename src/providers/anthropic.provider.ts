@@ -4,7 +4,7 @@ import { BaseAIProvider } from './base.provider';
 import logger from '../utils/logger';
 
 export class AnthropicProvider extends BaseAIProvider {
-    constructor(apiKey: string, model: string = 'claude-3.0') {
+    constructor(apiKey: string, model: string = 'claude-3-haiku') {
         super({ apiKey, model, name: 'anthropic', useClient: false });
         this.client = new Anthropic({ apiKey: apiKey || '' });
     }
