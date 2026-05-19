@@ -25,38 +25,6 @@ class PdfService
     }
 
     /**
-     * Download a Telegram file by file_id and save to temp.
-     * Returns local file path or null on failure.
-     */
-    public function downloadTelegramFile(string $fileId, string $botToken): ?string
-    {
-        // Step 1: Get file path from Telegram
-        $apiUrl  = "https://api.telegram.org/bot{$botToken}/getFile?file_id=" . urlencode($fileId);
-        $info    = $this->httpGet($apiUrl);
-        if (!isset($info['ok']) || !$info['ok']) {
-            return null;
-        }
-
-        $filePath = $info['result']['file_path'] ?? null;
-        if (!$filePath) {
-            return null;
-        }
-
-        // Step 2: Download file content
-        $downloadUrl = "https://api.telegram.org/file/bot{$botToken}/{$filePath}";
-        $content     = $this->httpGetRaw($downloadUrl);
-        if ($content === null) {
-            return null;
-        }
-
-        // Save to temp
-        $localPath = $this->tempDir . uniqid('tg_pdf_', true) . '.pdf';
-        file_put_contents($localPath, $content);
-
-        return $localPath;
-    }
-
-    /**
      * Merge multiple local PDF file paths into one PDF.
      * Returns path to the merged output file, or null on failure.
      */
@@ -67,24 +35,22 @@ class PdfService
         }
 
         try {
-            $defaultConfig = (new ConfigVariables())->getDefaults();
-            $fontDirs      = $defaultConfig['fontDir'];
+            $defaultConfig    = (new ConfigVariables())->getDefaults();
+            $fontDirs         = $defaultConfig['fontDir'];
             $defaultFontConfig = (new FontVariables())->getDefaults();
-            $fontData      = $defaultFontConfig['fontdata'];
+            $fontData         = $defaultFontConfig['fontdata'];
 
             $mpdf = new Mpdf([
-                'fontDir'     => $fontDirs,
-                'fontdata'    => $fontData,
-                'tempDir'     => $this->tempDir,
-                'format'      => 'A4',
+                'fontDir'  => $fontDirs,
+                'fontdata' => $fontData,
+                'tempDir'  => $this->tempDir,
+                'format'   => 'A4',
             ]);
 
             foreach ($localPaths as $path) {
                 if (!file_exists($path)) {
                     continue;
                 }
-                // Use page importer via built-in Mpdf import (requires setasign/fpdi)
-                // Fallback: embed each PDF as an HTML file reference
                 $pageCount = $this->countPages($path);
                 for ($i = 1; $i <= $pageCount; $i++) {
                     $mpdf->AddPage();
@@ -146,47 +112,6 @@ class PdfService
         preg_match_all('/\/Page\b/s', $content, $matches);
         $count = count($matches[0]);
         return max(1, (int)($count / 2));  // Each page has two /Page references
-    }
-
-    /**
-     * Perform a simple GET request and decode JSON.
-     */
-    private function httpGet(string $url): array
-    {
-        $body = $this->httpGetRaw($url);
-        if ($body === null) {
-            return [];
-        }
-        $decoded = json_decode($body, true);
-        return is_array($decoded) ? $decoded : [];
-    }
-
-    /**
-     * Perform a simple GET request and return body string.
-     */
-    private function httpGetRaw(string $url): ?string
-    {
-        if (function_exists('curl_init')) {
-            $ch = curl_init($url);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT        => 30,
-                CURLOPT_SSL_VERIFYPEER => true,
-            ]);
-            $body = curl_exec($ch);
-            $err  = curl_error($ch);
-            curl_close($ch);
-            if ($body === false || $err) {
-                return null;
-            }
-            return (string)$body;
-        }
-
-        $context = stream_context_create([
-            'http' => ['method' => 'GET', 'timeout' => 30, 'ignore_errors' => true],
-        ]);
-        $body = @file_get_contents($url, false, $context);
-        return $body !== false ? (string)$body : null;
     }
 
     /**

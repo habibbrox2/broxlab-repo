@@ -576,7 +576,7 @@
       const title = `Alert - ${(alert.severity || 'info').toUpperCase()}`;
       const options = {
         body: alert.message || 'Security event detected',
-        icon: '/assets/img/logo.png',
+        icon: window.__broxSiteLogo || '',
         tag: alert.type || 'security-alert',
         requireInteraction: alert.severity === 'critical',
       };

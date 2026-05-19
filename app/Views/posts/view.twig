@@ -1,7 +1,7 @@
 {% extends "layout.twig" %}
 {% block title %}{{ post.title }} | {{ app_settings.site_name|default("BroxBhai") }}{% endblock %}
 {% block meta_description %}{{ post.excerpt|default(post.content|striptags|slice(0, 160)) }}{% endblock %}
-{% block og_image %}{{ post.featured_image|default(post.image|default(app_settings.site_logo|default(url ~ 'assets/images/default-image.png')))|absolute_url }}{% endblock %}
+{% block og_image %}{{ post.featured_image|default(post.image|default(app_settings.site_logo))|absolute_url }}{% endblock %}
 {% block og_type %}article{% endblock %}
 {% set breadcrumbs = [
   { label: 'Articles', url: '/posts', icon: 'newspaper' },
@@ -257,12 +257,12 @@
   "description": {{ post.content|striptags|slice(0, 160)|json_encode }},
   "articleBody": {{ post.content|striptags|slice(0, 2000)|json_encode }},
   "wordCount": {{ post.content|striptags|wordcount }},
-  "image": {
-    "@type": "ImageObject",
-    "url": {{ post.featured_image|default(post.image|default(app_settings.site_logo|default(url ~ 'assets/images/default-image.png')))|json_encode }},
-    "width": 1200,
-    "height": 630
-  },
+   "image": {
+     "@type": "ImageObject",
+     "url": {{ post.featured_image|default(post.image|default(app_settings.site_logo))|json_encode }},
+     "width": 1200,
+     "height": 630
+   },
   "datePublished": "{{ (post.published_at|default(post.created_at))|date('c') }}",
   {% if post.updated_at %}"dateModified": "{{ post.updated_at|date('c') }}",{% endif %}
   "author": {
@@ -275,7 +275,7 @@
     "name": {{ app_settings.site_name|json_encode }},
     "logo": {
       "@type": "ImageObject",
-      "url": "{{ app_settings.site_logo|default(url ~ 'assets/images/default-logo.png') }}",
+       "url": "{{ app_settings.site_logo }}",
       "width": 250,
       "height": 100
     },

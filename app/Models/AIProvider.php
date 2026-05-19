@@ -97,7 +97,7 @@ class AIProvider
         ],
         'ollama' => [
             'name' => 'Ollama',
-            'endpoint' => 'http://localhost:11434',  // Local: http://localhost:11434 | Cloud: https://ollama.com/api
+            'endpoint' => 'https://ollama.com/api',
             'auth_type' => 'bearer',
             'supports_streaming' => true,
             'models' => []
@@ -145,11 +145,11 @@ class AIProvider
         $endpoint = $provider['api_endpoint']
             ?? (self::getProviderConfig('ollama')['endpoint'] ?? '');
         $endpoint = rtrim((string)$endpoint, '/');
-        $envHost = getenv('OLLAMA_HOST') ?: getenv('OLLAMA_BASE_URL') ?: '';
-        if (!empty($envHost)) {
+        $envHost = getenv('OLLAMA_BASE_URL') ?: '';
+        if (!empty($envHost) && !$this->isLocalHostEndpoint($envHost)) {
             $endpoint = rtrim($envHost, '/');
         }
-        return $endpoint !== '' ? $endpoint : 'http://localhost:11434';
+        return $endpoint !== '' ? $endpoint : 'https://ollama.com/api';
     }
 
     private function buildRemoteModelsCacheKey(string $providerName): string
@@ -608,8 +608,7 @@ class AIProvider
         if ($providerName === 'kilo') {
             $endpoint = rtrim($endpoint, '/') . '/chat/completions';
         }
-        // Ollama uses OpenAI-compatible API:
-        // - Local: http://localhost:11434/v1/chat/completions
+        // Ollama uses OpenAI-compatible API with cloud endpoint support only.
         // - Cloud: https://ollama.com/api/chat/completions
         if ($providerName === 'ollama') {
             $endpoint = (string)$endpoint;
@@ -633,9 +632,7 @@ class AIProvider
 
         $apiKey = $this->getAPIKey($providerName);
         if (empty($apiKey)) {
-            if (!($providerName === 'ollama' && $this->isLocalOllamaEndpoint((string)$endpoint))) {
-                return ['success' => false, 'error' => 'API key not configured for ' . $config['name']];
-            }
+            return ['success' => false, 'error' => 'API key not configured for ' . $config['name']];
         }
 
         // [PATCH] Fix common non-prefixed model names for OpenRouter
@@ -1438,8 +1435,7 @@ class AIProvider
                 $headers[] = 'Authorization: Bearer ' . $apiKey;
                 break;
             case 'ollama':
-                // Local Ollama does not require auth
-                if (!empty($apiKey) && !$this->isLocalOllamaEndpoint($endpoint)) {
+                if (!empty($apiKey)) {
                     $headers[] = 'Authorization: Bearer ' . $apiKey;
                 }
                 break;
@@ -1450,16 +1446,10 @@ class AIProvider
         return $headers;
     }
 
-    private function isLocalOllamaEndpoint(string $endpoint): bool
+    private function isLocalHostEndpoint(string $endpoint): bool
     {
-        // Determines if Ollama is running locally (no API key required)
-        // Local: http://localhost:11434 or http://127.0.0.1:11434
-        // Cloud: https://ollama.com/api (requires API key)
         $host = parse_url($endpoint, PHP_URL_HOST);
-        if ($host === null || $host === false || $host === '') {
-            return false;
-        }
-        return $host === 'localhost' || $host === '127.0.0.1';
+        return in_array($host, ['localhost', '127.0.0.1'], true);
     }
 
     /**
@@ -1722,6 +1712,9 @@ class AIProvider
         $apiKey = $this->getAPIKey($row['provider_name']);
         $row['has_api_key'] = !empty($apiKey);
         $row['api_key_preview'] = !empty($apiKey) ? substr($apiKey, 0, 4) . '...' . substr($apiKey, -4) : '';
+        // Full (still obfuscated by the input type="password") — the input carries the
+        // real value so the eye toggle button in the admin UI can reveal it on demand.
+        $row['api_key_masked'] = !empty($apiKey) ? (string)$apiKey : '';
 
         return $row;
     }
@@ -1972,12 +1965,10 @@ class AIProvider
                 $candidates[] = $endpoint;
             }
 
-            $envHost = getenv('OLLAMA_HOST') ?: getenv('OLLAMA_BASE_URL') ?: '';
-            if (!empty($envHost)) {
+            $envHost = getenv('OLLAMA_BASE_URL') ?: '';
+            if (!empty($envHost) && !$this->isLocalHostEndpoint($envHost)) {
                 $candidates[] = rtrim($envHost, '/');
             }
-            $candidates[] = 'http://localhost:11434';
-            $candidates[] = 'http://127.0.0.1:11434';
 
 
             $tried = [];
@@ -2261,12 +2252,8 @@ class AIProvider
             return ['success' => false, 'error' => 'Provider not found'];
         }
 
-        // For Ollama (local), API key is optional - it's a local service
         $apiKey = $this->getAPIKey($providerName);
-        $endpoint = $provider['api_endpoint'] ?? self::getProviderConfig($providerName)['endpoint'] ?? '';
-        $isLocalOllama = $providerName === 'ollama' && $this->isLocalOllamaEndpoint((string)$endpoint);
-
-        if (empty($apiKey) && !$isLocalOllama) {
+        if (empty($apiKey)) {
             return ['success' => false, 'error' => 'API key not configured'];
         }
 
@@ -2528,9 +2515,7 @@ class AIProvider
 
         $apiKey = $this->getAPIKey($providerName);
         if (empty($apiKey)) {
-            if (!($providerName === 'ollama' && $this->isLocalOllamaEndpoint((string)$endpoint))) {
-                return ['success' => false, 'error' => 'API key not configured for ' . $config['name']];
-            }
+            return ['success' => false, 'error' => 'API key not configured for ' . $config['name']];
         }
 
         // Ensure model prefix for OpenRouter
@@ -2661,12 +2646,10 @@ class AIProvider
     public function checkOllamaStatus(): array
     {
         $endpoints = [
-            getenv('OLLAMA_HOST') ?: getenv('OLLAMA_BASE_URL') ?: '',
-            'http://localhost:11434',
-            'http://127.0.0.1:11434'
+            getenv('OLLAMA_BASE_URL') ?: 'https://ollama.com/api'
         ];
 
-        foreach (array_filter($endpoints) as $endpoint) {
+        foreach ($endpoints as $endpoint) {
             $url = rtrim($endpoint, '/') . '/api/tags';
 
             $ch = curl_init($url);
@@ -2695,7 +2678,7 @@ class AIProvider
         return [
             'success' => false,
             'online' => false,
-            'error' => 'Ollama server not reachable. Configure OLLAMA_BASE_URL for local (http://localhost:11434) or cloud (https://ollama.com/api)'
+            'error' => 'Ollama server not reachable. Configure OLLAMA_BASE_URL for cloud (https://ollama.com/api)'
         ];
     }
 
@@ -2709,7 +2692,7 @@ class AIProvider
             return ['success' => false, 'error' => 'Ollama server is not running'];
         }
 
-        $endpoint = $status['endpoint'] ?? 'http://localhost:11434';
+        $endpoint = $status['endpoint'] ?? 'https://ollama.com/api';
         $url = rtrim($endpoint, '/') . '/api/show';
 
         $ch = curl_init($url);
@@ -2752,19 +2735,16 @@ class AIProvider
             return ['success' => false, 'error' => 'Provider not found'];
         }
 
-        // For Ollama (local), API key is optional
         $apiKey = $this->getAPIKey($providerName);
         $endpoint = $provider['api_endpoint'] ?? self::getProviderConfig($providerName)['endpoint'] ?? '';
-        $isLocalOllama = $providerName === 'ollama' && $this->isLocalOllamaEndpoint((string)$endpoint);
 
         $debug = [
             'provider' => $providerName,
             'endpoint' => $endpoint,
-            'has_api_key' => !empty($apiKey),
-            'is_local_ollama' => $isLocalOllama
+            'has_api_key' => !empty($apiKey)
         ];
 
-        if (empty($apiKey) && !$isLocalOllama) {
+        if (empty($apiKey)) {
             $debug['error'] = 'API key not configured';
             return ['success' => false, 'error' => 'API key not configured', 'debug' => $debug];
         }

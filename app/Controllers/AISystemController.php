@@ -727,7 +727,7 @@ function aiSystemGetProviderModels(AIProvider $aiProvider, string $providerName,
             $config = AIProvider::getProviderConfig($providerName);
             $models = $config['models'] ?? [];
         }
-        if ($providerName === 'fireworks') {
+        if (in_array($providerName, ['fireworks', 'openrouter'], true)) {
             $remote = $aiProvider->fetchRemoteModels($providerName);
             if (!empty($remote)) {
                 $models = $remote;
@@ -738,7 +738,7 @@ function aiSystemGetProviderModels(AIProvider $aiProvider, string $providerName,
 
     $config = AIProvider::getProviderConfig($providerName);
     $models = $config['models'] ?? [];
-    if ($providerName === 'fireworks') {
+    if (in_array($providerName, ['fireworks', 'openrouter'], true)) {
         $remote = $aiProvider->fetchRemoteModels($providerName);
         if (!empty($remote)) {
             $models = $remote;
@@ -755,6 +755,37 @@ function aiSystemResolveModel(AIProvider $aiProvider, string $providerName, stri
     }
     if (!empty($defaultModel) && isset($models[$defaultModel])) {
         return $defaultModel;
+    }
+
+    if (!empty($models)) {
+        $preferred = aiSystemFindPreferredModel($models);
+        if ($preferred !== '') {
+            return $preferred;
+        }
+    }
+
+    return (string)array_key_first($models);
+}
+
+function aiSystemFindPreferredModel(array $models): string
+{
+    $priorities = [
+        '/:free/i',
+        '/\bfree\b/i',
+        '/\bauto\b/i',
+        '/\bmini\b/i',
+        '/\bsmall\b/i',
+        '/\bturbo\b/i',
+        '/\bflash\b/i',
+        '/\bfast\b/i',
+    ];
+
+    foreach ($priorities as $pattern) {
+        foreach ($models as $modelId => $label) {
+            if (preg_match($pattern, $modelId) || preg_match($pattern, (string)$label)) {
+                return (string)$modelId;
+            }
+        }
     }
 
     return (string)array_key_first($models);
@@ -793,7 +824,8 @@ function aiSystemBuildModelCandidates(
         $candidates[] = $candidate;
     }
 
-    foreach (array_keys($models) as $modelCandidate) {
+    $sortedModels = aiSystemSortModelsByFreeAndPerformance($models);
+    foreach ($sortedModels as $modelCandidate) {
         $modelCandidate = trim((string)$modelCandidate);
         if ($modelCandidate === '') {
             continue;
@@ -809,6 +841,38 @@ function aiSystemBuildModelCandidates(
     }
 
     return $unique;
+}
+
+function aiSystemSortModelsByFreeAndPerformance(array $models): array
+{
+    $keys = array_keys($models);
+    usort($keys, function ($a, $b) use ($models) {
+        $weight = function (string $id, $label) {
+            $score = 0;
+            $text = strtolower($id . ' ' . (string)$label);
+            if (str_contains($text, ':free') || str_contains($text, ' free')) {
+                $score -= 200;
+            }
+            if (str_contains($text, ' auto')) {
+                $score -= 150;
+            }
+            if (str_contains($text, ' mini') || str_contains($text, ' small') || str_contains($text, ' flash') || str_contains($text, ' fast') || str_contains($text, ' turbo')) {
+                $score -= 100;
+            }
+            if (str_contains($text, ' 3.5') || str_contains($text, ' gpt-3.5') || str_contains($text, ' llama-2') || str_contains($text, ' llama-3')) {
+                $score -= 50;
+            }
+            return $score;
+        };
+
+        $scoreA = $weight($a, $models[$a] ?? '');
+        $scoreB = $weight($b, $models[$b] ?? '');
+        if ($scoreA === $scoreB) {
+            return strcmp($a, $b);
+        }
+        return $scoreA < $scoreB ? -1 : 1;
+    });
+    return $keys;
 }
 
 function aiSystemBuildProviderOrder(array $providers, string $primaryProvider): array
@@ -936,7 +1000,7 @@ function aiChatExtractOCRForAdmin(array $imageRefs): string
     // Hybrid OCR: Node.js Tesseract.js first, fallback to OCR.space API
     $ocrTexts = [];
 
-    require_once __DIR__ . '/../Helpers/OCRService.php';
+    require_once __DIR__ . '/../Services/OCRService.php';
     $ocr = new OCRService();
 
     foreach ($imageRefs as $ref) {
@@ -1145,7 +1209,7 @@ function aiChatExecuteAutoToolLoop(
     return $response;
 }
 
-function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $allowOverrides): void
+function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $allowOverrides, bool $allowProviderOverride = false): void
 {
     $aiProvider = new AIProvider($mysqli);
     $chatModel = new AIChatModel($mysqli);
@@ -1386,6 +1450,26 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
             $model = $input['model'];
         }
     }
+
+    if ($allowProviderOverride && !$isAdmin) {
+        if (!empty($input['provider']) && is_string($input['provider'])) {
+            $requestedProvider = trim($input['provider']);
+            $activeProviders = array_values(array_filter(array_map(fn($p) => $p['provider_name'] ?? '', $providers)));
+            if ($requestedProvider !== '' && in_array($requestedProvider, $activeProviders, true) && $aiProvider->hasApiKey($requestedProvider)) {
+                $provider = $requestedProvider;
+            }
+        }
+        if (!empty($input['model']) && is_string($input['model'])) {
+            $requestedModel = trim($input['model']);
+            if ($requestedModel !== '') {
+                $availableModels = aiSystemGetProviderModels($aiProvider, $provider, $providers);
+                if (isset($availableModels[$requestedModel])) {
+                    $model = $requestedModel;
+                }
+            }
+        }
+    }
+
     $selectedProvider = $provider;
     $selectedModel = $model;
 
@@ -2427,7 +2511,7 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
             ];
         }
 
-        if ($providerName === 'kilo' && !empty($list)) {
+        if (in_array($providerName, ['kilo', 'openrouter'], true) && !empty($list)) {
             usort($list, function ($a, $b) {
                 $aFree = str_contains($a['id'], ':free') || str_contains(strtolower($a['name']), 'free');
                 $bFree = str_contains($b['id'], ':free') || str_contains(strtolower($b['name']), 'free');
@@ -2493,7 +2577,7 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
             return;
         }
 
-        aiChatHandleRequest($input, $mysqli, false, false);
+        aiChatHandleRequest($input, $mysqli, false, false, true);
     });
 
     // POST /ai/chat (PHP fallback when the Node AI route is unavailable)
@@ -2518,7 +2602,7 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
             return;
         }
 
-        aiChatHandleRequest($input, $mysqli, false, false);
+        aiChatHandleRequest($input, $mysqli, false, false, true);
     });
 
     // POST /api/ai/clear-image-context
@@ -2583,12 +2667,12 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
             $input = [];
         }
 
-        $chatModel = new AIChatModel($mysqli);
-        $sessionState = aiChatResolveSessionState($input, $isAdmin);
+        $sessionService = new \App\Services\AIChatSessionService($mysqli);
+        $sessionState = $sessionService->resolveSessionState($input, $isAdmin);
         $conversationId = isset($input['conversation_id']) ? (int)$input['conversation_id'] : 0;
 
         header('Content-Type: application/json');
-        echo json_encode(aiChatBuildSessionPayload($chatModel, $sessionState, $conversationId));
+        echo json_encode($sessionService->buildSessionPayload($sessionState, $conversationId));
     };
 
     $router->post('/api/ai/session', function () use ($bootstrapSessionHandler) {
@@ -3670,7 +3754,7 @@ $router->post('/admin/ai-system/ocr', ['middleware' => ['auth', 'admin_only']], 
 
     try {
         // Use hybrid OCRService (Node.js primary → OCR.space fallback)
-        require_once __DIR__ . '/../Helpers/OCRService.php';
+        require_once __DIR__ . '/../Services/OCRService.php';
         $ocr = new OCRService();
 
         // Extract text using hybrid OCR

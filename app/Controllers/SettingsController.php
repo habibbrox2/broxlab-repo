@@ -68,10 +68,9 @@ $router->get('/admin/app-settings', ['middleware' => ['auth', 'super_admin_only'
     $settings['site_logo'] = brox_normalize_branding_asset_path((string)($settings['site_logo'] ?? ''));
     $settings['favicon'] = brox_normalize_branding_asset_path((string)($settings['favicon'] ?? ''));
 
-    // Set defaults for logo & favicon if not set
-    $uploadsLogoPrefix = brox_get_uploads_base_url() . '/logo/';
-    $settings['site_logo'] = $settings['site_logo'] !== '' ? $settings['site_logo'] : $uploadsLogoPrefix . 'logo.png';
-    $settings['favicon'] = $settings['favicon'] !== '' ? $settings['favicon'] : $uploadsLogoPrefix . 'favicon.ico';
+    // Remove defaults for logo & favicon - allow empty values
+    $settings['site_logo'] = $settings['site_logo'] !== '' ? $settings['site_logo'] : '';
+    $settings['favicon'] = $settings['favicon'] !== '' ? $settings['favicon'] : '';
 
     $settingsByCategory = $appSecurityModel->getSettingsByCategory();
     $categoryLabels = [

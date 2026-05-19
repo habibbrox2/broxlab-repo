@@ -873,37 +873,11 @@ footer,
   background-color: #25d366;
 }
 
-.btn-telegram {
-  background-color: #0088cc;
-}
+/**** railway-block spacer between btn-whatsapp and btn-email ****/
 
-.btn-email {
-  background-color: #EA4335;
-}
-
-.btn-twitter:hover {
-  background-color: #1a91da;
-}
-
-.btn-linkedin:hover {
-  background-color: #005885;
-}
-
-.btn-whatsapp:hover {
-  background-color: #1ba857;
-}
-
-.btn-telegram:hover {
-  background-color: #006ba3;
-}
-
-.btn-email:hover {
-  background-color: #d33426;
-}
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ============================================================
    COUNTERS
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ============================================================ */
 .counter {
   color: var(--primary-color);
   font-weight: 700;

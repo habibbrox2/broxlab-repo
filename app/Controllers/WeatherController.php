@@ -210,6 +210,12 @@ $router->get('/weather/details', ['middleware' => [], 'name' => 'weather.details
             'request_id' => $requestId,
             'location' => $location
         ]);
+        // Include stack trace for debugging
+        try {
+            logError('Weather exception trace: ' . $e->getTraceAsString(), 'WEATHER_TRACE');
+        } catch (Throwable $traceEx) {
+            // ignore
+        }
 
         weather_handleError($statusCode, $e->getMessage(), $errorCode, $requestId, $twig, ['location' => $location]);
     }

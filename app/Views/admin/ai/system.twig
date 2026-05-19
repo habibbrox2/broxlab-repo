@@ -681,9 +681,6 @@
                                     <td data-label="Endpoint">
                                         {% set endpoint = provider.api_endpoint|default(provider.config.endpoint)|default('') %}
                                         <small class="text-muted font-monospace" style="font-size: 11px;">{{ endpoint ?: 'N/A' }}</small>
-                                        {% if provider.provider_name == 'ollama' and endpoint in ['http://127.0.0.1:11434', 'http://localhost:11434'] %}
-                                            <span class="badge bg-info text-dark ms-1">Auto-detected</span>
-                                        {% endif %}
                                     </td>
                                     <td data-label="Status">
                                         <div class="form-check form-switch">
@@ -927,7 +924,9 @@
                                         <input type="password" class="form-control api-key-input"
                                                name="api_keys[{{ provider.provider_name }}]"
                                                {% if provider.provider_name == 'openrouter' %}id="apiKeyOpenRouter"{% endif %}
-                                               placeholder="{% if provider.has_api_key %}{{ provider.api_key_preview }} (click to update){% else %}Enter API key{% endif %}"
+                                               value="{{ provider.api_key_masked }}"
+                                               data-api-key-value="{{ provider.api_key_masked }}"
+                                               placeholder="{% if provider.has_api_key %}Key configured (click eye to reveal){% else %}Enter API key{% endif %}"
                                                autocomplete="new-password">
                                         <button class="btn btn-outline-secondary toggle-password" type="button">
                                             <i class="bi bi-eye"></i>
@@ -935,7 +934,7 @@
                                     </div>
                                     <small class="text-muted d-block mt-2">
                                         {% if provider.has_api_key %}
-                                        <span class="text-success">Configured</span>
+                                        <span class="text-success">Configured — click the eye icon to see value</span>
                                         {% else %}
                                         <span class="text-warning">Not configured</span>
                                         {% endif %}

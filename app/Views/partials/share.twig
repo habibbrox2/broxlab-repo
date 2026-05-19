@@ -35,15 +35,6 @@
             <i class="bi bi-whatsapp me-2"></i>WhatsApp
         </a>
 
-        {# Telegram Share #}
-        <a href="https://t.me/share/url?url={{ url|default(request.url) }}&text={{ title|default('Check this out')|url_encode }}"
-           target="_blank"
-           rel="noopener noreferrer"
-           class="btn btn-sm btn-telegram rounded-pill transition-all hover-scale"
-           title="Share on Telegram"
-           onclick="window.open(this.href, 'telegram-share', 'width=600,height=400'); return false;">
-            <i class="bi bi-telegram me-2"></i>Telegram
-        </a>
 
         {# Email Share #}
         <a href="mailto:?subject={{ title|default('Check this out')|url_encode }}&body={{ description|default('I thought you might like this')|url_encode }}%0D%0A{{ url|default(request.url) }}"

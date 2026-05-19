@@ -21,7 +21,7 @@
     "name": {{ (app_settings.meta_title ?: app_settings.site_name)|json_encode }},
     "description": {{ (app_settings.meta_description ?: 'Welcome to ' ~ app_settings.site_name)|json_encode }},
     "url": {{ url|json_encode }},
-    "image": {{ (app_settings.site_logo ?: url ~ 'assets/images/default-logo.png')|json_encode }},
+     "image": {{ app_settings.site_logo|json_encode }},
     "isPartOf": {
         "@type": "WebSite",
         "@id": {{ url|json_encode }},
@@ -142,6 +142,77 @@
       <span class="small mb-2">Scroll to explore</span>
       <div class="scroll-mouse">
         <div class="scroll-wheel"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container mb-5">
+  <div class="row align-items-center g-4">
+    <div class="col-lg-6">
+      <div class="p-4 rounded-4 shadow-sm border border-1 border-light h-100 bg-white">
+        <span class="badge bg-primary bg-opacity-10 text-primary mb-3">Calculator categories</span>
+        <h2 class="display-6 fw-bold">Quick access to calculators and converters</h2>
+        <p class="text-muted mb-4">Solve finance, math, health, and unit conversion tasks instantly with our curated calculator hub.</p>
+        <a href="/calculators" class="btn btn-primary btn-lg">
+          <i class="bi bi-calculator-fill me-2"></i>Browse all calculators
+        </a>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="row g-3">
+        <div class="col-6">
+          <div class="card h-100 border-0 shadow-sm rounded-4">
+            <div class="card-body">
+              <div class="mb-3">
+                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill p-2">
+                  <i class="bi bi-calculator fs-5"></i>
+                </span>
+              </div>
+              <h3 class="h6 fw-semibold">Math Calculators</h3>
+              <p class="text-muted small mb-0">Standard, scientific, graphing, and programmer tools.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="card h-100 border-0 shadow-sm rounded-4">
+            <div class="card-body">
+              <div class="mb-3">
+                <span class="badge bg-success bg-opacity-10 text-success rounded-pill p-2">
+                  <i class="bi bi-currency-dollar fs-5"></i>
+                </span>
+              </div>
+              <h3 class="h6 fw-semibold">Finance Tools</h3>
+              <p class="text-muted small mb-0">Loans, interest, mortgage, percentage, and GPA calculators.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="card h-100 border-0 shadow-sm rounded-4">
+            <div class="card-body">
+              <div class="mb-3">
+                <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill p-2">
+                  <i class="bi bi-heart-pulse fs-5"></i>
+                </span>
+              </div>
+              <h3 class="h6 fw-semibold">Health &amp; Lifestyle</h3>
+              <p class="text-muted small mb-0">BMI, date calculations, and personal planning tools.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="card h-100 border-0 shadow-sm rounded-4">
+            <div class="card-body">
+              <div class="mb-3">
+                <span class="badge bg-info bg-opacity-10 text-info rounded-pill p-2">
+                  <i class="bi bi-arrows-angle-expand fs-5"></i>
+                </span>
+              </div>
+              <h3 class="h6 fw-semibold">Converters</h3>
+              <p class="text-muted small mb-0">Currency, length, weight, temperature and more unit conversions.</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

@@ -14,12 +14,12 @@
     'use strict';
 
     // ── DOM references ──────────────────────────────────────────────────────
-    const form          = document.getElementById('calculator-form');
-    const formWrap      = document.getElementById('calc-form-wrap');
-    const resultsPanel  = document.getElementById('calc-results');
-    const submitBtn     = document.getElementById('calc-submit-btn');
-    const btnLabel      = document.getElementById('calc-btn-label');
-    const btnSpinner    = document.getElementById('calc-spinner');
+    const form = document.getElementById('calculator-form');
+    const formWrap = document.getElementById('calc-form-wrap');
+    const resultsPanel = document.getElementById('calc-results');
+    const submitBtn = document.getElementById('calc-submit-btn');
+    const btnLabel = document.getElementById('calc-btn-label');
+    const btnSpinner = document.getElementById('calc-spinner');
 
     if (!form) return; // Not a calculator page – do nothing
 
@@ -27,8 +27,8 @@
 
     // ── helpers ─────────────────────────────────────────────────────────────
     function setLoading(on) {
-        submitBtn.disabled  = on;
-        btnLabel.classList.toggle  ('d-none', on);
+        submitBtn.disabled = on;
+        btnLabel.classList.toggle('d-none', on);
         btnSpinner.classList.toggle('d-none', !on);
     }
 
@@ -79,17 +79,17 @@
      */
     function renderFinancial(type, r) {
         const highlight = type === 'simple-interest' ? [
-            { label: 'Interest Earned', value: r.currency_symbol + r.interest.toLocaleString(undefined, {maximumFractionDigits: 2}) },
-            { label: 'Total',           value: r.currency_symbol + r.total_after.toLocaleString(undefined, {maximumFractionDigits: 2}) },
+            { label: 'Interest Earned', value: r.currency_symbol + r.interest.toLocaleString(undefined, { maximumFractionDigits: 2 }) },
+            { label: 'Total', value: r.currency_symbol + r.total_after.toLocaleString(undefined, { maximumFractionDigits: 2 }) },
         ] : type === 'compound-interest' ? [
-            { label: 'Total Amount',    value: r.currency_symbol + r.total_amount.toLocaleString(undefined, {maximumFractionDigits: 2}) },
-            { label: 'Interest Earned', value: r.currency_symbol + r.interest_earned.toLocaleString(undefined, {maximumFractionDigits: 2}) },
+            { label: 'Total Amount', value: r.currency_symbol + r.total_amount.toLocaleString(undefined, { maximumFractionDigits: 2 }) },
+            { label: 'Interest Earned', value: r.currency_symbol + r.interest_earned.toLocaleString(undefined, { maximumFractionDigits: 2 }) },
         ] : type === 'loan-amortization' ? [
-            { label: 'Monthly Payment', value: r.currency_symbol + r.monthly_payment.toLocaleString(undefined, {maximumFractionDigits: 2}) },
-            { label: 'Total Interest',  value: r.currency_symbol + r.total_interest.toLocaleString(undefined, {maximumFractionDigits: 2}) },
+            { label: 'Monthly Payment', value: r.currency_symbol + r.monthly_payment.toLocaleString(undefined, { maximumFractionDigits: 2 }) },
+            { label: 'Total Interest', value: r.currency_symbol + r.total_interest.toLocaleString(undefined, { maximumFractionDigits: 2 }) },
         ] : [
-            { label: 'Monthly Payment', value: r.currency_symbol + r.monthly_total.toLocaleString(undefined, {maximumFractionDigits: 2}) },
-            { label: 'Total Interest',  value: r.currency_symbol + r.total_interest.toLocaleString(undefined, {maximumFractionDigits: 2}) },
+            { label: 'Monthly Payment', value: r.currency_symbol + r.monthly_total.toLocaleString(undefined, { maximumFractionDigits: 2 }) },
+            { label: 'Total Interest', value: r.currency_symbol + r.total_interest.toLocaleString(undefined, { maximumFractionDigits: 2 }) },
         ];
 
         const detailRows = Object.entries(r)
@@ -98,42 +98,42 @@
 
                 // waterfall for few known keys
                 const labels = {
-                    monthly_payment:        'Monthly Payment (P&I)',
-                    monthly_total:          'Total Monthly Payment',
-                    monthly_payment_pi:     'Monthly P&I Payment',
-                    monthly_tax:            'Monthly Property Tax',
-                    monthly_insurance:      'Monthly Insurance',
-                    monthly_hoa:            'Monthly HOA',
-                    total_payment:          'Total Payment Over Life',
-                    total_interest:         'Total Interest',
-                    interest_earned:        'Interest Earned',
-                    interest:               'Interest',
-                    total_after:            'Total after ' + (r.time_years || '') + ' years',
-                    principal:              'Principal',
-                    loan_amount:            'Loan Amount',
-                    down_payment:           'Down Payment',
-                    home_price:             'Home Price',
-                    rate_percent:           'Annual Rate',
-                    annual_rate_pct:        'Annual Rate',
-                    loan_term_months:       'Loan Term (months)',
-                    loan_term_years:        'Loan Term (years)',
-                    compounds_per_year:     'Compounds / Year',
-                    time_years:             'Time (years)',
-                    ltv_ratio:              'Loan-to-Value Ratio',
-                    property_tax:           'Property Tax (annual)',
-                    home_insurance:         'Home Insurance (annual)',
-                    hoa_monthly:            'HOA (monthly)',
+                    monthly_payment: 'Monthly Payment (P&I)',
+                    monthly_total: 'Total Monthly Payment',
+                    monthly_payment_pi: 'Monthly P&I Payment',
+                    monthly_tax: 'Monthly Property Tax',
+                    monthly_insurance: 'Monthly Insurance',
+                    monthly_hoa: 'Monthly HOA',
+                    total_payment: 'Total Payment Over Life',
+                    total_interest: 'Total Interest',
+                    interest_earned: 'Interest Earned',
+                    interest: 'Interest',
+                    total_after: 'Total after ' + (r.time_years || '') + ' years',
+                    principal: 'Principal',
+                    loan_amount: 'Loan Amount',
+                    down_payment: 'Down Payment',
+                    home_price: 'Home Price',
+                    rate_percent: 'Annual Rate',
+                    annual_rate_pct: 'Annual Rate',
+                    loan_term_months: 'Loan Term (months)',
+                    loan_term_years: 'Loan Term (years)',
+                    compounds_per_year: 'Compounds / Year',
+                    time_years: 'Time (years)',
+                    ltv_ratio: 'Loan-to-Value Ratio',
+                    property_tax: 'Property Tax (annual)',
+                    home_insurance: 'Home Insurance (annual)',
+                    hoa_monthly: 'HOA (monthly)',
                 };
-                const numKeys = ['monthly_payment','monthly_total','monthly_payment_pi','monthly_tax',
-                                 'monthly_insurance','monthly_hoa','total_payment','total_interest',
-                                 'interest_earned','interest','total_after','principal','loan_amount',
-                                 'down_payment','home_price','rate_percent','annual_rate_pct','property_tax',
-                                 'home_insurance','hoa_monthly','loan_amount'];
+                const numKeys = ['monthly_payment', 'monthly_total', 'monthly_payment_pi', 'monthly_tax',
+                    'monthly_insurance', 'monthly_hoa', 'total_payment', 'total_interest',
+                    'interest_earned', 'interest', 'total_after', 'principal', 'loan_amount',
+                    'down_payment', 'home_price', 'rate_percent', 'annual_rate_pct', 'property_tax',
+                    'home_insurance', 'hoa_monthly', 'loan_amount'];
 
                 const label = labels[k] ?? k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
                 if (k === 'currency_symbol') return null;
                 const val = (typeof v === 'number')
-                    ? r.currency_symbol + v.toLocaleString(undefined, {maximumFractionDigits: 2})
+                    ? r.currency_symbol + v.toLocaleString(undefined, { maximumFractionDigits: 2 })
                     : v;
                 return '<div class="detail-row"><span>' + label + '</span><span>' + val + '</span></div>';
             })
@@ -141,63 +141,128 @@
 
         const numCards = highlight.map(function (h) {
             return '<div class="result-num-card"><div class="rn-label">' + h.label + '</div>' +
-                   '<div class="rn-value">'    + h.value    + '</div></div>';
+                '<div class="rn-value">' + h.value + '</div></div>';
         }).join('');
 
         const detailsHtml = detailRows ? '<div class="mt-3 pt-3 border-top">' + detailRows + '</div>' : '';
 
         return '<div class="result-card border-primary">' +
-               '<div class="result-header bg-primary text-white"><i class="bi bi-check-circle-fill me-2"></i><span class="fw-bold">Result</span></div>' +
-               '<div class="result-body">' +
-               '<div class="result-row-grid mb-3">' + numCards + '</div>' +
-               detailsHtml +
-               '</div></div>';
+            '<div class="result-header bg-primary text-white"><i class="bi bi-check-circle-fill me-2"></i><span class="fw-bold">Result</span></div>' +
+            '<div class="result-body">' +
+            '<div class="result-row-grid mb-3">' + numCards + '</div>' +
+            detailsHtml +
+            '</div></div>';
     }
 
     function renderPercentage(r) {
         return '<p class="fs-3 fw-bold text-center text-primary"><i class="bi bi-percent me-2"></i>' +
-               r.result.toLocaleString(undefined, {maximumFractionDigits: 4}) + '</p>' +
-               '<p class="text-muted text-center">' + r.description + '</p>';
+            r.result.toLocaleString(undefined, { maximumFractionDigits: 4 }) + '</p>' +
+            '<p class="text-muted text-center">' + r.description + '</p>';
     }
 
     function renderPercentageChange(r) {
-        const cls   = r.change >= 0 ? 'text-success' : 'text-danger';
+        const cls = r.change >= 0 ? 'text-success' : 'text-danger';
         const badge = r.change >= 0 ? '+' : '';
         return '<div class="result-highlight">' +
-               '<div class="result-label">Change</div>' +
-               '<div class="result-value">' + badge + r.change.toLocaleString(undefined, {maximumFractionDigits: 2}) + '%</div>' +
-               '<div class="result-meta">' + r.absolute_change + '% absolute change</div>' +
-               '</div>' +
-               '<div class="result-row-grid mt-3">' +
-               '<div class="result-num-card"><div class="rn-label">From</div><div class="rn-value">' + r.from.toLocaleString() + '</div></div>' +
-               '<div class="result-num-card"><div class="rn-label">To</div><div class="rn-value">' + r.to.toLocaleString() + '</div></div>' +
-               '</div>';
+            '<div class="result-label">Change</div>' +
+            '<div class="result-value">' + badge + r.change.toLocaleString(undefined, { maximumFractionDigits: 2 }) + '%</div>' +
+            '<div class="result-meta">' + r.absolute_change + '% absolute change</div>' +
+            '</div>' +
+            '<div class="result-row-grid mt-3">' +
+            '<div class="result-num-card"><div class="rn-label">From</div><div class="rn-value">' + r.from.toLocaleString() + '</div></div>' +
+            '<div class="result-num-card"><div class="rn-label">To</div><div class="rn-value">' + r.to.toLocaleString() + '</div></div>' +
+            '</div>';
     }
 
     function renderGpa(r) {
         return '<div class="result-highlight">' +
-               '<div class="result-label">GPA</div>' +
-               '<div class="result-value">' + r.gpa.toLocaleString() + ' / 4.0</div>' +
-               '<div class="result-meta">Letter grade: ' + r.letter + '</div>' +
-               '</div>' +
-               '<div class="result-row-grid mt-3">' +
-               '<div class="result-num-card"><div class="rn-label">Total Credits</div><div class="rn-value">' + r.total_credits + '</div></div>' +
-               '<div class="result-num-card"><div class="rn-label">Total Points</div><div class="rn-value">' + r.total_points + '</div></div>' +
-               '</div>';
+            '<div class="result-label">GPA</div>' +
+            '<div class="result-value">' + r.gpa.toLocaleString() + ' / 4.0</div>' +
+            '<div class="result-meta">Letter grade: ' + r.letter + '</div>' +
+            '</div>' +
+            '<div class="result-row-grid mt-3">' +
+            '<div class="result-num-card"><div class="rn-label">Total Credits</div><div class="rn-value">' + r.total_credits + '</div></div>' +
+            '<div class="result-num-card"><div class="rn-label">Total Points</div><div class="rn-value">' + r.total_points + '</div></div>' +
+            '</div>';
     }
 
     function renderBMI(r) {
         return '<div class="result-highlight" style="background:linear-gradient(135deg,#11998e,#38ef7d)">' +
-               '<div class="result-label">BMI</div>' +
-               '<div class="result-value">' + r.bmi + '</div>' +
-               '<div class="result-meta">' + r.category + '</div>' +
-               '</div>' +
-               '<div class="result-row-grid mt-3">' +
-               '<div class="result-num-card"><div class="rn-label">Height</div><div class="rn-value">' + r.height_cm + ' cm / ' + r.height_feet + ' ft</div></div>' +
-               '<div class="result-num-card"><div class="rn-label">Weight</div><div class="rn-value">' + r.weight_kg + ' kg / ' + r.weight_lbs + ' lbs</div></div>' +
-               '</div>' +
-               '<div class="result-num-card mt-3"><div class="rn-label">Healthy Weight Range</div><div class="rn-value">' + r.min_healthy + ' – ' + r.max_healthy + ' kg</div></div>' +
-               '<p class="text-muted mt-2 mb-0"><i class="bi bi-info-circle me-1"></i>' + r.description + '</p>';
+            '<div class="result-label">BMI</div>' +
+            '<div class="result-value">' + r.bmi + '</div>' +
+            '<div class="result-meta">' + r.category + '</div>' +
+            '</div>' +
+            '<div class="result-row-grid mt-3">' +
+            '<div class="result-num-card"><div class="rn-label">Height</div><div class="rn-value">' + r.height_cm + ' cm / ' + r.height_feet + ' ft</div></div>' +
+            '<div class="result-num-card"><div class="rn-label">Weight</div><div class="rn-value">' + r.weight_kg + ' kg / ' + r.weight_lbs + ' lbs</div></div>' +
+            '</div>' +
+            '<div class="result-num-card mt-3"><div class="rn-label">Healthy Weight Range</div><div class="rn-value">' + r.min_healthy + ' – ' + r.max_healthy + ' kg</div></div>' +
+            '<p class="text-muted mt-2 mb-0"><i class="bi bi-info-circle me-1"></i>' + r.description + '</p>';
+    }
+
+    function renderGraphing(r) {
+        const rows = r.points.map(function (point) {
+            return '<tr><td>' + point.x + '</td><td>' + point.y + '</td></tr>';
+        }).join('');
+        return '<div class="result-card border-primary">' +
+            '<div class="result-header bg-primary text-white"><i class="bi bi-sliders me-2"></i><span class="fw-bold">Graphing Sample Values</span></div>' +
+            '<div class="result-body p-3"><p class="mb-3">Expression: <code>' + escapeHtml(r.expression) + '</code></p>' +
+            '<div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>X</th><th>Y</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></div>';
+    }
+
+    function renderStandardScientific(r) {
+        return '<div class="result-card border-primary">' +
+            '<div class="result-header bg-primary text-white"><i class="bi bi-calculator me-2"></i><span class="fw-bold">Result</span></div>' +
+            '<div class="result-body p-3"><p class="fs-3 fw-bold text-center text-primary">' + r.result + '</p>' +
+            '<p class="text-muted text-center">Expression: <code>' + escapeHtml(r.expression) + '</code></p></div></div>';
+    }
+
+    function renderProgrammer(r) {
+        return '<div class="result-card border-primary">' +
+            '<div class="result-header bg-primary text-white"><i class="bi bi-code-slash me-2"></i><span class="fw-bold">Programmer Conversion</span></div>' +
+            '<div class="result-body p-3">' +
+            '<div class="result-row-grid">' +
+            '<div class="result-num-card"><div class="rn-label">Decimal</div><div class="rn-value">' + r.decimal + '</div></div>' +
+            '<div class="result-num-card"><div class="rn-label">Binary</div><div class="rn-value">' + r.binary + '</div></div>' +
+            '<div class="result-num-card"><div class="rn-label">Octal</div><div class="rn-value">' + r.octal + '</div></div>' +
+            '<div class="result-num-card"><div class="rn-label">Hex</div><div class="rn-value">' + r.hex + '</div></div>' +
+            '</div></div></div>';
+    }
+
+    function renderDateCalculation(r) {
+        let rows = '';
+        if (r.difference_days !== undefined) {
+            rows += '<div class="detail-row"><span>Date Difference</span><span>' + r.difference_days + ' days</span></div>';
+        }
+        if (r.add_date !== undefined) {
+            rows += '<div class="detail-row"><span>Add Days</span><span>' + r.add_days + ' → ' + r.add_date + '</span></div>';
+        }
+        if (r.subtract_date !== undefined) {
+            rows += '<div class="detail-row"><span>Subtract Days</span><span>' + r.subtract_days + ' → ' + r.subtract_date + '</span></div>';
+        }
+        return '<div class="result-card border-primary">' +
+            '<div class="result-header bg-primary text-white"><i class="bi bi-calendar-event me-2"></i><span class="fw-bold">Date Calculation</span></div>' +
+            '<div class="result-body p-3">' +
+            '<div class="detail-row"><span>Start Date</span><span>' + r.start_date + '</span></div>' + rows +
+            '</div></div>';
+    }
+
+    function renderConverter(r) {
+        return '<div class="result-card border-primary">' +
+            '<div class="result-header bg-primary text-white"><i class="bi bi-arrow-left-right me-2"></i><span class="fw-bold">Converted Value</span></div>' +
+            '<div class="result-body p-3">' +
+            '<div class="detail-row"><span>' + r.from_unit + '</span><span>' + r.value + '</span></div>' +
+            '<div class="detail-row"><span>' + r.to_unit + '</span><span>' + r.converted + '</span></div>' +
+            '</div></div>';
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     function renderResult(type, r) {
@@ -215,6 +280,29 @@
                 return renderGpa(r);
             case 'bmi':
                 return renderBMI(r);
+            case 'standard':
+            case 'scientific':
+                return renderStandardScientific(r);
+            case 'graphing':
+                return renderGraphing(r);
+            case 'programmer':
+                return renderProgrammer(r);
+            case 'date-calculation':
+                return renderDateCalculation(r);
+            case 'currency-converter':
+            case 'volume-converter':
+            case 'length-converter':
+            case 'weight-converter':
+            case 'temperature-converter':
+            case 'energy-converter':
+            case 'area-converter':
+            case 'speed-converter':
+            case 'time-converter':
+            case 'power-converter':
+            case 'data-converter':
+            case 'pressure-converter':
+            case 'angle-converter':
+                return renderConverter(r);
             default:
                 return '<pre>' + JSON.stringify(r, null, 2) + '</pre>';
         }
@@ -224,7 +312,7 @@
         resultsPanel.querySelectorAll('.result-highlight, .result-value').forEach(function (el) {
             if (el.querySelector('.btn-calc-copy')) return;
             const btn = document.createElement('button');
-            btn.type      = 'button';
+            btn.type = 'button';
             btn.className = 'btn btn-outline-secondary btn-calc-copy mt-2';
             btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
             btn.addEventListener('click', function () {
@@ -251,7 +339,7 @@
             return;
         }
 
-        const data   = collectForm();
+        const data = collectForm();
         const typeEl = form.querySelector('input[name="calc_type"]');
         if (!typeEl) { alert('Calc type not found in form.'); return; }
         const type = typeEl.value;
@@ -261,34 +349,34 @@
         resultsPanel.classList.add('d-none');
 
         fetch(endpoint, {
-            method:   'POST',
-            headers:  { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body:     JSON.stringify(data),
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(data),
         })
-        .then(function (resp) { return resp.json(); })
-        .then(function (resp) {
-            setLoading(false);
+            .then(function (resp) { return resp.json(); })
+            .then(function (resp) {
+                setLoading(false);
 
-            if (!resp.success) {
-                resultsPanel.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>' +
-                                         (resp.error || 'Calculation failed. Please check your inputs.') + '</div>';
+                if (!resp.success) {
+                    resultsPanel.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>' +
+                        (resp.error || 'Calculation failed. Please check your inputs.') + '</div>';
+                    resultsPanel.classList.remove('d-none');
+                    return;
+                }
+
+                const html = renderResult(type, resp.result);
+                resultsPanel.innerHTML = html;
                 resultsPanel.classList.remove('d-none');
-                return;
-            }
-
-            const html = renderResult(type, resp.result);
-            resultsPanel.innerHTML = html;
-            resultsPanel.classList.remove('d-none');
-            addCopyButtons();
-            resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        })
-        .catch(function (err) {
-            setLoading(false);
-            console.error('[calculator.js] Network error:', err);
-            resultsPanel.innerHTML = '<div class="alert alert-danger"><i class="bi bi-wifi-off me-2"></i>' +
-                                     'Network error. Please check your connection and try again.</div>';
-            resultsPanel.classList.remove('d-none');
-        });
+                addCopyButtons();
+                resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            })
+            .catch(function (err) {
+                setLoading(false);
+                console.error('[calculator.js] Network error:', err);
+                resultsPanel.innerHTML = '<div class="alert alert-danger"><i class="bi bi-wifi-off me-2"></i>' +
+                    'Network error. Please check your connection and try again.</div>';
+                resultsPanel.classList.remove('d-none');
+            });
     });
 
     // ── clear field errors on input ─────────────────────────────────────────

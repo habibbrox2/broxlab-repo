@@ -9,7 +9,7 @@
 /** @var Router $router */
 /** @var \mysqli $mysqli */
 
-require_once __DIR__ . '/../Helpers/OCRService.php';
+require_once __DIR__ . '/../Services/OCRService.php';
 require_once __DIR__ . '/../Models/AppSettings.php';
 
 // Initialize OCR service

@@ -111,7 +111,6 @@
           <div class="mb-3">
             <label class="form-label">Action</label>
             <select class="form-select" name="action" id="route_action" onchange="toggleActionFields(this.value)">
-              <option value="forward_telegram">Forward to Telegram</option>
               <option value="reply_sms">Auto-Reply SMS</option>
               <option value="both">Both</option>
             </select>
@@ -159,13 +158,13 @@ function resetRouteForm() {
     document.getElementById('route_label').value = '';
     document.getElementById('route_match_type').value = 'any';
     document.getElementById('route_match_value').value = '';
-    document.getElementById('route_action').value = 'forward_telegram';
+    document.getElementById('route_action').value = 'reply_sms';
     document.getElementById('route_device_id').value = '';
     document.getElementById('route_sim_slot').value = '1';
     document.getElementById('route_reply_message').value = '';
     document.getElementById('route_enabled').checked = true;
     toggleMatchValue('any');
-    toggleActionFields('forward_telegram');
+    toggleActionFields('reply_sms');
     document.getElementById('routeModalLabel').textContent = 'Add SIM Routing Rule';
 }
 

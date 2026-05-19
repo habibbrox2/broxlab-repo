@@ -1,8 +1,8 @@
 <?php
 
 /**
- * helpers/BkashGateway.php
- * Lightweight bKash payment integration helper (moved from classes/)
+ * app/Services/BkashGateway.php
+ * Lightweight bKash payment integration service (moved from classes/)
  */
 
 class BkashGateway

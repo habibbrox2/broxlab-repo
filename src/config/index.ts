@@ -31,7 +31,7 @@ const envSchema = z.object({
     OPENROUTER_API_KEY: z.string().optional(),
     ANTHROPIC_API_KEY: z.string().optional(),
     OPENAI_API_KEY: z.string().optional(),
-    OLLAMA_BASE_URL: z.string().default('https://ollama.com/api'),  // Local: http://localhost:11434 | Cloud: https://ollama.com/api
+    OLLAMA_BASE_URL: z.string().default('https://ollama.com/api'),  // Cloud-only Ollama endpoint
     FIREWORKS_API_KEY: z.string().optional(),
     HUGGINGFACE_API_KEY: z.string().optional(),
     KILO_API_KEY: z.string().optional(),

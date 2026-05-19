@@ -11,7 +11,7 @@ return [
      * Weather API Provider
      * Currently supports: openweathermap
      */
-    'provider' => env('WEATHER_PROVIDER', 'openweathermap'),
+    'provider' => env('WEATHER_PROVIDER', 'mock'),
 
     /**
      * OpenWeatherMap API Configuration

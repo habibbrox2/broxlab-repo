@@ -16,7 +16,7 @@
     "@type": "Organization",
     "name": {{ app_settings.site_name|json_encode }},
     "url": "{{ url }}",
-    "logo": "{{ app_settings.site_logo|default(url ~ 'assets/images/default-logo.png') }}"
+     "logo": "{{ app_settings.site_logo }}"
   }
   {% if service.is_premium %},
   "pricingRange": "{{ app_settings.currency_symbol|default("$") }}{{ service.price|number_format(2, '.', ',') }}"

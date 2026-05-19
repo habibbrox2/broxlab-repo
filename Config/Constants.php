@@ -186,13 +186,7 @@ if (!function_exists('brox_normalize_branding_asset_path')) {
             $path = '/' . $path;
         }
 
-        if ($path === '/assets/logo.png' || $path === ($uploadsBaseUrl . '/logo.png')) {
-            return $uploadsLogoPrefix . 'logo.png';
-        }
 
-        if ($path === '/assets/favicon.ico' || $path === ($uploadsBaseUrl . '/favicon.ico')) {
-            return $uploadsLogoPrefix . 'favicon.ico';
-        }
 
         if (strpos($path, '/assets/logo/') === 0) {
             return $uploadsLogoPrefix . ltrim(substr($path, strlen('/assets/logo/')), '/');

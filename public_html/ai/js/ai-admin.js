@@ -483,6 +483,23 @@ if (!window.BroxAdminInstance) {
     }
   }
 
+  function selectPreferredAdminModel(models = []) {
+    const list = Array.isArray(models) ? models : [];
+    const patterns = [/:free/i, /\bfree\b/i, /\bauto\b/i, /\bmini\b/i, /\bsmall\b/i, /\bturbo\b/i, /\bflash\b/i, /\bfast\b/i];
+    const normalize = (value) => String(value || '').toLowerCase();
+
+    for (const pattern of patterns) {
+      for (const model of list) {
+        const text = `${normalize(model.id)} ${normalize(model.name)}`;
+        if (pattern.test(text)) {
+          return String(model.id || '');
+        }
+      }
+    }
+
+    return String(list[0]?.id || '');
+  }
+
   // ── Main Admin Copilot Class ──────────────────────────────────────────────
   class BroxAdminCopilot {
     constructor() {
@@ -1368,7 +1385,9 @@ if (!window.BroxAdminInstance) {
       } else if (defaults.model) {
         this.currentModel = defaults.model;
       } else {
-        this.currentModel = 'claude-3-haiku'; // Default fallback
+        const providerModels = providerList[this.currentProvider] || [];
+        const preferredFallback = selectPreferredAdminModel(providerModels);
+        this.currentModel = preferredFallback || 'openrouter/auto';
       }
       this.updateModelLabel();
 
@@ -1570,7 +1589,7 @@ if (!window.BroxAdminInstance) {
     loadFallbackModels() {
       // Fallback models when API is unavailable
       const fallbackModels = [
-        { id: 'anthropic/claude-3-haiku:free', name: 'Claude 3 Haiku (Free)', default: true },
+        { id: 'openrouter/auto', name: 'OpenRouter Auto (Free/Low-latency)', default: true },
         { id: 'google/gemini-pro-1.5:free', name: 'Gemini Pro 1.5 (Free)' },
         { id: 'openai/gpt-4o-mini:free', name: 'GPT-4o Mini (Free)' },
       ];
@@ -4566,7 +4585,7 @@ if (!window.BroxAdminInstance) {
 
       // Define model tiers
       const fastModels = [
-        'claude-3-haiku',
+        'openrouter/auto',
         'gpt-4o-mini',
         'gpt-3.5-turbo',
         'gemini-1.5-flash',
@@ -4574,9 +4593,9 @@ if (!window.BroxAdminInstance) {
         'qwen-2.5-7b',
       ];
 
-      const mediumModels = ['claude-3.5-sonnet', 'gpt-4o', 'gemini-1.5-pro'];
+      const mediumModels = ['gpt-4o', 'gemini-1.5-pro', 'llama-3.1-8b'];
 
-      const slowModels = ['claude-3-opus', 'gpt-4-turbo', 'gemini-2.0-flash-exp'];
+      const slowModels = ['gpt-4-turbo', 'gemini-2.0-flash-exp', 'gpt-4o'];
 
       // Determine query complexity
       const isSimple = textLength < 100 && wordCount < 20;

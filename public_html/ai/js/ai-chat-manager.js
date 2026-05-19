@@ -382,7 +382,7 @@ class AIChatManager {
                 body: JSON.stringify({
                     messages: messages,
                     provider: 'openrouter',
-                    model: 'openrouter/auto',
+                    model: 'openrouter/free',
                     csrf_token: this.csrfToken
                 })
             });

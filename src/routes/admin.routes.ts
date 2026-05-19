@@ -6,6 +6,7 @@ import redis from '../config/redis';
 import multipart from '@fastify/multipart';
 import { aiController } from '../controllers/ai.controller';
 import { mcpController } from '../controllers/mcp.controller';
+import aiProviderService from '../services/ai-provider.service';
 import { config } from '../config/index';
 
 export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
@@ -401,6 +402,58 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
                 },
             },
         });
+    });
+
+    /**
+     * Get frontend AI settings
+     * GET /api/ai-settings/frontend
+     */
+    fastify.get('/api/ai-settings/frontend', async (_request, reply) => {
+        try {
+            const rows = await aiProviderService.getActiveProviders();
+            const providerNames: Record<string, string> = {
+                openrouter: 'OpenRouter',
+                openai: 'OpenAI',
+                anthropic: 'Anthropic',
+                google: 'Google Gemini',
+                ollama: 'Ollama',
+                fireworks: 'Fireworks',
+                huggingface: 'Hugging Face',
+                kilo: 'Kilo',
+            };
+
+            const providers = await Promise.all(
+                rows.map(async (row) => {
+                    const apiKey = await aiProviderService.getAPIKey(row.provider_name);
+                    const source = apiKey
+                        ? row.api_key_env && process.env[row.api_key_env]
+                            ? 'env'
+                            : 'db'
+                        : 'none';
+
+                    return {
+                        provider_name: row.provider_name,
+                        name: providerNames[row.provider_name] || row.provider_name,
+                        has_api_key: Boolean(apiKey),
+                        api_key: apiKey || undefined,
+                        api_key_source: source,
+                    };
+                })
+            );
+
+            reply.send({
+                success: true,
+                provider: config.ai.defaultProvider || 'openrouter',
+                model: config.ai.frontendModel || config.ai.defaultModel || 'meta-llama/llama-3-8b-instruct:free',
+                providers,
+            });
+        } catch (error: any) {
+            logger.error('Failed to fetch frontend AI settings:', error);
+            reply.code(500).send({
+                success: false,
+                error: error.message || 'Failed to fetch frontend AI settings',
+            });
+        }
     });
 
     /**

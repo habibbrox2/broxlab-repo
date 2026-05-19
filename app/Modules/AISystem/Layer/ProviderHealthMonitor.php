@@ -23,7 +23,7 @@ class ProviderHealthMonitor
         'anthropic' => 'https://api.anthropic.com/v1/messages',
         'google' => 'https://generativelanguage.googleapis.com/v1/models',
         'fireworks' => 'https://api.fireworks.ai/inference/v1/models',
-        'ollama' => 'http://localhost:11434/api/tags',
+        'ollama' => 'https://ollama.com/api/tags',
         'openrouter' => 'https://openrouter.ai/api/v1/models'
     ];
 

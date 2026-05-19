@@ -32,37 +32,88 @@ if (!function_exists('yaml_parse')) {
         $result = [];
         $lines = preg_split('/\r?\n/', $trimmed);
         $currentKey = null;
+        $blockKey = null;
+        $blockIndent = null;
+        $blockMode = null;
+        $blockLines = [];
 
-        foreach ($lines as $line) {
-            $line = trim($line);
+        $flushBlock = function () use (&$result, &$blockKey, &$blockLines, &$blockMode) {
+            if ($blockKey !== null) {
+                $value = implode("\n", $blockLines);
+                if ($blockMode === '>') {
+                    $value = preg_replace('/\n+/', "\n", $value);
+                    $value = preg_replace('/\n\s+/u', ' ', $value);
+                }
+                $result[$blockKey] = rtrim($value, "\n");
+                $blockKey = null;
+                $blockLines = [];
+                $blockMode = null;
+            }
+        };
+
+        foreach ($lines as $rawLine) {
+            if ($blockKey !== null) {
+                $indent = strspn($rawLine, " \t");
+                if ($blockIndent === null && trim($rawLine) !== '') {
+                    $blockIndent = $indent;
+                }
+
+                if ($blockIndent !== null && $indent >= $blockIndent) {
+                    $blockLines[] = substr($rawLine, $blockIndent);
+                    continue;
+                }
+
+                $flushBlock();
+            }
+
+            $line = trim($rawLine);
             if ($line === '' || str_starts_with($line, '#')) {
                 continue;
             }
 
-            // Match key: value
             if (preg_match('/^([a-zA-Z0-9_\-]+):\s*(.*)$/', $line, $matches)) {
                 $currentKey = $matches[1];
                 $value = $matches[2];
 
-                // Interpret empty value as empty string (not null)
+                if ($value === '|' || $value === '>') {
+                    $blockKey = $currentKey;
+                    $blockIndent = null;
+                    $blockMode = $value;
+                    $blockLines = [];
+                    continue;
+                }
+
                 if ($value === '') {
                     $result[$currentKey] = '';
                 } else {
-                    $result[$currentKey] = $value;
+                    $result[$currentKey] = broxlab_yaml_parse_scalar($value);
                 }
                 continue;
             }
 
-            // Match list items under current key
             if ($currentKey !== null && preg_match('/^[-*]\s+(.*)$/', $line, $matches)) {
                 if (!isset($result[$currentKey]) || !is_array($result[$currentKey])) {
                     $result[$currentKey] = [];
                 }
-                $result[$currentKey][] = $matches[1];
+                $result[$currentKey][] = broxlab_yaml_parse_scalar($matches[1]);
             }
         }
 
+        $flushBlock();
         return $result;
+    }
+
+    function broxlab_yaml_parse_scalar(string $value): string
+    {
+        $value = trim($value);
+        if (($value[0] ?? '') === '"' && str_ends_with($value, '"')) {
+            return stripslashes(substr($value, 1, -1));
+        }
+        if (($value[0] ?? '') === "'" && str_ends_with($value, "'")) {
+            return str_replace("''", "'", substr($value, 1, -1));
+        }
+
+        return $value;
     }
 }
 
@@ -113,15 +164,36 @@ class PromptLoader
         $baseFolder = __DIR__ . '/../../system/prompts';
 
         // 1) context-specific file (admin/public)
-        $contextFile = $baseFolder . '/' . $context . '.md';
-        if (file_exists($contextFile)) {
-            $prompts = self::loadStructuredFile($contextFile);
+        $contextCandidates = [
+            $baseFolder . '/' . $context . '.md',
+            $baseFolder . '/' . $context . '.yaml',
+            $baseFolder . '/' . $context . '.yml',
+        ];
+
+        foreach ($contextCandidates as $candidate) {
+            if (file_exists($candidate)) {
+                $prompts = self::loadStructuredFile($candidate);
+                if (!empty($prompts)) {
+                    break;
+                }
+            }
         }
 
         // 2) fallback common prompts file
         if (empty($prompts)) {
-            $commonFile = $baseFolder . '/prompts.yaml';
-            $prompts = self::loadStructuredFile($commonFile);
+            $commonCandidates = [
+                $baseFolder . '/prompts.yaml',
+                $baseFolder . '/prompts.yml',
+                $baseFolder . '/prompts.md',
+            ];
+            foreach ($commonCandidates as $candidate) {
+                if (file_exists($candidate)) {
+                    $prompts = self::loadStructuredFile($candidate);
+                    if (!empty($prompts)) {
+                        break;
+                    }
+                }
+            }
         }
 
         if (!isset($prompts['system_prompt']) || trim((string) $prompts['system_prompt']) === '') {

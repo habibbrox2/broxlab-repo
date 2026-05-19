@@ -50,7 +50,49 @@ class WeatherService
      */
     public function getCurrentWeather(string $location, string $units = 'metric', int $forecastDays = 0): array
     {
+        error_log("[WeatherService] getCurrentWeather() called with location={$location}, units={$units}, forecastDays={$forecastDays}");
+        @file_put_contents(BASE_PATH . 'build/weather_debug.log', date('c') . " - getCurrentWeather called: location={$location}, units={$units}, forecastDays={$forecastDays}\n", FILE_APPEND);
         $config = $this->getConfig();
+        // If provider is set to mock in config, return deterministic mock data for local tests
+        if (!empty($config['provider']) && $config['provider'] === 'mock') {
+            $mockTemp = 29.5;
+            $mock = [
+                'success' => true,
+                'data' => [
+                    'current' => [
+                        'location_name' => $location,
+                        'temperature' => $mockTemp,
+                        'feels_like' => $mockTemp - 1.0,
+                        'humidity' => 65,
+                        'pressure' => 1012,
+                        'wind_speed' => 3.5,
+                        'wind_deg' => 90,
+                        'description' => 'Partly cloudy',
+                        'icon' => '02d',
+                        'main' => 'Clouds',
+                        'updated_at' => date('c')
+                    ]
+                ]
+            ];
+
+            if ($forecastDays > 0) {
+                $mock['data']['forecast'] = [];
+                for ($i = 0; $i < $forecastDays; $i++) {
+                    $date = date('Y-m-d', strtotime("+{$i} days"));
+                    $mock['data']['forecast'][] = [
+                        'date' => $date,
+                        'day_name' => date('l', strtotime($date)),
+                        'temp_min' => $mockTemp - 2,
+                        'temp_max' => $mockTemp + 2,
+                        'humidity_avg' => 60,
+                        'description' => 'Partly cloudy',
+                        'icon' => '02d',
+                    ];
+                }
+            }
+
+            return $mock;
+        }
         $cache = $this->getCache();
 
         // Generate cache key
@@ -60,7 +102,12 @@ class WeatherService
         if ($config['cache']['enabled']) {
             $cached = $cache->get($cacheKey);
             if ($cached !== null) {
-                return json_decode($cached, true);
+                $decoded = json_decode($cached, true);
+                if (is_array($decoded)) {
+                    return $decoded;
+                }
+                // Cached data invalid -> fall through and refresh cache
+                error_log('[WeatherService] Invalid cache payload, refreshing.');
             }
         }
 
@@ -76,7 +123,19 @@ class WeatherService
 
             // Cache the result
             if ($config['cache']['enabled']) {
-                $cache->set($cacheKey, json_encode($weatherData), $config['cache']['duration']);
+                try {
+                    $cache->set($cacheKey, json_encode($weatherData), $config['cache']['duration']);
+                } catch (\Throwable $e) {
+                    error_log('[WeatherService] Cache set failed: ' . $e->getMessage());
+                }
+            }
+
+            if (!is_array($weatherData)) {
+                error_log('[WeatherService] getCurrentWeather(): delegate returned non-array or null');
+                return [
+                    'success' => false,
+                    'error' => 'Weather service returned unexpected response'
+                ];
             }
 
             return $weatherData;

@@ -7,7 +7,6 @@
 {% block meta_keywords %}calculator, online calculator, finance calculator, BMI calculator, loan calculator, mortgage calculator, GPA calculator{% endblock %}
 
 {% set breadcrumbs = [
-  { label: 'Home', url: '/', icon: 'bi-house-door' },
   { label: 'Calculators' }
 ] %}
 
@@ -115,17 +114,22 @@
       </div>
     </div>
 
-    {# ── Category Groups ── #}
-    {% for groupKey, group in groups %}
-      {% set catLabel  = group.label %}
-      {% set items     = group.items %}
+    <div class="row g-4">
+      <div class="col-lg-4">
+        {% set current_type = 'all' %}
+        {% include 'public/partials/calculator-sidebar.twig' with {'groups': groups, 'current_type': current_type} %}
+      </div>
+      <div class="col-lg-8">
+        {# ── Category Groups ── #}
+        {% for groupKey, group in groups %}
+          {% set catLabel  = group.label %}
+          {% set items     = group.items %}
 
-      <div class="mb-5">
+          <div class="mb-5">
         <div class="d-flex align-items-center mb-4">
           {% set catIcon = {
-            'financial': 'bi-cash-stack text-primary',
-            'math':      'bi-functions text-success',
-            'health':    'bi-heart-pulse text-danger',
+            'calculator': 'bi-calculator text-primary',
+            'converter':  'bi-arrow-left-right text-success',
           }[groupKey] ?? 'bi-grid' %}
           <h2 class="h3 fw-bold mb-0 me-3">
             <i class="bi {{ catIcon }} me-2"></i>{{ catLabel }}
@@ -136,9 +140,8 @@
         <div class="row g-3">
           {% for item in items %}
             {% set bgColor = {
-              'financial': 'bg-primary-subtle text-primary',
-              'math':      'bg-success-subtle text-success',
-              'health':    'bg-danger-subtle  text-danger',
+              'calculator': 'bg-primary-subtle text-primary',
+              'converter':  'bg-success-subtle text-success',
             }[item.category] ?? 'bg-secondary-subtle text-secondary' %}
 
             <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
@@ -159,6 +162,9 @@
         </div>
       </div>
     {% endfor %}
+
+      </div>
+    </div>
 
     {# ── Subscribe CTA ── #}
     <div class="bg-light rounded-4 p-5 text-center mt-5">

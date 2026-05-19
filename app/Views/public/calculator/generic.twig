@@ -6,7 +6,6 @@
 {% block meta_description %}Use the free {{ header_title }} calculator – accurate, instant results, no sign-up required.{% endblock %}
 
 {% set breadcrumbs = [
-  { label: 'Home', url: '/', icon: 'bi-house-door' },
   { label: 'Calculators', url: '/calculators', icon: 'bi-calculator' },
   { label: header_title|default('Calculator') }
 ] %}
@@ -140,25 +139,12 @@
 <section class="py-5">
 <div class="container">
 
-  {# ── Back link ── #}
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-      {% for crumb in breadcrumbs %}
-        {% if crumb.url %}
-          <li class="breadcrumb-item"><a href="{{ crumb.url }}"
-             {% if crumb.icon %}<i class="bi {{ crumb.icon }} me-1"></i>{% endif %}>{{ crumb.label }}</a></li>
-        {% else %}
-          <li class="breadcrumb-item active" aria-current="page">{{ crumb.label }}</li>
-        {% endif %}
-      {% endfor %}
-    </ol>
-  </nav>
-
   <div class="row g-4 mb-4">
-    <!-- ── Formula card ── -->
-    <div class="col-12 col-lg-5 order-2 order-lg-1">
+    <div class="col-12 col-xl-4 order-2 order-xl-1">
       <div class="sticky-top" style="top:100px">
-        <div class="result-card shadow-sm mb-3">
+        {% include 'public/partials/calculator-sidebar.twig' with {'groups': groups, 'current_type': calc_type} %}
+
+        <div class="result-card shadow-sm mt-4 mb-3">
           <div class="result-header bg-white border-bottom">
             <div class="d-flex align-items-center">
               <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center me-3"
@@ -182,7 +168,7 @@
     </div>
 
     <!-- ── Form card ── -->
-    <div class="col-12 col-lg-7 order-1 order-lg-2">
+    <div class="col-12 col-xl-8 order-1 order-xl-2">
       <div class="result-card shadow-sm">
         <div class="result-header bg-primary text-white">
           <i class="bi bi-input-cursor-text me-2"></i>
@@ -194,6 +180,8 @@
                 action="/api/calculator/compute/{{ calc_type }}"
                 method="POST"
                 novalidate>
+
+            <input type="hidden" name="calc_type" value="{{ calc_type }}">
 
             {% for field in fields %}
               <div class="calc-field-group">

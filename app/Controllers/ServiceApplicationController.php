@@ -827,7 +827,7 @@ $router->post('/services/apply', function () use ($mysqli, $appModel, $serviceMo
             if ($effectiveGateway === 'bkash') {
                 // Use a lightweight helper to call bKash create payment API
                 try {
-                    require_once __DIR__ . '/../Helpers/BkashGateway.php';
+                    require_once __DIR__ . '/../Services/BkashGateway.php';
                     $bk = new BkashGateway($mysqli);
                     $invoice = 'srvapp-' . $serviceId . '-' . time() . '-' . bin2hex(random_bytes(4));
                     $siteUrl = trim((string)getSetting('site_url', ''), '/');

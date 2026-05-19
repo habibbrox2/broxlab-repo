@@ -276,7 +276,7 @@
                 "channel": {
                     "type": "string",
                     "required": false,
-                    "options": ["push", "email", "sms", "inapp", "telegram"],
+                    "options": ["push", "email", "sms", "inapp"],
                     "default": "inapp",
                     "description": "Delivery channel"
                 }

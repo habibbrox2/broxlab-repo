@@ -225,22 +225,19 @@
   <div class="container-fluid">
     <div class="row admin-shell-row">
 
-  {% set settings_children = [
-      {'name': 'Account Settings', 'url': '/admin/account-settings', 'key': 'account-settings'}
-  ] %}
-  {% if auth_user.is_super_admin %}
-      {% set settings_children = settings_children|merge([
-          {'name': 'App Settings', 'url': '/admin/app-settings', 'key': 'app-settings'},
-          {'name': 'AI SYSTEM', 'url': '/admin/ai-system', 'key': 'ai-settings'},
-          {'name': 'Telegram Settings', 'url': '/admin/telegram-settings', 'key': 'telegram-settings'},
-          {'name': 'Feature Flags', 'url': '/admin/feature-flags', 'key': 'feature-flags'},
-          {'name': 'Device Control Logs', 'url': '/admin/device-control', 'key': 'device-control'}
-      ]) %}
+    {% set settings_children = [
+        {'name': 'Account Settings', 'url': '/admin/account-settings', 'key': 'account-settings'}
+    ] %}
 
-  {% endif %}
+    {% if auth_user.is_super_admin %}
+        {% set settings_children = settings_children|merge([
+            {'name': 'App Settings', 'url': '/admin/app-settings', 'key': 'app-settings'},
+            {'name': 'AI SYSTEM', 'url': '/admin/ai-system', 'key': 'ai-settings'},
+            {'name': 'Feature Flags', 'url': '/admin/feature-flags', 'key': 'feature-flags'}
+        ]) %}
+    {% endif %}
 
-  {% set menu_items = [
-      {'name': 'Home', 'icon': 'bi-house-door', 'url': '/', 'key': 'home'},
+    {% set menu_items = [
       {'name': 'Dashboard', 'icon': 'bi-speedometer2', 'url': '/admin/dashboard', 'key': 'dashboard'},
       {'name': 'Analytics', 'icon': 'bi-bar-chart', 'url': '/admin/analytics', 'key': 'analytics'},
       {'name': 'Activity', 'icon': 'bi-activity', 'url': '/admin/log-activity', 'key': 'log-activity'},

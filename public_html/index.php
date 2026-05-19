@@ -215,6 +215,7 @@ if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
 // Load Helpers (Recursive)
 // ============================================================================
 requireAllPhpFiles(BASE_PATH . 'app/Helpers');
+requireAllPhpFiles(BASE_PATH . 'app/Services');
 
 // Upload directories (functions preserved)
 // Static-analysis helper: declare no-op stub so tools like Intelephense don't flag missing function

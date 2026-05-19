@@ -4,6 +4,8 @@ import { adminMiddleware } from '../middleware/auth.middleware';
 import logger from '../utils/logger';
 import { aiModelService } from '../services/ai-models.service';
 import aiProviderService from '../services/ai-provider.service';
+import { get as redisGet, set as redisSet, incr as redisIncr, expire as redisExpire } from '../config/redis';
+import crypto from 'crypto';
 import { generateEmbedding } from '../services/embedding.service';
 import { query, queryOne } from '../config/database';
 import { CodexProvider } from '../providers/codex.provider';
@@ -75,6 +77,84 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
         });
 
         await chatService.handleChat(request, reply, false);
+    });
+
+    /**
+     * OpenRouter proxy endpoint with server-side API key, Redis caching and rate limiting
+     * POST /api/ai/proxy/openrouter
+     */
+    fastify.post('/api/ai/proxy/openrouter', async (request, reply) => {
+        try {
+            const ip = String(request.ip || request.headers['x-forwarded-for'] || 'unknown');
+            const rateKey = `rl:openrouter:${ip}`;
+            const count = await redisIncr(rateKey);
+            if (count === 1) await redisExpire(rateKey, 60); // 60s window
+            const LIMIT = 30; // requests per minute per IP
+            if (count > LIMIT) {
+                reply.code(429).send({ success: false, error: 'Rate limit exceeded for OpenRouter proxy' });
+                return;
+            }
+
+            const body = request.body as any;
+            const messages = body.messages || [];
+            const options = body.options || {};
+            const model = (options.model || 'openrouter/free').toString();
+
+            const cacheKey = `openrouter:cache:${crypto.createHash('sha256').update(JSON.stringify({ messages, model })).digest('hex')}`;
+            const cached = await redisGet(cacheKey);
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached as string);
+                    reply.send(parsed);
+                    return;
+                } catch (e) {
+                    // fall through to fetch
+                }
+            }
+
+            const apiKey = await aiProviderService.getAPIKey('openrouter') || config.ai.openrouter.apiKey || process.env.OPENROUTER_API_KEY || '';
+            if (!apiKey) {
+                reply.code(500).send({ success: false, error: 'OpenRouter API key not configured on server' });
+                return;
+            }
+
+            const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                    'HTTP-Referer': String(request.headers.referer || request.headers.origin || ''),
+                    'X-OpenRouter-Title': 'BroxLab Public Assistant',
+                },
+                body: JSON.stringify({ model, messages, stream: false, ...options }),
+            });
+
+            const text = await res.text();
+            if (!res.ok) {
+                reply.code(res.status).send({ success: false, error: text || res.statusText });
+                return;
+            }
+
+            let json;
+            try {
+                json = JSON.parse(text);
+            } catch (err) {
+                json = { success: true, content: text };
+            }
+
+            // Cache short-lived responses to reduce downstream calls
+            try {
+                await redisSet(cacheKey, json, 30); // 30 seconds
+            } catch (err) {
+                // ignore cache set errors
+            }
+
+            reply.send(json);
+            return;
+        } catch (error: any) {
+            logger.error('OpenRouter proxy failed:', error);
+            reply.code(500).send({ success: false, error: error?.message || 'OpenRouter proxy error' });
+        }
     });
 
     /**

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ToolDefinitions - Registers all tools for the AI Assistant
  * 
@@ -19,28 +20,32 @@ if (!class_exists('ToolRegistry', false)) {
 }
 
 // 1. System Diagnostics Tool
-ToolRegistry::register('get_system_health', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('get_system_health', function (array $args, ?mysqli $mysqli) {
     $checks = [];
     $checks['php_version'] = ['status' => 'ok', 'value' => PHP_VERSION, 'message' => 'PHP ' . PHP_VERSION];
     $memoryLimit = ini_get('memory_limit');
     $checks['memory_limit'] = ['status' => 'ok', 'value' => $memoryLimit, 'message' => "Memory: {$memoryLimit}"];
-    
+
     if ($mysqli) {
-        try { $mysqli->query('SELECT 1'); $checks['database'] = ['status' => 'ok', 'message' => 'Database connected']; }
-        catch (Exception $e) { $checks['database'] = ['status' => 'error', 'message' => 'DB error: ' . $e->getMessage()]; }
+        try {
+            $mysqli->query('SELECT 1');
+            $checks['database'] = ['status' => 'ok', 'message' => 'Database connected'];
+        } catch (Exception $e) {
+            $checks['database'] = ['status' => 'error', 'message' => 'DB error: ' . $e->getMessage()];
+        }
     }
-    
+
     $freeSpace = disk_free_space('/');
     $totalSpace = disk_total_space('/');
     $usedPercent = $totalSpace > 0 ? round((($totalSpace - $freeSpace) / $totalSpace) * 100, 1) : 0;
     $checks['disk_space'] = ['status' => $usedPercent > 90 ? 'warning' : 'ok', 'value' => "{$usedPercent}% used", 'free_gb' => round($freeSpace / 1024 / 1024 / 1024, 2)];
-    
+
     $logPath = dirname(__DIR__, 2) . '/storage/logs/errors.log';
     if (file_exists($logPath)) {
         $logSize = filesize($logPath);
         $checks['error_log'] = ['status' => $logSize > 10 * 1024 * 1024 ? 'warning' : 'ok', 'size_mb' => round($logSize / 1024 / 1024, 2)];
     }
-    
+
     return $checks;
 }, [
     'name' => 'System Health Check',
@@ -59,22 +64,22 @@ ToolRegistry::register('get_system_health', function(array $args, ?mysqli $mysql
 ]);
 
 // 2. Database Query Tool
-ToolRegistry::register('query_database', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('query_database', function (array $args, ?mysqli $mysqli) {
     if (!$mysqli) throw new RuntimeException('Database connection not available');
-    
+
     $query = trim($args['query'] ?? '');
     if (empty($query)) throw new InvalidArgumentException('SQL query is required');
-    
+
     // Security: Only allow SELECT queries
     if (!preg_match('/^SELECT\s+/i', $query)) {
         throw new InvalidArgumentException('Only SELECT queries are allowed for security reasons');
     }
-    
+
     // Auto-add LIMIT if not present
     if (!preg_match('/LIMIT\s+\d+/i', $query)) {
         $query .= ' LIMIT ' . min((int)($args['limit'] ?? 50), 100);
     }
-    
+
     $result = @$mysqli->query($query);
     if (!$result) {
         $error = $mysqli->error;
@@ -83,11 +88,11 @@ ToolRegistry::register('query_database', function(array $args, ?mysqli $mysqli) 
         }
         throw new RuntimeException('Query failed: ' . $error);
     }
-    
+
     $rows = [];
     while ($row = $result->fetch_assoc()) $rows[] = $row;
     $result->free();
-    
+
     return [
         'query' => $query,
         'row_count' => count($rows),
@@ -127,11 +132,11 @@ ToolRegistry::register('query_database', function(array $args, ?mysqli $mysqli) 
 ]);
 
 // 3. Table Statistics Tool
-ToolRegistry::register('get_table_stats', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('get_table_stats', function (array $args, ?mysqli $mysqli) {
     if (!$mysqli) throw new RuntimeException('Database connection not available');
-    
+
     $table = $args['table'] ?? '';
-    
+
     if (!empty($table)) {
         // Sanitize table name
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
@@ -141,13 +146,13 @@ ToolRegistry::register('get_table_stats', function(array $args, ?mysqli $mysqli)
         }
         $stats = $result->fetch_assoc();
         $result->free();
-        
+
         // Get column info
         $columns = [];
         $colResult = $mysqli->query("SHOW COLUMNS FROM `{$table}`");
         while ($col = $colResult->fetch_assoc()) $columns[] = $col;
         $colResult->free();
-        
+
         return [
             'table' => $table,
             'rows' => (int)$stats['Rows'],
@@ -157,7 +162,7 @@ ToolRegistry::register('get_table_stats', function(array $args, ?mysqli $mysqli)
             'columns' => $columns
         ];
     }
-    
+
     // List all tables
     $tables = [];
     $result = $mysqli->query("SHOW TABLE STATUS");
@@ -170,7 +175,7 @@ ToolRegistry::register('get_table_stats', function(array $args, ?mysqli $mysqli)
         ];
     }
     $result->free();
-    
+
     return [
         'total_tables' => count($tables),
         'total_size_mb' => round(array_sum(array_column($tables, 'size_mb')), 2),
@@ -198,15 +203,17 @@ ToolRegistry::register('get_table_stats', function(array $args, ?mysqli $mysqli)
 ]);
 
 // 4. Error Log Analyzer Tool
-ToolRegistry::register('analyze_error_logs', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('analyze_error_logs', function (array $args, ?mysqli $mysqli) {
     $logPath = dirname(__DIR__, 2) . '/storage/logs/errors.log';
     if (!file_exists($logPath)) {
         throw new RuntimeException('Error log file not found at storage/logs/errors.log');
     }
-    
+
     $lines = array_slice(file($logPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [], -200);
-    $errors = []; $warnings = []; $critical = [];
-    
+    $errors = [];
+    $warnings = [];
+    $critical = [];
+
     foreach ($lines as $line) {
         $upper = strtoupper($line);
         if (str_contains($upper, '[CRITICAL]') || str_contains($upper, 'PHP FATAL')) {
@@ -217,7 +224,7 @@ ToolRegistry::register('analyze_error_logs', function(array $args, ?mysqli $mysq
             $warnings[] = aiChatRedactSecrets($line);
         }
     }
-    
+
     return [
         'total_lines_analyzed' => count($lines),
         'critical_count' => count($critical),
@@ -251,7 +258,7 @@ ToolRegistry::register('analyze_error_logs', function(array $args, ?mysqli $mysq
 ]);
 
 // 5. Summarize Tool
-ToolRegistry::register('summarize_text', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('summarize_text', function (array $args, ?mysqli $mysqli) {
     $input = $args['text'] ?? $args['input'] ?? '';
     if (empty($input)) throw new InvalidArgumentException('Text content is required for summarization');
     $input = trim((string)$input);
@@ -260,14 +267,15 @@ ToolRegistry::register('summarize_text', function(array $args, ?mysqli $mysqli) 
         if ($value === '') return false;
         if (!filter_var($value, FILTER_VALIDATE_URL)) return false;
         $parts = @parse_url($value);
-        if (!$parts || empty($parts['scheme']) || empty($parts['host'])) return false;
+        if (!$parts || !isset($parts['scheme']) || !isset($parts['host'])) return false;
+        /** @var string $scheme */
         $scheme = strtolower((string)$parts['scheme']);
         return $scheme === 'http' || $scheme === 'https';
     };
 
     $fetchUrlAsText = function (string $url): array {
         $parts = @parse_url($url);
-        if (!$parts || empty($parts['host'])) {
+        if (!$parts || !isset($parts['host'])) {
             throw new InvalidArgumentException('Invalid URL');
         }
 
@@ -276,7 +284,9 @@ ToolRegistry::register('summarize_text', function(array $args, ?mysqli $mysqli) 
             throw new InvalidArgumentException('Only http/https URLs are allowed');
         }
 
+        /** @var string $host */
         $host = strtolower((string)$parts['host']);
+        /** @var int|null $port */
         $port = isset($parts['port']) ? (int)$parts['port'] : null;
         if ($port !== null && !in_array($port, [80, 443], true)) {
             throw new InvalidArgumentException('Only standard ports 80/443 are allowed');
@@ -452,12 +462,12 @@ ToolRegistry::register('summarize_text', function(array $args, ?mysqli $mysqli) 
             'excerpt' => substr($textToSummarize, 0, 400),
         ];
     }
-    
+
     $sentences = preg_split('/(?<=[.!?])\s+/', $input, -1, PREG_SPLIT_NO_EMPTY);
     if (count($sentences) <= 3) {
         return ['summary' => $input, 'original_length' => strlen($input), 'summary_length' => strlen($input), 'compression' => '100%'];
     }
-    
+
     // Score sentences by position and content
     $scored = [];
     foreach ($sentences as $i => $s) {
@@ -472,12 +482,12 @@ ToolRegistry::register('summarize_text', function(array $args, ?mysqli $mysqli) 
         if (preg_match('/important|key|main|critical|significant|result/i', $s)) $score += 1;
         $scored[$i] = $score;
     }
-    
+
     arsort($scored);
     $top = array_slice(array_keys($scored), 0, min(3, count($sentences)));
     sort($top);
     $summary = implode(' ', array_map(fn($idx) => $sentences[$idx], $top));
-    
+
     return [
         'summary' => $summary,
         'original_length' => strlen($input),
@@ -506,15 +516,16 @@ ToolRegistry::register('summarize_text', function(array $args, ?mysqli $mysqli) 
 ]);
 
 // 6. Cache Statistics Tool
-ToolRegistry::register('get_cache_stats', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('get_cache_stats', function (array $args, ?mysqli $mysqli) {
     $cacheDir = dirname(__DIR__, 2) . '/storage/cache/data/';
     if (!is_dir($cacheDir)) {
         return ['status' => 'no_cache_dir', 'files' => 0, 'size' => '0 KB'];
     }
-    
+
     $files = glob($cacheDir . '*.cache') ?: [];
-    $size = 0; $expired = 0;
-    
+    $size = 0;
+    $expired = 0;
+
     foreach ($files as $file) {
         $size += filesize($file);
         $data = @file_get_contents($file);
@@ -525,7 +536,7 @@ ToolRegistry::register('get_cache_stats', function(array $args, ?mysqli $mysqli)
             }
         }
     }
-    
+
     return [
         'status' => 'ok',
         'files' => count($files),
@@ -550,29 +561,29 @@ ToolRegistry::register('get_cache_stats', function(array $args, ?mysqli $mysqli)
 ]);
 
 // 7. User Statistics Tool
-ToolRegistry::register('get_user_stats', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('get_user_stats', function (array $args, ?mysqli $mysqli) {
     if (!$mysqli) throw new RuntimeException('Database connection not available');
-    
+
     $stats = [];
-    
+
     $result = $mysqli->query("SELECT COUNT(*) as total FROM users");
     $stats['total_users'] = (int)($result->fetch_assoc()['total'] ?? 0);
-    
+
     $result = $mysqli->query("SELECT COUNT(*) as active FROM users WHERE last_login >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
     $stats['active_users_30d'] = (int)($result->fetch_assoc()['active'] ?? 0);
-    
+
     $result = $mysqli->query("SELECT COUNT(*) as new_today FROM users WHERE DATE(created_at) = CURDATE()");
     $stats['new_users_today'] = (int)($result->fetch_assoc()['new_today'] ?? 0);
-    
+
     $result = $mysqli->query("SELECT COUNT(*) as new_week FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
     $stats['new_users_week'] = (int)($result->fetch_assoc()['new_week'] ?? 0);
-    
+
     // Users by role
     $roles = [];
     $result = $mysqli->query("SELECT role, COUNT(*) as count FROM users GROUP BY role");
     while ($row = $result->fetch_assoc()) $roles[$row['role']] = (int)$row['count'];
     $stats['users_by_role'] = $roles;
-    
+
     return $stats;
 }, [
     'name' => 'Get User Statistics',
@@ -591,31 +602,31 @@ ToolRegistry::register('get_user_stats', function(array $args, ?mysqli $mysqli) 
 ]);
 
 // 8. Content Statistics Tool
-ToolRegistry::register('get_content_stats', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('get_content_stats', function (array $args, ?mysqli $mysqli) {
     if (!$mysqli) throw new RuntimeException('Database connection not available');
-    
+
     $stats = [];
-    
+
     // Posts
     $result = $mysqli->query("SELECT COUNT(*) as total, SUM(published = 1) as published FROM posts");
     $row = $result->fetch_assoc();
     $stats['posts'] = ['total' => (int)$row['total'], 'published' => (int)$row['published'], 'draft' => (int)$row['total'] - (int)$row['published']];
-    
+
     // Pages
     $result = $mysqli->query("SELECT COUNT(*) as total, SUM(published = 1) as published FROM pages");
     $row = $result->fetch_assoc();
     $stats['pages'] = ['total' => (int)$row['total'], 'published' => (int)$row['published']];
-    
+
     // Comments
     $result = $mysqli->query("SELECT COUNT(*) as total, SUM(status = 'approved') as approved, SUM(status = 'pending') as pending FROM comments");
     $row = $result->fetch_assoc();
     $stats['comments'] = ['total' => (int)$row['total'], 'approved' => (int)$row['approved'], 'pending' => (int)$row['pending']];
-    
+
     // Media
     $result = $mysqli->query("SELECT COUNT(*) as total, SUM(file_size) as total_size FROM media");
     $row = $result->fetch_assoc();
     $stats['media'] = ['total' => (int)$row['total'], 'total_size_mb' => round(($row['total_size'] ?? 0) / 1024 / 1024, 2)];
-    
+
     return $stats;
 }, [
     'name' => 'Get Content Statistics',
@@ -634,18 +645,18 @@ ToolRegistry::register('get_content_stats', function(array $args, ?mysqli $mysql
 ]);
 
 // 9. Help Tool
-ToolRegistry::register('list_tools', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('list_tools', function (array $args, ?mysqli $mysqli) {
     $namespace = $args['namespace'] ?? '';
-    
+
     if (!empty($namespace)) {
         $grouped = ToolRegistry::listToolsByNamespace();
         $tools = $grouped[$namespace] ?? [];
         return ['namespace' => $namespace, 'tools' => $tools, 'count' => count($tools)];
     }
-    
+
     $tools = ToolRegistry::listTools();
     $grouped = ToolRegistry::listToolsByNamespace();
-    
+
     $helpText = "Available Tools:\n\n";
     foreach ($grouped as $ns => $nsTools) {
         $helpText .= "=== {$ns} ===\n";
@@ -654,7 +665,7 @@ ToolRegistry::register('list_tools', function(array $args, ?mysqli $mysqli) {
         }
         $helpText .= "\n";
     }
-    
+
     return [
         'total_tools' => count($tools),
         'namespaces' => array_keys($grouped),
@@ -684,19 +695,19 @@ ToolRegistry::register('list_tools', function(array $args, ?mysqli $mysqli) {
 ]);
 
 // 10. Clear Cache Tool
-ToolRegistry::register('clear_cache', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('clear_cache', function (array $args, ?mysqli $mysqli) {
     ToolRegistry::clearCache();
-    
+
     $cacheDir = dirname(__DIR__, 2) . '/storage/cache/data/';
     $filesCleared = 0;
-    
+
     if (is_dir($cacheDir)) {
         $files = glob($cacheDir . '*.cache') ?: [];
         foreach ($files as $file) {
             if (@unlink($file)) $filesCleared++;
         }
     }
-    
+
     return [
         'success' => true,
         'files_cleared' => $filesCleared,
@@ -725,43 +736,43 @@ ToolRegistry::register('clear_cache', function(array $args, ?mysqli $mysqli) {
 ]);
 
 // 11. File Management Tool - List files in storage directory
-ToolRegistry::register('list_storage_files', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('list_storage_files', function (array $args, ?mysqli $mysqli) {
     $baseDir = dirname(__DIR__, 2) . '/storage';
     $path = $args['path'] ?? '';
     $filter = $args['filter'] ?? '';
     $limit = min((int)($args['limit'] ?? 50), 100);
-    
+
     $fullPath = $baseDir . '/' . ltrim($path, '/');
-    
+
     if (!is_dir($fullPath)) {
         return ['error' => 'Directory not found: ' . $path, 'path' => $path];
     }
-    
+
     $files = [];
     $items = scandir($fullPath);
-    
+
     foreach ($items as $item) {
         if ($item === '.' || $item === '..') continue;
-        
+
         $itemPath = $fullPath . '/' . $item;
         $isDir = is_dir($itemPath);
-        
+
         // Apply filter if specified
         if ($filter && !$isDir) {
             $ext = pathinfo($item, PATHINFO_EXTENSION);
             if (strtolower($ext) !== strtolower($filter)) continue;
         }
-        
+
         $files[] = [
             'name' => $item,
             'type' => $isDir ? 'directory' : 'file',
             'size' => $isDir ? null : filesize($itemPath),
             'modified' => date('Y-m-d H:i:s', filemtime($itemPath))
         ];
-        
+
         if (count($files) >= $limit) break;
     }
-    
+
     return [
         'path' => $path,
         'files' => $files,
@@ -787,7 +798,7 @@ ToolRegistry::register('list_storage_files', function(array $args, ?mysqli $mysq
 ]);
 
 // 12. Safe File Reader Tool
-ToolRegistry::register('read_file', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('read_file', function (array $args, ?mysqli $mysqli) {
     $projectRoot = realpath(dirname(__DIR__, 2));
     $inputPath = trim((string)($args['path'] ?? $args['file_path'] ?? $args['file'] ?? ''));
     $mode = strtolower((string)($args['mode'] ?? 'auto'));
@@ -872,7 +883,7 @@ ToolRegistry::register('read_file', function(array $args, ?mysqli $mysqli) {
     }
 
     if ($mode === 'pdf') {
-        require_once __DIR__ . '/OCRService.php';
+        require_once __DIR__ . '/../Services/OCRService.php';
         $ocr = new OCRService();
         $pdfData = base64_encode((string)file_get_contents($realPath));
         $pdfResult = $ocr->extractTextFromPDF($pdfData, ['language' => 'eng']);
@@ -883,7 +894,7 @@ ToolRegistry::register('read_file', function(array $args, ?mysqli $mysqli) {
     }
 
     if ($mode === 'image') {
-        require_once __DIR__ . '/OCRService.php';
+        require_once __DIR__ . '/../Services/OCRService.php';
         $ocr = new OCRService();
         $imageData = base64_encode((string)file_get_contents($realPath));
         $ocrResult = $ocr->extractTextFromImage($imageData, ['language' => 'eng']);
@@ -933,7 +944,7 @@ ToolRegistry::register('read_file', function(array $args, ?mysqli $mysqli) {
 ]);
 
 // 13. Image Analysis Tool
-ToolRegistry::register('analyze_image', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('analyze_image', function (array $args, ?mysqli $mysqli) {
     $path = trim((string)($args['path'] ?? $args['image_path'] ?? ''));
     $imageInput = trim((string)($args['image'] ?? ''));
     $includeOcr = !array_key_exists('include_ocr', $args) || (bool)$args['include_ocr'];
@@ -1020,7 +1031,7 @@ ToolRegistry::register('analyze_image', function(array $args, ?mysqli $mysqli) {
     }
 
     if ($includeOcr) {
-        require_once __DIR__ . '/OCRService.php';
+        require_once __DIR__ . '/../Services/OCRService.php';
         $ocr = new OCRService();
         $ocrResult = $ocr->extractTextFromImage(base64_encode($binary), ['language' => $language]);
         $result['ocr'] = [
@@ -1052,7 +1063,7 @@ ToolRegistry::register('analyze_image', function(array $args, ?mysqli $mysqli) {
 ]);
 
 // 14. Web Search Tool
-ToolRegistry::register('web_search', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('web_search', function (array $args, ?mysqli $mysqli) {
     $query = trim((string)($args['query'] ?? ''));
     $limit = min(max((int)($args['limit'] ?? 5), 1), 10);
 
@@ -1130,21 +1141,21 @@ ToolRegistry::register('web_search', function(array $args, ?mysqli $mysqli) {
 ]);
 
 // 15. Get App Settings Tool
-ToolRegistry::register('get_app_settings', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('get_app_settings', function (array $args, ?mysqli $mysqli) {
     if (!$mysqli) throw new RuntimeException('Database connection not available');
-    
+
     $category = $args['category'] ?? 'general';
-    
+
     $stmt = $mysqli->prepare("SELECT setting_key, setting_value FROM app_settings WHERE category = ?");
     $stmt->bind_param('s', $category);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     $settings = [];
     while ($row = $result->fetch_assoc()) {
         $settings[$row['setting_key']] = $row['setting_value'];
     }
-    
+
     return [
         'category' => $category,
         'settings' => $settings,
@@ -1168,37 +1179,37 @@ ToolRegistry::register('get_app_settings', function(array $args, ?mysqli $mysqli
 ]);
 
 // 13. Search Knowledge Base Tool
-ToolRegistry::register('search_knowledge_base', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('search_knowledge_base', function (array $args, ?mysqli $mysqli) {
     if (!$mysqli) throw new RuntimeException('Database connection not available');
-    
+
     $query = trim($args['query'] ?? '');
     $category = $args['category'] ?? null;
     $limit = min((int)($args['limit'] ?? 10), 50);
-    
+
     if (empty($query)) {
         throw new InvalidArgumentException('Search query is required');
     }
-    
+
     // Simple keyword search in knowledge base
     $sql = "SELECT id, title, content, category FROM ai_knowledge_base WHERE is_active = 1 AND (title LIKE ? OR content LIKE ?)";
     $params = ["%{$query}%", "%{$query}%"];
     $types = 'ss';
-    
+
     if ($category) {
         $sql .= " AND category = ?";
         $params[] = $category;
         $types .= 's';
     }
-    
+
     $sql .= " LIMIT ?";
     $params[] = $limit;
     $types .= 'i';
-    
+
     $stmt = $mysqli->prepare($sql);
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     $results = [];
     while ($row = $result->fetch_assoc()) {
         $results[] = [
@@ -1208,7 +1219,7 @@ ToolRegistry::register('search_knowledge_base', function(array $args, ?mysqli $m
             'category' => $row['category']
         ];
     }
-    
+
     return [
         'query' => $query,
         'results' => $results,
@@ -1234,14 +1245,14 @@ ToolRegistry::register('search_knowledge_base', function(array $args, ?mysqli $m
 ]);
 
 // 14. Reindex Knowledge Base Tool
-ToolRegistry::register('reindex_knowledge_base', function(array $args, ?mysqli $mysqli) {
+ToolRegistry::register('reindex_knowledge_base', function (array $args, ?mysqli $mysqli) {
     require_once __DIR__ . '/../Modules/AISystem/Layer/RAGEngine.php';
-    
+
     $provider = $args['provider'] ?? 'openai';
-    
+
     $rag = new \RAGEngine($mysqli);
     $result = $rag->reindexAllWithProvider($provider);
-    
+
     return [
         'success' => $result['success'] > 0,
         'provider' => $provider,

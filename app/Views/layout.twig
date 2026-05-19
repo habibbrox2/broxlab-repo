@@ -42,8 +42,8 @@
     {% endif %}
 
     {# ===== FAVICON & BRANDING ===== #}
-    <link rel="icon" type="image/x-icon" href="{{ app_settings.favicon|default('/assets/favicon.ico')|absolute_url }}">
-    <link rel="apple-touch-icon" href="{{ app_settings.site_logo|default('/assets/images/default-logo.png')|absolute_url }}">
+    <link rel="icon" type="image/x-icon" href="{{ app_settings.favicon|absolute_url }}">
+    <link rel="apple-touch-icon" href="{{ app_settings.site_logo|absolute_url }}">
     <link rel="shortcut icon" href="{{ app_settings.favicon|default('/assets/favicon.ico')|absolute_url }}">
     <meta name="theme-color" content="#0d6efd">
     <meta name="msapplication-TileColor" content="#0d6efd">
@@ -174,7 +174,7 @@
             "name": {{ app_settings.site_name|json_encode }},
             "logo": {
                 "@type": "ImageObject",
-                "url": {{ app_settings.site_logo|default('/assets/images/default-logo.png')|absolute_url|json_encode }}
+                 "url": {{ app_settings.site_logo|absolute_url|json_encode }}
             }
         },
         "mainEntity": {
@@ -242,7 +242,7 @@
         "@type": "LocalBusiness",
         "name": {{ app_settings.site_name|json_encode }},
         "url": {{ url|json_encode }},
-        "logo": {{ app_settings.site_logo|default(url ~ 'assets/images/default-logo.png')|absolute_url|json_encode }},
+        "logo": {{ app_settings.site_logo|absolute_url|json_encode }},
         "description": {{ app_settings.meta_description|default('Mobile reviews, tech news, and gadget insights')|json_encode }},
         "image": {{ app_settings.site_logo|default(url ~ 'assets/images/default-og-image.png')|absolute_url|json_encode }},
 
@@ -328,6 +328,7 @@
                             {'label': 'Mobiles', 'url': '/mobiles', 'icon': 'bi-phone-fill', 'match': '/mobiles'},
                             {'label': 'Articles', 'url': '/posts', 'icon': 'bi-newspaper', 'match': '/posts'},
                             {'label': 'Services', 'url': '/services', 'icon': 'bi-award-fill', 'match': '/services'},
+                            {'label': 'Calculators', 'url': '/calculators', 'icon': 'bi-calculator', 'match': '/calculators'},
                             {'label': 'Support Us', 'url': '/donate', 'icon': 'bi-heart-fill', 'match': '/donate'},
                             {'label': 'Studio', 'url': '/studio', 'icon': 'bi-palette-fill', 'match': '/studio'},
                             {'label': 'Bangla Converter', 'url': '/bangla-converter', 'icon': 'bi-translate', 'match': '/bangla-converter'},
@@ -631,35 +632,37 @@
     {# Firebase v2 init is handled in /assets/js/script.js #}
 
     
-    {# ===== STEP 2: Load Application Core Scripts ===== #}
-    <script>
-        window.__broxSiteLang = '{{ current_lang }}';
-        window.__broxSiteTranslations = window.__broxSiteTranslations || {};
-        window.__broxSiteTranslations['{{ current_lang }}'] = Object.assign(
-            window.__broxSiteTranslations['{{ current_lang }}'] || {},
-            {
-                'Enable Push Notifications': {{ 'Enable Push Notifications'|trans|json_encode|raw }},
-                'Enable push notifications': {{ 'Enable push notifications'|trans|json_encode|raw }},
-                'Enable notifications': {{ 'Enable notifications'|trans|json_encode|raw }},
-                'Enable': {{ 'Enable'|trans|json_encode|raw }},
-                'Later': {{ 'Later'|trans|json_encode|raw }},
-                'Stay updated with instant alerts and important updates.': {{ 'Stay updated with instant alerts and important updates.'|trans|json_encode|raw }},
-                'Notification': {{ 'Notification'|trans|json_encode|raw }},
-                'Scroll to top of page': {{ 'Scroll to top of page'|trans|json_encode|raw }},
-                'Switch to light mode': {{ 'Switch to light mode'|trans|json_encode|raw }},
-                'Switch to dark mode': {{ 'Switch to dark mode'|trans|json_encode|raw }},
-                'Toggle theme': {{ 'Toggle theme'|trans|json_encode|raw }},
-                'Login': {{ 'Login'|trans|json_encode|raw }},
-                'Join Now': {{ 'Join Now'|trans|json_encode|raw }},
-                'Logout': {{ 'Logout'|trans|json_encode|raw }},
-                'Profile': {{ 'Profile'|trans|json_encode|raw }},
-                'Dashboard': {{ 'Dashboard'|trans|json_encode|raw }},
-                'Notifications': {{ 'Notifications'|trans|json_encode|raw }},
-                'Settings': {{ 'Settings'|trans|json_encode|raw }},
-                'Home': {{ 'Home'|trans|json_encode|raw }}
-            }
-        );
-    </script>
+     {# ===== STEP 2: Load Application Core Scripts ===== #}
+     <script>
+         window.__broxSiteLang = '{{ current_lang }}';
+         window.__broxSiteTranslations = window.__broxSiteTranslations || {};
+         window.__broxSiteTranslations['{{ current_lang }}'] = Object.assign(
+             window.__broxSiteTranslations['{{ current_lang }}'] || {},
+             {
+                 'Enable Push Notifications': {{ 'Enable Push Notifications'|trans|json_encode|raw }},
+                 'Enable push notifications': {{ 'Enable push notifications'|trans|json_encode|raw }},
+                 'Enable notifications': {{ 'Enable notifications'|trans|json_encode|raw }},
+                 'Enable': {{ 'Enable'|trans|json_encode|raw }},
+                 'Later': {{ 'Later'|trans|json_encode|raw }},
+                 'Stay updated with instant alerts and important updates.': {{ 'Stay updated with instant alerts and important updates.'|trans|json_encode|raw }},
+                 'Notification': {{ 'Notification'|trans|json_encode|raw }},
+                 'Scroll to top of page': {{ 'Scroll to top of page'|trans|json_encode|raw }},
+                 'Switch to light mode': {{ 'Switch to light mode'|trans|json_encode|raw }},
+                 'Switch to dark mode': {{ 'Switch to dark mode'|trans|json_encode|raw }},
+                 'Toggle theme': {{ 'Toggle theme'|trans|json_encode|raw }},
+                 'Login': {{ 'Login'|trans|json_encode|raw }},
+                 'Join Now': {{ 'Join Now'|trans|json_encode|raw }},
+                 'Logout': {{ 'Logout'|trans|json_encode|raw }},
+                 'Profile': {{ 'Profile'|trans|json_encode|raw }},
+                 'Dashboard': {{ 'Dashboard'|trans|json_encode|raw }},
+                 'Notifications': {{ 'Notifications'|trans|json_encode|raw }},
+                 'Settings': {{ 'Settings'|trans|json_encode|raw }},
+                 'Home': {{ 'Home'|trans|json_encode|raw }}
+             }
+         );
+         // Site branding for JavaScript usage
+         window.__broxSiteLogo = '{{ app_settings.site_logo|default('') }}';
+     </script>
     <script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}"></script>
     <script type="module" src="{{ asset('/assets/js/dist/script.js') }}"></script>
 

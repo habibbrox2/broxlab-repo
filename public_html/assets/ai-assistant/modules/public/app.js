@@ -52,6 +52,21 @@ const DEFAULT_PREFS = {
 };
 
 const assistantPrefs = { ...DEFAULT_PREFS, };
+const providerApiKeys = {};
+const providerApiKeySources = {};
+const SUPPORTED_CLIENT_PROVIDERS = new Set(['openrouter', 'fireworks']);
+
+function getProviderApiKey(providerName) {
+  return String(providerApiKeys[providerName] || '').trim();
+}
+
+function getProviderApiKeySource(providerName) {
+  return String(providerApiKeySources[providerName] || 'none');
+}
+
+function hasProviderApiKey(providerName) {
+  return getProviderApiKey(providerName) !== '';
+}
 
 async function loadAssistantPrefs() {
   try {
@@ -70,12 +85,11 @@ async function loadAssistantPrefs() {
         assistantPrefs.model = 'openrouter/free';
       }
 
-      // Expose provider API keys globally for use by the runtime.
-      // These are read-only values provided by the backend.
+      // Store provider API keys in private client state only.
       (assistantPrefs.providers || []).forEach((p) => {
-        if (!p.api_key) return;
-        const keyName = p.provider_name.toUpperCase();
-        window[`${keyName}_API_KEY`] = p.api_key;
+        if (!p.api_key || !p.provider_name) return;
+        providerApiKeys[p.provider_name] = p.api_key;
+        providerApiKeySources[p.provider_name] = p.api_key_source || 'db';
       });
     }
   } catch (err) {
@@ -192,77 +206,60 @@ const historyStore = createHistoryStore({
 
 // Fireworks AI API call function
 async function callFireworksAI(messages, options = {}) {
-  const apiKey = window.FIREWORKS_API_KEY || ''; // Set your API key here or via window.FIREWORKS_API_KEY
-  const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
+  // Proxy the request to the backend so API keys are not exposed to clients
+  const payload = {
+    messages,
+    options: { ...(options || {}), provider: 'fireworks', model: options?.model },
+    stream: false,
+  };
+
+  const res = await fetch('/api/ai/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      'X-Requested-With': 'XMLHttpRequest',
     },
-    body: JSON.stringify({
-      model: options.model || 'accounts/fireworks/models/llama-v2-7b-chat',
-      messages: messages,
-      stream: options.stream || false,
-      ...options,
-    }),
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
   });
-  if (!response.ok) throw new Error('Fireworks API error');
-  return await response.json();
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Backend proxy error: ${res.status} ${res.statusText} ${body}`);
+  }
+
+  return await res.json();
 }
 
 // OpenRouter AI API call function
 async function callOpenRouterAI(messages, options = {}) {
-  const apiKey = String(window.OPENROUTER_API_KEY || '').trim();
-  if (!apiKey) {
-    throw new Error(
-      'Missing OpenRouter API key. Configure it in AI settings and refresh the page.'
-    );
-  }
+  // Proxy the request to the backend so API keys are not exposed to clients
+  const payload = {
+    messages,
+    options: { ...(options || {}), provider: 'openrouter', model: options?.model || 'openrouter/free' },
+    stream: false,
+  };
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const res = await fetch('/api/ai/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-      'HTTP-Referer': window.location.origin, // Optional
-      'X-OpenRouter-Title': 'BroxBhai Assistant', // Optional
+      'X-Requested-With': 'XMLHttpRequest',
     },
-    body: JSON.stringify({
-      model: options.model || 'meta-llama/llama-3-8b-instruct:free',
-      messages: messages,
-      stream: options.stream || false,
-      ...options,
-    }),
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
   });
 
-  if (!response.ok) {
-    let errText = '';
-    try {
-      const text = await response.text();
-      try {
-        const json = JSON.parse(text);
-        errText = json?.error?.message || text;
-      } catch {
-        errText = text;
-      }
-    } catch (e) {
-      // ignore
-    }
-    throw new Error(`OpenRouter API error (${response.status}): ${errText || response.statusText}`);
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Backend proxy error: ${res.status} ${res.statusText} ${body}`);
   }
 
   try {
-    return await response.json();
-  } catch (parseErr) {
-    let raw = '';
-    try {
-      raw = await response.text();
-    } catch {
-      // ignore
-    }
-    throw new Error(
-      `OpenRouter response parse error: ${parseErr.message}${raw ? ` - ${raw}` : ''}`
-    );
+    return await res.json();
+  } catch (err) {
+    const raw = await res.text();
+    throw new Error(`Backend proxy parse error: ${err.message} ${raw}`);
   }
 }
 
@@ -288,11 +285,11 @@ function setFallbackBadge(visible) {
 function updateOpenRouterKeyStatus() {
   if (!UI.openRouterKeyStatus) return;
 
-  const key = String(window.OPENROUTER_API_KEY || '').trim();
-  const source = String(window.OPENROUTER_API_KEY_SOURCE || 'none');
+  const key = getProviderApiKey('openrouter');
+  const source = getProviderApiKeySource('openrouter');
 
   if (!key) {
-    UI.openRouterKeyStatus.textContent = 'OpenRouter key missing';
+    UI.openRouterKeyStatus.textContent = 'OpenRouter API key not configured';
     UI.openRouterKeyStatus.className = 'assistant-status text-warning';
     return;
   }

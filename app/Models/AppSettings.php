@@ -1,21 +1,25 @@
 <?php
 // classes/AppSettings.php
 
-class AppSettings {
+class AppSettings
+{
     private $mysqli;
     private static $cache = null;
 
-    public function __construct(mysqli $mysqli) {
+    public function __construct(mysqli $mysqli)
+    {
         $this->mysqli = $mysqli;
     }
-    public function getSettings(): array {
+    public function getSettings(): array
+    {
         return $this->getAll();
     }
 
     /**
      * Parse public header nav items from settings with safe fallback.
      */
-    public function getPublicNavItems(?array $settings = null, bool $enabledOnly = true): array {
+    public function getPublicNavItems(?array $settings = null, bool $enabledOnly = true): array
+    {
         $settings = $settings ?? $this->getAll();
         $raw = $settings['public_nav_json'] ?? null;
 
@@ -61,7 +65,8 @@ class AppSettings {
     /**
      * Default public header menu items.
      */
-    public function getDefaultPublicNavItems(): array {
+    public function getDefaultPublicNavItems(): array
+    {
         return [
             ['label' => 'Home', 'url' => '/', 'icon' => 'bi-house-door-fill', 'match' => '/', 'enabled' => true, 'order' => 10],
             ['label' => 'Mobiles', 'url' => '/mobiles', 'icon' => 'bi-phone-fill', 'match' => '/mobiles', 'enabled' => true, 'order' => 20],
@@ -73,7 +78,8 @@ class AppSettings {
     /**
      * Get all settings (with caching)
      */
-    public function getAll(): array {
+    public function getAll(): array
+    {
         // Return cached version if available
         if (self::$cache !== null) {
             return self::$cache;
@@ -97,7 +103,8 @@ class AppSettings {
     /**
      * Get specific setting value
      */
-    public function get(string $key, $default = null) {
+    public function get(string $key, $default = null)
+    {
         $settings = $this->getAll();
         return $settings[$key] ?? $default;
     }
@@ -105,16 +112,18 @@ class AppSettings {
     /**
      * Update specific setting
      */
-    public function set(string $key, $value): bool {
+    public function set(string $key, $value): bool
+    {
         return $this->update([$key => $value]);
     }
 
     /**
      * Update multiple settings
      */
-    public function update(array $data): bool {
+    public function update(array $data): bool
+    {
         $settings = $this->getAll();
-        
+
         if (empty($settings)) {
             return $this->create($data);
         }
@@ -159,7 +168,8 @@ class AppSettings {
     /**
      * Create new settings record
      */
-    public function create(array $data): bool {
+    public function create(array $data): bool
+    {
         $data = array_merge($this->getDefaults(), $data);
 
         $fields = ['`id`'];
@@ -184,7 +194,7 @@ class AppSettings {
         }
 
         $sql = "INSERT INTO app_settings (" . implode(", ", $fields) . ", `created_at`, `updated_at`) VALUES (" . implode(", ", $placeholders) . ", NOW(), NOW()) " .
-               "ON DUPLICATE KEY UPDATE " . implode(", ", $updates) . ", `updated_at` = NOW()";
+            "ON DUPLICATE KEY UPDATE " . implode(", ", $updates) . ", `updated_at` = NOW()";
         $stmt = $this->mysqli->prepare($sql);
 
         if (!$stmt) {
@@ -207,17 +217,19 @@ class AppSettings {
     /**
      * Create default settings if none exist
      */
-    private function createDefault(): bool {
+    private function createDefault(): bool
+    {
         return $this->create($this->getDefaults());
     }
 
     /**
      * Get default settings values
      */
-    private function getDefaults(): array {
+    private function getDefaults(): array
+    {
         return [
             'site_name' => 'BroxBhai',
-            'site_logo' => '/assets/logo/logo.png',
+            'site_logo' => '',
             'favicon' => '/assets/logo/favicon.ico',
             'default_language' => 'bn',
             'timezone' => 'Asia/Dhaka',
@@ -260,7 +272,8 @@ class AppSettings {
     /**
      * Check if column exists in table
      */
-    private function isValidColumn(string $column): bool {
+    private function isValidColumn(string $column): bool
+    {
         static $columns = null;
 
         if ($columns === null) {
@@ -277,25 +290,29 @@ class AppSettings {
     /**
      * Clear cache
      */
-    public function clearCache(): void {
+    public function clearCache(): void
+    {
         self::$cache = null;
     }
 
     /**
      * Get all as JSON
      */
-    public function toJson(): string {
+    public function toJson(): string
+    {
         return json_encode($this->getAll());
     }
 
     /**
      * Get all as array
      */
-    public function toArray(): array {
+    public function toArray(): array
+    {
         return $this->getAll();
     }
 
-    private function normalizePublicNavItem(array $item): ?array {
+    private function normalizePublicNavItem(array $item): ?array
+    {
         $label = trim(strip_tags((string)($item['label'] ?? '')));
         $url = trim(strip_tags((string)($item['url'] ?? '')));
         $icon = trim(strip_tags((string)($item['icon'] ?? '')));
@@ -347,5 +364,4 @@ class AppSettings {
             'order' => $order,
         ];
     }
-
 }

@@ -293,15 +293,22 @@
       saveProviderBtn.addEventListener('click', saveProviderConfig);
     }
 
-    // API key password toggle
+    // API key password / visibility toggle
     document.querySelectorAll('.toggle-password').forEach((btn) => {
       btn.addEventListener('click', function () {
         const input = this.previousElementSibling;
+        if (!input) return;
+
         if (input.type === 'password') {
+          // Reveal — seed value from data attribute if the field has been cleared
+          if (!input.value && input.dataset && input.dataset.apiKeyValue !== undefined) {
+            input.value = input.dataset.apiKeyValue;
+          }
           input.type = 'text';
           this.querySelector('i').classList.remove('bi-eye');
           this.querySelector('i').classList.add('bi-eye-slash');
         } else {
+          // Hide again
           input.type = 'password';
           this.querySelector('i').classList.remove('bi-eye-slash');
           this.querySelector('i').classList.add('bi-eye');
@@ -1468,7 +1475,7 @@
     }
   }
 
-  // Check Ollama status
+  // Check Ollama cloud status
   function checkOllamaStatus() {
     const ollamaStatusEl = document.getElementById('ollamaLiveStatus');
     if (!ollamaStatusEl) return;

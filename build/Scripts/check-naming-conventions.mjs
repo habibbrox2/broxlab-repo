@@ -35,7 +35,6 @@ const CONFIG = {
     'Providers',
     'Routes',
     'Modules',
-    'Telegram',
     'FeatureFlags',
     'AISystem',
     'Layer',
