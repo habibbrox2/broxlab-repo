@@ -88,9 +88,10 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
             const ip = String(request.ip || request.headers['x-forwarded-for'] || 'unknown');
             const rateKey = `rl:openrouter:${ip}`;
             const count = await redisIncr(rateKey);
-            if (count === 1) await redisExpire(rateKey, 60); // 60s window
-            const LIMIT = 30; // requests per minute per IP
-            if (count > LIMIT) {
+            const rateWindow = config.ai?.proxy?.openrouter?.rateWindowSeconds || 60;
+            const rateLimit = config.ai?.proxy?.openrouter?.rateLimit || 30;
+            if (count === 1) await redisExpire(rateKey, rateWindow); // window seconds
+            if (count > rateLimit) {
                 reply.code(429).send({ success: false, error: 'Rate limit exceeded for OpenRouter proxy' });
                 return;
             }
@@ -144,7 +145,8 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
 
             // Cache short-lived responses to reduce downstream calls
             try {
-                await redisSet(cacheKey, json, 30); // 30 seconds
+                const cacheTTL = config.ai?.proxy?.openrouter?.cacheTTLSeconds || 30;
+                await redisSet(cacheKey, json, cacheTTL);
             } catch (err) {
                 // ignore cache set errors
             }

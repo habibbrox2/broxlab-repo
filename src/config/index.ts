@@ -37,6 +37,11 @@ const envSchema = z.object({
     KILO_API_KEY: z.string().optional(),
     GOOGLE_API_KEY: z.string().optional(),
 
+    // OpenRouter proxy configuration
+    OPENROUTER_PROXY_RATE_LIMIT: z.string().default('30'),
+    OPENROUTER_PROXY_RATE_WINDOW_SECONDS: z.string().default('60'),
+    OPENROUTER_PROXY_CACHE_TTL: z.string().default('30'),
+
     // Default AI Settings
     DEFAULT_PROVIDER: z.string().default('openrouter'),
     DEFAULT_MODEL: z.string().default('meta-llama/llama-3-8b-instruct:free'),
@@ -190,6 +195,13 @@ export const config = {
         },
         google: {
             apiKey: env.data.GOOGLE_API_KEY,
+        },
+        proxy: {
+            openrouter: {
+                rateLimit: parseInteger(env.data.OPENROUTER_PROXY_RATE_LIMIT, 'OPENROUTER_PROXY_RATE_LIMIT'),
+                rateWindowSeconds: parseInteger(env.data.OPENROUTER_PROXY_RATE_WINDOW_SECONDS, 'OPENROUTER_PROXY_RATE_WINDOW_SECONDS'),
+                cacheTTLSeconds: parseInteger(env.data.OPENROUTER_PROXY_CACHE_TTL, 'OPENROUTER_PROXY_CACHE_TTL'),
+            },
         },
         defaultProvider: env.data.DEFAULT_PROVIDER,
         defaultModel: env.data.DEFAULT_MODEL,
