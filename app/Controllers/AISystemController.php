@@ -1322,7 +1322,7 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
 
     $effective = $aiProvider->getEffectiveProvider();
     $provider = $effective['provider_name'] ?? 'openrouter';
-    $model = $settings['default_model'] ?? 'openrouter/auto';
+    $model = $settings['default_model'] ?? 'meta-llama/llama-3-8b-instruct:free';
 
     if (!$isAdmin) {
         $frontendProvider = $settings['frontend_provider'] ?? 'openrouter';
@@ -1915,7 +1915,7 @@ $router->post('/admin/ai-system/save', ['middleware' => ['auth', 'admin_only', '
     $frontendProvider = $_POST['frontend_provider'] ?? ($currentSettings['frontend_provider'] ?? 'openrouter');
     $backendProvider = $_POST['backend_provider'] ?? ($currentSettings['backend_provider'] ?? $frontendProvider);
     $defaultProvider = $_POST['default_provider'] ?? ($currentSettings['default_provider'] ?? $frontendProvider);
-    $defaultModel = $_POST['default_model'] ?? ($currentSettings['default_model'] ?? 'openrouter/auto');
+    $defaultModel = $_POST['default_model'] ?? ($currentSettings['default_model'] ?? 'meta-llama/llama-3-8b-instruct:free');
     $frontendModelInput = $_POST['frontend_model'] ?? ($currentSettings['frontend_model'] ?? '');
     $backendModelInput = $_POST['backend_model'] ?? ($currentSettings['backend_model'] ?? '');
     $defaultAuthor = $_POST['default_author'] ?? ($currentSettings['default_author'] ?? 'BroxBhai AI');

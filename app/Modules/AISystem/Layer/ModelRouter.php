@@ -10,7 +10,7 @@ namespace App\Modules\AISystem\Layer;
 class ModelRouter
 {
     private $providers = [];
-    private $defaultModel = 'google/gemini-2.0-flash-exp:free'; // Free model as default
+    private $defaultModel = 'meta-llama/llama-3-8b-instruct:free'; // Free model as default
     private $routingConfig = [];
     private $complexityThresholds = [
         'low' => 100,
@@ -60,7 +60,7 @@ class ModelRouter
     public function __construct(array $activeProviders, string $defaultModel = null)
     {
         $this->providers = $activeProviders;
-        $this->defaultModel = $defaultModel ?? 'openrouter/auto';
+        $this->defaultModel = $defaultModel ?? 'meta-llama/llama-3-8b-instruct:free';
 
         // Load routing config from environment or use defaults
         $this->loadRoutingConfig();

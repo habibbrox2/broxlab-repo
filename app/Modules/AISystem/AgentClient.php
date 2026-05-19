@@ -26,7 +26,7 @@ class AgentClient
         $this->freeOptimizer = new FreeApiOptimizer();
         // Initialise ModelRouter with the list of active providers and a default model fallback.
         $activeProviders = $this->aiProvider->getActive();
-        $defaultModel = $this->aiProvider->getSetting('default_model') ?: 'openrouter/auto';
+        $defaultModel = $this->aiProvider->getSetting('default_model') ?: 'meta-llama/llama-3-8b-instruct:free';
         $this->modelRouter = new \App\Modules\AISystem\Layer\ModelRouter($activeProviders, $defaultModel);
     }
 

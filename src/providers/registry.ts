@@ -11,7 +11,7 @@ const googleProvider = new GeminiProvider(config.ai.google.apiKey || '', 'gemini
 
 export const providers = {
   ollama: new OllamaProvider(),
-  openrouter: new OpenRouterProvider(config.ai.openrouter.apiKey || '', 'openrouter/auto'),
+  openrouter: new OpenRouterProvider(config.ai.openrouter.apiKey || '', 'meta-llama/llama-3-8b-instruct:free'),
   openai: new OpenAIProvider(config.ai.openai.apiKey || '', config.ai.defaultModel || 'gpt-4o'),
   codex: new CodexProvider(config.ai.openai.apiKey || '', 'code-davinci-002'),
   anthropic: new AnthropicProvider(config.ai.anthropic.apiKey || '', 'claude-3.0'),

@@ -1080,7 +1080,7 @@ $router->get('/admin/settings/ai', ['middleware' => ['auth', 'super_admin_only']
             'success' => true,
             'provider' => $settings['ai_provider'] ?? 'openrouter',
             'apiKey' => $settings['ai_api_key'] ?? '',
-            'model' => $settings['ai_model'] ?? 'openrouter/auto',
+            'model' => $settings['ai_model'] ?? 'meta-llama/llama-3-8b-instruct:free',
             'availableProviders' => ['openrouter', 'ollama']
         ]);
     } catch (Throwable $e) {
@@ -1119,7 +1119,7 @@ $router->post('/admin/settings/ai', ['middleware' => ['auth', 'super_admin_only'
         $data = [
             'ai_provider' => $provider,
             'ai_api_key' => $apiKey,
-            'ai_model' => $model ?: ($provider === 'openrouter' ? 'openrouter/auto' : 'llama2')
+            'ai_model' => $model ?: ($provider === 'openrouter' ? 'meta-llama/llama-3-8b-instruct:free' : 'llama2')
         ];
 
         if ($settingsModel->update($data)) {

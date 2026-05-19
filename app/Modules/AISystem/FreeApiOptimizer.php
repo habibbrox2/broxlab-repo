@@ -22,6 +22,13 @@ class FreeApiOptimizer
             'supports_streaming' => true,
             'rate_limit' => 'medium'
         ],
+        'meta-llama/llama-3-8b-instruct:free' => [
+            'name' => 'Llama 3 8B Instruct (Free)',
+            'cost' => 0,
+            'context_length' => 128000,
+            'supports_streaming' => true,
+            'rate_limit' => 'medium'
+        ],
         'google/gemini-2.0-flash-exp:free' => [
             'name' => 'Gemini 2.0 Flash (Free)',
             'cost' => 0,
@@ -38,6 +45,13 @@ class FreeApiOptimizer
         ],
         'meta-llama/llama-3.2-90b-vision-instruct:free' => [
             'name' => 'Llama 3.2 90B Vision (Free)',
+            'cost' => 0,
+            'context_length' => 128000,
+            'supports_streaming' => true,
+            'rate_limit' => 'medium'
+        ],
+        'meta-llama/llama-3-8b-instruct:free' => [
+            'name' => 'Llama 3 8B Instruct (Free)',
             'cost' => 0,
             'context_length' => 128000,
             'supports_streaming' => true,
@@ -127,9 +141,9 @@ class FreeApiOptimizer
     {
         // Task-specific model selection
         $modelPreferences = [
-            'general' => ['openrouter/auto', 'google/gemini-2.0-flash-exp:free', 'deepseek/deepseek-chat:free'],
-            'code' => ['meta-llama/llama-3.2-90b-vision-instruct:free', 'qwen/qwen-2.5-72b-instruct:free'],
-            'vision' => ['meta-llama/llama-3.2-90b-vision-instruct:free', 'google/gemini-2.0-flash-exp:free'],
+            'general' => ['meta-llama/llama-3-8b-instruct:free', 'google/gemini-2.0-flash-exp:free', 'deepseek/deepseek-chat:free', 'openrouter/auto'],
+            'code' => ['meta-llama/llama-3-8b-instruct:free', 'meta-llama/llama-3.2-90b-vision-instruct:free', 'qwen/qwen-2.5-72b-instruct:free'],
+            'vision' => ['meta-llama/llama-3.2-90b-vision-instruct:free', 'meta-llama/llama-3-8b-instruct:free', 'google/gemini-2.0-flash-exp:free'],
             'fast' => ['microsoft/phi-4-mini:free', 'THUDM/glm-4-9b-chat:free'],
             'long_context' => ['google/gemini-2.0-flash-exp:free', 'google/gemini-2.0-flash:free']
         ];
@@ -250,7 +264,7 @@ class FreeApiOptimizer
             ['provider' => 'openrouter', 'model' => 'deepseek/deepseek-chat:free'],
             ['provider' => 'openrouter', 'model' => 'qwen/qwen-2.5-72b-instruct:free'],
             ['provider' => 'openrouter', 'model' => 'THUDM/glm-4-9b-chat:free'],
-            ['provider' => 'openrouter', 'model' => 'openrouter/auto']
+            ['provider' => 'openrouter', 'model' => 'google/gemma-2-9b-it:free']
         ];
     }
 

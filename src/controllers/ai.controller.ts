@@ -18,7 +18,7 @@ const getSettingsFromDB = async () => {
               : config.ai.defaultProvider === 'ollama'
                 ? process.env.OLLAMA_API_KEY || ''
                 : '',
-    model: config.ai.defaultModel || 'openrouter/auto',
+    model: config.ai.defaultModel || 'meta-llama/llama-3-8b-instruct:free',
     availableProviders: Object.keys(providers),
   };
 };
@@ -27,7 +27,7 @@ const saveSettingsToDB = async (provider: string, apiKey: string, model: string)
   if (provider === 'openrouter') {
     process.env.OPENROUTER_API_KEY = apiKey;
     process.env.AI_PROVIDER = 'openrouter';
-    process.env.AI_MODEL = model || 'openrouter/auto';
+    process.env.AI_MODEL = model || 'meta-llama/llama-3-8b-instruct:free';
   } else if (provider === 'openai') {
     process.env.OPENAI_API_KEY = apiKey;
     process.env.AI_PROVIDER = 'openai';
@@ -84,7 +84,7 @@ export const aiController = {
         settings: {
           provider,
           apiKey: apiKey ? `********${apiKey.slice(-4)}` : '',
-          model: model || (provider === 'openrouter' ? 'openrouter/auto' : 'llama2'),
+          model: model || (provider === 'openrouter' ? 'meta-llama/llama-3-8b-instruct:free' : 'llama2'),
         },
       });
     } catch (error) {

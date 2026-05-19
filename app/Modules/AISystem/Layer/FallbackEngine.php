@@ -27,13 +27,19 @@ class FallbackEngine
         ['provider' => 'openrouter', 'model' => 'deepseek/deepseek-chat:free'],
         ['provider' => 'openrouter', 'model' => 'qwen/qwen-2.5-72b-instruct:free'],
         ['provider' => 'openrouter', 'model' => 'THUDM/glm-4-9b-chat:free'],
-        ['provider' => 'openrouter', 'model' => 'openrouter/auto']
+        ['provider' => 'openrouter', 'model' => 'google/gemma-2-9b-it:free']
     ];
 
     public function __construct(\AIProvider $aiProvider, array $fallbackChain = [])
     {
         $this->aiProvider = $aiProvider;
-        $this->fallbackChain = empty($fallbackChain) ? $this->defaultFallback : $fallbackChain;
+
+        // If no custom fallback chain provided, build dynamic chain from active providers
+        if (empty($fallbackChain)) {
+            $this->fallbackChain = $this->buildDynamicFallbackChain();
+        } else {
+            $this->fallbackChain = $fallbackChain;
+        }
 
         // Load configuration from environment
         $this->loadConfig();
@@ -97,6 +103,31 @@ class FallbackEngine
                 $this->circuitBreakerTimeout = (int)$value;
                 break;
         }
+    }
+
+    /**
+     * Execute with automatic provider switching
+     * Auto-detects available providers and rebuilds fallback chain at runtime
+     * 
+     * @param string $primaryProvider Primary provider name
+     * @param string $primaryModel Primary model name
+     * @param array $messages Chat messages
+     * @param array $options API options
+     * @param bool $autoSwitch Enable automatic provider switching
+     * @return array Result with success/error info
+     */
+    public function executeWithAutoSwitch(string $primaryProvider, string $primaryModel, array $messages, array $options, bool $autoSwitch = true): array
+    {
+        // Auto-rebuild fallback chain if auto-switch is enabled
+        if ($autoSwitch) {
+            $dynamicChain = $this->buildDynamicFallbackChain();
+            if (!empty($dynamicChain)) {
+                $this->fallbackChain = $dynamicChain;
+                $this->log('AUTO_SWITCH', "Rebuilt fallback chain with " . count($dynamicChain) . " provider options");
+            }
+        }
+
+        return $this->executeWithFallback($primaryProvider, $primaryModel, $messages, $options);
     }
 
     /**
@@ -369,6 +400,69 @@ class FallbackEngine
         ]) . "\n";
 
         @file_put_contents($this->logFile, $entry, FILE_APPEND | LOCK_EX);
+    }
+
+    /**
+     * Build dynamic fallback chain from all available providers
+     * Auto-switches between providers based on availability
+     */
+    public function buildDynamicFallbackChain(): array
+    {
+        $chain = [];
+        $providers = $this->aiProvider->getActive();
+
+        // Priority order for providers (try paid-tier free models first, then fallback to general free models)
+        $providerOrder = ['openrouter', 'anthropic', 'openai', 'google', 'ollama', 'fireworks'];
+
+        // Free model preferences by provider (prioritize fast, cheap models)
+        $freeModelsByProvider = [
+            'openrouter' => [
+                'meta-llama/llama-3-8b-instruct:free',
+                'google/gemina-2.0-flash-exp:free',
+                'deepseek/deepseek-chat:free',
+                'qwen/qwen-2.5-72b-instruct:free',
+                'google/gemma-2-9b-it:free'
+            ],
+            'anthropic' => ['claude-3-haiku'],
+            'openai' => ['gpt-3.5-turbo'],
+            'google' => ['gemini-pro'],
+            'ollama' => ['llama2', 'mistral'],
+            'fireworks' => ['accounts/fireworks/models/llama-v2-7b-chat']
+        ];
+
+        // Build chain following priority order
+        foreach ($providerOrder as $providerName) {
+            $provider = null;
+
+            // Find provider in active list
+            foreach ($providers as $p) {
+                if ($p['provider_name'] === $providerName) {
+                    $provider = $p;
+                    break;
+                }
+            }
+
+            // Skip if not active or no API key
+            if (!$provider || !$this->aiProvider->hasApiKey($providerName)) {
+                continue;
+            }
+
+            // Add preferred free models for this provider
+            $models = $freeModelsByProvider[$providerName] ?? [];
+            foreach ($models as $model) {
+                $chain[] = [
+                    'provider' => $providerName,
+                    'model' => $model
+                ];
+            }
+        }
+
+        // If no providers found, use the built-in default fallback
+        if (empty($chain)) {
+            return $this->defaultFallback;
+        }
+
+        return $chain;
     }
 
     /**

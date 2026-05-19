@@ -234,7 +234,7 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
     fastify.post('/api/ai/test', async (request, reply) => {
         try {
             const body = request.body as any;
-            const model = body.model || 'openrouter/auto';
+            const model = body.model || 'meta-llama/llama-3-8b-instruct:free';
 
             reply.send({
                 success: true,
