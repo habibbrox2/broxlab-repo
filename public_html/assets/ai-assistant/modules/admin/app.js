@@ -302,10 +302,10 @@ async function loadModels() {
       // Fallback models - prefer free models
       const fallbackModels = provider === 'openrouter'
         ? [
-            { id: 'meta-llama/llama-3-8b-instruct:free', name: 'Llama 3.8B (Free)', },
-            { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash (Free)', },
-            { id: 'google/gemma-2-9b-it:free', name: 'Gemma 2.9B (Free)', },
-          ]
+          { id: 'meta-llama/llama-3-8b-instruct:free', name: 'Llama 3.8B (Free)', },
+          { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash (Free)', },
+          { id: 'google/gemma-2-9b-it:free', name: 'Gemma 2.9B (Free)', },
+        ]
         : [{ id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', },];
 
       UI.model.innerHTML = fallbackModels
