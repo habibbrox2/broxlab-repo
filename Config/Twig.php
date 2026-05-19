@@ -1400,6 +1400,26 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             return LanguageHelper::translate((string) $text, $from, $to, false);
         }));
 
+        // ── Calculator description helper ────────────────────────────
+        $twig->addFunction(new \Twig\TwigFunction('getCalculatorDescription', function (string $type): string {
+            $descriptions = [
+                'simple-interest'    => '<p>Calculate the interest earned on a simple-interest investment or loan using the formula <em>SI = P × r × t</em>.</p>
+                    <ul><li><strong>Principal</strong> – starting amount</li><li><strong>Rate</strong> – annual interest rate as a percentage</li><li><strong>Time</strong> – number of years</li></ul>',
+                'compound-interest'  => '<p>Estimate the future value of an investment with compound interest. The interest is reinvested each compounding period.</p>
+                    <ul><li><strong>Compounded Yearly</strong> – interest adds once per year</li><li><strong>Compounded Monthly</strong> – interest adds every month</li><li><strong>Compounded Daily</strong> – interest adds every day</li></ul>',
+                'loan-amortization'  => '<p>Break down any loan into its monthly payments, total interest payable, and total cost. Works for personal loans, car loans, and student loans.</p>',
+                'mortgage'           => '<p>Estimate your monthly mortgage payment including principal &amp; interest (P&amp;I), property tax, home insurance, and HOA fees.</p>
+                    <ul><li><strong>LTV Ratio</strong> shows how much of the home price is financed</li><li><strong>PMI</strong> is typically required when the down payment is below 20%</li></ul>',
+                'percentage'         => '<p>Compute what a given percentage of any number is. Also useful for tips, discounts, and markup calculations.</p>',
+                'percentage-change'  => '<p>Find the percentage difference between two values. A positive result is an increase; a negative result is a decrease.</p>',
+                'gpa'                => '<p>Calculate your GPA from a list of courses. Enter each course\'s credit hours and grade point (on a 0–4 scale) as JSON.</p>
+                    <p><small>Example: <code>[{"credit_hours":3,"grade_point":4},{"credit_hours":3,"grade_point":3.3}]</code></small></p>',
+                'bmi'                => '<p>Body Mass Index (BMI) is a simple screening tool that compares your weight to your height. BMI does not measure body fat directly.</p>
+                    <ul><li><strong>Underweight</strong> – BMI below 18.5</li><li><strong>Normal</strong> – 18.5 – 24.9</li><li><strong>Overweight</strong> – 25 – 29.9</li><li><strong>Obese</strong> – 30 or above</li></ul>',
+            ];
+            return $descriptions[$type] ?? '<p>Complete the form below and click Calculate to see your result.</p>';
+        }, ['is_safe' => ['html']]));
+
         return $twig;
     } catch (Throwable $e) {
         error_log("CRITICAL: Twig initialization error - message: {$e->getMessage()}, " .

@@ -5,7 +5,6 @@ class LanguageHelper
 {
     private static $currentLang = null;
     private static $translations = [];
-    private static $aiClient = null;
     private static $cacheTableInitialized = false;
 
     /**
@@ -168,16 +167,34 @@ class LanguageHelper
      */
     private static function translateWithAI(string $text, string $from, string $to): ?string
     {
-        if (!self::$aiClient) {
-            self::$aiClient = new AIClient();
-        }
-
-        try {
-            return self::$aiClient->translate($text, $from, $to);
-        } catch (Exception $e) {
-            error_log('AI Translation failed: ' . $e->getMessage());
+        $mysqli = self::getDatabase();
+        if (!$mysqli) {
             return null;
         }
+
+        $agentClientPath = realpath(__DIR__ . '/../Modules/AISystem/AgentClient.php');
+        require_once $agentClientPath ?: (__DIR__ . '/../Modules/AISystem/AgentClient.php');
+
+        $agentClient = new AgentClient($mysqli);
+        $messages = [
+            [
+                'role' => 'system',
+                'content' => "Translate the following text from {$from} to {$to}. Only return the translated text, no explanations."
+            ],
+            [
+                'role' => 'user',
+                'content' => $text
+            ]
+        ];
+
+        $response = $agentClient->chat($messages);
+
+        if (is_array($response) && !empty($response['success']) && isset($response['content'])) {
+            return trim((string)$response['content']);
+        }
+
+        error_log('AI Translation failed: ' . ($response['error'] ?? 'Unknown error'));
+        return null;
     }
 
     /**
@@ -201,62 +218,5 @@ class LanguageHelper
             'bn' => 'বাংলা',
             'en' => 'English',
         ];
-    }
-}
-
-// AI Client class
-class AIClient
-{
-    private $nodeUrl;
-
-    public function __construct(?string $nodeUrl = null)
-    {
-        $this->nodeUrl = rtrim(
-            $nodeUrl ?? (getenv('NODE_SERVICE_URL') ?: getenv('NODEJS_SERVER_URL') ?: getenv('NODE_API_URL') ?: getenv('APP_URL') ?: 'http://localhost:3000'),
-            '/'
-        );
-    }
-
-    public function translate(string $text, string $from, string $to): ?string
-    {
-        $prompt = "Translate the following text from {$from} to {$to}. Only return the translated text, no explanations:\n\n{$text}";
-
-        $data = [
-            'messages' => [
-                ['role' => 'user', 'content' => $prompt]
-            ],
-            'options' => ['model' => 'openrouter/auto'] // Use openrouter auto-selection for translations
-        ];
-
-        $ch = curl_init($this->nodeUrl . '/api/ai/chat');
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-            ],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10, // Reduced from 30 to 10 seconds
-            CURLOPT_CONNECTTIMEOUT => 5, // Add connect timeout
-        ]);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
-
-        if ($error) {
-            error_log('AI Translation curl error: ' . $error);
-            return null;
-        }
-
-        if ($httpCode === 200 && $response) {
-            $result = json_decode($response, true);
-            if ($result && isset($result['response'])) {
-                return trim($result['response']);
-            }
-        }
-
-        return null;
     }
 }

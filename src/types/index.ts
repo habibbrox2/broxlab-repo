@@ -49,6 +49,8 @@ export interface ResponseMeta {
     model: string;
     provider: string;
     tokensUsed?: number;
+    inputTokens?: number;
+    outputTokens?: number;
     finishReason?: string;
     executionTimeMs?: number;
 }

@@ -6,6 +6,8 @@ import { aiModelService } from '../services/ai-models.service';
 import aiProviderService from '../services/ai-provider.service';
 import { generateEmbedding } from '../services/embedding.service';
 import { query, queryOne } from '../config/database';
+import { CodexProvider } from '../providers/codex.provider';
+import { config } from '../config/index';
 
 const chatBodySchema = {
     type: 'object',
@@ -110,6 +112,69 @@ export async function chatRoutes(fastify: FastifyInstance): Promise<void> {
         });
 
         await chatService.handleChat(request, reply, true);
+    });
+
+    /**
+     * Code completion endpoint
+     * POST /api/ai/code-completions
+     */
+    fastify.post('/api/ai/code-completions', async (request, reply) => {
+        try {
+            const body = request.body as any;
+            const prompt = (body.prompt || '').toString().trim();
+            const provider = (body.provider || 'codex').toString().trim().toLowerCase();
+            const model = (body.model || 'code-davinci-002').toString().trim();
+            const temperature = typeof body.temperature === 'number' ? body.temperature : 0.7;
+            const maxTokens = typeof body.maxTokens === 'number' ? body.maxTokens : 256;
+            const topP = typeof body.topP === 'number' ? body.topP : 1;
+            const stop = Array.isArray(body.stop) ? body.stop.filter((item: any) => typeof item === 'string') : ['\n\nclass', '\ndef ', '\n\n#'];
+
+            if (!prompt) {
+                reply.code(400).send({
+                    success: false,
+                    error: 'Prompt is required for code completion',
+                });
+                return;
+            }
+
+            if (!['codex', 'openai'].includes(provider)) {
+                reply.code(400).send({
+                    success: false,
+                    error: 'Unsupported provider for code completions. Use `codex` or `openai`.',
+                });
+                return;
+            }
+
+            const apiKey = config.ai.openai.apiKey || process.env.OPENAI_API_KEY || '';
+            if (!apiKey) {
+                reply.code(500).send({
+                    success: false,
+                    error: 'OpenAI API key is not configured',
+                });
+                return;
+            }
+
+            const providerInstance = new CodexProvider(apiKey, model);
+            const result = await providerInstance.completeCode(prompt, {
+                model,
+                temperature,
+                maxTokens,
+                topP,
+                stop,
+            });
+
+            reply.send({
+                success: true,
+                completion: result.completion,
+                meta: result.meta,
+            });
+        } catch (error: any) {
+            logger.error('Code completion failed:', error);
+            reply.code(500).send({
+                success: false,
+                error: error?.message || 'Code completion request failed',
+            });
+        }
     });
 
     /**

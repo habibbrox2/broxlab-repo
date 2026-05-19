@@ -24,12 +24,10 @@ if (!window.BroxAssistantLoaded) {
         langKey: 'brox.ai.lang',
         tokenKey: 'brox.ai.visitor_token',
         proxyUrl: '/api/ai/chat',
-        phpFallbackUrl: '/ai/chat',
         sessionBootstrapUrl: '/api/ai/session',
         modelsUrl: '/api/ai/models',
         frontendSettingsUrl: '/api/ai-system/frontend',
-        puterCdn: 'https://js.puter.com/v2/',     // Puter.js CDN (fallback only)
-        cryptoKeyId: 'brox.ai.crypto_key'         // Stored encryption key identifier
+        cryptoKeyId: 'brox.ai.crypto_key', // Stored encryption key identifier
     };
 
     // ── BroxCrypto: Encryption utility using Web Crypto API (AES-GCM) ───────────────
@@ -44,17 +42,17 @@ if (!window.BroxAssistantLoaded) {
                 return await crypto.subtle.importKey(
                     'raw',
                     keyBytes,
-                    { name: 'AES-GCM', length: 256 },
+                    { name: 'AES-GCM', length: 256, },
                     true,
-                    ['encrypt', 'decrypt']
+                    ['encrypt', 'decrypt',]
                 );
             }
 
             // Generate new key if none exists
             const key = await crypto.subtle.generateKey(
-                { name: 'AES-GCM', length: 256 },
+                { name: 'AES-GCM', length: 256, },
                 true,
-                ['encrypt', 'decrypt']
+                ['encrypt', 'decrypt',]
             );
 
             // Export and store the key bytes
@@ -78,7 +76,7 @@ if (!window.BroxAssistantLoaded) {
                     const data = encoder.encode(plaintext);
 
                     const ciphertext = await crypto.subtle.encrypt(
-                        { name: 'AES-GCM', iv: iv },
+                        { name: 'AES-GCM', iv: iv, },
                         key,
                         data
                     );
@@ -106,7 +104,7 @@ if (!window.BroxAssistantLoaded) {
                     const ciphertext = combined.slice(12);
 
                     const decrypted = await crypto.subtle.decrypt(
-                        { name: 'AES-GCM', iv: iv },
+                        { name: 'AES-GCM', iv: iv, },
                         key,
                         ciphertext
                     );
@@ -117,7 +115,7 @@ if (!window.BroxAssistantLoaded) {
                     console.warn('[BroxCrypto] Decryption failed:', e);
                     return null;
                 }
-            }
+            },
         };
     })();
 
@@ -139,7 +137,7 @@ if (!window.BroxAssistantLoaded) {
             reset: 'পূর্ববর্তী চ্যাট হিস্ট্রি রিসেট করা হয়েছে।',
             history_empty: 'কোন ইতিহাস নেই',
             chat_session: 'চ্যাট সেশন',
-            no_history: 'এই চ্যাটটি বর্তমানে সক্রিয় আছে।'
+            no_history: 'এই চ্যাটটি বর্তমানে সক্রিয় আছে।',
         },
         en: {
             title: 'Brox Assistant',
@@ -154,12 +152,12 @@ if (!window.BroxAssistantLoaded) {
             err_email_invalid: 'Please enter a valid email address.',
             err_mobile_invalid: 'Please enter a valid mobile number (11 digits).',
             err_conn: 'Connection error. Please try again later.',
-            fallback: '⚠️ Primary AI unavailable. Falling back to Puter AI.',
+            fallback: '⚠️ AI service unavailable. Please try again later.',
             reset: 'Previous chat history has been reset.',
             history_empty: 'No history',
             chat_session: 'Chat Session',
-            no_history: 'This chat is currently active.'
-        }
+            no_history: 'This chat is currently active.',
+        },
     };
 
     // ─── Validation Helpers ─────────────────────────────────────────────
@@ -185,21 +183,6 @@ if (!window.BroxAssistantLoaded) {
         return div.innerHTML;
     }
 
-    // ─── Puter.js Loader (lazy, CDN) ──────────────────────────────────────────────
-    function loadPuter() {
-        return new Promise((resolve, reject) => {
-            if (window.puter) return resolve(window.puter);
-            const s = document.createElement('script');
-            s.src = CONFIG.puterCdn;
-            s.async = true;
-            s.onload = () => {
-                resolve(window.puter);
-            };
-            s.onerror = () => reject(new Error('Puter.js could not be loaded from CDN'));
-            document.head.appendChild(s);
-        });
-    }
-
     // ─── Remote Model Loader ──────────────────────────────────────────────────────
     async function fetchModels(provider) {
         try {
@@ -207,7 +190,7 @@ if (!window.BroxAssistantLoaded) {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             if (data?.models && Array.isArray(data.models) && data.models.length > 0) {
-                return { models: data.models, source: 'remote' };
+                return { models: data.models, source: 'remote', };
             }
             throw new Error('No models returned');
         } catch (e) {
@@ -215,12 +198,12 @@ if (!window.BroxAssistantLoaded) {
             // Return fallback models for public assistant with better names
             return {
                 models: [
-                    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', default: true },
-                    { id: 'gemini-pro-1.5', name: 'Gemini Pro 1.5' },
-                    { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
-                    { id: 'claude-3-haiku', name: 'Claude 3 Haiku' }
+                    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', default: true, },
+                    { id: 'gemini-pro-1.5', name: 'Gemini Pro 1.5', },
+                    { id: 'gpt-4o-mini', name: 'GPT-4o Mini', },
+                    { id: 'claude-3-haiku', name: 'Claude 3 Haiku', },
                 ],
-                source: 'fallback'
+                source: 'fallback',
             };
         }
     }
@@ -250,15 +233,15 @@ if (!window.BroxAssistantLoaded) {
             this.sessionKey = this.sessionState.sessionKey || this.generateSessionKey();
             this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             this.isThinking = false;
-            this.currentModel = null;    // will be set after model list loads
-            this.frontendProvider = 'puter';
+            this.currentModel = null; // will be set after model list loads
+            this.frontendProvider = 'openrouter';
             this.frontendModel = '';
-            this.recognition = null;     // Speech recognition instance
+            this.recognition = null; // Speech recognition instance
             this.idleTimer = null;
             this.isChatActive = false;
             this.modelBarOpen = false;
             this.historyStateKey = 'brox.ai.assistant.open';
-            this.historyStateActive = !!(history.state && history.state[this.historyStateKey]);
+            this.historyStateActive = Boolean(history.state && history.state[this.historyStateKey]);
             this.overlay = null;
 
             this.initUI();
@@ -280,7 +263,7 @@ if (!window.BroxAssistantLoaded) {
         getVisitorToken() {
             let token = localStorage.getItem(CONFIG.tokenKey);
             if (!token) {
-                token = 'vt_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+                token = `vt_${Math.random().toString(36).substr(2, 9)}${Date.now().toString(36)}`;
                 localStorage.setItem(CONFIG.tokenKey, token);
             }
             return token;
@@ -325,7 +308,7 @@ if (!window.BroxAssistantLoaded) {
                 sessionStorage.setItem(CONFIG.sessionStateKey, JSON.stringify({
                     sessionKey: this.sessionKey || this.generateSessionKey(),
                     conversationId: this.conversationId || null,
-                    updatedAt: Date.now()
+                    updatedAt: Date.now(),
                 }));
             } catch (e) { }
         }
@@ -348,12 +331,12 @@ if (!window.BroxAssistantLoaded) {
             try {
                 const resp = await fetch(CONFIG.sessionBootstrapUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', },
                     body: JSON.stringify({
                         visitorToken: this.visitorToken,
                         session_key: this.sessionKey,
-                        conversation_id: this.conversationId || null
-                    })
+                        conversation_id: this.conversationId || null,
+                    }),
                 });
                 if (!resp.ok) return;
 
@@ -372,9 +355,9 @@ if (!window.BroxAssistantLoaded) {
                         .map(msg => ({
                             role: msg.role,
                             content: msg.content,
-                            timestamp: msg.created_at || msg.timestamp || undefined
+                            timestamp: msg.created_at || msg.timestamp || undefined,
                         }))
-                        .filter(msg => ['system', 'user', 'assistant'].includes(msg.role));
+                        .filter(msg => ['system', 'user', 'assistant',].includes(msg.role));
 
                     if (serverHistory.length && (this.history.length === 0 || serverHistory.length > this.history.length)) {
                         this.history = serverHistory;
@@ -391,7 +374,7 @@ if (!window.BroxAssistantLoaded) {
 
         loadUserProfile() {
             // Try encrypted storage first (v2026), fallback to plain
-            const encrypted = localStorage.getItem(CONFIG.userKey + '_enc');
+            const encrypted = localStorage.getItem(`${CONFIG.userKey}_enc`);
             if (encrypted) {
                 // Async decryption - return null for now, actual load happens async
                 BroxCrypto.decrypt(encrypted).then(decrypted => {
@@ -445,7 +428,7 @@ if (!window.BroxAssistantLoaded) {
             // Save encrypted (v2026)
             const encrypted = await BroxCrypto.encrypt(JSON.stringify(profile));
             if (encrypted) {
-                localStorage.setItem(CONFIG.userKey + '_enc', encrypted);
+                localStorage.setItem(`${CONFIG.userKey}_enc`, encrypted);
             }
 
             // Also save legacy unencrypted for backward compatibility
@@ -484,18 +467,18 @@ if (!window.BroxAssistantLoaded) {
                 prechatSteps: {
                     name: document.querySelector('.brox-ai-step-name'),
                     contact: document.querySelector('.brox-ai-step-contact'),
-                    topic: document.querySelector('.brox-ai-step-topic')
+                    topic: document.querySelector('.brox-ai-step-topic'),
                 },
                 prechatBtns: {
                     next1: document.getElementById('introNext1'),
                     next2: document.getElementById('introNext2'),
-                    start: document.getElementById('introStartChat')
+                    start: document.getElementById('introStartChat'),
                 },
                 prechatInputs: {
                     name: document.getElementById('introName'),
                     email: document.getElementById('introEmail'),
-                    mobile: document.getElementById('introMobile')
-                }
+                    mobile: document.getElementById('introMobile'),
+                },
             };
             if (this.nodes.btn) {
                 this.updateLangUI();
@@ -507,7 +490,7 @@ if (!window.BroxAssistantLoaded) {
 
         async bootstrapFrontendSettings() {
             const data = await fetchFrontendSettings();
-            this.frontendProvider = data?.provider || 'puter';
+            this.frontendProvider = data?.provider || 'openrouter';
             this.frontendModel = data?.frontend_model || data?.model || 'gemini-2.0-flash';
 
             // Set initial model name immediately to show it's loading
@@ -532,7 +515,7 @@ if (!window.BroxAssistantLoaded) {
             if (topicLabel) topicLabel.textContent = this.t('topic_label');
             if (startBtn) startBtn.textContent = this.t('start_btn');
 
-            ['langBn', 'langEn'].forEach(k => {
+            ['langBn', 'langEn',].forEach(k => {
                 const node = this.nodes[k];
                 if (!node) return;
                 const isActive = (k === 'langBn') ? this.lang === 'bn' : this.lang === 'en';
@@ -627,8 +610,8 @@ if (!window.BroxAssistantLoaded) {
             // Clear server-side image context for this session, since it is being reset.
             fetch('/api/ai/clear-image-context', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ visitorToken: this.visitorToken, session_key: this.sessionKey })
+                headers: { 'Content-Type': 'application/json', },
+                body: JSON.stringify({ visitorToken: this.visitorToken, session_key: this.sessionKey, }),
             }).catch(() => {
                 // non-critical
             });
@@ -649,7 +632,7 @@ if (!window.BroxAssistantLoaded) {
             const entry = document.createElement('div');
             entry.className = 'brox-ai-history-item';
             const firstMsg = this.history[0]?.content || 'চ্যাট সেশন';
-            entry.textContent = firstMsg.substring(0, 30) + '...';
+            entry.textContent = `${firstMsg.substring(0, 30)}...`;
             entry.onclick = () => {
                 window.showAlert(this.t('no_history'), this.t('chat_session'), 'info');
             };
@@ -685,7 +668,7 @@ if (!window.BroxAssistantLoaded) {
                 localStorage.setItem('brox.ai.gdpr_consent', JSON.stringify({
                     timestamp: Date.now(),
                     data: dataConsent,
-                    analytics: analyticsConsent
+                    analytics: analyticsConsent,
                 }));
 
                 // Send consent to server for audit trail
@@ -713,7 +696,11 @@ if (!window.BroxAssistantLoaded) {
         renderInitialState() {
             if (!this.nodes.prechat || !this.nodes.body || !this.nodes.footer) return;
             this.isChatActive = false;
-            this.nodes.body.innerHTML = '';
+
+            // Only clear if not currently streaming a response
+            if (!this.isThinking) {
+                this.nodes.body.innerHTML = '';
+            }
 
             if (this.user) {
                 // User exists - show chat interface
@@ -730,7 +717,19 @@ if (!window.BroxAssistantLoaded) {
                     const greeting = (this.lang === 'bn' ? `হ্যালো ${this.user.name}! ` : `Hello ${this.user.name}! `) + this.t('welcome');
                     this.addMessage('assistant', greeting);
                 } else {
-                    this.history.forEach(m => this.addMessage(m.role, m.content, false));
+                    // Only add messages that haven't been rendered yet (check data attribute)
+                    const renderedMessages = new Set();
+                    this.nodes.body.querySelectorAll('[data-rendered-to-dom]').forEach(el => {
+                        const content = el.querySelector('.brox-ai-msg-content')?.innerText || '';
+                        renderedMessages.add(content.substring(0, 50));
+                    });
+
+                    this.history.forEach(m => {
+                        const msgPreview = m.content.substring(0, 50);
+                        if (!renderedMessages.has(msgPreview)) {
+                            this.addMessage(m.role, m.content, false);
+                        }
+                    });
                 }
                 this.renderHistorySidebar();
                 return;
@@ -1065,13 +1064,13 @@ if (!window.BroxAssistantLoaded) {
             const state = event?.state || {};
             if (state && state[this.historyStateKey]) {
                 if (this.nodes.shell?.classList.contains('brox-ai-hidden')) {
-                    this.openAssistant({ skipHistory: true });
+                    this.openAssistant({ skipHistory: true, });
                 }
                 return;
             }
 
             if (this.nodes.shell && !this.nodes.shell.classList.contains('brox-ai-hidden')) {
-                this.closeAssistant({ fromPop: true });
+                this.closeAssistant({ fromPop: true, });
             }
         }
 
@@ -1104,8 +1103,8 @@ if (!window.BroxAssistantLoaded) {
             // Clear any cached image context when starting a fresh chat
             fetch('/api/ai/clear-image-context', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ visitorToken: this.visitorToken, session_key: this.sessionKey })
+                headers: { 'Content-Type': 'application/json', },
+                body: JSON.stringify({ visitorToken: this.visitorToken, session_key: this.sessionKey, }),
             }).catch(() => {
                 // non-critical
             });
@@ -1122,7 +1121,7 @@ if (!window.BroxAssistantLoaded) {
 
             const selected = Array.from(document.querySelectorAll('.brox-ai-topic-grid input:checked')).map(i => i.value);
 
-            this.user = { name, email, phone, topics: selected };
+            this.user = { name, email, phone, topics: selected, };
             this.saveUserProfile(this.user);
             this.resetConversationSession();
 
@@ -1144,7 +1143,7 @@ if (!window.BroxAssistantLoaded) {
 
             // Initialize chat in history
             this.history = [];
-            this.history.push({ role: 'user', content: this.user.name, timestamp: new Date().toISOString() });
+            this.history.push({ role: 'user', content: this.user.name, timestamp: new Date().toISOString(), });
             this.saveHistory();
             this.saveSessionState();
 
@@ -1181,7 +1180,7 @@ if (!window.BroxAssistantLoaded) {
             const sanitized = sanitizeInput(text);
             this.nodes.input.value = '';
             this.addMessage('user', sanitized);
-            this.history.push({ role: 'user', content: sanitized, timestamp: new Date().toISOString() });
+            this.history.push({ role: 'user', content: sanitized, timestamp: new Date().toISOString(), });
             this.saveHistory();
             this.renderHistorySidebar();
             this.renderQuickActions();
@@ -1194,6 +1193,19 @@ if (!window.BroxAssistantLoaded) {
             if (!this.nodes.body) return;
             const existing = this.nodes.body.querySelector('.brox-ai-typing');
             existing?.remove();
+
+            // Prevent duplicate assistant messages - check if last message has same content
+            if (role === 'assistant') {
+                const lastMsg = this.nodes.body.querySelector('.brox-ai-assistant:last-child');
+                if (lastMsg) {
+                    const lastContent = lastMsg.querySelector('.brox-ai-msg-content')?.innerText || '';
+                    const newContent = content.split('\n')[0]; // First line of new content
+                    if (lastContent.includes(newContent)) {
+                        console.warn('[BroxAssistant] Skipping duplicate assistant message');
+                        return;
+                    }
+                }
+            }
 
             // Check for incomplete response (e.g., ends with numbered list like "3.")
             const isIncomplete = this.isResponseIncomplete(content);
@@ -1213,7 +1225,7 @@ if (!window.BroxAssistantLoaded) {
 
             const meta = document.createElement('div');
             meta.className = 'brox-ai-msg-meta';
-            meta.textContent = new Date().toLocaleTimeString(this.lang === 'bn' ? 'bn-BD' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+            meta.textContent = new Date().toLocaleTimeString(this.lang === 'bn' ? 'bn-BD' : 'en-US', { hour: '2-digit', minute: '2-digit', });
             msg.appendChild(meta);
 
             // Add feedback for assistant messages
@@ -1268,13 +1280,13 @@ if (!window.BroxAssistantLoaded) {
                         try {
                             const resp = await fetch('/api/ai/feedback', {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers: { 'Content-Type': 'application/json', },
                                 body: JSON.stringify({
                                     conversation_id: convId,
                                     message_id: msgId,
                                     rating: rating,
-                                    csrf_token: csrfToken
-                                })
+                                    csrf_token: csrfToken,
+                                }),
                             });
                             const result = await resp.json();
                             if (result.success) {
@@ -1322,6 +1334,11 @@ if (!window.BroxAssistantLoaded) {
         renderMarkdown(el, text) {
             if (!text) return;
 
+            const escapedText = text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
             // Check if marked/highlight are available, otherwise use fallback
             if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
                 try {
@@ -1329,14 +1346,14 @@ if (!window.BroxAssistantLoaded) {
                     marked.setOptions({
                         highlight: function (code, lang) {
                             if (lang && hljs.getLanguage(lang)) {
-                                return hljs.highlight(code, { language: lang }).value;
+                                return hljs.highlight(code, { language: lang, }).value;
                             }
                             return hljs.highlightAuto(code).value;
                         },
                         breaks: true,
-                        gfm: true
+                        gfm: true,
                     });
-                    el.innerHTML = marked.parse(text);
+                    el.innerHTML = marked.parse(escapedText);
                     return;
                 } catch (e) {
                     console.warn('[Markdown] marked.js failed, using fallback:', e.message);
@@ -1394,7 +1411,7 @@ if (!window.BroxAssistantLoaded) {
             msg.appendChild(body);
             const meta = document.createElement('div');
             meta.className = 'brox-ai-msg-meta';
-            meta.textContent = new Date().toLocaleTimeString(this.lang === 'bn' ? 'bn-BD' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+            meta.textContent = new Date().toLocaleTimeString(this.lang === 'bn' ? 'bn-BD' : 'en-US', { hour: '2-digit', minute: '2-digit', });
 
             // Keep UX consistent with addMessage(): add feedback + copy actions for assistant bubbles
             if (role === 'assistant') {
@@ -1441,13 +1458,13 @@ if (!window.BroxAssistantLoaded) {
                         try {
                             const resp = await fetch('/api/ai/feedback', {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers: { 'Content-Type': 'application/json', },
                                 body: JSON.stringify({
                                     conversation_id: convId,
                                     message_id: msgId,
                                     rating: rating,
-                                    csrf_token: csrfToken
-                                })
+                                    csrf_token: csrfToken,
+                                }),
                             });
                             const result = await resp.json();
                             if (result.success) {
@@ -1461,6 +1478,8 @@ if (!window.BroxAssistantLoaded) {
             } else {
                 msg.appendChild(meta);
             }
+            // Mark wrapper to prevent duplicate rendering
+            msg.dataset.renderedToDom = 'true';
             this.nodes.body.appendChild(msg);
             this.nodes.body.scrollTop = this.nodes.body.scrollHeight;
             return body;
@@ -1494,23 +1513,23 @@ if (!window.BroxAssistantLoaded) {
         describeToolUsage(toolNames) {
             const map = this.lang === 'bn'
                 ? {
-                    web_search: { label: 'Searching', detail: 'ওয়েব থেকে তথ্য খোঁজা হচ্ছে...' },
-                    read_file: { label: 'Reading File', detail: 'লোকাল ফাইল পড়া হচ্ছে...' },
-                    analyze_image: { label: 'Analyzing Image', detail: 'ছবি বিশ্লেষণ করা হচ্ছে...' },
-                    fetch_url_content: { label: 'Browsing URL', detail: 'ওয়েবপেজ কনটেন্ট আনা হচ্ছে...' },
-                    search_knowledge_base: { label: 'Searching KB', detail: 'নলেজ বেসে খোঁজা হচ্ছে...' },
+                    web_search: { label: 'Searching', detail: 'ওয়েব থেকে তথ্য খোঁজা হচ্ছে...', },
+                    read_file: { label: 'Reading File', detail: 'লোকাল ফাইল পড়া হচ্ছে...', },
+                    analyze_image: { label: 'Analyzing Image', detail: 'ছবি বিশ্লেষণ করা হচ্ছে...', },
+                    fetch_url_content: { label: 'Browsing URL', detail: 'ওয়েবপেজ কনটেন্ট আনা হচ্ছে...', },
+                    search_knowledge_base: { label: 'Searching KB', detail: 'নলেজ বেসে খোঁজা হচ্ছে...', },
                 }
                 : {
-                    web_search: { label: 'Searching Web', detail: 'Looking up web results...' },
-                    read_file: { label: 'Reading File', detail: 'Reading local project files...' },
-                    analyze_image: { label: 'Analyzing Image', detail: 'Inspecting the image and OCR text...' },
-                    fetch_url_content: { label: 'Browsing URL', detail: 'Fetching page content...' },
-                    search_knowledge_base: { label: 'Searching KB', detail: 'Searching the knowledge base...' },
+                    web_search: { label: 'Searching Web', detail: 'Looking up web results...', },
+                    read_file: { label: 'Reading File', detail: 'Reading local project files...', },
+                    analyze_image: { label: 'Analyzing Image', detail: 'Inspecting the image and OCR text...', },
+                    fetch_url_content: { label: 'Browsing URL', detail: 'Fetching page content...', },
+                    search_knowledge_base: { label: 'Searching KB', detail: 'Searching the knowledge base...', },
                 };
             const primary = toolNames.find((name) => map[name]) || toolNames[0] || '';
             const meta = map[primary] || (this.lang === 'bn'
-                ? { label: 'Calling Tools', detail: 'সহায়ক টুল চালানো হচ্ছে...' }
-                : { label: 'Calling Tools', detail: 'Running assistant tools...' });
+                ? { label: 'Calling Tools', detail: 'সহায়ক টুল চালানো হচ্ছে...', }
+                : { label: 'Calling Tools', detail: 'Running assistant tools...', });
             return {
                 label: meta.label,
                 detail: meta.detail,
@@ -1542,7 +1561,7 @@ if (!window.BroxAssistantLoaded) {
             if (!this.nodes.body) return null;
             const div = document.createElement('div');
             div.className = 'brox-ai-typing brox-ai-thinking-dots';
-            div.innerHTML = `<span></span><span></span><span></span>`;
+            div.innerHTML = '<span></span><span></span><span></span>';
             this.nodes.body.appendChild(div);
             this.nodes.body.scrollTop = this.nodes.body.scrollHeight;
             return div;
@@ -1597,16 +1616,16 @@ if (!window.BroxAssistantLoaded) {
             let stageTimer = null;
             const stageMeta = this.lang === 'bn'
                 ? {
-                    thinking: { label: 'Thinking', sub: 'উত্তর সাজাচ্ছি...', icon: 'bi-stars' },
-                    searching: { label: 'Searching', sub: 'প্রাসঙ্গিক তথ্য খুঁজছি...', icon: 'bi-search' },
-                    calling: { label: 'Calling', sub: 'টুল/সিস্টেম কল চলছে...', icon: 'bi-gear' },
-                    writing: { label: 'Writing', sub: 'সম্পূর্ণ উত্তর লিখছি...', icon: 'bi-pencil-square' }
+                    thinking: { label: 'Thinking', sub: 'উত্তর সাজাচ্ছি...', icon: 'bi-stars', },
+                    searching: { label: 'Searching', sub: 'প্রাসঙ্গিক তথ্য খুঁজছি...', icon: 'bi-search', },
+                    calling: { label: 'Calling', sub: 'টুল/সিস্টেম কল চলছে...', icon: 'bi-gear', },
+                    writing: { label: 'Writing', sub: 'সম্পূর্ণ উত্তর লিখছি...', icon: 'bi-pencil-square', },
                 }
                 : {
-                    thinking: { label: 'Thinking', sub: 'Working on your request...', icon: 'bi-stars' },
-                    searching: { label: 'Searching', sub: 'Looking up relevant context...', icon: 'bi-search' },
-                    calling: { label: 'Calling', sub: 'Running tools/actions...', icon: 'bi-gear' },
-                    writing: { label: 'Writing', sub: 'Composing the final answer...', icon: 'bi-pencil-square' }
+                    thinking: { label: 'Thinking', sub: 'Working on your request...', icon: 'bi-stars', },
+                    searching: { label: 'Searching', sub: 'Looking up relevant context...', icon: 'bi-search', },
+                    calling: { label: 'Calling', sub: 'Running tools/actions...', icon: 'bi-gear', },
+                    writing: { label: 'Writing', sub: 'Composing the final answer...', icon: 'bi-pencil-square', },
                 };
 
             const detectInitialStage = () => {
@@ -1660,8 +1679,8 @@ if (!window.BroxAssistantLoaded) {
                 setStage(wrap, initial);
 
                 const sequence = initial === 'searching'
-                    ? ['searching', 'calling', 'writing']
-                    : ['thinking', 'searching', 'calling', 'writing'];
+                    ? ['searching', 'calling', 'writing',]
+                    : ['thinking', 'searching', 'calling', 'writing',];
                 let idx = 0;
 
                 if (stageTimer) {
@@ -1699,30 +1718,15 @@ if (!window.BroxAssistantLoaded) {
                     session_key: this.sessionKey,
                     context: this.user,
                     stream: true,
-                    csrf_token: this.csrfToken || ''
+                    csrf_token: this.csrfToken || '',
                 };
                 if (this.currentModel) payload.model = this.currentModel;
-                const shouldTryPhpFallback = (status, error) => {
-                    if (error) return true;
-                    return status >= 500;
-                };
-                const fetchChat = async (url) => fetch(url, {
+                const fetchChat = async () => fetch(CONFIG.proxyUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    headers: { 'Content-Type': 'application/json', },
+                    body: JSON.stringify(payload),
                 });
-                const fetchChatWithFallback = async () => {
-                    try {
-                        const primaryResp = await fetchChat(CONFIG.proxyUrl);
-                        if (primaryResp.ok || !shouldTryPhpFallback(primaryResp.status, null)) {
-                            return primaryResp;
-                        }
-                        return await fetchChat(CONFIG.phpFallbackUrl);
-                    } catch (error) {
-                        return await fetchChat(CONFIG.phpFallbackUrl);
-                    }
-                };
-                const resp = await fetchChatWithFallback();
+                const resp = await fetchChat();
                 this.updateAgenticStatus('Agentic', 'উত্তর জেনারেট করছি...');
                 if (!resp.ok) {
                     this.updateAgenticStatus(null);
@@ -1732,28 +1736,32 @@ if (!window.BroxAssistantLoaded) {
                         const ct = (resp.headers.get('content-type') || '').toLowerCase();
                         if (ct.includes('application/json')) {
                             errData = await resp.json();
+                        } else if (ct.includes('text/html')) {
+                            errData = { error: resp.status === 502 ? 'Bad Gateway' : resp.statusText || `Server error (${resp.status})`, };
                         } else {
-                            errData = { error: (await resp.text()) || null };
+                            errData = { error: (await resp.text()) || null, };
                         }
                     } catch (e) { }
-                    const code = errData?.error_code || '';
-                    if (code === 'no_providers' || code === 'providers_failed') {
-                        msgWrapper?.remove();
-                        return await this.puterFallback();
-                    }
-                    const msg = errData?.error || this.t('err_conn');
+                    const msg = errData?.error || (resp.status === 502 ? 'Bad Gateway' : this.t('err_conn'));
                     this.updateModelStatus('offline');
-                    if (msgBubble) this.renderMarkdown(msgBubble, msg);
+                    if (msgBubble) {
+                        this.renderMarkdown(msgBubble, msg);
+                        // Mark as rendered to prevent duplicate via addMessage
+                        msgWrapper.dataset.renderedToDom = 'true';
+                    }
                     return;
                 }
                 let fullReply = '';
                 const reader = resp.body.getReader();
                 const decoder = new TextDecoder('utf-8');
                 let isComplete = true;
+                let buffer = '';
                 while (true) {
-                    const { done, value } = await reader.read();
+                    const { done, value, } = await reader.read();
                     if (done) break;
-                    const lines = decoder.decode(value, { stream: true }).split('\n');
+                    buffer += decoder.decode(value, { stream: true, });
+                    const lines = buffer.split(/\r?\n/);
+                    buffer = lines.pop() || '';
                     for (const line of lines) {
                         if (!line.startsWith('data: ')) continue;
                         const raw = line.slice(6).trim();
@@ -1804,7 +1812,11 @@ if (!window.BroxAssistantLoaded) {
                 if (fullReply) {
                     const isIncomplete = !isComplete || this.isResponseIncomplete(fullReply);
                     if (isIncomplete) this.addContinueButton();
-                    this.history.push({ role: 'assistant', content: fullReply, timestamp: new Date().toISOString() });
+
+                    // Mark message as having been rendered to DOM to prevent duplicates
+                    msgWrapper.dataset.renderedToDom = 'true';
+
+                    this.history.push({ role: 'assistant', content: fullReply, timestamp: new Date().toISOString(), });
                     this.saveHistory();
                     this.saveSessionState();
                     this.renderQuickActions();
@@ -1818,7 +1830,11 @@ if (!window.BroxAssistantLoaded) {
                 this.updateAgenticStatus(null);
                 clearThinking();
                 this.updateModelStatus('offline');
-                if (msgBubble) this.renderMarkdown(msgBubble, this.t('err_conn'));
+                if (msgBubble) {
+                    this.renderMarkdown(msgBubble, this.t('err_conn'));
+                    // Mark as rendered to prevent duplicate
+                    msgWrapper.dataset.renderedToDom = 'true';
+                }
             }
         }
 
@@ -1849,7 +1865,7 @@ if (!window.BroxAssistantLoaded) {
             const continuePrompt = `continue from: "${lastTokens}"`;
 
             // Add user message indicating continuation
-            this.history.push({ role: 'user', content: continuePrompt, timestamp: new Date().toISOString() });
+            this.history.push({ role: 'user', content: continuePrompt, timestamp: new Date().toISOString(), });
             this.saveHistory();
             this.renderHistorySidebar();
             this.renderQuickActions();
@@ -1866,117 +1882,6 @@ if (!window.BroxAssistantLoaded) {
             return lastWords.join(' ');
         }
 
-        async puterFallback() {
-            this.addMessage('assistant', this.t('fallback'));
-            this.updateModelStatus('offline', 'Fallback (Puter)');
-            let msgBubble = null;
-            let msgWrapper = null;
-            let clearThinking = () => { };
-            try {
-                const puter = await loadPuter();
-                const lastMsg = this.history.filter(m => m.role === 'user').pop();
-                if (!lastMsg) return;
-                msgBubble = this.createEmptyMessage('assistant');
-                msgWrapper = msgBubble?.parentElement;
-                const t0 = performance.now();
-                let reply = '';
-                let thinkingCleared = false;
-                let stageTimer = null;
-
-                const stageMeta = this.lang === 'bn'
-                    ? {
-                        thinking: { label: 'Thinking', sub: 'উত্তর সাজাচ্ছি...', icon: 'bi-stars' },
-                        writing: { label: 'Writing', sub: 'সম্পূর্ণ উত্তর লিখছি...', icon: 'bi-pencil-square' }
-                    }
-                    : {
-                        thinking: { label: 'Thinking', sub: 'Working on your request...', icon: 'bi-stars' },
-                        writing: { label: 'Writing', sub: 'Composing the final answer...', icon: 'bi-pencil-square' }
-                    };
-
-                const setStage = (wrap, stageKey) => {
-                    if (!wrap) return;
-                    const meta = stageMeta[stageKey] || stageMeta.thinking;
-                    wrap.dataset.stage = stageKey;
-                    const icon = wrap.querySelector('[data-brox-ai-stage-icon]');
-                    const label = wrap.querySelector('[data-brox-ai-stage-label]');
-                    const sub = wrap.querySelector('[data-brox-ai-stage-sub]');
-                    if (icon) icon.className = `bi ${meta.icon}`;
-                    if (label) label.textContent = meta.label;
-                    if (sub) sub.textContent = meta.sub;
-                    try { this.updateAgenticStatus(meta.label, meta.sub); } catch { }
-                };
-
-                const showThinkingInBubble = () => {
-                    if (!msgBubble || !msgWrapper) return;
-                    msgWrapper.classList.add('brox-ai-thinking-msg');
-                    msgBubble.innerHTML = `
-                        <div class="brox-ai-thinking-wrap" aria-live="polite" aria-busy="true">
-                            <div class="brox-ai-progress-pill" role="status">
-                                <span class="brox-ai-progress-icon" aria-hidden="true"><i data-brox-ai-stage-icon class="bi bi-stars"></i></span>
-                                <span class="brox-ai-thinking-text" data-brox-ai-stage-label>${this.t('thinking')}</span>
-                                <span class="brox-ai-thinking-dots" aria-hidden="true"><span></span><span></span><span></span></span>
-                            </div>
-                            <div class="brox-ai-progress-sub" data-brox-ai-stage-sub></div>
-                            <div class="brox-ai-progress-bar" aria-hidden="true"></div>
-                            <div class="brox-ai-thinking-skeleton" aria-hidden="true">
-                                <span class="brox-ai-skel-line skel-1"></span>
-                                <span class="brox-ai-skel-line skel-2"></span>
-                                <span class="brox-ai-skel-line skel-3"></span>
-                            </div>
-                        </div>
-                    `;
-
-                    const wrap = msgBubble.querySelector('.brox-ai-thinking-wrap');
-                    setStage(wrap, 'thinking');
-
-                    if (stageTimer) {
-                        try { clearInterval(stageTimer); } catch { }
-                        stageTimer = null;
-                    }
-                    stageTimer = setInterval(() => {
-                        if (thinkingCleared) return;
-                        setStage(wrap, 'writing');
-                    }, 2400);
-                };
-
-                clearThinking = () => {
-                    if (!msgBubble || !msgWrapper) return;
-                    if (thinkingCleared) return;
-                    thinkingCleared = true;
-                    if (stageTimer) {
-                        try { clearInterval(stageTimer); } catch { }
-                        stageTimer = null;
-                    }
-                    msgWrapper.classList.remove('brox-ai-thinking-msg');
-                    msgBubble.innerHTML = '';
-                };
-
-                showThinkingInBubble();
-                const stream = await puter.ai.chat(lastMsg.content, { stream: true });
-                for await (const chunk of stream) {
-                    clearThinking();
-                    reply += chunk?.text || '';
-                    this.renderMarkdown(msgBubble, reply);
-                    this.nodes.body.scrollTop = this.nodes.body.scrollHeight;
-                }
-                if (reply) {
-                    this.history.push({ role: 'assistant', content: reply, timestamp: new Date().toISOString() });
-                    this.saveHistory();
-                    this.renderQuickActions();
-                    this.markActivity();
-                }
-                this.updateResponseMeta(msgBubble, t0);
-            } catch (fallbackErr) {
-                try { clearThinking(); } catch (e) { }
-                if (msgWrapper) msgWrapper.classList.remove('brox-ai-thinking-msg');
-                if (msgBubble) {
-                    this.renderMarkdown(msgBubble, this.t('err_conn'));
-                } else {
-                    this.addMessage('assistant', this.t('err_conn'));
-                }
-            }
-        }
-
         // ── GDPR Consent Server Sync ───────────────────────────────────────────────
         async sendGdprConsentToServer(dataConsent, analyticsConsent) {
             try {
@@ -1985,16 +1890,16 @@ if (!window.BroxAssistantLoaded) {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
+                        'X-CSRF-TOKEN': csrfToken,
                     },
                     body: JSON.stringify({
                         visitor_token: this.visitorToken,
                         consent: {
                             data: dataConsent,
                             analytics: analyticsConsent,
-                            timestamp: Date.now()
-                        }
-                    })
+                            timestamp: Date.now(),
+                        },
+                    }),
                 });
             } catch (e) {
                 // Non-critical: local consent is already stored
@@ -2082,11 +1987,11 @@ if (!window.BroxAssistantLoaded) {
 
         formatMetaTime() {
             const locale = this.lang === 'bn' ? 'bn-BD' : 'en-US';
-            return new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+            return new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', });
         }
 
         formatDuration(ms) {
-            return (ms / 1000).toFixed(1) + 's';
+            return `${(ms / 1000).toFixed(1)}s`;
         }
 
         updateResponseMeta(bodyEl, startedAt) {
@@ -2112,23 +2017,23 @@ if (!window.BroxAssistantLoaded) {
                     general: 'সাধারণ তথ্য',
                     support: 'সাপোর্ট',
                     billing: 'বিলিং',
-                    feedback: 'মতামত'
+                    feedback: 'মতামত',
                 };
             }
             return {
                 general: 'General',
                 support: 'Support',
                 billing: 'Billing',
-                feedback: 'Feedback'
+                feedback: 'Feedback',
             };
         }
 
         getTopicKeywords() {
             return {
-                general: ['general', 'info', 'information', 'guide', 'how to', 'what', 'why', 'কী', 'কি', 'তথ্য', 'জানতে'],
-                support: ['support', 'help', 'issue', 'problem', 'error', 'সাপোর্ট', 'সহায়তা', 'সমস্যা', 'ত্রুটি'],
-                billing: ['billing', 'bill', 'payment', 'price', 'pricing', 'invoice', 'বিল', 'পেমেন্ট', 'দাম', 'মূল্য', 'ইনভয়েস'],
-                feedback: ['feedback', 'review', 'suggestion', 'complaint', 'মতামত', 'প্রস্তাব', 'রিভিউ', 'অভিযোগ']
+                general: ['general', 'info', 'information', 'guide', 'how to', 'what', 'why', 'কী', 'কি', 'তথ্য', 'জানতে',],
+                support: ['support', 'help', 'issue', 'problem', 'error', 'সাপোর্ট', 'সহায়তা', 'সমস্যা', 'ত্রুটি',],
+                billing: ['billing', 'bill', 'payment', 'price', 'pricing', 'invoice', 'বিল', 'পেমেন্ট', 'দাম', 'মূল্য', 'ইনভয়েস',],
+                feedback: ['feedback', 'review', 'suggestion', 'complaint', 'মতামত', 'প্রস্তাব', 'রিভিউ', 'অভিযোগ',],
             };
         }
 
@@ -2147,46 +2052,46 @@ if (!window.BroxAssistantLoaded) {
 
         renderQuickActions() {
             if (!this.nodes.quickActions) return;
-            const lastAssistant = [...this.history].reverse().find(m => m.role === 'assistant');
-            const lastUser = [...this.history].reverse().find(m => m.role === 'user');
+            const lastAssistant = [...this.history,].reverse().find(m => m.role === 'assistant');
+            const lastUser = [...this.history,].reverse().find(m => m.role === 'user');
             const actions = [];
 
             if (this.lang === 'bn') {
                 if (lastAssistant) {
                     actions.push(
-                        { label: 'শেষ উত্তরের সারাংশ', prompt: 'শেষ উত্তরের সারাংশ দিন।' },
-                        { label: 'আরও বিস্তারিত', prompt: 'আরও বিস্তারিত ব্যাখ্যা করুন।' },
-                        { label: 'বাংলায় অনুবাদ', prompt: 'শেষ উত্তরের বাংলা অনুবাদ দিন।' }
+                        { label: 'শেষ উত্তরের সারাংশ', prompt: 'শেষ উত্তরের সারাংশ দিন।', },
+                        { label: 'আরও বিস্তারিত', prompt: 'আরও বিস্তারিত ব্যাখ্যা করুন।', },
+                        { label: 'বাংলায় অনুবাদ', prompt: 'শেষ উত্তরের বাংলা অনুবাদ দিন।', }
                     );
                 } else if (lastUser) {
                     actions.push(
-                        { label: 'প্রশ্ন সংক্ষেপ', prompt: 'আমার প্রশ্ন সংক্ষেপ করুন।' },
-                        { label: 'দ্রুত উত্তর', prompt: 'এক লাইনে উত্তর দিন।' },
-                        { label: 'ধাপে ধাপে', prompt: 'ধাপে ধাপে উত্তর দিন।' }
+                        { label: 'প্রশ্ন সংক্ষেপ', prompt: 'আমার প্রশ্ন সংক্ষেপ করুন।', },
+                        { label: 'দ্রুত উত্তর', prompt: 'এক লাইনে উত্তর দিন।', },
+                        { label: 'ধাপে ধাপে', prompt: 'ধাপে ধাপে উত্তর দিন।', }
                     );
                 } else {
                     actions.push(
-                        { label: 'কী করতে পারি?', prompt: 'আপনি কী কী করতে পারেন?' },
-                        { label: 'সাহায্য দরকার', prompt: 'আমি সাহায্য চাই।' }
+                        { label: 'কী করতে পারি?', prompt: 'আপনি কী কী করতে পারেন?', },
+                        { label: 'সাহায্য দরকার', prompt: 'আমি সাহায্য চাই।', }
                     );
                 }
             } else {
                 if (lastAssistant) {
                     actions.push(
-                        { label: 'Summarize last reply', prompt: 'Summarize the last reply.' },
-                        { label: 'Go deeper', prompt: 'Explain in more detail.' },
-                        { label: 'Translate to Bengali', prompt: 'Translate the last reply to Bengali.' }
+                        { label: 'Summarize last reply', prompt: 'Summarize the last reply.', },
+                        { label: 'Go deeper', prompt: 'Explain in more detail.', },
+                        { label: 'Translate to Bengali', prompt: 'Translate the last reply to Bengali.', }
                     );
                 } else if (lastUser) {
                     actions.push(
-                        { label: 'Shorten my question', prompt: 'Shorten my question.' },
-                        { label: 'Quick answer', prompt: 'Give a one-line answer.' },
-                        { label: 'Step-by-step', prompt: 'Answer step by step.' }
+                        { label: 'Shorten my question', prompt: 'Shorten my question.', },
+                        { label: 'Quick answer', prompt: 'Give a one-line answer.', },
+                        { label: 'Step-by-step', prompt: 'Answer step by step.', }
                     );
                 } else {
                     actions.push(
-                        { label: 'What can you do?', prompt: 'What can you help with?' },
-                        { label: 'Need help', prompt: 'I need help.' }
+                        { label: 'What can you do?', prompt: 'What can you help with?', },
+                        { label: 'Need help', prompt: 'I need help.', }
                     );
                 }
             }
@@ -2223,28 +2128,28 @@ if (!window.BroxAssistantLoaded) {
 
             const suggestions = this.lang === 'bn'
                 ? [
-                    { label: 'পরবর্তী বাক্য', prompt: `এই বাক্যের পরবর্তী স্বাভাবিক বাক্যটি পূরণ করুন: ‘${text}’` },
-                    { label: 'পরবর্তী বাক্যাংশ', prompt: `এই বাক্যের পরবর্তী সংক্ষিপ্ত বাক্যাংশটি সাজান: ‘${text}’` },
-                    { label: 'পরবর্তী শব্দসমষ্টি', prompt: `এই বাক্যের পরবর্তী কয়েকটি শব্দ অনুমান করুন: ‘${text}’` },
-                    { label: 'বাক্য সম্পূর্ণ করুন', prompt: `এই বাক্যটি সম্পূর্ণ করুন: ‘${text}’` },
-                    { label: 'শব্দের পরামর্শ', prompt: `এই বাক্যের পরবর্তী সম্ভাব্য শব্দ বা সংক্ষিপ্ত বাক্যাংশটি লিখুন: ‘${text}’` },
-                    { label: 'শব্দ/বাক্য পূরণ', prompt: `এই ইনপুটের পরবর্তী প্রাকৃতিক শব্দ বা বাক্যাংশ লিখুন: ‘${text}’` },
-                    { label: 'সংক্ষেপে', prompt: `${text} (সংক্ষেপে বলুন)` },
-                    { label: 'উদাহরণসহ', prompt: `${text} (উদাহরণসহ)` },
-                    { label: 'ধাপে ধাপে', prompt: `${text} (ধাপে ধাপে)` },
-                    { label: 'ইংরেজিতে', prompt: `${text} (ইংরেজিতে লিখুন)` }
+                    { label: 'পরবর্তী বাক্য', prompt: `এই বাক্যের পরবর্তী স্বাভাবিক বাক্যটি পূরণ করুন: ‘${text}’`, },
+                    { label: 'পরবর্তী বাক্যাংশ', prompt: `এই বাক্যের পরবর্তী সংক্ষিপ্ত বাক্যাংশটি সাজান: ‘${text}’`, },
+                    { label: 'পরবর্তী শব্দসমষ্টি', prompt: `এই বাক্যের পরবর্তী কয়েকটি শব্দ অনুমান করুন: ‘${text}’`, },
+                    { label: 'বাক্য সম্পূর্ণ করুন', prompt: `এই বাক্যটি সম্পূর্ণ করুন: ‘${text}’`, },
+                    { label: 'শব্দের পরামর্শ', prompt: `এই বাক্যের পরবর্তী সম্ভাব্য শব্দ বা সংক্ষিপ্ত বাক্যাংশটি লিখুন: ‘${text}’`, },
+                    { label: 'শব্দ/বাক্য পূরণ', prompt: `এই ইনপুটের পরবর্তী প্রাকৃতিক শব্দ বা বাক্যাংশ লিখুন: ‘${text}’`, },
+                    { label: 'সংক্ষেপে', prompt: `${text} (সংক্ষেপে বলুন)`, },
+                    { label: 'উদাহরণসহ', prompt: `${text} (উদাহরণসহ)`, },
+                    { label: 'ধাপে ধাপে', prompt: `${text} (ধাপে ধাপে)`, },
+                    { label: 'ইংরেজিতে', prompt: `${text} (ইংরেজিতে লিখুন)`, },
                 ]
                 : [
-                    { label: 'Next Sentence', prompt: `Complete the next natural sentence after: ‘${text}’` },
-                    { label: 'Next Phrase', prompt: `Predict the next short phrase for: ‘${text}’` },
-                    { label: 'Next Words', prompt: `Suggest the next few words after: ‘${text}’` },
-                    { label: 'Complete Sentence', prompt: `Complete this sentence: ‘${text}’` },
-                    { label: 'Word Suggestion', prompt: `Write the next possible word or short phrase for: ‘${text}’` },
-                    { label: 'Word/Phrase Completion', prompt: `Provide the next natural word or phrase following this input: ‘${text}’` },
-                    { label: 'Short', prompt: `${text} (short version)` },
-                    { label: 'With examples', prompt: `${text} (with examples)` },
-                    { label: 'Step‑by‑step', prompt: `${text} (step by step)` },
-                    { label: 'Translate to Bengali', prompt: `${text} (translate to Bengali)` }
+                    { label: 'Next Sentence', prompt: `Complete the next natural sentence after: ‘${text}’`, },
+                    { label: 'Next Phrase', prompt: `Predict the next short phrase for: ‘${text}’`, },
+                    { label: 'Next Words', prompt: `Suggest the next few words after: ‘${text}’`, },
+                    { label: 'Complete Sentence', prompt: `Complete this sentence: ‘${text}’`, },
+                    { label: 'Word Suggestion', prompt: `Write the next possible word or short phrase for: ‘${text}’`, },
+                    { label: 'Word/Phrase Completion', prompt: `Provide the next natural word or phrase following this input: ‘${text}’`, },
+                    { label: 'Short', prompt: `${text} (short version)`, },
+                    { label: 'With examples', prompt: `${text} (with examples)`, },
+                    { label: 'Step‑by‑step', prompt: `${text} (step by step)`, },
+                    { label: 'Translate to Bengali', prompt: `${text} (translate to Bengali)`, },
                 ];
 
             this.nodes.suggestions.innerHTML = suggestions.map(s =>

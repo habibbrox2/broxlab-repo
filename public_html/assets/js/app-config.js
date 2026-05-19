@@ -29,14 +29,8 @@
     notifications: {
       permissionPopupEnabled: true,
     },
-    ai: {
-      nodeServerUrl:
-        window.__APP_JS_CONFIG_OVERRIDES?.ai?.nodeServerUrl ||
-        (['localhost', '127.0.0.1',].includes(window.location.hostname)
-          ? 'http://localhost:3000'
-          : window.location.origin || 'http://localhost:3000'),
-      useNodeServer: window.__APP_JS_CONFIG_OVERRIDES?.ai?.useNodeServer || false,
-    },
+    ai: {},
+
   };
 
   function isPlainObject(value) {

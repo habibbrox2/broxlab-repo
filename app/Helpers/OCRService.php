@@ -1,29 +1,21 @@
 <?php
 
 /**
- * OCR Service - Hybrid Approach
- * Primary: Node.js OCR service (Tesseract.js on unified server port 3000)
- * Fallback: OCR.space API (web hosting compatible)
+ * OCR Service - PHP-only approach
+ * Primary: OCR.space API for image OCR
+ * Optional PDF support via local pdftotext if installed
  */
 
 class OCRService
 {
     private string $ocrSpaceApiKey;
     private int $timeout;
-    private string $nodeOcrUrl;
     private array $supportedLanguages = ['eng', 'ben', 'eng+ben'];
 
-    public function __construct(string $apiKey = null, int $timeout = 30, string $nodeOcrUrl = null)
+    public function __construct(string $apiKey = null, int $timeout = 30)
     {
-        $this->ocrSpaceApiKey = $apiKey ?: getenv('OCR_SPACE_API_KEY') ?: 'K81289438988957'; // Paid tier API key
+        $this->ocrSpaceApiKey = $apiKey ?: getenv('OCR_SPACE_API_KEY') ?: 'K81289438988957';
         $this->timeout = $timeout;
-        // Prefer the unified Node service URL and keep legacy fallbacks for compatibility
-        $nodeBaseUrl = $nodeOcrUrl ?: (getenv('NODE_SERVICE_URL') ?: (getenv('OCR_SERVICE_URL') ?: (getenv('OCR_API_URL') ?: (getenv('APP_URL') ?: 'http://localhost:3000'))));
-        $nodeBaseUrl = rtrim($nodeBaseUrl, '/');
-        if (str_ends_with($nodeBaseUrl, '/api/ocr')) {
-            $nodeBaseUrl = substr($nodeBaseUrl, 0, -8);
-        }
-        $this->nodeOcrUrl = rtrim($nodeBaseUrl, '/');
     }
 
     /**
@@ -43,192 +35,26 @@ class OCRService
     }
 
     /**
-     * Check if Node.js OCR service is healthy
+     * Check whether pdftotext is available in the current environment
      */
-    private function isNodeOcrHealthy(): bool
+    private function canUsePdftotext(): bool
     {
-        try {
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => $this->nodeOcrUrl . '/api/ocr/health',
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 3,
-                CURLOPT_CONNECTTIMEOUT => 2
-            ]);
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlError = curl_error($ch);
-            curl_close($ch);
-
-            $isHealthy = ($httpCode === 200);
-            if ($isHealthy) {
-                error_log("Node.js OCR service is healthy at {$this->nodeOcrUrl}");
-            } else {
-                error_log("Node.js OCR health check failed: HTTP $httpCode, URL: {$this->nodeOcrUrl}");
-            }
-            return $isHealthy;
-        } catch (Exception $e) {
-            error_log("Node.js OCR health check error: " . $e->getMessage() . ", URL: {$this->nodeOcrUrl}");
+        if (!function_exists('exec')) {
             return false;
         }
-    }
 
-    /**
-     * Extract text using Node.js OCR service (Tesseract.js)
-     */
-    private function extractTextViaNodeOcr(string $imageData, array $options = []): array
-    {
-        try {
-            error_log('Attempting Node.js OCR extraction');
+        $output = [];
+        $returnVar = 1;
+        @exec('pdftotext -v 2>&1', $output, $returnVar);
 
-            // Prepare payload
-            $payload = [
-                'image' => $imageData,
-                'lang' => $options['language'] ?? 'eng'
-            ];
-
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => $this->nodeOcrUrl . '/api/ocr/tesseract/image',
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => json_encode($payload),
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => $this->timeout,
-                CURLOPT_HTTPHEADER => [
-                    'Content-Type: application/json'
-                ]
-            ]);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $error = curl_error($ch);
-            curl_close($ch);
-
-            if ($error) {
-                error_log("Node.js OCR cURL error: $error");
-                return [
-                    'success' => false,
-                    'error' => 'Node.js OCR connection failed: ' . $error
-                ];
-            }
-
-            if ($httpCode !== 200) {
-                error_log("Node.js OCR HTTP error: $httpCode. Response: $response");
-                return [
-                    'success' => false,
-                    'error' => "Node.js OCR HTTP $httpCode"
-                ];
-            }
-
-            if (!$response) {
-                error_log("Node.js OCR returned empty response");
-                return [
-                    'success' => false,
-                    'error' => 'Node.js OCR returned empty response'
-                ];
-            }
-
-            $result = json_decode($response, true);
-            if (!$result) {
-                error_log("Failed to decode Node.js OCR response: $response");
-                return [
-                    'success' => false,
-                    'error' => 'Failed to parse Node.js OCR response'
-                ];
-            }
-
-            if (empty($result['success'])) {
-                error_log("Node.js OCR returned success=false: " . ($result['error'] ?? 'Unknown error'));
-                return [
-                    'success' => false,
-                    'error' => $result['error'] ?? 'Node.js OCR processing failed'
-                ];
-            }
-
-            if (empty($result['text'])) {
-                error_log("Node.js OCR returned empty text");
-                return [
-                    'success' => false,
-                    'error' => 'Node.js OCR extracted no text'
-                ];
-            }
-
-            error_log("Node.js OCR successfully extracted text (" . strlen($result['text']) . " chars)");
-            return [
-                'success' => true,
-                'text' => $result['text'],
-                'confidence' => $result['confidence'] ?? 0,
-                'engine' => 'tesseract.js (Node.js)',
-                'language' => $options['language'] ?? 'eng'
-            ];
-        } catch (Exception $e) {
-            error_log("Node.js OCR exception: " . $e->getMessage());
-            return [
-                'success' => false,
-                'error' => $e->getMessage()
-            ];
+        if ($returnVar === 0) {
+            return true;
         }
+
+        return stripos(implode(' ', $output), 'pdftotext') !== false;
     }
 
-    /**
-     * Extract text from PDF using the unified Node.js OCR service
-     */
-    private function extractTextViaNodePdf(string $pdfData, array $options = []): array
-    {
-        try {
-            $payload = [
-                'pdfBase64' => $pdfData,
-                'language' => $options['language'] ?? 'eng'
-            ];
 
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => $this->nodeOcrUrl . '/api/ocr/pdf/extract',
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => json_encode($payload),
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => $this->timeout,
-                CURLOPT_HTTPHEADER => [
-                    'Content-Type: application/json'
-                ]
-            ]);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $error = curl_error($ch);
-            curl_close($ch);
-
-            if ($error || $httpCode !== 200) {
-                return [
-                    'success' => false,
-                    'error' => $error ?: "Node.js OCR HTTP $httpCode"
-                ];
-            }
-
-            $result = json_decode($response, true);
-            if (empty($result['success']) || empty($result['text'])) {
-                return [
-                    'success' => false,
-                    'error' => $result['error'] ?? 'Node.js OCR PDF processing failed'
-                ];
-            }
-
-            return [
-                'success' => true,
-                'text' => $result['text'],
-                'engine' => 'pdf-parse (Node.js)'
-            ];
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'error' => $e->getMessage()
-            ];
-        }
-    }
-
-    /**
-     * Extract text from image - Primary: Node.js OCR, Fallback: OCR.space API
-     */
     public function extractTextFromImage(string $imageData, array $options = []): array
     {
         try {
@@ -249,18 +75,8 @@ class OCRService
                 ];
             }
 
-            // **PRIMARY: Try Node.js OCR service first** ✅
-            if ($this->isNodeOcrHealthy()) {
-                $nodeResult = $this->extractTextViaNodeOcr($imageData, $options);
-                if ($nodeResult['success'] && !empty($nodeResult['text'])) {
-                    return $nodeResult;
-                }
-                // Log Node.js failure but continue to fallback
-                error_log('Node.js OCR attempt failed, falling back to OCR.space: ' . ($nodeResult['error'] ?? 'Unknown error'));
-            }
-
-            // **FALLBACK: Use OCR.space API** 🔄
-            error_log('Using fallback OCR.space API for text extraction');
+            // Use OCR.space API for image extraction
+            error_log('Using OCR.space API for text extraction');
 
             // Decode base64 to binary
             $imageBinary = base64_decode($imageData);
@@ -552,20 +368,48 @@ class OCRService
     public function extractTextFromPDF(string $pdfData, array $options = []): array
     {
         try {
-            if ($this->isNodeOcrHealthy()) {
-                $pdfData = preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $pdfData)
-                    ? $pdfData
-                    : base64_encode($pdfData);
+            $pdfData = preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $pdfData)
+                ? $pdfData
+                : base64_encode($pdfData);
 
-                $nodeResult = $this->extractTextViaNodePdf($pdfData, $options);
-                if ($nodeResult['success']) {
-                    return $nodeResult;
+            if ($this->canUsePdftotext()) {
+                $tempPdf = tempnam(sys_get_temp_dir(), 'ocr_pdf_');
+                if ($tempPdf === false) {
+                    return ['success' => false, 'error' => 'Failed to create temporary file for PDF'];
                 }
+
+                file_put_contents($tempPdf, base64_decode($pdfData));
+                $outputTxt = $tempPdf . '.txt';
+                $command = escapeshellcmd('pdftotext') . ' ' . escapeshellarg($tempPdf) . ' ' . escapeshellarg($outputTxt);
+                exec($command . ' 2>&1', $execOutput, $returnVar);
+
+                if ($returnVar !== 0 || !file_exists($outputTxt)) {
+                    @unlink($tempPdf);
+                    @unlink($outputTxt);
+                    return [
+                        'success' => false,
+                        'error' => 'PDF text extraction failed using pdftotext: ' . implode(' ', $execOutput)
+                    ];
+                }
+
+                $text = trim((string)file_get_contents($outputTxt));
+                @unlink($tempPdf);
+                @unlink($outputTxt);
+
+                if ($text === '') {
+                    return ['success' => false, 'error' => 'PDF extracted no text'];
+                }
+
+                return [
+                    'success' => true,
+                    'text' => $text,
+                    'engine' => 'pdftotext'
+                ];
             }
 
             return [
                 'success' => false,
-                'error' => 'PDF processing not available in web hosting environment. Please convert PDF to images first.'
+                'error' => 'PDF processing is not available. Install pdftotext or convert PDF pages to images first.'
             ];
         } catch (Exception $e) {
             return [

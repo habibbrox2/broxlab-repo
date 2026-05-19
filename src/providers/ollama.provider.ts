@@ -6,7 +6,7 @@ export class OllamaProvider extends BaseAIProvider {
   constructor(apiKey?: string, model: string = 'llama2') {
     super({
       apiKey: apiKey || process.env.OLLAMA_API_KEY || '',
-      baseURL: process.env.OLLAMA_ENDPOINT || 'https://api.ollama.ai/v1',
+      baseURL: process.env.OLLAMA_ENDPOINT || process.env.OLLAMA_BASE_URL || 'https://ollama.com/api',
       model,
       name: 'ollama',
     });

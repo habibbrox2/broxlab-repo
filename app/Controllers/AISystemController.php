@@ -16,7 +16,6 @@ require_once __DIR__ . '/../Models/AppSettings.php';
 require_once __DIR__ . '/../Helpers/PromptLoader.php';
 require_once __DIR__ . '/../Helpers/ToolRegistry.php';
 require_once __DIR__ . '/../Helpers/ToolDefinitions.php';
-require_once __DIR__ . '/../Modules/AISystem/NodeAiClient.php';
 require_once __DIR__ . '/../Models/AIChatModel.php';
 require_once __DIR__ . '/../Models/AuthManager.php';
 require_once __DIR__ . '/../Models/UploadService.php';
@@ -26,125 +25,6 @@ function aiChatSendJson(array $payload, int $status = 200): void
     header('Content-Type: application/json');
     http_response_code($status);
     echo json_encode($payload, JSON_UNESCAPED_UNICODE);
-}
-
-function aiChatGetNodeServiceUrl(): ?string
-{
-    $nodeUrl = getenv('NODE_SERVICE_URL') ?: getenv('NODEJS_SERVER_URL') ?: getenv('NODE_API_URL') ?: getenv('APP_URL') ?: 'http://localhost:3000';
-    $nodeUrl = trim((string)$nodeUrl);
-    if ($nodeUrl === '') {
-        return null;
-    }
-    return rtrim($nodeUrl, '/');
-}
-
-/**
- * Check if Node server is healthy and responsive
- * Returns true if Node server is available and healthy, false otherwise
- * Implements quick timeout to prevent hanging requests
- */
-function aiChatIsNodeServerHealthy(): bool
-{
-    $nodeBaseUrl = aiChatGetNodeServiceUrl();
-    if ($nodeBaseUrl === null) {
-        return false;
-    }
-
-    try {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $nodeBaseUrl . '/health');
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 2);          // Quick 2-second timeout
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);   // 1-second connection timeout
-        curl_setopt($ch, CURLOPT_NOBODY, true);         // HEAD request to avoid downloading body
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
-
-        curl_exec($ch);
-        $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        // Health check passed if status is 2xx or 3xx
-        $isHealthy = $statusCode >= 200 && $statusCode < 400;
-        error_log('[AI Chat] Node health check: ' . ($isHealthy ? 'HEALTHY' : 'UNHEALTHY') . ' (status=' . $statusCode . ')');
-        return $isHealthy;
-    } catch (Exception $e) {
-        error_log('[AI Chat] Node health check failed: ' . $e->getMessage());
-        return false;
-    }
-}
-
-/**
- * Determine if Node server should be preferred
- * Returns true if Node server is healthy, false if PHP should be used
- */
-function aiChatShouldUseNodeServer(): bool
-{
-    // Check if Node service is configured
-    $nodeBaseUrl = aiChatGetNodeServiceUrl();
-    if ($nodeBaseUrl === null) {
-        error_log('[AI Chat] Node service not configured, using PHP backend');
-        return false;
-    }
-
-    // Check if Node server is healthy (with caching for 5 seconds to avoid excessive checks)
-    $cacheKey = 'node_health_' . md5($nodeBaseUrl);
-    $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $cacheKey;
-
-    $useCache = false;
-    if (file_exists($cacheFile)) {
-        $cacheAge = time() - filemtime($cacheFile);
-        if ($cacheAge < 5) { // Cache for 5 seconds
-            $cacheData = @file_get_contents($cacheFile);
-            if ($cacheData === 'healthy') {
-                error_log('[AI Chat] Using cached Node health status: HEALTHY');
-                return true;
-            } elseif ($cacheData === 'unhealthy') {
-                error_log('[AI Chat] Using cached Node health status: UNHEALTHY, falling back to PHP');
-                return false;
-            }
-        }
-    }
-
-    // Perform health check
-    $isHealthy = aiChatIsNodeServerHealthy();
-
-    // Cache result
-    @file_put_contents($cacheFile, $isHealthy ? 'healthy' : 'unhealthy');
-
-    if (!$isHealthy) {
-        error_log('[AI Chat] Node server unhealthy, falling back to PHP backend');
-    }
-
-    return $isHealthy;
-}
-
-function aiChatCallNodeService(array $messages, string $systemPrompt, array $options = [], bool $isAdmin = false): array
-{
-    $nodeBaseUrl = aiChatGetNodeServiceUrl();
-    if ($nodeBaseUrl === null) {
-        return [
-            'success' => false,
-            'error' => 'Node AI service is not configured',
-            'error_code' => 'node_service_unavailable'
-        ];
-    }
-
-    $nodeClient = new NodeAiClient(['baseUrl' => $nodeBaseUrl]);
-    $formattedOptions = [];
-    if (isset($options['model'])) {
-        $formattedOptions['model'] = (string)$options['model'];
-    }
-    if (isset($options['temperature'])) {
-        $formattedOptions['temperature'] = (float)$options['temperature'];
-    }
-    if (isset($options['max_tokens'])) {
-        $formattedOptions['maxTokens'] = (int)$options['max_tokens'];
-    }
-    if (isset($options['maxTokens'])) {
-        $formattedOptions['maxTokens'] = (int)$options['maxTokens'];
-    }
-
-    return $nodeClient->chat($messages, null, $systemPrompt, $formattedOptions);
 }
 
 function aiChatStreamContent(string $content, array $meta = []): void
@@ -185,6 +65,33 @@ function aiChatStreamContent(string $content, array $meta = []): void
     echo "data: [DONE]\n\n";
     @ob_flush();
     flush();
+}
+
+function aiChatDeriveHttpStatus(array $response, int $default = 502): int
+{
+    if (!empty($response['http_code']) && is_int($response['http_code'])) {
+        $code = $response['http_code'];
+        if (in_array($code, [400, 401, 402, 403, 404, 429], true)) {
+            return $code;
+        }
+        if ($code >= 500) {
+            return 502;
+        }
+    }
+
+    if (!empty($response['error_code']) && $response['error_code'] === 'provider_incomplete') {
+        return 400;
+    }
+
+    if (!empty($response['error']) && str_contains((string)$response['error'], 'API key not configured')) {
+        return 400;
+    }
+
+    if (!empty($response['error_type']) && $response['error_type'] === 'network') {
+        return 502;
+    }
+
+    return $default;
 }
 
 function aiChatExtractText($content): string
@@ -863,20 +770,35 @@ function aiSystemBuildModelCandidates(
     $candidates = [];
     $resolvedSelected = trim(aiSystemResolveModel($aiProvider, $providerName, $selectedModel, $providers, $defaultModel));
     $resolvedDefault = trim(aiSystemResolveModel($aiProvider, $providerName, $defaultModel, $providers, $defaultModel));
+    $models = aiSystemGetProviderModels($aiProvider, $providerName, $providers);
+    $hasModels = !empty($models);
 
     foreach ([$resolvedSelected, $resolvedDefault, $selectedModel, $defaultModel] as $candidate) {
         $candidate = trim((string)$candidate);
-        if ($candidate !== '') {
-            $candidates[] = $candidate;
+        if ($candidate === '') {
+            continue;
         }
+
+        if (strpos($candidate, '/') !== false && $providerName !== 'openrouter') {
+            [$prefix] = explode('/', $candidate, 2);
+            if ($prefix !== $providerName) {
+                continue;
+            }
+        }
+
+        if ($hasModels && !isset($models[$candidate])) {
+            continue;
+        }
+
+        $candidates[] = $candidate;
     }
 
-    $models = aiSystemGetProviderModels($aiProvider, $providerName, $providers);
-    foreach (array_keys($models) as $candidate) {
-        $candidate = trim((string)$candidate);
-        if ($candidate !== '') {
-            $candidates[] = $candidate;
+    foreach (array_keys($models) as $modelCandidate) {
+        $modelCandidate = trim((string)$modelCandidate);
+        if ($modelCandidate === '') {
+            continue;
         }
+        $candidates[] = $modelCandidate;
     }
 
     $unique = [];
@@ -1705,45 +1627,7 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         }
     }
 
-    $nodeServiceUrl = aiChatGetNodeServiceUrl();
-    error_log('[AI Chat] After provider loop: success=' . ($response['success'] ?? 'false') . ', nodeServiceUrl=' . ($nodeServiceUrl ?? 'null') . ', hasAutoTools=' . ($hasAutoTools ? 'true' : 'false'));
-
-    // Intelligent Node Server Routing:
-    // - If PHP providers succeeded, use that response
-    // - If Node is healthy, try Node service
-    // - If Node fails or is unhealthy, rely on PHP
-    // This ensures zero downtime: Node preferred if healthy, PHP as guaranteed fallback
-
-    if (empty($response['success']) && !$hasAutoTools && $nodeServiceUrl !== null) {
-        // Check if Node server is healthy before attempting to use it
-        $nodeIsHealthy = aiChatShouldUseNodeServer();
-
-        if ($nodeIsHealthy) {
-            error_log('[AI Chat] Node server is healthy, attempting to use Node service');
-            $nodeResponse = aiChatCallNodeService($messages, $systemPrompt, $options, $isAdmin);
-            error_log('[AI Chat] Node service response: success=' . ($nodeResponse['success'] ? 'true' : 'false') . ', error=' . ($nodeResponse['error'] ?? 'none'));
-
-            if (!empty($nodeResponse['success'])) {
-                error_log('[AI Chat] Node service succeeded');
-                $response = aiSystemAnnotateFallbackMeta(
-                    $nodeResponse,
-                    $selectedProvider,
-                    $selectedModel,
-                    $provider,
-                    $model
-                );
-                $response['fallback_used'] = false;  // Node was preferred, not a fallback
-                $response['fallback_source'] = 'node_service_primary';
-                $fallbackUsed = false;
-            } else {
-                error_log('[AI Chat] Node service failed, keeping PHP provider result');
-                // Node failed, keep PHP result (or error if both failed)
-            }
-        } else {
-            error_log('[AI Chat] Node server is not healthy, relying on PHP backend (zero downtime)');
-            // Node is down, use PHP backend exclusively (zero downtime guarantee)
-        }
-    }
+    error_log('[AI Chat] After provider loop: success=' . ($response['success'] ?? 'false') . ', hasAutoTools=' . ($hasAutoTools ? 'true' : 'false'));
 
     if (empty($response['success'])) {
         error_log('[AI Chat] All providers failed. hasUsableProvider=' . ($hasUsableProvider ? 'true' : 'false') . ', lastError=' . ($lastError ?? 'none'));
@@ -1764,7 +1648,7 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
                 'error' => $lastError ?? 'AI error',
                 'error_code' => 'providers_failed'
             ];
-            $status = (isset($lastError) && str_contains((string)$lastError, 'API key not configured')) ? 400 : 502;
+            $status = aiChatDeriveHttpStatus($response, 502);
             aiChatSendJson($errorPayload, $status);
             return;
         }
@@ -1800,12 +1684,7 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
 
     if ($stream) {
         if (empty($response['success'])) {
-            $status = 502;
-            if (isset($response['error_code']) && $response['error_code'] === 'provider_incomplete') {
-                $status = 400;
-            } elseif (isset($response['error']) && str_contains($response['error'], 'API key not configured')) {
-                $status = 400;
-            }
+            $status = aiChatDeriveHttpStatus($response, 502);
             aiChatSendJson([
                 'success' => false,
                 'error' => $response['error'] ?? 'AI error',
@@ -1854,12 +1733,7 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         return;
     }
 
-    $status = 502;
-    if (isset($response['error_code']) && $response['error_code'] === 'provider_incomplete') {
-        $status = 400;
-    } elseif (isset($response['error']) && str_contains($response['error'], 'API key not configured')) {
-        $status = 400;
-    }
+    $status = aiChatDeriveHttpStatus($response, 502);
     aiChatSendJson([
         'success' => false,
         'error' => $response['error'] ?? 'AI error',
@@ -2518,8 +2392,8 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
             $models = $config['models'] ?? [];
         }
 
-        // OpenRouter / OpenAI / Fireworks / Hugging Face / Ollama / Kilo can optionally return remote list when configured
-        if (in_array($providerName, ['openrouter', 'openai', 'fireworks', 'huggingface', 'ollama', 'kilo'], true)) {
+        // OpenRouter / OpenAI / Fireworks / Hugging Face / Ollama / Kilo / Google can optionally return remote list when configured
+        if (in_array($providerName, ['openrouter', 'openai', 'fireworks', 'huggingface', 'ollama', 'kilo', 'google', 'gemini'], true)) {
             $remote = $aiProvider->fetchRemoteModels($providerName, $forceRefresh);
             if (!empty($remote)) {
                 $models = $remote;
@@ -3824,16 +3698,12 @@ $router->post('/admin/ai-system/ocr', ['middleware' => ['auth', 'admin_only']], 
 });
 
 // GET /api/system/health - System health check (public endpoint, no auth required)
-// Shows status of PHP backend and Node.js AI service
+// Shows status of PHP backend and AI provider configuration
 // Used for monitoring and intelligent routing decisions
 $router->get('/api/system/health', [], function () use ($mysqli) {
     try {
         // Check PHP backend connectivity
         $phpHealthy = !empty($mysqli) && $mysqli instanceof \mysqli && $mysqli->connect_errno === 0;
-
-        // Check Node service health
-        $nodeHealthy = aiChatShouldUseNodeServer();
-        $nodeUrl = aiChatGetNodeServiceUrl();
 
         // Get AI provider status
         $aiProvider = new AIProvider($mysqli);
@@ -3849,19 +3719,13 @@ $router->get('/api/system/health', [], function () use ($mysqli) {
                 'healthy' => $phpHealthy,
                 'status' => $phpHealthy ? 'RUNNING' : 'DOWN'
             ],
-            'node_service' => [
-                'configured' => $nodeUrl !== null,
-                'url' => $nodeUrl,
-                'healthy' => $nodeHealthy,
-                'status' => $nodeHealthy ? 'RUNNING' : 'DOWN'
-            ],
             'ai_providers' => [
                 'active' => count($activeProviders),
                 'providers' => $activeProviderNames,
                 'status' => count($activeProviders) > 0 ? 'CONFIGURED' : 'NOT_CONFIGURED'
             ],
             'routing_strategy' => [
-                'preferred' => $nodeHealthy ? 'NODE_SERVER' : 'PHP_BACKEND',
+                'preferred' => 'PHP_BACKEND',
                 'fallback' => 'PHP_BACKEND',
                 'zero_downtime' => true
             ]
@@ -3870,8 +3734,6 @@ $router->get('/api/system/health', [], function () use ($mysqli) {
         // Determine overall status
         if (!$phpHealthy) {
             $response['status'] = 'critical';
-        } elseif (!$nodeHealthy && $nodeUrl !== null) {
-            $response['status'] = 'degraded';  // Node down but PHP available (zero downtime)
         }
 
         header('Content-Type: application/json');

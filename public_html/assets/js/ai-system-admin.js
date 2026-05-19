@@ -487,15 +487,7 @@
     }
   }
 
-  // Get Node.js server URL from config
-  function getAIServerUrl() {
-    return window.AppConfig?.get('ai.nodeServerUrl') ||
-      (['localhost', '127.0.0.1',].includes(window.location.hostname)
-        ? 'http://localhost:3000'
-        : window.location.origin || 'http://localhost:3000');
-  }
-
-  // Fetch provider models from API (use PHP fallback if Node.js fails)
+  // Fetch provider models from API
   async function fetchProviderModels(providerName, refresh) {
     const params = new URLSearchParams();
     params.set('provider', providerName);
@@ -504,72 +496,36 @@
       params.set('refresh', '1');
     }
 
-    // Try Node.js server first, fallback to PHP API
-    try {
-      const nodeUrl = `${getAIServerUrl()}/api/ai/models?${params.toString()}`;
-      const res = await fetch(nodeUrl, {
-        credentials: 'same-origin',
-        signal: AbortSignal.timeout(3000), // 3 second timeout
-      });
+    const phpUrl = `/api/ai/models?${params.toString()}`;
+    const res = await fetch(phpUrl, {
+      credentials: 'same-origin',
+    });
 
-      if (res.ok) {
-        const raw = await res.text();
-        let data = null;
-        try {
-          data = JSON.parse(raw);
-        } catch (e) {
-          console.warn('[AI Models] Non-JSON response from Node', providerName, raw);
-          throw new Error('Non-JSON response');
-        }
-
-        if (!data || data.success === false) {
-          const apiError = data && data.error ? String(data.error) : 'API returned success=false';
-          console.warn('[AI Models] API error from Node', providerName, apiError);
-          throw new Error(apiError);
-        }
-
-        if (!Array.isArray(data.models)) {
-          console.warn('[AI Models] Invalid models payload from Node', providerName, data);
-          throw new Error('Invalid models payload');
-        }
-        return data.models;
-      } else {
-        throw new Error(`HTTP ${res.status}`);
-      }
-    } catch (nodeError) {
-      console.warn('[AI Models] Node.js server unavailable, trying PHP API', providerName, nodeError.message);
-      // Fallback to PHP API
-      const phpUrl = `/api/ai/models?${params.toString()}`;
-      const res = await fetch(phpUrl, {
-        credentials: 'same-origin',
-      });
-
-      if (!res.ok) {
-        console.warn('[AI Models] PHP API fetch also failed', providerName, res.status);
-        throw new Error(`HTTP ${res.status}`);
-      }
-
-      const raw = await res.text();
-      let data = null;
-      try {
-        data = JSON.parse(raw);
-      } catch (e) {
-        console.warn('[AI Models] Non-JSON response from PHP', providerName, raw);
-        throw new Error('Non-JSON response');
-      }
-
-      if (!data || data.success === false) {
-        const apiError = data && data.error ? String(data.error) : 'API returned success=false';
-        console.warn('[AI Models] API error from PHP', providerName, apiError);
-        throw new Error(apiError);
-      }
-
-      if (!Array.isArray(data.models)) {
-        console.warn('[AI Models] Invalid models payload from PHP', providerName, data);
-        throw new Error('Invalid models payload');
-      }
-      return data.models;
+    if (!res.ok) {
+      console.warn('[AI Models] PHP API fetch failed', providerName, res.status);
+      throw new Error(`HTTP ${res.status}`);
     }
+
+    const raw = await res.text();
+    let data = null;
+    try {
+      data = JSON.parse(raw);
+    } catch (e) {
+      console.warn('[AI Models] Non-JSON response from PHP', providerName, raw);
+      throw new Error('Non-JSON response');
+    }
+
+    if (!data || data.success === false) {
+      const apiError = data && data.error ? String(data.error) : 'API returned success=false';
+      console.warn('[AI Models] API error from PHP', providerName, apiError);
+      throw new Error(apiError);
+    }
+
+    if (!Array.isArray(data.models)) {
+      console.warn('[AI Models] Invalid models payload from PHP', providerName, data);
+      throw new Error('Invalid models payload');
+    }
+    return data.models;
   }
 
   // Get provider model map

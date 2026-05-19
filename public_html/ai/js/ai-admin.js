@@ -11,7 +11,6 @@
  *  - Auto-save feedback with visual indicator
  *  - Enhanced history management (40 message limit with UI indicator)
  *  - SSE Streaming with reasoning animation
- *  - Puter.js client-side fallback
  *  - Remote model list loading
  *  - Slash command overlay menu
  *  - Mobile responsive design
@@ -48,14 +47,12 @@ const ADMIN_CONFIG = {
   sessionStateKey: 'brox.admin.session',
   optionsKey: 'brox.admin.request.options',
   proxyUrl: '/api/admin/ai/chat',
-  phpFallbackUrl: '/admin/ai-system/chat',
   sessionBootstrapUrl: '/api/admin/ai/session',
   logUrl: '/api/admin/logs/errors',
   modelsUrl: '/api/ai/models', // Fixed: was /api/ai-system/models
   defaultProviderUrl: '/api/ai/default-provider',
   adminDefaultsUrl: '/api/ai-system/admin-defaults',
   uploadUrl: '/api/admin/ai/upload',
-  puterCdn: 'https://js.puter.com/v2/',
   csrfRefreshUrl: '/api/csrf-token',
   maxHistory: 40,
   maxDomMessages: 120,
@@ -418,22 +415,6 @@ if (!window.BroxAdminInstance) {
     }
   }
 
-  // ── Puter.js Loader (Lazy CDN) ───────────────────────────────────────────
-  function loadPuter() {
-    return new Promise((resolve, reject) => {
-      if (window.puter) return resolve(window.puter);
-
-      const s = document.createElement('script');
-      s.src = ADMIN_CONFIG.puterCdn;
-      s.async = true;
-      s.onload = () => {
-        resolve(window.puter);
-      };
-      s.onerror = () => reject(new Error('Puter.js CDN load failed'));
-      document.head.appendChild(s);
-    });
-  }
-
   // ── Remote Model Loader ───────────────────────────────────────────────────
   async function fetchModels(provider, options = {}) {
     try {
@@ -519,7 +500,6 @@ if (!window.BroxAdminInstance) {
       this.preferredModel = '';
       this.defaultModel = '';
       this.cachedModels = [];
-      this.puterDisabled = false;
       this.fileHandler = null;
       this.modelBarOpen = false;
       this.isRecording = false; // Voice recording state
@@ -3157,6 +3137,8 @@ if (!window.BroxAdminInstance) {
     }
 
     renderWithArtifacts(container, content, animate) {
+      if (!container) return;
+      container.innerHTML = '';
       const parts = content.split(/```artifact([\s\S]*?)```/i);
       parts.forEach((part, i) => {
         if (i % 2 === 1) {
@@ -4799,12 +4781,7 @@ if (!window.BroxAdminInstance) {
 
       const maxRetries = 2;
       const baseDelay = 1000;
-      const shouldTryPhpFallback = (status, error) => {
-        if (error) {
-          return true;
-        }
-        return status >= 500;
-      };
+      const proxyUrls = [ADMIN_CONFIG.proxyUrl];
       const fetchChat = async (url) =>
         fetch(url, {
           method: 'POST',
@@ -4815,140 +4792,143 @@ if (!window.BroxAdminInstance) {
           },
           body: JSON.stringify(payload),
         });
-      const fetchChatWithFallback = async () => {
-        try {
-          const primaryResp = await fetchChat(ADMIN_CONFIG.proxyUrl);
-          if (primaryResp.ok || !shouldTryPhpFallback(primaryResp.status, null)) {
-            return primaryResp;
-          }
-
-          // Capture raw body for telemetry when primary returns 5xx/502
-          let rawPrimaryBody = '';
-          try {
-            rawPrimaryBody = await primaryResp.text();
-          } catch (e) {
-            rawPrimaryBody = '';
-          }
-          reportTelemetry('primary_ai_proxy_error', {
-            status: primaryResp.status,
-            url: ADMIN_CONFIG.proxyUrl,
-            body_snippet: String(rawPrimaryBody).substring(0, 1024),
-          });
-
-          const fallbackResp = await fetchChat(ADMIN_CONFIG.phpFallbackUrl);
-          return fallbackResp;
-        } catch (error) {
-          reportTelemetry('primary_ai_proxy_exception', { error: String(error) });
-          const fallbackResp = await fetchChat(ADMIN_CONFIG.phpFallbackUrl);
-          return fallbackResp;
-        }
-      };
 
       const attemptStream = async () => {
-        const resp = await fetchChatWithFallback();
+        let lastError = null;
 
-        if (!resp.ok) {
-          const raw = await resp.text();
-          const err = normalizeApiResponse(safeParseJSON(raw));
-          throw new Error(err.error || `AI error (${resp.status})`);
-        }
-
-        const contentType = (resp.headers.get('content-type') || '').toLowerCase();
-        if (
-          !contentType.includes('text/event-stream') &&
-          contentType.includes('application/json')
-        ) {
-          const json = await resp.json();
-          const norm = normalizeApiResponse(json);
-          if (!norm.success) {
-            throw new Error(norm.error || 'AI error');
+        for (const url of proxyUrls) {
+          const isFallback = url !== ADMIN_CONFIG.proxyUrl;
+          if (isFallback) {
+            this.updateStatus('warning', 'Primary AI backend unavailable, trying fallback endpoint...');
           }
-          await this.applyBackendSelectionMeta(json);
-          if (json && json.conversation_id) {
-            this.conversationId = Number(json.conversation_id);
-          }
-          if (json && json.session_key) {
-            this.sessionKey = String(json.session_key);
-          }
-          if (json && json.message_id && msgBubble?.parentElement) {
-            msgBubble.parentElement.dataset.messageId = String(json.message_id);
-          }
-          this.saveSessionState();
-          if (Array.isArray(json?.annotations)) {
-            responseAnnotations = json.annotations;
-          }
-          fullReply =
-            typeof norm.payload === 'string' ? norm.payload : JSON.stringify(norm.payload);
-          clearThinking();
-          this.renderWithArtifacts(msgBubble, fullReply, false);
-          return;
-        }
 
-        if (!resp.body) {
-          throw new Error('Empty response from AI server');
-        }
-
-        this.updateStatus('receiving', 'Receiving...');
-
-        const reader = resp.body.getReader();
-        const decoder = new TextDecoder('utf-8');
-        let parseErrors = 0;
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const raw = line.slice(6).trim();
-            if (raw === '[DONE]') return;
-
-            const obj = safeParseJSON(raw);
-            if (!obj) {
-              parseErrors += 1;
-              if (parseErrors >= 5) {
-                throw new Error('Stream parse errors');
-              }
+          let resp;
+          try {
+            resp = await fetchChat(url);
+          } catch (fetchErr) {
+            lastError = fetchErr;
+            if (!isFallback) {
               continue;
             }
+            throw fetchErr;
+          }
 
-            if (obj.error) {
-              throw new Error(obj.error);
-            }
-
-            if (obj && obj.meta) {
-              const meta = obj.meta || {};
-              await this.applyBackendSelectionMeta(meta);
-              if (meta.conversation_id) {
-                this.conversationId = Number(meta.conversation_id);
-              }
-              if (meta.session_key) {
-                this.sessionKey = String(meta.session_key);
-              }
-              if (meta.message_id && msgBubble?.parentElement) {
-                msgBubble.parentElement.dataset.messageId = String(meta.message_id);
-              }
-              if (Array.isArray(meta.annotations)) {
-                responseAnnotations = meta.annotations;
-              }
-              if (Array.isArray(meta.auto_tool_calls)) {
-                const wrap = msgBubble?.querySelector('.brox-ai-thinking-wrap');
-                this.applyLiveToolStatus(meta.auto_tool_calls, wrap);
-              }
-              this.saveSessionState();
+          if (!resp.ok) {
+            const raw = await resp.text();
+            const err = normalizeApiResponse(safeParseJSON(raw));
+            const message = err.error || `AI error (${resp.status})`;
+            if (!isFallback && [502, 503, 504].includes(resp.status)) {
+              lastError = new Error(message);
               continue;
             }
+            throw new Error(message);
+          }
 
-            if (obj.content) {
-              clearThinking();
-              fullReply += obj.content;
-              this.renderWithArtifacts(msgBubble, fullReply, false);
-              this.scrollToBottom();
+          const contentType = (resp.headers.get('content-type') || '').toLowerCase();
+          if (
+            !contentType.includes('text/event-stream') &&
+            contentType.includes('application/json')
+          ) {
+            const json = await resp.json();
+            const norm = normalizeApiResponse(json);
+            if (!norm.success) {
+              throw new Error(norm.error || 'AI error');
+            }
+            await this.applyBackendSelectionMeta(json);
+            if (json && json.conversation_id) {
+              this.conversationId = Number(json.conversation_id);
+            }
+            if (json && json.session_key) {
+              this.sessionKey = String(json.session_key);
+            }
+            if (json && json.message_id && msgBubble?.parentElement) {
+              msgBubble.parentElement.dataset.messageId = String(json.message_id);
+            }
+            this.saveSessionState();
+            if (Array.isArray(json?.annotations)) {
+              responseAnnotations = json.annotations;
+            }
+            fullReply =
+              typeof norm.payload === 'string' ? norm.payload : JSON.stringify(norm.payload);
+            clearThinking();
+            this.renderWithArtifacts(msgBubble, fullReply, false);
+            return;
+          }
+
+          if (!resp.body) {
+            throw new Error('Empty response from AI server');
+          }
+
+          this.updateStatus('receiving', 'Receiving...');
+
+          const reader = resp.body.getReader();
+          const decoder = new TextDecoder('utf-8');
+          let parseErrors = 0;
+          let buffer = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split(/\r?\n/);
+            buffer = lines.pop() || '';
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+              const raw = line.slice(6).trim();
+              if (raw === '[DONE]') return;
+
+              const obj = safeParseJSON(raw);
+              if (!obj) {
+                parseErrors += 1;
+                if (parseErrors >= 5) {
+                  throw new Error('Stream parse errors');
+                }
+                continue;
+              }
+
+              if (obj.error) {
+                throw new Error(obj.error);
+              }
+
+              if (obj && obj.meta) {
+                const meta = obj.meta || {};
+                await this.applyBackendSelectionMeta(meta);
+                if (meta.conversation_id) {
+                  this.conversationId = Number(meta.conversation_id);
+                }
+                if (meta.session_key) {
+                  this.sessionKey = String(meta.session_key);
+                }
+                if (meta.message_id && msgBubble?.parentElement) {
+                  msgBubble.parentElement.dataset.messageId = String(meta.message_id);
+                }
+                if (Array.isArray(meta.annotations)) {
+                  responseAnnotations = meta.annotations;
+                }
+                if (Array.isArray(meta.auto_tool_calls)) {
+                  const wrap = msgBubble?.querySelector('.brox-ai-thinking-wrap');
+                  this.applyLiveToolStatus(meta.auto_tool_calls, wrap);
+                }
+                this.saveSessionState();
+                continue;
+              }
+
+              if (obj.content) {
+                clearThinking();
+                fullReply += obj.content;
+                this.renderWithArtifacts(msgBubble, fullReply, false);
+                this.scrollToBottom();
+              }
             }
           }
         }
+
+        if (lastError) {
+          throw lastError;
+        }
+
+        throw new Error('AI request failed with all configured endpoints.');
       };
 
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -5067,75 +5047,6 @@ if (!window.BroxAdminInstance) {
       const overflow = messages.length - ADMIN_CONFIG.maxDomMessages;
       for (let i = 0; i < overflow; i++) {
         messages[i].remove();
-      }
-    }
-
-    // ── Puter.js Fallback ───────────────────────────────────────────────────
-    async puterFallback() {
-      if (this.puterDisabled) {
-        this.addMessage(
-          'assistant',
-          '❌ Puter fallback is disabled (unauthorized). Please configure Puter or use a valid AI provider.'
-        );
-        this.updateStatus('error', 'Fallback disabled');
-        return;
-      }
-      this.updateStatus('fallback', 'Using fallback AI');
-
-      this.addMessage('assistant', '⚠️ Primary AI unavailable. Switching to Puter AI...');
-
-      try {
-        const puter = await loadPuter();
-        const lastMsg = this.history.filter((m) => m.role === 'user').pop();
-        if (!lastMsg) return;
-
-        // Handle different message content formats
-        let messageContent;
-        if (typeof lastMsg.content === 'string') {
-          messageContent = lastMsg.content;
-        } else if (Array.isArray(lastMsg.content)) {
-          messageContent = lastMsg.content.map((p) => (p.type === 'text' ? p.text : '')).join(' ');
-        } else {
-          return;
-        }
-
-        const msgBubble = this.createEmptyMessage('assistant');
-        const t0 = performance.now();
-        let reply = '';
-
-        const stream = await puter.ai.chat(messageContent, { stream: true });
-        for await (const chunk of stream) {
-          const text = chunk?.text || '';
-          reply += text;
-          msgBubble.textContent = reply;
-          this.scrollToBottom();
-        }
-
-        if (reply) {
-          this.history.push({ role: 'assistant', content: reply });
-          this.saveHistory();
-        }
-        this.updateResponseMeta(msgBubble, t0);
-
-        this.updateStatus('ready', 'Ready (Puter)');
-      } catch (fallbackErr) {
-        console.error('[Admin Fallback] Puter error:', fallbackErr);
-        const status = fallbackErr?.status || fallbackErr?.error?.status;
-        const message = fallbackErr?.message || fallbackErr?.error?.message || '';
-        if (status === 401 || /unauthorized/i.test(message)) {
-          this.puterDisabled = true;
-          this.addMessage(
-            'assistant',
-            '❌ Puter unauthorized. Please login/configure Puter or use a valid provider.'
-          );
-          this.updateStatus('error', 'Puter unauthorized');
-          return;
-        }
-        this.addMessage(
-          'assistant',
-          '❌ Connection error. Both primary AI and Puter are unavailable.'
-        );
-        this.updateStatus('error', 'All AI failed');
       }
     }
 

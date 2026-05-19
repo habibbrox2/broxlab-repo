@@ -97,9 +97,17 @@ class AIProvider
         ],
         'ollama' => [
             'name' => 'Ollama',
-            'endpoint' => 'http://localhost:11434',
+            'endpoint' => 'http://localhost:11434',  // Local: http://localhost:11434 | Cloud: https://ollama.com/api
             'auth_type' => 'bearer',
             'supports_streaming' => true,
+            'models' => []
+        ],
+        'codex' => [
+            'name' => 'OpenAI Codex',
+            'endpoint' => 'https://api.openai.com/v1/code_completions',
+            'auth_type' => 'bearer',
+            'supports_streaming' => false,
+            'purpose' => 'code_completion',
             'models' => []
         ],
         'custom' => [
@@ -600,14 +608,27 @@ class AIProvider
         if ($providerName === 'kilo') {
             $endpoint = rtrim($endpoint, '/') . '/chat/completions';
         }
-        // Ollama uses OpenAI-compatible /v1/chat/completions path (per official docs)
+        // Ollama uses OpenAI-compatible API:
+        // - Local: http://localhost:11434/v1/chat/completions
+        // - Cloud: https://ollama.com/api/chat/completions
         if ($providerName === 'ollama') {
             $endpoint = (string)$endpoint;
             $endpoint = rtrim($endpoint, '/');
             $path = (string)parse_url($endpoint, PHP_URL_PATH);
+
+            // If no path or just root, it's a base URL - add /v1/chat/completions (local)
             if ($path === '' || $path === '/' || $path === false) {
                 $endpoint = $endpoint . '/v1/chat/completions';
             }
+            // If path ends with /api (cloud), add /chat/completions
+            elseif (substr($path, -4) === '/api') {
+                $endpoint = $endpoint . '/chat/completions';
+            }
+            // If path ends with /v1, add /chat/completions
+            elseif (substr($path, -3) === '/v1') {
+                $endpoint = $endpoint . '/chat/completions';
+            }
+            // Otherwise assume endpoint is complete (already includes /chat/completions)
         }
 
         $apiKey = $this->getAPIKey($providerName);
@@ -1431,6 +1452,9 @@ class AIProvider
 
     private function isLocalOllamaEndpoint(string $endpoint): bool
     {
+        // Determines if Ollama is running locally (no API key required)
+        // Local: http://localhost:11434 or http://127.0.0.1:11434
+        // Cloud: https://ollama.com/api (requires API key)
         $host = parse_url($endpoint, PHP_URL_HOST);
         if ($host === null || $host === false || $host === '') {
             return false;
@@ -1875,6 +1899,54 @@ class AIProvider
                     if (!is_array($m) || empty($m['id'])) continue;
                     $id = (string)$m['id'];
                     $models[$id] = $id;
+                }
+            }
+
+            $this->logRemoteFetchStatus($providerName, 'ok', $http, null, count($models));
+            return $models;
+        }
+
+        if ($providerName === 'google' || $providerName === 'gemini') {
+            $apiKey = $this->getAPIKey($providerName);
+            if (empty($apiKey)) {
+                $this->logRemoteFetchStatus($providerName, 'missing_api_key');
+                return [];
+            }
+
+            $url = 'https://generativelanguage.googleapis.com/v1/models';
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_HTTPGET, true);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Bearer ' . $apiKey,
+                'Content-Type: application/json'
+            ]);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+            $resp = curl_exec($ch);
+            $err = curl_error($ch);
+            $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($err || $http !== 200) {
+                $this->logRemoteFetchStatus($providerName, 'http_error', $http, $err ?: null);
+                return [];
+            }
+
+            $data = json_decode($resp, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->logRemoteFetchStatus($providerName, 'parse_error');
+                return [];
+            }
+
+            $models = [];
+            $items = $data['models'] ?? [];
+            if (is_array($items)) {
+                foreach ($items as $m) {
+                    if (!is_array($m) || empty($m['name'])) continue;
+                    $id = (string)$m['name'];
+                    $label = (string)($m['displayName'] ?? $id);
+                    $models[$id] = $label;
                 }
             }
 
@@ -2623,7 +2695,7 @@ class AIProvider
         return [
             'success' => false,
             'online' => false,
-            'error' => 'Ollama server not reachable. Make sure Ollama is running on localhost:11434'
+            'error' => 'Ollama server not reachable. Configure OLLAMA_BASE_URL for local (http://localhost:11434) or cloud (https://ollama.com/api)'
         ];
     }
 

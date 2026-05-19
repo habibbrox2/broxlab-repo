@@ -1,59 +1,19 @@
-{# Premium AI Assistant – Grok-Style Dark Theme (2026 Edition) #}
+{# Premium AI Assistant – Brox AI Design Parity with Admin Copilot #}
 {# IMPORTANT: Uses unique 'brox-ai-' prefix for all classes to avoid conflicts #}
 {# IDs align with assistant.js (BroxAssistant class) #}
 
 <div id="publicAssistantWrapper" class="bb-assistant-public">
 
-    {# ── Floating Action Button - Grok Style ── #}
-    <button id="publicAssistantBtn" class="brox-ai-grok-fab" title="Chat with Assistant" aria-label="Open Chat">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-        </svg>
+    {# Floating Action Button #}
+    <button id="publicAssistantBtn" class="brox-ai-trigger-fab" title="Chat with Assistant" aria-label="Open Chat">
+        <span class="brox-ai-fab-icon-open"><i class="bi bi-chat-dots-fill"></i></span>
+        <span class="brox-ai-fab-icon-close d-none"><i class="bi bi-x-lg"></i></span>
     </button>
 
-    {# ── Chat Window Shell - Grok Style ── #}
-    <div id="publicAssistantChat" class="brox-ai-grok-shell brox-ai-hidden">
+    {# Assistant Shell #}
+    <div id="publicAssistantChat" class="brox-ai-copilot-sidebar brox-ai-hidden" role="dialog" aria-labelledby="publicAssistantTitle" aria-modal="true">
 
-        {# ── Header - Minimal Grok Style ── #}
-        <div class="brox-ai-grok-header">
-            <div class="brox-ai-grok-title">
-                <span id="publicAssistantTitle">Brox AI</span>
-                <span class="brox-ai-grok-badge" id="publicAssistantModelName">AI</span>
-                <span class="brox-ai-status-indicator brox-ai-connecting" id="publicAssistantModelStatusIndicator"></span>
-                <span class="brox-ai-status-indicator brox-ai-online" id="publicAssistantStatusIndicator"></span>
-            </div>
-            <div class="brox-ai-grok-controls">
-                <button id="publicAssistantModelToggle" class="brox-ai-model-toggle" title="Toggle Model Selector">
-                    <i class="bi bi-chevron-down"></i>
-                </button>
-                <div class="brox-ai-lang-toggle">
-                    <button type="button" id="publicAssistantLangBn" class="active">বাং</button>
-                    <button type="button" id="publicAssistantLangEn">EN</button>
-                </div>
-                <button id="closePublicAssistant" class="brox-ai-grok-close">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 6L6 18M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-
-        {# ── Model Selector Bar ── #}
-        <div id="publicAssistantModelBar" class="brox-ai-model-bar brox-ai-collapsed">
-            <div class="brox-ai-model-bar-content">
-                <label id="publicAssistantModelLabel" class="brox-ai-model-label">Select Model:</label>
-                <select id="publicAssistantModel" class="brox-ai-model-select">
-                    <option value="claude-3-haiku">Claude 3 Haiku</option>
-                </select>
-            </div>
-        </div>
-
-        {# ── Sidebar (Chat History) ── #}
-        <div id="publicAssistantAgenticStatus" class="brox-ai-agentic-status brox-ai-hidden">
-            <span class="brox-ai-status-pill">Thinking</span>
-            <span class="ai-status-detail"></span>
-        </div>
-
+        {# Sidebar: Chat History #}
         <div id="publicAssistantSidebar" class="brox-ai-sidebar brox-ai-collapsed">
             <div class="brox-ai-sidebar-header">
                 <span>Chat History</span>
@@ -62,9 +22,175 @@
                 </button>
             </div>
             <div id="publicAssistantHistory" class="brox-ai-history-list"></div>
+            <div class="brox-ai-history-empty">
+                <i class="bi bi-inbox"></i>
+                <p>No history yet</p>
+            </div>
         </div>
 
-        {# ── GDPR Privacy Consent Modal ── #}
+        <div class="brox-ai-chat-main">
+            <div class="brox-ai-header admin-theme">
+                <div class="brox-ai-header-info">
+                    <h3 class="brox-ai-header-title" id="publicAssistantTitle">
+                        <i class="bi bi-robot"></i> Brox AI
+                    </h3>
+                    <div class="brox-ai-header-meta">
+                        <span class="brox-ai-context-badge" id="publicAssistantModelName">
+                            <i class="bi bi-award"></i> Claude 3 Haiku
+                        </span>
+                        <span id="publicAssistantModelStatusIndicator" class="brox-ai-status-indicator brox-ai-connecting" title="Model status"></span>
+                        <span id="publicAssistantStatusIndicator" class="brox-ai-status-indicator brox-ai-online" title="Connection status"></span>
+                        <span class="brox-ai-header-status" id="publicAssistantStatusText">Online</span>
+                    </div>
+                </div>
+                <div class="brox-ai-header-actions">
+                    <button id="publicAssistantModelToggle" class="brox-ai-icon-btn" title="Toggle Model Selector" aria-label="Toggle model selector">
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <button id="closePublicAssistant" class="brox-ai-icon-btn brox-ai-close-btn" title="Close Assistant" aria-label="Close assistant">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="publicAssistantModelBar" class="brox-ai-model-bar brox-ai-collapsed">
+                <div class="brox-ai-model-bar-content">
+                    <label id="publicAssistantModelLabel" class="brox-ai-model-label">Select Model:</label>
+                    <select id="publicAssistantModel" class="brox-ai-model-select">
+                        <option value="claude-3-haiku">Claude 3 Haiku</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="publicAssistantAgenticStatus" class="brox-ai-status-bar brox-ai-hidden">
+                <span class="brox-ai-status-indicator brox-ai-thinking"></span>
+                <span class="ai-status-detail"></span>
+            </div>
+
+            <div id="publicAssistantPreChat" class="brox-ai-body brox-ai-prechat">
+                <div class="brox-ai-welcome">
+                    <div class="brox-ai-welcome-icon">
+                        <i class="bi bi-lightning-charge-fill"></i>
+                    </div>
+                    <h4>How can I help you today?</h4>
+                    <p>Start with a quick question or choose a shortcut below.</p>
+
+                    <div class="brox-ai-form-group">
+                        <label for="introName">Your Name</label>
+                        <input type="text" id="introName" class="brox-ai-input" placeholder="Your name">
+                    </div>
+                    <button class="brox-ai-btn-primary" id="introNext1">Continue</button>
+
+                    <div class="brox-ai-form-group brox-ai-hidden brox-ai-step-contact">
+                        <label for="introEmail">Email (optional)</label>
+                        <input type="email" id="introEmail" class="brox-ai-input" placeholder="Email (optional)">
+                    </div>
+                    <div class="brox-ai-form-group brox-ai-hidden brox-ai-step-contact">
+                        <label for="introMobile">Mobile (optional)</label>
+                        <input type="text" id="introMobile" class="brox-ai-input" placeholder="Mobile (optional)">
+                    </div>
+                    <button class="brox-ai-btn-primary brox-ai-hidden brox-ai-step-contact" id="introNext2">Continue</button>
+
+                    <div class="brox-ai-form-group brox-ai-hidden brox-ai-step-topic">
+                        <label id="introTopicLabel">What would you like to know about?</label>
+                        <div class="brox-ai-topic-grid" id="introTopicOptions">
+                            <label class="brox-ai-topic-chip">
+                                <input type="checkbox" value="general" checked>
+                                <span>General</span>
+                            </label>
+                            <label class="brox-ai-topic-chip">
+                                <input type="checkbox" value="support">
+                                <span>Support</span>
+                            </label>
+                            <label class="brox-ai-topic-chip">
+                                <input type="checkbox" value="billing">
+                                <span>Billing</span>
+                            </label>
+                            <label class="brox-ai-topic-chip">
+                                <input type="checkbox" value="feedback">
+                                <span>Feedback</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button class="brox-ai-btn-primary brox-ai-hidden brox-ai-step-topic" id="introStartChat">Start Chat</button>
+                </div>
+            </div>
+
+            <div id="publicAssistantMessages" class="brox-ai-body custom-scrollbar brox-ai-scrollbar brox-ai-hidden" role="log" aria-live="polite">
+                {# Messages injected here by assistant.js #}
+            </div>
+
+            <div id="publicAssistantThinkingIndicator" class="thinking-indicator brox-ai-hidden">
+                <div class="thinking-content">
+                    <span class="thinking-text">Thinking...</span>
+                    <div class="thinking-dots">
+                        <span class="thinking-dot"></span>
+                        <span class="thinking-dot"></span>
+                        <span class="thinking-dot"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="publicAssistantSuggestionPanel" class="brox-ai-suggestion-panel brox-ai-hidden" role="listbox">
+                <div class="brox-ai-suggestion-header">
+                    <span>Suggestions</span>
+                    <button class="brox-ai-suggestion-close" aria-label="Close suggestions">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                <ul class="brox-ai-suggestion-list" id="publicAssistantSuggestions"></ul>
+            </div>
+
+            <div id="publicAssistantAttachmentPreview" class="brox-ai-attachment-preview brox-ai-hidden">
+                <div class="brox-ai-attachment-info">
+                    <i class="bi bi-paperclip"></i>
+                    <div class="brox-ai-attachment-thumb" id="publicAssistantAttachmentThumb"></div>
+                    <span class="brox-ai-attachment-name" id="publicAssistantFileName">file.pdf</span>
+                    <span class="brox-ai-attachment-size" id="publicAssistantFileSize">0 KB</span>
+                </div>
+                <div class="brox-ai-attachment-progress brox-ai-hidden" id="publicAssistantAttachmentProgress">
+                    <span class="brox-ai-attachment-progress-bar" id="publicAssistantAttachmentProgressBar"></span>
+                </div>
+                <button class="brox-ai-attachment-remove" id="publicAssistantRemoveAttachment" aria-label="Remove attachment">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+
+            <div id="publicAssistantQuickActions" class="brox-ai-quick-actions brox-ai-hidden" aria-label="Quick actions">
+                <button type="button" class="brox-ai-action-chip" id="publicAssistantCollectData" title="Collect visible form fields">
+                    <i class="bi bi-clipboard-data"></i> Collect
+                </button>
+                <button type="button" class="brox-ai-action-chip" id="publicAssistantAutoFill" title="Auto-fill form (uses URL in input if present)">
+                    <i class="bi bi-magic"></i> Auto-fill
+                </button>
+                <button type="button" class="brox-ai-action-chip" id="publicAssistantQuickSummarize" title="Summarize current page">
+                    <i class="bi bi-body-text"></i> Summarize
+                </button>
+                <button type="button" class="brox-ai-action-chip" id="publicAssistantClear" title="Clear chat history">
+                    <i class="bi bi-trash3"></i> Clear
+                </button>
+            </div>
+
+            <div id="publicAssistantFooter" class="brox-ai-footer brox-ai-hidden">
+                <div class="brox-ai-input-wrapper">
+                    <button id="publicAssistantAttach" class="brox-ai-action-btn brox-ai-action-btn-left" title="Attach file" aria-label="Attach file">
+                        <i class="bi bi-paperclip"></i>
+                    </button>
+                    <div class="brox-ai-input-container">
+                        <input type="text" id="publicAssistantInput" class="brox-ai-input" placeholder="Message Brox AI..." aria-label="Message input">
+                    </div>
+                    <button id="sendToPublicAssistant" class="brox-ai-send-btn" title="Send message" aria-label="Send">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </div>
+                <div class="brox-ai-input-hint">
+                    <span><kbd>Enter</kbd> Send</span>
+                    <span><kbd>Shift + Enter</kbd> New line</span>
+                    <span><kbd>/</kbd> Commands</span>
+                </div>
+            </div>
+        </div>
+
         <div id="publicAssistantGdpr" class="brox-ai-grok-modal brox-ai-hidden">
             <div class="brox-ai-grok-modal-content">
                 <div class="brox-ai-grok-modal-icon">
@@ -92,92 +218,6 @@
             </div>
         </div>
 
-        {# ── Pre-chat Workflow ── #}
-        <div id="publicAssistantPreChat" class="brox-ai-grok-body">
-            <div class="brox-ai-grok-welcome">
-                <div class="brox-ai-grok-logo">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                    </svg>
-                </div>
-                <h2>How can I help you today?</h2>
-                
-                {# Step 1: Name #}
-                <div class="brox-ai-grok-form brox-ai-step-name">
-                    <label id="introNameLabel" class="brox-ai-input-label">Your Name</label>
-                    <input type="text" id="introName" class="brox-ai-grok-input" placeholder="Your name">
-                    <button class="brox-ai-grok-btn-primary" id="introNext1">Continue</button>
-                </div>
-                
-                {# Step 2: Contact (hidden initially) #}
-                <div class="brox-ai-grok-form brox-ai-step-contact brox-ai-hidden">
-                    <label id="introEmailLabel" class="brox-ai-input-label">Email (optional)</label>
-                    <input type="email" id="introEmail" class="brox-ai-grok-input" placeholder="Email (optional)">
-                    <label id="introMobileLabel" class="brox-ai-input-label">Mobile (optional)</label>
-                    <input type="text" id="introMobile" class="brox-ai-grok-input" placeholder="Mobile (optional)">
-                    <button class="brox-ai-grok-btn-primary" id="introNext2">Continue</button>
-                </div>
-                
-                {# Step 3: Topics (hidden initially) #}
-                <div class="brox-ai-grok-form brox-ai-step-topic brox-ai-hidden">
-                    <label id="introTopicLabel" class="brox-ai-input-label">What would you like to know about?</label>
-                    <p class="brox-ai-grok-topic-label">Select Topics (Multi-select)</p>
-                    <div class="brox-ai-topic-grid" id="introTopicOptions">
-                        <label class="brox-ai-topic-chip">
-                            <input type="checkbox" value="general" checked>
-                            <span>General</span>
-                        </label>
-                        <label class="brox-ai-topic-chip">
-                            <input type="checkbox" value="support">
-                            <span>Support</span>
-                        </label>
-                        <label class="brox-ai-topic-chip">
-                            <input type="checkbox" value="billing">
-                            <span>Billing</span>
-                        </label>
-                        <label class="brox-ai-topic-chip">
-                            <input type="checkbox" value="feedback">
-                            <span>Feedback</span>
-                        </label>
-                    </div>
-                    <button class="brox-ai-grok-btn-primary" id="introStartChat">Start Chat</button>
-                </div>
-            </div>
-        </div>
-
-        {# ── Chat Messages Area ── #}
-        <div id="publicAssistantMessages" class="brox-ai-grok-messages brox-ai-hidden">
-            {# Messages injected here by assistant.js #}
-        </div>
-
-        {# ── Modern Thinking Indicator ── #}
-        <div id="publicAssistantThinkingIndicator" class="thinking-indicator brox-ai-hidden">
-            <div class="thinking-content">
-                <span class="thinking-text">Thinking...</span>
-                <div class="thinking-dots">
-                    <span class="thinking-dot"></span>
-                    <span class="thinking-dot"></span>
-                    <span class="thinking-dot"></span>
-                </div>
-            </div>
-        </div>
-
-        {# ── Footer / Input Area ── #}
-        <div class="brox-ai-grok-footer brox-ai-hidden" id="publicAssistantFooter">
-            <div class="brox-ai-grok-suggestions brox-ai-hidden" id="publicAssistantSuggestions"></div>
-            <div class="brox-ai-grok-quick-actions brox-ai-hidden" id="publicAssistantQuickActions"></div>
-            
-            <div class="brox-ai-grok-input-wrapper">
-                <input type="text" id="publicAssistantInput" class="brox-ai-grok-input" placeholder="Message Brox AI...">
-                <button class="brox-ai-grok-send" id="sendToPublicAssistant">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-        
-        {# Hidden elements for JS references #}
         <span id="publicAssistantStatusText" class="brox-ai-hidden">Online</span>
     </div>
 </div>

@@ -815,7 +815,7 @@
                                     <span class="badge bg-secondary" id="aiStatusTested">Last tested: Not tested</span>
                                 </div>
                                 <small class="ai-status-note">
-                                    Status reflects the selected frontend provider. Public chat uses this provider and model first, then active providers fall back by sort order.
+                                    Status reflects the active frontend provider. Public chat uses this provider and model first, then active providers fall back by sort order.
                                     Puter.js is only used if all providers fail.
                                 </small>
                             </div>
@@ -827,98 +827,18 @@
                             <div class="ai-section-block">
                                 <div class="ai-section-title">
                                     <div class="section-eyebrow">Routing</div>
-                                    <h3 class="h6 mb-0">Provider and model selection</h3>
+                                    <h3 class="h6 mb-0">Automatic provider and model selection</h3>
                                 </div>
 
                                 <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Frontend AI (Assistant)</label>
-                                        <select name="frontend_provider" class="form-select" id="frontendProviderSelect">
-                                            <option value="openrouter" {% if settings.frontend_provider == 'openrouter' or not settings.frontend_provider %}selected{% endif %}>OpenRouter (Default)</option>
-                                            <option value="fireworks" {% if settings.frontend_provider == 'fireworks' %}selected{% endif %}>Fireworks AI</option>
-                                            {% for provider in providers %}
-                                                {% if provider.is_active and provider.provider_name not in ['puter', 'openrouter', 'fireworks'] %}
-                                                <option value="{{ provider.provider_name }}"
-                                                        {% if settings.frontend_provider == provider.provider_name %}selected{% endif %}>
-                                                    {{ provider.display_name }}
-                                                </option>
-                                                {% endif %}
-                                            {% endfor %}
-                                        </select>
-                                        <small class="text-muted">AI for website assistant chat</small>
-                                        <small class="text-muted d-none" id="hfTipsFrontend">
-                                            Hugging Face tips: add <span class="font-monospace">:fastest</span>, <span class="font-monospace">:cheapest</span>, or <span class="font-monospace">:preferred</span> to auto-pick.
-                                        </small>
-                                        {% if settings.frontend_provider == 'openrouter' %}
-                                        <div class="mt-1" id="openrouterKeyStatus">
-                                            {% if settings.openrouter_key_source == 'db' %}
-                                                <span class="badge bg-success">OpenRouter key configured (DB)</span>
-                                            {% elseif settings.openrouter_key_source == 'env' %}
-                                                <span class="badge bg-info text-dark">OpenRouter key configured (env)</span>
-                                            {% else %}
-                                                <span class="badge bg-warning text-dark">OpenRouter key missing</span>
-                                            {% endif %}
-                                        </div>
-                                        {% endif %}
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Backend AI Provider (AutoContent)</label>
-                                        <select name="backend_provider" class="form-select" id="backendProviderSelect">
-                                            {% for provider in providers %}
-                                                {% if provider.is_active and provider.provider_name != 'puter' %}
-                                                <option value="{{ provider.provider_name }}"
-                                                        {% if settings.backend_provider == provider.provider_name %}selected{% endif %}>
-                                                    {{ provider.display_name }}
-                                                </option>
-                                                {% endif %}
-                                            {% endfor %}
-                                        </select>
-                                        <small class="text-muted">AI for content scraping</small>
-                                        <small class="text-muted d-none" id="hfTipsBackend">
-                                            Hugging Face tips: add <span class="font-monospace">:fastest</span>, <span class="font-monospace">:cheapest</span>, or <span class="font-monospace">:preferred</span> to auto-pick.
-                                        </small>
-                                    </div>
-
-                                    <div class="col-lg-6">
-                                        <div class="d-flex align-items-center justify-content-between">
-                                            <label class="form-label fw-semibold mb-1">Frontend Model (Assistant)</label>
-                                            <button type="button" class="btn btn-link btn-sm p-0 model-refresh-btn" id="frontendModelRefresh">
-                                                <i class="bi bi-arrow-clockwise"></i> Refresh
-                                            </button>
-                                        </div>
-                                        <select name="frontend_model" class="form-select" id="frontendModelSelect"></select>
-                                        <div class="form-check form-switch mt-2">
-                                            <input class="form-check-input" type="checkbox" id="frontendModelMultimodal">
-                                            <label class="form-check-label" for="frontendModelMultimodal">Multimodal (images & rich content)</label>
-                                        </div>
-                                        <small class="text-muted">Model used for website assistant</small>
-                                        <div class="text-danger small d-none" id="frontendModelWarning">No models available for this provider.</div>
-                                    </div>
-
-                                    <div class="col-lg-6">
-                                        <div class="d-flex align-items-center justify-content-between">
-                                            <label class="form-label fw-semibold mb-1">Backend Model (AutoContent)</label>
-                                            <button type="button" class="btn btn-link btn-sm p-0 model-refresh-btn" id="backendModelRefresh">
-                                                <i class="bi bi-arrow-clockwise"></i> Refresh
-                                            </button>
-                                        </div>
-                                        <select name="backend_model" class="form-select" id="backendModelSelect"></select>
-                                        <div class="form-check form-switch mt-2">
-                                            <input class="form-check-input" type="checkbox" id="backendModelMultimodal">
-                                            <label class="form-check-label" for="backendModelMultimodal">Multimodal (images & rich content)</label>
-                                        </div>
-                                        <small class="text-muted">Model used for AutoContent</small>
-                                        <div class="text-danger small d-none" id="backendModelWarning">No models available for this provider.</div>
-                                    </div>
-
                                     <div class="col-12">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="resetModelDefaults">
-                                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset models to defaults
-                                        </button>
+                                        <p class="text-muted mb-0">
+                                            Active providers and available AI models are selected automatically from your configured provider list. Manual frontend/backend provider and model selection has been removed.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
                             <div class="ai-section-block mt-4">
                                 <div class="ai-section-title">
@@ -1169,8 +1089,8 @@
                                 </h2>
                                 <div id="helpOllama" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
                                     <div class="accordion-body small text-muted p-3">
-                                        <p class="mb-2">Ollama Cloud provides API access to various models. Get your API key from <a href="https://ollama.ai" target="_blank" rel="noreferrer">ollama.ai</a> and use the cloud endpoint:</p>
-                                        <pre class="mb-0"><code>curl -X POST https://api.ollama.ai/v1/chat/completions \
+                                        <p class="mb-2">Ollama Cloud provides API access to various models. Get your API key from <a href="https://ollama.com" target="_blank" rel="noreferrer">ollama.com</a> and use the cloud endpoint:</p>
+                                        <pre class="mb-0"><code>curl -X POST https://ollama.com/api/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{"model":"llama2","messages":[{"role":"user","content":"Hello"}]}'</code></pre>
