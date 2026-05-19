@@ -47,7 +47,7 @@ const ASSISTANT_SITE_URL = 'https://broxlab.online';
 
 const DEFAULT_PREFS = {
   provider: 'puter',
-  model: 'gemini-2.0-flash',
+  model: 'meta-llama/llama-3-8b-instruct:free',
   providers: [],
 };
 
@@ -200,7 +200,7 @@ async function callFireworksAI(messages, options = {}) {
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: options.model || 'accounts/fireworks/models/deepseek-v3p1',
+      model: options.model || 'accounts/fireworks/models/llama-v2-7b-chat',
       messages: messages,
       stream: options.stream || false,
       ...options,
@@ -228,7 +228,7 @@ async function callOpenRouterAI(messages, options = {}) {
       'X-OpenRouter-Title': 'BroxBhai Assistant', // Optional
     },
     body: JSON.stringify({
-      model: options.model || 'openrouter/free',
+      model: options.model || 'meta-llama/llama-3-8b-instruct:free',
       messages: messages,
       stream: options.stream || false,
       ...options,

@@ -53,7 +53,7 @@ const STORAGE_KEYS = {
 
 const DEFAULT_PREFS = {
   provider: 'openrouter',
-  model: 'openai/gpt-4-turbo',
+  model: 'meta-llama/llama-3-8b-instruct:free',
   darkMode: true,
   autoSave: true,
   webMaxResults: 3,
@@ -299,10 +299,14 @@ async function loadModels() {
         console.info(`[ModelCache] ${logMsg} for ${provider}`);
       }
     } else {
-      // Fallback models
+      // Fallback models - prefer free models
       const fallbackModels = provider === 'openrouter'
-        ? [{ id: 'openai/gpt-4-turbo', name: 'GPT-4 Turbo', },]
-        : [{ id: 'gpt-4', name: 'GPT-4', },];
+        ? [
+            { id: 'meta-llama/llama-3-8b-instruct:free', name: 'Llama 3.8B (Free)', },
+            { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash (Free)', },
+            { id: 'google/gemma-2-9b-it:free', name: 'Gemma 2.9B (Free)', },
+          ]
+        : [{ id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', },];
 
       UI.model.innerHTML = fallbackModels
         .map(m => `<option value="${m.id}">${m.name}</option>`)
@@ -313,9 +317,9 @@ async function loadModels() {
   } catch (err) {
     console.error(t('error_loading_models'), err);
 
-    // Always have fallback
-    UI.model.innerHTML = '<option value="openai/gpt-4-turbo">GPT-4 Turbo</option>';
-    UI.model.value = 'openai/gpt-4-turbo';
+    // Always have fallback - use free models
+    UI.model.innerHTML = '<option value="meta-llama/llama-3-8b-instruct:free">Llama 3.8B (Free)</option><option value="google/gemma-2-9b-it:free">Gemma 2.9B (Free)</option>';
+    UI.model.value = 'meta-llama/llama-3-8b-instruct:free';
   }
 }
 
