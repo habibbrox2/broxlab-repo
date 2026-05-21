@@ -232,8 +232,8 @@
           <a href="/mobiles/view/{{ item.id }}" class="cc-btn cc-btn-mobile" aria-label="View specifications for {{ item.title }}">
             <span>View Specs</span><i class="bi bi-arrow-right"></i>
           </a>
-        {% elseif item.type == 'post' %}
-          <a href="{{ item.id ? '/posts/' ~ item.id ~ '/' ~ ((item.slug|default(item.url|default(item.id)))|url_encode) : '/posts/view/' ~ ((item.slug|default(item.url|default(item.id)))|url_encode) }}" class="cc-btn cc-btn-post" aria-label="Read article: {{ item.title }}">
+          {% elseif item.type == 'post' %}
+          <a href="{{ item.id ? '/posts/' ~ item.id ~ '/' ~ (('' ~ (item.slug|default(item.url|default(item.id))))|url_encode) : '/posts/view/' ~ (('' ~ (item.slug|default(item.url|default(item.id))))|url_encode) }}" class="cc-btn cc-btn-post" aria-label="Read article: {{ item.title }}">
             <span>Read Article</span><i class="bi bi-arrow-right"></i>
           </a>
         {% elseif item.type == 'service' %}

@@ -26,8 +26,7 @@ $normalizeLatestMobileItems = static function (array $mobiles): array {
 // ---------------- HOME PAGE ----------------
 $router->get('/', function () use ($twig, $homeModel, $normalizeLatestMobileItems) {
     $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-    $sort = trim((string)($_GET['sort'] ?? ''));
-    $sort = 'latest';
+$sort = 'latest';
     $limit = HOMEPAGE_FEED_LIMIT;
 
     $data = $homeModel->getUnifiedContent($page, $limit, $sort);
@@ -36,19 +35,18 @@ $router->get('/', function () use ($twig, $homeModel, $normalizeLatestMobileItem
     $topServices = $homeModel->getTopServices(8);
     $latestMobiles = $normalizeLatestMobileItems($homeModel->getLatestMobiles(8));
 
-    echo $twig->render('public/home.twig', [
-        'contents' => $data['contents'],
-        'top_posts' => $topPosts,
-        'top_services' => $topServices,
-        'latest_mobiles' => $latestMobiles,
-        'total_pages' => $data['total_pages'],
-        'current_page' => $page,
-        'homepage_feed_limit' => $limit,
-        'sort' => $sort,
-        'sort' => $sort,
-        'stats' => $stats,
-        'title' => 'Home'
-    ]);
+echo $twig->render('public/home.twig', [
+         'contents' => $data['contents'],
+         'top_posts' => $topPosts,
+         'top_services' => $topServices,
+         'latest_mobiles' => $latestMobiles,
+         'total_pages' => $data['total_pages'],
+         'current_page' => $page,
+         'homepage_feed_limit' => $limit,
+         'sort' => $sort,
+         'stats' => $stats,
+         'title' => 'Home'
+     ]);
 });
 
 // ============ API ENDPOINTS FOR INFINITE SCROLL ============
@@ -58,13 +56,10 @@ $router->get('/api/feed/load-more', function () use ($homeModel, $twig) {
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-cache, no-store, must-revalidate');
 
-    try {
-        $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-        $sort = isset($_GET['sort']) ? (string)$_GET['sort'] : 'latest';
-        $limit = HOMEPAGE_FEED_LIMIT;
-
-        // Validate sort parameter
-        $sort = 'latest';
+try {
+         $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+         $sort = 'latest';
+         $limit = HOMEPAGE_FEED_LIMIT;
 
         $data = $homeModel->getUnifiedContent($page, $limit, $sort);
         $html = $twig->render('partials/home-feed-items.twig', [

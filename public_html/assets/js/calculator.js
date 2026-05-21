@@ -35,9 +35,23 @@
     /** Collect form data into a plain object. */
     function collectForm() {
         const data = {};
+        const typeEl = form.querySelector('input[name="calc_type"]');
+        const type = typeEl ? typeEl.value : '';
+
         form.querySelectorAll('input[name]:not([type=checkbox]),select[name],textarea[name]').forEach(function (el) {
             if (el.type === 'checkbox') return;
-            data[el.name] = el.value.trim();
+            let value = el.value.trim();
+
+            // Special parsing for GPA courses JSON
+            if (el.name === 'courses' && type === 'gpa' && value) {
+                try {
+                    data[el.name] = JSON.parse(value);
+                } catch (e) {
+                    data[el.name] = value; // Send as-is, let backend handle error
+                }
+            } else {
+                data[el.name] = value;
+            }
         });
         // checkbox booleans
         form.querySelectorAll('input[type=checkbox][name]').forEach(function (el) {
@@ -46,10 +60,13 @@
         return data;
     }
 
-    /** Lightweight number validation before submission.
+    /** Lightweight form validation before submission.
      *  @returns {string|null}  Field name of first error, or null if valid. */
     function clientValidate() {
         let firstError = null;
+        const typeEl = form.querySelector('input[name="calc_type"]');
+        const type = typeEl ? typeEl.value : '';
+
         form.querySelectorAll('[required]').forEach(function (el) {
             const errEl = document.getElementById('err-' + el.name);
             if (!errEl) return;
@@ -61,6 +78,31 @@
                     el.classList.add('is-invalid');
                     errEl.textContent = 'Please enter a valid number.';
                     firstError = firstError || el.name;
+                }
+            } else if (el.type === 'date') {
+                // Validate date format (HTML5 date input uses YYYY-MM-DD)
+                if (el.value === '' || !el.value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    el.classList.add('is-invalid');
+                    errEl.textContent = 'Please enter a valid date (YYYY-MM-DD).';
+                    firstError = firstError || el.name;
+                }
+            } else if (el.name === 'courses' && type === 'gpa') {
+                // Validate GPA JSON format
+                if (el.value.trim() === '') {
+                    el.classList.add('is-invalid');
+                    errEl.textContent = 'This field is required.';
+                    firstError = firstError || el.name;
+                } else {
+                    try {
+                        const parsed = JSON.parse(el.value);
+                        if (!Array.isArray(parsed) || parsed.length === 0) {
+                            throw new Error('Must be non-empty array');
+                        }
+                    } catch (e) {
+                        el.classList.add('is-invalid');
+                        errEl.textContent = 'Invalid JSON format. Expected: [{"credit_hours":3,"grade_point":4.0}, ...]';
+                        firstError = firstError || el.name;
+                    }
                 }
             } else if (el.value.trim() === '') {
                 el.classList.add('is-invalid');
@@ -348,23 +390,55 @@
         resultsPanel.innerHTML = '';
         resultsPanel.classList.add('d-none');
 
+        // Collect CSRF token if available
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        const headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        };
+        if (csrfMeta) {
+            headers['X-CSRF-Token'] = csrfMeta.getAttribute('content');
+        }
+
         fetch(endpoint, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            headers: headers,
             body: JSON.stringify(data),
         })
-            .then(function (resp) { return resp.json(); })
-            .then(function (resp) {
+            .then(async function (resp) {
                 setLoading(false);
 
-                if (!resp.success) {
+                // Detect redirects (server redirected POST to a GET) or non-JSON responses
+                if (resp.redirected || (resp.status >= 300 && resp.status < 400)) {
+                    const location = resp.headers.get('Location') || resp.url || '';
                     resultsPanel.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>' +
-                        (resp.error || 'Calculation failed. Please check your inputs.') + '</div>';
+                        'Request was redirected by server (status ' + resp.status + '). Redirect target: ' + escapeHtml(location) + '</div>';
+                    resultsPanel.classList.remove('d-none');
+                    console.error('[calculator.js] POST was redirected to GET. Response status:', resp.status, 'location:', location);
+                    return;
+                }
+
+                const ct = resp.headers.get('content-type') || '';
+                if (!ct.includes('application/json')) {
+                    const text = await resp.text();
+                    resultsPanel.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>' +
+                        'Unexpected server response (expected JSON). Status: ' + resp.status + '. Response preview:<pre style="max-height:200px;overflow:auto;">' + escapeHtml(String(text).slice(0, 2000)) + '</pre></div>';
+                    resultsPanel.classList.remove('d-none');
+                    console.error('[calculator.js] Non-JSON response from server:', resp.status, resp.url, text);
+                    return;
+                }
+
+                const json = await resp.json();
+
+                if (!json.success) {
+                    resultsPanel.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>' +
+                        (json.error || 'Calculation failed. Please check your inputs.') + '</div>';
                     resultsPanel.classList.remove('d-none');
                     return;
                 }
 
-                const html = renderResult(type, resp.result);
+                const html = renderResult(type, json.result);
                 resultsPanel.innerHTML = html;
                 resultsPanel.classList.remove('d-none');
                 addCopyButtons();

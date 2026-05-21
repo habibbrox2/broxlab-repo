@@ -732,10 +732,7 @@ class CalculatorService
 
     private static function describePercentage(float $value, float $percent, float $result): string
     {
-        if ($percent == 0) {
-            return sprintf('%g%% of %g is %g', $percent, $value, $result);
-        }
-        return sprintf('%g%% of %g = %g', $percent, $result, $value);
+        return sprintf('%g%% of %g = %g', $percent, $value, $result);
     }
 
     // ══════════════════════════════════════════════════════════════════════

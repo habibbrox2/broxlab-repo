@@ -20,7 +20,7 @@
   {# Content pages #}
   {% for content in contents %}
   <url>
-    <loc>{{ base_url() }}posts/{{ content.id }}/{{ (content.slug|default(content.url|default(content.id)))|url_encode }}</loc>
+    <loc>{{ base_url() }}posts/{{ content.id }}/{{ ('' ~ (content.slug|default(content.url|default(content.id))) )|url_encode }}</loc>
     <lastmod>{{ content.updated_at|date('Y-m-d') }}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>

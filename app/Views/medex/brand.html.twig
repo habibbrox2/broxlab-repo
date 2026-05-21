@@ -45,6 +45,13 @@
                 <small class="text-muted d-block mb-2">Pricing</small>
                 <span class="badge bg-light text-dark border">Contact supplier</span>
             {% endif %}
+
+            <div class="mt-3">
+                <button id="medex-refresh-button" type="button" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-arrow-repeat"></i> Refresh MedEx
+                </button>
+                <div id="medex-refresh-feedback" class="text-muted small mt-2"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -134,7 +141,59 @@ function collapseAll() {
 document.addEventListener('DOMContentLoaded', function() {
     // Ensure first section is open
     // optional init
+
+    const refreshButton = document.getElementById('medex-refresh-button');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', function () {
+            sendMedexRefreshRequest(this);
+        });
+    }
 });
+
+async function sendMedexRefreshRequest(button) {
+    button.disabled = true;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Refreshing...';
+
+    const feedback = document.getElementById('medex-refresh-feedback');
+    if (feedback) {
+        feedback.textContent = '';
+    }
+
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const body = new URLSearchParams({ csrf_token: csrfToken }).toString();
+
+        const response = await fetch('/api/medex/refresh', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRF-Token': csrfToken,
+            },
+            body,
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Refresh failed');
+        }
+
+        if (feedback) {
+            feedback.textContent = 'Refresh completed successfully.';
+            setTimeout(() => {
+                feedback.textContent = '';
+            }, 5000);
+        }
+    } catch (error) {
+        if (feedback) {
+            feedback.textContent = String(error.message || 'Refresh failed');
+        }
+        console.error('MedEx refresh failed:', error);
+    } finally {
+        button.disabled = false;
+        button.innerHTML = originalText;
+    }
+}
 </script>
 {% endblock %}
 

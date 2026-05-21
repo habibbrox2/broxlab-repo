@@ -195,11 +195,12 @@
                   <input type="{{ field.type }}"
                          id="{{ field.name }}"
                          name="{{ field.name }}"
-                         class="form-control calc-field-input {% if field.step %}step-any{% endif %}"
+                         class="form-control calc-field-input {% if field.step %}step-any{% endif %} {% if field.type == 'date' %}datepicker{% endif %}"
                          {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
                          {% if field.step      is defined %}step="{{ field.step }}"{% endif %}
                          {% if field.min       is defined %}min="{{ field.min }}"{% endif %}
                          {% if field.max       is defined %}max="{{ field.max }}"{% endif %}
+                         {% if field.type == 'date' %}data-format="YYYY-MM-DD"{% endif %}
                          value="{{ field.default|default('') }}"
                          required>
 
@@ -255,7 +256,7 @@
                             class="form-control calc-field-input"
                             rows="4"
                             {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
-                            {% if field.required is defined and not field.required %}required{% endif %}>{{ field.default|default('') }}</textarea>
+                            required>{{ field.default|default('') }}</textarea>
                   {% if field.help %}<p class="calc-field-help">{{ field.help|raw }}</p>{% endif %}
                 {% endif %}
 

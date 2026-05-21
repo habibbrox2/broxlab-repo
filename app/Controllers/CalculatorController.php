@@ -41,6 +41,26 @@ function inputScalar(string $name, ?float &$out = null): bool
     return true;
 }
 
+/**
+ * Parse JSON courses input for GPA calculator.
+ * Handles both array and JSON string formats.
+ */
+function parseCourses($input): array
+{
+    if (is_array($input)) {
+        return $input;
+    }
+    if (!$input || !is_string($input)) {
+        return [];
+    }
+    try {
+        $parsed = json_decode(trim($input), true);
+        return is_array($parsed) ? $parsed : [];
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // ROUTES
 // ═══════════════════════════════════════════════════════════════════════════
@@ -332,7 +352,7 @@ $router->post('/api/calculator/compute/{type}', ['name' => 'calculators.compute'
                 (float)($input['to']   ?? 0),
             ),
             'gpa'                   => CalculatorService::gpa(
-                is_array($input['courses'] ?? null) ? $input['courses'] : [],
+                parseCourses($input['courses'] ?? null),
             ),
             'bmi'                   => CalculatorService::bmi(
                 (float)($input['height'] ?? 0),

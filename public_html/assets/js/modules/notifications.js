@@ -1,17 +1,14 @@
 /**
  * Notifications Module
  * Handles FCM notifications, bell dropdown, and related UI
- * Supports WebSocket for real-time updates with AJAX fallback
  */
 
 import { runWhenReady, getUserId, adminGetCsrfToken, adminEscapeHtml, adminToSafeUrl, adminFormatTime, adminSetListEmpty, adminUpdateBadge } from './utils.js';
-import NotificationWebSocketManager from './notification-ws-manager.js';
 
 const ADMIN_NAV_DROPDOWN_OPEN_EVENT = 'brox:navbar-dropdown-open';
 
 const adminNotificationCoreState = new Map();
 const adminNotificationBellState = new Map();
-const wsManagers = new Map(); // Map<context, NotificationWebSocketManager>
 
 export function adminEmitFcmSupportResolved(supported, context = 'admin') {
   if (typeof window === 'undefined') return;
@@ -126,90 +123,6 @@ export function adminGetDropdownMenuElement(bellEl, listEl) {
   return listEl?.closest('.admin-notification-dropdown, .brox-notification-dropdown') || null;
 }
 
-/**
- * Initialize WebSocket connection for real-time notifications
- */
-export async function adminInitNotificationWebSocket(context = 'admin', userId) {
-  if (!userId) {
-    return null;
-  }
-
-  // Check if WebSocket is supported
-  if (typeof WebSocket === 'undefined') {
-    console.warn('[Notifications] WebSocket not supported, will use AJAX polling');
-    return null;
-  }
-
-  try {
-    const wsManager = new NotificationWebSocketManager({
-      userId,
-      debug: window.__notificationDebug || false,
-      onConnectionChange: (isConnected) => {
-        const event = new CustomEvent('notification-ws-status', {
-          detail: { connected: isConnected, context, },
-        });
-        document.dispatchEvent(event);
-      },
-    });
-
-    // Connect to WebSocket
-    const connected = await wsManager.connect(userId);
-    if (!connected) {
-      console.warn('[Notifications] Failed to connect to WebSocket');
-      return null;
-    }
-
-    // Register handler for new notifications
-    wsManager.on('notification', (message) => {
-      const notificationData = message.data;
-      // Dispatch custom event for notification received
-      document.dispatchEvent(new CustomEvent('notification-received', {
-        detail: {
-          id: notificationData.id,
-          title: notificationData.title,
-          message: notificationData.message,
-          type: notificationData.type,
-          actionUrl: notificationData.actionUrl,
-          createdAt: notificationData.createdAt,
-        },
-      }));
-    });
-
-    // Register handler for connection status
-    wsManager.on('connected', (_message) => {
-      console.info('[Notifications] WebSocket connected');
-    });
-
-    wsManager.on('pong', (_message) => {
-      // Heartbeat response received
-    });
-
-    wsManagers.set(context, wsManager);
-    return wsManager;
-  } catch (error) {
-    console.error('[Notifications] Error initializing WebSocket:', error.message);
-    return null;
-  }
-}
-
-/**
- * Get existing WebSocket manager for context
- */
-export function adminGetNotificationWebSocketManager(context = 'admin') {
-  return wsManagers.get(context) || null;
-}
-
-/**
- * Disconnect WebSocket for context
- */
-export function adminDisconnectNotificationWebSocket(context = 'admin') {
-  const wsManager = wsManagers.get(context);
-  if (wsManager) {
-    wsManager.disconnect();
-    wsManagers.delete(context);
-  }
-}
-
 export function adminInitNotificationCore(options = {}) {
   const context = options.context || 'admin';
   const existing = adminNotificationCoreState.get(context);
@@ -300,7 +213,6 @@ export function adminInitNotificationBell(options = {}) {
 
   const pollIntervalMs = Number.isFinite(options.pollIntervalMs) ? options.pollIntervalMs : 60000;
   const limit = Number.isFinite(options.limit) ? options.limit : 10;
-  const context = options.context || 'admin';
   const bellEl = adminFindElement(options.bellSelector, 'data-notification-bell');
   const badgeEl = adminFindElement(options.badgeSelector, 'data-notification-badge');
   const countEl = adminFindElement(options.countSelector, 'data-notification-count');
@@ -325,18 +237,11 @@ export function adminInitNotificationBell(options = {}) {
     loading: false,
     initialized: false,
     pollId: null,
-    wsManager: null,
-    useWebSocket: true,
-    fallbackToAjax: false,
     destroy() {
       abortController.abort();
       if (state.pollId) {
         clearInterval(state.pollId);
         state.pollId = null;
-      }
-      if (state.wsManager) {
-        state.wsManager.disconnect();
-        state.wsManager = null;
       }
       adminNotificationBellState.delete(key);
     },
@@ -357,13 +262,6 @@ export function adminInitNotificationBell(options = {}) {
       adminUpdateBadge(badgeEl, countEl, 0);
     } finally {
       state.loading = false;
-    }
-  };
-
-  const handleNewNotification = async (_notification) => {
-    // Add new notification to the modal if it's open
-    if (listEl.classList.contains('show') || menuEl.classList.contains('show')) {
-      await loadAndRender();
     }
   };
 
@@ -435,24 +333,6 @@ export function adminInitNotificationBell(options = {}) {
     if (event.key === 'Escape') hideMenu();
   };
 
-  const handleNotificationReceived = (event) => {
-    if (state.fallbackToAjax) return; // Only process if using WebSocket
-    console.info('[Notifications] New notification received via WebSocket');
-    handleNewNotification(event.detail);
-  };
-
-  const handleWebSocketStatus = (event) => {
-    console.info('[Notifications] WebSocket status changed:', event.detail.connected);
-    if (!event.detail.connected && !state.fallbackToAjax) {
-      console.info('[Notifications] WebSocket disconnected, switching to AJAX polling fallback');
-      state.fallbackToAjax = true;
-      // Enable AJAX polling as fallback
-      if (!state.pollId) {
-        state.pollId = window.setInterval(loadAndRender, pollIntervalMs);
-      }
-    }
-  };
-
   bellEl.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -463,42 +343,12 @@ export function adminInitNotificationBell(options = {}) {
   document.addEventListener('click', globalClickHandler, { signal: abortController.signal, });
   document.addEventListener('keydown', escapeHandler, { signal: abortController.signal, });
   document.addEventListener(ADMIN_NAV_DROPDOWN_OPEN_EVENT, closeForExternalOpen, { signal: abortController.signal, });
-  document.addEventListener('notification-received', handleNotificationReceived, { signal: abortController.signal, });
-  document.addEventListener('notification-ws-status', handleWebSocketStatus, { signal: abortController.signal, });
 
-  // Initialize WebSocket if available, otherwise use AJAX polling
-  (async () => {
-    try {
-      const userId = options.userId ?? getUserId();
-      if (state.useWebSocket && typeof WebSocket !== 'undefined') {
-        console.info('[Notifications] Attempting to initialize WebSocket for real-time updates');
-        const wsManager = await adminInitNotificationWebSocket(context, userId);
-        if (wsManager && wsManager.isConnected) {
-          console.info('[Notifications] WebSocket connected successfully');
-          state.wsManager = wsManager;
-          state.fallbackToAjax = false;
-          // Initial load via AJAX
-          runWhenReady(() => loadAndRender());
-          return;
-        }
-      }
-
-      // Fallback to AJAX polling
-      console.info('[Notifications] Using AJAX polling fallback');
-      state.fallbackToAjax = true;
-      runWhenReady(() => {
-        loadAndRender();
-        state.pollId = window.setInterval(loadAndRender, pollIntervalMs);
-      });
-    } catch (error) {
-      console.error('[Notifications] Error initializing notification system:', error);
-      state.fallbackToAjax = true;
-      runWhenReady(() => {
-        loadAndRender();
-        state.pollId = window.setInterval(loadAndRender, pollIntervalMs);
-      });
-    }
-  })();
+  // Initialize notifications via AJAX polling only
+  runWhenReady(() => {
+    loadAndRender();
+    state.pollId = window.setInterval(loadAndRender, pollIntervalMs);
+  });
 
   adminNotificationBellState.set(key, state);
   return { active: true, destroy: state.destroy, };

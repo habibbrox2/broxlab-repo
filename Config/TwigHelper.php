@@ -692,9 +692,9 @@ if (!function_exists("registerTwigHelpers")) {
                     return strtolower($text);
                 }));
         
-                // URL encode filter
+                // URL encode filter (always cast to string to avoid PHP 8 strict urlencode type errors)
                 $twig->addFilter(new \Twig\TwigFilter('url_encode', function ($text) {
-                    return urlencode($text);
+                    return urlencode((string)$text);
                 }));
         
                 // JSON decode filter

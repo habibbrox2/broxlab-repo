@@ -48,7 +48,7 @@
         normalizeDigits(str) {
             if (!str) return str;
             const map = {
-                '০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9'
+                '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4', '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
             };
             return str.replace(/[০-৯]/g, (ch) => map[ch] || ch);
         },
@@ -407,7 +407,7 @@
             if (date.getDay() === 0 || date.getDay() === 6) button.classList.add('bxdp-weekend');
             button.textContent = date.getDate().toLocaleString(this.config.locale);
             button.setAttribute('role', 'gridcell');
-            button.setAttribute('aria-label', U.format(date, 'DD-MM-YYYY'));
+            button.setAttribute('aria-label', U.format(date, this.config.format || 'DD-MM-YYYY'));
             if (isOtherMonth) button.classList.add(CLS.other);
             if (U.sameDay(date, new Date())) button.classList.add(CLS.today);
 

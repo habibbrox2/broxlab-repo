@@ -12,6 +12,7 @@
  *
  * ROUTES:
  * - GET  /medex                   → companies list (paginated, 20/page)
+ * - GET  /medex/details           → medex dataset details dashboard
  * - GET  /medex/companies         → 301 redirect to /medex
  * - GET  /medex/company/{id}      → single company page
  * - GET  /medex/brand/{id}        → single brand detail page
@@ -69,6 +70,36 @@ $router->get("/medex", function () use ($twig) {
     ]);
 });
 
+// MedEx dataset details dashboard
+$router->get("/medex/details", function () use ($twig) {
+    try {
+        $medexService = new \App\Services\MedexDataService();
+        $medexService->refreshDataIfStale();
+    } catch (Exception $e) {
+        logError("MedEx service error: " . $e->getMessage());
+        renderError(500, "MedEx database is currently unavailable.");
+        return;
+    }
+
+    $breadcrumbs = [
+        ["label" => "MedEx", "url" => "/medex", "icon" => "pill"],
+        ["label" => "Details", "url" => "/medex/details", "icon" => "info-circle"],
+    ];
+
+    echo $twig->render("medex/details.html.twig", [
+        "title"           => "MedEx Dataset Details",
+        "total_companies" => $medexService->getTotalCompanies(),
+        "total_brands"    => $medexService->getTotalBrands(),
+        "last_updated"    => $medexService->getLastUpdated(),
+        "data_file_age"   => $medexService->getDataFileAgeSeconds(),
+        "cache_path"      => $medexService->getDataFilePath(),
+        "lock_exists"     => file_exists($medexService->getRefreshLockPath()),
+        "lock_age"        => $medexService->getRefreshLockAgeSeconds(),
+        "lock_path"       => $medexService->getRefreshLockPath(),
+        "breadcrumbs"     => $breadcrumbs,
+    ]);
+});
+
 // Alias: /medex/companies redirects to /medex
 $router->get("/medex/companies", function () {
     header("Location: /medex", true, 301);
@@ -79,6 +110,7 @@ $router->get("/medex/companies", function () {
 $router->get("/medex/company/{id}", function ($id) use ($twig) {
     try {
         $medexService = new \App\Services\MedexDataService();
+        $medexService->refreshDataIfStale();
     } catch (Exception $e) {
         logError("MedEx service error: " . $e->getMessage());
         renderError(500, "MedEx database is currently unavailable.");
@@ -115,6 +147,7 @@ $router->get("/medex/company/{id}", function ($id) use ($twig) {
 $router->get("/medex/brand/{id}", function ($id) use ($twig) {
     try {
         $medexService = new \App\Services\MedexDataService();
+        $medexService->refreshDataIfStale();
     } catch (Exception $e) {
         logError("MedEx service error: " . $e->getMessage());
         renderError(500, "MedEx database is currently unavailable.");
@@ -215,13 +248,25 @@ $router->get("/api/medex/companies", function () {
 });
 
 // API: refresh MedEx cache if stale or requested manually
-$router->get("/api/medex/refresh", function () {
+$router->match(['GET', 'POST'], "/api/medex/refresh", function () {
     header("Content-Type: application/json; charset=utf-8");
 
     $expectedToken = trim((string)($_ENV["MEDEX_REFRESH_TOKEN"] ?? ""));
+    $csrfValid = false;
+    if ($_SERVER["REQUEST_METHOD"] === "POST") {
+        $csrfToken = getCsrfTokenFromRequest() ?? '';
+        $csrfValid = validateCsrfToken($csrfToken);
+        if (!$csrfValid) {
+            http_response_code(403);
+            echo json_encode(["success" => false, "error" => "Invalid CSRF token"]);
+            exit;
+        }
+    }
+
     if ($expectedToken !== "") {
-        $providedToken = trim((string)($_GET["token"] ?? ""));
-        if (!hash_equals($expectedToken, $providedToken)) {
+        $providedToken = trim((string)($_REQUEST["token"] ?? ""));
+        $tokenValid = $providedToken !== "" && hash_equals($expectedToken, $providedToken);
+        if (!($tokenValid || ($csrfValid && $_SERVER["REQUEST_METHOD"] === "POST"))) {
             http_response_code(401);
             echo json_encode(["success" => false, "error" => "Unauthorized"]);
             exit;
@@ -251,6 +296,7 @@ $router->get("/api/medex/refresh", function () {
 $router->get("/api/medex/company/{id}", function ($id) {
     try {
         $medexService = new \App\Services\MedexDataService();
+        $medexService->refreshDataIfStale();
     } catch (Exception $e) {
         logError("MedEx service error: " . $e->getMessage());
         http_response_code(500);
@@ -282,6 +328,7 @@ $router->get("/api/medex/company/{id}", function ($id) {
 $router->get("/api/medex/brand/{id}", function ($id) {
     try {
         $medexService = new \App\Services\MedexDataService();
+        $medexService->refreshDataIfStale();
     } catch (Exception $e) {
         logError("MedEx service error: " . $e->getMessage());
         http_response_code(500);
