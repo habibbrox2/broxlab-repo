@@ -434,23 +434,37 @@ $router->get('/api/posts/check_permalink', ['middleware' => ['auth', 'admin_only
 
 
 
-// Auto-save Post as draft
+// Auto-save Post as draft (also creates draft for new posts)
 $router->post('/api/posts/autosave', ['middleware' => ['auth', 'admin_only']], function () use ($contentModel) {
     $id = sanitize_input($_POST['id'] ?? null);
     $title = sanitize_input($_POST['title'] ?? '');
     // Use HTMLPurifier for rich content autosave to avoid stored XSS while preserving allowed markup
     $purifier = getPurifier();
     $content = $purifier->purify($_POST['content'] ?? '');
+    $content = watermarkContentImages($content);
     $slug = sanitize_input($_POST['slug'] ?? '');
     $status = sanitize_input($_POST['status'] ?? 'draft');
     $published = $status === 'published' ? 1 : 0;
 
     if ($id) {
-        // Auto-save with status support
+        // Update existing post
         $contentModel->updatePost($id, $title, $content, $slug, $published, null, null);
-        $response = ['success' => true, 'message' => 'Post auto-saved', 'status' => $status, 'published' => $published];
+        $response = ['success' => true, 'message' => 'Post auto-saved', 'id' => (int)$id, 'status' => $status, 'published' => $published, 'is_new' => false];
     } else {
-        $response = ['success' => false, 'message' => 'Post ID missing'];
+        // Create new draft post
+        if (empty($slug)) {
+            $slug = $contentModel->generateUniquePermalink($title);
+        }
+        $author = '';
+        if (class_exists('AuthManager') && method_exists('AuthManager', 'getCurrentUsername')) {
+            $author = AuthManager::getCurrentUsername();
+        }
+        $newId = $contentModel->createPost($title, $content, $author, $slug, 0, null, null);
+        if ($newId) {
+            $response = ['success' => true, 'message' => 'Draft post created', 'id' => (int)$newId, 'status' => 'draft', 'published' => 0, 'is_new' => true];
+        } else {
+            $response = ['success' => false, 'message' => 'Failed to create draft post'];
+        }
     }
 
     header('Content-Type: application/json');

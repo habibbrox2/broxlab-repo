@@ -340,13 +340,18 @@ else
     log_warn "Composer unavailable; skipping PHP dependency install"
 fi
 
-if [[ -f "package.json" ]]; then
+if [[ -f "package.json" && "${USE_PHP_ONLY:-false}" != "true" ]]; then
     npm ci --include=dev 2>&1 | tee -a "$LOG_FILE" || npm install --legacy-peer-deps 2>&1 | tee -a "$LOG_FILE"
 fi
 
-if [[ "$SKIP_BUILD" == "false" && -f "package.json" ]]; then
+# If using PHP-only deployment (USE_PHP_ONLY=true), skip Node build steps
+if [[ "$SKIP_BUILD" == "false" && -f "package.json" && "${USE_PHP_ONLY:-false}" != "true" ]]; then
     log_section "BUILDING ASSETS"
     npm run build:prod 2>&1 | tee -a "$LOG_FILE"
+else
+    if [[ "${USE_PHP_ONLY:-false}" == "true" ]]; then
+        log_info "USE_PHP_ONLY=true — skipping Node/npm build steps"
+    fi
 fi
 
 log_section "VALIDATING PHP"

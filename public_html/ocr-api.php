@@ -5,7 +5,7 @@
  * No Python dependencies - uses Tesseract directly
  */
 
-require_once __DIR__ . '/../app/Services/OCRService.php';
+require_once dirname(__DIR__, 1) . '/app/Services/OCRService.php';
 
 // Set headers for CORS and JSON
 header('Access-Control-Allow-Origin: *');

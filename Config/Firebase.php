@@ -119,7 +119,7 @@ return [
     // Logging and Caching
     'logging' => [
         'enabled' => true,
-        'path' => __DIR__ . '/../storage/logs/firebase.log',
+        'path' => dirname(__DIR__, 1) . '/storage/logs/firebase.log',
         'level' => env('APP_DEBUG') === 'true' ? 'debug' : 'error',
     ],
 

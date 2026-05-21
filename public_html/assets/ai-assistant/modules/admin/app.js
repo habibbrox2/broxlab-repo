@@ -29,6 +29,8 @@ const UI = {
   // Settings panel elements
   provider: document.getElementById('adminAiProvider'),
   model: document.getElementById('adminAiModel'),
+  currentModel: document.getElementById('adminAiCurrentModel'),
+  modelStatusIndicator: document.getElementById('adminAiModelStatusIndicator'),
   refreshModels: document.getElementById('adminAiRefreshModels'),
   darkModeToggle: document.getElementById('adminAiDarkModeToggle'),
   clearHistoryBtn: document.getElementById('adminAiClearHistory'),
@@ -104,7 +106,7 @@ const I18N = {
 /**
  * Initialize the admin assistant
  */
-function init() {
+async function init() {
   loadPreferences();
   loadHistory();
   loadLanguage();
@@ -115,7 +117,9 @@ function init() {
   });
   renderHistory();
   bindEvents();
-  loadProviders();
+  await loadProviders();
+  await loadModels();
+  updateSelectedProviderModel();
   applyTheme();
 
   // Initialize model cache
@@ -223,6 +227,24 @@ function applyLanguage() {
   }
 }
 
+function updateSelectedProviderModel() {
+  if (!UI.currentModel || !UI.modelStatusIndicator) return;
+
+  const providerText = UI.provider?.selectedOptions?.[0]?.text || UI.provider?.value || 'Provider';
+  const modelText = UI.model?.selectedOptions?.[0]?.text || UI.model?.value || 'Model';
+  UI.currentModel.textContent = `${providerText} · ${modelText}`;
+  UI.currentModel.title = `Provider: ${providerText}, Model: ${modelText}`;
+
+  UI.modelStatusIndicator.className = 'brox-ai-status-indicator';
+  if (UI.provider?.value) {
+    UI.modelStatusIndicator.classList.add('brox-ai-online');
+    UI.modelStatusIndicator.title = 'Selected provider is active';
+  } else {
+    UI.modelStatusIndicator.classList.add('brox-ai-offline');
+    UI.modelStatusIndicator.title = 'No provider selected';
+  }
+}
+
 /**
  * Load available AI providers
  */
@@ -291,6 +313,8 @@ async function loadModels() {
         UI.model.value = adminPrefs.model;
       }
 
+      updateSelectedProviderModel();
+
       // Log cache status
       const logMsg = result.fromCache
         ? `[Cache] ${models.length} models loaded${result.isStale ? ' (stale)' : ''}`
@@ -313,6 +337,7 @@ async function loadModels() {
         .join('');
 
       UI.model.value = adminPrefs.model || fallbackModels[0].id;
+      updateSelectedProviderModel();
     }
   } catch (err) {
     console.error(t('error_loading_models'), err);
@@ -666,12 +691,14 @@ function bindEvents() {
     adminPrefs.provider = UI.provider.value;
     savePreferences();
     await loadModels();
+    updateSelectedProviderModel();
   });
 
   // Model change
   UI.model?.addEventListener('change', () => {
     adminPrefs.model = UI.model.value;
     savePreferences();
+    updateSelectedProviderModel();
   });
 
   // Refresh models button
@@ -748,6 +775,7 @@ function bindEvents() {
   if (UI.provider) UI.provider.value = adminPrefs.provider;
   if (UI.model) UI.model.value = adminPrefs.model;
   if (UI.webMaxResults) UI.webMaxResults.value = adminPrefs.webMaxResults;
+  updateSelectedProviderModel();
   if (UI.reasoningEffort) UI.reasoningEffort.value = adminPrefs.reasoningEffort;
   if (UI.responseFormat) UI.responseFormat.value = adminPrefs.responseFormat;
   if (UI.pdfEngine) UI.pdfEngine.value = adminPrefs.pdfEngine;

@@ -24,9 +24,9 @@ class RateLimiter
         $this->limitPerHour = (int)($this->getSetting('rate_limit_per_hour') ?? self::DEFAULT_PER_HOUR);
 
         // Setup cache directory for file-based storage
-        $this->cacheDir = realpath(__DIR__ . '/../../../storage/cache/rate-limits');
+        $this->cacheDir = realpath(dirname(__DIR__, 3) . '/storage/cache/rate-limits');
         if (!$this->cacheDir) {
-            $this->cacheDir = __DIR__ . '/../../../storage/cache/rate-limits';
+            $this->cacheDir = dirname(__DIR__, 3) . '/storage/cache/rate-limits';
         }
 
         if (!is_dir($this->cacheDir)) {
@@ -299,7 +299,7 @@ class RateLimiter
         }
 
         // Check for .env file if exists
-        $envFile = __DIR__ . '/../../../.env';
+        $envFile = dirname(__DIR__, 3) . '/.env';
         if (file_exists($envFile)) {
             $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
             foreach ($lines as $line) {

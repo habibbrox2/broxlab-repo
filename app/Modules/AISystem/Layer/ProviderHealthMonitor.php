@@ -315,7 +315,7 @@ class ProviderHealthMonitor
      */
     private function getCacheFilePath(string $provider): string
     {
-        return __DIR__ . '/../../../storage/cache/health_' . $provider . '.json';
+        return dirname(__DIR__, 3) . '/storage/cache/health_' . $provider . '.json';
     }
 
     /**

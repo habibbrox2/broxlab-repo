@@ -135,6 +135,7 @@
     <link rel="stylesheet" href="{{ asset('/assets/css/dist/public-bundle.css') }}">
     <link rel="stylesheet" href="{{ asset('/assets/css/tailwind.css') }}">
     <link rel="stylesheet" href="{{ asset('/assets/ai-assistant/styles/thinking-indicator.css') }}">
+    <link rel="stylesheet" href="{{ asset('/ai/dist/ai-style.css') }}">
     {% block extra_styles %}
     {% endblock %}
     {% block extra_head %}
@@ -633,8 +634,16 @@
 
     
      {# ===== STEP 2: Load Application Core Scripts ===== #}
-     <script>
-         window.__broxSiteLang = '{{ current_lang }}';
+    <script>
+        // Ensure notifications WS is disabled by default (force AJAX polling) unless explicitly configured
+        window.__APP_JS_CONFIG = window.__APP_JS_CONFIG || {};
+        window.__APP_JS_CONFIG.notifications = window.__APP_JS_CONFIG.notifications || {};
+        window.__APP_JS_CONFIG.notifications.websocketUrl = '';
+        // Silence Puter App Store prompt
+        window.puter = window.puter || {};
+        window.puter.quiet = true;
+
+        window.__broxSiteLang = '{{ current_lang }}';
          window.__broxSiteTranslations = window.__broxSiteTranslations || {};
          window.__broxSiteTranslations['{{ current_lang }}'] = Object.assign(
              window.__broxSiteTranslations['{{ current_lang }}'] || {},
@@ -711,6 +720,7 @@
         {% set assistant_variant = 'admin' %}
 {% include 'partials/ai-assistant/admin.twig' %}
 {% include 'partials/ai-assistant/script.twig' %}
+{% include 'partials/ai-assistant/admin-button.twig' %}
     {% endif %}
 
 <script>

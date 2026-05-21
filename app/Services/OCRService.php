@@ -76,7 +76,7 @@ class OCRService
             }
 
             // Use OCR.space API for image extraction
-            error_log('Using OCR.space API for text extraction');
+            aiErrorLog('Using OCR.space API for text extraction');
 
             // Decode base64 to binary
             $imageBinary = base64_decode($imageData);
@@ -88,7 +88,7 @@ class OCRService
             }
 
             $originalSizeKB = strlen($imageBinary) / 1024;
-            error_log("Image size before processing: {$originalSizeKB} KB");
+            aiErrorLog("Image size before processing: {$originalSizeKB} KB");
 
             // Check and compress image if it exceeds 900KB (leaving 100KB buffer for OCR.space 1MB limit)
             $imageSizeKB = $originalSizeKB;
@@ -98,7 +98,7 @@ class OCRService
                 // Try compression at 85% quality
                 $compressed85 = $this->compressImage($imageBinary, 85);
                 $size85 = strlen($compressed85) / 1024;
-                error_log("Image compressed at 85% quality: {$size85} KB");
+                aiErrorLog("Image compressed at 85% quality: {$size85} KB");
 
                 if ($size85 > 0 && $size85 <= 950) {
                     $compressedBinary = $compressed85;
@@ -107,7 +107,7 @@ class OCRService
                     // Try compression at 70% quality
                     $compressed70 = $this->compressImage($imageBinary, 70);
                     $size70 = strlen($compressed70) / 1024;
-                    error_log("Image compressed at 70% quality: {$size70} KB");
+                    aiErrorLog("Image compressed at 70% quality: {$size70} KB");
 
                     if ($size70 > 0 && $size70 <= 950) {
                         $compressedBinary = $compressed70;
@@ -116,7 +116,7 @@ class OCRService
                         // Try resizing
                         $resized = $this->resizeImage($imageBinary, 0.8);
                         $sizeResized = strlen($resized) / 1024;
-                        error_log("Image resized to 80%: {$sizeResized} KB");
+                        aiErrorLog("Image resized to 80%: {$sizeResized} KB");
 
                         if ($sizeResized > 0) {
                             $compressedBinary = $resized;
@@ -126,7 +126,7 @@ class OCRService
                 }
             }
 
-            error_log("Final image size before upload: {$imageSizeKB} KB");
+            aiErrorLog("Final image size before upload: {$imageSizeKB} KB");
 
             // Validate final size
             if ($imageSizeKB > 1024) {
@@ -149,7 +149,7 @@ class OCRService
             $tempFile = tempnam(sys_get_temp_dir(), 'ocr_');
             $written = file_put_contents($tempFile, $compressedBinary);
             if ($written === false) {
-                error_log("Failed to write to temp file: $tempFile");
+                aiErrorLog("Failed to write to temp file: $tempFile");
                 return [
                     'success' => false,
                     'error' => 'Failed to write image to temporary file'
@@ -157,11 +157,11 @@ class OCRService
             }
 
             $tempFileSize = filesize($tempFile);
-            error_log("Temp file created at $tempFile, size: {$tempFileSize} bytes");
+            aiErrorLog("Temp file created at $tempFile, size: {$tempFileSize} bytes");
 
             // Verify file exists and has content
             if (!file_exists($tempFile) || $tempFileSize === 0) {
-                error_log("Temp file verification failed - file may be empty or missing");
+                aiErrorLog("Temp file verification failed - file may be empty or missing");
                 @unlink($tempFile);
                 return [
                     'success' => false,
@@ -172,7 +172,7 @@ class OCRService
             try {
                 $postData['file'] = new CURLFile($tempFile, 'image/jpeg', 'ocr.jpg');
             } catch (Exception $e) {
-                error_log("CURLFile creation failed: " . $e->getMessage());
+                aiErrorLog("CURLFile creation failed: " . $e->getMessage());
                 @unlink($tempFile);
                 return [
                     'success' => false,
@@ -190,7 +190,7 @@ class OCRService
             curl_setopt($ch, CURLOPT_TIMEOUT, 60);
             curl_setopt($ch, CURLOPT_USERAGENT, 'BroxLab/1.0');
 
-            error_log("Sending request to OCR.space API with file size: {$tempFileSize} bytes");
+            aiErrorLog("Sending request to OCR.space API with file size: {$tempFileSize} bytes");
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
@@ -200,7 +200,7 @@ class OCRService
             @unlink($tempFile);
 
             if ($curlError) {
-                error_log("OCR.space cURL error: $curlError");
+                aiErrorLog("OCR.space cURL error: $curlError");
                 return [
                     'success' => false,
                     'error' => 'OCR.space API error: ' . $curlError
@@ -208,8 +208,8 @@ class OCRService
             }
 
             if ($httpCode !== 200) {
-                error_log("OCR.space HTTP error: $httpCode. Response length: " . strlen($response) . " chars");
-                error_log("Response preview: " . substr($response, 0, 500));
+                aiErrorLog("OCR.space HTTP error: $httpCode. Response length: " . strlen($response) . " chars");
+                aiErrorLog("Response preview: " . substr($response, 0, 500));
                 return [
                     'success' => false,
                     'error' => 'OCR.space API HTTP ' . $httpCode . ' - ' . substr($response, 0, 100)
@@ -217,7 +217,7 @@ class OCRService
             }
 
             if (empty($response)) {
-                error_log("OCR.space returned empty response");
+                aiErrorLog("OCR.space returned empty response");
                 return [
                     'success' => false,
                     'error' => 'OCR.space returned empty response'
@@ -226,18 +226,18 @@ class OCRService
 
             $data = json_decode($response, true);
             if (!$data) {
-                error_log("Failed to decode JSON response from OCR.space. Response: " . substr($response, 0, 500));
+                aiErrorLog("Failed to decode JSON response from OCR.space. Response: " . substr($response, 0, 500));
                 return [
                     'success' => false,
                     'error' => 'Invalid JSON response from OCR.space'
                 ];
             }
 
-            error_log("OCR.space response: " . json_encode(['IsErroredOnProcessing' => $data['IsErroredOnProcessing'] ?? null, 'ErrorMessage' => $data['ErrorMessage'] ?? null, 'ParsedText_len' => strlen($data['ParsedText'] ?? '')]));
+            aiErrorLog("OCR.space response: " . json_encode(['IsErroredOnProcessing' => $data['IsErroredOnProcessing'] ?? null, 'ErrorMessage' => $data['ErrorMessage'] ?? null, 'ParsedText_len' => strlen($data['ParsedText'] ?? '')]));
 
             if ($data['IsErroredOnProcessing'] === true) {
                 $errorMsg = is_array($data['ErrorMessage']) ? implode(', ', $data['ErrorMessage']) : ($data['ErrorMessage'] ?? 'Unknown error');
-                error_log("OCR.space processing error: $errorMsg");
+                aiErrorLog("OCR.space processing error: $errorMsg");
                 return [
                     'success' => false,
                     'error' => 'OCR.space API error: ' . $errorMsg
@@ -246,14 +246,14 @@ class OCRService
 
             $text = trim($data['ParsedText'] ?? '');
             if (empty($text)) {
-                error_log("OCR.space returned empty text. Full response: " . json_encode($data));
+                aiErrorLog("OCR.space returned empty text. Full response: " . json_encode($data));
                 return [
                     'success' => false,
                     'error' => 'No text extracted from image (OCR returned empty result)'
                 ];
             }
 
-            error_log("OCR.space successfully extracted text (" . strlen($text) . " chars)");
+            aiErrorLog("OCR.space successfully extracted text (" . strlen($text) . " chars)");
             return [
                 'success' => true,
                 'text' => $text,
@@ -274,13 +274,13 @@ class OCRService
     {
         try {
             if (!extension_loaded('gd')) {
-                error_log("GD extension not loaded, returning original image");
+                aiErrorLog("GD extension not loaded, returning original image");
                 return $imageBinary; // Return original if GD not available
             }
 
             $image = @imagecreatefromstring($imageBinary);
             if (!$image) {
-                error_log("Failed to create image from binary data (imagecreatefromstring returned false)");
+                aiErrorLog("Failed to create image from binary data (imagecreatefromstring returned false)");
                 return $imageBinary; // Return original if can't create image
             }
 
@@ -291,13 +291,13 @@ class OCRService
             @imagedestroy($image);
 
             if (!$jpegged || !$compressed || strlen($compressed) === 0) {
-                error_log("imagejpeg failed or returned empty output at quality {$quality}");
+                aiErrorLog("imagejpeg failed or returned empty output at quality {$quality}");
                 return $imageBinary;
             }
 
             return $compressed;
         } catch (Exception $e) {
-            error_log("Image compression failed: " . $e->getMessage());
+            aiErrorLog("Image compression failed: " . $e->getMessage());
             return $imageBinary;
         }
     }
@@ -309,13 +309,13 @@ class OCRService
     {
         try {
             if (!extension_loaded('gd')) {
-                error_log("GD extension not loaded, cannot resize image");
+                aiErrorLog("GD extension not loaded, cannot resize image");
                 return $imageBinary;
             }
 
             $image = @imagecreatefromstring($imageBinary);
             if (!$image) {
-                error_log("Failed to create image from binary data in resizeImage");
+                aiErrorLog("Failed to create image from binary data in resizeImage");
                 return $imageBinary;
             }
 
@@ -324,7 +324,7 @@ class OCRService
             $newWidth = (int)($width * $scale);
             $newHeight = (int)($height * $scale);
 
-            error_log("Resizing image from {$width}x{$height} to {$newWidth}x{$newHeight}");
+            aiErrorLog("Resizing image from {$width}x{$height} to {$newWidth}x{$newHeight}");
 
             // Prevent image from being too small
             if ($newWidth < 100 || $newHeight < 100) {
@@ -334,7 +334,7 @@ class OCRService
 
             $resized = @imagecreatetruecolor($newWidth, $newHeight);
             if (!$resized) {
-                error_log("Failed to create resized image canvas");
+                aiErrorLog("Failed to create resized image canvas");
                 @imagedestroy($image);
                 return $imageBinary;
             }
@@ -348,7 +348,7 @@ class OCRService
             @imagedestroy($resized);
 
             if (!$jpegOk || !$result || strlen($result) === 0) {
-                error_log("imagejpeg failed in resizeImage");
+                aiErrorLog("imagejpeg failed in resizeImage");
                 return $imageBinary;
             }
 
@@ -357,7 +357,7 @@ class OCRService
 
             return ($result && strlen($result) > 0) ? $result : $imageBinary;
         } catch (Exception $e) {
-            error_log("Image resize failed: " . $e->getMessage());
+            aiErrorLog("Image resize failed: " . $e->getMessage());
             return $imageBinary;
         }
     }

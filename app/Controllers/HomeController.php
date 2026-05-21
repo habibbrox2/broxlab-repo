@@ -192,7 +192,7 @@ $router->post('/contact', function () use ($mysqli, $twig) {
         $adminIds = $contactModel->getAdminUserIds();
 
         if (!empty($adminIds)) {
-            require_once __DIR__ . '/../Helpers/FirebaseHelper.php';
+            require_once dirname(__DIR__, 1) . '/Helpers/FirebaseHelper.php';
             $notificationTitle = "à¦¨à¦¤à§à¦¨ à¦¯à§‹à¦—à¦¾à¦¯à§‹à¦— à¦¬à¦¾à¦°à§à¦¤à¦¾";
             $notificationBody = "$name (" . substr($email, 0, 15) . "...) à¦†à¦ªà¦¨à¦¾à¦•à§‡ à¦¬à¦¾à¦°à§à¦¤à¦¾ à¦ªà¦¾à¦ à¦¿à¦¯à¦¼à§‡à¦›à§‡à¦¨: \"$subject\"";
             sendNotiAdmin(

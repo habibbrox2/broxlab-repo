@@ -53,7 +53,7 @@ class NewsletterModel {
             // Send push and email notification for newsletter subscription
             // Note: Newsletter subscribers are not users, so we'll send email notification only
             try {
-                require_once __DIR__ . '/../Helpers/EmailHelper.php';
+                require_once dirname(__DIR__, 1) . '/Helpers/EmailHelper.php';
                 
                 $htmlBody = "<h2>স্বাগতম আমাদের নিউজলেটারে!</h2>";
                 $htmlBody .= "<p>হ্যালো " . htmlspecialchars($name ?: 'Subscriber') . ",</p>";

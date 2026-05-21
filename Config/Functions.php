@@ -8,11 +8,11 @@
  */
 
 // ==================== LOAD HELPER FILES ====================
-require_once __DIR__ . '/../app/Helpers/NotificationHelper.php';
-require_once __DIR__ . '/../app/Helpers/BreadcrumbGenerator.php';
-require_once __DIR__ . '/../app/Helpers/UrlHelper.php';
-require_once __DIR__ . '/../app/Helpers/ClientInfoHelper.php';
-require_once __DIR__ . '/../app/Helpers/PurifierHelper.php';
+require_once dirname(__DIR__, 1) . '/app/Helpers/NotificationHelper.php';
+require_once dirname(__DIR__, 1) . '/app/Helpers/BreadcrumbGenerator.php';
+require_once dirname(__DIR__, 1) . '/app/Helpers/UrlHelper.php';
+require_once dirname(__DIR__, 1) . '/app/Helpers/ClientInfoHelper.php';
+require_once dirname(__DIR__, 1) . '/app/Helpers/PurifierHelper.php';
 
 
 // ==================== SEO HELPER FUNCTIONS ====================

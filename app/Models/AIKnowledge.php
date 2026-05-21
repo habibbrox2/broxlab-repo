@@ -77,7 +77,7 @@ class AIKnowledge
             return true;
         } catch (Throwable $e) {
             // Log error but don't throw - table operations should be resilient
-            error_log("AIKnowledge ensureTableSchema error: " . $e->getMessage());
+            aiErrorLog("AIKnowledge ensureTableSchema error: " . $e->getMessage());
             return false;
         }
     }
@@ -154,7 +154,7 @@ class AIKnowledge
         $priority = $data['priority'] ?? 0;
 
         $stmt = $this->mysqli->prepare("INSERT INTO ai_knowledge_base (title, content, source_url, category, source_type, is_active, priority, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
-        $stmt->bind_param('ssssiis', $title, $content, $sourceUrl, $category, $sourceType, $isActive, $priority);
+        $stmt->bind_param('sssssii', $title, $content, $sourceUrl, $category, $sourceType, $isActive, $priority);
         $stmt->execute();
         $id = $stmt->insert_id;
         $stmt->close();
@@ -176,7 +176,7 @@ class AIKnowledge
         $priority = $data['priority'] ?? 0;
 
         $stmt = $this->mysqli->prepare("UPDATE ai_knowledge_base SET title = ?, content = ?, source_url = ?, category = ?, source_type = ?, is_active = ?, priority = ?, updated_at = NOW() WHERE id = ?");
-        $stmt->bind_param('ssssiisi', $title, $content, $sourceUrl, $category, $sourceType, $isActive, $priority, $id);
+        $stmt->bind_param('sssssiii', $title, $content, $sourceUrl, $category, $sourceType, $isActive, $priority, $id);
         $res = $stmt->execute();
         $stmt->close();
         return $res;
@@ -226,8 +226,11 @@ class AIKnowledge
             return [];
         }
 
-        $stmt = $this->mysqli->query("SELECT DISTINCT category FROM ai_knowledge_base WHERE category IS NOT NULL ORDER BY category");
-        $rows = $stmt->fetch_all(MYSQLI_ASSOC);
+        $result = $this->mysqli->query("SELECT DISTINCT category FROM ai_knowledge_base WHERE category IS NOT NULL ORDER BY category");
+        if (!$result) {
+            return [];
+        }
+        $rows = $result->fetch_all(MYSQLI_ASSOC);
         return array_column($rows, 'category');
     }
 
@@ -243,7 +246,7 @@ class AIKnowledge
         foreach ($words as $w) {
             $w = trim($w);
             if (strlen($w) >= 4) {
-                $keywords[] = $this->mysqli->real_escape_string($w);
+                $keywords[] = $w;
             }
         }
 
@@ -251,11 +254,16 @@ class AIKnowledge
             return [];
         }
 
-        // Build a simple LIKE-based query across title and content
+        // Build parameterized LIKE query across title and content
         $whereParts = [];
+        $params = [];
+        $types = '';
         foreach ($keywords as $kw) {
-            $kwLike = "%{$kw}%";
-            $whereParts[] = "(`title` LIKE '" . $kwLike . "' OR `content` LIKE '" . $kwLike . "')";
+            $whereParts[] = '(`title` LIKE ? OR `content` LIKE ?)';
+            $likeParam = '%' . $kw . '%';
+            $params[] = $likeParam;
+            $params[] = $likeParam;
+            $types .= 'ss';
         }
 
         $whereSql = implode(' OR ', $whereParts);
@@ -263,14 +271,25 @@ class AIKnowledge
                 FROM ai_knowledge_base 
                 WHERE ({$whereSql}) AND is_active = 1 
                 ORDER BY priority DESC, created_at DESC 
-                LIMIT " . intval($limit);
+                LIMIT ?";
 
-        $res = $this->mysqli->query($sql);
-        if (!$res) {
+        $params[] = $limit;
+        $types .= 'i';
+
+        $stmt = $this->mysqli->prepare($sql);
+        if (!$stmt) {
             return [];
         }
-
-        return $res->fetch_all(MYSQLI_ASSOC);
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if (!$res) {
+            $stmt->close();
+            return [];
+        }
+        $rows = $res->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        return $rows;
     }
 
     // ==================== SELF-IMPROVING KB FEATURES ====================
@@ -321,7 +340,7 @@ class AIKnowledge
 
             return true;
         } catch (Throwable $e) {
-            error_log("AIKnowledge ensureFeedbackSchema error: " . $e->getMessage());
+            aiErrorLog("AIKnowledge ensureFeedbackSchema error: " . $e->getMessage());
             return false;
         }
     }
@@ -348,7 +367,7 @@ class AIKnowledge
 
             return $result;
         } catch (Throwable $e) {
-            error_log("AIKnowledge recordFeedback error: " . $e->getMessage());
+            aiErrorLog("AIKnowledge recordFeedback error: " . $e->getMessage());
             return false;
         }
     }
@@ -390,7 +409,7 @@ class AIKnowledge
             }
             return false;
         } catch (Throwable $e) {
-            error_log("AIKnowledge updateQualityScore error: " . $e->getMessage());
+            aiErrorLog("AIKnowledge updateQualityScore error: " . $e->getMessage());
             return false;
         }
     }
@@ -415,7 +434,7 @@ class AIKnowledge
             $stmt->close();
             return $result;
         } catch (Throwable $e) {
-            error_log("AIKnowledge recordUsage error: " . $e->getMessage());
+            aiErrorLog("AIKnowledge recordUsage error: " . $e->getMessage());
             return false;
         }
     }
@@ -433,43 +452,47 @@ class AIKnowledge
 
         try {
             // 1. Get low-performing knowledge items (low quality score, high usage)
-            $stmt = $this->mysqli->query("
+            $result = $this->mysqli->query("
                 SELECT id, title, quality_score, usage_count
                 FROM ai_knowledge_base
                 WHERE quality_score < 0.5 AND usage_count > 5
                 ORDER BY quality_score ASC
                 LIMIT 5
             ");
-            while ($row = $stmt->fetch_assoc()) {
-                $suggestions[] = [
-                    'type' => 'low_quality',
-                    'priority' => 'high',
-                    'knowledge_id' => $row['id'],
-                    'title' => $row['title'],
-                    'message' => "This knowledge item has low feedback score ({$row['quality_score']}) despite high usage. Consider improving content."
-                ];
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $suggestions[] = [
+                        'type' => 'low_quality',
+                        'priority' => 'high',
+                        'knowledge_id' => $row['id'],
+                        'title' => $row['title'],
+                        'message' => "This knowledge item has low feedback score ({$row['quality_score']}) despite high usage. Consider improving content."
+                    ];
+                }
             }
 
             // 2. Get unused knowledge that could be helpful
-            $stmt = $this->mysqli->query("
+            $result = $this->mysqli->query("
                 SELECT id, title, created_at
                 FROM ai_knowledge_base
                 WHERE usage_count = 0 AND is_active = 1
                 ORDER BY priority DESC, created_at DESC
                 LIMIT 3
             ");
-            while ($row = $stmt->fetch_assoc()) {
-                $suggestions[] = [
-                    'type' => 'unused',
-                    'priority' => 'medium',
-                    'knowledge_id' => $row['id'],
-                    'title' => $row['title'],
-                    'message' => "This knowledge item has never been used. Consider promoting or updating it."
-                ];
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $suggestions[] = [
+                        'type' => 'unused',
+                        'priority' => 'medium',
+                        'knowledge_id' => $row['id'],
+                        'title' => $row['title'],
+                        'message' => "This knowledge item has never been used. Consider promoting or updating it."
+                    ];
+                }
             }
 
             // 3. Get knowledge with negative feedback
-            $stmt = $this->mysqli->query("
+            $result = $this->mysqli->query("
                 SELECT k.id, k.title, COUNT(f.id) as neg_count
                 FROM ai_knowledge_base k
                 JOIN ai_knowledge_feedback f ON f.knowledge_id = k.id AND f.is_helpful = 0
@@ -477,19 +500,21 @@ class AIKnowledge
                 HAVING neg_count >= 2
                 LIMIT 5
             ");
-            while ($row = $stmt->fetch_assoc()) {
-                $suggestions[] = [
-                    'type' => 'negative_feedback',
-                    'priority' => 'high',
-                    'knowledge_id' => $row['id'],
-                    'title' => $row['title'],
-                    'message' => "This knowledge has {$row['neg_count']} negative feedbacks. Review and update content."
-                ];
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $suggestions[] = [
+                        'type' => 'negative_feedback',
+                        'priority' => 'high',
+                        'knowledge_id' => $row['id'],
+                        'title' => $row['title'],
+                        'message' => "This knowledge has {$row['neg_count']} negative feedbacks. Review and update content."
+                    ];
+                }
             }
 
             return $suggestions;
         } catch (Throwable $e) {
-            error_log("AIKnowledge getImprovementSuggestions error: " . $e->getMessage());
+            aiErrorLog("AIKnowledge getImprovementSuggestions error: " . $e->getMessage());
             return [];
         }
     }
@@ -567,31 +592,31 @@ class AIKnowledge
             $stats = [];
 
             // Total knowledge items
-            $stmt = $this->mysqli->query("SELECT COUNT(*) as cnt FROM ai_knowledge_base WHERE is_active = 1");
-            $stats['total_active'] = $stmt->fetch_assoc()['cnt'] ?? 0;
+            $result = $this->mysqli->query("SELECT COUNT(*) as cnt FROM ai_knowledge_base WHERE is_active = 1");
+            $stats['total_active'] = ($result && ($row = $result->fetch_assoc())) ? (int)($row['cnt'] ?? 0) : 0;
 
             // Total feedback
-            $stmt = $this->mysqli->query("SELECT COUNT(*) as cnt FROM ai_knowledge_feedback");
-            $stats['total_feedback'] = $stmt->fetch_assoc()['cnt'] ?? 0;
+            $result = $this->mysqli->query("SELECT COUNT(*) as cnt FROM ai_knowledge_feedback");
+            $stats['total_feedback'] = ($result && ($row = $result->fetch_assoc())) ? (int)($row['cnt'] ?? 0) : 0;
 
             // Positive feedback ratio
-            $stmt = $this->mysqli->query("SELECT 
+            $result = $this->mysqli->query("SELECT 
                 SUM(CASE WHEN is_helpful = 1 THEN 1 ELSE 0 END) / COUNT(*) as ratio
                 FROM ai_knowledge_feedback");
-            $row = $stmt->fetch_assoc();
-            $stats['positive_ratio'] = $row['ratio'] ? round($row['ratio'] * 100, 1) : 0;
+            $row = $result ? $result->fetch_assoc() : null;
+            $stats['positive_ratio'] = $row && !empty($row['ratio']) ? round($row['ratio'] * 100, 1) : 0;
 
             // Most used
-            $stmt = $this->mysqli->query("SELECT id, title, usage_count FROM ai_knowledge_base WHERE usage_count > 0 ORDER BY usage_count DESC LIMIT 5");
-            $stats['most_used'] = $stmt->fetch_all(MYSQLI_ASSOC);
+            $result = $this->mysqli->query("SELECT id, title, usage_count FROM ai_knowledge_base WHERE usage_count > 0 ORDER BY usage_count DESC LIMIT 5");
+            $stats['most_used'] = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
             // Needs improvement
-            $stmt = $this->mysqli->query("SELECT COUNT(*) as cnt FROM ai_knowledge_base WHERE quality_score < 0.5 AND usage_count > 3");
-            $stats['needs_improvement'] = $stmt->fetch_assoc()['cnt'] ?? 0;
+            $result = $this->mysqli->query("SELECT COUNT(*) as cnt FROM ai_knowledge_base WHERE quality_score < 0.5 AND usage_count > 3");
+            $stats['needs_improvement'] = ($result && ($row = $result->fetch_assoc())) ? (int)($row['cnt'] ?? 0) : 0;
 
             return $stats;
         } catch (Throwable $e) {
-            error_log("AIKnowledge getAnalytics error: " . $e->getMessage());
+            aiErrorLog("AIKnowledge getAnalytics error: " . $e->getMessage());
             return [];
         }
     }

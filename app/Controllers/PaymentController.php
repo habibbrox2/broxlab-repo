@@ -15,7 +15,7 @@
 $paymentApplicationModel = new ServiceApplicationModel($mysqli);
 $paymentServiceModel = new ServiceModel($mysqli);
 $paymentUserModel = new UserModel($mysqli);
-require_once __DIR__ . '/../Helpers/ServiceOpsHelper.php';
+require_once dirname(__DIR__, 1) . '/Helpers/ServiceOpsHelper.php';
 
 /**
  * bKash gateway callback (POST)

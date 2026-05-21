@@ -43,12 +43,12 @@ Options -Indexes
 HTACCESS;
 
         $uploadDirs = [
-            defined('UPLOADS_PROFILES_DIR') ? UPLOADS_PROFILES_DIR : __DIR__ . '/../public_html/uploads/profiles',
-            defined('UPLOADS_MOBILES_DIR') ? UPLOADS_MOBILES_DIR : __DIR__ . '/../public_html/uploads/mobiles',
-            defined('UPLOADS_CONTENT_DIR') ? UPLOADS_CONTENT_DIR : __DIR__ . '/../public_html/uploads/content',
-            defined('UPLOADS_MEDIA_DIR') ? UPLOADS_MEDIA_DIR : __DIR__ . '/../public_html/uploads/media',
-            defined('UPLOADS_SERVICES_DIR') ? UPLOADS_SERVICES_DIR : __DIR__ . '/../public_html/uploads/services',
-            __DIR__ . '/../public_html/uploads/ai',
+            defined('UPLOADS_PROFILES_DIR') ? UPLOADS_PROFILES_DIR : dirname(__DIR__, 1) . '/public_html/uploads/profiles',
+            defined('UPLOADS_MOBILES_DIR') ? UPLOADS_MOBILES_DIR : dirname(__DIR__, 1) . '/public_html/uploads/mobiles',
+            defined('UPLOADS_CONTENT_DIR') ? UPLOADS_CONTENT_DIR : dirname(__DIR__, 1) . '/public_html/uploads/content',
+            defined('UPLOADS_MEDIA_DIR') ? UPLOADS_MEDIA_DIR : dirname(__DIR__, 1) . '/public_html/uploads/media',
+            defined('UPLOADS_SERVICES_DIR') ? UPLOADS_SERVICES_DIR : dirname(__DIR__, 1) . '/public_html/uploads/services',
+            dirname(__DIR__, 1) . '/public_html/uploads/ai',
         ];
 
         foreach ($uploadDirs as $dir) {
@@ -100,12 +100,12 @@ $fileTypes = [
 
 return [
     'base' => [
-        'upload_dir' => defined('UPLOADS_DIR') ? UPLOADS_DIR : (__DIR__ . '/../public_html/uploads'),
-        'temp_dir' => defined('UPLOADS_TEMP_DIR') ? UPLOADS_TEMP_DIR : (__DIR__ . '/../public_html/uploads/tmp'),
-        'logs_dir' => defined('LOG_DIR') ? LOG_DIR . 'uploads' : __DIR__ . '/../storage/logs',
+        'upload_dir' => defined('UPLOADS_DIR') ? UPLOADS_DIR : (dirname(__DIR__, 1) . '/public_html/uploads'),
+        'temp_dir' => defined('UPLOADS_TEMP_DIR') ? UPLOADS_TEMP_DIR : (dirname(__DIR__, 1) . '/public_html/uploads/tmp'),
+        'logs_dir' => defined('LOG_DIR') ? LOG_DIR . 'uploads' : dirname(__DIR__, 1) . '/storage/logs',
         'max_file_size' => defined('UPLOAD_MAX_MEDIA_SIZE') ? UPLOAD_MAX_MEDIA_SIZE : (52 * 1024 * 1024),
         // Optional watermark path (create or place watermark image here if needed)
-        'watermark_path' => __DIR__ . '/../public_html/assets/watermark.png'
+        'watermark_path' => dirname(__DIR__, 1) . '/public_html/assets/watermark.png'
     ],
 
     'blocked_extensions' => $GLOBALS['BLOCKED_EXTENSIONS'] ?? [],

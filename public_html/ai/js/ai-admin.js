@@ -528,6 +528,17 @@ if (!window.BroxAdminInstance) {
       this._filePickerTimer = null;
       this._micPermission = 'unknown';
       this._micAccessPromise = null;
+      this.autocompleteIndex = -1;
+      this.autocompleteSuggestions = [
+        { value: '/help', label: 'Show available admin commands', keywords: ['help', 'commands', 'assist'] },
+        { value: '/list-tools', label: 'List all available admin tools', keywords: ['tools', 'list', 'commands'] },
+        { value: '/search-kb', label: 'Search the knowledge base', keywords: ['search', 'knowledge', 'kb'] },
+        { value: '/web-search', label: 'Search the web for answers', keywords: ['web', 'search', 'browser'] },
+        { value: '/summarize', label: 'Summarize content or chat history', keywords: ['summarize', 'summary'] },
+        { value: '/analyze-logs', label: 'Analyze recent logs or events', keywords: ['analyze', 'logs', 'debug'] },
+        { value: '/clear-cache', label: 'Clear system cache or temporary data', keywords: ['clear', 'cache', 'reset'] },
+        { value: '/get-cache-stats', label: 'Show cache statistics and usage', keywords: ['cache', 'stats', 'usage'] },
+      ];
       this.historyStateKey = 'brox.ai.admin.open';
       this.historyStateActive = !!(history.state && history.state[this.historyStateKey]);
       this.overlay = null;
@@ -2015,20 +2026,103 @@ if (!window.BroxAdminInstance) {
       if (this.nodes.input) {
         this.nodes.input.addEventListener('keydown', (e) => {
           if (e.isComposing) return;
+
+          const suggestionVisible =
+            this.nodes.suggestionPanel &&
+            !this.nodes.suggestionPanel.classList.contains('brox-ai-hidden');
+          const slashVisible =
+            this.nodes.slashMenu &&
+            !this.nodes.slashMenu.classList.contains('brox-ai-hidden');
+
           if (e.key === 'Escape') {
-            if (
-              this.nodes.slashMenu &&
-              !this.nodes.slashMenu.classList.contains('brox-ai-hidden')
-            ) {
+            if (suggestionVisible) {
+              this.hideSuggestionPanel();
+              e.preventDefault();
+              return;
+            }
+            if (slashVisible) {
               this.nodes.slashMenu.classList.add('brox-ai-hidden');
+              e.preventDefault();
               return;
             }
             this.closeSidebar();
             return;
           }
+
+          if (suggestionVisible) {
+            const items = Array.from(
+              this.nodes.suggestionList?.querySelectorAll('.brox-ai-suggestion-item') || []
+            );
+            const activeIndex = items.findIndex((it) => it.classList.contains('active'));
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+              e.preventDefault();
+              if (!items.length) return;
+              let nextIndex = activeIndex;
+              if (e.key === 'ArrowDown') {
+                nextIndex = activeIndex < items.length - 1 ? activeIndex + 1 : 0;
+              } else {
+                nextIndex = activeIndex > 0 ? activeIndex - 1 : items.length - 1;
+              }
+              items.forEach((it) => it.classList.remove('active'));
+              items[nextIndex].classList.add('active');
+              return;
+            }
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              const active = items[activeIndex] || items[0];
+              if (active) {
+                this.selectAutocompleteSuggestion(active.dataset.value || active.textContent || '');
+                return;
+              }
+              // No active suggestion item, fall through to send
+            }
+          }
+
+          if (e.key === 'Enter' && e.ctrlKey) {
+            e.preventDefault();
+            this.handleSend();
+            return;
+          }
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             this.handleSend();
+            return;
+          }
+
+          // Slash menu navigation (consolidated from separate listener)
+          if (slashVisible) {
+            const items = Array.from(this.nodes.slashMenu.querySelectorAll('.brox-ai-slash-item'));
+            if (items.length) {
+              let idx = items.findIndex((it) => it.classList.contains('active'));
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                idx = (idx + 1) % items.length;
+                items.forEach((it) => it.classList.remove('active'));
+                items[idx].classList.add('active');
+                return;
+              }
+              if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                idx = (idx - 1 + items.length) % items.length;
+                items.forEach((it) => it.classList.remove('active'));
+                items[idx].classList.add('active');
+                return;
+              }
+              if (e.key === 'Enter') {
+                const active = items[idx];
+                if (active) {
+                  e.preventDefault();
+                  const cmd = active.dataset.cmd;
+                  if (cmd) {
+                    this.nodes.input.value = cmd + ' ';
+                    this.nodes.input.focus();
+                    this.nodes.slashMenu.classList.add('brox-ai-hidden');
+                    this.resizeInput();
+                  }
+                  return;
+                }
+              }
+            }
           }
         });
 
@@ -2048,9 +2142,17 @@ if (!window.BroxAdminInstance) {
 
           // Slash command overlay
           const val = e.target.value;
+          const showSlash = val.trim().startsWith('/');
           if (this.nodes.slashMenu) {
-            const show = val.trim().startsWith('/');
-            this.nodes.slashMenu.classList.toggle('brox-ai-hidden', !show);
+            this.nodes.slashMenu.classList.toggle('brox-ai-hidden', !showSlash);
+          }
+
+          if (this.nodes.suggestionPanel) {
+            if (!showSlash) {
+              this.updateAutocompleteSuggestions(val);
+            } else {
+              this.hideSuggestionPanel();
+            }
           }
         });
 
@@ -2061,37 +2163,9 @@ if (!window.BroxAdminInstance) {
 
       // Slash menu
       this.bindSlashMenu();
+      this.bindSuggestionPanel();
 
-      if (this.nodes.input) {
-        this.nodes.input.addEventListener('keydown', (e) => {
-          if (this.nodes.slashMenu?.classList.contains('brox-ai-hidden')) return;
-          const items = Array.from(this.nodes.slashMenu.querySelectorAll('.brox-ai-slash-item'));
-          if (!items.length) return;
-          let idx = items.findIndex((it) => it.classList.contains('active'));
-          if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            idx = (idx + 1) % items.length;
-          } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            idx = (idx - 1 + items.length) % items.length;
-          } else if (e.key === 'Enter') {
-            if (idx >= 0) {
-              e.preventDefault();
-              const cmd = items[idx].dataset.cmd;
-              if (cmd) {
-                this.nodes.input.value = cmd + ' ';
-                this.nodes.input.focus();
-                this.nodes.slashMenu.classList.add('brox-ai-hidden');
-              }
-            }
-            return;
-          } else {
-            return;
-          }
-          items.forEach((it) => it.classList.remove('active'));
-          items[idx].classList.add('active');
-        });
-      }
+
 
       // Welcome commands
       document.addEventListener('click', (e) => {
@@ -2103,10 +2177,13 @@ if (!window.BroxAdminInstance) {
         }
       });
 
-      // Click outside to close slash menu
+      // Click outside to close slash menu and suggestion panel
       document.addEventListener('click', (e) => {
         if (!this.nodes.input?.contains(e.target) && !this.nodes.slashMenu?.contains(e.target)) {
           this.nodes.slashMenu?.classList.add('brox-ai-hidden');
+        }
+        if (!this.nodes.input?.contains(e.target) && !this.nodes.suggestionPanel?.contains(e.target)) {
+          this.hideSuggestionPanel();
         }
       });
 
@@ -2142,11 +2219,16 @@ if (!window.BroxAdminInstance) {
         this.closeSidebar();
       });
 
-      // Global Escape key closes sidebar
+      // Global Escape key closes sidebar (only when not focusing input or menus)
       document.addEventListener('keydown', (e) => {
         if (e.key !== 'Escape') return;
         if (!this.nodes.shell) return;
         if (this.nodes.shell.classList.contains('brox-ai-hidden')) return;
+        // Don't close if input has focus or suggestion/slash menus are open
+        if (document.activeElement === this.nodes.input) return;
+        const slashVisible = this.nodes.slashMenu && !this.nodes.slashMenu.classList.contains('brox-ai-hidden');
+        const suggestionVisible = this.nodes.suggestionPanel && !this.nodes.suggestionPanel.classList.contains('brox-ai-hidden');
+        if (slashVisible || suggestionVisible) return;
         this.closeSidebar();
       });
     }
@@ -2208,17 +2290,72 @@ if (!window.BroxAdminInstance) {
         const item = e.target.closest('.brox-ai-slash-item');
         if (item && this.nodes.input) {
           this.nodes.input.value = item.dataset.cmd + ' ';
-          this.nodes.slashMenu.classList.add('d-none');
+          this.nodes.slashMenu.classList.add('brox-ai-hidden');
           this.resizeInput();
           this.nodes.input.focus();
         }
       });
+    }
 
-      // Keyboard navigation
-      this.nodes.input?.addEventListener('keydown', (e) => {
-        if (e.key !== '/') return;
-        // Will be handled by input event
+    bindSuggestionPanel() {
+      if (!this.nodes.suggestionPanel || !this.nodes.suggestionList) return;
+
+      const closeBtn = this.nodes.suggestionPanel.querySelector('.brox-ai-suggestion-close');
+      if (closeBtn) {
+        closeBtn.onclick = () => this.hideSuggestionPanel();
+      }
+
+      this.nodes.suggestionPanel.addEventListener('click', (e) => {
+        const item = e.target.closest('.brox-ai-suggestion-item');
+        if (!item) return;
+        this.selectAutocompleteSuggestion(item.dataset.value || item.textContent || '');
       });
+    }
+
+    updateAutocompleteSuggestions(query) {
+      if (!this.nodes.suggestionPanel || !this.nodes.suggestionList) return;
+      const value = String(query || '').trim().toLowerCase();
+      const suggestions = this.autocompleteSuggestions.filter((item) => {
+        if (!value) return true;
+        return (
+          item.value.toLowerCase().includes(value) ||
+          item.label.toLowerCase().includes(value) ||
+          (item.keywords || []).some((keyword) => keyword.includes(value))
+        );
+      });
+
+      if (!suggestions.length) {
+        this.hideSuggestionPanel();
+        return;
+      }
+
+      this.nodes.suggestionList.innerHTML = suggestions
+        .map(
+          (item, index) =>
+            `<li class="brox-ai-suggestion-item${index === 0 ? ' active' : ''}" data-value="${item.value}">
+              <strong>${item.value}</strong>
+              <div class="brox-ai-suggestion-meta">${item.label}</div>
+            </li>`
+        )
+        .join('');
+
+      this.nodes.suggestionPanel.classList.remove('brox-ai-hidden');
+      this.autocompleteIndex = 0;
+    }
+
+    hideSuggestionPanel() {
+      if (!this.nodes.suggestionPanel || !this.nodes.suggestionList) return;
+      this.nodes.suggestionPanel.classList.add('brox-ai-hidden');
+      this.nodes.suggestionList.innerHTML = '';
+      this.autocompleteIndex = -1;
+    }
+
+    selectAutocompleteSuggestion(value) {
+      if (!this.nodes.input) return;
+      this.nodes.input.value = `${value} `;
+      this.resizeInput();
+      this.nodes.input.focus();
+      this.hideSuggestionPanel();
     }
 
     // ── Sidebar Management ─────────────────────────────────────────────────
@@ -2248,8 +2385,9 @@ if (!window.BroxAdminInstance) {
       setTimeout(() => {
         this.nodes.input?.focus();
       }, 10);
-      // Toggle button icon: show close icon
+      // Hide the FAB once the shell is open
       this.nodes.btn?.classList.add('brox-ai-active');
+      this.nodes.btn?.classList.add('d-none');
       this.overlay?.classList.add('brox-ai-overlay-active');
 
       if (!options.skipHistory) {
@@ -2261,8 +2399,9 @@ if (!window.BroxAdminInstance) {
       if (!this.nodes.shell) return;
       this.nodes.shell.classList.add('brox-ai-hidden');
       setTimeout(() => this.nodes.shell.classList.add('d-none'), 300);
-      // Toggle button icon: show open icon
+      // Show the FAB again once the shell is closed
       this.nodes.btn?.classList.remove('brox-ai-active');
+      this.nodes.btn?.classList.remove('d-none');
       this.overlay?.classList.remove('brox-ai-overlay-active');
 
       if (options.fromPop) {
@@ -2438,6 +2577,10 @@ if (!window.BroxAdminInstance) {
 
       // Validate input
       let sanitized = '';
+      if (!text && hasAttachment && attachment?.isImage) {
+        sanitized = 'Please analyze the attached screenshot and tell me what you see.';
+      }
+
       if (text) {
         const validation = validateInput(text);
         if (!validation.valid) {
@@ -2450,7 +2593,7 @@ if (!window.BroxAdminInstance) {
 
         // Local command handling (no server call)
         const cmdMatch = sanitized.match(
-          /^\/(collect-data|auto-?fill|summarize|analyze-logs|generate-report|check-security|fix-permissions|clear-cache|search-kb|web-search|optimize-db|deploy-status|health-check)\b/i
+          /^\/(collect-data|auto-?fill|summarize|analyze-logs|generate-report|check-security|fix-permissions|clear-cache|search-kb|web-search|optimize-db|deploy-status|health-check|service|services)\b/i
         );
         if (cmdMatch) {
           const cmdRaw = cmdMatch[1].toLowerCase();
@@ -2519,40 +2662,6 @@ if (!window.BroxAdminInstance) {
             sanitized.toLowerCase().includes('show me'))
         ) {
           await this.handleUrlBrowse(urlToBrowse, sanitized);
-          return;
-        }
-
-        // Check for OCR request with image attachment
-        if (
-          hasAttachment &&
-          attachment?.isImage &&
-          (sanitized.toLowerCase().includes('ocr') ||
-            sanitized.toLowerCase().includes('extract text') ||
-            sanitized.toLowerCase().includes('read text') ||
-            sanitized.toLowerCase().includes('what text') ||
-            sanitized.toLowerCase().includes('scan text'))
-        ) {
-          // Get base64 of uploaded image
-          if (attachment.uploaded?.url) {
-            try {
-              const imgResponse = await fetch(attachment.uploaded.url);
-              const blob = await imgResponse.blob();
-              const reader = new FileReader();
-              reader.onload = async () => {
-                const base64 = reader.result;
-                await this.handleOCR(base64);
-              };
-              reader.readAsDataURL(blob);
-            } catch (e) {
-              this.addMessage('assistant', '❌ Could not process image for OCR.');
-            }
-          } else if (attachment.file) {
-            const reader = new FileReader();
-            reader.onload = async () => {
-              await this.handleOCR(reader.result);
-            };
-            reader.readAsDataURL(attachment.file);
-          }
           return;
         }
 
@@ -3095,6 +3204,58 @@ if (!window.BroxAdminInstance) {
       this.pruneDomMessages();
     }
 
+    addHtmlMessage(role, html, msgIndex = null) {
+      if (!this.nodes.body) return;
+
+      this.nodes.welcome?.classList.add('d-none');
+
+      const msg = document.createElement('div');
+      msg.className = `brox-ai-msg brox-ai-${role}`;
+      msg.setAttribute('data-role', role);
+      if (msgIndex !== null && msgIndex !== undefined) {
+        msg.dataset.msgIndex = String(msgIndex);
+      }
+
+      const avatar = document.createElement('div');
+      avatar.className = 'brox-ai-msg-avatar';
+      avatar.innerHTML =
+        role === 'user'
+          ? '<i class="bi bi-person-fill"></i>'
+          : role === 'system'
+            ? '<i class="bi bi-exclamation-triangle-fill"></i>'
+            : '<i class="bi bi-stars"></i>';
+      msg.appendChild(avatar);
+
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'brox-ai-msg-content';
+      contentDiv.innerHTML = html;
+      msg.appendChild(contentDiv);
+
+      if (role === 'assistant') {
+        this.attachLongPressCopy(contentDiv, () => contentDiv.innerText || '');
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'brox-ai-msg-meta';
+      meta.textContent = new Date().toLocaleTimeString();
+
+      if (role === 'assistant') {
+        const actions = this.createAssistantActions({
+          msgEl: msg,
+          contentEl: contentDiv,
+          metaEl: meta,
+          msgIndex: Number.isInteger(msgIndex) ? msgIndex : null,
+        });
+        msg.appendChild(actions);
+      } else if (role !== 'system') {
+        msg.appendChild(meta);
+      }
+
+      this.nodes.body.appendChild(msg);
+      this.scrollToBottom();
+      this.pruneDomMessages();
+    }
+
     formatMetaTime() {
       return new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
     }
@@ -3123,6 +3284,20 @@ if (!window.BroxAdminInstance) {
 
     // ── Enhanced Markdown Rendering with marked.js + highlight.js (v2026) ──────
     formatMessage(text) {
+      if (!text) return '';
+
+      const detailsPattern = /^(.*?)(?:\r?\n){2}Details:\s*([\s\S]*)$/i;
+      const match = detailsPattern.exec(text);
+      if (match) {
+        const summary = match[1].trim();
+        const details = match[2].trim();
+        return `${this.formatMessageMarkdown(summary)}<details class="brox-ai-msg-details"><summary>Details</summary><div>${this.formatMessageMarkdown(details)}</div></details>`;
+      }
+
+      return this.formatMessageMarkdown(text);
+    }
+
+    formatMessageMarkdown(text) {
       if (!text) return '';
 
       // Try marked.js + highlight.js first
@@ -4316,12 +4491,11 @@ if (!window.BroxAdminInstance) {
                 </div>
             `;
 
-      this.addMessage('assistant', confirmationHtml, false);
-      this.saveHistory();
+      this.addHtmlMessage('assistant', confirmationHtml);
 
       // Add event listeners for checkboxes
       setTimeout(() => {
-        const container = this.nodes.messages?.querySelector('.nav-confirmation:last-child');
+        const container = this.nodes.body?.querySelector('.nav-confirmation:last-child');
         if (!container) return;
 
         const yesCheckbox = container.querySelector('.nav-confirm-yes');
@@ -4715,7 +4889,12 @@ if (!window.BroxAdminInstance) {
       this.isThinking = true;
       const t0 = performance.now();
       this.showTypingIndicator();
-      if (this.nodes.input) this.nodes.input.disabled = true;
+      if (this.nodes.input) {
+        this.nodes.input.disabled = true;
+      }
+      if (this.nodes.send) {
+        this.nodes.send.disabled = true;
+      }
       this.updateStatus('thinking', 'Thinking...');
 
       // Refresh CSRF token before making request
@@ -4769,34 +4948,22 @@ if (!window.BroxAdminInstance) {
       let responseAnnotations = null;
       let lastError = null;
 
-      let thinkingCleared = false;
-      const showThinkingInBubble = () => {
-        if (!msgBubble || !msgWrapper) return;
-        msgWrapper.classList.add('brox-ai-thinking-msg');
-        msgBubble.innerHTML = `
-                    <div class="brox-ai-thinking-wrap" aria-live="polite" aria-busy="true">
-                        <div class="brox-ai-thinking-label">
-                            <span class="brox-ai-thinking-text">Copilot is thinking...</span>
-                            <span class="brox-ai-thinking-dots" aria-hidden="true"><span></span><span></span><span></span></span>
-                        </div>
-                        <div class="brox-ai-thinking-skeleton" aria-hidden="true">
-                            <span class="brox-ai-skel-line skel-1"></span>
-                            <span class="brox-ai-skel-line skel-2"></span>
-                            <span class="brox-ai-skel-line skel-3"></span>
-                        </div>
-                    </div>
-                `;
+      const hideEmptyResponseBubble = () => {
+        if (!msgWrapper) return;
+        msgWrapper.classList.add('brox-ai-hidden');
+      };
+
+      const revealResponseBubble = () => {
+        if (!msgWrapper) return;
+        msgWrapper.classList.remove('brox-ai-hidden');
       };
 
       const clearThinking = () => {
         if (!msgBubble || !msgWrapper) return;
-        if (thinkingCleared) return;
-        thinkingCleared = true;
-        msgWrapper.classList.remove('brox-ai-thinking-msg');
         msgBubble.innerHTML = '';
       };
 
-      showThinkingInBubble();
+      hideEmptyResponseBubble();
 
       const maxRetries = 2;
       const baseDelay = 1000;
@@ -4870,6 +5037,7 @@ if (!window.BroxAdminInstance) {
             fullReply =
               typeof norm.payload === 'string' ? norm.payload : JSON.stringify(norm.payload);
             clearThinking();
+            revealResponseBubble();
             this.renderWithArtifacts(msgBubble, fullReply, false);
             return;
           }
@@ -4935,6 +5103,7 @@ if (!window.BroxAdminInstance) {
 
               if (obj.content) {
                 clearThinking();
+                revealResponseBubble();
                 fullReply += obj.content;
                 this.renderWithArtifacts(msgBubble, fullReply, false);
                 this.scrollToBottom();
@@ -4981,7 +5150,11 @@ if (!window.BroxAdminInstance) {
           : 'Received an empty response from the AI.';
         if (!msgBubble.textContent.trim()) {
           clearThinking();
-          msgBubble.innerHTML = `<em>${this.escapeHtml(msg)}</em>`;
+          if (msgWrapper?.classList.contains('brox-ai-hidden')) {
+            msgWrapper.remove();
+          } else {
+            msgBubble.innerHTML = `<em>${this.escapeHtml(msg)}</em>`;
+          }
         }
         if (lastError) {
           this.updateStatus('error', 'AI error');
@@ -5012,6 +5185,9 @@ if (!window.BroxAdminInstance) {
       if (this.nodes.input) {
         this.nodes.input.disabled = false;
         this.nodes.input.focus();
+      }
+      if (this.nodes.send) {
+        this.nodes.send.disabled = false;
       }
       this.hideTypingIndicator();
     }
@@ -5160,6 +5336,58 @@ if (!window.BroxAdminInstance) {
       voice,
       commands,
     };
+
+    // Ensure the admin FAB exists in the DOM. Some pages may not include the
+    // `partials/ai-assistant/admin.twig` (or it may be conditionally omitted),
+    // so create a lightweight fallback button so the admin interface can be
+    // opened regardless.
+    if (!document.getElementById('adminAiBtn')) {
+      try {
+        const fab = document.createElement('button');
+        fab.id = 'adminAiBtn';
+        fab.className = 'brox-ai-trigger-fab brox-ai-admin-fab-fallback admin-ai-fallback-button';
+        fab.title = 'Open Copilot (Ctrl+Alt+A)';
+        fab.setAttribute('aria-label', 'Open AI Copilot');
+        fab.type = 'button';
+        fab.tabIndex = 0;
+        fab.style.cssText = 'position: fixed !important; bottom: 80px !important; right: 20px !important; width: 48px !important; height: 48px !important; border-radius: 50% !important; background: linear-gradient(135deg, #0f172a, #1e293b) !important; color: #fff !important; border: 2px solid rgba(255,255,255,0.2) !important; box-shadow: 0 4px 12px rgba(15,23,42,0.4) !important; cursor: pointer !important; align-items: center !important; justify-content: center !important; font-size: 1.4rem !important; z-index: 2147483647 !important; display: flex !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;';
+
+        const openSpan = document.createElement('span');
+        openSpan.className = 'brox-ai-fab-icon-open';
+        openSpan.innerHTML = '<i class="bi bi-stars"></i>';
+
+        const closeSpan = document.createElement('span');
+        closeSpan.className = 'brox-ai-fab-icon-close d-none';
+        closeSpan.innerHTML = '<i class="bi bi-x-lg"></i>';
+
+        const badge = document.createElement('span');
+        badge.className = 'brox-ai-fab-badge';
+        badge.id = 'adminAiNotification';
+        badge.textContent = '0';
+
+        fab.appendChild(openSpan);
+        fab.appendChild(closeSpan);
+        fab.appendChild(badge);
+        fab.addEventListener('click', () => {
+          window.broxAdmin?.toggleSidebar?.();
+        });
+        fab.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            window.broxAdmin?.toggleSidebar?.();
+          }
+        });
+        if (document.body) {
+          document.body.appendChild(fab);
+        } else {
+          document.addEventListener('DOMContentLoaded', () => {
+            document.body.appendChild(fab);
+          });
+        }
+      } catch (err) {
+        console.warn('[AdminCopilot] Failed to create fallback FAB', err);
+      }
+    }
 
     window.broxAdmin = new BroxAdminCopilot();
     window.BroxAdminInstance = window.broxAdmin;

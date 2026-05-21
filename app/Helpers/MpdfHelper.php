@@ -80,7 +80,7 @@ if (!function_exists('mpdf_default_config')) {
     function mpdf_default_config(array $overrides = []): array
     {
         $tempDir = mpdf_temp_dir();
-        $fontPath = __DIR__ . '/../public_html/assets/fonts';
+        $fontPath = dirname(__DIR__, 1) . '/public_html/assets/fonts';
         $fontSolaiman = 'SolaimanLipi.ttf';
         $fontNikosh = 'Nikosh.ttf';
         $fontHelvetica = 'Helvetica.ttf';

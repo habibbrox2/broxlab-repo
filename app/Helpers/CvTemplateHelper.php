@@ -16,7 +16,7 @@ if (!function_exists('cvTemplateGetDirectory')) {
      */
     function cvTemplateGetDirectory(): string
     {
-        return __DIR__ . '/../Views/cv/templates';
+        return dirname(__DIR__, 1) . '/Views/cv/templates';
     }
 }
 
@@ -26,7 +26,7 @@ if (!function_exists('cvTemplateGetMetadataPath')) {
      */
     function cvTemplateGetMetadataPath(): string
     {
-        return __DIR__ . '/../../storage/cv-templates/templates.json';
+        return dirname(__DIR__, 2) . '/storage/cv-templates/templates.json';
     }
 }
 

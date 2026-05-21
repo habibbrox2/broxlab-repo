@@ -103,7 +103,7 @@ class AIChatModel
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     conversation_id VARCHAR(255) NOT NULL,
                     message_id INT NOT NULL,
-                    rating TINYINT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+                    rating TINYINT NOT NULL,
                     comment TEXT,
                     user_id INT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

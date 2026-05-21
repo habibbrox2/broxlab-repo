@@ -7,13 +7,15 @@
  * integrates with the AI Knowledge Base for context-aware responses.
  */
 
-require_once __DIR__ . '/../../Models/AIKnowledge.php';
+// Load AIKnowledge model from the application's Models directory
+require_once dirname(__DIR__, 3) . '/Models/AIKnowledge.php';
 
 class RAGEngine
 {
     private $mysqli;
     private $knowledgeModel;
     private $embeddingModel;
+    private static $embeddingColumnChecked = false;
 
     // Maximum tokens to use from retrieved context
     const MAX_CONTEXT_TOKENS = 2000;
@@ -267,14 +269,14 @@ class RAGEngine
      */
     private function generateEmbedding(string $text): ?array
     {
-        // Try to use Node.js embedding service
-        $embedding = $this->generateEmbeddingNodeJs($text);
+        // Prefer multi-provider PHP-native embedding (OpenAI, Ollama, Cohere, etc.)
+        $embedding = $this->generateEmbeddingMultiProvider($text, 'openai');
 
         if ($embedding !== null) {
             return $embedding;
         }
 
-        // Fallback to simple embedding if Node.js service fails
+        // Final fallback to simple deterministic embedding
         return $this->simpleEmbedding($text);
     }
 
@@ -526,60 +528,7 @@ class RAGEngine
         ];
     }
 
-    /**
-     * Generate embeddings using Node.js sentence-transformers service
-     * Requires: Node.js unified server running on port 3000 with embedding endpoint
-     * Service: npm install @xenova/transformers (or similar)
-     */
-    private function generateEmbeddingNodeJs(string $text): ?array
-    {
-        try {
-            // Prepare payload
-            $payload = [
-                'text' => $text,
-                'model' => 'sentence-transformers/all-MiniLM-L6-v2'
-            ];
-
-            // Call Node.js embedding service
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => (getenv('NODE_SERVICE_URL') ?: getenv('OCR_SERVICE_URL') ?: getenv('OCR_API_URL') ?: getenv('APP_URL') ?: 'http://localhost:3000') . '/api/ocr/embedding/generate',
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => json_encode($payload),
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 30,
-                CURLOPT_HTTPHEADER => [
-                    'Content-Type: application/json'
-                ]
-            ]);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $error = curl_error($ch);
-            curl_close($ch);
-
-            if ($error) {
-                error_log('Node.js embedding service error: ' . $error);
-                return null;
-            }
-
-            if ($httpCode !== 200) {
-                error_log('Node.js embedding service HTTP error: ' . $httpCode);
-                return null;
-            }
-
-            $data = json_decode($response, true);
-            if (!$data || empty($data['embedding'])) {
-                error_log('Node.js embedding service returned invalid response');
-                return null;
-            }
-
-            return is_array($data['embedding']) ? $data['embedding'] : null;
-        } catch (Exception $e) {
-            error_log('Node.js embedding generation failed: ' . $e->getMessage());
-            return null;
-        }
-    }
+    // Node.js embedding path removed — PHP multi-provider embedding used instead
 
     /**
      * Simple hash-based embedding for fallback
@@ -699,11 +648,13 @@ class RAGEngine
         // Note: This requires adding an 'embedding' column to the table
         $json = json_encode($embedding);
 
-        try {
-            // Check if column exists, if not add it
-            $this->mysqli->query("ALTER TABLE ai_knowledge_base ADD COLUMN embedding JSON DEFAULT NULL");
-        } catch (Exception $e) {
-            // Column might already exist
+        // Only attempt ALTER TABLE once (avoids repeated exceptions)
+        if (!self::$embeddingColumnChecked) {
+            $checkResult = $this->mysqli->query("SHOW COLUMNS FROM ai_knowledge_base LIKE 'embedding'");
+            if ($checkResult && $checkResult->num_rows === 0) {
+                $this->mysqli->query("ALTER TABLE ai_knowledge_base ADD COLUMN embedding JSON DEFAULT NULL");
+            }
+            self::$embeddingColumnChecked = true;
         }
 
         $stmt = $this->mysqli->prepare("UPDATE ai_knowledge_base SET embedding = ? WHERE id = ?");
@@ -784,17 +735,22 @@ class RAGEngine
      */
     public function extractTextFromPDF(string $pdfPath): array
     {
-        // Try Node.js PDF extraction service first (better quality)
-        try {
-            $nodeResult = $this->extractPdfViaNodeJs($pdfPath);
-            if ($nodeResult['success']) {
-                return $nodeResult;
+        // Prefer PHP PDF parser library when available (smalot/pdfparser)
+        if (class_exists('\\Smalot\\PdfParser\\Parser')) {
+            try {
+                $parser = new \Smalot\PdfParser\Parser();
+                $pdf = $parser->parseFile($pdfPath);
+                $text = trim($pdf->getText());
+                if (!empty($text)) {
+                    return ['success' => true, 'text' => $text];
+                }
+            } catch (Exception $e) {
+                // Continue to system fallback
+                aiErrorLog('Smalot PDF parser failed: ' . $e->getMessage());
             }
-        } catch (Exception $e) {
-            error_log('Node.js PDF extraction failed: ' . $e->getMessage());
         }
 
-        // Fallback: basic PDF text extraction using pdftotext command
+        // Fallback: basic PDF text extraction using pdftotext command (poppler)
         $tempText = sys_get_temp_dir() . '/pdf_extract_' . uniqid() . '.txt';
         $cmd = "pdftotext -layout \"" . escapeshellcmd($pdfPath) . "\" \"" . escapeshellcmd($tempText) . "\" 2>&1";
 
@@ -812,67 +768,7 @@ class RAGEngine
         return ['success' => false, 'text' => '', 'error' => 'Could not extract text from PDF'];
     }
 
-    /**
-     * Extract text from PDF using Node.js service
-     * Requires: Node.js service with pdf-parse or similar library
-     * @param string $pdfPath Path to PDF file
-     * @return array{success: bool, text: string, error?: string}
-     */
-    private function extractPdfViaNodeJs(string $pdfPath): array
-    {
-        if (!file_exists($pdfPath)) {
-            return ['success' => false, 'text' => '', 'error' => 'PDF file not found'];
-        }
-
-        try {
-            // Read PDF file as base64
-            $pdfContent = file_get_contents($pdfPath);
-            $pdfBase64 = base64_encode($pdfContent);
-
-            // Prepare payload
-            $payload = [
-                'pdf_data' => $pdfBase64,
-                'extract_text' => true
-            ];
-
-            // Call Node.js PDF extraction service
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => (getenv('NODE_SERVICE_URL') ?: getenv('OCR_SERVICE_URL') ?: getenv('OCR_API_URL') ?: getenv('APP_URL') ?: 'http://localhost:3000') . '/api/ocr/pdf/extract',
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => json_encode($payload),
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 60,
-                CURLOPT_HTTPHEADER => [
-                    'Content-Type: application/json'
-                ]
-            ]);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $error = curl_error($ch);
-            if (is_resource($ch)) {
-                curl_close($ch);
-            }
-
-            if ($error) {
-                return ['success' => false, 'text' => '', 'error' => 'Service error: ' . $error];
-            }
-
-            if ($httpCode !== 200) {
-                return ['success' => false, 'text' => '', 'error' => 'Service HTTP ' . $httpCode];
-            }
-
-            $data = json_decode($response, true);
-            if (!$data || empty($data['text'])) {
-                return ['success' => false, 'text' => '', 'error' => 'No text extracted'];
-            }
-
-            return ['success' => true, 'text' => trim($data['text'])];
-        } catch (Exception $e) {
-            return ['success' => false, 'text' => '', 'error' => $e->getMessage()];
-        }
-    }
+    // Node.js PDF extraction removed — rely on system pdftotext or PHP libraries
 
     /**
      * Extract text from image using OCR.space API (web hosting compatible)
@@ -901,7 +797,14 @@ class RAGEngine
             // Create temp file for upload
             $tempFile = tempnam(sys_get_temp_dir(), 'ocr_');
             file_put_contents($tempFile, base64_decode($imageData));
-            $postData['file'] = new CURLFile($tempFile, 'image/png', 'ocr.png');
+            // Detect image MIME type from the temp file
+            $detectedMime = @mime_content_type($tempFile);
+            $mimeTypes = ['png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'gif' => 'image/gif', 'webp' => 'image/webp'];
+            $ext = strtolower(pathinfo($tempFile, PATHINFO_EXTENSION));
+            $mime = ($detectedMime && in_array($detectedMime, $mimeTypes, true)) ? $detectedMime : ($mimeTypes[$ext] ?? 'image/png');
+            $ext = array_search($mime, $mimeTypes);
+            $filename = $ext ? 'ocr.' . $ext : 'ocr.png';
+            $postData['file'] = new CURLFile($tempFile, $mime, $filename);
 
             $ch = curl_init();
             curl_setopt_array($ch, [

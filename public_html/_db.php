@@ -23,7 +23,7 @@ define('DB_PASS', ',EnTio1PtqI-&M&D');
 define('DB_NAME', 'tdhuedhn_broxbhai');
 
 // ব্যাকআপ ডিরেক্টরি
-define('BACKUP_DIR', __DIR__ . '/../Database/');
+define('BACKUP_DIR', dirname(__DIR__, 1) . '/Database/');
 
 // প্রতিবার কতগুলো সারি এক্সপোর্ট করবে
 define('EXPORT_CHUNK_SIZE', 500);

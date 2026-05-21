@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../Models/BroxScrapModel.php';
-require_once __DIR__ . '/../Models/ContentModel.php';
-require_once __DIR__ . '/../Models/MobileModel.php';
-require_once __DIR__ . '/../Models/AIProvider.php';
+require_once dirname(__DIR__, 1) . '/Models/BroxScrapModel.php';
+require_once dirname(__DIR__, 1) . '/Models/ContentModel.php';
+require_once dirname(__DIR__, 1) . '/Models/MobileModel.php';
+require_once dirname(__DIR__, 1) . '/Models/AIProvider.php';
 
 // Make global variables available to this file
 
@@ -1389,7 +1389,7 @@ if (!function_exists('scraperPushToNullableString')) {
 
     function scraperPushLoadEnhancerPrompt(): string
     {
-        $promptFile = __DIR__ . '/../../system/prompts/enhancer.md';
+        $promptFile = dirname(__DIR__, 2) . '/system/prompts/enhancer.md';
         if (!is_file($promptFile)) {
             return 'You are a content enhancement assistant. Improve the given content while preserving facts.';
         }

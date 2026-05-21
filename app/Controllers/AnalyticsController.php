@@ -504,10 +504,10 @@ $router->post('/api/analytics/ingest', ['response' => 'json'], function () use (
     $idToken = $body['idToken'] ?? null;
     if (!empty($idToken)) {
         try {
-            require_once __DIR__ . '/../Models/FirebaseModel.php';
-            require_once __DIR__ . '/../Models/UserModel.php';
+            require_once dirname(__DIR__, 1) . '/Models/FirebaseModel.php';
+            require_once dirname(__DIR__, 1) . '/Models/UserModel.php';
 
-            $firebaseModel = new \Firebase\FirebaseModel(require __DIR__ . '/../../Config/Firebase.php');
+            $firebaseModel = new \Firebase\FirebaseModel(require dirname(__DIR__, 2) . '/Config/Firebase.php');
             $userModel = new UserModel($mysqli);
 
             $verify = $firebaseModel->verifyIdToken($idToken);

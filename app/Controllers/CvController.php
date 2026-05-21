@@ -53,7 +53,7 @@ if (!function_exists('cvGetTemplateAllowlist')) {
      */
     function cvGetTemplateAllowlist(): array
     {
-        $dir = __DIR__ . '/../Views/cv/templates';
+        $dir = dirname(__DIR__, 1) . '/Views/cv/templates';
         $files = glob($dir . '/*.twig') ?: [];
         $templates = [];
 
@@ -594,7 +594,7 @@ $router->get('/cv/{id}/export', ['middleware' => ['auth']], function ($id) use (
     ]);
 
     // Generate PDF using MpdfHelper functions
-    require_once __DIR__ . '/../Helpers/MpdfHelper.php';
+    require_once dirname(__DIR__, 1) . '/Helpers/MpdfHelper.php';
 
     // Use the generatePdf function (auto_exit=false to allow processing)
     generatePdf($html, $cv['title'] . '.pdf', ['auto_exit' => false]);
@@ -734,7 +734,7 @@ $router->post('/cv/{id}/ai/improve', ['middleware' => ['auth', 'csrf']], functio
     $type = $data['type'] ?? 'bullet';
 
     // Use CvAiHelper for text improvement
-    require_once __DIR__ . '/../Helpers/CvAiHelper.php';
+    require_once dirname(__DIR__, 1) . '/Helpers/CvAiHelper.php';
     $cvAi = new CvAiHelper($mysqli);
     $result = $cvAi->improveText($text, $type);
 
@@ -800,7 +800,7 @@ $router->post('/cv/{id}/ai/ats-score', ['middleware' => ['auth', 'csrf']], funct
     }
 
     // Use CvAiHelper for ATS score analysis
-    require_once __DIR__ . '/../Helpers/CvAiHelper.php';
+    require_once dirname(__DIR__, 1) . '/Helpers/CvAiHelper.php';
     $cvAi = new CvAiHelper($mysqli);
     $result = $cvAi->calculateAtsScore($cvData);
 

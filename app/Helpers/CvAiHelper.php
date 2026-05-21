@@ -2,7 +2,7 @@
 
 // app/Helpers/CvAiHelper.php
 
-require_once __DIR__ . '/../Modules/AISystem/AgentClient.php';
+require_once dirname(__DIR__, 1) . '/Modules/AISystem/AgentClient.php';
 
 class CvAiHelper
 {

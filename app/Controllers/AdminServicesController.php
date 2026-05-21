@@ -16,7 +16,7 @@
 
 $serviceModel = new ServiceModel($mysqli);
 $contentModel = new ContentModel($mysqli);
-require_once __DIR__ . '/../Helpers/ServiceOpsHelper.php';
+require_once dirname(__DIR__, 1) . '/Helpers/ServiceOpsHelper.php';
 
     // ============================================================================
     // GET ROUTES - Admin Service Views

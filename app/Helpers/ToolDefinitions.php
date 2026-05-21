@@ -267,7 +267,7 @@ ToolRegistry::register('summarize_text', function (array $args, ?mysqli $mysqli)
         if ($value === '') return false;
         if (!filter_var($value, FILTER_VALIDATE_URL)) return false;
         $parts = @parse_url($value);
-        if (!$parts || !isset($parts['scheme']) || !isset($parts['host'])) return false;
+        if (!is_array($parts) || !isset($parts['scheme']) || !isset($parts['host'])) return false;
         /** @var string $scheme */
         $scheme = strtolower((string)$parts['scheme']);
         return $scheme === 'http' || $scheme === 'https';
@@ -275,7 +275,7 @@ ToolRegistry::register('summarize_text', function (array $args, ?mysqli $mysqli)
 
     $fetchUrlAsText = function (string $url): array {
         $parts = @parse_url($url);
-        if (!$parts || !isset($parts['host'])) {
+        if (!is_array($parts) || !isset($parts['host'])) {
             throw new InvalidArgumentException('Invalid URL');
         }
 
@@ -883,7 +883,7 @@ ToolRegistry::register('read_file', function (array $args, ?mysqli $mysqli) {
     }
 
     if ($mode === 'pdf') {
-        require_once __DIR__ . '/../Services/OCRService.php';
+        require_once dirname(__DIR__, 1) . '/Services/OCRService.php';
         $ocr = new OCRService();
         $pdfData = base64_encode((string)file_get_contents($realPath));
         $pdfResult = $ocr->extractTextFromPDF($pdfData, ['language' => 'eng']);
@@ -894,7 +894,7 @@ ToolRegistry::register('read_file', function (array $args, ?mysqli $mysqli) {
     }
 
     if ($mode === 'image') {
-        require_once __DIR__ . '/../Services/OCRService.php';
+        require_once dirname(__DIR__, 1) . '/Services/OCRService.php';
         $ocr = new OCRService();
         $imageData = base64_encode((string)file_get_contents($realPath));
         $ocrResult = $ocr->extractTextFromImage($imageData, ['language' => 'eng']);
@@ -1031,7 +1031,7 @@ ToolRegistry::register('analyze_image', function (array $args, ?mysqli $mysqli) 
     }
 
     if ($includeOcr) {
-        require_once __DIR__ . '/../Services/OCRService.php';
+        require_once dirname(__DIR__, 1) . '/Services/OCRService.php';
         $ocr = new OCRService();
         $ocrResult = $ocr->extractTextFromImage(base64_encode($binary), ['language' => $language]);
         $result['ocr'] = [
@@ -1064,7 +1064,7 @@ ToolRegistry::register('analyze_image', function (array $args, ?mysqli $mysqli) 
 
 // 14. Web Search Tool
 ToolRegistry::register('web_search', function (array $args, ?mysqli $mysqli) {
-    $query = trim((string)($args['query'] ?? ''));
+    $query = trim((string)($args['query'] ?? $args['input'] ?? ''));
     $limit = min(max((int)($args['limit'] ?? 5), 1), 10);
 
     if ($query === '') {
@@ -1182,7 +1182,7 @@ ToolRegistry::register('get_app_settings', function (array $args, ?mysqli $mysql
 ToolRegistry::register('search_knowledge_base', function (array $args, ?mysqli $mysqli) {
     if (!$mysqli) throw new RuntimeException('Database connection not available');
 
-    $query = trim($args['query'] ?? '');
+    $query = trim($args['query'] ?? $args['input'] ?? '');
     $category = $args['category'] ?? null;
     $limit = min((int)($args['limit'] ?? 10), 50);
 
@@ -1246,7 +1246,7 @@ ToolRegistry::register('search_knowledge_base', function (array $args, ?mysqli $
 
 // 14. Reindex Knowledge Base Tool
 ToolRegistry::register('reindex_knowledge_base', function (array $args, ?mysqli $mysqli) {
-    require_once __DIR__ . '/../Modules/AISystem/Layer/RAGEngine.php';
+    require_once dirname(__DIR__, 1) . '/Modules/AISystem/Layer/RAGEngine.php';
 
     $provider = $args['provider'] ?? 'openai';
 
@@ -1271,8 +1271,123 @@ ToolRegistry::register('reindex_knowledge_base', function (array $args, ?mysqli 
         ],
         'required' => [],
         'additionalProperties' => false
+    ],            'examples' => [
+                ['input' => '/reindex_knowledge_base provider="openai"', 'output' => 'Reindexed 25 items']
+            ]
+        ]);
+
+// 16. Analytics Tool (from ReActAgent)
+ToolRegistry::register('get_analytics', function (array $args, ?mysqli $mysqli) {
+    if (!$mysqli) throw new RuntimeException('Database connection not available');
+    require_once dirname(__DIR__, 1) . '/Models/AnalyticsModel.php';
+    if (!class_exists('AnalyticsModel', false)) {
+        throw new RuntimeException('AnalyticsModel not available');
+    }
+    $model = new AnalyticsModel($mysqli);
+    $summary = $model->getSummary();
+    if (!$summary) {
+        return ['status' => 'no_data', 'message' => 'No analytics data available'];
+    }
+    return $summary;
+}, [
+    'name' => 'Get Analytics',
+    'description' => 'Retrieve analytics data including visitor stats, page views, and user metrics. Use this when asked about site traffic, visitor counts, or analytics.',
+    'namespace' => 'users',
+    'parameters' => [
+        'type' => 'object',
+        'properties' => [],
+        'required' => [],
+        'additionalProperties' => false
     ],
+    'cacheable' => true,
+    'strict' => false,
     'examples' => [
-        ['input' => '/reindex_knowledge_base provider="openai"', 'output' => 'Reindexed 25 items']
+        ['input' => '/get_analytics', 'output' => 'Analytics summary with visitor and page view data']
+    ]
+]);
+
+// 17. Send Notification Tool (from ReActAgent)
+ToolRegistry::register('send_notification', function (array $args, ?mysqli $mysqli) {
+    $message = trim((string)($args['message'] ?? ''));
+    $type = in_array(($args['type'] ?? 'info'), ['info', 'success', 'warning', 'error'], true) ? $args['type'] : 'info';
+    if (empty($message)) {
+        throw new InvalidArgumentException('Notification message is required');
+    }
+    aiErrorLog("[System Notification] [{$type}] {$message}");
+    return ['success' => true, 'message' => "Notification queued: [{$type}] {$message}"];
+}, [
+    'name' => 'Send Notification',
+    'description' => 'Send a system notification log entry. Use this to record important events, warnings, or alerts.',
+    'namespace' => 'system',
+    'parameters' => [
+        'type' => 'object',
+        'properties' => [
+            'message' => ['type' => 'string', 'description' => 'The notification message content'],
+            'type' => ['type' => 'string', 'description' => 'Notification type: info, success, warning, error', 'enum' => ['info', 'success', 'warning', 'error'], 'default' => 'info']
+        ],
+        'required' => ['message'],
+        'additionalProperties' => false
+    ],
+    'strict' => true,
+    'examples' => [
+        ['input' => '/send_notification message="System update completed" type="success"', 'output' => 'Notification queued']
+    ]
+]);
+
+// 18. Write Article Tool
+ToolRegistry::register('write_article', function (array $args, ?mysqli $mysqli) {
+    if (!$mysqli) throw new RuntimeException('Database connection not available');
+
+    $topic = trim((string)($args['topic'] ?? ''));
+    if (empty($topic)) {
+        throw new InvalidArgumentException('Article topic is required');
+    }
+
+    require_once dirname(__DIR__, 1) . '/Services/AI/ArticleWriterService.php';
+    $writer = new ArticleWriterService($mysqli);
+
+    $options = [
+        'tone' => $args['tone'] ?? 'informative',
+        'length' => $args['length'] ?? 'medium',
+        'language' => $args['language'] ?? 'en',
+        'style' => $args['style'] ?? '',
+        'keywords' => $args['keywords'] ?? '',
+    ];
+
+    $result = $writer->generateArticle($topic, $options);
+    if (!$result['success']) {
+        throw new RuntimeException($result['error'] ?? 'Article generation failed');
+    }
+
+    return [
+        'topic' => $topic,
+        'title' => $result['article']['title'] ?? '',
+        'seo_title' => $result['article']['seo_title'] ?? '',
+        'seo_description' => $result['article']['seo_description'] ?? '',
+        'word_count' => str_word_count(strip_tags($result['article']['content'] ?? '')),
+        'reading_time' => ($result['article']['reading_time_minutes'] ?? 0) . ' min',
+        'tags' => $result['article']['tags'] ?? [],
+        'message' => 'Article generated successfully. View and publish in the admin panel: /admin/ai/article-writer'
+    ];
+}, [
+    'name' => 'Write Article',
+    'description' => 'Generate a complete, publication-ready article on any topic using AI. Returns structured data including title, SEO metadata, word count, and tags. Use this when asked to write content, blog posts, or articles about any subject.',
+    'namespace' => 'content',
+    'parameters' => [
+        'type' => 'object',
+        'properties' => [
+            'topic' => ['type' => 'string', 'description' => 'The article topic or subject to write about'],
+            'tone' => ['type' => 'string', 'description' => 'Writing tone', 'enum' => ['professional', 'casual', 'informative', 'persuasive', 'storytelling'], 'default' => 'informative'],
+            'length' => ['type' => 'string', 'description' => 'Article length', 'enum' => ['short', 'medium', 'long', 'extended'], 'default' => 'medium'],
+            'language' => ['type' => 'string', 'description' => 'Output language code (e.g., en, bn)', 'default' => 'en'],
+            'style' => ['type' => 'string', 'description' => 'Extra style instructions or writing guidelines'],
+            'keywords' => ['type' => 'string', 'description' => 'Comma-separated SEO keywords to include'],
+        ],
+        'required' => ['topic'],
+        'additionalProperties' => false
+    ],
+    'strict' => true,
+    'examples' => [
+        ['input' => '/write_article topic="Benefits of AI in Healthcare" tone="professional" length="long"', 'output' => 'Returns structured article metadata including title, SEO info, word count, and tags']
     ]
 ]);

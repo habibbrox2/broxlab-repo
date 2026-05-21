@@ -8,7 +8,7 @@
 $router->get('/admin/setup-linked-emails', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     try {
         // Read and execute the migration SQL
-        $sqlPath = __DIR__ . '/../../Database/user_recovery_emails.sql';
+        $sqlPath = dirname(__DIR__, 2) . '/Database/user_recovery_emails.sql';
 
         if (!file_exists($sqlPath)) {
             throw new Exception("Migration file not found");

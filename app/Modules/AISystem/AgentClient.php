@@ -5,8 +5,8 @@ use App\Modules\AISystem\UnifiedCache;
 
 require_once __DIR__ . '/RateLimiter.php';
 require_once __DIR__ . '/FreeApiOptimizer.php';
-$aiProviderPath = realpath(__DIR__ . '/../../Models/AIProvider.php');
-require_once $aiProviderPath ?: (__DIR__ . '/../../Models/AIProvider.php');
+$aiProviderPath = realpath(dirname(__DIR__, 2) . '/Models/AIProvider.php');
+require_once $aiProviderPath ?: (dirname(__DIR__, 2) . '/Models/AIProvider.php');
 // ModelRouter provides automatic provider/model selection based on message complexity
 require_once __DIR__ . '/Layer/ModelRouter.php';
 

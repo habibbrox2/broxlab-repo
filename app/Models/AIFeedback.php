@@ -11,7 +11,18 @@ class AIFeedback
 
     public function __construct($mysqli = null)
     {
-        $this->mysqli = $mysqli ?: Db::getInstance()->getConnection();
+        if ($mysqli instanceof \mysqli) {
+            $this->mysqli = $mysqli;
+        } elseif (class_exists('Db') && method_exists('Db', 'getInstance')) {
+            $instance = Db::getInstance();
+            if ($instance && method_exists($instance, 'getConnection')) {
+                $this->mysqli = $instance->getConnection();
+            } else {
+                $this->mysqli = null;
+            }
+        } else {
+            $this->mysqli = null;
+        }
     }
 
     /**
@@ -23,7 +34,14 @@ class AIFeedback
             INSERT INTO ai_feedback (conversation_id, message_id, rating, comment, user_id, created_at)
             VALUES (?, ?, ?, ?, ?, NOW())
         ");
-        $stmt->bind_param("iiiss", $conversationId, $messageId, $rating, $comment, $userId);
+
+        // All params are references; set null var BEFORE bind_param so MySQLi sends SQL NULL
+        $nullUserId = null;
+        if ($userId === null) {
+            $stmt->bind_param("siisi", $conversationId, $messageId, $rating, $comment, $nullUserId);
+        } else {
+            $stmt->bind_param("siisi", $conversationId, $messageId, $rating, $comment, $userId);
+        }
         $result = $stmt->execute();
         $stmt->close();
         return $result;
@@ -49,33 +67,17 @@ class AIFeedback
     }
 
     /**
-     * Get average rating for a provider or model
+     * Get average rating for feedback (date-filtered only)
+     * Note: provider/model filters removed because ai_messages table does not store those columns.
      */
-    public function getAverageRating($provider = null, $model = null, $days = 30)
+    public function getAverageRating($days = 30)
     {
-        $where = "WHERE f.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";
-        $params = [$days];
-        $types = "i";
-
-        if ($provider) {
-            $where .= " AND m.provider = ?";
-            $params[] = $provider;
-            $types .= "s";
-        }
-
-        if ($model) {
-            $where .= " AND m.model = ?";
-            $params[] = $model;
-            $types .= "s";
-        }
-
         $stmt = $this->mysqli->prepare("
-            SELECT AVG(f.rating) as avg_rating, COUNT(f.id) as total_feedback
-            FROM ai_feedback f
-            JOIN ai_messages m ON f.message_id = m.id
-            $where
+            SELECT AVG(rating) as avg_rating, COUNT(id) as total_feedback
+            FROM ai_feedback
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
         ");
-        $stmt->bind_param($types, ...$params);
+        $stmt->bind_param("i", $days);
         $stmt->execute();
         $result = $stmt->get_result();
         $data = $result->fetch_assoc();
@@ -113,7 +115,7 @@ class AIFeedback
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 conversation_id VARCHAR(255) NOT NULL,
                 message_id INT NOT NULL,
-                rating TINYINT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+                rating TINYINT NOT NULL,
                 comment TEXT,
                 user_id INT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

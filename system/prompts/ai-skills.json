@@ -11,7 +11,7 @@
             "enabled": true,
             "priority": 10,
             "context": {
-                "prompt_file": "assistant.md",
+                "prompt_file": "public.md",
                 "max_tokens": 1000,
                 "temperature": 0.3
             },

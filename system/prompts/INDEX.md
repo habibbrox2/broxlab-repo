@@ -9,7 +9,7 @@ This file documents all prompt files in `system/prompts/` and their purpose, ver
 
 | File | Purpose | Version | Loaded By | Last Updated | Status |
 |------|---------|---------|-----------|--------------|--------|
-| `assistant.md` | Public-facing chat assistant system prompt | 1.0 | `PromptLoader::loadPrompts('public')` | 2026-03-20 | Active |
+| `public.md` | Public-facing chat assistant system prompt | 1.0 | `PromptLoader::loadPrompts('public')` | 2026-03-20 | Active |
 | `admin.md` | Admin/internal assistant system prompt | 1.0 | `PromptLoader::loadPrompts('admin')` | 2026-03-20 | Active |
 | `enhancer.md` | Content enhancement/rewriting prompt | 1.0 | `PHPBridge.js::loadPrompt()` | 2026-03-15 | Active |
 | `summarizer.md` | Content summarization prompt | 1.0 | `PHPBridge.js::loadPrompt()` | 2026-03-15 | Active |

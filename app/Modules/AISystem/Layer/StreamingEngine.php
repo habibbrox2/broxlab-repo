@@ -20,7 +20,7 @@ class StreamingEngine
         // Setup logging
         $this->enableLogging = getenv('STREAM_LOGGING') ?? false;
         if ($this->enableLogging) {
-            $this->logFile = __DIR__ . '/../../../storage/logs/streaming.log';
+            $this->logFile = dirname(__DIR__, 3) . '/storage/logs/streaming.log';
             $logDir = dirname($this->logFile);
             if (!is_dir($logDir)) {
                 @mkdir($logDir, 0777, true);

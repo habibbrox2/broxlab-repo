@@ -19,10 +19,10 @@
 /** @var \Twig\Environment $twig */
 /** @var \mysqli $mysqli */
 
-require_once __DIR__ . '/../../Config/Functions.php';
-require_once __DIR__ . '/../Helpers/FirebaseHelper.php';
-require_once __DIR__ . '/../Helpers/AuthAndSecurityHelper.php';
-require_once __DIR__ . '/../Helpers/EmailHelper.php';
+require_once dirname(__DIR__, 2) . '/Config/Functions.php';
+require_once dirname(__DIR__, 1) . '/Helpers/FirebaseHelper.php';
+require_once dirname(__DIR__, 1) . '/Helpers/AuthAndSecurityHelper.php';
+require_once dirname(__DIR__, 1) . '/Helpers/EmailHelper.php';
 
 $userModel = new UserModel($mysqli);
 $authManager = new AuthManager($mysqli);
@@ -1000,7 +1000,7 @@ $router->post('/api/oauth/reauth', ['middleware' => ['auth'], 'response' => 'jso
         }
 
         try {
-            $firebaseModel = new \Firebase\FirebaseModel(require __DIR__ . '/../../Config/Firebase.php');
+            $firebaseModel = new \Firebase\FirebaseModel(require dirname(__DIR__, 2) . '/Config/Firebase.php');
         } catch (Throwable $e) {
             logError('OAuth reauth FirebaseModel init failed: ' . $e->getMessage());
             return json_response([
@@ -1288,7 +1288,7 @@ $router->get('/api/oauth/providers', ['response' => 'json'], function () use ($s
             ], 200);
         }
 
-        $firebaseModel = new \Firebase\FirebaseModel(require __DIR__ . '/../../Config/Firebase.php');
+        $firebaseModel = new \Firebase\FirebaseModel(require dirname(__DIR__, 2) . '/Config/Firebase.php');
         $liveResult = $firebaseModel->getEnabledOAuthProvidersLive();
         if (empty($liveResult['success'])) {
             $errorCode = (string)($liveResult['error_code'] ?? 'provider_status_fetch_failed');

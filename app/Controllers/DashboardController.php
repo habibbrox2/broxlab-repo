@@ -480,7 +480,7 @@ $router->get('/admin/cvs/{id}/export', ['middleware' => ['auth', 'admin_only']],
         'sections' => $visibleSections
     ]);
 
-    require_once __DIR__ . '/../Helpers/MpdfHelper.php';
+    require_once dirname(__DIR__, 1) . '/Helpers/MpdfHelper.php';
     generatePdf($html, $cv['title'] . '.pdf', ['auto_exit' => false]);
 });
 
@@ -524,7 +524,7 @@ $router->post('/admin/cvs/bulk/export-zip', ['middleware' => ['auth', 'admin_onl
         $template = in_array($template, $templates, true) ? $template : 'modern';
     }
 
-    require_once __DIR__ . '/../Helpers/MpdfHelper.php';
+    require_once dirname(__DIR__, 1) . '/Helpers/MpdfHelper.php';
 
     $cvModel = new CvModel($mysqli);
     $cvSectionModel = new CvSectionModel($mysqli);

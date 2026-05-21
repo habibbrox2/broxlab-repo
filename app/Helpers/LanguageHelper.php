@@ -172,8 +172,8 @@ class LanguageHelper
             return null;
         }
 
-        $agentClientPath = realpath(__DIR__ . '/../Modules/AISystem/AgentClient.php');
-        require_once $agentClientPath ?: (__DIR__ . '/../Modules/AISystem/AgentClient.php');
+        $agentClientPath = realpath(dirname(__DIR__, 1) . '/Modules/AISystem/AgentClient.php');
+        require_once $agentClientPath ?: (dirname(__DIR__, 1) . '/Modules/AISystem/AgentClient.php');
 
         $agentClient = new AgentClient($mysqli);
         $messages = [

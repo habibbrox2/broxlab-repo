@@ -35,8 +35,20 @@ export async function ensurePuterReady() {
  */
 function loadPuterScript() {
   return new Promise((resolve, reject) => {
+    // Allow disabling Puter welcome/marketing console message by setting window.puter.quiet = true
+    try {
+      if (typeof window !== 'undefined') {
+        window.puter = window.puter || {};
+        // Respect existing setting if already configured
+        if (!('quiet' in window.puter)) {
+          window.puter.quiet = true;
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
     const script = document.createElement('script');
-    script.src = 'https://puter.com/js/puter-v2.0.0.js';
+    script.src = 'https://js.puter.com/v2/';
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error('Failed to load Puter script'));

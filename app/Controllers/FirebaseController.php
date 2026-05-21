@@ -20,15 +20,15 @@
 /** @var Router $router */
 /** @var \mysqli $mysqli */
 
-require_once __DIR__ . '/../Helpers/FirebaseHelper.php';
-require_once __DIR__ . '/../Models/FirebaseModel.php';
-require_once __DIR__ . '/../Models/NotificationModel.php';
-require_once __DIR__ . '/../Models/UserModel.php';
-require_once __DIR__ . '/../Models/AuthManager.php';
-require_once __DIR__ . '/../Models/SecurityManager.php';
-require_once __DIR__ . '/../../Config/Functions.php';
-require_once __DIR__ . '/../Helpers/EmailHelper.php';
-require_once __DIR__ . '/../Helpers/AuthAndSecurityHelper.php';
+require_once dirname(__DIR__, 1) . '/Helpers/FirebaseHelper.php';
+require_once dirname(__DIR__, 1) . '/Models/FirebaseModel.php';
+require_once dirname(__DIR__, 1) . '/Models/NotificationModel.php';
+require_once dirname(__DIR__, 1) . '/Models/UserModel.php';
+require_once dirname(__DIR__, 1) . '/Models/AuthManager.php';
+require_once dirname(__DIR__, 1) . '/Models/SecurityManager.php';
+require_once dirname(__DIR__, 2) . '/Config/Functions.php';
+require_once dirname(__DIR__, 1) . '/Helpers/EmailHelper.php';
+require_once dirname(__DIR__, 1) . '/Helpers/AuthAndSecurityHelper.php';
 
 // Initialize variables to null to avoid undefined variable warnings
 $firebaseModel = null;
@@ -42,7 +42,7 @@ $securityManager = null;
 /** @var \mysqli $mysqli */
 
 try {
-    $firebaseConfig = require __DIR__ . '/../../Config/Firebase.php';
+    $firebaseConfig = require dirname(__DIR__, 2) . '/Config/Firebase.php';
     $serviceAccountResolved = function_exists('resolve_firebase_service_account')
         ? resolve_firebase_service_account()
         : null;

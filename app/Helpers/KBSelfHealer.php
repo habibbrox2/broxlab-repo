@@ -14,13 +14,12 @@
  * - Usage-based content suggestions
  */
 
-require_once __DIR__ . '/../Modules/AISystem/AgentClient.php';
+require_once dirname(__DIR__, 1) . '/Modules/AISystem/AgentClient.php';
 
 class KBSelfHealer
 {
     private $mysqli;
     private $agentClient;
-    private $nodeJsUrl;
     private $useNodeJs;
     private $autoImprove;
     private $qualityThreshold;
@@ -35,19 +34,8 @@ class KBSelfHealer
         $this->mysqli = $mysqli;
         $this->agentClient = new AgentClient($mysqli);
 
-        // Configuration
-        $this->useNodeJs = $options['useNodeJs'] ?? (getenv('KB_USE_NODEJS') === 'true');
-        $nodeJsUrl = rtrim(
-            (string)($options['nodeJsUrl'] ?? getenv('NODE_SERVICE_URL') ?? getenv('NODEJS_AI_SERVER_URL') ?? getenv('NODE_API_URL') ?? getenv('APP_URL') ?? 'http://localhost:3000'),
-            '/'
-        );
-        if (str_ends_with($nodeJsUrl, '/api/ai')) {
-            $nodeJsUrl = substr($nodeJsUrl, 0, -7);
-        }
-        if (str_ends_with($nodeJsUrl, '/api/ocr')) {
-            $nodeJsUrl = substr($nodeJsUrl, 0, -8);
-        }
-        $this->nodeJsUrl = $nodeJsUrl;
+        // Disable Node.js usage; use PHP-native AgentClient by default
+        $this->useNodeJs = false;
         $this->autoImprove = $options['autoImprove'] ?? (getenv('KB_AUTO_IMPROVE') === 'true');
         $this->qualityThreshold = $options['qualityThreshold'] ?? 50;
         $this->lookbackDays = $options['lookbackDays'] ?? 30;
@@ -505,26 +493,8 @@ Provide JSON:
      */
     private function callNodeJsAI(string $endpoint, array $data): array
     {
-        $ch = curl_init($this->nodeJsUrl . $endpoint);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
-            'Accept: application/json'
-        ]);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($httpCode !== 200) {
-            throw new Exception("Node.js API returned status $httpCode");
-        }
-
-        $result = json_decode($response, true);
-
-        return $result['content'] ?? $result;
+        // Node.js integration removed; prefer AgentClient (PHP) for AI calls.
+        throw new \BadMethodCallException('callNodeJsAI removed: Node.js integration disabled');
     }
 
     /**

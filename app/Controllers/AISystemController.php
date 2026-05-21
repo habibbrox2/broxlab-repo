@@ -10,113 +10,48 @@
 /** @var \Twig\Environment $twig */
 /** @var \mysqli $mysqli */
 
-$aiProviderPath = realpath(__DIR__ . '/../Models/AIProvider.php');
-require_once $aiProviderPath ?: (__DIR__ . '/../Models/AIProvider.php');
-require_once __DIR__ . '/../Models/AppSettings.php';
-require_once __DIR__ . '/../Helpers/PromptLoader.php';
-require_once __DIR__ . '/../Helpers/ToolRegistry.php';
-require_once __DIR__ . '/../Helpers/ToolDefinitions.php';
-require_once __DIR__ . '/../Models/AIChatModel.php';
-require_once __DIR__ . '/../Models/AuthManager.php';
-require_once __DIR__ . '/../Models/UploadService.php';
+$aiProviderPath = realpath(dirname(__DIR__, 1) . '/Models/AIProvider.php');
+require_once $aiProviderPath ?: (dirname(__DIR__, 1) . '/Models/AIProvider.php');
+require_once dirname(__DIR__, 1) . '/Models/AppSettings.php';
+require_once dirname(__DIR__, 1) . '/Helpers/PromptLoader.php';
+require_once dirname(__DIR__, 1) . '/Helpers/ToolRegistry.php';
+require_once dirname(__DIR__, 1) . '/Helpers/ToolDefinitions.php';
+require_once dirname(__DIR__, 1) . '/Models/AIChatModel.php';
+require_once dirname(__DIR__, 1) . '/Models/AuthManager.php';
+require_once dirname(__DIR__, 1) . '/Models/UploadService.php';
+
+// ==================== AI SERVICE CLASSES ====================
+require_once dirname(__DIR__, 1) . '/Services/AI/ChatResponseService.php';
+require_once dirname(__DIR__, 1) . '/Services/AI/ChatMessageService.php';
+require_once dirname(__DIR__, 1) . '/Services/AI/ChatProviderService.php';
+require_once dirname(__DIR__, 1) . '/Services/AI/ChatSessionService.php';
+require_once dirname(__DIR__, 1) . '/Services/AI/ChatLogService.php';
+require_once dirname(__DIR__, 1) . '/Services/AI/ChatToolService.php';
+// ==================== AI SERVICE CLASSES ====================
 
 function aiChatSendJson(array $payload, int $status = 200): void
 {
-    header('Content-Type: application/json');
-    http_response_code($status);
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    ChatResponseService::sendJson($payload, $status);
 }
+
 
 function aiChatStreamContent(string $content, array $meta = []): void
 {
-    header('Content-Type: text/event-stream');
-    header('Cache-Control: no-cache');
-    header('X-Accel-Buffering: no');
-    @ini_set('output_buffering', 'off');
-    @ini_set('zlib.output_compression', '0');
-    while (ob_get_level() > 0) {
-        @ob_end_flush();
-    }
-    @ob_implicit_flush(true);
-
-    if (!empty($meta)) {
-        echo 'data: ' . json_encode(['meta' => $meta], JSON_UNESCAPED_UNICODE) . "\n\n";
-        @ob_flush();
-        flush();
-    }
-
-    $chunkSize = 200;
-    if (function_exists('mb_strlen')) {
-        $length = mb_strlen($content, 'UTF-8');
-        for ($i = 0; $i < $length; $i += $chunkSize) {
-            $chunk = mb_substr($content, $i, $chunkSize, 'UTF-8');
-            echo 'data: ' . json_encode(['content' => $chunk], JSON_UNESCAPED_UNICODE) . "\n\n";
-            @ob_flush();
-            flush();
-        }
-    } else {
-        foreach (str_split($content, $chunkSize) as $chunk) {
-            echo 'data: ' . json_encode(['content' => $chunk], JSON_UNESCAPED_UNICODE) . "\n\n";
-            @ob_flush();
-            flush();
-        }
-    }
-
-    echo "data: [DONE]\n\n";
-    @ob_flush();
-    flush();
+    ChatResponseService::streamContent($content, $meta);
 }
+
 
 function aiChatDeriveHttpStatus(array $response, int $default = 502): int
 {
-    if (!empty($response['http_code']) && is_int($response['http_code'])) {
-        $code = $response['http_code'];
-        if (in_array($code, [400, 401, 402, 403, 404, 429], true)) {
-            return $code;
-        }
-        if ($code >= 500) {
-            return 502;
-        }
-    }
-
-    if (!empty($response['error_code']) && $response['error_code'] === 'provider_incomplete') {
-        return 400;
-    }
-
-    if (!empty($response['error']) && str_contains((string)$response['error'], 'API key not configured')) {
-        return 400;
-    }
-
-    if (!empty($response['error_type']) && $response['error_type'] === 'network') {
-        return 502;
-    }
-
-    return $default;
+    return ChatResponseService::deriveHttpStatus($response, $default);
 }
+
 
 function aiChatExtractText($content): string
 {
-    if (is_string($content)) {
-        return trim($content);
-    }
-    if (!is_array($content)) {
-        return '';
-    }
-    $parts = [];
-    foreach ($content as $part) {
-        if (!is_array($part)) {
-            continue;
-        }
-        if (($part['type'] ?? '') !== 'text') {
-            continue;
-        }
-        $text = $part['text'] ?? '';
-        if (is_string($text) && trim($text) !== '') {
-            $parts[] = trim($text);
-        }
-    }
-    return trim(implode("\n", $parts));
+    return ChatMessageService::extractText($content);
 }
+
 
 function aiChatNormalizeMessages($messages, int $maxMessages, int $maxChars, ?string &$error = null): array
 {
@@ -245,128 +180,33 @@ function aiChatNormalizeMessages($messages, int $maxMessages, int $maxChars, ?st
 
 function aiChatLastUserMessage(array $messages): string
 {
-    for ($i = count($messages) - 1; $i >= 0; $i--) {
-        if (($messages[$i]['role'] ?? '') === 'user') {
-            return aiChatExtractText($messages[$i]['content'] ?? '');
-        }
-    }
-    return '';
+    return ChatMessageService::lastUserMessage($messages);
 }
+
 
 function aiChatExtractImageReferences(array $messages): array
 {
-    $refs = [];
-    foreach ($messages as $msg) {
-        if (!is_array($msg) || empty($msg['content']) || !is_array($msg['content'])) {
-            continue;
-        }
-        foreach ($msg['content'] as $part) {
-            if (!is_array($part) || ($part['type'] ?? '') !== 'image_url') {
-                continue;
-            }
-            $image = $part['image_url'] ?? [];
-            $url = $image['url'] ?? null;
-
-            // Support multiple image input formats:
-            // 1. URL: "https://..."
-            // 2. Base64: "data:image/png;base64,..."
-            // 3. File ID: "file-id-from-upload"
-            if (!$url) {
-                continue;
-            }
-
-            // Extract detail level (low, high, original, auto) - default to "high" for better analysis
-            $detail = $image['detail'] ?? 'high';
-            if (!in_array($detail, ['low', 'high', 'original', 'auto'], true)) {
-                $detail = 'high';
-            }
-
-            $refs[] = [
-                'url' => $url,
-                'name' => $image['name'] ?? null,
-                'mime' => $image['mime'] ?? null,
-                'size' => isset($image['size']) ? (int)$image['size'] : null,
-                'detail' => $detail,
-                'is_base64' => strpos($url, 'data:') === 0,
-                'is_url' => strpos($url, 'http') === 0
-            ];
-        }
-    }
-    return $refs;
+    return ChatMessageService::extractImageReferences($messages);
 }
+
 
 function aiChatMergeImageReferences(array $existing, array $incoming): array
 {
-    $merged = [];
-    $seen = [];
-    foreach (array_merge($existing, $incoming) as $ref) {
-        if (!is_array($ref) || empty($ref['url'])) {
-            continue;
-        }
-        $url = (string)$ref['url'];
-        if (isset($seen[$url])) {
-            continue;
-        }
-        $seen[$url] = true;
-        $merged[] = [
-            'url' => $url,
-            'name' => $ref['name'] ?? null,
-            'mime' => $ref['mime'] ?? null,
-            'size' => isset($ref['size']) ? (int)$ref['size'] : null,
-            'detail' => $ref['detail'] ?? 'high',
-            'is_base64' => $ref['is_base64'] ?? (strpos($url, 'data:') === 0),
-            'is_url' => $ref['is_url'] ?? (strpos($url, 'http') === 0)
-        ];
-    }
-    return $merged;
+    return ChatMessageService::mergeImageReferences($existing, $incoming);
 }
+
 
 function aiChatHasImageContent(array $messages): bool
 {
-    foreach ($messages as $msg) {
-        if (!is_array($msg) || empty($msg['content']) || !is_array($msg['content'])) {
-            continue;
-        }
-        foreach ($msg['content'] as $part) {
-            if (!is_array($part) || ($part['type'] ?? '') !== 'image_url') {
-                continue;
-            }
-            $url = $part['image_url']['url'] ?? null;
-            if (is_string($url) && trim($url) !== '') {
-                return true;
-            }
-        }
-    }
-    return false;
+    return ChatMessageService::hasImageContent($messages);
 }
+
 
 function aiChatAppendImageContext(string $prompt, array $imageRefs): string
 {
-    if (empty($imageRefs)) {
-        return $prompt;
-    }
-
-    $lines = ["\n\n[IMAGE CONTEXT]"];
-    foreach ($imageRefs as $img) {
-        $line = '- ' . ($img['name'] ? ($img['name'] . ': ') : 'Image: ') . ($img['url'] ?? '');
-        $metaParts = [];
-        if (!empty($img['mime'])) {
-            $metaParts[] = $img['mime'];
-        }
-        if (!empty($img['size'])) {
-            $metaParts[] = $img['size'] . ' bytes';
-        }
-        if (!empty($img['detail'])) {
-            $metaParts[] = 'detail: ' . $img['detail'];
-        }
-        if (!empty($metaParts)) {
-            $line .= ' (' . implode(', ', $metaParts) . ')';
-        }
-        $lines[] = $line;
-    }
-
-    return $prompt . "\n" . implode("\n", $lines);
+    return ChatMessageService::appendImageContext($prompt, $imageRefs);
 }
+
 
 /**
  * Build vision-compatible message content with proper image format
@@ -378,100 +218,18 @@ function aiChatAppendImageContext(string $prompt, array $imageRefs): string
  */
 function aiChatBuildVisionMessages(array $messages, array $imageRefs): array
 {
-    if (empty($imageRefs)) {
-        return $messages;
-    }
-
-    $builtMessages = [];
-
-    foreach ($messages as $msg) {
-        if (!is_array($msg)) {
-            $builtMessages[] = $msg;
-            continue;
-        }
-
-        $role = $msg['role'] ?? 'user';
-        $content = $msg['content'] ?? '';
-
-        // If content is a string and there are images, convert to multimodal format
-        if (is_string($content) && !empty($imageRefs) && $role === 'user') {
-            $newContent = [];
-
-            // Add text part
-            if (!empty(trim($content))) {
-                $newContent[] = [
-                    'type' => 'text',
-                    'text' => $content
-                ];
-            }
-
-            // Add image parts
-            foreach ($imageRefs as $img) {
-                $imageData = [
-                    'url' => $img['url'],
-                    'detail' => $img['detail'] ?? 'high'
-                ];
-
-                // Add name if available
-                if (!empty($img['name'])) {
-                    $imageData['name'] = $img['name'];
-                }
-
-                $newContent[] = [
-                    'type' => 'image_url',
-                    'image_url' => $imageData
-                ];
-            }
-
-            $builtMessages[] = [
-                'role' => $role,
-                'content' => $newContent
-            ];
-        } else {
-            // Pass through as-is (already in multimodal format)
-            $builtMessages[] = $msg;
-        }
-    }
-
-    return $builtMessages;
+    return ChatMessageService::buildVisionMessages($messages, $imageRefs);
 }
+
 
 /**
  * Check if a model supports vision/images
  */
 function aiChatSupportsVision(?string $model): bool
 {
-    if (empty($model)) {
-        return true; // Default to allowing
-    }
-
-    $modelLower = strtolower($model);
-
-    // Known vision models
-    $visionIndicators = [
-        'vision',
-        'gpt-4o',
-        'gpt-4-vision',
-        'gpt-4-turbo',
-        'claude-3',
-        'claude-3.5',
-        'claude-3.7',
-        'gemini',
-        'llama-3.2',
-        'qwen2-vl',
-        'pixtral',
-        'minimax',
-        'deepseek-vl'
-    ];
-
-    foreach ($visionIndicators as $indicator) {
-        if (strpos($modelLower, $indicator) !== false) {
-            return true;
-        }
-    }
-
-    return false;
+    return ChatMessageService::supportsVision($model);
 }
+
 
 /**
  * Encode a local image file as base64 data URL
@@ -482,29 +240,9 @@ function aiChatSupportsVision(?string $model): bool
  */
 function aiChatEncodeImageBase64(string $filePath): ?string
 {
-    if (!file_exists($filePath) || !is_readable($filePath)) {
-        return null;
-    }
-
-    $mimeTypes = [
-        'png' => 'image/png',
-        'jpg' => 'image/jpeg',
-        'jpeg' => 'image/jpeg',
-        'webp' => 'image/webp',
-        'gif' => 'image/gif'
-    ];
-
-    $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-    $mime = $mimeTypes[$ext] ?? 'image/png';
-
-    $data = file_get_contents($filePath);
-    if ($data === false) {
-        return null;
-    }
-
-    $base64 = base64_encode($data);
-    return "data:{$mime};base64,{$base64}";
+    return ChatMessageService::encodeImageBase64($filePath);
 }
+
 
 /**
  * Download and encode a remote image as base64
@@ -514,282 +252,75 @@ function aiChatEncodeImageBase64(string $filePath): ?string
  */
 function aiChatEncodeRemoteImage(string $url): ?string
 {
-    $context = stream_context_create([
-        'http' => [
-            'timeout' => 10,
-            'follow_location' => 1,
-            'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        ]
-    ]);
-
-    $data = @file_get_contents($url, false, $context);
-    if ($data === false) {
-        return null;
-    }
-
-    // Detect MIME type from content
-    $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime = $finfo->buffer($data);
-
-    if (strpos($mime, 'image/') !== 0) {
-        return null;
-    }
-
-    $base64 = base64_encode($data);
-    return "data:{$mime};base64,{$base64}";
+    return ChatMessageService::encodeRemoteImage($url);
 }
+
 
 function aiChatParseSlashCommand(string $text): ?array
 {
-    $text = trim($text);
-    if ($text === '' || $text[0] !== '/') {
-        return null;
-    }
-    if (!preg_match('/^\/([a-zA-Z0-9_-]+)(?:\s+(.*))?$/', $text, $m)) {
-        return null;
-    }
-    return [
-        'cmd' => strtolower($m[1]),
-        'args' => trim((string)($m[2] ?? '')),
-    ];
+    return ChatToolService::parseCommand($text);
 }
+
 
 function aiChatResolveErrorLogPath(): string
 {
-    if (defined('BASE_PATH')) {
-        return rtrim((string)BASE_PATH, "/\\") . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'errors.log';
-    }
-    return dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'errors.log';
+    return ChatLogService::resolveErrorLogPath();
 }
+
 
 function aiChatReadLastLines(string $path, int $n): array
 {
-    $lines = [];
-    $fp = @fopen($path, 'r');
-    if (!$fp) return $lines;
-
-    @fseek($fp, 0, SEEK_END);
-    $pos = (int)@ftell($fp);
-    $buffer = '';
-    $lineCount = 0;
-
-    while ($pos > 0 && $lineCount < $n) {
-        $chunk = min(4096, $pos);
-        $pos -= $chunk;
-        @fseek($fp, $pos);
-        $buffer = (string)@fread($fp, $chunk) . $buffer;
-        $lineCount = substr_count($buffer, "\n");
-    }
-
-    @fclose($fp);
-    $all = explode("\n", $buffer);
-    if (end($all) === '') array_pop($all);
-    return array_slice($all, -$n);
+    return ChatLogService::readLastLines($path, $n);
 }
+
 
 function aiChatRedactSecrets(string $line): string
 {
-    $patterns = [
-        '/(authorization\s*[:=]\s*)([^\s,;]+)/i',
-        '/(api[_-]?key\s*[:=]\s*)([^\s,;]+)/i',
-        '/(token\s*[:=]\s*)([^\s,;]+)/i',
-        '/(password\s*[:=]\s*)([^\s,;]+)/i',
-        '/(DB_PASS\s*[:=]\s*)([^\s,;]+)/i',
-    ];
-    foreach ($patterns as $p) {
-        $line = preg_replace($p, '$1[REDACTED]', $line) ?? $line;
-    }
-    return $line;
+    return ChatLogService::redactSecrets($line);
 }
+
 
 function aiChatSelectRecentErrors(array $lines, int $limit = 20): array
 {
-    $out = [];
-    foreach (array_reverse($lines) as $line) {
-        $line = trim((string)$line);
-        if ($line === '') continue;
-        $u = strtoupper($line);
-        $match = str_contains($u, '[ERROR]') || str_contains($u, '[CRITICAL]') || str_contains($u, '[WARNING]')
-            || str_contains($u, 'PHP FATAL') || str_contains($u, 'PHP WARNING') || str_contains($u, 'PHP ERROR');
-        if (!$match) continue;
-        $line = aiChatRedactSecrets($line);
-        if (strlen($line) > 800) {
-            $line = substr($line, 0, 800) . '…';
-        }
-        $out[] = $line;
-        if (count($out) >= $limit) break;
-    }
-    return array_reverse($out);
+    return ChatLogService::selectRecentErrors($lines, $limit);
 }
+
 
 function aiChatBuildRecentConversationText(array $messages, int $max = 10): string
 {
-    $slice = array_slice($messages, -$max);
-    $parts = [];
-    foreach ($slice as $m) {
-        $role = (string)($m['role'] ?? '');
-        $content = aiChatExtractText($m['content'] ?? '');
-        if ($content === '') continue;
-        $label = $role === 'assistant' ? 'Assistant' : 'User';
-        $parts[] = $label . ': ' . $content;
-    }
-    return implode("\n", $parts);
+    return ChatLogService::buildRecentConversationText($messages, $max);
 }
+
 
 function aiChatSelectFallbackProvider(AIProvider $aiProvider, string $currentProvider, array $settings): ?array
 {
-    $active = $aiProvider->getActive();
-    foreach ($active as $provider) {
-        $name = $provider['provider_name'] ?? '';
-        if ($name === '' || $name === $currentProvider) {
-            continue;
-        }
-        if (!$aiProvider->hasApiKey($name)) {
-            continue;
-        }
-
-        $models = $provider['supported_models'] ?? [];
-        if (empty($models)) {
-            $config = AIProvider::getProviderConfig($name);
-            $models = $config['models'] ?? [];
-        }
-
-        $defaultModel = $settings['default_model'] ?? '';
-        $model = ($defaultModel !== '' && isset($models[$defaultModel]))
-            ? $defaultModel
-            : array_key_first($models);
-
-        if (!$model) {
-            continue;
-        }
-
-        return [
-            'provider' => $name,
-            'model' => $model
-        ];
-    }
-
-    return null;
+    return ChatProviderService::selectFallbackProvider($aiProvider, $currentProvider, $settings);
 }
+
 
 function aiChatLogUsage(mysqli $mysqli, string $provider, string $model, array $usage, string $status, ?string $error, ?int $userId, array $metadata): void
 {
-    $promptTokens = (int)($usage['prompt_tokens'] ?? $usage['input_tokens'] ?? 0);
-    $completionTokens = (int)($usage['completion_tokens'] ?? $usage['output_tokens'] ?? 0);
-    $totalTokens = (int)($usage['total_tokens'] ?? ($promptTokens + $completionTokens));
-    $cost = (float)($usage['cost'] ?? 0);
-    $requestType = 'chat';
-    $metadataJson = json_encode($metadata, JSON_UNESCAPED_UNICODE);
-
-    $stmt = $mysqli->prepare("
-        INSERT INTO ai_usage_logs
-        (provider_name, model_name, prompt_tokens, completion_tokens, total_tokens, cost, request_type, status, error_message, user_id, metadata)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ");
-
-    if (!$stmt) {
-        return;
-    }
-
-    $stmt->bind_param(
-        'ssiiidsssis',
-        $provider,
-        $model,
-        $promptTokens,
-        $completionTokens,
-        $totalTokens,
-        $cost,
-        $requestType,
-        $status,
-        $error,
-        $userId,
-        $metadataJson
-    );
-
-    // Execute with error handling - don't let logging failure break the chat
-    try {
-        $stmt->execute();
-    } catch (\Exception $e) {
-        // Log silently but don't break the chat functionality
-        error_log('AI usage logging failed: ' . $e->getMessage());
-    }
-    $stmt->close();
+    ChatLogService::logUsage($mysqli, $provider, $model, $usage, $status, $error, $userId, $metadata);
 }
+
 
 function aiSystemGetProviderModels(AIProvider $aiProvider, string $providerName, array $providers): array
 {
-    foreach ($providers as $provider) {
-        if (($provider['provider_name'] ?? '') !== $providerName) {
-            continue;
-        }
-        $models = $provider['supported_models'] ?? [];
-        if (empty($models)) {
-            $config = AIProvider::getProviderConfig($providerName);
-            $models = $config['models'] ?? [];
-        }
-        if (in_array($providerName, ['fireworks', 'openrouter'], true)) {
-            $remote = $aiProvider->fetchRemoteModels($providerName);
-            if (!empty($remote)) {
-                $models = $remote;
-            }
-        }
-        return $models;
-    }
-
-    $config = AIProvider::getProviderConfig($providerName);
-    $models = $config['models'] ?? [];
-    if (in_array($providerName, ['fireworks', 'openrouter'], true)) {
-        $remote = $aiProvider->fetchRemoteModels($providerName);
-        if (!empty($remote)) {
-            $models = $remote;
-        }
-    }
-    return $models;
+    return ChatProviderService::getProviderModels($aiProvider, $providerName, $providers);
 }
+
 
 function aiSystemResolveModel(AIProvider $aiProvider, string $providerName, string $selectedModel, array $providers, string $defaultModel = ''): string
 {
-    $models = aiSystemGetProviderModels($aiProvider, $providerName, $providers);
-    if (!empty($selectedModel) && isset($models[$selectedModel])) {
-        return $selectedModel;
-    }
-    if (!empty($defaultModel) && isset($models[$defaultModel])) {
-        return $defaultModel;
-    }
-
-    if (!empty($models)) {
-        $preferred = aiSystemFindPreferredModel($models);
-        if ($preferred !== '') {
-            return $preferred;
-        }
-    }
-
-    return (string)array_key_first($models);
+    return ChatProviderService::resolveModel($aiProvider, $providerName, $selectedModel, $providers, $defaultModel);
 }
+
 
 function aiSystemFindPreferredModel(array $models): string
 {
-    $priorities = [
-        '/:free/i',
-        '/\bfree\b/i',
-        '/\bauto\b/i',
-        '/\bmini\b/i',
-        '/\bsmall\b/i',
-        '/\bturbo\b/i',
-        '/\bflash\b/i',
-        '/\bfast\b/i',
-    ];
-
-    foreach ($priorities as $pattern) {
-        foreach ($models as $modelId => $label) {
-            if (preg_match($pattern, $modelId) || preg_match($pattern, (string)$label)) {
-                return (string)$modelId;
-            }
-        }
-    }
-
-    return (string)array_key_first($models);
+    return ChatProviderService::findPreferredModel($models);
 }
+
 
 function aiSystemBuildModelCandidates(
     AIProvider $aiProvider,
@@ -845,54 +376,15 @@ function aiSystemBuildModelCandidates(
 
 function aiSystemSortModelsByFreeAndPerformance(array $models): array
 {
-    $keys = array_keys($models);
-    usort($keys, function ($a, $b) use ($models) {
-        $weight = function (string $id, $label) {
-            $score = 0;
-            $text = strtolower($id . ' ' . (string)$label);
-            if (str_contains($text, ':free') || str_contains($text, ' free')) {
-                $score -= 200;
-            }
-            if (str_contains($text, ' auto')) {
-                $score -= 150;
-            }
-            if (str_contains($text, ' mini') || str_contains($text, ' small') || str_contains($text, ' flash') || str_contains($text, ' fast') || str_contains($text, ' turbo')) {
-                $score -= 100;
-            }
-            if (str_contains($text, ' 3.5') || str_contains($text, ' gpt-3.5') || str_contains($text, ' llama-2') || str_contains($text, ' llama-3')) {
-                $score -= 50;
-            }
-            return $score;
-        };
-
-        $scoreA = $weight($a, $models[$a] ?? '');
-        $scoreB = $weight($b, $models[$b] ?? '');
-        if ($scoreA === $scoreB) {
-            return strcmp($a, $b);
-        }
-        return $scoreA < $scoreB ? -1 : 1;
-    });
-    return $keys;
+    return ChatProviderService::sortModelsByFreeAndPerformance($models);
 }
+
 
 function aiSystemBuildProviderOrder(array $providers, string $primaryProvider): array
 {
-    $ordered = [];
-    $primaryProvider = trim($primaryProvider);
-    if ($primaryProvider !== '') {
-        $ordered[] = $primaryProvider;
-    }
-
-    foreach ($providers as $provider) {
-        $name = trim((string)($provider['provider_name'] ?? ''));
-        if ($name === '' || in_array($name, $ordered, true)) {
-            continue;
-        }
-        $ordered[] = $name;
-    }
-
-    return $ordered;
+    return ChatProviderService::buildProviderOrder($providers, $primaryProvider);
 }
+
 
 function aiSystemAnnotateFallbackMeta(
     array $response,
@@ -914,74 +406,9 @@ function aiSystemAnnotateFallbackMeta(
 }
 function aiChatNormalizeAdvancedOptions(array $inputOptions): array
 {
-    $normalized = [];
-    $intKeys = ['n', 'max_tokens', 'max_completion_tokens', 'top_logprobs', 'seed'];
-    foreach ($intKeys as $key) {
-        if (array_key_exists($key, $inputOptions)) {
-            $value = (int)$inputOptions[$key];
-            if ($value > 0) {
-                $normalized[$key] = $value;
-            }
-        }
-    }
-
-    $floatKeys = ['temperature', 'top_p', 'presence_penalty', 'frequency_penalty'];
-    foreach ($floatKeys as $key) {
-        if (array_key_exists($key, $inputOptions) && is_numeric($inputOptions[$key])) {
-            $normalized[$key] = (float)$inputOptions[$key];
-        }
-    }
-
-    $boolKeys = ['store', 'logprobs', 'parallel_tool_calls'];
-    foreach ($boolKeys as $key) {
-        if (array_key_exists($key, $inputOptions)) {
-            $normalized[$key] = (bool)$inputOptions[$key];
-        }
-    }
-
-    $stringKeys = [
-        'tool_choice',
-        'reasoning_effort',
-        'prompt_cache_key',
-        'prompt_cache_retention',
-        'safety_identifier',
-        'service_tier',
-        'user',
-        'verbosity'
-    ];
-    foreach ($stringKeys as $key) {
-        if (array_key_exists($key, $inputOptions) && is_string($inputOptions[$key])) {
-            $value = trim($inputOptions[$key]);
-            if ($value !== '') {
-                $normalized[$key] = $value;
-            }
-        }
-    }
-
-    $arrayKeys = ['plugins', 'tools', 'stop', 'modalities'];
-    foreach ($arrayKeys as $key) {
-        if (array_key_exists($key, $inputOptions) && is_array($inputOptions[$key])) {
-            $normalized[$key] = $inputOptions[$key];
-        }
-    }
-
-    $objectKeys = [
-        'response_format',
-        'web_search_options',
-        'metadata',
-        'stream_options',
-        'audio',
-        'prediction',
-        'logit_bias'
-    ];
-    foreach ($objectKeys as $key) {
-        if (array_key_exists($key, $inputOptions) && is_array($inputOptions[$key])) {
-            $normalized[$key] = $inputOptions[$key];
-        }
-    }
-
-    return $normalized;
+    return ChatProviderService::normalizeAdvancedOptions($inputOptions);
 }
+
 
 /**
  * Extract OCR text from images for admin assistant
@@ -993,153 +420,33 @@ function aiChatNormalizeAdvancedOptions(array $inputOptions): array
  */
 function aiChatExtractOCRForAdmin(array $imageRefs): string
 {
-    if (empty($imageRefs)) {
-        return '';
-    }
-
-    // Hybrid OCR: Node.js Tesseract.js first, fallback to OCR.space API
-    $ocrTexts = [];
-
-    require_once __DIR__ . '/../Services/OCRService.php';
-    $ocr = new OCRService();
-
-    foreach ($imageRefs as $ref) {
-        try {
-            $imageData = null;
-
-            // Handle base64 data URLs
-            if ($ref['is_base64'] ?? false) {
-                $imageData = $ref['url'];
-            }
-            // Handle uploaded file references
-            elseif (isset($ref['file_path']) && file_exists($ref['file_path'])) {
-                $imageData = base64_encode(file_get_contents($ref['file_path']));
-            }
-            // Handle HTTP/HTTPS URLs by downloading
-            elseif ($ref['is_url'] ?? false) {
-                $ch = curl_init();
-                curl_setopt_array($ch, [
-                    CURLOPT_URL => $ref['url'],
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_TIMEOUT => 10,
-                    CURLOPT_FOLLOWLOCATION => true
-                ]);
-                $imageData = curl_exec($ch);
-                curl_close($ch);
-                if ($imageData) {
-                    $imageData = base64_encode($imageData);
-                }
-            }
-
-            // Extract text using hybrid OCR (Node.js → OCR.space fallback)
-            if ($imageData) {
-                $result = $ocr->extractTextFromImage($imageData, ['language' => 'eng']);
-                if (!empty($result['success']) && !empty($result['text'])) {
-                    $fileName = $ref['name'] ?? 'Image';
-                    $engine = $result['engine'] ?? 'OCR Service';
-                    $ocrTexts[] = "**OCR from $fileName** ($engine):\n" . trim($result['text']);
-                } else {
-                    // Log failure for debugging
-                    error_log('Admin OCR extraction failed for ' . ($ref['name'] ?? 'Image') . ': ' . ($result['error'] ?? 'Unknown error'));
-                }
-            }
-        } catch (Exception $e) {
-            // Silently skip failed OCR attempts
-            error_log("Admin OCR extraction failed: " . $e->getMessage());
-        }
-    }
-
-    return implode("\n\n", $ocrTexts);
+    return ChatLogService::extractOCRForAdmin($imageRefs);
 }
+
 
 function aiChatResolveSessionState(array $input, bool $isAdmin): array
 {
-    $context = $isAdmin ? 'admin' : 'public';
-    $userId = $isAdmin ? (AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null)) : null;
-    $guestToken = !$isAdmin ? (string)($input['visitorToken'] ?? '') : '';
-    $guestToken = $guestToken !== '' ? $guestToken : null;
-    $sessionKey = trim((string)($input['session_key'] ?? $input['sessionKey'] ?? ''));
-    if ($sessionKey === '') {
-        $sessionKey = null;
-    }
-
-    $sessionImageKey = null;
-    if ($sessionKey !== null) {
-        $sessionImageKey = $context . '_session_' . $sessionKey;
-    } elseif ($userId) {
-        $sessionImageKey = $context . '_user_' . (int)$userId;
-    } elseif ($guestToken !== null) {
-        $sessionImageKey = $context . '_visitor_' . $guestToken;
-    }
-
-    return [
-        'context' => $context,
-        'user_id' => $userId ? (int)$userId : null,
-        'guest_token' => $guestToken,
-        'session_key' => $sessionKey,
-        'image_context_key' => $sessionImageKey,
-    ];
+    return ChatSessionService::resolveSessionState($input, $isAdmin);
 }
+
 
 function aiChatBuildSessionPayload(AIChatModel $chatModel, array $sessionState, ?int $conversationId = null): array
 {
-    $conversation = null;
-    $context = (string)($sessionState['context'] ?? 'public');
-    $userId = isset($sessionState['user_id']) ? (int)$sessionState['user_id'] : null;
-    $guestToken = $sessionState['guest_token'] ?? null;
-    $sessionKey = $sessionState['session_key'] ?? null;
-
-    if ($conversationId) {
-        $conversation = $chatModel->getConversationByIdForActor($conversationId, $userId, $guestToken, $context);
-    }
-
-    if (!$conversation && $sessionKey !== null) {
-        $conversation = $chatModel->getConversationForSession($userId, $guestToken, $sessionKey, $context);
-    }
-
-    $messages = [];
-    if ($conversation && !empty($conversation['id'])) {
-        $messages = $chatModel->getMessages((int)$conversation['id']);
-    }
-
-    return [
-        'success' => true,
-        'session_key' => $sessionKey,
-        'conversation' => $conversation,
-        'conversation_id' => $conversation['id'] ?? null,
-        'status' => $conversation['status'] ?? null,
-        'title' => $conversation['title'] ?? null,
-        'messages' => $messages,
-    ];
+    return ChatSessionService::buildSessionPayload($chatModel, $sessionState, $conversationId);
 }
+
 
 function aiChatProviderSupportsAutoTools(string $providerName): bool
 {
-    return in_array($providerName, ['openai', 'openrouter', 'ollama', 'fireworks', 'kilo'], true);
+    return ChatProviderService::providerSupportsAutoTools($providerName);
 }
+
 
 function aiChatGetAllowedToolDefinitions(bool $isAdmin): array
 {
-    $allTools = ToolRegistry::getToolsForAPI();
-    if ($isAdmin) {
-        return $allTools;
-    }
-
-    $allowedToolIds = array_map(
-        static fn(array $tool): string => (string)($tool['id'] ?? ''),
-        PromptLoader::getToolsForRole('public')
-    );
-    $allowedToolIds = array_values(array_filter($allowedToolIds, static fn(string $id): bool => $id !== ''));
-    if (empty($allowedToolIds)) {
-        return [];
-    }
-
-    return array_values(array_filter($allTools, static function (array $tool) use ($allowedToolIds): bool {
-        $function = $tool['function'] ?? [];
-        $name = is_array($function) ? (string)($function['name'] ?? '') : '';
-        return $name !== '' && in_array($name, $allowedToolIds, true);
-    }));
+    return ChatProviderService::getAllowedToolDefinitions($isAdmin);
 }
+
 
 function aiChatExecuteAutoToolLoop(
     AIProvider $aiProvider,
@@ -1286,10 +593,21 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
 
     $systemPrompt = PromptLoader::getSystemPrompt($contextType, $mysqli);
     if ($contextData && is_array($contextData)) {
+        $sanitizeContextValue = function ($value) {
+            if (!is_scalar($value)) {
+                return '';
+            }
+            $clean = strip_tags((string)$value);
+            $clean = preg_replace('/[\r\n]+/', ' ', $clean);
+            $clean = preg_replace('/[\x00-\x1f\x7f]/u', '', $clean);
+            return trim($clean);
+        };
+
         $systemPrompt .= "\n\n[USER CONTEXT]\n";
         foreach ($contextData as $key => $val) {
-            if (is_scalar($val)) {
-                $systemPrompt .= ucfirst((string)$key) . ": $val\n";
+            $safeValue = $sanitizeContextValue($val);
+            if ($safeValue !== '') {
+                $systemPrompt .= ucfirst((string)$key) . ": $safeValue\n";
             }
         }
     }
@@ -1311,10 +629,19 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         'summarize' => 'summarize_text',
         'cache-stats' => 'get_cache_stats',
         'cache_stats' => 'get_cache_stats',
+        'get-cache-stats' => 'get_cache_stats',
         'user-stats' => 'get_user_stats',
         'user_stats' => 'get_user_stats',
         'content-stats' => 'get_content_stats',
         'content_stats' => 'get_content_stats',
+        'search-kb' => 'search_knowledge_base',
+        'search_kb' => 'search_knowledge_base',
+        'web-search' => 'web_search',
+        'web_search' => 'web_search',
+        'clear-cache' => 'clear_cache',
+        'clear_cache' => 'clear_cache',
+        'list-tools' => 'list_tools',
+        'list_tools' => 'list_tools',
         'help' => 'list_tools',
     ];
 
@@ -1471,7 +798,13 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     }
 
     $selectedProvider = $provider;
-    $selectedModel = $model;
+    $selectedModel = aiSystemResolveModel(
+        $aiProvider,
+        $selectedProvider,
+        (string)$model,
+        $providers,
+        (string)($settings['default_model'] ?? '')
+    );
 
     $options = [];
     if ($allowOverrides && isset($input['options']) && is_array($input['options'])) {
@@ -1645,18 +978,17 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
     $hasUsableProvider = false;
     $lastError = null;
     $primaryProvider = $provider;
-    $primaryModel = $model;
+    $primaryModel = $selectedModel;
     $selectedProvider = $provider;
-    $selectedModel = $model;
     $finalProvider = $provider;
-    $finalModel = $model;
+    $finalModel = $selectedModel;
     $responseModelWasSwitched = false;
 
-    error_log('[AI Chat] Ordered providers: ' . implode(', ', $orderedProviders) . ' | primaryProvider=' . $primaryProvider);
+    aiErrorLog('[AI Chat] Ordered providers: ' . implode(', ', $orderedProviders) . ' | primaryProvider=' . $primaryProvider);
 
     foreach ($orderedProviders as $name) {
         if (!$aiProvider->hasApiKey($name)) {
-            error_log('[AI Chat] Skipping ' . $name . ' - no API key');
+            aiErrorLog('[AI Chat] Skipping ' . $name . ' - no API key');
             continue;
         }
         $modelCandidates = aiSystemBuildModelCandidates(
@@ -1667,17 +999,17 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
             (string)($settings['default_model'] ?? '')
         );
         if (empty($modelCandidates)) {
-            error_log('[AI Chat] Skipping ' . $name . ' - no model candidates');
+            aiErrorLog('[AI Chat] Skipping ' . $name . ' - no model candidates');
             continue;
         }
 
         $hasUsableProvider = true;
-        error_log('[AI Chat] Trying provider: ' . $name . ' with models: ' . implode(', ', $modelCandidates));
+        aiErrorLog('[AI Chat] Trying provider: ' . $name . ' with models: ' . implode(', ', $modelCandidates));
 
         foreach ($modelCandidates as $candidateModel) {
             $provider = $name;
             $model = $candidateModel;
-            error_log('[AI Chat] Attempting ' . $provider . '/' . $model);
+            aiErrorLog('[AI Chat] Attempting ' . $provider . '/' . $model);
 
             $providerOptions = $options;
             if ($hasAutoTools && !aiChatProviderSupportsAutoTools($provider)) {
@@ -1690,10 +1022,10 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
                 $response = $aiProvider->callAPI($provider, $model, $messages, $providerOptions);
             }
 
-            error_log('[AI Chat] Response from ' . $provider . ': success=' . ($response['success'] ? 'true' : 'false') . ', error=' . ($response['error'] ?? 'none'));
+            aiErrorLog('[AI Chat] Response from ' . $provider . ': success=' . ($response['success'] ? 'true' : 'false') . ', error=' . ($response['error'] ?? 'none'));
 
             if (!empty($response['success'])) {
-                error_log('[AI Chat] SUCCESS with ' . $provider . '/' . $model);
+                aiErrorLog('[AI Chat] SUCCESS with ' . $provider . '/' . $model);
                 $finalProvider = $provider;
                 $finalModel = $model;
                 $responseModelWasSwitched = ($finalProvider !== $primaryProvider) || ($finalModel !== $primaryModel);
@@ -1711,10 +1043,10 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         }
     }
 
-    error_log('[AI Chat] After provider loop: success=' . ($response['success'] ?? 'false') . ', hasAutoTools=' . ($hasAutoTools ? 'true' : 'false'));
+    aiErrorLog('[AI Chat] After provider loop: success=' . ($response['success'] ?? 'false') . ', hasAutoTools=' . ($hasAutoTools ? 'true' : 'false'));
 
     if (empty($response['success'])) {
-        error_log('[AI Chat] All providers failed. hasUsableProvider=' . ($hasUsableProvider ? 'true' : 'false') . ', lastError=' . ($lastError ?? 'none'));
+        aiErrorLog('[AI Chat] All providers failed. hasUsableProvider=' . ($hasUsableProvider ? 'true' : 'false') . ', lastError=' . ($lastError ?? 'none'));
         if (!$hasUsableProvider) {
             if (!$isAdmin) {
                 $errorPayload = [
@@ -2299,8 +1631,7 @@ $router->get('/api/ai/providers', function () use ($mysqli) {
     echo json_encode($aiProvider->getActive());
 });
 
-// GET /api/ai/settings
-$router->get('/api/ai/settings', function () use ($mysqli) {
+$serveAiSettings = function () use ($mysqli) {
     $aiProvider = new AIProvider($mysqli);
     $settings = $aiProvider->getSettings();
     $providers = $aiProvider->getActive();
@@ -2320,8 +1651,21 @@ $router->get('/api/ai/settings', function () use ($mysqli) {
         $providers,
         (string)($settings['default_model'] ?? '')
     );
+    $settings['provider'] = $frontendProvider;
+    $settings['model'] = $settings['frontend_model'];
+    $settings['providers'] = $providers;
     header('Content-Type: application/json');
     echo json_encode($settings);
+};
+
+// GET /api/ai/settings
+$router->get('/api/ai/settings', function () use ($serveAiSettings) {
+    $serveAiSettings();
+});
+
+// GET /api/ai-settings/frontend (legacy compatibility)
+$router->get('/api/ai-settings/frontend', function () use ($serveAiSettings) {
+    $serveAiSettings();
 });
 
 // POST /api/ai/test (centralized in app/Routes/AISystemRoutes.php)
@@ -2653,7 +1997,7 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
         $userId = AuthManager::getCurrentUserId() ?? ($_SESSION['user_id'] ?? null);
         $userId = $userId ? (int)$userId : null;
 
-        require_once __DIR__ . '/../Models/AIFeedback.php';
+        require_once dirname(__DIR__, 1) . '/Models/AIFeedback.php';
         $feedbackModel = new AIFeedback($mysqli);
         $ok = $feedbackModel->saveFeedback($conversationId, $messageId, $rating, null, $userId);
 
@@ -2737,14 +2081,14 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
 
             aiChatHandleRequest($input, $mysqli, true, true);
         } catch (Exception $e) {
-            error_log('[AI Admin Chat] Exception: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+            aiErrorLog('[AI Admin Chat] Exception: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
             aiChatSendJson([
                 'success' => false,
                 'error' => 'Internal server error: ' . $e->getMessage(),
                 'error_code' => 'exception'
             ], 500);
         } catch (Throwable $t) {
-            error_log('[AI Admin Chat] Fatal error: ' . $t->getMessage() . ' at ' . $t->getFile() . ':' . $t->getLine());
+            aiErrorLog('[AI Admin Chat] Fatal error: ' . $t->getMessage() . ' at ' . $t->getFile() . ':' . $t->getLine());
             aiChatSendJson([
                 'success' => false,
                 'error' => 'Fatal error: ' . $t->getMessage(),
@@ -2857,7 +2201,7 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
 }
 
 // ==================== Knowledge Base Management (Admin) ====================
-require_once __DIR__ . '/../Models/AIKnowledge.php';
+require_once dirname(__DIR__, 1) . '/Models/AIKnowledge.php';
 
 // GET /api/admin/ai-knowledge - list knowledge slices
 $router->get('/api/admin/ai-knowledge', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
@@ -2959,7 +2303,7 @@ $router->post('/api/admin/ai-knowledge', ['middleware' => ['auth', 'admin_only',
     }
     // Handle uploaded PDF file (optional)
     if (!empty($_FILES['pdf_file']) && $_FILES['pdf_file']['error'] === UPLOAD_ERR_OK) {
-        $uploadDir = __DIR__ . '/../../public_html/uploads/knowledge';
+        $uploadDir = dirname(__DIR__, 2) . '/public_html/uploads/knowledge';
         if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
         $tmp = $_FILES['pdf_file']['tmp_name'];
         $orig = basename($_FILES['pdf_file']['name']);
@@ -3062,7 +2406,7 @@ $router->post('/api/ai/record-usage', ['middleware' => ['csrf']], function () us
 
 // POST /api/admin/ai-knowledge/reindex - Reindex all knowledge items with embeddings
 $router->post('/api/admin/ai-knowledge/reindex', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    require_once __DIR__ . '/../Modules/AISystem/Layer/RAGEngine.php';
+    require_once dirname(__DIR__, 1) . '/Modules/AISystem/Layer/RAGEngine.php';
 
     $rag = new RAGEngine($mysqli);
     $result = $rag->reindexAll();
@@ -3073,7 +2417,7 @@ $router->post('/api/admin/ai-knowledge/reindex', ['middleware' => ['auth', 'admi
 
 // GET /api/admin/ai-knowledge/search - Search knowledge base (for RAG)
 $router->get('/api/admin/ai-knowledge/search', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    require_once __DIR__ . '/../Modules/AISystem/Layer/RAGEngine.php';
+    require_once dirname(__DIR__, 1) . '/Modules/AISystem/Layer/RAGEngine.php';
 
     $query = $_GET['q'] ?? '';
     $limit = min(10, (int)($_GET['limit'] ?? 5));
@@ -3128,9 +2472,384 @@ $router->get('/admin/ai-knowledge', ['middleware' => ['auth', 'admin_only']], fu
     ]);
 });
 
+// ==================== Autonomous Article Writer ====================
+
+// GET /admin/ai/article-writer - Article Writer UI
+$router->get('/admin/ai/article-writer', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    $breadcrumbs = [
+        ['label' => 'Dashboard', 'url' => '/admin'],
+        ['label' => 'AI SYSTEM', 'url' => '/admin/ai-system'],
+        ['label' => 'Article Writer', 'url' => '/admin/ai/article-writer']
+    ];
+
+    echo $twig->render('admin/ai/article-writer.twig', [
+        'title' => 'Autonomous Article Writer',
+        'breadcrumbs' => $breadcrumbs,
+        'csrf_token' => generateCsrfToken()
+    ]);
+});
+
+// POST /api/admin/ai/article-writer/generate - Generate article via AI
+$router->post('/api/admin/ai/article-writer/generate', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $topic = trim((string)($input['topic'] ?? ''));
+
+    if ($topic === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Topic is required']);
+        return;
+    }
+
+    require_once dirname(__DIR__, 1) . '/Services/AI/ArticleWriterService.php';
+    $writer = new ArticleWriterService($mysqli);
+
+    $options = [
+        'tone' => $input['tone'] ?? 'informative',
+        'length' => $input['length'] ?? 'medium',
+        'language' => $input['language'] ?? 'en',
+        'style' => $input['style'] ?? '',
+        'keywords' => $input['keywords'] ?? '',
+    ];
+
+    $result = $writer->generateArticle($topic, $options);
+
+    if (!$result['success']) {
+        http_response_code(502);
+        echo json_encode(['success' => false, 'error' => $result['error'] ?? 'Generation failed']);
+        return;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'article' => $result['article'],
+        'meta' => $result['meta'] ?? [],
+    ]);
+    return;
+});
+
+// POST /api/admin/ai/article-writer/publish - Publish/save generated article
+$router->post('/api/admin/ai/article-writer/publish', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $article = $input['article'] ?? [];
+    $publish = !empty($input['publish']);
+    $authorId = max(0, (int)($input['author_id'] ?? 0));
+
+    if (empty($article['title']) || empty($article['content'])) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Article title and content are required']);
+        return;
+    }
+
+    require_once dirname(__DIR__, 1) . '/Services/AI/ArticleWriterService.php';
+    $writer = new ArticleWriterService($mysqli);
+
+    $result = $writer->publishArticle($article, $publish, $authorId);
+
+    if (!$result['success']) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => $result['error'] ?? 'Publishing failed']);
+        return;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'post_id' => $result['post_id'],
+        'slug' => $result['slug'],
+        'published' => $result['published'],
+        'url' => $result['url'],
+    ]);
+    return;
+});
+
+// ==================== Bulk Article Generator ====================
+
+// GET /admin/ai/bulk-article-writer - Bulk Article Writer UI
+$router->get('/admin/ai/bulk-article-writer', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    $breadcrumbs = [
+        ['label' => 'Dashboard', 'url' => '/admin'],
+        ['label' => 'AI SYSTEM', 'url' => '/admin/ai-system'],
+        ['label' => 'Bulk Article Generator', 'url' => '/admin/ai/bulk-article-writer']
+    ];
+
+    echo $twig->render('admin/ai/bulk-article-writer.twig', [
+        'title' => 'Bulk Article Generator',
+        'breadcrumbs' => $breadcrumbs,
+        'csrf_token' => generateCsrfToken()
+    ]);
+});
+
+// POST /api/admin/ai/bulk-article-writer/parse-csv - Parse CSV and return topics
+$router->post('/api/admin/ai/bulk-article-writer/parse-csv', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $csvContent = $input['csv'] ?? '';
+
+    if ($csvContent === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'CSV content is required']);
+        return;
+    }
+
+    require_once dirname(__DIR__, 1) . '/Services/AI/ArticleWriterService.php';
+    $writer = new ArticleWriterService($mysqli);
+
+    $result = $writer->parseCSVTopics($csvContent);
+
+    if (!$result['success']) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => $result['error'] ?? 'Failed to parse CSV']);
+        return;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'rows' => $result['rows'],
+        'total' => $result['total'],
+        'errors' => $result['errors'] ?? [],
+    ]);
+    return;
+});
+
+// POST /api/admin/ai/bulk-article-writer/generate - Batch generate articles
+$router->post('/api/admin/ai/bulk-article-writer/generate', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $topics = $input['topics'] ?? [];
+
+    if (empty($topics)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Topics are required']);
+        return;
+    }
+
+    require_once dirname(__DIR__, 1) . '/Services/AI/ArticleWriterService.php';
+    $writer = new ArticleWriterService($mysqli);
+
+    $defaultOptions = [
+        'tone' => $input['tone'] ?? 'informative',
+        'length' => $input['length'] ?? 'medium',
+        'language' => $input['language'] ?? 'en',
+    ];
+
+    $result = $writer->generateBatchArticles($topics, $defaultOptions);
+
+    if (!$result['success'] && empty($result['articles'])) {
+        http_response_code(502);
+        echo json_encode(['success' => false, 'error' => $result['error'] ?? 'Batch generation failed']);
+        return;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'articles' => $result['articles'],
+        'summary' => $result['summary'] ?? [],
+    ]);
+    return;
+});
+
+// POST /api/admin/ai/bulk-article-writer/publish - Publish batch articles
+$router->post('/api/admin/ai/bulk-article-writer/publish', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $articles = $input['articles'] ?? [];
+    $publish = !empty($input['publish']);
+    $authorId = max(0, (int)($input['author_id'] ?? 0));
+
+    if (empty($articles)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Articles are required']);
+        return;
+    }
+
+    require_once dirname(__DIR__, 1) . '/Services/AI/ArticleWriterService.php';
+    $writer = new ArticleWriterService($mysqli);
+
+    $result = $writer->publishBatchArticles($articles, $authorId, $publish);
+
+    if (!$result['success'] && empty($result['results'])) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => $result['error'] ?? 'Batch publishing failed']);
+        return;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'results' => $result['results'],
+        'summary' => $result['summary'] ?? [],
+    ]);
+    return;
+});
+
+// ==================== Streaming Article Writer (Live) ====================
+
+// GET /admin/ai/article-writer-stream - Streaming Article Writer UI
+$router->get('/admin/ai/article-writer-stream', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    $breadcrumbs = [
+        ['label' => 'Dashboard', 'url' => '/admin'],
+        ['label' => 'AI SYSTEM', 'url' => '/admin/ai-system'],
+        ['label' => 'Live Article Writer', 'url' => '/admin/ai/article-writer-stream']
+    ];
+
+    echo $twig->render('admin/ai/article-writer-stream.twig', [
+        'title' => 'Live Streaming Article Writer',
+        'breadcrumbs' => $breadcrumbs,
+        'csrf_token' => generateCsrfToken()
+    ]);
+});
+
+// POST /api/admin/ai/article-writer-stream/generate - SSE streaming article generation
+$router->post('/api/admin/ai/article-writer-stream/generate', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    header('Content-Type: text/event-stream');
+    header('Cache-Control: no-cache');
+    header('X-Accel-Buffering: no');
+    header('Connection: keep-alive');
+    @ini_set('output_buffering', 'off');
+    @ini_set('zlib.output_compression', '0');
+    while (ob_get_level() > 0) {
+        @ob_end_flush();
+    }
+    @ob_implicit_flush(true);
+
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $topic = trim((string)($input['topic'] ?? ''));
+
+    if ($topic === '') {
+        echo "data: " . json_encode(['error' => 'Topic is required']) . "\n\n";
+        echo "data: [DONE]\n\n";
+        @ob_flush();
+        flush();
+        return;
+    }
+
+    require_once dirname(__DIR__, 1) . '/Services/AI/ArticleWriterService.php';
+    $writer = new ArticleWriterService($mysqli);
+
+    $options = [
+        'tone' => $input['tone'] ?? 'informative',
+        'length' => $input['length'] ?? 'medium',
+        'language' => $input['language'] ?? 'en',
+        'style' => $input['style'] ?? '',
+        'keywords' => $input['keywords'] ?? '',
+    ];
+
+    // Send initial generation start event
+    echo "data: " . json_encode(['type' => 'start', 'message' => 'Generating article...']) . "\n\n";
+    @ob_flush();
+    flush();
+
+    $result = $writer->generateArticle($topic, $options);
+
+    if (!$result['success']) {
+        echo "data: " . json_encode(['type' => 'error', 'error' => $result['error'] ?? 'Generation failed']) . "\n\n";
+        echo "data: [DONE]\n\n";
+        @ob_flush();
+        flush();
+        return;
+    }
+
+    $article = $result['article'] ?? [];
+    $content = $article['content'] ?? '';
+    $title = $article['title'] ?? '';
+
+    // Chunk settings
+    $chunkSize = 200;
+
+    // Send title first
+    echo "data: " . json_encode(['type' => 'title', 'title' => $title]) . "\n\n";
+    @ob_flush();
+    flush();
+
+    // Stream content in chunks
+    if (function_exists('mb_strlen')) {
+        $contentLen = mb_strlen($content, 'UTF-8');
+    } else {
+        $contentLen = strlen($content);
+    }
+
+    for ($pos = 0; $pos < $contentLen; $pos += $chunkSize) {
+        if (function_exists('mb_substr')) {
+            $chunk = mb_substr($content, $pos, $chunkSize, 'UTF-8');
+        } else {
+            $chunk = substr($content, $pos, $chunkSize);
+        }
+
+        $progress = (int)min(100, round((($pos + $chunkSize) / max(1, $contentLen)) * 100));
+        echo "data: " . json_encode(['type' => 'content', 'chunk' => $chunk, 'progress' => $progress]) . "\n\n";
+
+        @ob_flush();
+        flush();
+
+        // Small delay for realistic streaming effect
+        usleep(15000); // 15ms
+    }
+
+    // Send meta info
+    echo "data: " . json_encode([
+        'type' => 'meta',
+        'meta' => [
+            'title' => $title,
+            'seo_title' => $result['meta']['seo_title'] ?? '',
+            'seo_description' => $result['meta']['seo_description'] ?? '',
+            'slug' => $result['meta']['slug'] ?? '',
+            'tags' => $result['meta']['tags'] ?? [],
+            'reading_time_minutes' => $result['meta']['reading_time_minutes'] ?? 3,
+            'key_points' => $result['meta']['key_points'] ?? [],
+        ]
+    ]) . "\n\n";
+    @ob_flush();
+    flush();
+
+    echo "data: [DONE]\n\n";
+    @ob_flush();
+    flush();
+});
+
+// POST /api/admin/ai/article-writer-stream/save - Save streaming generated article
+$router->post('/api/admin/ai/article-writer-stream/save', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $article = $input['article'] ?? [];
+    $publish = !empty($input['publish']);
+    $authorId = max(0, (int)($input['author_id'] ?? 0));
+
+    if (empty($article['title']) || empty($article['content'])) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Article title and content are required']);
+        return;
+    }
+
+    require_once dirname(__DIR__, 1) . '/Services/AI/ArticleWriterService.php';
+    $writer = new ArticleWriterService($mysqli);
+
+    $result = $writer->publishArticle($article, $publish, $authorId);
+
+    if (!$result['success']) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => $result['error'] ?? 'Saving failed']);
+        return;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'post_id' => $result['post_id'] ?? null,
+        'slug' => $result['slug'] ?? null,
+        'published' => $result['published'] ?? false,
+        'url' => $result['url'] ?? null,
+    ]);
+    return;
+});
+
 // GET /api/admin/ai-chats - List all conversations
 $router->get('/api/admin/ai-chats', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    require_once __DIR__ . '/../Models/AIChatModel.php';
+    require_once dirname(__DIR__, 1) . '/Models/AIChatModel.php';
     $chatModel = new AIChatModel($mysqli);
     $page = (int)($_GET['page'] ?? 1);
     $limit = 20;
@@ -3148,7 +2867,7 @@ $router->get('/api/admin/ai-chats', ['middleware' => ['auth', 'admin_only']], fu
 
 // GET /api/admin/ai-chats/{id} - Get transcript
 $router->get('/api/admin/ai-chats/(\d+)', ['middleware' => ['auth', 'admin_only']], function ($id) use ($mysqli) {
-    require_once __DIR__ . '/../Models/AIChatModel.php';
+    require_once dirname(__DIR__, 1) . '/Models/AIChatModel.php';
     $chatModel = new AIChatModel($mysqli);
     $messages = $chatModel->getMessages((int)$id);
     header('Content-Type: application/json');
@@ -3157,7 +2876,7 @@ $router->get('/api/admin/ai-chats/(\d+)', ['middleware' => ['auth', 'admin_only'
 
 // POST /api/admin/ai-chats/reply - Log manual admin response
 $router->post('/api/admin/ai-chats/reply', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
-    require_once __DIR__ . '/../Models/AIChatModel.php';
+    require_once dirname(__DIR__, 1) . '/Models/AIChatModel.php';
     $chatModel = new AIChatModel($mysqli);
 
     $input = json_decode(file_get_contents('php://input'), true);
@@ -3177,7 +2896,7 @@ $router->post('/api/admin/ai-chats/reply', ['middleware' => ['auth', 'admin_only
 
 // POST /api/admin/ai-chats/end - Close conversation
 $router->post('/api/admin/ai-chats/end', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
-    require_once __DIR__ . '/../Models/AIChatModel.php';
+    require_once dirname(__DIR__, 1) . '/Models/AIChatModel.php';
     $chatModel = new AIChatModel($mysqli);
 
     $input = json_decode(file_get_contents('php://input'), true);
@@ -3388,6 +3107,7 @@ $router->post('/api/admin/ai-tools/reset-circuit-breaker', ['middleware' => ['au
 $router->get('/api/admin/system-health', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     header('Content-Type: application/json');
 
+    // Node.js dependency removed: only check core PHP services here
     $health = [
         'success' => true,
         'timestamp' => date('Y-m-d H:i:s'),
@@ -3406,10 +3126,6 @@ $router->get('/api/admin/system-health', ['middleware' => ['auth', 'admin_only']
         'cache' => [
             'status' => 'active',
             'check' => false
-        ],
-        'nodejs' => [
-            'status' => 'checking',
-            'check' => false
         ]
     ];
 
@@ -3423,7 +3139,7 @@ $router->get('/api/admin/system-health', ['middleware' => ['auth', 'admin_only']
     }
 
     // Check API responsiveness (cache/file system)
-    $cacheFile = __DIR__ . '/../../storage/cache/.health_check';
+    $cacheFile = dirname(__DIR__, 2) . '/storage/cache/.health_check';
     try {
         @file_put_contents($cacheFile, time());
         $health['cache']['check'] = file_exists($cacheFile);
@@ -3432,23 +3148,7 @@ $router->get('/api/admin/system-health', ['middleware' => ['auth', 'admin_only']
         $health['cache']['status'] = 'error';
     }
 
-    // Check Node.js server
-    $nodejsPort = getenv('NODEJS_PORT') ?: '3000';
-    $nodejsHost = getenv('NODEJS_HOST') ?: 'localhost';
-    try {
-        $fp = @fsockopen($nodejsHost, $nodejsPort, $errno, $errstr, 5);
-        if ($fp) {
-            fclose($fp);
-            $health['nodejs']['check'] = true;
-            $health['nodejs']['status'] = 'online';
-        } else {
-            $health['nodejs']['status'] = 'offline';
-            $health['nodejs']['error'] = "Connection failed: $errstr ($errno)";
-        }
-    } catch (Exception $e) {
-        $health['nodejs']['status'] = 'error';
-        $health['nodejs']['error'] = $e->getMessage();
-    }
+    // Node.js checks removed — system is PHP-native
 
     // Check API (try a simple endpoint)
     $health['api']['check'] = true;
@@ -3710,7 +3410,7 @@ $router->post('/admin/ai-system/add-knowledge', ['middleware' => ['auth', 'admin
         }
 
         // Save to knowledge base
-        require_once __DIR__ . '/../Models/AIKnowledge.php';
+        require_once dirname(__DIR__, 1) . '/Models/AIKnowledge.php';
         $knowledgeModel = new AIKnowledge($mysqli);
         $result = $knowledgeModel->create([
             'title' => $title,
@@ -3754,7 +3454,7 @@ $router->post('/admin/ai-system/ocr', ['middleware' => ['auth', 'admin_only']], 
 
     try {
         // Use hybrid OCRService (Node.js primary → OCR.space fallback)
-        require_once __DIR__ . '/../Services/OCRService.php';
+        require_once dirname(__DIR__, 1) . '/Services/OCRService.php';
         $ocr = new OCRService();
 
         // Extract text using hybrid OCR

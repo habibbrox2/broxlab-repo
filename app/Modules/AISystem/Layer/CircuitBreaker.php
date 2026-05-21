@@ -267,7 +267,7 @@ class CircuitBreaker
      */
     private function log(string $message): void
     {
-        $logFile = __DIR__ . '/../../../storage/logs/circuit_breaker.log';
+        $logFile = dirname(__DIR__, 3) . '/storage/logs/circuit_breaker.log';
         $logDir = dirname($logFile);
 
         if (!is_dir($logDir)) {

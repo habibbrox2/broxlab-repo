@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../vendor/autoload.php';
-require_once __DIR__ . '/../Config/Constants.php';
-require_once __DIR__ . '/../app/Helpers/ErrorLogging.php';
-require_once __DIR__ . '/../app/Helpers/LanguageHelper.php';
-require_once __DIR__ . '/../app/Models/UserModel.php';
-require_once __DIR__ . '/../app/Models/AppSettings.php';
+require_once dirname(__DIR__, 1) . '/vendor/autoload.php';
+require_once dirname(__DIR__, 1) . '/Config/Constants.php';
+require_once dirname(__DIR__, 1) . '/app/Helpers/ErrorLogging.php';
+require_once dirname(__DIR__, 1) . '/app/Helpers/LanguageHelper.php';
+require_once dirname(__DIR__, 1) . '/app/Models/UserModel.php';
+require_once dirname(__DIR__, 1) . '/app/Models/AppSettings.php';
 require_once __DIR__ . '/Functions.php';
 require_once __DIR__ . '/TwigHelper.php';
 require_once __DIR__ . '/RteCacheConfig.php';
@@ -41,9 +41,13 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
             $session = [];
         }
 
-        secureSession();
+        if (function_exists('secureSession')) {
+            secureSession();
+        } elseif (!headers_sent()) {
+            session_start();
+        }
 
-        $loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/../app/Views');
+        $loader = new \Twig\Loader\FilesystemLoader(dirname(__DIR__, 1) . '/app/Views');
 
         // Fetch app settings (cached inside AppSettings model)
         $appSettings = $settingsModel->getSettings();

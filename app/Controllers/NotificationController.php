@@ -11,16 +11,16 @@
 /** @var \Twig\Environment $twig */
 /** @var \mysqli $mysqli */
 
-require_once __DIR__ . '/../Models/NotificationModel.php';
-require_once __DIR__ . '/../Models/NotificationTemplate.php';
-require_once __DIR__ . '/../Models/ScheduledNotificationModel.php';
-require_once __DIR__ . '/../Models/DeviceSyncModel.php';
-require_once __DIR__ . '/../Models/TokenManagementModel.php';
-require_once __DIR__ . '/../Models/AuthManager.php';
-require_once __DIR__ . '/../Models/FirebaseModel.php';
-require_once __DIR__ . '/../Helpers/FirebaseHelper.php';
-require_once __DIR__ . '/../Helpers/EmailHelper.php';
-require_once __DIR__ . '/../Helpers/NotificationWebSocketHelper.php';
+require_once dirname(__DIR__, 1) . '/Models/NotificationModel.php';
+require_once dirname(__DIR__, 1) . '/Models/NotificationTemplate.php';
+require_once dirname(__DIR__, 1) . '/Models/ScheduledNotificationModel.php';
+require_once dirname(__DIR__, 1) . '/Models/DeviceSyncModel.php';
+require_once dirname(__DIR__, 1) . '/Models/TokenManagementModel.php';
+require_once dirname(__DIR__, 1) . '/Models/AuthManager.php';
+require_once dirname(__DIR__, 1) . '/Models/FirebaseModel.php';
+require_once dirname(__DIR__, 1) . '/Helpers/FirebaseHelper.php';
+require_once dirname(__DIR__, 1) . '/Helpers/EmailHelper.php';
+require_once dirname(__DIR__, 1) . '/Helpers/NotificationWebSocketHelper.php';
 
 $notificationModel = null;
 /**
@@ -31,7 +31,7 @@ $notificationModel = null;
 $notificationModel = new NotificationModel($mysqli);
 
 // Load notification helper functions (moved out of controller)
-require_once __DIR__ . '/../Helpers/NotificationHelper.php';
+require_once dirname(__DIR__, 1) . '/Helpers/NotificationHelper.php';
 
 // ----- RESEND NOTIFICATION API -----
 $router->post('/api/resend-notification', function () use ($mysqli) {
@@ -330,6 +330,33 @@ $router->post('/api/send-draft', function () use ($mysqli) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
+});
+
+// ----- WEBSOCKET CONFIG API -----
+$router->get('/api/websocket-config', function () use ($mysqli) {
+    header('Content-Type: application/json');
+
+    $url = null;
+    if (array_key_exists('WEBSOCKET_SERVER_URL', $_ENV) && $_ENV['WEBSOCKET_SERVER_URL'] !== null) {
+        $url = trim((string)$_ENV['WEBSOCKET_SERVER_URL']);
+    }
+
+    if ($url === null && array_key_exists('WEBSOCKET_SERVER_URL', $_SERVER) && $_SERVER['WEBSOCKET_SERVER_URL'] !== null) {
+        $url = trim((string)$_SERVER['WEBSOCKET_SERVER_URL']);
+    }
+
+    if ($url === null) {
+        $value = getenv('WEBSOCKET_SERVER_URL');
+        if ($value !== false) {
+            $url = trim((string)$value);
+        }
+    }
+
+    if ($url === null || $url === '') {
+        $url = 'http://localhost:3003';
+    }
+
+    echo json_encode(['success' => true, 'websocket_server_url' => $url]);
 });
 
 // ----- DELIVERY LOGS API -----
@@ -1220,7 +1247,7 @@ $router->post('/api/save-fcm-token', function () use ($mysqli) {
 
         // Validate Sender ID matches
         if (!empty($clientSenderId)) {
-            $firebaseConfig = require __DIR__ . '/../../Config/Firebase.php';
+            $firebaseConfig = require dirname(__DIR__, 2) . '/Config/Firebase.php';
             $serverSenderId = $firebaseConfig['fcm']['messagingSenderId'] ?? null;
 
             if (!empty($serverSenderId) && $clientSenderId !== $serverSenderId) {
@@ -3189,7 +3216,7 @@ $router->get('/api/firebase-health', ['middleware' => ['auth', 'admin_only']], f
     header('Content-Type: application/json');
     try {
         // Get Firebase config
-        $firebaseConfig = require __DIR__ . '/../../Config/Firebase.php';
+        $firebaseConfig = require dirname(__DIR__, 2) . '/Config/Firebase.php';
         $senderId = $firebaseConfig['fcm']['messagingSenderId'] ?? null;
         $vapidKey = $firebaseConfig['fcm']['vapidKey'] ?? null;
 
@@ -3282,7 +3309,7 @@ $router->post('/api/topics/subscribe', function () use ($mysqli) {
         // Device/token-level subscription (Actual Firebase Call)
         if (!empty($token)) {
             try {
-                $firebaseModel = new \Firebase\FirebaseModel(require __DIR__ . '/../../Config/Firebase.php');
+                $firebaseModel = new \Firebase\FirebaseModel(require dirname(__DIR__, 2) . '/Config/Firebase.php');
                 $firebaseModel->subscribeToTopic($topic, $token);
             } catch (Exception $e) {
                 logError('Firebase subscribe error: ' . $e->getMessage());
@@ -3329,7 +3356,7 @@ $router->post('/api/topics/unsubscribe', function () use ($mysqli) {
         // Device/token-level unsubscription (Actual Firebase Call)
         if (!empty($token)) {
             try {
-                $firebaseModel = new \Firebase\FirebaseModel(require __DIR__ . '/../../Config/Firebase.php');
+                $firebaseModel = new \Firebase\FirebaseModel(require dirname(__DIR__, 2) . '/Config/Firebase.php');
                 $firebaseModel->unsubscribeFromTopic($topic, $token);
             } catch (Exception $e) {
                 logError('Firebase unsubscribe error: ' . $e->getMessage());

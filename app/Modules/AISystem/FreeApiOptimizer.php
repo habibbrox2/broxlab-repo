@@ -50,13 +50,6 @@ class FreeApiOptimizer
             'supports_streaming' => true,
             'rate_limit' => 'medium'
         ],
-        'meta-llama/llama-3-8b-instruct:free' => [
-            'name' => 'Llama 3 8B Instruct (Free)',
-            'cost' => 0,
-            'context_length' => 128000,
-            'supports_streaming' => true,
-            'rate_limit' => 'medium'
-        ],
         'qwen/qwen-2.5-72b-instruct:free' => [
             'name' => 'Qwen 2.5 72B (Free)',
             'cost' => 0,

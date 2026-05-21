@@ -83,7 +83,7 @@ class ModelRouter
         }
 
         // Try to load from .env file
-        $envFile = __DIR__ . '/../../../.env';
+        $envFile = dirname(__DIR__, 3) . '/.env';
         if (file_exists($envFile)) {
             $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
             foreach ($lines as $line) {

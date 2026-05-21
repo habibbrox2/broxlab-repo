@@ -597,11 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-initAdminNotificationRuntime();
-runWhenReady(initAdminUserDropdownSync);
-initAdminDebugUtils();
-initAdminUnifiedLogout();
-
+// Page loaded flag
 runWhenReady(() => {
   document.body.classList.add('loaded');
 });
@@ -1055,11 +1051,11 @@ runWhenReady(() => {
       const isChangeForm = inputId.includes('change');
       const prefix = isChangeForm ? 'changePwd' : 'pwd';
 
-      const lengthCheck = byId(`${prefix }Length`);
-      const upperCheck = byId(`${prefix }Upper`);
-      const lowerCheck = byId(`${prefix }Lower`);
-      const numberCheck = byId(`${prefix }Number`);
-      const specialCheck = byId(`${prefix }Special`);
+      const lengthCheck = byId(`${prefix}Length`);
+      const upperCheck = byId(`${prefix}Upper`);
+      const lowerCheck = byId(`${prefix}Lower`);
+      const numberCheck = byId(`${prefix}Number`);
+      const specialCheck = byId(`${prefix}Special`);
 
       if (lengthCheck) lengthCheck.classList.toggle('valid', password.length >= 8);
       if (upperCheck) upperCheck.classList.toggle('valid', /[A-Z]/.test(password));
@@ -1284,7 +1280,7 @@ runWhenReady(() => {
     function renderLog(log) {
       const time = new Date(log.created_at).toLocaleString();
       const statusClass = log.status === 'success' ? 'bg-success' : 'bg-danger';
-      const username = log.username || `#${ log.user_id || '0'}`;
+      const username = log.username || `#${log.user_id || '0'}`;
       let browserInfo = 'Unknown';
       if (log.details && log.details._browser) browserInfo = log.details._browser;
       else if (log.user_agent) browserInfo = parseBrowserInfo(log.user_agent);
@@ -1311,14 +1307,14 @@ runWhenReady(() => {
     function showLogDetailsModal(log) {
       const time = new Date(log.created_at).toLocaleString();
       const statusClass = log.status === 'success' ? 'bg-success' : 'bg-danger';
-      const username = log.username || `#${ log.user_id || '0'}`;
+      const username = log.username || `#${log.user_id || '0'}`;
       byId('modalLogId').textContent = log.id;
       byId('modalLogTime').textContent = time;
       byId('modalLogUser').textContent = username;
       byId('modalLogRole').textContent = log.role;
       byId('modalLogAction').textContent = log.action;
       byId('modalLogResource').textContent =
-        `${log.resource_type || 'N/A' } #${ log.resource_id || 'N/A'}`;
+        `${log.resource_type || 'N/A'} #${log.resource_id || 'N/A'}`;
       byId('modalLogStatus').innerHTML = `<span class="badge ${statusClass}">${log.status}</span>`;
       byId('modalLogIp').textContent = log.ip_address || 'N/A';
       byId('modalLogAgent').textContent = log.user_agent || 'N/A';
@@ -1568,15 +1564,15 @@ runWhenReady(() => {
         .then((r) => r.json())
         .then((data) => {
           if (data.success) {
-            byId('previewSubject').innerHTML = `<strong>${ escapeHtml(data.subject) }</strong>`;
+            byId('previewSubject').innerHTML = `<strong>${escapeHtml(data.subject)}</strong>`;
             byId('previewBody').innerHTML = data.body;
             showToast('Preview updated successfully', 'success');
           } else {
-            showToast(`Preview failed: ${ data.message}`, 'danger');
+            showToast(`Preview failed: ${data.message}`, 'danger');
           }
         })
         .catch((err) => {
-          showToast(`Error: ${ err}`, 'danger');
+          showToast(`Error: ${err}`, 'danger');
           console.error('Preview error:', err);
         })
         .finally(() => {
@@ -1611,7 +1607,7 @@ runWhenReady(() => {
             showToast(data.message, 'danger');
           }
         })
-        .catch((err) => showToast(`Error: ${ err}`, 'danger'));
+        .catch((err) => showToast(`Error: ${err}`, 'danger'));
     };
   }
 
@@ -1839,7 +1835,7 @@ runWhenReady(() => {
           const data = await resp.json();
           showTestEmailModal(data.success, data.message || 'No response');
         } catch (err) {
-          showTestEmailModal(false, `Request failed: ${ err.message || err}`);
+          showTestEmailModal(false, `Request failed: ${err.message || err}`);
         } finally {
           testEmailBtn.disabled = false;
           testEmailBtn.textContent = originalText;
@@ -1920,7 +1916,7 @@ runWhenReady(() => {
               tabPane?.insertBefore(alertDiv, tabPane.firstChild);
               bootstrap.Modal.getInstance(byId('require2faAdminModal'))?.hide();
             } else {
-              alert(`Error: ${ data.message}`);
+              alert(`Error: ${data.message}`);
             }
           })
           .catch(() => {
@@ -1968,7 +1964,7 @@ runWhenReady(() => {
           }
         })
         .catch((err) => {
-          showAlert(`Import error: ${ err.message}`, 'danger');
+          showAlert(`Import error: ${err.message}`, 'danger');
         });
     });
 
@@ -1998,7 +1994,7 @@ runWhenReady(() => {
           }
         })
         .catch((err) => {
-          showAlert(`Reset error: ${ err.message}`, 'danger');
+          showAlert(`Reset error: ${err.message}`, 'danger');
         });
     });
 
@@ -2032,7 +2028,7 @@ runWhenReady(() => {
             else showAlert(data.message || 'Save failed', 'danger');
           })
           .catch((err) => {
-            showAlert(`Error: ${ err.message}`, 'danger');
+            showAlert(`Error: ${err.message}`, 'danger');
           })
           .finally(() => {
             this.disabled = false;
@@ -2195,7 +2191,7 @@ runWhenReady(() => {
 
           const reader = new FileReader();
           reader.onload = function (event) {
-            const previewId = `preview-${ Date.now() }-${ index}`;
+            const previewId = `preview-${Date.now()}-${index}`;
             const fileKey = `${file.name}::${file.size}::${file.lastModified}`;
             const previewHTML = `
                             <div class="col-md-6 col-lg-12 col-xl-6 mb-3" id="${previewId}-container" data-file-key="${fileKey}">
@@ -2431,8 +2427,8 @@ runWhenReady(() => {
           window.showMessage?.(data.message || 'Service saved successfully!', 'success');
           setTimeout(
             () =>
-              (window.location.href =
-              `/admin/services/details/${ data.service_id || formData.get('service_id')}`),
+            (window.location.href =
+              `/admin/services/details/${data.service_id || formData.get('service_id')}`),
             2000
           );
         } else {
@@ -2462,7 +2458,7 @@ runWhenReady(() => {
     byId('confirmDelete')?.addEventListener('click', () => {
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = `/admin/services/details/${ deleteServiceId }/delete`;
+      form.action = `/admin/services/details/${deleteServiceId}/delete`;
       form.innerHTML = `<input type="hidden" name="csrf_token" value="${csrfToken}">`;
       document.body.appendChild(form);
       form.submit();
@@ -2648,14 +2644,14 @@ runWhenReady(() => {
                 </div>
 
                 ${app.status === 'rejected' && app.rejection_reason
-    ? `
+          ? `
                     <div class="alert alert-danger rounded-2">
                         <strong>Rejection Reason:</strong>
                         <p class="mb-0">${app.rejection_reason}</p>
                     </div>
                 `
-    : ''
-  }
+          : ''
+        }
 
                 <div class="mb-3">
                     <label class="form-label small text-muted text-uppercase">Admin Notes</label>
@@ -2663,28 +2659,28 @@ runWhenReady(() => {
                 </div>
 
                 ${app.status === 'rejected'
-    ? `
+          ? `
                     <div class="mb-3">
                         <label class="form-label small text-muted text-uppercase">Rejection Reason</label>
                         <input type="text" class="form-control rounded-2" id="appRejectionReason" value="${app.rejection_reason || ''}">
                     </div>
                 `
-    : ''
-  }
+          : ''
+        }
 
                 <div class="mt-4">
                     <h6 class="fw-bold mb-2">Audit Log</h6>
                     <div class="timeline small">
                         ${app.audit_log
-    .map(
-      (log) => `
+          .map(
+            (log) => `
                             <div class="mb-2">
                                 <div class="text-muted"><small>${new Date(log.created_at).toLocaleString()}</small></div>
                                 <div><strong>${log.action_type}</strong>: ${log.description}</div>
                             </div>
                         `
-    )
-    .join('')}
+          )
+          .join('')}
                     </div>
                 </div>
             `;
@@ -2775,7 +2771,7 @@ runWhenReady(() => {
             showSuccess?.(data.message || 'Notification resent');
             location.reload();
           } else {
-            showError?.(`? Error: ${ data.error || 'Unknown error'}`);
+            showError?.(`? Error: ${data.error || 'Unknown error'}`);
           }
         })
         .catch((err) => showError?.(err.message || 'Error resending'));
@@ -2807,11 +2803,11 @@ runWhenReady(() => {
           showSuccess?.(data.message || 'Notification resent');
           location.reload();
         } else {
-          showError?.(`Error: ${ data.error || 'Unknown error'}`);
+          showError?.(`Error: ${data.error || 'Unknown error'}`);
         }
       } catch (error) {
         console.error('Error:', error);
-        showError?.(`Error: ${ error.message}`);
+        showError?.(`Error: ${error.message}`);
       }
     }
 
@@ -3073,7 +3069,7 @@ runWhenReady(() => {
         })
         .catch((err) => {
           console.error('Error:', err);
-          showError?.(`Error: ${ err.message}`);
+          showError?.(`Error: ${err.message}`);
         });
     }
 
@@ -3094,7 +3090,7 @@ runWhenReady(() => {
         }
       } catch (error) {
         console.error('Error:', error);
-        showError?.(`Error: ${ error.message}`);
+        showError?.(`Error: ${error.message}`);
       }
     }
 
@@ -3114,11 +3110,11 @@ runWhenReady(() => {
             window.location.href = `/admin/notifications/view?id=${data.notification_id}`;
           }, 1500);
         } else {
-          showError?.(`Error: ${ data.error || 'Unknown error'}`);
+          showError?.(`Error: ${data.error || 'Unknown error'}`);
         }
       } catch (error) {
         console.error('Error:', error);
-        showError?.(`Error: ${ error.message}`);
+        showError?.(`Error: ${error.message}`);
       }
     }
 
@@ -3149,7 +3145,7 @@ runWhenReady(() => {
           showError?.('Failed to update draft');
         }
       } catch (error) {
-        showError?.(`Error: ${ error.message}`);
+        showError?.(`Error: ${error.message}`);
       }
     }
 
@@ -3250,7 +3246,7 @@ runWhenReady(() => {
           const deviceId = escapeHtml(s.device_id ?? '');
           const deviceName = escapeHtml(s.device_name ?? '-');
           const token = String(s.token ?? '');
-          const tokenShort = escapeHtml(token.length > 40 ? `${token.slice(0, 40) }...` : token);
+          const tokenShort = escapeHtml(token.length > 40 ? `${token.slice(0, 40)}...` : token);
           const permission = escapeHtml(s.permission ?? 'granted');
           const permClass =
             permission === 'granted'
@@ -3261,7 +3257,7 @@ runWhenReady(() => {
           const type = escapeHtml(s.device_type ?? '-');
           const created = escapeHtml(s.created_at ?? '-');
           const userLabel = s.user_id
-            ? `<strong>${escapeHtml(s.username || s.email || `UID:${ s.user_id}`)}</strong>`
+            ? `<strong>${escapeHtml(s.username || s.email || `UID:${s.user_id}`)}</strong>`
             : '<span class="text-muted">Guest</span>';
 
           return `
@@ -3295,7 +3291,7 @@ runWhenReady(() => {
       if (filters.per_page) q.set('per_page', filters.per_page);
 
       try {
-        const res = await fetch(`/api/admin/notification-subscribers?${ q.toString()}`, {
+        const res = await fetch(`/api/admin/notification-subscribers?${q.toString()}`, {
           headers: { 'X-CSRF-Token': getCsrfToken(), },
         });
         const data = await res.json();
@@ -3317,7 +3313,7 @@ runWhenReady(() => {
       if (filters.search) q.set('search', filters.search);
       if (filters.permission) q.set('permission', filters.permission);
       if (filters.per_page) q.set('per_page', filters.per_page);
-      window.history.replaceState({}, '', `${window.location.pathname }?${ q.toString()}`);
+      window.history.replaceState({}, '', `${window.location.pathname}?${q.toString()}`);
       reloadSubscribersTable();
     };
 
@@ -3458,7 +3454,7 @@ runWhenReady(() => {
         notify('Reason too long (max 500 chars)', 'error');
         return;
       }
-      const res = await post(`/api/notification/${ id }/pause`, { reason, });
+      const res = await post(`/api/notification/${id}/pause`, { reason, });
       if (res && res.success) notify(res.message || 'Paused');
       else notify(res.error || 'Failed', 'error');
     });
@@ -3469,7 +3465,7 @@ runWhenReady(() => {
         notify('Provide notification id', 'error');
         return;
       }
-      const res = await post(`/api/notification/${ id }/resume`, {});
+      const res = await post(`/api/notification/${id}/resume`, {});
       if (res && res.success) notify(res.message || 'Resumed');
       else notify(res.error || 'Failed', 'error');
     });
@@ -3493,7 +3489,7 @@ runWhenReady(() => {
       }).then((r) => r.json());
       if (res.success) {
         const limits = res.limits || {};
-        byId('currentLimits').innerText = `Current limits: ${ JSON.stringify(limits)}`;
+        byId('currentLimits').innerText = `Current limits: ${JSON.stringify(limits)}`;
         byId('hourly').value = limits.hourly || '';
         byId('daily').value = limits.daily || '';
       } else {
@@ -3593,8 +3589,8 @@ runWhenReady(() => {
         body: JSON.stringify({ topic, title, message, channels: ['push',], }),
       });
       const j = await res.json();
-      if (j.success) alert(`Queued: ${ j.notification_id}`);
-      else alert(`Error: ${ j.error || 'unknown'}`);
+      if (j.success) alert(`Queued: ${j.notification_id}`);
+      else alert(`Error: ${j.error || 'unknown'}`);
     });
 
     loadTopics();
@@ -3730,31 +3726,31 @@ runWhenReady(() => {
       indicator.classList.remove('online', 'offline', 'warning', 'checking');
 
       switch (status) {
-      case 'online':
-        indicator.classList.add('online');
-        icon.className = 'bi bi-server';
-        text.textContent = 'Online';
-        indicator.title = 'All systems operational';
-        break;
-      case 'offline':
-        indicator.classList.add('offline');
-        icon.className = 'bi bi-exclamation-triangle';
-        text.textContent = 'Offline';
-        indicator.title = message || 'Server offline';
-        break;
-      case 'warning':
-        indicator.classList.add('warning');
-        icon.className = 'bi bi-exclamation-triangle';
-        text.textContent = 'Warning';
-        indicator.title = message || 'Some services may be degraded';
-        break;
-      case 'checking':
-      default:
-        indicator.classList.add('checking');
-        icon.className = 'bi bi-arrow-repeat';
-        text.textContent = 'Checking...';
-        indicator.title = 'Checking server status...';
-        break;
+        case 'online':
+          indicator.classList.add('online');
+          icon.className = 'bi bi-server';
+          text.textContent = 'Online';
+          indicator.title = 'All systems operational';
+          break;
+        case 'offline':
+          indicator.classList.add('offline');
+          icon.className = 'bi bi-exclamation-triangle';
+          text.textContent = 'Offline';
+          indicator.title = message || 'Server offline';
+          break;
+        case 'warning':
+          indicator.classList.add('warning');
+          icon.className = 'bi bi-exclamation-triangle';
+          text.textContent = 'Warning';
+          indicator.title = message || 'Some services may be degraded';
+          break;
+        case 'checking':
+        default:
+          indicator.classList.add('checking');
+          icon.className = 'bi bi-arrow-repeat';
+          text.textContent = 'Checking...';
+          indicator.title = 'Checking server status...';
+          break;
       }
     };
 
@@ -3803,8 +3799,8 @@ runWhenReady(() => {
         const data = await response.json();
 
         if (data.success) {
-          // Update individual service statuses
-          const services = ['database', 'cache', 'api', 'nodejs',];
+          // Update individual service statuses (Node.js removed)
+          const services = ['database', 'cache', 'api'];
           services.forEach((service) => {
             if (data[service]) {
               const status = data[service].check ? 'online' : 'offline';
@@ -3813,12 +3809,12 @@ runWhenReady(() => {
             }
           });
 
-          // Check if all services are operational
-          const { database, cache, api, nodejs, } = data;
+          // Check if all required services are operational.
+          const { database, cache, api } = data;
 
-          if (database.check && cache.check && api.check && nodejs.check) {
+          if (database.check && cache.check && api.check) {
             updateStatus('online', 'All systems operational');
-          } else if (database.check || cache.check || api.check || nodejs.check) {
+          } else if (database.check || cache.check || api.check) {
             updateStatus('warning', 'Some services may be degraded');
           } else {
             updateStatus('offline', 'All services offline');

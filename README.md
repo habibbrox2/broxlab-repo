@@ -1,6 +1,6 @@
 # BroxLab
 
-BroxLab is a full-stack PHP app with Twig views and one unified Node.js service for AI, OCR, tools, and related APIs.
+BroxLab is a full-stack PHP app with Twig views. This repository has been converted to a PHP-only deployment: the Node.js unified service and build tooling are removed from the default branch. If you need to re-enable Node.js tooling later, restore `package.json` and `src/` and follow the original build steps.
 
 ## Stack
 
@@ -25,10 +25,9 @@ BroxLab is a full-stack PHP app with Twig views and one unified Node.js service 
 ## Install
 
 1. `composer install`
-2. `npm install`
-3. Configure `.env` and `Config/` values
+2. Configure `.env` and `Config/` values
 4. Import the database schema from `Database/`
-5. `npm run build`
+5. (Optional) If you restore Node.js and frontend tooling, run `npm install` and `npm run build` to rebuild assets.
 
 ## Run
 

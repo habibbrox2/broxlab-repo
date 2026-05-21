@@ -158,7 +158,7 @@
                     <i class="bi bi-stars"></i>
                 </div>
                 <h4>Welcome to Admin Copilot</h4>
-                <p>Your AI assistant for administrative tasks. Try these commands:</p>
+                <p>Your AI assistant for administrative tasks. Type '/' in the input field or use one of these commands:</p>
                 <div class="brox-ai-welcome-commands">
                     <button class="brox-ai-cmd-chip" data-cmd="/summarize">
                         <i class="bi bi-body-text"></i> /summarize
@@ -166,18 +166,24 @@
                     <button class="brox-ai-cmd-chip" data-cmd="/analyze-logs">
                         <i class="bi bi-journal-text"></i> /analyze-logs
                     </button>
+                    <button class="brox-ai-cmd-chip" data-cmd="/list-tools">
+                        <i class="bi bi-list-task"></i> /list-tools
+                    </button>
+                    <button class="brox-ai-cmd-chip" data-cmd="/help">
+                        <i class="bi bi-question-circle"></i> /help
+                    </button>
                 </div>
             </div>
-        </div>
 
-    {# Thinking Indicator #}
-    <div class="thinking-indicator brox-ai-hidden" id="adminAiThinkingIndicator">
-        <div class="thinking-content">
-            <span class="thinking-text">Thinking...</span>
-            <div class="thinking-dots">
-                <span class="thinking-dot"></span>
-                <span class="thinking-dot"></span>
-                <span class="thinking-dot"></span>
+        {# Thinking Indicator #}
+        <div class="thinking-indicator brox-ai-hidden" id="adminAiThinkingIndicator">
+            <div class="thinking-content">
+                <span class="thinking-text">Thinking...</span>
+                <div class="thinking-dots">
+                    <span class="thinking-dot"></span>
+                    <span class="thinking-dot"></span>
+                    <span class="thinking-dot"></span>
+                </div>
             </div>
         </div>
     </div>
@@ -205,27 +211,6 @@
                     <small>Analyze system error logs</small>
                 </div>
             </li>
-            <li class="brox-ai-slash-item" data-cmd="/generate-report" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-file-earmark-bar-graph"></i></div>
-                <div class="brox-ai-slash-info">
-                    <strong>/generate-report</strong>
-                    <small>Generate analytics report</small>
-                </div>
-            </li>
-            <li class="brox-ai-slash-item" data-cmd="/check-security" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-shield-check"></i></div>
-                <div class="brox-ai-slash-info">
-                    <strong>/check-security</strong>
-                    <small>Run security audit</small>
-                </div>
-            </li>
-            <li class="brox-ai-slash-item" data-cmd="/fix-permissions" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-person-check"></i></div>
-                <div class="brox-ai-slash-info">
-                    <strong>/fix-permissions</strong>
-                    <small>Fix user permissions</small>
-                </div>
-            </li>
             <li class="brox-ai-slash-item" data-cmd="/clear-cache" role="menuitem">
                 <div class="brox-ai-slash-icon"><i class="bi bi-trash"></i></div>
                 <div class="brox-ai-slash-info">
@@ -247,25 +232,39 @@
                     <small>Search the web</small>
                 </div>
             </li>
-            <li class="brox-ai-slash-item" data-cmd="/optimize-db" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-hdd"></i></div>
+            <li class="brox-ai-slash-item" data-cmd="/get-cache-stats" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-speedometer2"></i></div>
                 <div class="brox-ai-slash-info">
-                    <strong>/optimize-db</strong>
-                    <small>Optimize database</small>
+                    <strong>/get-cache-stats</strong>
+                    <small>View cache statistics</small>
                 </div>
             </li>
-            <li class="brox-ai-slash-item" data-cmd="/deploy-status" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-cloud-upload"></i></div>
+            <li class="brox-ai-slash-item" data-cmd="/user-stats" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-people"></i></div>
                 <div class="brox-ai-slash-info">
-                    <strong>/deploy-status</strong>
-                    <small>Check deployment status</small>
+                    <strong>/user-stats</strong>
+                    <small>View user statistics</small>
                 </div>
             </li>
-            <li class="brox-ai-slash-item" data-cmd="/health-check" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-heart-pulse"></i></div>
+            <li class="brox-ai-slash-item" data-cmd="/content-stats" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-file-earmark-text"></i></div>
                 <div class="brox-ai-slash-info">
-                    <strong>/health-check</strong>
-                    <small>System health status</small>
+                    <strong>/content-stats</strong>
+                    <small>View content statistics</small>
+                </div>
+            </li>
+            <li class="brox-ai-slash-item" data-cmd="/list-tools" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-list-task"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/list-tools</strong>
+                    <small>Show available admin tools</small>
+                </div>
+            </li>
+            <li class="brox-ai-slash-item" data-cmd="/help" role="menuitem">
+                <div class="brox-ai-slash-icon"><i class="bi bi-question-circle"></i></div>
+                <div class="brox-ai-slash-info">
+                    <strong>/help</strong>
+                    <small>Show the same tool list as /list-tools</small>
                 </div>
             </li>
         </ul>
@@ -345,16 +344,10 @@
         {# Keyboard Shortcuts Hint #}
         <div class="brox-ai-input-hint">
             <span><kbd>Enter</kbd> Send</span>
+            <span><kbd>Ctrl + Enter</kbd> Send (always)</span>
             <span><kbd>Shift + Enter</kbd> New line</span>
             <span><kbd>/</kbd> Commands</span>
         </div>
     </div>
   </div>
 </div>
-
-{# Trigger FAB Button - Toggle with different icons #}
-<button id="adminAiBtn" class="brox-ai-trigger-fab" title="Open Copilot (Ctrl+Alt+A)" aria-label="Open AI Copilot">
-    <span class="brox-ai-fab-icon-open"><i class="bi bi-stars"></i></span>
-    <span class="brox-ai-fab-icon-close d-none"><i class="bi bi-x-lg"></i></span>
-    <span class="brox-ai-fab-badge" id="adminAiNotification">0</span>
-</button>

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/Functions.php';
-require_once __DIR__ . '/../app/Helpers/ErrorLogging.php';
-require_once __DIR__ . '/../app/Models/UserModel.php';
+require_once dirname(__DIR__, 1) . '/app/Helpers/ErrorLogging.php';
+require_once dirname(__DIR__, 1) . '/app/Models/UserModel.php';
 
 if (!function_exists('env')) {
     function env(string $key, mixed $default = null)
@@ -1049,6 +1049,11 @@ if (!function_exists("registerTwigHelpers")) {
                     }
                 }));
         
+                // Get environment variable (reads from .env, $_ENV, $_SERVER, getenv)
+                $twig->addFunction(new \Twig\TwigFunction('env', function ($key, $default = null) {
+                    return env((string)$key, $default);
+                }));
+
                 // Get configuration value
                 $twig->addFunction(new \Twig\TwigFunction('config', function ($key, $default = null) use ($appSettings) {
                     return $appSettings[$key] ?? $default;
@@ -1282,8 +1287,9 @@ if (!function_exists("registerTwigHelpers")) {
                 $twig->addGlobal('is_dev_env', brox_is_development_env());
                 $publicNavItems = [];
                 try {
-                    if ($settingsModel instanceof AppSettings) {
-                        $publicNavItems = $settingsModel->getPublicNavItems($appSettings, true);
+                    if (class_exists('AppSettings')) {
+                        $settingsModelInstance = new AppSettings($mysqli);
+                        $publicNavItems = $settingsModelInstance->getPublicNavItems($appSettings, true);
                     }
                 } catch (Throwable $e) {
                     $publicNavItems = [];

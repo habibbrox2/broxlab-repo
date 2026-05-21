@@ -27,7 +27,7 @@ if (!function_exists('firebase_config')) {
         static $cfg = null;
         if ($cfg !== null) return $cfg;
 
-        $cfgFile = __DIR__ . '/../../Config/Firebase.php';
+        $cfgFile = dirname(__DIR__, 2) . '/Config/Firebase.php';
         if (file_exists($cfgFile)) {
             $cfg = @include $cfgFile;
             if (!is_array($cfg)) $cfg = [];
@@ -61,7 +61,7 @@ if (!function_exists('config_valid_path')) {
 
         // 2. Root relative check
         $cleanPath = ltrim($path, '/\\');
-        $rootPath = realpath(__DIR__ . '/../../');
+        $rootPath = realpath(dirname(__DIR__, 2) . '/');
         if ($rootPath) {
             $checkPath = $rootPath . DIRECTORY_SEPARATOR . $cleanPath;
             if (file_exists($checkPath)) {
@@ -70,7 +70,7 @@ if (!function_exists('config_valid_path')) {
         }
 
         // 3. Config directory check
-        $configPath = __DIR__ . '/../../Config/' . basename($path);
+        $configPath = dirname(__DIR__, 2) . '/Config/' . basename($path);
         if (file_exists($configPath)) {
             return $configPath;
         }
@@ -158,7 +158,7 @@ if (!function_exists('resolve_firebase_service_account')) {
         // 4. Try default locations
         $defaults = [
             'Config/broxlab-firebase.json',
-            __DIR__ . '/../../Config/broxlab-firebase.json',
+            dirname(__DIR__, 2) . '/Config/broxlab-firebase.json',
         ];
         foreach ($defaults as $d) {
             $pv = config_valid_path($d);
@@ -191,7 +191,7 @@ if (!function_exists('sendFirebaseNotification')) {
     {
         // ensure token management class is loaded when needed
         if (!class_exists('TokenManagementModel')) {
-            $tmPath = __DIR__ . '/../Models/TokenManagementModel.php';
+            $tmPath = dirname(__DIR__, 1) . '/Models/TokenManagementModel.php';
             if (file_exists($tmPath)) {
                 require_once $tmPath;
             }

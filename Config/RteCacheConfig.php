@@ -12,7 +12,7 @@
  * @return string - URL parameter (e.g., '?v=1706921416')
  */
 function getRTECacheBuster($filename) {
-    $filepath = __DIR__ . '/../public_html/rtceditor/' . $filename;
+    $filepath = dirname(__DIR__, 1) . '/public_html/rtceditor/' . $filename;
     
     if (!file_exists($filepath)) {
         // Fallback to current timestamp if file not found
@@ -32,7 +32,7 @@ function getRTECacheBuster($filename) {
  * @return string - URL parameter (e.g., '?v=1706921416')
  */
 function getFirebaseCacheBuster($filename) {
-    $filepath = __DIR__ . '/../public_html/' . $filename;
+    $filepath = dirname(__DIR__, 1) . '/public_html/' . $filename;
     
     if (!file_exists($filepath)) {
         // Fallback to current timestamp if file not found
@@ -99,7 +99,7 @@ function getFirebaseCoreFiles() {
  * @return string - Version string (timestamp)
  */
 function getRTEVersion() {
-    $rtePath = __DIR__ . '/../public_html/rtceditor/';
+    $rtePath = dirname(__DIR__, 1) . '/public_html/rtceditor/';
     $latestMtime = 0;
     
     if (is_dir($rtePath)) {
@@ -121,7 +121,7 @@ function getRTEVersion() {
  * @return string - Version string (timestamp)
  */
 function getFirebaseVersion() {
-    $publicPath = __DIR__ . '/../public_html/';
+    $publicPath = dirname(__DIR__, 1) . '/public_html/';
     $firebaseFiles = [
         'firebase-init.js',
         'firebase/notification-system.js',

@@ -8,7 +8,7 @@
 // ---------------------------------------------------------------------------
 // Environment detection
 // ---------------------------------------------------------------------------
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once dirname(__DIR__, 1) . '/vendor/autoload.php';
 
 // Load environment variables (similar to other scripts)
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
@@ -199,7 +199,7 @@ try {
 // ---------------------------------------------------------------------------
 $appSettings = null;
 
-$settingsFile = __DIR__ . '/../app/Models/AppSettings.php';
+$settingsFile = dirname(__DIR__, 1) . '/app/Models/AppSettings.php';
 if (file_exists($settingsFile)) {
     require_once $settingsFile;
     try {

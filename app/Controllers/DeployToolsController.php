@@ -7,15 +7,15 @@ declare(strict_types=1);
 /** @var \mysqli $mysqli */
 
 // Load vendor autoload and environment variables
-require_once __DIR__ . '/../../vendor/autoload.php';
+require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
 
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
+$dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__, 2) . '/');
 $dotenv->safeLoad();
 
-require_once __DIR__ . '/../Models/DeployJobModel.php';
-require_once __DIR__ . '/../Models/WebhookSettingsModel.php';
-require_once __DIR__ . '/../../Config/Constants.php';
-require_once __DIR__ . '/../Helpers/ErrorLogging.php';
+require_once dirname(__DIR__, 1) . '/Models/DeployJobModel.php';
+require_once dirname(__DIR__, 1) . '/Models/WebhookSettingsModel.php';
+require_once dirname(__DIR__, 2) . '/Config/Constants.php';
+require_once dirname(__DIR__, 1) . '/Helpers/ErrorLogging.php';
 
 // ============================================================================
 // ENVIRONMENT CHECK FUNCTION

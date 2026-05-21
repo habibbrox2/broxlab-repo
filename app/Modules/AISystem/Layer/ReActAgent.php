@@ -7,7 +7,7 @@
  * multi-step problem solving with tool use capabilities.
  */
 
-require_once __DIR__ . '/../../Models/AIKnowledge.php';
+require_once dirname(__DIR__, 2) . '/Models/AIKnowledge.php';
 require_once __DIR__ . '/RAGEngine.php';
 
 class ReActAgent
@@ -349,7 +349,7 @@ PROMPT;
     private function toolGetAnalytics(): string
     {
         try {
-            require_once __DIR__ . '/../../Models/AnalyticsModel.php';
+            require_once dirname(__DIR__, 2) . '/Models/AnalyticsModel.php';
             $model = new AnalyticsModel($this->mysqli);
 
             $summary = $model->getSummary();
@@ -394,7 +394,7 @@ PROMPT;
     private function toolListUsers(int $limit = 10, ?string $role = null): string
     {
         try {
-            require_once __DIR__ . '/../../Models/UserModel.php';
+            require_once dirname(__DIR__, 2) . '/Models/UserModel.php';
             $model = new UserModel($this->mysqli);
 
             // Simple user list - in production, add proper method
@@ -422,7 +422,7 @@ PROMPT;
         }
 
         // Log notification (actual implementation would use notification system)
-        error_log("[ReActAgent Notification] [{$type}] {$message}");
+        aiErrorLog("[ReActAgent Notification] [{$type}] {$message}");
 
         return "Notification queued: [{$type}] {$message}";
     }

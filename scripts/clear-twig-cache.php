@@ -5,7 +5,7 @@
  * Usage: php scripts/clear-twig-cache.php
  */
 
-$cacheDir = __DIR__ . '/../storage/cache/twig/';
+$cacheDir = dirname(__DIR__, 1) . '/storage/cache/twig/';
 
 function deleteDir($dir)
 {

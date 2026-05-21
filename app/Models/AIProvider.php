@@ -1327,22 +1327,26 @@ class AIProvider
             return is_string($content) ? trim($content) : '';
         }
 
-        $supportsRichContent = $this->supportsRichContent($providerName);
-        $parts = [];
         $fallbackLines = [];
         foreach ($content as $part) {
+            if (is_string($part)) {
+                $text = trim($part);
+                if ($text !== '') {
+                    $fallbackLines[] = $text;
+                }
+                continue;
+            }
             if (!is_array($part)) {
                 continue;
             }
+
             $type = $part['type'] ?? '';
             if ($type === 'text') {
                 $text = $part['text'] ?? '';
                 if (!is_string($text) || trim($text) === '') {
                     continue;
                 }
-                $text = trim($text);
-                $parts[] = ['type' => 'text', 'text' => $text];
-                $fallbackLines[] = $text;
+                $fallbackLines[] = trim($text);
             } elseif ($type === 'image_url') {
                 $image = $part['image_url'] ?? [];
                 $url = $image['url'] ?? '';
@@ -1367,49 +1371,17 @@ class AIProvider
                     $line .= ' (' . implode(', ', $meta) . ')';
                 }
                 $fallbackLines[] = $line;
-
-                if ($supportsRichContent) {
-                    $artifact = ['url' => $url];
-                    $detail = $image['detail'] ?? null;
-                    if (is_string($detail)) {
-                        $detail = trim($detail);
-                        if (in_array($detail, ['low', 'high', 'auto', 'original'], true)) {
-                            $artifact['detail'] = $detail;
-                        }
-                    }
-                    $parts[] = ['type' => 'image_url', 'image_url' => $artifact];
-                }
             } elseif ($type === 'file') {
                 $file = $part['file'] ?? [];
                 if (!is_array($file)) {
                     continue;
                 }
-                $fileData = $file['file_data'] ?? $file['fileData'] ?? '';
-                $fileId = $file['file_id'] ?? $file['fileId'] ?? '';
                 $filename = $file['filename'] ?? $file['name'] ?? 'attachment';
                 if (!is_string($filename) || trim($filename) === '') {
                     $filename = 'attachment';
                 }
-
-                $text = 'Attached file: ' . trim($filename);
-                $fallbackLines[] = $text;
-                if ($supportsRichContent) {
-                    $artifact = ['filename' => trim($filename)];
-                    if (is_string($fileData) && trim($fileData) !== '') {
-                        $artifact['file_data'] = trim($fileData);
-                    } elseif (is_string($fileId) && trim($fileId) !== '') {
-                        $artifact['file_id'] = trim($fileId);
-                    } else {
-                        $parts[] = ['type' => 'text', 'text' => $text];
-                        continue;
-                    }
-                    $parts[] = ['type' => 'file', 'file' => $artifact];
-                }
+                $fallbackLines[] = 'Attached file: ' . trim($filename);
             }
-        }
-
-        if ($supportsRichContent && !empty($parts)) {
-            return $parts;
         }
 
         if (empty($fallbackLines)) {
@@ -1551,13 +1523,14 @@ class AIProvider
             }
             // Standard chat completions response format (choices array)
             if (isset($data['choices'][0]['message'])) {
-                $annotations = $data['choices'][0]['message']['annotations'] ?? null;
+                $message = $data['choices'][0]['message'];
+                $annotations = $message['annotations'] ?? null;
                 return [
                     'success' => true,
-                    'content' => $data['choices'][0]['message']['content'] ?? '',
+                    'content' => $this->normalizeMessageContentForProvider($providerName, $message['content'] ?? ''),
                     'usage' => $data['usage'] ?? [],
                     'annotations' => is_array($annotations) ? $annotations : null,
-                    'tool_calls' => $data['choices'][0]['message']['tool_calls'] ?? null,
+                    'tool_calls' => $message['tool_calls'] ?? null,
                     'finish_reason' => $data['choices'][0]['finish_reason'] ?? null
                 ];
             }
@@ -1611,13 +1584,14 @@ class AIProvider
                 break;
             default:
                 if (isset($data['choices'][0]['message'])) {
-                    $annotations = $data['choices'][0]['message']['annotations'] ?? null;
+                    $message = $data['choices'][0]['message'];
+                    $annotations = $message['annotations'] ?? null;
                     return [
                         'success' => true,
-                        'content' => $data['choices'][0]['message']['content'] ?? '',
+                        'content' => $this->normalizeMessageContentForProvider($providerName, $message['content'] ?? ''),
                         'usage' => $data['usage'] ?? [],
                         'annotations' => is_array($annotations) ? $annotations : null,
-                        'tool_calls' => $data['choices'][0]['message']['tool_calls'] ?? null,
+                        'tool_calls' => $message['tool_calls'] ?? null,
                         'finish_reason' => $data['choices'][0]['finish_reason'] ?? null
                     ];
                 }
@@ -1651,8 +1625,8 @@ class AIProvider
                 }
             }
 
-            // 3) Fall back to serializing the message object so callers at least see something useful
-            return ['success' => true, 'content' => json_encode($msg), 'usage' => $data['usage'] ?? [], 'raw' => $data];
+            // 3) Fall back to normalized message content so callers get clean text
+            return ['success' => true, 'content' => $this->normalizeMessageContentForProvider($providerName, $msg['content'] ?? ''), 'usage' => $data['usage'] ?? [], 'raw' => $data];
         }
 
         return ['success' => false, 'error' => 'Unexpected response format', 'raw' => $data];
@@ -2239,7 +2213,7 @@ class AIProvider
         if ($httpCode !== null) $payload['http'] = $httpCode;
         if ($error) $payload['error'] = $error;
         if ($count !== null) $payload['count'] = $count;
-        error_log('[AI Remote Models] ' . json_encode($payload));
+        aiErrorLog('[AI Remote Models] ' . json_encode($payload));
     }
 
     /**
@@ -2799,7 +2773,7 @@ class AIProvider
         if (!getenv('AI_DEBUG_PAYLOAD')) {
             return;
         }
-        error_log('[AI Payload] Invalid model for ' . $providerName . ': ' . $requested . ' -> ' . $fallback);
+        aiErrorLog('[AI Payload] Invalid model for ' . $providerName . ': ' . $requested . ' -> ' . $fallback);
     }
 
     private function logPayloadDebug(string $providerName, string $model, string $endpoint, array $requestData): void
@@ -2819,6 +2793,6 @@ class AIProvider
         if (isset($requestData['system']) && is_string($requestData['system'])) {
             $meta['has_system'] = $requestData['system'] !== '';
         }
-        error_log('[AI Payload] ' . json_encode($meta));
+        aiErrorLog('[AI Payload] ' . json_encode($meta));
     }
 }

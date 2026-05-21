@@ -161,7 +161,7 @@ class PromptLoader
     {
         $prompts = [];
 
-        $baseFolder = __DIR__ . '/../../system/prompts';
+        $baseFolder = dirname(__DIR__, 2) . '/system/prompts';
 
         // 1) context-specific file (admin/public)
         $contextCandidates = [
@@ -206,8 +206,8 @@ class PromptLoader
 
         // 3) fallback to DB setting if still empty or missing system_prompt
         if ((!isset($prompts['system_prompt']) || trim((string)$prompts['system_prompt']) === '') && $mysqli) {
-            $aiProviderPath = realpath(__DIR__ . '/../Models/AIProvider.php');
-            require_once $aiProviderPath ?: (__DIR__ . '/../Models/AIProvider.php');
+            $aiProviderPath = realpath(dirname(__DIR__, 1) . '/Models/AIProvider.php');
+            require_once $aiProviderPath ?: (dirname(__DIR__, 1) . '/Models/AIProvider.php');
             $aiProvider = new AIProvider($mysqli);
             if ($context === 'admin') {
                 $prompts['system_prompt'] = $aiProvider->getSetting(
@@ -243,9 +243,10 @@ class PromptLoader
             $system .= "\n2. For data summaries, tables, or complex lists, use the ARTIFACT format:";
             $system .= "\n   ```artifact\n   {\n     \"title\": \"Data Title\",\n     \"type\": \"table\",\n     \"headers\": [\"Col1\", \"Col2\"],\n     \"rows\": [[\"Val1\", \"Val2\"]]\n   }\n   ```";
             $system .= "\n3. Be context-aware. Use the provided [USER CONTEXT] to tailor your response to the current page.";
-            $system .= "\n4. Supported slash commands (admin only): /summarize, /analyze-logs.";
-            $system .= "\n5. Refer to admin URLs and tools available in the dashboard when relevant.";
-            $system .= "\n6. Do NOT reply with overly short messages. When the user asks a question, give a complete, thorough response with the necessary details and actionable steps.";
+            $system .= "\n4. Supported slash commands (admin only): /summarize, /analyze-logs, /help, /list-tools. Use /help or /list-tools to see the current available admin tools and command syntax.";
+            $system .= "\n5. Use key=value arguments or a single input string after the slash command, for example: /search-kb input=invoice or /clear-cache.";
+            $system .= "\n6. Refer to admin URLs and tools available in the dashboard when relevant.";
+            $system .= "\n7. Do NOT reply with overly short messages. When the user asks a question, give a complete, thorough response with the necessary details and actionable steps.";
         }
 
         return $system;
@@ -430,7 +431,7 @@ class PromptLoader
      */
     public static function loadAISkills(): array
     {
-        $skillsFile = __DIR__ . '/../../system/prompts/ai-skills.json';
+        $skillsFile = dirname(__DIR__, 2) . '/system/prompts/ai-skills.json';
         if (!file_exists($skillsFile)) {
             return [];
         }
@@ -444,7 +445,7 @@ class PromptLoader
      */
     public static function loadAITools(): array
     {
-        $toolsFile = __DIR__ . '/../../system/prompts/ai-tools.json';
+        $toolsFile = dirname(__DIR__, 2) . '/system/prompts/ai-tools.json';
         if (!file_exists($toolsFile)) {
             return [];
         }

@@ -1,8 +1,8 @@
 <?php
 // app/Routes/Router.php
 
-require_once __DIR__ . '/../../Config/Constants.php';
-require_once __DIR__ . '/../Helpers/ErrorLogging.php';
+require_once dirname(__DIR__, 2) . '/Config/Constants.php';
+require_once dirname(__DIR__, 1) . '/Helpers/ErrorLogging.php';
 
 class Router
 {

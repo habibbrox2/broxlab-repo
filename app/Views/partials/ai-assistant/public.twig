@@ -4,8 +4,9 @@
 
 <div id="publicAssistantWrapper" class="bb-assistant-public">
 
-    {# Floating Action Button #}
-    <button id="publicAssistantBtn" class="brox-ai-trigger-fab" title="Chat with Assistant" aria-label="Open Chat">
+    {# Floating Action Button - all base styles inline for maximum specificity #}
+    <button id="publicAssistantBtn" class="brox-ai-trigger-fab" title="Chat with Assistant" aria-label="Open Chat"
+      style="position: fixed !important;bottom: 80px !important;right: 20px !important;width: 48px !important;height: 48px !important;border-radius: 50% !important;background: linear-gradient(135deg, #0f172a, #1e293b) !important;color: #fff !important;border: 2px solid rgba(255,255,255,0.2) !important;box-shadow: 0 4px 12px rgba(15,23,42,0.4) !important;cursor: pointer !important;z-index: 999999 !important;display: flex !important;align-items: center !important;justify-content: center !important;font-size: 1.4rem !important;opacity: 1 !important;visibility: visible !important;pointer-events: auto !important;">
         <span class="brox-ai-fab-icon-open"><i class="bi bi-chat-dots-fill"></i></span>
         <span class="brox-ai-fab-icon-close d-none"><i class="bi bi-x-lg"></i></span>
     </button>
@@ -44,6 +45,10 @@
                     </div>
                 </div>
                 <div class="brox-ai-header-actions">
+                    <span class="brox-ai-lang-toggle" style="display:inline-flex;gap:0.25rem;">
+                        <button id="publicAssistantLangBn" class="brox-ai-model-toggle" title="বাংলা" aria-label="Switch to Bengali" style="font-size:0.75rem;font-weight:700;">বাং</button>
+                        <button id="publicAssistantLangEn" class="brox-ai-model-toggle active" title="English" aria-label="Switch to English" style="font-size:0.75rem;font-weight:700;">EN</button>
+                    </span>
                     <button id="publicAssistantModelToggle" class="brox-ai-icon-btn" title="Toggle Model Selector" aria-label="Toggle model selector">
                         <i class="bi bi-chevron-down"></i>
                     </button>
@@ -76,44 +81,51 @@
                     <h4>How can I help you today?</h4>
                     <p>Start with a quick question or choose a shortcut below.</p>
 
-                    <div class="brox-ai-form-group">
-                        <label for="introName">Your Name</label>
-                        <input type="text" id="introName" class="brox-ai-input" placeholder="Your name">
-                    </div>
-                    <button class="brox-ai-btn-primary" id="introNext1">Continue</button>
-
-                    <div class="brox-ai-form-group brox-ai-hidden brox-ai-step-contact">
-                        <label for="introEmail">Email (optional)</label>
-                        <input type="email" id="introEmail" class="brox-ai-input" placeholder="Email (optional)">
-                    </div>
-                    <div class="brox-ai-form-group brox-ai-hidden brox-ai-step-contact">
-                        <label for="introMobile">Mobile (optional)</label>
-                        <input type="text" id="introMobile" class="brox-ai-input" placeholder="Mobile (optional)">
-                    </div>
-                    <button class="brox-ai-btn-primary brox-ai-hidden brox-ai-step-contact" id="introNext2">Continue</button>
-
-                    <div class="brox-ai-form-group brox-ai-hidden brox-ai-step-topic">
-                        <label id="introTopicLabel">What would you like to know about?</label>
-                        <div class="brox-ai-topic-grid" id="introTopicOptions">
-                            <label class="brox-ai-topic-chip">
-                                <input type="checkbox" value="general" checked>
-                                <span>General</span>
-                            </label>
-                            <label class="brox-ai-topic-chip">
-                                <input type="checkbox" value="support">
-                                <span>Support</span>
-                            </label>
-                            <label class="brox-ai-topic-chip">
-                                <input type="checkbox" value="billing">
-                                <span>Billing</span>
-                            </label>
-                            <label class="brox-ai-topic-chip">
-                                <input type="checkbox" value="feedback">
-                                <span>Feedback</span>
-                            </label>
+                    <div class="brox-ai-step-name">
+                        <div class="brox-ai-form-group">
+                            <label id="introNameLabel" for="introName">Your Name</label>
+                            <input type="text" id="introName" class="brox-ai-input" placeholder="Your name">
                         </div>
+                        <div id="publicAssistantPreChatError" class="brox-ai-hidden" aria-live="polite"></div>
+                        <button class="brox-ai-btn-primary" id="introNext1">Continue</button>
                     </div>
-                    <button class="brox-ai-btn-primary brox-ai-hidden brox-ai-step-topic" id="introStartChat">Start Chat</button>
+
+                    <div class="brox-ai-step-contact brox-ai-hidden">
+                        <div class="brox-ai-form-group">
+                            <label id="introEmailLabel" for="introEmail">Email (optional)</label>
+                            <input type="email" id="introEmail" class="brox-ai-input" placeholder="Email (optional)">
+                        </div>
+                        <div class="brox-ai-form-group">
+                            <label id="introMobileLabel" for="introMobile">Mobile (optional)</label>
+                            <input type="text" id="introMobile" class="brox-ai-input" placeholder="Mobile (optional)">
+                        </div>
+                        <button class="brox-ai-btn-primary" id="introNext2">Continue</button>
+                    </div>
+
+                    <div class="brox-ai-step-topic brox-ai-hidden">
+                        <div class="brox-ai-form-group">
+                            <label id="introTopicLabel">What would you like to know about?</label>
+                            <div class="brox-ai-topic-grid" id="introTopicOptions">
+                                <label class="brox-ai-topic-chip">
+                                    <input type="checkbox" value="general" checked>
+                                    <span>General</span>
+                                </label>
+                                <label class="brox-ai-topic-chip">
+                                    <input type="checkbox" value="support">
+                                    <span>Support</span>
+                                </label>
+                                <label class="brox-ai-topic-chip">
+                                    <input type="checkbox" value="billing">
+                                    <span>Billing</span>
+                                </label>
+                                <label class="brox-ai-topic-chip">
+                                    <input type="checkbox" value="feedback">
+                                    <span>Feedback</span>
+                                </label>
+                            </div>
+                        </div>
+                        <button class="brox-ai-btn-primary" id="introStartChat">Start Chat</button>
+                    </div>
                 </div>
             </div>
 
@@ -121,16 +133,7 @@
                 {# Messages injected here by assistant.js #}
             </div>
 
-            <div id="publicAssistantThinkingIndicator" class="thinking-indicator brox-ai-hidden">
-                <div class="thinking-content">
-                    <span class="thinking-text">Thinking...</span>
-                    <div class="thinking-dots">
-                        <span class="thinking-dot"></span>
-                        <span class="thinking-dot"></span>
-                        <span class="thinking-dot"></span>
-                    </div>
-                </div>
-            </div>
+            {# Thinking indicator is rendered inline by assistant.js inside the message bubble - no separate DOM element needed #}
 
             <div id="publicAssistantSuggestionPanel" class="brox-ai-suggestion-panel brox-ai-hidden" role="listbox">
                 <div class="brox-ai-suggestion-header">
@@ -186,6 +189,7 @@
                 </div>
                 <div class="brox-ai-input-hint">
                     <span><kbd>Enter</kbd> Send</span>
+                    <span><kbd>Ctrl + Enter</kbd> Send (always)</span>
                     <span><kbd>Shift + Enter</kbd> New line</span>
                     <span><kbd>/</kbd> Commands</span>
                 </div>

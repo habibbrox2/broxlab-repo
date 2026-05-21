@@ -5,7 +5,7 @@
  * Helper functions for sending emails using templates
  */
 
-require_once __DIR__ . '/../Models/EmailTemplate.php';
+require_once dirname(__DIR__, 1) . '/Models/EmailTemplate.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;

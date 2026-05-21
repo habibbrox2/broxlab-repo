@@ -2,7 +2,7 @@
 // classes/CommentModel.php
 
 // Load Parsedown library
-require_once __DIR__ . '/../../vendor/erusev/parsedown/Parsedown.php';
+require_once dirname(__DIR__, 2) . '/vendor/erusev/parsedown/Parsedown.php';
 
 class CommentModel {
     private mysqli $db;

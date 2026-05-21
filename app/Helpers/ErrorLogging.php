@@ -15,7 +15,7 @@
  * 
  * NOTE: Log configuration constants (LOG_MAX_SIZE, LOG_MAX_AGE_DAYS, 
  * LOG_CLEANUP_PROBABILITY, ENABLE_ENHANCED_ERROR_LOG) are now defined in Config/Constants.php
-**/
+ **/
 
 // =====================================================================
 // INITIALIZATION & CONFIGURATION
@@ -48,9 +48,20 @@ if (!defined('LOG_DEBUG')) define('LOG_DEBUG', 100);
 // Sensitive fields to sanitize
 if (!defined('LOG_SENSITIVE_FIELDS')) {
     define('LOG_SENSITIVE_FIELDS', [
-        'password', 'token', 'api_key', 'secret', 'authorization',
-        'cookie', 'session', 'credit_card', 'ssn', 'private_key',
-        'access_token', 'refresh_token', 'bearer', 'jwt'
+        'password',
+        'token',
+        'api_key',
+        'secret',
+        'authorization',
+        'cookie',
+        'session',
+        'credit_card',
+        'ssn',
+        'private_key',
+        'access_token',
+        'refresh_token',
+        'bearer',
+        'jwt'
     ]);
 }
 
@@ -67,16 +78,17 @@ if (!function_exists('getCorrelationId')) {
      * Get or generate correlation ID for request tracing
      * Used to link all log entries for a single request
      */
-    function getCorrelationId(): string {
+    function getCorrelationId(): string
+    {
         static $correlationId = null;
-        
+
         if ($correlationId === null) {
             // Check for existing correlation ID from header (distributed tracing)
-            $correlationId = $_SERVER['HTTP_X_CORRELATION_ID'] ?? 
-                            $_SERVER['HTTP_X_REQUEST_ID'] ?? 
-                            bin2hex(random_bytes(8));
+            $correlationId = $_SERVER['HTTP_X_CORRELATION_ID'] ??
+                $_SERVER['HTTP_X_REQUEST_ID'] ??
+                bin2hex(random_bytes(8));
         }
-        
+
         return $correlationId;
     }
 }
@@ -89,7 +101,8 @@ if (!function_exists('sanitizeSensitiveData')) {
      * @param mixed $data Data to sanitize
      * @return mixed Sanitized data
      */
-    function sanitizeSensitiveData($data) {
+    function sanitizeSensitiveData($data)
+    {
         // Guard against closures/resources that cannot be serialized
         if ($data instanceof \Closure) {
             return '[closure]';
@@ -155,12 +168,13 @@ if (!function_exists('isRateLimited')) {
      * @param string $errorKey Unique key for the error type
      * @return bool True if rate limited (should skip logging)
      */
-    function isRateLimited(string $errorKey): bool {
+    function isRateLimited(string $errorKey): bool
+    {
         static $rateLimits = [];
-        
+
         $now = time();
         $windowStart = $now - LOG_RATE_LIMIT_SECONDS;
-        
+
         // Clean old entries
         foreach ($rateLimits as $key => $timestamps) {
             $rateLimits[$key] = array_filter($timestamps, fn($t) => $t > $windowStart);
@@ -168,14 +182,14 @@ if (!function_exists('isRateLimited')) {
                 unset($rateLimits[$key]);
             }
         }
-        
+
         // Check current error
         if (!isset($rateLimits[$errorKey])) {
             $rateLimits[$errorKey] = [];
         }
-        
+
         $rateLimits[$errorKey][] = $now;
-        
+
         return count($rateLimits[$errorKey]) > LOG_RATE_LIMIT_MAX;
     }
 }
@@ -189,7 +203,8 @@ if (!function_exists('writeStructuredLog')) {
      * @param array $context Additional context data
      * @param string $logType Log file type (errors, debug, etc.)
      */
-    function writeStructuredLog(string $level, string $message, array $context = [], string $logType = 'errors'): void {
+    function writeStructuredLog(string $level, string $message, array $context = [], string $logType = 'errors'): void
+    {
         $entry = [
             'timestamp' => date('c'), // ISO 8601
             'level' => strtoupper($level),
@@ -207,7 +222,7 @@ if (!function_exists('writeStructuredLog')) {
                 'peak' => memory_get_peak_usage(),
             ],
         ];
-        
+
         // Add caller info
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
         $caller = $backtrace[1] ?? $backtrace[0] ?? [];
@@ -218,14 +233,14 @@ if (!function_exists('writeStructuredLog')) {
                 'function' => $caller['function'] ?? null,
             ];
         }
-        
+
         $logFile = getLogFilePath($logType);
-        
+
         // Check rotation
         if (file_exists($logFile) && filesize($logFile) >= LOG_MAX_SIZE) {
             rotateLogFile($logFile);
         }
-        
+
         @file_put_contents($logFile, json_encode($entry, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND | LOCK_EX);
     }
 }
@@ -236,7 +251,8 @@ if (!function_exists('logEmergency')) {
     /**
      * Log emergency - system is unusable
      */
-    function logEmergency(string $message, array $context = []): void {
+    function logEmergency(string $message, array $context = []): void
+    {
         writeStructuredLog('emergency', $message, $context, 'errors');
     }
 }
@@ -245,7 +261,8 @@ if (!function_exists('logAlert')) {
     /**
      * Log alert - action must be taken immediately
      */
-    function logAlert(string $message, array $context = []): void {
+    function logAlert(string $message, array $context = []): void
+    {
         writeStructuredLog('alert', $message, $context, 'errors');
     }
 }
@@ -254,7 +271,8 @@ if (!function_exists('logCritical')) {
     /**
      * Log critical - critical conditions
      */
-    function logCritical(string $message, array $context = []): void {
+    function logCritical(string $message, array $context = []): void
+    {
         writeStructuredLog('critical', $message, $context, 'errors');
     }
 }
@@ -263,7 +281,8 @@ if (!function_exists('logWarning')) {
     /**
      * Log warning - warning conditions
      */
-    function logWarning(string $message, array $context = []): void {
+    function logWarning(string $message, array $context = []): void
+    {
         writeStructuredLog('warning', $message, $context, 'errors');
     }
 }
@@ -272,7 +291,8 @@ if (!function_exists('logNotice')) {
     /**
      * Log notice - normal but significant condition
      */
-    function logNotice(string $message, array $context = []): void {
+    function logNotice(string $message, array $context = []): void
+    {
         writeStructuredLog('notice', $message, $context, 'info');
     }
 }
@@ -286,10 +306,11 @@ if (!function_exists('initializeErrorLogging')) {
      * Initialize comprehensive error logging system
      * Should be called early in application bootstrap
      */
-    function initializeErrorLogging(): void {
+    function initializeErrorLogging(): void
+    {
         // Ensure logs directory exists
-        $logDir = defined('BASE_PATH') ? 
-            BASE_PATH . 'storage/logs' : 
+        $logDir = defined('BASE_PATH') ?
+            BASE_PATH . 'storage/logs' :
             dirname(__DIR__, 2) . '/storage/logs';
 
         if (!is_dir($logDir)) {
@@ -302,17 +323,17 @@ if (!function_exists('initializeErrorLogging')) {
         ini_set('error_reporting', E_ALL);
         ini_set('display_errors', '0');
         ini_set('log_errors_max_len', '0'); // No truncation
-        
+
         // Set up error handlers
         set_error_handler('comprehensiveErrorHandler');
         set_exception_handler('comprehensiveExceptionHandler');
         register_shutdown_function('comprehensiveFatalErrorHandler');
-        
+
         // Override default error_log to use our enhanced system
         if (ENABLE_ENHANCED_ERROR_LOG) {
             registerEnhancedErrorLog();
         }
-        
+
         // Randomly run log cleanup (1% chance)
         if (rand(1, LOG_CLEANUP_PROBABILITY) === 1) {
             cleanupOldLogs();
@@ -328,11 +349,12 @@ if (!function_exists('getLogFilePath')) {
     /**
      * Get the full path for a specific log file
      */
-    function getLogFilePath(string $logType): string {
-        $logDir = defined('BASE_PATH') ? 
-            BASE_PATH . 'storage/logs' : 
+    function getLogFilePath(string $logType): string
+    {
+        $logDir = defined('BASE_PATH') ?
+            BASE_PATH . 'storage/logs' :
             dirname(__DIR__, 2) . '/storage/logs';
-        
+
         return $logDir . DIRECTORY_SEPARATOR . $logType . '.log';
     }
 }
@@ -342,7 +364,8 @@ if (!function_exists('registerEnhancedErrorLog')) {
      * Register enhanced error_log() wrapper to intercept all error_log calls
      * This ensures all error logging uses our enhanced format
      */
-    function registerEnhancedErrorLog(): void {
+    function registerEnhancedErrorLog(): void
+    {
         // We use a shutdown function to wrap calls
         // This captures calls to error_log() made throughout the application
     }
@@ -359,9 +382,10 @@ if (!function_exists('enhancedErrorLog')) {
      * @param string|null $extra_headers Optional. Additional headers
      * @return bool
      */
-    function enhancedErrorLog($message, int $message_type = 0, ?string $destination = null, ?string $extra_headers = null): bool {
-        $logDir = defined('BASE_PATH') ? 
-            BASE_PATH . 'storage/logs' : 
+    function enhancedErrorLog($message, int $message_type = 0, ?string $destination = null, ?string $extra_headers = null): bool
+    {
+        $logDir = defined('BASE_PATH') ?
+            BASE_PATH . 'storage/logs' :
             dirname(__DIR__, 2) . '/storage/logs';
 
         if (!is_dir($logDir)) {
@@ -370,16 +394,16 @@ if (!function_exists('enhancedErrorLog')) {
 
         // Build enhanced message
         $timestamp = date('d-M-Y H:i:s e');
-        
+
         // If message is array, convert to JSON for logging
-        $messageStr = is_array($message) ? 
-            json_encode($message, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : 
+        $messageStr = is_array($message) ?
+            json_encode($message, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) :
             (string)$message;
 
         // Get backtrace to find caller
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5);
         $caller = null;
-        
+
         // Find the actual caller (skip enhancedErrorLog itself)
         foreach ($backtrace as $trace) {
             if (isset($trace['function']) && $trace['function'] !== 'enhancedErrorLog') {
@@ -406,13 +430,13 @@ if (!function_exists('enhancedErrorLog')) {
 
         // Add caller information
         if ($caller) {
-            $file = isset($caller['file']) ? 
-                str_replace(defined('BASE_PATH') ? BASE_PATH : '', '', $caller['file']) : 
+            $file = isset($caller['file']) ?
+                str_replace(defined('BASE_PATH') ? BASE_PATH : '', '', $caller['file']) :
                 'unknown';
             $line = $caller['line'] ?? 'unknown';
             $function = $caller['function'] ?? 'unknown';
             $class = isset($caller['class']) ? $caller['class'] . '::' : '';
-            
+
             $formattedMessage .= " | Called from: {$class}{$function}() in {$file}:{$line}";
         }
 
@@ -420,12 +444,12 @@ if (!function_exists('enhancedErrorLog')) {
         switch ($message_type) {
             case 0: // OS system logger or file
                 $logFile = $destination ?? ($logDir . DIRECTORY_SEPARATOR . 'errors.log');
-                
+
                 // Check if rotation is needed
                 if (file_exists($logFile) && filesize($logFile) >= LOG_MAX_SIZE) {
                     rotateLogFile($logFile);
                 }
-                
+
                 // Write with newline
                 return error_log($formattedMessage . "\n", 3, $logFile);
 
@@ -436,12 +460,12 @@ if (!function_exists('enhancedErrorLog')) {
                 if (!$destination) {
                     $destination = $logDir . DIRECTORY_SEPARATOR . 'errors.log';
                 }
-                
+
                 // Check if rotation is needed
                 if (file_exists($destination) && filesize($destination) >= LOG_MAX_SIZE) {
                     rotateLogFile($destination);
                 }
-                
+
                 return error_log($formattedMessage . "\n", 3, $destination);
 
             case 4: // SAPI logging handler
@@ -457,16 +481,50 @@ if (!function_exists('writeToLog')) {
     /**
      * Write message to specific log file with automatic rotation
      */
-    function writeToLog(string $logType, string $message): void {
+    function writeToLog(string $logType, string $message): void
+    {
         $logFile = getLogFilePath($logType);
-        
+
         // Check if rotation is needed before writing
         if (file_exists($logFile) && filesize($logFile) >= LOG_MAX_SIZE) {
             rotateLogFile($logFile);
         }
-        
+
         // Write to log file
         error_log($message, 3, $logFile);
+    }
+}
+
+if (!function_exists('aiErrorLog')) {
+    /**
+     * Write AI-related logs to a separate ai.log file.
+     * This keeps AI/internal logs out of errors.log.
+     *
+     * @param string|array $message
+     * @param int $message_type
+     * @param string|null $destination
+     * @param string|null $extra_headers
+     * @return bool
+     */
+    function aiErrorLog($message, int $message_type = 3, ?string $destination = null, ?string $extra_headers = null): bool
+    {
+        $logFile = $destination ?: getLogFilePath('ai');
+
+        if ($message_type === 3 || $message_type === 0) {
+            if (file_exists($logFile) && filesize($logFile) >= LOG_MAX_SIZE) {
+                rotateLogFile($logFile);
+            }
+            $messageStr = is_array($message)
+                ? json_encode($message, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+                : (string)$message;
+            return error_log($messageStr . "\n", 3, $logFile);
+        }
+
+        if ($message_type === 1) {
+            return error_log($message, 1, $destination ?? $logFile, $extra_headers);
+        }
+
+        return error_log($message, $message_type, $destination ?? $logFile, $extra_headers);
     }
 }
 
@@ -474,17 +532,18 @@ if (!function_exists('rotateLogFile')) {
     /**
      * Rotate a log file when it exceeds max size
      */
-    function rotateLogFile(string $logFile): void {
+    function rotateLogFile(string $logFile): void
+    {
         if (!file_exists($logFile)) {
             return;
         }
-        
+
         // Create backup filename with timestamp
         $backupFile = $logFile . '.' . date('Y-m-d_His') . '.bak';
-        
+
         // Rename current log to backup
         @rename($logFile, $backupFile);
-        
+
         // Create new empty log file
         @touch($logFile);
         @chmod($logFile, 0644);
@@ -495,20 +554,21 @@ if (!function_exists('cleanupOldLogs')) {
     /**
      * Clean up old log files and backups
      */
-    function cleanupOldLogs(): void {
-        $logDir = defined('BASE_PATH') ? 
-            BASE_PATH . 'storage/logs' : 
+    function cleanupOldLogs(): void
+    {
+        $logDir = defined('BASE_PATH') ?
+            BASE_PATH . 'storage/logs' :
             dirname(__DIR__, 2) . '/storage/logs';
-        
+
         if (!is_dir($logDir)) {
             return;
         }
-        
+
         $now = time();
         $maxAge = LOG_MAX_AGE_DAYS * 24 * 60 * 60; // Convert days to seconds
-        
+
         $files = glob($logDir . DIRECTORY_SEPARATOR . '*.{log,bak}', GLOB_BRACE);
-        
+
         foreach ($files as $file) {
             // Skip if file is current log (not a backup)
             if (substr($file, -4) === '.log' && strpos(basename($file), '.bak') === false) {
@@ -518,11 +578,11 @@ if (!function_exists('cleanupOldLogs')) {
                 }
                 continue;
             }
-            
+
             // Delete old backup files
             if (basename($file) !== '.' && basename($file) !== '..' && is_file($file)) {
                 $fileAge = $now - filemtime($file);
-                
+
                 if ($fileAge > $maxAge) {
                     @unlink($file);
                 }
@@ -539,7 +599,8 @@ if (!function_exists('comprehensiveErrorHandler')) {
     /**
      * Comprehensive error handler for all PHP errors
      */
-    function comprehensiveErrorHandler(int $errno, string $errstr, string $errfile, int $errline): bool {
+    function comprehensiveErrorHandler(int $errno, string $errstr, string $errfile, int $errline): bool
+    {
         // Skip if error reporting is suppressed
         if (!(error_reporting() & $errno)) {
             return false;
@@ -563,8 +624,8 @@ if (!function_exists('comprehensiveErrorHandler')) {
         ];
 
         $errorType = $errorTypes[$errno] ?? 'UNKNOWN ERROR';
-        $relativeFile = defined('BASE_PATH') ? 
-            str_replace(BASE_PATH, '', $errfile) : 
+        $relativeFile = defined('BASE_PATH') ?
+            str_replace(BASE_PATH, '', $errfile) :
             $errfile;
 
         $logMessage = buildErrorLogMessage(
@@ -588,9 +649,10 @@ if (!function_exists('comprehensiveExceptionHandler')) {
      * Comprehensive exception handler for uncaught exceptions
      * Handles both PHP and Twig exceptions
      */
-    function comprehensiveExceptionHandler(Throwable $exception): void {
+    function comprehensiveExceptionHandler(Throwable $exception): void
+    {
         $logMessage = buildExceptionLogMessage($exception);
-        
+
         // Use enhanced error logging
         enhancedErrorLog($logMessage, 3, getLogFilePath('errors'));
 
@@ -609,12 +671,13 @@ if (!function_exists('comprehensiveFatalErrorHandler')) {
     /**
      * Handle fatal errors during shutdown
      */
-    function comprehensiveFatalErrorHandler(): void {
+    function comprehensiveFatalErrorHandler(): void
+    {
         $lastError = error_get_last();
 
         if ($lastError && in_array($lastError['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-            $relativeFile = defined('BASE_PATH') ? 
-                str_replace(BASE_PATH, '', $lastError['file']) : 
+            $relativeFile = defined('BASE_PATH') ?
+                str_replace(BASE_PATH, '', $lastError['file']) :
                 $lastError['file'];
 
             $logMessage = sprintf(
@@ -643,7 +706,8 @@ if (!function_exists('buildErrorLogMessage')) {
     /**
      * Build detailed error log message with complete information
      */
-    function buildErrorLogMessage(string $errorType, string $message, string $file, int $line, array $backtrace): string {
+    function buildErrorLogMessage(string $errorType, string $message, string $file, int $line, array $backtrace): string
+    {
         $timestamp = date('d-M-Y H:i:s e');
 
         $log = "\n" . str_repeat("═", 100) . "\n";
@@ -689,29 +753,30 @@ if (!function_exists('buildExceptionLogMessage')) {
      * Build detailed exception log message
      * Handles both PHP and Twig exceptions with full details
      */
-    function buildExceptionLogMessage(Throwable $exception): string {
+    function buildExceptionLogMessage(Throwable $exception): string
+    {
         $timestamp = date('d-M-Y H:i:s e');
         $exceptionClass = get_class($exception);
-        
+
         // Check if this is a Twig exception
         $isTwigException = (
-            $exceptionClass === 'Twig\Error\RuntimeError' || 
-            $exceptionClass === 'Twig\Error\SyntaxError' || 
+            $exceptionClass === 'Twig\Error\RuntimeError' ||
+            $exceptionClass === 'Twig\Error\SyntaxError' ||
             $exceptionClass === 'Twig\Error\LoaderError' ||
             strpos($exceptionClass, 'Twig\\Error') === 0
         );
 
-        $relativeFile = defined('BASE_PATH') ? 
-            str_replace(BASE_PATH, '', $exception->getFile()) : 
+        $relativeFile = defined('BASE_PATH') ?
+            str_replace(BASE_PATH, '', $exception->getFile()) :
             $exception->getFile();
 
         $log = "\n" . str_repeat("═", 100) . "\n";
         $log .= "[$timestamp] [UNCAUGHT EXCEPTION";
-        
+
         if ($isTwigException) {
             $log .= " - TWIG TEMPLATE ERROR";
         }
-        
+
         $log .= " - $exceptionClass]\n";
         $log .= str_repeat("─", 100) . "\n";
 
@@ -725,7 +790,7 @@ if (!function_exists('buildExceptionLogMessage')) {
 
         // Location
         $log .= "LOCATION:\n";
-        
+
         // For Twig exceptions, try to get the template info
         if ($isTwigException && method_exists($exception, 'getSourceContext') && method_exists($exception, 'getTemplateLine')) {
             try {
@@ -735,17 +800,17 @@ if (!function_exists('buildExceptionLogMessage')) {
                     $log .= "  Template: " . $sourceContext->getName() . "\n";
                     $templateLine = call_user_func([$exception, 'getTemplateLine']);
                     $log .= "  Template Line: " . $templateLine . "\n";
-                    
+
                     // Show template code snippet if available
                     $code = $sourceContext->getCode();
                     if ($code && method_exists($exception, 'getTemplateLine')) {
                         $lines = explode("\n", $code);
                         $errorLine = $templateLine - 1; // 0-indexed
-                        
+
                         $log .= "\n  Template Code Context:\n";
                         $start = max(0, $errorLine - 2);
                         $end = min(count($lines) - 1, $errorLine + 2);
-                        
+
                         for ($i = $start; $i <= $end; $i++) {
                             $lineNum = $i + 1;
                             $prefix = ($i === $errorLine) ? "  >>> " : "      ";
@@ -758,7 +823,7 @@ if (!function_exists('buildExceptionLogMessage')) {
                 // If we can't get template info, continue with regular logging
             }
         }
-        
+
         $log .= "  PHP File: $relativeFile\n";
         $log .= "  PHP Line: " . $exception->getLine() . "\n\n";
 
@@ -801,7 +866,8 @@ if (!function_exists('buildRequestInfo')) {
     /**
      * Build request information block
      */
-    function buildRequestInfo(): string {
+    function buildRequestInfo(): string
+    {
         $info = "REQUEST INFORMATION:\n";
         $info .= sprintf("  Method: %s\n", $_SERVER['REQUEST_METHOD'] ?? 'N/A');
         $info .= sprintf("  URI: %s\n", $_SERVER['REQUEST_URI'] ?? 'N/A');
@@ -821,7 +887,8 @@ if (!function_exists('buildMemoryInfo')) {
     /**
      * Build memory information block
      */
-    function buildMemoryInfo(): string {
+    function buildMemoryInfo(): string
+    {
         $info = "MEMORY INFORMATION:\n";
         $info .= sprintf("  Current: %s\n", formatBytes(memory_get_usage()));
         $info .= sprintf("  Peak: %s\n", formatBytes(memory_get_peak_usage()));
@@ -834,7 +901,8 @@ if (!function_exists('formatBytes')) {
     /**
      * Format bytes to human-readable format
      */
-    function formatBytes(int $bytes, int $precision = 2): string {
+    function formatBytes(int $bytes, int $precision = 2): string
+    {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
 
         for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
@@ -854,9 +922,10 @@ if (!function_exists('logError')) {
      * Log a general error with complete details
      * Using enhanced error_log format
      */
-    function logError(string $message, string $severity = 'ERROR', array $context = []): void {
+    function logError(string $message, string $severity = 'ERROR', array $context = []): void
+    {
         $timestamp = date('d-M-Y H:i:s e');
-        
+
         $logMessage = "\n" . str_repeat("═", 100) . "\n";
         $logMessage .= sprintf("[$timestamp] [%s]\n", $severity);
         $logMessage .= str_repeat("─", 100) . "\n";
@@ -878,7 +947,7 @@ if (!function_exists('logError')) {
 
         $logMessage .= buildMemoryInfo();
         $logMessage .= str_repeat("═", 100) . "\n";
-        
+
         // Use enhanced error logging
         enhancedErrorLog($logMessage, 3, getLogFilePath('errors'));
     }
@@ -889,7 +958,8 @@ if (!function_exists('logDebug')) {
      * Log debug information (only in development mode)
      * Using enhanced error_log format
      */
-    function logDebug(string $message, $data = null): void {
+    function logDebug(string $message, $data = null): void
+    {
         if (!defined('DEBUG_MODE') || !DEBUG_MODE) {
             return;
         }
@@ -897,11 +967,11 @@ if (!function_exists('logDebug')) {
         $timestamp = date('d-M-Y H:i:s e');
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
         $caller = $backtrace[0] ?? [];
-        
+
         $logMessage = "\n" . str_repeat("─", 100) . "\n";
         $logMessage .= sprintf("[$timestamp] [DEBUG]\n", $timestamp);
         $logMessage .= "MESSAGE: " . $message . "\n";
-        
+
         if (isset($caller['file']) && isset($caller['line'])) {
             $file = defined('BASE_PATH') ? str_replace(BASE_PATH, '', $caller['file']) : $caller['file'];
             $logMessage .= sprintf("Called from: %s:%d\n", $file, $caller['line']);
@@ -918,7 +988,7 @@ if (!function_exists('logDebug')) {
 
         $logMessage .= "URI: " . ($_SERVER['REQUEST_URI'] ?? 'N/A') . "\n";
         $logMessage .= str_repeat("─", 100) . "\n";
-        
+
         // Use enhanced error logging
         enhancedErrorLog($logMessage, 3, getLogFilePath('debug'));
     }
@@ -929,11 +999,12 @@ if (!function_exists('logDatabase')) {
      * Log database operations with complete details
      * Using enhanced error_log format
      */
-    function logDatabase(string $operation, string $query, float $executionTime = 0, bool $success = true, array $context = []): void {
+    function logDatabase(string $operation, string $query, float $executionTime = 0, bool $success = true, array $context = []): void
+    {
         $timestamp = date('d-M-Y H:i:s e');
         $status = $success ? 'SUCCESS' : 'FAILED';
         $timeStr = $executionTime > 0 ? sprintf(" (%.2f ms)", $executionTime) : '';
-        
+
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
         $caller = $backtrace[1] ?? $backtrace[0] ?? [];
 
@@ -941,18 +1012,18 @@ if (!function_exists('logDatabase')) {
         $logMessage .= sprintf("[$timestamp] [DB-%s] %s%s\n", $status, $operation, $timeStr);
         $logMessage .= str_repeat("─", 50) . "\n";
         $logMessage .= "QUERY:\n  " . $query . "\n\n";
-        
+
         if (isset($caller['file']) && isset($caller['line'])) {
             $file = defined('BASE_PATH') ? str_replace(BASE_PATH, '', $caller['file']) : $caller['file'];
             $logMessage .= sprintf("Called from: %s:%d\n", $file, $caller['line']);
         }
-        
+
         $logMessage .= sprintf("IP: %s | URI: %s\n", $_SERVER['REMOTE_ADDR'] ?? 'N/A', $_SERVER['REQUEST_URI'] ?? 'N/A');
-        
+
         if (!empty($context)) {
             $logMessage .= "Context: " . json_encode($context) . "\n";
         }
-        
+
         $logMessage .= str_repeat("─", 100) . "\n";
 
         // Use enhanced error logging
@@ -965,9 +1036,10 @@ if (!function_exists('logSecurity')) {
      * Log security events with complete details
      * Using enhanced error_log format
      */
-    function logSecurity(string $event, string $severity = 'MEDIUM', array $context = []): void {
+    function logSecurity(string $event, string $severity = 'MEDIUM', array $context = []): void
+    {
         $timestamp = date('d-M-Y H:i:s e');
-        
+
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
         $caller = $backtrace[1] ?? $backtrace[0] ?? [];
 
@@ -992,7 +1064,7 @@ if (!function_exists('logSecurity')) {
         }
 
         $logMessage .= "\n" . str_repeat("═", 100) . "\n";
-        
+
         // Use enhanced error logging
         enhancedErrorLog($logMessage, 3, getLogFilePath('security'));
     }
@@ -1003,9 +1075,10 @@ if (!function_exists('logMiddlewareReject')) {
      * Log middleware rejection events with complete details
      * Using enhanced error_log format
      */
-    function logMiddlewareReject(string $middleware, string $type, array $context = []): void {
+    function logMiddlewareReject(string $middleware, string $type, array $context = []): void
+    {
         $timestamp = date('d-M-Y H:i:s e');
-        
+
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
         $caller = $backtrace[1] ?? $backtrace[0] ?? [];
 
@@ -1013,12 +1086,12 @@ if (!function_exists('logMiddlewareReject')) {
         $logMessage .= sprintf("[$timestamp] [MIDDLEWARE_REJECT]\n");
         $logMessage .= "Middleware: " . $middleware . "\n";
         $logMessage .= "Type: " . $type . "\n";
-        
+
         if (isset($caller['file']) && isset($caller['line'])) {
             $file = defined('BASE_PATH') ? str_replace(BASE_PATH, '', $caller['file']) : $caller['file'];
             $logMessage .= sprintf("Location: %s:%d\n", $file, $caller['line']);
         }
-        
+
         $logMessage .= sprintf("Method: %s\n", $_SERVER['REQUEST_METHOD'] ?? 'N/A');
         $logMessage .= sprintf("URI: %s\n", $_SERVER['REQUEST_URI'] ?? 'N/A');
         $logMessage .= sprintf("IP: %s\n", $_SERVER['REMOTE_ADDR'] ?? 'N/A');
@@ -1031,7 +1104,7 @@ if (!function_exists('logMiddlewareReject')) {
         }
 
         $logMessage .= str_repeat("─", 100) . "\n";
-        
+
         // Use enhanced error logging
         enhancedErrorLog($logMessage, 3, getLogFilePath('middleware'));
     }
@@ -1042,21 +1115,22 @@ if (!function_exists('logInfo')) {
      * Log informational messages with complete details
      * Using enhanced error_log format
      */
-    function logInfo(string $message, array $context = []): void {
+    function logInfo(string $message, array $context = []): void
+    {
         $timestamp = date('d-M-Y H:i:s e');
-        
+
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
         $caller = $backtrace[1] ?? $backtrace[0] ?? [];
 
         $logMessage = "\n" . str_repeat("─", 100) . "\n";
         $logMessage .= sprintf("[$timestamp] [INFO]\n");
         $logMessage .= "MESSAGE: " . $message . "\n";
-        
+
         if (isset($caller['file']) && isset($caller['line'])) {
             $file = defined('BASE_PATH') ? str_replace(BASE_PATH, '', $caller['file']) : $caller['file'];
             $logMessage .= sprintf("Location: %s:%d\n", $file, $caller['line']);
         }
-        
+
         $logMessage .= sprintf("Method: %s\n", $_SERVER['REQUEST_METHOD'] ?? 'N/A');
         $logMessage .= sprintf("URI: %s\n", $_SERVER['REQUEST_URI'] ?? 'N/A');
         $logMessage .= sprintf("IP: %s\n", $_SERVER['REMOTE_ADDR'] ?? 'N/A');
@@ -1073,7 +1147,7 @@ if (!function_exists('logInfo')) {
         }
 
         $logMessage .= str_repeat("─", 100) . "\n";
-        
+
         // Use enhanced error logging
         enhancedErrorLog($logMessage, 3, getLogFilePath('info'));
     }
@@ -1088,9 +1162,10 @@ if (!function_exists('logTwigError')) {
      * Explicitly log Twig template errors
      * Use this in Twig error handlers for more control
      */
-    function logTwigError(Throwable $exception, array $context = []): void {
+    function logTwigError(Throwable $exception, array $context = []): void
+    {
         $logMessage = buildExceptionLogMessage($exception);
-        
+
         if (!empty($context)) {
             $logMessage = str_replace(
                 str_repeat("═", 100) . "\n",
@@ -1098,7 +1173,7 @@ if (!function_exists('logTwigError')) {
                 $logMessage
             );
         }
-        
+
         // Use enhanced error logging
         enhancedErrorLog($logMessage, 3, getLogFilePath('errors'));
     }
@@ -1205,7 +1280,8 @@ if (!function_exists('getLogDirectory')) {
     /**
      * Get the logs directory path
      */
-    function getLogDirectory(): string {
+    function getLogDirectory(): string
+    {
         $baseDir = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2) . DIRECTORY_SEPARATOR;
         return $baseDir . 'storage' . DIRECTORY_SEPARATOR . 'logs';
     }
@@ -1215,7 +1291,8 @@ if (!function_exists('getLogFiles')) {
     /**
      * Get list of all log files
      */
-    function getLogFiles(): array {
+    function getLogFiles(): array
+    {
         $logDir = getLogDirectory();
         $files = [];
 
@@ -1231,7 +1308,8 @@ if (!function_exists('clearLogFile')) {
     /**
      * Clear a specific log file
      */
-    function clearLogFile(string $filename): bool {
+    function clearLogFile(string $filename): bool
+    {
         $logDir = getLogDirectory();
         $filePath = $logDir . DIRECTORY_SEPARATOR . $filename;
 
@@ -1252,7 +1330,8 @@ if (!function_exists('getLogFileSize')) {
     /**
      * Get size of a log file
      */
-    function getLogFileSize(string $filename): int {
+    function getLogFileSize(string $filename): int
+    {
         $logDir = getLogDirectory();
         $filePath = $logDir . DIRECTORY_SEPARATOR . $filename;
 
@@ -1268,7 +1347,8 @@ if (!function_exists('getLogFileStats')) {
     /**
      * Get detailed statistics of a log file
      */
-    function getLogFileStats(string $filename): array {
+    function getLogFileStats(string $filename): array
+    {
         $logDir   = getLogDirectory();
         $filePath = $logDir . DIRECTORY_SEPARATOR . $filename;
 
@@ -1297,7 +1377,8 @@ if (!function_exists('readLogFile')) {
     /**
      * Read a log file safely (optionally limit lines)
      */
-    function readLogFile(string $filename, int $maxLines = 500): string {
+    function readLogFile(string $filename, int $maxLines = 500): string
+    {
         $logDir   = getLogDirectory();
         $filePath = $logDir . DIRECTORY_SEPARATOR . $filename;
 
@@ -1323,7 +1404,8 @@ if (!function_exists('deleteLogFile')) {
     /**
      * Delete a log file safely
      */
-    function deleteLogFile(string $filename): bool {
+    function deleteLogFile(string $filename): bool
+    {
         $logDir   = getLogDirectory();
         $filePath = $logDir . DIRECTORY_SEPARATOR . $filename;
 
@@ -1344,7 +1426,8 @@ if (!function_exists('getTotalLogSize')) {
     /**
      * Get total size of all log files
      */
-    function getTotalLogSize(): array {
+    function getTotalLogSize(): array
+    {
         $logDir = getLogDirectory();
         $total  = 0;
 

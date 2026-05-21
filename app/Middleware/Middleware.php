@@ -7,11 +7,11 @@ declare(strict_types=1);
  * Fully Corrected & Production-Ready Middleware System
  */
 
-require_once __DIR__ . '/../Models/AuthManager.php';
-require_once __DIR__ . '/../Models/SessionManager.php';
-require_once __DIR__ . '/../Models/FirebaseModel.php';
-require_once __DIR__ . '/../Models/SecurityManager.php';
-require_once __DIR__ . '/../Models/UserModel.php';
+require_once dirname(__DIR__, 1) . '/Models/AuthManager.php';
+require_once dirname(__DIR__, 1) . '/Models/SessionManager.php';
+require_once dirname(__DIR__, 1) . '/Models/FirebaseModel.php';
+require_once dirname(__DIR__, 1) . '/Models/SecurityManager.php';
+require_once dirname(__DIR__, 1) . '/Models/UserModel.php';
 
 /* =====================================================
    BOOTSTRAP DEPENDENCIES

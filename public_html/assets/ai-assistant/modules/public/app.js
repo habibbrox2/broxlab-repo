@@ -8,8 +8,8 @@ import {
 import { createThinkingIndicator } from '../../core/thinking.js';
 import { createHistoryStore } from '../../core/storage.js';
 import { createLanguageState } from '../../core/i18n.js';
-import { ensurePuterReady, getPuterClient, extractResponseText } from '../../core/puter.js';
-import { initializeModelCache } from '../../core/cache.js';
+import { ensurePuterReady, getPuterClient, extractResponseText, getPuterModels } from '../../core/puter.js';
+import { initializeModelCache, loadModelsWithCache } from '../../core/cache.js';
 
 const UI = {
   btn: document.getElementById('publicAssistantBtn'),
@@ -21,6 +21,8 @@ const UI = {
   closeBtn: document.getElementById('closePublicAssistant'),
   statusIndicator: document.getElementById('publicAssistantStatusIndicator'),
   status: document.getElementById('publicAssistantStatusText'),
+  modelName: document.getElementById('publicAssistantModelName'),
+  modelStatusIndicator: document.getElementById('publicAssistantModelStatusIndicator'),
   openRouterKeyStatus: document.getElementById('publicAssistantOpenRouterKeyStatus'),
   thinkingIndicator: document.getElementById('publicAssistantThinkingIndicator'),
   fallbackBadge: document.getElementById('publicAssistantFallbackBadge'),
@@ -51,6 +53,11 @@ const DEFAULT_PREFS = {
   providers: [],
 };
 
+const DEBUG_MODE =
+  new URLSearchParams(window.location.search).get('ai_debug') === '1' ||
+  window.localStorage.getItem('ai_debug_enabled') === 'true';
+
+const MODEL_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 const assistantPrefs = { ...DEFAULT_PREFS, };
 const providerApiKeys = {};
 const providerApiKeySources = {};
@@ -64,26 +71,115 @@ function getProviderApiKeySource(providerName) {
   return String(providerApiKeySources[providerName] || 'none');
 }
 
-function hasProviderApiKey(providerName) {
-  return getProviderApiKey(providerName) !== '';
+function getActiveClientProviders() {
+  return (assistantPrefs.providers || [])
+    .filter((p) => p.provider_name && p.has_api_key && SUPPORTED_CLIENT_PROVIDERS.has(p.provider_name))
+    .map((p) => p.provider_name);
+}
+
+function showPreChatError(message) {
+  const container = document.getElementById('publicAssistantPreChatError') || (() => {
+    const el = document.createElement('div');
+    el.id = 'publicAssistantPreChatError';
+    el.className = 'brox-ai-text-error';
+    el.style.cssText = 'margin-top:0.75rem;color:#d92e2e;font-size:0.95rem;line-height:1.4;';
+    const parent = document.querySelector('#publicAssistantPreChat .brox-ai-welcome');
+    parent?.appendChild(el);
+    return el;
+  })();
+
+  container.textContent = message;
+  container.classList.remove('brox-ai-hidden');
+  window.setTimeout(() => container.classList.add('brox-ai-hidden'), 6000);
+}
+
+function choosePreferredProvider() {
+  const active = getActiveClientProviders();
+  if (assistantPrefs.provider && active.includes(assistantPrefs.provider)) {
+    return assistantPrefs.provider;
+  }
+  return active.length > 0 ? active[0] : assistantPrefs.provider;
+}
+
+function selectModelFromList(provider, models, currentModel) {
+  if (!Array.isArray(models) || models.length === 0) {
+    return currentModel;
+  }
+
+  if (currentModel && models.some((m) => String(m.id) === String(currentModel))) {
+    return currentModel;
+  }
+
+  const defaultModel = models.find((m) => m.default || false);
+  if (defaultModel) {
+    return String(defaultModel.id);
+  }
+
+  if (provider === 'openrouter') {
+    const freeModel = models.find((m) => {
+      const id = String(m.id).toLowerCase();
+      const name = String(m.name || '').toLowerCase();
+      return id.includes(':free') || id.includes('/free') || name.includes('free');
+    });
+    if (freeModel) {
+      return String(freeModel.id);
+    }
+  }
+
+  return String(models[0].id);
+}
+
+async function getBackendModels(provider) {
+  try {
+    const result = await loadModelsWithCache(provider, {
+      cacheTTL: MODEL_CACHE_TTL,
+      timeout: 10000,
+    });
+    return Array.isArray(result?.models) ? result.models : [];
+  } catch (err) {
+    console.warn(`Failed to load models for ${provider}:`, err?.message || err);
+    return [];
+  }
+}
+
+async function preloadProviderModels() {
+  const activeProviders = getActiveClientProviders();
+  const preferredProvider = choosePreferredProvider();
+
+  if (preferredProvider && preferredProvider !== 'puter') {
+    const models = await getBackendModels(preferredProvider);
+    assistantPrefs.model = selectModelFromList(preferredProvider, models, assistantPrefs.model);
+    assistantPrefs.provider = preferredProvider;
+  }
+
+  updateSelectedProviderModel();
+
+  await Promise.all(
+    activeProviders
+      .filter((provider) => provider !== preferredProvider)
+      .map(async (provider) => {
+        await getBackendModels(provider);
+      })
+  );
+
+  try {
+    const ready = await ensurePuterReady({ interactive: false, allowAuth: false, });
+    if (ready) {
+      await getPuterModels();
+    }
+  } catch (err) {
+    console.info('Puter preload failed:', err);
+  }
 }
 
 async function loadAssistantPrefs() {
   try {
-    const response = await fetch('/api/ai-settings/frontend');
+    const response = await fetch('/api/ai/settings');
     if (response.ok) {
       const data = await response.json();
       assistantPrefs.provider = data.provider;
       assistantPrefs.model = data.model;
       assistantPrefs.providers = Array.isArray(data.providers) ? data.providers : [];
-
-      // Ensure we have a default model for OpenRouter (free router) when not explicitly set.
-      if (
-        assistantPrefs.provider === 'openrouter' &&
-        (!assistantPrefs.model || !assistantPrefs.model.includes('/'))
-      ) {
-        assistantPrefs.model = 'openrouter/free';
-      }
 
       // Store provider API keys in private client state only.
       (assistantPrefs.providers || []).forEach((p) => {
@@ -91,12 +187,24 @@ async function loadAssistantPrefs() {
         providerApiKeys[p.provider_name] = p.api_key;
         providerApiKeySources[p.provider_name] = p.api_key_source || 'db';
       });
+
+      // Auto-select a working provider and model before the assistant opens.
+      assistantPrefs.provider = choosePreferredProvider();
+      if (assistantPrefs.provider === 'openrouter' && (!assistantPrefs.model || !assistantPrefs.model.includes('/'))) {
+        assistantPrefs.model = 'openrouter/free';
+      }
+
+      if (assistantPrefs.provider !== 'puter') {
+        const models = await getBackendModels(assistantPrefs.provider);
+        assistantPrefs.model = selectModelFromList(assistantPrefs.provider, models, assistantPrefs.model);
+      }
     }
   } catch (err) {
     console.info('Failed to load assistant prefs from backend:', err);
   }
   console.info('assistantPrefs loaded:', assistantPrefs);
   updateOpenRouterKeyStatus();
+  updateSelectedProviderModel();
 }
 
 const I18N = {
@@ -213,7 +321,7 @@ async function callFireworksAI(messages, options = {}) {
     stream: false,
   };
 
-  const res = await fetch('/api/ai/chat', {
+  const res = await fetch('/ai/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -240,7 +348,7 @@ async function callOpenRouterAI(messages, options = {}) {
     stream: false,
   };
 
-  const res = await fetch('/api/ai/chat', {
+  const res = await fetch('/ai/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -312,6 +420,27 @@ function setTyping(active) {
     } else {
       publicThinking.hide();
     }
+  }
+}
+
+function updateSelectedProviderModel() {
+  if (!UI.modelName || !UI.modelStatusIndicator) {
+    return;
+  }
+
+  const provider = assistantPrefs.provider || 'puter';
+  const model = assistantPrefs.model || '';
+  const providerLabel = provider === 'puter' ? 'Puter (fallback)' : provider;
+  UI.modelName.textContent = model ? `${providerLabel} · ${model}` : providerLabel;
+  UI.modelName.title = model ? `Selected provider: ${providerLabel}, selected model: ${model}` : `Selected provider: ${providerLabel}`;
+
+  UI.modelStatusIndicator.className = 'brox-ai-status-indicator';
+  if (provider === 'puter') {
+    UI.modelStatusIndicator.classList.add('brox-ai-offline');
+    UI.modelStatusIndicator.title = 'Fallback provider selected';
+  } else {
+    UI.modelStatusIndicator.classList.add('brox-ai-online');
+    UI.modelStatusIndicator.title = 'Selected backend provider';
   }
 }
 
@@ -595,7 +724,8 @@ function bindEvents() {
   document.getElementById('introNext1')?.addEventListener('click', () => {
     const name = String(document.getElementById('introName')?.value || '').trim();
     if (!name) {
-      alert(t('alert_name_required'));
+      showPreChatError(t('alert_name_required'));
+      document.getElementById('introName')?.focus();
       return;
     }
     setPreChatStep('step-contact');
@@ -609,12 +739,14 @@ function bindEvents() {
     const mobile = String(document.getElementById('introMobile')?.value || '').trim();
     const topics = getSelectedTopics();
     if (!name) {
-      alert(t('alert_name_required'));
+      showPreChatError(t('alert_name_required'));
+      document.getElementById('introName')?.focus();
       setPreChatStep('step-name');
       return;
     }
     if (!topics.length) {
-      alert(t('alert_topic_required'));
+      showPreChatError(t('alert_topic_required'));
+      document.getElementById('introTopicOptions')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     userInfo = { name, email, mobile, topics, supportSent: false, };
@@ -700,9 +832,13 @@ async function handleUserMessage() {
       : 'Puter';
 
   if (providerOrder !== lastProviderChain) {
-    await appendAssistant(UI.messages, `Provider fallback order: ${providerOrder}`, {
-      animate: true,
-    });
+    if (DEBUG_MODE) {
+      await appendAssistant(UI.messages, `Provider fallback order: ${providerOrder}`, {
+        animate: true,
+      });
+    } else {
+      console.info('Provider fallback order:', providerOrder);
+    }
     lastProviderChain = providerOrder;
   }
 
@@ -811,8 +947,10 @@ async function handleUserMessage() {
     }
     await appendAssistant(
       UI.messages,
-      `All configured providers failed, falling back to Puter.js${lastUsed}.`,
-      { animate: true, }
+      DEBUG_MODE
+        ? `All configured providers failed, falling back to Puter.js${lastUsed}.`
+        : 'One of our AI connectors is temporarily unavailable. Switching to the local fallback to keep the conversation going.',
+      { animate: true }
     );
   }
 
@@ -928,11 +1066,12 @@ async function init() {
   else showPreChat();
   setStatus(t('assistant_status'));
 
-  // Initialize model cache
-  initializeModelCache(['puter-js', 'openrouter',], {
-    ttl: 24 * 60 * 60 * 1000, // 24 hours
+  // Initialize model cache and prefetch supported provider models.
+  initializeModelCache(['openrouter', 'fireworks'], {
+    ttl: MODEL_CACHE_TTL,
     storageKey: 'brox.public.models.cache',
   });
+  preloadProviderModels();
 }
 
 init();

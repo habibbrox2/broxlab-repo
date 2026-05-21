@@ -159,7 +159,7 @@ if (!function_exists('processBkashPaymentId')) {
         }
 
         try {
-            require_once __DIR__ . '/../Services/BkashGateway.php';
+            require_once dirname(__DIR__, 1) . '/Services/BkashGateway.php';
             $bk = new BkashGateway($mysqli);
 
             $exec = $bk->executePayment($paymentId);

@@ -44,9 +44,9 @@ class UnifiedCache
     public function __construct()
     {
         // Use unified storage directory
-        $this->baseCacheDir = realpath(__DIR__ . '/../../../storage/cache');
+        $this->baseCacheDir = realpath(dirname(__DIR__, 3) . '/storage/cache');
         if (!$this->baseCacheDir) {
-            $this->baseCacheDir = __DIR__ . '/../../../storage/cache';
+            $this->baseCacheDir = dirname(__DIR__, 3) . '/storage/cache';
         }
 
         // Create subdirectories for different cache types
@@ -142,7 +142,7 @@ class UnifiedCache
 
         if ($result === false) {
             // Log error in production
-            error_log("UnifiedCache: Failed to write cache file: {$cacheFile}");
+            aiErrorLog("UnifiedCache: Failed to write cache file: {$cacheFile}");
             return false;
         }
 
@@ -344,7 +344,7 @@ class UnifiedCache
 
         if (!$key) {
             // Check .env file
-            $envFile = __DIR__ . '/../../../.env';
+            $envFile = dirname(__DIR__, 3) . '/.env';
             if (file_exists($envFile)) {
                 $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
                 foreach ($lines as $line) {

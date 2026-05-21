@@ -294,7 +294,10 @@
 
   {% if auth_user.is_super_admin %}
     {% set menu_items = menu_items|merge([
-      {'name': 'AI Knowledge Base', 'icon': 'bi-book', 'url': '/admin/ai-knowledge', 'key': 'ai-knowledge'}
+      {'name': 'AI Knowledge Base', 'icon': 'bi-book', 'url': '/admin/ai-knowledge', 'key': 'ai-knowledge'},
+      {'name': 'AI Article Writer', 'icon': 'bi-pencil-square', 'url': '/admin/ai/article-writer', 'key': 'ai-article-writer'},
+      {'name': 'Live Article Writer', 'icon': 'bi-sync', 'url': '/admin/ai/article-writer-stream', 'key': 'ai-article-writer-stream'},
+      {'name': 'Bulk Article Gen', 'icon': 'bi-boxes', 'url': '/admin/ai/bulk-article-writer', 'key': 'ai-bulk-article-writer'}
     ]) %}
   {% endif %}
 
@@ -410,6 +413,13 @@
   {# jQuery for legacy code compatibility - load before other scripts #}
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 
+  <script>
+    window.__APP_JS_CONFIG_OVERRIDES = {
+      notifications: {
+        websocketUrl: {{ env('WEBSOCKET_SERVER_URL', '') | json_encode | raw }}
+      }
+    };
+  </script>
   <script src="{{ asset('/assets/js/dist/app-config.js') }}" defer></script>
   <script src="{{ asset('/assets/firebase/v2/dist/firebase-config.js') }}" defer></script>
 
@@ -536,5 +546,6 @@
   {% set assistant_variant = 'admin' %}
 {% include 'partials/ai-assistant/admin.twig' %}
 {% include 'partials/ai-assistant/script.twig' %}
+{% include 'partials/ai-assistant/admin-button.twig' %}
 </body>
 </html>

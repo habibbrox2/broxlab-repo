@@ -102,7 +102,7 @@ class SemanticCache
 
             return null;
         } catch (\Exception $e) {
-            error_log('[SemanticCache] Error: ' . $e->getMessage());
+            aiErrorLog('[SemanticCache] Error: ' . $e->getMessage());
             return null;
         }
     }
@@ -151,7 +151,7 @@ class SemanticCache
 
             return $cacheKey;
         } catch (\Exception $e) {
-            error_log('[SemanticCache] Set error: ' . $e->getMessage());
+            aiErrorLog('[SemanticCache] Set error: ' . $e->getMessage());
             return '';
         }
     }
@@ -215,7 +215,7 @@ class SemanticCache
 
             return array_slice($results, 0, $limit);
         } catch (\Exception $e) {
-            error_log('[SemanticCache] Search error: ' . $e->getMessage());
+            aiErrorLog('[SemanticCache] Search error: ' . $e->getMessage());
             return [];
         }
     }

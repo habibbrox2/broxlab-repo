@@ -573,6 +573,8 @@ export function initAdminUserDropdownSync() {
 }
 
 export async function initAdminDebugUtils() {
+  // Idempotent initialization: avoid re-initializing and duplicate logs
+  if (window.debugUtilsReady) return;
   try {
     const mod = await import('/assets/firebase/v2/dist/debug.js');
     const DebugUtils = mod.default || mod.DebugUtils;
@@ -581,7 +583,11 @@ export async function initAdminDebugUtils() {
     window.DebugUtils = DebugUtils;
     window.debugUtilsReady = true;
     console.info('[DebugUtils] Initialized and ready');
-    window.dispatchEvent(new CustomEvent('debugUtilsLoaded', { detail: DebugUtils, }));
+    try {
+      window.dispatchEvent(new CustomEvent('debugUtilsLoaded', { detail: DebugUtils, }));
+    } catch (e) {
+      // ignore dispatch failures
+    }
   } catch (err) {
     // Silent fail
   }

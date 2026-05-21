@@ -10,6 +10,7 @@
     "erusev/parsedown": "^1.7.4 || ^1.8",
     "kreait/firebase-php": "^7.0 || ^8.1",
     "mpdf/mpdf": "^8.2",
+    "smalot/pdfparser": "^0.16",
     "guzzlehttp/guzzle": "^7.8",
     "symfony/dom-crawler": "^6.4",
     "symfony/css-selector": "^6.4",
@@ -25,5 +26,14 @@
     "classmap": [
       "app/"
     ]
+  },
+  "scripts": {
+    "test:php": "php tests/AIProviderOpenRouterContentTest.php"
+  }
+  ,
+  "config": {
+    "platform": {
+      "ext-pcntl": "1.0"
+    }
   }
 }

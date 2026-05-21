@@ -47,7 +47,7 @@ class FallbackEngine
         // Setup logging
         $this->enableLogging = getenv('FALLBACK_LOGGING') ?? false;
         if ($this->enableLogging) {
-            $this->logFile = __DIR__ . '/../../../storage/logs/fallback_engine.log';
+            $this->logFile = dirname(__DIR__, 3) . '/storage/logs/fallback_engine.log';
             $logDir = dirname($this->logFile);
             if (!is_dir($logDir)) {
                 @mkdir($logDir, 0777, true);
@@ -65,7 +65,7 @@ class FallbackEngine
         $this->maxDelay = (int)getenv('FALLBACK_MAX_DELAY') ?: 10;
 
         // Try .env file
-        $envFile = __DIR__ . '/../../../.env';
+        $envFile = dirname(__DIR__, 3) . '/.env';
         if (file_exists($envFile)) {
             $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
             foreach ($lines as $line) {

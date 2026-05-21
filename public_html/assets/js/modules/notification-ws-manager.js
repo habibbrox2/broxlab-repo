@@ -24,12 +24,60 @@ class NotificationWebSocketManager extends EventTarget {
   }
 
   error(...args) {
-    console.error('[WebSocketManager]', ...args);
+    // Only log as error when debug mode is enabled; otherwise log as warn to avoid
+    // noisy error-level messages in production consoles when WS isn't available.
+    if (this.debug) {
+      console.error('[WebSocketManager]', ...args);
+    } else {
+      console.warn('[WebSocketManager]', ...args);
+    }
   }
 
   /**
      * Connect to WebSocket server
      */
+  getConfiguredWebSocketUrl() {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    const configured = window.__APP_JS_CONFIG?.notifications?.websocketUrl
+      || window.__APP_CONFIG?.notifications?.websocketUrl;
+
+    return typeof configured === 'string' && configured.trim() !== ''
+      ? configured.trim()
+      : null;
+  }
+
+  getDefaultWebSocketBaseUrl() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.hostname;
+    const port = window.location.port || '3003';
+    return `${protocol}//${host}:${port}`;
+  }
+
+  getWebSocketUrl() {
+    try {
+      const baseUrl = this.getConfiguredWebSocketUrl() || this.getDefaultWebSocketBaseUrl();
+      const url = new URL(baseUrl, window.location.href);
+
+      if (url.protocol === 'http:') {
+        url.protocol = 'ws:';
+      } else if (url.protocol === 'https:') {
+        url.protocol = 'wss:';
+      }
+
+      if (!url.searchParams.has('userId')) {
+        url.searchParams.set('userId', this.userId);
+      }
+
+      return url.toString();
+    } catch (err) {
+      this.error('Invalid WebSocket URL configured:', err);
+      return `${this.getDefaultWebSocketBaseUrl()}?userId=${encodeURIComponent(this.userId)}`;
+    }
+  }
+
   connect(userId = null) {
     if (userId) {
       this.userId = userId;
@@ -41,10 +89,7 @@ class NotificationWebSocketManager extends EventTarget {
     }
 
     try {
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsHost = window.location.hostname;
-      const wsPort = window.location.port || '3000'; // Use current port or fallback to 3000
-      const wsUrl = `${wsProtocol}//${wsHost}:${wsPort}?userId=${this.userId}`;
+      const wsUrl = this.getWebSocketUrl();
 
       this.log('Connecting to WebSocket:', wsUrl);
 
@@ -143,10 +188,15 @@ class NotificationWebSocketManager extends EventTarget {
      * Handle WebSocket error
      */
   handleError(event) {
+    // Prefer non-fatal warning in production; preserve debug behaviour when requested.
     this.error('WebSocket error:', event);
-    this.dispatchEvent(new CustomEvent('error', {
-      detail: { error: event, },
-    }));
+    try {
+      this.dispatchEvent(new CustomEvent('error', {
+        detail: { error: event, },
+      }));
+    } catch (e) {
+      // ignore dispatch problems
+    }
   }
 
   /**

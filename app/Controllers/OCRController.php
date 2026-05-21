@@ -9,8 +9,8 @@
 /** @var Router $router */
 /** @var \mysqli $mysqli */
 
-require_once __DIR__ . '/../Services/OCRService.php';
-require_once __DIR__ . '/../Models/AppSettings.php';
+require_once dirname(__DIR__, 1) . '/Services/OCRService.php';
+require_once dirname(__DIR__, 1) . '/Models/AppSettings.php';
 
 // Initialize OCR service
 $ocrService = new OCRService();

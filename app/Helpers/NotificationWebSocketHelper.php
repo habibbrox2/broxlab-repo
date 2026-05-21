@@ -8,12 +8,17 @@
  * @package Broxbhai
  */
 
+require_once dirname(__DIR__, 1) . '/Helpers/WebSocketConfigHelper.php';
+
 class NotificationWebSocketHelper
 {
     /**
-     * WebSocket server URL for broadcasting notifications
+     * Get configured WebSocket server URL from environment.
      */
-    private const WEBSOCKET_URL = 'http://localhost:3003';
+    private static function getWebSocketServerUrl(): string
+    {
+        return getWebSocketServerUrl();
+    }
 
     /**
      * Broadcast notification to users via WebSocket
@@ -69,7 +74,7 @@ class NotificationWebSocketHelper
         }
 
         curl_setopt_array($ch, [
-            CURLOPT_URL => self::WEBSOCKET_URL . '/broadcast',
+            CURLOPT_URL => self::getWebSocketServerUrl() . '/broadcast',
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => json_encode($payload),
             CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
@@ -104,7 +109,7 @@ class NotificationWebSocketHelper
         try {
             $ch = curl_init();
             curl_setopt_array($ch, [
-                CURLOPT_URL => self::WEBSOCKET_URL . '/health',
+                CURLOPT_URL => self::getWebSocketServerUrl() . '/health',
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => 3,
                 CURLOPT_CONNECTTIMEOUT => 3

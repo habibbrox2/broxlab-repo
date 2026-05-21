@@ -484,7 +484,7 @@ if (!function_exists('weather_handleError')) {
             exit;
         }
 
-        $template = __DIR__ . '/../Views/weather/error.twig';
+        $template = dirname(__DIR__, 1) . '/Views/weather/error.twig';
         if (file_exists($template)) {
             echo $twig->render('weather/error.twig', [
                 'title'      => 'Weather Error',

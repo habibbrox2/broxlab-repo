@@ -480,7 +480,7 @@ if (!function_exists('sendNotiUser')) {
                         // Cleanup invalid tokens based on FCM error response
                         try {
                             if (!class_exists('TokenManagementModel')) {
-                                require_once __DIR__ . '/../Models/TokenManagementModel.php';
+                                require_once dirname(__DIR__, 1) . '/Models/TokenManagementModel.php';
                             }
                             if (class_exists('TokenManagementModel')) {
                                 $errLower = strtolower($errorMsg);
