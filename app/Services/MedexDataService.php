@@ -29,8 +29,15 @@ class MedexDataService
 
     public function __construct()
     {
-        $this->dataFile = BASE_PATH . 'medex_herbal_companies.json';
+        $uploadsDir = defined('UPLOADS_DIR') ? rtrim(UPLOADS_DIR, '/\\') . '/medex' : BASE_PATH . 'public_html/uploads/medex';
+        $this->dataFile = rtrim($uploadsDir, '/\\') . '/medex_herbal_companies.json';
         $this->refreshLockFile = BASE_PATH . 'medex_refresh.lock';
+        if (!file_exists($this->dataFile)) {
+            $fallback = BASE_PATH . 'medex_herbal_companies.json';
+            if (file_exists($fallback)) {
+                $this->dataFile = $fallback;
+            }
+        }
         $this->loadData();
     }
 
@@ -212,7 +219,11 @@ class MedexDataService
             return $this->detailedData;
         }
 
-        $detailedFile = BASE_PATH . 'medex_herbal_companies_detailed.json';
+        $uploadsDir = defined('UPLOADS_DIR') ? rtrim(UPLOADS_DIR, '/\\') . '/medex' : BASE_PATH . 'public_html/uploads/medex';
+        $detailedFile = rtrim($uploadsDir, '/\\') . '/medex_herbal_companies_detailed.json';
+        if (!file_exists($detailedFile)) {
+            $detailedFile = BASE_PATH . 'medex_herbal_companies_detailed.json';
+        }
         if (file_exists($detailedFile)) {
             $json = file_get_contents($detailedFile);
             $data = json_decode($json, true);
@@ -274,6 +285,11 @@ class MedexDataService
         return $this->dataFile;
     }
 
+    public function getRefreshLockPath(): string
+    {
+        return $this->refreshLockFile;
+    }
+
     public function getDataFileAgeSeconds(): int
     {
         if (!file_exists($this->dataFile)) {
@@ -282,21 +298,68 @@ class MedexDataService
         return max(0, time() - filemtime($this->dataFile));
     }
 
-    public function isDataStale(int $thresholdSeconds = self::REFRESH_DATA_TTL): bool
+    public function getRefreshLockAgeSeconds(): int
     {
+        if (!file_exists($this->refreshLockFile)) {
+            return PHP_INT_MAX;
+        }
+        return max(0, time() - filemtime($this->refreshLockFile));
+    }
+
+    public function getRefreshDataTtl(): int
+    {
+        return self::REFRESH_DATA_TTL;
+    }
+
+    public function isDataStale(int $thresholdSeconds = null): bool
+    {
+        if ($thresholdSeconds === null) {
+            $thresholdSeconds = $this->getRefreshDataTtl();
+        }
+
         return !file_exists($this->dataFile) || $this->getDataFileAgeSeconds() > $thresholdSeconds;
     }
 
-    public function refreshDataIfStale(int $thresholdSeconds = self::REFRESH_DATA_TTL): bool
+    public function isRefreshLockStale(): bool
     {
+        return file_exists($this->refreshLockFile) && $this->getRefreshLockAgeSeconds() >= self::REFRESH_LOCK_TTL;
+    }
+
+    private function cleanupStaleRefreshLock(): void
+    {
+        if ($this->isRefreshLockStale()) {
+            @unlink($this->refreshLockFile);
+        }
+    }
+
+    public function refreshDataIfStale(int $thresholdSeconds = null): bool
+    {
+        if ($thresholdSeconds === null) {
+            $thresholdSeconds = $this->getRefreshDataTtl();
+        }
+
+        if ($this->isRefreshLockStale()) {
+            $this->cleanupStaleRefreshLock();
+        }
+
         if (!$this->isDataStale($thresholdSeconds)) {
             return false;
         }
-        return $this->refreshDataFromSource();
+
+        $success = $this->refreshDataFromSource();
+        if (!$success && !file_exists($this->dataFile)) {
+            throw new Exception('MedEx data is stale and refresh failed. No cache is available.');
+        }
+
+        return $success;
     }
 
     public function refreshDataFromSource(): bool
     {
+        @set_time_limit(0);
+        @ini_set('max_execution_time', '0');
+        ignore_user_abort(true);
+
         if (!$this->acquireRefreshLock()) {
             return false;
         }
@@ -350,11 +413,22 @@ class MedexDataService
 
     private function acquireRefreshLock(): bool
     {
-        if (file_exists($this->refreshLockFile) && (time() - filemtime($this->refreshLockFile)) < self::REFRESH_LOCK_TTL) {
-            return false;
+        if (file_exists($this->refreshLockFile)) {
+            if ($this->isRefreshLockStale()) {
+                @unlink($this->refreshLockFile);
+            } else {
+                return false;
+            }
         }
-        file_put_contents($this->refreshLockFile, json_encode(['started_at' => date('c')], JSON_UNESCAPED_UNICODE));
-        return true;
+
+        $payload = [
+            'started_at' => date('c'),
+            'pid'        => function_exists('getmypid') ? getmypid() : null,
+            'host'       => function_exists('gethostname') ? gethostname() : null,
+        ];
+
+        $result = file_put_contents($this->refreshLockFile, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
+        return $result !== false;
     }
 
     private function releaseRefreshLock(): void
