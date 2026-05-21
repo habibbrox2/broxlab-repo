@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MedEx Bangladesh - Herbal Companies Data Scraper
  * Fetches company list and detailed information
@@ -7,7 +8,26 @@
 set_time_limit(0);
 ini_set('memory_limit', '512M');
 
-function fetchPage($url) {
+function getUploadsBaseDir(): string
+{
+    $uploads = realpath(__DIR__ . '/../public_html/uploads');
+    if ($uploads === false) {
+        $uploads = __DIR__ . '/../public_html/uploads';
+    }
+    return rtrim(str_replace('\\', '/', $uploads), '/');
+}
+
+function getMedexUploadsDir(): string
+{
+    $dir = getUploadsBaseDir() . '/medex';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+    return $dir;
+}
+
+function fetchPage(string $url): string|false
+{
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -24,7 +44,8 @@ function fetchPage($url) {
     return $html;
 }
 
-function parseMainPage($html) {
+function parseMainPage(string $html): array
+{
     $dom = new DOMDocument();
     libxml_use_internal_errors(true);
     $dom->loadHTML($html);
@@ -32,15 +53,23 @@ function parseMainPage($html) {
     $companies = [];
     $rows = $xpath->query("//div[contains(@class, 'data-row')]");
     foreach ($rows as $row) {
+        if (!$row instanceof DOMElement) {
+            continue;
+        }
         $nameDiv = $xpath->query(".//div[contains(@class, 'data-row-top')]", $row);
         if ($nameDiv->length == 0) continue;
         $link = $xpath->query(".//a", $nameDiv->item(0));
         if ($link->length == 0) continue;
-        $name = trim($link->item(0)->nodeValue);
-        $href = $link->item(0)->getAttribute('href');
+        $linkItem = $link->item(0);
+        if (!$linkItem instanceof DOMElement) {
+            continue;
+        }
+        $name = trim($linkItem->nodeValue);
+        $href = $linkItem->getAttribute('href');
         $countDiv = $xpath->query(".//div[not(contains(@class, 'data-row-top'))]", $row);
         $countText = $countDiv->length > 0 ? trim($countDiv->item(0)->nodeValue) : '';
-        $gen = 0; $brand = 0;
+        $gen = 0;
+        $brand = 0;
         if (preg_match('/(\d+)\s+generics/i', $countText, $m)) $gen = (int)$m[1];
         if (preg_match('/(\d+)\s+brand\s+names/i', $countText, $m)) $brand = (int)$m[1];
         $companies[] = [
@@ -53,7 +82,8 @@ function parseMainPage($html) {
     return $companies;
 }
 
-function getTotalPages($html) {
+function getTotalPages(string $html): int
+{
     $dom = new DOMDocument();
     libxml_use_internal_errors(true);
     $dom->loadHTML($html);
@@ -61,6 +91,9 @@ function getTotalPages($html) {
     $links = $xpath->query("//nav//a[contains(@href, 'page=')]");
     $max = 1;
     foreach ($links as $link) {
+        if (!$link instanceof DOMElement) {
+            continue;
+        }
         $href = $link->getAttribute('href');
         if (preg_match('/page=(\d+)/', $href, $m)) {
             $num = (int)$m[1];
@@ -70,7 +103,8 @@ function getTotalPages($html) {
     return $max;
 }
 
-function parseCompanyOverview($html) {
+function parseCompanyOverview(string $html): array
+{
     $dom = new DOMDocument();
     libxml_use_internal_errors(true);
     $dom->loadHTML($html);
@@ -91,21 +125,38 @@ function parseCompanyOverview($html) {
             $label = trim($tds->item(0)->nodeValue);
             $value = trim($tds->item(1)->nodeValue);
             switch ($label) {
-                case 'Established': $details['established'] = $value; break;
-                case 'Market Share': $details['market_share'] = $value; break;
-                case 'Growth': $details['growth'] = $value; break;
-                case 'Total generics': $details['total_generics'] = $value; break;
+                case 'Established':
+                    $details['established'] = $value;
+                    break;
+                case 'Market Share':
+                    $details['market_share'] = $value;
+                    break;
+                case 'Growth':
+                    $details['growth'] = $value;
+                    break;
+                case 'Total generics':
+                    $details['total_generics'] = $value;
+                    break;
                 case 'Headquarter':
                     $link = $xpath->query(".//a", $tds->item(1));
                     if ($link->length > 0) {
-                        $details['headquarter'] = trim($link->item(0)->nodeValue);
-                        $details['headquarter_url'] = $link->item(0)->getAttribute('href');
+                        $linkItem = $link->item(0);
+                        if ($linkItem instanceof DOMElement) {
+                            $details['headquarter'] = trim($linkItem->nodeValue);
+                            $details['headquarter_url'] = $linkItem->getAttribute('href');
+                        } else {
+                            $details['headquarter'] = $value;
+                        }
                     } else {
                         $details['headquarter'] = $value;
                     }
                     break;
-                case 'Contact details': $details['contact'] = $value; break;
-                case 'Fax': $details['fax'] = $value; break;
+                case 'Contact details':
+                    $details['contact'] = $value;
+                    break;
+                case 'Fax':
+                    $details['fax'] = $value;
+                    break;
             }
         }
     }
@@ -118,12 +169,20 @@ function parseCompanyOverview($html) {
         if ($container->length > 0) {
             $links = $xpath->query(".//a[contains(@class, 'hoverable-block')]", $container->item(0));
             foreach ($links as $l) {
+                if (!$l instanceof DOMElement) {
+                    continue;
+                }
                 $nameDiv = $xpath->query(".//div[contains(@class, 'data-row-top')]", $l);
                 $ingDiv = $xpath->query(".//div[not(contains(@class, 'data-row-top'))]", $l);
                 if ($nameDiv->length > 0 && $ingDiv->length > 0) {
+                    $nameNode = $nameDiv->item(0);
+                    $genericNode = $ingDiv->item(0);
+                    if (!$nameNode instanceof DOMElement || !$genericNode instanceof DOMElement) {
+                        continue;
+                    }
                     $brands[] = [
-                        'name' => trim($nameDiv->item(0)->nodeValue),
-                        'generic' => trim($ingDiv->item(0)->nodeValue),
+                        'name' => trim($nameNode->nodeValue),
+                        'generic' => trim($genericNode->nodeValue),
                         'url' => $l->getAttribute('href')
                     ];
                 }
@@ -174,6 +233,7 @@ for ($p = 1; $p <= $totalPages; $p++) {
 echo "\nOutputting results...\n";
 header('Content-Type: application/json; charset=utf-8');
 echo json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-file_put_contents('medex_herbal_companies.json', json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-echo "\nData saved to medex_herbal_companies.json\n";
-?>
+
+$outputPath = getMedexUploadsDir() . '/medex_herbal_companies.json';
+file_put_contents($outputPath, json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+echo "\nData saved to {$outputPath}\n";

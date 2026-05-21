@@ -25,7 +25,7 @@ $options = [
     "start" => 0,
     "limit" => null,
     "brands_limit" => null,
-    "output" => "medex_herbal_companies_detailed.json",
+    "output" => null,
     "resume" => false,
     "rate" => 0.75,
 ];
@@ -33,8 +33,27 @@ $options = [
 // Parse command line arguments
 parse_command_line_arguments($options);
 
+function getUploadsBaseDir(): string
+{
+    $uploads = realpath(__DIR__ . '/../public_html/uploads');
+    if ($uploads === false) {
+        $uploads = __DIR__ . '/../public_html/uploads';
+    }
+    return rtrim(str_replace('\\', '/', $uploads), '/');
+}
+
+function getMedexUploadsDir(): string
+{
+    $dir = getUploadsBaseDir() . '/medex';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+    return $dir;
+}
+
 // Constants
-define("INPUT_FILE", "medex_herbal_companies.json");
+define("UPLOADS_MEDEX_DIR", getMedexUploadsDir());
+define("INPUT_FILE", UPLOADS_MEDEX_DIR . "/medex_herbal_companies.json");
 define("PROGRESS_FILE", "medex_detailed_progress.json");
 define("BASE_URL", "https://medex.com.bd");
 define("USER_AGENT", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
@@ -64,8 +83,10 @@ try {
 
 /**
  * Parse command line arguments
+ *
+ * @param array<string,mixed> $options
  */
-function parse_command_line_arguments(&$options)
+function parse_command_line_arguments(array &$options): void
 {
     global $argv;
 
@@ -97,8 +118,11 @@ function parse_command_line_arguments(&$options)
 
 /**
  * Main execution function
+ *
+ * @param array<string,mixed> $options
+ * @param array<string,string> $bnSectionKeys
  */
-function main($options, $bnSectionKeys)
+function main(array $options, array $bnSectionKeys): void
 {
     $startTime = microtime(true);
 
@@ -141,7 +165,7 @@ function main($options, $bnSectionKeys)
     echo str_repeat("=", 60) . PHP_EOL . PHP_EOL;
 
     // Load or initialize output/progress
-    $outputFile = $options["output"];
+    $outputFile = $options["output"] ?: UPLOADS_MEDEX_DIR . '/medex_herbal_companies_detailed.json';
     $progress = [];
     $results = [];
 
@@ -218,8 +242,13 @@ function main($options, $bnSectionKeys)
 
 /**
  * Process a single company
+ *
+ * @param array<string,mixed> $company
+ * @param array<string,mixed> $options
+ * @param array<string,string> $bnSectionKeys
+ * @return array<string,mixed>
  */
-function process_company($company, $options, $bnSectionKeys)
+function process_company(array $company, array $options, array $bnSectionKeys): array
 {
     // Fetch brand list page
     $companyUrl = $company["url"] ?? "";
@@ -289,8 +318,12 @@ function process_company($company, $options, $bnSectionKeys)
 
 /**
  * Process a single brand (fetch en + bn, parse details)
+ *
+ * @param array<string,mixed> $brandLink
+ * @param array<string,string> $bnSectionKeys
+ * @return array<string,mixed>|null
  */
-function process_brand($brandLink, $bnSectionKeys)
+function process_brand(array $brandLink, array $bnSectionKeys): ?array
 {
     $brandUrl = $brandLink["url"];
 
@@ -344,7 +377,7 @@ function process_brand($brandLink, $bnSectionKeys)
 /**
  * Fetch a web page with cURL
  */
-function fetch_page($url, $maxRetries = 3)
+function fetch_page(string $url, int $maxRetries = 3): string|false
 {
     $attempt = 0;
 
@@ -389,7 +422,7 @@ function fetch_page($url, $maxRetries = 3)
 /**
  * Extract all brand links from company brand page (with pagination)
  */
-function extract_all_brand_links($html, $baseUrl)
+function extract_all_brand_links(string $html, string $baseUrl): array
 {
     $links = [];
     $dom = new DOMDocument();
@@ -401,6 +434,9 @@ function extract_all_brand_links($html, $baseUrl)
     // Extract initial brand links
     $nodes = $xpath->query('//a[contains(@class,"hoverable-block")]');
     foreach ($nodes as $node) {
+        if (!$node instanceof DOMElement) {
+            continue;
+        }
         $href = $node->getAttribute("href");
         $nameNode = $xpath->query(".//h3", $node)->item(0);
         $name = $nameNode ? trim($nameNode->textContent) : "";
@@ -422,6 +458,9 @@ function extract_all_brand_links($html, $baseUrl)
     foreach ($links as $l) $seen[$l["url"]] = true;
 
     foreach ($alphaLinks as $pageLink) {
+        if (!$pageLink instanceof DOMElement) {
+            continue;
+        }
         $href = $pageLink->getAttribute("href");
         if (strpos($href, "/brands?alpha=") === false) continue;
 
@@ -440,6 +479,9 @@ function extract_all_brand_links($html, $baseUrl)
 
         $pageNodes = $xpP->query('//a[contains(@class,"hoverable-block")]');
         foreach ($pageNodes as $node) {
+            if (!$node instanceof DOMElement) {
+                continue;
+            }
             $href = $node->getAttribute("href");
             $nameNode = $xpP->query(".//h3", $node)->item(0);
             $name = $nameNode ? trim($nameNode->textContent) : "";
@@ -466,7 +508,7 @@ function extract_all_brand_links($html, $baseUrl)
 /**
  * Parse brand detail page
  */
-function parse_brand_detail_page($html)
+function parse_brand_detail_page(string $html): array
 {
     $dom = new DOMDocument();
     libxml_use_internal_errors(true);
@@ -535,7 +577,7 @@ function parse_brand_detail_page($html)
 /**
  * Clean text content
  */
-function clean_text($text)
+function clean_text(?string $text): string
 {
     if ($text === null) return "";
     $text = trim($text);
@@ -547,7 +589,7 @@ function clean_text($text)
 /**
  * Ensure URL is absolute
  */
-function ensure_absolute_url($url, $baseUrl)
+function ensure_absolute_url(string $url, string $baseUrl): string
 {
     if (strpos($url, "http") === 0) {
         return $url;
@@ -559,8 +601,11 @@ function ensure_absolute_url($url, $baseUrl)
 
 /**
  * Save progress checkpoint
+ *
+ * @param int $lastIndex
+ * @param array<string,mixed> $progress
  */
-function save_progress($lastIndex, $progress)
+function save_progress(int $lastIndex, array $progress): void
 {
     $progress["last_index"] = $lastIndex;
     $progress["timestamp"] = date("c");
@@ -569,8 +614,10 @@ function save_progress($lastIndex, $progress)
 
 /**
  * Save output JSON
+ *
+ * @param array<mixed> $data
  */
-function save_output($data, $filename)
+function save_output(array $data, string $filename): void
 {
     file_put_contents($filename, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 }
@@ -578,7 +625,7 @@ function save_output($data, $filename)
 /**
  * Format time in human readable format
  */
-function format_time($seconds)
+function format_time(float $seconds): string
 {
     $hours = floor($seconds / 3600);
     $minutes = floor(($seconds % 3600) / 60);
