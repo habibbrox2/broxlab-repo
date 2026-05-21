@@ -788,13 +788,11 @@ if (document.readyState === 'loading') {
   init();
 }
 
-// Export for testing if needed
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    init,
-    handleUserMessage,
-    clearHistory,
-    loadProviders,
-    loadModels,
-  };
-}
+// Export for testing if needed (ESM compatible)
+export {
+  init,
+  handleUserMessage,
+  clearHistory,
+  loadProviders,
+  loadModels,
+};
