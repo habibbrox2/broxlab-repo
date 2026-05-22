@@ -15,6 +15,11 @@ if (is_file($autoload)) {
     require_once $autoload;
 }
 
+$constants = $root . '/Config/Constants.php';
+if (is_file($constants)) {
+    require_once $constants;
+}
+
 if (class_exists('Dotenv\\Dotenv')) {
     $dotenv = Dotenv\Dotenv::createUnsafeImmutable($root);
     $dotenv->safeLoad();
@@ -49,7 +54,14 @@ if (isset($opts['help'])) {
 $runDetailed = isset($opts['detailed']);
 $resume = isset($opts['resume']);
 $rate = isset($opts['rate']) ? max(0.01, (float)$opts['rate']) : 0.75;
-$output = trim((string)($opts['output'] ?? 'medex_herbal_companies_detailed.json'));
+$uploadsDir = $root . '/public_html/uploads/medex';
+$defaultOutput = $uploadsDir . '/medex_herbal_companies_detailed.json';
+$output = trim((string)($opts['output'] ?? $defaultOutput));
+$output = trim($output, "\"'");
+$output = ltrim($output, '=');
+if (!preg_match('/^(?:[A-Za-z]:[\\\\\/]|[\\\\\/])/', $output)) {
+    $output = $root . '/' . ltrim($output, '/\\');
+}
 $providedToken = trim((string)($opts['token'] ?? ''));
 $expectedToken = trim((string)($_ENV['MEDEX_REFRESH_CRON_TOKEN'] ?? ''));
 
@@ -77,7 +89,13 @@ echo "MedEx base refresh completed successfully.\n";
 echo "Data file: " . $service->getDataFilePath() . "\n";
 echo "Last updated: {$updatedAt}\n";
 
-if ($runDetailed) {
+$detailedFile = $uploadsDir . '/medex_herbal_companies_detailed.json';
+$autoDetailed = trim((string)($_ENV['MEDEX_AUTO_DETAILED_REFRESH'] ?? '0')) === '1';
+if (!file_exists($detailedFile)) {
+    $runDetailed = true;
+}
+
+if ($runDetailed || $autoDetailed) {
     echo "Running detailed MedEx extraction...\n";
     $phpBinary = PHP_BINARY;
     $detailScript = $root . '/scripts/scrape-medex-detailed.php';
@@ -85,6 +103,10 @@ if ($runDetailed) {
     if (!is_file($detailScript)) {
         fwrite(STDERR, "Detailed scraper script not found: {$detailScript}\n");
         exit(1);
+    }
+
+    if (!is_dir($uploadsDir)) {
+        @mkdir($uploadsDir, 0755, true);
     }
 
     $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($detailScript);
