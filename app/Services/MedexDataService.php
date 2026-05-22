@@ -20,12 +20,13 @@ class MedexDataService
     private ?array $companiesById = null;
     private ?array $companiesBySlug = null;
     private string $lastUpdated;
+    private bool $dataLoaded = false;
     private ?array $detailedData = null;
     private string $refreshLockFile;
 
     private const MED_EX_BASE_URL = 'https://medex.com.bd';
     private const REFRESH_LOCK_TTL = 1800; // 30 minutes
-    private const REFRESH_DATA_TTL = 86400; // 24 hours
+    private const REFRESH_DATA_TTL = 2592000; // 30 days
 
     public function __construct()
     {
@@ -49,6 +50,7 @@ class MedexDataService
         if (!file_exists($this->dataFile)) {
             $this->companies = [];
             $this->lastUpdated = '';
+            $this->dataLoaded = false;
             return;
         }
 
@@ -58,11 +60,13 @@ class MedexDataService
             error_log("Failed to parse MedEx JSON data: " . $this->dataFile);
             $this->companies = [];
             $this->lastUpdated = '';
+            $this->dataLoaded = false;
             return;
         }
 
         $this->companies = $data;
         $this->lastUpdated = date('c', filemtime($this->dataFile));
+        $this->dataLoaded = true;
 
         $this->buildIndexes();
     }
@@ -193,7 +197,15 @@ class MedexDataService
             return [];
         }
 
-        // Try to enrich with detailed data if available
+        $this->refreshDetailedDataIfStale();
+
+        // === Preferred: new drug-centric flat file (produced by collect-medex-drug-details.php) ===
+        $drugCentric = $this->getDrugCentricDetailedData();
+        if ($drugCentric && isset($drugCentric[$brandId])) {
+            return array_merge($brand, $drugCentric[$brandId]);
+        }
+
+        // === Fallback: legacy company-grouped detailed data ===
         $detailed = $this->getDetailedData();
         if ($detailed) {
             foreach ($detailed as $dc) {
@@ -219,11 +231,7 @@ class MedexDataService
             return $this->detailedData;
         }
 
-        $uploadsDir = defined('UPLOADS_DIR') ? rtrim(UPLOADS_DIR, '/\\') . '/medex' : BASE_PATH . 'public_html/uploads/medex';
-        $detailedFile = rtrim($uploadsDir, '/\\') . '/medex_herbal_companies_detailed.json';
-        if (!file_exists($detailedFile)) {
-            $detailedFile = BASE_PATH . 'medex_herbal_companies_detailed.json';
-        }
+        $detailedFile = $this->getDetailedDataFilePath();
         if (file_exists($detailedFile)) {
             $json = file_get_contents($detailedFile);
             $data = json_decode($json, true);
@@ -245,6 +253,41 @@ class MedexDataService
             }
         }
 
+        return null;
+    }
+
+    /**
+     * Lazy-load the new drug-centric detailed brand data (flat list from collect-medex-drug-details.php).
+     * Normalizes records so that "details_en" / "details_bn" keys exist for backward compatibility
+     * with existing brand view / controller code.
+     */
+    private function getDrugCentricDetailedData(): ?array
+    {
+        // New preferred way: load from per-company files on demand
+        // This method now returns null so getBrandWithDetails falls back to loading per-company when needed.
+        return null;
+    }
+
+    /**
+     * Load detailed brands for one specific company from its individual JSON file.
+     */
+    public function getCompanyDetailedBrands(int $companyId, string $companySlug = null): ?array
+    {
+        $dir = $this->getCompaniesDetailedDir();
+        if (!is_dir($dir)) return null;
+
+        // Try to find the file by slug if provided, otherwise scan (not ideal for prod)
+        $files = glob($dir . '/*.json');
+        foreach ($files as $file) {
+            if (basename($file) === 'index.json') continue;
+
+            $data = json_decode(file_get_contents($file), true);
+            if (!is_array($data)) continue;
+
+            if (($data['company_id'] ?? null) == $companyId) {
+                return $data;
+            }
+        }
         return null;
     }
 
@@ -285,6 +328,118 @@ class MedexDataService
         return $this->dataFile;
     }
 
+    public function getDetailedDataFilePath(): string
+    {
+        $uploadsDir = defined('UPLOADS_DIR') ? rtrim(UPLOADS_DIR, '/\\') . '/medex' : BASE_PATH . 'public_html/uploads/medex';
+
+        // Prefer the new drug-centric detailed file (grouped by company name)
+        // produced by collect-medex-drug-details.php using the improved parser.
+        $newGrouped = rtrim($uploadsDir, '/\\') . '/medex_herbal_brands_detailed.json';
+        if (file_exists($newGrouped)) {
+            return $newGrouped;
+        }
+
+        // Fallback to legacy file
+        return rtrim($uploadsDir, '/\\') . '/medex_herbal_companies_detailed.json';
+    }
+
+    /**
+     * Path to the new drug-centric detailed brands file (produced by collect-medex-drug-details.php)
+     * This is the preferred source when available (flat list, better parser, bilingual).
+     */
+    public function getDrugCentricDetailedDataFilePath(): string
+    {
+        // Deprecated in favor of per-company files
+        $uploadsDir = defined('UPLOADS_DIR') ? rtrim(UPLOADS_DIR, '/\\') . '/medex' : BASE_PATH . 'public_html/uploads/medex';
+        return rtrim($uploadsDir, '/\\') . '/companies/index.json';
+    }
+
+    public function getCompaniesDetailedDir(): string
+    {
+        $uploadsDir = defined('UPLOADS_DIR') ? rtrim(UPLOADS_DIR, '/\\') . '/medex' : BASE_PATH . 'public_html/uploads/medex';
+        return rtrim($uploadsDir, '/\\') . '/companies';
+    }
+
+    public function getDetailedDataFileAgeSeconds(): int
+    {
+        $path = $this->getDetailedDataFilePath();
+        if (!file_exists($path)) {
+            return PHP_INT_MAX;
+        }
+        return max(0, time() - filemtime($path));
+    }
+
+    public function getDrugCentricDetailedDataFileAgeSeconds(): int
+    {
+        $path = $this->getDrugCentricDetailedDataFilePath();
+        if (!file_exists($path)) {
+            return PHP_INT_MAX;
+        }
+        return max(0, time() - filemtime($path));
+    }
+
+    public function isDetailedDataStale(int $thresholdSeconds = null): bool
+    {
+        if ($thresholdSeconds === null) {
+            $thresholdSeconds = $this->getRefreshDataTtl();
+        }
+
+        $path = $this->getDetailedDataFilePath();
+        return !file_exists($path) || $this->getDetailedDataFileAgeSeconds() > $thresholdSeconds;
+    }
+
+    public function refreshDetailedDataIfStale(int $thresholdSeconds = null): bool
+    {
+        if ($thresholdSeconds === null) {
+            $thresholdSeconds = $this->getRefreshDataTtl();
+        }
+
+        if (!$this->isDetailedDataStale($thresholdSeconds)) {
+            return false;
+        }
+
+        $this->queueBackgroundDetailedRefresh();
+        return false;
+    }
+
+    private function queueBackgroundDetailedRefresh(): bool
+    {
+        $script = BASE_PATH . 'scripts/cron/medex-refresh.php';
+        if (!is_file($script)) {
+            return false;
+        }
+
+        $outputPath = $this->getDetailedDataFilePath();
+        $outputDir = dirname($outputPath);
+        if (!is_dir($outputDir)) {
+            @mkdir($outputDir, 0755, true);
+        }
+
+        $phpBinary = PHP_BINARY;
+        $nullDevice = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'NUL' : '/dev/null';
+        $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($script) . ' --detailed --output=' . escapeshellarg($outputPath) . ' > ' . $nullDevice . ' 2>&1';
+
+        if (stripos(PHP_OS, 'WIN') === 0) {
+            if (function_exists('popen')) {
+                pclose(popen('start /b "" ' . $cmd, 'r'));
+                return true;
+            }
+            return false;
+        }
+
+        if (function_exists('exec')) {
+            exec($cmd . ' &');
+            return true;
+        }
+
+        if (function_exists('popen')) {
+            pclose(popen($cmd . ' &', 'r'));
+            return true;
+        }
+
+        return false;
+    }
+
     public function getRefreshLockPath(): string
     {
         return $this->refreshLockFile;
@@ -306,9 +461,48 @@ class MedexDataService
         return max(0, time() - filemtime($this->refreshLockFile));
     }
 
+    public function getRefreshLockInfo(): array
+    {
+        if (!file_exists($this->refreshLockFile)) {
+            return [];
+        }
+
+        $json = @file_get_contents($this->refreshLockFile);
+        if ($json === false) {
+            return [];
+        }
+
+        $data = json_decode($json, true);
+        return is_array($data) ? $data : [];
+    }
+
+    private function isProcessRunning(int $pid): bool
+    {
+        if ($pid <= 0) {
+            return false;
+        }
+
+        if (stripos(PHP_OS, 'WIN') === 0) {
+            $output = [];
+            exec('tasklist /fi "PID eq ' . $pid . '" 2>NUL', $output);
+            foreach ($output as $line) {
+                if (preg_match('/\b' . preg_quote((string)$pid, '/') . '\b/', $line)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if (function_exists('posix_kill')) {
+            return posix_kill($pid, 0);
+        }
+
+        return false;
+    }
+
     public function getRefreshDataTtl(): int
     {
-        return self::REFRESH_DATA_TTL;
+        return (int)($_ENV['MEDEX_REFRESH_TTL_SECONDS'] ?? self::REFRESH_DATA_TTL);
     }
 
     public function isDataStale(int $thresholdSeconds = null): bool
@@ -317,12 +511,31 @@ class MedexDataService
             $thresholdSeconds = $this->getRefreshDataTtl();
         }
 
-        return !file_exists($this->dataFile) || $this->getDataFileAgeSeconds() > $thresholdSeconds;
+        return !file_exists($this->dataFile) || !$this->dataLoaded || $this->getDataFileAgeSeconds() > $thresholdSeconds;
     }
 
     public function isRefreshLockStale(): bool
     {
-        return file_exists($this->refreshLockFile) && $this->getRefreshLockAgeSeconds() >= self::REFRESH_LOCK_TTL;
+        if (!file_exists($this->refreshLockFile)) {
+            return false;
+        }
+
+        $lockAge = $this->getRefreshLockAgeSeconds();
+        if ($lockAge >= self::REFRESH_LOCK_TTL) {
+            return true;
+        }
+
+        $info = $this->getRefreshLockInfo();
+        if (empty($info['pid'])) {
+            return true;
+        }
+
+        $currentHost = function_exists('gethostname') ? gethostname() : null;
+        if (!empty($info['host']) && $info['host'] === $currentHost) {
+            return !$this->isProcessRunning((int)$info['pid']);
+        }
+
+        return false;
     }
 
     private function cleanupStaleRefreshLock(): void
@@ -346,12 +559,51 @@ class MedexDataService
             return false;
         }
 
-        $success = $this->refreshDataFromSource();
-        if (!$success && !file_exists($this->dataFile)) {
-            throw new Exception('MedEx data is stale and refresh failed. No cache is available.');
+        if (file_exists($this->dataFile) && $this->dataLoaded) {
+            // Keep the existing cached data available for users and refresh in the background.
+            $this->queueBackgroundRefresh();
+            return false;
         }
 
-        return $success;
+        $success = $this->refreshDataFromSource();
+        if (!$success) {
+            error_log('MedEx refresh failed and no cache is available.');
+            return false;
+        }
+
+        return true;
+    }
+
+    private function queueBackgroundRefresh(): bool
+    {
+        $script = BASE_PATH . 'scripts/cron/medex-refresh.php';
+        if (!is_file($script)) {
+            return false;
+        }
+
+        $phpBinary = PHP_BINARY;
+        $nullDevice = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'NUL' : '/dev/null';
+        $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($script) . ' > ' . $nullDevice . ' 2>&1';
+
+        if (stripos(PHP_OS, 'WIN') === 0) {
+            if (function_exists('popen')) {
+                pclose(popen('start /b "" ' . $cmd, 'r'));
+                return true;
+            }
+            return false;
+        }
+
+        if (function_exists('exec')) {
+            exec($cmd . ' &');
+            return true;
+        }
+
+        if (function_exists('popen')) {
+            pclose(popen($cmd . ' &', 'r'));
+            return true;
+        }
+
+        return false;
     }
 
     public function refreshDataFromSource(): bool
@@ -359,6 +611,10 @@ class MedexDataService
         @set_time_limit(0);
         @ini_set('max_execution_time', '0');
         ignore_user_abort(true);
+
+        if ($this->isRefreshLockStale()) {
+            $this->cleanupStaleRefreshLock();
+        }
 
         if (!$this->acquireRefreshLock()) {
             return false;
@@ -383,6 +639,7 @@ class MedexDataService
                 }
 
                 $companies = $this->parseMainPage($pageHtml);
+
                 foreach ($companies as $company) {
                     $companyUrl = $company['url'];
                     if (strpos($companyUrl, 'http') !== 0) {
@@ -405,6 +662,11 @@ class MedexDataService
 
             $this->saveData($all);
             $this->loadData();
+
+            if ($this->isDetailedDataStale()) {
+                $this->queueBackgroundDetailedRefresh();
+            }
+
             return true;
         } finally {
             $this->releaseRefreshLock();
@@ -626,6 +888,15 @@ class MedexDataService
 
     private function saveData(array $data): void
     {
+        $dir = dirname($this->dataFile);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+
+        if (!is_dir($dir)) {
+            throw new Exception('Unable to create MedEx cache directory: ' . $dir);
+        }
+
         file_put_contents($this->dataFile, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 

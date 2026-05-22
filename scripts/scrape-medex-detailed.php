@@ -54,7 +54,7 @@ function getMedexUploadsDir(): string
 // Constants
 define("UPLOADS_MEDEX_DIR", getMedexUploadsDir());
 define("INPUT_FILE", UPLOADS_MEDEX_DIR . "/medex_herbal_companies.json");
-define("PROGRESS_FILE", "medex_detailed_progress.json");
+define("PROGRESS_FILE", UPLOADS_MEDEX_DIR . "/medex_detailed_progress.json");
 define("BASE_URL", "https://medex.com.bd");
 define("USER_AGENT", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
@@ -98,7 +98,12 @@ function parse_command_line_arguments(array &$options): void
         } elseif (strpos($arg, "--brands-limit=") === 0) {
             $options["brands_limit"] = (int)substr($arg, 14);
         } elseif (strpos($arg, "--output=") === 0) {
-            $options["output"] = substr($arg, 8);
+            $value = substr($arg, 8);
+            $value = trim($value, " \t\n\r\0\x0B\"'");
+            if (strpos($value, "=") === 0) {
+                $value = ltrim($value, "=");
+            }
+            $options["output"] = $value;
         } elseif (strpos($arg, "--rate=") === 0) {
             $options["rate"] = (float)substr($arg, 6);
         } elseif ($arg === "--resume") {
@@ -362,7 +367,8 @@ function process_brand(array $brandLink, array $bnSectionKeys): ?array
 
     return [
         "brand_name" => $brandLink["name"] ?? $detailsEn["brand_name"] ?? "",
-        "generic_name" => $brandLink["generic"] ?? $detailsEn["generic_name"] ?? "",
+        "generic_listing" => $brandLink["generic"] ?? "",
+        "generic_name" => $detailsEn["generic_name"] ?? "",
         "strength" => $detailsEn["strength"] ?? "",
         "dosage_form" => $detailsEn["dosage_form"] ?? "",
         "unit_price" => $detailsEn["unit_price"] ?? "",
@@ -441,6 +447,9 @@ function extract_all_brand_links(string $html, string $baseUrl): array
         $nameNode = $xpath->query(".//h3", $node)->item(0);
         $name = $nameNode ? trim($nameNode->textContent) : "";
         $genericNode = $xpath->query('.//span[contains(@class,"text-muted")]', $node)->item(0);
+        if (!$genericNode) {
+            $genericNode = $xpath->query('.//div[contains(@class,"text-muted")]', $node)->item(0);
+        }
         $generic = $genericNode ? trim($genericNode->textContent) : "";
 
         if ($href && $name) {
@@ -619,6 +628,10 @@ function save_progress(int $lastIndex, array $progress): void
  */
 function save_output(array $data, string $filename): void
 {
+    $dir = dirname($filename);
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
     file_put_contents($filename, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 }
 

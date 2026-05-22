@@ -96,6 +96,9 @@ $router->get("/medex/details", function () use ($twig) {
         "lock_exists"     => file_exists($medexService->getRefreshLockPath()),
         "lock_age"        => $medexService->getRefreshLockAgeSeconds(),
         "lock_path"       => $medexService->getRefreshLockPath(),
+        // New drug-centric detailed file (from collect-medex-drug-details.php batch)
+        "drug_centric_file_age" => $medexService->getDrugCentricDetailedDataFileAgeSeconds(),
+        "drug_centric_cache_path" => $medexService->getDrugCentricDetailedDataFilePath(),
         "breadcrumbs"     => $breadcrumbs,
     ]);
 });
