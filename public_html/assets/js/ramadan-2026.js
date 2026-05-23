@@ -680,11 +680,11 @@
         });
       }
 
-      function getWidgetTodayKey() {
+      var getWidgetTodayKey = function () {
         return resolveTodayKey(root);
-      }
+      };
 
-      function refreshStatic() {
+      var refreshStatic = function () {
         try {
           const todayKey = getWidgetTodayKey();
           updateStats(elements, selectedDivision, todayKey);
@@ -693,16 +693,16 @@
           logError('refreshStatic failed', error);
           renderWidgetError(root, RUNTIME_ERROR_TEXT, tableBody);
         }
-      }
+      };
 
-      function refreshCountdown() {
+      var refreshCountdown = function () {
         try {
           updateCountdown(elements, selectedDivision, getWidgetTodayKey());
         } catch (error) {
           logError('refreshCountdown failed', error);
           renderWidgetError(root, RUNTIME_ERROR_TEXT, tableBody);
         }
-      }
+      };
 
       refreshStatic();
       refreshCountdown();

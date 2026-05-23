@@ -3,60 +3,71 @@
  * Consolidated from: account-settings-shared.js, analytics-dashboard.js, media-upload.js
  */
 
+import { debounce } from './utils.js';
+
 function getDefaultTimeoutMs() {
   const configured = Number(
     window.__APP_JS_CONFIG?.network?.requestTimeoutMs
-        ?? window.__APP_FIREBASE_CONFIG?.network?.requestTimeoutMs
-        ?? window.__APP_CONFIG?.network?.requestTimeoutMs
+    ?? window.__APP_FIREBASE_CONFIG?.network?.requestTimeoutMs
+    ?? window.__APP_CONFIG?.network?.requestTimeoutMs
   );
   return Number.isFinite(configured) && configured > 0 ? configured : 12000;
 }
 
 /**
- * Fetch with configurable timeout
+ * Create an AbortController with timeout.
+ * @param {number} ms - Timeout in milliseconds
+ * @returns {[AbortController, () => void]} [controller, clearTimer]
+ */
+function createAbortWithTimeout(ms) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return [controller, () => clearTimeout(timer)];
+}
+
+/**
+ * Fetch with configurable timeout.
  * @param {string} url - URL to fetch
- * @param {Object} options - Fetch options with optional timeoutMs
- * @returns {Promise<{ok: boolean, status: number, data: *}>}
+ * @param {Object} [options] - Fetch options with optional timeoutMs
+ * @returns {Promise<{ok: boolean, status: number, data: *, error?: Error}>}
  */
 export async function fetchWithTimeout(url, options = {}) {
   const timeoutMs = Number(options.timeoutMs || getDefaultTimeoutMs());
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const [controller, clearTimer] = createAbortWithTimeout(timeoutMs);
 
   try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
+    const response = await fetch(url, { ...options, signal: controller.signal });
     const data = await response.json().catch(() => ({}));
-    return { ok: response.ok, status: response.status, data, };
+    return { ok: response.ok, status: response.status, data };
   } catch (error) {
-    return { ok: false, status: 0, data: {}, error, };
+    return { ok: false, status: 0, data: {}, error };
   } finally {
-    clearTimeout(timer);
+    clearTimer();
   }
 }
 
 /**
- * Fetch JSON with standardized response format
+ * Fetch JSON with standardized response format.
  * @param {string} url - URL to fetch
- * @param {Object} options - Fetch options
+ * @param {Object} [options] - Fetch options
  * @returns {Promise<{ok: boolean, status: number, data: *}>}
  */
 export function fetchJson(url, options = {}) {
-  return fetchWithTimeout(url, { ...options, timeoutMs: options.timeoutMs || getDefaultTimeoutMs(), });
+  return fetchWithTimeout(url, {
+    ...options,
+    timeoutMs: options.timeoutMs || getDefaultTimeoutMs(),
+  });
 }
 
 /**
- * Safe JSON fetch with silent failure
+ * Safe JSON fetch — returns null on failure instead of throwing.
  * @param {string} url - URL to fetch
- * @param {Object} options - Fetch options with optional timeoutMs
+ * @param {Object} [options] - Fetch options
  * @returns {Promise<*|null>} Parsed JSON or null
  */
 export async function safeFetchJson(url, options = {}) {
   const { timeoutMs = getDefaultTimeoutMs(), ...fetchOptions } = options;
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const [controller, clearTimer] = createAbortWithTimeout(timeoutMs);
 
   try {
     const response = await fetch(url, {
@@ -72,53 +83,68 @@ export async function safeFetchJson(url, options = {}) {
     }
     return null;
   } finally {
-    clearTimeout(timeoutId);
+    clearTimer();
   }
 }
 
 /**
- * Upload FormData via XHR with progress tracking
+ * Upload FormData via XHR with progress tracking.
  * @param {string} url - Upload endpoint URL
  * @param {FormData} formData - Form data to upload
- * @param {Object} callbacks - Callback object with methods, onProgress, onSuccess, onError
- * @returns {Promise<void>}
+ * @param {Object} [callbacks] - { onProgress, onSuccess, onError }
+ * @returns {Promise<*>}
  */
 export function uploadFormData(url, formData, callbacks = {}) {
-  const { onProgress, onSuccess, onError, } = callbacks;
+  const { onProgress, onSuccess, onError } = callbacks;
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
 
     if (onProgress) {
-      xhr.upload.onprogress = function (uploadEvent) {
-        if (!uploadEvent.lengthComputable) return;
-        const percent = Math.round((uploadEvent.loaded / uploadEvent.total) * 100);
-        onProgress(percent);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          onProgress(Math.round((e.loaded / e.total) * 100));
+        }
       };
     }
 
-    xhr.onload = function () {
+    xhr.onload = () => {
       if (xhr.status === 200) {
         try {
           const result = JSON.parse(xhr.responseText);
-          if (onSuccess) onSuccess(result);
+          onSuccess?.(result);
           resolve(result);
         } catch {
-          if (onError) onError('Invalid response format');
+          onError?.('Invalid response format');
           reject(new Error('Invalid response format'));
         }
       } else {
-        if (onError) onError(`Upload failed with status ${ xhr.status}`);
+        const msg = `Upload failed with status ${xhr.status}`;
+        onError?.(msg);
         reject(new Error('Upload failed'));
       }
     };
 
-    xhr.onerror = function () {
-      if (onError) onError('Connection error during upload');
+    xhr.onerror = () => {
+      onError?.('Connection error during upload');
       reject(new Error('Upload failed'));
+    };
+
+    xhr.ontimeout = () => {
+      onError?.('Upload timeout');
+      reject(new Error('Upload timeout'));
     };
 
     xhr.send(formData);
   });
+}
+
+/**
+ * Debounced wrapper for safeFetchJson — avoids duplicate concurrent requests.
+ * @param {number} wait - Debounce wait in ms (default 300)
+ * @returns {Function} Debounced safeFetchJson
+ */
+export function createDebouncedFetcher(wait = 300) {
+  return debounce((url, options) => safeFetchJson(url, options), wait);
 }

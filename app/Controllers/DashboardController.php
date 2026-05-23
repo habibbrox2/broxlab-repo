@@ -976,7 +976,27 @@ $router->get('/user/dashboard', ['middleware' => ['auth', 'user_dashboard_only']
 
         // Get notices/announcements
         $notices = [];
-        // TODO: Fetch from announcements table if exists
+        // Fetch announcements from notifications table (type = 'announcement', status = 'sent')
+        try {
+            $notifStmt = $mysqli->prepare("
+                SELECT id, title, message, action_url, created_at
+                FROM notifications
+                WHERE type = 'announcement'
+                  AND status = 'sent'
+                  AND (user_id IS NULL OR user_id = 0 OR user_id = ?)
+                  AND deleted_at IS NULL
+                ORDER BY created_at DESC
+                LIMIT 5
+            ");
+            $notifUserId = (int)($currentUser['id'] ?? 0);
+            $notifStmt->bind_param('i', $notifUserId);
+            $notifStmt->execute();
+            $notices = $notifStmt->get_result()->fetch_all(MYSQLI_ASSOC) ?: [];
+            $notifStmt->close();
+        } catch (Throwable $e) {
+            logError('Dashboard: Failed to fetch announcements: ' . $e->getMessage());
+            $notices = [];
+        }
 
         // Get user roles
         $userRoles = $userModel->getRoles($userId);

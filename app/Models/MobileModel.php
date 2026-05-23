@@ -20,7 +20,7 @@ class MobileModel {
 
     // Insert a mobile
 
-    public function insertMobile($brand_name, $model_name, $official_price, $unofficial_price, $status, $release_date, $is_official = 0) {
+    public function insertMobile($brand_name, $model_name, $official_price, $unofficial_price, $status, $release_date, $is_official = 0): int {
 
         try {
             $stmt = $this->mysqli->prepare(
@@ -72,7 +72,7 @@ class MobileModel {
 
     // Update a mobile
 
-    public function updateMobile($id, $brand_name, $model_name, $official_price, $unofficial_price, $status, $release_date, $is_official = 0) {
+    public function updateMobile($id, $brand_name, $model_name, $official_price, $unofficial_price, $status, $release_date, $is_official = 0): bool {
 
         try {
             $stmt = $this->mysqli->prepare(
@@ -95,7 +95,7 @@ class MobileModel {
 
     // Insert specifications
 
-    public function insertSpecifications($mobile_id, array $keys, array $values) {
+    public function insertSpecifications($mobile_id, array $keys, array $values): void {
 
         if (empty($keys)) return;
 
@@ -131,7 +131,7 @@ class MobileModel {
 
     // ✅ Update specifications (delete + reinsert)
 
-    public function updateSpecifications($mobile_id, array $keys, array $values) {
+    public function updateSpecifications($mobile_id, array $keys, array $values): void {
 
         $stmt = $this->mysqli->prepare("DELETE FROM mobile_specs WHERE mobile_id = ?");
 
@@ -149,7 +149,7 @@ class MobileModel {
 
     // Insert images
 
-    public function insertImages($mobile_id, array $images) {
+    public function insertImages($mobile_id, array $images): void {
 
         foreach ($images as $image) {
 
@@ -169,7 +169,7 @@ class MobileModel {
 
     // ✅ Update images (delete + reinsert)
 
-    public function updateImages($mobile_id, array $images) {
+    public function updateImages($mobile_id, array $images): void {
 
         $stmt = $this->mysqli->prepare("DELETE FROM mobile_images WHERE mobile_id = ?");
 
@@ -184,7 +184,7 @@ class MobileModel {
     }
 
     // Delete specific images
-    public function deleteImages(array $image_ids) {
+    public function deleteImages(array $image_ids): bool {
         if (empty($image_ids)) return false;
         
         $placeholders = implode(',', array_fill(0, count($image_ids), '?'));
@@ -204,7 +204,7 @@ class MobileModel {
 
     // Delete mobile (with related data)
 
-    public function deleteMobile($id) {
+    public function deleteMobile($id): bool {
 
         $mobileId = (int)$id;
         if ($mobileId <= 0) {
@@ -251,7 +251,7 @@ class MobileModel {
 
     // Fetch by ID
 
-    public function fetchMobileById($id) {
+    public function fetchMobileById($id): ?array {
 
         $stmt = $this->mysqli->prepare("SELECT id, brand_name, model_name, is_official, official_price, unofficial_price, status, release_date, created_at FROM mobiles WHERE id = ?");
 
@@ -270,7 +270,7 @@ class MobileModel {
 
 
     // Fetch list (paginated) - অপ্টিমাইজড
-    public function fetchMobiles($limit = 20, $offset = 0, $sort = 'id', $order = 'DESC') {
+    public function fetchMobiles($limit = 20, $offset = 0, $sort = 'id', $order = 'DESC'): array {
             // whitelist allowed sort columns
             $allowed = ['id','brand_name','model_name','release_date','created_at'];
             if (!in_array($sort, $allowed)) $sort = 'id';
@@ -320,11 +320,37 @@ class MobileModel {
             return $mobiles;
     }
 
+    /**
+     * Lightweight list for sitemap.xml (dynamic mobiles)
+     * Returns: id, brand_name, model_name, created_at
+     */
+    public function getSitemapMobiles(int $limit = 1000): array
+    {
+        try {
+            $sql = "SELECT id, brand_name, model_name, created_at 
+                    FROM mobiles 
+                    ORDER BY created_at DESC 
+                    LIMIT ?";
+
+            $stmt = $this->mysqli->prepare($sql);
+            $stmt->bind_param('i', $limit);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $mobiles = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
+
+            return $mobiles ?: [];
+        } catch (\Throwable $e) {
+            error_log('[MobileModel] getSitemapMobiles failed: ' . $e->getMessage());
+            return [];
+        }
+    }
+
 
 
     // Count total
 
-    public function countMobiles() {
+    public function countMobiles(): int {
 
         return (int)($this->mysqli->query("SELECT COUNT(*) as total FROM mobiles")->fetch_assoc()['total'] ?? 0);
 
@@ -334,7 +360,7 @@ class MobileModel {
 
     // Specs
 
-    public function fetchSpecsByMobileId($id) {
+    public function fetchSpecsByMobileId($id): array {
 
         $stmt = $this->mysqli->prepare("SELECT spec_key, spec_value FROM mobile_specs WHERE mobile_id = ?");
 
@@ -354,7 +380,7 @@ class MobileModel {
 
     // Images
 
-    public function fetchImagesByMobileId($id) {
+    public function fetchImagesByMobileId($id): array {
 
         $stmt = $this->mysqli->prepare("SELECT image_url FROM mobile_images WHERE mobile_id = ?");
 
@@ -402,7 +428,7 @@ class MobileModel {
     /**
      * Get paginated, searched, and sorted mobiles
      */
-    public function getMobiles($page = 1, $limit = 20, $search = '', $sort = 'brand_name', $order = 'ASC', $filters = []) {
+    public function getMobiles($page = 1, $limit = 20, $search = '', $sort = 'brand_name', $order = 'ASC', $filters = []): array {
         $offset = ($page - 1) * $limit;
         $order = strtoupper($order) === 'DESC' ? 'DESC' : 'ASC';
         $allowedSorts = ['id', 'brand_name', 'model_name', 'official_price', 'status', 'created_at', 'is_official'];
@@ -451,7 +477,7 @@ class MobileModel {
     /**
      * Get total count of mobiles with optional search and filters
      */
-    public function getMobilesCount($search = '', $filters = []) {
+    public function getMobilesCount($search = '', $filters = []): int {
         $sql = "SELECT COUNT(*) as total FROM mobiles WHERE 1=1";
         $params = [];
         $types = '';
@@ -489,7 +515,7 @@ class MobileModel {
     }
 
     // Get related mobiles (অপ্টিমাইজড: N+1 সমস্যা সমাধান করা)
-    public function getRelatedMobiles($mobileId, $limit = 3) {
+    public function getRelatedMobiles($mobileId, $limit = 3): array {
         // মোট মোবাইল সংখ্যা পান (র‍্যান্ডম অফসেট এর জন্য)
         $countResult = $this->mysqli->query("SELECT COUNT(*) as total FROM mobiles WHERE id != {$mobileId}");
         $countData = $countResult->fetch_assoc();
@@ -542,7 +568,7 @@ class MobileModel {
     }
 
     // Get complete mobile data for detail view (এক জায়গায় সব ডেটা - N+1 সমস্যা নেই)
-    public function getMobileComplete($id) {
+    public function getMobileComplete($id): ?array {
         if (!$id || !is_numeric($id)) return null;
 
         // মোবাইল বেসিক ডেটা

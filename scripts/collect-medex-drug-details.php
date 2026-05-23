@@ -25,6 +25,13 @@
 
 declare(strict_types=1);
 
+// If accessed via web, instruct to use the frontend collector UI instead.
+if (PHP_SAPI !== 'cli') {
+    header('Content-Type: text/html; charset=utf-8');
+    echo "<h1>MedEx Collector (web)</h1><p>This CLI script is deprecated in the web context. Please use the browser-based collector: <a href=\"/medex-collector.html\">/medex-collector.html</a></p>";
+    exit;
+}
+
 $root = dirname(__DIR__);
 require_once __DIR__ . '/scrape-medex-brand-details.php';   // brings in extract_brand_details() etc.
 

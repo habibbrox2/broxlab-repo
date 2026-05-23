@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ChatProviderService - Provider/model resolution, fallback, and advanced options
  * Extracted from AISystemController.php for modularity
@@ -17,6 +18,24 @@ class ChatProviderService
             if ($name === '' || $name === $currentProvider) {
                 continue;
             }
+            // Skip providers that have been recorded as unhealthy by the
+            // ProviderHealthMonitor to avoid selecting providers that fail
+            // connectivity or return model 404/402 errors.
+            $healthOk = true;
+            try {
+                require_once dirname(__DIR__, 2) . '/Modules/AISystem/Layer/ProviderHealthMonitor.php';
+                $monitor = new \App\Modules\AISystem\Layer\ProviderHealthMonitor();
+                $health = $monitor->getProviderHealth($name);
+                if (is_array($health) && isset($health['is_healthy']) && $health['is_healthy'] === false) {
+                    $healthOk = false;
+                }
+            } catch (Throwable $e) {
+                // If health monitor is not available, proceed normally
+                $healthOk = true;
+            }
+            if (!$healthOk) {
+                continue;
+            }
             if (!$aiProvider->hasApiKey($name)) {
                 continue;
             }
@@ -28,8 +47,8 @@ class ChatProviderService
             $defaultModel = $settings['default_model'] ?? '';
             $model = ($defaultModel !== '' && isset($models[$defaultModel]))
                 ? $defaultModel
-                : array_key_first($models);
-            if (!$model) {
+                : (array_key_first($models) ?? '');
+            if ($model === '') {
                 continue;
             }
             return ['provider' => $name, 'model' => $model];
@@ -88,7 +107,7 @@ class ChatProviderService
                 return $preferred;
             }
         }
-        return (string)array_key_first($models);
+        return (string)(array_key_first($models) ?? '');
     }
 
     /**
@@ -97,8 +116,14 @@ class ChatProviderService
     public static function findPreferredModel(array $models): string
     {
         $priorities = [
-            '/:free/i', '/\bfree\b/i', '/\bauto\b/i', '/\bmini\b/i',
-            '/\bsmall\b/i', '/\bturbo\b/i', '/\bflash\b/i', '/\bfast\b/i',
+            '/:free/i',
+            '/\bfree\b/i',
+            '/\bauto\b/i',
+            '/\bmini\b/i',
+            '/\bsmall\b/i',
+            '/\bturbo\b/i',
+            '/\bflash\b/i',
+            '/\bfast\b/i',
         ];
         foreach ($priorities as $pattern) {
             foreach ($models as $modelId => $label) {
@@ -107,7 +132,7 @@ class ChatProviderService
                 }
             }
         }
-        return (string)array_key_first($models);
+        return (string)(array_key_first($models) ?? '');
     }
 
     /**
@@ -133,7 +158,8 @@ class ChatProviderService
             }
             if (strpos($candidate, '/') !== false && $providerName !== 'openrouter') {
                 [$prefix] = explode('/', $candidate, 2);
-                if ($prefix !== $providerName) {
+                $kiloAlias = $providerName === 'kilo' && str_starts_with($prefix, 'kilo-auto');
+                if ($prefix !== $providerName && !$kiloAlias) {
                     continue;
                 }
             }
@@ -252,8 +278,16 @@ class ChatProviderService
                 $normalized[$key] = (bool)$inputOptions[$key];
             }
         }
-        $stringKeys = ['tool_choice', 'reasoning_effort', 'prompt_cache_key', 'prompt_cache_retention',
-            'safety_identifier', 'service_tier', 'user', 'verbosity'];
+        $stringKeys = [
+            'tool_choice',
+            'reasoning_effort',
+            'prompt_cache_key',
+            'prompt_cache_retention',
+            'safety_identifier',
+            'service_tier',
+            'user',
+            'verbosity'
+        ];
         foreach ($stringKeys as $key) {
             if (array_key_exists($key, $inputOptions) && is_string($inputOptions[$key])) {
                 $value = trim($inputOptions[$key]);
@@ -280,7 +314,10 @@ class ChatProviderService
      */
     public static function providerSupportsAutoTools(string $providerName): bool
     {
-        return in_array($providerName, ['openai', 'openrouter', 'ollama', 'fireworks', 'kilo'], true);
+        // Exclude providers that commonly run local or cloud model endpoints which
+        // may not have consistent model lists (e.g. Ollama). Enable auto-tools only
+        // for providers known to support stable tool/function calling.
+        return in_array($providerName, ['openai', 'openrouter', 'fireworks', 'kilo'], true);
     }
 
     /**

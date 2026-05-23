@@ -15,8 +15,10 @@
     <!-- RTE Cache Busting: Forces reload when files are modified -->
     {% set rte_version = getRTEVersion() %}
     <link href="/rtceditor/editor.css?v={{ rte_version }}" rel="stylesheet">
-    <script src="/rtceditor/editor.js?v={{ rte_version }}" defer></script>
+    <script src="/rtceditor/editor.bundle.js?v={{ rte_version }}" defer></script>
+    {% if rte_debug is defined and rte_debug %}
     <script src="/rtceditor/editor.debug.js?v={{ rte_version }}" defer></script>
+    {% endif %}
 </head>
 <body class="bg-light">
 

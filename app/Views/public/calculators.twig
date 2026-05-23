@@ -2,12 +2,12 @@
    Calculator directory – mirrors the category-gallery style of Calculator.net  #}
 {% extends 'layout.twig' %}
 
-{% block title %}Online Calculators | {{ app_settings.site_name|default('BroxLab') }}{% endblock %}
-{% block meta_description %}Free online calculators for finance, math, health & fitness. Accurate, instant results — no sign-up required.{% endblock %}
+{% block title %}{{ current_lang == 'bn' ? 'অনলাইন ক্যালকুলেটর' : 'Online Calculators' }} | {{ app_settings.site_name|default('BroxLab') }}{% endblock %}
+{% block meta_description %}{{ current_lang == 'bn' ? 'ফাইন্যান্স, গণিত, স্বাস্থ্য এবং ফিটনেসের জন্য বিনামূল্যে অনলাইন ক্যালকুলেটর। সঠিক, দ্রুত ফলাফল - কোন সাইন-আপের প্রয়োজন নেই।' : 'Free online calculators for finance, math, health & fitness. Accurate, instant results — no sign-up required.' }}{% endblock %}
 {% block meta_keywords %}calculator, online calculator, finance calculator, BMI calculator, loan calculator, mortgage calculator, GPA calculator{% endblock %}
 
 {% set breadcrumbs = [
-  { label: 'Calculators' }
+  { label: current_lang == 'bn' ? 'ক্যালকুলেটর' : 'Calculators' }
 ] %}
 
 {% block extra_styles %}
@@ -67,11 +67,12 @@
       <div class="row align-items-center g-4">
         <div class="col-lg-8">
           <h1 class="display-5 fw-bold mb-3">
-            <i class="bi bi-calculator-fill me-3"></i>Online Calculators
+            <i class="bi bi-calculator-fill me-3"></i>{{ current_lang == 'bn' ? 'অনলাইন ক্যালকুলেটর' : 'Online Calculators' }}
           </h1>
           <p class="lead mb-0">
-            Free, accurate calculators for everyday needs — finance, math, health &amp; fitness.
-            Pick a category and start calculating instantly.
+            {{ current_lang == 'bn' ? 'দৈনন্দিন কাজের জন্য বিনামূল্যে ও সঠিক ক্যালকুলেটর — ফাইন্যান্স, গণিত, স্বাস্থ্য ও ফিটনেস।' : 'Free, accurate calculators for everyday needs — finance, math, health & fitness.' }}
+            <br>
+            {{ current_lang == 'bn' ? 'একটি বিভাগ নির্বাচন করুন এবং তাত্ক্ষণিকভাবে গণনা শুরু করুন।' : 'Pick a category and start calculating instantly.' }}
           </p>
         </div>
         <div class="col-lg-4 text-center">
@@ -89,13 +90,13 @@
       <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm text-center py-3">
           <div class="display-6 fw-bold text-primary">{{ total_calculators }}</div>
-          <div class="text-muted small">Calculators</div>
+          <div class="text-muted small">{{ current_lang == 'bn' ? 'ক্যালকুলেটর' : 'Calculators' }}</div>
         </div>
       </div>
       <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm text-center py-3">
           <div class="display-6 fw-bold text-success">{{ groups|length }}</div>
-          <div class="text-muted small">Categories</div>
+          <div class="text-muted small">{{ current_lang == 'bn' ? 'বিভাগ' : 'Categories' }}</div>
         </div>
       </div>
       <div class="col-6 col-md-3">
@@ -103,13 +104,13 @@
         {% set totalUsers   = stats.total_users|default(0)|int %}
         <div class="card border-0 shadow-sm text-center py-3">
           <div class="display-6 fw-bold text-info">{{ totalPosts }}</div>
-          <div class="text-muted small">Articles</div>
+          <div class="text-muted small">{{ current_lang == 'bn' ? 'আর্টিকেল' : 'Articles' }}</div>
         </div>
       </div>
       <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm text-center py-3">
           <div class="display-6 fw-bold text-warning">{{ totalUsers }}</div>
-          <div class="text-muted small">Users</div>
+          <div class="text-muted small">{{ current_lang == 'bn' ? 'ইউজার' : 'Users' }}</div>
         </div>
       </div>
     </div>
@@ -153,7 +154,7 @@
                 <div class="flex-grow-1">
                   <div class="card-title text-dark mb-1">{{ item.label }}</div>
                   <div class="card-text">
-                    <i class="bi bi-arrow-right-circle me-1"></i>Start Calculating
+                    <i class="bi bi-arrow-right-circle me-1"></i>{{ current_lang == 'bn' ? 'গণনা শুরু করুন' : 'Start Calculating' }}
                   </div>
                 </div>
               </a>
@@ -169,12 +170,12 @@
     {# ── Subscribe CTA ── #}
     <div class="bg-light rounded-4 p-5 text-center mt-5">
       <h3 class="fw-bold mb-2">
-        <i class="bi bi-rss text-danger me-2"></i>Stay Updated
+        <i class="bi bi-rss text-danger me-2"></i>{{ current_lang == 'bn' ? 'আপডেট থাকুন' : 'Stay Updated' }}
       </h3>
-      <p class="text-muted mb-3">New calculators and tools are added regularly. Subscribe to our newsletter so you don't miss a thing.</p>
+      <p class="text-muted mb-3">{{ current_lang == 'bn' ? 'নিয়মিত নতুন ক্যালকুলেটর ও টুলস যোগ করা হয়। নিউজলেটারে সাবস্ক্রাইব করুন যাতে আপনি কিছুই মিস না করেন।' : 'New calculators and tools are added regularly. Subscribe to our newsletter so you don\'t miss a thing.' }}</p>
       <div class="d-inline-flex gap-2 flex-wrap justify-content-center">
-        <a href="/newsletter" class="btn btn-danger"><i class="bi bi-envelope me-1"></i>Subscribe</a>
-        <a href="/" class="btn btn-outline-secondary">Back to Home</a>
+        <a href="/newsletter" class="btn btn-danger"><i class="bi bi-envelope me-1"></i>{{ current_lang == 'bn' ? 'সাবস্ক্রাইব করুন' : 'Subscribe' }}</a>
+        <a href="/" class="btn btn-outline-secondary">{{ current_lang == 'bn' ? 'হোমে ফিরে যান' : 'Back to Home' }}</a>
       </div>
     </div>
 

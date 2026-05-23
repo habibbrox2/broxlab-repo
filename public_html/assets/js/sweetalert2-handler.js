@@ -89,6 +89,13 @@
   }
 
   /**
+     * Safely get Swal reference (guards against missing library).
+     */
+  function getSwal() {
+    return typeof Swal !== 'undefined' ? Swal : null;
+  }
+
+  /**
      * Toast notification (temporary popup)
      * @param {string} message - The message text
      * @param {string} status - 'success', 'danger', 'warning', 'info'
@@ -97,6 +104,11 @@
      */
   window.showMessage = async function (message, status = 'info', duration = MessageConfig.toastDuration, options = {}) {
     if (!message) return;
+    const Swal = getSwal();
+    if (!Swal) {
+      console.warn('[MessageHandler] SweetAlert2 not loaded');
+      return;
+    }
 
     const { custom, swalOptions, } = splitSwalOptions(options, ['allowHtml',]);
     const allowHtml = custom.allowHtml === true;
@@ -128,7 +140,7 @@
       ...swalOptions,
     };
 
-    return await Swal.fire(config);
+    return await Swal.fire(config).catch(() => {});
   };
 
   /**
@@ -147,6 +159,11 @@
      */
   window.showAlert = async function (message, title = 'Alert', status = 'info', options = {}) {
     if (!message) return;
+    const Swal = getSwal();
+    if (!Swal) {
+      console.warn('[MessageHandler] SweetAlert2 not loaded');
+      return;
+    }
 
     const { custom, swalOptions, } = splitSwalOptions(options, ['allowHtml',]);
     const allowHtml = custom.allowHtml === true;
@@ -174,7 +191,7 @@
       ...swalOptions,
     };
 
-    return await Swal.fire(config);
+    return await Swal.fire(config).catch(() => {});
   };
 
   /**
@@ -187,6 +204,11 @@
      */
   window.showConfirm = async function (message, title = 'Confirm', status = 'warning', options = {}) {
     if (!message) return false;
+    const Swal = getSwal();
+    if (!Swal) {
+      console.warn('[MessageHandler] SweetAlert2 not loaded');
+      return false;
+    }
 
     const { custom, swalOptions, } = splitSwalOptions(options, ['allowHtml',]);
     const allowHtml = custom.allowHtml === true;
@@ -218,7 +240,7 @@
       ...swalOptions,
     };
 
-    const result = await Swal.fire(config);
+    const result = await Swal.fire(config).catch(() => ({ isConfirmed: false }));
     return result.isConfirmed ?? false;
   };
 
@@ -232,6 +254,11 @@
      */
   window.showPrompt = async function (message, defaultValue = '', label = '', options = {}) {
     if (!message) return null;
+    const Swal = getSwal();
+    if (!Swal) {
+      console.warn('[MessageHandler] SweetAlert2 not loaded');
+      return null;
+    }
 
     const { custom, swalOptions, } = splitSwalOptions(options, ['required',]);
     const isRequired = custom.required === true;
@@ -277,7 +304,7 @@
       ...swalOptions,
     };
 
-    const result = await Swal.fire(config);
+    const result = await Swal.fire(config).catch(() => ({ value: null }));
     return result.value ?? null;
   };
 
@@ -438,6 +465,11 @@
          * Show a loading state (no auto-dismiss)
          */
     showLoading: async function (message = 'Loading...', title = '') {
+      const Swal = getSwal();
+      if (!Swal) {
+        console.warn('[MessageHandler] SweetAlert2 not loaded');
+        return null;
+      }
       return await Swal.fire({
         icon: 'info',
         title: title,
@@ -447,15 +479,21 @@
         didOpen: () => {
           Swal.showLoading();
         },
-      });
+      }).catch(() => null);
     },
 
     /**
          * Hide the loading state
          */
     hideLoading: function () {
-      Swal.hideLoading();
-      Swal.close();
+      const Swal = getSwal();
+      if (!Swal) return;
+      try {
+        Swal.hideLoading();
+        Swal.close();
+      } catch (e) {
+        // Ignore close failures
+      }
     },
   };
 
@@ -477,9 +515,15 @@
 
   /**
      * SweetAlert2 Custom Styling
+     * Only injected once when first needed
      */
-  const style = document.createElement('style');
-  style.textContent = `
+  injectStylesOnce();
+
+  function injectStylesOnce() {
+    if (document.getElementById('swal2-custom-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'swal2-custom-styles';
+    style.textContent = `
         /* SweetAlert2 Toast Customization */
         .swal2-popup.swal2-toast {
             background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
@@ -664,6 +708,7 @@
             }
         }
     `;
-  document.head.appendChild(style);
+    document.head.appendChild(style);
+  }
 
 })();

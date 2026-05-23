@@ -1,25 +1,33 @@
 {% extends 'medex/base.html.twig' %}
 
 {% block page_content %}
+{% set labelTotalCompanies = current_lang == 'bn' ? 'মোট কোম্পানি' : 'Total Companies' %}
+{% set labelTotalBrands = current_lang == 'bn' ? 'মোট ব্র্যান্ড' : 'Total Brands' %}
+{% set labelLastUpdated = current_lang == 'bn' ? 'শেষ আপডেট' : 'Last Updated' %}
+{% set labelDatabaseStatus = current_lang == 'bn' ? 'ডেটাবেসের অবস্থা:' : 'Database Status:' %}
+{% set labelSearchPlaceholder = current_lang == 'bn' ? 'কোম্পানি খুঁজুন...' : 'Search companies...' %}
+{% set labelFilter = current_lang == 'bn' ? 'ফিল্টার' : 'Filter' %}
+{% set labelExport = current_lang == 'bn' ? 'এক্সপোর্ট' : 'Export' %}
+{% set labelDetailsPage = current_lang == 'bn' ? 'বিস্তারিত' : 'Details' %}
 
 {# Stats Summary #}
 <div class="row mb-4">
     <div class="col-md-4">
         <div class="medex-stats-card">
             <div class="medex-stats-number">{{ total_companies }}</div>
-            <div class="medex-stats-label">Total Companies</div>
+            <div class="medex-stats-label">{{ labelTotalCompanies }}</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="medex-stats-card">
             <div class="medex-stats-number" id="medexTotalBrands">{{ total_brands|number_format }}</div>
-            <div class="medex-stats-label">Total Brands</div>
+            <div class="medex-stats-label">{{ labelTotalBrands }}</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="medex-stats-card">
             <div class="medex-stats-number">{{ last_updated ? last_updated|date('M d, Y') : 'N/A' }}</div>
-            <div class="medex-stats-label">Last Updated</div>
+            <div class="medex-stats-label">{{ labelLastUpdated }}</div>
         </div>
     </div>
 </div>
@@ -29,10 +37,10 @@
     <div class="d-flex align-items-center">
         <i class="bi bi-info-circle-fill me-3 fs-4"></i>
         <div>
-            <strong>Database Status:</strong>
-            {{ total_companies }} herbal pharmaceutical companies indexed.
+            <strong>{{ labelDatabaseStatus }}</strong>
+            {{ current_lang == 'bn' ? total_companies|number_format ~ ' টি হার্বাল ফার্মাসিউটিক্যাল কোম্পানি সূচিপত্রভুক্ত' : total_companies ~ ' herbal pharmaceutical companies indexed.' }}
             {% if last_updated %}
-                <br><small class="text-muted">Last updated: {{ last_updated|date('M d, Y H:i') }}</small>
+                <br><small class="text-muted">{{ current_lang == 'bn' ? 'শেষ আপডেট:' : 'Last updated:' }} {{ last_updated|date('M d, Y H:i') }}</small>
             {% endif %}
         </div>
     </div>
@@ -42,16 +50,16 @@
 <div class="medex-filter-bar">
     <div class="input-group" style="flex: 1; min-width: 250px;">
         <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
-        <input id="medexSearchInput" type="text" class="form-control medex-filter-input border-start-0" placeholder="Search companies..." aria-label="Search companies">
+        <input id="medexSearchInput" type="text" class="form-control medex-filter-input border-start-0" placeholder="{{ labelSearchPlaceholder }}" aria-label="{{ labelSearchPlaceholder }}">
     </div>
-    <button id="medexFilterBtn" class="btn btn-outline-secondary" type="button" title="Filter" aria-label="Filter">
-        <i class="bi bi-funnel me-1"></i> Filter
+    <button id="medexFilterBtn" class="btn btn-outline-secondary" type="button" title="{{ labelFilter }}" aria-label="{{ labelFilter }}">
+        <i class="bi bi-funnel me-1"></i> {{ labelFilter }}
     </button>
-    <button id="medexExportBtn" class="btn btn-primary medex-btn--primary" type="button" title="Export" aria-label="Export">
-        <i class="bi bi-download me-1"></i> Export
+    <button id="medexExportBtn" class="btn btn-primary medex-btn--primary" type="button" title="{{ labelExport }}" aria-label="{{ labelExport }}">
+        <i class="bi bi-download me-1"></i> {{ labelExport }}
     </button>
     <a href="/medex/details" class="btn btn-outline-info ms-2" title="MedEx details page" aria-label="MedEx details page">
-        <i class="bi bi-info-circle me-1"></i> Details
+        <i class="bi bi-info-circle me-1"></i> {{ labelDetailsPage }}
     </a>
 </div>
 <div class="mt-3 mb-3">
@@ -64,7 +72,7 @@
 <div class="medex-card">
     <div class="medex-card-header">
         <i class="bi bi-building"></i>
-        Herbal Pharmaceutical Companies
+        {{ current_lang == 'bn' ? 'হার্বাল ফার্মাসিউটিক্যাল কোম্পানি' : 'Herbal Pharmaceutical Companies' }}
         <span class="badge bg-success float-end">{{ total_companies }}</span>
     </div>
     <div class="medex-card-body p-0">

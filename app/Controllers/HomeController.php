@@ -52,23 +52,35 @@ echo $twig->render('public/home.twig', [
 // ============ API ENDPOINTS FOR INFINITE SCROLL ============
 // Load more feed items via AJAX for infinite scroll pagination
 $router->get('/api/feed/load-more', function () use ($homeModel, $twig) {
-    // Set JSON header before any output
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-cache, no-store, must-revalidate');
 
-try {
-         $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-         $sort = 'latest';
-         $limit = HOMEPAGE_FEED_LIMIT;
+    try {
+        $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+        if ($page < 1) {
+            throw new \InvalidArgumentException('Page must be greater than 0');
+        }
+
+        $sort = 'latest';
+        $limit = HOMEPAGE_FEED_LIMIT;
 
         $data = $homeModel->getUnifiedContent($page, $limit, $sort);
+        if ($data === null) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Database error',
+                'error_code' => 'db_error'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
         $html = $twig->render('partials/home-feed-items.twig', [
             'items' => $data['contents'] ?? [],
             'start_index' => (($page - 1) * $limit) + 1,
             'empty_text' => 'No content available at the moment.'
         ]);
 
-        // Return JSON with items and pagination info
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -79,11 +91,19 @@ try {
             'total_pages' => (int)($data['total_pages'] ?? 1),
             'has_more' => $page < ($data['total_pages'] ?? 1)
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    } catch (Throwable $e) {
+    } catch (\InvalidArgumentException $e) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'error_code' => 'invalid_input'
+        ], JSON_UNESCAPED_UNICODE);
+    } catch (\Exception $e) {
         http_response_code(500);
         echo json_encode([
             'success' => false,
             'error' => 'Failed to load items',
+            'error_code' => 'internal_error',
             'message' => $e->getMessage()
         ], JSON_UNESCAPED_UNICODE);
     }

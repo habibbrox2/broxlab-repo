@@ -91,7 +91,7 @@ const ChatApi = {
       body: JSON.stringify({
         messages,
         provider: 'openrouter',
-        model: 'openrouter/free',
+        model: 'meta-llama/llama-3-8b-instruct:free',
         csrf_token: csrfToken,
       }),
     });

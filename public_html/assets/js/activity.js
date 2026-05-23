@@ -404,8 +404,8 @@
   }
 
   function setupInputTracking() {
-    const changeHandler = debounce(function () {
-      const input = this;
+    const changeHandler = debounce(function (ev) {
+      const input = ev && ev.target ? ev.target : this;
       const name = input.name;
       const type = (input.type || '').toLowerCase();
       if (!name || /password|hidden/i.test(type)) return;

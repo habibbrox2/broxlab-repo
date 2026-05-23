@@ -780,7 +780,7 @@
             <form action="/admin/ai-system/save" method="POST" id="aiSettingsForm" class="card ai-panel">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="default_provider" value="{{ settings.default_provider|default('openrouter')|e('html_attr') }}">
-                <input type="hidden" name="default_model" value="{{ settings.default_model|default('openrouter/auto')|e('html_attr') }}">
+                <input type="hidden" name="default_model" value="{{ settings.default_model|default('meta-llama/llama-3-8b-instruct:free')|e('html_attr') }}">
                 <input type="hidden" name="default_author" value="{{ settings.default_author|default('BroxBhai AI')|e('html_attr') }}">
                 <input type="hidden" name="image_context_max_messages" value="{{ settings.image_context_max_messages|default(10)|e('html_attr') }}">
                 <input type="hidden" name="system_prompt" value="{{ settings.system_prompt|default('')|e('html_attr') }}">
@@ -979,14 +979,14 @@
                                         <span class="snapshot-label">Frontend model</span>
                                         <span class="d-block small text-muted">Assistant default</span>
                                     </span>
-                                    <span class="snapshot-value">{{ settings.frontend_model|default(settings.default_model|default('openrouter/auto')) }}</span>
+                                    <span class="snapshot-value">{{ settings.frontend_model|default(settings.default_model|default('meta-llama/llama-3-8b-instruct:free')) }}</span>
                                 </li>
                                 <li class="list-group-item">
                                     <span>
                                         <span class="snapshot-label">Backend model</span>
                                         <span class="d-block small text-muted">AutoContent default</span>
                                     </span>
-                                    <span class="snapshot-value">{{ settings.backend_model|default(settings.default_model|default('openrouter/auto')) }}</span>
+                                    <span class="snapshot-value">{{ settings.backend_model|default(settings.default_model|default('meta-llama/llama-3-8b-instruct:free')) }}</span>
                                 </li>
                                 <li class="list-group-item">
                                     <span>

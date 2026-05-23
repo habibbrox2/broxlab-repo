@@ -3,16 +3,10 @@
  * Watches the source form URL/content type and auto-selects a matching preset.
  */
 
+import { debounce } from '../shared/utils.js';
+
 const DEFAULT_HINT = 'Select a preset configuration for this source';
 const DEBOUNCE_MS = 450;
-
-const debounce = (fn, delay = DEBOUNCE_MS) => {
-  let timeoutId;
-  return (...args) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => fn(...args), delay);
-  };
-};
 
 const createHintUpdater = (hintEl) => {
   if (!hintEl) return () => {};
@@ -95,7 +89,7 @@ export function initPresetAutoSelector() {
   const debouncedGuess = debounce(() => {
     resetOverride();
     guessPreset();
-  });
+  }, DEBOUNCE_MS);
 
   urlInput.addEventListener('input', debouncedGuess);
 

@@ -77,6 +77,111 @@ function getActiveClientProviders() {
     .map((p) => p.provider_name);
 }
 
+function getPromptEnhancementContext() {
+  const context = [];
+
+  if (document.title) {
+    context.push(`Page title: ${document.title.trim()}`);
+  }
+
+  const pageUrl = window.location?.href || '';
+  if (pageUrl) {
+    context.push(`Page URL: ${pageUrl}`);
+  }
+
+  if (currentLang) {
+    context.push(`Current UI language: ${currentLang === 'bn' ? 'Bangla' : 'English'}`);
+  }
+
+  if (userInfo?.topics?.length) {
+    context.push(`Selected topics: ${userInfo.topics.join(', ')}`);
+  }
+
+  return context.filter(Boolean).join('\n\n').trim();
+}
+
+function normalizeEnhancedPromptText(text) {
+  let value = String(text || '').trim();
+  if (!value) return '';
+
+  value = value.replace(/^```(?:prompt|text)?\s*/i, '').replace(/```$/i, '').trim();
+  value = value.replace(/^(?:enhanced|improved)\s+prompt\s*:\s*/i, '').trim();
+  value = value.replace(/^(?:here(?:'s| is) the improved prompt|here is a better prompt)\s*[:\-]?\s*/i, '').trim();
+  value = value.replace(/^(?:prompt enhancement|rewritten prompt)\s*[:\-]?\s*/i, '').trim();
+  return value;
+}
+
+function getPromptEnhancementProvider() {
+  const activeProviders = getActiveClientProviders();
+  if (assistantPrefs.provider && activeProviders.includes(assistantPrefs.provider)) {
+    return assistantPrefs.provider;
+  }
+  return activeProviders[0] || 'puter';
+}
+
+async function requestEnhancedPrompt(rawText) {
+  const promptText = String(rawText || '').trim();
+  if (!promptText) return '';
+
+  const enhancementContext = getPromptEnhancementContext();
+  const provider = getPromptEnhancementProvider();
+  const model =
+    provider === 'puter'
+      ? 'gemini-2.0-flash'
+      : assistantPrefs.model || 'meta-llama/llama-3-8b-instruct:free';
+  const messages = [
+    {
+      role: 'system',
+      content: [
+        'You are an expert prompt enhancer for AI assistants.',
+        'Rewrite the user prompt so it is clearer, more specific, and more useful.',
+        'Preserve the original intent.',
+        'Add relevant context when provided, such as page information or selected topics.',
+        'Improve instructions for output format, detail level, tone, or scope when helpful.',
+        'If the prompt is already strong, polish it instead of over-expanding it.',
+        'Return only the improved prompt text. Do not add explanations, commentary, or code fences.',
+      ].join(' '),
+    },
+    {
+      role: 'user',
+      content: [
+        'Original prompt:',
+        promptText,
+        enhancementContext ? `\nContext:\n${enhancementContext}` : '',
+        '\nReturn a ready-to-send improved prompt.',
+      ].filter(Boolean).join('\n'),
+    },
+  ];
+
+  let response;
+  if (provider === 'openrouter') {
+    response = await callOpenRouterAI(messages, {
+      model: model && model.includes('/') ? model : 'meta-llama/llama-3-8b-instruct:free',
+      temperature: 0.2,
+      maxTokens: 600,
+    });
+  } else if (provider === 'fireworks') {
+    response = await callFireworksAI(messages, {
+      model,
+      temperature: 0.2,
+      maxTokens: 600,
+    });
+  } else {
+    await ensurePuterReady({ interactive: false, allowAuth: false, t: (key) => t(key), });
+    const puter = await getPuterClient();
+    response = await puter.ai.chat(messages, {
+      model: model || 'gemini-2.0-flash',
+      stream: false,
+    });
+  }
+
+  const enhanced = normalizeEnhancedPromptText(extractResponseText(response) || '');
+  if (!enhanced) {
+    throw new Error('Prompt enhancer returned an empty result');
+  }
+  return enhanced;
+}
+
 function showPreChatError(message) {
   const container = document.getElementById('publicAssistantPreChatError') || (() => {
     const el = document.createElement('div');
@@ -191,7 +296,7 @@ async function loadAssistantPrefs() {
       // Auto-select a working provider and model before the assistant opens.
       assistantPrefs.provider = choosePreferredProvider();
       if (assistantPrefs.provider === 'openrouter' && (!assistantPrefs.model || !assistantPrefs.model.includes('/'))) {
-        assistantPrefs.model = 'openrouter/free';
+        assistantPrefs.model = 'meta-llama/llama-3-8b-instruct:free';
       }
 
       if (assistantPrefs.provider !== 'puter') {
@@ -344,7 +449,11 @@ async function callOpenRouterAI(messages, options = {}) {
   // Proxy the request to the backend so API keys are not exposed to clients
   const payload = {
     messages,
-    options: { ...(options || {}), provider: 'openrouter', model: options?.model || 'openrouter/free' },
+    options: {
+      ...(options || {}),
+      provider: 'openrouter',
+      model: options?.model || 'meta-llama/llama-3-8b-instruct:free',
+    },
     stream: false,
   };
 
@@ -757,9 +866,36 @@ function bindEvents() {
 }
 
 async function handleUserMessage() {
-  const text = String(UI.input?.value || '').trim();
-  if (!text || !userInfo?.name) {
+  const rawText = String(UI.input?.value || '').trim();
+  if (!rawText || !userInfo?.name) {
     showPreChat();
+    return;
+  }
+
+  const staticReply = getStaticReply(rawText, currentLang);
+  if (staticReply) {
+    const { history, expired, } = historyStore.load();
+    chatHistory = expired ? [] : history;
+    if (expired) {
+      // Reset user info and show pre-chat when session expires due to inactivity
+      userInfo = null;
+      window.localStorage.removeItem(USER_INFO_KEY);
+      supportLogged = false;
+      showPreChat();
+      appendAssistant(UI.messages, t('session_expired_notice'), { animate: true, });
+      return; // Don't proceed with the message
+    }
+
+    UI.input.value = '';
+    const ts = new Date().toISOString();
+    chatHistory.push({ role: 'user', text: rawText, ts, });
+    historyStore.save(chatHistory);
+    appendMessage(UI.messages, 'user', rawText, { ts, });
+    await appendAssistant(UI.messages, staticReply, { animate: true, });
+    return;
+  }
+
+  if (rawText.startsWith('/')) {
     return;
   }
 
@@ -775,25 +911,33 @@ async function handleUserMessage() {
     return; // Don't proceed with the message
   }
 
+  let promptText = rawText;
+  try {
+    if (UI.loading) {
+      UI.loading.classList.remove('d-none');
+    }
+    if (publicThinking) {
+      publicThinking.show().setStep(0).setStatus('Enhancing prompt...');
+    }
+    promptText = await requestEnhancedPrompt(rawText);
+  } catch (err) {
+    console.warn('Prompt enhancement skipped:', err);
+    promptText = rawText;
+  }
+
   UI.input.value = '';
   const ts = new Date().toISOString();
-  chatHistory.push({ role: 'user', text, ts, });
+  chatHistory.push({ role: 'user', text: promptText, ts, });
   historyStore.save(chatHistory);
-  appendMessage(UI.messages, 'user', text, { ts, });
+  appendMessage(UI.messages, 'user', promptText, { ts, });
 
   if (userInfo.topics.includes('support') && !supportLogged) {
-    const queued = sendSupportMessage(text);
+    const queued = sendSupportMessage(rawText);
     if (queued) {
       supportLogged = true;
       userInfo.supportSent = true;
       saveUserInfo();
     }
-  }
-
-  const staticReply = getStaticReply(text, currentLang);
-  if (staticReply) {
-    await appendAssistant(UI.messages, staticReply, { animate: true, });
-    return;
   }
 
   setTyping(true);
@@ -845,7 +989,7 @@ async function handleUserMessage() {
   const apiMessages = [
     { role: 'system', content: buildSystemPrompt(), },
     ...chatHistory.map((r) => ({ role: r.role, content: r.text, })),
-    { role: 'user', content: text, },
+    { role: 'user', content: promptText, },
   ];
 
   let providerError = null;
@@ -862,7 +1006,7 @@ async function handleUserMessage() {
           publicThinking.setStep(2).setStatus(`Calling ${prov.provider_name}...`);
         }
         if (prov.provider_name === 'openrouter') {
-          model = model && model.includes('/') ? model : 'openrouter/free';
+          model = model && model.includes('/') ? model : 'meta-llama/llama-3-8b-instruct:free';
           response = await callOpenRouterAI(apiMessages, { stream: false, model, });
         } else if (prov.provider_name === 'fireworks') {
           model = model || '';
@@ -928,8 +1072,8 @@ async function handleUserMessage() {
           /not a valid model id/i.test(providerErr.message)
         ) {
           triedFallbackModel = true;
-          assistantPrefs.model = 'openrouter/free';
-          console.info('Retrying OpenRouter using openrouter/free due to invalid model error');
+          assistantPrefs.model = 'meta-llama/llama-3-8b-instruct:free';
+          console.info('Retrying OpenRouter using meta-llama/llama-3-8b-instruct:free due to invalid model error');
           continue; // retry this provider with fallback model
         }
 
@@ -973,7 +1117,7 @@ async function handleUserMessage() {
     const apiMessages = [
       { role: 'system', content: buildSystemPrompt(), },
       ...chatHistory.map((r) => ({ role: r.role, content: r.text, })),
-      { role: 'user', content: text, },
+      { role: 'user', content: promptText, },
     ];
 
     const response = await puter.ai.chat(apiMessages, { model: model, stream: false, });
@@ -1085,4 +1229,3 @@ window.syncChatLanguage = function (newLang) {
     updateLangButtons();
   }
 };
-

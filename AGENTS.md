@@ -25,6 +25,7 @@ Read first: [README.md](README.md) → [AGENTS.md](AGENTS.md) → [copilot-instr
 | **Node Service** | `src/` (TypeScript) | Unified AI, OCR, tools APIs on Fastify |
 | **Build Tools** | `build/` (esbuild, eslint, vitest, playwright) | JS/CSS bundling, linting, testing |
 | **Frontend Sources** | `public_html/assets/{js,css}/` | **Never edit `dist/`** (auto-generated) |
+| **RTE Editor** | `public_html/rtceditor/` | Rich Text Editor — source files + esbuild bundle |
 | **AI/Prompts** | `system/prompts/` | AI model configs and prompt templates |
 | **Agent Skills** | `.ai/*.skill.md` | Workflow and task-specific skills for AI agents |
 
@@ -82,6 +83,8 @@ Read first: [README.md](README.md) → [AGENTS.md](AGENTS.md) → [copilot-instr
 | **Naming convention violations** | Build fails at validation gate | PHP: PascalCase classes; JS/CSS/dirs: kebab-case files |
 | **SELECT \* instead of explicit columns** | Security review blocker; performance issue | List columns: `SELECT id, name, email FROM table` |
 | **Forgetting to rebuild after code changes** | Browser sees stale bundle | Run `npm run dev` (watch) or `npm run build:prod` before deploy |
+| **Editing `rtceditor/editor.bundle.js` directly** | Changes lost on rebuild | Edit source `.js` files in `rtceditor/`, then `npm run build:rte` to regenerate |
+| **Loading `editor.js` instead of `editor.bundle.js`** | 11 separate HTTP requests instead of 1 | Use `editor.bundle.js?v={{ rte_version }}` in Twig templates (bundle replaces 11 separate files) |
 
 ---
 
@@ -149,3 +152,121 @@ Read first: [README.md](README.md) → [AGENTS.md](AGENTS.md) → [copilot-instr
 3. Commit to `main` branch
 4. GitHub Actions triggers deployment via `web-host/scripts/deploy.sh`
 5. Secrets required: HOST, USER, SSH_KEY_BASE64, REMOTE_BASE, SSH_PORT, KEEP_RELEASES
+
+---
+
+## RTE Editor Migration Guide
+
+The Rich Text Editor was restructured for performance. Key changes:
+
+### Before (v2.3.0)
+- **18 separate JS files** loaded at startup via `editor.js` → dynamic script injection
+- 5 tiny helper files (ui, utils, keyboard, dragdrop, formatting) each required their own HTTP request
+- `editor.debug.js` always loaded on the demo page
+- Debug logging (`console.group`, `console.trace`, emoji-heavy `debugLog` calls) always included
+
+### After (v2.4.0+)
+
+| Change | Detail |
+|--------|--------|
+| **esbuild bundle** | 11 eager files → 1 minified `editor.bundle.js` (91.7 KB, 58.8% smaller) |
+| **Lazy loading** | modals (723 lines), color (517), images (257) loaded **on first interaction**, not at startup |
+| **Consolidated helpers** | 5 small helpers merged into `editor-core-essentials.js`; original files deleted |
+| **Gated debug.js** | `editor.debug.js` only loads when `rte_debug` flag is `true` |
+| **Gated logging** | Verbose `debugGroup`/`debugGroupEnd` removed; remaining debug calls gated behind `RTE_DEBUG=false` |
+
+### File Structure
+
+```
+public_html/rtceditor/
+├── editor.bundle.js          # 🏁 PRODUCTION BUNDLE (minified, 91 KB) — load this
+├── editor.css                # Stylesheet (unchanged)
+├── editor.js                 # Core class (included in bundle; standalone kept for backward compat)
+├── editor-core-essentials.js # Consolidated from 5 deleted helpers
+├── editor.toolbar.js         # Eager helpers (all bundled)
+├── editor.selection.js       #
+├── editor.block-formatting.js#
+├── editor.normalization.js   #
+├── editor.history.js         #
+├── editor.views.js           #
+├── editor.sanitize.js        #
+├── editor.input.js           #
+├── editor.figures.js         #
+├── editor.debug.js           # Debug module — only loads when rte_debug=true
+├── editor.modals.js          # 🔄 Lazy-loaded on first modal click
+├── editor.color.js           # 🔄 Lazy-loaded on first color interaction
+└── editor.images.js          # 🔄 Lazy-loaded on first image interaction
+```
+
+### How It Works
+
+1. `editor.bundle.js` is loaded via `<script defer>` in the Twig template
+2. The bundle contains all 11 eager source files concatenated and minified
+3. When `RichTextEditor.loadHelpers()` runs, it discovers that all install functions are already defined on `window` (because the bundle defined them at load time), so it calls them **synchronously** without injecting any `<script>` tags
+4. The 3 lazy modules (`modals`, `color`, `images`) are NOT in the bundle — they are loaded dynamically via `_loadLazyModule()` on first click/interaction
+
+### How to Work With RTE
+
+#### Edit source files
+Always edit the individual `.js` files in `public_html/rtceditor/`, never edit `editor.bundle.js` directly.
+
+#### Rebuild the bundle
+```bash
+# Production build (minified)
+npm run build:rte
+
+# Includes RTE in full production build
+npm run build:prod
+```
+
+#### Update a Twig template that uses the editor
+```twig
+{% set rte_version = getRTEVersion() %}
+<link href="/rtceditor/editor.css?v={{ rte_version }}" rel="stylesheet">
+<script src="/rtceditor/editor.bundle.js?v={{ rte_version }}" defer></script>
+{% if rte_debug is defined and rte_debug %}
+<script src="/rtceditor/editor.debug.js?v={{ rte_version }}" defer></script>
+{% endif %}
+```
+
+#### Enable debug logging
+- Set `window.RTE_DEBUG = true` in the browser console
+- Or pass `rte_debug: true` to the Twig template to load `editor.debug.js`
+- Debug log output is tagged with categories: `[RTE:category:timestamp]`
+
+### Deprecated / Removed
+
+| File | Status | Replacement |
+|------|--------|------------|
+| `editor.ui.js` | 🗑 Deleted | `editor-core-essentials.js` |
+| `editor.utils.js` | 🗑 Deleted | `editor-core-essentials.js` |
+| `editor.keyboard.js` | 🗑 Deleted | `editor-core-essentials.js` |
+| `editor.dragdrop.js` | 🗑 Deleted | `editor-core-essentials.js` |
+| `editor.formatting.js` | 🗑 Deleted | `editor-core-essentials.js` |
+| `editor.js` standalone | ⚠️ Deprecated | `editor.bundle.js` (still works but not recommended) |
+
+### RTE Debug Gotchas
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| `debugGroup is not a function` | Old `editor.selection.js` still loaded | Rebuild bundle: `npm run build:rte` |
+| Editor loads but toolbar buttons don't work | Old helper files still cached | Clear browser cache + hard reload (Ctrl+Shift+R) |
+| Bundle not reflecting source changes | Forgot to rebuild | Run `npm run build:rte` after editing source files |
+| Lazy module fails to load | Wrong `baseDir` detection (script lookup relies on `editor.js` substring match) | Ensure the `<script>` tag src includes `editor` in the filename |
+
+### Troubleshooting
+
+**Q: The bundle is too big (~91 KB). Can we make it smaller?**
+
+The remaining debug logging calls (`RTE_debugLog` guarded by `RTE_DEBUG=false`) add ~2-3 KB of dead code. A future build-time strip step (e.g., esbuild `drop: ['console']` with a custom plugin) could remove them entirely for production.
+
+**Q: Can I add a new helper module?**
+
+Yes. Add a new `editor.new-module.js` file following the IIFE + `window.installXxx` pattern, then:
+1. Add it to the `modules` array in `editor.js`'s `loadHelpers()` static method
+2. Add the file path to the `EAGER_MODULES` array in `build/esbuild-rte.mjs`
+3. Rebuild: `npm run build:rte`
+
+**Q: How do I add a new lazy-loaded module?**
+
+Add it to the `_lazyModules` map in `editor.js`'s `loadHelpers()` (key: path, value: install function name). Do NOT add it to the bundle's `EAGER_MODULES` array. It will be loaded dynamically on first access.

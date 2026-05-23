@@ -12,6 +12,14 @@
 import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
 import { checkPasswordRequirements, getPasswordStrength, validateConfirmation, PASSWORD_REQUIREMENTS } from '../shared/form-validators.js';
 
+const runWhenReady = (fn) => {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fn, { once: true });
+  } else {
+    fn();
+  }
+};
+
 (function () {
   'use strict';
 
@@ -413,29 +421,29 @@ import { checkPasswordRequirements, getPasswordStrength, validateConfirmation, P
 
   // ============ INITIALIZATION ============
   function init() {
-    cacheElements();
+    try {
+      cacheElements();
 
-    if (!elements.form) {
-      console.warn('Register form not found');
-      return;
-    }
+      if (!elements.form) {
+        console.warn('Register form not found');
+        return;
+      }
 
-    initPasswordToggles();
-    initFormHandler();
-    initOAuthButtons();
-    setupAuthCallbacks();
+      initPasswordToggles();
+      initFormHandler();
+      initOAuthButtons();
+      setupAuthCallbacks();
 
-    // Trigger initial validation if form has values (after error)
-    if (elements.password?.value) {
-      updateStrengthBars();
-      generatePasswordFeedback();
+      // Trigger initial validation if form has values (after error)
+      if (elements.password?.value) {
+        updateStrengthBars();
+        generatePasswordFeedback();
+      }
+    } catch (error) {
+      console.error('[Register] Initialization failed:', error);
     }
   }
 
   // Initialize when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  runWhenReady(init);
 })();

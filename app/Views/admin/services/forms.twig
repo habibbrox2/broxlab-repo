@@ -7,6 +7,429 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
         rel="stylesheet">
   <link href="/rtceditor/editor.css?v={{ rte_version }}" rel="stylesheet">
+  <style>
+    /* AI Writer Floating Button */
+    .ai-fab-service {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 9995;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      border: none;
+      box-shadow: 0 4px 20px rgba(102,126,234,0.45);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      opacity: 0;
+      transform: scale(0) translateY(20px);
+      pointer-events: none;
+    }
+    .ai-fab-service.visible {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      pointer-events: auto;
+    }
+    .ai-fab-service:hover {
+      transform: scale(1.1) translateY(-3px);
+      box-shadow: 0 8px 30px rgba(102,126,234,0.6);
+    }
+    .ai-fab-service:active {
+      transform: scale(0.95);
+    }
+    .ai-fab-service i {
+      font-size: 1.4rem;
+      transition: transform 0.3s ease;
+    }
+    .ai-fab-service:hover i {
+      transform: rotate(-15deg) scale(1.1);
+    }
+    .ai-fab-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #ff6b6b;
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(255,107,107,0.5);
+      animation: ai-fab-pulse 2s ease-in-out infinite;
+    }
+    @keyframes ai-fab-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+    .ai-fab-tooltip {
+      position: absolute;
+      right: 68px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s ease;
+      pointer-events: none;
+    }
+    .ai-fab-tooltip::after {
+      content: '';
+      position: absolute;
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-left: 6px solid rgba(0,0,0,0.85);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+    .ai-fab-service:hover .ai-fab-tooltip {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Prefill flash animation */
+    @keyframes prefill-flash {
+      0% { background-color: transparent; box-shadow: none; }
+      15% { background-color: #d4edda; box-shadow: 0 0 0 3px rgba(40,167,69,0.35); }
+      50% { background-color: #d4edda; box-shadow: 0 0 0 3px rgba(40,167,69,0.35); }
+      100% { background-color: transparent; box-shadow: none; }
+    }
+    .prefill-flash {
+      animation: prefill-flash 2s ease-out forwards;
+      border-radius: 4px;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    /* Prefill toast notification */
+    .prefill-toast {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 10000;
+      background: #fff;
+      border: 1px solid #28a745;
+      border-left: 5px solid #28a745;
+      border-radius: 10px;
+      padding: 0.85rem 1.25rem;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #1a1a2e;
+      transform: translateX(120%);
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      max-width: 380px;
+    }
+    .prefill-toast.show {
+      transform: translateX(0);
+    }
+    .prefill-toast i {
+      color: #28a745;
+      font-size: 1.3rem;
+    }
+    .prefill-toast .toast-close {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: #6c757d;
+      cursor: pointer;
+      padding: 0.15rem 0.35rem;
+      font-size: 1.1rem;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .prefill-toast .toast-close:hover {
+      background: #f1f3f5;
+    }
+
+    /* AI Service Overlay (reuses same card style as content form) */
+    .ai-gen-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .ai-gen-overlay.active {
+      opacity: 1; visibility: visible;
+    }
+    .ai-gen-card {
+      background: #fff; border-radius: 20px;
+      padding: 2.5rem; max-width: 420px; width: 90%;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      text-align: center;
+      transform: scale(0.9) translateY(20px);
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .ai-gen-overlay.active .ai-gen-card {
+      transform: scale(1) translateY(0);
+    }
+    .ai-gen-spinner {
+      width: 56px; height: 56px; margin: 0 auto 1.25rem;
+      border: 5px solid #e9ecef;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: ai-spin 0.8s linear infinite;
+    }
+    .ai-gen-spinner.done {
+      border-color: #198754;
+      border-top-color: #198754;
+      animation: ai-pop 0.4s ease;
+    }
+    .ai-gen-spinner.error {
+      border-color: #dc3545;
+      border-top-color: #dc3545;
+      animation: none;
+    }
+    @keyframes ai-spin { to { transform: rotate(360deg); } }
+    @keyframes ai-pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+    .ai-gen-title {
+      font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;
+      color: #1a1a2e;
+    }
+    .ai-gen-text {
+      font-size: 0.9rem; color: #6c757d; margin-bottom: 1.25rem;
+      min-height: 1.4em;
+    }
+    .ai-gen-progress {
+      height: 4px; background: #e9ecef; border-radius: 4px;
+      overflow: hidden; margin-bottom: 1rem;
+    }
+    .ai-gen-progress-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+    .ai-gen-progress-bar.done {
+      background: linear-gradient(90deg, #28a745, #20c997);
+    }
+    .ai-gen-progress-bar.error {
+      background: linear-gradient(90deg, #dc3545, #e74c3c);
+    }
+    .ai-gen-check {
+      display: none; width: 56px; height: 56px; margin: 0 auto 1.25rem;
+      background: #198754; border-radius: 50%;
+      align-items: center; justify-content: center;
+    }
+    .ai-gen-check.show { display: flex; }
+    .ai-gen-check i { color: #fff; font-size: 1.8rem; }
+    @keyframes ai-check-in {
+      0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+      100% { transform: scale(1) rotate(0); opacity: 1; }
+    }
+    .ai-gen-check i { animation: ai-check-in 0.4s ease; }
+
+    /* Pexels Image Picker Modal */
+    .pexels-modal {
+      position: fixed; inset: 0; z-index: 9998;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.5rem;
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .pexels-modal.active {
+      opacity: 1; visibility: visible;
+    }
+    .pexels-modal-content {
+      background: #fff; border-radius: 16px;
+      max-width: 800px; width: 100%; max-height: 85vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      transform: scale(0.92) translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .pexels-modal.active .pexels-modal-content {
+      transform: scale(1) translateY(0);
+    }
+    .pexels-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #e9ecef;
+      flex-shrink: 0;
+    }
+    .pexels-modal-header h5 {
+      margin: 0; font-weight: 700;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .pexels-modal-header h5 i { color: #05a081; }
+    .pexels-modal-close {
+      background: none; border: none; font-size: 1.5rem;
+      color: #6c757d; cursor: pointer; padding: 0.25rem;
+      line-height: 1; border-radius: 8px; transition: all 0.2s;
+    }
+    .pexels-modal-close:hover { background: #f1f3f5; color: #1a1a2e; }
+    .pexels-modal-search {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #e9ecef;
+      display: flex; gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    .pexels-modal-search input {
+      flex: 1;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 0.55rem 1rem;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .pexels-modal-search input:focus {
+      border-color: #05a081;
+    }
+    .pexels-modal-search button {
+      padding: 0.55rem 1.25rem;
+      border: none;
+      border-radius: 10px;
+      background: #05a081;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pexels-modal-search button:hover {
+      background: #048069;
+      transform: translateY(-1px);
+    }
+    .pexels-modal-search button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .pexels-modal-body {
+      flex: 1; overflow-y: auto; padding: 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    .pexels-modal-body .pexels-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #6c757d;
+    }
+    .pexels-modal-body .pexels-empty i {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 0.75rem;
+    }
+    .pexels-photo-card {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      border: 3px solid transparent;
+      position: relative;
+    }
+    .pexels-photo-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      border-color: #05a081;
+    }
+    .pexels-photo-card.selected {
+      border-color: #05a081;
+      box-shadow: 0 0 0 3px rgba(5,160,129,0.3);
+    }
+    .pexels-photo-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+    .pexels-photo-card .pexels-photo-info {
+      padding: 0.5rem 0.75rem;
+      background: #fff;
+      font-size: 0.78rem;
+      color: #6c757d;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pexels-photo-card .pexels-photo-info a {
+      color: #05a081;
+      text-decoration: none;
+    }
+    .pexels-photo-card .pexels-loading-overlay {
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,0.85);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; visibility: hidden;
+      transition: all 0.2s;
+    }
+    .pexels-photo-card .pexels-loading-overlay.active {
+      opacity: 1; visibility: visible;
+    }
+    .pexels-modal-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 1.5rem;
+      border-top: 1px solid #e9ecef;
+      flex-shrink: 0;
+      font-size: 0.85rem;
+      color: #6c757d;
+    }
+    .pexels-modal-footer .pexels-credit a {
+      color: #05a081;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .pexels-modal-footer .pexels-credit a:hover {
+      text-decoration: underline;
+    }
+    .pexels-modal-footer button {
+      padding: 0.5rem 1.5rem;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pexels-modal-footer button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .pexels-modal-footer button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+    }
+    .pexels-loading {
+      text-align: center; padding: 3rem 1rem;
+      color: #6c757d;
+      grid-column: 1 / -1;
+    }
+    .pexels-loading .spinner-border { width: 2.5rem; height: 2.5rem; }
+    .pexels-error {
+      text-align: center; padding: 2rem 1rem;
+      color: #dc3545;
+      grid-column: 1 / -1;
+    }
+  </style>
 {% endblock %}
 {% block content %}
   <div class="container-fluid py-4">
@@ -270,6 +693,16 @@
                     <small class="text-muted">Supported: JPG, PNG, GIF, WebP (Max 10MB each)</small>
                   </div>
                   <div id="imagePreviewContainer" class="row g-3 mt-3"></div>
+                  <div class="mt-3">
+                    <button type="button" class="modern-btn modern-btn-secondary w-100" id="pexelsBtn">
+                      <i class="bi bi-image-fill me-1"></i> Find Image from Pexels
+                    </button>
+                  </div>
+                  <div class="mt-3">
+                    <button type="button" class="modern-btn modern-btn-secondary w-100" id="pixabayBtn">
+                      <i class="bi bi-image-fill me-1"></i> Find Image from Pixabay
+                    </button>
+                  </div>
                 </div>
               </div>
               <!-- Application Form Fields -->
@@ -568,10 +1001,97 @@
        data-service-all-categories='{{ all_categories|default([]) |json_encode|e("html_attr") }}'
        data-exclude-id='{{ service ? service.id : "" }}'
        class="inl-a-0006"></div>
+
+  <!-- AI Writer Floating Button -->
+  <button class="ai-fab-service" id="aiFabServiceBtn" aria-label="Open AI Writer" title="AI Writer">
+    <i class="bi bi-magic"></i>
+    <span class="ai-fab-badge">AI</span>
+    <span class="ai-fab-tooltip">Generate Description with AI</span>
+  </button>
+
+  <!-- AI Generation Overlay -->
+  <div class="ai-gen-overlay" id="aiGenOverlayService" role="dialog" aria-modal="true" aria-label="Generating service description">
+    <div class="ai-gen-card">
+      <div class="ai-gen-spinner" id="aiGenSpinnerService"></div>
+      <div class="ai-gen-check" id="aiGenCheckService"><i class="bi bi-check-lg"></i></div>
+      <div class="ai-gen-title" id="aiGenTitleService">Generating Description</div>
+      <div class="ai-gen-text" id="aiGenTextService">Starting up...</div>
+      <div class="ai-gen-progress">
+        <div class="ai-gen-progress-bar" id="aiGenProgressBarService"></div>
+      </div>
+      <small class="text-muted" id="aiGenCharsService"></small>
+    </div>
+  </div>
+
+  <!-- Prefill Toast Notification -->
+  <div class="prefill-toast" id="prefillToast">
+    <i class="bi bi-check-circle-fill"></i>
+    <span id="prefillToastText">Fields auto-filled from URL</span>
+    <button class="toast-close" id="prefillToastClose" type="button">&times;</button>
+  </div>
+
+  <!-- Pexels Image Picker Modal -->
+  <div class="pexels-modal" id="pexelsModal" role="dialog" aria-modal="true" aria-label="Search Pexels images">
+    <div class="pexels-modal-content">
+      <div class="pexels-modal-header">
+        <h5><i class="bi bi-image-fill"></i> Search Images from Pexels</h5>
+        <button type="button" class="pexels-modal-close" id="pexelsModalClose">&times;</button>
+      </div>
+      <div class="pexels-modal-search">
+        <input type="text" id="pexelsSearchInput" placeholder="Search for images related to your service..." value="">
+        <button type="button" id="pexelsSearchBtn"><i class="bi bi-search me-1"></i>Search</button>
+      </div>
+      <div class="pexels-modal-body" id="pexelsResults">
+        <div class="pexels-empty">
+          <i class="bi bi-image"></i>
+          <p class="fw-semibold mb-1">Search for images</p>
+          <p class="mb-0 small">Enter a search term above to find relevant images from Pexels</p>
+        </div>
+      </div>
+      <div class="pexels-modal-footer">
+        <span class="pexels-credit">
+          Photos from <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a>
+          <span id="pexelsTotalResults" class="ms-2 text-muted"></span>
+        </span>
+        <button type="button" id="pexelsInsertBtn" disabled>
+          <i class="bi bi-download me-1"></i> Download Selected
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pexels-modal" id="pixabayModal" role="dialog" aria-modal="true" aria-label="Search Pixabay images">
+    <div class="pexels-modal-content">
+      <div class="pexels-modal-header">
+        <h5><i class="bi bi-image-fill"></i> Search Images from Pixabay</h5>
+        <button type="button" class="pexels-modal-close" id="pixabayModalClose">&times;</button>
+      </div>
+      <div class="pexels-modal-search">
+        <input type="text" id="pixabaySearchInput" placeholder="Search for images related to your service..." value="">
+        <button type="button" id="pixabaySearchBtn"><i class="bi bi-search me-1"></i>Search</button>
+      </div>
+      <div class="pexels-modal-body" id="pixabayResults">
+        <div class="pexels-empty">
+          <i class="bi bi-image"></i>
+          <p class="fw-semibold mb-1">Search for images</p>
+          <p class="mb-0 small">Enter a search term above to find relevant images from Pixabay</p>
+        </div>
+      </div>
+      <div class="pexels-modal-footer">
+        <span class="pexels-credit">
+          Images from <a href="https://pixabay.com" target="_blank" rel="noopener">Pixabay</a>
+          <span id="pixabayTotalResults" class="ms-2 text-muted"></span>
+        </span>
+        <button type="button" id="pixabayInsertBtn" disabled>
+          <i class="bi bi-download me-1"></i> Download Selected
+        </button>
+      </div>
+    </div>
+  </div>
 {% endblock %}
 {% block scripts %}
   {% set rte_version = getRTEVersion() %}
-  <script src="/rtceditor/editor.js?v={{ rte_version }}" defer></script>
+  <script src="/rtceditor/editor.bundle.js?v={{ rte_version }}" defer></script>
   <script>
         (function () {
             const premiumToggle = document.getElementById('isPremium');
@@ -594,5 +1114,1058 @@
             premiumToggle.addEventListener('change', syncPremiumPriceVisibility);
             syncPremiumPriceVisibility();
         })();
+  </script>
+
+  <!-- AI Writer FAB + Generation Script -->
+  <script>
+    // Global helper: escape HTML special characters (used by multiple IIFE blocks)
+    function escapeHtml(str) {
+      var d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+  (function() {
+    'use strict';
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const fabBtn = document.getElementById('aiFabServiceBtn');
+    const descCard = document.querySelector('.admin-panel-card:has(.modern-rich-editor)');
+
+    // Prefill flash indicator helpers
+    function flashField(el, label) {
+      if (!el) return;
+      el.classList.add('prefill-flash');
+      el.style.position = 'relative';
+      setTimeout(function() { el.classList.remove('prefill-flash'); }, 2200);
+    }
+
+    function showPrefillToast(fieldNames) {
+      if (!fieldNames.length) return;
+      var toast = document.getElementById('prefillToast');
+      var text = document.getElementById('prefillToastText');
+      if (!toast || !text) return;
+      text.textContent = '\u2713 Auto-filled: ' + fieldNames.join(', ');
+      toast.classList.add('show');
+      var timer = setTimeout(function() { toast.classList.remove('show'); }, 5000);
+      var closeBtn = document.getElementById('prefillToastClose');
+      if (closeBtn) {
+        closeBtn.onclick = function() {
+          clearTimeout(timer);
+          toast.classList.remove('show');
+        };
+      }
+      toast.onclick = function(e) {
+        if (e.target === closeBtn) return;
+        clearTimeout(timer);
+        toast.classList.remove('show');
+      };
+    }
+
+    // URL param prefill for service AI writer
+    var urlTopic = '';
+    var urlTone = '';
+    var urlKeywords = '';
+    try {
+      function safeDecodeUrlValue(val) {
+        if (!val) return '';
+        var s = String(val);
+        try { s = decodeURIComponent(s); } catch (_) {}
+        return s;
+      }
+
+      function sanitizePrefillHtml(html) {
+        if (!html) return '';
+        var raw = String(html);
+        try {
+          var doc = new DOMParser().parseFromString('<div>' + raw + '</div>', 'text/html');
+          var root = doc.body && doc.body.firstChild;
+          if (!root) return '';
+
+          var allowed = {
+            'P': true, 'H1': true, 'H2': true, 'H3': true,
+            'UL': true, 'OL': true, 'LI': true,
+            'STRONG': true, 'EM': true, 'B': true, 'I': true,
+            'BR': true, 'BLOCKQUOTE': true,
+            'A': true,
+            'DIV': true, 'SPAN': true
+          };
+
+          function isSafeUrl(url) {
+            var u = String(url || '').trim();
+            if (!u) return true;
+            if (/^javascript:/i.test(u)) return false;
+            return /^(https?:|mailto:|tel:|\/|#)/i.test(u);
+          }
+
+          function cleanNode(node) {
+            if (!node) return;
+            if (node.nodeType === Node.COMMENT_NODE) {
+              node.remove();
+              return;
+            }
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              var tag = (node.tagName || '').toUpperCase();
+              if (!allowed[tag]) {
+                var parent = node.parentNode;
+                if (parent) {
+                  while (node.firstChild) parent.insertBefore(node.firstChild, node);
+                  parent.removeChild(node);
+                } else {
+                  node.remove();
+                }
+                return;
+              }
+
+              Array.from(node.attributes || []).forEach(function (attr) {
+                var name = (attr.name || '').toLowerCase();
+                var value = attr.value || '';
+                if (name.startsWith('on') || name === 'style') {
+                  node.removeAttribute(attr.name);
+                  return;
+                }
+                if ((name === 'href' || name === 'src') && !isSafeUrl(value)) {
+                  node.removeAttribute(attr.name);
+                }
+              });
+            }
+            Array.from(node.childNodes || []).forEach(cleanNode);
+          }
+
+          cleanNode(root);
+          return root.innerHTML || '';
+        } catch (_) {
+          return '';
+        }
+      }
+
+      var sp = new URLSearchParams(window.location.search);
+      urlTopic = safeDecodeUrlValue(sp.get('topic') || sp.get('q') || '');
+      urlTone = sp.get('tone') || '';
+      urlKeywords = safeDecodeUrlValue(sp.get('keywords') || '');
+
+      // Direct form field prefill from URL params
+      var urlSlug = sp.get('slug') || '';
+      var urlContent = sp.get('content') || '';
+      var safeHtmlContent = sanitizePrefillHtml(safeDecodeUrlValue(urlContent));
+
+      var prefilledFields = [];
+
+      if (urlTopic) {
+        var nameInput = document.querySelector('input[name="name"]');
+        if (nameInput && !nameInput.value.trim()) {
+          nameInput.value = urlTopic;
+          flashField(nameInput, 'Service Name');
+          prefilledFields.push('Service Name');
+        }
+      }
+      if (urlSlug) {
+        var slugInput = document.querySelector('input[name="slug"]');
+        if (slugInput && !slugInput.value.trim()) {
+          slugInput.value = urlSlug;
+          flashField(slugInput, 'Slug');
+          prefilledFields.push('Slug');
+        }
+      }
+      if (safeHtmlContent) {
+        try {
+          var editor = window.editor_content;
+          var contentFilled = false;
+          if (editor && typeof editor.setContent === 'function') {
+            var existing = '';
+            try { existing = String(editor.getContent() || '').trim(); } catch(_) {}
+            if (!existing) {
+              editor.setContent(safeHtmlContent);
+              contentFilled = true;
+            }
+          } else {
+            var ta = document.querySelector('textarea[name="description"]');
+            if (ta && !ta.value.trim()) {
+              ta.value = safeHtmlContent;
+              contentFilled = true;
+            }
+          }
+          if (contentFilled) {
+            var editorEl = document.querySelector('.modern-rich-editor');
+            if (editorEl) flashField(editorEl, 'Description');
+            prefilledFields.push('Description');
+          }
+        } catch(_) {}
+      }
+
+      // Show toast if any fields were prefilled
+      if (prefilledFields.length) {
+        showPrefillToast(prefilledFields);
+      }
+    } catch(_) {}
+
+    // Overlay elements
+    const overlay = document.getElementById('aiGenOverlayService');
+    const spinner = document.getElementById('aiGenSpinnerService');
+    const checkIcon = document.getElementById('aiGenCheckService');
+    const overlayTitle = document.getElementById('aiGenTitleService');
+    const overlayText = document.getElementById('aiGenTextService');
+    const progressBar = document.getElementById('aiGenProgressBarService');
+    const charsDisplay = document.getElementById('aiGenCharsService');
+
+    if (!fabBtn || !overlay) return;
+
+    // --- FAB visibility ---
+    function checkFabVisibility() {
+      if (!descCard) return;
+      var rect = descCard.getBoundingClientRect();
+      var isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+      fabBtn.classList.toggle('visible', !isVisible);
+    }
+
+    var scrollTimer = null;
+    window.addEventListener('scroll', function() {
+      if (scrollTimer) return;
+      scrollTimer = setTimeout(function() {
+        checkFabVisibility();
+        scrollTimer = null;
+      }, 150);
+    }, { passive: true });
+
+    window.addEventListener('load', checkFabVisibility);
+    window.addEventListener('resize', checkFabVisibility);
+    checkFabVisibility();
+
+    // --- Overlay helpers ---
+    function showProgress(pct, text, title) {
+      progressBar.style.width = pct + '%';
+      if (text) overlayText.textContent = text;
+      if (title) overlayTitle.textContent = title;
+    }
+
+    function showOverlay() {
+      spinner.className = 'ai-gen-spinner';
+      checkIcon.classList.remove('show');
+      progressBar.className = 'ai-gen-progress-bar';
+      overlayTitle.textContent = 'Generating Description';
+      overlayText.textContent = 'Starting up...';
+      progressBar.style.width = '5%';
+      if (charsDisplay) charsDisplay.textContent = '';
+      overlay.classList.add('active');
+    }
+
+    function hideOverlay() {
+      overlay.classList.remove('active');
+    }
+
+    function showCompletion(success, message) {
+      if (success) {
+        spinner.className = 'ai-gen-spinner done';
+        checkIcon.classList.add('show');
+        progressBar.className = 'ai-gen-progress-bar done';
+        progressBar.style.width = '100%';
+        overlayTitle.textContent = 'Complete!';
+        overlayText.textContent = message || 'Description generated successfully';
+        setTimeout(function() { hideOverlay(); }, 1200);
+      } else {
+        spinner.className = 'ai-gen-spinner error';
+        progressBar.className = 'ai-gen-progress-bar error';
+        overlayTitle.textContent = 'Generation Failed';
+        overlayText.textContent = message || 'An error occurred';
+        setTimeout(function() { hideOverlay(); }, 3000);
+      }
+    }
+
+    function convertToHtml(title, content) {
+      var html = '';
+      if (title) html += '<h2>' + escapeHtml(title) + '</h2>\n';
+      var paragraphs = (content || '').split(/\n{2,}/);
+      var inList = false;
+      paragraphs.forEach(function(p) {
+        var t = p.trim();
+        if (!t) return;
+        if (t.startsWith('### ')) {
+          if (inList) { html += '</ul>\n'; inList = false; }
+          html += '<h3>' + escapeHtml(t.slice(4)) + '</h3>\n';
+        } else if (t.startsWith('## ')) {
+          if (inList) { html += '</ul>\n'; inList = false; }
+          html += '<h2>' + escapeHtml(t.slice(3)) + '</h2>\n';
+        } else if (t.startsWith('# ')) {
+          if (inList) { html += '</ul>\n'; inList = false; }
+          html += '<h1>' + escapeHtml(t.slice(2)) + '</h1>\n';
+        } else if (t.startsWith('> ')) {
+          if (inList) { html += '</ul>\n'; inList = false; }
+          html += '<blockquote>' + escapeHtml(t.slice(2)) + '</blockquote>\n';
+        } else if (t.startsWith('- ') || t.startsWith('* ')) {
+          if (!inList) { html += '<ul>\n'; inList = true; }
+          html += '<li>' + escapeHtml(t.slice(2)) + '</li>\n';
+        } else {
+          if (inList) { html += '</ul>\n'; inList = false; }
+          html += '<p>' + escapeHtml(t) + '</p>\n';
+        }
+      });
+      if (inList) html += '</ul>\n';
+      return html;
+    }
+
+    function setEditorContent(html) {
+      var editor = window.editor_content;
+      if (editor && typeof editor.setContent === 'function') {
+        // Get current content and append if it exists
+        var existingHtml = '';
+        try { existingHtml = String(editor.getContent() || '').trim(); } catch(_) {}
+        if (existingHtml) {
+          editor.setContent(existingHtml + '\n\n' + html);
+        } else {
+          editor.setContent(html);
+        }
+      } else {
+        var textarea = document.querySelector('textarea[name="description"]');
+        if (textarea) {
+          var existing = textarea.value || '';
+          textarea.value = existing ? existing + '\n\n' + html : html;
+        }
+      }
+    }
+
+    // --- Prompt + Generation ---
+    function buildPrompt(options) {
+      var prompt = 'Write a detailed service description';
+      if (options.tone && options.tone !== 'informative') {
+        prompt += ' in a ' + options.tone + ' tone';
+      }
+      if (options.length && options.length !== 'medium') {
+        prompt += '. Make it ' + options.length + ' in length';
+      }
+      prompt += ' for the following service: ' + options.topic + '.';
+      if (options.keywords) {
+        prompt += ' Include these keywords: ' + options.keywords + '.';
+      }
+      prompt += ' Describe what the service offers, its key features, and benefits. Use markdown formatting with headings and paragraphs. Do NOT include metadata blocks or TITLE: labels. Just write the description directly.';
+      return prompt;
+    }
+
+    // --- Streaming support ---
+    async function streamGeneration(options) {
+      showOverlay();
+      showProgress(10, 'Starting stream...', 'Live Stream');
+
+      var messages = [
+        {
+          role: 'system',
+          content: 'You are a professional service description writer. Generate a well-structured description with proper headings and paragraphs using markdown formatting. Focus on benefits, features, and value proposition. Write the description directly without any title labels or metadata blocks.'
+        },
+        {
+          role: 'user',
+          content: buildPrompt(options)
+        }
+      ];
+
+      try {
+        var resp = await fetch('/api/admin/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+          body: JSON.stringify({
+            messages: messages,
+            stream: true,
+            tools: []
+          })
+        });
+
+        if (!resp.ok) {
+          var errData = await resp.json().catch(function() { return {}; });
+          throw new Error(errData.error || 'HTTP ' + resp.status);
+        }
+
+        var reader = resp.body.getReader();
+        var decoder = new TextDecoder();
+        var buffer = '';
+        var fullHtml = '';
+        var charCount = 0;
+
+        showProgress(25, 'Receiving content...', 'Live Stream');
+
+        while (true) {
+          var result = await reader.read();
+          if (result.done) break;
+
+          buffer += decoder.decode(result.value, { stream: true });
+          var lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (var si = 0; si < lines.length; si++) {
+            var line = lines[si].trim();
+            if (!line || line === 'data: [DONE]') continue;
+            if (line.startsWith('data: ')) {
+              try {
+                var parsed = JSON.parse(line.slice(6));
+                var content = parsed.content || parsed.choices?.[0]?.delta?.content || '';
+                if (content) {
+                  fullHtml += content;
+                  charCount = fullHtml.length;
+                  showProgress(Math.min(85, 25 + (charCount / 100)), charCount + ' chars received', 'Live Stream');
+
+                  // Live-update overlay text with partial content
+                  overlayText.innerHTML = '<small class="text-muted d-block text-start" style="max-height:80px;overflow-y:auto;font-size:0.82rem;">'
+                    + escapeHtml(fullHtml.slice(-300))
+                    + '</small>';
+                  if (charsDisplay) charsDisplay.textContent = charCount + ' characters received';
+                }
+              } catch (_) { /* skip malformed SSE line */ }
+            }
+          }
+        }
+
+        // Process remaining buffer
+        if (buffer.trim() && buffer.startsWith('data: ')) {
+          try {
+            var parsed = JSON.parse(buffer.slice(6));
+            var content = parsed.content || parsed.choices?.[0]?.delta?.content || '';
+            if (content) fullHtml += content;
+          } catch (_) {}
+        }
+
+        showProgress(85, 'Converting ' + fullHtml.length + ' chars to HTML...', 'Finalizing');
+
+        // Convert the raw streamed text to HTML
+        var rawLines = fullHtml.split('\n');
+        var title = '';
+        var bodyLines = [];
+        if (rawLines.length > 0 && /^#{1,2}\s/.test(rawLines[0])) {
+          title = rawLines[0].replace(/^#+\s*/, '').trim();
+          rawLines = rawLines.slice(1);
+        }
+        bodyLines = rawLines.join('\n').trim();
+        var html = convertToHtml(title, bodyLines);
+
+        if (html) {
+          showProgress(95, 'Inserting into editor...', 'Finalizing');
+          setEditorContent(html);
+          // Scroll to description editor
+          var editorEl = document.querySelector('.modern-rich-editor');
+          if (editorEl) editorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        showCompletion(true, 'Description streamed into editor!');
+
+      } catch (err) {
+        showCompletion(false, err.message || 'Stream error');
+      }
+    }
+
+    // --- Non-streaming generation (existing) ---
+    function nonStreamGeneration(options) {
+      showOverlay();
+      showProgress(10, 'Sending request...', 'Generating Description');
+
+      var messages = [
+        {
+          role: 'system',
+          content: 'You are a professional service description writer. Generate a well-structured description with proper headings and paragraphs using markdown formatting. Focus on benefits, features, and value proposition.'
+        },
+        {
+          role: 'user',
+          content: buildPrompt(options)
+        }
+      ];
+
+      fetch('/api/admin/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+        body: JSON.stringify({
+          messages: messages,
+          stream: false,
+          tools: []
+        })
+      })
+      .then(function(resp) { return resp.json(); })
+      .then(function(data) {
+        if (data.success && data.content) {
+          showProgress(70, 'Processing response...', 'Generating Description');
+          var rawText = typeof data.content === 'string' ? data.content : JSON.stringify(data.content);
+          // Strip any metadata blocks
+          rawText = rawText.replace(/```[\s\S]*?```/g, '').replace(/TITLE:|SLUG:|META_TITLE:|META_DESCRIPTION:|TAGS:|CATEGORIES:/gi, '').trim();
+          // Check if first line looks like a title, extract it
+          var lines = rawText.split('\n');
+          var title = '';
+          var content = '';
+          if (lines.length > 0 && /^#{1,2}\s/.test(lines[0])) {
+            title = lines[0].replace(/^#+\s*/, '').trim();
+            lines = lines.slice(1);
+          }
+          content = lines.join('\n').trim();
+          var html = convertToHtml(title, content);
+          showProgress(90, 'Inserting into editor...', 'Finalizing');
+          setEditorContent(html);
+          // Scroll to description editor
+          var editorEl = document.querySelector('.modern-rich-editor');
+          if (editorEl) editorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showCompletion(true, 'Description inserted into editor!');
+        } else {
+          showCompletion(false, data.error || data.message || 'Empty response');
+        }
+      })
+      .catch(function(err) {
+        showCompletion(false, err.message || 'Network error');
+      });
+    }
+
+    // --- Entry point ---
+    var fabClickGuard = false;
+    fabBtn.addEventListener('click', function() {
+      if (fabClickGuard) return;
+      fabClickGuard = true;
+
+      // Show a lightweight input modal with topic, tone, length, keywords, stream toggle
+      Swal.fire({
+        title: 'Generate Service Description',
+        html:
+          '<div class="text-start">' +
+          '<label class="form-label fw-semibold">Service / Topic <span class="text-danger">*</span></label>' +
+          '<input id="swal-topic" class="form-control mb-3" placeholder="e.g., Professional Web Development" value="' + urlTopic.replace(/'/g, '&#39;') + '" autofocus>' +
+          '<label class="form-label fw-semibold">Tone</label>' +
+          '<select id="swal-tone" class="form-select mb-3">' +
+          '<option value="informative"' + (urlTone === 'informative' ? ' selected' : '') + '>Informative</option>' +
+          '<option value="professional"' + (urlTone === 'professional' ? ' selected' : '') + '>Professional</option>' +
+          '<option value="persuasive"' + (urlTone === 'persuasive' ? ' selected' : '') + '>Persuasive</option>' +
+          '<option value="conversational"' + (urlTone === 'conversational' ? ' selected' : '') + '>Conversational</option>' +
+          '</select>' +
+          '<label class="form-label fw-semibold">Length</label>' +
+          '<select id="swal-length" class="form-select mb-3">' +
+          '<option value="short">Short</option>' +
+          '<option value="medium" selected>Medium</option>' +
+          '<option value="long">Long</option>' +
+          '</select>' +
+          '<label class="form-label fw-semibold">Keywords (optional)</label>' +
+          '<input id="swal-keywords" class="form-control" placeholder="e.g., responsive, SEO-friendly" value="' + (urlKeywords ? escapeHtml(urlKeywords) : '') + '">' +
+          '<div class="d-flex align-items-center gap-2 mt-3">' +
+          '<div class="form-check form-switch mb-0">' +
+          '<input class="form-check-input" type="checkbox" id="swal-stream" checked>' +
+          '<label class="form-check-label small" for="swal-stream"><i class="bi bi-broadcast me-1"></i>Live Stream</label>' +
+          '</div>' +
+          '<span class="text-muted small"><i class="bi bi-info-circle me-1"></i>Real-time output</span>' +
+          '</div>' +
+          '</div>',
+        showCancelButton: true,
+        confirmButtonText: '<i class="bi bi-lightning-fill me-1"></i> Generate',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#667eea',
+        showLoaderOnConfirm: true,
+        preConfirm: function() {
+          var topic = document.getElementById('swal-topic').value.trim();
+          if (!topic) {
+            Swal.showValidationMessage('Please enter a topic');
+            return false;
+          }
+          return {
+            topic: topic,
+            tone: document.getElementById('swal-tone').value,
+            length: document.getElementById('swal-length').value,
+            keywords: document.getElementById('swal-keywords').value.trim(),
+            streamEnabled: document.getElementById('swal-stream').checked
+          };
+        }
+      }).then(function(result) {
+        if (!result.isConfirmed || !result.value) {
+          fabClickGuard = false;
+          return;
+        }
+
+        var options = result.value;
+        fabClickGuard = false;
+
+        // Route to streaming or non-streaming based on toggle
+        if (options.streamEnabled) {
+          streamGeneration(options);
+        } else {
+          nonStreamGeneration(options);
+        }
+      }).catch(function() {
+        fabClickGuard = false;
+      });
+    });
+
+    // --- Keyboard shortcut: Ctrl+Shift+A / Cmd+Shift+A ---
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'a' || e.key === 'A')) {
+        // Ignore if user is typing in an input/textarea
+        var tag = e.target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
+        e.preventDefault();
+        fabBtn.click();
+      }
+    });
+  })();
+
+    // --- Pexels Image Picker ---
+    (function() {
+      var pexelsBtn = document.getElementById('pexelsBtn');
+      var modal = document.getElementById('pexelsModal');
+      var closeBtn = document.getElementById('pexelsModalClose');
+      var searchInput = document.getElementById('pexelsSearchInput');
+      var searchBtn = document.getElementById('pexelsSearchBtn');
+      var resultsEl = document.getElementById('pexelsResults');
+      var insertBtn = document.getElementById('pexelsInsertBtn');
+      var totalResults = document.getElementById('pexelsTotalResults');
+
+      if (!pexelsBtn || !modal) return;
+
+      var selectedPhoto = null;
+      var currentQuery = '';
+      var currentPage = 1;
+      var totalPages = 1;
+
+      function openModal() {
+        modal.classList.add('active');
+        // Auto-fill search from service name
+        var nameInput = document.querySelector('input[name="name"]');
+        if (nameInput && nameInput.value.trim() && !searchInput.value) {
+          searchInput.value = nameInput.value.trim();
+          performSearch(searchInput.value);
+        } else {
+          searchInput.focus();
+        }
+      }
+
+      function closeModal() {
+        modal.classList.remove('active');
+        selectedPhoto = null;
+        insertBtn.disabled = true;
+      }
+
+      function showLoading() {
+        resultsEl.innerHTML = '<div class="pexels-loading"><div class="spinner-border text-success" role="status"></div><p class="mt-2 small">Searching...</p></div>';
+      }
+
+      function showError(msg) {
+        resultsEl.innerHTML = '<div class="pexels-error"><i class="bi bi-exclamation-triangle-fill me-1"></i>' + escapeHtml(msg) + '</div>';
+      }
+
+      function showEmpty() {
+        resultsEl.innerHTML = '<div class="pexels-empty"><i class="bi bi-image"></i><p class="fw-semibold mb-1">No images found</p><p class="mb-0 small">Try a different search term</p></div>';
+      }
+
+      async function performSearch(query, page) {
+        page = page || 1;
+        if (!query) return;
+        currentQuery = query;
+        currentPage = page;
+        showLoading();
+        selectedPhoto = null;
+        insertBtn.disabled = true;
+
+        try {
+          var resp = await fetch('/api/pexels/search?q=' + encodeURIComponent(query) + '&page=' + page + '&per_page=15');
+          var data = await resp.json();
+
+          if (!data.success) {
+            showError(data.error || 'Search failed');
+            return;
+          }
+
+          if (!data.photos || !data.photos.length) {
+            showEmpty();
+            if (totalResults) totalResults.textContent = '';
+            return;
+          }
+
+          totalPages = Math.ceil((data.total_results || 0) / (data.per_page || 15));
+          if (totalResults) {
+            totalResults.textContent = data.total_results + ' results';
+          }
+
+          renderPhotos(data.photos, page, totalPages);
+        } catch (err) {
+          showError('Network error: ' + (err.message || 'Unknown'));
+        }
+      }
+
+      function renderPhotos(photos, page, totalPages) {
+        var html = '';
+        photos.forEach(function(photo) {
+          var src = photo.src?.medium || photo.src?.small || '';
+          var alt = escapeHtml(photo.alt || 'Pexels photo');
+          var photographer = escapeHtml(photo.photographer || 'Unknown');
+          var width = photo.width || 0;
+          var height = photo.height || 0;
+          html += '<div class="pexels-photo-card" data-id="' + photo.id + '" data-url="' + escapeHtml(photo.src?.large || photo.src?.original || '') + '" data-alt="' + alt + '" data-photographer="' + photographer + '" data-width="' + width + '" data-height="' + height + '">';
+          html += '<img src="' + escapeHtml(src) + '" alt="' + alt + '" loading="lazy">';
+          html += '<div class="pexels-photo-info">' + photographer + '</div>';
+          html += '<div class="pexels-loading-overlay"><div class="spinner-border spinner-border-sm text-success"></div></div>';
+          html += '</div>';
+        });
+
+        // Pagination nav
+        if (totalPages > 1) {
+          html += '<div class="pexels-pagination" style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:0.75rem;padding:1rem 0;">';
+          if (page > 1) {
+            html += '<button type="button" class="btn btn-sm btn-outline-secondary pexels-page-btn" data-page="' + (page - 1) + '"><i class="bi bi-chevron-left"></i> Previous</button>';
+          }
+          html += '<small class="text-muted">Page ' + page + ' of ' + totalPages + '</small>';
+          if (page < totalPages) {
+            html += '<button type="button" class="btn btn-sm btn-outline-secondary pexels-page-btn" data-page="' + (page + 1) + '">Next <i class="bi bi-chevron-right"></i></button>';
+          }
+          html += '</div>';
+        }
+
+        resultsEl.innerHTML = html;
+
+        // Click handler for photo selection
+        resultsEl.querySelectorAll('.pexels-photo-card').forEach(function(card) {
+          card.addEventListener('click', function() {
+            resultsEl.querySelectorAll('.pexels-photo-card').forEach(function(c) { c.classList.remove('selected'); });
+            card.classList.add('selected');
+            selectedPhoto = {
+              id: card.dataset.id,
+              url: card.dataset.url,
+              alt: card.dataset.alt,
+              photographer: card.dataset.photographer,
+              width: parseInt(card.dataset.width) || 0,
+              height: parseInt(card.dataset.height) || 0
+            };
+            insertBtn.disabled = false;
+          });
+        });
+
+        // Click handler for pagination
+        resultsEl.querySelectorAll('.pexels-page-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            performSearch(currentQuery, parseInt(this.dataset.page));
+          });
+        });
+      }
+
+      // Insert selected image into the images gallery
+      insertBtn.addEventListener('click', async function() {
+        if (!selectedPhoto) return;
+        insertBtn.disabled = true;
+        insertBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Downloading...';
+
+        var selectedCard = resultsEl.querySelector('.pexels-photo-card.selected .pexels-loading-overlay');
+        if (selectedCard) selectedCard.classList.add('active');
+
+        try {
+          var resp = await fetch('/api/pexels/download-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+            body: JSON.stringify({
+              image_url: selectedPhoto.url,
+              alt_text: selectedPhoto.alt
+            })
+          });
+          var data = await resp.json();
+
+          if (data.success && data.url) {
+            // Add the downloaded image to the images gallery
+            var container = document.getElementById('imagesContainer');
+            if (container) {
+              var imgUrl = data.thumbnail_url || data.url;
+              var altText = escapeHtml(selectedPhoto.alt) || 'Image from Pexels';
+              var uniqueId = 'pexels-' + Date.now();
+
+              var newItem = document.createElement('div');
+              newItem.className = 'image-item card mb-3 border';
+              newItem.dataset.imageId = '';
+              newItem.innerHTML = '<div class="card-body">' +
+                '<div class="row align-items-center">' +
+                '<div class="col-md-3">' +
+                '<img src="' + escapeHtml(imgUrl) + '" alt="' + altText + '" class="img-fluid rounded shadow-sm">' +
+                '</div>' +
+                '<div class="col-md-9">' +
+                '<div class="row g-2">' +
+                '<div class="col-md-6">' +
+                '<label class="form-label small fw-semibold">Alt Text</label>' +
+                '<input type="text" class="form-control form-control-sm" value="' + altText + '" data-field="alt_text" placeholder="Image description">' +
+                '</div>' +
+                '<div class="col-md-3">' +
+                '<label class="form-label small fw-semibold">Order</label>' +
+                '<input type="number" class="form-control form-control-sm" value="0" data-field="display_order" min="0">' +
+                '</div>' +
+                '<div class="col-md-3">' +
+                '<label class="form-label small fw-semibold">Featured</label>' +
+                '<div class="form-check form-switch">' +
+                '<input class="form-check-input" type="radio" name="featured_image" value="new_' + uniqueId + '">' +
+                '<label class="form-check-label small">Set as featured</label>' +
+                '</div>' +
+                '</div>' +
+                '<div class="col-md-9">' +
+                '<label class="form-label small fw-semibold">Caption</label>' +
+                '<textarea class="form-control form-control-sm" rows="2" data-field="caption" placeholder="Optional caption"></textarea>' +
+                '</div>' +
+                '<div class="col-md-3">' +
+                '<label class="form-label small fw-semibold">&nbsp;</label>' +
+                '<button type="button" class="btn btn-sm btn-danger w-100" onclick="removeImage(this)"><i class="bi bi-trash me-1"></i>Delete</button>' +
+                '</div>' +
+                '<input type="hidden" name="pexels_images[]" value="' + escapeHtml(data.url) + '">' +
+                '</div>' +
+                '</div>' +
+                '</div>' +
+                '</div>';
+              container.appendChild(newItem);
+
+              // Remove the empty state placeholder if present
+              var emptyState = container.querySelector('.pexels-empty-state');
+              if (emptyState) emptyState.remove();
+            }
+
+            // Show success toast
+            var toastText = document.getElementById('prefillToastText');
+            var toast = document.getElementById('prefillToast');
+            if (toast && toastText) {
+              toastText.textContent = '\u2713 Image added to gallery';
+              toast.classList.add('show');
+              setTimeout(function() { toast.classList.remove('show'); }, 3000);
+            }
+
+            closeModal();
+          } else {
+            showError(data.error || 'Download failed');
+            if (selectedCard) selectedCard.classList.remove('active');
+            insertBtn.disabled = false;
+            insertBtn.innerHTML = '<i class="bi bi-download me-1"></i> Download Selected';
+          }
+        } catch (err) {
+          showError('Download error: ' + (err.message || 'Unknown'));
+          if (selectedCard) selectedCard.classList.remove('active');
+          insertBtn.disabled = false;
+          insertBtn.innerHTML = '<i class="bi bi-download me-1"></i> Download Selected';
+        }
+      });
+
+      // Event listeners
+      pexelsBtn.addEventListener('click', openModal);
+      closeBtn.addEventListener('click', closeModal);
+      searchBtn.addEventListener('click', function() {
+        performSearch(searchInput.value.trim());
+      });
+      searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          performSearch(searchInput.value.trim());
+        }
+      });
+
+      // Close on overlay click
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeModal();
+      });
+
+      // Close on Escape
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+          closeModal();
+        }
+      });
+    })();
+
+    // --- Pixabay Image Picker ---
+    (function() {
+      var pixabayBtn = document.getElementById('pixabayBtn');
+      var modal = document.getElementById('pixabayModal');
+      var closeBtn = document.getElementById('pixabayModalClose');
+      var searchInput = document.getElementById('pixabaySearchInput');
+      var searchBtn = document.getElementById('pixabaySearchBtn');
+      var resultsEl = document.getElementById('pixabayResults');
+      var insertBtn = document.getElementById('pixabayInsertBtn');
+      var totalResults = document.getElementById('pixabayTotalResults');
+
+      if (!pixabayBtn || !modal) return;
+
+      var selectedPhoto = null;
+      var currentQuery = '';
+      var currentPage = 1;
+      var totalPages = 1;
+
+      function openModal() {
+        modal.classList.add('active');
+        var nameInput = document.querySelector('input[name="name"]');
+        if (nameInput && nameInput.value.trim() && !searchInput.value) {
+          searchInput.value = nameInput.value.trim();
+          performSearch(searchInput.value);
+        } else {
+          searchInput.focus();
+        }
+      }
+
+      function closeModal() {
+        modal.classList.remove('active');
+        selectedPhoto = null;
+        insertBtn.disabled = true;
+      }
+
+      function showLoading() {
+        resultsEl.innerHTML = '<div class="pexels-loading"><div class="spinner-border text-success" role="status"></div><p class="mt-2 small">Searching...</p></div>';
+      }
+
+      function showError(msg) {
+        resultsEl.innerHTML = '<div class="pexels-error"><i class="bi bi-exclamation-triangle-fill me-1"></i>' + escapeHtml(msg) + '</div>';
+      }
+
+      function showEmpty() {
+        resultsEl.innerHTML = '<div class="pexels-empty"><i class="bi bi-image"></i><p class="fw-semibold mb-1">No images found</p><p class="mb-0 small">Try a different search term</p></div>';
+      }
+
+      async function performSearch(query, page) {
+        page = page || 1;
+        if (!query) return;
+        currentQuery = query;
+        currentPage = page;
+        showLoading();
+        selectedPhoto = null;
+        insertBtn.disabled = true;
+
+        try {
+          var resp = await fetch('/api/pixabay/search?q=' + encodeURIComponent(query) + '&page=' + page + '&per_page=15');
+          var data = await resp.json();
+
+          if (!data.success) {
+            showError(data.error || 'Search failed');
+            return;
+          }
+
+          if (!data.images || !data.images.length) {
+            showEmpty();
+            if (totalResults) totalResults.textContent = '';
+            return;
+          }
+
+          totalPages = Math.ceil((data.total_results || 0) / (data.per_page || 15));
+          if (totalResults) {
+            totalResults.textContent = data.total_results + ' results';
+          }
+
+          renderPhotos(data.images, page, totalPages);
+        } catch (err) {
+          showError('Network error: ' + (err.message || 'Unknown'));
+        }
+      }
+
+      function renderPhotos(photos, page, totalPages) {
+        var html = '';
+        photos.forEach(function(photo) {
+          var src = photo.src?.medium || photo.src?.small || '';
+          var alt = escapeHtml(photo.alt || 'Pixabay image');
+          var photographer = escapeHtml(photo.photographer || 'Unknown');
+          var width = photo.width || 0;
+          var height = photo.height || 0;
+          html += '<div class="pexels-photo-card" data-id="' + photo.id + '" data-url="' + escapeHtml(photo.src?.large || photo.src?.original || '') + '" data-alt="' + alt + '" data-photographer="' + photographer + '" data-width="' + width + '" data-height="' + height + '">';
+          html += '<img src="' + escapeHtml(src) + '" alt="' + alt + '" loading="lazy">';
+          html += '<div class="pexels-photo-info">' + photographer + '</div>';
+          html += '<div class="pexels-loading-overlay"><div class="spinner-border spinner-border-sm text-success"></div></div>';
+          html += '</div>';
+        });
+
+        if (totalPages > 1) {
+          html += '<div class="pexels-pagination" style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:0.75rem;padding:1rem 0;">';
+          if (page > 1) {
+            html += '<button type="button" class="btn btn-sm btn-outline-secondary pexels-page-btn" data-page="' + (page - 1) + '"><i class="bi bi-chevron-left"></i> Previous</button>';
+          }
+          html += '<small class="text-muted">Page ' + page + ' of ' + totalPages + '</small>';
+          if (page < totalPages) {
+            html += '<button type="button" class="btn btn-sm btn-outline-secondary pexels-page-btn" data-page="' + (page + 1) + '">Next <i class="bi bi-chevron-right"></i></button>';
+          }
+          html += '</div>';
+        }
+
+        resultsEl.innerHTML = html;
+
+        resultsEl.querySelectorAll('.pexels-photo-card').forEach(function(card) {
+          card.addEventListener('click', function() {
+            resultsEl.querySelectorAll('.pexels-photo-card').forEach(function(c) { c.classList.remove('selected'); });
+            card.classList.add('selected');
+            selectedPhoto = {
+              id: card.dataset.id,
+              url: card.dataset.url,
+              alt: card.dataset.alt,
+              photographer: card.dataset.photographer,
+              width: parseInt(card.dataset.width) || 0,
+              height: parseInt(card.dataset.height) || 0
+            };
+            insertBtn.disabled = false;
+          });
+        });
+
+        resultsEl.querySelectorAll('.pexels-page-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            performSearch(currentQuery, parseInt(this.dataset.page));
+          });
+        });
+      }
+
+      insertBtn.addEventListener('click', async function() {
+        if (!selectedPhoto) return;
+        insertBtn.disabled = true;
+        insertBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Downloading...';
+
+        var selectedCard = resultsEl.querySelector('.pexels-photo-card.selected .pexels-loading-overlay');
+        if (selectedCard) selectedCard.classList.add('active');
+
+        try {
+          var resp = await fetch('/api/pixabay/download-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+            body: JSON.stringify({
+              image_url: selectedPhoto.url,
+              alt_text: selectedPhoto.alt
+            })
+          });
+          var data = await resp.json();
+
+          if (data.success && data.url) {
+            var container = document.getElementById('imagesContainer');
+            if (container) {
+              var imgUrl = data.thumbnail_url || data.url;
+              var altText = escapeHtml(selectedPhoto.alt) || 'Image from Pixabay';
+              var uniqueId = 'pixabay-' + Date.now();
+
+              var newItem = document.createElement('div');
+              newItem.className = 'image-item card mb-3 border';
+              newItem.dataset.imageId = '';
+              newItem.innerHTML = '<div class="card-body">' +
+                '<div class="row align-items-center">' +
+                '<div class="col-md-3">' +
+                '<img src="' + escapeHtml(imgUrl) + '" alt="' + altText + '" class="img-fluid rounded shadow-sm">' +
+                '</div>' +
+                '<div class="col-md-9">' +
+                '<input type="hidden" name="service_images[]" value="' + escapeHtml(data.url) + '">' +
+                '<p class="mb-1">' + altText + '</p>' +
+                '</div>' +
+                '</div>' +
+                '</div>';
+              container.insertAdjacentElement('afterbegin', newItem);
+            }
+
+            closeModal();
+          } else {
+            showError(data.error || 'Download failed');
+            if (selectedCard) selectedCard.classList.remove('active');
+            insertBtn.disabled = false;
+            insertBtn.innerHTML = '<i class="bi bi-download me-1"></i> Download Selected';
+          }
+        } catch (err) {
+          showError('Download error: ' + (err.message || 'Unknown'));
+          if (selectedCard) selectedCard.classList.remove('active');
+          insertBtn.disabled = false;
+          insertBtn.innerHTML = '<i class="bi bi-download me-1"></i> Download Selected';
+        }
+      });
+
+      pixabayBtn.addEventListener('click', openModal);
+      closeBtn.addEventListener('click', closeModal);
+      searchBtn.addEventListener('click', function() {
+        performSearch(searchInput.value.trim());
+      });
+      searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          performSearch(searchInput.value.trim());
+        }
+      });
+
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeModal();
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+          closeModal();
+        }
+      });
+    })();
   </script>
 {% endblock %}

@@ -122,6 +122,34 @@ class ServiceModel {
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC) ?: [];
     }
 
+    /**
+     * Lightweight list for sitemap.xml (dynamic services)
+     * Returns: id, slug, name, updated_at
+     */
+    public function getSitemapServices(int $limit = 500): array
+    {
+        try {
+            $sql = "SELECT id, slug, name, updated_at 
+                    FROM services 
+                    WHERE status IN ('active', 'archived') 
+                      AND deleted_at IS NULL 
+                    ORDER BY updated_at DESC 
+                    LIMIT ?";
+
+            $stmt = $this->mysqli->prepare($sql);
+            $stmt->bind_param('i', $limit);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $services = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
+
+            return $services ?: [];
+        } catch (\Throwable $e) {
+            error_log('[ServiceModel] getSitemapServices failed: ' . $e->getMessage());
+            return [];
+        }
+    }
+
 
     /**
      * Get all services (admin view) with pagination

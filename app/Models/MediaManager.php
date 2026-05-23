@@ -578,12 +578,106 @@ class MediaManager
         } catch (Throwable $e) {
             return ['success' => false, 'error' => 'Hard delete error: ' . $e->getMessage()];
         }
+    }    /**
+     * Save image from binary data (e.g., downloaded from external API)
+     *
+     * @param string $binaryData  Raw image binary
+     * @param string $filename    Desired filename (will be uniquified)
+     * @param array  $meta        Optional metadata: ['alt_text' => '', 'source' => '', 'source_url' => '']
+     * @return array              ['success' => bool, 'url' => string, 'thumbnail_url' => string, 'width' => int, 'height' => int, 'filename' => string]
+     */
+    public function saveFromBinary(string $binaryData, string $filename, array $meta = []): array
+    {
+        try {
+            // Sanitize and uniquify filename
+            $safeName = $this->sanitizeFilename($filename);
+            $ext = strtolower(pathinfo($safeName, PATHINFO_EXTENSION));
+            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                $ext = 'jpg';
+            }
+            $uniqueName = pathinfo($safeName, PATHINFO_FILENAME) . '-' . uniqid() . '.' . $ext;
+
+            // Year/month subdirectory
+            $yearMonth = date('Y/m');
+            $destDir = rtrim($this->uploadDir, '/\\') . '/' . $yearMonth;
+            if (!is_dir($destDir)) {
+                mkdir($destDir, 0755, true);
+            }
+
+            $destPath = $destDir . '/' . $uniqueName;
+            $written = file_put_contents($destPath, $binaryData);
+            if ($written === false) {
+                throw new \RuntimeException('Failed to write file to disk');
+            }
+
+            $mimeType = $this->detectMimeType($destPath);
+            $filePath = $yearMonth . '/' . $uniqueName;
+
+            // Generate thumbnail for images
+            $thumbnailPath = null;
+            $width = 0;
+            $height = 0;
+            if (strpos($mimeType, 'image/') === 0 && $this->imageProcessor) {
+                $imageInfo = @getimagesize($destPath);
+                if ($imageInfo) {
+                    $width = $imageInfo[0];
+                    $height = $imageInfo[1];
+                    $thumbName = pathinfo($uniqueName, PATHINFO_FILENAME) . '_thumb.' . $ext;
+                    $thumbFullPath = $destDir . '/' . $thumbName;
+                    if ($this->imageProcessor->generateThumbnail($destPath, $thumbFullPath)) {
+                        $thumbnailPath = $yearMonth . '/' . $thumbName;
+                    }
+                }
+            }
+
+            // Save to database if mysqli is available
+            if ($this->mysqli) {
+                $altText = $meta['alt_text'] ?? 'Image from ' . ($meta['source'] ?? 'external');
+                $source = $meta['source'] ?? 'external';
+                $sourceUrl = $meta['source_url'] ?? '';
+                $mediaType = strpos($mimeType, 'image/') === 0 ? 'image' : 'document';
+
+                $stmt = $this->mysqli->prepare(
+                    'INSERT INTO media (user_id, title, description, file_path, thumbnail_path, original_name, mime_type, media_type, file_size, width, height, source, source_url, created_at, updated_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
+                );
+                if ($stmt) {
+                    $userId = 0;
+                    $title = $altText;
+                    $description = $altText;
+                    $fileSize = strlen($binaryData);
+                    $stmt->bind_param('isssssssiiiss', $userId, $title, $description, $filePath, $thumbnailPath, $uniqueName, $mimeType, $mediaType, $fileSize, $width, $height, $source, $sourceUrl);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+            }
+
+            $publicUrl = '/uploads/media/' . $filePath;
+            $thumbUrl = $thumbnailPath ? '/uploads/media/' . $thumbnailPath : $publicUrl;
+
+            return [
+                'success' => true,
+                'url' => $publicUrl,
+                'thumbnail_url' => $thumbUrl,
+                'filename' => $uniqueName,
+                'width' => $width,
+                'height' => $height,
+                'alt_text' => $meta['alt_text'] ?? '',
+            ];
+        } catch (\Throwable $e) {
+            logError('MediaManager::saveFromBinary - ' . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
     }
 
     /**
      * Get media file URL
      */
-    public function getMediaUrl(string $filePath): string {
+    public function getMediaUrl(string $filePath): string
+    {
         return '/uploads/media/' . $filePath;
     }
 

@@ -162,6 +162,7 @@ Thumbs.db
 .continue/
 .kilocode/
 .roo/
+.kilo/kilo.json
 
 # ─────────────────────────────────────────────────────────────────
 #  9. GENERATED ASSETS (Edit sources, run build - don't commit dist)

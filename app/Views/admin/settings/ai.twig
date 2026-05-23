@@ -17,8 +17,8 @@
              class="form-control"
              name="ai_model"
              id="ai_model"
-             value="{{ settings.ai_model|default('openrouter/auto') }}"
-             placeholder="e.g., openrouter/auto, llama2">
+             value="{{ settings.ai_model|default('meta-llama/llama-3-8b-instruct:free') }}"
+             placeholder="e.g., meta-llama/llama-3-8b-instruct:free, llama2">
       <small class="text-muted">Model identifier for the selected provider.</small>
     </div>
     
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const updateModelPlaceholder = () => {
       const provider = aiProviderSelect.value;
       if (provider === 'openrouter') {
-        aiModelInput.placeholder = 'e.g., openrouter/auto, openai/gpt-4';
+        aiModelInput.placeholder = 'e.g., meta-llama/llama-3-8b-instruct:free, google/gemini-2.0-flash-exp:free';
       } else if (provider === 'ollama') {
         aiModelInput.placeholder = 'e.g., llama2, codellama, mistral (via Ollama Cloud)';
       }

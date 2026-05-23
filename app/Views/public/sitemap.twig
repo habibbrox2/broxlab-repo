@@ -46,4 +46,24 @@
     <priority>0.7</priority>
   </url>
   {% endfor %}
+
+  {# Services #}
+  {% for service in services %}
+  <url>
+    <loc>{{ base_url() }}services/{{ service.slug }}</loc>
+    <lastmod>{{ service.updated_at|date('Y-m-d') }}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  {% endfor %}
+
+  {# Mobiles #}
+  {% for mobile in mobiles %}
+  <url>
+    <loc>{{ base_url() }}mobiles/view/{{ mobile.id }}</loc>
+    <lastmod>{{ mobile.created_at|date('Y-m-d') }}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  {% endfor %}
 </urlset>

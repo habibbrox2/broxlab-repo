@@ -1,5 +1,12 @@
 <?php
 
+// When accessed via the webserver, point users to the frontend collector UI.
+if (PHP_SAPI !== 'cli') {
+    header('Content-Type: text/html; charset=utf-8');
+    echo "<h1>MedEx Companies Scraper</h1><p>This script is intended for CLI use. For browser-based collection use: <a href=\"/medex-collector.html\">/medex-collector.html</a></p>";
+    exit;
+}
+
 /**
  * MedEx Bangladesh - Herbal Companies Data Scraper
  * Fetches company list and detailed information

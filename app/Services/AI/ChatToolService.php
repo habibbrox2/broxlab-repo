@@ -128,23 +128,33 @@ class ChatToolService
     public static function executeCommand(array $cmd, mysqli $mysqli, bool $isAdmin): ?array
     {
         if (!$cmd || !$isAdmin) {
-            return null;
+            return [
+                'success' => false,
+                'error' => 'Unauthorized access',
+                'error_code' => 'unauthorized',
+            ];
         }
 
-        // Resolve command alias
         $originalCmd = $cmd['cmd'];
         $cmd['cmd'] = self::$commandAliases[$cmd['cmd']] ?? $cmd['cmd'];
 
-        // Execute tool via registry
         $toolResult = ToolRegistry::execute($cmd['cmd'], $cmd['args'], $mysqli);
 
         if (!$toolResult['success']) {
-            $errorMsg = $toolResult['error'] ?? 'Tool execution failed';
             $errorCode = $toolResult['error_code'] ?? 'tool_error';
+            $errorMsg = $toolResult['error'] ?? 'Tool execution failed';
 
             if ($errorCode === 'tool_not_found') {
                 $availableTools = array_map(fn($t) => '/' . $t['name'], ToolRegistry::listTools());
                 $errorMsg = "Unknown command: /{$originalCmd}\n\nAvailable: " . implode(', ', $availableTools);
+            } elseif ($errorCode === 'invalid_args') {
+                $errorMsg = "Invalid arguments for /{$originalCmd}: {$errorMsg}";
+            } elseif ($errorCode === 'execution_error') {
+                $errorMsg = "Execution failed: {$errorMsg}";
+            } elseif ($errorCode === 'permission_denied') {
+                $errorMsg = "Permission denied for /{$originalCmd}";
+            } elseif ($errorCode === 'resource_not_found') {
+                $errorMsg = "Resource not found: {$errorMsg}";
             }
 
             return [
@@ -154,7 +164,6 @@ class ChatToolService
             ];
         }
 
-        // Format tool output
         $toolOutput = json_encode($toolResult['data'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         $execTime = $toolResult['execution_time_ms'] ?? 0;
         $cached = !empty($toolResult['cached']) ? ' (cached)' : '';

@@ -3,11 +3,11 @@
 {% extends 'layout.twig' %}
 
 {% block title %}{{ header_title }} | {{ app_settings.site_name|default('BroxLab') }}{% endblock %}
-{% block meta_description %}Use the free {{ header_title }} calculator – accurate, instant results, no sign-up required.{% endblock %}
+{% block meta_description %}{{ current_lang == 'bn' ? 'সঠিক ও দ্রুত ফলাফলের জন্য ফ্রি ' ~ header_title ~ ' ক্যালকুলেটর ব্যবহার করুন — কোন সাইন-আপের প্রয়োজন নেই।' : 'Use the free ' ~ header_title ~ ' calculator – accurate, instant results, no sign-up required.' }}{% endblock %}
 
 {% set breadcrumbs = [
-  { label: 'Calculators', url: '/calculators', icon: 'bi-calculator' },
-  { label: header_title|default('Calculator') }
+  { label: current_lang == 'bn' ? 'ক্যালকুলেটর' : 'Calculators', url: '/calculators', icon: 'bi-calculator' },
+  { label: header_title|default(current_lang == 'bn' ? 'ক্যালকুলেটর' : 'Calculator') }
 ] %}
 
 {% block extra_styles %}
@@ -161,7 +161,7 @@
         </div>
         <div class="text-center mt-3">
           <a href="/calculators" class="btn btn-calc-back">
-            <i class="bi bi-grid me-1"></i>All Calculators
+            <i class="bi bi-grid me-1"></i>{{ current_lang == 'bn' ? 'সমস্ত ক্যালকুলেটর' : 'All Calculators' }}
           </a>
         </div>
       </div>
@@ -172,7 +172,7 @@
       <div class="result-card shadow-sm">
         <div class="result-header bg-primary text-white">
           <i class="bi bi-input-cursor-text me-2"></i>
-          <span class="fw-bold">Enter Values</span>
+          <span class="fw-bold">{{ current_lang == 'bn' ? 'মান লিখুন' : 'Enter Values' }}</span>
         </div>
         <div class="result-body" id="calc-form-wrap">
 
@@ -270,7 +270,7 @@
             <div class="p-3 text-end border-top bg-light">
               <button type="submit" class="btn btn-primary calc-submit-btn" id="calc-submit-btn">
                 <span id="calc-btn-label">
-                  <i class="bi bi-calculator me-1"></i>Calculate
+                  <i class="bi bi-calculator me-1"></i>{{ current_lang == 'bn' ? 'গণনা করুন' : 'Calculate' }}
                 </span>
                 <span id="calc-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
               </button>

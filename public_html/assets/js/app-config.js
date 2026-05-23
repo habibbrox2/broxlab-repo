@@ -1,37 +1,24 @@
 /**
- * JS Runtime Configuration
- * Scope: /public/assets/js
+ * JS Runtime Configuration Singleton
  *
  * Primary globals:
- *   window.__APP_JS_CONFIG
- *   window.AppJsConfig.get(path, fallback)
+ *   window.__APP_JS_CONFIG   — Merged config object
+ *   window.AppJsConfig.get(path, fallback) — Safe nested accessor
  *
  * Backward compatibility:
- *   - Merges into window.__APP_CONFIG (legacy readers)
- *   - Mirrors getter as window.AppConfig
+ *   Merges into window.__APP_CONFIG (legacy readers)
+ *   Aliased as window.AppConfig
  */
 (function initJsRuntimeConfig(global) {
-  const DEFAULT_JS_CONFIG = {
-    app: {
-      name: 'BroxBhai',
-      env: 'production',
-    },
-    ui: {
-      theme: {
-        defaultTheme: 'light',
-        storageKey: 'broxbhai-theme',
-        transitionDuration: 300,
-      },
-    },
-    network: {
-      requestTimeoutMs: 12000,
-    },
-    notifications: {
-      permissionPopupEnabled: true,
-    },
-    ai: {},
-
-  };
+  const DEFAULT_JS_CONFIG = Object.freeze({
+    app: Object.freeze({ name: 'BroxBhai', env: 'production' }),
+    ui: Object.freeze({
+      theme: Object.freeze({ defaultTheme: 'light', storageKey: 'broxbhai-theme', transitionDuration: 300 }),
+    }),
+    network: Object.freeze({ requestTimeoutMs: 12000 }),
+    notifications: Object.freeze({ permissionPopupEnabled: true }),
+    ai: Object.freeze({}),
+  });
 
   function isPlainObject(value) {
     return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -39,15 +26,15 @@
 
   function deepMerge(base, source) {
     if (!isPlainObject(source)) return base;
-    Object.keys(source).forEach((key) => {
-      const sourceValue = source[key];
-      const baseValue = base[key];
-      if (isPlainObject(sourceValue) && isPlainObject(baseValue)) {
-        deepMerge(baseValue, sourceValue);
-        return;
+    for (const key of Object.keys(source)) {
+      const sv = source[key];
+      const bv = base[key];
+      if (isPlainObject(sv) && isPlainObject(bv)) {
+        deepMerge(bv, sv);
+      } else {
+        base[key] = sv;
       }
-      base[key] = sourceValue;
-    });
+    }
     return base;
   }
 
@@ -55,18 +42,19 @@
     return JSON.parse(JSON.stringify(value));
   }
 
-  const modernOverrides = isPlainObject(global.__APP_JS_CONFIG_OVERRIDES) ? global.__APP_JS_CONFIG_OVERRIDES : {};
-  const legacyOverrides = isPlainObject(global.__APP_CONFIG_OVERRIDES) ? global.__APP_CONFIG_OVERRIDES : {};
-
+  /* Merge overrides */
   const mergedJsConfig = deepMerge(
-    deepMerge(clone(DEFAULT_JS_CONFIG), legacyOverrides),
-    modernOverrides
+    deepMerge(clone(DEFAULT_JS_CONFIG), isPlainObject(global.__APP_CONFIG_OVERRIDES) ? global.__APP_CONFIG_OVERRIDES : {}),
+    isPlainObject(global.__APP_JS_CONFIG_OVERRIDES) ? global.__APP_JS_CONFIG_OVERRIDES : {},
   );
 
   global.__APP_JS_CONFIG = mergedJsConfig;
 
-  const legacyGlobal = isPlainObject(global.__APP_CONFIG) ? clone(global.__APP_CONFIG) : {};
-  global.__APP_CONFIG = deepMerge(legacyGlobal, mergedJsConfig);
+  /* Legacy backwards compat */
+  global.__APP_CONFIG = deepMerge(
+    isPlainObject(global.__APP_CONFIG) ? clone(global.__APP_CONFIG) : {},
+    mergedJsConfig,
+  );
 
   const getter = {
     get(path, fallbackValue) {

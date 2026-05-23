@@ -442,7 +442,7 @@ class AIKnowledge
     /**
      * Get self-improvement suggestions based on analytics
      */
-    public function getImprovementSuggestions(int $limit = 10): array
+    public function getImprovementSuggestions(int $lowQualityLimit = 5, int $unusedLimit = 3, int $negativeFeedbackLimit = 5, int $limit = 10): array
     {
         if (!$this->ensureFeedbackSchema()) {
             return [];
@@ -452,12 +452,13 @@ class AIKnowledge
 
         try {
             // 1. Get low-performing knowledge items (low quality score, high usage)
+            $lowQualityLimit = max(1, (int)$lowQualityLimit);
             $result = $this->mysqli->query("
                 SELECT id, title, quality_score, usage_count
                 FROM ai_knowledge_base
                 WHERE quality_score < 0.5 AND usage_count > 5
                 ORDER BY quality_score ASC
-                LIMIT 5
+                LIMIT {$lowQualityLimit}
             ");
             if ($result) {
                 while ($row = $result->fetch_assoc()) {
@@ -472,12 +473,13 @@ class AIKnowledge
             }
 
             // 2. Get unused knowledge that could be helpful
+            $unusedLimit = max(1, (int)$unusedLimit);
             $result = $this->mysqli->query("
                 SELECT id, title, created_at
                 FROM ai_knowledge_base
                 WHERE usage_count = 0 AND is_active = 1
                 ORDER BY priority DESC, created_at DESC
-                LIMIT 3
+                LIMIT {$unusedLimit}
             ");
             if ($result) {
                 while ($row = $result->fetch_assoc()) {
@@ -492,13 +494,14 @@ class AIKnowledge
             }
 
             // 3. Get knowledge with negative feedback
+            $negativeFeedbackLimit = max(1, (int)$negativeFeedbackLimit);
             $result = $this->mysqli->query("
                 SELECT k.id, k.title, COUNT(f.id) as neg_count
                 FROM ai_knowledge_base k
                 JOIN ai_knowledge_feedback f ON f.knowledge_id = k.id AND f.is_helpful = 0
                 GROUP BY k.id, k.title
                 HAVING neg_count >= 2
-                LIMIT 5
+                LIMIT {$negativeFeedbackLimit}
             ");
             if ($result) {
                 while ($row = $result->fetch_assoc()) {
@@ -582,7 +585,7 @@ class AIKnowledge
     /**
      * Get analytics summary for KB
      */
-    public function getAnalytics(): array
+    public function getAnalytics(int $mostUsedLimit = 5): array
     {
         if (!$this->ensureFeedbackSchema()) {
             return [];
@@ -607,7 +610,8 @@ class AIKnowledge
             $stats['positive_ratio'] = $row && !empty($row['ratio']) ? round($row['ratio'] * 100, 1) : 0;
 
             // Most used
-            $result = $this->mysqli->query("SELECT id, title, usage_count FROM ai_knowledge_base WHERE usage_count > 0 ORDER BY usage_count DESC LIMIT 5");
+            $mostUsedLimit = max(1, (int)$mostUsedLimit);
+            $result = $this->mysqli->query("SELECT id, title, usage_count FROM ai_knowledge_base WHERE usage_count > 0 ORDER BY usage_count DESC LIMIT {$mostUsedLimit}");
             $stats['most_used'] = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
             // Needs improvement

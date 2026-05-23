@@ -1178,6 +1178,50 @@ ToolRegistry::register('get_app_settings', function (array $args, ?mysqli $mysql
     ]
 ]);
 
+// 15.1. Test AI Providers Tool
+ToolRegistry::register('test_ai_providers', function (array $args, ?mysqli $mysqli) {
+    require_once dirname(__DIR__, 1) . '/Models/AIProvider.php';
+    $providerModel = new AIProvider($mysqli);
+
+    $active = $providerModel->getActive();
+    $results = [];
+    foreach ($active as $p) {
+        $name = $p['provider_name'] ?? '';
+        if ($name === '') continue;
+
+        // Choose a sensible test model if available
+        $models = $p['supported_models'] ?? [];
+        $testModel = (string)($models ? array_key_first($models) : '');
+
+        try {
+            $res = $providerModel->testConnectionVerbose($name, $testModel);
+        } catch (Throwable $e) {
+            $res = ['success' => false, 'error' => $e->getMessage()];
+        }
+
+        $results[$name] = $res;
+    }
+
+    return [
+        'count' => count($results),
+        'results' => $results
+    ];
+}, [
+    'name' => 'Test AI Providers',
+    'description' => 'Run verbose connection checks for all active AI providers and return detailed debug info. Useful for diagnosing model 404s or API key issues.',
+    'namespace' => 'system',
+    'parameters' => [
+        'type' => 'object',
+        'properties' => [],
+        'required' => [],
+        'additionalProperties' => false
+    ],
+    'strict' => true,
+    'examples' => [
+        ['input' => '/test_ai_providers', 'output' => 'Returns connection test results for configured providers']
+    ]
+]);
+
 // 13. Search Knowledge Base Tool
 ToolRegistry::register('search_knowledge_base', function (array $args, ?mysqli $mysqli) {
     if (!$mysqli) throw new RuntimeException('Database connection not available');
@@ -1271,10 +1315,11 @@ ToolRegistry::register('reindex_knowledge_base', function (array $args, ?mysqli 
         ],
         'required' => [],
         'additionalProperties' => false
-    ],            'examples' => [
-                ['input' => '/reindex_knowledge_base provider="openai"', 'output' => 'Reindexed 25 items']
-            ]
-        ]);
+    ],
+    'examples' => [
+        ['input' => '/reindex_knowledge_base provider="openai"', 'output' => 'Reindexed 25 items']
+    ]
+]);
 
 // 16. Analytics Tool (from ReActAgent)
 ToolRegistry::register('get_analytics', function (array $args, ?mysqli $mysqli) {
@@ -1354,12 +1399,38 @@ ToolRegistry::register('write_article', function (array $args, ?mysqli $mysqli) 
         'keywords' => $args['keywords'] ?? '',
     ];
 
-    $result = $writer->generateArticle($topic, $options);
+    try {
+        $result = $writer->generateArticle($topic, $options);
+    } catch (Throwable $e) {
+        logError('[Tool write_article] Unexpected exception: ' . $e->getMessage(), 'ERROR', [
+            'tool' => 'write_article',
+            'exception' => get_class($e),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return [
+            'success' => false,
+            'topic' => $topic,
+            'error' => 'Unexpected article generation error',
+            'message' => 'Article generation failed due to an internal error. Please try again.'
+        ];
+    }
+
     if (!$result['success']) {
-        throw new RuntimeException($result['error'] ?? 'Article generation failed');
+        // Log the error but return a graceful failure object so tool execution
+        // does not throw and cascade into a 502 on the API gateway. The
+        // caller can inspect 'success' and 'error' fields and decide how to
+        // proceed (retry, fallback, or show error to user).
+        aiErrorLog('[Tool write_article] Article generation failed: ' . ($result['error'] ?? 'unknown'));
+        return [
+            'success' => false,
+            'topic' => $topic,
+            'error' => $result['error'] ?? 'Article generation failed',
+            'message' => 'Article generation failed. See error for details.'
+        ];
     }
 
     return [
+        'success' => true,
         'topic' => $topic,
         'title' => $result['article']['title'] ?? '',
         'seo_title' => $result['article']['seo_title'] ?? '',
@@ -1367,7 +1438,8 @@ ToolRegistry::register('write_article', function (array $args, ?mysqli $mysqli) 
         'word_count' => str_word_count(strip_tags($result['article']['content'] ?? '')),
         'reading_time' => ($result['article']['reading_time_minutes'] ?? 0) . ' min',
         'tags' => $result['article']['tags'] ?? [],
-        'message' => 'Article generated successfully. View and publish in the admin panel: /admin/ai/article-writer'
+        'message' => 'Article generated successfully. View and publish in the admin panel: /admin/ai/article-writer',
+        'article' => $result['article'] ?? null,
     ];
 }, [
     'name' => 'Write Article',
