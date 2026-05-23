@@ -205,6 +205,12 @@ class MedexDataService
             return [];
         }
 
+        // First check for a per-brand detail file produced by on-demand route refresh.
+        $perBrand = $this->getPerBrandDetailedData($brandId);
+        if ($perBrand) {
+            return array_merge($brand, $perBrand);
+        }
+
         $this->refreshDetailedDataIfStale();
 
         // === Preferred: new drug-centric flat file (produced by collect-medex-drug-details.php) ===
@@ -228,6 +234,24 @@ class MedexDataService
         }
 
         return $brand;
+    }
+
+    private function getPerBrandDetailedData(int $brandId): ?array
+    {
+        $path = $this->getPerBrandDetailedDataFilePath($brandId);
+        if (!file_exists($path)) {
+            return null;
+        }
+
+        $json = file_get_contents($path);
+        $data = json_decode($json, true);
+        return is_array($data) ? $data : null;
+    }
+
+    private function getPerBrandDetailedDataFilePath(int $brandId): string
+    {
+        $uploadsDir = defined('UPLOADS_DIR') ? rtrim(UPLOADS_DIR, '/\\') . '/medex' : BASE_PATH . 'public_html/uploads/medex';
+        return rtrim($uploadsDir, '/\\') . '/brand-details/brand-' . $brandId . '.json';
     }
 
     /**
@@ -431,6 +455,16 @@ class MedexDataService
             }
         }
         return $total;
+    }
+
+    /**
+     * Get all brands (flat list)
+     *
+     * @return array Array of brand records
+     */
+    public function getAllBrands(): array
+    {
+        return array_values($this->brandsIndex ?? []);
     }
 
     public function getDataFilePath(): string

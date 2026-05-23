@@ -267,3 +267,19 @@ $router->get('/sitemap-mobiles.xml', function () use ($twig, $mobileModel, $setS
     ]);
     exit;
 });
+
+// --- MedEx Brands (individual brand/medicine pages) ---
+$router->get('/sitemap-medex-brands.xml', function () use ($twig, $setSitemapHeaders) {
+    $setSitemapHeaders();
+    try {
+        $medexService = new \App\Services\MedexDataService();
+        $brands = $medexService->getAllBrands();
+    } catch (\Throwable $e) {
+        error_log('Sitemap MedEx brands error: ' . $e->getMessage());
+        $brands = [];
+    }
+    echo $twig->render('public/sitemaps/sitemap-medex-brands.twig', [
+        'brands' => $brands,
+    ]);
+    exit;
+});

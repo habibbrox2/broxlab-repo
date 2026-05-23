@@ -14,10 +14,10 @@
 <IfModule mod_expires.c>
     ExpiresActive On
     
-    # CSS files - cache for 1 year
+    # CSS files - cache for 1 year (immutable with versioned URLs)
     ExpiresByType text/css "access plus 1 year"
     
-    # JavaScript files - cache for 1 year
+    # JavaScript files - cache for 1 year (immutable with versioned URLs)
     ExpiresByType application/javascript "access plus 1 year"
     ExpiresByType application/x-javascript "access plus 1 year"
     
@@ -49,8 +49,28 @@
     # HTML - cache for 0 seconds (always check for updates)
     ExpiresByType text/html "access plus 0 seconds"
     
-    # Default - cache for 1 hour
-    ExpiresDefault "access plus 1 hour"
+    # Default - cache for 1 month for unknown static assets
+    ExpiresDefault "access plus 1 month"
+</IfModule>
+
+# ============================================
+# Cache-Control Headers (Immutable for Versioned Assets)
+# ============================================
+<IfModule mod_headers.c>
+    # Versioned assets (CSS, JS, images with ?v= in URL) can be cached immutably
+    <FilesMatch "\.(css|js|mjs)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+
+    # Images and fonts - also immutable with versioning
+    <FilesMatch "\.(ico|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+
+    # HTML - no cache, must revalidate every time
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "no-cache, must-revalidate"
+    </FilesMatch>
 </IfModule>
 
 # ============================================

@@ -9,13 +9,14 @@
             <div class="d-flex align-items-center flex-wrap">
                 <i class="bi bi-building medex-page-icon"></i>
                 <div>
-                    <h1 class="medex-page-title mb-1">{{ company.name }}</h1>
-                    <p class="medex-page-subtitle mb-0">
+                    <h1 class="medex-page-title mb-1" id="medexCompanyName">{{ company.name }}</h1>
+                    <p class="medex-page-subtitle mb-0" data-i18n-en="Herbal Pharmaceutical Company" data-i18n-bn="হার্বাল ফার্মাসিউটিক্যাল কোম্পানি">
                         {{ current_lang == 'bn' ? 'হার্বাল ফার্মাসিউটিক্যাল কোম্পানি' : 'Herbal Pharmaceutical Company' }}
                         {% if company.headquarter %}
                             <span class="ms-2"><i class="bi bi-geo-alt"></i> {{ company.headquarter }}</span>
                         {% endif %}
                     </p>
+                    <span id="medexCompanyStatus" class="text-muted small d-block mt-2">Fetching live company data…</span>
                 </div>
             </div>
         </div>
@@ -27,37 +28,35 @@
     <div class="col-lg-8">
         <div class="medex-card">
             <div class="medex-card-header">
-                <i class="bi bi-info-circle"></i> {{ current_lang == 'bn' ? 'কোম্পানি ওভারভিউ' : 'Company Overview' }}
+                <i class="bi bi-info-circle"></i> <span data-i18n-en="Company Overview" data-i18n-bn="কোম্পানি ওভারভিউ">{{ current_lang == 'bn' ? 'কোম্পানি ওভারভিউ' : 'Company Overview' }}</span>
             </div>
             <div class="medex-card-body">
-                {% if company.overview %}
-                    <div class="medex-overview-text">{{ company.overview|nl2br }}</div>
-                {% endif %}
+                <div id="medexCompanyOverview" class="medex-overview-text">{% if company.overview %}{{ company.overview|nl2br }}{% endif %}</div>
 
                 <div class="medex-details-grid mt-4">
                     <div class="medex-detail-item">
-                        <div class="medex-detail-label">{{ current_lang == 'bn' ? 'প্রতিষ্ঠিত' : 'Established' }}</div>
-                        <div class="medex-detail-value">{{ company.established|default('N/A') }}</div>
+                        <div class="medex-detail-label" data-i18n-en="Established" data-i18n-bn="প্রতিষ্ঠিত">{{ current_lang == 'bn' ? 'প্রতিষ্ঠিত' : 'Established' }}</div>
+                        <div id="medexCompanyEstablished" class="medex-detail-value">{{ company.established|default('N/A') }}</div>
                     </div>
                     <div class="medex-detail-item">
-                        <div class="medex-detail-label">{{ current_lang == 'bn' ? 'বাজারে অংশ' : 'Market Share' }}</div>
-                        <div class="medex-detail-value">{{ company.market_share|default('N/A') }}</div>
+                        <div class="medex-detail-label" data-i18n-en="Market Share" data-i18n-bn="বাজারে অংশ">{{ current_lang == 'bn' ? 'বাজারে অংশ' : 'Market Share' }}</div>
+                        <div id="medexCompanyMarketShare" class="medex-detail-value">{{ company.market_share|default('N/A') }}</div>
                     </div>
                     <div class="medex-detail-item">
-                        <div class="medex-detail-label">{{ current_lang == 'bn' ? 'বৃদ্ধি' : 'Growth' }}</div>
-                        <div class="medex-detail-value">{{ company.growth|default('N/A') }}</div>
+                        <div class="medex-detail-label" data-i18n-en="Growth" data-i18n-bn="বৃদ্ধি">{{ current_lang == 'bn' ? 'বৃদ্ধি' : 'Growth' }}</div>
+                        <div id="medexCompanyGrowth" class="medex-detail-value">{{ company.growth|default('N/A') }}</div>
                     </div>
                     <div class="medex-detail-item">
-                        <div class="medex-detail-label">{{ current_lang == 'bn' ? 'মোট জেনেরিকস' : 'Total Generics' }}</div>
-                        <div class="medex-detail-value">{{ company.total_generics|default(company.generics|default(0))|number_format }}</div>
+                        <div class="medex-detail-label" data-i18n-en="Total Generics" data-i18n-bn="মোট জেনেরিকস">{{ current_lang == 'bn' ? 'মোট জেনেরিকস' : 'Total Generics' }}</div>
+                        <div id="medexCompanyGenerics" class="medex-detail-value">{{ company.total_generics|default(company.generics|default(0))|number_format }}</div>
                     </div>
                     <div class="medex-detail-item">
-                        <div class="medex-detail-label">{{ current_lang == 'bn' ? 'মোট ব্র্যান্ড' : 'Total Brands' }}</div>
-                        <div class="medex-detail-value">{{ company.brands|default(brand_count)|number_format }}</div>
+                        <div class="medex-detail-label" data-i18n-en="Total Brands" data-i18n-bn="মোট ব্র্যান্ড">{{ current_lang == 'bn' ? 'মোট ব্র্যান্ড' : 'Total Brands' }}</div>
+                        <div id="medexCompanyBrands" class="medex-detail-value">{{ company.brands|default(brand_count)|number_format }}</div>
                     </div>
                     <div class="medex-detail-item">
-                        <div class="medex-detail-label">{{ current_lang == 'bn' ? 'হেডকোয়াটার' : 'Headquarter' }}</div>
-                        <div class="medex-detail-value small">{{ company.headquarter|default('N/A') }}</div>
+                        <div class="medex-detail-label" data-i18n-en="Headquarter" data-i18n-bn="হেডকোয়াটার">{{ current_lang == 'bn' ? 'হেডকোয়াটার' : 'Headquarter' }}</div>
+                        <div id="medexCompanyHeadquarter" class="medex-detail-value small">{{ company.headquarter|default('N/A') }}</div>
                     </div>
                 </div>
 
@@ -66,14 +65,14 @@
                     <div class="row g-3">
                         {% if company.contact %}
                         <div class="col-sm-6">
-                            <label class="text-muted small fw-bold"><i class="bi bi-telephone me-1"></i>{{ current_lang == 'bn' ? 'যোগাযোগ' : 'Contact' }}</label>
-                            <div class="fw-semibold small">{{ company.contact }}</div>
+                            <label class="text-muted small fw-bold"><i class="bi bi-telephone me-1"></i><span data-i18n-en="Contact" data-i18n-bn="যোগাযোগ">{{ current_lang == 'bn' ? 'যোগাযোগ' : 'Contact' }}</span></label>
+                            <div id="medexCompanyContact" class="fw-semibold small">{{ company.contact }}</div>
                         </div>
                         {% endif %}
                         {% if company.fax %}
                         <div class="col-sm-6">
-                            <label class="text-muted small fw-bold"><i class="bi bi-fax me-1"></i>{{ current_lang == 'bn' ? 'ফ্যাক্স' : 'Fax' }}</label>
-                            <div class="fw-semibold small">{{ company.fax }}</div>
+                            <label class="text-muted small fw-bold"><i class="bi bi-fax me-1"></i><span data-i18n-en="Fax" data-i18n-bn="ফ্যাক্স">{{ current_lang == 'bn' ? 'ফ্যাক্স' : 'Fax' }}</span></label>
+                            <div id="medexCompanyFax" class="fw-semibold small">{{ company.fax }}</div>
                         </div>
                         {% endif %}
                     </div>
@@ -86,10 +85,8 @@
     <div class="col-lg-4">
         <div class="medex-stats-card">
             <div class="medex-stats-number">{{ brand_count }}</div>
-            <div class="medex-stats-label">{{ current_lang == 'bn' ? 'মোট ব্র্যান্ড' : 'Total Brands' }}</div>
-            <a href="#brands-section" class="btn btn-outline-success btn-sm mt-3">
-                <i class="bi bi-capsule me-1"></i> {{ current_lang == 'bn' ? 'প্রোডাক্ট দেখুন' : 'View Products' }}
-            </a>
+            <div class="medex-stats-label" data-i18n-en="Total Brands" data-i18n-bn="মোট ব্র্যান্ড">{{ current_lang == 'bn' ? 'মোট ব্র্যান্ড' : 'Total Brands' }}</div>
+            <a href="#brands-section" class="btn btn-outline-success btn-sm mt-3">                <i class="bi bi-capsule me-1"></i> <span data-i18n-en="View Products" data-i18n-bn="প্রোডাক্ট দেখুন">{{ current_lang == 'bn' ? 'প্রোডাক্ট দেখুন' : 'View Products' }}</span></a>
         </div>
 
         {% if company.headquarter_url %}
@@ -97,7 +94,7 @@
             <a href="{{ company.headquarter_url }}" target="_blank" rel="noopener" class="text-decoration-none">
                 <img src="https://image.thum.io/get/width=400/crop=800/300?{{ company.headquarter|url_encode }}" 
                      alt="{{ current_lang == 'bn' ? 'অবস্থান মানচিত্র' : 'Location map' }}" class="medex-location-map" onerror="this.style.display='none'">
-                <div class="medex-location-btn">
+                <div class="medex-location-btn" data-i18n-en="Open in Google Maps" data-i18n-bn="গুগল ম্যাপসে খুলুন">
                     <i class="bi bi-geo-alt me-1"></i> {{ current_lang == 'bn' ? 'গুগল ম্যাপসে খুলুন' : 'Open in Google Maps' }}
                 </div>
             </a>
@@ -109,7 +106,7 @@
 {# Back button #}
 <div class="mb-4">
     <a href="/medex" class="medex-back-link">
-        <i class="bi bi-arrow-left"></i> {{ current_lang == 'bn' ? 'সকল কোম্পানিতে ফিরে যান' : 'Back to all Companies' }}
+        <i class="bi bi-arrow-left"></i> <span data-i18n-en="Back to all Companies" data-i18n-bn="সকল কোম্পানিতে ফিরে যান">{{ current_lang == 'bn' ? 'সকল কোম্পানিতে ফিরে যান' : 'Back to all Companies' }}</span>
     </a>
 </div>
 
@@ -119,8 +116,8 @@
         <div class="medex-card">
             <div class="medex-card-header">
                 <i class="bi bi-capsule"></i>
-                {{ current_lang == 'bn' ? 'পণ্য ও ব্র্যান্ড' : 'Products & Brands' }}
-                <span class="badge bg-success float-end">{{ brand_count }}</span>
+                <span data-i18n-en="Products & Brands" data-i18n-bn="পণ্য ও ব্র্যান্ড">{{ current_lang == 'bn' ? 'পণ্য ও ব্র্যান্ড' : 'Products & Brands' }}</span>
+                <span id="medexCompanyBrandCount" class="badge bg-success float-end">{{ brand_count }}</span>
             </div>
             <div class="medex-card-body p-0">
                 {% if brands is not empty %}
@@ -128,13 +125,13 @@
                     <table class="medex-table">
                         <thead>
                             <tr>
-                                <th scope="col">{{ current_lang == 'bn' ? 'ব্র্যান্ড নাম' : 'Brand Name' }}</th>
-                                <th scope="col">{{ current_lang == 'bn' ? 'জেনেরিক নাম' : 'Generic Name' }}</th>
-                                <th scope="col" class="text-center">{{ current_lang == 'bn' ? 'স্ট্রেন্থ' : 'Strength' }}</th>
-                                <th scope="col" class="text-center">{{ current_lang == 'bn' ? 'বিস্তারিত' : 'Details' }}</th>
+                                <th scope="col"><span data-i18n-en="Brand Name" data-i18n-bn="ব্র্যান্ড নাম">{{ current_lang == 'bn' ? 'ব্র্যান্ড নাম' : 'Brand Name' }}</span></th>
+                                <th scope="col"><span data-i18n-en="Generic Name" data-i18n-bn="জেনেরিক নাম">{{ current_lang == 'bn' ? 'জেনেরিক নাম' : 'Generic Name' }}</span></th>
+                                <th scope="col" class="text-center"><span data-i18n-en="Strength" data-i18n-bn="স্ট্রেন্থ">{{ current_lang == 'bn' ? 'স্ট্রেন্থ' : 'Strength' }}</span></th>
+                                <th scope="col" class="text-center"><span data-i18n-en="Details" data-i18n-bn="বিস্তারিত">{{ current_lang == 'bn' ? 'বিস্তারিত' : 'Details' }}</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="medexCompanyTableBody">
                             {% for brand in brands %}
                             <tr class="medex-hover-lift">
                                 <td>
@@ -181,8 +178,12 @@
 {# Bottom back link #}
 <div class="mt-5 mb-4">
     <a href="/medex" class="medex-back-link">
-        <i class="bi bi-arrow-left"></i> Back to all Companies
+        <i class="bi bi-arrow-left"></i> <span data-i18n-en="Back to all Companies" data-i18n-bn="সকল কোম্পানিতে ফিরে যান">{{ current_lang == 'bn' ? 'সকল কোম্পানিতে ফিরে যান' : 'Back to all Companies' }}</span>
     </a>
 </div>
 
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ asset('/assets/js/medex-route-fetch.js') }}"></script>
 {% endblock %}

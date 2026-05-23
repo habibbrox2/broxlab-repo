@@ -300,6 +300,108 @@ $router->match(['GET', 'POST'], "/api/medex/refresh", function () {
     exit;
 });
 
+function medexRunBackgroundCommand(string $command): bool
+{
+    if (stripos(PHP_OS, 'WIN') === 0) {
+        $backgroundCmd = 'cmd /c start /B "" ' . $command . ' > NUL 2>&1';
+        $process = @popen($backgroundCmd, 'r');
+        if ($process === false) {
+            return false;
+        }
+        return @pclose($process) !== false;
+    }
+
+    exec($command . ' > /dev/null 2>&1 &', $output, $returnCode);
+    return true;
+}
+
+function medexNormalizePath(string $path): string
+{
+    if (DIRECTORY_SEPARATOR === '\\') {
+        return str_replace('/', '\\', $path);
+    }
+    return $path;
+}
+
+function medexRunRouteRefresh(string $step, array $params = []): array
+{
+    $root = medexNormalizePath(dirname(__DIR__, 2));
+    $phpBinary = PHP_BINARY;
+    $script = '';
+    $cmd = '';
+
+    switch ($step) {
+        case 'companies':
+            $script = medexNormalizePath($root . '/scripts/scrape-medex-companies.php');
+            $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($script);
+            break;
+        case 'detailed':
+            $script = medexNormalizePath($root . '/scripts/scrape-medex-detailed.php');
+            $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($script) . ' --resume';
+            break;
+        case 'drug-details':
+            $script = medexNormalizePath($root . '/scripts/collect-medex-drug-details.php');
+            $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($script) . ' --resume';
+            if (!empty($params['bilingual'])) {
+                $cmd .= ' --bilingual';
+            }
+            break;
+        case 'brand-details':
+            if (empty($params['brand_id'])) {
+                return ['success' => false, 'error' => 'Missing brand_id for brand-details step'];
+            }
+            $brandId = (int)$params['brand_id'];
+            try {
+                $service = new \App\Services\MedexDataService();
+                $brand = $service->getBrandById($brandId);
+            } catch (Exception $e) {
+                return ['success' => false, 'error' => 'Unable to load brand metadata'];
+            }
+            if (!$brand) {
+                return ['success' => false, 'error' => 'Brand not found'];
+            }
+            $brandUrl = '';
+            if (!empty($brand['brand_url_en'])) {
+                $brandUrl = $brand['brand_url_en'];
+            } elseif (!empty($brand['brand_url'])) {
+                $brandUrl = $brand['brand_url'];
+            } elseif (!empty($brand['url'])) {
+                $brandUrl = $brand['url'];
+            }
+            if ($brandUrl === '') {
+                return ['success' => false, 'error' => 'Brand URL unavailable for brand-details step'];
+            }
+
+            $outputDir = medexNormalizePath($root . '/public_html/uploads/medex/brand-details');
+            if (!is_dir($outputDir)) {
+                @mkdir($outputDir, 0755, true);
+            }
+            $outputFile = medexNormalizePath($outputDir . '/brand-' . $brandId . '.json');
+
+            $script = medexNormalizePath($root . '/scripts/scrape-medex-brand-details.php');
+            $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($script)
+                . ' --url=' . escapeshellarg($brandUrl)
+                . ' --output=' . escapeshellarg($outputFile);
+            if (!empty($params['bilingual'])) {
+                $cmd .= ' --bilingual';
+            }
+            break;
+        default:
+            return ['success' => false, 'error' => 'Unknown refresh step'];
+    }
+
+    if ($script === '' || !is_file($script)) {
+        return ['success' => false, 'error' => 'Script not found for step: ' . $step];
+    }
+
+    $started = medexRunBackgroundCommand($cmd);
+    if (!$started) {
+        return ['success' => false, 'error' => 'Failed to start background job'];
+    }
+
+    return ['success' => true, 'started' => true, 'step' => $step];
+}
+
 // API: trigger a full MedEx refresh + collector run from browser UI
 $router->match(['GET', 'POST'], "/api/medex/refresh-all", function () {
     header("Content-Type: application/json; charset=utf-8");
@@ -326,26 +428,16 @@ $router->match(['GET', 'POST'], "/api/medex/refresh-all", function () {
         }
     }
 
-    $root = dirname(__DIR__, 2);
+    $root = medexNormalizePath(dirname(__DIR__, 2));
     $phpBinary = PHP_BINARY;
-    $refreshScript = $root . '/scripts/cron/medex-refresh.php';
+    $refreshScript = medexNormalizePath($root . '/scripts/cron/medex-refresh.php');
     $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($refreshScript) . ' --detailed --drug-details';
     $bilingualEnv = trim((string)($_ENV['MEDEX_AUTO_DRUG_DETAILS_BILINGUAL'] ?? '')) === '1';
     if ($bilingualEnv || trim((string)($_REQUEST['bilingual'] ?? '')) !== '') {
         $cmd .= ' --bilingual';
     }
 
-    $started = false;
-    if (stripos(PHP_OS, 'WIN') === 0) {
-        $backgroundCmd = 'cmd /c start /B "" ' . $cmd . ' > NUL 2>&1';
-        $process = @popen($backgroundCmd, 'r');
-        if ($process !== false) {
-            $started = @pclose($process) !== false;
-        }
-    } else {
-        exec($cmd . ' > /dev/null 2>&1 &', $output, $returnCode);
-        $started = true;
-    }
+    $started = medexRunBackgroundCommand($cmd);
 
     if (!$started) {
         http_response_code(500);
@@ -358,6 +450,57 @@ $router->match(['GET', 'POST'], "/api/medex/refresh-all", function () {
         "started" => true,
         "message" => "MedEx refresh and collector job started.",
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+});
+
+$router->match(['GET', 'POST'], "/api/medex/refresh-route", function () {
+    header("Content-Type: application/json; charset=utf-8");
+
+    $expectedToken = trim((string)($_ENV["MEDEX_REFRESH_TOKEN"] ?? ""));
+    $csrfValid = false;
+    if ($_SERVER["REQUEST_METHOD"] === "POST") {
+        $csrfToken = getCsrfTokenFromRequest() ?? '';
+        $csrfValid = validateCsrfToken($csrfToken);
+        if (!$csrfValid) {
+            http_response_code(403);
+            echo json_encode(["success" => false, "error" => "Invalid CSRF token"]);
+            exit;
+        }
+    }
+
+    if ($expectedToken !== "") {
+        $providedToken = trim((string)($_REQUEST["token"] ?? ""));
+        $tokenValid = $providedToken !== "" && hash_equals($expectedToken, $providedToken);
+        if (!($tokenValid || ($csrfValid && $_SERVER["REQUEST_METHOD"] === "POST"))) {
+            http_response_code(401);
+            echo json_encode(["success" => false, "error" => "Unauthorized"]);
+            exit;
+        }
+    }
+
+    $step = trim((string)($_REQUEST['step'] ?? ''));
+    if ($step === '') {
+        http_response_code(400);
+        echo json_encode(["success" => false, "error" => "Missing step parameter"]);
+        exit;
+    }
+
+    $params = [];
+    if (isset($_REQUEST['brand_id'])) {
+        $params['brand_id'] = (int)$_REQUEST['brand_id'];
+    }
+    if (trim((string)($_REQUEST['bilingual'] ?? '')) !== '') {
+        $params['bilingual'] = true;
+    }
+
+    $result = medexRunRouteRefresh($step, $params);
+    if (!$result['success']) {
+        http_response_code(500);
+        echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 });
 
@@ -481,29 +624,30 @@ $router->post("/api/medex/save-data", function () {
     header("Content-Type: application/json; charset=utf-8");
 
     $csrfToken = getCsrfTokenFromRequest() ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (!validateCsrfToken($csrfToken)) {
+    $csrfValid = validateCsrfToken($csrfToken);
+    if (!$csrfValid) {
         http_response_code(403);
         echo json_encode(["success" => false, "error" => "Invalid CSRF token"]);
         exit;
     }
 
     $expectedToken = trim((string)($_ENV["MEDEX_REFRESH_TOKEN"] ?? ""));
-    if ($expectedToken !== "") {
-        $provided = trim((string)($_POST["token"] ?? $_GET["token"] ?? ""));
-        if (!hash_equals($expectedToken, $provided)) {
-            http_response_code(401);
-            echo json_encode(["success" => false, "error" => "Unauthorized"]);
-            exit;
-        }
-    }
-
-    // Accept either application/json or form-encoded with "data" field containing JSON string
     $raw = file_get_contents("php://input");
     $payload = json_decode($raw, true);
     if (!is_array($payload)) {
         // fallback to POST
         $dataField = $_POST["data"] ?? "";
         $payload = json_decode($dataField, true);
+    }
+
+    if ($expectedToken !== "") {
+        $provided = trim((string)($_POST["token"] ?? $_GET["token"] ?? $payload["token"] ?? $payload["meta"]["token"] ?? ""));
+        $tokenValid = $provided !== "" && hash_equals($expectedToken, $provided);
+        if (!($tokenValid || $csrfValid)) {
+            http_response_code(401);
+            echo json_encode(["success" => false, "error" => "Unauthorized"]);
+            exit;
+        }
     }
 
     if (!isset($payload["data"]) || !is_array($payload["data"])) {

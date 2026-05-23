@@ -114,28 +114,34 @@
     <link rel="dns-prefetch" href="https://firebaseinstallations.googleapis.com">
 
 
-    {# ===== CRITICAL CSS PRELOAD ===== #}
-    <link rel="preload" href="{{ asset('/cdn/css/bootstrap.min.css') }}" as="style">
-    <link rel="preload" href="{{ asset('/cdn/css/bootstrap-icons.min.css') }}" as="style">
-    <link rel="preload" href="{{ asset('/assets/css/dist/public-bundle.css') }}" as="style">
-    <link rel="preload" href="{{ asset('/assets/css/tailwind.css') }}" as="style">
-
-    {# ===== BOOTSTRAP CSS (Critical Path) - CDN Subdomain ===== #}
+    {# ===== CRITICAL CSS (Render-Blocking) ===== #}
+    {# Bootstrap grid & reboot are foundational - keep render-blocking #}
     <link href="{{ asset('/cdn/css/bootstrap.min.css') }}" rel="stylesheet">
-    <link href="{{ asset('/cdn/css/sweetalert2.min.css') }}" rel="stylesheet">
+    {# App styles (above-the-fold layout, navbar) - keep render-blocking #}
+    <link rel="stylesheet" href="{{ asset('/assets/css/dist/public-bundle.css') }}">
+
+    {# Bootstrap Icons - render-blocking because icons are used in navbar, theme toggle, etc. #}
+    <link href="{{ asset('/cdn/css/bootstrap-icons.min.css') }}" rel="stylesheet">
+
+    {# ===== NON-CRITICAL CSS (Deferred via media="print" trick) ===== #}
+    {# SweetAlert2 modals - only needed on interaction #}
+    <link href="{{ asset('/cdn/css/sweetalert2.min.css') }}" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="{{ asset('/cdn/css/sweetalert2.min.css') }}" rel="stylesheet"></noscript>
+
+    {# Tailwind utility classes - supplement to main bundle #}
+    <link rel="stylesheet" href="{{ asset('/assets/css/tailwind.css') }}" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{{ asset('/assets/css/tailwind.css') }}"></noscript>
+
+    {# AI Assistant styles - only needed when assistant is active #}
+    <link rel="stylesheet" href="{{ asset('/assets/ai-assistant/styles/thinking-indicator.css') }}" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{{ asset('/assets/ai-assistant/styles/thinking-indicator.css') }}"></noscript>
+
+    <link rel="stylesheet" href="{{ asset('/ai/dist/ai-style.css') }}" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{{ asset('/ai/dist/ai-style.css') }}"></noscript>
 
     {# ===== GOOGLE FONTS (Deferred Loading) ===== #}
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'" async>
     <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
-
-    {# ===== BOOTSTRAP ICONS (Deferred Loading) ===== #}
-    <link href="{{ asset('/cdn/css/bootstrap-icons.min.css') }}" rel="stylesheet">
-
-    {# ===== APPLICATION STYLESHEETS (Bundled for Performance) ===== #}
-    <link rel="stylesheet" href="{{ asset('/assets/css/dist/public-bundle.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/css/tailwind.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/ai-assistant/styles/thinking-indicator.css') }}">
-    <link rel="stylesheet" href="{{ asset('/ai/dist/ai-style.css') }}">
     {% block extra_styles %}
     {% endblock %}
     {% block extra_head %}
@@ -304,7 +310,7 @@
                 {# Brand / Logo #}
                 <a class="navbar-brand brox-brand-link" href="{{ studio_header_url|default('/studio') }}" title="Studio">
                     {% if app_settings.site_logo is defined and app_settings.site_logo %}
-                        <img src="{{ app_settings.site_logo|absolute_url }}" alt="{{ app_settings.site_name }}" class="brox-brand-logo me-2" loading="lazy" decoding="async">
+                        <img src="{{ app_settings.site_logo|absolute_url }}" alt="{{ app_settings.site_name }}" class="brox-brand-logo me-2" loading="lazy" decoding="async" width="120" height="40">
                     {% else %}
                         <div class="bg-primary rounded-3 p-2 me-2 shadow-sm brox-brand-icon">
                             <i class="bi bi-phone-fill text-white"></i> <span class="brox-brand-text">{{ app_settings.site_name }}</span>
@@ -423,9 +429,9 @@
                                    href="#" id="broxNavbarUser" role="button" 
                                    data-bs-toggle="dropdown" aria-expanded="false">
                                     {% if auth_user.profile_pic is defined and auth_user.profile_pic %}
-                                        <img src="{{ auth_user.profile_pic|absolute_url }}" class="rounded-circle me-2 brox-user-avatar" alt="{{ auth_user.username }}" loading="lazy" decoding="async">
+                                        <img src="{{ auth_user.profile_pic|absolute_url }}" class="rounded-circle me-2 brox-user-avatar" alt="{{ auth_user.username }}" loading="lazy" decoding="async" width="32" height="32">
                                     {% else %}
-                                        <img src="{{ '/assets/images/default-avatar.png'|absolute_url }}" class="rounded-circle me-2 brox-user-avatar" alt="User avatar" loading="lazy" decoding="async">
+                                        <img src="{{ '/assets/images/default-avatar.png'|absolute_url }}" class="rounded-circle me-2 brox-user-avatar" alt="User avatar" loading="lazy" decoding="async" width="32" height="32">
                                     {% endif %}
                                     <span class="brox-user-dropdown-username d-none d-lg-inline">{{ auth_user.username }}</span>
                                 </a>
@@ -677,7 +683,8 @@
 
     {# ===== STEP 3: Load Feature Scripts (Non-critical) ===== #}
     {# Datepicker Library #}
-    <link rel="stylesheet" href="{{ asset('/assets/datepicker/datepicker.css') }}">
+    <link rel="stylesheet" href="{{ asset('/assets/datepicker/datepicker.css') }}" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{{ asset('/assets/datepicker/datepicker.css') }}"></noscript>
     <script src="{{ asset('/assets/datepicker/datepicker.js') }}" defer></script>
     <script src="{{ asset('/assets/js/dist/datepicker.js') }}" defer></script>
 

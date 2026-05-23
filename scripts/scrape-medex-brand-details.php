@@ -159,8 +159,9 @@ if (!defined('MEDEX_BRAND_PARSER_LOADED')) {
         $strNode = $xpath->query('//div[@title="Strength"]')->item(0);
         $data['strength'] = $strNode ? clean_text($strNode->textContent) : '';
 
+        /** @var DOMElement|null $companyNode */
         $companyNode = $xpath->query('//div[@title="Manufactured by"]//a[contains(@class,"calm-link")]')->item(0);
-        if ($companyNode) {
+        if ($companyNode instanceof DOMElement) {
             $data['company']['name'] = clean_text($companyNode->textContent);
             $data['company']['url']  = ensure_absolute((string)$companyNode->getAttribute('href'));
         }
@@ -181,12 +182,19 @@ if (!defined('MEDEX_BRAND_PARSER_LOADED')) {
 
         // Pack images
         foreach ($xpath->query('//a[contains(@class,"mp-trigger-g") or contains(@class,"mp-trigger-gdc")]') as $a) {
+            if (!($a instanceof DOMElement)) {
+                continue;
+            }
             $href = (string)$a->getAttribute('href');
-            if ($href && str_contains($href, '/storage/images/packaging/')) $data['pack_images'][] = ensure_absolute($href);
+            if ($href && str_contains($href, '/storage/images/packaging/')) {
+                $data['pack_images'][] = ensure_absolute($href);
+            }
             $img = $xpath->query('.//img[@data-src]', $a)->item(0);
-            if ($img) {
+            if ($img instanceof DOMElement) {
                 $src = (string)$img->getAttribute('data-src');
-                if ($src) $data['pack_images'][] = ensure_absolute($src);
+                if ($src) {
+                    $data['pack_images'][] = ensure_absolute($src);
+                }
             }
         }
         $data['pack_images'] = array_values(array_unique($data['pack_images']));

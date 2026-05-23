@@ -19,7 +19,7 @@
 
 {% block extra_head %}
     {% set medexLangUrlBase = current_url|replace({'?lang=bn':'?','&lang=bn':'','?lang=en':'?','&lang=en':''})|replace({'?&':'?','&&':'&'})|trim('?&') %}
-    {% set medexLangQuery = medexLangUrlBase contains '?' ? '&' : '?' %}
+    {% set medexLangQuery = medexLangUrlBase matches('/\\?/') ? '&' : '?' %}
     <link rel="alternate" hreflang="en" href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang=en">
     <link rel="alternate" hreflang="bn" href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang=bn">
     <link rel="alternate" hreflang="x-default" href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang=en">
@@ -34,17 +34,17 @@
             {% set medexSubheader = current_lang == 'bn' ? 'বাংলাদেশের হার্বাল ফার্মাসিউটিক্যাল কোম্পানির ডেটাবেস' : 'Herbal Pharmaceutical Companies in Bangladesh' %}
             <h1 class="h2 mb-0">
                 <i class="bi bi-capsule me-2 text-primary"></i>
-                {{ title|default(medexHeading) }}
+                <span data-i18n-en="MedEx Database" data-i18n-bn="মেডএক্স ডেটাবেস">{{ title|default(medexHeading) }}</span>
             </h1>
-            <p class="text-muted mt-2 mb-0">
+            <p class="text-muted mt-2 mb-0" data-i18n-en="Herbal Pharmaceutical Companies in Bangladesh" data-i18n-bn="বাংলাদেশের হার্বাল ফার্মাসিউটিক্যাল কোম্পানির ডেটাবেস">
                 {{ medexSubheader }}
             </p>
 
             <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
                 {% for code,label in available_languages %}
-                    <a href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang={{ code }}" class="btn btn-sm {% if current_lang == code %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                    <button type="button" class="btn btn-sm {% if current_lang == code %}btn-primary{% else %}btn-outline-secondary{% endif %}" data-lang-btn="{{ code }}">
                         {{ label }}
-                    </a>
+                    </button>
                 {% endfor %}
             </div>
         </div>
@@ -52,21 +52,6 @@
 
     {# Content block #}
     {% block page_content %}{% endblock %}
-</div>
-
-<div id="medex-collector-banner" style="position:fixed;bottom:18px;right:18px;z-index:1050;max-width:320px;box-shadow:0 8px 20px rgba(0,0,0,.16);border:1px solid rgba(0,0,0,.08);background:#fff;padding:14px 16px;border-radius:16px;font-family:system-ui, sans-serif;display:none;">
-    <div style="display:flex;align-items:center;gap:12px;">
-        <span style="font-size:1.2rem;">🧪</span>
-        <div style="flex:1;">
-            <strong>MedEx Browser Collector</strong>
-            <div style="font-size:.86rem;color:#555;">Run the JS scraper from this page or open the dedicated collector UI.</div>
-        </div>
-    </div>
-    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-        <a href="/medex-collector.html" class="btn btn-sm btn-success" style="flex:1;min-width:120px;">Open Collector</a>
-        <button id="medex-collector-launch" type="button" class="btn btn-sm btn-outline-primary" style="flex:1;min-width:120px;">Run Collector</button>
-    </div>
-    <div id="medex-collector-banner-log" style="margin-top:10px;font-size:.78rem;color:#444;display:none;"></div>
 </div>
 
 <script src="{{ asset('/assets/js/medex-scraper.js') }}"></script>
@@ -220,55 +205,6 @@
     }
 
     checkAndCollect();
-})();
-</script>
-<script>
-(function() {
-    const path = window.location.pathname || '';
-    if (!path.startsWith('/medex') || path === '/medex-collector.html') {
-        return;
-    }
-
-    const banner = document.getElementById('medex-collector-banner');
-    const launchButton = document.getElementById('medex-collector-launch');
-    const bannerLog = document.getElementById('medex-collector-banner-log');
-    if (!banner || !launchButton) {
-        return;
-    }
-
-    banner.style.display = 'block';
-
-    launchButton.addEventListener('click', async function () {
-        if (typeof window.MedexScraper !== 'function') {
-            bannerLog.textContent = 'Collector script not loaded yet.';
-            return;
-        }
-
-        launchButton.disabled = true;
-        bannerLog.style.display = 'block';
-        bannerLog.textContent = 'Starting collector...';
-
-        const scraper = new window.MedexScraper({ rate: 700 });
-        scraper.on('log', (msg) => {
-            bannerLog.textContent = msg;
-        });
-        scraper.on('error', (err) => {
-            bannerLog.textContent = 'Error: ' + (err.message || JSON.stringify(err));
-            launchButton.disabled = false;
-        });
-        scraper.on('complete', async (result) => {
-            bannerLog.textContent = 'Complete: ' + (result.count || 0) + ' companies';
-            try {
-                const uploadResult = await scraper.saveToServer({ auto: true, page: path }, { retries: 4, backoffBase: 1000, silent: true });
-                bannerLog.textContent = 'Saved: ' + (uploadResult.response?.saved || uploadResult.response?.success ? 'yes' : 'no');
-            } catch (uploadError) {
-                bannerLog.textContent = 'Upload failed: ' + (uploadError.message || uploadError);
-            }
-            launchButton.disabled = false;
-        });
-
-        await scraper.run();
-    });
 })();
 </script>
 {% endblock %}

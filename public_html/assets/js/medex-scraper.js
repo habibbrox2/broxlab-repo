@@ -22,6 +22,7 @@
       this.proxyUrl = opts.proxyUrl || '/api/medex/proxy';
       this.saveUrl = opts.saveUrl || '/api/medex/save-data';
       this.rate = Number(opts.rate) || 350; // ms between requests (polite)
+      this.token = opts.token || '';
       this.data = [];
       this.running = false;
       this.paused = false;
@@ -60,6 +61,24 @@
     getCsrfToken() {
       const meta = document.querySelector('meta[name="csrf-token"]');
       return meta ? meta.getAttribute('content') || '' : '';
+    }
+
+    getSaveToken() {
+      if (this.token) {
+        return String(this.token).trim();
+      }
+
+      if (typeof window !== 'undefined' && window.MEDEX_REFRESH_TOKEN) {
+        return String(window.MEDEX_REFRESH_TOKEN).trim();
+      }
+
+      const meta = document.querySelector('meta[name="medex-refresh-token"]');
+      if (meta) {
+        return meta.getAttribute('content') || '';
+      }
+
+      const input = document.querySelector('input[name="medex_refresh_token"], input[name="token"]');
+      return input ? String(input.value || '').trim() : '';
     }
 
     async fetchViaProxy(targetUrl) {
@@ -314,12 +333,13 @@
     }
 
     async saveToServer(extraMeta = {}, options = {}) {
-      // options: { retries: number, backoffBase: ms, silent: bool }
+      // options: { retries: number, backoffBase: ms, silent: bool, token: string }
       if (!this.data.length) throw new Error('No data to save');
 
       const retries = Number(options.retries || 3);
       const backoffBase = Number(options.backoffBase || 500);
       const silent = !!options.silent;
+      const saveToken = String(options.token || extraMeta.token || this.getSaveToken() || '').trim();
 
       const csrf = this.getCsrfToken();
 
@@ -333,6 +353,10 @@
         }, extraMeta),
         csrf_token: csrf,
       };
+
+      if (saveToken) {
+        payload.token = saveToken;
+      }
 
       const body = JSON.stringify(payload);
 

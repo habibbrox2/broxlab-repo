@@ -29,6 +29,18 @@
         status.textContent = `[${t}] ${msg}\n` + status.textContent;
     }
 
+    function getMedexToken() {
+        if (typeof window !== 'undefined' && window.MEDEX_REFRESH_TOKEN) {
+            return String(window.MEDEX_REFRESH_TOKEN).trim();
+        }
+        const meta = document.querySelector('meta[name="medex-refresh-token"]');
+        if (meta) {
+            return String(meta.getAttribute('content') || '').trim();
+        }
+        const input = document.querySelector('input[name="medex_refresh_token"], input[name="token"]');
+        return input ? String(input.value || input.getAttribute('content') || '').trim() : '';
+    }
+
     function setButtons(running) {
         startBtn.disabled = running;
         pauseBtn.disabled = !running;
@@ -71,9 +83,10 @@
                 if (autoSaveCheckbox && autoSaveCheckbox.checked) {
                     const retries = Number(saveRetriesInput ? saveRetriesInput.value : 3) || 3;
                     const silent = !!(silentSaveCheckbox && silentSaveCheckbox.checked);
+                    const token = getMedexToken();
                     log('Auto-saving to server (silent=' + silent + ', retries=' + retries + ')...');
                     // call saveToServer but don't block UI
-                    scraper.saveToServer({ note: 'auto-save via UI' }, { retries: retries, backoffBase: 1000, silent: silent })
+                    scraper.saveToServer({ note: 'auto-save via UI' }, { retries: retries, backoffBase: 1000, silent: silent, token: token })
                         .then((r) => {
                             log('Auto-save result: ' + JSON.stringify(r));
                             if (!silent) alert('Auto-save result: ' + (r.success ? 'OK' : 'FAILED'));
@@ -116,7 +129,8 @@
             log('Saving to server...');
             const retries = Number(saveRetriesInput ? saveRetriesInput.value : 3) || 3;
             const silent = !!(silentSaveCheckbox && silentSaveCheckbox.checked);
-            const res = await scraper.saveToServer({ note: 'collected via UI' }, { retries: retries, backoffBase: 1000, silent: silent });
+            const token = getMedexToken();
+            const res = await scraper.saveToServer({ note: 'collected via UI' }, { retries: retries, backoffBase: 1000, silent: silent, token: token });
             log('Save response: ' + JSON.stringify(res));
             if (!silent) alert('Saved: ' + (res.response && res.response.saved ? res.response.saved : (res.saved || 'unknown')));
         } catch (e) {

@@ -866,17 +866,29 @@ if (!function_exists("registerTwigHelpers")) {
                     if (strpos($mimeType, 'text') !== false) return $iconMap['text'];
         
                     return '≡ƒôÄ';
-                }));
-        
-                // Asset URL helper (with version/cache busting)
+                }));                // Asset URL helper (with version/cache busting)
                 $twig->addFunction(new \Twig\TwigFunction('asset', function ($path, $version = true) {
                     $url = '/' . ltrim($path, '/');
+
+                    // In dev mode, map /cdn/ paths to actual CDN URLs so they don't 404
+                    if (brox_is_development_env() && strpos($url, '/cdn/') === 0) {
+                        static $cdnMap = [
+                            '/cdn/css/bootstrap.min.css'        => 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
+                            '/cdn/css/bootstrap-icons.min.css'  => 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css',
+                            '/cdn/css/sweetalert2.min.css'      => 'https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css',
+                            '/cdn/js/sweetalert2.all.min.js'   => 'https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js',
+                        ];
+                        if (isset($cdnMap[$url])) {
+                            return $cdnMap[$url];
+                        }
+                    }
+
                     $url = brox_resolve_asset_for_development($url);
-        
+
                     if ($version) {
                         $documentRoot = $_SERVER['DOCUMENT_ROOT'] ?? realpath(dirname(__DIR__) . '/public_html');
                         $fullPath = $documentRoot . $url;
-        
+
                         if (file_exists($fullPath)) {
                             $filemtime = @filemtime($fullPath);
                             if ($filemtime !== false) {
@@ -885,7 +897,7 @@ if (!function_exists("registerTwigHelpers")) {
                             }
                         }
                     }
-        
+
                     return $url;
                 }));
         

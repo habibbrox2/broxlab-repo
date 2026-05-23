@@ -237,10 +237,10 @@ for ($p = 1; $p <= $totalPages; $p++) {
 }
 
 // Output JSON
+$jsonOutput = json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 echo "\nOutputting results...\n";
-header('Content-Type: application/json; charset=utf-8');
-echo json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+echo $jsonOutput . "\n";
 
 $outputPath = getMedexUploadsDir() . '/medex_herbal_companies.json';
-file_put_contents($outputPath, json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-echo "\nData saved to {$outputPath}\n";
+file_put_contents($outputPath, $jsonOutput);
+echo "Data saved to {$outputPath}\n";

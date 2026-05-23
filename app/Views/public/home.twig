@@ -5,8 +5,11 @@
 {% block og_type %}website{% endblock %}
 
 {% block extra_styles %}
-  <link rel="stylesheet" href="{{ url }}assets/css/mobiles-grid.css">
-  <link rel="stylesheet" href="{{ asset('assets/css/weather.css') }}">
+  {# Non-critical page-specific styles (deferred) #}
+  <link rel="stylesheet" href="{{ url }}assets/css/mobiles-grid.css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="{{ url }}assets/css/mobiles-grid.css"></noscript>
+  <link rel="stylesheet" href="{{ asset('assets/css/weather.css') }}" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="{{ asset('assets/css/weather.css') }}"></noscript>
 {% endblock %}
 
 {% block content %}
@@ -439,7 +442,7 @@
             <a href="{{ ('/posts/' ~ p.id ~ '/' ~ (('' ~ (p.slug|default(p.id)))|url_encode))|absolute_url }}" class="home-top-card is-post" role="listitem" aria-label="Top post: {{ p.title }}">
               <div class="home-top-card__media">
                 {% if p.image %}
-                  <img src="{{ p.image|absolute_url }}" alt="{{ p.title|striptags }}" loading="lazy" decoding="async">
+                  <img src="{{ p.image|absolute_url }}" alt="{{ p.title|striptags }}" loading="lazy" decoding="async" width="320" height="180">
                 {% else %}
                   <span class="home-top-card__placeholder"><i class="bi bi-newspaper"></i></span>
                 {% endif %}
@@ -461,7 +464,7 @@
             <a href="/services/{{ s.slug }}" class="home-top-card is-service" role="listitem" aria-label="Top service: {{ s.title|default(s.name) }}">
               <div class="home-top-card__media">
                 {% if s.image %}
-                  <img src="{{ s.image }}" alt="{{ s.title|default(s.name) }}" loading="lazy" decoding="async">
+                  <img src="{{ s.image }}" alt="{{ s.title|default(s.name) }}" loading="lazy" decoding="async" width="320" height="180">
                 {% else %}
                   <span class="home-top-card__placeholder"><i class="bi bi-award-fill"></i></span>
                 {% endif %}
@@ -1342,7 +1345,8 @@
                    class="object-fit-cover w-100 h-100" 
                    alt="{{ item.title }}"
                    loading="lazy"
-                   decoding="async">
+                   decoding="async"
+                   width="400" height="225">
             </div>
             {% endif %}
             <div class="card-body">
