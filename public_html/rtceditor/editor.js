@@ -91,7 +91,8 @@ if (_RTE_shouldDefine) {
 
             if (!options.skipHelperCheck && !RichTextEditor.isHelpersReady()) {
                 const missingHelpers = RichTextEditor.getMissingHelpers();
-                console.warn(
+                window.RTE_debugLog(
+                    'loader',
                     `RTE: Editor "${editorId}" initialized before helpers loaded. ` +
                     `Call await RichTextEditor.loadHelpers() first, or use RichTextEditor.create().` +
                     (missingHelpers.length ? ` Missing helpers: ${missingHelpers.join(', ')}` : '')
@@ -1967,38 +1968,80 @@ if (_RTE_shouldDefine) {
         }
 
         /**
-         * Show link modal
+         * Lazy-load a module on first interaction
+         * @private
+         */
+        async _loadLazyModule(moduleName) {
+            const lazyMap = RichTextEditor._lazyModules || {};
+            const path = Object.keys(lazyMap).find(k => lazyMap[k] === moduleName);
+            if (!path) return false;
+
+            const scriptInfo = RichTextEditor._getEditorScriptInfo();
+            const fullPath = scriptInfo.baseDir + path.replace(/^\.\//, '');
+            const versionQuery = scriptInfo.versionQuery;
+            const fullPathWithVersion = versionQuery ? fullPath + versionQuery : fullPath;
+
+            if (typeof window[moduleName] === 'function') {
+                try {
+                    window[moduleName](RichTextEditor);
+                    return true;
+                } catch (e) {
+                    console.error('RTE: Lazy install error for', moduleName, e);
+                    return false;
+                }
+            }
+
+            try {
+                await RichTextEditor._loadModule(scriptInfo.baseDir, path, moduleName, versionQuery);
+                return true;
+            } catch (e) {
+                console.error('RTE: Lazy load failed for', moduleName, e);
+                return false;
+            }
+        }
+
+        /**
+         * Ensure a lazy module is loaded before delegating
+         * @private
+         */
+        async _ensureModule(moduleName, delegateFn, ...args) {
+            await this._loadLazyModule(moduleName);
+            return delegateFn.call(this, ...args);
+        }
+
+        /**
+         * Show link modal (lazy-loads modals if needed)
          */
         showLinkModal() {
             if (this._isDelegated('showLinkModal')) {
-                return this._delegate('showLinkModal');
+                return this._ensureModule('installModalHelpers', RichTextEditor.prototype.showLinkModal);
             }
         }
 
         /**
-         * Show image modal
+         * Show image modal (lazy-loads modals + images)
          */
         showImageModal() {
             if (this._isDelegated('showImageModal')) {
-                return this._delegate('showImageModal');
+                return this._ensureModule('installModalHelpers', RichTextEditor.prototype.showImageModal);
             }
         }
 
         /**
-         * Show video modal
+         * Show video modal (lazy-loads modals)
          */
         showVideoModal() {
             if (this._isDelegated('showVideoModal')) {
-                return this._delegate('showVideoModal');
+                return this._ensureModule('installModalHelpers', RichTextEditor.prototype.showVideoModal);
             }
         }
 
         /**
-         * Show special character modal
+         * Show special character modal (lazy-loads modals)
          */
         showSpecialCharModal() {
             if (this._isDelegated('showSpecialCharModal')) {
-                return this._delegate('showSpecialCharModal');
+                return this._ensureModule('installModalHelpers', RichTextEditor.prototype.showSpecialCharModal);
             }
         }
 
@@ -2550,25 +2593,26 @@ if (_RTE_shouldDefine) {
             }
 
             this._helpersLoadPromise = (async () => {
+                // Eager-loaded modules (core functionality needed at startup)
                 const modules = [
-                    ['./editor.utils.js', 'installUtilsHelpers'],
-                    ['./editor.color.js', 'installColorHelpers'],
+                    ['./editor-core-essentials.js', 'installCoreEssentials'],
                     ['./editor.toolbar.js', 'installToolbarHelpers'],
                     ['./editor.selection.js', 'installSelectionManager'],
                     ['./editor.block-formatting.js', 'installBlockFormattingHelpers'],
                     ['./editor.normalization.js', 'installNormalizationHelpers'],
                     ['./editor.history.js', 'installHistoryHelpers'],
-                    ['./editor.formatting.js', 'installFormattingHelpers'],
                     ['./editor.views.js', 'installViewHelpers'],
-                    ['./editor.ui.js', 'installUIHelpers'],
-                    ['./editor.modals.js', 'installModalHelpers'],
                     ['./editor.sanitize.js', 'installSanitizeHelpers'],
-                    ['./editor.images.js', 'installImageHelpers'],
                     ['./editor.input.js', 'installInputHelpers'],
-                    ['./editor.dragdrop.js', 'installDragDropHelpers'],
-                    ['./editor.figures.js', 'installFigureHelpers'],
-                    ['./editor.keyboard.js', 'installKeyboardHelpers']
+                    ['./editor.figures.js', 'installFigureHelpers']
                 ];
+
+                // Lazy-loaded modules (loaded on first interaction)
+                this._lazyModules = {
+                    './editor.modals.js': 'installModalHelpers',
+                    './editor.color.js': 'installColorHelpers',
+                    './editor.images.js': 'installImageHelpers'
+                };
 
                 const result = {};
                 const scriptInfo = this._getEditorScriptInfo();
@@ -2587,11 +2631,16 @@ if (_RTE_shouldDefine) {
                     }
                 }
 
+                // Mark lazy modules as pending (not loaded yet)
+                for (const [path, fn] of Object.entries(this._lazyModules)) {
+                    result[fn] = 'lazy';
+                }
+
                 this._helpersLoaded = result;
 
-                const passed = Object.values(result).filter(v => v).length;
+                const passed = Object.values(result).filter(v => v === true).length;
                 const total = Object.values(result).length;
-                window.RTE_debugLog('loader', `Helpers loaded: ${passed}/${total} successful`);
+                window.RTE_debugLog('loader', `Helpers loaded: ${passed}/${total} (${Object.keys(this._lazyModules).length} lazy)`);
                 return result;
             })();
 
@@ -2615,14 +2664,20 @@ if (_RTE_shouldDefine) {
                 if (scripts[i].src && scripts[i].src.includes('editor.js')) {
                     try {
                         const scriptUrl = new URL(scripts[i].src, window.location.href);
-                        const baseDir = scriptUrl.href.replace(/\/[^\/?#]+(\?.*)?$/, '/');
+                        let baseDir = scriptUrl.href.replace(/\/[^\/?#]+(\?.*)?$/, '/');
+                        if (!baseDir.includes('/rtceditor/')) {
+                            baseDir = `${window.location.origin}/rtceditor/`;
+                        }
                         const version = scriptUrl.searchParams.get('v');
                         const versionQuery = version ? `?v=${encodeURIComponent(version)}` : '';
                         return { baseDir, versionQuery };
                     } catch (err) {
                         const src = scripts[i].src;
                         const [path, query = ''] = src.split('?');
-                        const baseDir = path.replace(/\/[^\/?#]+$/, '/');
+                        let baseDir = path.replace(/\/[^\/?#]+$/, '/');
+                        if (!baseDir.includes('/rtceditor/')) {
+                            baseDir = `${window.location.origin}/rtceditor/`;
+                        }
                         const match = query.match(/(?:^|&)v=([^&]+)/);
                         const versionQuery = match ? `?v=${encodeURIComponent(match[1])}` : '';
                         return { baseDir, versionQuery };

@@ -13,13 +13,15 @@
     "watch:ai": "node build/esbuild-ai.mjs --watch",
     "build:assistants": "node build/esbuild-assistants.mjs",
     "build:firebase:v2": "node build/esbuild-firebase.mjs",
+    "build:rte": "node build/esbuild-rte.mjs",
     "build:app:dist": "node build/esbuild.config.js",
     "build": "npm run build:css && npm run build:js && npm run build:ai",
-    "build:prod": "npm run build:css && npm run build:js && npm run build:ai && npm run build:assistants && npm run build:firebase:v2",
+    "build:prod": "npm run build:css && npm run build:js && npm run build:ai && npm run build:rte && npm run build:assistants && npm run build:firebase:v2",
     "dev": "npm run build:css && npm run build:js && npm run build:ai",
+    "dev:rte": "node build/esbuild-rte.mjs",
     "lint": "eslint \"public_html/assets/js/**/*.{js,ts}\" --ext .js,.ts --ignore-pattern \"public_html/assets/js/dist/**\"",
     "type-check": "tsc -p build/tsconfig.json --noEmit",
-    "test": "vitest",
+    "test": "vitest --passWithNoTests",
     "validate": "npm run lint --if-present && npm run type-check --if-present && npm test --if-present"
   },
   "devDependencies": {

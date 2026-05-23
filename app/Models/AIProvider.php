@@ -212,7 +212,7 @@ class AIProvider
     public function getAll(): array
     {
         $stmt = $this->mysqli->prepare("
-            SELECT * FROM ai_providers 
+            SELECT id, provider_name, display_name, description, api_endpoint, is_active, is_default, supported_models, extra_settings, sort_order FROM ai_providers 
             ORDER BY sort_order ASC, id ASC
         ");
         $stmt->execute();
@@ -232,7 +232,7 @@ class AIProvider
     public function getActive(): array
     {
         $stmt = $this->mysqli->prepare("
-            SELECT * FROM ai_providers 
+            SELECT id, provider_name, display_name, description, api_endpoint, is_active, is_default, supported_models, extra_settings, sort_order FROM ai_providers 
             WHERE is_active = TRUE 
             ORDER BY sort_order ASC
         ");
@@ -252,7 +252,7 @@ class AIProvider
      */
     public function getById(int $id): ?array
     {
-        $stmt = $this->mysqli->prepare("SELECT * FROM ai_providers WHERE id = ?");
+        $stmt = $this->mysqli->prepare("SELECT id, provider_name, display_name, description, api_endpoint, is_active, is_default, supported_models, extra_settings, sort_order FROM ai_providers WHERE id = ?");
         $stmt->bind_param('i', $id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -269,7 +269,7 @@ class AIProvider
      */
     public function getByName(string $name): ?array
     {
-        $stmt = $this->mysqli->prepare("SELECT * FROM ai_providers WHERE provider_name = ?");
+        $stmt = $this->mysqli->prepare("SELECT id, provider_name, display_name, description, api_endpoint, is_active, is_default, supported_models, extra_settings, sort_order FROM ai_providers WHERE provider_name = ?");
         $stmt->bind_param('s', $name);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -286,7 +286,7 @@ class AIProvider
      */
     public function getDefault(): ?array
     {
-        $stmt = $this->mysqli->prepare("SELECT * FROM ai_providers WHERE is_default = TRUE LIMIT 1");
+        $stmt = $this->mysqli->prepare("SELECT id, provider_name, display_name, description, api_endpoint, is_active, is_default, supported_models, extra_settings, sort_order FROM ai_providers WHERE is_default = TRUE LIMIT 1");
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -295,7 +295,7 @@ class AIProvider
         }
 
         // Fallback to first active provider
-        $stmt = $this->mysqli->prepare("SELECT * FROM ai_providers WHERE is_active = TRUE ORDER BY sort_order ASC LIMIT 1");
+        $stmt = $this->mysqli->prepare("SELECT id, provider_name, display_name, description, api_endpoint, is_active, is_default, supported_models, extra_settings, sort_order FROM ai_providers WHERE is_active = TRUE ORDER BY sort_order ASC LIMIT 1");
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -457,7 +457,7 @@ class AIProvider
      */
     public function getSettings(): array
     {
-        $stmt = $this->mysqli->query("SELECT * FROM ai_settings");
+        $stmt = $this->mysqli->query("SELECT setting_key, setting_value, setting_type FROM ai_settings");
 
         $settings = [];
         while ($row = $stmt->fetch_assoc()) {
@@ -487,7 +487,7 @@ class AIProvider
      */
     public function getSetting(string $key, $default = null)
     {
-        $stmt = $this->mysqli->prepare("SELECT * FROM ai_settings WHERE setting_key = ?");
+        $stmt = $this->mysqli->prepare("SELECT setting_key, setting_value, setting_type FROM ai_settings WHERE setting_key = ?");
         $stmt->bind_param('s', $key);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -644,16 +644,27 @@ class AIProvider
         $headers = $this->buildHeaders($providerName, $apiKey, $requestData, (string)$endpoint);
         $this->logPayloadDebug($providerName, $model, $endpoint, $requestData);
 
+        $timeout = (int)($options['timeout'] ?? 120);
+        if ($timeout <= 0) {
+            $timeout = 120;
+        }
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(max(300, $timeout + 60));
+        }
+
         // Make the request
         $ch = curl_init($endpoint);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, $options['timeout'] ?? 120);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+        if (defined('CURLOPT_NOSIGNAL')) {
+            curl_setopt($ch, CURLOPT_NOSIGNAL, 1);
+        }
         $responseHeaders = [];
         curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($ch, $headerLine) use (&$responseHeaders) {
             $trimmed = trim($headerLine);
@@ -724,7 +735,19 @@ class AIProvider
         }
 
         // Parse response
-        return $this->parseResponse($providerName, $response);
+        $parsedResponse = $this->parseResponse($providerName, $response);
+        if (!empty($parsedResponse['success'])) {
+            $content = trim((string)($parsedResponse['content'] ?? ''));
+            if ($content === '' && empty($parsedResponse['tool_calls']) && empty($parsedResponse['auto_tool_calls'])) {
+                return [
+                    'success' => false,
+                    'error' => 'AI provider returned an empty response',
+                    'error_code' => 'empty_response'
+                ];
+            }
+        }
+
+        return $parsedResponse;
     }
 
     private function extractRetryAfterSeconds(array $headers): ?int
@@ -2257,6 +2280,27 @@ class AIProvider
                 }
                 $testModel = (string)array_key_first($models) ?? '';
             }
+
+            if ($providerName === 'openrouter') {
+                foreach ([
+                    'meta-llama/llama-3-8b-instruct:free',
+                    'google/gemini-2.0-flash-exp:free',
+                    'deepseek/deepseek-chat:free',
+                    'qwen/qwen-2.5-72b-instruct:free',
+                ] as $preferredModel) {
+                    if (isset($models[$preferredModel])) {
+                        $testModel = $preferredModel;
+                        break;
+                    }
+                }
+            } elseif ($providerName === 'kilo') {
+                foreach (['kilo-auto/free', 'kilo-auto/frontier', 'kilo-gpt-4o'] as $preferredModel) {
+                    if (isset($models[$preferredModel])) {
+                        $testModel = $preferredModel;
+                        break;
+                    }
+                }
+            }
         }
 
         // Simple test prompt
@@ -2287,6 +2331,29 @@ class AIProvider
             return $model;
         }
 
+        if ($providerName === 'openrouter') {
+            if ($model === 'auto' || $model === 'free') {
+                return 'meta-llama/llama-3-8b-instruct:free';
+            }
+
+            if (strpos($model, 'openrouter/') === 0) {
+                $suffix = substr($model, strlen('openrouter/'));
+                if ($suffix === 'auto' || $suffix === 'free') {
+                    return 'meta-llama/llama-3-8b-instruct:free';
+                }
+            }
+
+            if ($model === 'openrouter' || $model === '') {
+                return 'meta-llama/llama-3-8b-instruct:free';
+            }
+        }
+
+        if ($providerName === 'kilo') {
+            if ($model === 'auto' || $model === 'kilo/auto') {
+                return 'kilo-auto/free';
+            }
+        }
+
         // If it already has a slash, assume it's correctly prefixed
         if (strpos($model, '/') !== false) {
             return $model;
@@ -2303,7 +2370,8 @@ class AIProvider
                 'claude-3-opus' => 'anthropic/claude-3-opus',
                 'claude-3-sonnet' => 'anthropic/claude-3-sonnet',
                 'claude-3-haiku' => 'anthropic/claude-3-haiku',
-                'auto' => 'openrouter/auto'
+                'auto' => 'meta-llama/llama-3-8b-instruct:free',
+                'free' => 'meta-llama/llama-3-8b-instruct:free'
             ];
 
             // Check if we have a mapping
@@ -2364,7 +2432,8 @@ class AIProvider
             $models = $config['models'] ?? [];
         }
 
-        if ($providerName === 'fireworks') {
+        // Fetch remote models for providers that support it
+        if ($providerName === 'fireworks' || $providerName === 'openrouter' || $providerName === 'kilo') {
             $remote = $this->fetchRemoteModels($providerName);
             if (!empty($remote)) {
                 $models = $remote;
@@ -2383,6 +2452,30 @@ class AIProvider
             $hintResolved = $this->resolveHuggingFaceHintModel($model, $models);
             if ($hintResolved !== '') {
                 return $hintResolved;
+            }
+        }
+
+        $preferredModels = [];
+        if ($providerName === 'openrouter') {
+            $preferredModels = [
+                'meta-llama/llama-3-8b-instruct:free',
+                'google/gemini-2.0-flash-exp:free',
+                'deepseek/deepseek-chat:free',
+                'qwen/qwen-2.5-72b-instruct:free',
+            ];
+        } elseif ($providerName === 'kilo') {
+            $preferredModels = [
+                'kilo-auto/free',
+                'kilo-auto/frontier',
+                'kilo-gpt-4o',
+            ];
+        }
+
+        if (!empty($preferredModels)) {
+            foreach ($preferredModels as $preferredModel) {
+                if (isset($models[$preferredModel]) && ($model === '' || !isset($models[$model]))) {
+                    return $preferredModel;
+                }
             }
         }
 
@@ -2501,6 +2594,14 @@ class AIProvider
         $requestData = $this->buildRequest($providerName, $model, $prompt, $options);
         $headers = $this->buildHeaders($providerName, $apiKey, $requestData, (string)$endpoint);
 
+        $timeout = (int)($requestData['timeout'] ?? 120);
+        if ($timeout <= 0) {
+            $timeout = 120;
+        }
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(max(300, $timeout + 60));
+        }
+
         // Make streaming request
         return $this->makeStreamingRequest($endpoint, $headers, $requestData, $providerName, $onChunk);
     }
@@ -2510,14 +2611,25 @@ class AIProvider
      */
     private function makeStreamingRequest(string $endpoint, array $headers, array $requestData, string $providerName, callable $onChunk): array
     {
+        $timeout = (int)($requestData['timeout'] ?? 120);
+        if ($timeout <= 0) {
+            $timeout = 120;
+        }
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(max(300, $timeout + 60));
+        }
+
         $ch = curl_init($endpoint);
 
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, false); // Stream directly
-        curl_setopt($ch, CURLOPT_TIMEOUT, $requestData['timeout'] ?? 120);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+        if (defined('CURLOPT_NOSIGNAL')) {
+            curl_setopt($ch, CURLOPT_NOSIGNAL, 1);
+        }
 
         // Handle SSE streaming
         $buffer = '';

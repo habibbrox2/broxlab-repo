@@ -18,7 +18,7 @@ return [
      * Get your free API key from: https://openweathermap.org/api
      */
     'openweathermap' => [
-        'api_key' => env('OPENWEATHER_API_KEY', '9637bfc83ce329bd1056ccfa0cffe593'),
+        'api_key' => env('OPENWEATHER_API_KEY', ''),
         'base_url' => 'https://api.openweathermap.org/data/2.5',
         'geocoding_url' => 'https://api.openweathermap.org/geo/1.0',
         'units' => 'metric', // metric (Celsius) or imperial (Fahrenheit)

@@ -7,6 +7,28 @@ import { adminGetCsrfToken } from './utils.js';
 
 const SPECIAL_CHAR_PATTERN = new RegExp("[!@#$%^&*()_+\\-=\\[\\]{};:'\",.<>?/\\\\]");
 
+/**
+ * Get Bootstrap reference safely (guards against missing library).
+ */
+function getBootstrap() {
+  return (typeof bootstrap !== 'undefined') ? bootstrap : null;
+}
+
+/**
+ * Get a Bootstrap modal instance safely.
+ */
+function getModalInstance(elementId) {
+  const Bootstrap = getBootstrap();
+  if (!Bootstrap || !Bootstrap.Modal) return null;
+  const el = document.getElementById(elementId);
+  if (!el) return null;
+  try {
+    return Bootstrap.Modal.getInstance(el);
+  } catch {
+    return null;
+  }
+}
+
 export function validatePasswordStrength(inputId) {
   const input = document.getElementById(inputId);
   if (!input) return;
@@ -66,7 +88,7 @@ export async function setPassword() {
       showAlert(alertBox, data.message, 'success');
       setTimeout(() => {
         form.reset();
-        bootstrap.Modal.getInstance(document.getElementById('setPasswordModal'))?.hide();
+        getModalInstance('setPasswordModal')?.hide();
         location.reload();
       }, 1500);
     } else {
@@ -115,7 +137,7 @@ export async function changePassword() {
       showAlert(alertBox, data.message, 'success');
       setTimeout(() => {
         form.reset();
-        bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'))?.hide();
+        getModalInstance('changePasswordModal')?.hide();
         location.reload();
       }, 1500);
     } else {
@@ -127,7 +149,7 @@ export async function changePassword() {
   }
 }
 
-function showAlert(alertBox, message, type = 'danger') {
+export function showAlert(alertBox, message, type = 'danger') {
   if (!alertBox) return;
   alertBox.className = `alert alert-${type} alert-dismissible show`;
   alertBox.textContent = message;

@@ -15,7 +15,6 @@
 
     // ── DOM references ──────────────────────────────────────────────────────
     const form = document.getElementById('calculator-form');
-    const formWrap = document.getElementById('calc-form-wrap');
     const resultsPanel = document.getElementById('calc-results');
     const submitBtn = document.getElementById('calc-submit-btn');
     const btnLabel = document.getElementById('calc-btn-label');
@@ -166,11 +165,6 @@
                     home_insurance: 'Home Insurance (annual)',
                     hoa_monthly: 'HOA (monthly)',
                 };
-                const numKeys = ['monthly_payment', 'monthly_total', 'monthly_payment_pi', 'monthly_tax',
-                    'monthly_insurance', 'monthly_hoa', 'total_payment', 'total_interest',
-                    'interest_earned', 'interest', 'total_after', 'principal', 'loan_amount',
-                    'down_payment', 'home_price', 'rate_percent', 'annual_rate_pct', 'property_tax',
-                    'home_insurance', 'hoa_monthly', 'loan_amount'];
 
                 const label = labels[k] ?? k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
                 if (k === 'currency_symbol') return null;
@@ -203,7 +197,6 @@
     }
 
     function renderPercentageChange(r) {
-        const cls = r.change >= 0 ? 'text-success' : 'text-danger';
         const badge = r.change >= 0 ? '+' : '';
         return '<div class="result-highlight">' +
             '<div class="result-label">Change</div>' +

@@ -1938,10 +1938,38 @@ class SecurityManager {
     }
 
     public function cleanupExpiredData(): void {
+        try {
+            // Cleanup expired password reset tokens
+            $stmt = $this->mysqli->prepare(
+                "DELETE FROM password_resets WHERE expires_at < NOW()"
+            );
+            if ($stmt) {
+                $stmt->execute();
+                $stmt->close();
+            }
 
-        // TODO: Stored procedure references non-existent definer, disabled for now
-        // $this->mysqli->query("CALL cleanup_expired_tokens()");
+            // Revoke expired remember-me tokens
+            $stmt = $this->mysqli->prepare(
+                "UPDATE remember_tokens SET is_active = 0, revoked_at = NOW() WHERE expires_at < NOW() AND revoked_at IS NULL"
+            );
+            if ($stmt) {
+                $stmt->execute();
+                $stmt->close();
+            }
 
+            // Unlock accounts whose lockout period has expired
+            $stmt = $this->mysqli->prepare(
+                "UPDATE users SET account_locked_until = NULL, failed_login_attempts = 0 WHERE account_locked_until IS NOT NULL AND account_locked_until < NOW()"
+            );
+            if ($stmt) {
+                $stmt->execute();
+                $stmt->close();
+            }
+
+            logDebug('SecurityManager::cleanupExpiredData completed - expired tokens and lockouts cleared');
+        } catch (Throwable $e) {
+            logError('SecurityManager::cleanupExpiredData error: ' . $e->getMessage());
+        }
     }
 
     /**

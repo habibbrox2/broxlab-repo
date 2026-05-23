@@ -44,6 +44,7 @@ const UI = {
   responseFormat: document.getElementById('adminAiResponseFormat'),
   advancedJson: document.getElementById('adminAiAdvancedOptionsJson'),
   fileInput: document.getElementById('adminAiFileInput'),
+  enhanceBtn: document.getElementById('adminAiEnhancePrompt'),
 };
 
 // Configuration constants
@@ -326,7 +327,6 @@ async function loadModels() {
       // Fallback models - prefer free models
       const fallbackModels = provider === 'openrouter'
         ? [
-          { id: 'openrouter/free', name: 'OpenRouter Free', },
           { id: 'meta-llama/llama-3-8b-instruct:free', name: 'Llama 3.8B (Free)', },
           { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash (Free)', },
         ]
@@ -343,8 +343,8 @@ async function loadModels() {
     console.error(t('error_loading_models'), err);
 
     // Always have fallback - use free models
-    UI.model.innerHTML = '<option value="openrouter/free">OpenRouter Free</option><option value="meta-llama/llama-3-8b-instruct:free">Llama 3.8B (Free)</option><option value="google/gemma-2-9b-it:free">Gemma 2.9B (Free)</option>';
-    UI.model.value = 'openrouter/free';
+    UI.model.innerHTML = '<option value="meta-llama/llama-3-8b-instruct:free">Llama 3.8B (Free)</option><option value="google/gemma-2-9b-it:free">Gemma 2.9B (Free)</option>';
+    UI.model.value = 'meta-llama/llama-3-8b-instruct:free';
   }
 }
 
@@ -416,12 +416,199 @@ function updateAssistantText(element, text) {
   }
 }
 
+function getCurrentSelectedText() {
+  const active = document.activeElement;
+  if (active && typeof active.value === 'string' && typeof active.selectionStart === 'number' && typeof active.selectionEnd === 'number') {
+    const selected = active.value.slice(active.selectionStart, active.selectionEnd).trim();
+    if (selected) return selected;
+  }
+
+  const selection = window.getSelection ? String(window.getSelection().toString() || '').trim() : '';
+  return selection;
+}
+
+function getPromptEnhancementContext() {
+  const context = [];
+  const metaContext = window.__BROX_PROMPT_ENHANCE_CONTEXT__;
+
+  if (typeof metaContext === 'string' && metaContext.trim()) {
+    context.push(metaContext.trim());
+  } else if (metaContext && typeof metaContext === 'object') {
+    if (typeof metaContext.filePath === 'string' && metaContext.filePath.trim()) {
+      context.push(`Current file path: ${metaContext.filePath.trim()}`);
+    }
+    if (typeof metaContext.selectedCode === 'string' && metaContext.selectedCode.trim()) {
+      context.push(`Selected code:\n${metaContext.selectedCode.trim()}`);
+    }
+    if (typeof metaContext.note === 'string' && metaContext.note.trim()) {
+      context.push(metaContext.note.trim());
+    }
+  }
+
+  const bodyFilePath =
+    document.body?.dataset?.currentFilePath ||
+    document.body?.dataset?.filePath ||
+    document.body?.dataset?.path ||
+    '';
+  if (bodyFilePath) {
+    context.push(`Current file path: ${bodyFilePath}`);
+  }
+
+  const selectedText = getCurrentSelectedText();
+  if (selectedText) {
+    context.push(`Selected text:\n${selectedText}`);
+  }
+
+  return context.filter(Boolean).join('\n\n').trim();
+}
+
+function normalizeEnhancedPromptText(text) {
+  let value = String(text || '').trim();
+  if (!value) return '';
+
+  value = value.replace(/^```(?:prompt|text)?\s*/i, '').replace(/```$/i, '').trim();
+  value = value.replace(/^(?:enhanced|improved)\s+prompt\s*:\s*/i, '').trim();
+  value = value.replace(/^(?:here(?:'s| is) the improved prompt|here is a better prompt)\s*[:\-]?\s*/i, '').trim();
+  value = value.replace(/^(?:prompt enhancement|rewritten prompt)\s*[:\-]?\s*/i, '').trim();
+  return value;
+}
+
+async function callPromptEnhancer(promptText) {
+  const model = adminPrefs.model || 'meta-llama/llama-3-8b-instruct:free';
+  const enhancementContext = getPromptEnhancementContext();
+
+  const messages = [
+    {
+      role: 'system',
+      content: [
+        'You are an expert prompt enhancer for AI assistants.',
+        'Rewrite the user prompt so it is clearer, more specific, and more useful.',
+        'Preserve the original intent.',
+        'Add relevant context when provided, such as file path or selected code.',
+        'Improve instructions for output format, detail level, tone, or scope when helpful.',
+        'If the prompt is already strong, polish it instead of over-expanding it.',
+        'Return only the improved prompt text. Do not add explanations, commentary, or code fences.',
+      ].join(' '),
+    },
+    {
+      role: 'user',
+      content: [
+        'Original prompt:',
+        promptText.trim(),
+        enhancementContext ? `\nContext:\n${enhancementContext}` : '',
+        '\nReturn a ready-to-send improved prompt.',
+      ].filter(Boolean).join('\n'),
+    },
+  ];
+
+  const payload = {
+    messages,
+    options: {
+      model,
+      temperature: 0.2,
+      maxTokens: 600,
+    },
+    stream: false,
+  };
+
+  const response = await fetch('/api/admin/ai/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    credentials: 'same-origin',
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const rawText = await response.text();
+    let errorDetails = rawText;
+    try {
+      const parsed = JSON.parse(rawText);
+      errorDetails = parsed.error || JSON.stringify(parsed, null, 2);
+    } catch (err) {
+      errorDetails = rawText.trim() || `${response.status} ${response.statusText}`;
+    }
+    throw new Error(`Backend API error: ${errorDetails}`);
+  }
+
+  const data = await response.json();
+  if (!data.success) {
+    throw new Error(data.error || 'Prompt enhancement failed');
+  }
+
+  const enhanced = normalizeEnhancedPromptText(data.content || '');
+  if (!enhanced) {
+    throw new Error('Prompt enhancer returned an empty result');
+  }
+  return enhanced;
+}
+
+async function enhanceCurrentPrompt() {
+  const raw = String(UI.input?.value || '').trim();
+  if (!raw) return;
+
+  const button = UI.enhanceBtn;
+  const original = raw;
+  if (button) {
+    button.disabled = true;
+    button.dataset.originalHtml = button.innerHTML;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enhancing...';
+  }
+
+  try {
+    const enhanced = await callPromptEnhancer(raw);
+    if (UI.input) {
+      UI.input.value = enhanced;
+      UI.input.focus();
+      UI.input.setSelectionRange(enhanced.length, enhanced.length);
+      UI.input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  } catch (err) {
+    console.error('Prompt enhancement failed:', err);
+    window.showAlert?.(
+      err?.message || 'Prompt enhancement failed. Please try again.',
+      'Enhance Prompt',
+      'warning'
+    );
+    if (UI.input && !UI.input.value.trim()) {
+      UI.input.value = original;
+    }
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = button.dataset.originalHtml || '<i class="bi bi-stars"></i> Enhance Prompt';
+    }
+  }
+}
+
 /**
  * Handle user message submission
  */
 async function handleUserMessage() {
-  const text = String(UI.input?.value || '').trim();
-  if (!text) return;
+  const rawText = String(UI.input?.value || '').trim();
+  if (!rawText) return;
+
+  let text = rawText;
+  const shouldEnhance = !rawText.startsWith('/');
+  if (shouldEnhance) {
+    try {
+      if (UI.loading) {
+        UI.loading.classList.remove('d-none');
+      }
+      if (adminThinking) {
+        adminThinking.show().setStep(0).setStatus('Enhancing prompt...');
+      }
+      text = await callPromptEnhancer(rawText);
+      if (UI.input) {
+        UI.input.value = text;
+      }
+    } catch (err) {
+      console.warn('Prompt enhancement skipped:', err);
+      text = rawText;
+    }
+  }
 
   UI.input.value = '';
 
@@ -669,6 +856,7 @@ if (typeof window !== 'undefined') {
 function bindEvents() {
   // Send message on button click
   UI.sendBtn?.addEventListener('click', handleUserMessage);
+  UI.enhanceBtn?.addEventListener('click', enhanceCurrentPrompt);
 
   // Send message on Enter key
   UI.input?.addEventListener('keypress', (e) => {

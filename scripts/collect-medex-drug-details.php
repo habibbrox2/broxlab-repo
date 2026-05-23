@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Batch Collector: Detailed Drug Information for ALL brands listed in medex_herbal_companies.json
  *
@@ -24,6 +25,13 @@
  */
 
 declare(strict_types=1);
+
+// If accessed via web, instruct to use the frontend collector UI instead.
+if (PHP_SAPI !== 'cli') {
+    header('Content-Type: text/html; charset=utf-8');
+    echo "<h1>MedEx Collector (web)</h1><p>This CLI script is deprecated in the web context. Please use the browser-based collector: <a href=\"/medex-collector.html\">/medex-collector.html</a></p>";
+    exit;
+}
 
 $root = dirname(__DIR__);
 require_once __DIR__ . '/scrape-medex-brand-details.php';   // brings in extract_brand_details() etc.
@@ -151,9 +159,11 @@ foreach ($toProcess as $idx => $brandInfo) {
     }
 
     $elapsed = microtime(true) - $startTime;
-    printf("[%s] #%d/%d  %s (%s)\n",
+    printf(
+        "[%s] #%d/%d  %s (%s)\n",
         format_time($elapsed),
-        $globalIdx + 1, $total,
+        $globalIdx + 1,
+        $total,
         $brandInfo['brand_name'],
         $brandInfo['company_name']
     );
@@ -272,7 +282,7 @@ function save_all_company_files(array $resultsByCompany): void
             'name'       => $companyName,
             'slug'       => $slug,
             'file'       => "companies/{$slug}.json",
-            'brand_count'=> count($companyData['brands_details'] ?? []),
+            'brand_count' => count($companyData['brands_details'] ?? []),
         ];
     }
 

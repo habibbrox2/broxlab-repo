@@ -385,7 +385,10 @@ $router->get('/admin/revenue/ads/delete/{id}', ['middleware' => ['auth', 'admin_
         return;
     }
     $id = (int)$id;
-    $mysqli->query("DELETE FROM ad_placements WHERE id=" . $id);
+    $stmt = $mysqli->prepare("DELETE FROM ad_placements WHERE id=?");
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $stmt->close();
     showMessage('Ad placement deleted', 'success');
     redirect('/admin/revenue/ads');
 });
@@ -401,7 +404,11 @@ $router->post('/admin/revenue/ads/toggle/{id}', ['middleware' => ['auth', 'admin
         return;
     }
     $id    = (int)$id;
-    $row   = $mysqli->query("SELECT status FROM ad_placements WHERE id=" . $id)->fetch_assoc();
+    $stmt  = $mysqli->prepare("SELECT status FROM ad_placements WHERE id=?");
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
     if (!$row) {
         showMessage('Ad placement not found', 'danger');
         redirect('/admin/revenue/ads');
@@ -429,7 +436,15 @@ $router->post('/admin/revenue/donations/{id}/confirm', ['middleware' => ['auth',
     $id = (int)$id;
     $note = trim((string)($_POST['note'] ?? ''));
     $adminId = (int)(AuthManager::getCurrentUserId() ?? 0);
-    $mysqli->query("UPDATE donation_payments SET status='completed', confirmed_by={$adminId}, confirmed_at=NOW() WHERE id={$id}" . ($note ? ", note='" . $mysqli->real_escape_string($note) . "'" : ""));
+    if ($note !== '') {
+        $stmt = $mysqli->prepare("UPDATE donation_payments SET status='completed', confirmed_by=?, note=?, confirmed_at=NOW() WHERE id=?");
+        $stmt->bind_param('isi', $adminId, $note, $id);
+    } else {
+        $stmt = $mysqli->prepare("UPDATE donation_payments SET status='completed', confirmed_by=?, confirmed_at=NOW() WHERE id=?");
+        $stmt->bind_param('ii', $adminId, $id);
+    }
+    $stmt->execute();
+    $stmt->close();
     showMessage('Donation marked as confirmed', 'success');
     redirect('/admin/revenue/donations');
 });
@@ -446,7 +461,10 @@ $router->post('/admin/revenue/donations/{id}/reject', ['middleware' => ['auth', 
     }
     $id   = (int)$id;
     $note = trim((string)($_POST['note'] ?? ''));
-    $mysqli->query("UPDATE donation_payments SET status='cancelled', note='" . $mysqli->real_escape_string($note) . "', updated_at=NOW() WHERE id=" . $id);
+    $stmt = $mysqli->prepare("UPDATE donation_payments SET status='cancelled', note=?, updated_at=NOW() WHERE id=?");
+    $stmt->bind_param('si', $note, $id);
+    $stmt->execute();
+    $stmt->close();
     showMessage('Donation cancelled', 'success');
     redirect('/admin/revenue/donations');
 });
@@ -523,7 +541,11 @@ $router->get('/api/ads/{slot_key}', function ($slot_key = '') use ($mysqli, $adM
     }
 
     if (!empty($ad['id'])) {
-        $mysqli->query("UPDATE ad_placements SET impressions=impressions+1 WHERE id=" . (int)$ad['id']);
+        $adId = (int)$ad['id'];
+        $stmt = $mysqli->prepare("UPDATE ad_placements SET impressions=impressions+1 WHERE id=?");
+        $stmt->bind_param('i', $adId);
+        $stmt->execute();
+        $stmt->close();
     }
 
     echo json_encode([
@@ -543,7 +565,10 @@ $router->get('/api/ads/{slot_key}', function ($slot_key = '') use ($mysqli, $adM
 $router->post('/api/ads/{id}/click', function ($id = 0) use ($mysqli) {
     header('Content-Type: application/json; charset=utf-8');
     $id = (int)$id;
-    $mysqli->query("UPDATE ad_placements SET clicks=clicks+1 WHERE id=" . $id);
+    $stmt = $mysqli->prepare("UPDATE ad_placements SET clicks=clicks+1 WHERE id=?");
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $stmt->close();
     echo json_encode(['success' => true]);
     exit;
 });

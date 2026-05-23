@@ -126,6 +126,14 @@
       border-bottom: 1px solid #e9ecef;
       flex-shrink: 0;
     }
+    .ai-preview-header-actions {
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .ai-preview-header-actions .ai-preview-btn {
+      padding: 0.45rem 0.9rem;
+      font-size: 0.88rem;
+      min-width: 108px;
+    }
     .ai-preview-header h3 {
       margin: 0; font-size: 1.15rem; font-weight: 700;
       display: flex; align-items: center; gap: 0.5rem;
@@ -204,6 +212,433 @@
       to { opacity: 1; transform: translateY(0); }
     }
     .ai-preview-body { animation: ai-preview-fade-in 0.3s ease; }
+
+    /* AI Writer Floating Button */
+    .ai-fab {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 9995;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      border: none;
+      box-shadow: 0 4px 20px rgba(102,126,234,0.45);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      opacity: 0;
+      transform: scale(0) translateY(20px);
+      pointer-events: none;
+    }
+    .ai-fab.visible {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      pointer-events: auto;
+    }
+    .ai-fab:hover {
+      transform: scale(1.1) translateY(-3px);
+      box-shadow: 0 8px 30px rgba(102,126,234,0.6);
+    }
+    .ai-fab:active {
+      transform: scale(0.95);
+    }
+    .ai-fab i {
+      font-size: 1.4rem;
+      transition: transform 0.3s ease;
+    }
+    .ai-fab:hover i {
+      transform: rotate(-15deg) scale(1.1);
+    }
+    .ai-fab-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #ff6b6b;
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(255,107,107,0.5);
+      animation: ai-fab-pulse 2s ease-in-out infinite;
+    }
+    @keyframes ai-fab-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+    /* Tooltip */
+    .ai-fab-tooltip {
+      position: absolute;
+      right: 68px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s ease;
+      pointer-events: none;
+    }
+    .ai-fab-tooltip::after {
+      content: '';
+      position: absolute;
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-left: 6px solid rgba(0,0,0,0.85);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+    .ai-fab:hover .ai-fab-tooltip {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* AI Writer Docked Mini Bar */
+    .ai-writer-dock {
+      position: fixed;
+      right: 1.5rem;
+      bottom: 1.5rem;
+      z-index: 9996;
+      display: none;
+      align-items: center;
+      gap: 0.85rem;
+      min-width: 280px;
+      max-width: min(480px, calc(100vw - 3rem));
+      padding: 0.85rem 1rem;
+      border: 1px solid rgba(102,126,234,0.18);
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,255,0.98));
+      box-shadow: 0 18px 45px rgba(17,24,39,0.18);
+      backdrop-filter: blur(12px);
+      transform: translateY(10px) scale(0.98);
+      opacity: 0;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .ai-writer-dock.show {
+      display: flex;
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .ai-writer-dock .dock-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      flex-shrink: 0;
+      box-shadow: 0 10px 20px rgba(102,126,234,0.28);
+    }
+    .ai-writer-dock .dock-copy {
+      min-width: 0;
+      flex: 1;
+    }
+    .ai-writer-dock .dock-title {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ai-writer-dock .dock-status {
+      margin: 0.15rem 0 0;
+      font-size: 0.82rem;
+      color: #6c757d;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ai-writer-dock .dock-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    .ai-writer-dock .dock-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 0.55rem 0.8rem;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+    .ai-writer-dock .dock-btn:hover {
+      transform: translateY(-1px);
+    }
+    .ai-writer-dock .dock-btn-primary {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(102,126,234,0.22);
+    }
+    .ai-writer-dock .dock-btn-secondary {
+      background: #f1f3f5;
+      color: #495057;
+    }
+
+    /* Prefill flash animation */
+    @keyframes prefill-flash {
+      0% { background-color: transparent; box-shadow: none; }
+      15% { background-color: #d4edda; box-shadow: 0 0 0 3px rgba(40,167,69,0.35); }
+      50% { background-color: #d4edda; box-shadow: 0 0 0 3px rgba(40,167,69,0.35); }
+      100% { background-color: transparent; box-shadow: none; }
+    }
+    .prefill-flash {
+      animation: prefill-flash 2s ease-out forwards;
+      border-radius: 4px;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    /* Prefill toast notification */
+    .prefill-toast {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 10000;
+      background: #fff;
+      border: 1px solid #28a745;
+      border-left: 5px solid #28a745;
+      border-radius: 10px;
+      padding: 0.85rem 1.25rem;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #1a1a2e;
+      transform: translateX(120%);
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      max-width: 380px;
+    }
+    .prefill-toast.show {
+      transform: translateX(0);
+    }
+    .prefill-toast i {
+      color: #28a745;
+      font-size: 1.3rem;
+    }
+    .prefill-toast .toast-close {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: #6c757d;
+      cursor: pointer;
+      padding: 0.15rem 0.35rem;
+      font-size: 1.1rem;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .prefill-toast .toast-close:hover {
+      background: #f1f3f5;
+    }
+
+    /* Pexels Image Picker Modal */
+    .pexels-modal {
+      position: fixed; inset: 0; z-index: 9998;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.5rem;
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .pexels-modal.active {
+      opacity: 1; visibility: visible;
+    }
+    .pexels-modal-content {
+      background: #fff; border-radius: 16px;
+      max-width: 800px; width: 100%; max-height: 85vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      transform: scale(0.92) translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .pexels-modal.active .pexels-modal-content {
+      transform: scale(1) translateY(0);
+    }
+    .pexels-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #e9ecef;
+      flex-shrink: 0;
+    }
+    .pexels-modal-header h5 {
+      margin: 0; font-weight: 700;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .pexels-modal-header h5 i { color: #05a081; }
+    .pexels-modal-close {
+      background: none; border: none; font-size: 1.5rem;
+      color: #6c757d; cursor: pointer; padding: 0.25rem;
+      line-height: 1; border-radius: 8px; transition: all 0.2s;
+    }
+    .pexels-modal-close:hover { background: #f1f3f5; color: #1a1a2e; }
+    .pexels-modal-search {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #e9ecef;
+      display: flex; gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    .pexels-modal-search input {
+      flex: 1;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 0.55rem 1rem;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .pexels-modal-search input:focus {
+      border-color: #05a081;
+    }
+    .pexels-modal-search button {
+      padding: 0.55rem 1.25rem;
+      border: none;
+      border-radius: 10px;
+      background: #05a081;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pexels-modal-search button:hover {
+      background: #048069;
+      transform: translateY(-1px);
+    }
+    .pexels-modal-search button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .pexels-modal-body {
+      flex: 1; overflow-y: auto; padding: 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    .pexels-modal-body .pexels-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #6c757d;
+    }
+    .pexels-modal-body .pexels-empty i {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 0.75rem;
+    }
+    .pexels-photo-card {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      border: 3px solid transparent;
+      position: relative;
+    }
+    .pexels-photo-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      border-color: #05a081;
+    }
+    .pexels-photo-card.selected {
+      border-color: #05a081;
+      box-shadow: 0 0 0 3px rgba(5,160,129,0.3);
+    }
+    .pexels-photo-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+    .pexels-photo-card .pexels-photo-info {
+      padding: 0.5rem 0.75rem;
+      background: #fff;
+      font-size: 0.78rem;
+      color: #6c757d;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pexels-photo-card .pexels-photo-info a {
+      color: #05a081;
+      text-decoration: none;
+    }
+    .pexels-photo-card .pexels-loading-overlay {
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,0.85);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; visibility: hidden;
+      transition: all 0.2s;
+    }
+    .pexels-photo-card .pexels-loading-overlay.active {
+      opacity: 1; visibility: visible;
+    }
+    .pexels-modal-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 1.5rem;
+      border-top: 1px solid #e9ecef;
+      flex-shrink: 0;
+      font-size: 0.85rem;
+      color: #6c757d;
+    }
+    .pexels-modal-footer .pexels-credit a {
+      color: #05a081;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .pexels-modal-footer .pexels-credit a:hover {
+      text-decoration: underline;
+    }
+    .pexels-modal-footer button {
+      padding: 0.5rem 1.5rem;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pexels-modal-footer button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .pexels-modal-footer button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+    }
+    .pexels-loading {
+      text-align: center; padding: 3rem 1rem;
+      color: #6c757d;
+      grid-column: 1 / -1;
+    }
+    .pexels-loading .spinner-border { width: 2.5rem; height: 2.5rem; }
+    .pexels-error {
+      text-align: center; padding: 2rem 1rem;
+      color: #dc3545;
+      grid-column: 1 / -1;
+    }
   </style>
 {% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
@@ -302,6 +737,29 @@
                            value="{{ item.slug|default("") }}">
                   </div>
                   <div id="seo-feedback" class="form-helper"></div>
+                </div>
+                <div class="mb-4">
+                  <label for="meta_title" class="modern-form-label">
+                    SEO Title
+                  </label>
+                  <input type="text"
+                         class="modern-input"
+                         id="meta_title"
+                         name="meta_title"
+                         placeholder="Optional SEO title"
+                         value="{{ item.meta_title|default("") }}">
+                  <div class="form-helper">A custom SEO title for search engines and social previews.</div>
+                </div>
+                <div class="mb-4">
+                  <label for="meta_description" class="modern-form-label">
+                    SEO Description
+                  </label>
+                  <textarea class="modern-textarea"
+                            id="meta_description"
+                            name="meta_description"
+                            rows="3"
+                            placeholder="Optional SEO description">{{ item.meta_description|default("") }}</textarea>
+                  <div class="form-helper">A short summary that appears in search results and social previews.</div>
                 </div>
                 <!-- Content -->
                 <div>
@@ -416,66 +874,92 @@
                   {% endif %}
                 </div>
               </div>
-              <!-- AI Writer Card -->
-              <div class="admin-panel-card" id="aiWriterCard">
-                <div class="admin-panel-card-header d-flex align-items-center justify-content-between cursor-pointer"
-                     data-bs-toggle="collapse"
-                     data-bs-target="#aiWriterCollapse"
-                     href="#aiWriterCollapse"
-                     role="button"
-                     aria-expanded="false">
-                  <h5 class="admin-panel-card-header-title mb-0">
-                    <i class="bi bi-magic"></i>
-                    AI Article Writer
-                  </h5>
-                  <i class="bi bi-chevron-down"></i>
-                </div>
-                <div class="collapse" id="aiWriterCollapse">
-                  <div class="admin-panel-card-body">
-                    <div class="mb-3">
-                      <label class="modern-form-label">Topic</label>
-                      <input type="text" class="modern-input" id="aiTopic"
-                             placeholder="e.g., Benefits of AI in Healthcare">
+              <!-- AI Writer Modal -->
+              <div class="modal fade" id="aiWriterModal" tabindex="-1" aria-labelledby="aiWriterModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-centered">
+                  <div class="modal-content border-0 rounded-4 shadow-lg">
+                    <div class="modal-header border-bottom fw-600">
+                      <h5 class="modal-title" id="aiWriterModalLabel">
+                        <i class="bi bi-magic me-2"></i>
+                        AI Article Writer
+                      </h5>
+                      <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="modern-btn-close ai-writer-minimize" id="aiWriterMinimizeBtn" aria-label="Minimize AI Writer" title="Minimize">
+                          <i class="bi bi-dash-lg"></i>
+                        </button>
+                        <button type="button" class="modern-btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
                     </div>
-                    <div class="mb-3">
-                      <label class="modern-form-label">Tone</label>
-                      <select class="modern-select" id="aiTone">
-                        <option value="informative">Informative</option>
-                        <option value="professional">Professional</option>
-                        <option value="conversational">Conversational</option>
-                        <option value="persuasive">Persuasive</option>
-                        <option value="technical">Technical</option>
-                      </select>
+                    <div class="modal-body">
+                      <div class="mb-3">
+                        <label class="modern-form-label">Topic</label>
+                        <input type="text" class="modern-input" id="aiTopic"
+                               placeholder="e.g., Benefits of AI in Healthcare">
+                      </div>
+                      <div class="mb-3">
+                        <label class="modern-form-label">Tone</label>
+                        <select class="modern-select" id="aiTone">
+                          <option value="informative">Informative</option>
+                          <option value="professional">Professional</option>
+                          <option value="conversational">Conversational</option>
+                          <option value="persuasive">Persuasive</option>
+                          <option value="technical">Technical</option>
+                        </select>
+                      </div>
+                      <div class="mb-3">
+                        <label class="modern-form-label">Length</label>
+                        <select class="modern-select" id="aiLength">
+                          <option value="short">Short</option>
+                          <option value="medium" selected>Medium</option>
+                          <option value="long">Long</option>
+                          <option value="detailed">Detailed</option>
+                        </select>
+                      </div>
+                      <div class="mb-3">
+                        <label class="modern-form-label">Language</label>
+                        <select class="modern-select" id="aiLanguage">
+                          <option value="en">English</option>
+                          <option value="bn">Bengali</option>
+                          <option value="hi">Hindi</option>
+                          <option value="ar">Arabic</option>
+                        </select>
+                      </div>
+                      <div class="mb-3">
+                        <label class="modern-form-label">Keywords (optional)</label>
+                        <input type="text" class="modern-input" id="aiKeywords"
+                               placeholder="e.g., statistics, research">
+                      </div>
+                      <div class="mb-2">
+                        <button type="button" class="modern-btn modern-btn-secondary w-100" id="pexelsBtn">
+                          <i class="bi bi-image-fill me-1"></i> Find Image from Pexels
+                        </button>
+                      </div>
+                      <div class="mb-2">
+                        <button type="button" class="modern-btn modern-btn-secondary w-100" id="pixabayBtn">
+                          <i class="bi bi-image-fill me-1"></i> Find Image from Pixabay
+                        </button>
+                      </div>
+                      <div class="mb-3 d-flex align-items-center gap-3">
+                        <div class="form-check form-switch mb-0">
+                          <input class="form-check-input" type="checkbox" id="aiStreamToggle" checked>
+                          <label class="form-check-label small" for="aiStreamToggle">
+                            <i class="bi bi-broadcast me-1"></i>Live Stream
+                          </label>
+                        </div>
+                        <span class="text-muted small">
+                          <i class="bi bi-info-circle me-1"></i>Stream shows real-time output
+                        </span>
+                      </div>
+                      <button class="btn btn-primary w-100" id="aiGenerateBtn">
+                        <i class="bi bi-lightning-fill me-1"></i>Generate with AI
+                      </button>
+                      <div class="d-flex align-items-center gap-2 mt-3 d-none" id="aiStatus">
+                        <span class="spinner-border spinner-border-sm text-primary"></span>
+                        <small class="text-muted" id="aiStatusText">Generating...</small>
+                      </div>
                     </div>
-                    <div class="mb-3">
-                      <label class="modern-form-label">Length</label>
-                      <select class="modern-select" id="aiLength">
-                        <option value="short">Short</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="long">Long</option>
-                        <option value="detailed">Detailed</option>
-                      </select>
-                    </div>
-                    <div class="mb-3">
-                      <label class="modern-form-label">Language</label>
-                      <select class="modern-select" id="aiLanguage">
-                        <option value="en">English</option>
-                        <option value="bn">Bengali</option>
-                        <option value="hi">Hindi</option>
-                        <option value="ar">Arabic</option>
-                      </select>
-                    </div>
-                    <div class="mb-3">
-                      <label class="modern-form-label">Keywords (optional)</label>
-                      <input type="text" class="modern-input" id="aiKeywords"
-                             placeholder="e.g., statistics, research">
-                    </div>
-                    <button class="btn btn-primary w-100" id="aiGenerateBtn">
-                      <i class="bi bi-lightning-fill me-1"></i>Generate with AI
-                    </button>
-                    <div class="d-flex align-items-center gap-2 mt-3 d-none" id="aiStatus">
-                      <span class="spinner-border spinner-border-sm text-primary"></span>
-                      <small class="text-muted" id="aiStatusText">Generating...</small>
+                    <div class="modal-footer border-top">
+                      <button type="button" class="modern-btn modern-btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
                     </div>
                   </div>
                 </div>
@@ -505,6 +989,13 @@
        data-content-type="{{ type }}"
        class="d-none"></div>
 
+  <!-- AI Writer Floating Button -->
+  <button class="ai-fab" id="aiFabBtn" aria-label="Open AI Writer" title="AI Writer">
+    <i class="bi bi-magic"></i>
+    <span class="ai-fab-badge">AI</span>
+    <span class="ai-fab-tooltip">Open AI Writer</span>
+  </button>
+
   <!-- AI Generation Overlay -->
   <div class="ai-gen-overlay" id="aiGenOverlay" role="dialog" aria-modal="true" aria-label="Generating article">
     <div class="ai-gen-card">
@@ -519,32 +1010,93 @@
     </div>
   </div>
 
-  <!-- AI Preview Modal -->
-  <div class="ai-preview-overlay" id="aiPreviewOverlay" role="dialog" aria-modal="true" aria-label="Article preview">
-    <div class="ai-preview-modal">
-      <div class="ai-preview-header">
-        <h3><i class="bi bi-eye-fill"></i> Article Preview</h3>
-        <button type="button" class="ai-preview-close" id="aiPreviewClose" aria-label="Close preview">&times;</button>
+  <!-- Prefill Toast Notification -->
+  <div class="prefill-toast" id="prefillToast">
+    <i class="bi bi-check-circle-fill"></i>
+    <span id="prefillToastText">Fields auto-filled from URL</span>
+    <button class="toast-close" id="prefillToastClose" type="button">&times;</button>
+  </div>
+
+  <!-- AI Writer Docked Mini Bar -->
+  <div class="ai-writer-dock" id="aiWriterDock" aria-live="polite" aria-label="AI Writer minimized controls">
+    <div class="dock-icon">
+      <i class="bi bi-magic"></i>
+    </div>
+    <div class="dock-copy">
+      <p class="dock-title" id="aiWriterDockTitle">AI Writer</p>
+      <p class="dock-status" id="aiWriterDockStatus">Ready to generate your post.</p>
+    </div>
+    <div class="dock-actions">
+      <button type="button" class="dock-btn dock-btn-secondary" id="aiWriterDockStatusBtn">Status</button>
+      <button type="button" class="dock-btn dock-btn-primary" id="aiWriterRestoreBtn">
+        <i class="bi bi-window me-1"></i>Restore
+      </button>
+    </div>
+  </div>
+
+  <!-- Pexels Image Picker Modal -->
+  <div class="pexels-modal" id="pexelsModal" role="dialog" aria-modal="true" aria-label="Search Pexels images">
+    <div class="pexels-modal-content">
+      <div class="pexels-modal-header">
+        <h5><i class="bi bi-image-fill"></i> Search Images from Pexels</h5>
+        <button type="button" class="pexels-modal-close" id="pexelsModalClose">&times;</button>
       </div>
-      <div class="ai-preview-body" id="aiPreviewBody">
-        <div class="ai-preview-title" id="aiPreviewTitle"></div>
-        <div class="ai-preview-content" id="aiPreviewContent"></div>
+      <div class="pexels-modal-search">
+        <input type="text" id="pexelsSearchInput" placeholder="Search for images related to your topic..." value="">
+        <button type="button" id="pexelsSearchBtn"><i class="bi bi-search me-1"></i>Search</button>
       </div>
-      <div class="ai-preview-footer">
-        <span class="ai-preview-stats" id="aiPreviewStats"></span>
-        <button type="button" class="ai-preview-btn ai-preview-btn-outline" id="aiPreviewRegen">
-          <i class="bi bi-arrow-repeat me-1"></i>Regenerate
-        </button>
-        <button type="button" class="ai-preview-btn ai-preview-btn-primary" id="aiPreviewApply">
-          <i class="bi bi-check-lg me-1"></i>Apply to Form
+      <div class="pexels-modal-body" id="pexelsResults">
+        <div class="pexels-empty">
+          <i class="bi bi-image"></i>
+          <p class="fw-semibold mb-1">Search for images</p>
+          <p class="mb-0 small">Enter a search term above to find relevant images from Pexels</p>
+        </div>
+      </div>
+      <div class="pexels-modal-footer">
+        <span class="pexels-credit">
+          Photos from <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a>
+          <span id="pexelsTotalResults" class="ms-2 text-muted"></span>
+        </span>
+        <button type="button" id="pexelsInsertBtn" disabled>
+          <i class="bi bi-download me-1"></i> Insert Selected
         </button>
       </div>
     </div>
   </div>
+
+  <div class="pexels-modal" id="pixabayModal" role="dialog" aria-modal="true" aria-label="Search Pixabay images">
+    <div class="pexels-modal-content">
+      <div class="pexels-modal-header">
+        <h5><i class="bi bi-image-fill"></i> Search Images from Pixabay</h5>
+        <button type="button" class="pexels-modal-close" id="pixabayModalClose">&times;</button>
+      </div>
+      <div class="pexels-modal-search">
+        <input type="text" id="pixabaySearchInput" placeholder="Search for images related to your topic..." value="">
+        <button type="button" id="pixabaySearchBtn"><i class="bi bi-search me-1"></i>Search</button>
+      </div>
+      <div class="pexels-modal-body" id="pixabayResults">
+        <div class="pexels-empty">
+          <i class="bi bi-image"></i>
+          <p class="fw-semibold mb-1">Search for images</p>
+          <p class="mb-0 small">Enter a search term above to find relevant images from Pixabay</p>
+        </div>
+      </div>
+      <div class="pexels-modal-footer">
+        <span class="pexels-credit">
+          Images from <a href="https://pixabay.com" target="_blank" rel="noopener">Pixabay</a>
+          <span id="pixabayTotalResults" class="ms-2 text-muted"></span>
+        </span>
+        <button type="button" id="pixabayInsertBtn" disabled>
+          <i class="bi bi-download me-1"></i> Insert Selected
+        </button>
+      </div>
+    </div>
+  </div>
+
 {% endblock %}
 {% block scripts %}
   {% set rte_version = getRTEVersion() %}
-  <script src="/rtceditor/editor.js?v={{ rte_version }}" defer></script>
+  <script src="/rtceditor/editor.bundle.js?v={{ rte_version }}" defer></script>
   <script>
         document.addEventListener('DOMContentLoaded', function () {
             const form = document.querySelector('form[data-autosave="true"]');
@@ -567,20 +1119,340 @@
 
   <!-- AI Article Writer Stream -->
   <script>
+    // Global helper: escape HTML special characters (used by multiple IIFE blocks)
+    function escapeHtml(str) {
+      var d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
   (function() {
     'use strict';
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const aiModalEl = document.getElementById('aiWriterModal');
+    const aiModal = (aiModalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal)
+      ? new bootstrap.Modal(aiModalEl)
+      : null;
+
+    // Prefill flash indicator helpers
+    function flashField(el, label) {
+      if (!el) return;
+      el.classList.add('prefill-flash');
+      el.style.position = 'relative';
+      setTimeout(function() { el.classList.remove('prefill-flash'); }, 2200);
+    }
+
+    function showPrefillToast(fieldNames) {
+      if (!fieldNames.length) return;
+      var toast = document.getElementById('prefillToast');
+      var text = document.getElementById('prefillToastText');
+      if (!toast || !text) return;
+      text.textContent = '\u2713 Auto-filled: ' + fieldNames.join(', ');
+      toast.classList.add('show');
+      // Auto-dismiss after 5 seconds
+      var timer = setTimeout(function() { toast.classList.remove('show'); }, 5000);
+      // Close button
+      var closeBtn = document.getElementById('prefillToastClose');
+      if (closeBtn) {
+        closeBtn.onclick = function() {
+          clearTimeout(timer);
+          toast.classList.remove('show');
+        };
+      }
+      // Click anywhere on toast to dismiss
+      toast.onclick = function(e) {
+        if (e.target === closeBtn) return;
+        clearTimeout(timer);
+        toast.classList.remove('show');
+      };
+    }
+
+    var aiDock = document.getElementById('aiWriterDock');
+    var aiDockTitle = document.getElementById('aiWriterDockTitle');
+    var aiDockStatus = document.getElementById('aiWriterDockStatus');
+    var aiDockStatusBtn = document.getElementById('aiWriterDockStatusBtn');
+    var aiRestoreBtn = document.getElementById('aiWriterRestoreBtn');
+    var aiMinimizeBtn = document.getElementById('aiWriterMinimizeBtn');
+    var aiWriterShouldDock = false;
+
+    function setDockVisible(visible) {
+      if (!aiDock) return;
+      aiDock.classList.toggle('show', !!visible);
+      aiDock.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    }
+
+    function setDockState(title, status) {
+      if (aiDockTitle) {
+        aiDockTitle.textContent = title || 'AI Writer';
+      }
+      if (aiDockStatus) {
+        aiDockStatus.textContent = status || 'Ready to generate your post.';
+      }
+    }
+
+    function showDockAndHideModal() {
+      aiWriterShouldDock = true;
+      setDockVisible(true);
+      if (aiModalEl && aiModalEl.contains(document.activeElement)) {
+        document.activeElement.blur();
+      }
+      if (aiModal) {
+        aiModal.hide();
+      } else {
+        var aiWriterModal = document.getElementById('aiWriterModal');
+        if (aiWriterModal) {
+          aiWriterModal.classList.remove('show');
+          aiWriterModal.style.display = 'none';
+        }
+      }
+    }
+
+    function restoreDockedWriter() {
+      aiWriterShouldDock = false;
+      setDockVisible(false);
+      if (aiModal) {
+        aiModal.show();
+      } else {
+        var aiWriterModal = document.getElementById('aiWriterModal');
+        if (aiWriterModal) {
+          aiWriterModal.classList.add('show');
+          aiWriterModal.style.display = 'block';
+        }
+      }
+      setTimeout(function() {
+        var topicInput = document.getElementById('aiTopic');
+        if (topicInput) topicInput.focus();
+      }, 250);
+    }
+
+    window.__aiWriterDock = {
+      setState: setDockState,
+      show: function (title, status) {
+        setDockState(title, status);
+        setDockVisible(true);
+      },
+      hide: function () {
+        setDockVisible(false);
+      },
+      setDocked: function (value) {
+        aiWriterShouldDock = !!value;
+      }
+    };
+
+    // URL param prefill for AI Writer
+    (function prefillAIWriterFromURL() {
+      try {
+        function safeDecodeUrlValue(val) {
+          if (!val) return '';
+          var s = String(val);
+          // URLSearchParams already decodes most inputs; this is a best-effort for double-encoded payloads.
+          try { s = decodeURIComponent(s); } catch (_) {}
+          return s;
+        }
+
+        function sanitizePrefillHtml(html) {
+          if (!html) return '';
+          var raw = String(html);
+          try {
+            var doc = new DOMParser().parseFromString('<div>' + raw + '</div>', 'text/html');
+            var root = doc.body && doc.body.firstChild;
+            if (!root) return '';
+
+            var allowed = {
+              'ARTICLE': true,
+              'P': true, 'H1': true, 'H2': true, 'H3': true,
+              'UL': true, 'OL': true, 'LI': true,
+              'STRONG': true, 'EM': true, 'B': true, 'I': true,
+              'BR': true, 'BLOCKQUOTE': true,
+              'A': true,
+              'DIV': true, 'SPAN': true
+            };
+
+            function isSafeUrl(url) {
+              var u = String(url || '').trim();
+              if (!u) return true;
+              if (/^javascript:/i.test(u)) return false;
+              // Allow relative, http(s), mailto, tel.
+              return /^(https?:|mailto:|tel:|\/|#)/i.test(u);
+            }
+
+            function cleanNode(node) {
+              if (!node) return;
+              if (node.nodeType === Node.COMMENT_NODE) {
+                node.remove();
+                return;
+              }
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                var tag = (node.tagName || '').toUpperCase();
+                if (!allowed[tag]) {
+                  // Unwrap: keep the text/children but remove the element itself.
+                  var parent = node.parentNode;
+                  if (parent) {
+                    while (node.firstChild) parent.insertBefore(node.firstChild, node);
+                    parent.removeChild(node);
+                  } else {
+                    node.remove();
+                  }
+                  return;
+                }
+
+                // Strip dangerous attributes.
+                Array.from(node.attributes || []).forEach(function (attr) {
+                  var name = (attr.name || '').toLowerCase();
+                  var value = attr.value || '';
+                  if (name.startsWith('on')) {
+                    node.removeAttribute(attr.name);
+                    return;
+                  }
+                  if (name === 'style') {
+                    node.removeAttribute(attr.name);
+                    return;
+                  }
+                  if ((name === 'href' || name === 'src') && !isSafeUrl(value)) {
+                    node.removeAttribute(attr.name);
+                    return;
+                  }
+                  if (tag !== 'A' && name === 'target') {
+                    node.removeAttribute(attr.name);
+                    return;
+                  }
+                });
+              }
+
+              Array.from(node.childNodes || []).forEach(cleanNode);
+            }
+
+            cleanNode(root);
+            return root.innerHTML || '';
+          } catch (_) {
+            return '';
+          }
+        }
+
+        var params = new URLSearchParams(window.location.search);
+        var topic = safeDecodeUrlValue(params.get('topic') || params.get('q') || '');
+        var tone = params.get('tone') || '';
+        var length = params.get('length') || '';
+        var keywords = safeDecodeUrlValue(params.get('keywords') || '');
+        var lang = params.get('language') || params.get('lang') || '';
+
+        // Direct form field prefill from URL params
+        var urlSlug = params.get('slug') || '';
+        var urlContent = params.get('content') || '';
+        var safeHtmlContent = sanitizePrefillHtml(safeDecodeUrlValue(urlContent));
+
+        var prefilledFields = [];
+
+        if (topic) {
+          var titleInput = document.getElementById('title');
+          if (titleInput && !titleInput.value.trim()) {
+            titleInput.value = topic;
+            flashField(titleInput, 'Title');
+            prefilledFields.push('Title');
+          }
+        }
+        if (urlSlug) {
+          var slugInput = document.getElementById('seo');
+          if (slugInput && !slugInput.value.trim()) {
+            slugInput.value = urlSlug;
+            flashField(slugInput, 'Slug');
+            prefilledFields.push('Slug');
+          }
+        }
+        if (safeHtmlContent) {
+          try {
+            var editor = window.editor_content;
+            var contentFilled = false;
+            if (editor && typeof editor.setContent === 'function') {
+              // Check if editor already has content from the server
+              var existing = '';
+              try { existing = String(editor.getContent() || '').trim(); } catch(_) {}
+              if (!existing) {
+                editor.setContent(safeHtmlContent);
+                contentFilled = true;
+              }
+            } else {
+              var ci = document.getElementById('content-input');
+              if (ci && !ci.value.trim()) {
+                ci.value = safeHtmlContent;
+                contentFilled = true;
+              }
+            }
+            if (contentFilled) {
+              var editorEl = document.querySelector('.modern-rich-editor');
+              if (editorEl) flashField(editorEl, 'Content');
+              prefilledFields.push('Content');
+            }
+          } catch(_) { /* ignore URL content errors */ }
+        }
+
+        if (topic || tone || keywords || lang) {
+          var topicInput = document.getElementById('aiTopic');
+          var toneSelect = document.getElementById('aiTone');
+          var keywordsInput = document.getElementById('aiKeywords');
+          var langSelect = document.getElementById('aiLanguage');
+          if (topic && topicInput) {
+            topicInput.value = topic;
+            flashField(topicInput, 'Topic');
+            if (prefilledFields.indexOf('Title') === -1) prefilledFields.push('Topic');
+          }
+        if (tone && toneSelect) {
+          for (var pfi = 0; pfi < toneSelect.options.length; pfi++) {
+            if (toneSelect.options[pfi].value === tone) { toneSelect.selectedIndex = pfi; break; }
+          }
+        }
+        if (length) {
+          var lengthSelect = document.getElementById('aiLength');
+          if (lengthSelect) {
+            for (var lfi = 0; lfi < lengthSelect.options.length; lfi++) {
+              if (lengthSelect.options[lfi].value === length) {
+                lengthSelect.selectedIndex = lfi;
+                break;
+              }
+            }
+          }
+        }
+        if (keywords && keywordsInput) {
+          keywordsInput.value = keywords;
+          flashField(keywordsInput, 'Keywords');
+            if (prefilledFields.indexOf('Keywords') === -1) prefilledFields.push('Keywords');
+          }
+          if (lang && langSelect) {
+            for (var pfi = 0; pfi < langSelect.options.length; pfi++) {
+              if (langSelect.options[pfi].value === lang) { langSelect.selectedIndex = pfi; break; }
+            }
+          }
+          // Auto-open AI writer modal so the user sees the prefill
+          if (aiModal) {
+            aiModal.show();
+          } else {
+            var aiWriterModal = document.getElementById('aiWriterModal');
+            if (aiWriterModal) {
+              aiWriterModal.classList.add('show');
+              aiWriterModal.style.display = 'block';
+            }
+          }
+        }
+
+        // Show toast if any fields were prefilled
+        if (prefilledFields.length) {
+          // Deduplicate: if Title and Topic were both filled, just show one
+          var displayFields = [];
+          for (var fi = 0; fi < prefilledFields.length; fi++) {
+            var f = prefilledFields[fi];
+            if (displayFields.indexOf(f) === -1) displayFields.push(f);
+          }
+          showPrefillToast(displayFields);
+        }
+      } catch (_) { /* ignore */ }
+    })();
+
     let dismissTimer = null;
     let lastOptions = null;
     let lastHtml = '';
     let lastTitle = '';
-
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
-    }
+    let lastMeta = {};
 
     function convertToHtml(title, content) {
       let html = '';
@@ -615,6 +1487,7 @@
     }
 
     const generateBtn = document.getElementById('aiGenerateBtn');
+    const streamToggle = document.getElementById('aiStreamToggle');
     const statusEl = document.getElementById('aiStatus');
     const statusText = document.getElementById('aiStatusText');
 
@@ -627,26 +1500,66 @@
     const progressBar = document.getElementById('aiGenProgressBar');
     const charsDisplay = document.getElementById('aiGenChars');
 
-    // Preview modal elements
-    const previewOverlay = document.getElementById('aiPreviewOverlay');
-    const previewTitle = document.getElementById('aiPreviewTitle');
-    const previewContent = document.getElementById('aiPreviewContent');
-    const previewStats = document.getElementById('aiPreviewStats');
-    const previewClose = document.getElementById('aiPreviewClose');
-    const previewApply = document.getElementById('aiPreviewApply');
-    const previewRegen = document.getElementById('aiPreviewRegen');
-
     // Form submit elements
     const form = document.querySelector('form[data-autosave="true"]');
     const submitBtn = form?.querySelector('button[type="submit"]');
 
     if (!generateBtn) return;
 
+    function getDockTitle() {
+      var topicValue = document.getElementById('aiTopic')?.value.trim() || '';
+      if (topicValue) return topicValue;
+      if (lastTitle) return lastTitle;
+      return 'AI Writer';
+    }
+
+    function syncDockStatus(status) {
+      if (window.__aiWriterDock && typeof window.__aiWriterDock.setState === 'function') {
+        window.__aiWriterDock.setState(getDockTitle(), status);
+      }
+    }
+
+    if (aiMinimizeBtn) {
+      aiMinimizeBtn.addEventListener('click', function () {
+        syncDockStatus(statusText.textContent || 'Minimized');
+        showDockAndHideModal();
+      });
+    }
+    if (aiRestoreBtn) {
+      aiRestoreBtn.addEventListener('click', function () {
+        restoreDockedWriter();
+        syncDockStatus(statusText.textContent || 'Ready');
+      });
+    }
+    if (aiDockStatusBtn) {
+      aiDockStatusBtn.addEventListener('click', function () {
+        restoreDockedWriter();
+      });
+    }
+    if (aiModalEl) {
+      aiModalEl.addEventListener('shown.bs.modal', function () {
+        aiWriterShouldDock = false;
+        setDockVisible(false);
+      });
+      aiModalEl.addEventListener('hidden.bs.modal', function () {
+        if (aiWriterShouldDock) {
+          setDockVisible(true);
+          syncDockStatus(statusText.textContent || 'Minimized');
+          if (aiRestoreBtn) {
+            setTimeout(function() { aiRestoreBtn.focus(); }, 0);
+          }
+        } else {
+          setDockVisible(false);
+        }
+      });
+    }
+
     // --- Helper functions ---
     function showProgress(pct, text, title) {
       progressBar.style.width = pct + '%';
       if (text) overlayText.textContent = text;
       if (title) overlayTitle.textContent = title;
+      syncDockStatus(text || title || 'Working...');
     }
 
     function showOverlay() {
@@ -659,8 +1572,8 @@
       progressBar.style.width = '5%';
       charsDisplay.textContent = '';
       overlay.classList.add('active');
-      previewOverlay.classList.remove('active');
       if (submitBtn) submitBtn.disabled = true;
+      syncDockStatus('Starting up...');
     }
 
     function hideOverlay() {
@@ -676,78 +1589,383 @@
         progressBar.style.width = '100%';
         overlayTitle.textContent = 'Complete!';
         overlayText.textContent = message || 'Article generated successfully';
+        syncDockStatus(message || 'Article generated successfully');
         dismissTimer = setTimeout(function() {
           hideOverlay();
-          showPreview();
         }, 800);
       } else {
         spinner.className = 'ai-gen-spinner error';
         progressBar.className = 'ai-gen-progress-bar error';
         overlayTitle.textContent = 'Generation Failed';
         overlayText.textContent = message || 'An error occurred';
+        syncDockStatus(message || 'An error occurred');
         dismissTimer = setTimeout(function() {
           hideOverlay();
         }, 3000);
       }
     }
 
-    function showPreview() {
-      if (!lastTitle && !lastHtml) return;
-      previewTitle.textContent = lastTitle || 'Untitled';
-      previewContent.innerHTML = lastHtml;
-      const wordCount = lastHtml.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length;
-      const charCount = lastHtml.replace(/<[^>]+>/g, '').length;
-      previewStats.textContent = wordCount + ' words \u00b7 ' + charCount + ' characters';
-      previewOverlay.classList.add('active');
+    function setFormMetaField(id, value) {
+      var element = document.getElementById(id);
+      if (!element) return;
+      element.value = String(value || '');
     }
 
-    function hidePreview() {
-      previewOverlay.classList.remove('active');
+    function getFieldValue(id) {
+      var element = document.getElementById(id);
+      if (!element) return '';
+      return String(element.value || '').trim();
     }
 
-    function applyToForm() {
-      // Fill title
-      if (lastTitle) {
-        document.getElementById('title').value = lastTitle;
-      }
-      // Fill editor
-      if (lastHtml) {
-        const editor = window.editor_content;
-        if (editor && typeof editor.setContent === 'function') {
-          editor.setContent(lastHtml);
-        } else {
-          const ci = document.getElementById('content-input');
-          if (ci) ci.value = lastHtml;
+    function setFieldIfEmpty(id, value) {
+      var element = document.getElementById(id);
+      if (!element) return false;
+      var current = String(element.value || '').trim();
+      var next = String(value || '').trim();
+      if (!next || current) return false;
+      element.value = next;
+      return true;
+    }
+
+    function setSelectIfEmpty(id, value) {
+      var element = document.getElementById(id);
+      var next = String(value || '').trim();
+      if (!element || !next || String(element.value || '').trim()) return false;
+      for (var i = 0; i < element.options.length; i++) {
+        var option = element.options[i];
+        if (option.value === next || option.textContent.trim().toLowerCase() === next.toLowerCase()) {
+          element.selectedIndex = i;
+          return true;
         }
       }
-      hidePreview();
+      return false;
     }
 
-    // --- Preview modal event handlers ---
-    previewClose.addEventListener('click', hidePreview);
-    previewApply.addEventListener('click', function() {
-      applyToForm();
-    });
-    previewRegen.addEventListener('click', function() {
-      hidePreview();
-      if (lastOptions) {
-        startGeneration(lastOptions)["catch"](function(err) {
-          console.error('Regeneration failed:', err);
+    function setReaderIndexingIfEmpty(value) {
+      var select = document.querySelector('select[name="reader_indexing"]');
+      var next = normalizeReaderIndexing(value);
+      if (!select || !next) return false;
+      if (String(select.value || '').trim()) return false;
+      for (var i = 0; i < select.options.length; i++) {
+        if (select.options[i].value === next) {
+          select.selectedIndex = i;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function ensureHiddenCategoryInput(name) {
+      if (!name) return;
+      var existingInputs = document.querySelectorAll('input[name="new_categories[]"]');
+      for (var i = 0; i < existingInputs.length; i++) {
+        if (existingInputs[i].value === name) {
+          return;
+        }
+      }
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'new_categories[]';
+      input.value = name;
+      document.querySelector('form[data-autosave="true"]')?.appendChild(input);
+    }
+
+    function setTagValues(tagNames) {
+      if (!Array.isArray(tagNames) || !tagNames.length) return;
+      var select = document.getElementById('tags');
+      if (!select) return;
+      tagNames.forEach(function(tagName) {
+        if (!tagName) return;
+        var normalized = String(tagName).trim();
+        if (!normalized) return;
+        var matched = false;
+        Array.from(select.options).forEach(function(option) {
+          if (option.textContent.trim().toLowerCase() === normalized.toLowerCase() || option.value === normalized) {
+            option.selected = true;
+            matched = true;
+          }
         });
-      }
-    });
+        if (!matched) {
+          var option = document.createElement('option');
+          option.value = normalized;
+          option.textContent = normalized;
+          option.selected = true;
+          select.appendChild(option);
+        }
+      });
+    }
 
-    // Close preview on overlay click (click outside modal)
-    previewOverlay.addEventListener('click', function(e) {
-      if (e.target === previewOverlay) hidePreview();
-    });
+    function setCategoryValues(categoryNames) {
+      if (!Array.isArray(categoryNames) || !categoryNames.length) return;
+      var select = document.getElementById('category_ids_select');
+      if (!select) return;
+      var nameMap = {};
+      Array.from(select.options).forEach(function(option) {
+        nameMap[option.textContent.trim().toLowerCase()] = option.value;
+      });
+      categoryNames.forEach(function(categoryName) {
+        if (!categoryName) return;
+        var normalized = String(categoryName).trim();
+        if (!normalized) return;
+        var lower = normalized.toLowerCase();
+        if (nameMap[lower]) {
+          var option = select.querySelector('option[value="' + nameMap[lower] + '"]');
+          if (option) option.selected = true;
+        } else {
+          ensureHiddenCategoryInput(normalized);
+        }
+      });
+    }
 
-    // Keyboard: Escape to close preview
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape' && previewOverlay.classList.contains('active')) {
-        hidePreview();
+    function maybeSetContent(html) {
+      if (!html) return false;
+      var editor = window.editor_content;
+      if (editor && typeof editor.setContent === 'function') {
+        var existing = '';
+        try { existing = String(editor.getContent() || '').trim(); } catch(_) {}
+        if (!existing) {
+          editor.setContent(html);
+          return true;
+        }
+        return false;
       }
-    });
+      var ci = document.getElementById('content-input');
+      if (ci && !String(ci.value || '').trim()) {
+        ci.value = html;
+        return true;
+      }
+      return false;
+    }
+
+    function getHtmlSegments(html) {
+      var parser = new DOMParser();
+      var doc = parser.parseFromString('<div>' + html + '</div>', 'text/html');
+      var wrapper = doc.body.firstChild;
+      var segments = [];
+      if (!wrapper) return [html];
+      wrapper.childNodes.forEach(function(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          segments.push(node.textContent || '');
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          segments.push(node.outerHTML);
+        }
+      });
+      return segments.length ? segments : [html];
+    }
+
+    async function typeContentIntoEditor(html) {
+      if (!html) return;
+      var editor = window.editor_content;
+      var segments = getHtmlSegments(html);
+      var current = '';
+      if (editor && typeof editor.setContent === 'function') {
+        for (var i = 0; i < segments.length; i++) {
+          current += segments[i];
+          editor.setContent(current);
+          await new Promise(function(resolve) { setTimeout(resolve, 35); });
+        }
+        editor.setContent(html);
+      } else {
+        var ci = document.getElementById('content-input');
+        if (ci) {
+          ci.value = html;
+        }
+      }
+    }
+
+    function slugifyText(value) {
+      return String(value || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-\u0980-\u09FF]+/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    async function applyToForm() {
+      var appliedAny = false;
+      var generatedTitle = lastMeta.title || lastTitle;
+      if (generatedTitle) {
+        appliedAny = setFieldIfEmpty('title', generatedTitle) || appliedAny;
+      }
+      if (lastMeta.slug) {
+        appliedAny = setFieldIfEmpty('seo', lastMeta.slug) || appliedAny;
+      } else if (generatedTitle) {
+        // Auto-generate slug from title if no slug was provided
+        var autoSlug = slugifyText(generatedTitle);
+        var slugInput = document.getElementById('seo');
+        if (autoSlug && slugInput && !slugInput.value.trim()) {
+          slugInput.value = autoSlug;
+          appliedAny = true;
+        }
+      }
+      if (lastMeta.meta_title) {
+        appliedAny = setFieldIfEmpty('meta_title', lastMeta.meta_title) || appliedAny;
+      }
+      if (lastMeta.meta_description) {
+        appliedAny = setFieldIfEmpty('meta_description', lastMeta.meta_description) || appliedAny;
+      }
+      if (lastMeta.tags && lastMeta.tags.length) {
+        appliedAny = true;
+        setTagValues(lastMeta.tags);
+      }
+      if (lastMeta.categories && lastMeta.categories.length) {
+        appliedAny = true;
+        setCategoryValues(lastMeta.categories);
+      }
+      if (lastMeta.reader_indexing) {
+        appliedAny = setReaderIndexingIfEmpty(lastMeta.reader_indexing) || appliedAny;
+      }
+      if (lastHtml) {
+        appliedAny = (await maybeSetContent(lastHtml)) || appliedAny;
+      }
+      if (!appliedAny && generatedTitle) {
+        // Last-resort mirror the generated title into the dock when form fields were already filled.
+        if (window.__aiWriterDock && typeof window.__aiWriterDock.setState === 'function') {
+          window.__aiWriterDock.setState(generatedTitle, 'Generated content is ready to review.');
+        }
+      }
+    }
+
+    // --- Streaming support ---
+    async function streamGeneration(options) {
+      generateBtn.disabled = true;
+      generateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Streaming...';
+      statusEl.classList.remove('d-none');
+      statusText.textContent = 'Streaming AI response...';
+
+      var fullHtml = '';
+      var title= '';
+      var meta = {};
+      var charCount = 0;
+
+      try {
+        showOverlay();
+        showProgress(10, 'Starting stream...', 'Live Stream');
+
+        var messages = [
+          {
+            role: 'system',
+            content: 'You are a professional article writer. Generate a well-structured, SEO-optimized article. Include metadata for slug, SEO title, SEO description, tags, categories, and reader indexing when available. Return only the article and metadata. Do not include any intro sentence, apology, or commentary. First provide a compelling title on a line starting with "TITLE:", then the full article body with proper headings and paragraphs. Use markdown formatting.'
+          },
+          {
+            role: 'user',
+            content: buildUserPrompt(options)
+          }
+        ];
+
+        var resp = await fetch('/api/admin/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+          body: JSON.stringify({
+            messages: messages,
+            stream: true,
+            tools: []
+          })
+        });
+
+        if (!resp.ok) {
+          var errData = {};
+          try {
+            errData = await resp.json();
+          } catch (_) {}
+          throw new Error(errData.error || 'HTTP ' + resp.status);
+        }
+
+        // Read the stream
+        var reader = resp.body.getReader();
+        var decoder = new TextDecoder();
+        var buffer = '';
+
+        showProgress(25, 'Receiving content...', 'Live Stream');
+
+        while (true) {
+          var result = await reader.read();
+          if (result.done) break;
+
+          buffer += decoder.decode(result.value, { stream: true });
+          var lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (var si = 0; si < lines.length; si++) {
+            var line = lines[si].trim();
+            if (!line || line === 'data: [DONE]') continue;
+            if (line.startsWith('data: ')) {
+              try {
+                var parsed = JSON.parse(line.slice(6));
+                var content = parsed.content || parsed.choices?.[0]?.delta?.content || '';
+                if (content) {
+                  fullHtml += content;
+                  charCount = fullHtml.length;
+                  showProgress(Math.min(85, 25 + (charCount / 100)), charCount + ' chars received', 'Live Stream');
+                  
+                  // Live-update overlay text with partial content
+                  overlayText.innerHTML = '<small class="text-muted d-block text-start" style="max-height:80px;overflow-y:auto;font-size:0.82rem;">'
+                    + escapeHtml(fullHtml.slice(-300))
+                    + '</small>';
+                  if (charsDisplay) charsDisplay.textContent = charCount + ' characters received';
+                }
+              } catch (_) { /* skip malformed SSE line */ }
+            }
+          }
+        }
+
+        // Process remaining buffer
+        if (buffer.trim() && buffer.startsWith('data: ')) {
+          try {
+            var parsed = JSON.parse(buffer.slice(6));
+            var content = parsed.content || parsed.choices?.[0]?.delta?.content || '';
+            if (content) fullHtml += content;
+          } catch (_) {}
+        }
+
+        showProgress(80, 'Processing ' + fullHtml.length + ' chars...', 'Live Stream');
+
+        // Parse the full streamed text
+        var rawText = fullHtml;
+        var parsed = parseArticleResponse(rawText);
+        title = parsed.title;
+        lastHtml = parsed.content ? convertToHtml(parsed.title, parsed.content) : rawText;
+        lastMeta = parsed.metadata || {};
+        lastTitle = title;
+
+        if (!lastHtml) {
+          lastHtml = rawText;
+        }
+
+        // Apply results directly to form
+        showProgress(90, 'Applying to form...', 'Finalizing');
+        try {
+          await applyToForm();
+          // Show a brief flash indicator on the AI writer card
+          var statusFlash = document.getElementById('aiStatus');
+          if (statusFlash) {
+            statusFlash.classList.remove('d-none', 'd-flex');
+            statusFlash.className = 'd-flex align-items-center gap-2 mt-3';
+            statusFlash.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i></span><small class="text-success fw-semibold">\u2713 Applied \u2014 fields updated with AI content</small>';
+            setTimeout(function() {
+              statusFlash.classList.add('d-none');
+            }, 5000);
+          }
+        } catch (applyErr) {
+          console.error('Auto-apply after stream failed:', applyErr);
+        }
+
+      } catch (err) {
+        showCompletion(false, err.message || 'Stream error');
+        resetBtn();
+        return;
+      }
+
+      resetBtn();
+showCompletion(true, 'Article streamed successfully! The form has been updated.');
+
+      function resetBtn() {
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Generate with AI';
+      }
+    }
 
     // --- Prompt building ---
     function buildUserPrompt(options) {
@@ -762,35 +1980,341 @@
       if (options.keywords) {
         prompt += ' Include and emphasize these keywords: ' + options.keywords + '.';
       }
-      prompt += '\n\nIMPORTANT: First provide a compelling article title on a line starting with "TITLE:", then provide the full article body with proper sections, paragraphs, and headings (using markdown ## for subsections).';
+      prompt += '\n\nReturn only the article content and metadata. Do not add any intro sentence such as "I\'ll write this article for you" or any commentary.\nUse a clear title, well-structured sections, and include metadata in one of these formats: a JSON block or labeled lines. Use these labels if possible:\nTITLE:, SLUG:, META_TITLE:, META_DESCRIPTION:, TAGS:, CATEGORIES:, READER_INDEXING:.\n\nSet READER_INDEXING to one of: default, noindex, or nofollow.\nThe article body must be separate from metadata and use markdown headings and paragraphs.';
       return prompt;
     }
 
+    function cleanRawArticleResponse(text) {
+      if (!text) return '';
+      text = String(text).replace(/\r\n/g, '\n');
+      text = text.replace(/<tool_call[\s\S]*?<\/tool_call>/gi, '');
+      text = text.replace(/<parameter[\s\S]*?<\/parameter>/gi, '');
+      text = text.replace(/^.*tool_call.*$/gmi, '');
+      text = text.replace(/^.*<parameter.*$/gmi, '');
+      text = text.replace(/^.*<\/parameter>.*$/gmi, '');
+      text = text.replace(/(?:\n\s*){3,}/g, '\n\n');
+      return text.trim();
+    }
+
+    function parseJsonMetadata(text) {
+      if (!text) return null;
+      var fencedMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+      var candidate = fencedMatch ? fencedMatch[1] : (text.match(/\{[\s\S]*\}/) || [null])[0];
+      if (!candidate) return null;
+      try {
+        return JSON.parse(candidate);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function stripJsonMetadataBlock(text) {
+      if (!text) return text;
+      var fencedMatch = text.match(/```(?:json)?\s*[\s\S]*?```/i);
+      if (fencedMatch) {
+        return text.replace(fencedMatch[0], '');
+      }
+      var rawObjectMatch = text.match(/\{[\s\S]*\}/);
+      if (rawObjectMatch) {
+        return text.replace(rawObjectMatch[0], '');
+      }
+      return text;
+    }
+
+    function parseCommaSeparated(value) {
+      return String(value || '')
+        .split(/[;,]/)
+        .map(function(item) {
+          return item.trim();
+        })
+        .filter(Boolean);
+    }
+
+    function sanitizeGeneratedTitle(value) {
+      var title = String(value || '')
+        .replace(/^[\s"'“”'`]+|[\s"'“”'`]+$/g, '')
+        .trim();
+      if (!title) return '';
+      if (isBoilerplateLine(title)) return '';
+      if (/^(?:#{1,6}\s*)?metadata[:\s]*$/i.test(title)) return '';
+      return title;
+    }
+
+    function normalizeReaderIndexing(value) {
+      var normalized = String(value || '').trim().toLowerCase();
+      if (normalized === 'default' || normalized === 'index' || normalized === 'follow' || normalized === '') {
+        return '';
+      }
+      if (normalized === 'noindex' || normalized === 'nofollow') {
+        return normalized;
+      }
+      return '';
+    }
+
+    function isBoilerplateLine(line) {
+      var normalized = String(line || '').trim().toLowerCase();
+      if (!normalized) return true;
+      return (
+        normalized.startsWith("i'll write this article for you") ||
+        normalized.startsWith('i will write this article for you') ||
+        normalized.startsWith("here's the content with metadata") ||
+        normalized.startsWith('here is the content with metadata') ||
+        normalized.startsWith("here's an article") ||
+        normalized.startsWith('here is an article') ||
+        normalized.startsWith('below is the article') ||
+        normalized.startsWith('sure,') ||
+        normalized.startsWith('of course,') ||
+        normalized.startsWith('absolutely,') ||
+        normalized.startsWith('certainly,')
+      );
+    }
+
+    function cleanArticleBodyText(text) {
+      var source = cleanRawArticleResponse(String(text || ''));
+      if (!source) return '';
+
+      var lines = source.split('\n');
+      var bodyLines = [];
+      var skipBlock = false;
+      var inMetadataSection = false;
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line) {
+          if (bodyLines.length) bodyLines.push('');
+          continue;
+        }
+        if (/^```/.test(line)) {
+          skipBlock = !skipBlock;
+          continue;
+        }
+        if (skipBlock) continue;
+        if (/^<tool_call\b/i.test(line) || /^<\/tool_call>/i.test(line) || /^<parameter\b/i.test(line) || /^<\/parameter>/i.test(line)) {
+          continue;
+        }
+        if (isBoilerplateLine(line)) {
+          continue;
+        }
+
+        var metaCheck = applyMetadataLine(line, {
+          title: '',
+          slug: '',
+          meta_title: '',
+          meta_description: '',
+          tags: [],
+          categories: [],
+          reader_indexing: ''
+        });
+        if (metaCheck.matched) {
+          if (metaCheck.metadataMode) {
+            inMetadataSection = true;
+          }
+          continue;
+        }
+        if (inMetadataSection) {
+          continue;
+        }
+        if (/^TITLE:\s*/i.test(line)) {
+          continue;
+        }
+
+        bodyLines.push(line);
+      }
+
+      return bodyLines.join('\n').trim();
+    }
+
+    function applyMetadataLine(line, metadata) {
+      var raw = String(line || '').trim();
+      if (!raw) return { matched: false, metadataMode: false };
+
+      var labelMatch = raw.match(/^\s*(?:[-*]|\u2022)\s*(?:#{1,6}\s*)?(?:\*\*)?([A-Za-z][A-Za-z0-9 _-]*?)(?:\*\*)?\s*:\s*(.*)$/);
+      if (!labelMatch) {
+        if (/^(?:#{1,6}\s*)?metadata[:\s]*$/i.test(raw)) {
+          return { matched: true, metadataMode: true };
+        }
+        return { matched: false, metadataMode: false };
+      }
+
+      var key = labelMatch[1].trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+      var value = String(labelMatch[2] || '').trim();
+
+      if (key === 'metadata') {
+        return { matched: true, metadataMode: true };
+      }
+      if (key === 'title' || key === 'headline') {
+        metadata.title = sanitizeGeneratedTitle(value);
+        return { matched: true, metadataMode: false };
+      }
+      if (key === 'slug' || key === 'url slug') {
+        metadata.slug = slugifyText(value);
+        return { matched: true, metadataMode: false };
+      }
+      if (key === 'meta title' || key === 'seo title') {
+        metadata.meta_title = value;
+        return { matched: true, metadataMode: false };
+      }
+      if (key === 'meta description' || key === 'seo description' || key === 'description') {
+        metadata.meta_description = value;
+        return { matched: true, metadataMode: false };
+      }
+      if (key === 'tags') {
+        metadata.tags = parseCommaSeparated(value);
+        return { matched: true, metadataMode: false };
+      }
+      if (key === 'categories' || key === 'category') {
+        metadata.categories = parseCommaSeparated(value);
+        return { matched: true, metadataMode: false };
+      }
+      if (key === 'reader indexing' || key === 'seo indexing' || key === 'indexing') {
+        metadata.reader_indexing = normalizeReaderIndexing(value);
+        return { matched: true, metadataMode: false };
+      }
+
+      return { matched: false, metadataMode: false };
+    }
+
+
     function parseArticleResponse(text) {
+      var rawText = String(text || '');
+      var metadata = {
+        title: '',
+        slug: '',
+        meta_title: '',
+        meta_description: '',
+        tags: [],
+        categories: [],
+        reader_indexing: ''
+      };
       var title = '';
       var content = '';
-      var lines = text.split('\n');
-      var titleFound = false;
-      var contentLines = [];
-      for (var i = 0; i < lines.length; i++) {
-        var line = lines[i];
-        if (line.toUpperCase().startsWith('TITLE:')) {
-          title = line.substring(6).trim();
-          titleFound = true;
-        } else if (titleFound) {
-          contentLines.push(line);
-        } else {
-          contentLines.push(line);
-        }
+
+      var jsonSource = parseJsonMetadata(rawText);
+      if (jsonSource && typeof jsonSource === 'object') {
+        metadata.title = sanitizeGeneratedTitle(jsonSource.title || jsonSource.headline || '');
+        metadata.slug = String(jsonSource.slug || '').trim() || slugifyText(metadata.title);
+        metadata.meta_title = String(jsonSource.meta_title || jsonSource.seo_title || '').trim();
+        metadata.meta_description = String(jsonSource.meta_description || jsonSource.description || '').trim();
+        metadata.tags = Array.isArray(jsonSource.tags) ? jsonSource.tags.map(String).map(function(t){return t.trim();}).filter(Boolean) : parseCommaSeparated(jsonSource.tags || '');
+        metadata.categories = Array.isArray(jsonSource.categories) ? jsonSource.categories.map(String).map(function(c){return c.trim();}).filter(Boolean) : parseCommaSeparated(jsonSource.categories || '');
+        metadata.reader_indexing = normalizeReaderIndexing(jsonSource.reader_indexing || jsonSource.seo_indexing || jsonSource.indexing || '');
+        content = cleanArticleBodyText(jsonSource.content || jsonSource.body || jsonSource.article || '');
+        title = metadata.title || title;
       }
+
+      rawText = stripJsonMetadataBlock(content || rawText);
+      rawText = cleanRawArticleResponse(rawText);
+      if (typeof console !== 'undefined' && typeof console.debug === 'function') {
+        console.debug('AI parser cleaned response snippet:', rawText.slice(0, 400));
+      }
+      var lines = rawText.split('\n');
+      var contentLines = [];
+      var skipBlock = false;
+      var foundTitleLine = false;
+      var inMetadataSection = false;
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line) {
+          if (foundTitleLine || contentLines.length) contentLines.push('');
+          continue;
+        }
+        if (/^```/.test(line)) {
+          skipBlock = !skipBlock;
+          continue;
+        }
+        if (skipBlock) continue;
+        if (/^<tool_call\b/i.test(line) || /^<\/tool_call>/i.test(line) || /^<parameter\b/i.test(line) || /^<\/parameter>/i.test(line)) {
+          continue;
+        }
+
+        if (isBoilerplateLine(line)) {
+          continue;
+        }
+
+        var metaResult = applyMetadataLine(line, metadata);
+        if (metaResult.matched) {
+          if (metaResult.metadataMode) {
+            inMetadataSection = true;
+          }
+          continue;
+        }
+        if (inMetadataSection) {
+          continue;
+        }
+
+        var upper = line.toUpperCase();
+        if (upper.startsWith('TITLE:')) {
+          metadata.title = line.substring(6).trim();
+          title = metadata.title;
+          foundTitleLine = true;
+          continue;
+        }
+        if (upper.startsWith('SLUG:')) {
+          metadata.slug = slugifyText(line.substring(5).trim());
+          continue;
+        }
+        if (upper.startsWith('META_TITLE:')) {
+          metadata.meta_title = line.substring(11).trim();
+          continue;
+        }
+        if (upper.startsWith('META_DESCRIPTION:')) {
+          metadata.meta_description = line.substring(17).trim();
+          continue;
+        }
+        if (upper.startsWith('TAGS:')) {
+          metadata.tags = parseCommaSeparated(line.substring(5));
+          continue;
+        }
+        if (upper.startsWith('CATEGORIES:')) {
+          metadata.categories = parseCommaSeparated(line.substring(11));
+          continue;
+        }
+        if (upper.startsWith('READER_INDEXING:') || upper.startsWith('SEO_INDEXING:') || upper.startsWith('INDEXING:')) {
+          metadata.reader_indexing = normalizeReaderIndexing(line.substring(line.indexOf(':') + 1).trim());
+          continue;
+        }
+
+        if (!title && /^#{1,6}\s+/.test(line)) {
+          title = line.replace(/^#{1,6}\s+/, '').trim();
+          if (!metadata.title) {
+            metadata.title = title;
+          }
+          foundTitleLine = true;
+          continue;
+        }
+
+        contentLines.push(line);
+      }
+
       if (!title && contentLines.length > 0) {
         title = contentLines[0].replace(/^#+\s*/, '').trim();
+        if (!metadata.title) {
+          metadata.title = title;
+        }
         if (contentLines.length > 1) {
           contentLines = contentLines.slice(1);
         }
       }
-      content = contentLines.join('\n').trim();
-      return { title: title, content: content };
+      if (!content) {
+        content = contentLines.join('\n').trim();
+      }
+      if (!metadata.slug && metadata.title) {
+        metadata.slug = slugifyText(metadata.title);
+      }
+      if (!metadata.title && metadata.meta_title) {
+        metadata.title = metadata.meta_title;
+      }
+      if (!title && metadata.title) {
+        title = metadata.title;
+      }
+      metadata.reader_indexing = normalizeReaderIndexing(metadata.reader_indexing);
+
+      return {
+        title: String(title || '').trim(),
+        content: String(content || '').trim(),
+        metadata: metadata
+      };
     }
 
     // --- Generation ---
@@ -799,6 +2323,7 @@
       generateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generating...';
       statusEl.classList.remove('d-none');
       statusText.textContent = 'Starting generation...';
+      syncDockStatus('Starting generation...');
 
       var fullTitle = '';
       var fullContent = '';
@@ -810,7 +2335,7 @@
         var messages = [
           {
             role: 'system',
-            content: 'You are a professional article writer. Generate a well-structured, SEO-optimized article. First provide a compelling title on a line starting with "TITLE:", then the full article body with proper headings and paragraphs. Use markdown formatting.'
+            content: 'You are a professional article writer. Generate a well-structured, SEO-optimized article. Include metadata for slug, SEO title, SEO description, tags, categories, and reader indexing when available. Return only the article and metadata. Do not include any intro sentence, apology, or commentary. First provide a compelling title on a line starting with "TITLE:", then the full article body with proper headings and paragraphs. Use markdown formatting.'
           },
           {
             role: 'user',
@@ -823,7 +2348,8 @@
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
           body: JSON.stringify({
             messages: messages,
-            stream: false
+            stream: false,
+            tools: []
           })
         });
 
@@ -832,15 +2358,26 @@
         if (data.success && data.content) {
           showProgress(70, 'Processing AI response...', 'Generating Article');
           statusText.textContent = 'Processing response...';
+          syncDockStatus('Processing response...');
 
-          var parsed = parseArticleResponse(data.content);
+          var rawText = typeof data.content === 'string' ? data.content : JSON.stringify(data.content);
+          var parsed = parseArticleResponse(rawText);
           fullTitle = parsed.title;
           fullContent = parsed.content;
+          lastMeta = parsed.metadata || {};
 
-          showProgress(85, 'Article received (' + fullContent.length + ' chars)', 'Generating Article');
-          if (charsDisplay) charsDisplay.textContent = fullContent.length + ' characters generated';
+          if (!fullContent || /<tool_call\b|<\/tool_call>/i.test(parsed.content || '')) {
+            fetchError = 'AI response contained tool call metadata instead of readable article text. Please regenerate or check AI provider settings.';
+          } else {
+            showProgress(85, 'Article received (' + fullContent.length + ' chars)', 'Generating Article');
+            if (charsDisplay) charsDisplay.textContent = fullContent.length + ' characters generated';
+            syncDockStatus('Article received and ready to apply');
+          }
         } else {
-          fetchError = data.error || (data.message ? data.message : 'The AI returned an empty response. Please try again or check your AI provider settings.');
+          fetchError = data.error || data.message || 'The AI returned an empty response. Please try again or check your AI provider settings.';
+          if (!fetchError && data.raw) {
+            fetchError = 'Unexpected AI payload: ' + JSON.stringify(data.raw);
+          }
         }
       } catch(err) {
         fetchError = err.message || 'Network error. Please try again.';
@@ -859,6 +2396,7 @@
       // Store results for preview
       lastTitle = fullTitle;
       lastHtml = convertToHtml(fullTitle, fullContent);
+      syncDockStatus(fullTitle || 'Generated article ready');
 
       // Auto-save draft in background
       try {
@@ -870,7 +2408,12 @@
         formData.append('id', postIdInput?.value || '');
         formData.append('title', fullTitle);
         formData.append('content', lastHtml);
+        if (slugInput && !slugInput.value && lastMeta.slug) {
+          slugInput.value = lastMeta.slug;
+        }
         formData.append('slug', slugInput?.value || '');
+        formData.append('meta_title', document.getElementById('meta_title')?.value || '');
+        formData.append('meta_description', document.getElementById('meta_description')?.value || '');
         formData.append('status', 'draft');
 
         var saveResp = await fetch('/api/posts/autosave', {
@@ -891,20 +2434,51 @@
             document.querySelector('form[data-autosave="true"]')?.appendChild(hidden);
           }
           overlayText.textContent = 'Draft saved (ID: ' + saveData.id + ')';
+          syncDockStatus('Draft saved (ID: ' + saveData.id + ')');
         } else {
           overlayText.textContent = 'Draft auto-save completed';
+          syncDockStatus('Draft auto-save completed');
         }
       } catch(saveErr) {
         overlayText.textContent = 'Generation ready for preview';
+        syncDockStatus('Generation ready for preview');
+      }
+
+      // Apply results directly to the live form so fields are prefilled
+      try {
+        await applyToForm();
+        syncDockStatus('Fields applied to the form');
+      } catch (applyErr) {
+        console.error('Auto-apply failed:', applyErr);
       }
 
       resetBtn();
-      showCompletion(true, 'Article generated \u2014 reviewing preview...');
+      showCompletion(true, 'Article generated - fields updated in the form.');
 
       function resetBtn() {
         generateBtn.disabled = false;
         generateBtn.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Generate with AI';
+        syncDockStatus('Ready');
       }
+    }
+
+    function ensureAICardExpanded() {
+      aiWriterShouldDock = false;
+      setDockVisible(false);
+      if (aiModal) {
+        aiModal.show();
+      } else {
+        var aiWriterModal = document.getElementById('aiWriterModal');
+        if (aiWriterModal) {
+          aiWriterModal.classList.add('show');
+          aiWriterModal.style.display = 'block';
+        }
+      }
+      setTimeout(function() {
+        var topicInput = document.getElementById('aiTopic');
+        if (topicInput) topicInput.focus();
+      }, 200);
+      syncDockStatus('Ready to generate your post.');
     }
 
     // --- Entry point ---
@@ -915,6 +2489,9 @@
         return;
       }
 
+      // Auto-open the AI writer modal so user sees status
+      ensureAICardExpanded();
+
       const options = {
         topic: topic,
         tone: document.getElementById('aiTone')?.value || 'informative',
@@ -924,11 +2501,542 @@
       };
       lastOptions = options;
 
-      showOverlay();
-      startGeneration(options)["catch"](function(err) {
-        console.error('Generation failed:', err);
-      });
+      // Check stream toggle — use streaming if enabled
+      if (streamToggle && streamToggle.checked) {
+        streamGeneration(options)["catch"](function(err) {
+          console.error('Stream generation failed:', err);
+        });
+      } else {
+        showOverlay();
+        startGeneration(options)["catch"](function(err) {
+          console.error('Generation failed:', err);
+        });
+      }
     });
   })();
+
+    // --- Floating AI Writer Button ---
+    (function() {
+      var fabBtn = document.getElementById('aiFabBtn');
+      var aiModalEl = document.getElementById('aiWriterModal');
+      var aiTopic = document.getElementById('aiTopic');
+
+      if (!fabBtn || !aiModalEl) return;
+
+      var aiModalInstance = (typeof bootstrap !== 'undefined' && bootstrap.Modal)
+        ? new bootstrap.Modal(aiModalEl)
+        : null;
+
+      function showFab() {
+        fabBtn.classList.add('visible');
+      }
+
+      function hideFab() {
+        fabBtn.classList.remove('visible');
+      }
+
+      function openModal() {
+        if (window.__aiWriterDock && typeof window.__aiWriterDock.setDocked === 'function') {
+          window.__aiWriterDock.setDocked(false);
+          window.__aiWriterDock.hide();
+        }
+        if (aiModalInstance) {
+          aiModalInstance.show();
+        } else {
+          aiModalEl.classList.add('show');
+          aiModalEl.style.display = 'block';
+        }
+        hideFab();
+        setTimeout(function() {
+          if (aiTopic) aiTopic.focus();
+        }, 250);
+      }
+
+      function closeModal() {
+        if (window.__aiWriterDock && typeof window.__aiWriterDock.setDocked === 'function') {
+          window.__aiWriterDock.setDocked(false);
+          window.__aiWriterDock.hide();
+        }
+        if (aiModalInstance) {
+          aiModalInstance.hide();
+        } else {
+          aiModalEl.classList.remove('show');
+          aiModalEl.style.display = 'none';
+        }
+        showFab();
+      }
+
+      showFab();
+
+      fabBtn.addEventListener('click', openModal);
+
+      if (aiModalInstance) {
+        aiModalEl.addEventListener('shown.bs.modal', hideFab);
+        aiModalEl.addEventListener('hidden.bs.modal', showFab);
+      } else {
+        // Fallback close handlers for custom modal behavior
+        aiModalEl.querySelectorAll('[data-bs-dismiss="modal"]').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            closeModal();
+          });
+        });
+
+        aiModalEl.addEventListener('click', function(event) {
+          if (event.target === aiModalEl) {
+            closeModal();
+          }
+        });
+      }
+
+      document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'a' || e.key === 'A')) {
+          var tag = e.target.tagName;
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
+          e.preventDefault();
+          fabBtn.click();
+        }
+      });
+    })();
+
+    // --- Pexels Image Picker ---
+    (function() {
+      var pexelsBtn = document.getElementById('pexelsBtn');
+      var modal = document.getElementById('pexelsModal');
+      var closeBtn = document.getElementById('pexelsModalClose');
+      var searchInput = document.getElementById('pexelsSearchInput');
+      var searchBtn = document.getElementById('pexelsSearchBtn');
+      var resultsEl = document.getElementById('pexelsResults');
+      var insertBtn = document.getElementById('pexelsInsertBtn');
+      var totalResults = document.getElementById('pexelsTotalResults');
+
+      if (!pexelsBtn || !modal) return;
+
+      var selectedPhoto = null;
+      var currentQuery = '';
+      var currentPage = 1;
+      var totalPages = 1;
+
+      function openModal() {
+        modal.classList.add('active');
+        // Auto-fill search from AI writer topic
+        var topic = document.getElementById('aiTopic')?.value.trim();
+        if (topic && !searchInput.value) {
+          searchInput.value = topic;
+          performSearch(topic);
+        } else {
+          searchInput.focus();
+        }
+      }
+
+      function closeModal() {
+        modal.classList.remove('active');
+        selectedPhoto = null;
+        insertBtn.disabled = true;
+      }
+
+      function showLoading() {
+        resultsEl.innerHTML = '<div class="pexels-loading"><div class="spinner-border text-success" role="status"></div><p class="mt-2 small">Searching...</p></div>';
+      }
+
+      function showError(msg) {
+        resultsEl.innerHTML = '<div class="pexels-error"><i class="bi bi-exclamation-triangle-fill me-1"></i>' + escapeHtml(msg) + '</div>';
+      }
+
+      function showEmpty() {
+        resultsEl.innerHTML = '<div class="pexels-empty"><i class="bi bi-image"></i><p class="fw-semibold mb-1">No images found</p><p class="mb-0 small">Try a different search term</p></div>';
+      }
+
+      async function performSearch(query, page) {
+        page = page || 1;
+        if (!query) return;
+        currentQuery = query;
+        currentPage = page;
+        showLoading();
+        selectedPhoto = null;
+        insertBtn.disabled = true;
+
+        try {
+          var resp = await fetch('/api/pexels/search?q=' + encodeURIComponent(query) + '&page=' + page + '&per_page=15');
+          var data = await resp.json();
+
+          if (!data.success) {
+            showError(data.error || 'Search failed');
+            return;
+          }
+
+          if (!data.photos || !data.photos.length) {
+            showEmpty();
+            if (totalResults) totalResults.textContent = '';
+            return;
+          }
+
+          totalPages = Math.ceil((data.total_results || 0) / (data.per_page || 15));
+          if (totalResults) {
+            totalResults.textContent = data.total_results + ' results';
+          }
+
+          renderPhotos(data.photos, page, totalPages);
+        } catch (err) {
+          showError('Network error: ' + (err.message || 'Unknown'));
+        }
+      }
+
+      function renderPhotos(photos, page, totalPages) {
+        var html = '';
+        photos.forEach(function(photo) {
+          var src = photo.src?.medium || photo.src?.small || '';
+          var alt = escapeHtml(photo.alt || 'Pexels photo');
+          var photographer = escapeHtml(photo.photographer || 'Unknown');
+          var width = photo.width || 0;
+          var height = photo.height || 0;
+          html += '<div class="pexels-photo-card" data-id="' + photo.id + '" data-url="' + escapeHtml(photo.src?.large || photo.src?.original || '') + '" data-alt="' + alt + '" data-photographer="' + photographer + '" data-width="' + width + '" data-height="' + height + '">';
+          html += '<img src="' + escapeHtml(src) + '" alt="' + alt + '" loading="lazy">';
+          html += '<div class="pexels-photo-info">' + photographer + '</div>';
+          html += '<div class="pexels-loading-overlay"><div class="spinner-border spinner-border-sm text-success"></div></div>';
+          html += '</div>';
+        });
+
+        // Pagination nav
+        if (totalPages > 1) {
+          html += '<div class="pexels-pagination" style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:0.75rem;padding:1rem 0;">';
+          if (page > 1) {
+            html += '<button type="button" class="btn btn-sm btn-outline-secondary pexels-page-btn" data-page="' + (page - 1) + '"><i class="bi bi-chevron-left"></i> Previous</button>';
+          }
+          html += '<small class="text-muted">Page ' + page + ' of ' + totalPages + '</small>';
+          if (page < totalPages) {
+            html += '<button type="button" class="btn btn-sm btn-outline-secondary pexels-page-btn" data-page="' + (page + 1) + '">Next <i class="bi bi-chevron-right"></i></button>';
+          }
+          html += '</div>';
+        }
+
+        resultsEl.innerHTML = html;
+
+        // Click handler for photo selection
+        resultsEl.querySelectorAll('.pexels-photo-card').forEach(function(card) {
+          card.addEventListener('click', function() {
+            resultsEl.querySelectorAll('.pexels-photo-card').forEach(function(c) { c.classList.remove('selected'); });
+            card.classList.add('selected');
+            selectedPhoto = {
+              id: card.dataset.id,
+              url: card.dataset.url,
+              alt: card.dataset.alt,
+              photographer: card.dataset.photographer,
+              width: parseInt(card.dataset.width) || 0,
+              height: parseInt(card.dataset.height) || 0
+            };
+            insertBtn.disabled = false;
+          });
+        });
+
+        // Click handler for pagination
+        resultsEl.querySelectorAll('.pexels-page-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            performSearch(currentQuery, parseInt(this.dataset.page));
+          });
+        });
+      }
+
+      // Insert selected image
+      insertBtn.addEventListener('click', async function() {
+        if (!selectedPhoto) return;
+        insertBtn.disabled = true;
+        insertBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Downloading...';
+
+        // Show loading overlay on selected photo
+        var selectedCard = resultsEl.querySelector('.pexels-photo-card.selected .pexels-loading-overlay');
+        if (selectedCard) selectedCard.classList.add('active');
+
+        try {
+          var resp = await fetch('/api/pexels/download-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+            body: JSON.stringify({
+              image_url: selectedPhoto.url,
+              alt_text: selectedPhoto.alt
+            })
+          });
+          var data = await resp.json();
+
+          if (data.success && data.url) {
+            // Insert image into the RTE editor
+            var editor = window.editor_content;
+            var imgTag = '<img src="' + data.url + '" alt="' + escapeHtml(selectedPhoto.alt) + '" class="img-fluid">';
+            if (editor && typeof editor.insertContent === 'function') {
+              editor.insertContent(imgTag);
+            } else if (editor && typeof editor.setContent === 'function') {
+              var existing = '';
+              try { existing = String(editor.getContent() || '').trim(); } catch(_) {}
+              editor.setContent(existing + '\n\n' + imgTag);
+            } else {
+              var contentInput = document.getElementById('content-input');
+              if (contentInput) {
+                contentInput.value += '\n\n' + imgTag;
+              }
+            }
+
+            // Show success toast briefly
+            var toastText = document.getElementById('prefillToastText');
+            var toast = document.getElementById('prefillToast');
+            if (toast && toastText) {
+              toastText.textContent = '\u2713 Image inserted into editor';
+              toast.classList.add('show');
+              setTimeout(function() { toast.classList.remove('show'); }, 3000);
+            }
+
+            closeModal();
+          } else {
+            showError(data.error || 'Download failed');
+            if (selectedCard) selectedCard.classList.remove('active');
+            insertBtn.disabled = false;
+            insertBtn.innerHTML = '<i class="bi bi-download me-1"></i> Insert Selected';
+          }
+        } catch (err) {
+          showError('Download error: ' + (err.message || 'Unknown'));
+          if (selectedCard) selectedCard.classList.remove('active');
+          insertBtn.disabled = false;
+          insertBtn.innerHTML = '<i class="bi bi-download me-1"></i> Insert Selected';
+        }
+      });
+
+      // Event listeners
+      pexelsBtn.addEventListener('click', openModal);
+      closeBtn.addEventListener('click', closeModal);
+      searchBtn.addEventListener('click', function() {
+        performSearch(searchInput.value.trim());
+      });
+      searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          performSearch(searchInput.value.trim());
+        }
+      });
+
+      // Close on overlay click
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeModal();
+      });
+
+      // Close on Escape
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+          closeModal();
+        }
+      });
+    })();
+
+    // --- Pixabay Image Picker ---
+    (function() {
+      var pixabayBtn = document.getElementById('pixabayBtn');
+      var modal = document.getElementById('pixabayModal');
+      var closeBtn = document.getElementById('pixabayModalClose');
+      var searchInput = document.getElementById('pixabaySearchInput');
+      var searchBtn = document.getElementById('pixabaySearchBtn');
+      var resultsEl = document.getElementById('pixabayResults');
+      var insertBtn = document.getElementById('pixabayInsertBtn');
+      var totalResults = document.getElementById('pixabayTotalResults');
+
+      if (!pixabayBtn || !modal) return;
+
+      var selectedPhoto = null;
+      var currentQuery = '';
+      var currentPage = 1;
+      var totalPages = 1;
+
+      function openModal() {
+        modal.classList.add('active');
+        var topic = document.getElementById('aiTopic')?.value.trim();
+        if (topic && !searchInput.value) {
+          searchInput.value = topic;
+          performSearch(topic);
+        } else {
+          searchInput.focus();
+        }
+      }
+
+      function closeModal() {
+        modal.classList.remove('active');
+        selectedPhoto = null;
+        insertBtn.disabled = true;
+      }
+
+      function showLoading() {
+        resultsEl.innerHTML = '<div class="pexels-loading"><div class="spinner-border text-success" role="status"></div><p class="mt-2 small">Searching...</p></div>';
+      }
+
+      function showError(msg) {
+        resultsEl.innerHTML = '<div class="pexels-error"><i class="bi bi-exclamation-triangle-fill me-1"></i>' + escapeHtml(msg) + '</div>';
+      }
+
+      function showEmpty() {
+        resultsEl.innerHTML = '<div class="pexels-empty"><i class="bi bi-image"></i><p class="fw-semibold mb-1">No images found</p><p class="mb-0 small">Try a different search term</p></div>';
+      }
+
+      async function performSearch(query, page) {
+        page = page || 1;
+        if (!query) return;
+        currentQuery = query;
+        currentPage = page;
+        showLoading();
+        selectedPhoto = null;
+        insertBtn.disabled = true;
+
+        try {
+          var resp = await fetch('/api/pixabay/search?q=' + encodeURIComponent(query) + '&page=' + page + '&per_page=15');
+          var data = await resp.json();
+
+          if (!data.success) {
+            showError(data.error || 'Search failed');
+            return;
+          }
+
+          if (!data.images || !data.images.length) {
+            showEmpty();
+            if (totalResults) totalResults.textContent = '';
+            return;
+          }
+
+          totalPages = Math.ceil((data.total_results || 0) / (data.per_page || 15));
+          if (totalResults) {
+            totalResults.textContent = data.total_results + ' results';
+          }
+
+          renderPhotos(data.images, page, totalPages);
+        } catch (err) {
+          showError('Network error: ' + (err.message || 'Unknown'));
+        }
+      }
+
+      function renderPhotos(photos, page, totalPages) {
+        var html = '';
+        photos.forEach(function(photo) {
+          var src = photo.src?.medium || photo.src?.small || '';
+          var alt = escapeHtml(photo.alt || 'Pixabay image');
+          var photographer = escapeHtml(photo.photographer || 'Unknown');
+          var width = photo.width || 0;
+          var height = photo.height || 0;
+          html += '<div class="pexels-photo-card" data-id="' + photo.id + '" data-url="' + escapeHtml(photo.src?.large || photo.src?.original || '') + '" data-alt="' + alt + '" data-photographer="' + photographer + '" data-width="' + width + '" data-height="' + height + '">';
+          html += '<img src="' + escapeHtml(src) + '" alt="' + alt + '" loading="lazy">';
+          html += '<div class="pexels-photo-info">' + photographer + '</div>';
+          html += '<div class="pexels-loading-overlay"><div class="spinner-border spinner-border-sm text-success"></div></div>';
+          html += '</div>';
+        });
+
+        if (totalPages > 1) {
+          html += '<div class="pexels-pagination" style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:0.75rem;padding:1rem 0;">';
+          if (page > 1) {
+            html += '<button type="button" class="btn btn-sm btn-outline-secondary pexels-page-btn" data-page="' + (page - 1) + '"><i class="bi bi-chevron-left"></i> Previous</button>';
+          }
+          html += '<small class="text-muted">Page ' + page + ' of ' + totalPages + '</small>';
+          if (page < totalPages) {
+            html += '<button type="button" class="btn btn-sm btn-outline-secondary pexels-page-btn" data-page="' + (page + 1) + '">Next <i class="bi bi-chevron-right"></i></button>';
+          }
+          html += '</div>';
+        }
+
+        resultsEl.innerHTML = html;
+
+        resultsEl.querySelectorAll('.pexels-photo-card').forEach(function(card) {
+          card.addEventListener('click', function() {
+            resultsEl.querySelectorAll('.pexels-photo-card').forEach(function(c) { c.classList.remove('selected'); });
+            card.classList.add('selected');
+            selectedPhoto = {
+              id: card.dataset.id,
+              url: card.dataset.url,
+              alt: card.dataset.alt,
+              photographer: card.dataset.photographer,
+              width: parseInt(card.dataset.width) || 0,
+              height: parseInt(card.dataset.height) || 0
+            };
+            insertBtn.disabled = false;
+          });
+        });
+
+        resultsEl.querySelectorAll('.pexels-page-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            performSearch(currentQuery, parseInt(this.dataset.page));
+          });
+        });
+      }
+
+      insertBtn.addEventListener('click', async function() {
+        if (!selectedPhoto) return;
+        insertBtn.disabled = true;
+        insertBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Downloading...';
+
+        var selectedCard = resultsEl.querySelector('.pexels-photo-card.selected .pexels-loading-overlay');
+        if (selectedCard) selectedCard.classList.add('active');
+
+        try {
+          var resp = await fetch('/api/pixabay/download-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+            body: JSON.stringify({
+              image_url: selectedPhoto.url,
+              alt_text: selectedPhoto.alt
+            })
+          });
+          var data = await resp.json();
+
+          if (data.success && data.url) {
+            var editor = window.editor_content;
+            var imgTag = '<img src="' + data.url + '" alt="' + escapeHtml(selectedPhoto.alt) + '" class="img-fluid">';
+            if (editor && typeof editor.insertContent === 'function') {
+              editor.insertContent(imgTag);
+            } else if (editor && typeof editor.setContent === 'function') {
+              var existing = '';
+              try { existing = String(editor.getContent() || '').trim(); } catch(_) {}
+              editor.setContent(existing + '\n\n' + imgTag);
+            } else {
+              var contentInput = document.getElementById('content-input');
+              if (contentInput) {
+                contentInput.value += '\n\n' + imgTag;
+              }
+            }
+
+            var toastText = document.getElementById('prefillToastText');
+            var toast = document.getElementById('prefillToast');
+            if (toast && toastText) {
+              toastText.textContent = '\u2713 Image inserted into editor';
+              toast.classList.add('show');
+              setTimeout(function() { toast.classList.remove('show'); }, 3000);
+            }
+
+            closeModal();
+          } else {
+            showError(data.error || 'Download failed');
+            if (selectedCard) selectedCard.classList.remove('active');
+            insertBtn.disabled = false;
+            insertBtn.innerHTML = '<i class="bi bi-download me-1"></i> Insert Selected';
+          }
+        } catch (err) {
+          showError('Download error: ' + (err.message || 'Unknown'));
+          if (selectedCard) selectedCard.classList.remove('active');
+          insertBtn.disabled = false;
+          insertBtn.innerHTML = '<i class="bi bi-download me-1"></i> Insert Selected';
+        }
+      });
+
+      pixabayBtn.addEventListener('click', openModal);
+      closeBtn.addEventListener('click', closeModal);
+      searchBtn.addEventListener('click', function() {
+        performSearch(searchInput.value.trim());
+      });
+      searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          performSearch(searchInput.value.trim());
+        }
+      });
+
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeModal();
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+          closeModal();
+        }
+      });
+    })();
   </script>
 {% endblock %}

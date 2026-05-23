@@ -2,8 +2,8 @@
 <div class="calculator-sidebar bg-white rounded-4 shadow-sm border border-1 p-3">
   <div class="d-flex align-items-center justify-content-between mb-3">
     <div>
-      <h5 class="mb-1 fw-bold">Calculator hub</h5>
-      <p class="small text-muted mb-0">Jump between calculators and converters with one click.</p>
+      <h5 class="mb-1 fw-bold">{{ current_lang == 'bn' ? 'ক্যালকুলেটর হাব' : 'Calculator hub' }}</h5>
+      <p class="small text-muted mb-0">{{ current_lang == 'bn' ? 'এক ক্লিকে ক্যালকুলেটর ও কনভার্টার মধ্যে স্যুইচ করুন।' : 'Jump between calculators and converters with one click.' }}</p>
     </div>
   </div>
 
@@ -12,8 +12,8 @@
        class="list-group-item list-group-item-action py-3 {% if current_type is not defined or current_type == 'all' %}active{% endif %}">
       <div class="d-flex align-items-center justify-content-between">
         <div>
-          <div class="fw-semibold">All Calculators</div>
-          <small class="text-muted">Browse the full library</small>
+          <div class="fw-semibold">{{ current_lang == 'bn' ? 'সমস্ত ক্যালকুলেটর' : 'All Calculators' }}</div>
+          <small class="text-muted">{{ current_lang == 'bn' ? 'পূর্ণ লাইব্রেরি ব্রাউজ করুন' : 'Browse the full library' }}</small>
         </div>
         <i class="bi bi-grid"></i>
       </div>

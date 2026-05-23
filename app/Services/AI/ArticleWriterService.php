@@ -160,6 +160,8 @@ class ArticleWriterService
      * Publish (or save as draft) a generated article
      *
      * @param array $article  Article data from generateArticle()
+     *      Supports: title, content, slug, tags, meta_title, seo_title, meta_description, seo_description,
+     *                category_id, category (name), reading_time_minutes, key_points
      * @param bool  $publish  True to publish immediately, false to save as draft
      * @param int   $authorId Author user ID
      * @return array{success:bool, post_id?:int, slug?:string, error?:string}
@@ -169,6 +171,8 @@ class ArticleWriterService
         $title = trim((string)($article['title'] ?? ''));
         $content = trim((string)($article['content'] ?? ''));
         $slug = trim((string)($article['slug'] ?? ''));
+        $metaTitle = trim((string)($article['meta_title'] ?? $article['seo_title'] ?? ''));
+        $metaDescription = trim((string)($article['meta_description'] ?? $article['seo_description'] ?? ''));
 
         if ($title === '' || $content === '') {
             return ['success' => false, 'error' => 'Article title and content are required'];
@@ -192,7 +196,9 @@ class ArticleWriterService
             $published,
             null,    // reader_indexing
             $publish ? date('Y-m-d H:i:s') : null,
-            null     // source_url
+            null,    // source_url
+            $metaTitle,
+            $metaDescription
         );
 
         if (!$postId) {
@@ -201,24 +207,13 @@ class ArticleWriterService
 
         // Attach tags if available
         if (!empty($article['tags']) && is_array($article['tags'])) {
-            $tagIds = [];
-            foreach ($article['tags'] as $tagName) {
-                $tagName = trim((string)$tagName);
-                if ($tagName === '') continue;
+            $this->attachTags($postId, $article['tags']);
+        }
 
-                $existing = $this->contentModel->getTagBySlug($this->slugify($tagName));
-                if ($existing) {
-                    $tagIds[] = (int)$existing['id'];
-                } else {
-                    $tagId = $this->contentModel->createTag($tagName);
-                    if ($tagId) {
-                        $tagIds[] = (int)$tagId;
-                    }
-                }
-            }
-            if (!empty($tagIds)) {
-                $this->contentModel->attachTagsToContent('post', $postId, $tagIds);
-            }
+        // Attach category if provided
+        $categoryId = $this->resolveCategoryId($article);
+        if ($categoryId !== null) {
+            $this->contentModel->attachCategoriesToContent('post', $postId, [$categoryId]);
         }
 
         // Mark as published if publish flag is set (ensures all status fields align)
@@ -312,7 +307,8 @@ JSON;
         }
 
         // Try finding JSON object anywhere in the response
-        if (preg_match('/\{[^{}]*"title"[^{}]*"content"[^{}]*\}/s', $content, $matches)) {
+        // Look for objects containing both title and content fields
+        if (preg_match('/\{[^{}]*"(?:title|headline)"[^{}]*:[^{}]*"[^"]*"[^{}]*"(?:content|body|article)"[^{}]*:[^{}]*"[^"]*"[^{}]*\}/s', $content, $matches)) {
             $decoded = json_decode($matches[0], true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                 return $this->normalizeArticleData($decoded);
@@ -323,17 +319,21 @@ JSON;
         // Look for the last complete JSON object
         $braceDepth = 0;
         $lastCompleteEnd = -1;
-        for ($i = 0; $i < strlen($content); $i++) {
-            if ($content[$i] === '{') {
+        $len = function_exists('mb_strlen') ? mb_strlen($content, 'UTF-8') : strlen($content);
+        for ($i = 0; $i < $len; $i++) {
+            $char = function_exists('mb_substr') ? mb_substr($content, $i, 1, 'UTF-8') : $content[$i];
+            if ($char === '{') {
                 if ($braceDepth === 0) $lastCompleteEnd = -1;
                 $braceDepth++;
-            } elseif ($content[$i] === '}') {
+            } elseif ($char === '}') {
                 $braceDepth--;
                 if ($braceDepth === 0) $lastCompleteEnd = $i;
             }
         }
         if ($lastCompleteEnd > 0) {
-            $partial = substr($content, 0, $lastCompleteEnd + 1);
+            $partial = function_exists('mb_substr')
+                ? mb_substr($content, 0, $lastCompleteEnd + 1, 'UTF-8')
+                : substr($content, 0, $lastCompleteEnd + 1);
             $decoded = json_decode($partial, true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                 return $this->normalizeArticleData($decoded);
@@ -370,8 +370,8 @@ JSON;
             if (preg_match('/<p[^>]*>(.*?)<\/p>/s', $content, $m)) {
                 $seoDescription = trim(strip_tags($m[1]));
             }
-            if (mb_strlen($seoDescription) > 160) {
-                $seoDescription = mb_substr($seoDescription, 0, 157) . '...';
+            if ($this->safeStrlen($seoDescription) > 160) {
+                $seoDescription = $this->safeSubstr($seoDescription, 0, 157) . '...';
             }
         }
 
@@ -385,8 +385,8 @@ JSON;
 
         return [
             'title' => $title,
-            'seo_title' => mb_substr(trim((string)($data['seo_title'] ?? $title)), 0, 60),
-            'seo_description' => mb_substr($seoDescription, 0, 160),
+            'seo_title' => $this->safeSubstr(trim((string)($data['seo_title'] ?? $title)), 0, 60),
+            'seo_description' => $this->safeSubstr($seoDescription, 0, 160),
             'content' => $content,
             'slug' => $this->slugify(trim((string)($data['slug'] ?? $title))),
             'tags' => $tags,
@@ -405,9 +405,18 @@ JSON;
         // If we have a title and some content, create a minimal valid structure
         $title = '';
         if (preg_match('/"title"\s*:\s*"([^"]+)"/', $rawContent, $m)) {
-            $title = $m[1];
-        } elseif (preg_match('/#\s*(.+)/', $rawContent, $m)) {
             $title = trim($m[1]);
+        } elseif (preg_match('/#\s*(.+?)(?:\n|$)/', $rawContent, $m)) {
+            $title = trim($m[1]);
+        }
+
+        // Validate title
+        if ($title !== '') {
+            $title = htmlspecialchars_decode($title, ENT_QUOTES);
+            $title = trim(strip_tags($title));
+            if (strlen($title) > 255) {
+                $title = substr($title, 0, 252) . '...';
+            }
         }
 
         // Extract text content (strip any obvious code fences)
@@ -435,7 +444,7 @@ JSON;
             return $this->normalizeArticleData([
                 'title' => $title,
                 'content' => implode("\n", $htmlParts),
-                'seo_description' => mb_substr(strip_tags($cleanText), 0, 160),
+                'seo_description' => $this->safeSubstr(strip_tags($cleanText), 0, 160),
                 'tags' => [$originalTopic],
             ]);
         }
@@ -490,7 +499,7 @@ JSON;
             if (($provider['provider_name'] ?? '') === $providerName) {
                 $models = $provider['supported_models'] ?? [];
                 if (!empty($models)) {
-                    return (string)array_key_first($models);
+                    return (string)(array_key_first($models) ?? 'gpt-4o-mini');
                 }
             }
         }
@@ -499,11 +508,87 @@ JSON;
     }
 
     /**
+     * Attach tags to a post, creating them if they don't exist.
+     */
+    private function attachTags(int $postId, array $tags): void
+    {
+        $tagIds = [];
+        foreach ($tags as $tagName) {
+            $tagName = trim((string)$tagName);
+            if ($tagName === '') continue;
+
+            $existing = $this->contentModel->getTagBySlug($this->slugify($tagName));
+            if ($existing) {
+                $tagIds[] = (int)$existing['id'];
+            } else {
+                $tagId = $this->contentModel->createTag($tagName);
+                if ($tagId) {
+                    $tagIds[] = (int)$tagId;
+                }
+            }
+        }
+        if (!empty($tagIds)) {
+            $this->contentModel->attachTagsToContent('post', $postId, $tagIds);
+        }
+    }
+
+    /**
+     * Resolve a category ID from article data.
+     * Supports: category_id (numeric), category (name string)
+     *
+     * @return int|null Category ID or null if none provided
+     */
+    private function resolveCategoryId(array $article): ?int
+    {
+        // Direct numeric ID
+        $categoryId = isset($article['category_id']) ? (int)$article['category_id'] : 0;
+        if ($categoryId > 0) {
+            return $categoryId;
+        }
+
+        // Category name — find or create
+        $categoryName = trim((string)($article['category'] ?? $article['category_name'] ?? ''));
+        if ($categoryName === '') {
+            return null;
+        }
+
+        $categories = $this->contentModel->getAllCategories();
+        foreach ($categories as $cat) {
+            if (strcasecmp($cat['name'], $categoryName) === 0) {
+                return (int)$cat['id'];
+            }
+        }
+
+        // Create new category
+        $newId = $this->contentModel->createCategory($categoryName);
+        return $newId ? (int)$newId : null;
+    }
+
+    /**
      * Simple slugify helper
      */
     private function slugify(string $text): string
     {
         return $this->contentModel->generateUniquePermalink($text);
+    }
+
+    /**
+     * Safe UTF-8 string length (with mbstring fallback)
+     */
+    private function safeStrlen(string $str): int
+    {
+        return function_exists('mb_strlen') ? mb_strlen($str, 'UTF-8') : strlen($str);
+    }
+
+    /**
+     * Safe UTF-8 substring (with mbstring fallback)
+     */
+    private function safeSubstr(string $str, int $start, int $length = null): string
+    {
+        if (function_exists('mb_substr')) {
+            return $length === null ? mb_substr($str, $start, null, 'UTF-8') : mb_substr($str, $start, $length, 'UTF-8');
+        }
+        return $length === null ? substr($str, $start) : substr($str, $start, $length);
     }
 
     /**

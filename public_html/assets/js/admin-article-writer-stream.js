@@ -12,6 +12,11 @@
     articleSlug: null,
     articleTitle: '',
     articleContent: '',
+    articleTags: [],
+    articleSeoTitle: '',
+    articleSeoDescription: '',
+    articleKeyPoints: [],
+    articleReadingTime: null,
     startTime: null,
     timerInterval: null,
     el: {},
@@ -102,6 +107,7 @@
         const decoder = new TextDecoder();
         let buffer = '';
 
+        // eslint-disable-next-line no-constant-condition
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -136,7 +142,7 @@
           try {
             const parsed = JSON.parse(data);
             this.processEvent(parsed);
-          } catch (e) {}
+          } catch (e) { /* skip trailing data */ }
         }
 
         this.onComplete();
@@ -158,10 +164,14 @@
           break;
 
         case 'meta':
-          if (data.slug) this.articleSlug = data.slug;
-          if (data.content) {
-            this.articleContent = data.content;
-            this.renderContent();
+          // Server emits: { type: 'meta', meta: { ... } }
+          if (data && data.meta) {
+            if (data.meta.slug) this.articleSlug = data.meta.slug;
+            if (Array.isArray(data.meta.tags)) this.articleTags = data.meta.tags;
+            if (data.meta.seo_title) this.articleSeoTitle = data.meta.seo_title;
+            if (data.meta.seo_description) this.articleSeoDescription = data.meta.seo_description;
+            if (Array.isArray(data.meta.key_points)) this.articleKeyPoints = data.meta.key_points;
+            if (data.meta.reading_time_minutes) this.articleReadingTime = data.meta.reading_time_minutes;
           }
           break;
 
@@ -256,4 +266,150 @@
       this.state = 'idle';
       this.stopTimer();
       this.el.generateBtn.disabled = false;
-      this.el.generateBtnText.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Ge
+      this.el.generateBtnText.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Generate Article';
+      this.el.generateBtnSpinner?.classList.add('d-none');
+      this.el.stopBtn.disabled = true;
+      this.setStatus('idle', 'Generation stopped');
+    },
+
+    escapeHtml(str) {
+      var d = document.createElement('div');
+      d.textContent = str || '';
+      return d.innerHTML;
+    },
+
+    setStatus(type, msg) {
+      var dot = this.el.statusDot;
+      var text = this.el.statusText;
+      if (!dot || !text) return;
+      var colors = { idle: 'secondary', generating: 'warning', done: 'success', error: 'danger' };
+      dot.className = 'status-dot bg-' + (colors[type] || 'secondary');
+      text.textContent = msg || '';
+    },
+
+    startTimer() {
+      this.stopTimer();
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
+      var self = this;
+      this.timerInterval = setInterval(function () {
+        var elapsed = Math.floor((Date.now() - self.startTime) / 1000);
+        var mins = Math.floor(elapsed / 60);
+        var secs = elapsed % 60;
+        if (self.el.statusElapsed) {
+          self.el.statusElapsed.textContent = mins + 'm ' + secs + 's';
+        }
+      }, 1000);
+    },
+
+    stopTimer() {
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+      }
+    },
+
+    handleError(msg) {
+      this.state = 'error';
+      this.stopTimer();
+      this.el.generateBtn.disabled = false;
+      this.el.generateBtnText.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Generate Article';
+      this.el.generateBtnSpinner?.classList.add('d-none');
+      this.el.stopBtn.disabled = true;
+      this.el.progressFill.style.width = '0%';
+      this.setStatus('error', msg || 'Generation failed');
+      if (this.el.contentEditor) {
+        this.el.contentEditor.innerHTML += '<div class="alert alert-danger mt-3">' + this.escapeHtml(msg) + '</div>';
+      }
+    },
+
+    saveArticle(publish) {
+      if (!this.postId && !this.articleContent) {
+        this.setStatus('error', 'No article to save');
+        return;
+      }
+      this.setStatus('info', (publish ? 'Publishing' : 'Saving') + '...');
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
+      var self = this;
+      // Canonical endpoint is `/save`. We pass `publish: true|false` to control behavior.
+      fetch('/api/admin/ai/article-writer-stream/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.csrfToken },
+        body: JSON.stringify({
+          article: {
+            title: this.articleTitle,
+            content: this.articleContent,
+            slug: this.articleSlug || '',
+            tags: this.articleTags || [],
+            seo_title: this.articleSeoTitle || '',
+            seo_description: this.articleSeoDescription || ''
+          },
+          publish: publish,
+          author_id: 0
+        })
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.success) {
+          self.postId = d.post_id || self.postId;
+          self.articleSlug = d.slug || self.articleSlug;
+          self.setStatus('done', 'Article ' + (publish ? 'published' : 'saved') + ' successfully');
+          self.el.saveBtn.disabled = true;
+          self.el.publishBtn.disabled = true;
+        } else {
+          self.setStatus('error', d.error || 'Save failed');
+        }
+      })
+      .catch(function (err) {
+        self.setStatus('error', 'Network error: ' + err.message);
+      });
+    },
+
+    copyContent() {
+      var text = this.articleTitle + '\n\n' + this.articleContent;
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
+      var self = this;
+      navigator.clipboard.writeText(text).then(function () {
+        self.setStatus('done', 'Content copied to clipboard');
+      }).catch(function () {
+        self.setStatus('error', 'Failed to copy');
+      });
+    },
+
+    reset(focus) {
+      this.state = 'idle';
+      this.postId = null;
+      this.articleSlug = null;
+      this.articleTitle = '';
+      this.articleContent = '';
+      this.articleTags = [];
+      this.articleSeoTitle = '';
+      this.articleSeoDescription = '';
+      this.articleKeyPoints = [];
+      this.articleReadingTime = null;
+      this.stopTimer();
+      this.el.generateBtn.disabled = false;
+      this.el.generateBtnText.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Generate Article';
+      this.el.generateBtnSpinner?.classList.add('d-none');
+      this.el.stopBtn.disabled = true;
+      this.el.saveBtn.disabled = true;
+      this.el.publishBtn.disabled = true;
+      this.el.copyBtn.disabled = true;
+      this.el.progressFill.style.width = '0%';
+      if (this.el.contentEditor) {
+        this.el.contentEditor.innerHTML = '<div class="empty-state text-muted text-center py-5"><i class="bi bi-pencil fs-1 d-block mb-2"></i>Generated content will appear here</div>';
+      }
+      if (this.el.liveTitle) this.el.liveTitle.textContent = 'Live Preview';
+      if (this.el.wordCount) this.el.wordCount.textContent = '0 words';
+      if (this.el.charCount) this.el.charCount.textContent = '0 chars';
+      this.setStatus('idle', 'Ready');
+      if (focus !== false && this.el.topicInput) this.el.topicInput.focus();
+    }
+  };
+
+  // Auto-init on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { writer.init(); });
+  } else {
+    writer.init();
+  }
+})();

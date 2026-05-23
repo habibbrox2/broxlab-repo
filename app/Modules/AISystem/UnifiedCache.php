@@ -44,10 +44,9 @@ class UnifiedCache
     public function __construct()
     {
         // Use unified storage directory
-        $this->baseCacheDir = realpath(dirname(__DIR__, 3) . '/storage/cache');
-        if (!$this->baseCacheDir) {
-            $this->baseCacheDir = dirname(__DIR__, 3) . '/storage/cache';
-        }
+        $baseDir = dirname(__DIR__, 3) . '/storage/cache';
+        $realBase = realpath($baseDir);
+        $this->baseCacheDir = $realBase !== false ? $realBase : $baseDir;
 
         // Create subdirectories for different cache types
         $this->ensureDirectory($this->baseCacheDir . '/' . self::CATEGORY_MODEL);

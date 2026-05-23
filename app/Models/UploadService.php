@@ -616,11 +616,31 @@ class UploadService
 
     /**
      * রেট লিমিট চেক করুন
+     * Counts uploads by this user within the last minute from the media table.
      */
     private function checkRateLimit(): bool
     {
-        // TODO: Implement rate limiting logic
-        return true;
+        try {
+            $maxPerMinute = $this->config['security']['rate_limit']['max_per_minute'] ?? 20;
+            $since = date('Y-m-d H:i:s', time() - 60);
+
+            $stmt = $this->mysqli->prepare(
+                "SELECT COUNT(*) AS cnt FROM media WHERE user_id = ? AND created_at >= ?"
+            );
+            if (!$stmt) {
+                return true;
+            }
+            $stmt->bind_param('is', $this->userId, $since);
+            $stmt->execute();
+            $row = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+
+            $count = (int)($row['cnt'] ?? 0);
+            return $count < $maxPerMinute;
+        } catch (Throwable $e) {
+            logError('checkRateLimit error: ' . $e->getMessage());
+            return true;
+        }
     }
 
     /**

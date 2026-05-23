@@ -23,6 +23,16 @@ module.exports = {
             },
         },
     ],
+    globals: {
+        bootstrap: 'readonly',
+        Swal: 'readonly',
+        Chart: 'readonly',
+        broxI18n: 'readonly',
+        withAssetVersion: 'readonly',
+        showToast: 'readonly',
+        MessageHandlerConfig: 'readonly',
+        Apex: 'readonly',
+    },
     rules: {
         'no-console': 'off',
         '@typescript-eslint/no-unused-vars': ['warn', { 'argsIgnorePattern': '^_' }],

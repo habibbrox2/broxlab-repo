@@ -49,7 +49,7 @@ class AdvertisementModel
     public function getAllInquiries(): array
     {
         try {
-            $res = $this->mysqli->query("SELECT * FROM advertisement_inquiries ORDER BY created_at DESC");
+            $res = $this->mysqli->query("SELECT id, name, email, company, budget, message, ip_address, created_at FROM advertisement_inquiries ORDER BY created_at DESC");
             return $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
         } catch (Exception $e) {
             logError($e->getMessage());
@@ -60,7 +60,7 @@ class AdvertisementModel
     public function getInquiryById(int $id): ?array
     {
         try {
-            $stmt = $this->mysqli->prepare("SELECT * FROM advertisement_inquiries WHERE id = ?");
+            $stmt = $this->mysqli->prepare("SELECT id, name, email, company, budget, message, ip_address, created_at FROM advertisement_inquiries WHERE id = ?");
             $stmt->bind_param("i", $id);
             $stmt->execute();
             $row = $stmt->get_result()->fetch_assoc();
@@ -193,7 +193,7 @@ class AdvertisementModel
             $params[] = $kw; $params[] = $kw; $params[] = $kw;
         }
 
-        $sql = "SELECT * FROM donation_payments";
+        $sql = "SELECT id, donor_name, donor_email, donor_phone, amount, currency, method, bkash_trxid, nagad_trxid, stripe_payment_intent, note, status, created_at FROM donation_payments";
         if ($where) $sql .= " WHERE " . implode(' AND ', $where);
         $sql .= " ORDER BY created_at DESC LIMIT ? OFFSET ?";
 
@@ -330,7 +330,7 @@ class AdvertisementModel
     {
         $now = date('Y-m-d H:i:s');
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM ad_placements
+            "SELECT id, name, slot_key, placement, ad_code, publisher_name, publisher_email, status, start_date, end_date, created_by, created_at FROM ad_placements
              WHERE slot_key = ?
                AND status = 'active'
                AND (start_date IS NULL OR start_date <= ?)
@@ -447,7 +447,7 @@ class AdvertisementModel
     public function getSponsoredForPost(int $postId): ?array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM sponsored_posts WHERE post_id = ? LIMIT 1"
+            "SELECT id, post_id, sponsor_name, sponsor_logo, label_type, label_text, label_color, background_color, sponsored_from, sponsored_until, paid_amount, payment_method, payment_status, notes, created_by, created_at FROM sponsored_posts WHERE post_id = ? LIMIT 1"
         );
         $stmt->bind_param('i', $postId);
         $stmt->execute();
@@ -462,7 +462,7 @@ class AdvertisementModel
     public function getSponsoredPosts(int $limit = 20, int $offset = 0): array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT sp.*, p.title AS post_title, p.slug AS post_slug, p.published
+            "SELECT sp.id, sp.post_id, sp.sponsor_name, sp.sponsor_logo, sp.label_type, sp.label_text, sp.label_color, sp.background_color, sp.sponsored_from, sp.sponsored_until, sp.paid_amount, sp.payment_method, sp.payment_status, sp.notes, sp.created_by, sp.created_at, p.title AS post_title, p.slug AS post_slug, p.published
              FROM sponsored_posts sp
              LEFT JOIN posts p ON p.id = sp.post_id
              ORDER BY sp.created_at DESC
@@ -581,10 +581,7 @@ class AdvertisementModel
      * Get all revenue settings grouped by category
      */
     public function getAllRevenueSettings(): array
-    {
-        $res = $this->mysqli->query(
-            "SELECT * FROM revenue_settings ORDER BY category, setting_key"
-        );
+    {$res = $this->mysqli->query("SELECT id, setting_key, setting_value, setting_type, category, updated_at FROM revenue_settings ORDER BY category, setting_key");
         $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
         $grouped = [];
         foreach ($rows as $r) {

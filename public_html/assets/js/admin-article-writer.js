@@ -4,10 +4,7 @@
  */
 (function () {
   'use strict';
-  console.log('[AW DEBUG] Article Writer IIFE starting');
-
   var form = document.getElementById('articleWriterForm');
-  console.log('[AW DEBUG] form element:', form ? form.id : 'NOT FOUND');
   var topicInput = document.getElementById('articleTopic');
   var toneSelect = document.getElementById('articleTone');
   var lengthSelect = document.getElementById('articleLength');
@@ -31,11 +28,48 @@
   var recentSection = document.getElementById('recentArticlesSection');
   var recentList = document.getElementById('recentArticlesList');
 
+  // ---------- URL param prefill ----------
+  (function prefillFromURL() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var topic = params.get('topic') || params.get('q') || '';
+      var tone = params.get('tone') || '';
+      var length = params.get('length') || '';
+      var keywords = params.get('keywords') || '';
+      var style = params.get('style') || '';
+
+      if (topic && topicInput) topicInput.value = topic;
+      if (tone && toneSelect) {
+        for (var ti = 0; ti < toneSelect.options.length; ti++) {
+          if (toneSelect.options[ti].value === tone) { toneSelect.selectedIndex = ti; break; }
+        }
+      }
+      if (length && lengthSelect) {
+        for (var li = 0; li < lengthSelect.options.length; li++) {
+          if (lengthSelect.options[li].value === length) { lengthSelect.selectedIndex = li; break; }
+        }
+      }
+      if (keywords && keywordsInput) keywordsInput.value = keywords;
+      if (style && styleInput) styleInput.value = style;
+
+      // Auto-generate if topic prefilled
+      if (topic && generateBtn && !generateBtn.disabled) {
+        setTimeout(function () { generateBtn.click(); }, 300);
+      }
+    } catch (_) { /* ignore */ }
+  })();
+
   var currentArticle = null;
   var isGenerating = false;
   var isPublishing = false;
   var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute('content') || '';
   var userId = (document.querySelector('meta[name="user-id"]') || {}).getAttribute('content') || '0';
+  var articleCategorySelect = document.getElementById('articleCategory');
+  var editMetaTitle = document.getElementById('editMetaTitle');
+  var editMetaDescription = document.getElementById('editMetaDescription');
+  var editTags = document.getElementById('editTags');
+  var editCategory = document.getElementById('editCategory');
+  var articleMetaEditFields = document.getElementById('articleMetaEditFields');
 
   function showStatus(msg, type, timeout) {
     statusEl.textContent = msg;
@@ -90,7 +124,7 @@
       if (recent.length > 10) recent = recent.slice(0, 10);
       localStorage.setItem('ai-article-writer-recent', JSON.stringify(recent));
       renderRecent(recent);
-    } catch (e) {}
+    } catch (_) { /* ignore */ }
   }
 
   function renderRecent(items) {
@@ -113,7 +147,24 @@
   }
 
   function loadRecent() {
-    try { renderRecent(JSON.parse(localStorage.getItem('ai-article-writer-recent') || '[]')); } catch (e) {}
+    try { renderRecent(JSON.parse(localStorage.getItem('ai-article-writer-recent') || '[]')); } catch (_) { /* ignore */ }
+  }
+
+  function populateEditableFields(article) {
+    if (!article) return;
+    editMetaTitle.value = article.seo_title || '';
+    editMetaDescription.value = article.seo_description || '';
+    editTags.value = (article.tags || []).join(', ');
+    // Try to match the category name from the article metadata
+    var catName = article.category || article.category_name || '';
+    if (catName && editCategory) {
+      for (var ci = 0; ci < editCategory.options.length; ci++) {
+        if (editCategory.options[ci].text.toLowerCase() === catName.toLowerCase()) {
+          editCategory.value = editCategory.options[ci].value;
+          break;
+        }
+      }
+    }
   }
 
   function renderArticle(article) {
@@ -135,6 +186,10 @@
       ' <span class="seo-char-count">(' + seoTitle.length + '/60)</span></div>' +
       '<div><strong>Meta Description:</strong> ' + esc(truncate(seoDesc, 160)) +
       ' <span class="seo-char-count">(' + seoDesc.length + '/160)</span></div>';
+
+    // Populate editable SEO fields
+    populateEditableFields(article);
+    articleMetaEditFields.style.display = 'block';
 
     var tags = article.tags || [];
     if (tags.length) {
@@ -164,6 +219,8 @@
     saveDraftBtn.disabled = false;
     saveDraftBtn.className = 'btn btn-outline-primary';
     editBtn.style.display = 'none';
+    editBtn.className = 'btn btn-outline-secondary';
+    editBtn.innerHTML = '<i class="bi bi-box-arrow-up-right me-1"></i> Continue in Editor';
     delete editBtn.dataset.postId;
     delete editBtn.dataset.slug;
 
@@ -180,6 +237,7 @@
     articleTags.innerHTML = '';
     articleTags.style.display = 'none';
     articleKeyPoints.style.display = 'none';
+    articleMetaEditFields.style.display = 'none';
     statusEl.className = 'status-message';
     publishBtn.innerHTML = '<i class="bi bi-globe me-1"></i> Publish Now';
     publishBtn.disabled = false;
@@ -188,6 +246,8 @@
     saveDraftBtn.disabled = false;
     saveDraftBtn.className = 'btn btn-outline-primary';
     editBtn.style.display = 'none';
+    editBtn.className = 'btn btn-outline-secondary';
+    editBtn.innerHTML = '<i class="bi bi-box-arrow-up-right me-1"></i> Continue in Editor';
   }
 
   function generateArticle(topic, opts) {
@@ -220,12 +280,42 @@
     });
   }
 
+  function buildSavePayload() {
+    var payload = {
+      title: currentArticle.title,
+      seo_title: currentArticle.seo_title,
+      seo_description: currentArticle.seo_description,
+      content: currentArticle.content,
+      slug: currentArticle.slug,
+      tags: currentArticle.tags,
+      reading_time_minutes: currentArticle.reading_time_minutes,
+      key_points: currentArticle.key_points,
+      category_id: ''
+    };
+    // Override SEO fields from editable inputs if present
+    if (editMetaTitle && editMetaTitle.value.trim()) {
+      payload.seo_title = editMetaTitle.value.trim();
+    }
+    if (editMetaDescription && editMetaDescription.value.trim()) {
+      payload.seo_description = editMetaDescription.value.trim();
+    }
+    if (editTags && editTags.value.trim()) {
+      payload.tags = editTags.value.split(',').map(function(t) { return t.trim(); }).filter(Boolean);
+    }
+    if (editCategory && editCategory.value) {
+      payload.category_id = editCategory.value;
+    } else if (articleCategorySelect && articleCategorySelect.value) {
+      payload.category_id = articleCategorySelect.value;
+    }
+    return payload;
+  }
+
   function saveArticle(publish) {
     if (isPublishing || !currentArticle) return;
     setPublishing(true);
     showStatus((publish ? 'Publishing' : 'Saving draft') + ' article\u2026', 'info', 30000);
 
-    var data = { title: currentArticle.title, seo_title: currentArticle.seo_title, seo_description: currentArticle.seo_description, content: currentArticle.content, slug: currentArticle.slug, tags: currentArticle.tags, reading_time_minutes: currentArticle.reading_time_minutes, key_points: currentArticle.key_points };
+    var data = buildSavePayload();
 
     fetch('/api/admin/ai/article-writer/publish', {
       method: 'POST',
@@ -244,6 +334,7 @@
       editBtn.style.display = 'inline-flex';
       editBtn.dataset.postId = d.post_id || '';
       editBtn.dataset.slug = d.slug || '';
+      editBtn.innerHTML = '<i class="bi bi-box-arrow-up-right me-1"></i> Continue in Editor';
       if (publish) { publishBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Published'; publishBtn.disabled = true; }
       else { saveDraftBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Draft Saved'; saveDraftBtn.disabled = true; }
     })
@@ -255,9 +346,7 @@
 
   // Handle article generation via click on the button (type="button")
   if (generateBtn) {
-    console.log('[AW DEBUG] Attaching click handler to generateBtn');
-    generateBtn.addEventListener('click', function (e) {
-      console.log('[AW DEBUG] Generate button clicked!');
+    generateBtn.addEventListener('click', function () {
       var topic = topicInput ? topicInput.value.trim() : '';
       if (!topic) { showStatus('Please enter a topic.', 'error'); if (topicInput) topicInput.focus(); return; }
       generateArticle(topic, {
@@ -268,9 +357,6 @@
         style: styleInput ? styleInput.value.trim() : ''
       });
     });
-    console.log('[AW DEBUG] Click handler attached to generateBtn');
-  } else {
-    console.log('[AW DEBUG] generateBtn is null, cannot attach click handler');
   }
   
   // Also intercept form submission as a safety net
@@ -303,8 +389,15 @@
   });
 
   if (editBtn) editBtn.addEventListener('click', function () {
-    var postId = this.dataset.postId || this.dataset.slug;
-    window.open(postId ? '/admin/posts/' + postId : '/admin/posts', '_blank');
+    var postId = this.dataset.postId;
+    var slug = this.dataset.slug;
+    if (postId) {
+      window.location.href = '/admin/posts/edit?id=' + postId;
+    } else if (slug) {
+      window.location.href = '/admin/posts/edit?slug=' + slug;
+    } else {
+      window.location.href = '/admin/posts';
+    }
   });
 
   if (topicInput) topicInput.addEventListener('keydown', function (e) {
@@ -321,7 +414,6 @@
     topicInput.focus();
   });
 
-  console.log('[AW DEBUG] Article Writer IIFE completed successfully');
   loadRecent();
   if (topicInput) topicInput.focus();
 })();

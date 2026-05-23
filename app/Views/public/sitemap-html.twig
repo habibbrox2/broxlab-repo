@@ -61,8 +61,8 @@
           <div class="card-body">
             <h2 class="h5 card-title fw-bold mb-3"><i class="bi bi-phone me-2"></i>Services</h2>
             <ul class="list-unstyled mb-0 sitemap-scroll">
-              {% for category in services %}
-                <li><a href="/category/{{ category.slug }}" class="sitemap-link">{{ category.name }}</a></li>
+              {% for service in services %}
+                <li><a href="/services/{{ service.slug }}" class="sitemap-link">{{ service.name }}</a></li>
               {% endfor %}
             </ul>
           </div>
@@ -108,6 +108,45 @@
           For a machine-readable version, visit <a href="/sitemap.xml" class="text-primary">/sitemap.xml</a>
         </p>
       </div>
+    </div>
+
+    {# New split sitemap system for search engines #}
+    <div class="card public-surface-card border-0 mt-4 p-4">
+      <h2 class="h5 fw-bold mb-3"><i class="bi bi-file-earmark-code me-2"></i>XML Sitemaps (for Search Engines)</h2>
+      <p class="text-muted small mb-3">
+        We provide a modern split sitemap system. The main index is at
+        <a href="/sitemap.xml" class="text-primary">/sitemap.xml</a>.
+      </p>
+      <div class="row g-2 small">
+        <div class="col-6 col-md-4 col-lg-2">
+          <a href="/sitemap-posts.xml" class="sitemap-link d-block">Posts</a>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <a href="/sitemap-pages.xml" class="sitemap-link d-block">Pages</a>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <a href="/sitemap-categories.xml" class="sitemap-link d-block">Categories</a>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <a href="/sitemap-tags.xml" class="sitemap-link d-block">Tags</a>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <a href="/sitemap-services.xml" class="sitemap-link d-block">Services</a>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <a href="/sitemap-static.xml" class="sitemap-link d-block">Static &amp; Public</a>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <a href="/sitemap-mobiles.xml" class="sitemap-link d-block">Mobiles</a>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <a href="/sitemap.xml" class="sitemap-link d-block fw-bold">Sitemap Index</a>
+        </div>
+      </div>
+       <p class="text-muted mt-3 mb-0 small">
+         <strong>Note:</strong> <code>/sitemap-products.xml</code> redirects to services. 
+         <code>/sitemap-static.xml</code> contains Home, MedEx, Calculators, Contact, Advertise, Donate and other public pages.
+       </p>
     </div>
 
   </div>

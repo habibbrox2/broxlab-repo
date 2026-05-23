@@ -22,6 +22,7 @@ class MedexDataService
     private string $lastUpdated;
     private bool $dataLoaded = false;
     private ?array $detailedData = null;
+    private ?array $drugCentricDetailedData = null;
     private string $refreshLockFile;
 
     private const MED_EX_BASE_URL = 'https://medex.com.bd';
@@ -31,6 +32,13 @@ class MedexDataService
     public function __construct()
     {
         $uploadsDir = defined('UPLOADS_DIR') ? rtrim(UPLOADS_DIR, '/\\') . '/medex' : BASE_PATH . 'public_html/uploads/medex';
+
+        // Ensure uploads medex directory exists and is writable. This prevents failures
+        // when the webserver process attempts to atomically write new data files.
+        if (!is_dir($uploadsDir)) {
+            @mkdir($uploadsDir, 0755, true);
+        }
+
         $this->dataFile = rtrim($uploadsDir, '/\\') . '/medex_herbal_companies.json';
         $this->refreshLockFile = BASE_PATH . 'medex_refresh.lock';
         if (!file_exists($this->dataFile)) {
@@ -263,9 +271,111 @@ class MedexDataService
      */
     private function getDrugCentricDetailedData(): ?array
     {
-        // New preferred way: load from per-company files on demand
-        // This method now returns null so getBrandWithDetails falls back to loading per-company when needed.
+        if ($this->drugCentricDetailedData !== null) {
+            return $this->drugCentricDetailedData;
+        }
+
+        $uploadsDir = defined('UPLOADS_DIR') ? rtrim(UPLOADS_DIR, '/\\') . '/medex' : BASE_PATH . 'public_html/uploads/medex';
+        $flatFile = rtrim($uploadsDir, '/\\') . '/medex_herbal_brands_detailed.json';
+
+        if (file_exists($flatFile)) {
+            $json = file_get_contents($flatFile);
+            $data = json_decode($json, true);
+            if (is_array($data)) {
+                $result = [];
+                foreach ($data as $entry) {
+                    $brandId = $this->extractBrandIdFromBrandData($entry);
+                    if ($brandId === null) {
+                        continue;
+                    }
+                    $result[$brandId] = $this->normalizeDrugCentricEntry($entry);
+                }
+                $this->drugCentricDetailedData = $result;
+                return $result;
+            }
+        }
+
+        $companiesDir = $this->getCompaniesDetailedDir();
+        if (!is_dir($companiesDir)) {
+            $this->drugCentricDetailedData = null;
+            return null;
+        }
+
+        $files = glob($companiesDir . '/*.json');
+        if (!is_array($files) || count($files) === 0) {
+            $this->drugCentricDetailedData = null;
+            return null;
+        }
+
+        $result = [];
+        foreach ($files as $file) {
+            if (basename($file) === 'index.json') {
+                continue;
+            }
+            $data = json_decode(file_get_contents($file), true);
+            if (!is_array($data) || empty($data['brands']) || !is_array($data['brands'])) {
+                continue;
+            }
+            foreach ($data['brands'] as $brand) {
+                if (!is_array($brand)) {
+                    continue;
+                }
+                $brandId = $this->extractBrandIdFromBrandData($brand);
+                if ($brandId === null) {
+                    continue;
+                }
+                $normalized = $this->normalizeDrugCentricEntry($brand);
+                if (!isset($normalized['_company_id']) && isset($data['company_id'])) {
+                    $normalized['_company_id'] = $data['company_id'];
+                }
+                if (!isset($normalized['_company_name']) && isset($data['company_name'])) {
+                    $normalized['_company_name'] = $data['company_name'];
+                }
+                $result[$brandId] = $normalized;
+            }
+        }
+
+        $this->drugCentricDetailedData = $result ?: null;
+        return $this->drugCentricDetailedData;
+    }
+
+    private function extractBrandIdFromBrandData(array $brand): ?int
+    {
+        $urlCandidates = [];
+        if (isset($brand['brand_url_en'])) {
+            $urlCandidates[] = $brand['brand_url_en'];
+        }
+        if (isset($brand['brand_url']) && !in_array($brand['brand_url'], $urlCandidates, true)) {
+            $urlCandidates[] = $brand['brand_url'];
+        }
+        if (isset($brand['url']) && !in_array($brand['url'], $urlCandidates, true)) {
+            $urlCandidates[] = $brand['url'];
+        }
+
+        foreach ($urlCandidates as $url) {
+            if (!is_string($url)) {
+                continue;
+            }
+            if (preg_match('#/brands/(\d+)(?:/|$)#', $url, $m)) {
+                return (int)$m[1];
+            }
+        }
+
         return null;
+    }
+
+    private function normalizeDrugCentricEntry(array $brand): array
+    {
+        if (!isset($brand['details_en']) && isset($brand['sections_en']) && is_array($brand['sections_en'])) {
+            $brand['details_en'] = $brand['sections_en'];
+        }
+        if (!isset($brand['details_bn']) && isset($brand['sections_bn']) && is_array($brand['sections_bn'])) {
+            $brand['details_bn'] = $brand['sections_bn'];
+        }
+        if (!isset($brand['details_en']) && isset($brand['sections']) && is_array($brand['sections'])) {
+            $brand['details_en'] = $brand['sections'];
+        }
+        return $brand;
     }
 
     /**
@@ -349,8 +459,11 @@ class MedexDataService
      */
     public function getDrugCentricDetailedDataFilePath(): string
     {
-        // Deprecated in favor of per-company files
         $uploadsDir = defined('UPLOADS_DIR') ? rtrim(UPLOADS_DIR, '/\\') . '/medex' : BASE_PATH . 'public_html/uploads/medex';
+        $flatFile = rtrim($uploadsDir, '/\\') . '/medex_herbal_brands_detailed.json';
+        if (file_exists($flatFile)) {
+            return $flatFile;
+        }
         return rtrim($uploadsDir, '/\\') . '/companies/index.json';
     }
 
@@ -922,5 +1035,53 @@ class MedexDataService
         }
 
         return $results;
+    }
+
+    /**
+     * Public proxy fetch for client-side JS scraper (non-blocking collection).
+     * Whitelists medex.com.bd domains and safe paths only.
+     * Reuses the internal fetchPage() with retries, timeouts, and proper UA.
+     * Returns structured result for easy JSON response.
+     */
+    public function proxyFetch(string $targetUrl): array
+    {
+        $normalized = trim($targetUrl);
+        $allowedBase = 'https://medex.com.bd';
+
+        if (
+            !str_starts_with($normalized, $allowedBase) &&
+            !str_starts_with($normalized, 'http://medex.com.bd')
+        ) {
+            return [
+                'success' => false,
+                'error'   => 'forbidden_domain',
+                'url'     => $normalized,
+            ];
+        }
+
+        // Restrict to known MedEx paths used by scrapers (companies list, company pages, brand pages)
+        if (!preg_match('#^https?://medex\.com\.bd/(companies|brands|generics|brand/|company/)#i', $normalized)) {
+            return [
+                'success' => false,
+                'error'   => 'forbidden_path',
+                'url'     => $normalized,
+            ];
+        }
+
+        $html = $this->fetchPage($normalized);
+        if ($html === null) {
+            return [
+                'success' => false,
+                'error'   => 'fetch_failed',
+                'url'     => $normalized,
+            ];
+        }
+
+        return [
+            'success' => true,
+            'html'    => $html,
+            'url'     => $normalized,
+            'length'  => strlen($html),
+        ];
     }
 }

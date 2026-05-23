@@ -11,12 +11,14 @@
  * @var StatisticsModel $statisticsModel
  * @var AdvertisementModel $advertisementModel
  * @var ServiceModel $serviceModel
+ * @var MobileModel $mobileModel
  */
 
 $newsletterModel = new NewsletterModel($mysqli);
 $statisticsModel = new StatisticsModel($mysqli);
 $advertisementModel = new AdvertisementModel($mysqli);
 $serviceModel = new ServiceModel($mysqli);
+$mobileModel = new MobileModel($mysqli);
 
 // ==================== NEWSLETTER ROUTES ====================
 
@@ -196,22 +198,25 @@ $router->get('/ramadan', function () {
 // NOTE: Advertise routes moved to HomeController.php
 // See /controllers/HomeController.php for full advertise functionality
 
-// ==================== SITEMAP (HTML VERSION) ====================
+// ==================== SITEMAP (HTML only) ====================
+// XML sitemaps are now served from SitemapController.php (split + index pattern)
+// See /sitemap.xml (index) + /sitemap-*.xml individual files
 
-$router->get('/sitemap', function () use ($twig, $contentModel, $serviceModel) {
+$staticPages = [
+    ['slug' => 'about-us', 'title' => 'About Us', 'group' => 'main', 'priority' => '0.8'],
+    ['slug' => 'faq', 'title' => 'Frequently Asked Questions', 'group' => 'main', 'priority' => '0.7'],
+    ['slug' => 'ramadan-2026', 'title' => 'Ramadan Calendar 2026', 'group' => 'main', 'priority' => '0.7'],
+    ['slug' => 'newsletter', 'title' => 'Newsletter', 'group' => 'main', 'priority' => '0.6'],
+    ['slug' => 'bangla-converter', 'title' => 'Bangla Converter', 'group' => 'main', 'priority' => '0.6'],
+    ['slug' => 'terms', 'title' => 'Terms of Service', 'group' => 'legal', 'priority' => '0.3'],
+    ['slug' => 'privacy', 'title' => 'Privacy Policy', 'group' => 'legal', 'priority' => '0.3'],
+];
+
+$router->get('/sitemap', function () use ($twig, $contentModel, $serviceModel, $staticPages) {
     $contents = $contentModel->getSitemapPosts(500);
     $categories = $contentModel->getSitemapCategories();
     $tags = $contentModel->getSitemapTags();
-    $services = $serviceModel->getAllActive();
-    $staticPages = [
-        ['slug' => 'about-us', 'title' => 'About Us', 'group' => 'main'],
-        ['slug' => 'faq', 'title' => 'Frequently Asked Questions', 'group' => 'main'],
-        ['slug' => 'ramadan-2026', 'title' => 'Ramadan Calendar 2026', 'group' => 'main'],
-        ['slug' => 'newsletter', 'title' => 'Newsletter', 'group' => 'main'],
-        ['slug' => 'bangla-converter', 'title' => 'Bangla Converter', 'group' => 'main'],
-        ['slug' => 'terms', 'title' => 'Terms of Service', 'group' => 'legal'],
-        ['slug' => 'privacy', 'title' => 'Privacy Policy', 'group' => 'legal'],
-    ];
+    $services = $serviceModel->getSitemapServices(500);
 
     echo $twig->render('public/sitemap-html.twig', [
         'title' => 'Sitemap',
@@ -223,22 +228,21 @@ $router->get('/sitemap', function () use ($twig, $contentModel, $serviceModel) {
     ]);
 });
 
+// Old combined /sitemap.xml route removed (now handled by SitemapController with split files)
 
+// $router->get('/sitemap.xml', function () use ($twig, $contentModel) {
+//     // Set header BEFORE any output
+//     header('Content-Type: application/xml; charset=utf-8');
+//     header('Cache-Control: public, max-age=86400'); // Cache for 24 hours
 
+//     $contents = $contentModel->getSitemapPosts(500);
+//     $categories = $contentModel->getSitemapCategories();
+//     $tags = $contentModel->getSitemapTags();
 
-$router->get('/sitemap.xml', function () use ($twig, $contentModel) {
-    // Set header BEFORE any output
-    header('Content-Type: application/xml; charset=utf-8');
-    header('Cache-Control: public, max-age=86400'); // Cache for 24 hours
-
-    $contents = $contentModel->getSitemapPosts(500);
-    $categories = $contentModel->getSitemapCategories();
-    $tags = $contentModel->getSitemapTags();
-
-    // Render and output sitemap
-    echo $twig->render('public/sitemap.twig', [
-        'contents' => $contents,
-        'tags' => $tags
-    ]);
-    exit; // Prevent further output
-});
+//     // Render and output sitemap
+//     echo $twig->render('public/sitemap.twig', [
+//         'contents' => $contents,
+//         'tags' => $tags
+//     ]);
+//     exit; // Prevent further output
+// });

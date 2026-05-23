@@ -81,7 +81,7 @@ window.broxI18n = Object.assign(window.broxI18n || {}, {
 });
 
 runWhenReady(() => {
-  window.broxI18n.apply();
+  window.broxI18n?.apply?.();
 });
 
 /* ===== Inlined Notification Runtime ===== */
@@ -123,9 +123,14 @@ function escapeHtml(value) {
 function toSafeUrl(url) {
   const value = String(url || '').trim();
   if (!value) return '#';
-  if (value.startsWith('/')) return value;
-  if (/^https?:\/\//i.test(value)) return value;
-  return '#';
+
+  try {
+    const parsed = new URL(value, window.location.origin);
+    if (parsed.origin !== window.location.origin) return '#';
+    return `${parsed.pathname}${parsed.search}${parsed.hash}` || '#';
+  } catch {
+    return '#';
+  }
 }
 
 function formatTime(value) {
@@ -1408,7 +1413,10 @@ runWhenReady(initNavbarUserDropdownMobileFallback);
 let notificationSystemApiPromise = null;
 const loadNotificationSystemApi = () => {
   if (!notificationSystemApiPromise) {
-    notificationSystemApiPromise = import(withAssetVersion('/assets/firebase/v2/dist/notification-system.js'))
+    const moduleUrl = typeof withAssetVersion === 'function'
+      ? withAssetVersion('/assets/firebase/v2/dist/notification-system.js')
+      : '/assets/firebase/v2/dist/notification-system.js';
+    notificationSystemApiPromise = import(moduleUrl)
       .catch((error) => {
         notificationSystemApiPromise = null;
         throw error;

@@ -27,6 +27,15 @@ function escapeHtml(value) {
   return div.innerHTML;
 }
 
+function sanitizeCssColor(color, fallback = '#0d6efd') {
+  if (typeof color !== 'string') return fallback;
+  const value = color.trim();
+  if (!value) return fallback;
+  if (/^#[0-9A-Fa-f]{3,8}$/.test(value)) return value;
+  if (/^[a-zA-Z]+$/.test(value)) return value;
+  return fallback;
+}
+
 function normalizeAlertType(type) {
   if (!type) return 'info';
   if (type === 'error') return 'danger';
@@ -43,8 +52,8 @@ function defaultShowAlert(message, type = 'info', containerId = 'alerts-containe
   }
 
   const container = document.getElementById(containerId)
-        || document.getElementById('alert-container')
-        || document.getElementById('alerts-container');
+    || document.getElementById('alert-container')
+    || document.getElementById('alerts-container');
 
   if (!container) {
     const logFn = normalizedType === 'danger' ? console.error : console.info;
@@ -108,8 +117,8 @@ function mapFirebaseRuntimeMessage(message, fallbackMessage) {
 
   if (
     normalized.includes('redirect_uri_mismatch') ||
-        normalized.includes('redirect uri mismatch') ||
-        normalized.includes('url mismatch')
+    normalized.includes('redirect uri mismatch') ||
+    normalized.includes('url mismatch')
   ) {
     return 'OAuth provider redirect URL mismatch. Please contact admin to verify provider redirect settings.';
   }
@@ -195,7 +204,7 @@ function renderAccounts(accountsContainer, accounts, theme, onSetPrimary, onUnli
     const providerMeta = PROVIDER_UI[provider] || {};
     const providerLabel = escapeHtml(providerMeta.name || (provider.charAt(0).toUpperCase() + provider.slice(1)));
     const icon = escapeHtml(providerMeta.icon || 'link-45deg');
-    const color = escapeHtml(providerMeta.color || '#0d6efd');
+    const color = escapeHtml(sanitizeCssColor(providerMeta.color || '#0d6efd'));
     const email = escapeHtml(account.provider_email || account.email || 'Not available');
     const linkedDate = account.linked_at ? new Date(account.linked_at).toLocaleDateString() : 'N/A';
     const isPrimary = Number(account.is_primary) === 1;

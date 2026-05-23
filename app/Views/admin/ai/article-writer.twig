@@ -4,6 +4,14 @@
 
 {% block stylesheets %}
 <style>
+  .meta-edit-field { transition: all 0.2s ease; }
+  .edit-section-toggle {
+    cursor: pointer;
+    user-select: none;
+  }
+  .edit-section-toggle i { transition: transform 0.2s ease; }
+  .edit-section-toggle[aria-expanded="true"] i { transform: rotate(180deg); }
+
   .article-writer { max-width: 1200px; }
   .writer-card {
     background: var(--bs-card-bg, #fff);
@@ -207,6 +215,16 @@
         <label for="articleStyle" class="form-label">Style Guidance <span class="text-muted fw-normal">(optional)</span></label>
         <textarea id="articleStyle" name="style" class="form-control" rows="2" placeholder="e.g., 'Include statistics from 2024, write for beginners'"></textarea>
       </div>
+      <div class="mb-3">
+        <label for="articleCategory" class="form-label">Category <span class="text-muted fw-normal">(optional)</span></label>
+        <select id="articleCategory" name="category" class="form-select">
+          <option value="">— No category —</option>
+          {% for cat in categories|default([]) %}
+            <option value="{{ cat.id }}">{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Select a category for the article.</div>
+      </div>
       <div class="action-bar">
         <button type="button" id="generateBtn" class="btn btn-primary btn-generate">
           <i class="bi bi-magic me-1"></i>
@@ -228,6 +246,30 @@
     </div>
     <div id="articleMetaBar" class="article-meta-grid"></div>
     <div id="articleSEOInfo" class="seo-info"></div>
+    <div class="mb-3" id="articleMetaEditFields" style="display:none;">
+      <h6 class="fw-semibold mb-2 text-muted text-uppercase small">Editable SEO Fields</h6>
+      <div class="mb-2">
+        <label class="form-label small">Meta Title</label>
+        <input type="text" id="editMetaTitle" class="form-control" placeholder="SEO title (max 60 chars)">
+      </div>
+      <div class="mb-2">
+        <label class="form-label small">Meta Description</label>
+        <textarea id="editMetaDescription" class="form-control" rows="2" placeholder="SEO description (max 160 chars)"></textarea>
+      </div>
+      <div class="mb-2">
+        <label class="form-label small">Tags <span class="text-muted fw-normal">(comma-separated)</span></label>
+        <input type="text" id="editTags" class="form-control" placeholder="tag1, tag2, tag3">
+      </div>
+      <div class="mb-2">
+        <label class="form-label small">Category</label>
+        <select id="editCategory" class="form-select">
+          <option value="">— No category —</option>
+          {% for cat in categories|default([]) %}
+            <option value="{{ cat.id }}">{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
     <div id="articleKeyPoints" style="display:none;"></div>
     <div id="articleTags" class="mb-3"></div>
     <h6 class="text-muted text-uppercase small fw-semibold mb-2">Content Preview</h6>
@@ -240,7 +282,7 @@
         <i class="bi bi-save me-1"></i> Save as Draft
       </button>
       <button type="button" id="editInPostsBtn" class="btn btn-outline-secondary" style="display:none;">
-        <i class="bi bi-box-arrow-up-right me-1"></i> Open in Editor
+        <i class="bi bi-box-arrow-up-right me-1"></i> Continue in Editor
       </button>
     </div>
   </div>
@@ -261,5 +303,8 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+  window.__ARTICLE_WRITER_CATEGORIES = {{ categories|default([])|map(c => { id: c.id, name: c.name })|json_encode|raw }};
+</script>
 <script src="{{ asset('/assets/js/admin-article-writer.js') }}" defer></script>
 {% endblock %}

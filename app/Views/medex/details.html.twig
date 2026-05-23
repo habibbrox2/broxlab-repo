@@ -1,30 +1,44 @@
 {% extends 'medex/base.html.twig' %}
 
 {% block page_content %}
+{% set labelTotalCompanies = current_lang == 'bn' ? 'মোট কোম্পানি' : 'Total Companies' %}
+{% set labelTotalBrands = current_lang == 'bn' ? 'মোট ব্র্যান্ড' : 'Total Brands' %}
+{% set labelLastUpdated = current_lang == 'bn' ? 'শেষ আপডেট' : 'Last Updated' %}
+{% set labelCacheFile = current_lang == 'bn' ? 'ক্যাশ ফাইল' : 'Cache File' %}
+{% set labelRefreshLock = current_lang == 'bn' ? 'রিফ্রেশ লক' : 'Refresh Lock' %}
+{% set labelAutoClean = current_lang == 'bn' ? 'অটো-ক্লিন আচরণ:' : 'Auto-clean behavior:' %}
+{% set labelBackToCompanies = current_lang == 'bn' ? 'কোম্পানিতে ফিরে যান' : 'Back to Companies' %}
+{% set labelBrowserCollection = current_lang == 'bn' ? 'ব্রাউজার চালিত সংগ্রহ (প্রস্তাবিত)' : 'Browser-powered Collection (Recommended)' %}
+{% set labelWhyBetter = current_lang == 'bn' ? 'কারণ এটি ভালো:' : 'Why this is better:' %}
+{% set labelStartCollection = current_lang == 'bn' ? 'সংগ্রহ শুরু করুন' : 'Start Collection' %}
+{% set labelPause = current_lang == 'bn' ? 'বিরতি দিন' : 'Pause' %}
+{% set labelResume = current_lang == 'bn' ? 'পুনরায় চালু করুন' : 'Resume' %}
+{% set labelStop = current_lang == 'bn' ? 'বন্ধ করুন' : 'Stop' %}
+{% set labelUpload = current_lang == 'bn' ? 'ডেটা আপলোড করুন' : 'Upload Collected Data to Server' %}
 <div class="row mb-4">
     <div class="col-12">
         <div class="medex-card">
             <div class="medex-card-header">
                 <i class="bi bi-info-circle"></i>
-                MedEx Dataset Details
+                {{ current_lang == 'bn' ? 'MedEx ডেটাসেট বিস্তারিত' : 'MedEx Dataset Details' }}
             </div>
             <div class="medex-card-body">
                 <div class="row gy-3">
                     <div class="col-md-4">
                         <div class="medex-detail-summary">
-                            <h5>Total Companies</h5>
+                            <h5>{{ labelTotalCompanies }}</h5>
                             <p class="display-6 mb-0">{{ total_companies|number_format }}</p>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="medex-detail-summary">
-                            <h5>Total Brands</h5>
+                            <h5>{{ labelTotalBrands }}</h5>
                             <p class="display-6 mb-0">{{ total_brands|number_format }}</p>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="medex-detail-summary">
-                            <h5>Last Updated</h5>
+                            <h5>{{ labelLastUpdated }}</h5>
                             <p class="mb-0">{{ last_updated ? last_updated|date('M d, Y H:i') : 'N/A' }}</p>
                         </div>
                     </div>
@@ -35,24 +49,24 @@
                 <div class="row gy-3">
                     <div class="col-md-6">
                         <div class="medex-detail-box">
-                            <h6>Cache File</h6>
-                            <p class="mb-1"><strong>Path:</strong> <code>{{ cache_path }}</code></p>
-                            <p class="mb-0"><strong>Age:</strong> {{ data_file_age|number_format }} seconds</p>
+                            <h6>{{ labelCacheFile }}</h6>
+                            <p class="mb-1"><strong>{{ current_lang == 'bn' ? 'পথ:' : 'Path:' }}</strong> <code>{{ cache_path }}</code></p>
+                            <p class="mb-0"><strong>{{ current_lang == 'bn' ? 'বয়স:' : 'Age:' }}</strong> {{ data_file_age|number_format }} {{ current_lang == 'bn' ? 'সেকেন্ড' : 'seconds' }}</p>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="medex-detail-box">
-                            <h6>Refresh Lock</h6>
-                            <p class="mb-1"><strong>Path:</strong> <code>{{ lock_path }}</code></p>
-                            <p class="mb-0"><strong>Status:</strong>
+                            <h6>{{ labelRefreshLock }}</h6>
+                            <p class="mb-1"><strong>{{ current_lang == 'bn' ? 'পথ:' : 'Path:' }}</strong> <code>{{ lock_path }}</code></p>
+                            <p class="mb-0"><strong>{{ current_lang == 'bn' ? 'স্ট্যাটাস:' : 'Status:' }}</strong>
                                 {% if lock_exists %}
-                                    <span class="text-success">Active</span>
+                                    <span class="text-success">{{ current_lang == 'bn' ? 'সক্রিয়' : 'Active' }}</span>
                                 {% else %}
-                                    <span class="text-muted">Not present</span>
+                                    <span class="text-muted">{{ current_lang == 'bn' ? 'উপস্থিত নেই' : 'Not present' }}</span>
                                 {% endif %}
                             </p>
                             {% if lock_exists %}
-                                <p class="mb-0"><strong>Age:</strong> {{ lock_age|number_format }} seconds</p>
+                                <p class="mb-0"><strong>{{ current_lang == 'bn' ? 'বয়স:' : 'Age:' }}</strong> {{ lock_age|number_format }} {{ current_lang == 'bn' ? 'সেকেন্ড' : 'seconds' }}</p>
                             {% endif %}
                         </div>
                     </div>
@@ -61,16 +75,16 @@
                 <hr class="my-4">
 
                 <div class="alert alert-info">
-                    <strong>Auto-clean behavior:</strong>
-                    If a stale lock file is detected, MedEx refresh will remove it automatically and proceed.
+                    <strong>{{ labelAutoClean }}</strong>
+                    {{ current_lang == 'bn' ? 'যদি একটি স্থগিত লক ফাইল পাওয়া যায়, MedEx পুনরায় ফ্রেশ করে এটি স্বয়ংক্রিয়ভাবে সরিয়ে দেয় এবং চলমান রাখে।' : 'If a stale lock file is detected, MedEx refresh will remove it automatically and proceed.' }}
                 </div>
 
                 <div class="d-flex flex-wrap gap-2 align-items-center align-items-center">
                     <a href="/medex" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Back to Companies
+                        <i class="bi bi-arrow-left"></i> {{ labelBackToCompanies }}
                     </a>
                     <button id="medex-refresh-button" type="button" class="btn btn-primary">
-                        <i class="bi bi-arrow-clockwise"></i> Refresh Now
+                        <i class="bi bi-arrow-clockwise"></i> {{ current_lang == 'bn' ? 'এখন রিফ্রেশ করুন' : 'Refresh Now (Server)' }}
                     </button>
                     <div id="medex-refresh-feedback" class="text-muted small"></div>
                 </div>
@@ -79,8 +93,77 @@
     </div>
 </div>
 
+{# ==================== JS-POWERED NON-BLOCKING COLLECTION UI ==================== #}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="medex-card border-primary">
+            <div class="medex-card-header bg-primary text-white">
+                <i class="bi bi-browser-chrome"></i>
+                {{ labelBrowserCollection }}
+            </div>
+            <div class="medex-card-body">
+                <div class="alert alert-warning py-2 small mb-3">
+                    <strong>{{ labelWhyBetter }}</strong> {{ current_lang == 'bn' ? 'সকল স্ক্র্যাপিং আপনার ব্রাউজারে চলে। PHP ব্যাকএন্ড শুধুমাত্র ছোট-মেয়াদী প্রক্সি অনুরোধ এবং চূড়ান্ত সেভ পরিচালনা করে।' : 'All scraping runs in your browser. The PHP backend only handles short-lived proxy requests and the final save.' }} {{ current_lang == 'bn' ? 'কোনও পৃষ্ঠা দেখার সময় দীর্ঘকালীন সংগ্রহ শুরু হয় না — ৩০ দিনের রিফ্রেশ চক্রে সাইট ধীর বা অপ্রাপ্য হওয়ার ঝুঁকি নেই।' : 'Visiting /medex or any page never triggers long-running collection — zero risk of site slowdown or downtime during the 30-day refresh cycle.' }}
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-auto">
+                        <button id="js-scrape-start" class="btn btn-success">
+                            <i class="bi bi-play-fill"></i> {{ labelStartCollection }}
+                        </button>
+                    </div>
+                    <div class="col-auto">
+                        <button id="js-scrape-pause" class="btn btn-warning" disabled>
+                            <i class="bi bi-pause-fill"></i> {{ labelPause }}
+                        </button>
+                    </div>
+                    <div class="col-auto">
+                        <button id="js-scrape-resume" class="btn btn-info" disabled>
+                            <i class="bi bi-play-fill"></i> {{ labelResume }}
+                        </button>
+                    </div>
+                    <div class="col-auto">
+                        <button id="js-scrape-stop" class="btn btn-danger" disabled>
+                            <i class="bi bi-stop-fill"></i> {{ labelStop }}
+                        </button>
+                    </div>
+                    <div class="col-auto">
+                        <button id="js-scrape-upload" class="btn btn-primary" disabled>
+                            <i class="bi bi-cloud-upload"></i> {{ labelUpload }}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span id="js-scrape-status">Idle — ready to collect from medex.com.bd</span>
+                        <span id="js-scrape-count">0 / 0</span>
+                    </div>
+                    <div class="progress" style="height: 1.25rem;">
+                        <div id="js-scrape-progress" class="progress-bar progress-bar-striped" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label class="form-label small fw-semibold">Live Log</label>
+                    <textarea id="js-scrape-log" class="form-control font-monospace" rows="8" readonly style="font-size: 0.85rem; background:#0d1117; color:#c9d1d9;"></textarea>
+                </div>
+
+                <div class="small text-muted mt-2">
+                    Rate limit: ~350ms between requests. You can pause/resume at any time. Data is kept only in this browser tab until you click Upload.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
 {% block extra_scripts %}
+{# Load the client-side scraper (source file, not bundled) #}
+<script src="{{ asset('/assets/js/medex-scraper.js') }}"></script>
+
 <script>
+    // Legacy server refresh (kept for compatibility)
     async function sendMedexRefreshRequest(button) {
         button.disabled = true;
         const originalText = button.innerHTML;
@@ -107,26 +190,155 @@
                 throw new Error(data.error || 'Refresh failed');
             }
 
-            feedback.textContent = 'Refresh completed successfully.';
-            setTimeout(() => {
-                feedback.textContent = '';
-            }, 5000);
+            feedback.textContent = 'Server refresh completed.';
+            setTimeout(() => { feedback.textContent = ''; }, 5000);
         } catch (error) {
             feedback.textContent = String(error.message || 'Refresh failed');
-            console.error('MedEx refresh failed:', error);
+            console.error('MedEx server refresh failed:', error);
         } finally {
             button.disabled = false;
             button.innerHTML = originalText;
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const refreshButton = document.getElementById('medex-refresh-button');
-        if (refreshButton) {
-            refreshButton.addEventListener('click', function () {
+    // ==================== JS SCRAPER UI WIRING ====================
+    let scraper = null;
+    let collectedData = null;
+
+    function logToUI(msg) {
+        const ta = document.getElementById('js-scrape-log');
+        if (!ta) return;
+        const time = new Date().toLocaleTimeString();
+        ta.value = `[${time}] ${msg}\n` + ta.value;
+        ta.scrollTop = 0;
+    }
+
+    function updateProgress(p) {
+        const bar = document.getElementById('js-scrape-progress');
+        const status = document.getElementById('js-scrape-status');
+        const count = document.getElementById('js-scrape-count');
+
+        if (!bar || !status || !count) return;
+
+        if (p.phase === 'list') {
+            status.textContent = `Fetching list pages (${p.current}/${p.total})`;
+            const pct = Math.round((p.current / p.total) * 100);
+            bar.style.width = pct + '%';
+            bar.textContent = pct + '%';
+            count.textContent = (p.found || 0) + ' companies listed';
+        } else if (p.phase === 'details') {
+            const pct = Math.round((p.current / p.total) * 100);
+            bar.style.width = pct + '%';
+            bar.textContent = pct + '%';
+            status.textContent = `Enriching: ${p.company}`;
+            count.textContent = `${p.current} / ${p.total}`;
+        } else if (p.phase === 'init') {
+            status.textContent = 'Initializing...';
+            bar.style.width = '0%';
+        }
+    }
+
+    function setControls(state) {
+        const start = document.getElementById('js-scrape-start');
+        const pause = document.getElementById('js-scrape-pause');
+        const resume = document.getElementById('js-scrape-resume');
+        const stop = document.getElementById('js-scrape-stop');
+        const upload = document.getElementById('js-scrape-upload');
+
+        if (!start || !pause || !resume || !stop || !upload) return;
+
+        start.disabled = state.running === true;
+        pause.disabled = !state.running || state.paused === true;
+        resume.disabled = !state.running || state.paused !== true;
+        stop.disabled = !state.running;
+        upload.disabled = !collectedData || state.running === true;
+    }
+
+    function initScraperUI() {
+        const startBtn = document.getElementById('js-scrape-start');
+        const pauseBtn = document.getElementById('js-scrape-pause');
+        const resumeBtn = document.getElementById('js-scrape-resume');
+        const stopBtn = document.getElementById('js-scrape-stop');
+        const uploadBtn = document.getElementById('js-scrape-upload');
+        const statusEl = document.getElementById('js-scrape-status');
+
+        if (!window.MedexScraper) {
+            if (statusEl) statusEl.textContent = 'ERROR: medex-scraper.js failed to load';
+            return;
+        }
+
+        scraper = new window.MedexScraper({ rate: 380 });
+
+        scraper.on('log', (msg) => logToUI(msg));
+        scraper.on('progress', (p) => updateProgress(p));
+        scraper.on('complete', (result) => {
+            collectedData = result.data;
+            logToUI(`Collection complete! ${result.count} companies ready for upload.`);
+            const bar = document.getElementById('js-scrape-progress');
+            if (bar) {
+                bar.style.width = '100%';
+                bar.classList.remove('progress-bar-striped');
+                bar.classList.add('bg-success');
+            }
+            document.getElementById('js-scrape-status').textContent = 'Collection finished — click Upload to persist';
+            setControls({ running: false });
+        });
+        scraper.on('error', (e) => {
+            logToUI('ERROR: ' + e.message);
+            setControls({ running: false });
+        });
+        scraper.on('paused', () => setControls({ running: true, paused: true }));
+        scraper.on('resumed', () => setControls({ running: true, paused: false }));
+        scraper.on('stopped', () => setControls({ running: false }));
+
+        startBtn.addEventListener('click', () => {
+            collectedData = null;
+            document.getElementById('js-scrape-log').value = '';
+            document.getElementById('js-scrape-progress').style.width = '0%';
+            document.getElementById('js-scrape-progress').classList.add('progress-bar-striped');
+            document.getElementById('js-scrape-progress').classList.remove('bg-success');
+            scraper.run();
+            setControls({ running: true, paused: false });
+        });
+
+        pauseBtn.addEventListener('click', () => { scraper.pause(); });
+        resumeBtn.addEventListener('click', () => { scraper.resume(); });
+        stopBtn.addEventListener('click', () => { scraper.stop(); setControls({ running: false }); });
+
+        uploadBtn.addEventListener('click', async () => {
+            if (!collectedData) return;
+            uploadBtn.disabled = true;
+            const orig = uploadBtn.innerHTML;
+            uploadBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Uploading...';
+
+            try {
+                const result = await scraper.saveToServer();
+                logToUI('SUCCESS: ' + result.saved + ' companies saved. Backup: ' + (result.backup || 'none'));
+                alert('Data uploaded successfully! The /medex pages will now use the fresh dataset.');
+            } catch (err) {
+                logToUI('Upload failed: ' + err.message);
+                alert('Upload failed: ' + err.message);
+            } finally {
+                uploadBtn.innerHTML = orig;
+                uploadBtn.disabled = false;
+            }
+        });
+
+        setControls({ running: false });
+        logToUI('JS Scraper ready. Click Start Collection to begin (runs entirely in this browser tab).');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Legacy button
+        const legacyBtn = document.getElementById('medex-refresh-button');
+        if (legacyBtn) {
+            legacyBtn.addEventListener('click', function () {
                 sendMedexRefreshRequest(this);
             });
         }
+
+        // New JS scraper UI
+        initScraperUI();
     });
 </script>
 {% endblock %}

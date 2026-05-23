@@ -29,11 +29,15 @@ class ResponseParser
         }
 
         // Anthropic format
-        if ($providerName === 'anthropic' && isset($data['content'])) {
+        if ($providerName === 'anthropic' && isset($data['content']) && is_array($data['content'])) {
             $content = '';
             foreach ($data['content'] as $block) {
-                if ($block['type'] === 'text') {
-                    $content .= $block['text'];
+                if (!is_array($block) || ($block['type'] ?? '') !== 'text') {
+                    continue;
+                }
+                $text = $block['text'] ?? '';
+                if (is_string($text)) {
+                    $content .= $text;
                 }
             }
             return [

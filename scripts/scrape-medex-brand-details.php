@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MedEx Brand/Drug Detailed Information Extractor (Standalone + Library)
  *
@@ -58,6 +59,13 @@ const SECTION_TITLES = [
 
 if (!defined('MEDEX_BRAND_PARSER_LOADED')) {
     define('MEDEX_BRAND_PARSER_LOADED', true);
+
+    // If loaded from the web (non-CLI), short-circuit and point to the frontend UI
+    if (PHP_SAPI !== 'cli') {
+        header('Content-Type: text/html; charset=utf-8');
+        echo "<h1>MedEx Brand Parser</h1><p>Use the browser-based collector at <a href=\"/medex-collector.html\">/medex-collector.html</a> which uses the client-side scraper.</p>";
+        exit;
+    }
 
     // ==================== PUBLIC API (usable when required) ====================
 
@@ -309,12 +317,11 @@ if (!defined('MEDEX_BRAND_PARSER_LOADED')) {
             echo "  • {$title}: " . ($preview ?: '(empty)') . "\n";
         }
     }
-
 } // end MEDEX_BRAND_PARSER_LOADED guard
 
 // ==================== CLI ENTRYPOINT (only when run directly) ====================
 $isDirect = (PHP_SAPI === 'cli') &&
-            (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'] ?? __FILE__));
+    (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'] ?? __FILE__));
 
 if ($isDirect) {
     $options = [

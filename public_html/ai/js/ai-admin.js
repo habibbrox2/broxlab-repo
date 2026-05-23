@@ -1038,6 +1038,7 @@ if (!window.BroxAdminInstance) {
         close: document.getElementById('adminAiClose'),
         collectDataBtn: document.getElementById('adminAiCollectData'),
         autoFillBtn: document.getElementById('adminAiAutoFill'),
+        enhancePromptBtn: document.getElementById('adminAiEnhancePrompt'),
         summarizeBtn: document.getElementById('adminAiQuickSummarize'),
         slashMenu: document.getElementById('adminAiSlashMenu'),
         suggestionPanel: document.getElementById('adminAiSuggestionPanel'),
@@ -1398,7 +1399,7 @@ if (!window.BroxAdminInstance) {
       } else {
         const providerModels = providerList[this.currentProvider] || [];
         const preferredFallback = selectPreferredAdminModel(providerModels);
-        this.currentModel = preferredFallback || 'openrouter/auto';
+        this.currentModel = preferredFallback || 'meta-llama/llama-3-8b-instruct:free';
       }
       this.updateModelLabel();
 
@@ -1600,7 +1601,7 @@ if (!window.BroxAdminInstance) {
     loadFallbackModels() {
       // Fallback models when API is unavailable
       const fallbackModels = [
-        { id: 'openrouter/auto', name: 'OpenRouter Auto (Free/Low-latency)', default: true },
+        { id: 'meta-llama/llama-3-8b-instruct:free', name: 'Llama 3 8B Instruct (Free)', default: true },
         { id: 'google/gemini-pro-1.5:free', name: 'Gemini Pro 1.5 (Free)' },
         { id: 'openai/gpt-4o-mini:free', name: 'GPT-4o Mini (Free)' },
       ];
@@ -1983,6 +1984,11 @@ if (!window.BroxAdminInstance) {
       // Auto-fill form from assistant output
       if (this.nodes.autoFillBtn) {
         this.nodes.autoFillBtn.onclick = () => this.handleAutoFill();
+      }
+
+      // Enhance prompt before sending
+      if (this.nodes.enhancePromptBtn) {
+        this.nodes.enhancePromptBtn.onclick = () => this.handleEnhancePrompt();
       }
 
       // Summarize current page
@@ -2670,11 +2676,20 @@ if (!window.BroxAdminInstance) {
           /(?:go to|navigate to|open|show me|take me to|switch to)\s+([\w\s-]+?)(?:\?|$)/i,
           /(?:take me to|go to)\s+(users|posts|settings|analytics|dashboard|notifications?|media|comments?|security|permissions?|roles?|content|pages|themes?|logs|home|profile|service|application)s?/i,
         ];
-        for (const pattern of navPatterns) {
+      for (const pattern of navPatterns) {
           const navMatch = sanitized.match(pattern);
           if (navMatch) {
             await this.handleNavigationRequest(sanitized, navMatch[1] || navMatch[0]);
             return;
+          }
+        }
+
+        if (sanitized) {
+          try {
+            this.updateStatus('loading', 'Enhancing prompt...');
+            sanitized = await this.requestEnhancedPrompt(sanitized);
+          } catch (err) {
+            console.warn('Prompt enhancement skipped:', err);
           }
         }
       }
@@ -4030,6 +4045,166 @@ if (!window.BroxAdminInstance) {
       await this.applyAutoFillFromLastAssistant();
     }
 
+    getPromptEnhancementContext() {
+      const parts = [];
+      const explicit = window.__BROX_PROMPT_ENHANCE_CONTEXT__;
+
+      if (typeof explicit === 'string' && explicit.trim()) {
+        parts.push(explicit.trim());
+      } else if (explicit && typeof explicit === 'object') {
+        if (typeof explicit.filePath === 'string' && explicit.filePath.trim()) {
+          parts.push(`Current file path: ${explicit.filePath.trim()}`);
+        }
+        if (typeof explicit.selectedCode === 'string' && explicit.selectedCode.trim()) {
+          parts.push(`Selected code:\n${explicit.selectedCode.trim()}`);
+        }
+        if (typeof explicit.note === 'string' && explicit.note.trim()) {
+          parts.push(explicit.note.trim());
+        }
+      }
+
+      const bodyPath =
+        document.body?.dataset?.currentFilePath ||
+        document.body?.dataset?.filePath ||
+        document.body?.dataset?.path ||
+        '';
+      if (bodyPath) {
+        parts.push(`Current file path: ${bodyPath}`);
+      }
+
+      const active = document.activeElement;
+      if (active && typeof active.value === 'string' && typeof active.selectionStart === 'number' && typeof active.selectionEnd === 'number') {
+        const selected = active.value.slice(active.selectionStart, active.selectionEnd).trim();
+        if (selected) {
+          parts.push(`Selected text:\n${selected}`);
+        }
+      }
+
+      const selection = String(window.getSelection?.()?.toString() || '').trim();
+      if (selection) {
+        parts.push(`Selected text:\n${selection}`);
+      }
+
+      return parts.filter(Boolean).join('\n\n').trim();
+    }
+
+    normalizeEnhancedPromptText(text) {
+      let value = String(text || '').trim();
+      if (!value) return '';
+      value = value.replace(/^```(?:prompt|text)?\s*/i, '').replace(/```$/i, '').trim();
+      value = value.replace(/^(?:enhanced|improved)\s+prompt\s*:\s*/i, '').trim();
+      value = value.replace(/^(?:here(?:'s| is) the improved prompt|here is a better prompt)\s*[:\-]?\s*/i, '').trim();
+      value = value.replace(/^(?:prompt enhancement|rewritten prompt)\s*[:\-]?\s*/i, '').trim();
+      return value;
+    }
+
+    async handleEnhancePrompt() {
+      const input = this.nodes.input;
+      const rawText = String(input?.value || '').trim();
+      if (!rawText) {
+        this.updateStatus('warning', 'Type a prompt first.');
+        return;
+      }
+
+      const button = this.nodes.enhancePromptBtn;
+      const originalHtml = button?.innerHTML || '';
+      if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enhancing...';
+      }
+      this.updateStatus('loading', 'Enhancing prompt...');
+
+      try {
+        const enhanced = await this.requestEnhancedPrompt(rawText);
+        if (input) {
+          input.value = enhanced;
+          input.focus();
+          if (typeof input.setSelectionRange === 'function') {
+            input.setSelectionRange(enhanced.length, enhanced.length);
+          }
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        this.updateStatus('ready', 'Prompt enhanced');
+      } catch (err) {
+        console.error('[EnhancePrompt] Failed:', err);
+        this.updateStatus('error', err.message || 'Failed to enhance prompt');
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.innerHTML = originalHtml || '<i class="bi bi-stars"></i> Enhance Prompt';
+        }
+      }
+    }
+
+    async requestEnhancedPrompt(rawText) {
+      await refreshCsrfToken();
+      const payload = {
+        messages: [
+          {
+            role: 'system',
+            content: [
+              'You are an expert prompt enhancer for AI assistants.',
+              'Rewrite the user prompt so it is clearer, more specific, and more useful.',
+              'Preserve the original intent.',
+              'Add relevant context when provided, such as file path or selected code.',
+              'Improve instructions for output format, detail level, tone, or scope when helpful.',
+              'If the prompt is already strong, polish it instead of over-expanding it.',
+              'Return only the improved prompt text. Do not add explanations, commentary, or code fences.',
+            ].join(' '),
+          },
+          {
+            role: 'user',
+            content: [
+              'Original prompt:',
+              rawText.trim(),
+              this.getPromptEnhancementContext() ? `\nContext:\n${this.getPromptEnhancementContext()}` : '',
+              '\nReturn a ready-to-send improved prompt.',
+            ].filter(Boolean).join('\n'),
+          },
+        ],
+        stream: false,
+        options: {
+          provider: this.currentProvider || 'openrouter',
+          model: this.currentModel || this.defaultModel || 'meta-llama/llama-3-8b-instruct:free',
+          temperature: 0.2,
+          maxTokens: 600,
+        },
+      };
+
+      const response = await fetch('/api/admin/ai/chat', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCsrfToken() || '',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const raw = await response.text();
+        let message = raw.trim() || `${response.status} ${response.statusText}`;
+        try {
+          const json = JSON.parse(raw);
+          message = json.error || json.message || message;
+        } catch {
+          // ignore parse errors
+        }
+        throw new Error(message);
+      }
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Prompt enhancement failed');
+      }
+
+      const enhanced = this.normalizeEnhancedPromptText(data.content || '');
+      if (!enhanced) {
+        throw new Error('Prompt enhancer returned an empty response');
+      }
+      return enhanced;
+    }
+
     async applyAutoFillFromLastAssistant() {
       const raw = this.getLastAssistantContent();
       const rawText = this.getMessagePlainText(raw || '');
@@ -4759,7 +4934,7 @@ if (!window.BroxAdminInstance) {
 
       // Define model tiers
       const fastModels = [
-        'openrouter/auto',
+        'meta-llama/llama-3-8b-instruct:free',
         'gpt-4o-mini',
         'gpt-3.5-turbo',
         'gemini-1.5-flash',
