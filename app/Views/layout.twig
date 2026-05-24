@@ -525,21 +525,12 @@
                             </button>
                         </li>
 
-                        {# Language Toggle #}
+                        {# Language Toggle - Switch button (toggles between BN/EN) #}
                         {% if available_languages is defined and available_languages|length > 1 %}
-                        <li class="nav-item dropdown brox-nav-item ms-lg-2">
-                            <a class="nav-link dropdown-toggle brox-nav-link brox-language-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span data-i18n="{{ current_lang == 'bn' ? 'Bangla' : 'English' }}" data-i18n-en="EN" data-i18n-bn="বাংলা">{{ current_lang == 'bn' ? 'বাংলা'|trans : 'EN'|trans }}</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
-                                {% for langCode, langName in available_languages %}
-                                    <li>
-                                        <a class="dropdown-item {% if current_lang == langCode %}active{% endif %}" href="?lang={{ langCode }}" data-lang-btn="{{ langCode }}">
-                                            <span data-i18n="{{ langCode == 'bn' ? 'Bangla' : 'English' }}" data-i18n-en="{{ langCode == 'bn' ? 'Bangla' : 'English' }}" data-i18n-bn="{{ langCode == 'bn' ? 'বাংলা' : 'ইংরেজি' }}">{{ langName|trans }}</span>
-                                        </a>
-                                    </li>
-                                {% endfor %}
-                            </ul>
+                        <li class="nav-item brox-nav-item ms-lg-2">
+                            <button type="button" class="nav-link brox-nav-link brox-language-toggle" data-lang-btn="{{ current_lang == 'bn' ? 'en' : 'bn' }}" title="{{ current_lang == 'bn' ? 'Switch to English' : 'বাংলায় স্যুইচ করুন' }}" aria-label="{{ current_lang == 'bn' ? 'Switch to English' : 'বাংলায় স্যুইচ করুন' }}" data-i18n-title="{{ current_lang == 'bn' ? 'Switch to English' : 'বাংলায় স্যুইচ করুন' }}" data-i18n-aria-label="{{ current_lang == 'bn' ? 'Switch to English' : 'বাংলায় স্যুইচ করুন' }}">
+                                <span data-i18n-en="EN" data-i18n-bn="বাংলা" data-i18n="{{ current_lang == 'bn' ? 'Bangla' : 'English' }}">{{ current_lang == 'bn' ? 'বাংলা'|trans : 'EN'|trans }}</span>
+                            </button>
                         </li>
                         {% endif %}
                     </ul>

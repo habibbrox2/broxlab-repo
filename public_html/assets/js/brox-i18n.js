@@ -287,6 +287,13 @@ function switchLanguage(lang) {
   if (window.medexTogglePageLang) {
     window.medexTogglePageLang(lang);
   }
+
+  // Flip toggle button data-lang-btn attributes to point to the opposite language
+  var oppositeLang = lang === 'en' ? 'bn' : 'en';
+  var toggleBtns = document.querySelectorAll('[data-lang-btn]');
+  for (var i = 0; i < toggleBtns.length; i++) {
+    toggleBtns[i].setAttribute('data-lang-btn', oppositeLang);
+  }
 }
 
 // ======================== SEO Link Updates ========================
