@@ -439,3 +439,90 @@
     gap: 0.5rem;
   }
 }
+
+
+/* -- Home datetime card overflow fix -- */
+@media (max-width: 576px) {
+  .home-datetime-card {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+  .home-datetime-card .row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  .home-datetime-card [class*="col-"] {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 0.75rem;
+  }
+  .home-datetime-card .datetime-section {
+    padding: 0.75rem !important;
+  }
+  .home-datetime-card .p-4 {
+    padding: 0.75rem !important;
+  }
+  .home-datetime-card .datetime-content {
+    font-size: 0.9rem !important;
+    word-break: break-word;
+  }
+  /* Hide decorative blurred circles on mobile that extend beyond viewport */
+  .home-datetime-card .bg-primary, .home-datetime-card .bg-success {
+    display: none !important;
+  }
+}
+
+/* -- Home section overflow hardening -- */
+@media (max-width: 576px) {
+  /* Force all homepage sections to be contained */
+  section.home-hero,
+  section.home-datetime-wrap,
+  section.home-top-slider,
+  section.home-services-section,
+  section.home-featured-section,
+  section.home-categories-section,
+  section.home-mobiles-section {
+    overflow: hidden !important;
+    max-width: 100vw !important;
+  }
+  /* Ensure containers inside sections don't overflow */
+  section.home-hero .container,
+  section.home-datetime-wrap .container,
+  section.home-top-slider .container,
+  section.home-services-section .container,
+  section.home-featured-section .container,
+  section.home-categories-section .container,
+  section.home-mobiles-section .container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    max-width: 100% !important;
+  }
+  /* Fix any grid container overflow */
+  .home-services-section .row,
+  .home-featured-section .row,
+  .home-top-slider .row {
+    margin-left: -6px !important;
+    margin-right: -6px !important;
+  }
+}
+
+/* -- Top slider track width fix (ensure it doesn't cause body overflow) -- */
+@media (max-width: 576px) {
+  .home-top-slider__viewport {
+    overflow-x: hidden !important;
+  }
+  .home-top-slider__track {
+    grid-auto-columns: minmax(180px, 1fr);
+    gap: 8px;
+    padding: 0 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    max-width: 100%;
+  }
+  .home-top-slider__track > * {
+    scroll-snap-align: start;
+  }
+}
