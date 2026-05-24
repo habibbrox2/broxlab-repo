@@ -299,8 +299,10 @@ class Router
         // Get the document root (typically public_html)
         $documentRoot = $_SERVER['DOCUMENT_ROOT'] ?? dirname(__DIR__, 2) . '/public_html';
 
+        $uriPath = parse_url($uri, PHP_URL_PATH) ?: $uri;
+
         // Sanitize the URI to prevent directory traversal
-        $path = $documentRoot . $uri;
+        $path = $documentRoot . $uriPath;
         $path = realpath($path);
 
         // Verify the path is within public_html and the file exists

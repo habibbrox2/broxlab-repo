@@ -381,7 +381,7 @@ try {
         }
     }
 
-    $requestUri = $_SERVER['REQUEST_URI'] ?? $_SERVER['PHP_SELF'] ?? '/';
+    $requestUri = parse_url($_SERVER['REQUEST_URI'] ?? $_SERVER['PHP_SELF'] ?? '/', PHP_URL_PATH) ?: '/';
     $router->dispatch($requestMethod, $requestUri);
 } catch (Throwable $e) {
     logError('Routing Error: ' . $e->getMessage());
