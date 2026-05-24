@@ -45,7 +45,7 @@ const LANGUAGE_KEY = 'brox.publicAssistant.language.v2';
 const USER_INFO_KEY = 'brox.publicAssistant.userInfo.v2';
 const MAX_STORED_MESSAGES = 40;
 const INACTIVITY_LIMIT_MS = 60 * 60 * 1000; // 1 hour
-const ASSISTANT_SITE_URL = 'https://broxlab.online';
+const ASSISTANT_SITE_URL = window.location?.origin || `${window.location.protocol}//${window.location.host}`;
 
 const DEFAULT_PREFS = {
   provider: 'puter',
@@ -62,6 +62,7 @@ const assistantPrefs = { ...DEFAULT_PREFS, };
 const providerApiKeys = {};
 const providerApiKeySources = {};
 const SUPPORTED_CLIENT_PROVIDERS = new Set(['openrouter', 'fireworks']);
+const ASSISTANT_SITE_URL = window.location?.origin || `${window.location.protocol}//${window.location.host}`;
 
 function getProviderApiKey(providerName) {
   return String(providerApiKeys[providerName] || '').trim();
@@ -769,7 +770,7 @@ function buildSystemPrompt() {
     topics,
     'Keep replies concise and friendly.',
     'If asked your name, answer that you are Brox and mention BroxLab with the URL.',
-    'If asked about yourself or broxlab.online, describe briefly and include the site URL.',
+    'If asked about yourself or the site, describe briefly and include the site URL.',
     'Do not promise backend actions; provide helpful guidance and links.',
   ]
     .filter(Boolean)

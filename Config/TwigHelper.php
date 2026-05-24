@@ -1224,10 +1224,10 @@ if (!function_exists("registerTwigHelpers")) {
                 if (empty($preferredSiteUrl)) {
                     $preferredSiteUrl = trim((string)env('APP_URL', ''));
                 }
-                if (empty($preferredSiteUrl)) {
-                    $preferredSiteUrl = 'https://broxlab.online';
+                if (empty($preferredSiteUrl) && !empty($_SERVER['HTTP_HOST'])) {
+                    $host = preg_replace('/:\\d+$/', '', $_SERVER['HTTP_HOST']);
+                    $preferredSiteUrl = brox_get_request_protocol() . '://' . $host;
                 }
-        
                 $baseUrl = rtrim($preferredSiteUrl, '/');
         
                 // Redirect to the preferred domain/protocol if the request is not already using it.

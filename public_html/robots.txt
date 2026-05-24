@@ -12,7 +12,7 @@ Disallow: /api/
 
 
 # Sitemap URL
-Sitemap: https://broxlab.online/sitemap.xml
+Sitemap: /sitemap.xml
 
 # Google-specific
 User-agent: Googlebot

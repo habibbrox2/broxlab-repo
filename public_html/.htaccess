@@ -8,6 +8,9 @@
     RewriteBase /
 </IfModule>
 
+# Default document
+DirectoryIndex index.php index.html
+
 # ============================================
 # Browser Caching - Static Assets
 # ============================================
@@ -159,16 +162,14 @@ FileETag None
 <IfModule mod_rewrite.c>
     # Rewrite /cdn/ to /assets/cdn/
     RewriteRule ^cdn/(.*)$ assets/cdn/$1 [L]
-    
+
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} !^/assets/
     RewriteCond %{REQUEST_URI} !^/cdn/
-    
-    # Redirect to index.php for routing
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^(.*)$ index.php?/$1 [L,QSA]
+
+    # Redirect all non-file/non-directory requests to index.php
+    RewriteRule . index.php [L,QSA]
 </IfModule>
 
 # ============================================
@@ -178,13 +179,23 @@ Options -Indexes
 
 # ============================================
 # Block access to sensitive files
-# =========================================>
+# ============================================
 <FilesMatch "^\.">
-    Order allow,deny
-    Deny from all
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
 </FilesMatch>
 
 <FilesMatch "\.(env|git|md|sql)$">
-    Order allow,deny
-    Deny from all
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
 </FilesMatch>

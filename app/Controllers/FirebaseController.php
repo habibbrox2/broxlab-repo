@@ -151,9 +151,22 @@ $proxyFirebaseAuthHandler = function () use ($authManager, $userModel, $firebase
                 'http://localhost',
                 'http://localhost:8000',
                 'http://localhost:3000',
-                'https://broxlab.online',
-                'https://www.broxlab.online',
             ];
+
+            $configuredAppUrl = trim((string)env('APP_URL', ''));
+            if ($configuredAppUrl !== '') {
+                $allowedOrigins[] = rtrim($configuredAppUrl, '/');
+            }
+
+            $configuredAppDomain = trim((string)env('APP_DOMAIN', ''));
+            if ($configuredAppDomain !== '') {
+                $domain = preg_replace('#^https?://#i', '', $configuredAppDomain);
+                $allowedOrigins[] = 'https://' . $domain;
+                $allowedOrigins[] = 'http://' . $domain;
+            }
+
+            $allowedOrigins[] = 'https://broxlab.online';
+            $allowedOrigins[] = 'https://www.broxlab.online';
 
             // Allow all localhost origins in development
             $isDevelopment = env('APP_ENV') === 'development';

@@ -52,14 +52,20 @@ $localAuthDomain = $normalizeDomainValue(
     env('FIREBASE_AUTH_DOMAIN_LOCAL', ''),
     ''
 );
-$liveDomains = [
+
+$appDomain = preg_replace('#^https?://#i', '', trim((string)env('APP_DOMAIN', '')));
+$appUrlHost = parse_url(trim((string)env('APP_URL', '')), PHP_URL_HOST) ?: '';
+
+$liveDomains = array_values(array_filter(array_unique([
+    $appDomain,
+    $appUrlHost,
     'broxlab.online',
     'broxlab.govinpqms.online',
-];
+])));
 
 $resolvedLiveDomain = in_array($host, $liveDomains, true)
     ? $host
-    : 'broxlab.online';
+    : (string)$normalizeDomainValue(env('FIREBASE_AUTH_DOMAIN_LIVE', $appDomain ?: $appUrlHost ?: 'broxlab.online'), 'broxlab.online');
 
 $liveAuthDomain = $normalizeDomainValue(
     env('FIREBASE_AUTH_DOMAIN_LIVE', $resolvedLiveDomain),
