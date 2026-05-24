@@ -196,7 +196,7 @@
             details.total_brands = value;
             break;
           case 'Headquarters':
-            details.headquarters = value;
+            details.headquarter = value;
             break;
           case 'Contact':
             details.contact = value;

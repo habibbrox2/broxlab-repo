@@ -199,7 +199,12 @@ if (!defined('MEDEX_BRAND_PARSER_LOADED')) {
         }
         $data['pack_images'] = array_values(array_unique($data['pack_images']));
 
-        // Sections (robust: id div + following sibling .ac-body)
+        // Sections: dual-strategy extraction.
+        // Strategy 1 (preferred): Find .ac-body as a descendant of the section div
+        //   (e.g., <div id="indications" class="ac"><div class="ac-body">...)
+        // Strategy 2 (fallback): Find .ac-body as a following sibling of the section div
+        //   (e.g., <div id="indications">...</div><div class="ac-body">...)
+        // This handles both HTML structures used by MedEx.com.bd.
         $sectionIds = [
             'indications'        => 'indications',
             'mode_of_action'     => 'pharmacology',
@@ -220,13 +225,20 @@ if (!defined('MEDEX_BRAND_PARSER_LOADED')) {
             $idDiv = $xpath->query('//div[@id="' . $domId . '"]')->item(0);
             $content = '';
             if ($idDiv) {
-                $next = $idDiv->nextSibling;
-                while ($next) {
-                    if ($next instanceof DOMElement && str_contains($next->getAttribute('class'), 'ac-body')) {
-                        $content = clean_text($next->textContent);
-                        break;
+                // Strategy 1: descendant .ac-body (preferred)
+                $acBody = $xpath->query('.//div[contains(@class,"ac-body")]', $idDiv)->item(0);
+                if ($acBody instanceof DOMElement) {
+                    $content = clean_text($acBody->textContent);
+                } else {
+                    // Strategy 2: following sibling .ac-body
+                    $next = $idDiv->nextSibling;
+                    while ($next) {
+                        if ($next instanceof DOMElement && str_contains($next->getAttribute('class'), 'ac-body')) {
+                            $content = clean_text($next->textContent);
+                            break;
+                        }
+                        $next = $next->nextSibling;
                     }
-                    $next = $next->nextSibling;
                 }
             }
             $sections[$key] = $content;

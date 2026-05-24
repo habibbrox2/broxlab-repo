@@ -2,17 +2,18 @@
 {% extends "layout.twig" %}
 {% set suppress_layout_flash = true %}
 {% block title %}Login - {{ app_settings.site_name|default("BroxBhai") }}{% endblock %}
-{% block content %}
-  {# Structured Data - Login Page #}
+{% set page_schema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  'name': app_settings.site_name|default('BroxBhai'),
+  'url': url
+} %}
+{% block schema %}
   <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  "name": "{{ app_settings.site_name|default('BroxBhai')|json }}",
-  "url": "{{ url }}"
-}
+{{ page_schema|schema_json }}
   </script>
-
+{% endblock %}
+{% block content %}
   {# page-specific styles – does not override global Tailwind #}
   <style>
     /* limit checkbox styles to login card only */

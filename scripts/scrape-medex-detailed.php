@@ -567,7 +567,11 @@ function parse_brand_detail_page(string $html): array
         $data["strip_price"] = $pkgNode ? clean_text($pkgNode->textContent) : "";
     }
 
-    // Detailed sections
+    // Detailed sections — dual-strategy extraction.
+    // Strategy 1 (preferred): Find .ac-body as a descendant of the section div
+    //   (e.g., <div id="indications" class="ac"><div class="ac-body">...</div></div>)
+    // Strategy 2 (fallback): Find .ac-body as a following sibling of the section div
+    //   (e.g., <div id="indications">...</div><div class="ac-body">...</div>)
     $sectionMap = [
         "indications" => "indications",
         "mode_of_action" => "pharmacology",
@@ -583,8 +587,26 @@ function parse_brand_detail_page(string $html): array
     ];
 
     foreach ($sectionMap as $sectionId => $field) {
-        $sectionNode = $xpath->query('//div[@id="' . $sectionId . '"]//div[contains(@class,"ac-body")]')->item(0);
-        $data[$field] = $sectionNode ? clean_text($sectionNode->textContent) : "";
+        $idDiv = $xpath->query('//div[@id="' . $sectionId . '"]')->item(0);
+        $content = '';
+        if ($idDiv) {
+            // Strategy 1: descendant .ac-body (preferred)
+            $acBody = $xpath->query('.//div[contains(@class,"ac-body")]', $idDiv)->item(0);
+            if ($acBody instanceof DOMElement) {
+                $content = clean_text($acBody->textContent);
+            } else {
+                // Strategy 2: following sibling .ac-body
+                $next = $idDiv->nextSibling;
+                while ($next) {
+                    if ($next instanceof DOMElement && str_contains($next->getAttribute('class'), 'ac-body')) {
+                        $content = clean_text($next->textContent);
+                        break;
+                    }
+                    $next = $next->nextSibling;
+                }
+            }
+        }
+        $data[$field] = $content;
     }
 
     return $data;

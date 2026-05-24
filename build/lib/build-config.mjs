@@ -86,6 +86,7 @@ export function getAppEntryPoints() {
         activity: path.join(jsDir, 'activity.js'),
         'auth/login': path.join(jsDir, 'auth', 'login.js'),
         'auth/register': path.join(jsDir, 'auth', 'register.js'),
+        'brox-i18n': path.join(jsDir, 'brox-i18n.js'),
     };
 }
 

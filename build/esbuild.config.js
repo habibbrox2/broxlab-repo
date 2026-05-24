@@ -25,6 +25,7 @@ const ENTRY_POINTS = {
   activity: join(ROOT_DIR, 'public_html', 'assets', 'js', 'activity.js'),
   'auth/login': join(ROOT_DIR, 'public_html', 'assets', 'js', 'auth', 'login.js'),
   'auth/register': join(ROOT_DIR, 'public_html', 'assets', 'js', 'auth', 'register.js'),
+  'brox-i18n': join(ROOT_DIR, 'public_html', 'assets', 'js', 'brox-i18n.js'),
 };
 
 const buildOptions = {

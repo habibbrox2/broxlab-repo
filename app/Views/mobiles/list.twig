@@ -8,17 +8,19 @@
   <link rel="stylesheet" href="{{ asset('/assets/css/mobiles-grid.css') }}">
 {% endblock %}
 
-{% block content %}
-  {# ================= Structured Data ================= #}
+{% set page_schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  'name': 'Latest Phones & Mobile Devices',
+  'description': 'Browse the latest mobile phones and smartphone specifications',
+  'url': current_url
+} %}
+{% block schema %}
   <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "CollectionPage",
-  "name": "Latest Phones & Mobile Devices",
-  "description": "Browse the latest mobile phones and smartphone specifications",
-  "url": "{{ current_url }}"
-}
+{{ page_schema|schema_json }}
   </script>
+{% endblock %}
+{% block content %}
   {# ================= Hero Section ================= #}
   <section class="hero-section mobiles-list-hero position-relative py-5 mb-5 overflow-hidden inl-p-0014">
     <div class="container">

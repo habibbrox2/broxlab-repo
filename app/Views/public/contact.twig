@@ -5,48 +5,29 @@
 {% set breadcrumbs = [
   { label: 'Contact Us', url: '/contact', icon: 'envelope' }
 ] %}
+{% set page_schema = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  'name': app_settings.site_name,
+  'url': current_url,
+  'telephone': app_settings.contact_phone|default(''),
+  'email': app_settings.contact_email|default(''),
+  'description': 'Contact ' ~ app_settings.site_name ~ ' for inquiries and support',
+  'contactPoint': {
+    '@type': 'ContactPoint',
+    'contactType': 'Customer Service',
+    'telephone': app_settings.contact_phone|default(''),
+    'email': app_settings.contact_email|default('')
+  }
+} %}
+{% block schema %}
+  <script type="application/ld+json">
+{{ page_schema|schema_json }}
+  </script>
+{% endblock %}
 
 {% block content %}
 <div class="page-contact public-static-page">
-  <script type="application/ld+json">
-[
-{
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [
-    {
-      "@type": "ListItem",
-      "position": 1,
-      "name": "Home",
-      "item": "{{ url }}"
-    }
-    {% for crumb in breadcrumbs %}
-    ,{
-      "@type": "ListItem",
-      "position": {{ loop.index + 1 }},
-      "name": {{ crumb.label|json_encode|raw }},
-      "item": {{ (loop.last ? canonical_url : (url ~ crumb.url))|json_encode|raw }}
-    }
-    {% endfor %}
-  ]
-},
-{
-  "@context": "https://schema.org",
-  "@type": "LocalBusiness",
-  "name": {{ app_settings.site_name|json_encode }},
-  "url": "{{ url|json }}",
-  "telephone": "{{ app_settings.phone|default('') }}",
-  "email": "{{ app_settings.contact_email|default('') }}",
-  "description": "Contact {{ app_settings.site_name }} for inquiries and support",
-  "contactPoint": {
-    "@type": "ContactPoint",
-    "contactType": "Customer Service",
-    "telephone": "{{ app_settings.phone|default('') }}",
-    "email": "{{ app_settings.contact_email|default('') }}"
-  }
-}
-]
-  </script>
 
   <section class="hero-section public-page-hero public-hero--contact position-relative py-5 mb-4 overflow-hidden">
     <div class="container">

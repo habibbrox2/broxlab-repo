@@ -102,6 +102,33 @@ if (!function_exists('brox_get_request_host')) {
     }
 }
 
+if (!function_exists('brox_normalize_schema')) {
+    function brox_normalize_schema(mixed $value, string $baseUrl): mixed
+    {
+        if (is_array($value)) {
+            foreach ($value as $key => $item) {
+                $value[$key] = brox_normalize_schema($item, $baseUrl);
+            }
+            return $value;
+        }
+
+        if (!is_string($value)) {
+            return $value;
+        }
+
+        $trimmed = trim($value);
+        if (preg_match('~^(https?://|//)~i', $trimmed)) {
+            return $trimmed;
+        }
+
+        if (preg_match('~^/[^/].*~', $trimmed)) {
+            return rtrim($baseUrl, '/') . $trimmed;
+        }
+
+        return $trimmed;
+    }
+}
+
 if (!function_exists('brox_project_root')) {
     function brox_project_root(): string
     {
@@ -487,6 +514,14 @@ if (!function_exists("registerTwigHelpers")) {
                         return (int) $value;
                     }
                     return (int) $default;
+                }));
+        
+                // Float cast filter
+                $twig->addFilter(new \Twig\TwigFilter('float', function ($value, $default = 0.0) {
+                    if (is_numeric($value)) {
+                        return (float) $value;
+                    }
+                    return (float) $default;
                 }));
         
                 // Word count filter
@@ -1210,11 +1245,6 @@ if (!function_exists("registerTwigHelpers")) {
                     return getRTEFileUrl($filename, $basePath);
                 }));
         
-        
-                // ============================================================
-                // GLOBAL VARIABLES - URL & BASE CONFIGURATION
-                // ============================================================
-        
                 // 1. Determine base URL (protocol + host)
                 $protocol = brox_get_request_protocol();
                 $host = brox_get_request_host() ?? 'localhost';
@@ -1229,7 +1259,20 @@ if (!function_exists("registerTwigHelpers")) {
                     $preferredSiteUrl = brox_get_request_protocol() . '://' . $host;
                 }
                 $baseUrl = rtrim($preferredSiteUrl, '/');
-        
+
+                // Schema JSON filter for JSON-LD output
+                $twig->addFilter(new \Twig\TwigFilter('schema_json', function ($value) use ($baseUrl) {
+                    return json_encode(
+                        brox_normalize_schema($value, $baseUrl),
+                        JSON_UNESCAPED_SLASHES |
+                        JSON_UNESCAPED_UNICODE |
+                        JSON_HEX_TAG |
+                        JSON_HEX_AMP |
+                        JSON_HEX_APOS |
+                        JSON_HEX_QUOT
+                    );
+                }, ['is_safe' => ['html']]));
+
                 // Redirect to the preferred domain/protocol if the request is not already using it.
                 if (PHP_SAPI !== 'cli' && !brox_is_development_env()) {
                     $currentBaseUrl = strtolower($protocol . '://' . preg_replace('/:\d+$/', '', $host));

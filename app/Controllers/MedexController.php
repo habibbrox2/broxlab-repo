@@ -62,7 +62,7 @@ $router->get("/medex", function () use ($twig) {
         ["label" => "MedEx", "url" => "/medex", "icon" => "pill"],
     ];
 
-    echo $twig->render("medex/companies.html.twig", [
+    echo $twig->render("medex/companies.twig", [
         "title"           => "Herbal Pharmaceutical Companies in Bangladesh",
         "companies"       => $companies,
         "pagination"      => $pagination,
@@ -91,7 +91,7 @@ $router->get("/medex/details", function () use ($twig) {
         ["label" => "Details", "url" => "/medex/details", "icon" => "info-circle"],
     ];
 
-    echo $twig->render("medex/details.html.twig", [
+    echo $twig->render("medex/details.twig", [
         "title"           => "MedEx Dataset Details",
         "total_companies" => $medexService->getTotalCompanies(),
         "total_brands"    => $medexService->getTotalBrands(),
@@ -141,7 +141,7 @@ $router->get("/medex/company/{id}", function ($id) use ($twig) {
         ["label" => $company["name"], "url" => "/medex/company/" . $id, "icon" => "building"],
     ];
 
-    echo $twig->render("medex/company.html.twig", [
+    echo $twig->render("medex/company.twig", [
         "title"          => $company["name"] . " - MedEx",
         "company"        => $company,
         "brands"         => $brands,
@@ -217,7 +217,7 @@ $router->get("/medex/brand/{id}", function ($id) use ($twig) {
     }
     $breadcrumbs[] = ["label" => $brand["name"], "url" => "", "icon" => "capsule"];
 
-    echo $twig->render("medex/brand.html.twig", [
+    echo $twig->render("medex/brand.twig", [
         "title"         => $brand["name"] . " - MedEx",
         "brand"         => $brand,
         "company"       => $company,
@@ -258,28 +258,7 @@ $router->get("/api/medex/companies", function () {
 // API: refresh MedEx cache if stale or requested manually
 $router->match(['GET', 'POST'], "/api/medex/refresh", function () {
     header("Content-Type: application/json; charset=utf-8");
-
-    $expectedToken = trim((string)($_ENV["MEDEX_REFRESH_TOKEN"] ?? ""));
-    $csrfValid = false;
-    if ($_SERVER["REQUEST_METHOD"] === "POST") {
-        $csrfToken = getCsrfTokenFromRequest() ?? '';
-        $csrfValid = validateCsrfToken($csrfToken);
-        if (!$csrfValid) {
-            http_response_code(403);
-            echo json_encode(["success" => false, "error" => "Invalid CSRF token"]);
-            exit;
-        }
-    }
-
-    if ($expectedToken !== "") {
-        $providedToken = trim((string)($_REQUEST["token"] ?? ""));
-        $tokenValid = $providedToken !== "" && hash_equals($expectedToken, $providedToken);
-        if (!($tokenValid || ($csrfValid && $_SERVER["REQUEST_METHOD"] === "POST"))) {
-            http_response_code(401);
-            echo json_encode(["success" => false, "error" => "Unauthorized"]);
-            exit;
-        }
-    }
+    medexRequireAuth();
 
     try {
         $medexService = new \App\Services\MedexDataService();
@@ -299,6 +278,54 @@ $router->match(['GET', 'POST'], "/api/medex/refresh", function () {
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 });
+
+/**
+ * Authenticate a MedEx API request using dual auth (MEDEX_REFRESH_TOKEN OR CSRF).
+ *
+ * Supports two modes:
+ * - POST: requires CSRF (session-based) OR MEDEX_REFRESH_TOKEN
+ * - GET:  requires MEDEX_REFRESH_TOKEN (no session needed)
+ *
+ * Call at the top of any API route handler. Exits with 401/403 on failure.
+ */
+function medexRequireAuth(?array $payload = null): void
+{
+    $expectedToken = trim((string)($_ENV["MEDEX_REFRESH_TOKEN"] ?? ""));
+    $csrfValid = false;
+
+    if ($_SERVER["REQUEST_METHOD"] === "POST") {
+        // Check CSRF from standard sources + optional JSON payload body
+        $csrfToken = getCsrfTokenFromRequest() ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($payload["csrf_token"] ?? '');
+        $csrfValid = validateCsrfToken($csrfToken);
+    }
+
+    if ($expectedToken !== "") {
+        // Check token from standard sources + optional JSON payload body
+        $providedToken = trim((string)($_REQUEST["token"] ?? ($payload["token"] ?? ($payload["meta"]["token"] ?? ""))));
+        $tokenValid = $providedToken !== "" && hash_equals($expectedToken, $providedToken);
+        if ($tokenValid) {
+            return; // Token valid — bypass all other checks
+        }
+        // Token not valid — CSRF-only is acceptable for POST
+        if ($_SERVER["REQUEST_METHOD"] === "POST" && $csrfValid) {
+            return;
+        }
+        error_log("MedEx auth failed: method={$_SERVER['REQUEST_METHOD']}, path=" . ($_SERVER['REQUEST_URI'] ?? 'unknown') . ", token_configured=" . ($expectedToken !== '' ? 'yes' : 'no') . ", token_provided=" . ($providedToken !== '' ? 'yes' : 'no') . ", csrf_valid=" . ($csrfValid ? 'yes' : 'no'));
+        http_response_code(401);
+        header("Content-Type: application/json; charset=utf-8");
+        echo json_encode(["success" => false, "error" => "Unauthorized"]);
+        exit;
+    }
+
+    // No MEDEX_REFRESH_TOKEN configured — require CSRF for POST
+    if ($_SERVER["REQUEST_METHOD"] === "POST" && !$csrfValid) {
+        error_log("MedEx CSRF auth failed: path=" . ($_SERVER['REQUEST_URI'] ?? 'unknown') . ", token_configured=no, csrf_provided=" . (isset($csrfToken) && $csrfToken !== '' ? 'yes' : 'no'));
+        http_response_code(403);
+        header("Content-Type: application/json; charset=utf-8");
+        echo json_encode(["success" => false, "error" => "Invalid CSRF token"]);
+        exit;
+    }
+}
 
 function medexRunBackgroundCommand(string $command): bool
 {
@@ -405,28 +432,7 @@ function medexRunRouteRefresh(string $step, array $params = []): array
 // API: trigger a full MedEx refresh + collector run from browser UI
 $router->match(['GET', 'POST'], "/api/medex/refresh-all", function () {
     header("Content-Type: application/json; charset=utf-8");
-
-    $expectedToken = trim((string)($_ENV["MEDEX_REFRESH_TOKEN"] ?? ""));
-    $csrfValid = false;
-    if ($_SERVER["REQUEST_METHOD"] === "POST") {
-        $csrfToken = getCsrfTokenFromRequest() ?? '';
-        $csrfValid = validateCsrfToken($csrfToken);
-        if (!$csrfValid) {
-            http_response_code(403);
-            echo json_encode(["success" => false, "error" => "Invalid CSRF token"]);
-            exit;
-        }
-    }
-
-    if ($expectedToken !== "") {
-        $providedToken = trim((string)($_REQUEST["token"] ?? ""));
-        $tokenValid = $providedToken !== "" && hash_equals($expectedToken, $providedToken);
-        if (!($tokenValid || ($csrfValid && $_SERVER["REQUEST_METHOD"] === "POST"))) {
-            http_response_code(401);
-            echo json_encode(["success" => false, "error" => "Unauthorized"]);
-            exit;
-        }
-    }
+    medexRequireAuth();
 
     $root = medexNormalizePath(dirname(__DIR__, 2));
     $phpBinary = PHP_BINARY;
@@ -455,28 +461,7 @@ $router->match(['GET', 'POST'], "/api/medex/refresh-all", function () {
 
 $router->match(['GET', 'POST'], "/api/medex/refresh-route", function () {
     header("Content-Type: application/json; charset=utf-8");
-
-    $expectedToken = trim((string)($_ENV["MEDEX_REFRESH_TOKEN"] ?? ""));
-    $csrfValid = false;
-    if ($_SERVER["REQUEST_METHOD"] === "POST") {
-        $csrfToken = getCsrfTokenFromRequest() ?? '';
-        $csrfValid = validateCsrfToken($csrfToken);
-        if (!$csrfValid) {
-            http_response_code(403);
-            echo json_encode(["success" => false, "error" => "Invalid CSRF token"]);
-            exit;
-        }
-    }
-
-    if ($expectedToken !== "") {
-        $providedToken = trim((string)($_REQUEST["token"] ?? ""));
-        $tokenValid = $providedToken !== "" && hash_equals($expectedToken, $providedToken);
-        if (!($tokenValid || ($csrfValid && $_SERVER["REQUEST_METHOD"] === "POST"))) {
-            http_response_code(401);
-            echo json_encode(["success" => false, "error" => "Unauthorized"]);
-            exit;
-        }
-    }
+    medexRequireAuth();
 
     $step = trim((string)($_REQUEST['step'] ?? ''));
     if ($step === '') {
@@ -575,23 +560,7 @@ $router->get("/api/medex/brand/{id}", function ($id) {
 // Auth: CSRF (POST) + optional MEDEX_REFRESH_TOKEN
 $router->post("/api/medex/proxy", function () {
     header("Content-Type: application/json; charset=utf-8");
-
-    $csrfToken = getCsrfTokenFromRequest() ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (!validateCsrfToken($csrfToken)) {
-        http_response_code(403);
-        echo json_encode(["success" => false, "error" => "Invalid CSRF token"]);
-        exit;
-    }
-
-    $expectedToken = trim((string)($_ENV["MEDEX_REFRESH_TOKEN"] ?? ""));
-    if ($expectedToken !== "") {
-        $provided = trim((string)($_POST["token"] ?? $_GET["token"] ?? ""));
-        if (!hash_equals($expectedToken, $provided)) {
-            http_response_code(401);
-            echo json_encode(["success" => false, "error" => "Unauthorized"]);
-            exit;
-        }
-    }
+    medexRequireAuth();
 
     $targetUrl = trim((string)($_POST["url"] ?? ""));
     if ($targetUrl === "") {
@@ -620,35 +589,23 @@ $router->post("/api/medex/proxy", function () {
 // POST /api/medex/save-data - Receive full collected dataset from JS scraper and persist
 // Body (JSON or form): { data: [ ...companies... ], meta?: { collected_at, source: "js-scraper-v1", count } }
 // Validates structure, creates timestamped backup, atomic write.
+// Auth: medexRequireAuth (handles token + CSRF dual-auth)
 $router->post("/api/medex/save-data", function () {
     header("Content-Type: application/json; charset=utf-8");
 
-    $csrfToken = getCsrfTokenFromRequest() ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    $csrfValid = validateCsrfToken($csrfToken);
-    if (!$csrfValid) {
-        http_response_code(403);
-        echo json_encode(["success" => false, "error" => "Invalid CSRF token"]);
-        exit;
-    }
-
-    $expectedToken = trim((string)($_ENV["MEDEX_REFRESH_TOKEN"] ?? ""));
+    // Read the raw JSON body first (before any auth checks)
     $raw = file_get_contents("php://input");
     $payload = json_decode($raw, true);
     if (!is_array($payload)) {
-        // fallback to POST
         $dataField = $_POST["data"] ?? "";
         $payload = json_decode($dataField, true);
     }
-
-    if ($expectedToken !== "") {
-        $provided = trim((string)($_POST["token"] ?? $_GET["token"] ?? $payload["token"] ?? $payload["meta"]["token"] ?? ""));
-        $tokenValid = $provided !== "" && hash_equals($expectedToken, $provided);
-        if (!($tokenValid || $csrfValid)) {
-            http_response_code(401);
-            echo json_encode(["success" => false, "error" => "Unauthorized"]);
-            exit;
-        }
+    if (!is_array($payload)) {
+        $payload = [];
     }
+
+    // Auth: pass $payload so medexRequireAuth can check token/meta.token/csrf_token from JSON body
+    medexRequireAuth($payload);
 
     if (!isset($payload["data"]) || !is_array($payload["data"])) {
         http_response_code(400);

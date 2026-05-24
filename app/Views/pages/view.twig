@@ -7,28 +7,33 @@
   { label: 'Pages', url: '/pages', icon: 'file' },
   { label: page.title|slice(0, 40) ~ (page.title|length > 40 ? '...' : ''), icon: 'file-text' }
 ] %}
-{% block content %}
-  {# Structured Data - Web Page Schema #}
-  <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebPage",
-  "name": {{ page.title|json_encode }},
-  "description": {{ page.content|striptags|slice(0, 160)|json_encode }},
-  "url": "{{ current_url }}",
-     "image": {{ (page.featured_image|default(page.image|default(app_settings.site_logo))) | json_encode }},
-  "datePublished": "{{ page.created_at|date('c') }}",
-  {% if page.updated_at %}"dateModified": "{{ page.updated_at|date('c') }}",{% endif %}
-  "publisher": {
-    "@type": "Organization",
-    "name": {{ app_settings.site_name|json_encode }},
-    "logo": {
-      "@type": "ImageObject",
-     "url": "{{ app_settings.site_logo }}"
+{% set page_image = page.featured_image|default(page.image|default(app_settings.site_logo))|absolute_url %}
+{% set page_schema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  'url': current_url,
+  'name': page.title,
+  'description': page.content|striptags|slice(0, 160),
+  'image': page_image,
+  'datePublished': page.created_at|date('c'),
+  'publisher': {
+    '@type': 'Organization',
+    'name': app_settings.site_name,
+    'logo': {
+      '@type': 'ImageObject',
+      'url': app_settings.site_logo|absolute_url
     }
   }
-}
+} %}
+{% if page.updated_at %}
+  {% set page_schema = page_schema|merge({'dateModified': page.updated_at|date('c')}) %}
+{% endif %}
+{% block schema %}
+  <script type="application/ld+json">
+{{ page_schema|schema_json }}
   </script>
+{% endblock %}
+{% block content %}
   {# Hero Header Section #}
   <section class="position-relative overflow-hidden mb-5 inl-p-0048">
     <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10"

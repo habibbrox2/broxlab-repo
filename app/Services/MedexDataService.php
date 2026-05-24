@@ -40,7 +40,7 @@ class MedexDataService
         }
 
         $this->dataFile = rtrim($uploadsDir, '/\\') . '/medex_herbal_companies.json';
-        $this->refreshLockFile = BASE_PATH . 'medex_refresh.lock';
+        $this->refreshLockFile = rtrim($uploadsDir, '/\\') . '/medex_refresh.lock';
         if (!file_exists($this->dataFile)) {
             $fallback = BASE_PATH . 'medex_herbal_companies.json';
             if (file_exists($fallback)) {
@@ -245,7 +245,23 @@ class MedexDataService
 
         $json = file_get_contents($path);
         $data = json_decode($json, true);
-        return is_array($data) ? $data : null;
+        if (!is_array($data)) {
+            return null;
+        }
+
+        // Normalize: the per-brand scraper saves sections_en/sections_bn, but the controller
+        // expects details_en/details_bn. This mirrors normalizeDrugCentricEntry().
+        if (!isset($data['details_en']) && isset($data['sections_en']) && is_array($data['sections_en'])) {
+            $data['details_en'] = $data['sections_en'];
+        }
+        if (!isset($data['details_bn']) && isset($data['sections_bn']) && is_array($data['sections_bn'])) {
+            $data['details_bn'] = $data['sections_bn'];
+        }
+        if (!isset($data['details_en']) && isset($data['sections']) && is_array($data['sections'])) {
+            $data['details_en'] = $data['sections'];
+        }
+
+        return $data;
     }
 
     private function getPerBrandDetailedDataFilePath(int $brandId): string

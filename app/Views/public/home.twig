@@ -12,28 +12,30 @@
   <noscript><link rel="stylesheet" href="{{ asset('assets/css/weather.css') }}"></noscript>
 {% endblock %}
 
-{% block content %}
+{% set page_image = app_settings.site_logo|default(url ~ 'assets/images/default-og-image.png')|absolute_url %}
+{% set page_schema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  '@id': canonical_url|default(url),
+  'url': url,
+  'name': app_settings.meta_title ?: app_settings.site_name,
+  'description': app_settings.meta_description ?: 'Welcome to ' ~ app_settings.site_name,
+  'image': page_image,
+  'isPartOf': {
+    '@type': 'WebSite',
+    '@id': url,
+    'name': app_settings.site_name
+  },
+  'datePublished': 'now'|date('c'),
+  'dateModified': 'now'|date('c')
+} %}
+{% block schema %}
+  <script type="application/ld+json">
+{{ page_schema|schema_json }}
+  </script>
+{% endblock %}
 
-{# ===== JSON-LD: HomePage Schema ===== #}
-{# Helps Google understand this is the homepage and improves featured snippet chances #}
-<script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    "@id": {{ canonical_url|default(url)|json_encode }},
-    "name": {{ (app_settings.meta_title ?: app_settings.site_name)|json_encode }},
-    "description": {{ (app_settings.meta_description ?: 'Welcome to ' ~ app_settings.site_name)|json_encode }},
-    "url": {{ url|json_encode }},
-     "image": {{ app_settings.site_logo|json_encode }},
-    "isPartOf": {
-        "@type": "WebSite",
-        "@id": {{ url|json_encode }},
-        "name": {{ app_settings.site_name|json_encode }}
-    },
-    "datePublished": "{{ 'now'|date('c') }}",
-    "dateModified": "{{ 'now'|date('c') }}"
-}
-</script>
+{% block content %}
 
 {# ==================== HERO SECTION ==================== #}
 <section class="hero home-hero position-relative text-center text-white py-5 mb-5 overflow-hidden"

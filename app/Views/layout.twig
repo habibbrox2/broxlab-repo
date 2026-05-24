@@ -63,8 +63,21 @@
     <meta property="og:image:type" content="image/png">
     <meta property="og:type" content="{% block og_type %}website{% endblock %}">
     <meta property="og:url" content="{{ canonical_url|default(current_url) }}">
-    <meta property="og:locale" content="en_US">
+    <meta property="og:locale" content="{{ current_lang == 'bn' ? 'bn_BD' : 'en_US' }}">
     <meta property="og:locale:alternate" content="bn_BD">
+    {% if app_settings.facebook_app_id %}<meta property="fb:app_id" content="{{ app_settings.facebook_app_id }}">{% endif %}
+
+    {# Article-specific OG tags - populated by content views via block or page variables #}
+    {% if og_article_author is defined %}<meta property="article:author" content="{{ og_article_author }}">{% endif %}
+    {% if og_article_publisher is defined %}<meta property="article:publisher" content="{{ og_article_publisher }}">{% endif %}
+    {% if og_published_time is defined %}<meta property="article:published_time" content="{{ og_published_time }}">{% endif %}
+    {% if og_modified_time is defined %}<meta property="article:modified_time" content="{{ og_modified_time }}">{% endif %}
+    {% if og_section is defined %}<meta property="article:section" content="{{ og_section }}">{% endif %}
+    {% if og_tags is defined and og_tags is iterable %}
+      {% for tag in og_tags %}
+        <meta property="article:tag" content="{{ tag }}">
+      {% endfor %}
+    {% endif %}
 
     {# ===== ORGANIZATION SCHEMA (Site-wide) ===== #}
     <script type="application/ld+json">
@@ -96,10 +109,21 @@
     {% if app_settings.twitter_handle %}<meta name="twitter:creator" content="@{{ app_settings.twitter_handle }}">{% endif %}
     {% if app_settings.twitter_site %}<meta name="twitter:site" content="@{{ app_settings.twitter_site }}">{% endif %}
 
+    {# ===== MOBILE & THUMBNAIL META ===== #}
+    <meta name="thumbnail" content="{{ block('og_image') }}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="{{ app_settings.site_name }}">
+    <meta name="application-name" content="{{ app_settings.site_name }}">
+
     {# ===== LANGUAGE & LOCALIZATION ===== #}
-    <meta name="language" content="English">
-    <link rel="alternate" hreflang="en-US" href="{{ canonical_url|default(current_url) }}">
-    <link rel="alternate" hreflang="bn-BD" href="{{ current_url }}" lang="bn">
+    <meta name="language" content="{{ current_lang == 'bn' ? 'Bengali' : 'English' }}">
+    <link rel="alternate" hreflang="en" href="{{ canonical_url|default(current_url) }}">
+    <link rel="alternate" hreflang="bn" href="{{ current_url }}" lang="bn">
+    <link rel="alternate" hreflang="x-default" href="{{ canonical_url|default(current_url) }}">
+
+    {# ===== PAGE TIMESTAMPS (SEO) ===== #}
+    {% if page_date_published is defined %}<meta name="date" content="{{ page_date_published }}">{% endif %}
+    {% if page_date_modified is defined %}<meta name="modified" content="{{ page_date_modified }}">{% endif %}
 
     {# ===== FIREBASE & NOTIFICATION SYSTEM META TAGS ===== #}
     <meta name="csrf-token" content="{{ csrf_token }}">
@@ -273,6 +297,8 @@
     }
     </script>
 
+    {% block schema %}{% endblock %}
+
     {% if breadcrumbs is defined and breadcrumbs|length > 0 %}
     {% set sanitized_breadcrumbs = breadcrumbs|sanitize_breadcrumbs %}
     <script type="application/ld+json">
@@ -331,19 +357,20 @@
                     {% set nav_items = (public_nav_items is iterable) ? public_nav_items : [] %}
                     {% if nav_items is empty %}
                         {% set nav_items = [
-                            {'label': 'Home', 'url': '/', 'icon': 'bi-house-door-fill', 'match': '/'},
-                            {'label': 'Mobiles', 'url': '/mobiles', 'icon': 'bi-phone-fill', 'match': '/mobiles'},
-                            {'label': 'Articles', 'url': '/posts', 'icon': 'bi-newspaper', 'match': '/posts'},
-                            {'label': 'Services', 'url': '/services', 'icon': 'bi-award-fill', 'match': '/services'},
-                            {'label': 'Calculators', 'url': '/calculators', 'icon': 'bi-calculator', 'match': '/calculators'},
-                            {'label': 'Support Us', 'url': '/donate', 'icon': 'bi-heart-fill', 'match': '/donate'},
-                            {'label': 'Studio', 'url': '/studio', 'icon': 'bi-palette-fill', 'match': '/studio'},
-                            {'label': 'Bangla Converter', 'url': '/bangla-converter', 'icon': 'bi-translate', 'match': '/bangla-converter'},
+                            {'label': 'Home', 'label_bn': 'হোম', 'url': '/', 'icon': 'bi-house-door-fill', 'match': '/'},
+                            {'label': 'Mobiles', 'label_bn': 'মোবাইল', 'url': '/mobiles', 'icon': 'bi-phone-fill', 'match': '/mobiles'},
+                            {'label': 'Articles', 'label_bn': 'আর্টিকেল', 'url': '/posts', 'icon': 'bi-newspaper', 'match': '/posts'},
+                            {'label': 'Services', 'label_bn': 'সেবাসমূহ', 'url': '/services', 'icon': 'bi-award-fill', 'match': '/services'},
+                            {'label': 'Calculators', 'label_bn': 'ক্যালকুলেটর', 'url': '/calculators', 'icon': 'bi-calculator', 'match': '/calculators'},
+                            {'label': 'Support Us', 'label_bn': 'সহায়তা করুন', 'url': '/donate', 'icon': 'bi-heart-fill', 'match': '/donate'},
+                            {'label': 'Studio', 'label_bn': 'স্টুডিও', 'url': '/studio', 'icon': 'bi-palette-fill', 'match': '/studio'},
+                            {'label': 'Bangla Converter', 'label_bn': 'বাংলা কনভার্টার', 'url': '/bangla-converter', 'icon': 'bi-translate', 'match': '/bangla-converter'},
+                            {'label': 'MedEx', 'label_bn': 'মেডএক্স', 'url': '/medex', 'icon': 'bi-capsule', 'match': '/medex'},
                         ] %}
                         {# Add Dashboard link for authenticated users #}
                         {% if auth_user is defined and auth_user.is_authenticated %}
                             {% set dashboard_url = (auth_user.is_super_admin is defined and auth_user.is_super_admin) or (auth_user.role is defined and auth_user.role == 'admin') ? '/admin/dashboard' : '/user/dashboard' %}
-                            {% set nav_items = nav_items|merge([{'label': 'Dashboard', 'url': dashboard_url, 'icon': 'bi-speedometer2', 'match': dashboard_url}]) %}
+                            {% set nav_items = nav_items|merge([{'label': 'Dashboard', 'label_bn': 'ড্যাশবোর্ড', 'url': dashboard_url, 'icon': 'bi-speedometer2', 'match': dashboard_url}]) %}
                         {% endif %}
                     {% endif %}
 
@@ -358,7 +385,7 @@
                                         {% if item.icon|default('') %}
                                             <i class="bi {{ item.icon }} me-2"></i>
                                         {% endif %}
-                                        <span data-i18n="{{ item.label|default('Link') }}">{{ item.label|default('Link')|trans }}</span>
+                                        <span data-i18n="{{ item.label|default('Link') }}" data-i18n-en="{{ item.label }}" data-i18n-bn="{{ item.label_bn|default(item.label) }}">{{ item.label|default('Link')|trans }}</span>
                                     </a>
                                 </li>
                             {% endif %}
@@ -502,13 +529,13 @@
                         {% if available_languages is defined and available_languages|length > 1 %}
                         <li class="nav-item dropdown brox-nav-item ms-lg-2">
                             <a class="nav-link dropdown-toggle brox-nav-link brox-language-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span data-i18n="{{ current_lang == 'bn' ? 'Bangla' : 'English' }}">{{ current_lang == 'bn' ? 'বাংলা'|trans : 'EN'|trans }}</span>
+                                <span data-i18n="{{ current_lang == 'bn' ? 'Bangla' : 'English' }}" data-i18n-en="EN" data-i18n-bn="বাংলা">{{ current_lang == 'bn' ? 'বাংলা'|trans : 'EN'|trans }}</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
                                 {% for langCode, langName in available_languages %}
                                     <li>
-                                        <a class="dropdown-item {% if current_lang == langCode %}active{% endif %}" href="?lang={{ langCode }}">
-                                            <span data-i18n="{{ langCode == 'bn' ? 'Bangla' : 'English' }}">{{ langName|trans }}</span>
+                                        <a class="dropdown-item {% if current_lang == langCode %}active{% endif %}" href="?lang={{ langCode }}" data-lang-btn="{{ langCode }}">
+                                            <span data-i18n="{{ langCode == 'bn' ? 'Bangla' : 'English' }}" data-i18n-en="{{ langCode == 'bn' ? 'Bangla' : 'English' }}" data-i18n-bn="{{ langCode == 'bn' ? 'বাংলা' : 'ইংরেজি' }}">{{ langName|trans }}</span>
                                         </a>
                                     </li>
                                 {% endfor %}
@@ -586,13 +613,13 @@
     {% include 'partials/footer.twig' %}
 
     {# ===== SCROLL TO TOP BUTTON ===== #}
-    <button id="scrollTopBtn" type="button" title="{{ 'Scroll to top of page'|trans }}" aria-label="{{ 'Scroll to top of page'|trans }}" data-i18n-title="Scroll to top of page" data-i18n-aria-label="Scroll to top of page" style="position: fixed; bottom: 140px; right: 20px; z-index: 1998; width: 48px; height: 48px; border: none; border-radius: 50%; background: var(--bs-primary); color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
-        <i class="bi bi-arrow-up-short" aria-hidden="true" style="font-size: 1.4rem;"></i>
+    <button id="scrollTopBtn" type="button" title="{{ 'Scroll to top of page'|trans }}" aria-label="{{ 'Scroll to top of page'|trans }}" data-i18n-title="Scroll to top of page" data-i18n-aria-label="Scroll to top of page" class="scroll-top-btn">
+        <i class="bi bi-arrow-up-short" aria-hidden="true"></i>
     </button>
 
 
     {# ===== NOTIFICATION PERMISSION BUTTON (For All Users) ===== #}
-    <button id="enableNotificationsBtn" title="{{ 'Enable push notifications'|trans }}" aria-label="{{ 'Enable notifications'|trans }}" data-i18n-title="Enable push notifications" data-i18n-aria-label="Enable notifications" style="position: fixed; bottom: 20px; right: 70px; z-index: 998; padding: 10px 12px; border: none; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all 0.3s ease; font-size: 14px; display: none; animation: pulse 2s infinite;">
+    <button id="enableNotificationsBtn" title="{{ 'Enable push notifications'|trans }}" aria-label="{{ 'Enable notifications'|trans }}" data-i18n-title="Enable push notifications" data-i18n-aria-label="Enable notifications" class="notif-permission-btn" style="display: none;">
         🔔
     </button>
 
@@ -681,6 +708,9 @@
     <script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}"></script>
     <script type="module" src="{{ asset('/assets/js/dist/script.js') }}"></script>
 
+    {# brox-i18n handles dynamic language switching (no page reload) #}
+    <script type="module" src="{{ asset('/assets/js/dist/brox-i18n.js') }}"></script>
+
     {# ===== STEP 3: Load Feature Scripts (Non-critical) ===== #}
     {# Datepicker Library #}
     <link rel="stylesheet" href="{{ asset('/assets/datepicker/datepicker.css') }}" media="print" onload="this.media='all'">
@@ -730,153 +760,7 @@
 {% include 'partials/ai-assistant/admin-button.twig' %}
     {% endif %}
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle language toggle clicks
-    const languageLinks = document.querySelectorAll('a[href*=\"?lang=\"]');
-    languageLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const url = new URL(this.href, window.location.origin);
-            const newLang = url.searchParams.get('lang');
-            if (!newLang) return;
-
-            // Perform dynamic translation instead of page reload
-            translatePageToLanguage(newLang).then(() => {
-                // Update URL without reload
-                const currentUrl = new URL(window.location.href);
-                currentUrl.searchParams.set('lang', newLang);
-                window.history.pushState({}, '', currentUrl.toString());
-
-                // Sync site and chat language if available
-                if (window.broxI18n?.setLanguage) {
-                    window.broxI18n.setLanguage(newLang);
-                }
-                if (window.syncChatLanguage) {
-                    window.syncChatLanguage(newLang);
-                }
-
-                // Update language display
-                updateLanguageDisplay(newLang);
-            }).catch(error => {
-                console.error('Translation failed:', error);
-                // Fallback to page reload
-                window.location.href = this.href;
-            });
-        });
-    });
-
-    // Function to dynamically translate the page
-    async function translatePageToLanguage(targetLang) {
-        const translationCache = window.__broxClientTranslationCache = window.__broxClientTranslationCache || {};
-
-        // Collect all translatable elements
-        const translatableElements = document.querySelectorAll('[data-i18n], [data-i18n-title], [data-i18n-aria-label]');
-        if (translatableElements.length === 0) {
-            return; // No elements to translate
-        }
-
-        const itemsByText = {};
-        const originalItems = [];
-
-        const applyTranslation = (item, translated) => {
-            if (item.attribute === 'textContent') {
-                item.element.textContent = translated;
-            } else if (item.attribute === 'title') {
-                item.element.setAttribute('title', translated);
-            } else if (item.attribute === 'ariaLabel') {
-                item.element.setAttribute('aria-label', translated);
-            }
-        };
-
-        const buildCacheKey = (text) => `${targetLang}::${text}`;
-
-        translatableElements.forEach(el => {
-            if (el.hasAttribute('data-i18n')) {
-                const originalText = el.getAttribute('data-i18n');
-                if (originalText && originalText.trim()) {
-                    originalItems.push({ element: el, text: originalText.trim(), attribute: 'textContent' });
-                }
-            }
-            if (el.hasAttribute('data-i18n-title')) {
-                const originalText = el.getAttribute('data-i18n-title');
-                if (originalText && originalText.trim()) {
-                    originalItems.push({ element: el, text: originalText.trim(), attribute: 'title' });
-                }
-            }
-            if (el.hasAttribute('data-i18n-aria-label')) {
-                const originalText = el.getAttribute('data-i18n-aria-label');
-                if (originalText && originalText.trim()) {
-                    originalItems.push({ element: el, text: originalText.trim(), attribute: 'ariaLabel' });
-                }
-            }
-        });
-
-        if (originalItems.length === 0) {
-            return;
-        }
-
-        originalItems.forEach(item => {
-            const cacheKey = buildCacheKey(item.text);
-            if (translationCache[cacheKey]) {
-                applyTranslation(item, translationCache[cacheKey]);
-            } else {
-                itemsByText[item.text] = itemsByText[item.text] || [];
-                itemsByText[item.text].push(item);
-            }
-        });
-
-        const textsToTranslate = Object.keys(itemsByText);
-        if (textsToTranslate.length === 0) {
-            return;
-        }
-
-        const batchSize = 10;
-        for (let i = 0; i < textsToTranslate.length; i += batchSize) {
-            const batch = textsToTranslate.slice(i, i + batchSize);
-
-            try {
-                const response = await fetch('/api/translate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        texts: batch,
-                        from: 'en',
-                        to: targetLang
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const result = await response.json();
-                if (result.success && result.translations) {
-                    batch.forEach(original => {
-                        const translated = result.translations[original] || original;
-                        const cacheKey = buildCacheKey(original);
-                        translationCache[cacheKey] = translated;
-                        const items = itemsByText[original] || [];
-                        items.forEach(item => applyTranslation(item, translated));
-                    });
-                }
-            } catch (error) {
-                console.warn('Failed to translate batch:', batch, error);
-            }
-        }
-    }
-
-    // Function to update language display in the dropdown
-    function updateLanguageDisplay(lang) {
-        const langDisplay = document.querySelector('.brox-language-toggle .dropdown-toggle');
-        if (langDisplay) {
-            langDisplay.innerHTML = lang === 'bn' ? 'বাংলা' : 'EN';
-        }
-    }
-});
-</script>
+{# brox-i18n module handles dynamic language switching automatically via data-lang-btn attributes #}
 
 </body>
 </html>

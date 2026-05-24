@@ -10,73 +10,94 @@
 {% set image_count = images|length %}
 {% set spec_count = specifications|length %}
 {% set main_image = image_count > 0 ? images[0].image_url : null %}
-
-{% block content %}
-  <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Product",
-  "name": "{{ mobile.brand_name|json }} {{ mobile.model_name|json }}",
-  "description": "Complete specifications and information about {{ mobile.brand_name|json }} {{ mobile.model_name|json }} phone",
-  "brand": {
-    "@type": "Brand",
-    "name": "{{ mobile.brand_name|json }}"
+{% set page_image = main_image ? main_image : app_settings.site_logo|default(url ~ 'assets/images/default-image.png')|absolute_url %}
+{% set page_schema = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  'name': mobile.brand_name ~ ' ' ~ mobile.model_name,
+  'description': 'Complete specifications and information about ' ~ mobile.brand_name ~ ' ' ~ mobile.model_name ~ ' phone',
+  'brand': {
+    '@type': 'Brand',
+    'name': mobile.brand_name
   },
-  "image": {% if main_image %}"{{ main_image }}"{% else %}[]{% endif %},
-  "offers": {
-    "@type": "Offer",
-    "url": "{{ current_url }}",
-    "availability": "https://schema.org/InStock",
-    "priceCurrency": "BDT",
-    {% if mobile.official_price and mobile.official_price > 0 %}"price": "{{ mobile.official_price|round(2) }}",{% elseif mobile.unofficial_price and mobile.unofficial_price > 0 %}"price": "{{ mobile.unofficial_price|round(2) }}",{% endif %}
-    {% if mobile.official_price and mobile.official_price > 0 %}"priceSpecification": {
-      "@type": "PriceSpecification",
-      "priceCurrency": "BDT",
-      "price": "{{ mobile.official_price|round(2) }}"
-    },{% endif %}
-    "shippingDetails": {
-      "@type": "ShippingDeliveryTime",
-      "shippingRate": {
-        "@type": "PriceSpecification",
-        "priceCurrency": "BDT",
-        "price": "0"
+  'image': page_image,
+  'url': current_url,
+  'offers': {
+    '@type': 'Offer',
+    'url': current_url,
+    'availability': 'https://schema.org/InStock',
+    'priceCurrency': 'BDT',
+    'shippingDetails': {
+      '@type': 'ShippingDeliveryTime',
+      'shippingRate': {
+        '@type': 'PriceSpecification',
+        'priceCurrency': 'BDT',
+        'price': 0
       },
-      "shippingDestination": {
-        "@type": "ShippingRateArea",
-        "areaServed": "BD"
+      'shippingDestination': {
+        '@type': 'ShippingRateArea',
+        'areaServed': 'BD'
       },
-      "deliveryTime": {
-        "@type": "ShippingDeliveryTime",
-        "handlingTime": {
-          "@type": "QuantitativeValue",
-          "minValue": 0,
-          "maxValue": 2,
-          "unitCode": "DAY"
+      'deliveryTime': {
+        '@type': 'ShippingDeliveryTime',
+        'handlingTime': {
+          '@type': 'QuantitativeValue',
+          'minValue': 0,
+          'maxValue': 2,
+          'unitCode': 'DAY'
         },
-        "transitTime": {
-          "@type": "QuantitativeValue",
-          "minValue": 1,
-          "maxValue": 5,
-          "unitCode": "DAY"
+        'transitTime': {
+          '@type': 'QuantitativeValue',
+          'minValue': 1,
+          'maxValue': 5,
+          'unitCode': 'DAY'
         }
       }
     },
-    "hasMerchantReturnPolicy": {
-      "@type": "MerchantReturnPolicy",
-      "returnsAccepted": true,
-      "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
-      "merchantReturnDays": 30,
-      "returnMethod": "https://schema.org/ReturnByMail",
-      "returnFees": "https://schema.org/FreeReturn"
+    'hasMerchantReturnPolicy': {
+      '@type': 'MerchantReturnPolicy',
+      'returnsAccepted': true,
+      'returnPolicyCategory': 'https://schema.org/MerchantReturnFiniteReturnWindow',
+      'merchantReturnDays': 30,
+      'returnMethod': 'https://schema.org/ReturnByMail',
+      'returnFees': 'https://schema.org/FreeReturn'
     }
   },
-  "aggregateRating": {
-    "@type": "AggregateRating",
-    "ratingValue": "4.5",
-    "reviewCount": "{{ comments|length > 0 ? comments|length : 0 }}"
+  'aggregateRating': {
+    '@type': 'AggregateRating',
+    'ratingValue': 4.5,
+    'reviewCount': comments|length
+  },
+  'isPartOf': {
+    '@type': 'WebSite',
+    '@id': url
   }
-}
+} %}
+{% if mobile.official_price and mobile.official_price > 0 %}
+  {% set page_schema = page_schema|merge({
+    'offers': page_schema.offers|merge({
+      'price': mobile.official_price|round(2),
+      'priceSpecification': {
+        '@type': 'PriceSpecification',
+        'priceCurrency': 'BDT',
+        'price': mobile.official_price|round(2)
+      }
+    })
+  }) %}
+{% elseif mobile.unofficial_price and mobile.unofficial_price > 0 %}
+  {% set page_schema = page_schema|merge({
+    'offers': page_schema.offers|merge({
+      'price': mobile.unofficial_price|round(2)
+    })
+  }) %}
+{% endif %}
+{% block schema %}
+  <script type="application/ld+json">
+{{ page_schema|schema_json }}
   </script>
+{% endblock %}
+
+{% block content %}
 
   <section class="mobile-view-page py-4 py-lg-5">
     <div class="container">

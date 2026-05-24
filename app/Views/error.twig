@@ -3,10 +3,12 @@
 
 {% block title %}{% if code %}{{ code }}{% endif %} {{ 'Error'|trans }} - {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
 
+{% block meta_description %}{% if code == 404 %}{{ 'Page not found. The requested URL was not found on this server.'|trans }}{% elseif code == 403 %}{{ 'Access denied. You do not have permission to access this resource.'|trans }}{% elseif code == 500 %}{{ 'Internal server error. Something went wrong on our end.'|trans }}{% else %}{{ 'An error occurred while processing your request.'|trans }}{% endif %}{% endblock %}
+
 {% block head %}
 {{ parent() }}
 
-{% if code == 404 %}
+{% if code in [403, 404, 500] %}
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
 <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
 <meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
@@ -598,6 +600,29 @@
       </div>
 
     </div>
+    {% endif %}
+
+    {# ===== JSON-LD STRUCTURED DATA ===== #}
+    {% if c == 404 %}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "@id": {{ canonical_url|default(current_url)|json_encode }},
+      "url": {{ canonical_url|default(current_url)|json_encode }},
+      "name": "{{ c }} {{ 'Error'|trans }} - {{ app_settings.site_name|default('BroxBhai') }}",
+      "description": {{ ('Page not found. The requested URL ' ~ (canonical_url|default(current_url)) ~ ' was not found.')|json_encode }},
+      "isPartOf": {
+        "@type": "WebSite",
+        "@id": {{ url|json_encode }}
+      },
+      "mainEntity": {
+        "@type": "SearchAction",
+        "target": {{ (url ~ '/search?q={search_term_string}')|json_encode }},
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
     {% endif %}
 
     {# ===== DEBUG SECTION ===== #}

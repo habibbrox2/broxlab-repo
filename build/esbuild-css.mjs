@@ -90,6 +90,7 @@ async function buildAll() {
         'public_html/assets/css/5-feed.css',
         'public_html/assets/css/6-pages.css',
         'public_html/assets/css/7-dark-mode.css',
+        'public_html/assets/css/8-responsive.css',
     ];
 
     const adminFiles = [

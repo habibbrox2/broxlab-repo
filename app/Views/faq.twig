@@ -18,7 +18,7 @@
       </div>
     </div>
   </section>
-  {# Structured Data - FAQ Schema #}
+  {# Structured Data - FAQ Schema (all 8 Q&A pairs dynamically) #}
   <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -26,10 +26,66 @@
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "What is BroxBhai?",
+      "name": {{ 'What is BroxBhai?'|trans|json_encode }},
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "BroxBhai is your ultimate destination for mobile reviews, tech insights, and gadget discussions."
+        "text": {{ 'BroxBhai is a comprehensive platform for mobile device reviews, tech news, and gadget discussions. We provide detailed reviews, comparisons, and guides to help you make informed decisions about your tech purchases.'|trans|json_encode }}
+      }
+    },
+    {
+      "@type": "Question",
+      "name": {{ 'How can I submit a review?'|trans|json_encode }},
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": {{ 'You need to create an account first, then navigate to your dashboard and click "Submit Review". Make sure to provide detailed information and include photos if possible.'|trans|json_encode }}
+      }
+    },
+    {
+      "@type": "Question",
+      "name": {{ 'How do I report inappropriate content?'|trans|json_encode }},
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": {{ 'If you find any inappropriate content or spam, please use the report button on that content or contact us directly with details.'|trans|json_encode }}
+      }
+    },
+    {
+      "@type": "Question",
+      "name": {{ 'Can I edit my profile?'|trans|json_encode }},
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": {{ 'Yes! Once you are logged in, go to your profile settings where you can update your name, email, profile picture, and other personal information.'|trans|json_encode }}
+      }
+    },
+    {
+      "@type": "Question",
+      "name": {{ 'How often is content updated?'|trans|json_encode }},
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": {{ 'We publish new reviews, news, and guides regularly. Subscribe to our newsletter to get the latest updates.'|trans|json_encode }}
+      }
+    },
+    {
+      "@type": "Question",
+      "name": {{ 'Is BroxBhai free to use?'|trans|json_encode }},
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": {{ 'Yes! BroxBhai is completely free to browse, read reviews, and participate in discussions. You only need to create a free account to submit content.'|trans|json_encode }}
+      }
+    },
+    {
+      "@type": "Question",
+      "name": {{ 'How can I delete my account?'|trans|json_encode }},
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": {{ 'You can request account deletion from your account settings. Please note that this action cannot be undone.'|trans|json_encode }}
+      }
+    },
+    {
+      "@type": "Question",
+      "name": {{ 'Do you accept guest posts?'|trans|json_encode }},
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": {{ 'Yes! We welcome guest posts from experienced reviewers and tech writers. Please contact us with your proposal.'|trans|json_encode }}
       }
     }
   ]

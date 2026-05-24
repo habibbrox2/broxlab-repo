@@ -661,6 +661,53 @@
     box-shadow: var(--medex-shadow-lg);
 }
 
+/* ===== Toast Notifications ===== */
+@keyframes medexToastSlideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes medexToastSlideOut {
+    from { transform: translateX(0);    opacity: 1; }
+    to   { transform: translateX(100%); opacity: 0; }
+}
+
+.medex-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    min-width: 280px;
+    max-width: 420px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+    animation: medexToastSlideIn 0.3s ease-out;
+    line-height: 1.4;
+}
+
+.medex-toast--primary { background: #0d6efd; }
+.medex-toast--success { background: #198754; }
+.medex-toast--danger  { background: #dc3545; }
+
+.medex-toast__close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.8);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0 0 0 8px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.medex-toast__close:hover { color: #fff; }
+
 /* Focus states */
 .medex-section-header:focus,
 .medex-btn:focus,

@@ -94,56 +94,6 @@
     var _routeToastEl = null;
     var _routeToastTimer = null;
 
-    function _injectToastStyles() {
-        if (document.getElementById('medex-toast-style')) return;
-        var style = document.createElement('style');
-        style.id = 'medex-toast-style';
-        style.textContent = `
-            @keyframes medexToastSlideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to   { transform: translateX(0);    opacity: 1; }
-            }
-            @keyframes medexToastSlideOut {
-                from { transform: translateX(0);    opacity: 1; }
-                to   { transform: translateX(100%); opacity: 0; }
-            }
-            .medex-toast {
-                position: fixed;
-                bottom: 24px;
-                right: 24px;
-                z-index: 9999;
-                min-width: 280px;
-                max-width: 420px;
-                padding: 14px 18px;
-                border-radius: 12px;
-                box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-                font-size: 0.9rem;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                color: #fff;
-                animation: medexToastSlideIn 0.3s ease-out;
-                line-height: 1.4;
-            }
-            .medex-toast--primary { background: #0d6efd; }
-            .medex-toast--success { background: #198754; }
-            .medex-toast--danger  { background: #dc3545; }
-            .medex-toast__close {
-                margin-left: auto;
-                background: none;
-                border: none;
-                color: rgba(255,255,255,0.8);
-                font-size: 1.1rem;
-                cursor: pointer;
-                padding: 0 0 0 8px;
-                line-height: 1;
-                flex-shrink: 0;
-            }
-            .medex-toast__close:hover { color: #fff; }
-        `;
-        document.head.appendChild(style);
-    }
-
     function showRouteToast(message, type) {
         // type: 'starting' | 'success' | 'error'
         if (_routeToastEl) {
@@ -154,8 +104,6 @@
             clearTimeout(_routeToastTimer);
             _routeToastTimer = null;
         }
-
-        _injectToastStyles();
 
         var bgClass = 'medex-toast--primary';
         var iconHtml = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
@@ -689,10 +637,10 @@
             var url = new URL(window.location.href);
             url.searchParams.set('lang', lang);
             window.history.replaceState({}, '', url.toString());
-        } catch (e) {}
+        } catch (e) { /* non-critical, silently ignore */ }
 
         // Save preference
-        try { localStorage.setItem('medex-lang', lang); } catch (e) {}
+        try { localStorage.setItem('medex-lang', lang); } catch (e) { /* non-critical, silently ignore */ }
 
         // Update all data-i18n elements (static page text)
         document.querySelectorAll('[data-i18n-en]').forEach(function (el) {
@@ -761,26 +709,24 @@
         medexSyncLangUI(lang);
     }
 
-    async function initBrandDrugDetailsCollection() {
+    async function initBrandSpecificCollection() {
         if (!brandId) return;
+        // Skip if triggerRouteRefresh already fired for this page load (prevents duplicate API calls)
+        if (routeRefreshState.triggered) return;
 
-        const feedback = document.getElementById('medex-refresh-feedback');
-        if (!feedback) return;
-
-        var stateKey = 'medex-brand-details-last-run-' + brandId;
-        var cooldownMs = 12 * 60 * 60 * 1000; // 12 hours
+        var stateKey = 'medex-brand-detail-collect-' + brandId;
+        var cooldownMs = 6 * 60 * 60 * 1000; // 6 hours per brand
         var lastRun = parseInt(localStorage.getItem(stateKey) || '0', 10);
         if (Number.isFinite(lastRun) && Date.now() - lastRun < cooldownMs) {
             return;
         }
         localStorage.setItem(stateKey, Date.now().toString());
 
-        feedback.innerHTML = '<span class="spinner-border spinner-border-sm text-primary me-1" role="status" aria-hidden="true"></span> Starting drug details collection in background…';
-        showRouteToast('Drug details collection starting for brand ' + brandId + '...', 'starting');
+        showRouteToast('Starting detail collection for brand ' + brandId + '...', 'starting');
 
         try {
             var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-            var body = new URLSearchParams({ step: 'drug-details' });
+            var body = new URLSearchParams({ step: 'brand-details', brand_id: brandId });
             if (csrfToken) {
                 body.append('csrf_token', csrfToken);
             }
@@ -798,13 +744,11 @@
 
             var json = await response.json();
             if (!response.ok || !json.success) {
-                throw new Error(json.error || 'Unable to start drug details collection');
+                throw new Error(json.error || 'Unable to start brand detail collection');
             }
-            feedback.textContent = 'Drug details collection started in background. Refresh after a few minutes.';
-            showRouteToast('Drug details collection started for brand ' + brandId + '.', 'success');
+            showRouteToast('Brand detail collection started for brand ' + brandId + '. Refresh after a minute.', 'success');
         } catch (err) {
-            feedback.innerHTML = '<span class="text-danger">Drug details collection failed: ' + escapeHtml(err.message || err) + '</span>';
-            showRouteToast('Drug details collection failed: ' + (err.message || err), 'error');
+            showRouteToast('Brand detail collection failed: ' + (err.message || err), 'error');
         }
     }
 
@@ -834,8 +778,8 @@
                     showRouteStatus('medexBrandStatus', 'Brand details appear incomplete. Starting route collection...', false);
                     triggerRouteRefresh('brand-details', { brand_id: brandId });
                 }
-                // Also trigger drug-details collection for this brand in background
-                initBrandDrugDetailsCollection();
+                // Also trigger brand-specific detail collection in background
+                initBrandSpecificCollection();
             })
             .catch((error) => {
                 showRouteStatus('medexBrandStatus', `Unable to load live brand data: ${error.message || error}`, true);

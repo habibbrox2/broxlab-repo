@@ -6,6 +6,67 @@
   { label: 'FAQ', url: '/faq', icon: 'question' }
 ] %}
 
+{% set faq_items = [
+  {
+    '@type': 'Question',
+    'name': 'What is BroxBhai?',
+    'acceptedAnswer': {
+      '@type': 'Answer',
+      'text': 'BroxBhai is a comprehensive platform for mobile device reviews, tech news, and gadget discussions with detailed reviews, comparisons, and guides.'
+    }
+  },
+  {
+    '@type': 'Question',
+    'name': 'How can I submit a review?',
+    'acceptedAnswer': {
+      '@type': 'Answer',
+      'text': 'Create an account, go to your dashboard, click Submit Review, and include detailed information with images if possible.'
+    }
+  },
+  {
+    '@type': 'Question',
+    'name': 'How do I report inappropriate content?',
+    'acceptedAnswer': {
+      '@type': 'Answer',
+      'text': 'Use the report button on the content or contact us directly with details about the issue.'
+    }
+  },
+  {
+    '@type': 'Question',
+    'name': 'Can I edit my profile?',
+    'acceptedAnswer': {
+      '@type': 'Answer',
+      'text': 'Yes. After login, open your profile settings to update personal information and profile picture.'
+    }
+  },
+  {
+    '@type': 'Question',
+    'name': 'How often is content updated?',
+    'acceptedAnswer': {
+      '@type': 'Answer',
+      'text': 'We publish news, reviews, and guides regularly. Subscribe to our newsletter for the latest updates.'
+    }
+  },
+  {
+    '@type': 'Question',
+    'name': 'Is BroxBhai free to use?',
+    'acceptedAnswer': {
+      '@type': 'Answer',
+      'text': 'Yes. Most content on BroxBhai is available free of charge, though some services may require registration or premium access.'
+    }
+  }
+] %}
+{% set page_schema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  'mainEntity': faq_items
+} %}
+{% block schema %}
+  <script type="application/ld+json">
+{{ page_schema|schema_json }}
+  </script>
+{% endblock %}
+
 {% block content %}
 <div class="page-faq public-static-page">
   <section class="hero-section public-page-hero public-hero--faq position-relative py-5 mb-4 overflow-hidden">
@@ -27,63 +88,6 @@
       </div>
     </div>
   </section>
-
-  <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "What is BroxBhai?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "BroxBhai is a comprehensive platform for mobile device reviews, tech news, and gadget discussions with detailed reviews, comparisons, and guides."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How can I submit a review?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Create an account, go to your dashboard, click Submit Review, and include detailed information with images if possible."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How do I report inappropriate content?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Use the report button on the content or contact us directly with details about the issue."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Can I edit my profile?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. After login, open your profile settings to update personal information and profile picture."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How often is content updated?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "We publish news, reviews, and guides regularly. Subscribe to our newsletter for the latest updates."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Is BroxBhai free to use?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. Browsing and reading content is completely free. You only need a free account for submissions and participation."
-      }
-    }
-  ]
-}
-  </script>
 
   <div class="container py-4 py-lg-5">
     <div class="row">

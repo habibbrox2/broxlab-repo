@@ -1,4 +1,4 @@
-/* RTE Editor Bundle - 2026-05-23T14:57:50.755Z */
+/* RTE Editor Bundle - 2026-05-24T10:46:56.343Z */
 /* Eager: 11 files - 3 lazy (modals,color,images) loaded dynamically */
 (()=>{var S=Object.create;var _=Object.defineProperty;var C=Object.getOwnPropertyDescriptor;var E=Object.getOwnPropertyNames;var T=Object.getPrototypeOf,H=Object.prototype.hasOwnProperty;var L=(u,h)=>()=>(h||u((h={exports:{}}).exports,h),h.exports);var M=(u,h,i,r)=>{if(h&&typeof h=="object"||typeof h=="function")for(let e of E(h))!H.call(u,e)&&e!==i&&_(u,e,{get:()=>h[e],enumerable:!(r=C(h,e))||r.enumerable});return u};var A=(u,h,i)=>(i=u!=null?S(T(u)):{},M(h||!u||!u.__esModule?_(i,"default",{value:u,enumerable:!0}):i,u));var I=L((z,m)=>{typeof window.__RTE_BUNDLED__>"u"&&(window.__RTE_BUNDLED__=!0);/**
  * Rich Text Editor - Vanilla JavaScript

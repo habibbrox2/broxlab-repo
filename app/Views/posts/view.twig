@@ -7,6 +7,56 @@
   { label: 'Articles', url: '/posts', icon: 'newspaper' },
   { label: post.title|slice(0, 40) ~ (post.title|length > 40 ? '...' : ''), icon: 'file-text' }
 ] %}
+{% set page_image = post.featured_image|default(post.image|default(app_settings.site_logo))|absolute_url %}
+{% set page_keywords = post.categories is iterable ? post.categories|map(item => item.name)|filter(k => k|length > 0)|unique : [] %}
+{% set page_schema = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  '@id': canonical_url|default(current_url),
+  'url': canonical_url|default(current_url),
+  'headline': post.title,
+  'description': post.content|striptags|slice(0, 160),
+  'articleBody': post.content|striptags|slice(0, 2000),
+  'wordCount': post.content|striptags|wordcount,
+  'image': {
+    '@type': 'ImageObject',
+    'url': page_image,
+    'width': 1200,
+    'height': 630
+  },
+  'datePublished': (post.published_at|default(post.created_at))|date('c'),
+  'author': {
+    '@type': 'Person',
+    'name': post.author
+  },
+  'publisher': {
+    '@type': 'Organization',
+    'name': app_settings.site_name,
+    'logo': {
+      '@type': 'ImageObject',
+      'url': app_settings.site_logo|absolute_url,
+      'width': 250,
+      'height': 100
+    }
+  },
+  'mainEntityOfPage': {
+    '@type': 'WebPage',
+    '@id': canonical_url|default(current_url)
+  },
+  'isPartOf': {
+    '@type': 'WebSite',
+    '@id': url ~ '#website'
+  },
+  'keywords': page_keywords
+} %}
+{% if post.updated_at %}
+  {% set page_schema = page_schema|merge({'dateModified': post.updated_at|date('c')}) %}
+{% endif %}
+{% block schema %}
+  <script type="application/ld+json">
+{{ page_schema|schema_json }}
+  </script>
+{% endblock %}
 {% block extra_styles %}
   <style>
     .post-view-hero {
@@ -247,54 +297,6 @@
   </style>
 {% endblock %}
 {% block content %}
-  {# Structured Data - Article Schema #}
-  <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BlogPosting",
-  "@id": "{{ canonical_url|default(current_url) }}",
-  "headline": {{ post.title|json_encode }},
-  "description": {{ post.content|striptags|slice(0, 160)|json_encode }},
-  "articleBody": {{ post.content|striptags|slice(0, 2000)|json_encode }},
-  "wordCount": {{ post.content|striptags|wordcount }},
-   "image": {
-     "@type": "ImageObject",
-     "url": {{ post.featured_image|default(post.image|default(app_settings.site_logo))|json_encode }},
-     "width": 1200,
-     "height": 630
-   },
-  "datePublished": "{{ (post.published_at|default(post.created_at))|date('c') }}",
-  {% if post.updated_at %}"dateModified": "{{ post.updated_at|date('c') }}",{% endif %}
-  "author": {
-    "@type": "Person",
-    "name": {{ post.author|json_encode }},
-    "url": "{{ url }}"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": {{ app_settings.site_name|json_encode }},
-    "logo": {
-      "@type": "ImageObject",
-       "url": "{{ app_settings.site_logo }}",
-      "width": 250,
-      "height": 100
-    },
-    "url": "{{ url }}"
-  },
-  "mainEntity": {
-    "@type": "Article",
-    "@id": "{{ canonical_url|default(current_url) }}"
-  },
-  "isPartOf": {
-    "@type": "WebSite",
-    "@id": "{{ url }}#website"
-  }
-  {% if post.categories and post.categories|length > 0 %}
-  ,"keywords": {{ post.categories|map(item => item.name)|json_encode }}
-  {% endif %}
-}
-  </script>
-  {# Hero Header Section #}
   <section class="post-view-hero position-relative overflow-hidden mb-5 inl-p-0052">
     <div class="position-absolute top-0 start-0 w-100 h-100 opacity-20"
          aria-hidden="true">

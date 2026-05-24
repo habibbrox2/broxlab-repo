@@ -6,19 +6,18 @@
   { label: 'Categories', url: '/categories', icon: 'folder' }
 ] %}
 
-{% block content %}
-
-
-{# Structured Data - Collection Page Schema #}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "CollectionPage",
-  "name": "All Categories",
-  "description": "Browse all categories on {{ app_settings.site_name|default('BroxBhai') }}. Find content organized by categories.",
-  "url": "{{ current_url }}"
-}
-</script>
+{% set page_schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  'name': 'All Categories',
+  'description': 'Browse all categories on ' ~ (app_settings.site_name|default('BroxBhai')) ~ '. Find content organized by categories.',
+  'url': current_url
+} %}
+{% block schema %}
+  <script type="application/ld+json">
+{{ page_schema|schema_json }}
+  </script>
+{% endblock %}
 
 {# Hero Section #}
 <section class="hero-section position-relative py-5 mb-5 overflow-hidden" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">

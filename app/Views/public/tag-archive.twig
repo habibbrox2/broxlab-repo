@@ -8,17 +8,18 @@
 ] %}
 
 {% block content %}
-
-{# Structured Data - Collection Page Schema #}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "CollectionPage",
-  "name": "{{ tag.name|json }}",
-  "description": "Browse all articles and posts tagged with {{ tag.name|json }}",
-  "url": "{{ current_url }}"
-}
-</script>
+{% set page_schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  'name': tag.name,
+  'description': 'Browse all articles and posts tagged with ' ~ tag.name,
+  'url': current_url
+} %}
+{% block schema %}
+  <script type="application/ld+json">
+{{ page_schema|schema_json }}
+  </script>
+{% endblock %}
 
 {# Hero Section #}
 <section class="hero-section position-relative py-5 mb-5 overflow-hidden" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">

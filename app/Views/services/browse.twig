@@ -4,6 +4,18 @@
 {% block meta_description %}Explore our comprehensive range of professional services designed to enhance your mobile experience and provide expert assistance.{% endblock %}
 {% block og_type %}website{% endblock %}
 {% set breadcrumbs = [{"label": "Services", "url": "/services", "icon": "briefcase"}] %}
+{% set page_schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  'name': 'Available Services',
+  'description': 'Browse our complete range of services',
+  'url': current_url
+} %}
+{% block schema %}
+  <script type="application/ld+json">
+{{ page_schema|schema_json }}
+  </script>
+{% endblock %}
 {% block content %}
   <style>
     .inl-p-0005 {
@@ -35,16 +47,6 @@
       flex: 1 1 auto;
     }
   </style>
-  {# Structured Data - Service Collection Schema #}
-  <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "CollectionPage",
-  "name": "Available Services",
-  "description": "Browse our complete range of services",
-  "url": "{{ current_url }}"
-}
-  </script>
   {# Hero Section #}
   <section class="hero-section position-relative py-5 mb-5 overflow-hidden inl-p-0005">
     <div class="container">
