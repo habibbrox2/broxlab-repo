@@ -36,7 +36,6 @@
     "vitest": "^1.6.1"
   },
   "dependencies": {
-    "@esbuild/win32-x64": "^0.28.0",
     "firebase": "^12.13.0",
     "playwright": "^1.60.0"
   }
