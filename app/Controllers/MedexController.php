@@ -36,6 +36,11 @@
 /** @var Router $router */
 /** @var \Twig\Environment $twig */
 
+// Build base URL for canonical/SEO links (used across route closures)
+$medexProtocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) ? 'https' : 'http';
+$medexHost = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$medexBaseUrl = $medexProtocol . '://' . $medexHost;
+
 // ==================== PUBLIC ROUTES ====================
 
 // Companies list (paginated)
@@ -115,7 +120,7 @@ $router->get("/medex/companies", function () {
 });
 
 // Single company detail page
-$router->get("/medex/company/{id}", function ($id) use ($twig) {
+$router->get("/medex/company/{id}", function ($id) use ($twig, $medexBaseUrl) {
     try {
         $medexService = new \App\Services\MedexDataService();
         // Auto-refresh disabled for all read paths (prevents blocking during JS collection)
@@ -147,12 +152,12 @@ $router->get("/medex/company/{id}", function ($id) use ($twig) {
         "brands"         => $brands,
         "brand_count"    => $brandCount,
         "breadcrumbs"    => $breadcrumbs,
-        "canonical_url"  => "/medex/company/" . $id,
+        "canonical_url"  => $medexBaseUrl . "/medex/company/" . $id,
     ]);
 });
 
 // Single brand/medicine detail page
-$router->get("/medex/brand/{id}", function ($id) use ($twig) {
+$router->get("/medex/brand/{id}", function ($id) use ($twig, $medexBaseUrl) {
     try {
         $medexService = new \App\Services\MedexDataService();
         // Auto-refresh disabled for all read paths (prevents blocking during JS collection)
@@ -223,7 +228,7 @@ $router->get("/medex/brand/{id}", function ($id) use ($twig) {
         "company"       => $company,
         "sections"      => $sections,
         "breadcrumbs"   => $breadcrumbs,
-        "canonical_url" => "/medex/brand/" . $id,
+        "canonical_url" => $medexBaseUrl . "/medex/brand/" . $id,
     ]);
 });
 
