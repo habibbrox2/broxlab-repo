@@ -62,7 +62,6 @@ const assistantPrefs = { ...DEFAULT_PREFS, };
 const providerApiKeys = {};
 const providerApiKeySources = {};
 const SUPPORTED_CLIENT_PROVIDERS = new Set(['openrouter', 'fireworks']);
-const ASSISTANT_SITE_URL = window.location?.origin || `${window.location.protocol}//${window.location.host}`;
 
 function getProviderApiKey(providerName) {
   return String(providerApiKeys[providerName] || '').trim();
