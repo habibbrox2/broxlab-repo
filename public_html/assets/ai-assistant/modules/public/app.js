@@ -106,8 +106,8 @@ function normalizeEnhancedPromptText(text) {
 
   value = value.replace(/^```(?:prompt|text)?\s*/i, '').replace(/```$/i, '').trim();
   value = value.replace(/^(?:enhanced|improved)\s+prompt\s*:\s*/i, '').trim();
-  value = value.replace(/^(?:here(?:'s| is) the improved prompt|here is a better prompt)\s*[:\-]?\s*/i, '').trim();
-  value = value.replace(/^(?:prompt enhancement|rewritten prompt)\s*[:\-]?\s*/i, '').trim();
+  value = value.replace(/^(?:here(?:'s| is) the improved prompt|here is a better prompt)\s*[:-]?\s*/i, '').trim();
+  value = value.replace(/^(?:prompt enhancement|rewritten prompt)\s*[:-]?\s*/i, '').trim();
   return value;
 }
 
@@ -996,8 +996,10 @@ async function handleUserMessage() {
 
   for (const prov of providerChain) {
     let triedFallbackModel = false;
+    let providerRetry = true;
 
-    while (true) {
+    while (providerRetry) {
+      providerRetry = false;
       try {
         let model = assistantPrefs.model;
         let response;
@@ -1074,6 +1076,7 @@ async function handleUserMessage() {
           triedFallbackModel = true;
           assistantPrefs.model = 'meta-llama/llama-3-8b-instruct:free';
           console.info('Retrying OpenRouter using meta-llama/llama-3-8b-instruct:free due to invalid model error');
+          providerRetry = true;
           continue; // retry this provider with fallback model
         }
 
