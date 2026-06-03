@@ -97,7 +97,7 @@ export function formatDate(dateStr) {
 export function formatDateLabel(dateStr) {
   if (!dateStr) return '';
   try {
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', });
   } catch {
     return String(dateStr);
   }

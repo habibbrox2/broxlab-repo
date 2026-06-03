@@ -1,11 +1,11 @@
-{% extends 'layout.twig' %}
+﻿{% extends 'layout.twig' %}
 
 {% block title %}
-    {{ current_lang == 'bn' ? 'মেডএক্স ডেটাসেট বিস্তারিত' : 'MedEx Dataset Details' }} - {{ app_settings.site_name }}
+ {{ current_lang == 'bn' ? 'à¦®à§‡à¦¡à¦à¦•à§à¦¸ à¦¡à§‡à¦Ÿà¦¾à¦¸à§‡à¦Ÿ à¦¬à¦¿à¦¸à§à¦¤à¦¾à¦°à¦¿à¦¤' : 'MedEx Dataset Details' }} - {{ app_settings.site_name }}
 {% endblock %}
 
 {% block meta_description %}
-    {{ current_lang == 'bn' ? 'মেডএক্স ডেটাবেসের বিস্তারিত তথ্য: মোট কোম্পানি, ব্র্যান্ড, ক্যাশ ফাইলের অবস্থা ও রিফ্রেশ লকের স্থিতি।' : 'Detailed MedEx dataset information: total companies, brands, cache file status, refresh lock state, and data collection tools.' }}
+ {{ current_lang == 'bn' ? 'à¦®à§‡à¦¡à¦à¦•à§à¦¸ à¦¡à§‡à¦Ÿà¦¾à¦¬à§‡à¦¸à§‡à¦° à¦¬à¦¿à¦¸à§à¦¤à¦¾à¦°à¦¿à¦¤ à¦¤à¦¥à§à¦¯: à¦®à§‹à¦Ÿ à¦•à§‹à¦®à§à¦ªà¦¾à¦¨à¦¿, à¦¬à§à¦°à§à¦¯à¦¾à¦¨à§à¦¡, à¦•à§à¦¯à¦¾à¦¶ à¦«à¦¾à¦‡à¦²à§‡à¦° à¦…à¦¬à¦¸à§à¦¥à¦¾ à¦“ à¦°à¦¿à¦«à§à¦°à§‡à¦¶ à¦²à¦•à§‡à¦° à¦¸à§à¦¥à¦¿à¦¤à¦¿à¥¤' : 'Detailed MedEx dataset information: total companies, brands, cache file status, refresh lock state, and data collection tools.' }}
 {% endblock %}
 
 {% block meta_keywords %}medex dataset, pharmaceutical data, medicine database, Bangladesh drug information, herbal medicine data, pharma analytics{% endblock %}
@@ -13,207 +13,211 @@
 {% block og_image %}{{ url ~ 'assets/images/medex-og.jpg'|default(app_settings.site_logo|default(url ~ 'assets/images/default-og-image.png')) }}{% endblock %}
 
 {% set breadcrumbs = [
-    { label: 'MedEx', url: '/medex', icon: 'capsule' },
-    { label: 'Dataset Details', icon: 'info-circle' }
+ { label: 'MedEx', url: '/medex', icon: 'capsule' },
+ { label: 'Dataset Details', icon: 'info-circle' }
 ] %}
 
 {% set page_schema = {
-  '@context': 'https://schema.org',
-  '@type': 'Dataset',
-  'name': 'MedEx - Herbal Pharmaceutical Dataset',
-  'description': (current_lang == 'bn' ? 'বাংলাদেশের হার্বাল ফার্মাসিউটিক্যাল কোম্পানি ও ব্র্যান্ডের ডেটাবেস' : 'Bangladesh herbal pharmaceutical companies and brands database'),
-  'url': current_url,
-  'version': total_companies|default(0),
-  'temporalCoverage': last_updated ? last_updated|date('Y') : '2025',
-  'inLanguage': ['en', 'bn'],
-  'isPartOf': {
-    '@type': 'WebSite',
-    'name': app_settings.site_name,
-    'url': url
-  }
+ '@context': 'https://schema.org',
+ '@type': 'Dataset',
+ 'name': 'MedEx - Herbal Pharmaceutical Dataset',
+ 'description': (current_lang == 'bn' ? 'à¦¬à¦¾à¦‚à¦²à¦¾à¦¦à§‡à¦¶à§‡à¦° à¦¹à¦¾à¦°à§à¦¬à¦¾à¦² à¦«à¦¾à¦°à§à¦®à¦¾à¦¸à¦¿à¦‰à¦Ÿà¦¿à¦•à§à¦¯à¦¾à¦² à¦•à§‹à¦®à§à¦ªà¦¾à¦¨à¦¿ à¦“ à¦¬à§à¦°à§à¦¯à¦¾à¦¨à§à¦¡à§‡à¦° à¦¡à§‡à¦Ÿà¦¾à¦¬à§‡à¦¸' : 'Bangladesh herbal pharmaceutical companies and brands database'),
+ 'url': current_url,
+ 'version': total_companies|default(0),
+ 'temporalCoverage': last_updated ? last_updated|date('Y') : '2025',
+ 'inLanguage': ['en', 'bn'],
+ 'isPartOf': {
+ '@type': 'WebSite',
+ 'name': app_settings.site_name,
+ 'url': url
+ }
 } %}
 {% block schema %}
-  <script type="application/ld+json">
+ <script type="application/ld+json">
 {{ page_schema|schema_json }}
-  </script>
+ </script>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
 
-{% set labelTotalCompanies = current_lang == 'bn' ? 'মোট কোম্পানি' : 'Total Companies' %}
-{% set labelTotalBrands = current_lang == 'bn' ? 'মোট ব্র্যান্ড' : 'Total Brands' %}
-{% set labelLastUpdated = current_lang == 'bn' ? 'শেষ আপডেট' : 'Last Updated' %}
-{% set labelCacheFile = current_lang == 'bn' ? 'ক্যাশ ফাইল' : 'Cache File' %}
-{% set labelRefreshLock = current_lang == 'bn' ? 'রিফ্রেশ লক' : 'Refresh Lock' %}
-{% set labelAutoClean = current_lang == 'bn' ? 'অটো-ক্লিন আচরণ:' : 'Auto-clean behavior:' %}
-{% set labelBackToCompanies = current_lang == 'bn' ? 'কোম্পানিতে ফিরে যান' : 'Back to Companies' %}
-{% set labelBrowserCollection = current_lang == 'bn' ? 'ব্রাউজার চালিত সংগ্রহ (প্রস্তাবিত)' : 'Browser-powered Collection (Recommended)' %}
-{% set labelWhyBetter = current_lang == 'bn' ? 'কারণ এটি ভালো:' : 'Why this is better:' %}
-{% set labelStartCollection = current_lang == 'bn' ? 'সংগ্রহ শুরু করুন' : 'Start Collection' %}
-{% set labelPause = current_lang == 'bn' ? 'বিরতি দিন' : 'Pause' %}
-{% set labelResume = current_lang == 'bn' ? 'পুনরায় চালু করুন' : 'Resume' %}
-{% set labelStop = current_lang == 'bn' ? 'বন্ধ করুন' : 'Stop' %}
-{% set labelUpload = current_lang == 'bn' ? 'ডেটা আপলোড করুন' : 'Upload Collected Data to Server' %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="medex-card">
-            <div class="medex-card-header">
-                <i class="bi bi-info-circle"></i>
-                <span data-i18n-en="MedEx Dataset Details" data-i18n-bn="MedEx ডেটাসেট বিস্তারিত">{{ current_lang == 'bn' ? 'MedEx ডেটাসেট বিস্তারিত' : 'MedEx Dataset Details' }}</span>
-            </div>
-            <div class="medex-card-body">
-                <div class="row gy-3">
-                    <div class="col-md-4">
-                        <div class="medex-detail-summary">
-                            <h5 data-i18n-en="Total Companies" data-i18n-bn="মোট কোম্পানি">{{ labelTotalCompanies }}</h5>
-                            <p class="display-6 mb-0">{{ total_companies|number_format }}</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="medex-detail-summary">
-                            <h5 data-i18n-en="Total Brands" data-i18n-bn="মোট ব্র্যান্ড">{{ labelTotalBrands }}</h5>
-                            <p class="display-6 mb-0">{{ total_brands|number_format }}</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="medex-detail-summary">
-                            <h5 data-i18n-en="Last Updated" data-i18n-bn="শেষ আপডেট">{{ labelLastUpdated }}</h5>
-                            <p class="mb-0">{{ last_updated ? last_updated|date('M d, Y H:i') : 'N/A' }}</p>
-                        </div>
-                    </div>
-                </div>
+{% set labelTotalCompanies = current_lang == 'bn' ? 'à¦®à§‹à¦Ÿ à¦•à§‹à¦®à§à¦ªà¦¾à¦¨à¦¿' : 'Total Companies' %}
+{% set labelTotalBrands = current_lang == 'bn' ? 'à¦®à§‹à¦Ÿ à¦¬à§à¦°à§à¦¯à¦¾à¦¨à§à¦¡' : 'Total Brands' %}
+{% set labelLastUpdated = current_lang == 'bn' ? 'à¦¶à§‡à¦· à¦†à¦ªà¦¡à§‡à¦Ÿ' : 'Last Updated' %}
+{% set labelCacheFile = current_lang == 'bn' ? 'à¦•à§à¦¯à¦¾à¦¶ à¦«à¦¾à¦‡à¦²' : 'Cache File' %}
+{% set labelRefreshLock = current_lang == 'bn' ? 'à¦°à¦¿à¦«à§à¦°à§‡à¦¶ à¦²à¦•' : 'Refresh Lock' %}
+{% set labelAutoClean = current_lang == 'bn' ? 'à¦…à¦Ÿà§‹-à¦•à§à¦²à¦¿à¦¨ à¦†à¦šà¦°à¦£:' : 'Auto-clean behavior:' %}
+{% set labelBackToCompanies = current_lang == 'bn' ? 'à¦•à§‹à¦®à§à¦ªà¦¾à¦¨à¦¿à¦¤à§‡ à¦«à¦¿à¦°à§‡ à¦¯à¦¾à¦¨' : 'Back to Companies' %}
+{% set labelBrowserCollection = current_lang == 'bn' ? 'à¦¬à§à¦°à¦¾à¦‰à¦œà¦¾à¦° à¦šà¦¾à¦²à¦¿à¦¤ à¦¸à¦‚à¦—à§à¦°à¦¹ (à¦ªà§à¦°à¦¸à§à¦¤à¦¾à¦¬à¦¿à¦¤)' : 'Browser-powered Collection (Recommended)' %}
+{% set labelWhyBetter = current_lang == 'bn' ? 'à¦•à¦¾à¦°à¦£ à¦à¦Ÿà¦¿ à¦­à¦¾à¦²à§‹:' : 'Why this is better:' %}
+{% set labelStartCollection = current_lang == 'bn' ? 'à¦¸à¦‚à¦—à§à¦°à¦¹ à¦¶à§à¦°à§ à¦•à¦°à§à¦¨' : 'Start Collection' %}
+{% set labelPause = current_lang == 'bn' ? 'à¦¬à¦¿à¦°à¦¤à¦¿ à¦¦à¦¿à¦¨' : 'Pause' %}
+{% set labelResume = current_lang == 'bn' ? 'à¦ªà§à¦¨à¦°à¦¾à¦¯à¦¼ à¦šà¦¾à¦²à§ à¦•à¦°à§à¦¨' : 'Resume' %}
+{% set labelStop = current_lang == 'bn' ? 'à¦¬à¦¨à§à¦§ à¦•à¦°à§à¦¨' : 'Stop' %}
+{% set labelUpload = current_lang == 'bn' ? 'à¦¡à§‡à¦Ÿà¦¾ à¦†à¦ªà¦²à§‹à¦¡ à¦•à¦°à§à¦¨' : 'Upload Collected Data to Server' %}
+<div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
+ <div class="col-span-12">
+ <div class="medex-card border border-slate-200 bg-white shadow-sm">
+ <div class="medex-border-b border-slate-200 px-4 py-3">
+ <i class="lucide lucide-info"></i>
+ <span data-i18n-en="MedEx Dataset Details" data-i18n-bn="MedEx à¦¡à§‡à¦Ÿà¦¾à¦¸à§‡à¦Ÿ à¦¬à¦¿à¦¸à§à¦¤à¦¾à¦°à¦¿à¦¤">{{ current_lang == 'bn' ? 'MedEx à¦¡à§‡à¦Ÿà¦¾à¦¸à§‡à¦Ÿ à¦¬à¦¿à¦¸à§à¦¤à¦¾à¦°à¦¿à¦¤' : 'MedEx Dataset Details' }}</span>
+ </div>
+ <div class="medex-p-4">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gy-3">
+ <div class="md:col-span-4">
+ <div class="medex-detail-summary">
+ <h5 data-i18n-en="Total Companies" data-i18n-bn="à¦®à§‹à¦Ÿ à¦•à§‹à¦®à§à¦ªà¦¾à¦¨à¦¿">{{ labelTotalCompanies }}</h5>
+ <p class="text-2xl mb-0">{{ total_companies|number_format }}</p>
+ </div>
+ </div>
+ <div class="md:col-span-4">
+ <div class="medex-detail-summary">
+ <h5 data-i18n-en="Total Brands" data-i18n-bn="à¦®à§‹à¦Ÿ à¦¬à§à¦°à§à¦¯à¦¾à¦¨à§à¦¡">{{ labelTotalBrands }}</h5>
+ <p class="text-2xl mb-0">{{ total_brands|number_format }}</p>
+ </div>
+ </div>
+ <div class="md:col-span-4">
+ <div class="medex-detail-summary">
+ <h5 data-i18n-en="Last Updated" data-i18n-bn="à¦¶à§‡à¦· à¦†à¦ªà¦¡à§‡à¦Ÿ">{{ labelLastUpdated }}</h5>
+ <p class="mb-0">{{ last_updated ? last_updated|date('M d, Y H:i') : 'N/A' }}</p>
+ </div>
+ </div>
+ </div>
 
-                <hr class="my-4">
+ <hr class="my-4">
 
-                <div class="row gy-3">
-                    <div class="col-md-6">
-                        <div class="medex-detail-box">
-                            <h6 data-i18n-en="Cache File" data-i18n-bn="ক্যাশ ফাইল">{{ labelCacheFile }}</h6>
-                            <p class="mb-1"><strong>{{ current_lang == 'bn' ? 'পথ:' : 'Path:' }}</strong> <code>{{ cache_path }}</code></p>
-                            <p class="mb-0"><strong>{{ current_lang == 'bn' ? 'বয়স:' : 'Age:' }}</strong> {{ data_file_age|number_format }} {{ current_lang == 'bn' ? 'সেকেন্ড' : 'seconds' }}</p>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="medex-detail-box">
-                            <h6 data-i18n-en="Refresh Lock" data-i18n-bn="রিফ্রেশ লক">{{ labelRefreshLock }}</h6>
-                            <p class="mb-1"><strong>{{ current_lang == 'bn' ? 'পথ:' : 'Path:' }}</strong> <code>{{ lock_path }}</code></p>
-                            <p class="mb-0"><strong>{{ current_lang == 'bn' ? 'স্ট্যাটাস:' : 'Status:' }}</strong>
-                                {% if lock_exists %}
-                                    <span class="text-success">{{ current_lang == 'bn' ? 'সক্রিয়' : 'Active' }}</span>
-                                {% else %}
-                                    <span class="text-muted">{{ current_lang == 'bn' ? 'উপস্থিত নেই' : 'Not present' }}</span>
-                                {% endif %}
-                            </p>
-                            {% if lock_exists %}
-                                <p class="mb-0"><strong>{{ current_lang == 'bn' ? 'বয়স:' : 'Age:' }}</strong> {{ lock_age|number_format }} {{ current_lang == 'bn' ? 'সেকেন্ড' : 'seconds' }}</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gy-3">
+ <div class="md:col-span-6">
+ <div class="medex-detail-box">
+ <h6 data-i18n-en="Cache File" data-i18n-bn="à¦•à§à¦¯à¦¾à¦¶ à¦«à¦¾à¦‡à¦²">{{ labelCacheFile }}</h6>
+ <p class="mb-1"><strong>{{ current_lang == 'bn' ? 'à¦ªà¦¥:' : 'Path:' }}</strong> <code>{{ cache_path }}</code></p>
+ <p class="mb-0"><strong>{{ current_lang == 'bn' ? 'à¦¬à¦¯à¦¼à¦¸:' : 'Age:' }}</strong> {{ data_file_age|number_format }} {{ current_lang == 'bn' ? 'à¦¸à§‡à¦•à§‡à¦¨à§à¦¡' : 'seconds' }}</p>
+ </div>
+ </div>
+ <div class="md:col-span-6">
+ <div class="medex-detail-box">
+ <h6 data-i18n-en="Refresh Lock" data-i18n-bn="à¦°à¦¿à¦«à§à¦°à§‡à¦¶ à¦²à¦•">{{ labelRefreshLock }}</h6>
+ <p class="mb-1"><strong>{{ current_lang == 'bn' ? 'à¦ªà¦¥:' : 'Path:' }}</strong> <code>{{ lock_path }}</code></p>
+ <p class="mb-0"><strong>{{ current_lang == 'bn' ? 'à¦¸à§à¦Ÿà§à¦¯à¦¾à¦Ÿà¦¾à¦¸:' : 'Status:' }}</strong>
+ {% if lock_exists %}
+ <span class="text-emerald-600">{{ current_lang == 'bn' ? 'à¦¸à¦•à§à¦°à¦¿à¦¯à¦¼' : 'Active' }}</span>
+ {% else %}
+ <span class="text-slate-500">{{ current_lang == 'bn' ? 'à¦‰à¦ªà¦¸à§à¦¥à¦¿à¦¤ à¦¨à§‡à¦‡' : 'Not present' }}</span>
+ {% endif %}
+ </p>
+ {% if lock_exists %}
+ <p class="mb-0"><strong>{{ current_lang == 'bn' ? 'à¦¬à¦¯à¦¼à¦¸:' : 'Age:' }}</strong> {{ lock_age|number_format }} {{ current_lang == 'bn' ? 'à¦¸à§‡à¦•à§‡à¦¨à§à¦¡' : 'seconds' }}</p>
+ {% endif %}
+ </div>
+ </div>
+ </div>
 
-                <hr class="my-4">
+ <hr class="my-4">
 
-                <div class="alert alert-info">
-                    <strong data-i18n-en="Auto-clean behavior:" data-i18n-bn="অটো-ক্লিন আচরণ:">{{ labelAutoClean }}</strong>
-                    <span data-i18n-en="If a stale lock file is detected, MedEx refresh will remove it automatically and proceed." data-i18n-bn="যদি একটি স্থগিত লক ফাইল পাওয়া যায়, MedEx পুনরায় ফ্রেশ করে এটি স্বয়ংক্রিয়ভাবে সরিয়ে দেয় এবং চলমান রাখে।">{{ current_lang == 'bn' ? 'যদি একটি স্থগিত লক ফাইল পাওয়া যায়, MedEx পুনরায় ফ্রেশ করে এটি স্বয়ংক্রিয়ভাবে সরিয়ে দেয় এবং চলমান রাখে।' : 'If a stale lock file is detected, MedEx refresh will remove it automatically and proceed.' }}</span>
-                </div>
+ <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
+ <strong data-i18n-en="Auto-clean behavior:" data-i18n-bn="à¦…à¦Ÿà§‹-à¦•à§à¦²à¦¿à¦¨ à¦†à¦šà¦°à¦£:">{{ labelAutoClean }}</strong>
+ <span data-i18n-en="If a stale lock file is detected, MedEx refresh will remove it automatically and proceed." data-i18n-bn="à¦¯à¦¦à¦¿ à¦à¦•à¦Ÿà¦¿ à¦¸à§à¦¥à¦—à¦¿à¦¤ à¦²à¦• à¦«à¦¾à¦‡à¦² à¦ªà¦¾à¦“à¦¯à¦¼à¦¾ à¦¯à¦¾à¦¯à¦¼, MedEx à¦ªà§à¦¨à¦°à¦¾à¦¯à¦¼ à¦«à§à¦°à§‡à¦¶ à¦•à¦°à§‡ à¦à¦Ÿà¦¿ à¦¸à§à¦¬à¦¯à¦¼à¦‚à¦•à§à¦°à¦¿à¦¯à¦¼à¦­à¦¾à¦¬à§‡ à¦¸à¦°à¦¿à¦¯à¦¼à§‡ à¦¦à§‡à¦¯à¦¼ à¦à¦¬à¦‚ à¦šà¦²à¦®à¦¾à¦¨ à¦°à¦¾à¦–à§‡à¥¤">{{ current_lang == 'bn' ? 'à¦¯à¦¦à¦¿ à¦à¦•à¦Ÿà¦¿ à¦¸à§à¦¥à¦—à¦¿à¦¤ à¦²à¦• à¦«à¦¾à¦‡à¦² à¦ªà¦¾à¦“à¦¯à¦¼à¦¾ à¦¯à¦¾à¦¯à¦¼, MedEx à¦ªà§à¦¨à¦°à¦¾à¦¯à¦¼ à¦«à§à¦°à§‡à¦¶ à¦•à¦°à§‡ à¦à¦Ÿà¦¿ à¦¸à§à¦¬à¦¯à¦¼à¦‚à¦•à§à¦°à¦¿à¦¯à¦¼à¦­à¦¾à¦¬à§‡ à¦¸à¦°à¦¿à¦¯à¦¼à§‡ à¦¦à§‡à¦¯à¦¼ à¦à¦¬à¦‚ à¦šà¦²à¦®à¦¾à¦¨ à¦°à¦¾à¦–à§‡à¥¤' : 'If a stale lock file is detected, MedEx refresh will remove it automatically and proceed.' }}</span>
+ </div>
 
-                <div class="d-flex flex-wrap gap-2 align-items-center">
-                    <a href="/medex" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> {{ labelBackToCompanies }}
-                    </a>
-                    <button id="medex-refresh-button" type="button" class="btn btn-primary" data-i18n-en="Refresh Now (Server)" data-i18n-bn="এখন রিফ্রেশ করুন">
-                        <i class="bi bi-arrow-clockwise"></i> <span data-i18n-en="Refresh Now (Server)" data-i18n-bn="এখন রিফ্রেশ করুন">{{ current_lang == 'bn' ? 'এখন রিফ্রেশ করুন' : 'Refresh Now (Server)' }}</span>
-                    </button>
-                    <div id="medex-refresh-feedback" class="text-muted small"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+ <div class="flex flex-wrap gap-2 items-center">
+ <a href="/medex" class="inline-flex items-center px-4 py-2 text-neutral-700 font-medium rounded-lg hover:bg-neutral-100 transition-colors">
+ <i class="lucide lucide-arrow-left"></i> {{ labelBackToCompanies }}
+ </a>
+ <button id="medex-refresh-button" type="button" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-600/90 transition-colors" data-i18n-en="Refresh Now (Server)" data-i18n-bn="à¦à¦–à¦¨ à¦°à¦¿à¦«à§à¦°à§‡à¦¶ à¦•à¦°à§à¦¨">
+ <i class="lucide lucide-rotate-ccw"></i> <span data-i18n-en="Refresh Now (Server)" data-i18n-bn="à¦à¦–à¦¨ à¦°à¦¿à¦«à§à¦°à§‡à¦¶ à¦•à¦°à§à¦¨">{{ current_lang == 'bn' ? 'à¦à¦–à¦¨ à¦°à¦¿à¦«à§à¦°à§‡à¦¶ à¦•à¦°à§à¦¨' : 'Refresh Now (Server)' }}</span>
+ </button>
+ <div id="medex-refresh-feedback" class="text-slate-500 small"></div>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 
 {# ==================== JS-POWERED NON-BLOCKING COLLECTION UI ==================== #}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="medex-card border-primary">
-            <div class="medex-card-header bg-primary text-white">
-                <i class="bi bi-browser-chrome"></i>
-                <span data-i18n-en="Browser-powered Collection (Recommended)" data-i18n-bn="ব্রাউজার চালিত সংগ্রহ (প্রস্তাবিত)">{{ labelBrowserCollection }}</span>
-            </div>
-            <div class="medex-card-body">
-                <div class="alert alert-warning py-2 small mb-3" data-i18n-en="All scraping runs in your browser. The PHP backend only handles short-lived proxy requests and the final save. Visiting /medex or any page never triggers long-running collection — zero risk of site slowdown or downtime during the 30-day refresh cycle." data-i18n-bn="সকল স্ক্র্যাপিং আপনার ব্রাউজারে চলে। PHP ব্যাকএন্ড শুধুমাত্র ছোট-মেয়াদী প্রক্সি অনুরোধ এবং চূড়ান্ত সেভ পরিচালনা করে। কোনও পৃষ্ঠা দেখার সময় দীর্ঘকালীন সংগ্রহ শুরু হয় না — ৩০ দিনের রিফ্রেশ চক্রে সাইট ধীর বা অপ্রাপ্য হওয়ার ঝুঁকি নেই।">
-                    <strong data-i18n-en="Why this is better:" data-i18n-bn="কারণ এটি ভালো:">{{ labelWhyBetter }}</strong> {{ current_lang == 'bn' ? 'সকল স্ক্র্যাপিং আপনার ব্রাউজারে চলে। PHP ব্যাকএন্ড শুধুমাত্র ছোট-মেয়াদী প্রক্সি অনুরোধ এবং চূড়ান্ত সেভ পরিচালনা করে।' : 'All scraping runs in your browser. The PHP backend only handles short-lived proxy requests and the final save.' }} {{ current_lang == 'bn' ? 'কোনও পৃষ্ঠা দেখার সময় দীর্ঘকালীন সংগ্রহ শুরু হয় না — ৩০ দিনের রিফ্রেশ চক্রে সাইট ধীর বা অপ্রাপ্য হওয়ার ঝুঁকি নেই।' : 'Visiting /medex or any page never triggers long-running collection — zero risk of site slowdown or downtime during the 30-day refresh cycle.' }}</div>
-                </div>
+<div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
+ <div class="col-span-12">
+ <div class="medex-card border-primary">
+ <div class="medex-border-b border-slate-200 px-4 py-3 bg-indigo-600 text-white">
+ <i class="lucide lucide-globe"></i>
+ <span data-i18n-en="Browser-powered Collection (Recommended)" data-i18n-bn="à¦¬à§à¦°à¦¾à¦‰à¦œà¦¾à¦° à¦šà¦¾à¦²à¦¿à¦¤ à¦¸à¦‚à¦—à§à¦°à¦¹ (à¦ªà§à¦°à¦¸à§à¦¤à¦¾à¦¬à¦¿à¦¤)">{{ labelBrowserCollection }}</span>
+ </div>
+ <div class="medex-p-4">
+ <div class="p-4 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 py-2 small mb-3" data-i18n-en="All scraping runs in your browser. The PHP backend only handles short-lived proxy requests and the final save. Visiting /medex or any page never triggers long-running collection â€” zero risk of site slowdown or downtime during the 30-day refresh cycle." data-i18n-bn="à¦¸à¦•à¦² à¦¸à§à¦•à§à¦°à§à¦¯à¦¾à¦ªà¦¿à¦‚ à¦†à¦ªà¦¨à¦¾à¦° à¦¬à§à¦°à¦¾à¦‰à¦œà¦¾à¦°à§‡ à¦šà¦²à§‡à¥¤ PHP à¦¬à§à¦¯à¦¾à¦•à¦à¦¨à§à¦¡ à¦¶à§à¦§à§à¦®à¦¾à¦¤à§à¦° à¦›à§‹à¦Ÿ-à¦®à§‡à¦¯à¦¼à¦¾à¦¦à§€ à¦ªà§à¦°à¦•à§à¦¸à¦¿ à¦…à¦¨à§à¦°à§‹à¦§ à¦à¦¬à¦‚ à¦šà§‚à¦¡à¦¼à¦¾à¦¨à§à¦¤ à¦¸à§‡à¦­ à¦ªà¦°à¦¿à¦šà¦¾à¦²à¦¨à¦¾ à¦•à¦°à§‡à¥¤ à¦•à§‹à¦¨à¦“ à¦ªà§ƒà¦·à§à¦ à¦¾ à¦¦à§‡à¦–à¦¾à¦° à¦¸à¦®à¦¯à¦¼ à¦¦à§€à¦°à§à¦˜à¦•à¦¾à¦²à§€à¦¨ à¦¸à¦‚à¦—à§à¦°à¦¹ à¦¶à§à¦°à§ à¦¹à¦¯à¦¼ à¦¨à¦¾ â€” à§©à§¦ à¦¦à¦¿à¦¨à§‡à¦° à¦°à¦¿à¦«à§à¦°à§‡à¦¶ à¦šà¦•à§à¦°à§‡ à¦¸à¦¾à¦‡à¦Ÿ à¦§à§€à¦° à¦¬à¦¾ à¦…à¦ªà§à¦°à¦¾à¦ªà§à¦¯ à¦¹à¦“à¦¯à¦¼à¦¾à¦° à¦à§à¦à¦•à¦¿ à¦¨à§‡à¦‡à¥¤">
+ <strong data-i18n-en="Why this is better:" data-i18n-bn="à¦•à¦¾à¦°à¦£ à¦à¦Ÿà¦¿ à¦­à¦¾à¦²à§‹:">{{ labelWhyBetter }}</strong> {{ current_lang == 'bn' ? 'à¦¸à¦•à¦² à¦¸à§à¦•à§à¦°à§à¦¯à¦¾à¦ªà¦¿à¦‚ à¦†à¦ªà¦¨à¦¾à¦° à¦¬à§à¦°à¦¾à¦‰à¦œà¦¾à¦°à§‡ à¦šà¦²à§‡à¥¤ PHP à¦¬à§à¦¯à¦¾à¦•à¦à¦¨à§à¦¡ à¦¶à§à¦§à§à¦®à¦¾à¦¤à§à¦° à¦›à§‹à¦Ÿ-à¦®à§‡à¦¯à¦¼à¦¾à¦¦à§€ à¦ªà§à¦°à¦•à§à¦¸à¦¿ à¦…à¦¨à§à¦°à§‹à¦§ à¦à¦¬à¦‚ à¦šà§‚à¦¡à¦¼à¦¾à¦¨à§à¦¤ à¦¸à§‡à¦­ à¦ªà¦°à¦¿à¦šà¦¾à¦²à¦¨à¦¾ à¦•à¦°à§‡à¥¤' : 'All scraping runs in your browser. The PHP backend only handles short-lived proxy requests and the final save.' }} {{ current_lang == 'bn' ? 'à¦•à§‹à¦¨à¦“ à¦ªà§ƒà¦·à§à¦ à¦¾ à¦¦à§‡à¦–à¦¾à¦° à¦¸à¦®à¦¯à¦¼ à¦¦à§€à¦°à§à¦˜à¦•à¦¾à¦²à§€à¦¨ à¦¸à¦‚à¦—à§à¦°à¦¹ à¦¶à§à¦°à§ à¦¹à¦¯à¦¼ à¦¨à¦¾ â€” à§©à§¦ à¦¦à¦¿à¦¨à§‡à¦° à¦°à¦¿à¦«à§à¦°à§‡à¦¶ à¦šà¦•à§à¦°à§‡ à¦¸à¦¾à¦‡à¦Ÿ à¦§à§€à¦° à¦¬à¦¾ à¦…à¦ªà§à¦°à¦¾à¦ªà§à¦¯ à¦¹à¦“à¦¯à¦¼à¦¾à¦° à¦à§à¦à¦•à¦¿ à¦¨à§‡à¦‡à¥¤' : 'Visiting /medex or any page never triggers long-running collection â€” zero risk of site slowdown or downtime during the 30-day refresh cycle.' }}</div>
+ </div>
 
-                <div class="row g-2 mb-3">
-                    <div class="col-auto">
-                        <button id="js-scrape-start" class="btn btn-success" data-i18n-en="Start Collection" data-i18n-bn="সংগ্রহ শুরু করুন">
-                            <i class="bi bi-play-fill"></i> <span data-i18n-en="Start Collection" data-i18n-bn="সংগ্রহ শুরু করুন">{{ labelStartCollection }}</span>
-                        </button>
-                    </div>
-                    <div class="col-auto">
-                        <button id="js-scrape-pause" class="btn btn-warning" disabled data-i18n-en="Pause" data-i18n-bn="বিরতি দিন">
-                            <i class="bi bi-pause-fill"></i> <span data-i18n-en="Pause" data-i18n-bn="বিরতি দিন">{{ labelPause }}</span>
-                        </button>
-                    </div>
-                    <div class="col-auto">
-                        <button id="js-scrape-resume" class="btn btn-info" disabled data-i18n-en="Resume" data-i18n-bn="পুনরায় চালু করুন">
-                            <i class="bi bi-play-fill"></i> <span data-i18n-en="Resume" data-i18n-bn="পুনরায় চালু করুন">{{ labelResume }}</span>
-                        </button>
-                    </div>
-                    <div class="col-auto">
-                        <button id="js-scrape-stop" class="btn btn-danger" disabled data-i18n-en="Stop" data-i18n-bn="বন্ধ করুন">
-                            <i class="bi bi-stop-fill"></i> <span data-i18n-en="Stop" data-i18n-bn="বন্ধ করুন">{{ labelStop }}</span>
-                        </button>
-                    </div>
-                    <div class="col-auto">
-                        <button id="js-scrape-upload" class="btn btn-primary" disabled data-i18n-en="Upload Collected Data to Server" data-i18n-bn="ডেটা আপলোড করুন">
-                            <i class="bi bi-cloud-upload"></i> <span data-i18n-en="Upload Collected Data to Server" data-i18n-bn="ডেটা আপলোড করুন">{{ labelUpload }}</span>
-                        </button>
-                    </div>
-                </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-2 mb-3">
+ <div class="col-auto">
+ <button id="js-scrape-start" class="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors" data-i18n-en="Start Collection" data-i18n-bn="à¦¸à¦‚à¦—à§à¦°à¦¹ à¦¶à§à¦°à§ à¦•à¦°à§à¦¨">
+ <i class="lucide lucide-play"></i> <span data-i18n-en="Start Collection" data-i18n-bn="à¦¸à¦‚à¦—à§à¦°à¦¹ à¦¶à§à¦°à§ à¦•à¦°à§à¦¨">{{ labelStartCollection }}</span>
+ </button>
+ </div>
+ <div class="col-auto">
+ <button id="js-scrape-pause" class="inline-flex items-center px-4 py-2 bg-amber-500 text-white font-medium rounded-lg hover:bg-amber-600 transition-colors" disabled data-i18n-en="Pause" data-i18n-bn="à¦¬à¦¿à¦°à¦¤à¦¿ à¦¦à¦¿à¦¨">
+ <i class="lucide lucide-pause"></i> <span data-i18n-en="Pause" data-i18n-bn="à¦¬à¦¿à¦°à¦¤à¦¿ à¦¦à¦¿à¦¨">{{ labelPause }}</span>
+ </button>
+ </div>
+ <div class="col-auto">
+ <button id="js-scrape-resume" class="inline-flex items-center px-4 py-2 bg-sky-500 text-white font-medium rounded-lg hover:bg-sky-600 transition-colors" disabled data-i18n-en="Resume" data-i18n-bn="à¦ªà§à¦¨à¦°à¦¾à¦¯à¦¼ à¦šà¦¾à¦²à§ à¦•à¦°à§à¦¨">
+ <i class="lucide lucide-play"></i> <span data-i18n-en="Resume" data-i18n-bn="à¦ªà§à¦¨à¦°à¦¾à¦¯à¦¼ à¦šà¦¾à¦²à§ à¦•à¦°à§à¦¨">{{ labelResume }}</span>
+ </button>
+ </div>
+ <div class="col-auto">
+ <button id="js-scrape-stop" class="inline-flex items-center px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors" disabled data-i18n-en="Stop" data-i18n-bn="à¦¬à¦¨à§à¦§ à¦•à¦°à§à¦¨">
+ <i class="lucide lucide-square"></i> <span data-i18n-en="Stop" data-i18n-bn="à¦¬à¦¨à§à¦§ à¦•à¦°à§à¦¨">{{ labelStop }}</span>
+ </button>
+ </div>
+ <div class="col-auto">
+ <button id="js-scrape-upload" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-600/90 transition-colors" disabled data-i18n-en="Upload Collected Data to Server" data-i18n-bn="à¦¡à§‡à¦Ÿà¦¾ à¦†à¦ªà¦²à§‹à¦¡ à¦•à¦°à§à¦¨">
+ <i class="lucide lucide-cloud-upload"></i> <span data-i18n-en="Upload Collected Data to Server" data-i18n-bn="à¦¡à§‡à¦Ÿà¦¾ à¦†à¦ªà¦²à§‹à¦¡ à¦•à¦°à§à¦¨">{{ labelUpload }}</span>
+ </button>
+ </div>
+ </div>
 
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between small mb-1">
-                        <span id="js-scrape-status">Idle — ready to collect from medex.com.bd</span>
-                        <span id="js-scrape-count">0 / 0</span>
-                    </div>
-                    <div class="progress" style="height: 1.25rem;">
-                        <div id="js-scrape-progress" class="progress-bar progress-bar-striped" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-                    </div>
-                </div>
+ <div class="mb-2">
+ <div class="flex justify-between small mb-1">
+ <span id="js-scrape-status">Idle â€” ready to collect from medex.com.bd</span>
+ <span id="js-scrape-count">0 / 0</span>
+ </div>
+ <div class="w-full bg-neutral-200 rounded-full" style="height: 1.25rem;">
+ <div id="js-scrape-progress" class="bg-indigo-600 rounded-full bg-gradient-to-r from-primary to-primary-dark" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+ </div>
+ </div>
 
-                <div class="mt-3">
-                    <label class="form-label small fw-semibold">Live Log</label>
-                    <textarea id="js-scrape-log" class="form-control font-monospace" rows="8" readonly style="font-size: 0.85rem; background:#0d1117; color:#c9d1d9;"></textarea>
-                </div>
+ <div class="mt-3">
+ <label class="block text-sm font-medium text-neutral-700 mb-1.5 font-semibold">Live Log</label>
+ <textarea id="js-scrape-log" class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm font-mono" rows="8" readonly style="font-size: 0.85rem; background:#0d1117; color:#c9d1d9;"></textarea>
+ </div>
 
-                <div class="small text-muted mt-2">
-                    Rate limit: ~350ms between requests. You can pause/resume at any time. Data is kept only in this browser tab until you click Upload.
-                </div>
-            </div>
-        </div>
-    </div>
+ <div class="small text-slate-500 mt-2">
+ Rate limit: ~350ms between requests. You can pause/resume at any time. Data is kept only in this browser tab until you click Upload.
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 </div>
 {% endblock %}
 
 {% block extra_styles %}
-<link rel="stylesheet" href="{{ asset('/assets/css/medex.css') }}">
-<link rel="stylesheet" href="{{ asset('/assets/css/medex-theme.css') }}">
+
 {% endblock %}
 
 {% block extra_head %}
-    {% set medexLangUrlBase = current_url|replace({'?lang=bn':'?','&lang=bn':'','?lang=en':'?','&lang=en':''})|replace({'?&':'?','&&':'&'})|trim('?&') %}
-    {% set medexLangQuery = medexLangUrlBase matches('/\\?/') ? '&' : '?' %}
-    <link rel="alternate" hreflang="en" href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang=en">
-    <link rel="alternate" hreflang="bn" href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang=bn">
-    <link rel="alternate" hreflang="x-default" href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang=en">
+ {% set medexLangUrlBase = current_url|replace({'?lang=bn':'?','&lang=bn':'','?lang=en':'?','&lang=en':''})|replace({'?&':'?','&&':'&'})|trim('?&') %}
+ {% set medexLangQuery = medexLangUrlBase matches('/\\?/') ? '&' : '?' %}
+ <link rel="alternate" hreflang="en" href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang=en">
+ <link rel="alternate" hreflang="bn" href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang=bn">
+ <link rel="alternate" hreflang="x-default" href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang=en">
 {% endblock %}
 
 {% block extra_scripts %}
 {# Load the client-side scraper (source file, not bundled) #}
-<script src="{{ asset('/assets/js/medex-scraper.js') }}"></script>
-<script src="{{ asset('/assets/js/medex-details-page.js') }}"></script>
+<script type="module" src="{{ asset('/assets/js/dist/medex-scraper.js') }}"></script>
+<script type="module" src="{{ asset('/assets/js/dist/medex-autocollect.js') }}"></script>
+<script type="module" src="{{ asset('/assets/js/dist/medex-details-page.js') }}"></script>
 {% endblock %}
+
+
+
+

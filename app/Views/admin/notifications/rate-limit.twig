@@ -1,29 +1,33 @@
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
 {% block title %}Notification Rate Limit{% endblock %}
 {% block content %}
-  <div class="container py-4">
-    <div class="admin-panel-card">
-      <div class="admin-panel-card-header">
-        <h5 class="mb-0">Per-Admin Rate Limit</h5>
-      </div>
-      <div class="admin-panel-card-body">
-        <div id="currentLimits" class="mb-3 text-muted">Loading...</div>
-        <form id="rateLimitForm">
-          <div class="mb-3">
-            <label for="hourly" class="form-label">Hourly limit</label>
-            <input type="number" class="form-control" id="hourly" name="hourly" min="0" />
-          </div>
-          <div class="mb-3">
-            <label for="daily" class="form-label">Daily limit</label>
-            <input type="number" class="form-control" id="daily" name="daily" min="0" />
-          </div>
-          <div class="d-flex gap-2">
-            <button type="button" id="saveBtn" class="btn btn-primary">Save</button>
-          </div>
-          <div id="rlResult" class="mt-3"></div>
-        </form>
-      </div>
-    </div>
+<div class="w-full px-4 sm:px-6 py-4">
+ <section class="admin-page-header">
+  <div>
+   <p class="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">
+    <i class="lucide lucide-gauge"></i>
+    Rate Limiting
+   </p>
+   <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">Notification Rate Limit</h1>
+   <p class="mt-2 text-sm text-slate-600">Configure per-admin send limits.</p>
   </div>
-  <div id="toast-container" aria-live="polite" class="inl-a-0038"></div>
+ </section>
+
+ <section class="admin-panel-card max-w-2xl">
+  <div id="currentLimits" class="mb-4 text-sm text-slate-500">Loading...</div>
+  <form id="rateLimitForm" class="space-y-4">
+   <div>
+    <label for="hourly" class="form-label">Hourly limit</label>
+    <input type="number" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="hourly" name="hourly" min="0" />
+   </div>
+   <div>
+    <label for="daily" class="form-label">Daily limit</label>
+    <input type="number" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="daily" name="daily" min="0" />
+   </div>
+   <button type="button" id="saveBtn" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"><i class="lucide lucide-save"></i> Save</button>
+   <div id="rlResult" class="mt-3"></div>
+  </form>
+ </section>
+ <div id="toast-container" aria-live="polite"></div>
+</div>
 {% endblock %}

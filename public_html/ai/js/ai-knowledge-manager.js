@@ -165,10 +165,10 @@ function getCategoryBadge(category) {
 
 function getSourceBadge(type) {
   const badges = {
-    text: '<span class="badge bg-primary"><i class="bi bi-file-text"></i> Text</span>',
-    pdf: '<span class="badge bg-danger"><i class="bi bi-file-pdf"></i> PDF</span>',
-    url: '<span class="badge bg-success"><i class="bi bi-link"></i> URL</span>',
-    document: '<span class="badge bg-secondary"><i class="bi bi-file-earmark"></i> Document</span>',
+    text: '<span class="badge bg-primary"><i class="lucide lucide-file-text"></i> Text</span>',
+    pdf: '<span class="badge bg-danger"><i class="lucide lucide-file-text"></i> PDF</span>',
+    url: '<span class="badge bg-success"><i class="lucide lucide-link"></i> URL</span>',
+    document: '<span class="badge bg-secondary"><i class="lucide lucide-file"></i> Document</span>',
   };
   return badges[type] || badges.text;
 }
@@ -248,7 +248,7 @@ class KnowledgeBaseManager {
     el.innerHTML = `
       <div class="alert alert-${type} alert-dismissible fade show" role="alert">
         ${msg}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-brox-dismiss="alert" aria-label="Close"></button>
       </div>
     `;
     setTimeout(() => {
@@ -329,14 +329,14 @@ class KnowledgeBaseManager {
           : '<span class="badge bg-secondary">Inactive</span>'
         }</td>
         <td>
-          <button class="btn btn-sm btn-outline-primary me-1" data-action="edit" data-id="${item.id}" title="Edit">
-            <i class="bi bi-pencil"></i>
+          <button class="btn btn-sm btn-outline-primary mr-1" data-action="edit" data-id="${item.id}" title="Edit">
+            <i class="lucide lucide-pencil"></i>
           </button>
-          <button class="btn btn-sm btn-outline-${item.is_active ? 'warning' : 'success'} me-1" data-action="toggle" data-id="${item.id}" title="${item.is_active ? 'Deactivate' : 'Activate'}">
-            <i class="bi bi-${item.is_active ? 'eye-slash' : 'eye'}"></i>
+          <button class="btn btn-sm btn-outline-${item.is_active ? 'warning' : 'success'} mr-1" data-action="toggle" data-id="${item.id}" title="${item.is_active ? 'Deactivate' : 'Activate'}">
+            <i class="lucide lucide-${item.is_active ? 'eye-off' : 'eye'}"></i>
           </button>
           <button class="btn btn-sm btn-outline-danger" data-action="delete" data-id="${item.id}" title="Delete">
-            <i class="bi bi-trash"></i>
+            <i class="lucide lucide-trash-2"></i>
           </button>
         </td>
       </tr>
@@ -367,10 +367,10 @@ class KnowledgeBaseManager {
   renderEmptyState() {
     this.nodes.container.innerHTML = `
       <div class="text-center py-5 text-muted">
-        <i class="bi bi-book fs-1"></i>
+        <i class="lucide lucide-book fs-1"></i>
         <p class="mt-2">No knowledge slices found.</p>
         <button class="btn btn-primary btn-sm" id="btnAddFirst">
-          <i class="bi bi-plus-lg"></i> Add Your First Slice
+          <i class="lucide lucide-plus"></i> Add Your First Slice
         </button>
       </div>
     `;
@@ -422,8 +422,8 @@ class KnowledgeBaseManager {
   }
 
   showModal() {
-    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-      const modal = new bootstrap.Modal(this.nodes.modal);
+    if (typeof broxUI !== 'undefined' && broxUI.Modal) {
+      const modal = new broxUI.Modal(this.nodes.modal);
       modal.show();
     } else {
       this.nodes.modal?.classList.add('show');
@@ -454,8 +454,8 @@ class KnowledgeBaseManager {
     try {
       await KBApi.save(payload);
       this.showAlert('Knowledge slice saved successfully');
-      if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-        const modal = bootstrap.Modal.getInstance(this.nodes.modal);
+      if (typeof broxUI !== 'undefined' && broxUI.Modal) {
+        const modal = broxUI.Modal.getInstance(this.nodes.modal);
         if (modal) modal.hide();
       }
       await this.fetchItems();

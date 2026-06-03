@@ -208,7 +208,7 @@ class FormAutosave {
           return;
         }
       }
-    } catch (error) {
+    } catch {
       // Fall through to keepalive fetch
     }
 

@@ -1,226 +1,229 @@
-{% extends "admin/layout.twig" %}
+﻿{% extends"admin/layout.twig" %}
 
 {% block title %}CV Management{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% set current_page = current_page|default('cvs') %}
 
-{% block stylesheets %}
-  <link rel="stylesheet" href="{{ asset('/assets/css/cv-admin.css') }}">
-{% endblock %}
+
 
 {% block content %}
-  {% set filters = filters|default({}) %}
-  {% set selected_template = filters.template|default('modern') %}
-  {% set template_query = selected_template ? '?template=' ~ selected_template : '' %}
+ {% set filters = filters|default({}) %}
+ {% set selected_template = filters.template|default('modern') %}
+ {% set template_query = selected_template ? '?template=' ~ selected_template : '' %}
 
-  <div class="container-fluid py-4 cv-admin-page">
-    <div class="cv-admin-hero">
-      <div>
-        <div class="cv-admin-title">CV Management</div>
-        <div class="cv-admin-subtitle">Monitor CV activity, preview templates, and export files.</div>
-      </div>
-      <div class="cv-admin-hero-actions">
-        <a href="/admin/cv-templates" class="modern-btn modern-btn-outline">
-          <i class="bi bi-grid-3x3-gap me-1"></i> Template Library
-        </a>
-      </div>
-    </div>
+ <div class="w-full px-4 sm:px-6 py-4 cv-admin-page">
+ <div class="cv-admin-hero">
+ <div>
+ <div class="cv-admin-title">CV Management</div>
+ <div class="cv-admin-subtitle">Monitor CV activity, preview templates, and export files.</div>
+ </div>
+ <div class="cv-admin-hero-actions">
+ <a href="/admin/cv-templates" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition transition-outline">
+ <i class="lucide lucide-grid-3x3 mr-1"></i> Template Library
+ </a>
+ </div>
+ </div>
 
-    <div class="cv-admin-stats">
-      <div class="cv-admin-stat-card">
-        <div class="cv-admin-stat-icon bg-primary-subtle text-primary">
-          <i class="bi bi-files"></i>
-        </div>
-        <div>
-          <div class="cv-admin-stat-value">{{ stats.total|default(0) }}</div>
-          <div class="cv-admin-stat-label">Total CVs</div>
-        </div>
-      </div>
-      <div class="cv-admin-stat-card">
-        <div class="cv-admin-stat-icon bg-success-subtle text-success">
-          <i class="bi bi-check-circle"></i>
-        </div>
-        <div>
-          <div class="cv-admin-stat-value">{{ stats.active|default(0) }}</div>
-          <div class="cv-admin-stat-label">Active CVs</div>
-        </div>
-      </div>
-      <div class="cv-admin-stat-card">
-        <div class="cv-admin-stat-icon bg-warning-subtle text-warning">
-          <i class="bi bi-pause-circle"></i>
-        </div>
-        <div>
-          <div class="cv-admin-stat-value">{{ stats.inactive|default(0) }}</div>
-          <div class="cv-admin-stat-label">Inactive CVs</div>
-        </div>
-      </div>
-      <div class="cv-admin-stat-card">
-        <div class="cv-admin-stat-icon bg-info-subtle text-info">
-          <i class="bi bi-people"></i>
-        </div>
-        <div>
-          <div class="cv-admin-stat-value">{{ stats.users_with_cvs|default(0) }}</div>
-          <div class="cv-admin-stat-label">Users with CVs</div>
-        </div>
-      </div>
-    </div>
+ <div class="cv-admin-stats">
+ <div class="cv-admin- border border-slate-200 bg-white shadow-sm">
+ <div class="cv-admin-stat-icon bg-indigo-600-subtle text-indigo-600">
+ <i class="lucide lucide-files"></i>
+ </div>
+ <div>
+ <div class="cv-admin-stat-value">{{ stats.total|default(0) }}</div>
+ <div class="cv-admin-stat-label">Total CVs</div>
+ </div>
+ </div>
+ <div class="cv-admin- border border-slate-200 bg-white shadow-sm">
+ <div class="cv-admin-stat-icon bg-emerald-600-subtle text-emerald-600">
+ <i class="lucide lucide-check-circle"></i>
+ </div>
+ <div>
+ <div class="cv-admin-stat-value">{{ stats.active|default(0) }}</div>
+ <div class="cv-admin-stat-label">Active CVs</div>
+ </div>
+ </div>
+ <div class="cv-admin- border border-slate-200 bg-white shadow-sm">
+ <div class="cv-admin-stat-icon bg-amber-500-subtle text-amber-600">
+ <i class="lucide lucide-pause-circle"></i>
+ </div>
+ <div>
+ <div class="cv-admin-stat-value">{{ stats.inactive|default(0) }}</div>
+ <div class="cv-admin-stat-label">Inactive CVs</div>
+ </div>
+ </div>
+ <div class="cv-admin- border border-slate-200 bg-white shadow-sm">
+ <div class="cv-admin-stat-icon bg-sky-500-subtle text-sky-600">
+ <i class="lucide lucide-users"></i>
+ </div>
+ <div>
+ <div class="cv-admin-stat-value">{{ stats.users_with_cvs|default(0) }}</div>
+ <div class="cv-admin-stat-label">Users with CVs</div>
+ </div>
+ </div>
+ </div>
 
-    <div class="admin-panel-card mb-4 cv-admin-filters">
-      <div class="admin-panel-card-body">
-        <form class="row g-3 align-items-end" method="get" action="">
-          <div class="col-lg-4">
-            <label class="form-label small text-muted">Search</label>
-            <div class="input-group">
-              <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
-              <input type="text"
-                     name="search"
-                     value="{{ filters.search|default('') }}"
-                     class="form-control"
-                     placeholder="Search by title, user, or email">
-            </div>
-          </div>
-          <div class="col-lg-2 col-md-4">
-            <label class="form-label small text-muted">Status</label>
-            <select name="status" class="form-select">
-              <option value="all" {% if filters.status == 'all' %}selected{% endif %}>All</option>
-              <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
-              <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
-            </select>
-          </div>
-          <div class="col-lg-2 col-md-4">
-            <label class="form-label small text-muted">Sort</label>
-            <select name="sort" class="form-select">
-              <option value="updated" {% if filters.sort == 'updated' %}selected{% endif %}>Updated</option>
-              <option value="created" {% if filters.sort == 'created' %}selected{% endif %}>Created</option>
-              <option value="title" {% if filters.sort == 'title' %}selected{% endif %}>Title</option>
-              <option value="owner" {% if filters.sort == 'owner' %}selected{% endif %}>Owner</option>
-            </select>
-          </div>
-          <div class="col-lg-2 col-md-4">
-            <label class="form-label small text-muted">Order</label>
-            <select name="order" class="form-select">
-              <option value="desc" {% if filters.order == 'desc' %}selected{% endif %}>Newest</option>
-              <option value="asc" {% if filters.order == 'asc' %}selected{% endif %}>Oldest</option>
-            </select>
-          </div>
-          <div class="col-lg-2 col-md-4">
-            <label class="form-label small text-muted">Template</label>
-            <select name="template" class="form-select" data-template-select>
-              {% for template in templates|default([]) %}
-                <option value="{{ template }}" {% if template == selected_template %}selected{% endif %}>
-                  {{ template|capitalize }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-lg-2 col-md-4">
-            <label class="form-label small text-muted">Limit</label>
-            <select name="limit" class="form-select">
-              {% for size in [10, 20, 50, 100] %}
-                <option value="{{ size }}" {% if filters.limit == size %}selected{% endif %}>{{ size }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-lg-2 col-md-4">
-            <button type="submit" class="modern-btn modern-btn-primary w-100">
-              <i class="bi bi-funnel-fill me-1"></i>Apply
-            </button>
-          </div>
-          <div class="col-lg-2 col-md-4">
-            <a href="/admin/cvs" class="modern-btn modern-btn-outline w-100">
-              <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
-            </a>
-          </div>
-        </form>
-      </div>
-    </div>
+ <div class=" border border-slate-200 bg-white shadow-sm mb-4 cv-admin-filters">
+ <div class="p-4">
+ <form class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3 items-end" method="get" action="">
+ <div class="lg:col-span-4">
+ <label class="form-label small text-slate-500">Search</label>
+ <div class="input-group">
+ <span class="inline-flex items-center bg-slate-100"><i class="lucide lucide-search"></i></span>
+ <input type="text"
+ name="search"
+ value="{{ filters.search|default('') }}"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ placeholder="Search by title, user, or email">
+ </div>
+ </div>
+ <div class="lg:col-span-2 md:col-span-4">
+ <label class="form-label small text-slate-500">Status</label>
+ <select name="status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+ <option value="all" {% if filters.status == 'all' %}selected{% endif %}>All</option>
+ <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
+ <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
+ </select>
+ </div>
+ <div class="lg:col-span-2 md:col-span-4">
+ <label class="form-label small text-slate-500">Sort</label>
+ <select name="sort" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+ <option value="updated" {% if filters.sort == 'updated' %}selected{% endif %}>Updated</option>
+ <option value="created" {% if filters.sort == 'created' %}selected{% endif %}>Created</option>
+ <option value="title" {% if filters.sort == 'title' %}selected{% endif %}>Title</option>
+ <option value="owner" {% if filters.sort == 'owner' %}selected{% endif %}>Owner</option>
+ </select>
+ </div>
+ <div class="lg:col-span-2 md:col-span-4">
+ <label class="form-label small text-slate-500">Order</label>
+ <select name="order" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+ <option value="desc" {% if filters.order == 'desc' %}selected{% endif %}>Newest</option>
+ <option value="asc" {% if filters.order == 'asc' %}selected{% endif %}>Oldest</option>
+ </select>
+ </div>
+ <div class="lg:col-span-2 md:col-span-4">
+ <label class="form-label small text-slate-500">Template</label>
+ <select name="template" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" data-template-select>
+ {% for template in templates|default([]) %}
+ <option value="{{ template }}" {% if template == selected_template %}selected{% endif %}>
+ {{ template|capitalize }}
+ </option>
+ {% endfor %}
+ </select>
+ </div>
+ <div class="lg:col-span-2 md:col-span-4">
+ <label class="form-label small text-slate-500">Limit</label>
+ <select name="limit" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+ {% for size in [10, 20, 50, 100] %}
+ <option value="{{ size }}" {% if filters.limit == size %}selected{% endif %}>{{ size }}</option>
+ {% endfor %}
+ </select>
+ </div>
+ <div class="lg:col-span-2 md:col-span-4">
+ <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 w-full">
+ <i class="lucide lucide-filter mr-1"></i>Apply
+ </button>
+ </div>
+ <div class="lg:col-span-2 md:col-span-4">
+ <a href="/admin/cvs" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition transition-outline w-full">
+ <i class="lucide lucide-rotate-ccw mr-1"></i>Reset
+ </a>
+ </div>
+ </form>
+ </div>
+ </div>
 
-    <div class="cv-admin-bulk">
-      <div class="cv-admin-selection" data-cv-selection>
-        <span class="text-muted">Selected:</span>
-        <span class="fw-semibold" data-selected-count>0</span>
-      </div>
-      <div class="cv-admin-bulk-actions">
-        <button type="button" class="modern-btn modern-btn-primary" data-bulk-export>
-          <i class="bi bi-file-earmark-arrow-down me-1"></i> Bulk Export PDF
-        </button>
-        <span class="text-muted small">Limit: 50 CVs per export.</span>
-      </div>
-    </div>
-    <div class="alert alert-warning d-none mt-3" data-bulk-error></div>
+ <div class="cv-admin-bulk">
+ <div class="cv-admin-selection" data-cv-selection>
+ <span class="text-slate-500">Selected:</span>
+ <span class="font-semibold" data-selected-count>0</span>
+ </div>
+ <div class="cv-admin-bulk-actions">
+ <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700" data-bulk-export>
+ <i class="lucide lucide-file-down mr-1"></i> Bulk Export PDF
+ </button>
+ <span class="text-slate-500 small">Limit: 50 CVs per export.</span>
+ </div>
+ </div>
+ <div class="p-4 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 hidden mt-3" data-bulk-error></div>
 
-    {% if cvs is not empty %}
-      <div class="admin-panel-card">
-        <div class="admin-panel-card-body">
-          <div class="table-responsive">
-            <table class="table table-stacked table-hover align-middle cv-admin-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Title</th>
-                  <th>Owner</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                  <th>Updated</th>
-                  <th class="text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for cv in cvs %}
-                  {% set owner_name = (cv.first_name ~ ' ' ~ cv.last_name)|trim %}
-                  {% set owner_name = owner_name ? owner_name : (cv.username|default('Unknown')) %}
-                  <tr data-id="{{ cv.id }}">
-                    <td class="fw-semibold" data-label="ID">#{{ cv.id }}</td>
-                    <td data-label="Title">
-                      <div class="fw-semibold">{{ cv.title|default('Untitled CV') }}</div>
-                      <div class="text-muted small">User ID: {{ cv.user_id }}</div>
-                    </td>
-                    <td data-label="Owner">
-                      <div class="fw-semibold">{{ owner_name }}</div>
-                      <div class="text-muted small">{{ cv.email|default('') }}</div>
-                    </td>
-                    <td data-label="Status">
-                      {% if cv.is_active %}
-                        <span class="badge bg-success-subtle text-success">Active</span>
-                      {% else %}
-                        <span class="badge bg-secondary-subtle text-muted">Inactive</span>
-                      {% endif %}
-                    </td>
-                    <td class="text-muted" data-label="Created">{{ cv.created_at ? (cv.created_at|date('M d, Y')) : '—' }}</td>
-                    <td class="text-muted" data-label="Updated">{{ cv.updated_at ? (cv.updated_at|date('M d, Y')) : '—' }}</td>
-                    <td class="text-center" data-label="Actions">
-                      <a href="/admin/cvs/{{ cv.id }}/preview{{ template_query }}"
-                         class="modern-btn btn-sm btn-info me-1"
-                         target="_blank"
-                         title="Preview HTML">
-                        <i class="bi bi-eye-fill"></i>
-                      </a>
-                      <a href="/admin/cvs/{{ cv.id }}/export{{ template_query }}"
-                         class="modern-btn btn-sm btn-success"
-                         target="_blank"
-                         title="Export PDF">
-                        <i class="bi bi-file-earmark-pdf"></i>
-                      </a>
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      {% include "admin/partials/pagination.twig" %}
-    {% else %}
-      <div class="alert alert-info">
-        <i class="bi bi-info-circle me-1"></i> No CVs found matching your filters.
-      </div>
-    {% endif %}
-  </div>
+ {% if cvs is not empty %}
+ <div class=" border border-slate-200 bg-white shadow-sm">
+ <div class="p-4">
+ <div class="overflow-x-auto">
+ <table class="table table-stacked table-hover align-middle cv-admin-table">
+ <thead>
+ <tr>
+ <th>ID</th>
+ <th>Title</th>
+ <th>Owner</th>
+ <th>Status</th>
+ <th>Created</th>
+ <th>Updated</th>
+ <th class="text-center">Actions</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for cv in cvs %}
+ {% set owner_name = (cv.first_name ~ ' ' ~ cv.last_name)|trim %}
+ {% set owner_name = owner_name ? owner_name : (cv.username|default('Unknown')) %}
+ <tr data-id="{{ cv.id }}">
+ <td class="font-semibold" data-label="ID">#{{ cv.id }}</td>
+ <td data-label="Title">
+ <div class="font-semibold">{{ cv.title|default('Untitled CV') }}</div>
+ <div class="text-slate-500 small">User ID: {{ cv.user_id }}</div>
+ </td>
+ <td data-label="Owner">
+ <div class="font-semibold">{{ owner_name }}</div>
+ <div class="text-slate-500 small">{{ cv.email|default('') }}</div>
+ </td>
+ <td data-label="Status">
+ {% if cv.is_active %}
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-600-subtle text-emerald-600">Active</span>
+ {% else %}
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-600-subtle text-slate-500">Inactive</span>
+ {% endif %}
+ </td>
+ <td class="text-slate-500" data-label="Created">{{ cv.created_at ? (cv.created_at|date('M d, Y')) : 'â€”' }}</td>
+ <td class="text-slate-500" data-label="Updated">{{ cv.updated_at ? (cv.updated_at|date('M d, Y')) : 'â€”' }}</td>
+ <td class="text-center" data-label="Actions">
+ <a href="/admin/cvs/{{ cv.id }}/preview{{ template_query }}"
+ class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-sky-500 text-white hover:bg-sky-600 mr-1"
+ target="_blank"
+ title="Preview HTML">
+ <i class="lucide lucide-eye"></i>
+ </a>
+ <a href="/admin/cvs/{{ cv.id }}/export{{ template_query }}"
+ class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-emerald-600 text-white hover:bg-emerald-700"
+ target="_blank"
+ title="Export PDF">
+ <i class="lucide lucide-file-text"></i>
+ </a>
+ </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+ {% include"admin/partials/pagination.twig" %}
+ {% else %}
+ <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
+ <i class="lucide lucide-info mr-1"></i> No CVs found matching your filters.
+ </div>
+ {% endif %}
+ </div>
 {% endblock %}
 
 {% block scripts %}
-  {{ parent() }}
-  <script src="{{ asset('/assets/js/cv-admin.js') }}" defer></script>
+ {{ parent() }}
+ <script type="module" src="{{ asset('/assets/js/dist/cv-admin.js') }}" defer></script>
 {% endblock %}
+
+
+
+
+
 
 

@@ -145,7 +145,14 @@ $router->get('/admin/dashboard', ['middleware' => ['auth', 'admin_or_super_only'
     }
 });
 
-
+/**
+ * Admin Dashboard Alias Route
+ * GET /admin -> redirects to /admin/dashboard
+ */
+$router->get('/admin', ['middleware' => ['auth', 'admin_or_super_only']], function () {
+    header('Location: /admin/dashboard');
+    exit;
+});
 
 // ========= CONTACT MESSAGES MANAGEMENT ==========
 

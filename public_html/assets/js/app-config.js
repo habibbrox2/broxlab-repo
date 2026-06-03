@@ -11,12 +11,12 @@
  */
 (function initJsRuntimeConfig(global) {
   const DEFAULT_JS_CONFIG = Object.freeze({
-    app: Object.freeze({ name: 'BroxBhai', env: 'production' }),
+    app: Object.freeze({ name: 'BroxBhai', env: 'production', }),
     ui: Object.freeze({
-      theme: Object.freeze({ defaultTheme: 'light', storageKey: 'broxbhai-theme', transitionDuration: 300 }),
+      theme: Object.freeze({ defaultTheme: 'light', storageKey: 'broxbhai-theme', transitionDuration: 300, }),
     }),
-    network: Object.freeze({ requestTimeoutMs: 12000 }),
-    notifications: Object.freeze({ permissionPopupEnabled: true }),
+    network: Object.freeze({ requestTimeoutMs: 12000, }),
+    notifications: Object.freeze({ permissionPopupEnabled: true, }),
     ai: Object.freeze({}),
   });
 
@@ -45,7 +45,7 @@
   /* Merge overrides */
   const mergedJsConfig = deepMerge(
     deepMerge(clone(DEFAULT_JS_CONFIG), isPlainObject(global.__APP_CONFIG_OVERRIDES) ? global.__APP_CONFIG_OVERRIDES : {}),
-    isPlainObject(global.__APP_JS_CONFIG_OVERRIDES) ? global.__APP_JS_CONFIG_OVERRIDES : {},
+    isPlainObject(global.__APP_JS_CONFIG_OVERRIDES) ? global.__APP_JS_CONFIG_OVERRIDES : {}
   );
 
   global.__APP_JS_CONFIG = mergedJsConfig;
@@ -53,7 +53,7 @@
   /* Legacy backwards compat */
   global.__APP_CONFIG = deepMerge(
     isPlainObject(global.__APP_CONFIG) ? clone(global.__APP_CONFIG) : {},
-    mergedJsConfig,
+    mergedJsConfig
   );
 
   const getter = {

@@ -1,115 +1,119 @@
-{% extends "admin/layout.twig" %}
+﻿{% extends"admin/layout.twig" %}
 
 {% block title %}CV Template Management{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% set current_page = current_page|default('cv-templates') %}
 
-{% block stylesheets %}
-  <link rel="stylesheet" href="{{ asset('/assets/css/cv-admin.css') }}">
-{% endblock %}
+{% block stylesheets %}{% endblock %}
 
 {% block content %}
-  {% set template_meta = {
-    'modern': {
-      'desc': 'Clean design with bold accents',
-      'gradient': 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
-      'icon': 'bi-palette'
-    },
-    'minimal': {
-      'desc': 'Simple, elegant typography',
-      'gradient': 'linear-gradient(135deg, #374151 0%, #6B7280 100%)',
-      'icon': 'bi-square'
-    },
-    'ats': {
-      'desc': 'Optimized for ATS scanners',
-      'gradient': 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
-      'icon': 'bi-robot'
-    },
-    'professional': {
-      'desc': 'Classic business layout',
-      'gradient': 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%)',
-      'icon': 'bi-briefcase'
-    }
-  } %}
+ {% set template_meta = {
+ 'modern': {
+ 'desc': 'Clean design with bold accents',
+ '': 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+ 'icon': 'lucide lucide-palette'
+ },
+ 'minimal': {
+ 'desc': 'Simple, elegant typography',
+ '': 'linear-gradient(135deg, #374151 0%, #6B7280 100%)',
+ 'icon': 'lucide lucide-square'
+ },
+ 'ats': {
+ 'desc': 'Optimized for ATS scanners',
+ '': 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+ 'icon': 'lucide lucide-robot'
+ },
+ 'professional': {
+ 'desc': 'Classic business layout',
+ '': 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%)',
+ 'icon': 'lucide lucide-briefcase'
+ }
+ } %}
 
-  <div class="container-fluid py-4 cv-admin-page">
-    <div class="cv-admin-hero">
-      <div>
-        <div class="cv-admin-title">CV Template Management</div>
-        <div class="cv-admin-subtitle">Preview and manage template keys across the platform.</div>
-      </div>
-      <div class="cv-admin-hero-actions">
-        <a href="/admin/cv-templates/create" class="modern-btn modern-btn-primary">
-          <i class="bi bi-plus-circle me-1"></i> Create Template
-        </a>
-        <a href="/admin/cvs" class="modern-btn modern-btn-outline">
-          <i class="bi bi-arrow-left me-1"></i> Back to CVs
-        </a>
-      </div>
-    </div>
+ <div class="container-app py-4 cv-admin-page">
+ <div class="cv-admin-hero">
+ <div>
+ <div class="cv-admin-title">CV Template Management</div>
+ <div class="cv-admin-subtitle">Preview and manage template keys across the platform.</div>
+ </div>
+ <div class="cv-admin-hero-actions">
+ <a href="/admin/cv-templates/create" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700">
+ <i class="lucide lucide-plus-circle mr-1"></i> Create Template
+ </a>
+ <a href="/admin/cvs" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition transition-outline">
+ <i class="lucide lucide-arrow-left mr-1"></i> Back to CVs
+ </a>
+ </div>
+ </div>
 
-    {% if templates is not empty %}
-      <div class="cv-template-grid">
-        {% for key, template in templates %}
-          {% set meta = template_meta[key]|default({'desc': template.description|default('CV template'), 'gradient': 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)', 'icon': 'bi-file-earmark-text'}) %}
-          <div class="cv-template-card">
-            <div class="cv-template-preview" style="background: {{ meta.gradient }};">
-              <i class="bi {{ meta.icon }}"></i>
-            </div>
-            <div class="cv-template-body">
-              <div class="cv-template-title">
-                {{ template.name }}
-                {% if template.status == 'disabled' %}
-                  <span class="badge bg-danger ms-2">Disabled</span>
-                {% else %}
-                  <span class="badge bg-success ms-2">Active</span>
-                {% endif %}
-              </div>
-              <div class="cv-template-desc">{{ template.description|default(meta.desc) }}</div>
-              <div class="cv-template-meta">
-                <span class="badge bg-light text-muted">Key: {{ key }}</span>
-                {% if template.is_custom %}
-                  <span class="badge bg-primary">Custom</span>
-                {% endif %}
-              </div>
-              <div class="cv-template-actions">
-                <a href="/admin/cv-templates/preview/{{ key }}"
-                   class="modern-btn btn-sm btn-info"
-                   target="_blank">
-                  <i class="bi bi-eye-fill me-1"></i> Preview
-                </a>
-                <a href="/admin/cv-templates/{{ key }}/edit"
-                   class="modern-btn btn-sm btn-warning">
-                  <i class="bi bi-pencil me-1"></i> Edit
-                </a>
-                <form method="post" action="/admin/cv-templates/{{ key }}/toggle" class="d-inline" data-toggle-form>
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                  <button type="submit"
-                          class="modern-btn btn-sm {% if template.status == 'active' %}btn-danger{% else %}btn-success{% endif %}">
-                    <i class="bi {% if template.status == 'active' %}bi-pause-fill{% else %}bi-play-fill{% endif %} me-1"></i>
-                    {% if template.status == 'active' %}Disable{% else %}Enable{% endif %}
-                  </button>
-                </form>
-                <button type="button"
-                        class="modern-btn btn-sm btn-outline-secondary"
-                        data-copy-template
-                        data-template-key="{{ key }}">
-                  <i class="bi bi-clipboard me-1"></i> Copy Key
-                </button>
-              </div>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="alert alert-info">
-        <i class="bi bi-info-circle me-1"></i> No templates found in <code>app/Views/cv/templates</code>.
-      </div>
-    {% endif %}
-  </div>
+ {% if templates is not empty %}
+ <div class="cv-template-grid">
+ {% for key, template in templates %}
+ {% set meta = template_meta[key]|default({'desc': template.description|default('CV template'), '': 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)', 'icon': 'lucide lucide-file-text'}) %}
+ <div class="cv-template-rounded-xl border border-slate-200 bg-white shadow-sm">
+ <div class="cv-template-preview" style="background: {{ meta. }};">
+ <i class="bi {{ meta.icon }}"></i>
+ </div>
+ <div class="cv-template-body">
+ <div class="cv-template-title">
+ {{ template.name }}
+ {% if template.status == 'disabled' %}
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-red-600 ml-2">Disabled</span>
+ {% else %}
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-600 ml-2">Active</span>
+ {% endif %}
+ </div>
+ <div class="cv-template-desc">{{ template.description|default(meta.desc) }}</div>
+ <div class="cv-template-meta flex flex-wrap items-center gap-2">
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-500">Key: {{ key }}</span>
+ {% if template.is_custom %}
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-indigo-600">Custom</span>
+ {% endif %}
+ </div>
+ <div class="cv-template-actions">
+ <a href="/admin/cv-templates/preview/{{ key }}"
+ class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-slate-100 text-slate-900 border border-slate-300 hover:bg-slate-200"
+ target="_blank">
+ <i class="lucide lucide-eye mr-1"></i> Preview
+ </a>
+ <a href="/admin/cv-templates/{{ key }}/edit"
+ class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-indigo-600 text-white hover:bg-indigo-700">
+ <i class="lucide lucide-pencil mr-1"></i> Edit
+ </a>
+ <form method="post" action="/admin/cv-templates/{{ key }}/toggle" class="inline" data-toggle-form>
+ <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+ <button type="submit"
+ class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs {% if template.status == 'active' %}bg-red-600 text-white hover:bg-red-700{% else %}bg-emerald-600 hover:bg-emerald-700{% endif %}">
+ <i class="lucide {% if template.status == 'active' %}lucide-pause{% else %}lucide-play{% endif %} mr-1"></i>
+ {% if template.status == 'active' %}Disable{% else %}Enable{% endif %}
+ </button>
+ </form>
+ <button type="button"
+ class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs inline-flex text-slate-600 hover:bg-slate-100"
+ data-copy-template
+ data-template-key="{{ key }}">
+ <i class="lucide lucide-clipboard mr-1"></i> Copy Key
+ </button>
+ </div>
+ </div>
+ </div>
+ {% endfor %}
+ </div>
+ {% else %}
+ <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
+ <i class="lucide lucide-info mr-1"></i> No templates found in <code>app/Views/cv/templates</code>.
+ </div>
+ {% endif %}
+ </div>
 {% endblock %}
 
 {% block scripts %}
-  {{ parent() }}
-  <script src="{{ asset('/assets/js/cv-admin.js') }}" defer></script>
+ {{ parent() }}
+ <script type="module" src="{{ asset('/assets/js/dist/cv-admin.js') }}" defer></script>
 {% endblock %}
+
+
+
+
+
+

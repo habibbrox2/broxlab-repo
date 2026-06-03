@@ -1,502 +1,502 @@
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
 {% block title %}Deploy Tools{% endblock %}
 
 {% block content %}
 <style>
-  .file-tree {
-    font-family: 'Segoe UI', monospace;
-    font-size: 13px;
-    background: #1e1e1e;
-    color: #d4d4d4;
-    padding: 15px;
-    border-radius: 8px;
-    max-height: 500px;
-    overflow-y: auto;
-  }
-  .file-tree .folder { cursor: pointer; color: #ffd700; }
-  .file-tree .folder:hover { color: #fff; }
-  .file-tree .file { color: #9cdcfe; }
-  .file-tree .file-twig { color: #c586c0; }
-  .file-tree .file-php { color: #4ec9b0; }
-  .file-tree .file-js { color: #dcdcaa; }
-  .file-tree .file-css { color: #d7ba7d; }
-  .file-tree .file-md { color: #6a9955; }
-  .file-tree .file-json { color: #ce9178; }
-  .file-tree .indent { padding-left: 20px; display: none; }
-  .file-tree .indent.expanded { display: block; }
-  .file-tree .toggle { display: inline-block; width: 16px; text-align: center; margin-right: 4px; }
-  .file-tree .size { color: #6a9955; font-size: 11px; margin-left: 8px; }
-  .file-tree-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  .live-indicator { display: inline-block; width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-  .webhook-status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
-  .webhook-status.active { background: #22c55e; }
-  .webhook-status.inactive { background: #6b7280; }
-  .version-card { border-left: 3px solid #007bff; }
-  .backup-list { max-height: 300px; overflow-y: auto; }
+ .file-tree {
+ font-family: 'Segoe UI', monospace;
+ font-size: 13px;
+ background: #1e1e1e;
+ color: #d4d4d4;
+ padding: 15px;
+ border-radius: 8px;
+ max-height: 500px;
+ overflow-y: auto;
+ }
+ .file-tree .folder { cursor: pointer; color: #ffd700; }
+ .file-tree .folder:hover { color: #fff; }
+ .file-tree .file { color: #9cdcfe; }
+ .file-tree .file-twig { color: #c586c0; }
+ .file-tree .file-php { color: #4ec9b0; }
+ .file-tree .file-js { color: #dcdcaa; }
+ .file-tree .file-css { color: #d7ba7d; }
+ .file-tree .file-md { color: #6a9955; }
+ .file-tree .file-json { color: #ce9178; }
+ .file-tree .indent { padding-left: 20px; display: none; }
+ .file-tree .indent.expanded { display: block; }
+ .file-tree .toggle { display: inline-block; width: 16px; text-align: center; margin-right: 4px; }
+ .file-tree .size { color: #6a9955; font-size: 11px; margin-left: 8px; }
+ .file-tree-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+ .live-indicator { display: inline-block; width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; }
+ @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+ .webhook-status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+ .webhook-status.active { background: #22c55e; }
+ .webhook-status.inactive { background: #6b7280; }
+ .version-entry { border-left: 3px solid #007bff; }
+ .backup-list { max-height: 300px; overflow-y: auto; }
 </style>
 
-<div class="container-fluid py-4">
-  <div class="admin-page-header mb-4">
-    <div class="admin-page-title">
-      <i class="bi bi-rocket-takeoff"></i>
-      Deploy Tools
-    </div>
-    <div class="admin-page-subtitle">
-      <i class="bi bi-arrow-repeat"></i> Localhost <code>git push</code> → GitHub Webhook → <i class="bi bi-cloud-download"></i> Auto Deploy
-    </div>
-  </div>
+<div class="w-full px-4 sm:px-6 py-4">
+ <div class=" mb-4">
+ <div>
+ <i class="lucide lucide-rocket"></i>
+ Deploy Tools
+ </div>
+ <div>
+ <i class="lucide lucide-repeat"></i> Localhost <code>git push</code> → GitHub Webhook → <i class="lucide lucide-cloud-download"></i> Auto Deploy
+ </div>
+ </div>
 
-  <ul class="nav nav-tabs mb-4" id="deployTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="deploy-tab" data-bs-toggle="tab" data-bs-target="#deploy-pane" type="button">
-        <i class="bi bi-rocket me-1"></i> Deploy
-        <span class="live-indicator ms-1" title="Live"></span>
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="webhook-tab" data-bs-toggle="tab" data-bs-target="#webhook-pane" type="button">
-        <i class="bi bi-git me-1"></i> GitHub Webhook
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="versions-tab" data-bs-toggle="tab" data-bs-target="#versions-pane" type="button">
-        <i class="bi bi-clock-history me-1"></i> Versions & Backup
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="jobs-tab" data-bs-toggle="tab" data-bs-target="#jobs-pane" type="button">
-        <i class="bi bi-list-task me-1"></i> Jobs
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="filetree-tab" data-bs-toggle="tab" data-bs-target="#filetree-pane" type="button">
-        <i class="bi bi-folder me-1"></i> File Tree
-      </button>
-    </li>
-  </ul>
+ <ul class="nav nav-tabs mb-4" id="deployTabs" role="tablist">
+ <li class="nav-item" role="presentation">
+ <button class="nav-link active" id="deploy-tab" data-brox-toggle="tab" data-brox-target="#deploy-pane" type="button">
+ <i class="lucide lucide-rocket mr-1"></i> Deploy
+ <span class="live-indicator ml-1" title="Live"></span>
+ </button>
+ </li>
+ <li class="nav-item" role="presentation">
+ <button class="nav-link" id="webhook-tab" data-brox-toggle="tab" data-brox-target="#webhook-pane" type="button">
+ <i class="lucide lucide-git-branch mr-1"></i> GitHub Webhook
+ </button>
+ </li>
+ <li class="nav-item" role="presentation">
+ <button class="nav-link" id="versions-tab" data-brox-toggle="tab" data-brox-target="#versions-pane" type="button">
+ <i class="lucide lucide-clock mr-1"></i> Versions & Backup
+ </button>
+ </li>
+ <li class="nav-item" role="presentation">
+ <button class="nav-link" id="jobs-tab" data-brox-toggle="tab" data-brox-target="#jobs-pane" type="button">
+ <i class="lucide lucide-list-checks mr-1"></i> Jobs
+ </button>
+ </li>
+ <li class="nav-item" role="presentation">
+ <button class="nav-link" id="filetree-tab" data-brox-toggle="tab" data-brox-target="#filetree-pane" type="button">
+ <i class="lucide lucide-folder mr-1"></i> File Tree
+ </button>
+ </li>
+ </ul>
 
-  <div class="tab-content" id="deployTabsContent">
-    <!-- Deploy Tab -->
-    <div class="tab-pane fade show active" id="deploy-pane" role="tabpanel">
-      <div class="row g-4">
-        <div class="col-lg-4">
-          <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white d-flex align-items-center justify-content-between">
-              <strong><i class="bi bi-play-fill text-success me-1"></i>Run Deploy</strong>
-              <span class="badge bg-success">Live</span>
-            </div>
-            <div class="card-body">
-              <form id="runDeployForm" class="mb-3">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <input type="hidden" name="job_type" value="deploy">
-                <div class="form-check mb-3">
-                  <input class="form-check-input" type="checkbox" name="with_vendor" id="withVendor">
-                  <label class="form-check-label" for="withVendor">Include vendor folder</label>
-                </div>
-                <div class="form-check mb-3">
-                  <input class="form-check-input" type="checkbox" name="with_backup" id="withBackup" checked>
-                  <label class="form-check-label" for="withBackup">Create backup before deploy</label>
-                </div>
-                <button type="submit" class="btn btn-success w-100" id="runDeployBtn">
-                  <i class="bi bi-play-fill me-1"></i> Run Deploy Now
-                </button>
-              </form>
+ <div class="tab-content" id="deployTabsContent">
+ <!-- Deploy Tab -->
+ <div class="tab-pane fade show active" id="deploy-pane" role="tabpanel">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+ <div class="lg:col-span-4">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0">
+ <div class="border-b border-slate-200 px-4 py-3 bg-white flex items-center justify-between">
+ <strong><i class="lucide lucide-play text-emerald-600 mr-1"></i>Run Deploy</strong>
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-600">Live</span>
+ </div>
+ <div class="p-4">
+ <form id="runDeployForm" class="mb-3">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+ <input type="hidden" name="job_type" value="deploy">
+ <div class="flex items-start gap-2 mb-3">
+ <input class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" name="with_vendor" id="withVendor">
+ <label class="text-sm text-slate-700" for="withVendor">Include vendor folder</label>
+ </div>
+ <div class="flex items-start gap-2 mb-3">
+ <input class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" name="with_backup" id="withBackup" checked>
+ <label class="text-sm text-slate-700" for="withBackup">Create backup before deploy</label>
+ </div>
+ <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-emerald-600 text-white hover:bg-emerald-700 w-full" id="runDeployBtn">
+ <i class="lucide lucide-play mr-1"></i> Run Deploy Now
+ </button>
+ </form>
 
-              <hr>
+ <hr>
 
-              <form method="POST" action="/admin/deploy-tools/queue" class="mb-3">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <input type="hidden" name="job_type" value="deploy">
-                <button type="submit" class="btn btn-outline-primary w-100">
-                  <i class="bi bi-clock me-1"></i> Queue Deploy
-                </button>
-              </form>
+ <form method="POST" action="/admin/deploy-tools/queue" class="mb-3">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+ <input type="hidden" name="job_type" value="deploy">
+ <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-indigo-600 hover:bg-indigo-100 w-full">
+ <i class="lucide lucide-clock mr-1"></i> Queue Deploy
+ </button>
+ </form>
 
-              <hr>
+ <hr>
 
-              <form method="POST" action="/admin/deploy-tools/queue">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <input type="hidden" name="job_type" value="db_backup">
-                <button type="submit" class="btn btn-outline-secondary w-100">
-                  <i class="bi bi-database-check me-1"></i> Queue DB Backup
-                </button>
-              </form>
-            </div>
-          </div>
+ <form method="POST" action="/admin/deploy-tools/queue">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+ <input type="hidden" name="job_type" value="db_backup">
+ <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-slate-600 hover:bg-slate-100 w-full">
+ <i class="lucide lucide-database mr-1"></i> Queue DB Backup
+ </button>
+ </form>
+ </div>
+ </div>
 
-          <div class="card border-0 shadow-sm mt-4">
-            <div class="card-header bg-white">
-              <strong>Quick Deploy Info</strong>
-            </div>
-            <div class="card-body small">
-              <div class="row mb-2">
-                <div class="col-5 text-muted">Webhook:</div>
-                <div class="col-7">
-                  <span class="webhook-status {{ webhook_settings.enabled ? 'active' : 'inactive' }}"></span>
-                  {{ webhook_settings.enabled ? 'Enabled' : 'Disabled' }}
-                </div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-5 text-muted">Target Branch:</div>
-                <div class="col-7"><code>{{ webhook_settings.branch ?: 'main' }}</code></div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-5 text-muted">Auto Deploy:</div>
-                <div class="col-7">{{ webhook_settings.auto_deploy ? 'Yes' : 'No' }}</div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-5 text-muted">Backup:</div>
-                <div class="col-7">{{ webhook_settings.create_backup ? 'Yes' : 'No' }}</div>
-              </div>
-              <div class="row mb-0">
-                <div class="col-5 text-muted">Last Deploy:</div>
-                <div class="col-7">{{ webhook_settings.last_delivery ?: 'Never' }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 mt-4">
+ <div class="border-b border-slate-200 px-4 py-3 bg-white">
+ <strong>Quick Deploy Info</strong>
+ </div>
+ <div class="p-4 small">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-2">
+ <div class="col-span-5 text-slate-500">Webhook:</div>
+ <div class="col-span-7">
+ <span class="webhook-status {{ webhook_settings.enabled ? 'active' : 'inactive' }}"></span>
+ {{ webhook_settings.enabled ? 'Enabled' : 'Disabled' }}
+ </div>
+ </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-2">
+ <div class="col-span-5 text-slate-500">Target Branch:</div>
+ <div class="col-span-7"><code>{{ webhook_settings.branch ?: 'main' }}</code></div>
+ </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-2">
+ <div class="col-span-5 text-slate-500">Auto Deploy:</div>
+ <div class="col-span-7">{{ webhook_settings.auto_deploy ? 'Yes' : 'No' }}</div>
+ </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-2">
+ <div class="col-span-5 text-slate-500">Backup:</div>
+ <div class="col-span-7">{{ webhook_settings.create_backup ? 'Yes' : 'No' }}</div>
+ </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-0">
+ <div class="col-span-5 text-slate-500">Last Deploy:</div>
+ <div class="col-span-7">{{ webhook_settings.last_delivery ?: 'Never' }}</div>
+ </div>
+ </div>
+ </div>
+ </div>
 
-        <div class="col-lg-8">
-          <!-- Live Progress Card -->
-          <div class="card border-0 shadow-sm mb-4" id="progressCard" style="display: none;">
-            <div class="card-header bg-white d-flex align-items-center justify-content-between">
-              <strong><i class="bi bi-activity text-success me-1"></i><span id="progressTitle">Deploy Progress</span></strong>
-              <span class="badge bg-warning text-dark" id="progressStatus">Running</span>
-            </div>
-            <div class="card-body">
-              <div class="mb-3">
-                <div class="progress" style="height: 25px;">
-                  <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" id="progressBar" role="progressbar" style="width: 0%;">
-                    <span id="progressText">0%</span>
-                  </div>
-                </div>
-              </div>
-              <div class="alert alert-info mb-3">
-                <i class="bi bi-info-circle me-2"></i>
-                <span id="currentStep">Initializing...</span>
-              </div>
-              <div id="stepsContainer" class="small"><div class="text-muted">Waiting for steps...</div></div>
-              <div class="mt-3">
-                <button class="btn btn-sm btn-outline-secondary" onclick="refreshProgress()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
-                <button class="btn btn-sm btn-outline-danger" onclick="cancelDeploy()" id="cancelBtn"><i class="bi bi-x-circle"></i> Cancel</button>
-              </div>
-            </div>
-          </div>
+ <div class="lg:col-span-8">
+ <!-- Live Progress Card -->
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 mb-4" id="progressCard" style="display: none;">
+ <div class="border-b border-slate-200 px-4 py-3 bg-white flex items-center justify-between">
+ <strong><i class="lucide lucide-activity text-emerald-600 mr-1"></i><span id="progressTitle">Deploy Progress</span></strong>
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-amber-500 text-slate-900" id="progressStatus">Running</span>
+ </div>
+ <div class="p-4">
+ <div class="mb-3">
+ <div class="progress" style="height: 25px;">
+ <div class="progress-bar progress-bar-striped progress-bar-animated bg-emerald-600" id="progressBar" role="progressbar" style="width: 0%;">
+ <span id="progressText">0%</span>
+ </div>
+ </div>
+ </div>
+ <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 mb-3">
+ <i class="lucide lucide-info mr-2"></i>
+ <span id="currentStep">Initializing...</span>
+ </div>
+ <div id="stepsContainer" class="small"><div class="text-slate-500">Waiting for steps...</div></div>
+ <div class="mt-3">
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100" onclick="refreshProgress()"><i class="lucide lucide-refresh-cw"></i> Refresh</button>
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs text-red-600 hover:bg-red-100" onclick="cancelDeploy()" id="cancelBtn"><i class="lucide lucide-x-circle"></i> Cancel</button>
+ </div>
+ </div>
+ </div>
 
-          <div class="card border-0 shadow-sm mb-4" id="noDeployCard">
-            <div class="card-body text-center py-5">
-              <i class="bi bi-rocket-takeoff display-1 text-muted"></i>
-              <h5 class="mt-3 text-muted">Ready to Deploy</h5>
-              <p class="text-muted">Click "Run Deploy Now" to start a live deployment.</p>
-            </div>
-          </div>
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 mb-4" id="noDeployCard">
+ <div class="p-4 text-center py-5">
+ <i class="lucide lucide-rocket text-6xl text-slate-500"></i>
+ <h5 class="mt-3 text-slate-500">Ready to Deploy</h5>
+ <p class="text-slate-500">Click"Run Deploy Now" to start a live deployment.</p>
+ </div>
+ </div>
 
-          <div class="card border-0 shadow-sm mb-4" id="completedCard" style="display: none;">
-            <div class="card-body text-center py-4">
-              <i class="bi bi-check-circle-fill display-4 text-success"></i>
-              <h5 class="mt-3 text-success">Deploy Completed!</h5>
-              <p class="text-muted" id="completedMessage">Your deployment finished successfully.</p>
-              <button class="btn btn-success" onclick="resetDeployUI()"><i class="bi bi-arrow-repeat"></i> Deploy Again</button>
-            </div>
-          </div>
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 mb-4" id="completedCard" style="display: none;">
+ <div class="p-4 text-center py-4">
+ <i class="lucide lucide-check-circle text-4xl text-emerald-600"></i>
+ <h5 class="mt-3 text-emerald-600">Deploy Completed!</h5>
+ <p class="text-slate-500" id="completedMessage">Your deployment finished successfully.</p>
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-emerald-600 text-white hover:bg-emerald-700" onclick="resetDeployUI()"><i class="lucide lucide-repeat"></i> Deploy Again</button>
+ </div>
+ </div>
 
-          <div class="card border-0 shadow-sm mb-4" id="failedCard" style="display: none;">
-            <div class="card-body text-center py-4">
-              <i class="bi bi-x-circle-fill display-4 text-danger"></i>
-              <h5 class="mt-3 text-danger">Deploy Failed</h5>
-              <p class="text-muted" id="failedMessage">There was an error during deployment.</p>
-              <button class="btn btn-danger" onclick="resetDeployUI()"><i class="bi bi-arrow-repeat"></i> Try Again</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 mb-4" id="failedCard" style="display: none;">
+ <div class="p-4 text-center py-4">
+ <i class="lucide lucide-x-circle text-4xl text-red-600"></i>
+ <h5 class="mt-3 text-red-600">Deploy Failed</h5>
+ <p class="text-slate-500" id="failedMessage">There was an error during deployment.</p>
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-red-600 text-white hover:bg-red-700" onclick="resetDeployUI()"><i class="lucide lucide-repeat"></i> Try Again</button>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 
-    <!-- GitHub Webhook Tab -->
-    <div class="tab-pane fade" id="webhook-pane" role="tabpanel">
-      <div class="row g-4">
-        <div class="col-lg-6">
-          <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white d-flex align-items-center justify-content-between">
-              <strong><i class="bi bi-gear me-2"></i>Webhook Configuration</strong>
-              <span class="webhook-status {{ webhook_settings.enabled ? 'active' : 'inactive' }}"></span>
-            </div>
-            <div class="card-body">
-              <form id="webhookForm">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                
-                <div class="form-check form-switch mb-4">
-                  <input class="form-check-input" type="checkbox" name="webhook_enabled" id="webhookEnabled" {{ webhook_settings.enabled ? 'checked' : '' }}>
-                  <label class="form-check-label" for="webhookEnabled">Enable GitHub Webhook</label>
-                </div>
+ <!-- GitHub Webhook Tab -->
+ <div class="tab-pane fade" id="webhook-pane" role="tabpanel">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+ <div class="lg:col-span-6">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0">
+ <div class="border-b border-slate-200 px-4 py-3 bg-white flex items-center justify-between">
+ <strong><i class="lucide lucide-settings mr-2"></i>Webhook Configuration</strong>
+ <span class="webhook-status {{ webhook_settings.enabled ? 'active' : 'inactive' }}"></span>
+ </div>
+ <div class="p-4">
+ <form id="webhookForm">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-                <div class="mb-3">
-                  <label class="form-label">Webhook URL</label>
-                  <div class="input-group">
-                    <input type="text" class="form-control" value="{{ webhook_url }}" readonly id="webhookUrl">
-                    <button class="btn btn-outline-secondary" type="button" onclick="copyWebhookUrl()"><i class="bi bi-clipboard"></i></button>
-                  </div>
-                  <small class="text-muted">Use this URL in GitHub webhook settings</small>
-                </div>
+ <div class="flex items-start gap-2 form-switch mb-4">
+ <input class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" name="webhook_enabled" id="webhookEnabled" {{ webhook_settings.enabled ? 'checked' : '' }}>
+ <label class="text-sm text-slate-700" for="webhookEnabled">Enable GitHub Webhook</label>
+ </div>
 
-                <div class="mb-3">
-                  <label class="form-label">Webhook Secret</label>
-                  <div class="input-group">
-                    <input type="text" class="form-control" name="webhook_secret" value="{{ webhook_settings.secret }}" placeholder="Enter secret">
-                    <button class="btn btn-outline-secondary" type="button" onclick="toggleSecret()"><i class="bi bi-eye" id="eyeIcon"></i></button>
-                  </div>
-                </div>
+ <div class="mb-3">
+ <label class="form-label">Webhook URL</label>
+ <div class="input-group">
+ <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" value="{{ webhook_url }}" readonly id="webhookUrl">
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-slate-600 hover:bg-slate-100" type="button" onclick="copyWebhookUrl()"><i class="lucide lucide-clipboard"></i></button>
+ </div>
+ <small class="text-slate-500">Use this URL in GitHub webhook settings</small>
+ </div>
 
-                <div class="mb-3">
-                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="generateNewSecret()">
-                    <i class="bi bi-arrow-repeat me-1"></i> Generate New Secret
-                  </button>
-                  <input type="hidden" name="generate_secret" id="generateSecret" value="0">
-                </div>
+ <div class="mb-3">
+ <label class="form-label">Webhook Secret</label>
+ <div class="input-group">
+ <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="webhook_secret" value="{{ webhook_settings.secret }}" placeholder="Enter secret">
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-slate-600 hover:bg-slate-100" type="button" onclick="toggleSecret()"><i class="lucide lucide-eye" id="eyeIcon"></i></button>
+ </div>
+ </div>
 
-                <div class="mb-3">
-                  <label class="form-label">Target Branch</label>
-                  <input type="text" class="form-control" name="webhook_branch" value="{{ webhook_settings.branch ?: 'main' }}">
-                </div>
+ <div class="mb-3">
+ <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 text-xs" onclick="generateNewSecret()">
+ <i class="lucide lucide-repeat mr-1"></i> Generate New Secret
+ </button>
+ <input type="hidden" name="generate_secret" id="generateSecret" value="0">
+ </div>
 
-                <div class="form-check form-switch mb-3">
-                  <input class="form-check-input" type="checkbox" name="webhook_auto_deploy" id="webhookAutoDeploy" {{ webhook_settings.auto_deploy ? 'checked' : '' }}>
-                  <label class="form-check-label" for="webhookAutoDeploy">Auto-deploy on webhook trigger</label>
-                </div>
+ <div class="mb-3">
+ <label class="form-label">Target Branch</label>
+ <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="webhook_branch" value="{{ webhook_settings.branch ?: 'main' }}">
+ </div>
 
-                <div class="form-check form-switch mb-3">
-                  <input class="form-check-input" type="checkbox" name="create_backup" id="createBackup" {{ webhook_settings.create_backup ? 'checked' : '' }}>
-                  <label class="form-check-label" for="createBackup">Create backup before deploy</label>
-                </div>
+ <div class="flex items-start gap-2 form-switch mb-3">
+ <input class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" name="webhook_auto_deploy" id="webhookAutoDeploy" {{ webhook_settings.auto_deploy ? 'checked' : '' }}>
+ <label class="text-sm text-slate-700" for="webhookAutoDeploy">Auto-deploy on webhook trigger</label>
+ </div>
 
-                <div class="mb-3">
-                  <label class="form-label">Max Backups to Keep</label>
-                  <input type="number" class="form-control" name="max_backups" value="{{ webhook_settings.max_backups ?: 5 }}" min="1" max="20">
-                  <small class="text-muted">Older backups will be automatically deleted</small>
-                </div>
+ <div class="flex items-start gap-2 form-switch mb-3">
+ <input class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" name="create_backup" id="createBackup" {{ webhook_settings.create_backup ? 'checked' : '' }}>
+ <label class="text-sm text-slate-700" for="createBackup">Create backup before deploy</label>
+ </div>
 
-                <div class="mb-3">
-                  <label class="form-label">Deploy Path (cPanel)</label>
-                  <input type="text" class="form-control" name="deploy_path" value="{{ webhook_settings.deploy_path }}" placeholder="/home/username/BROXBHAI">
-                  <small class="text-muted">Full path to your project on the server</small>
-                </div>
+ <div class="mb-3">
+ <label class="form-label">Max Backups to Keep</label>
+ <input type="number" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="max_backups" value="{{ webhook_settings.max_backups ?: 5 }}" min="1" max="20">
+ <small class="text-slate-500">Older backups will be automatically deleted</small>
+ </div>
 
-                <div class="mb-3">
-                  <label class="form-label">Project Name</label>
-                  <input type="text" class="form-control" name="project_name" value="{{ webhook_settings.project_name ?: 'broxbhai' }}" placeholder="broxbhai">
-                  <small class="text-muted">Used for backup naming</small>
-                </div>
+ <div class="mb-3">
+ <label class="form-label">Deploy Path (cPanel)</label>
+ <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="deploy_path" value="{{ webhook_settings.deploy_path }}" placeholder="/home/username/BROXBHAI">
+ <small class="text-slate-500">Full path to your project on the server</small>
+ </div>
 
-                <div class="mb-3">
-                  <label class="form-label">Admin API Key (for cPanel webhook)</label>
-                  <div class="input-group">
-                    <input type="text" class="form-control" name="admin_api_key" value="{{ webhook_settings.admin_api_key }}" placeholder="Enter a strong random key">
-                    <button class="btn btn-outline-secondary" type="button" onclick="toggleAdminApiKey()"><i class="bi bi-eye" id="adminApiEyeIcon"></i></button>
-                  </div>
-                  <small class="text-muted">Use this key for remote management API</small>
-                </div>
+ <div class="mb-3">
+ <label class="form-label">Project Name</label>
+ <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="project_name" value="{{ webhook_settings.project_name ?: 'broxbhai' }}" placeholder="broxbhai">
+ <small class="text-slate-500">Used for backup naming</small>
+ </div>
 
-                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Save Settings</button>
-                <button type="button" class="btn btn-outline-success ms-2" onclick="testWebhook()"><i class="bi bi-send me-1"></i> Test Webhook</button>
-              </form>
-            </div>
-          </div>
-        </div>
+ <div class="mb-3">
+ <label class="form-label">Admin API Key (for cPanel webhook)</label>
+ <div class="input-group">
+ <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="admin_api_key" value="{{ webhook_settings.admin_api_key }}" placeholder="Enter a strong random key">
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-slate-600 hover:bg-slate-100" type="button" onclick="toggleAdminApiKey()"><i class="lucide lucide-eye" id="adminApiEyeIcon"></i></button>
+ </div>
+ <small class="text-slate-500">Use this key for remote management API</small>
+ </div>
 
-        <div class="col-lg-6">
-          <div class="card border-0 shadow-sm guide-card mb-4" style="background: linear-gradient(135deg, #1e3a5f 0%, #0d6efd 100%); color: white;">
-            <div class="card-body">
-              <h5><i class="bi bi-github me-2"></i>GitHub Setup Guide</h5>
-              <hr style="border-color: rgba(255,255,255,0.3);">
-              <ol>
-                <li><strong>Save settings</strong> above (enable webhook & generate secret)</li>
-                <li><strong>Copy Webhook URL</strong>: <code>{{ webhook_url }}</code></li>
-                <li><strong>GitHub:</strong> Your Repo → Settings → Webhooks → Add webhook</li>
-                <li><strong>Configure:</strong>
-                  <ul>
-                    <li>Payload URL: <code>{{ webhook_url }}</code></li>
-                    <li>Content type: <code>application/json</code></li>
-                    <li>Secret: <code>{{ webhook_settings.secret ?: '[generate one above]' }}</code></li>
-                    <li>Events: Select <code>Just the push event</code></li>
-                  </ul>
-                </li>
-                <li><strong>Save</strong> - Click Add webhook</li>
-                <li><strong>Test</strong> - Push to '{{ webhook_settings.branch ?: 'main' }}' branch</li>
-              </ol>
-              <div class="alert alert-info mt-3" style="background: rgba(255,255,255,0.15); border: none;">
-                <i class="bi bi-lightbulb me-2"></i>
-                <strong>How it works:</strong> When you push to GitHub, it sends a webhook to your server → Server runs <code>git pull</code> → Code updates automatically!
-              </div>
-            </div>
-          </div>
+ <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700"><i class="lucide lucide-check mr-1"></i> Save Settings</button>
+ <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition transition-ghost-success ml-2" onclick="testWebhook()"><i class="lucide lucide-send mr-1"></i> Test Webhook</button>
+ </form>
+ </div>
+ </div>
+ </div>
 
-          <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white"><strong>Status</strong></div>
-            <div class="card-body">
-              <div class="row">
-                <div class="col-6">
-                  <small class="text-muted">Last Delivery</small>
-                  <strong>{{ webhook_settings.last_delivery ?: 'Never' }}</strong>
-                </div>
-                <div class="col-6">
-                  <small class="text-muted">Last Status</small>
-                  <strong class="{{ webhook_settings.last_status == 'triggered' ? 'text-success' : 'text-muted' }}">
-                    {{ webhook_settings.last_status ?: 'N/A' }}
-                  </strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+ <div class="lg:col-span-6">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0  mb-4" style="background: linear-gradient(135deg, #1e3a5f 0%, #0d6efd 100%); color: white;">
+ <div class="p-4">
+ <h5><i class="lucide lucide-github mr-2"></i>GitHub Setup Guide</h5>
+ <hr style="border-color: rgba(255,255,255,0.3);">
+ <ol>
+ <li><strong>Save settings</strong> above (enable webhook & generate secret)</li>
+ <li><strong>Copy Webhook URL</strong>: <code>{{ webhook_url }}</code></li>
+ <li><strong>GitHub:</strong> Your Repo → Settings → Webhooks → Add webhook</li>
+ <li><strong>Configure:</strong>
+ <ul>
+ <li>Payload URL: <code>{{ webhook_url }}</code></li>
+ <li>Content type: <code>application/json</code></li>
+ <li>Secret: <code>{{ webhook_settings.secret ?: '[generate one above]' }}</code></li>
+ <li>Events: Select <code>Just the push event</code></li>
+ </ul>
+ </li>
+ <li><strong>Save</strong> - Click Add webhook</li>
+ <li><strong>Test</strong> - Push to '{{ webhook_settings.branch ?: 'main' }}' branch</li>
+ </ol>
+ <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 mt-3" style="background: rgba(255,255,255,0.15); border: none;">
+ <i class="lucide lucide-lightbulb mr-2"></i>
+ <strong>How it works:</strong> When you push to GitHub, it sends a webhook to your server → Server runs <code>git pull</code> → Code updates automatically!
+ </div>
+ </div>
+ </div>
 
-    <!-- Versions & Backup Tab -->
-    <div class="tab-pane fade" id="versions-pane" role="tabpanel">
-      <div class="row g-4">
-        <div class="col-lg-6">
-          <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-              <strong><i class="bi bi-clock-history me-2"></i>Version History</strong>
-              <button class="btn btn-sm btn-outline-secondary" onclick="loadVersions()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
-            </div>
-            <div class="card-body backup-list" id="versionsList">
-              <div class="text-center py-4 text-muted">
-                <i class="bi bi-inbox display-4"></i>
-                <p>No versions yet</p>
-              </div>
-            </div>
-          </div>
-        </div>
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0">
+ <div class="border-b border-slate-200 px-4 py-3 bg-white"><strong>Status</strong></div>
+ <div class="p-4">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+ <div class="col-span-6">
+ <small class="text-slate-500">Last Delivery</small>
+ <strong>{{ webhook_settings.last_delivery ?: 'Never' }}</strong>
+ </div>
+ <div class="col-span-6">
+ <small class="text-slate-500">Last Status</small>
+ <strong class="{{ webhook_settings.last_status == 'triggered' ? 'text-emerald-600' : 'text-slate-500' }}">
+ {{ webhook_settings.last_status ?: 'N/A' }}
+ </strong>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 
-        <div class="col-lg-6">
-          <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white">
-              <strong><i class="bi bi-arrow-counterclockwise me-2"></i>Rollback</strong>
-            </div>
-            <div class="card-body">
-              <p class="text-muted">Select a version from the list to rollback.</p>
-              
-              <div class="mb-3">
-                <label class="form-label">Rollback to Version</label>
-                <select class="form-select" id="rollbackVersion">
-                  <option value="">Select version...</option>
-                </select>
-              </div>
+ <!-- Versions & Backup Tab -->
+ <div class="tab-pane fade" id="versions-pane" role="tabpanel">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+ <div class="lg:col-span-6">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0">
+ <div class="border-b border-slate-200 px-4 py-3 bg-white flex justify-between items-center">
+ <strong><i class="lucide lucide-clock mr-2"></i>Version History</strong>
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100" onclick="loadVersions()"><i class="lucide lucide-refresh-cw"></i> Refresh</button>
+ </div>
+ <div class="p-4 backup-list" id="versionsList">
+ <div class="text-center py-4 text-slate-500">
+ <i class="lucide lucide-inbox text-5xl"></i>
+ <p>No versions yet</p>
+ </div>
+ </div>
+ </div>
+ </div>
 
-              <div class="alert alert-warning">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                A backup of current state will be created before rollback.
-              </div>
+ <div class="lg:col-span-6">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0">
+ <div class="border-b border-slate-200 px-4 py-3 bg-white">
+ <strong><i class="lucide lucide-rotate-ccw mr-2"></i>Rollback</strong>
+ </div>
+ <div class="p-4">
+ <p class="text-slate-500">Select a version from the list to rollback.</p>
 
-              <button class="btn btn-danger" onclick="performRollback()" id="rollbackBtn">
-                <i class="bi bi-arrow-counterclockwise me-1"></i> Rollback Now
-              </button>
-            </div>
-          </div>
+ <div class="mb-3">
+ <label class="form-label">Rollback to Version</label>
+ <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="rollbackVersion">
+ <option value="">Select version...</option>
+ </select>
+ </div>
 
-          <div class="card border-0 shadow-sm mt-4">
-            <div class="card-header bg-white">
-              <strong>Webhook Deploy History</strong>
-            </div>
-            <div class="card-body">
-              <div class="table-responsive">
-                <table class="table table-sm">
-                  <thead>
-                    <tr>
-                      <th>Time</th>
-                      <th>Branch</th>
-                      <th>Status</th>
-                      <th>Backup</th>
-                    </tr>
-                  </thead>
-                  <tbody id="webhookLogs">
-                    <tr><td colspan="4" class="text-muted">No logs yet</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+ <div class="p-4 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
+ <i class="lucide lucide-alert-triangle mr-2"></i>
+ A backup of current state will be created before rollback.
+ </div>
 
-    <!-- Jobs Tab -->
-    <div class="tab-pane fade" id="jobs-pane" role="tabpanel">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-          <strong>Recent Jobs</strong>
-        </div>
-        <div class="card-body">
-          {% if jobs is empty %}
-            <div class="text-muted">No jobs queued yet.</div>
-          {% else %}
-            <div class="table-responsive">
-              <table class="table table-sm table-hover align-middle">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Started</th>
-                    <th>Finished</th>
-                    <th>Log</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for job in jobs %}
-                    <tr>
-                      <td>{{ job.id }}</td>
-                      <td>{{ job.job_type|upper }}</td>
-                      <td>
-                        <span class="badge bg-{{ job.status == 'success' ? 'success' : (job.status == 'failed' ? 'danger' : (job.status == 'running' ? 'warning text-dark' : 'secondary')) }}">
-                          {{ job.status }}
-                        </span>
-                      </td>
-                      <td>{{ job.created_at|default('') }}</td>
-                      <td>{{ job.started_at|default('') }}</td>
-                      <td>{{ job.finished_at|default('') }}</td>
-                      <td>
-                        {% if job.log_path %}
-                          <a href="/admin/deploy-tools/log?id={{ job.id }}" class="btn btn-outline-secondary btn-sm">View</a>
-                        {% else %}
-                          <span class="text-muted">—</span>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-red-600 text-white hover:bg-red-700" onclick="performRollback()" id="rollbackBtn">
+ <i class="lucide lucide-rotate-ccw mr-1"></i> Rollback Now
+ </button>
+ </div>
+ </div>
 
-    <!-- File Tree Tab -->
-    <div class="tab-pane fade" id="filetree-pane" role="tabpanel">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white">
-          <div class="file-tree-header">
-            <strong><i class="bi bi-folder-tree me-2"></i>Project File Tree</strong>
-            <div>
-              <button class="btn btn-sm btn-outline-secondary" onclick="refreshFileTree()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
-            </div>
-          </div>
-        </div>
-        <div class="card-body p-0">
-          <div id="fileTreeContainer" class="file-tree">
-            <div class="text-center py-5">
-              <div class="spinner-border text-primary" role="status"></div>
-              <div class="mt-2 text-muted">Loading file tree...</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 mt-4">
+ <div class="border-b border-slate-200 px-4 py-3 bg-white">
+ <strong>Webhook Deploy History</strong>
+ </div>
+ <div class="p-4">
+ <div class="overflow-x-auto">
+ <table class="table">
+ <thead>
+ <tr>
+ <th>Time</th>
+ <th>Branch</th>
+ <th>Status</th>
+ <th>Backup</th>
+ </tr>
+ </thead>
+ <tbody id="webhookLogs">
+ <tr><td colspan="4" class="text-slate-500">No logs yet</td></tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- Jobs Tab -->
+ <div class="tab-pane fade" id="jobs-pane" role="tabpanel">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0">
+ <div class="border-b border-slate-200 px-4 py-3 bg-white flex justify-between items-center">
+ <strong>Recent Jobs</strong>
+ </div>
+ <div class="p-4">
+ {% if jobs is empty %}
+ <div class="text-slate-500">No jobs queued yet.</div>
+ {% else %}
+ <div class="overflow-x-auto">
+ <table class="table table-hover align-middle">
+ <thead>
+ <tr>
+ <th>ID</th>
+ <th>Type</th>
+ <th>Status</th>
+ <th>Created</th>
+ <th>Started</th>
+ <th>Finished</th>
+ <th>Log</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for job in jobs %}
+ <tr>
+ <td>{{ job.id }}</td>
+ <td>{{ job.job_type|upper }}</td>
+ <td>
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-{{ job.status == 'success' ? : (job.status 'failed' 'danger' 'running' 'warning text-slate-900' 'secondary')) }}">
+ {{ job.status }}
+ </span>
+ </td>
+ <td>{{ job.created_at|default('') }}</td>
+ <td>{{ job.started_at|default('') }}</td>
+ <td>{{ job.finished_at|default('') }}</td>
+ <td>
+ {% if job.log_path %}
+ <a href="/admin/deploy-tools/log?id={{ job.id }}" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-slate-600 hover:bg-slate-100 px-3 py-1.5 text-xs">View</a>
+ {% else %}
+ <span class="text-slate-500">—</span>
+ {% endif %}
+ </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ {% endif %}
+ </div>
+ </div>
+ </div>
+
+ <!-- File Tree Tab -->
+ <div class="tab-pane fade" id="filetree-pane" role="tabpanel">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0">
+ <div class="border-b border-slate-200 px-4 py-3 bg-white">
+ <div class="file-tree-header">
+ <strong><i class="lucide lucide-folder-tree mr-2"></i>Project File Tree</strong>
+ <div>
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100" onclick="refreshFileTree()"><i class="lucide lucide-refresh-cw"></i> Refresh</button>
+ </div>
+ </div>
+ </div>
+ <div class="p-4 p-0">
+ <div id="fileTreeContainer" class="file-tree">
+ <div class="text-center py-5">
+ <div class="inline-spinner text-indigo-600" role="status"></div>
+ <div class="mt-2 text-slate-500">Loading file tree...</div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 
 <script>
@@ -507,369 +507,369 @@ let currentProgressId = null;
 let progressInterval = null;
 
 document.getElementById('runDeployForm').addEventListener('submit', async function(e) {
-  e.preventDefault();
-  const btn = document.getElementById('runDeployBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Starting...';
-  
-  const formData = new FormData(this);
-  
-  try {
-    const response = await fetch('/admin/deploy-tools/run', { method: 'POST', body: formData });
-    const data = await response.json();
-    
-    if (data.error) {
-      alert('Error: ' + data.error);
-      btn.disabled = false;
-      btn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Run Deploy Now';
-      return;
-    }
-    
-    currentProgressId = data.progress_id;
-    showProgressCard();
-    startProgressPolling();
-  } catch (err) {
-    alert('Error starting deploy: ' + err.message);
-    btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Run Deploy Now';
-  }
+ e.preventDefault();
+ const btn = document.getElementById('runDeployBtn');
+ btn.disabled = true;
+ btn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-1"></span> Starting...';
+
+ const formData = new FormData(this);
+
+ try {
+ const response = await fetch('/admin/deploy-tools/run', { method: 'POST', body: formData });
+ const data = await response.json();
+
+ if (data.error) {
+ alert('Error: ' + data.error);
+ btn.disabled = false;
+ btn.innerHTML = '<i class="lucide lucide-play mr-1"></i> Run Deploy Now';
+ return;
+ }
+
+ currentProgressId = data.progress_id;
+ showProgressCard();
+ startProgressPolling();
+ } catch (err) {
+ alert('Error starting deploy: ' + err.message);
+ btn.disabled = false;
+ btn.innerHTML = '<i class="lucide lucide-play mr-1"></i> Run Deploy Now';
+ }
 });
 
 function showProgressCard() {
-  document.getElementById('noDeployCard').style.display = 'none';
-  document.getElementById('progressCard').style.display = 'block';
-  document.getElementById('completedCard').style.display = 'none';
-  document.getElementById('failedCard').style.display = 'none';
+ document.getElementById('noDeployCard').style.display = 'none';
+ document.getElementById('progressCard').style.display = 'block';
+ document.getElementById('completedCard').style.display = 'none';
+ document.getElementById('failedCard').style.display = 'none';
 }
 
 function startProgressPolling() {
-  if (progressInterval) clearInterval(progressInterval);
-  progressInterval = setInterval(refreshProgress, 2000);
+ if (progressInterval) clearInterval(progressInterval);
+ progressInterval = setInterval(refreshProgress, 2000);
 }
 
 function stopProgressPolling() {
-  if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+ if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
 }
 
 async function refreshProgress() {
-  if (!currentProgressId) return;
-  try {
-    const response = await fetch(`/admin/deploy-tools/progress?id=${currentProgressId}`);
-    const data = await response.json();
-    if (data.error) return;
-    updateProgressUI(data);
-    if (data.status === 'completed' || data.status === 'done' || data.progress >= 100) {
-      stopProgressPolling();
-      showCompletedCard();
-    } else if (data.status === 'failed') {
-      stopProgressPolling();
-      showFailedCard(data.error || 'Deploy failed');
-    }
-  } catch (err) { console.log('Error:', err); }
+ if (!currentProgressId) return;
+ try {
+ const response = await fetch(`/admin/deploy-tools/progress?id=${currentProgressId}`);
+ const data = await response.json();
+ if (data.error) return;
+ updateProgressUI(data);
+ if (data.status === 'completed' || data.status === 'done' || data.progress >= 100) {
+ stopProgressPolling();
+ showCompletedCard();
+ } else if (data.status === 'failed') {
+ stopProgressPolling();
+ showFailedCard(data.error || 'Deploy failed');
+ }
+ } catch (err) { console.log('Error:', err); }
 }
 
 function updateProgressUI(data) {
-  const progress = data.progress || 0;
-  document.getElementById('progressBar').style.width = progress + '%';
-  document.getElementById('progressText').textContent = progress + '%';
-  
-  const statusBadge = document.getElementById('progressStatus');
-  if (data.status === 'running') {
-    statusBadge.className = 'badge bg-warning text-dark';
-    statusBadge.textContent = 'Running';
-  } else if (data.status === 'completed' || data.status === 'done') {
-    statusBadge.className = 'badge bg-success';
-    statusBadge.textContent = 'Completed';
-  } else if (data.status === 'failed') {
-    statusBadge.className = 'badge bg-danger';
-    statusBadge.textContent = 'Failed';
-  }
-  
-  document.getElementById('currentStep').textContent = data.current_step || 'Processing...';
-  
-  const stepsContainer = document.getElementById('stepsContainer');
-  if (data.steps && data.steps.length > 0) {
-    let html = '';
-    data.steps.forEach((step, index) => {
-      const isLast = index === data.steps.length - 1;
-      html += `<div class="d-flex align-items-start mb-2">
-        <div class="me-2">${isLast && data.status === 'running' ? '<span class="spinner-border spinner-border-sm text-success"></span>' : '<i class="bi bi-check-circle-fill text-success"></i>'}</div>
-        <div class="flex-grow-1">
-          <div class="fw-bold">${step.step}</div>
-          <div class="text-muted small">${step.message}</div>
-        </div>
-        <div class="text-muted small">${step.progress || 0}%</div>
-      </div>`;
-    });
-    stepsContainer.innerHTML = html;
-  }
+ const progress = data.progress || 0;
+ document.getElementById('progressBar').style.width = progress + '%';
+ document.getElementById('progressText').textContent = progress + '%';
+
+ const statusBadge = document.getElementById('progressStatus');
+ if (data.status === 'running') {
+ statusBadge.className = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-amber-500 text-slate-900';
+ statusBadge.textContent = 'Running';
+ } else if (data.status === 'completed' || data.status === 'done') {
+ statusBadge.className = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-600';
+ statusBadge.textContent = 'Completed';
+ } else if (data.status === 'failed') {
+ statusBadge.className = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-red-600';
+ statusBadge.textContent = 'Failed';
+ }
+
+ document.getElementById('currentStep').textContent = data.current_step || 'Processing...';
+
+ const stepsContainer = document.getElementById('stepsContainer');
+ if (data.steps && data.steps.length > 0) {
+ let html = '';
+ data.steps.forEach((step, index) => {
+ const isLast = index === data.steps.length - 1;
+ html += `<div class="flex items-start mb-2">
+ <div class="mr-2">${isLast && data.status === 'running' ? '<span class="inline-spinner inline-spinner-sm text-emerald-600"></span>' : '<i class="lucide lucide-check-circle text-emerald-600"></i>'}</div>
+ <div class="flex-grow-1">
+ <div class="font-bold">${step.step}</div>
+ <div class="text-slate-500 small">${step.message}</div>
+ </div>
+ <div class="text-slate-500 small">${step.progress || 0}%</div>
+ </div>`;
+ });
+ stepsContainer.innerHTML = html;
+ }
 }
 
 function showCompletedCard() {
-  document.getElementById('progressCard').style.display = 'none';
-  document.getElementById('completedCard').style.display = 'block';
-  document.getElementById('failedCard').style.display = 'none';
+ document.getElementById('progressCard').style.display = 'none';
+ document.getElementById('completedCard').style.display = 'block';
+ document.getElementById('failedCard').style.display = 'none';
 }
 
 function showFailedCard(message) {
-  document.getElementById('progressCard').style.display = 'none';
-  document.getElementById('completedCard').style.display = 'none';
-  document.getElementById('failedCard').style.display = 'block';
-  document.getElementById('failedMessage').textContent = message;
+ document.getElementById('progressCard').style.display = 'none';
+ document.getElementById('completedCard').style.display = 'none';
+ document.getElementById('failedCard').style.display = 'block';
+ document.getElementById('failedMessage').textContent = message;
 }
 
 function resetDeployUI() {
-  currentProgressId = null;
-  stopProgressPolling();
-  document.getElementById('noDeployCard').style.display = 'block';
-  document.getElementById('progressCard').style.display = 'none';
-  document.getElementById('completedCard').style.display = 'none';
-  document.getElementById('failedCard').style.display = 'none';
-  document.getElementById('progressBar').style.width = '0%';
-  document.getElementById('progressText').textContent = '0%';
-  document.getElementById('currentStep').textContent = 'Initializing...';
-  document.getElementById('stepsContainer').innerHTML = '<div class="text-muted">Waiting for steps...</div>';
-  const btn = document.getElementById('runDeployBtn');
-  btn.disabled = false;
-  btn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Run Deploy Now';
+ currentProgressId = null;
+ stopProgressPolling();
+ document.getElementById('noDeployCard').style.display = 'block';
+ document.getElementById('progressCard').style.display = 'none';
+ document.getElementById('completedCard').style.display = 'none';
+ document.getElementById('failedCard').style.display = 'none';
+ document.getElementById('progressBar').style.width = '0%';
+ document.getElementById('progressText').textContent = '0%';
+ document.getElementById('currentStep').textContent = 'Initializing...';
+ document.getElementById('stepsContainer').innerHTML = '<div class="text-slate-500">Waiting for steps...</div>';
+ const btn = document.getElementById('runDeployBtn');
+ btn.disabled = false;
+ btn.innerHTML = '<i class="lucide lucide-play mr-1"></i> Run Deploy Now';
 }
 
 function cancelDeploy() {
-  if (confirm('Cancel current deploy?')) {
-    stopProgressPolling();
-    resetDeployUI();
-  }
+ if (confirm('Cancel current deploy?')) {
+ stopProgressPolling();
+ resetDeployUI();
+ }
 }
 
 // =====================
 // WEBHOOK FUNCTIONS
 // =====================
 function copyWebhookUrl() {
-  const urlInput = document.getElementById('webhookUrl');
-  urlInput.select();
-  navigator.clipboard.writeText(urlInput.value).then(() => alert('URL copied!'));
+ const urlInput = document.getElementById('webhookUrl');
+ urlInput.select();
+ navigator.clipboard.writeText(urlInput.value).then(() => alert('URL copied!'));
 }
 
 function toggleSecret() {
-  const secretInput = document.querySelector('input[name="webhook_secret"]');
-  const eyeIcon = document.getElementById('eyeIcon');
-  if (secretInput.type === 'password') {
-    secretInput.type = 'text';
-    eyeIcon.classList.remove('bi-eye');
-    eyeIcon.classList.add('bi-eye-slash');
-  } else {
-    secretInput.type = 'password';
-    eyeIcon.classList.remove('bi-eye-slash');
-    eyeIcon.classList.add('bi-eye');
-  }
+ const secretInput = document.querySelector('input[name="webhook_secret"]');
+ const eyeIcon = document.getElementById('eyeIcon');
+ if (secretInput.type === 'password') {
+ secretInput.type = 'text';
+ eyeIcon.classList.remove('lucide-eye');
+ eyeIcon.classList.add('lucide-eye-off');
+ } else {
+ secretInput.type = 'password';
+ eyeIcon.classList.remove('lucide-eye-off');
+ eyeIcon.classList.add('lucide-eye');
+ }
 }
 
 function toggleAdminApiKey() {
-  const apiKeyInput = document.querySelector('input[name="admin_api_key"]');
-  const eyeIcon = document.getElementById('adminApiEyeIcon');
-  if (apiKeyInput.type === 'password') {
-    apiKeyInput.type = 'text';
-    eyeIcon.classList.remove('bi-eye');
-    eyeIcon.classList.add('bi-eye-slash');
-  } else {
-    apiKeyInput.type = 'password';
-    eyeIcon.classList.remove('bi-eye-slash');
-    eyeIcon.classList.add('bi-eye');
-  }
+ const apiKeyInput = document.querySelector('input[name="admin_api_key"]');
+ const eyeIcon = document.getElementById('adminApiEyeIcon');
+ if (apiKeyInput.type === 'password') {
+ apiKeyInput.type = 'text';
+ eyeIcon.classList.remove('lucide-eye');
+ eyeIcon.classList.add('lucide-eye-off');
+ } else {
+ apiKeyInput.type = 'password';
+ eyeIcon.classList.remove('lucide-eye-off');
+ eyeIcon.classList.add('lucide-eye');
+ }
 }
 
 function generateNewSecret() {
-  if (confirm('Generate new secret? This will break existing webhook.')) {
-    const randomSecret = Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('');
-    document.querySelector('input[name="webhook_secret"]').value = randomSecret;
-    document.getElementById('generateSecret').value = '1';
-  }
+ if (confirm('Generate new secret? This will break existing webhook.')) {
+ const randomSecret = Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+ document.querySelector('input[name="webhook_secret"]').value = randomSecret;
+ document.getElementById('generateSecret').value = '1';
+ }
 }
 
 document.getElementById('webhookForm').addEventListener('submit', async function(e) {
-  e.preventDefault();
-  const formData = new FormData(this);
-  formData.set('webhook_enabled', document.getElementById('webhookEnabled').checked ? '1' : '0');
-  formData.set('webhook_auto_deploy', document.getElementById('webhookAutoDeploy').checked ? '1' : '0');
-  formData.set('create_backup', document.getElementById('createBackup').checked ? '1' : '0');
-  
-  try {
-    const response = await fetch('/admin/deploy-tools/webhook/update', { method: 'POST', body: formData });
-    const data = await response.json();
-    if (data.success) {
-      alert('Settings saved!');
-      location.reload();
-    } else {
-      alert('Error: ' + data.message);
-    }
-  } catch (err) {
-    alert('Error: ' + err.message);
-  }
+ e.preventDefault();
+ const formData = new FormData(this);
+ formData.set('webhook_enabled', document.getElementById('webhookEnabled').checked ? '1' : '0');
+ formData.set('webhook_auto_deploy', document.getElementById('webhookAutoDeploy').checked ? '1' : '0');
+ formData.set('create_backup', document.getElementById('createBackup').checked ? '1' : '0');
+
+ try {
+ const response = await fetch('/admin/deploy-tools/webhook/update', { method: 'POST', body: formData });
+ const data = await response.json();
+ if (data.success) {
+ alert('Settings saved!');
+ location.reload();
+ } else {
+ alert('Error: ' + data.message);
+ }
+ } catch (err) {
+ alert('Error: ' + err.message);
+ }
 });
 
 async function testWebhook() {
-  const btn = event.target;
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testing...';
-  
-  try {
-    const formData = new FormData();
-    formData.append('csrf_token', '{{ csrf_token }}');
-    const response = await fetch('/admin/deploy-tools/webhook/test', { method: 'POST', body: formData });
-    const data = await response.json();
-    alert(data.success ? 'Test successful!' : 'Test failed: ' + (data.error || data.message));
-    if (data.success) loadVersions();
-  } catch (err) {
-    alert('Error: ' + err.message);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-send me-1"></i> Test Webhook';
-  }
+ const btn = event.target;
+ btn.disabled = true;
+ btn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-1"></span> Testing...';
+
+ try {
+ const formData = new FormData();
+ formData.append('csrf_token', '{{ csrf_token }}');
+ const response = await fetch('/admin/deploy-tools/webhook/test', { method: 'POST', body: formData });
+ const data = await response.json();
+ alert(data.success ? 'Test successful!' : 'Test failed: ' + (data.error || data.message));
+ if (data.success) loadVersions();
+ } catch (err) {
+ alert('Error: ' + err.message);
+ } finally {
+ btn.disabled = false;
+ btn.innerHTML = '<i class="lucide lucide-send mr-1"></i> Test Webhook';
+ }
 }
 
 // =====================
 // VERSIONS & ROLLBACK
 // =====================
 async function loadVersions() {
-  try {
-    const response = await fetch('/admin/deploy-tools/webhook/logs');
-    const data = await response.json();
-    
-    const versionsList = document.getElementById('versionsList');
-    const rollbackSelect = document.getElementById('rollbackVersion');
-    const webhookLogs = document.getElementById('webhookLogs');
-    
-    if (data.logs && data.logs.length > 0) {
-      let versionsHtml = '';
-      let optionsHtml = '<option value="">Select version...</option>';
-      let logsHtml = '';
-      
-      data.logs.forEach(log => {
-        const time = new Date(log.created_at).toLocaleString();
-        const statusClass = log.deployment_triggered ? 'success' : 'secondary';
-        
-        versionsHtml += `<div class="d-flex align-items-center p-2 border-bottom">
-          <div class="flex-grow-1">
-            <strong>${log.version_tag || 'N/A'}</strong>
-            <div class="small text-muted">${time}</div>
-          </div>
-          <div>
-            <span class="badge bg-${statusClass}">${log.deployment_triggered ? 'Deployed' : 'Ignored'}</span>
-            ${log.backup_created ? '<span class="badge bg-info ms-1">Backup</span>' : ''}
-          </div>
-        </div>`;
-        
-        if (log.version_tag) {
-          optionsHtml += `<option value="${log.version_tag}">${log.version_tag} - ${time}</option>`;
-        }
-        
-        logsHtml += `<tr>
-          <td>${time}</td>
-          <td><code>${log.deploy_path || 'N/A'}</code></td>
-          <td><span class="badge bg-${statusClass}">${log.deployment_triggered ? 'Deployed' : 'Ignored'}</span></td>
-          <td>${log.backup_created ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-muted"></i>'}</td>
-        </tr>`;
-      });
-      
-      versionsList.innerHTML = versionsHtml || '<div class="text-muted text-center py-4">No versions</div>';
-      rollbackSelect.innerHTML = optionsHtml;
-      webhookLogs.innerHTML = logsHtml;
-    } else {
-      versionsList.innerHTML = '<div class="text-muted text-center py-4"><i class="bi bi-inbox display-4"></i><p>No versions yet</p></div>';
-    }
-  } catch (err) {
-    console.error('Error loading versions:', err);
-  }
+ try {
+ const response = await fetch('/admin/deploy-tools/webhook/logs');
+ const data = await response.json();
+
+ const versionsList = document.getElementById('versionsList');
+ const rollbackSelect = document.getElementById('rollbackVersion');
+ const webhookLogs = document.getElementById('webhookLogs');
+
+ if (data.logs && data.logs.length > 0) {
+ let versionsHtml = '';
+ let optionsHtml = '<option value="">Select version...</option>';
+ let logsHtml = '';
+
+ data.logs.forEach(log => {
+ const time = new Date(log.created_at).toLocaleString();
+ const statusClass = log.deployment_triggered ? 'success' : 'secondary';
+
+ versionsHtml += `<div class="flex items-center p-2 border-bottom">
+ <div class="flex-grow-1">
+ <strong>${log.version_tag || 'N/A'}</strong>
+ <div class="small text-slate-500">${time}</div>
+ </div>
+ <div>
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-${statusClass}">${log.deployment_triggered ? 'Deployed' : 'Ignored'}</span>
+ ${log.backup_created ? '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-sky-500 ml-1">Backup</span>' : ''}
+ </div>
+ </div>`;
+
+ if (log.version_tag) {
+ optionsHtml += `<option value="${log.version_tag}">${log.version_tag} - ${time}</option>`;
+ }
+
+ logsHtml += `<tr>
+ <td>${time}</td>
+ <td><code>${log.deploy_path || 'N/A'}</code></td>
+ <td><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-${statusClass}">${log.deployment_triggered ? 'Deployed' : 'Ignored'}</span></td>
+ <td>${log.backup_created ? '<i class="lucide lucide-check-circle text-emerald-600"></i>' : '<i class="lucide lucide-x-circle text-slate-500"></i>'}</td>
+ </tr>`;
+ });
+
+ versionsList.innerHTML = versionsHtml || '<div class="text-slate-500 text-center py-4">No versions</div>';
+ rollbackSelect.innerHTML = optionsHtml;
+ webhookLogs.innerHTML = logsHtml;
+ } else {
+ versionsList.innerHTML = '<div class="text-slate-500 text-center py-4"><i class="lucide lucide-inbox text-4xl"></i><p>No versions yet</p></div>';
+ }
+ } catch (err) {
+ console.error('Error loading versions:', err);
+ }
 }
 
 async function performRollback() {
-  const version = document.getElementById('rollbackVersion').value;
-  if (!version) {
-    alert('Please select a version to rollback to');
-    return;
-  }
-  
-  if (!confirm(`Rollback to ${version}? Current state will be backed up first.`)) {
-    return;
-  }
-  
-  const btn = document.getElementById('rollbackBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Rolling back...';
-  
-  try {
-    const formData = new FormData();
-    formData.append('csrf_token', '{{ csrf_token }}');
-    formData.append('version', version);
+ const version = document.getElementById('rollbackVersion').value;
+ if (!version) {
+ alert('Please select a version to rollback to');
+ return;
+ }
 
-    const response = await fetch('/admin/deploy-tools/webhook/remote-rollback', {
-      method: 'POST',
-      body: formData
-    });
-    const data = await response.json();
-    
-    const ok = data.success && data.data && data.data.success;
+ if (!confirm(`Rollback to ${version}? Current state will be backed up first.`)) {
+ return;
+ }
 
-    if (ok) {
-      alert('Rollback successful!');
-      loadVersions();
-    } else {
-      const msg = (data.data && data.data.message) ? data.data.message : (data.message || 'Rollback failed');
-      alert('Rollback failed: ' + msg);
-    }
-  } catch (err) {
-    alert('Error: ' + err.message);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-arrow-counterclockwise me-1"></i> Rollback Now';
-  }
+ const btn = document.getElementById('rollbackBtn');
+ btn.disabled = true;
+ btn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-1"></span> Rolling back...';
+
+ try {
+ const formData = new FormData();
+ formData.append('csrf_token', '{{ csrf_token }}');
+ formData.append('version', version);
+
+ const response = await fetch('/admin/deploy-tools/webhook/remote-rollback', {
+ method: 'POST',
+ body: formData
+ });
+ const data = await response.json();
+
+ const ok = data.success && data.data && data.data.success;
+
+ if (ok) {
+ alert('Rollback successful!');
+ loadVersions();
+ } else {
+ const msg = (data.data && data.data.message) ? data.data.message : (data.message || 'Rollback failed');
+ alert('Rollback failed: ' + msg);
+ }
+ } catch (err) {
+ alert('Error: ' + err.message);
+ } finally {
+ btn.disabled = false;
+ btn.innerHTML = '<i class="lucide lucide-rotate-ccw mr-1"></i> Rollback Now';
+ }
 }
 
 // Load versions when tab is shown
-document.getElementById('versions-tab').addEventListener('shown.bs.tab', loadVersions);
+document.getElementById('versions-tab').addEventListener('brox:shown', loadVersions);
 
 // =====================
 // FILE TREE
 // =====================
 function renderTree(data, level = 0) {
-  let html = '';
-  if (level === 0) {
-    html += `<div class="folder" style="padding: 4px 0;"><span class="toggle">📂</span><span class="folder">${data.name}</span></div>`;
-    if (data.children && data.children.length > 0) {
-      html += '<div class="indent expanded">';
-      data.children.forEach(child => html += renderTree(child, level + 1));
-      html += '</div>';
-    }
-    return html;
-  }
-  if (data.type === 'folder') {
-    html += `<div class="folder" style="padding: 4px 0;"><span class="toggle">📁</span><span class="folder">${data.name}/</span></div>`;
-  } else {
-    html += `<div style="padding: 2px 0;"><span class="toggle">📄</span><span class="file">${data.name}</span></div>`;
-  }
-  return html;
+ let html = '';
+ if (level === 0) {
+ html += `<div class="folder" style="padding: 4px 0;"><span class="toggle">📂</span><span class="folder">${data.name}</span></div>`;
+ if (data.children && data.children.length > 0) {
+ html += '<div class="indent expanded">';
+ data.children.forEach(child => html += renderTree(child, level + 1));
+ html += '</div>';
+ }
+ return html;
+ }
+ if (data.type === 'folder') {
+ html += `<div class="folder" style="padding: 4px 0;"><span class="toggle">📁</span><span class="folder">${data.name}/</span></div>`;
+ } else {
+ html += `<div style="padding: 2px 0;"><span class="toggle">📄</span><span class="file">${data.name}</span></div>`;
+ }
+ return html;
 }
 
 function refreshFileTree() {
-  const container = document.getElementById('fileTreeContainer');
-  container.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
-  
-  fetch(`/admin/deploy-tools/api/file-tree?refresh=${Date.now()}`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.error) {
-        container.innerHTML = `<div class="text-danger p-3">Error: ${data.error}</div>`;
-        return;
-      }
-      container.innerHTML = renderTree(data);
-    })
-    .catch(err => {
-      container.innerHTML = `<div class="text-danger p-3">Error: ${err.message}</div>`;
-    });
+ const container = document.getElementById('fileTreeContainer');
+ container.innerHTML = '<div class="text-center py-5"><div class="inline-spinner text-indigo-600"></div></div>';
+
+ fetch(`/admin/deploy-tools/api/file-tree?refresh=${Date.now()}`)
+ .then(res => res.json())
+ .then(data => {
+ if (data.error) {
+ container.innerHTML = `<div class="text-red-600 p-3">Error: ${data.error}</div>`;
+ return;
+ }
+ container.innerHTML = renderTree(data);
+ })
+ .catch(err => {
+ container.innerHTML = `<div class="text-red-600 p-3">Error: ${err.message}</div>`;
+ });
 }
 
-document.getElementById('filetree-tab').addEventListener('shown.bs.tab', function() {
-  refreshFileTree();
+document.getElementById('filetree-tab').addEventListener('brox:shown', function() {
+ refreshFileTree();
 });
 </script>
 {% endblock %}

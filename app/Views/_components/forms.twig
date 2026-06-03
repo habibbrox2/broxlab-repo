@@ -1,0 +1,158 @@
+﻿{# ============================================================================
+ FORMS â€” Reusable form component macros
+ Usage: {% import '_components/forms.twig' as forms %}
+ {{ forms.input({ name: 'email', label: 'Email', type: 'email', required: true }) }}
+ {{ forms.select({ name: 'role', label: 'Role', options: roles, value: user.role }) }}
+ ============================================================================ #}
+
+{# â”€â”€ Form group wrapper â”€â”€ #}
+{% macro group(opts) %}
+ {% set class = opts.class|default('') %}
+ <div class="mb-5 {{ class }}">
+ {{ opts.content|raw }}
+ </div>
+{% endmacro %}
+
+{# â”€â”€ Form label â”€â”€ #}
+{% macro label(opts) %}
+ {% set text = opts.text|default('') %}
+ {% set for = opts.for|default('') %}
+ {% set required = opts.required|default(false) %}
+ {% set class = opts.class|default('') %}
+ <label for="{{ for }}" class="block font-semibold text-sm text-slate-800 mb-2 {{ class }}">
+ {{ text }}
+ {% if required %}<span class="text-red-600 ml-1">*</span>{% endif %}
+ </label>
+{% endmacro %}
+
+{# â”€â”€ Text input â”€â”€ #}
+{% macro input(opts) %}
+ {% set name = opts.name|default('') %}
+ {% set type = opts.type|default('text') %}
+ {% set value = opts.value|default('') %}
+ {% set placeholder = opts.placeholder|default('') %}
+ {% set required = opts.required|default(false) %}
+ {% set disabled = opts.disabled|default(false) %}
+ {% set class = opts.class|default('') %}
+ {% set attrs = opts.attrs|default('') %}
+ {% set hasError = opts.hasError|default(false) %}
+ {% set label = opts.label|default('') %}
+ 
+ {% if label %}
+ {{ _self.label({ text: label, for: name, required: required }) }}
+ {% endif %}
+ 
+ {% set errorClass = hasError ? 'border-red-600 ring-2 ring-red-100' : 'focus:border-indigo-500 ring-2 ring-indigo-100' %}
+
+ <input type="{{ type }}" name="{{ name }}" id="{{ name }}" value="{{ value }}"
+	 placeholder="{{ placeholder }}" {{ required ? 'required' : '' }} {{ disabled ? 'disabled' : '' }}
+	 class="block w-full min-h-[44px] px-4 py-2.5 text-base border border-slate-200 bg-white shadow-sm rounded-lg transition-all duration-150 appearance-none hover:border-slate-400 outline-none {{ errorClass }} {{ disabled ? 'bg-slate-50 opacity-60 cursor-not-allowed' : '' }} {{ class }}"
+	 {{ attrs|raw }}>
+{% endmacro %}
+
+{# â”€â”€ Select dropdown â”€â”€ #}
+{% macro select(opts) %}
+ {% set name = opts.name|default('') %}
+ {% set options = opts.options|default([]) %}
+ {% set value = opts.value|default('') %}
+ {% set placeholder = opts.placeholder|default('Select...') %}
+ {% set required = opts.required|default(false) %}
+ {% set disabled = opts.disabled|default(false) %}
+ {% set class = opts.class|default('') %}
+ {% set label = opts.label|default('') %}
+ {% set hasError = opts.hasError|default(false) %}
+ 
+ {% if label %}
+ {{ _self.label({ text: label, for: name, required: required }) }}
+ {% endif %}
+ 
+ {% set errorClass = hasError ? 'border-red-600 ring-2 ring-red-100' : 'focus:border-indigo-500 ring-2 ring-indigo-100' %}
+
+ <select name="{{ name }}" id="{{ name }}" {{ required ? 'required' : '' }} {{ disabled ? 'disabled' : '' }}
+	 class="block w-full min-h-[44px] px-4 py-2.5 text-base border border-slate-200 bg-white shadow-sm rounded-lg transition-all duration-150 appearance-none hover:border-slate-400 outline-none pr-10 bg-no-repeat bg-[right_0.75rem_center] bg-[length:12px] {{ errorClass }} {{ disabled ? 'bg-slate-50 opacity-60 cursor-not-allowed' : '' }} {{ class }}">
+ {% if placeholder %}<option value="">{{ placeholder }}</option>{% endif %}
+ {% for key, label in options %}
+ <option value="{{ key }}" {{ key == value ? 'selected' : '' }}>{{ label }}</option>
+ {% endfor %}
+ </select>
+{% endmacro %}
+
+{# â”€â”€ Textarea â”€â”€ #}
+{% macro textarea(opts) %}
+ {% set name = opts.name|default('') %}
+ {% set value = opts.value|default('') %}
+ {% set rows = opts.rows|default(4) %}
+ {% set placeholder = opts.placeholder|default('') %}
+ {% set required = opts.required|default(false) %}
+ {% set class = opts.class|default('') %}
+ {% set label = opts.label|default('') %}
+ 
+ {% if label %}
+ {{ _self.label({ text: label, for: name, required: required }) }}
+ {% endif %}
+ 
+ <textarea name="{{ name }}" id="{{ name }}" rows="{{ rows }}" {{ required ? 'required' : '' }}
+		   placeholder="{{ placeholder }}"
+		   class="block w-full px-4 py-2.5 text-base border border-slate-200 bg-white shadow-sm rounded-lg transition-all duration-150 outline-none hover:border-slate-400 focus:border-indigo-500 ring-2 ring-indigo-100 {{ class }}">{{ value }}</textarea>
+{% endmacro %}
+
+{# â”€â”€ Checkbox â”€â”€ #}
+{% macro checkbox(opts) %}
+ {% set name = opts.name|default('') %}
+ {% set label = opts.label|default('') %}
+ {% set checked = opts.checked|default(false) %}
+ {% set value = opts.value|default('1') %}
+ {% set class = opts.class|default('') %}
+ <label class="inline-flex items-center gap-2 cursor-pointer {{ class }}">
+	 <input type="checkbox" name="{{ name }}" value="{{ value }}" {{ checked ? 'checked' : '' }}
+					class="w-[18px] h-[18px] border-2 border-neutral-300 rounded accent-indigo-600 cursor-pointer transition-all duration-150 flex-shrink-0">
+	 <span class="text-sm text-slate-700 cursor-pointer select-none">{{ label }}</span>
+ </label>
+{% endmacro %}
+
+{# â”€â”€ Toggle switch â”€â”€ #}
+{% macro switch(opts) %}
+ {% set name = opts.name|default('') %}
+ {% set label = opts.label|default('') %}
+ {% set checked = opts.checked|default(false) %}
+ {% set class = opts.class|default('') %}
+ <label class="inline-flex items-center gap-3 cursor-pointer {{ class }}">
+	 <input type="checkbox" name="{{ name }}" value="1" {{ checked ? 'checked' : '' }} class="sr-only peer">
+	 <div class="relative w-14 h-7 bg-slate-300 peer-checked:bg-gradient-to-r peer-checked:from-indigo-500 peer-checked:to-indigo-700 rounded-full transition-all duration-300 after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:w-6 after:h-6 after:bg-white after:rounded-full after:shadow-md after:transition-all after:duration-300 peer-checked:after:translate-x-7"></div>
+	 <span class="text-sm font-medium text-slate-700 select-none">{{ label }}</span>
+ </label>
+{% endmacro %}
+
+{# â”€â”€ Form error message â”€â”€ #}
+{% macro error(opts) %}
+ {% set message = opts.message|default('') %}
+ {% if message %}
+ <p class="text-xs text-red-600 mt-1">{{ message }}</p>
+ {% endif %}
+{% endmacro %}
+
+{# â”€â”€ Form help text â”€â”€ #}
+{% macro help(opts) %}
+ <p class="text-xs text-slate-400 mt-1">{{ opts.text|default('') }}</p>
+{% endmacro %}
+
+{# â”€â”€ Input group (prepend/append) â”€â”€ #}
+{% macro inputGroup(opts) %}
+ {% set prepend = opts.prepend|default('') %}
+ {% set append = opts.append|default('') %}
+ {% set class = opts.class|default('') %}
+ <div class="flex items-stretch rounded-lg overflow-hidden shadow-sm {{ class }}">
+ {% if prepend %}
+ <div class="flex items-center px-3.5 py-2.5 bg-slate-50 border border-slate-200 border-r-0 text-indigo-600 text-sm">{{ prepend|raw }}</div>
+ {% endif %}
+ {{ opts.content|raw }}
+ {% if append %}
+ <div class="flex items-center px-3.5 py-2.5 bg-slate-50 border border-slate-200 border-l-0 text-indigo-600 text-sm">{{ append|raw }}</div>
+ {% endif %}
+ </div>
+{% endmacro %}
+
+
+
+
+

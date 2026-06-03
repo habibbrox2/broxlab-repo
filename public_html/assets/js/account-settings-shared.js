@@ -9,7 +9,7 @@ const PROVIDER_UI = {
 const runtimeAssetVersion = (() => {
   try {
     return new URL(import.meta.url).searchParams.get('v') || '';
-  } catch (error) {
+  } catch {
     return '';
   }
 })();
@@ -65,9 +65,9 @@ function defaultShowAlert(message, type = 'info', containerId = 'alerts-containe
   alertDiv.className = `alert alert-${normalizedType} alert-dismissible fade show`;
   alertDiv.role = 'alert';
   alertDiv.innerHTML = `
-        <i class="bi bi-${normalizedType === 'success' ? 'check-circle-fill' : normalizedType === 'danger' ? 'exclamation-circle-fill' : 'info-circle-fill'} me-2"></i>
+        <i class="icon-${normalizedType === 'success' ? 'check-circle-fill' : normalizedType === 'danger' ? 'exclamation-circle-fill' : 'info-circle-fill'} mr-2"></i>
         ${escapeHtml(safeMessage)}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-brox-dismiss="alert" aria-label="Close"></button>
     `;
   container.appendChild(alertDiv);
   setTimeout(() => {
@@ -148,8 +148,8 @@ function renderProviders(providersContainer, providers, theme, onLinkProvider) {
   const providerEntries = Object.entries(providers || {});
   if (providerEntries.length === 0) {
     providersContainer.innerHTML = `
-            <div class="alert alert-info small mb-0">
-                <i class="bi bi-info-circle-fill me-2"></i>
+            <div class="p-4 rounded-lg bg-info-light text-info-dark border border-info small mb-0">
+                <i class="bi icon-info mr-2"></i>
                 No OAuth providers are currently available.
             </div>
         `;
@@ -164,7 +164,7 @@ function renderProviders(providersContainer, providers, theme, onLinkProvider) {
     if (theme === 'modern') {
       return `
                 <button type="button" class="modern-btn modern-btn-white modern-btn-sm js-oauth-link-btn" data-provider="${escapeHtml(provider)}">
-                    <i class="bi bi-${icon} me-1"></i> Link ${name} Account
+                    <i class="icon-${icon} mr-1"></i> Link ${name} Account
                 </button>
             `;
     }
@@ -172,7 +172,7 @@ function renderProviders(providersContainer, providers, theme, onLinkProvider) {
     const btnColor = escapeHtml(meta.btn || 'secondary');
     return `
             <button type="button" class="btn btn-outline-${btnColor} btn-sm js-oauth-link-btn" data-provider="${escapeHtml(provider)}">
-                <i class="bi bi-${icon} me-1"></i> Link ${name} Account
+                <i class="icon-${icon} mr-1"></i> Link ${name} Account
             </button>
         `;
   }).join('');
@@ -191,8 +191,8 @@ function renderAccounts(accountsContainer, accounts, theme, onSetPrimary, onUnli
 
   if (!Array.isArray(accounts) || accounts.length === 0) {
     accountsContainer.innerHTML = `
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle-fill me-2"></i>
+            <div class="p-4 rounded-lg bg-info-light text-info-dark border border-info">
+                <i class="bi icon-info mr-2"></i>
                 <strong>No linked accounts yet.</strong> Link an account below to get started.
             </div>
         `;
@@ -215,22 +215,22 @@ function renderAccounts(accountsContainer, accounts, theme, onSetPrimary, onUnli
                     <div class="admin-panel-card-body p-3">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-${icon}" style="font-size: 1.5rem; color: ${color};"></i>
+                                <i class="icon-${icon}" style="font-size: 1.5rem; color: ${color};"></i>
                                 <div>
                                     <h6 class="mb-0">${providerLabel}</h6>
                                     <small class="text-muted">${email}</small>
                                 </div>
                             </div>
                             <span class="badge ${isPrimary ? 'bg-primary' : 'bg-success'}">
-                                <i class="bi bi-${isPrimary ? 'star-fill' : 'check-circle'} me-1"></i>
+                                <i class="icon-${isPrimary ? 'star-fill' : 'check-circle'} mr-1"></i>
                                 ${isPrimary ? 'Primary' : 'Connected'}
                             </span>
                         </div>
                         <p class="text-muted small mb-3">Linked on ${escapeHtml(linkedDate)}</p>
                         <div class="d-flex gap-2">
-                            ${isPrimary ? '' : `<button type="button" class="modern-btn modern-btn-primary modern-btn-sm js-oauth-set-primary" data-provider="${escapeHtml(provider)}"><i class="bi bi-star me-1"></i> Set Primary</button>`}
+                            ${isPrimary ? '' : `<button type="button" class="modern-btn modern-btn-primary modern-btn-sm js-oauth-set-primary" data-provider="${escapeHtml(provider)}"><i class="bi icon-star mr-1"></i> Set Primary</button>`}
                             <button type="button" class="modern-btn modern-btn-danger modern-btn-sm js-oauth-unlink" data-provider="${escapeHtml(provider)}">
-                                <i class="bi bi-unlink me-1"></i> Unlink
+                                <i class="bi icon-unlink mr-1"></i> Unlink
                             </button>
                         </div>
                     </div>
@@ -242,13 +242,13 @@ function renderAccounts(accountsContainer, accounts, theme, onSetPrimary, onUnli
             <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
                 <div>
                     <div class="d-flex align-items-center">
-                        <i class="bi bi-${icon} me-2 fs-5"></i>
+                        <i class="icon-${icon} mr-2 fs-5"></i>
                         <div>
                             <strong class="d-block">${providerLabel} Account</strong>
                             <small class="text-muted d-block">${email}</small>
                             <small class="text-muted d-block">Linked: ${escapeHtml(linkedDate)}</small>
                         </div>
-                        ${isPrimary ? '<span class="badge bg-success ms-2">Primary</span>' : ''}
+                        ${isPrimary ? '<span class="badge bg-success ml-2">Primary</span>' : ''}
                     </div>
                 </div>
                 <div class="btn-group" role="group">
@@ -653,7 +653,7 @@ export function initAccountSettingsOAuth(options = {}) {
     if (accountsContainer) {
       accountsContainer.innerHTML = `
                 <div class="text-center py-4">
-                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                    <div class="inline-spinner inline-spinner-sm text-primary" role="status"></div>
                     <p class="text-muted small mt-2">Opening ${escapeHtml(normalizedProvider)} sign-in popup...</p>
                 </div>
             `;
@@ -722,7 +722,7 @@ export function initAccountSettingsOAuth(options = {}) {
     if (!accountsContainer) return;
     accountsContainer.innerHTML = `
             <div class="text-center py-4">
-                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                <div class="inline-spinner inline-spinner-sm text-primary" role="status"></div>
                 <p class="text-muted small mt-2">Loading your linked accounts...</p>
             </div>
         `;
@@ -809,7 +809,7 @@ export function initAccountPasswordChange(options = {}) {
     const originalText = submitBtn?.innerHTML || '';
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
+      submitBtn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-2"></span>Updating...';
     }
 
     const { data, } = await fetchJson('/user/change-password', {

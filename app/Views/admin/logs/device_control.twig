@@ -1,109 +1,116 @@
-{% extends "admin/layout.twig" %}
+﻿{% extends"admin/layout.twig" %}
 
 {% block title %}Device Control Logs{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="admin-page-header mb-4">
-        <div class="admin-page-title"><i class="bi bi-cpu me-2"></i>Device Control Logs</div>
-        <div class="admin-page-subtitle">Remote device command history and delivery status.</div>
-    </div>
+<div class="admin-page-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+ <div>
+ <h1 class="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900"><i class="lucide lucide-cpu text-indigo-600"></i> Device Control Logs</h1>
+ <p class="mt-1 max-w-2xl text-sm text-slate-500">Remote device command history and delivery status.</p>
+ </div>
+</div>
+<div>
 
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="small text-muted">Total Devices</div>
-                    <div class="h4 mb-0">{{ summary.total|default(0) }}</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="small text-muted">Online</div>
-                    <div class="h4 text-success mb-0">{{ summary.online|default(0) }}</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="small text-muted">Offline</div>
-                    <div class="h4 text-secondary mb-0">{{ summary.offline|default(0) }}</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="small text-muted">Disabled</div>
-                    <div class="h4 text-danger mb-0">{{ summary.disabled|default(0) }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3 mb-4">
+ <div class="col-span-6 md:col-span-3">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm h-full">
+ <div class="p-4">
+ <div class="small text-slate-500">Total Devices</div>
+ <div class="h4 mb-0">{{ summary.total|default(0) }}</div>
+ </div>
+ </div>
+ </div>
+ <div class="col-span-6 md:col-span-3">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm h-full">
+ <div class="p-4">
+ <div class="small text-slate-500">Online</div>
+ <div class="h4 text-emerald-600 mb-0">{{ summary.online|default(0) }}</div>
+ </div>
+ </div>
+ </div>
+ <div class="col-span-6 md:col-span-3">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm h-full">
+ <div class="p-4">
+ <div class="small text-slate-500">Offline</div>
+ <div class="h4 text-slate-600 mb-0">{{ summary.offline|default(0) }}</div>
+ </div>
+ </div>
+ </div>
+ <div class="col-span-6 md:col-span-3">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm h-full">
+ <div class="p-4">
+ <div class="small text-slate-500">Disabled</div>
+ <div class="h4 text-red-600 mb-0">{{ summary.disabled|default(0) }}</div>
+ </div>
+ </div>
+ </div>
+ </div>
 
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <strong>Recent Commands</strong>
-            <form method="get" class="d-flex gap-2">
-                <select name="limit" class="form-select form-select-sm">
-                    <option value="50" {% if limit == 50 %}selected{% endif %}>50</option>
-                    <option value="100" {% if limit == 100 %}selected{% endif %}>100</option>
-                    <option value="200" {% if limit == 200 %}selected{% endif %}>200</option>
-                    <option value="500" {% if limit == 500 %}selected{% endif %}>500</option>
-                </select>
-                <button class="btn btn-sm btn-primary" type="submit">Apply</button>
-            </form>
-        </div>
-        <div class="card-body p-0">
-            {% if commands is not empty %}
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>#ID</th>
-                                <th>Device</th>
-                                <th>Command</th>
-                                <th>Status</th>
-                                <th>Response</th>
-                                <th>Created</th>
-                                <th>Delivered</th>
-                                <th>Executed</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for row in commands %}
-                                <tr>
-                                    <td class="font-monospace">{{ row.id }}</td>
-                                    <td>{{ row.device_name|default('Device #' ~ row.device_id) }}</td>
-                                    <td><code>{{ row.command }}</code></td>
-                                    <td>
-                                        {% set status = row.status|default('queued') %}
-                                        {% if status == 'completed' %}
-                                            <span class="badge bg-success">{{ status }}</span>
-                                        {% elseif status == 'failed' %}
-                                            <span class="badge bg-danger">{{ status }}</span>
-                                        {% elseif status == 'delivered' %}
-                                            <span class="badge bg-info text-dark">{{ status }}</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">{{ status }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="small text-muted">{{ row.response_text|default('') }}</td>
-                                    <td class="small">{{ row.created_at|default('') }}</td>
-                                    <td class="small">{{ row.delivered_at|default('') }}</td>
-                                    <td class="small">{{ row.executed_at|default('') }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="p-4 text-center text-muted">No command history found yet.</div>
-            {% endif %}
-        </div>
-    </div>
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+ <div class="border-b border-slate-200 px-4 py-3 flex justify-between items-center">
+ <strong>Recent Commands</strong>
+ <form method="get" class="flex gap-2">
+ <select name="limit" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10">
+ <option value="50" {% if limit == 50 %}selected{% endif %}>50</option>
+ <option value="100" {% if limit == 100 %}selected{% endif %}>100</option>
+ <option value="200" {% if limit == 200 %}selected{% endif %}>200</option>
+ <option value="500" {% if limit == 500 %}selected{% endif %}>500</option>
+ </select>
+ <button class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700" type="submit">Apply</button>
+ </form>
+ </div>
+ <div class="p-4 p-0">
+ {% if commands is not empty %}
+ <div class="overflow-x-auto">
+ <table class="table table-hover mb-0">
+ <thead class="bg-slate-50">
+ <tr>
+ <th>#ID</th>
+ <th>Device</th>
+ <th>Command</th>
+ <th>Status</th>
+ <th>Response</th>
+ <th>Created</th>
+ <th>Delivered</th>
+ <th>Executed</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for cmd in commands %}
+ <tr>
+ <td class="font-monospace">{{ cmd.id }}</td>
+ <td>{{ cmd.device_name|default('Device #' ~ cmd.device_id) }}</td>
+ <td><code>{{ cmd.command }}</code></td>
+ <td>
+ {% set status = cmd.status|default('queued') %}
+ {% if status == 'completed' %}
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-600">{{ status }}</span>
+ {% elseif status == 'failed' %}
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-red-600">{{ status }}</span>
+ {% elseif status == 'delivered' %}
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-sky-500 text-slate-900">{{ status }}</span>
+ {% else %}
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-600">{{ status }}</span>
+ {% endif %}
+ </td>
+ <td class="small text-slate-500">{{ cmd.response_text|default('') }}</td>
+ <td class="small">{{ cmd.created_at|default('') }}</td>
+ <td class="small">{{ cmd.delivered_at|default('') }}</td>
+ <td class="small">{{ cmd.executed_at|default('') }}</td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ {% else %}
+ <div class="p-4 text-center text-slate-500">No command history found yet.</div>
+ {% endif %}
+ </div>
+ </div>
 </div>
 {% endblock %}
+
+
+
+
+

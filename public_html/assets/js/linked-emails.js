@@ -57,8 +57,8 @@ export function initLinkedEmails(options = {}) {
     } catch (error) {
       console.error('Error loading linked emails:', error);
       container.innerHTML = `
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
+                <div class="p-4 rounded-lg bg-warning-light text-warning-dark border border-warning">
+                    <i class="bi icon-alert-triangle mr-2"></i>
                     Could not load linked emails. Please refresh the page.
                 </div>
             `;
@@ -71,8 +71,8 @@ export function initLinkedEmails(options = {}) {
 
     if (!emails || emails.length === 0) {
       container.innerHTML = `
-                <div class="alert alert-secondary">
-                    <i class="bi bi-info-circle me-2"></i>
+                <div class="p-4 rounded-lg bg-neutral-100 text-neutral-700 border border-neutral-200">
+                    <i class="bi icon-info mr-2"></i>
                     No additional emails linked yet. Add one below to strengthen your account security.
                 </div>
             `;
@@ -91,21 +91,21 @@ export function initLinkedEmails(options = {}) {
                     <div class="card-body d-flex align-items-center justify-content-between">
                         <div>
                             <div class="d-flex align-items-center gap-2 mb-1">
-                                <i class="bi bi-envelope-fill text-primary"></i>
+                                <i class="bi icon-mail text-primary"></i>
                                 <strong>${escapeHtml(email)}</strong>
-                                ${isPrimary ? '<span class="badge bg-success"><i class="bi bi-star-fill me-1"></i>Primary</span>' : ''}
-                                ${!isVerified ? '<span class="badge bg-warning"><i class="bi bi-clock me-1"></i>Pending</span>' : ''}
+                                ${isPrimary ? '<span class="badge bg-success"><i class="bi icon-star mr-1"></i>Primary</span>' : ''}
+                                ${!isVerified ? '<span class="badge bg-warning"><i class="bi icon-clock mr-1"></i>Pending</span>' : ''}
                             </div>
                             <small class="text-muted">${isVerified ? 'Verified' : 'Verification pending'}</small>
                         </div>
                         <div class="btn-group btn-group-sm gap-2" role="group">
                             ${!isPrimary && isVerified ? `
                                 <button type="button" class="btn btn-outline-primary js-set-primary" data-email="${escapeHtml(email)}">
-                                    <i class="bi bi-star me-1"></i> Set Primary
+                                    <i class="bi icon-star mr-1"></i> Set Primary
                                 </button>
                             ` : ''}
                             <button type="button" class="btn btn-outline-danger js-unlink-email" data-email="${escapeHtml(email)}">
-                                <i class="bi bi-unlink me-1"></i> Unlink
+                                <i class="bi icon-unlink mr-1"></i> Unlink
                             </button>
                         </div>
                     </div>

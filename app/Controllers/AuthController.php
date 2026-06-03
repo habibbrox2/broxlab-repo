@@ -205,6 +205,11 @@ $router->post('/login', ['middleware' => ['guest_only']], function () use ($auth
     $data = getRequestData();
     $requestedRedirect = resolveAuthRedirectPath($data);
 
+    // post_login_redirect disabled: clear any captured previous-page redirect immediately
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        unset($_SESSION['post_login_redirect']);
+    }
+
     // Determine response type (AJAX or regular form submission)
     $type = isAjaxRequest() ? 'json' : 'redirect';
 
@@ -402,9 +407,10 @@ $router->post('/login', ['middleware' => ['guest_only']], function () use ($auth
         $redirectUrl = '/user/dashboard';
     }
 
-    if ($requestedRedirect !== '') {
-        $redirectUrl = $requestedRedirect;
-    }
+    // Redirect to default dashboard regardless of previous page
+    // if ($requestedRedirect !== '') {
+    //     $redirectUrl = $requestedRedirect;
+    // }
 
     if (session_status() === PHP_SESSION_ACTIVE) {
         unset($_SESSION['post_login_redirect']);
@@ -425,6 +431,11 @@ $router->post('/register', ['middleware' => ['guest_only']], function () use ($u
     // Get request data (handles both JSON AJAX and form submissions)
     $data = getRequestData();
     $requestedRedirect = resolveAuthRedirectPath($data);
+
+    // post_login_redirect disabled: clear any captured previous-page redirect immediately
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        unset($_SESSION['post_login_redirect']);
+    }
 
     // Determine response type (AJAX or regular form submission)
     $type = isAjaxRequest() ? 'json' : 'redirect';
@@ -588,7 +599,9 @@ $router->post('/register', ['middleware' => ['guest_only']], function () use ($u
             'Registration successful! Welcome to ' . getSetting('site_name', 'BroxBhai'),
             $type,
             200,
-            $requestedRedirect !== '' ? $requestedRedirect : '/user/dashboard'
+            // Always redirect to user dashboard after registration
+            //$requestedRedirect !== '' ? $requestedRedirect : '/user/dashboard'
+            '/user/dashboard'
         );
     }
 

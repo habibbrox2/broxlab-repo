@@ -65,7 +65,7 @@ export function initRbacUserRoles(options = {}) {
     if (!userResults) return;
     if (!Array.isArray(users) || users.length === 0) {
       userLookup.clear();
-      userResults.innerHTML = '<div class="alert alert-info">No users found.</div>';
+      userResults.innerHTML = '<div class="p-4 rounded-lg bg-info-light text-info-dark border border-info">No users found.</div>';
       userResults.style.display = 'block';
       return;
     }
@@ -123,7 +123,7 @@ export function initRbacUserRoles(options = {}) {
       })
       .catch(() => {
         if (!userResults) return;
-        userResults.innerHTML = '<div class="alert alert-danger">Failed to search users.</div>';
+        userResults.innerHTML = '<div class="p-4 rounded-lg bg-danger-light text-danger-dark border border-danger">Failed to search users.</div>';
         userResults.style.display = 'block';
       });
   }
@@ -137,7 +137,7 @@ export function initRbacUserRoles(options = {}) {
 
         const roles = Array.isArray(data?.data) ? data.data : [];
         if (roles.length === 0) {
-          list.innerHTML = '<div class="alert alert-info mb-0">No roles assigned.</div>';
+          list.innerHTML = '<div class="p-4 rounded-lg bg-info-light text-info-dark border border-info mb-0">No roles assigned.</div>';
           return;
         }
 
@@ -180,7 +180,7 @@ export function initRbacUserRoles(options = {}) {
           });
           html += '</div>';
         }
-        list.innerHTML = html || '<div class="alert alert-info">No permissions found.</div>';
+        list.innerHTML = html || '<div class="p-4 rounded-lg bg-info-light text-info-dark border border-info">No permissions found.</div>';
       });
   }
 
@@ -255,7 +255,7 @@ export function initRbacUserRoles(options = {}) {
                     `;
         }).join('');
 
-        const modal = new bootstrap.Modal(byId('assignRoleModal'));
+        const modal = new broxUI.Modal(byId('assignRoleModal'));
         modal.show();
       });
   }
@@ -279,7 +279,7 @@ export function initRbacUserRoles(options = {}) {
       .then((response) => response.json())
       .then((data) => {
         if (data?.success) {
-          bootstrap.Modal.getInstance(byId('assignRoleModal'))?.hide();
+          broxUI.Modal.getInstance(byId('assignRoleModal'))?.hide();
           loadUserRoles(selectedUserId);
           loadUserPermissions(selectedUserId);
           alert('Roles assigned successfully!');
@@ -338,7 +338,7 @@ export function initUsersEditUser(options = {}) {
       .then((response) => response.json())
       .then((data) => {
         if (!data?.data || data.data.length === 0) {
-          permissionsEl.innerHTML = '<div class="alert alert-info mb-0">No roles assigned, no permissions available.</div>';
+          permissionsEl.innerHTML = '<div class="p-4 rounded-lg bg-info-light text-info-dark border border-info mb-0">No roles assigned, no permissions available.</div>';
           return;
         }
         return fetch('/api/rbac/permissions/grouped')
@@ -355,7 +355,7 @@ export function initUsersEditUser(options = {}) {
                                 </div>`;
               });
             }
-            permissionsEl.innerHTML = html || '<div class="alert alert-info mb-0">No permissions found.</div>';
+            permissionsEl.innerHTML = html || '<div class="p-4 rounded-lg bg-info-light text-info-dark border border-info mb-0">No permissions found.</div>';
           });
       });
   }

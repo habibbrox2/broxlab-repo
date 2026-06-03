@@ -12,9 +12,9 @@ function setAlertHtml(container, type, message, strongLabel = '') {
 
   container.innerHTML = `
         <div class="alert alert-${safeType} alert-dismissible fade show" role="alert">
-            <i class="bi bi-${icon} me-2"></i>
+            <i class="icon-${icon} mr-2"></i>
             ${strong}${safeMessage}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="btn-close" data-brox-dismiss="alert"></button>
         </div>
     `;
 }
@@ -67,7 +67,7 @@ export function initSecurity2FASetup(options = {}) {
     const btn = buttonEl || document.querySelector('button[onclick*="copySecret"]');
     if (!btn) return;
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="bi bi-check me-1"></i> Copied!';
+    btn.innerHTML = '<i class="bi icon-check mr-1"></i> Copied!';
     setTimeout(() => {
       btn.innerHTML = originalText;
     }, 2000);
@@ -101,7 +101,7 @@ export function initSecurity2FABackup(options = {}) {
       const btn = buttonEl || document.querySelector('button[onclick*="copyAllBackupCodes"]');
       if (!btn) return;
       const originalText = btn.innerHTML;
-      btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+      btn.innerHTML = '<i class="bi icon-check"></i> Copied!';
       btn.classList.add('disabled');
 
       setTimeout(() => {
@@ -123,7 +123,7 @@ export function initSecurity2FABackup(options = {}) {
     const btn = buttonEl || document.querySelector('button[onclick*="regenerateBackupCodes"]');
     if (!btn) return;
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+    btn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-2"></span>Generating...';
 
     fetch('/admin/security/2fa/backup-codes/regenerate', {
       method: 'POST',
@@ -142,12 +142,12 @@ export function initSecurity2FABackup(options = {}) {
         }
         alert(`Error: ${ data?.error || 'Failed to generate codes'}`);
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Generate New Codes';
+        btn.innerHTML = '<i class="bi icon-repeat"></i> Generate New Codes';
       })
       .catch(() => {
         alert('An error occurred. Please try again.');
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Generate New Codes';
+        btn.innerHTML = '<i class="bi icon-repeat"></i> Generate New Codes';
       });
   };
 
@@ -193,7 +193,7 @@ export function initSecurity2FA(options = {}) {
     const button = event?.currentTarget || byId('confirmDisableTwoFABtn');
     if (!button) return;
     button.disabled = true;
-    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Disabling...';
+    button.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-2"></span>Disabling...';
 
     fetch('/admin/security/2fa/disable', {
       method: 'POST',
@@ -209,12 +209,12 @@ export function initSecurity2FA(options = {}) {
         }
         showAlertInModal(alertBox, data?.error || 'Failed to disable 2FA', 'danger');
         button.disabled = false;
-        button.innerHTML = '<i class="bi bi-trash me-1"></i> Disable 2FA';
+        button.innerHTML = '<i class="bi icon-trash-2 mr-1"></i> Disable 2FA';
       })
       .catch(() => {
         showAlertInModal(alertBox, 'An error occurred. Please try again.', 'danger');
         button.disabled = false;
-        button.innerHTML = '<i class="bi bi-trash me-1"></i> Disable 2FA';
+        button.innerHTML = '<i class="bi icon-trash-2 mr-1"></i> Disable 2FA';
       });
   }
 

@@ -1,24 +1,26 @@
-{# Partial: Category selector and prefill
-   Expects: categories (array of {id,name}), selectedCategories (array of ids or objects)
+﻿{# Partial: Category selector and prefill
+ Expects: categories (array of {id,name}), selectedCategories (array of ids or objects)
 #}
 {% set selectedIds = [] %}
 {% for sc in selectedCategories|default([]) %}
-    {% if sc is iterable %}
-        {% if sc.id is defined and (sc.id ~ '') is not empty %}
-            {% set selectedIds = selectedIds|merge([sc.id ~ '']) %}
-        {% endif %}
-    {% else %}
-        {% set raw = sc ~ '' %}
-        {% if raw matches '/^[0-9]+$/' %}
-            {% set selectedIds = selectedIds|merge([raw]) %}
-        {% endif %}
-    {% endif %}
+ {% if sc is iterable %}
+ {% if sc.id is defined and (sc.id ~ '') is not empty %}
+ {% set selectedIds = selectedIds|merge([sc.id ~ '']) %}
+ {% endif %}
+ {% else %}
+ {% set raw = sc ~ '' %}
+ {% if raw matches '/^[0-9]+$/' %}
+ {% set selectedIds = selectedIds|merge([raw]) %}
+ {% endif %}
+ {% endif %}
 {% endfor %}
 
-<select multiple name="category_ids[]" id="category_ids_select" class="form-control blogspot-categories">
-    {% for cat in categories %}
-        {% set catId = cat.id ~ '' %}
-        <option value="{{ cat.id }}" {{ catId in selectedIds ? 'selected' : '' }}>{{ cat.name }}</option>
-    {% endfor %}
+<select multiple name="category_ids[]" id="category_ids_select" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 blogspot-categories">
+ {% for cat in categories %}
+ {% set catId = cat.id ~ '' %}
+ <option value="{{ cat.id }}" {{ catId in selectedIds ? 'selected' : '' }}>{{ cat.name }}</option>
+ {% endfor %}
 </select>
-<small class="form-text text-muted mt-1">Type to search and press Enter to select or create</small>
+<small class="text-xs text-neutral-400 mt-1">Type to search and press Enter to select or create</small>
+
+

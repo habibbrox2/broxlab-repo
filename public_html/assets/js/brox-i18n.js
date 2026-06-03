@@ -19,7 +19,7 @@
 
 const BROXI18N_STORAGE_KEY = 'brox-i18n-lang';
 const BROXI18N_LANG_CHANGE = 'brox:langchange';
-const BROXI18N_ACCEPTED_LANGS = ['en', 'bn'];
+const BROXI18N_ACCEPTED_LANGS = ['en', 'bn',];
 
 let _currentLang = detectInitialLang();
 let _isTranslating = false;
@@ -48,7 +48,7 @@ function detectInitialLang() {
 // ======================== Cache Helpers ========================
 
 function cacheKey(text, lang) {
-  return lang + '::' + text;
+  return `${lang}::${text}`;
 }
 
 function getCached(text, lang) {
@@ -76,21 +76,21 @@ function applyTranslation(root) {
   if (!root || typeof root.querySelectorAll !== 'function') return;
 
   // Method 1: data-i18n-en + data-i18n-bn (instant, no API call)
-  root.querySelectorAll('[data-i18n-en][data-i18n-bn]').forEach(function (el) {
-    var attr = 'data-i18n-' + _currentLang;
-    var translation = el.getAttribute(attr);
+  root.querySelectorAll('[data-i18n-en][data-i18n-bn]').forEach((el) => {
+    const attr = `data-i18n-${_currentLang}`;
+    const translation = el.getAttribute(attr);
     if (translation !== null && translation !== '') {
       el.textContent = translation;
     }
   });
 
   // Method 2: data-i18n (fallback — checks cache, then queues API batch)
-  root.querySelectorAll('[data-i18n]').forEach(function (el) {
+  root.querySelectorAll('[data-i18n]').forEach((el) => {
     // Skip if already handled by Method 1
     if (el.hasAttribute('data-i18n-en') && el.hasAttribute('data-i18n-bn')) return;
-    var key = el.getAttribute('data-i18n') || '';
+    const key = el.getAttribute('data-i18n') || '';
     if (!key) return;
-    var cached = getCached(key, _currentLang);
+    const cached = getCached(key, _currentLang);
     if (cached) {
       el.textContent = cached;
       return;
@@ -99,10 +99,10 @@ function applyTranslation(root) {
   });
 
   // data-i18n-title
-  root.querySelectorAll('[data-i18n-title]').forEach(function (el) {
-    var key = el.getAttribute('data-i18n-title') || '';
+  root.querySelectorAll('[data-i18n-title]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-title') || '';
     if (!key) return;
-    var cached = getCached(key, _currentLang);
+    const cached = getCached(key, _currentLang);
     if (cached) {
       el.setAttribute('title', cached);
     } else {
@@ -111,10 +111,10 @@ function applyTranslation(root) {
   });
 
   // data-i18n-aria-label
-  root.querySelectorAll('[data-i18n-aria-label]').forEach(function (el) {
-    var key = el.getAttribute('data-i18n-aria-label') || '';
+  root.querySelectorAll('[data-i18n-aria-label]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-aria-label') || '';
     if (!key) return;
-    var cached = getCached(key, _currentLang);
+    const cached = getCached(key, _currentLang);
     if (cached) {
       el.setAttribute('aria-label', cached);
     } else {
@@ -123,10 +123,10 @@ function applyTranslation(root) {
   });
 
   // data-i18n-placeholder
-  root.querySelectorAll('[data-i18n-placeholder]').forEach(function (el) {
-    var key = el.getAttribute('data-i18n-placeholder') || '';
+  root.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-placeholder') || '';
     if (!key) return;
-    var cached = getCached(key, _currentLang);
+    const cached = getCached(key, _currentLang);
     if (cached) {
       el.setAttribute('placeholder', cached);
     } else {
@@ -142,38 +142,38 @@ function applyTranslation(root) {
 function fetchPendingBatch() {
   if (_isTranslating) return;
 
-  var texts = [];
-  var items = [];
+  const texts = [];
+  const items = [];
 
-  document.querySelectorAll('[data-i18n-pending]').forEach(function (el) {
-    var t = el.dataset.i18nPending;
+  document.querySelectorAll('[data-i18n-pending]').forEach((el) => {
+    const t = el.dataset.i18nPending;
     if (t && texts.indexOf(t) === -1) {
       texts.push(t);
-      items.push({ el: el, attr: 'textContent', key: t });
+      items.push({ el: el, attr: 'textContent', key: t, });
     }
     delete el.dataset.i18nPending;
   });
-  document.querySelectorAll('[data-i18n-title-pending]').forEach(function (el) {
-    var t = el.dataset.i18nTitlePending;
+  document.querySelectorAll('[data-i18n-title-pending]').forEach((el) => {
+    const t = el.dataset.i18nTitlePending;
     if (t && texts.indexOf(t) === -1) {
       texts.push(t);
-      items.push({ el: el, attr: 'title', key: t });
+      items.push({ el: el, attr: 'title', key: t, });
     }
     delete el.dataset.i18nTitlePending;
   });
-  document.querySelectorAll('[data-i18n-aria-label-pending]').forEach(function (el) {
-    var t = el.dataset.i18nAriaLabelPending;
+  document.querySelectorAll('[data-i18n-aria-label-pending]').forEach((el) => {
+    const t = el.dataset.i18nAriaLabelPending;
     if (t && texts.indexOf(t) === -1) {
       texts.push(t);
-      items.push({ el: el, attr: 'ariaLabel', key: t });
+      items.push({ el: el, attr: 'ariaLabel', key: t, });
     }
     delete el.dataset.i18nAriaLabelPending;
   });
-  document.querySelectorAll('[data-i18n-placeholder-pending]').forEach(function (el) {
-    var t = el.dataset.i18nPlaceholderPending;
+  document.querySelectorAll('[data-i18n-placeholder-pending]').forEach((el) => {
+    const t = el.dataset.i18nPlaceholderPending;
     if (t && texts.indexOf(t) === -1) {
       texts.push(t);
-      items.push({ el: el, attr: 'placeholder', key: t });
+      items.push({ el: el, attr: 'placeholder', key: t, });
     }
     delete el.dataset.i18nPlaceholderPending;
   });
@@ -181,10 +181,10 @@ function fetchPendingBatch() {
   if (texts.length === 0) return;
 
   _isTranslating = true;
-  var BATCH_SIZE = 10;
+  const BATCH_SIZE = 10;
 
   (function sendBatch(start) {
-    var batch = texts.slice(start, start + BATCH_SIZE);
+    const batch = texts.slice(start, start + BATCH_SIZE);
     if (batch.length === 0) {
       _isTranslating = false;
       return;
@@ -192,31 +192,31 @@ function fetchPendingBatch() {
 
     fetch('/api/translate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ texts: batch, from: 'en', to: _currentLang })
+      headers: { 'Content-Type': 'application/json', },
+      body: JSON.stringify({ texts: batch, from: 'en', to: _currentLang, }),
     })
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
-      if (data.success && data.translations) {
-        items.forEach(function (item) {
-          var translated = data.translations[item.key];
-          if (!translated) return;
-          setCached(item.key, _currentLang, translated);
-          if (item.el && item.el.isConnected) {
-            if (item.attr === 'textContent') item.el.textContent = translated;
-            else if (item.attr === 'title') item.el.setAttribute('title', translated);
-            else if (item.attr === 'ariaLabel') item.el.setAttribute('aria-label', translated);
-            else if (item.attr === 'placeholder') item.el.setAttribute('placeholder', translated);
-          }
-        });
-      }
-    })
-    .catch(function (err) {
-      console.warn('[brox-i18n] Batch translate failed:', err);
-    })
-    .finally(function () {
-      sendBatch(start + BATCH_SIZE);
-    });
+      .then((res) => { return res.json(); })
+      .then((data) => {
+        if (data.success && data.translations) {
+          items.forEach((item) => {
+            const translated = data.translations[item.key];
+            if (!translated) return;
+            setCached(item.key, _currentLang, translated);
+            if (item.el && item.el.isConnected) {
+              if (item.attr === 'textContent') item.el.textContent = translated;
+              else if (item.attr === 'title') item.el.setAttribute('title', translated);
+              else if (item.attr === 'ariaLabel') item.el.setAttribute('aria-label', translated);
+              else if (item.attr === 'placeholder') item.el.setAttribute('placeholder', translated);
+            }
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn('[brox-i18n] Batch translate failed:', err);
+      })
+      .finally(() => {
+        sendBatch(start + BATCH_SIZE);
+      });
   })(0);
 }
 
@@ -226,7 +226,7 @@ function wireLangButtons(root) {
   root = root || document;
   if (!root || typeof root.querySelectorAll !== 'function') return;
 
-  root.querySelectorAll('[data-lang-btn]').forEach(function (btn) {
+  root.querySelectorAll('[data-lang-btn]').forEach((btn) => {
     // Remove existing listener to avoid duplicates
     btn.removeEventListener('click', handleLangBtnClick);
     btn.addEventListener('click', handleLangBtnClick);
@@ -235,7 +235,7 @@ function wireLangButtons(root) {
 
 function handleLangBtnClick(e) {
   e.preventDefault();
-  var lang = this.getAttribute('data-lang-btn');
+  const lang = this.getAttribute('data-lang-btn');
   if (!lang) return;
   switchLanguage(lang);
 }
@@ -246,7 +246,7 @@ function switchLanguage(lang) {
   if (!BROXI18N_ACCEPTED_LANGS.includes(lang)) return;
   if (lang === _currentLang) return;
 
-  var oldLang = _currentLang;
+  const oldLang = _currentLang;
   _currentLang = lang;
 
   // Update <html> element
@@ -257,9 +257,9 @@ function switchLanguage(lang) {
 
   // Update URL without reload
   try {
-    var url = new URL(window.location.href);
+    const url = new URL(window.location.href);
     url.searchParams.set('lang', lang);
-    window.history.replaceState({ lang: lang }, '', url.toString());
+    window.history.replaceState({ lang: lang, }, '', url.toString());
   } catch (_) { /* ignore */ }
 
   // Persist preference
@@ -279,7 +279,7 @@ function switchLanguage(lang) {
   // Dispatch custom event for cross-component sync
   try {
     window.dispatchEvent(new CustomEvent(BROXI18N_LANG_CHANGE, {
-      detail: { oldLang: oldLang, newLang: lang }
+      detail: { oldLang: oldLang, newLang: lang, },
     }));
   } catch (_) { /* ignore */ }
 
@@ -289,9 +289,9 @@ function switchLanguage(lang) {
   }
 
   // Flip toggle button data-lang-btn attributes to point to the opposite language
-  var oppositeLang = lang === 'en' ? 'bn' : 'en';
-  var toggleBtns = document.querySelectorAll('[data-lang-btn]');
-  for (var i = 0; i < toggleBtns.length; i++) {
+  const oppositeLang = lang === 'en' ? 'bn' : 'en';
+  const toggleBtns = document.querySelectorAll('[data-lang-btn]');
+  for (let i = 0; i < toggleBtns.length; i++) {
     toggleBtns[i].setAttribute('data-lang-btn', oppositeLang);
   }
 }
@@ -300,38 +300,37 @@ function switchLanguage(lang) {
 
 function updateSeoLinks(lang) {
   // Update hreflang links
-  var alternateEn = document.querySelector('link[hreflang="en"]');
-  var alternateBn = document.querySelector('link[hreflang="bn"]');
-  var canonical = document.querySelector('link[rel="canonical"]');
+  const alternateEn = document.querySelector('link[hreflang="en"]');
+  const alternateBn = document.querySelector('link[hreflang="bn"]');
 
-  var currentUrl = window.location.href;
+  const currentUrl = window.location.href;
 
   if (alternateEn) {
-    var enUrl = setUrlParam(currentUrl, 'lang', 'en');
+    const enUrl = setUrlParam(currentUrl, 'lang', 'en');
     alternateEn.setAttribute('href', enUrl);
   }
   if (alternateBn) {
-    var bnUrl = setUrlParam(currentUrl, 'lang', 'bn');
+    const bnUrl = setUrlParam(currentUrl, 'lang', 'bn');
     alternateBn.setAttribute('href', bnUrl);
   }
 
   // Update OG locale
-  var ogLocale = document.querySelector('meta[property="og:locale"]');
+  const ogLocale = document.querySelector('meta[property="og:locale"]');
   if (ogLocale) {
     ogLocale.setAttribute('content', lang === 'bn' ? 'bn_BD' : 'en_US');
   }
 
   // Update language meta and html lang attribute
-  var langMeta = document.querySelector('meta[name="language"]');
+  const langMeta = document.querySelector('meta[name="language"]');
   if (langMeta) {
     langMeta.setAttribute('content', lang === 'bn' ? 'Bengali' : 'English');
   }
 
   // Update JSON-LD inLanguage
-  var ldJsonScripts = document.querySelectorAll('script[type="application/ld+json"]');
-  ldJsonScripts.forEach(function (script) {
+  const ldJsonScripts = document.querySelectorAll('script[type="application/ld+json"]');
+  ldJsonScripts.forEach((script) => {
     try {
-      var json = JSON.parse(script.textContent);
+      const json = JSON.parse(script.textContent);
       if (json.inLanguage) {
         json.inLanguage = lang === 'bn' ? 'bn-BD' : 'en-US';
         script.textContent = JSON.stringify(json, null, 2);
@@ -342,7 +341,7 @@ function updateSeoLinks(lang) {
 
 function setUrlParam(url, key, value) {
   try {
-    var u = new URL(url, window.location.origin);
+    const u = new URL(url, window.location.origin);
     u.searchParams.set(key, value);
     return u.toString();
   } catch (_) {
@@ -352,7 +351,7 @@ function setUrlParam(url, key, value) {
 
 // ======================== Public API ========================
 
-var broxI18n = {
+const broxI18n = {
   /** Get current language code ('en' | 'bn') */
   getLang: function () { return _currentLang; },
 
@@ -376,7 +375,7 @@ var broxI18n = {
     if (!to) to = _currentLang;
     if (to === 'en') return text; // English is source, no translation needed
     return getCached(text, to) || text;
-  }
+  },
 };
 
 // Export to global for backward compatibility
@@ -392,7 +391,7 @@ function init() {
   wireLangButtons();
 
   // Listen for MedEx page language toggles
-  document.addEventListener('brox:medex-langchange', function (e) {
+  document.addEventListener('brox:medex-langchange', (e) => {
     if (e.detail && e.detail.lang) {
       switchLanguage(e.detail.lang);
     }
@@ -400,7 +399,7 @@ function init() {
 
   // If URL has lang param but it differs from detected, update
   try {
-    var urlLang = new URLSearchParams(window.location.search).get('lang');
+    const urlLang = new URLSearchParams(window.location.search).get('lang');
     if (urlLang && urlLang !== _currentLang && BROXI18N_ACCEPTED_LANGS.includes(urlLang)) {
       _currentLang = urlLang;
       applyTranslation();
@@ -410,7 +409,7 @@ function init() {
 
 // Run on DOMContentLoaded (safe to call multiple times)
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init, { once: true });
+  document.addEventListener('DOMContentLoaded', init, { once: true, });
 } else {
   init();
 }

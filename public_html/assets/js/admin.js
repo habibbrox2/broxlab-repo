@@ -115,10 +115,10 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        let targetUrl = null;
+        let targetUrl;
         try {
           targetUrl = new URL(href, window.location.origin);
-        } catch (err) {
+        } catch {
           return;
         }
 
@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         link.removeAttribute('aria-current');
       });
 
-      const collapseToggles = Array.from(sidebar.querySelectorAll('a[data-bs-toggle="collapse"]'));
+      const collapseToggles = Array.from(sidebar.querySelectorAll('a[data-brox-toggle="collapse"]'));
       collapseToggles.forEach((toggle) => {
         toggle.classList.remove('active');
       });
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let parentCollapse = bestMatch.closest('.collapse');
       while (parentCollapse && parentCollapse.id) {
         parentCollapse.classList.add('show');
-        const selector = `a[data-bs-toggle="collapse"][href="#${cssEscape(parentCollapse.id)}"]`;
+        const selector = `a[data-brox-toggle="collapse"][href="#${cssEscape(parentCollapse.id)}"]`;
         const toggle = sidebar.querySelector(selector);
         if (toggle) {
           toggle.classList.add('active');
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const readMiniState = () => {
       try {
         return localStorage.getItem(MINI_STORAGE_KEY) === '1';
-      } catch (err) {
+      } catch {
         return false;
       }
     };
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const writeMiniState = (enabled) => {
       try {
         localStorage.setItem(MINI_STORAGE_KEY, enabled ? '1' : '0');
-      } catch (err) {
+      } catch {
         // Silent fail if storage is unavailable
       }
     };
@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const value = Number.parseInt(localStorage.getItem(SIDEBAR_WIDTH_KEY) || '', 10);
         return Number.isFinite(value) ? value : DEFAULT_SIDEBAR_WIDTH;
-      } catch (err) {
+      } catch {
         return DEFAULT_SIDEBAR_WIDTH;
       }
     };
@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const writeSidebarWidth = (width) => {
       try {
         localStorage.setItem(SIDEBAR_WIDTH_KEY, String(width));
-      } catch (err) {
+      } catch {
         // Silent fail if storage is unavailable
       }
     };
@@ -343,7 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
         adminShellRow.classList.add('is-resizing');
         try {
           sidebarResizer.setPointerCapture(pointerId);
-        } catch (err) {
+        } catch {
           // ignore capture errors
         }
         event.preventDefault();
@@ -367,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pointerId !== null) {
           try {
             sidebarResizer.releasePointerCapture(pointerId);
-          } catch (err) {
+          } catch {
             // ignore release errors
           }
         }
@@ -503,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Close sidebar when a menu link is clicked (Mobile)
-    const menuLinks = sidebar.querySelectorAll('a.list-group-item:not([data-bs-toggle])');
+    const menuLinks = sidebar.querySelectorAll('a.list-group-item:not([data-brox-toggle])');
     menuLinks.forEach((link) => {
       link.addEventListener('click', () => {
         if (window.innerWidth < 992) {
@@ -523,9 +523,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const el = document.getElementById(id);
         if (el) {
           try {
-            const bs = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false, });
+            const bs = broxUI.Collapse.getOrCreateInstance(el, { toggle: false, });
             bs.show();
-          } catch (e) {
+          } catch {
             // ignore if bootstrap not available yet
           }
         }
@@ -533,35 +533,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Track show/hide events
       collapses.forEach((c) => {
-        c.addEventListener('shown.bs.collapse', () => {
+        c.addEventListener('brox:shown', () => {
           openSet.add(c.id);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(openSet)));
         });
-        c.addEventListener('hidden.bs.collapse', () => {
+        c.addEventListener('brox:hidden', () => {
           openSet.delete(c.id);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(openSet)));
         });
       });
-    } catch (err) {
+    } catch {
       // localStorage or bootstrap events not available; fail silently
     }
 
     // Enforce single expanded submenu at a time.
-    if (typeof bootstrap !== 'undefined') {
+    if (typeof broxUI !== 'undefined') {
       const STORAGE_KEY = 'admin.sidebar.openSubmenus';
       const collapses = Array.from(sidebar.querySelectorAll('.collapse[id]'));
       const persistSingleOpen = (id) => {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(id ? [id,] : []));
-        } catch (err) {
+        } catch {
           // Ignore storage failures.
         }
       };
       const hideCollapse = (el) => {
         if (!el || !el.classList.contains('show')) return;
         try {
-          bootstrap.Collapse.getOrCreateInstance(el, { toggle: false, }).hide();
-        } catch (err) {
+          broxUI.Collapse.getOrCreateInstance(el, { toggle: false, }).hide();
+        } catch {
           el.classList.remove('show');
         }
       };
@@ -575,17 +575,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       collapses.forEach((current) => {
-        current.addEventListener('show.bs.collapse', () => {
+        current.addEventListener('brox:show', () => {
           collapses.forEach((other) => {
             if (other !== current) hideCollapse(other);
           });
         });
 
-        current.addEventListener('shown.bs.collapse', () => {
+        current.addEventListener('brox:shown', () => {
           persistSingleOpen(current.id);
         });
 
-        current.addEventListener('hidden.bs.collapse', () => {
+        current.addEventListener('brox:hidden', () => {
           const active = collapses.find((el) => el.classList.contains('show'));
           persistSingleOpen(active ? active.id : null);
         });
@@ -638,7 +638,7 @@ runWhenReady(() => {
     if (!value) return fallback;
     try {
       return JSON.parse(value);
-    } catch (e) {
+    } catch {
       return fallback;
     }
   };
@@ -664,7 +664,7 @@ runWhenReady(() => {
         toast.style.zIndex = '9999';
         toast.innerHTML = `
                     ${String(message || '')}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <button type="button" class="btn-close" data-brox-dismiss="alert"></button>
                 `;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), Number(duration) || 5000);
@@ -794,7 +794,7 @@ runWhenReady(() => {
             } else {
               setFeedback(data?.message || 'Slug unavailable', 'bad');
             }
-          } catch (e) {
+          } catch {
             setFeedback('Could not verify slug right now', 'bad');
           }
         };
@@ -1029,11 +1029,11 @@ runWhenReady(() => {
 
   function initFlashMessageAutoDismiss() {
     const flashMsg = byId('flash-message');
-    if (!flashMsg || typeof bootstrap === 'undefined') return;
+    if (!flashMsg || typeof broxUI === 'undefined') return;
     setTimeout(() => {
       try {
-        new bootstrap.Alert(flashMsg).close();
-      } catch (e) { /* ignore auto-dismiss errors */ }
+        new broxUI.Alert(flashMsg).close();
+      } catch { /* ignore auto-dismiss errors */ }
     }, 5000);
   }
 
@@ -1122,7 +1122,7 @@ runWhenReady(() => {
             showAlert(alertBox, data.message, 'success');
             setTimeout(() => {
               form.reset();
-              bootstrap.Modal.getInstance(byId('setPasswordModal'))?.hide();
+              broxUI.Modal.getInstance(byId('setPasswordModal'))?.hide();
               location.reload();
             }, 1500);
           } else {
@@ -1172,7 +1172,7 @@ runWhenReady(() => {
             showAlert(alertBox, data.message, 'success');
             setTimeout(() => {
               form.reset();
-              bootstrap.Modal.getInstance(byId('changePasswordModal'))?.hide();
+              broxUI.Modal.getInstance(byId('changePasswordModal'))?.hide();
               location.reload();
             }, 1500);
           } else {
@@ -1289,7 +1289,7 @@ runWhenReady(() => {
       row.dataset.id = log.id;
       row.innerHTML = `
                 <td class="log-time">${time}</td>
-                <td class="log-user"><i class="bi bi-person-circle me-2"></i>${username}</td>
+                <td class="log-user"><i class="bi icon-user-circle mr-2"></i>${username}</td>
                 <td class="log-action">${log.action}</td>
                 <td><span class="resource-type">${log.resource_type || 'N/A'} <strong>#${log.resource_id || 'N/A'}</strong></span></td>
                 <td><span class="badge ${statusClass}">${log.status}</span></td>
@@ -1330,7 +1330,7 @@ runWhenReady(() => {
         : 'No additional details';
       byId('modalLogDetails').textContent = detailsJson;
       window.currentLogJson = JSON.stringify(log, null, 2);
-      const modal = new bootstrap.Modal(byId('logDetailsModal'));
+      const modal = new broxUI.Modal(byId('logDetailsModal'));
       modal.show();
     }
 
@@ -1360,7 +1360,7 @@ runWhenReady(() => {
           data.logs.forEach((log) => tbody.appendChild(renderLog(log)));
         } else {
           tbody.innerHTML =
-            '<tr><td colspan="6" class="empty-state"><div><i class="bi bi-inbox"></i><p>No logs found</p></div></td></tr>';
+            '<tr><td colspan="6" class="empty-state"><div><i class="bi icon-inbox"></i><p>No logs found</p></div></td></tr>';
         }
 
         currentPage = data.page;
@@ -1376,10 +1376,10 @@ runWhenReady(() => {
 
         byId('prevPage').disabled = currentPage <= 1;
         byId('nextPage').disabled = currentPage >= totalPages;
-      } catch (err) {
-        console.error('Error fetching logs', err);
+      } catch {
+        console.error('Error fetching logs');
         tbody.innerHTML =
-          '<tr><td colspan="6" class="empty-state"><i class="bi bi-exclamation-circle"></i> Error loading logs</td></tr>';
+          '<tr><td colspan="6" class="empty-state"><i class="bi icon-alert-circle"></i> Error loading logs</td></tr>';
       }
     }
 
@@ -1461,7 +1461,7 @@ runWhenReady(() => {
           const btn = byId('modalCopyJson');
           if (!btn) return;
           const originalText = btn.innerHTML;
-          btn.innerHTML = '<i class="bi bi-check me-2"></i>Copied!';
+          btn.innerHTML = '<i class="bi icon-check mr-2"></i>Copied!';
           btn.classList.remove('btn-primary');
           btn.classList.add('btn-success');
           setTimeout(() => {
@@ -1496,7 +1496,7 @@ runWhenReady(() => {
         } else {
           alert(data.message || 'Failed to update activity logging');
         }
-      } catch (e) {
+      } catch {
         alert('Error updating activity logging');
       }
     });
@@ -1555,7 +1555,7 @@ runWhenReady(() => {
       const formData = new FormData(form);
       const originalHTML = previewBtn.innerHTML;
       previewBtn.disabled = true;
-      previewBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading...';
+      previewBtn.innerHTML = '<i class="bi icon-hourglass"></i> Loading...';
 
       fetch(`${adminDir}/email-templates/${templateId}/preview`, {
         method: 'POST',
@@ -1665,7 +1665,7 @@ runWhenReady(() => {
 
     window.approveApplication = function (appId) {
       appIdToAction = appId;
-      new bootstrap.Modal(byId('approveModal')).show();
+      new broxUI.Modal(byId('approveModal')).show();
     };
 
     window.confirmApprove = function () {
@@ -1683,7 +1683,7 @@ runWhenReady(() => {
 
     window.rejectApplication = function (appId) {
       appIdToAction = appId;
-      new bootstrap.Modal(byId('rejectModal')).show();
+      new broxUI.Modal(byId('rejectModal')).show();
     };
 
     window.confirmReject = function () {
@@ -1705,7 +1705,7 @@ runWhenReady(() => {
 
     window.markProcessing = function (appId) {
       appIdToAction = appId;
-      new bootstrap.Modal(byId('processingModal')).show();
+      new broxUI.Modal(byId('processingModal')).show();
     };
 
     window.confirmProcessing = function () {
@@ -1834,8 +1834,8 @@ runWhenReady(() => {
           });
           const data = await resp.json();
           showTestEmailModal(data.success, data.message || 'No response');
-        } catch (err) {
-          showTestEmailModal(false, `Request failed: ${err.message || err}`);
+        } catch {
+          showTestEmailModal(false, 'Request failed');
         } finally {
           testEmailBtn.disabled = false;
           testEmailBtn.textContent = originalText;
@@ -1855,13 +1855,13 @@ runWhenReady(() => {
                       <div class="modal-content">
                         <div class="modal-header">
                           <h5 class="modal-title">Test Email</h5>
-                          <button type="button" class="modern-btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          <button type="button" class="modern-btn-close" data-brox-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                           <p id="testEmailModalMessage"></p>
                         </div>
                         <div class="modal-footer">
-                          <button type="button" class="modern-btn modern-btn-secondary" data-bs-dismiss="modal">Close</button>
+                          <button type="button" class="modern-btn modern-btn-secondary" data-brox-dismiss="modal">Close</button>
                         </div>
                       </div>
                     </div>`;
@@ -1875,7 +1875,7 @@ runWhenReady(() => {
         msgEl.classList.toggle('text-danger', !success);
       }
 
-      const bootstrapModal = new bootstrap.Modal(modalEl);
+      const bootstrapModal = new broxUI.Modal(modalEl);
       bootstrapModal.show();
     }
 
@@ -1886,7 +1886,7 @@ runWhenReady(() => {
         const btn = save2faAdminBtn;
         const originalText = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+        btn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-2"></span>Saving...';
 
         const csrfToken = getCsrfToken() || '';
         const body = new URLSearchParams({
@@ -1906,15 +1906,15 @@ runWhenReady(() => {
           .then((data) => {
             if (data.success) {
               const alertDiv = document.createElement('div');
-              alertDiv.className = 'alert alert-success alert-dismissible show mt-3';
+              alertDiv.className = 'p-4 rounded-lg bg-success-light text-success-dark border border-success alert-dismissible show mt-3';
               alertDiv.innerHTML = `
-                            <i class="bi bi-check-circle me-2"></i>
+                            <i class="bi icon-check-circle mr-2"></i>
                             <strong>Success!</strong> ${data.message}
-                            <button type="button" class="modern-btn-close" data-bs-dismiss="alert"></button>
+                            <button type="button" class="modern-btn-close" data-brox-dismiss="alert"></button>
                         `;
               const tabPane = document.querySelector('#security');
               tabPane?.insertBefore(alertDiv, tabPane.firstChild);
-              bootstrap.Modal.getInstance(byId('require2faAdminModal'))?.hide();
+              broxUI.Modal.getInstance(byId('require2faAdminModal'))?.hide();
             } else {
               alert(`Error: ${data.message}`);
             }
@@ -1940,7 +1940,7 @@ runWhenReady(() => {
     });
 
     byId('btnImport')?.addEventListener('click', () => {
-      const modal = new bootstrap.Modal(byId('importModal'));
+      const modal = new broxUI.Modal(byId('importModal'));
       modal.show();
     });
 
@@ -1955,7 +1955,7 @@ runWhenReady(() => {
       fetch('/admin/app-settings/security/import', { method: 'POST', body: formData, })
         .then((res) => res.json())
         .then((data) => {
-          bootstrap.Modal.getInstance(byId('importModal'))?.hide();
+          broxUI.Modal.getInstance(byId('importModal'))?.hide();
           if (data.success) {
             showAlert(`Successfully imported ${data.updated} settings`, 'success');
             setTimeout(() => location.reload(), 1500);
@@ -1969,7 +1969,7 @@ runWhenReady(() => {
     });
 
     byId('btnReset')?.addEventListener('click', () => {
-      const modal = new bootstrap.Modal(byId('resetModal'));
+      const modal = new broxUI.Modal(byId('resetModal'));
       modal.show();
     });
 
@@ -1985,7 +1985,7 @@ runWhenReady(() => {
       fetch('/admin/app-settings/security/reset', { method: 'POST', body: formData, })
         .then((res) => res.json())
         .then((data) => {
-          bootstrap.Modal.getInstance(byId('resetModal'))?.hide();
+          broxUI.Modal.getInstance(byId('resetModal'))?.hide();
           if (data.success) {
             showAlert(data.message, 'success');
             setTimeout(() => location.reload(), 1500);
@@ -2199,14 +2199,14 @@ runWhenReady(() => {
                                     <img src="${event.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="Preview">
                                     <div class="card-body p-3">
                                         <h6 class="card-title text-truncate mb-2" title="${file.name}">
-                                            <i class="bi bi-image text-primary me-1"></i>${file.name}
+                                            <i class="bi icon-image text-primary mr-1"></i>${file.name}
                                         </h6>
                                         <p class="card-text small text-muted mb-2">
-                                            <i class="bi bi-file-earmark me-1"></i>
+                                            <i class="bi icon-file mr-1"></i>
                                             ${(file.size / 1024).toFixed(2)} KB
                                         </p>
                                         <button type="button" class="btn btn-sm btn-danger w-100" onclick="removePreview('${previewId}-container')">
-                                            <i class="bi bi-trash me-1"></i>Remove
+                                            <i class="bi icon-trash-2 mr-1"></i>Remove
                                         </button>
                                     </div>
                                 </div>
@@ -2271,7 +2271,7 @@ runWhenReady(() => {
                     </div>
                     <div class="col-md-1">
                         <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeMetadata(this)">
-                            <i class="bi bi-x"></i>
+                            <i class="bi icon-x"></i>
                         </button>
                     </div>
                 </div>
@@ -2312,7 +2312,7 @@ runWhenReady(() => {
                             </div>
                             <div class="col-md-1">
                                 <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeFormField(this)">
-                                    <i class="bi bi-trash"></i>
+                                    <i class="bi icon-trash-2"></i>
                                 </button>
                             </div>
                         </div>
@@ -2427,7 +2427,7 @@ runWhenReady(() => {
           window.showMessage?.(data.message || 'Service saved successfully!', 'success');
           setTimeout(
             () =>
-            (window.location.href =
+              (window.location.href =
               `/admin/services/details/${data.service_id || formData.get('service_id')}`),
             2000
           );
@@ -2446,7 +2446,7 @@ runWhenReady(() => {
     if (!deleteModal) return;
     const csrfToken = getCsrfToken();
     let deleteServiceId = null;
-    const modal = new bootstrap.Modal(deleteModal);
+    const modal = new broxUI.Modal(deleteModal);
 
     document.querySelectorAll('.delete-service').forEach((btn) => {
       btn.addEventListener('click', function () {
@@ -2533,7 +2533,7 @@ runWhenReady(() => {
                     <td>${app.approved_by_name || '--'}</td>
                     <td>
                         <button class="modern-btn btn-sm btn-outline-primary rounded-2" onclick="viewApplication(${app.id})">
-                            <i class="bi bi-eye"></i> View
+                            <i class="bi icon-eye"></i> View
                         </button>
                     </td>
                 </tr>
@@ -2580,7 +2580,7 @@ runWhenReady(() => {
         const data = await response.json();
         if (data.success) {
           renderApplicationDetail(data.data);
-          const modal = new bootstrap.Modal(byId('detailModal'));
+          const modal = new broxUI.Modal(byId('detailModal'));
           modal.show();
         }
       } catch (error) {
@@ -2644,14 +2644,14 @@ runWhenReady(() => {
                 </div>
 
                 ${app.status === 'rejected' && app.rejection_reason
-          ? `
-                    <div class="alert alert-danger rounded-2">
+    ? `
+                    <div class="p-4 rounded-lg bg-danger-light text-danger-dark border border-danger rounded-2">
                         <strong>Rejection Reason:</strong>
                         <p class="mb-0">${app.rejection_reason}</p>
                     </div>
                 `
-          : ''
-        }
+    : ''
+  }
 
                 <div class="mb-3">
                     <label class="form-label small text-muted text-uppercase">Admin Notes</label>
@@ -2659,28 +2659,28 @@ runWhenReady(() => {
                 </div>
 
                 ${app.status === 'rejected'
-          ? `
+    ? `
                     <div class="mb-3">
                         <label class="form-label small text-muted text-uppercase">Rejection Reason</label>
                         <input type="text" class="form-control rounded-2" id="appRejectionReason" value="${app.rejection_reason || ''}">
                     </div>
                 `
-          : ''
-        }
+    : ''
+  }
 
                 <div class="mt-4">
                     <h6 class="fw-bold mb-2">Audit Log</h6>
                     <div class="timeline small">
                         ${app.audit_log
-          .map(
-            (log) => `
+    .map(
+      (log) => `
                             <div class="mb-2">
                                 <div class="text-muted"><small>${new Date(log.created_at).toLocaleString()}</small></div>
                                 <div><strong>${log.action_type}</strong>: ${log.description}</div>
                             </div>
                         `
-          )
-          .join('')}
+    )
+    .join('')}
                     </div>
                 </div>
             `;
@@ -2741,7 +2741,7 @@ runWhenReady(() => {
       const notificationSystem = await import('/assets/firebase/v2/dist/notification-system.js');
       const analytics = await import('/assets/firebase/v2/dist/analytics.js');
       return { notificationSystem, analytics, };
-    } catch (e) {
+    } catch {
       return { notificationSystem: null, analytics: null, };
     }
   }
@@ -2848,7 +2848,7 @@ runWhenReady(() => {
           if (!res.ok) continue;
           const data = await res.json();
           if (data && data.success) return true;
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -2890,9 +2890,9 @@ runWhenReady(() => {
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Delivery Channels</label>
                                 <p>
-                                    ${notif.channels.includes('push') ? '<span class="badge bg-primary me-2"><i class="bi bi-phone"></i> Push</span>' : ''}
-                                    ${notif.channels.includes('email') ? '<span class="badge bg-success me-2"><i class="bi bi-envelope"></i> Email</span>' : ''}
-                                    ${notif.channels.includes('in_app') ? '<span class="badge bg-warning"><i class="bi bi-chat"></i> In-App</span>' : ''}
+                                    ${notif.channels.includes('push') ? '<span class="badge bg-primary mr-2"><i class="bi icon-phone"></i> Push</span>' : ''}
+                                    ${notif.channels.includes('email') ? '<span class="badge bg-success mr-2"><i class="bi icon-mail"></i> Email</span>' : ''}
+                                    ${notif.channels.includes('in_app') ? '<span class="badge bg-warning"><i class="bi icon-message-square"></i> In-App</span>' : ''}
                                 </p>
                             </div>
                             <div class="row">
@@ -2956,7 +2956,7 @@ runWhenReady(() => {
         .catch(() => {
           if (detailContent) {
             detailContent.innerHTML =
-              '<div class="alert alert-danger">Failed to load notification details</div>';
+              '<div class="p-4 rounded-lg bg-danger-light text-danger-dark border border-danger">Failed to load notification details</div>';
           }
         });
     };
@@ -3022,13 +3022,13 @@ runWhenReady(() => {
                                 <td>${createdAt}</td>
                                 <td>
                                     <button class="modern-btn btn-sm btn-primary" data-action="edit-draft" data-draft-id="${draft.id}">
-                                        <i class="bi bi-pencil"></i> Edit
+                                        <i class="bi icon-pencil"></i> Edit
                                     </button>
                                     <button class="modern-btn btn-sm btn-success" data-action="send-draft" data-draft-id="${draft.id}">
-                                        <i class="bi bi-send"></i> Send
+                                        <i class="bi icon-send"></i> Send
                                     </button>
                                     <button class="modern-btn btn-sm btn-danger" data-action="delete-draft" data-draft-id="${draft.id}">
-                                        <i class="bi bi-trash"></i> Delete
+                                        <i class="bi icon-trash-2"></i> Delete
                                     </button>
                                 </td>
                             </tr>
@@ -3039,14 +3039,14 @@ runWhenReady(() => {
         } else {
           list.innerHTML = `
                         <div class="p-4 text-center text-muted">
-                            <i class="bi bi-inbox mb-3 d-block"></i>
+                            <i class="bi icon-inbox mb-3 d-block"></i>
                             <strong>No drafts found</strong><br>
                             <small><a href="/admin/notifications/send" class="text-decoration-none">Create a new notification draft</a></small>
                         </div>
                     `;
         }
       } catch (error) {
-        list.innerHTML = `<div class="alert alert-danger m-3">Error: ${error.message}</div>`;
+        list.innerHTML = `<div class="p-4 rounded-lg bg-danger-light text-danger-dark border border-danger m-3">Error: ${error.message}</div>`;
       }
     }
 
@@ -3062,7 +3062,7 @@ runWhenReady(() => {
             byId('editType').value = draft.type;
             byId('editActionUrl').value = draft.action_url || '';
             byId('editRecipientType').value = draft.recipient_type;
-            new bootstrap.Modal(byId('editDraftModal')).show();
+            new broxUI.Modal(byId('editDraftModal')).show();
           } else {
             showError?.('Failed to load draft details');
           }
@@ -3139,7 +3139,7 @@ runWhenReady(() => {
         const result = await response.json();
         if (result.success) {
           showSuccess?.(result.message || 'Draft updated successfully');
-          bootstrap.Modal.getInstance(byId('editDraftModal'))?.hide();
+          broxUI.Modal.getInstance(byId('editDraftModal'))?.hide();
           loadDrafts();
         } else {
           showError?.('Failed to update draft');
@@ -3193,7 +3193,7 @@ runWhenReady(() => {
         MultiDeviceSync,
         OfflineNotificationHandler,
       });
-    } catch (e) { /* ignore notification module diagnostics */ }
+    } catch { /* ignore notification module diagnostics */ }
   }
 
   function initNotificationsDeviceSync() {
@@ -3300,8 +3300,8 @@ runWhenReady(() => {
         }
         renderSubscribers(data.subscribers || []);
         if (totalCountEl) totalCountEl.textContent = String(data.pagination?.total ?? 0);
-      } catch (err) {
-        console.error(err);
+      } catch {
+        console.error('Subscribers error');
         toast('Error', 'Subscribers data fetch failed', 'danger');
       }
     }
@@ -3336,7 +3336,7 @@ runWhenReady(() => {
             });
             data = await res.json();
             if (data && data.success) break;
-          } catch (err) {
+          } catch {
             data = null;
           }
         }
@@ -3347,8 +3347,8 @@ runWhenReady(() => {
           toast('Error', data && data.error ? data.error : 'Revoke failed', 'danger');
           if (btn) btn.disabled = false;
         }
-      } catch (err) {
-        console.error(err);
+      } catch {
+        console.error('Network error');
         toast('Error', 'Network error', 'danger');
         if (btn) btn.disabled = false;
       }
@@ -3372,8 +3372,8 @@ runWhenReady(() => {
           toast('Error', data.error || 'Delete failed', 'danger');
           if (btn) btn.disabled = false;
         }
-      } catch (err) {
-        console.error(err);
+      } catch {
+        console.error('Network error');
         toast('Error', 'Network error', 'danger');
         if (btn) btn.disabled = false;
       }
@@ -3407,9 +3407,9 @@ runWhenReady(() => {
         const affected = Number(data.affected || 0);
         toast('Success', `${affected} device ${permanent ? 'deleted' : 'revoked'}`, 'success');
         await reloadSubscribersTable();
-      } catch (err) {
-        console.error(err);
-        toast('Error', err.message || 'Bulk action failed', 'danger');
+      } catch {
+        console.error('Bulk action error');
+        toast('Error', 'Bulk action failed', 'danger');
       }
     };
 
@@ -3726,31 +3726,31 @@ runWhenReady(() => {
       indicator.classList.remove('online', 'offline', 'warning', 'checking');
 
       switch (status) {
-        case 'online':
-          indicator.classList.add('online');
-          icon.className = 'bi bi-server';
-          text.textContent = 'Online';
-          indicator.title = 'All systems operational';
-          break;
-        case 'offline':
-          indicator.classList.add('offline');
-          icon.className = 'bi bi-exclamation-triangle';
-          text.textContent = 'Offline';
-          indicator.title = message || 'Server offline';
-          break;
-        case 'warning':
-          indicator.classList.add('warning');
-          icon.className = 'bi bi-exclamation-triangle';
-          text.textContent = 'Warning';
-          indicator.title = message || 'Some services may be degraded';
-          break;
-        case 'checking':
-        default:
-          indicator.classList.add('checking');
-          icon.className = 'bi bi-arrow-repeat';
-          text.textContent = 'Checking...';
-          indicator.title = 'Checking server status...';
-          break;
+      case 'online':
+        indicator.classList.add('online');
+        icon.className = 'bi icon-server';
+        text.textContent = 'Online';
+        indicator.title = 'All systems operational';
+        break;
+      case 'offline':
+        indicator.classList.add('offline');
+        icon.className = 'bi icon-alert-triangle';
+        text.textContent = 'Offline';
+        indicator.title = message || 'Server offline';
+        break;
+      case 'warning':
+        indicator.classList.add('warning');
+        icon.className = 'bi icon-alert-triangle';
+        text.textContent = 'Warning';
+        indicator.title = message || 'Some services may be degraded';
+        break;
+      case 'checking':
+      default:
+        indicator.classList.add('checking');
+        icon.className = 'bi icon-repeat';
+        text.textContent = 'Checking...';
+        indicator.title = 'Checking server status...';
+        break;
       }
     };
 
@@ -3800,7 +3800,7 @@ runWhenReady(() => {
 
         if (data.success) {
           // Update individual service statuses (Node.js removed)
-          const services = ['database', 'cache', 'api'];
+          const services = ['database', 'cache', 'api',];
           services.forEach((service) => {
             if (data[service]) {
               const status = data[service].check ? 'online' : 'offline';
@@ -3810,7 +3810,7 @@ runWhenReady(() => {
           });
 
           // Check if all required services are operational.
-          const { database, cache, api } = data;
+          const { database, cache, api, } = data;
 
           if (database.check && cache.check && api.check) {
             updateStatus('online', 'All systems operational');

@@ -92,7 +92,7 @@ export default class UIEnhancements {
     if (!msgElement) return;
 
     const timeEl = document.createElement('span');
-    timeEl.className = 'msg-time small text-muted ms-2';
+    timeEl.className = 'msg-time small text-muted ml-2';
     timeEl.textContent = date.toLocaleTimeString(undefined, {
       hour: '2-digit',
       minute: '2-digit',

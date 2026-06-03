@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 // If executed via a browser, instruct to use the new frontend collector UI.
 if (PHP_SAPI !== 'cli') {
@@ -65,19 +65,21 @@ define("PROGRESS_FILE", UPLOADS_MEDEX_DIR . "/medex_detailed_progress.json");
 define("BASE_URL", "https://medex.com.bd");
 define("USER_AGENT", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
+require_once __DIR__ . '/medex-cloudflare-helper.php';
+
 // Bengali section key mappings
 $bnSectionKeys = [
-    "indications" => "নির্দেশনা",
-    "pharmacology" => "ফার্মাকোলজি",
-    "dosage" => "মাত্রা_ও_সেবনবিধি",
-    "interactions" => "ঔষধের_মিঠস্ক্রিয়া",
-    "contraindications" => "প্রতিনির্দেশনা",
-    "side_effects" => "পার্শ্ব_প্রতিক্রিয়া",
-    "pregnancy" => "গর্ভাবস্থায়_ও_স্টন্যদানকালে",
-    "precautions" => "সতর্কতা",
-    "overdose" => "মাত্রাধিক্যতা",
-    "therapeutic_class" => "থেরাপিউটিক_ক্লাস",
-    "storage" => "সংরক্ষণ",
+    "indications" => "?????????",
+    "pharmacology" => "???????????",
+    "dosage" => "??????_?_????????",
+    "interactions" => "?????_????????????",
+    "contraindications" => "??????????????",
+    "side_effects" => "???????_????????????",
+    "pregnancy" => "????????????_?_?????????????",
+    "precautions" => "???????",
+    "overdose" => "?????????????",
+    "therapeutic_class" => "??????????_?????",
+    "storage" => "???????",
 ];
 
 // Main execution
@@ -392,44 +394,7 @@ function process_brand(array $brandLink, array $bnSectionKeys): ?array
  */
 function fetch_page(string $url, int $maxRetries = 3): string|false
 {
-    $attempt = 0;
-
-    while ($attempt < $maxRetries) {
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_CONNECTTIMEOUT => 15,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_USERAGENT => USER_AGENT,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_HTTPHEADER => [
-                "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language: en-US,en;q=0.9,bn;q=0.8",
-            ],
-        ]);
-
-        $response = curl_exec($ch);
-        $err = curl_error($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($response !== false && $code >= 200 && $code < 300) {
-            return $response;
-        }
-
-        $attempt++;
-        if ($attempt < $maxRetries) {
-            $wait = pow(2, $attempt); // Exponential backoff
-            sleep($wait);
-        }
-    }
-
-    error_log("Fetch failed after {$maxRetries} attempts: {$url} (HTTP {$code})");
-    return false;
+    return medex_fetch_page($url, $maxRetries);
 }
 
 /**
@@ -567,7 +532,7 @@ function parse_brand_detail_page(string $html): array
         $data["strip_price"] = $pkgNode ? clean_text($pkgNode->textContent) : "";
     }
 
-    // Detailed sections — dual-strategy extraction.
+    // Detailed sections � dual-strategy extraction.
     // Strategy 1 (preferred): Find .ac-body as a descendant of the section div
     //   (e.g., <div id="indications" class="ac"><div class="ac-body">...</div></div>)
     // Strategy 2 (fallback): Find .ac-body as a following sibling of the section div

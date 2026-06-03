@@ -1,6 +1,5 @@
 /* eslint-disable */
-(function () {
-  'use strict';
+'use strict';
 
   var d = document;
   function g(id) { return d.getElementById(id); }
@@ -78,8 +77,8 @@
     if (!gs) return;
     gs.disabled = isLoading;
     gs.innerHTML = isLoading
-      ? '<span class="spinner-border spinner-border-sm me-1"></span> Generating...'
-      : '<i class="bi bi-magic me-1"></i> Generate All Articles';
+      ? '<span class="inline-spinner inline-spinner-sm mr-1"></span> Generating...'
+      : '<i class="bi icon-wand-sparkles mr-1"></i> Generate All Articles';
   }
 
   function renderPreview(rows) {
@@ -130,8 +129,8 @@
         '</label>' +
         '<span class="article-result-meta">' +
         (a.success
-          ? '<i class="bi bi-check-circle text-success"></i> Success'
-          : '<i class="bi bi-x-circle text-danger"></i> ' + esc(a.error || 'Failed')) +
+          ? '<i class="bi icon-check-circle text-success"></i> Success'
+          : '<i class="bi icon-x-circle text-danger"></i> ' + esc(a.error || 'Failed')) +
         '</span>';
 
       var body = d.createElement('div');
@@ -396,4 +395,6 @@
     if (ps) ps.classList.remove('d-none');
     up(1);
   });
-})();
+
+export { generateAll, publishSelected, parseCSV };
+

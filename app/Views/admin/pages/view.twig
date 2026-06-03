@@ -1,60 +1,64 @@
-{% extends "admin/layout.twig" %}
+﻿{% extends"admin/layout.twig" %}
 {% block title %}{{ page.title }}{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-file-text me-2"></i>
-        Page Details
-      </div>
-      <div class="admin-page-subtitle">View page information</div>
-    </div>
+ <div class="w-full px-4 sm:px-6 py-4">
+ <div class=" mb-4">
+ <div>
+ <i class="lucide lucide-file-text mr-2"></i>
+ Page Details
+ </div>
+ <div>View page information</div>
+ </div>
 
-    <div class="admin-panel-card mb-4">
-      <div class="admin-panel-card-header">
-        <h6 class="admin-panel-card-title mb-0">
-          <i class="bi bi-file-text me-2"></i>{{ page.title }}
-        </h6>
-      </div>
-      <div class="admin-panel-card-body">
-        <p class="mb-1 text-muted">
-          <i class="bi bi-calendar me-1"></i> {{ page.created_at|date("Y-m-d H:i") }}
-        </p>
-      </div>
-    </div>
+ <div class=" border border-slate-200 bg-white shadow-sm mb-4">
+ <div class=" border-slate-200 px-4 py-3">
+ <h6 class=" mb-0">
+ <i class="lucide lucide-file-text mr-2"></i>{{ page.title }}
+ </h6>
+ </div>
+ <div class="p-4">
+ <p class="mb-1 text-slate-500">
+ <i class="lucide lucide-calendar mr-1"></i> {{ page.created_at|date("Y-m-d H:i") }}
+ </p>
+ </div>
+ </div>
 
-    <div class="admin-panel-card mb-4">
-      <div class="admin-panel-card-body">{{ page.content|raw }}</div>
-    </div>
+ <div class=" border border-slate-200 bg-white shadow-sm mb-4">
+ <div class="p-4">{{ page.content|raw }}</div>
+ </div>
 
-    <div class="admin-panel-card mb-4">
-      <div class="admin-panel-card-header">
-        <h6 class="admin-panel-card-title mb-0">
-          <i class="bi bi-chat-dots me-2"></i>Comments & Feedback
-        </h6>
-      </div>
-      <div class="admin-panel-card-body">
-        <p class="text-muted">
-          <i class="bi bi-info-circle me-1"></i>
-          Comments are managed through the main Comments panel.
-          <a href="/admin/comments" class="modern-btn btn-sm btn-primary ms-2">
-            <i class="bi bi-chat-dots me-1"></i>Go to Comments Management
-          </a>
-        </p>
-        <p class="mb-0">
-          <small class="text-muted">
-            <i class="bi bi-people-fill me-1"></i>Users can post comments on the public page at:
-            <a href="/pages/view/{{ page.slug }}" target="_blank" class="text-primary">/pages/view/{{ page.slug }}</a>
-          </small>
-        </p>
-      </div>
-    </div>
+ <div class=" border border-slate-200 bg-white shadow-sm mb-4">
+ <div class=" border-slate-200 px-4 py-3">
+ <h6 class=" mb-0">
+ <i class="lucide lucide-message-circle mr-2"></i>Comments & Feedback
+ </h6>
+ </div>
+ <div class="p-4">
+ <p class="text-slate-500">
+ <i class="lucide lucide-info mr-1"></i>
+ Comments are managed through the main Comments panel.
+ <a href="/admin/comments" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-indigo-600 text-white hover:bg-indigo-700 ml-2">
+ <i class="lucide lucide-message-circle mr-1"></i>Go to Comments Management
+ </a>
+ </p>
+ <p class="mb-0">
+ <small class="text-slate-500">
+ <i class="lucide lucide-users mr-1"></i>Users can post comments on the public page at:
+ <a href="/pages/view/{{ page.slug }}" target="_blank" class="text-indigo-600">/pages/view/{{ page.slug }}</a>
+ </small>
+ </p>
+ </div>
+ </div>
 
-    <div class="d-flex justify-content-end">
-      <a href="/admin/pages" class="modern-btn modern-btn-white">
-        <i class="bi bi-arrow-left me-1"></i> Back to Pages
-      </a>
-    </div>
-  </div>
+ <div class="flex justify-end">
+ <a href="/admin/pages" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-slate-100 text-slate-900 border border-slate-300 hover:bg-slate-200">
+ <i class="lucide lucide-arrow-left mr-1"></i> Back to Pages
+ </a>
+ </div>
+ </div>
 {% endblock %}
+
+
+
+

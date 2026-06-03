@@ -5,7 +5,7 @@ const parseJsonDefault = (value, fallback) => {
   if (!value) return fallback;
   try {
     return JSON.parse(value);
-  } catch (error) {
+  } catch {
     return fallback;
   }
 };
@@ -72,7 +72,7 @@ export function initMobileFormShared(options = {}) {
                 <input type="text" name="specifications[value][]" class="form-control" placeholder="Value" value="${escapeHtml(value)}">
             </div>
             <div class="col-md-1">
-                <button type="button" class="modern-btn modern-btn-danger btn-sm remove-spec" title="Remove"><i class="bi bi-x-lg"></i></button>
+                <button type="button" class="modern-btn modern-btn-danger btn-sm remove-spec" title="Remove"><i class="bi icon-x"></i></button>
             </div>
         `;
     specsContainer.appendChild(row);
@@ -173,7 +173,7 @@ export function initMobileFormShared(options = {}) {
           container.dataset.fileName = file.name;
           container.innerHTML = `
                         <img src="${event.target.result}" class="img-thumbnail image-thumbnail-full">
-                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 remove-image"><i class="bi bi-x-lg"></i></button>
+                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 remove-image"><i class="bi icon-x"></i></button>
                     `;
 
           imagesPreview.appendChild(container);
@@ -201,7 +201,7 @@ export function initMobileFormShared(options = {}) {
 
     const button = container.querySelector('.remove-existing-image');
     if (!button) return;
-    button.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
+    button.innerHTML = '<i class="bi icon-rotate-ccw"></i>';
     button.classList.remove('btn-danger');
     button.classList.add('btn-outline-secondary');
     button.title = 'Undo delete';
@@ -224,7 +224,7 @@ export function initMobileFormShared(options = {}) {
 
     const button = container.querySelector('.remove-existing-image');
     if (!button) return;
-    button.innerHTML = '<i class="bi bi-x-lg"></i>';
+    button.innerHTML = '<i class="bi icon-x"></i>';
     button.classList.remove('btn-outline-secondary');
     button.classList.add('btn-danger');
     button.title = 'Remove';

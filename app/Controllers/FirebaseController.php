@@ -474,25 +474,32 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
     if ($normalizedProvider !== '') {
         $provider = $normalizedProvider;
     }
-    $requestedRedirect = normalizeAuthRedirectPath($input['redirect'] ?? $input['oauth_redirect'] ?? $input['next'] ?? '');
 
-    if ($requestedRedirect === '') {
-        $requestedRedirect = normalizeAuthRedirectPath($_SESSION['post_login_redirect'] ?? '');
-    }
-
-    if ($requestedRedirect !== '') {
-        $_SESSION['post_login_redirect'] = $requestedRedirect;
-    }
+    // post_login_redirect disabled: always redirect to role-based dashboard after Firebase login
+    // $requestedRedirect = normalizeAuthRedirectPath($input['redirect'] ?? $input['oauth_redirect'] ?? $input['next'] ?? '');
+    // if ($requestedRedirect === '') {
+    //     $requestedRedirect = normalizeAuthRedirectPath($_SESSION['post_login_redirect'] ?? '');
+    // }
+    // if ($requestedRedirect !== '') {
+    //     $_SESSION['post_login_redirect'] = $requestedRedirect;
+    // }
+    $requestedRedirect = ''; // force empty to prevent previous-page redirect
 
     // Get device info for new device detection (will be used after user is authenticated)
     $loginDeviceId = $input['device_id'] ?? null;
     $loginBrowserInfo = $input['browser'] ?? '';
     $isNewDevice = false;
 
-    if (!$securityManager->isFirebaseOAuthEnabled()) {
-        logError('Firebase signin blocked: enable_firebase_oauth is disabled');
-        authErrorResponse('oauth_provider_disabled', '', 'json', 403);
-    }
+    // Override requestedRedirect to always go to default dashboard
+    // $requestedRedirect = normalizeAuthRedirectPath($input['redirect'] ?? $input['oauth_redirect'] ?? $input['next'] ?? '');
+    // 
+    // if ($requestedRedirect === '') {
+    //     $requestedRedirect = normalizeAuthRedirectPath($_SESSION['post_login_redirect'] ?? '');
+    // }
+    // 
+    // if ($requestedRedirect !== '') {
+    //     $_SESSION['post_login_redirect'] = $requestedRedirect;
+    // }
 
     $allowAnonymousServerLoginRaw = strtolower(trim((string)env('ALLOW_ANONYMOUS_SERVER_LOGIN', 'true')));
     $allowAnonymousServerLogin = !in_array($allowAnonymousServerLoginRaw, ['0', 'false', 'off', 'no'], true);
@@ -734,9 +741,10 @@ $router->post('/api/firebase/signin', ['response' => 'json'], function () use ($
         if ($userModel->isSuperAdmin((int)$localUserId) || $userModel->hasRole((int)$localUserId, 'admin')) {
             $redirectUrl = '/admin/dashboard';
         }
-        if ($requestedRedirect !== '') {
-            $redirectUrl = $requestedRedirect;
-        }
+        // post_login_redirect disabled - ignore any previous page, always use role dashboard
+        // if ($requestedRedirect !== '') {
+        //     $redirectUrl = $requestedRedirect;
+        // }
 
         if (session_status() === PHP_SESSION_ACTIVE) {
             unset($_SESSION['post_login_redirect']);

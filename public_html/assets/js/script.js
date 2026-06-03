@@ -435,7 +435,7 @@ async function requestNotificationPermissionTracked(options = {}) {
   if (Notification.permission === 'granted') return 'granted';
   if (Notification.permission === 'denied') return 'denied';
 
-  let permission = 'default';
+  let permission;
   try {
     permission = await Notification.requestPermission();
   } catch (err) {
@@ -474,7 +474,7 @@ function showNotificationPermissionPopup(options = {}) {
   popup.className = 'notification-permission-popup';
   popup.innerHTML = `
         <div class="notification-permission-popup__title">
-            <i class="bi bi-bell-fill text-primary"></i>
+            <i class="bi icon-bell text-primary"></i>
             <span>${escapeHtml(title)}</span>
         </div>
         <p class="notification-permission-popup__body">${escapeHtml(message)}</p>
@@ -525,7 +525,7 @@ function setListEmpty(listEl, message) {
   if (!listEl) return;
   listEl.innerHTML = `
         <div class="text-center py-4 text-muted">
-            <i class="bi bi-inbox fs-4"></i>
+            <i class="bi icon-inbox fs-4"></i>
             <p class="mb-0 mt-2 small">${escapeHtml(message)}</p>
         </div>
     `;
@@ -739,8 +739,8 @@ function initNotificationBell(options = {}) {
   // if bootstrap toggling is attached through attribute, remove it so our
   // custom handler has exclusive control. we still keep the element in a
   // `.dropdown` wrapper for styling, but the data attribute is unnecessary.
-  if (bellEl && bellEl.hasAttribute('data-bs-toggle')) {
-    bellEl.removeAttribute('data-bs-toggle');
+  if (bellEl && bellEl.hasAttribute('data-brox-toggle')) {
+    bellEl.removeAttribute('data-brox-toggle');
   }
 
   if (!bellEl || !listEl) {
@@ -879,7 +879,7 @@ function initNotificationBell(options = {}) {
   // intercept all clicks on the bell and manage toggle ourselves
   const handleBellTrigger = (event) => {
     event.preventDefault();
-    // stop bootstrap-lite document listener from firing
+    // prevent upstream click handlers from interfering
     event.stopImmediatePropagation();
     event.stopPropagation();
     toggleMenu();
@@ -910,8 +910,8 @@ function initNotificationBell(options = {}) {
 
   // remove any residual bootstrap listeners – not strictly needed since we
   // removed data-bs-toggle, but keeping for safety
-  bellEl.removeEventListener('shown.bs.dropdown', handleDropdownShown);
-  bellEl.removeEventListener('hidden.bs.dropdown', handleDropdownHidden);
+  bellEl.removeEventListener('brox:shown', handleDropdownShown);
+  bellEl.removeEventListener('brox:hidden', handleDropdownHidden);
 
   window.addEventListener('resize', handleViewportChange, { signal: abortController.signal, });
   window.addEventListener('scroll', handleViewportChange, { passive: true, signal: abortController.signal, });
@@ -1117,7 +1117,7 @@ document.addEventListener('click', (event) => {
     const isClickOnToggler = navbarToggler.contains(event.target);
 
     if (!isClickInsideNav && !isClickOnToggler && navbarCollapse.classList.contains('show')) {
-      new bootstrap.Collapse(navbarCollapse, {
+      new window.broxUI.Collapse(navbarCollapse, {
         toggle: true,
       });
     }
@@ -1209,7 +1209,7 @@ function initNavbarDropdownViewportFallback() {
   if (!navbar) return;
 
   const toggles = Array.from(
-    navbar.querySelectorAll('.dropdown-toggle[data-bs-toggle="dropdown"], [data-notification-bell][data-bs-toggle="dropdown"]')
+    navbar.querySelectorAll('.dropdown-toggle[data-brox-toggle="dropdown"], [data-notification-bell][data-brox-toggle="dropdown"]')
   );
   if (!toggles.length) return;
 
@@ -1237,8 +1237,8 @@ function initNavbarDropdownViewportFallback() {
       resetDropdownViewportStyles(menuEl);
     };
 
-    toggleEl.addEventListener('shown.bs.dropdown', handleShown);
-    toggleEl.addEventListener('hidden.bs.dropdown', handleHidden);
+    toggleEl.addEventListener('brox:shown', handleShown);
+    toggleEl.addEventListener('brox:hidden', handleHidden);
   });
 
   window.addEventListener('resize', recalcVisibleDropdowns);
@@ -1344,8 +1344,8 @@ function initNavbarUserDropdownMobileFallback() {
     if (!isOpening || sourceKind === 'user') return;
     if (!isOpen()) return;
 
-    if (!isMobileViewport() && window.bootstrap?.Dropdown?.getOrCreateInstance) {
-      const instance = window.bootstrap.Dropdown.getOrCreateInstance(toggleEl);
+    if (!isMobileViewport() && window.broxUI.Dropdown.getOrCreateInstance) {
+      const instance = window.broxUI.Dropdown.getOrCreateInstance(toggleEl);
       if (instance && typeof instance.hide === 'function') {
         instance.hide();
         return;
@@ -1371,12 +1371,12 @@ function initNavbarUserDropdownMobileFallback() {
     }
   });
 
-  toggleEl.addEventListener('shown.bs.dropdown', () => {
+  toggleEl.addEventListener('brox:shown', () => {
     if (!isMobileViewport()) {
       emitNavbarDropdownState('user', true);
     }
   });
-  toggleEl.addEventListener('hidden.bs.dropdown', () => {
+  toggleEl.addEventListener('brox:hidden', () => {
     if (!isMobileViewport()) {
       emitNavbarDropdownState('user', false);
     }
@@ -1479,7 +1479,7 @@ const CAROUSEL_DEFAULT_OPTIONS = {
 
 function initializeCarouselElement(el) {
   if (!el || el.dataset.carouselInitialized === 'true') return;
-  if (!(window.bootstrap && typeof window.bootstrap.Carousel === 'function')) return;
+  if (typeof window.broxUI.Carousel !== 'function') return;
 
   const options = {
     ...CAROUSEL_DEFAULT_OPTIONS,
@@ -1491,7 +1491,7 @@ function initializeCarouselElement(el) {
   };
 
   try {
-    new window.bootstrap.Carousel(el, options);
+    new window.broxUI.Carousel(el, options);
     el.dataset.carouselInitialized = 'true';
   } catch (error) {
     // Keep the page functional even if one carousel fails.
@@ -1504,7 +1504,7 @@ function setupUnifiedCarousels() {
   let retryCount = 0;
 
   const initializeCarousels = (root = document) => {
-    if (!(window.bootstrap && typeof window.bootstrap.Carousel === 'function')) {
+    if (typeof window.broxUI.Carousel !== 'function') {
       if (retryCount < MAX_RETRY) {
         retryCount += 1;
         setTimeout(() => initializeCarousels(root), RETRY_DELAY_MS);

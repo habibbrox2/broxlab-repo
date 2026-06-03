@@ -1,178 +1,179 @@
-{% set rating_content_type = content_type|default('post') %}
+﻿{% set rating_content_type = content_type|default('post') %}
 {% set rating_content_id = content_id|default(0) %}
 
 {% if rating_content_id %}
 <section
-    class="content-rating-widget card border-0 shadow-sm rounded-4 mb-4"
-    data-rating-widget
-    data-content-type="{{ rating_content_type }}"
-    data-content-id="{{ rating_content_id }}"
+ class="content-rating-widget rounded-xl border border-slate-200 bg-white shadow-sm border-0 rounded-2xl mb-4"
+ data-rating-widget
+ data-content-type="{{ rating_content_type }}"
+ data-content-id="{{ rating_content_id }}"
 >
-    <div class="card-body p-4">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-            <h3 class="h6 fw-bold mb-0">
-                <i class="bi bi-star-fill text-warning me-2"></i>Rate This Content
-            </h3>
-            <div class="small text-muted">
-                <span data-rating-average>0.0</span>/5
-                <span class="mx-1">|</span>
-                <span data-rating-total>0</span> ratings
-            </div>
-        </div>
+ <div class="p-4">
+ <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+ <h3 class="h6 font-bold mb-0">
+ <i class="lucide lucide-star text-amber-600 mr-2"></i>Rate This Content
+ </h3>
+ <div class="small text-slate-500">
+ <span data-rating-average>0.0</span>/5
+ <span class="mx-1">|</span>
+ <span data-rating-total>0</span> ratings
+ </div>
+ </div>
 
-        <div class="d-flex align-items-center flex-wrap gap-2 mb-3" role="group" aria-label="Rate this content">
-            {% for i in 1..5 %}
-                <button
-                    type="button"
-                    class="btn btn-sm content-rating-star-btn"
-                    data-rating-value="{{ i }}"
-                    aria-label="Rate {{ i }} star{{ i > 1 ? 's' : '' }}"
-                >
-                    <i class="bi bi-star-fill"></i>
-                </button>
-            {% endfor %}
-            <span class="small text-muted ms-1" data-rating-current>Not rated yet</span>
-        </div>
+ <div class="flex items-center flex-wrap gap-2 mb-3" role="group" aria-label="Rate this content">
+ {% for i in 1..5 %}
+ <button
+ type="button"
+ class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs content-rating-star-inline-flex"
+ data-rating-value="{{ i }}"
+ aria-label="Rate {{ i }} star{{ i > 1 ? 's' : '' }}"
+ >
+ <i class="lucide lucide-star"></i>
+ </button>
+ {% endfor %}
+ <span class="small text-slate-500 ml-1" data-rating-current>Not rated yet</span>
+ </div>
 
-        <div class="content-rating-breakdown">
-            {% for star in 5..1 %}
-                <div class="content-rating-row">
-                    <span class="content-rating-row-label">{{ star }} <i class="bi bi-star-fill text-warning"></i></span>
-                    <div class="progress flex-grow-1 inl-c-0003">
-                        <div
-                            class="progress-bar bg-warning inl-c-0004"
-                            role="progressbar"
-                           
-                            data-rating-bar="{{ star }}"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                            aria-valuenow="0"
-                        ></div>
-                    </div>
-                    <span class="content-rating-row-count" data-rating-count="{{ star }}">0</span>
-                </div>
-            {% endfor %}
-        </div>
+ <div class="content-rating-breakdown">
+ {% for star in 5..1 %}
+ <div class="content-rating-grid grid-cols-1 gap-4 md:grid-cols-12">
+ <span class="content-rating-grid grid-cols-1 gap-4 md:grid-cols-12-label">{{ star }} <i class="lucide lucide-star text-amber-600"></i></span>
+ <div class="progress flex-grow-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+ <div
+ class="progress-bar bg-amber-500 h-full rounded-full transition-all"
+ role="progressbar"
+ 
+ data-rating-bar="{{ star }}"
+ aria-valuemin="0"
+ aria-valuemax="100"
+ aria-valuenow="0"
+ ></div>
+ </div>
+ <span class="content-rating-grid grid-cols-1 gap-4 md:grid-cols-12-count" data-rating-count="{{ star }}">0</span>
+ </div>
+ {% endfor %}
+ </div>
 
-        <div class="small mt-2" data-rating-status></div>
-    </div>
+ <div class="small mt-2" data-rating-status></div>
+ </div>
 </section>
 
 
 
 <script>
 (function () {
-    const widgets = document.querySelectorAll('[data-rating-widget]:not([data-rating-ready="1"])');
-    if (!widgets.length) return;
+ const widgets = document.querySelectorAll('[data-rating-widget]:not([data-rating-ready="1"])');
+ if (!widgets.length) return;
 
-    const renderWidget = (widget, payload) => {
-        const summary = payload && payload.summary ? payload.summary : {};
-        const distribution = summary.distribution || {};
-        const percentages = summary.percentages || {};
-        const total = Number(summary.total || 0);
-        const average = Number(summary.average || 0).toFixed(1);
-        const userRating = Number(payload && payload.user_rating ? payload.user_rating : 0);
+ const renderWidget = (widget, payload) => {
+ const summary = payload && payload.summary ? payload.summary : {};
+ const distribution = summary.distribution || {};
+ const percentages = summary.percentages || {};
+ const total = Number(summary.total || 0);
+ const average = Number(summary.average || 0).toFixed(1);
+ const userRating = Number(payload && payload.user_rating ? payload.user_rating : 0);
 
-        const averageEl = widget.querySelector('[data-rating-average]');
-        const totalEl = widget.querySelector('[data-rating-total]');
-        const currentEl = widget.querySelector('[data-rating-current]');
-        const starButtons = widget.querySelectorAll('[data-rating-value]');
+ const averageEl = widget.querySelector('[data-rating-average]');
+ const totalEl = widget.querySelector('[data-rating-total]');
+ const currentEl = widget.querySelector('[data-rating-current]');
+ const starButtons = widget.querySelectorAll('[data-rating-value]');
 
-        if (averageEl) averageEl.textContent = average;
-        if (totalEl) totalEl.textContent = String(total);
-        if (currentEl) currentEl.textContent = userRating > 0 ? ('Your rating: ' + userRating + '/5') : 'Not rated yet';
-
-        starButtons.forEach((btn) => {
-            const value = Number(btn.getAttribute('data-rating-value') || 0);
-            btn.classList.toggle('active', value > 0 && value <= userRating);
-        });
-
-        [1, 2, 3, 4, 5].forEach((star) => {
-            const barEl = widget.querySelector('[data-rating-bar="' + star + '"]');
-            const countEl = widget.querySelector('[data-rating-count="' + star + '"]');
-            const count = Number(distribution[star] || 0);
-            const width = Number(percentages[star] || 0);
-
-            if (countEl) countEl.textContent = String(count);
-            if (barEl) {
-                barEl.style.width = width + '%';
-                barEl.setAttribute('aria-valuenow', String(width));
-            }
-        });
-    };
-
-    const setStatus = (widget, text, type) => {
-        const statusEl = widget.querySelector('[data-rating-status]');
-        if (!statusEl) return;
-        statusEl.className = 'small mt-2';
-        if (type === 'success') statusEl.classList.add('text-success');
-        if (type === 'error') statusEl.classList.add('text-danger');
-        if (type === 'muted') statusEl.classList.add('text-muted');
-        statusEl.textContent = text || '';
-    };
-
-    const loadSummary = async (widget) => {
-        const contentType = widget.getAttribute('data-content-type');
-        const contentId = widget.getAttribute('data-content-id');
-        const url = '/api/ratings/summary?content_type=' + encodeURIComponent(contentType) + '&content_id=' + encodeURIComponent(contentId);
-
-        const response = await fetch(url, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        const data = await response.json();
-        if (!response.ok || !data.success) {
-            throw new Error(data.message || 'Failed to load ratings');
-        }
-        renderWidget(widget, data);
-    };
-
-    const submitRating = async (widget, value) => {
-        const contentType = widget.getAttribute('data-content-type');
-        const contentId = Number(widget.getAttribute('data-content-id') || 0);
-
-        const response = await fetch('/api/ratings/submit', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-                content_type: contentType,
-                content_id: contentId,
-                rating: value
-            })
-        });
-        const data = await response.json();
-        if (!response.ok || !data.success) {
-            throw new Error(data.message || 'Failed to submit rating');
-        }
-        return data;
-    };
-
-    widgets.forEach((widget) => {
-        widget.setAttribute('data-rating-ready', '1');
-        setStatus(widget, 'Loading rating summary...', 'muted');
-
-        loadSummary(widget)
-            .then(() => setStatus(widget, '', 'muted'))
-            .catch((err) => setStatus(widget, err.message, 'error'));
-
-        widget.querySelectorAll('[data-rating-value]').forEach((btn) => {
-            btn.addEventListener('click', async () => {
-                const value = Number(btn.getAttribute('data-rating-value') || 0);
-                if (value < 1 || value > 5) return;
-
-                setStatus(widget, 'Submitting your rating...', 'muted');
-                try {
-                    const data = await submitRating(widget, value);
-                    renderWidget(widget, data);
-                    setStatus(widget, 'Thanks! Your rating has been saved.', 'success');
-                } catch (err) {
-                    setStatus(widget, err.message, 'error');
-                }
-            });
-        });
+ if (averageEl) averageEl.textContent = average;
+ if (totalEl) totalEl.textContent = String(total);
+ if (currentEl) currentEl.textContent = userRating > 0 ? ('Your rating: ' + userRating + '/5') : 'Not rated yet';    starButtons.forEach((starBtn) => {
+      const value = Number(starBtn.getAttribute('data-rating-value') || 0);
+      starBtn.classList.toggle('active', value > 0 && value <= userRating);
     });
+
+ [1, 2, 3, 4, 5].forEach((star) => {
+ const barEl = widget.querySelector('[data-rating-bar="' + star + '"]');
+ const countEl = widget.querySelector('[data-rating-count="' + star + '"]');
+ const count = Number(distribution[star] || 0);
+ const width = Number(percentages[star] || 0);
+
+ if (countEl) countEl.textContent = String(count);
+ if (barEl) {
+ barEl.style.width = width + '%';
+ barEl.setAttribute('aria-valuenow', String(width));
+ }
+ });
+ };
+
+ const setStatus = (widget, text, type) => {
+ const statusEl = widget.querySelector('[data-rating-status]');
+ if (!statusEl) return;
+ statusEl.className = 'small mt-2';
+ if (type === 'success') statusEl.classList.add('text-emerald-600');
+ if (type === 'error') statusEl.classList.add('text-red-600');
+ if (type === 'muted') statusEl.classList.add('text-slate-500');
+ statusEl.textContent = text || '';
+ };
+
+ const loadSummary = async (widget) => {
+ const contentType = widget.getAttribute('data-content-type');
+ const contentId = widget.getAttribute('data-content-id');
+ const url = '/api/ratings/summary?content_type=' + encodeURIComponent(contentType) + '&content_id=' + encodeURIComponent(contentId);
+
+ const response = await fetch(url, {
+ headers: { 'X-Requested-With': 'XMLHttpRequest' }
+ });
+ const data = await response.json();
+ if (!response.ok || !data.success) {
+ throw new Error(data.message || 'Failed to load ratings');
+ }
+ renderWidget(widget, data);
+ };
+
+ const submitRating = async (widget, value) => {
+ const contentType = widget.getAttribute('data-content-type');
+ const contentId = Number(widget.getAttribute('data-content-id') || 0);
+
+ const response = await fetch('/api/ratings/submit', {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ 'X-Requested-With': 'XMLHttpRequest'
+ },
+ body: JSON.stringify({
+ content_type: contentType,
+ content_id: contentId,
+ rating: value
+ })
+ });
+ const data = await response.json();
+ if (!response.ok || !data.success) {
+ throw new Error(data.message || 'Failed to submit rating');
+ }
+ return data;
+ };
+
+ widgets.forEach((widget) => {
+ widget.setAttribute('data-rating-ready', '1');
+ setStatus(widget, 'Loading rating summary...', 'muted');
+
+ loadSummary(widget)
+ .then(() => setStatus(widget, '', 'muted'))
+ .catch((err) => setStatus(widget, err.message, 'error'));      widget.querySelectorAll('[data-rating-value]').forEach((starBtn) => {
+        starBtn.addEventListener('click', async () => {
+          const value = Number(starBtn.getAttribute('data-rating-value') || 0);
+ if (value < 1 || value > 5) return;
+
+ setStatus(widget, 'Submitting your rating...', 'muted');
+ try {
+ const data = await submitRating(widget, value);
+ renderWidget(widget, data);
+ setStatus(widget, 'Thanks! Your rating has been saved.', 'success');
+ } catch (err) {
+ setStatus(widget, err.message, 'error');
+ }
+ });
+ });
+ });
 })();
 </script>
 {% endif %}
+
+
+
+
+

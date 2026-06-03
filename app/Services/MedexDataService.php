@@ -24,6 +24,7 @@ class MedexDataService
     private ?array $detailedData = null;
     private ?array $drugCentricDetailedData = null;
     private string $refreshLockFile;
+    private ?string $lastFetchError = null;
 
     private const MED_EX_BASE_URL = 'https://medex.com.bd';
     private const REFRESH_LOCK_TTL = 1800; // 30 minutes
@@ -31,23 +32,38 @@ class MedexDataService
 
     public function __construct()
     {
-        $uploadsDir = defined('UPLOADS_DIR') ? rtrim(UPLOADS_DIR, '/\\') . '/medex' : BASE_PATH . 'public_html/uploads/medex';
+        $uploadsDir = $this->getUploadsDir();
+        $this->ensureUploadsDir();
 
-        // Ensure uploads medex directory exists and is writable. This prevents failures
-        // when the webserver process attempts to atomically write new data files.
-        if (!is_dir($uploadsDir)) {
-            @mkdir($uploadsDir, 0755, true);
+        $uploadsFile = rtrim($uploadsDir, '/\\') . '/medex_herbal_companies.json';
+        $legacyFile = BASE_PATH . 'medex_herbal_companies.json';
+
+        if (file_exists($uploadsFile)) {
+            $this->dataFile = $uploadsFile;
+        } elseif (file_exists($legacyFile)) {
+            $this->dataFile = $legacyFile;
+        } else {
+            $this->dataFile = $uploadsFile;
         }
 
-        $this->dataFile = rtrim($uploadsDir, '/\\') . '/medex_herbal_companies.json';
         $this->refreshLockFile = rtrim($uploadsDir, '/\\') . '/medex_refresh.lock';
-        if (!file_exists($this->dataFile)) {
-            $fallback = BASE_PATH . 'medex_herbal_companies.json';
-            if (file_exists($fallback)) {
-                $this->dataFile = $fallback;
+        $this->loadData();
+
+        if (!$this->dataLoaded) {
+            if (!$this->refreshDataFromSource()) {
+                $errorDetail = $this->lastFetchError ? ': ' . $this->lastFetchError : '';
+                error_log('MedEx cache unavailable and source refresh failed' . $errorDetail);
+                $this->companies = [];
+                $this->buildIndexes();
+                return;
+            }
+            $this->loadData();
+            if (!$this->dataLoaded) {
+                error_log('MedEx cache could not be loaded after refreshing from source.');
+                $this->companies = [];
+                $this->buildIndexes();
             }
         }
-        $this->loadData();
     }
 
     /**
@@ -483,9 +499,82 @@ class MedexDataService
         return array_values($this->brandsIndex ?? []);
     }
 
+    public function getUploadsDir(): string
+    {
+        $baseUploads = defined('UPLOADS_DIR') ? rtrim(UPLOADS_DIR, '/\\') : rtrim(str_replace('\\', '/', BASE_PATH), '/') . '/public_html/uploads';
+        return rtrim($baseUploads, '/\\') . '/medex';
+    }
+
+    public function ensureUploadsDir(): void
+    {
+        $uploadsDir = $this->getUploadsDir();
+        if (!is_dir($uploadsDir) && !@mkdir($uploadsDir, 0755, true) && !is_dir($uploadsDir)) {
+            throw new Exception('Unable to create MedEx upload directory: ' . $uploadsDir);
+        }
+    }
+
     public function getDataFilePath(): string
     {
         return $this->dataFile;
+    }
+
+    public function getWritableDataFilePath(string $type = 'companies'): string
+    {
+        $uploadsDir = rtrim($this->getUploadsDir(), '/\\');
+        $type = trim(strtolower($type));
+
+        switch ($type) {
+            case 'detailed':
+            case 'companies_detailed':
+            case 'company_details':
+                return $uploadsDir . '/medex_herbal_companies_detailed.json';
+            case 'brands':
+            case 'brand_details':
+            case 'drug_details':
+            case 'brands_detailed':
+                return $uploadsDir . '/medex_herbal_brands_detailed.json';
+            case 'companies':
+            default:
+                return $uploadsDir . '/medex_herbal_companies.json';
+        }
+    }
+
+    public function saveCollectedData(array $data, string $type = 'companies'): array
+    {
+        $targetFile = $this->getWritableDataFilePath($type);
+        $dir = dirname($targetFile);
+        if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
+            throw new Exception('Unable to create MedEx uploads directory: ' . $dir);
+        }
+
+        if (is_file($targetFile)) {
+            $backup = $targetFile . '.bak-' . date('Ymd-His');
+            @copy($targetFile, $backup);
+        }
+
+        $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($json === false) {
+            throw new Exception('Unable to encode MedEx collected data: ' . json_last_error_msg());
+        }
+
+        $tmpFile = $targetFile . '.tmp-' . uniqid('', true);
+        if (file_put_contents($tmpFile, $json, LOCK_EX) === false) {
+            @unlink($tmpFile);
+            throw new Exception('Failed to write temp MedEx data file: ' . $tmpFile);
+        }
+
+        if (!@rename($tmpFile, $targetFile)) {
+            @unlink($tmpFile);
+            throw new Exception('Failed to commit MedEx data file: ' . $targetFile);
+        }
+
+        @touch($targetFile);
+        return [
+            'target' => $targetFile,
+            'saved' => count($data),
+            'backup' => $backup ?? null,
+            'last_updated' => date('c', filemtime($targetFile)),
+        ];
     }
 
     public function getDetailedDataFilePath(): string
@@ -567,39 +656,7 @@ class MedexDataService
 
     private function queueBackgroundDetailedRefresh(): bool
     {
-        $script = BASE_PATH . 'scripts/cron/medex-refresh.php';
-        if (!is_file($script)) {
-            return false;
-        }
-
-        $outputPath = $this->getDetailedDataFilePath();
-        $outputDir = dirname($outputPath);
-        if (!is_dir($outputDir)) {
-            @mkdir($outputDir, 0755, true);
-        }
-
-        $phpBinary = PHP_BINARY;
-        $nullDevice = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'NUL' : '/dev/null';
-        $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($script) . ' --detailed --output=' . escapeshellarg($outputPath) . ' > ' . $nullDevice . ' 2>&1';
-
-        if (stripos(PHP_OS, 'WIN') === 0) {
-            if (function_exists('popen')) {
-                pclose(popen('start /b "" ' . $cmd, 'r'));
-                return true;
-            }
-            return false;
-        }
-
-        if (function_exists('exec')) {
-            exec($cmd . ' &');
-            return true;
-        }
-
-        if (function_exists('popen')) {
-            pclose(popen($cmd . ' &', 'r'));
-            return true;
-        }
-
+        // All background refresh execution is disabled for JS-driven collection.
         return false;
     }
 
@@ -642,17 +699,6 @@ class MedexDataService
     private function isProcessRunning(int $pid): bool
     {
         if ($pid <= 0) {
-            return false;
-        }
-
-        if (stripos(PHP_OS, 'WIN') === 0) {
-            $output = [];
-            exec('tasklist /fi "PID eq ' . $pid . '" 2>NUL', $output);
-            foreach ($output as $line) {
-                if (preg_match('/\b' . preg_quote((string)$pid, '/') . '\b/', $line)) {
-                    return true;
-                }
-            }
             return false;
         }
 
@@ -723,8 +769,7 @@ class MedexDataService
         }
 
         if (file_exists($this->dataFile) && $this->dataLoaded) {
-            // Keep the existing cached data available for users and refresh in the background.
-            $this->queueBackgroundRefresh();
+            // Keep the existing cached data available for users. Background refresh is disabled.
             return false;
         }
 
@@ -735,38 +780,6 @@ class MedexDataService
         }
 
         return true;
-    }
-
-    private function queueBackgroundRefresh(): bool
-    {
-        $script = BASE_PATH . 'scripts/cron/medex-refresh.php';
-        if (!is_file($script)) {
-            return false;
-        }
-
-        $phpBinary = PHP_BINARY;
-        $nullDevice = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'NUL' : '/dev/null';
-        $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($script) . ' > ' . $nullDevice . ' 2>&1';
-
-        if (stripos(PHP_OS, 'WIN') === 0) {
-            if (function_exists('popen')) {
-                pclose(popen('start /b "" ' . $cmd, 'r'));
-                return true;
-            }
-            return false;
-        }
-
-        if (function_exists('exec')) {
-            exec($cmd . ' &');
-            return true;
-        }
-
-        if (function_exists('popen')) {
-            pclose(popen($cmd . ' &', 'r'));
-            return true;
-        }
-
-        return false;
     }
 
     public function refreshDataFromSource(): bool
@@ -865,6 +878,12 @@ class MedexDataService
 
     private function fetchPage(string $url, int $maxRetries = 3): ?string
     {
+        $this->lastFetchError = null;
+
+        if (!function_exists('curl_init')) {
+            return $this->fetchPageViaStreams($url);
+        }
+
         $attempt = 0;
         while ($attempt < $maxRetries) {
             $ch = curl_init();
@@ -886,19 +905,146 @@ class MedexDataService
 
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $error = curl_error($ch);
+            $error = trim(curl_error($ch));
             curl_close($ch);
 
             if ($response !== false && $httpCode >= 200 && $httpCode < 300) {
-                return $response;
+                if ($this->isBlockedPage($response, $url)) {
+                    $this->lastFetchError = 'blocked_by_challenge';
+                    error_log("MedEx curl fetch blocked by challenge: {$url}");
+                } else {
+                    return $response;
+                }
             }
+
+            $this->lastFetchError = trim(($error !== '' ? $error : 'http_code=' . $httpCode));
+            error_log("MedEx curl fetch failed: {$url} ({$this->lastFetchError})");
 
             $attempt++;
             sleep(min(5, $attempt * 2));
         }
 
-        error_log("MedEx fetch failed: {$url} ({$httpCode})");
+        $streamResponse = $this->fetchPageViaStreams($url);
+        if ($streamResponse !== null) {
+            if ($this->isBlockedPage($streamResponse, $url)) {
+                $this->lastFetchError = 'blocked_by_challenge';
+                error_log("MedEx stream fetch blocked by challenge: {$url}");
+                return $this->fetchPageViaPlaywright($url);
+            }
+            return $streamResponse;
+        }
+
+        return $this->fetchPageViaPlaywright($url);
+    }
+
+    private function fetchPageViaStreams(string $url): ?string
+    {
+        $this->lastFetchError = null;
+
+        $headers = [
+            'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language: en-US,en;q=0.9,bn;q=0.8',
+            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Connection: close',
+        ];
+
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'header' => implode("\r\n", $headers),
+                'timeout' => 30,
+                'ignore_errors' => true,
+                'max_redirects' => 10,
+            ],
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ],
+        ]);
+
+        $content = @file_get_contents($url, false, $context);
+        if ($content !== false) {
+            return $content;
+        }
+
+        $error = error_get_last();
+        $message = is_array($error) && isset($error['message']) ? $error['message'] : 'unknown stream error';
+        $this->lastFetchError = trim($message);
+        error_log("MedEx stream fetch failed: {$url} ({$this->lastFetchError})");
         return null;
+    }
+
+    private function isBlockedPage(string $html, string $url = ''): bool
+    {
+        $lower = mb_strtolower($html, 'UTF-8');
+        if (str_contains($lower, 'captcha-challenge') || str_contains($lower, 'cf-challenge') || str_contains($lower, 'turnstile') || str_contains($lower, 'security check')) {
+            return true;
+        }
+        if (str_contains($lower, 'og:url" content="http://medex.com.bd/captcha-challenge') || str_contains($lower, 'https://challenges.cloudflare.com/turnstile')) {
+            return true;
+        }
+        return false;
+    }
+
+    private function getPlaywrightScriptPath(): string
+    {
+        return rtrim(str_replace('\\', '/', BASE_PATH), '/') . '/scripts/medex-playwright-fetch.js';
+    }
+
+    private function fetchPageViaPlaywright(string $url): ?string
+    {
+        $this->lastFetchError = null;
+
+        if (!function_exists('proc_open')) {
+            $this->lastFetchError = 'proc_open_unavailable';
+            error_log("MedEx playwright fetch unavailable: proc_open is disabled for {$url}");
+            return null;
+        }
+
+        $script = $this->getPlaywrightScriptPath();
+        if (!is_file($script)) {
+            $this->lastFetchError = 'playwright_script_missing';
+            error_log("MedEx playwright fetch unavailable: script not found at {$script}");
+            return null;
+        }
+
+        $node = 'node';
+        $command = escapeshellcmd($node) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($url);
+        $descriptors = [
+            ['pipe', 'r'],
+            ['pipe', 'w'],
+            ['pipe', 'w'],
+        ];
+
+        $cwd = rtrim(str_replace('\\', '/', BASE_PATH), '/');
+        $process = proc_open($command, $descriptors, $pipes, $cwd);
+        if (!is_resource($process)) {
+            $this->lastFetchError = 'playwright_proc_failed';
+            error_log("MedEx playwright proc failed to start for {$url}");
+            return null;
+        }
+
+        fclose($pipes[0]);
+        $output = stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        $error = stream_get_contents($pipes[2]);
+        fclose($pipes[2]);
+
+        $exitCode = proc_close($process);
+        if ($exitCode !== 0 || trim($output) === '') {
+            $this->lastFetchError = trim($error !== '' ? $error : "playwright_exit_{$exitCode}");
+            error_log("MedEx playwright fetch failed: {$url} ({$this->lastFetchError})");
+            return null;
+        }
+
+        $output = trim($output);
+        if ($output === '' || $this->isBlockedPage($output, $url)) {
+            $this->lastFetchError = 'playwright_challenge_or_empty';
+            error_log("MedEx playwright fetch blocked or returned empty content: {$url}");
+            return null;
+        }
+
+        return $output;
     }
 
     private function parseMainPage(string $html): array
@@ -1052,15 +1198,18 @@ class MedexDataService
     private function saveData(array $data): void
     {
         $dir = dirname($this->dataFile);
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0755, true);
-        }
-
-        if (!is_dir($dir)) {
+        if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
             throw new Exception('Unable to create MedEx cache directory: ' . $dir);
         }
 
-        file_put_contents($this->dataFile, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($json === false) {
+            throw new Exception('Unable to encode MedEx data: ' . json_last_error_msg());
+        }
+
+        if (file_put_contents($this->dataFile, $json, LOCK_EX) === false) {
+            throw new Exception('Failed to write MedEx data file: ' . $this->dataFile);
+        }
     }
 
     /**
@@ -1133,5 +1282,10 @@ class MedexDataService
             'url'     => $normalized,
             'length'  => strlen($html),
         ];
+    }
+
+    public function curlFetchPage(string $targetUrl): array
+    {
+        return $this->proxyFetch($targetUrl);
     }
 }

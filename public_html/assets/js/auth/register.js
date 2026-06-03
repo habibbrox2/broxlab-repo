@@ -14,7 +14,7 @@ import { checkPasswordRequirements, getPasswordStrength, validateConfirmation, P
 
 const runWhenReady = (fn) => {
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', fn, { once: true });
+    document.addEventListener('DOMContentLoaded', fn, { once: true, });
   } else {
     fn();
   }
@@ -155,7 +155,7 @@ const runWhenReady = (fn) => {
       btn.setAttribute('aria-busy', isActive ? 'true' : 'false');
 
       if (isActive) {
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        btn.innerHTML = '<span class="inline-spinner inline-spinner-sm" role="status" aria-hidden="true"></span>';
       }
     });
   }
@@ -223,7 +223,7 @@ const runWhenReady = (fn) => {
     for (const [key, req,] of Object.entries(PASSWORD_REQUIREMENTS)) {
       const isMet = requirements[key];
       const className = isMet ? 'met' : 'unmet';
-      const icon = isMet ? '<i class="bi bi-check-circle"></i>' : '<i class="bi bi-circle"></i>';
+      const icon = isMet ? '<i class="lucide lucide-check-circle w-3.5 h-3.5"></i>' : '<i class="lucide lucide-circle w-3.5 h-3.5"></i>';
       html += `<li class="${className}">${icon} ${req.label}</li>`;
     }
 
@@ -242,6 +242,13 @@ const runWhenReady = (fn) => {
     if (!elements.passwordToggles.length) return;
 
     elements.passwordToggles.forEach((toggleEl) => {
+      const updateIcon = (isPassword) => {
+        const iconName = isPassword ? 'eye' : 'eye-off';
+        toggleEl.innerHTML = `<i class="lucide lucide-${iconName} w-5 h-5"></i>`;
+        toggleEl.setAttribute('aria-label', isPassword ? 'Show password' : 'Hide password');
+        toggleEl.setAttribute('aria-pressed', isPassword ? 'false' : 'true');
+      };
+
       const toggle = () => {
         const targetId = toggleEl.dataset.togglePassword;
         if (!targetId) return;
@@ -251,13 +258,17 @@ const runWhenReady = (fn) => {
 
         const isPassword = targetInput.type === 'password';
         targetInput.type = isPassword ? 'text' : 'password';
-        toggleEl.className = isPassword
-          ? 'bi bi-eye-slash password-toggle'
-          : 'bi bi-eye password-toggle';
-        toggleEl.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
-        toggleEl.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+        updateIcon(isPassword);
         targetInput.focus();
       };
+
+      // Initialize icon state
+      if (toggleEl.dataset.togglePassword) {
+        const targetInput = document.getElementById(toggleEl.dataset.togglePassword);
+        if (targetInput) {
+          updateIcon(true);
+        }
+      }
 
       toggleEl.addEventListener('click', (e) => {
         e.preventDefault();

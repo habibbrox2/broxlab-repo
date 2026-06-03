@@ -223,8 +223,8 @@ export function adminInitNotificationBell(options = {}) {
     return { active: false, };
   }
 
-  if (bellEl.hasAttribute('data-bs-toggle')) {
-    bellEl.removeAttribute('data-bs-toggle');
+  if (bellEl.hasAttribute('data-brox-toggle')) {
+    bellEl.removeAttribute('data-brox-toggle');
   }
 
   menuEl.classList.remove('show');
@@ -388,8 +388,8 @@ export function initAdminUserDropdownSync() {
   const userDropdown = userMenu?.querySelector('[data-admin-user-dropdown]');
 
   const closeUserDropdown = () => {
-    if (window.bootstrap?.Dropdown?.getOrCreateInstance) {
-      const instance = window.bootstrap.Dropdown.getOrCreateInstance(userToggle);
+    if (window.broxUI?.Dropdown?.getOrCreateInstance) {
+      const instance = window.broxUI.Dropdown.getOrCreateInstance(userToggle);
       if (instance && typeof instance.hide === 'function') {
         instance.hide();
         return;
@@ -406,11 +406,11 @@ export function initAdminUserDropdownSync() {
     userToggle.setAttribute('aria-expanded', 'false');
   };
 
-  userToggle.addEventListener('shown.bs.dropdown', () => {
+  userToggle.addEventListener('brox:shown', () => {
     adminEmitNavbarDropdownState('user', true);
   });
 
-  userToggle.addEventListener('hidden.bs.dropdown', () => {
+  userToggle.addEventListener('brox:hidden', () => {
     adminEmitNavbarDropdownState('user', false);
   });
 

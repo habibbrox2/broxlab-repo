@@ -97,7 +97,7 @@ export function initMediaUpload(options = {}) {
           } else {
             window.showAlert(result.message || 'Upload failed', 'danger');
           }
-        } catch (error) {
+        } catch {
           window.showAlert('Unexpected response format', 'danger');
         }
       } else {

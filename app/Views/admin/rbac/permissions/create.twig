@@ -1,66 +1,48 @@
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <div class="row mb-4">
-      <div class="col">
-        <h1 class="h3 mb-0">
-          <a href="/admin/permissions" class="text-decoration-none text-theme-strong">
-            <i class="bi bi-key me-2"></i>Permissions
-          </a>
-          <span class="text-muted">/</span>
-          <span>Create New Permission</span>
-        </h1>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-lg-5 mx-auto">
-        <div class="admin-panel-card border-0 shadow-sm">
-          <div class="card-header bg-light border-bottom">
-            <h5 class="mb-0">Permission Details</h5>
-          </div>
-          <div class="admin-panel-card-body">
-            <form method="POST" action="/admin/permissions/store">
-              <div class="mb-3">
-                <label for="name" class="form-label">Permission Name *</label>
-                <input type="text"
-                       class="form-control"
-                       id="name"
-                       name="name"
-                       placeholder="e.g., post.create"
-                       required>
-                <small class="text-muted">Use format: module.action (e.g., post.create, user.delete)</small>
-              </div>
-              <div class="mb-3">
-                <label for="module" class="form-label">Module *</label>
-                <input type="text"
-                       class="form-control"
-                       id="module"
-                       name="module"
-                       placeholder="e.g., post"
-                       required>
-                <small class="text-muted">The main category/module for this permission</small>
-              </div>
-              <div class="mb-3">
-                <label for="description" class="form-label">Description</label>
-                <textarea class="form-control"
-                          id="description"
-                          name="description"
-                          rows="3"
-                          placeholder="What does this permission allow?"></textarea>
-              </div>
-              <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">
-                  <i class="bi bi-check-circle me-2"></i>Create Permission
-                </button>
-                <a href="/admin/permissions" class="btn btn-outline-secondary">
-                  <i class="bi bi-x-circle me-2"></i>Cancel
-                </a>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+<div class="w-full px-4 sm:px-6 py-4 space-y-4">
+ <section class="admin-page-header">
+  <div class="flex items-end justify-between gap-3">
+   <div>
+    <p class="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">
+     <i class="lucide lucide-key"></i>
+     Permissions
+    </p>
+    <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">Create New Permission</h1>
+    <p class="mt-2 text-sm text-slate-600">Add a permission that can be assigned to roles.</p>
+   </div>
+   <a href="/admin/permissions" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+    <i class="lucide lucide-arrow-left"></i> Back to Permissions
+   </a>
   </div>
+ </section>
+
+ <section class="admin-panel-card max-w-3xl">
+  <form method="POST" action="/admin/permissions/store">
+   <div class="mb-3">
+    <label for="name" class="form-label">Permission Name *</label>
+    <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="name" name="name" placeholder="e.g., post.create" required>
+    <small class="text-slate-500">Use format: module.action (e.g., post.create, user.delete)</small>
+   </div>
+   <div class="mb-3">
+    <label for="module" class="form-label">Module *</label>
+    <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="module" name="module" placeholder="e.g., post" required>
+    <small class="text-slate-500">The main category/module for this permission</small>
+   </div>
+   <div class="mb-3">
+    <label for="description" class="form-label">Description</label>
+    <textarea class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="description" name="description" rows="3" placeholder="What does this permission allow?"></textarea>
+   </div>
+   <div class="flex gap-2">
+    <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">
+     <i class="lucide lucide-check-circle"></i> Create Permission
+    </button>
+    <a href="/admin/permissions" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+     <i class="lucide lucide-x-circle"></i> Cancel
+    </a>
+   </div>
+  </form>
+ </section>
+</div>
 {% endblock %}

@@ -1,28 +1,31 @@
-<div class="mb-4">
-  <h5 class="mb-3"><i class="bi bi-server me-2"></i>MCP Server Configuration</h5>
-  
-  <div class="row g-3">
-    <div class="col-12">
-      <label class="form-label">MCP Server URL</label>
-      <input type="text" 
-             class="form-control" 
-             name="mcp_server_url" 
-             id="mcp_server_url"
-             value="{{ settings.mcp_server_url|default('') }}"
-             placeholder="http://localhost:3000">
-      <small class="text-muted">The URL of your MCP (Model Context Protocol) server.</small>
-    </div>
-    
-    <div class="col-12">
-      <label class="form-label">MCP API Key</label>
-      <input type="password" 
-             class="form-control" 
-             name="mcp_api_key" 
-             id="mcp_api_key"
-             value="{{ settings.mcp_api_key|default('') }}"
-             placeholder="Enter MCP API key"
-             autocomplete="off">
-      <small class="text-muted">Authentication key for accessing the MCP server.</small>
-    </div>
+<section class="admin-panel-card">
+ <div class="mb-4 flex items-center gap-2">
+  <i class="lucide lucide-server text-indigo-600"></i>
+  <h2 class="text-lg font-semibold text-slate-950">MCP Server Configuration</h2>
+ </div>
+
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+  <div class="col-span-12">
+   <label class="form-label">MCP Server URL</label>
+   <input type="text"
+    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+    name="mcp_server_url"
+    id="mcp_server_url"
+    value="{{ settings.mcp_server_url|default('') }}"
+    placeholder="http://localhost:3000">
+   <small class="text-slate-500">The URL of your MCP (Model Context Protocol) server.</small>
   </div>
-</div>
+
+  <div class="col-span-12">
+   <label class="form-label">MCP API Key</label>
+   <input type="password"
+    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+    name="mcp_api_key"
+    id="mcp_api_key"
+    value="{{ settings.mcp_api_key|default('') }}"
+    placeholder="Enter MCP API key"
+    autocomplete="off">
+   <small class="text-slate-500">Authentication key for accessing the MCP server.</small>
+  </div>
+ </div>
+</section>

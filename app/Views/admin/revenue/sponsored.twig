@@ -1,6 +1,6 @@
-{% extends 'admin/layout.twig' %}
+﻿{% extends 'admin/layout.twig' %}
 
-{% block title %}Sponsored Posts – Admin | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+{% block title %}Sponsored Posts â€“ Admin | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="/admin/dashboard">Admin</a></li>
@@ -9,76 +9,82 @@
 {% endblock %}
 
 {% block page_content %}
-<div class="dashboard-page">
+<div>
 
-  <div class="card border-0 shadow-sm rounded-4 mb-4">
-    <div class="card-header bg-white border-0 py-3">
-      <h5 class="mb-0 fw-bold">
-        <i class="bi bi-award-fill text-warning me-2"></i>Sponsored / Promoted Posts
-      </h5>
-    </div>
-    <div class="card-body p-4">
-      <p class="text-muted small mb-0">
-        Sponsored posts carry a visible label on both the front-end and the admin panel.
-        Revenue from sponsorships is tracked per post.
-      </p>
-    </div>
-  </div>
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 rounded-2xl mb-4">
+ <div class="border-b border-slate-200 px-4 py-3 bg-white border-0">
+ <h5 class="mb-0 font-bold">
+ <i class="lucide lucide-award text-amber-600 mr-2"></i>Sponsored / Promoted Posts
+ </h5>
+ </div>
+ <div class="p-4">
+ <p class="text-slate-500 small mb-0">
+ Sponsored posts carry a visible label on both the front-end and the admin panel.
+ Revenue from sponsorships is tracked per post.
+ </p>
+ </div>
+ </div>
 
-  <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-    <div class="card-header bg-white border-0 py-3">
-      <h5 class="mb-0 fw-bold">Existing Sponsorships</h5>
-    </div>
-    <div class="card-body p-0 table-responsive">
-      <table class="table table-hover mb-0 align-middle">
-        <thead class="table-light"><tr>
-          <th class="px-4">ID</th>
-          <th>Post</th>
-          <th>Sponsor</th>
-          <th>Label Type</th>
-          <th>Paid (BDT)</th>
-          <th>Payment Status</th>
-          <th>From</th>
-          <th>Until</th>
-          <th class="px-4">Actions</th>
-        </tr></thead>
-        <tbody>
-        {% for sp in sponsored %}
-          {% set ps = sp.payment_status %}
-          {% set psc = ps == 'paid' ? 'bg-success-subtle text-success'
-                   : ps == 'pending' ? 'bg-warning-subtle text-warning'
-                   : 'bg-secondary-subtle text-secondary' %}
-          <tr>
-            <td class="px-4"><span class="badge bg-secondary">#{{ sp.id }}</span></td>
-            <td>
-              <a href="/posts/{{ sp.post_id }}/{{ sp.post_slug|url_encode }}" target="_blank" class="fw-semibold text-decoration-none">
-                {{ sp.post_title|default('Post #' ~ sp.post_id) }}
-                <i class="bi bi-box-arrow-up-right small text-muted"></i>
-              </a>
-            </td>
-            <td class="fw-semibold">{{ sp.sponsor_name }}</td>
-            <td>
-              <span class="badge" style="background:{{ sp.background_color ?? '#fffbeb' }};color:{{ sp.label_color ?? '#92400e' }};">
-                {{ sp.label_text ?? 'Sponsored' }}
-              </span>
-            </td>
-            <td class="fw-bold">৳{{ (sp.paid_amount ?? 0)|number_format(2) }}</td>
-            <td><span class="badge {{ psc }}">{{ ps|capitalize }}</span></td>
-            <td>{{ sp.sponsored_from ?? '—' }}</td>
-            <td>{{ sp.sponsored_until ?? '—' }}</td>
-            <td class="px-4 text-end">
-              <button class="btn btn-sm btn-outline-danger rounded-pill">Remove</button>
-            </td>
-          </tr>
-        {% else %}
-          <tr><td colspan="9" class="text-center py-5 text-muted">
-            <i class="bi bi-award fs-3 d-block mb-2"></i>No sponsored posts yet.
-          </td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 rounded-2xl overflow-hidden">
+ <div class="border-b border-slate-200 px-4 py-3 bg-white border-0">
+ <h5 class="mb-0 font-bold">Existing Sponsorships</h5>
+ </div>
+ <div class="p-4 p-0 overflow-x-auto">
+ <table class="table table-hover mb-0 align-middle">
+ <thead class="table-light"><tr>
+ <th class="px-4">ID</th>
+ <th>Post</th>
+ <th>Sponsor</th>
+ <th>Label Type</th>
+ <th>Paid (BDT)</th>
+ <th>Payment Status</th>
+ <th>From</th>
+ <th>Until</th>
+ <th class="px-4">Actions</th>
+ </tr></thead>
+ <tbody>
+ {% for sp in sponsored %}
+ {% set ps = sp.payment_status %}
+ {% set psc = ps == 'paid' ? 'bg-emerald-600-subtle text-emerald-600'
+ : ps == 'pending' ? 'bg-amber-500-subtle text-amber-600'
+ : 'bg-slate-600-subtle text-slate-600' %}
+ <tr>
+ <td class="px-4"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-600">#{{ sp.id }}</span></td>
+ <td>
+ <a href="/posts/{{ sp.post_id }}/{{ sp.post_slug|url_encode }}" target="_blank" class="font-semibold no-underline">
+ {{ sp.post_title|default('Post #' ~ sp.post_id) }}
+ <i class="lucide lucide-external-link small text-slate-500"></i>
+ </a>
+ </td>
+ <td class="font-semibold">{{ sp.sponsor_name }}</td>
+ <td>
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold" style="background:{{ sp.background_color ?? '#fffbeb' }};color:{{ sp.label_color ?? '#92400e' }};">
+ {{ sp.label_text ?? 'Sponsored' }}
+ </span>
+ </td>
+ <td class="font-bold">à§³{{ (sp.paid_amount ?? 0)|number_format(2) }}</td>
+ <td><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {{ psc }}">{{ ps|capitalize }}</span></td>
+ <td>{{ sp.sponsored_from ?? 'â€”' }}</td>
+ <td>{{ sp.sponsored_until ?? 'â€”' }}</td>
+ <td class="px-4 text-right">
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs text-red-600 hover:bg-red-100 rounded-full">Remove</button>
+ </td>
+ </tr>
+ {% else %}
+ <tr><td colspan="9" class="text-center py-5 text-slate-500">
+ <i class="lucide lucide-award text-3xl block mb-2"></i>No sponsored posts yet.
+ </td></tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ </div>
 
 </div>
 {% endblock %}
+
+
+
+
+
+

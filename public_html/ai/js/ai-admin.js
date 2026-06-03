@@ -1011,11 +1011,11 @@ if (!window.BroxAdminInstance) {
       if (!indicator) return;
 
       indicator.classList.add('brox-ai-saving');
-      indicator.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Saving...';
+      indicator.innerHTML = '<i class="lucide lucide-refresh-cw spin"></i> Saving...';
 
       setTimeout(() => {
         indicator.classList.remove('brox-ai-saving');
-        indicator.innerHTML = '<i class="bi bi-check-circle-fill"></i> Saved';
+        indicator.innerHTML = '<i class="lucide lucide-check-circle"></i> Saved';
       }, 500);
     }
 
@@ -1246,7 +1246,7 @@ if (!window.BroxAdminInstance) {
         recognition.onstart = function () {
           self.isRecording = true;
           micBtn.classList.add('recording');
-          micBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
+          micBtn.innerHTML = '<i class="lucide lucide-mic"></i>';
           micBtn.setAttribute('aria-pressed', 'true');
           self.updateStatus('recording', 'Listening...');
         };
@@ -1289,7 +1289,7 @@ if (!window.BroxAdminInstance) {
           console.error('[Voice] Error:', event.error);
           self.isRecording = false;
           micBtn.classList.remove('recording');
-          micBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
+          micBtn.innerHTML = '<i class="lucide lucide-mic"></i>';
           micBtn.removeAttribute('aria-pressed');
           self.updateStatus('ready', 'Ready');
 
@@ -1305,7 +1305,7 @@ if (!window.BroxAdminInstance) {
         recognition.onend = function () {
           self.isRecording = false;
           micBtn.classList.remove('recording');
-          micBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
+          micBtn.innerHTML = '<i class="lucide lucide-mic"></i>';
           micBtn.removeAttribute('aria-pressed');
           self.updateStatus('ready', 'Ready');
         };
@@ -3021,11 +3021,11 @@ if (!window.BroxAdminInstance) {
       const feedback = document.createElement('div');
       feedback.className = 'brox-ai-feedback';
       feedback.innerHTML = `
-                <button class="brox-ai-feedback-btn" data-rating="1" title="Poor"><i class="bi bi-hand-thumbs-down"></i></button>
-                <button class="brox-ai-feedback-btn" data-rating="5" title="Excellent"><i class="bi bi-hand-thumbs-up"></i></button>
-                <button class="brox-ai-copy-btn brox-ai-msg-tool-btn" data-action="copy" title="Copy"><i class="bi bi-clipboard"></i></button>
-                <button class="brox-ai-copy-btn brox-ai-msg-tool-btn" data-action="regenerate" title="Regenerate"><i class="bi bi-arrow-clockwise"></i></button>
-                <button class="brox-ai-copy-btn brox-ai-msg-tool-btn" data-action="report" title="Report"><i class="bi bi-flag"></i></button>
+                <button class="brox-ai-feedback-btn" data-rating="1" title="Poor"><i class="lucide lucide-thumbs-down"></i></button>
+                <button class="brox-ai-feedback-btn" data-rating="5" title="Excellent"><i class="lucide lucide-thumbs-up"></i></button>
+                <button class="brox-ai-copy-btn brox-ai-msg-tool-btn" data-action="copy" title="Copy"><i class="lucide lucide-clipboard"></i></button>
+                <button class="brox-ai-copy-btn brox-ai-msg-tool-btn" data-action="regenerate" title="Regenerate"><i class="lucide lucide-refresh-cw"></i></button>
+                <button class="brox-ai-copy-btn brox-ai-msg-tool-btn" data-action="report" title="Report"><i class="lucide lucide-flag"></i></button>
             `;
 
       feedback.querySelectorAll('.brox-ai-feedback-btn[data-rating]').forEach((btn) => {
@@ -3095,10 +3095,10 @@ if (!window.BroxAdminInstance) {
       avatar.className = 'brox-ai-msg-avatar';
       avatar.innerHTML =
         role === 'user'
-          ? '<i class="bi bi-person-fill"></i>'
+          ? '<i class="lucide lucide-user"></i>'
           : role === 'system'
-            ? '<i class="bi bi-exclamation-triangle-fill"></i>'
-            : '<i class="bi bi-stars"></i>';
+            ? '<i class="lucide lucide-alert-triangle"></i>'
+            : '<i class="lucide lucide-sparkles"></i>';
       msg.appendChild(avatar);
 
       const contentDiv = document.createElement('div');
@@ -3147,7 +3147,7 @@ if (!window.BroxAdminInstance) {
             if (part.file.mime) fileBits.push(part.file.mime);
             if (part.file.size) fileBits.push(this.formatFileSize(part.file.size));
             const icon =
-              part.file.mime === 'application/pdf' ? 'bi-file-earmark-pdf' : 'bi-file-earmark';
+              part.file.mime === 'application/pdf' ? 'icon-file-text' : 'icon-file';
             fileWrap.innerHTML = `<i class="bi ${icon}"></i> <span>${this.escapeHtml(fileBits.join(' • ') || 'File attachment')}</span>`;
             contentDiv.appendChild(fileWrap);
           }
@@ -3235,10 +3235,10 @@ if (!window.BroxAdminInstance) {
       avatar.className = 'brox-ai-msg-avatar';
       avatar.innerHTML =
         role === 'user'
-          ? '<i class="bi bi-person-fill"></i>'
+          ? '<i class="lucide lucide-user"></i>'
           : role === 'system'
-            ? '<i class="bi bi-exclamation-triangle-fill"></i>'
-            : '<i class="bi bi-stars"></i>';
+            ? '<i class="lucide lucide-alert-triangle"></i>'
+            : '<i class="lucide lucide-sparkles"></i>';
       msg.appendChild(avatar);
 
       const contentDiv = document.createElement('div');
@@ -4110,7 +4110,7 @@ if (!window.BroxAdminInstance) {
       const originalHtml = button?.innerHTML || '';
       if (button) {
         button.disabled = true;
-        button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enhancing...';
+        button.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-1"></span>Enhancing...';
       }
       this.updateStatus('loading', 'Enhancing prompt...');
 
@@ -4131,7 +4131,7 @@ if (!window.BroxAdminInstance) {
       } finally {
         if (button) {
           button.disabled = false;
-          button.innerHTML = originalHtml || '<i class="bi bi-stars"></i> Enhance Prompt';
+          button.innerHTML = originalHtml || '<i class="lucide lucide-sparkles"></i> Enhance Prompt';
         }
       }
     }
@@ -4868,7 +4868,7 @@ if (!window.BroxAdminInstance) {
         closeBtn.className = 'brox-ai-lightbox-close';
         closeBtn.type = 'button';
         closeBtn.setAttribute('aria-label', 'Close image');
-        closeBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
+        closeBtn.innerHTML = '<i class="lucide lucide-x"></i>';
         closeBtn.addEventListener('click', () => this.closeImageLightbox());
         content.appendChild(closeBtn);
 
@@ -5378,7 +5378,7 @@ if (!window.BroxAdminInstance) {
       const avatar = document.createElement('div');
       avatar.className = 'brox-ai-msg-avatar';
       avatar.innerHTML =
-        role === 'user' ? '<i class="bi bi-person-fill"></i>' : '<i class="bi bi-stars"></i>';
+        role === 'user' ? '<i class="lucide lucide-user"></i>' : '<i class="lucide lucide-sparkles"></i>';
       msg.appendChild(avatar);
 
       const body = document.createElement('div');
@@ -5529,11 +5529,11 @@ if (!window.BroxAdminInstance) {
 
         const openSpan = document.createElement('span');
         openSpan.className = 'brox-ai-fab-icon-open';
-        openSpan.innerHTML = '<i class="bi bi-stars"></i>';
+        openSpan.innerHTML = '<i class="lucide lucide-sparkles"></i>';
 
         const closeSpan = document.createElement('span');
         closeSpan.className = 'brox-ai-fab-icon-close d-none';
-        closeSpan.innerHTML = '<i class="bi bi-x-lg"></i>';
+        closeSpan.innerHTML = '<i class="lucide lucide-x"></i>';
 
         const badge = document.createElement('span');
         badge.className = 'brox-ai-fab-badge';

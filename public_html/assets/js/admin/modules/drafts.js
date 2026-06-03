@@ -360,7 +360,7 @@ class OfflineDraftManager {
     clearTimeout(this._debounceTimer);
     try {
       await this.saveLocal();
-    } catch (error) {
+    } catch {
       // noop
     }
   }

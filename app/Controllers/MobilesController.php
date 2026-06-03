@@ -532,6 +532,10 @@ $router->group('/mobiles', [], function ($router) use ($twig, $mobileModel, $tax
         // à¦¶à§à¦§à§à¦®à¦¾à¦¤à§à¦° à¦•à¦®à§‡à¦¨à§à¦Ÿ à¦à¦¬à¦‚ à¦°à¦¿à¦²à§‡à¦Ÿà§‡à¦¡ à¦®à§‹à¦¬à¦¾à¦‡à¦² à¦†à¦²à¦¾à¦¦à¦¾ à¦•à§‹à¦¯à¦¼à§‡à¦°à¦¿à¦¤à§‡ (à¦à¦—à§à¦²à§‹ à¦¸à¦¬à¦¸à¦®à¦¯à¦¼ à¦ªà§à¦°à¦¯à¦¼à§‹à¦œà¦¨ à¦¹à¦¯à¦¼ à¦¨à¦¾)
         $comments  = $commentModel->getComments('mobiles', $id);
         $related_mobiles = $mobileModel->getRelatedMobiles($id, 3);
+        $related_mobiles = array_map(static function (array $mobile): array {
+            $mobile['type'] = 'mobile';
+            return $mobile;
+        }, $related_mobiles);
 
         echo $twig->render('mobiles/view.twig', [
             'mobile'         => $mobile,

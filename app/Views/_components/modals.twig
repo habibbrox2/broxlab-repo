@@ -1,0 +1,71 @@
+﻿{# ============================================================================
+ MODALS â€” Reusable modal component macros
+ Usage: {% import '_components/modals.twig' as modal %}
+ {{ modal.start({ id: 'myModal', title: 'Confirm' }) }}
+ ... body ...
+ {{ modal.end({ primary: { text: 'Save', class: 'bg-indigo-600 text-white hover:bg-indigo-700' } }) }}
+ ============================================================================ #}
+
+{# â”€â”€ Modal wrapper start â”€â”€ #}
+{% macro start(opts) %}
+ {% set id = opts.id|default('modal-' ~ random()) %}
+ {% set title = opts.title|default('Modal') %}
+ {% set size = opts.size|default('md') %}
+ {% set class = opts.class|default('') %}
+ {% set centered = opts.centered|default(true) %}
+ 
+ {% set sizeClass = size == 'sm' ? 'max-w-sm' : size == 'lg' ? 'max-w-3xl' : size == 'xl' ? 'max-w-5xl' : size == 'full' ? 'max-w-[95vw]' : 'max-w-lg' %}
+ {% set centerClass = centered ? 'min-h-[calc(100vh-1rem)] flex items-center' : '' %}
+
+ <div id="{{ id }}" class="fixed inset-0 z-50 hidden" tabindex="-1" role="dialog" aria-hidden="true">
+	 <div class="fixed inset-0 bg-black/50 z-40"></div>
+	 <div class="relative w-auto mx-2 my-2 {{ centerClass }}">
+		 <div class="relative flex flex-col w-full bg-white rounded-xl border border-slate-200 shadow-sm pointer-events-auto outline-none {{ sizeClass }} {{ class }}">
+ {% if title %}
+		 <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 rounded-t-xl">
+			 <h5 class="text-lg font-bold text-slate-800 m-0 flex items-center gap-2">
+				 {% if opts.icon %}<i class="lucide lucide-{{ opts.icon }} w-5 h-5 text-indigo-600"></i>{% endif %}
+				 {{ title }}
+			 </h5>
+			 <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all duration-150" data-brox-dismiss="modal" aria-label="Close">&times;</button>
+		 </div>
+ {% endif %}
+ <div class="modal-body relative flex-1 px-5 py-4 {{ opts.bodyClass|default('') }}">
+{% endmacro %}
+
+{# â”€â”€ Modal wrapper end â”€â”€ #}
+{% macro end(opts) %}
+		 </div>
+		 {% if opts.footer is defined or opts.primary or opts.secondary %}
+			 <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-200 rounded-b-xl bg-slate-50 {{ opts.footerClass|default('') }}">
+				 {% if opts.secondary %}
+					 <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition-all duration-150" data-brox-dismiss="modal">{{ opts.secondary.text|default('Cancel') }}</button>
+				 {% endif %}
+				 {% if opts.primary %}
+					 <button type="button" class="px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow transition-all duration-150" data-brox-action="{{ opts.primary.action|default('') }}">{{ opts.primary.text|default('Save') }}</button>
+				 {% endif %}
+				 {{ opts.footer|default('')|raw }}
+			 </div>
+		 {% endif %}
+	 </div>
+ </div>
+{% endmacro %}
+
+{# â”€â”€ Quick confirm modal (danger variant) â”€â”€ #}
+{% macro confirm(opts) %}
+	{% set _ = opts|merge({ 
+	title: opts.title|default('Confirm Action'),
+	icon: opts.icon|default('alert-triangle'),
+	class: (opts.class|default('') ~ ' border-t-4 border-red-600'),
+	primary: { text: opts.confirmText|default('Delete'), action: opts.action|default(''), class: 'bg-red-600 hover:bg-red-700' },
+	secondary: { text: 'Cancel' }
+	}) %}
+ {{ _self.start(_) }}
+ <p class="text-slate-600">{{ opts.message|default('Are you sure? This action cannot be undone.') }}</p>
+ {{ _self.end(_) }}
+{% endmacro %}
+
+
+
+
+

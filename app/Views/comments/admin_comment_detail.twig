@@ -1,494 +1,498 @@
-{% extends "admin/layout.twig" %}
+﻿{% extends"admin/layout.twig" %}
 {% block title %}Comment Detail - Admin{% endblock %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-4">
-      <ol class="breadcrumb">
-        <li class="breadcrumb-item">
-          <a href="/admin">Dashboard</a>
-        </li>
-        <li class="breadcrumb-item">
-          <a href="/admin/comments">Comments</a>
-        </li>
-        <li class="breadcrumb-item active">Comment #{{ comment.id }}</li>
-      </ol>
-    </nav>
-    <!-- Page Header -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <h1 class="h3 mb-0 fw-bold">
-          <i class="bi bi-chat-square-text me-2"></i> Comment Details
-        </h1>
-      </div>
-    </div>
-    <div class="row">
-      <!-- Main Comment -->
-      <div class="col-lg-8">
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-header bg-light border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-bold">
-              <span class="badge bg-{{ comment.status == 'approved' ? 'success' : (comment.status == 'rejected' ? 'danger' : 'warning') }}">
-                {{ comment.status|capitalize }}
-              </span>
-            </h5>
-            <small class="text-muted">ID: #{{ comment.id }}</small>
-          </div>
-          <div class="card-body">
-            <!-- Author Info -->
-            <div class="mb-4">
-              <p class="text-muted small mb-2">
-                <strong>Author:</strong>
-                {% if comment.user_id %}
-                  User ID: {{ comment.user_id }}
-                {% else %}
-                  Guest: {{ comment.guest_name ?? 'Anonymous' }}
-                {% endif %}
-              </p>
-              <p class="text-muted small mb-0">
-                <strong>Posted:</strong>
-                <time datetime="{{ comment.created_at }}">{{ comment.created_at|date("M d, Y H:i:s") }}</time>
-              </p>
-            </div>
-            <!-- Content -->
-            <div class="comment-content bg-light p-3 rounded mb-4">
-              <div id="commentContentDisplay">
-                <p class="mb-0">{{ comment.content|e }}</p>
-              </div>
-              <div id="commentContentEdit" class="inl-p-0004">
-                <textarea class="form-control" id="editCommentContent" rows="4">{{ comment.content }}</textarea>
-                <div class="mt-2">
-                  <button type="button"
-                          class="btn btn-success btn-sm"
-                          onclick="saveEditComment({{ comment.id }})">
-                    <i class="bi bi-check me-1"></i> Save
-                  </button>
-                  <button type="button"
-                          class="btn btn-secondary btn-sm"
-                          onclick="cancelEditComment()">
-                    <i class="bi bi-x me-1"></i> Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-            <!-- Metadata -->
-            <div class="row mb-4">
-              <div class="col-md-6">
-                <div class="bg-light p-3 rounded">
-                  <p class="text-muted small mb-1">Content Type:</p>
-                  <p class="mb-0 fw-bold">{{ comment.content_type }}</p>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="bg-light p-3 rounded">
-                  <p class="text-muted small mb-1">Content ID:</p>
-                  <p class="mb-0 fw-bold">#{{ comment.content_id }}</p>
-                </div>
-              </div>
-            </div>
-            {% if comment.status == 'rejected' and comment.rejection_reason %}
-              <div class="alert alert-danger" role="alert">
-                <strong>Rejection Reason:</strong>
-                {{ comment.rejection_reason }}
-              </div>
-            {% endif %}
-            <!-- Stats -->
-            <div class="row">
-              <div class="col-sm-6">
-                <div class="d-flex align-items-center">
-                  <i class="bi bi-hand-thumbs-up text-primary me-2"></i>
-                  <div>
-                    <p class="text-muted small mb-0">Likes</p>
-                    <p class="mb-0 fw-bold">{{ comment.likes|default(0) }}</p>
-                  </div>
-                </div>
-              </div>
-              <div class="col-sm-6">
-                <div class="d-flex align-items-center">
-                  <i class="bi bi-chat-left-text text-info me-2"></i>
-                  <div>
-                    <p class="text-muted small mb-0">Replies</p>
-                    <p class="mb-0 fw-bold">{{ replies|length }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- Actions -->
-          <div class="card-footer bg-light border-top">
-            <div class="btn-group" role="group">
-              {% if can_approve and comment.status != 'approved' %}
-                <button type="button"
-                        class="btn btn-success btn-sm"
-                        onclick="approveComment({{ comment.id }})">
-                  <i class="bi bi-check-lg me-1"></i> Approve
-                </button>
-              {% endif %}
-              {% if can_edit %}
-                <button type="button"
-                        class="btn btn-info btn-sm"
-                        onclick="toggleEditComment()">
-                  <i class="bi bi-pencil me-1"></i> Edit
-                </button>
-              {% endif %}
-              {% if comment.status != 'hidden' %}
-                <button type="button"
-                        class="btn btn-warning btn-sm"
-                        data-bs-toggle="modal"
-                        data-bs-target="#hideModal">
-                  <i class="bi bi-eye-slash me-1"></i> Hide
-                </button>
-              {% else %}
-                <button type="button"
-                        class="btn btn-info btn-sm"
-                        onclick="unhideComment({{ comment.id }})">
-                  <i class="bi bi-eye me-1"></i> Unhide
-                </button>
-              {% endif %}
-              {% if can_delete %}
-                <button type="button"
-                        class="btn btn-danger btn-sm"
-                        onclick="deleteComment({{ comment.id }})">
-                  <i class="bi bi-trash me-1"></i> Delete
-                </button>
-              {% endif %}
-              <a href="/admin/comments" class="btn btn-secondary btn-sm">
-                <i class="bi bi-arrow-left me-1"></i> Back
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Sidebar -->
-      <div class="col-lg-4">
-        <!-- Review Info -->
-        {% if comment.reviewed_by %}
-          <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-light border-bottom">
-              <h6 class="mb-0 fw-bold">Review Info</h6>
-            </div>
-            <div class="card-body">
-              <p class="text-muted small mb-2">
-                <strong>Reviewed By:</strong> Admin ID: {{ comment.reviewed_by }}
-              </p>
-              <p class="text-muted small mb-0">
-                <strong>Reviewed At:</strong>
-                <time datetime="{{ comment.reviewed_at }}">{{ comment.reviewed_at|date("M d, Y H:i:s") }}</time>
-              </p>
-            </div>
-          </div>
-        {% endif %}
-        <!-- Quick Actions -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-header bg-light border-bottom">
-            <h6 class="mb-0 fw-bold">Quick Actions</h6>
-          </div>
-          <div class="card-body">
-            {% if comment.status != 'approved' %}
-              <button type="button"
-                      class="btn btn-success w-100 mb-2"
-                      onclick="approveComment({{ comment.id }})">
-                <i class="bi bi-check-lg"></i> Approve
-              </button>
-            {% endif %}
-            {% if comment.status != 'rejected' %}
-              <button type="button"
-                      class="btn btn-warning w-100 mb-2"
-                      data-bs-toggle="modal"
-                      data-bs-target="#rejectModal">
-                <i class="bi bi-exclamation-lg"></i> Reject
-              </button>
-            {% endif %}
-            {% if comment.status != 'hidden' %}
-              <button type="button"
-                      class="btn btn-warning w-100 mb-2"
-                      data-bs-toggle="modal"
-                      data-bs-target="#hideModal">
-                <i class="bi bi-eye-slash"></i> Hide
-              </button>
-            {% else %}
-              <button type="button"
-                      class="btn btn-info w-100 mb-2"
-                      onclick="unhideComment({{ comment.id }})">
-                <i class="bi bi-eye"></i> Unhide
-              </button>
-            {% endif %}
-            <button type="button"
-                    class="btn btn-danger w-100"
-                    onclick="deleteComment({{ comment.id }})">
-              <i class="bi bi-trash"></i> Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Replies Section -->
-    {% if replies|length > 0 %}
-      <div class="row mt-4">
-        <div class="col-12">
-          <div class="card border-0 shadow-sm">
-            <div class="card-header bg-light border-bottom">
-              <h5 class="mb-0 fw-bold">Replies ({{ replies|length }})</h5>
-            </div>
-            <div class="card-body">
-              {% for reply in replies %}
-                <div class="card mb-3 {% if reply.is_admin_reply %}border-info border-2{% endif %}">
-                  <div class="card-body">
-                    <div class="d-flex justify-content-between mb-2">
-                      <div>
-                        <strong>
-                          {% if reply.user_id %}
-                            User #{{ reply.user_id }}
-                          {% else %}
-                            {{ reply.guest_name ?? 'Anonymous' }}
-                          {% endif %}
-                        </strong>
-                        {% if reply.is_admin_reply %}<span class="badge bg-primary ms-1">Admin Reply</span>{% endif %}
-                      </div>
-                      <small class="text-muted">{{ reply.created_at|date("M d, Y H:i") }}</small>
-                    </div>
-                    <p class="mb-0 text-muted">{{ reply.content|e }}</p>
-                  </div>
-                </div>
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-      </div>
-    {% endif %}
-    <!-- Admin Reply Section -->
-    <div class="row mt-4">
-      <div class="col-lg-8">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header bg-light border-bottom">
-            <h5 class="mb-0 fw-bold">
-              <i class="bi bi-reply-all me-2"></i> Post Admin Reply
-            </h5>
-          </div>
-          <div class="card-body">
-            <form id="adminReplyForm"
-                  onsubmit="submitAdminReply(event, {{ comment.id }}, '{{ comment.content_type }}', {{ comment.content_id }})">
-              <div class="mb-3">
-                <label for="adminReplyContent" class="form-label">Your Reply</label>
-                <textarea class="form-control"
-                          id="adminReplyContent"
-                          name="content"
-                          rows="4"
-                          placeholder="Type your admin response here..."
-                          required></textarea>
-                <small class="text-muted">Your reply will be marked as an admin response.</small>
-              </div>
-              <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">
-                  <i class="bi bi-send me-1"></i> Post Reply
-                </button>
-                <button type="reset" class="btn btn-secondary">
-                  <i class="bi bi-x me-1"></i> Clear
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- Hide Modal -->
-  <div class="modal fade" id="hideModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Hide Comment</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Reason (Optional)</label>
-            <textarea class="form-control"
-                      id="hideReason"
-                      rows="3"
-                      placeholder="Why is this comment being hidden?"></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button"
-                  class="btn btn-warning"
-                  onclick="hideComment({{ comment.id }})">Hide</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <script>
+ <div class="w-full px-4 sm:px-6 py-4">
+ <!-- Breadcrumb -->
+ <nav aria-label="breadcrumb" class="mb-4">
+ <ol class="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
+ <li class="flex items-center gap-1.5">
+ <a href="/admin" class="text-indigo-600 hover:text-indigo-600/80 transition-colors">Dashboard</a>
+ <span class="text-neutral-300 select-none">/</span>
+ </li>
+ <li class="flex items-center gap-1.5">
+ <a href="/admin/comments" class="text-indigo-600 hover:text-indigo-600/80 transition-colors">Comments</a>
+ <span class="text-neutral-300 select-none">/</span>
+ </li>
+ <li class="text-neutral-700 font-medium" aria-current="page">Comment #{{ comment.id }}</li>
+ </ol>
+ </nav>
+ <!-- Page Header -->
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
+ <div class="col-span-12">
+ <h1 class="h3 mb-0 font-bold">
+ <i class="lucide lucide-message-square-text mr-2"></i> Comment Details
+ </h1>
+ </div>
+ </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+ <!-- Main Comment -->
+ <div class="lg:col-span-8">
+ <div class="bg-white rounded-xl shadow-sm mb-4">
+ <div class="flex items-center justify-between px-5 py-3 bg-neutral-50 border-b border-neutral-200 rounded-t-xl">
+ <h5 class="mb-0 font-semibold text-neutral-900">
+ <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {% if comment.status == 'approved' %}bg-emerald-100 text-emerald-800 elseif 'rejected' %}bg-red-100 text-red-800 else %}bg-amber-100 text-amber-800{% endif %}">
+ {{ comment.status|capitalize }}
+ </span>
+ </h5>
+ <small class="text-neutral-500">ID: #{{ comment.id }}</small>
+ </div>
+ <div class="p-5">
+ <!-- Author Info -->
+ <div class="mb-4">
+ <p class="text-neutral-500 text-sm mb-2">
+ <strong>Author:</strong>
+ {% if comment.user_id %}
+ User ID: {{ comment.user_id }}
+ {% else %}
+ Guest: {{ comment.guest_name ?? 'Anonymous' }}
+ {% endif %}
+ </p>
+ <p class="text-neutral-500 text-sm mb-0">
+ <strong>Posted:</strong>
+ <time datetime="{{ comment.created_at }}">{{ comment.created_at|date("M d, Y H:i:s") }}</time>
+ </p>
+ </div>
+ <!-- Content -->
+ <div class="comment-content bg-slate-100 p-3 rounded mb-4">
+ <div id="commentContentDisplay">
+ <p class="mb-0">{{ comment.content|e }}</p>
+ </div>
+ <div id="commentContentEdit" class="hidden">
+ <textarea class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none" id="editCommentContent" rows="4">{{ comment.content }}</textarea>
+ <div class="mt-2 flex gap-2">
+ <button type="button"
+ class="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors"
+ onclick="saveEditComment({{ comment.id }})">
+ <i class="lucide lucide-check mr-1"></i> Save
+ </button>
+ <button type="button"
+ class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm font-medium hover:bg-neutral-100 transition-colors"
+ onclick="cancelEditComment()">
+ <i class="lucide lucide-x mr-1"></i> Cancel
+ </button>
+ </div>
+ </div>
+ </div>
+ <!-- Metadata -->
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
+ <div class="md:col-span-6">
+ <div class="bg-slate-100 p-3 rounded">
+ <p class="text-slate-500 small mb-1">Content Type:</p>
+ <p class="mb-0 font-bold">{{ comment.content_type }}</p>
+ </div>
+ </div>
+ <div class="md:col-span-6">
+ <div class="bg-slate-100 p-3 rounded">
+ <p class="text-slate-500 small mb-1">Content ID:</p>
+ <p class="mb-0 font-bold">#{{ comment.content_id }}</p>
+ </div>
+ </div>
+ </div>
+ {% if comment.status == 'rejected' and comment.rejection_reason %}
+ <div class="p-4 rounded-lg bg-red-600-light text-red-600-dark border border-danger" role="alert">
+ <strong>Rejection Reason:</strong>
+ {{ comment.rejection_reason }}
+ </div>
+ {% endif %}
+ <!-- Stats -->
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+ <div class="sm:col-span-6">
+ <div class="flex items-center">
+ <i class="lucide lucide-thumbs-up text-indigo-600 mr-2"></i>
+ <div>
+ <p class="text-slate-500 small mb-0">Likes</p>
+ <p class="mb-0 font-bold">{{ comment.likes|default(0) }}</p>
+ </div>
+ </div>
+ </div>
+ <div class="sm:col-span-6">
+ <div class="flex items-center">
+ <i class="lucide lucide-message-square-text text-sky-600 mr-2"></i>
+ <div>
+ <p class="text-slate-500 small mb-0">Replies</p>
+ <p class="mb-0 font-bold">{{ replies|length }}</p>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ <!-- Actions -->
+ <div class="flex items-center gap-2 px-5 py-3 bg-neutral-50 border-t border-neutral-200 rounded-b-xl flex-wrap">
+ {% if can_approve and comment.status != 'approved' %}
+ <button type="button"
+ class="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors"
+ onclick="approveComment({{ comment.id }})">
+ <i class="lucide lucide-check-check mr-1"></i> Approve
+ </button>
+ {% endif %}
+ {% if can_edit %}
+ <button type="button"
+ class="inline-flex items-center px-3 py-1.5 rounded-lg bg-sky-600 text-white text-sm font-medium hover:bg-sky-700 transition-colors"
+ onclick="toggleEditComment()">
+ <i class="lucide lucide-pencil mr-1"></i> Edit
+ </button>
+ {% endif %}
+ {% if comment.status != 'hidden' %}
+ <button type="button"
+ class="inline-flex items-center px-3 py-1.5 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors"
+ data-brox-toggle="modal"
+ data-brox-target="#hideModal">
+ <i class="lucide lucide-eye-off mr-1"></i> Hide
+ </button>
+ {% else %}
+ <button type="button"
+ class="inline-flex items-center px-3 py-1.5 rounded-lg bg-sky-600 text-white text-sm font-medium hover:bg-sky-700 transition-colors"
+ onclick="unhideComment({{ comment.id }})">
+ <i class="lucide lucide-eye mr-1"></i> Unhide
+ </button>
+ {% endif %}
+ {% if can_delete %}
+ <button type="button"
+ class="inline-flex items-center px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+ onclick="deleteComment({{ comment.id }})">
+ <i class="lucide lucide-trash-2 mr-1"></i> Delete
+ </button>
+ {% endif %}
+ <a href="/admin/comments" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm font-medium hover:bg-neutral-100 transition-colors">
+ <i class="lucide lucide-arrow-left mr-1"></i> Back
+ </a>
+ </div>
+ </div>
+ </div>
+ </div>
+ <!-- Sidebar -->
+ <div class="lg:col-span-4">
+ <!-- Review Info -->
+ {% if comment.reviewed_by %}
+ <div class="bg-white rounded-xl shadow-sm mb-4">
+ <div class="px-5 py-3 bg-neutral-50 border-b border-neutral-200 rounded-t-xl">
+ <h6 class="mb-0 font-semibold text-neutral-900">Review Info</h6>
+ </div>
+ <div class="p-5">
+ <p class="text-neutral-500 text-sm mb-2">
+ <strong>Reviewed By:</strong> Admin ID: {{ comment.reviewed_by }}
+ </p>
+ <p class="text-neutral-500 text-sm mb-0">
+ <strong>Reviewed At:</strong>
+ <time datetime="{{ comment.reviewed_at }}">{{ comment.reviewed_at|date("M d, Y H:i:s") }}</time>
+ </p>
+ </div>
+ </div>
+ {% endif %}
+ <!-- Quick Actions -->
+ <div class="bg-white rounded-xl shadow-sm mb-4">
+ <div class="px-5 py-3 bg-neutral-50 border-b border-neutral-200 rounded-t-xl">
+ <h6 class="mb-0 font-semibold text-neutral-900">Quick Actions</h6>
+ </div>
+ <div class="p-5">
+ {% if comment.status != 'approved' %}
+ <button type="button"
+ class="inline-flex items-center justify-center w-full px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors mb-2"
+ onclick="approveComment({{ comment.id }})">
+ <i class="lucide lucide-check-check mr-1"></i> Approve
+ </button>
+ {% endif %}
+ {% if comment.status != 'rejected' %}
+ <button type="button"
+ class="inline-flex items-center justify-center w-full px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors mb-2"
+ data-brox-toggle="modal"
+ data-brox-target="#rejectModal">
+ <i class="lucide lucide-alert-triangle mr-1"></i> Reject
+ </button>
+ {% endif %}
+ {% if comment.status != 'hidden' %}
+ <button type="button"
+ class="inline-flex items-center justify-center w-full px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors mb-2"
+ data-brox-toggle="modal"
+ data-brox-target="#hideModal">
+ <i class="lucide lucide-eye-off mr-1"></i> Hide
+ </button>
+ {% else %}
+ <button type="button"
+ class="inline-flex items-center justify-center w-full px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium hover:bg-sky-700 transition-colors mb-2"
+ onclick="unhideComment({{ comment.id }})">
+ <i class="lucide lucide-eye mr-1"></i> Unhide
+ </button>
+ {% endif %}
+ <button type="button"
+ class="inline-flex items-center justify-center w-full px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+ onclick="deleteComment({{ comment.id }})">
+ <i class="lucide lucide-trash-2 mr-1"></i> Delete
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+ <!-- Replies Section -->
+ {% if replies|length > 0 %}
+ <div class="mt-4">
+ <div class="bg-white rounded-xl shadow-sm">
+ <div class="px-5 py-3 bg-neutral-50 border-b border-neutral-200 rounded-t-xl">
+ <h5 class="mb-0 font-semibold text-neutral-900">Replies ({{ replies|length }})</h5>
+ </div>
+ <div class="p-5 space-y-3">
+ {% for reply in replies %}
+ <div class="bg-white rounded-lg border border-neutral-200 {% if reply.is_admin_reply %}border-sky-300 border-2{% endif %}">
+ <div class="p-4">
+ <div class="flex items-center justify-between mb-2">
+ <div class="flex items-center gap-2">
+ <strong class="text-sm text-neutral-800">
+ {% if reply.user_id %}
+ User #{{ reply.user_id }}
+ {% else %}
+ {{ reply.guest_name ?? 'Anonymous' }}
+ {% endif %}
+ </strong>
+ {% if reply.is_admin_reply %}<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-indigo-600/10 text-indigo-600">Admin Reply</span>{% endif %}
+ </div>
+ <small class="text-neutral-500 text-sm">{{ reply.created_at|date("M d, Y H:i") }}</small>
+ </div>
+ <p class="mb-0 text-neutral-600 text-sm">{{ reply.content|e }}</p>
+ </div>
+ </div>
+ {% endfor %}
+ </div>
+ </div>
+ </div>
+ {% endif %}
+ <!-- Admin Reply Section -->
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mt-4">
+ <div class="lg:col-span-8">
+ <div class="bg-white rounded-xl shadow-sm">
+ <div class="px-5 py-3 bg-neutral-50 border-b border-neutral-200 rounded-t-xl">
+ <h5 class="mb-0 font-semibold text-neutral-900">
+ <i class="lucide lucide-reply-all mr-2"></i> Post Admin Reply
+ </h5>
+ </div>
+ <div class="p-5">
+ <form id="adminReplyForm"
+ onsubmit="submitAdminReply(event, {{ comment.id }}, '{{ comment.content_type }}', {{ comment.content_id }})">
+ <div class="mb-4">
+ <label for="adminReplyContent" class="block text-sm font-medium text-neutral-700 mb-1.5">Your Reply</label>
+ <textarea class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+ id="adminReplyContent"
+ name="content"
+ rows="4"
+ placeholder="Type your admin response here..."
+ required></textarea>
+ <small class="text-neutral-500 text-sm">Your reply will be marked as an admin response.</small>
+ </div>
+ <div class="flex gap-2">
+ <button type="submit" class="inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-600/90 transition-colors">
+ <i class="lucide lucide-send mr-1"></i> Post Reply
+ </button>
+ <button type="reset" class="inline-flex items-center px-4 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm font-semibold hover:bg-neutral-100 transition-colors">
+ <i class="lucide lucide-x mr-1"></i> Clear
+ </button>
+ </div>
+ </form>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ <!-- Hide Modal -->
+ <div class="fixed inset-0 z-50 hidden" id="hideModal" tabindex="-1">
+ <div class="fixed inset-0 bg-black/50 transition-opacity" data-brox-dismiss="modal"></div>
+ <div class="fixed inset-0 flex items-center justify-center p-4">
+ <div class="bg-white rounded-xl shadow-md-xl w-full max-w-md overflow-hidden">
+ <div class="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
+ <h5 class="text-lg font-semibold text-neutral-900">Hide Comment</h5>
+ <button type="button" class="w-8 h-8 flex items-center justify-center border-0 bg-transparent text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100 rounded-lg transition-all duration-150 cursor-pointer" data-brox-dismiss="modal">&times;</button>
+ </div>
+ <div class="p-6">
+ <div class="mb-4">
+ <label class="block text-sm font-medium text-neutral-700 mb-1.5">Reason (Optional)</label>
+ <textarea class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+ id="hideReason"
+ rows="3"
+ placeholder="Why is this comment being hidden?"></textarea>
+ </div>
+ </div>
+ <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-neutral-200 bg-neutral-50">
+ <button type="button" class="inline-flex items-center px-4 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm font-medium hover:bg-neutral-100 transition-colors" data-brox-dismiss="modal">Cancel</button>
+ <button type="button"
+ class="inline-flex items-center px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors"
+ onclick="hideComment({{ comment.id }})">Hide</button>
+ </div>
+ </div>
+ </div>
+ </div>
+ <script>
 function approveComment(id) {
-    if (!confirm('Are you sure you want to approve this comment?')) return;
+ if (!confirm('Are you sure you want to approve this comment?')) return;
 
-    fetch(`/admin/comments/${id}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert('Comment approved!');
-            location.reload();
-        } else {
-            alert('Error: ' + data.message);
-        }
-    })
-    .catch(e => alert('Error: ' + e.message));
+ fetch(`/admin/comments/${id}/approve`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({})
+ })
+ .then(r => r.json())
+ .then(data => {
+ if (data.success) {
+ alert('Comment approved!');
+ location.reload();
+ } else {
+ alert('Error: ' + data.message);
+ }
+ })
+ .catch(e => alert('Error: ' + e.message));
 }
 
 function rejectComment(id) {
-    const reason = document.getElementById('rejectReason').value;
+ const reason = document.getElementById('rejectReason').value;
 
-    fetch(`/admin/comments/${id}/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'reason=' + encodeURIComponent(reason)
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert('Comment rejected!');
-            location.reload();
-        } else {
-            alert('Error: ' + data.message);
-        }
-    })
-    .catch(e => alert('Error: ' + e.message));
+ fetch(`/admin/comments/${id}/reject`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+ body: 'reason=' + encodeURIComponent(reason)
+ })
+ .then(r => r.json())
+ .then(data => {
+ if (data.success) {
+ alert('Comment rejected!');
+ location.reload();
+ } else {
+ alert('Error: ' + data.message);
+ }
+ })
+ .catch(e => alert('Error: ' + e.message));
 }
 
 function toggleEditComment() {
-    document.getElementById('commentContentDisplay').style.display =
-        document.getElementById('commentContentDisplay').style.display === 'none' ? 'block' : 'none';
-    document.getElementById('commentContentEdit').style.display =
-        document.getElementById('commentContentEdit').style.display === 'none' ? 'block' : 'none';
+ document.getElementById('commentContentDisplay').style.display =
+ document.getElementById('commentContentDisplay').style.display === 'none' ? 'block' : 'none';
+ document.getElementById('commentContentEdit').style.display =
+ document.getElementById('commentContentEdit').style.display === 'none' ? 'block' : 'none';
 }
 
 function cancelEditComment() {
-    document.getElementById('commentContentDisplay').style.display = 'block';
-    document.getElementById('commentContentEdit').style.display = 'none';
+ document.getElementById('commentContentDisplay').style.display = 'block';
+ document.getElementById('commentContentEdit').style.display = 'none';
 }
 
 function saveEditComment(id) {
-    const newContent = document.getElementById('editCommentContent').value;
+ const newContent = document.getElementById('editCommentContent').value;
 
-    if (!newContent.trim()) {
-        alert('Comment content cannot be empty!');
-        return;
-    }
+ if (!newContent.trim()) {
+ alert('Comment content cannot be empty!');
+ return;
+ }
 
-    const formData = new FormData();
-    formData.append('content', newContent);
+ const formData = new FormData();
+ formData.append('content', newContent);
 
-    fetch(`/admin/comments/${id}/edit`, {
-        method: 'POST',
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert('Comment updated!');
-            location.reload();
-        } else {
-            alert('Error: ' + data.message);
-        }
-    })
-    .catch(e => alert('Error: ' + e.message));
+ fetch(`/admin/comments/${id}/edit`, {
+ method: 'POST',
+ body: formData
+ })
+ .then(r => r.json())
+ .then(data => {
+ if (data.success) {
+ alert('Comment updated!');
+ location.reload();
+ } else {
+ alert('Error: ' + data.message);
+ }
+ })
+ .catch(e => alert('Error: ' + e.message));
 }
 
 function hideComment(id) {
-    const reason = document.getElementById('hideReason').value;
+ const reason = document.getElementById('hideReason').value;
 
-    const formData = new FormData();
-    if (reason) formData.append('reason', reason);
+ const formData = new FormData();
+ if (reason) formData.append('reason', reason);
 
-    fetch(`/admin/comments/${id}/hide`, {
-        method: 'POST',
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert('Comment hidden!');
-            location.reload();
-        } else {
-            alert('Error: ' + data.message);
-        }
-    })
-    .catch(e => alert('Error: ' + e.message));
+ fetch(`/admin/comments/${id}/hide`, {
+ method: 'POST',
+ body: formData
+ })
+ .then(r => r.json())
+ .then(data => {
+ if (data.success) {
+ alert('Comment hidden!');
+ location.reload();
+ } else {
+ alert('Error: ' + data.message);
+ }
+ })
+ .catch(e => alert('Error: ' + e.message));
 }
 
 function unhideComment(id) {
-    if (!confirm('Are you sure you want to unhide this comment?')) return;
+ if (!confirm('Are you sure you want to unhide this comment?')) return;
 
-    fetch(`/admin/comments/${id}/unhide`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert('Comment unhidden!');
-            location.reload();
-        } else {
-            alert('Error: ' + data.message);
-        }
-    })
-    .catch(e => alert('Error: ' + e.message));
+ fetch(`/admin/comments/${id}/unhide`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({})
+ })
+ .then(r => r.json())
+ .then(data => {
+ if (data.success) {
+ alert('Comment unhidden!');
+ location.reload();
+ } else {
+ alert('Error: ' + data.message);
+ }
+ })
+ .catch(e => alert('Error: ' + e.message));
 }
 
 function submitAdminReply(event, parentId, contentType, contentId) {
-    event.preventDefault();
+ event.preventDefault();
 
-    const content = document.getElementById('adminReplyContent').value;
+ const content = document.getElementById('adminReplyContent').value;
 
-    if (!content.trim()) {
-        alert('Reply cannot be empty!');
-        return;
-    }
+ if (!content.trim()) {
+ alert('Reply cannot be empty!');
+ return;
+ }
 
-    const formData = new FormData();
-    formData.append('content', content);
-    formData.append('content_type', contentType);
-    formData.append('content_id', contentId);
+ const formData = new FormData();
+ formData.append('content', content);
+ formData.append('content_type', contentType);
+ formData.append('content_id', contentId);
 
-    fetch(`/admin/comments/${parentId}/reply`, {
-        method: 'POST',
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert('Admin reply posted!');
-            location.reload();
-        } else {
-            alert('Error: ' + data.message);
-        }
-    })
-    .catch(e => alert('Error: ' + e.message));
+ fetch(`/admin/comments/${parentId}/reply`, {
+ method: 'POST',
+ body: formData
+ })
+ .then(r => r.json())
+ .then(data => {
+ if (data.success) {
+ alert('Admin reply posted!');
+ location.reload();
+ } else {
+ alert('Error: ' + data.message);
+ }
+ })
+ .catch(e => alert('Error: ' + e.message));
 }
 
 function deleteComment(id) {
-    if (!confirm('Are you sure you want to permanently delete this comment and its replies?')) return;
+ if (!confirm('Are you sure you want to permanently delete this comment and its replies?')) return;
 
-    fetch(`/admin/comments/${id}/delete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert('Comment deleted!');
-            window.location.href = '/admin/comments';
-        } else {
-            alert('Error: ' + data.message);
-        }
-    })
-    .catch(e => alert('Error: ' + e.message));
+ fetch(`/admin/comments/${id}/delete`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({})
+ })
+ .then(r => r.json())
+ .then(data => {
+ if (data.success) {
+ alert('Comment deleted!');
+ window.location.href = '/admin/comments';
+ } else {
+ alert('Error: ' + data.message);
+ }
+ })
+ .catch(e => alert('Error: ' + e.message));
 }
-  </script>
+ </script>
 {% endblock %}
+
+
+
+

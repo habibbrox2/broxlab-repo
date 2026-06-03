@@ -79,6 +79,7 @@ $maxAttempts = 3;
 $attempt = 0;
 $connected = false;
 $lastException = null;
+$mysqli = null;
 
 while ($attempt < $maxAttempts && !$connected) {
     $attempt++;

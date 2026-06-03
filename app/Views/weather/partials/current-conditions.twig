@@ -1,24 +1,24 @@
 ﻿{# weather/partials/current-conditions.twig #}
-{# Displays current weather conditions card #}
+{# Displays current weather conditions rounded-xl border border-slate-200 bg-white shadow-sm #}
 
 {# Determine unit symbol #}
-{% set unitSymbol = '°C' %}
+{% set unitSymbol = 'C' %}
 {% if units is defined %}
-    {% if units == 'imperial' %}
-        {% set unitSymbol = '°F' %}
-    {% elseif units == 'kelvin' %}
-        {% set unitSymbol = ' K' %}
-    {% else %}
-        {% set unitSymbol = '°C' %}
-    {% endif %}
+ {% if units == 'imperial' %}
+ {% set unitSymbol = 'F' %}
+ {% elseif units == 'kelvin' %}
+ {% set unitSymbol = ' K' %}
+ {% else %}
+ {% set unitSymbol = 'C' %}
+ {% endif %}
 {% elseif weather.units is defined %}
-    {% if weather.units == 'imperial' %}
-        {% set unitSymbol = '°F' %}
-    {% elseif weather.units == 'kelvin' %}
-        {% set unitSymbol = ' K' %}
-    {% else %}
-        {% set unitSymbol = '°C' %}
-    {% endif %}
+ {% if weather.units == 'imperial' %}
+ {% set unitSymbol = 'F' %}
+ {% elseif weather.units == 'kelvin' %}
+ {% set unitSymbol = ' K' %}
+ {% else %}
+ {% set unitSymbol = 'C' %}
+ {% endif %}
 {% endif %}
 
 {# Normalize payload fields so this partial works with nested `weather` objects #}
@@ -33,19 +33,19 @@
 {% set weatherPressure = pressure is defined ? pressure : (weather.pressure|default(0)) %}
 {% set weatherIconClass = 'cloud-sun' %}
 {% if weatherIcon starts with '01' %}
-    {% set weatherIconClass = 'sun-fill' %}
+ {% set weatherIconClass = 'sun-fill' %}
 {% elseif weatherIcon starts with '02' %}
-    {% set weatherIconClass = 'cloud-sun-fill' %}
+ {% set weatherIconClass = 'cloud-sun-fill' %}
 {% elseif weatherIcon starts with '03' or weatherIcon starts with '04' %}
-    {% set weatherIconClass = 'cloud-fill' %}
+ {% set weatherIconClass = 'cloud-fill' %}
 {% elseif weatherIcon starts with '09' or weatherIcon starts with '10' %}
-    {% set weatherIconClass = 'cloud-rain-fill' %}
+ {% set weatherIconClass = 'cloud-rain-fill' %}
 {% elseif weatherIcon starts with '11' %}
-    {% set weatherIconClass = 'cloud-lightning-rain-fill' %}
+ {% set weatherIconClass = 'cloud-lightning-rain-fill' %}
 {% elseif weatherIcon starts with '13' %}
-    {% set weatherIconClass = 'cloud-snow-fill' %}
+ {% set weatherIconClass = 'cloud-snow-fill' %}
 {% elseif weatherIcon starts with '50' %}
-    {% set weatherIconClass = 'cloud-fog2-fill' %}
+ {% set weatherIconClass = 'cloud-fog2-fill' %}
 {% endif %}
 
 {# Map wind degrees to direction #}
@@ -59,41 +59,45 @@
 {% elseif windDeg >= 292.5 and windDeg < 337.5 %}{% set windDir = 'NW' %}
 {% endif %}
 
-<div class="card border-0 shadow-lg overflow-hidden">
-    <div class="card-body p-4">
-        <div class="row align-items-center">
-            {# Weather Icon #}
-            <div class="col-4 text-center">
-                <div class="weather-icon-wrapper mb-2">
-                    <i class="bi bi-{{ weatherIconClass }} fs-1 text-primary"></i>
-                </div>
-                <div class="text-muted small text-uppercase">{{ weatherDescription|title }}</div>
-            </div>
+<div class="bg-white rounded-xl shadow-lg overflow-hidden">
+ <div class="p-4">
+ <div class="flex items-center">
+ {# Weather Icon #}
+ <div class="w-1/3 text-center">
+ <div class="weather-icon-wrapper mb-2">
+ <i class="lucide lucide-{{ weatherIconClass }} text-4xl text-indigo-600" style="width:1em;height:1em;"></i>
+ </div>
+ <div class="text-neutral-500 text-sm uppercase">{{ weatherDescription|title }}</div>
+ </div>
 
-            {# Temperature & Location #}
-            <div class="col-5 text-center">
-                <div class="display-3 fw-bold text-dark mb-0" style="font-size: 3rem;">
-                    {{ weatherTemp|round|int }}
-                    <small class="fs-5 text-muted">{{ unitSymbol }}</small>
-                </div>
-                <div class="text-muted">Feels like {{ weatherFeels|round|int }}{{ unitSymbol }}</div>
-                <h4 class="h5 mt-2">{{ weatherLocation }}</h4>
-            </div>
+ {# Temperature & Location #}
+ <div class="w-5/12 text-center">
+ <div class="text-5xl font-bold text-neutral-900 mb-0" style="font-size: 3rem;">
+ {{ weatherTemp|round|int }}
+ <small class="text-base text-neutral-500">{{ unitSymbol }}</small>
+ </div>
+ <div class="text-neutral-500">Feels like {{ weatherFeels|round|int }}{{ unitSymbol }}</div>
+ <h4 class="text-lg font-medium mt-2">{{ weatherLocation }}</h4>
+ </div>
 
-            {# Additional Info #}
-            <div class="col-3 text-center">
-                <div class="row g-2 small">
-                    <div class="col-12">
-                        <i class="bi bi-droplet-fill text-primary me-1"></i>{{ weatherHumidity }}%
-                    </div>
-                    <div class="col-12">
-                        <i class="bi bi-wind text-success me-1"></i>{{ weatherWind }} m/s {{ windDir }}
-                    </div>
-                    <div class="col-12">
-                        <i class="bi bi-speedometer2 text-warning me-1"></i>{{ weatherPressure }} hPa
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+ {# Additional Info #}
+ <div class="w-1/4 text-center">
+ <div class="space-y-1 text-sm">
+ <div>
+ <i class="lucide lucide-droplet text-indigo-600 mr-1" style="width:1em;height:1em;"></i>{{ weatherHumidity }}%
+ </div>
+ <div>
+ <i class="lucide lucide-wind text-emerald-600 mr-1" style="width:1em;height:1em;"></i>{{ weatherWind }} m/s {{ windDir }}
+ </div>
+ <div>
+ <i class="lucide lucide-gauge text-amber-600 mr-1" style="width:1em;height:1em;"></i>{{ weatherPressure }} hPa
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
+
+
+
+

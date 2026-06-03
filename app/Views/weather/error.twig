@@ -1,41 +1,44 @@
-﻿{% extends "layout.twig" %}
+﻿{% extends"layout.twig" %}
 
 {% block title %}Weather Error{{ parent() ? ' | ' ~ parent() : '' }}{% endblock %}
 
 {% block meta_description %}We could not retrieve weather data. Please try again later.{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body text-center py-5">
-                    <div class="mb-4">
-                        <i class="bi bi-cloud-slash fs-1 text-danger"></i>
-                    </div>
-                    <h1 class="h2 text-danger mb-3">Weather Service Unavailable</h1>
-                    <p class="text-muted mb-4">
-                        {{ message|default('We could not retrieve weather data at this time.') }}
-                    </p>
-                    {% if error_code %}
-                        <div class="alert alert-secondary small">
-                            <code class="text-muted">Error Code: {{ error_code }}</code>
-                            {% if request_id %}
-                                <br><code class="text-muted">Request ID: {{ request_id }}</code>
-                            {% endif %}
-                        </div>
-                    {% endif %}
-                    <div class="d-flex gap-3 justify-content-center mt-4">
-                        <a href="{{ path('weather.home') }}" class="btn btn-primary">
-                            <i class="bi bi-house me-1"></i>Weather Home
-                        </a>
-                        <a href="{{ url }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-1"></i>Back to Site
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="max-w-7xl mx-auto px-4 py-8">
+ <div class="flex justify-center">
+ <div class="w-full max-w-lg">
+ <div class="bg-white rounded-xl shadow-sm">
+ <div class="px-5 py-8 text-center">
+ <div class="mb-4">
+ <i class="lucide lucide-cloud-off text-4xl text-red-600" style="width:1em;height:1em;"></i>
+ </div>
+ <h1 class="text-2xl text-red-600 mb-3">Weather Service Unavailable</h1>
+ <p class="text-neutral-500 mb-4">
+ {{ message|default('We could not retrieve weather data at this time.') }}
+ </p>
+ {% if error_code %}
+ <div class="p-4 rounded-lg bg-neutral-100 text-neutral-700 border border-neutral-200 text-sm">
+ <code class="text-neutral-500">Error Code: {{ error_code }}</code>
+ {% if request_id %}
+ <br><code class="text-neutral-500">Request ID: {{ request_id }}</code>
+ {% endif %}
+ </div>
+ {% endif %}
+ <div class="flex gap-3 justify-center mt-4">
+ <a href="{{ path('weather.home') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-600-dark transition-colors">
+ <i class="lucide lucide-house mr-1" style="width:1em;height:1em;"></i>Weather Home
+ </a>
+ <a href="{{ url }}" class="inline-flex items-center px-4 py-2 text-neutral-700 rounded-lg font-medium hover:bg-neutral-100 transition-colors">
+ <i class="lucide lucide-arrow-left mr-1" style="width:1em;height:1em;"></i>Back to Site
+ </a>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 {% endblock %}
+
+
+

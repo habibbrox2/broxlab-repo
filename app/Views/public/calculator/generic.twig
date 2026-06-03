@@ -1,294 +1,300 @@
-{# app/Views/public/calculator/generic.twig
-   One-template-fits-all calculator form + AJAX results  #}
+﻿{# app/Views/public/calculator/generic.twig
+ One-template-fits-all calculator form + AJAX results #}
 {% extends 'layout.twig' %}
 
 {% block title %}{{ header_title }} | {{ app_settings.site_name|default('BroxLab') }}{% endblock %}
-{% block meta_description %}{{ current_lang == 'bn' ? 'সঠিক ও দ্রুত ফলাফলের জন্য ফ্রি ' ~ header_title ~ ' ক্যালকুলেটর ব্যবহার করুন — কোন সাইন-আপের প্রয়োজন নেই।' : 'Use the free ' ~ header_title ~ ' calculator – accurate, instant results, no sign-up required.' }}{% endblock %}
+{% block meta_description %}{{ current_lang == 'bn' ? 'à¦¸à¦ à¦¿à¦• à¦“ à¦¦à§à¦°à§à¦¤ à¦«à¦²à¦¾à¦«à¦²à§‡à¦° à¦œà¦¨à§à¦¯ à¦«à§à¦°à¦¿ ' ~ header_title ~ ' à¦•à§à¦¯à¦¾à¦²à¦•à§à¦²à§‡à¦Ÿà¦° à¦¬à§à¦¯à¦¬à¦¹à¦¾à¦° à¦•à¦°à§à¦¨ â€” à¦•à§‹à¦¨ à¦¸à¦¾à¦‡à¦¨-à¦†à¦ªà§‡à¦° à¦ªà§à¦°à¦¯à¦¼à§‹à¦œà¦¨ à¦¨à§‡à¦‡à¥¤' : 'Use the free ' ~ header_title ~ ' calculator â€“ accurate, instant results, no sign-up required.' }}{% endblock %}
 
 {% set breadcrumbs = [
-  { label: current_lang == 'bn' ? 'ক্যালকুলেটর' : 'Calculators', url: '/calculators', icon: 'bi-calculator' },
-  { label: header_title|default(current_lang == 'bn' ? 'ক্যালকুলেটর' : 'Calculator') }
+ { label: current_lang == 'bn' ? 'à¦•à§à¦¯à¦¾à¦²à¦•à§à¦²à§‡à¦Ÿà¦°' : 'Calculators', url: '/calculators', icon: 'icon-calculator' },
+ { label: header_title|default(current_lang == 'bn' ? 'à¦•à§à¦¯à¦¾à¦²à¦•à§à¦²à§‡à¦Ÿà¦°' : 'Calculator') }
 ] %}
 
 {% block extra_styles %}
 <style>
-  /* ── calculator form ─────────────────────────────────────────── */
-  .calc-form-card {
-    border-radius: 18px;
-    overflow: hidden;
-  }
-  .calc-field-group {
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid #f0f0f0;
-    transition: background 0.15s ease;
-  }
-  .calc-field-group:last-child { border-bottom: none; }
-  .calc-field-group:hover { background: #f8f9ff; }
-  .calc-field-group label {
-    font-weight: 600;
-    font-size: 0.92rem;
-    margin-bottom: 0.45rem;
-    display: block;
-  }
-  .calc-field-input {
-    border: 2px solid #dee2e6;
-    border-radius: 10px;
-    padding: 0.62rem 0.9rem;
-    font-size: 1rem;
-    width: 100%;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    background: #fff;
-  }
-  .calc-field-input:focus {
-    outline: none;
-    border-color: var(--bs-primary);
-    box-shadow: 0 0 0 0.2rem rgba(13,110,253,.15);
-  }
-  .calc-field-input.is-invalid {
-    border-color: #dc3545;
-    background: #fff8f8;
-  }
-  .calc-field-help {
-    font-size: 0.8rem;
-    color: #6c757d;
-    margin-top: 0.3rem;
-  }
-  .calc-field-error { color: #dc3545; font-size: 0.82rem; margin-top: 0.25rem; }
-  textarea.calc-field-input { resize: vertical; min-height: 96px; }
+ /* â”€â”€ calculator form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+ .calc-form-card {
+ border-radius: 18px;
+ overflow: hidden;
+ }
+ .calc-field-group {
+ padding: 1rem 1.25rem;
+ border-bottom: 1px solid #f0f0f0;
+ transition: background 0.15s ease;
+ }
+ .calc-field-group:last-child { border-bottom: none; }
+ .calc-field-group:hover { background: #f8f9ff; }
+ .calc-field-group label {
+ font-weight: 600;
+ font-size: 0.92rem;
+ margin-bottom: 0.45rem;
+ display: block;
+ }
+ .calc-field-input {
+ border: 2px solid #dee2e6;
+ border-radius: 10px;
+ padding: 0.62rem 0.9rem;
+ font-size: 1rem;
+ width: 100%;
+ transition: border-color 0.2s ease, box-shadow-md 0.2s ease;
+ background: #fff;
+ }
+ .calc-field-input:focus {
+ outline: none;
+ border-color: var(--bs-primary);
+ box-shadow: 0 0 0 0.2rem rgba(13,110,253,.15);
+ }
+ .calc-field-input.is-invalid {
+ border-color: #dc3545;
+ background: #fff8f8;
+ }
+ .calc-field-help {
+ font-size: 0.8rem;
+ color: #6c757d;
+ margin-top: 0.3rem;
+ }
+ .calc-field-error { color: #dc3545; font-size: 0.82rem; margin-top: 0.25rem; }
+ textarea.calc-field-input { resize: vertical; min-height: 96px; }
 
-  /* ── result cards ────────────────────────────────────────────── */
-  .result-card {
-    border-radius: 14px;
-    border: none;
-    box-shadow: 0 4px 28px rgba(0,0,0,0.08);
-    overflow: hidden;
-    animation: calcFadeIn 0.35s ease-out;
-  }
-  .result-card .result-header {
-    padding: 1rem 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  .result-card .result-body { padding: 1.5rem; }
-  .result-highlight {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #fff;
-    border-radius: 10px;
-    padding: 1.5rem;
-    text-align: center;
-  }
-  .result-highlight .result-label { opacity: 0.85; font-size: 0.95rem; margin-bottom: 0.4rem; }
-  .result-highlight .result-value { font-size: 2.5rem; font-weight: 700; line-height: 1; }
-  .result-meta { font-size: 0.88rem; opacity: 0.8; margin-top: 0.5rem; }
+ /* â”€â”€ result cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+ .result-card {
+ border-radius: 14px;
+ border: none;
+ box-shadow: 0 4px 28px rgba(0,0,0,0.08);
+ overflow: hidden;
+ animation: calcFadeIn 0.35s ease-out;
+ }
+ .result-card .result-header {
+ padding: 1rem 1.5rem;
+ display: flex;
+ align-items: center;
+ gap: 0.75rem;
+ }
+ .result-card .result-body { padding: 1.5rem; }
+ .result-highlight {
+ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+ color: #fff;
+ border-radius: 10px;
+ padding: 1.5rem;
+ text-align: center;
+ }
+ .result-highlight .result-label { opacity: 0.85; font-size: 0.95rem; margin-bottom: 0.4rem; }
+ .result-highlight .result-value { font-size: 2.5rem; font-weight: 700; line-height: 1; }
+ .result-meta { font-size: 0.88rem; opacity: 0.8; margin-top: 0.5rem; }
 
-  .result-row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  @media (max-width: 576px) { .result-row-grid { grid-template-columns: 1fr; } }
+ .result-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+ @media (max-width: 576px) { .result-grid-2col { grid-template-columns: 1fr; } }
 
-  .result-num-card {
-    background: #f8f9ff;
-    border-radius: 10px;
-    padding: 0.85rem 1rem;
-    text-align: center;
-  }
-  .result-num-card .rn-label { font-size: 0.78rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; }
-  .result-num-card .rn-value { font-size: 1.3rem; font-weight: 700; color: var(--bs-primary); }
+ .result-num-card {
+ background: #f8f9ff;
+ border-radius: 10px;
+ padding: 0.85rem 1rem;
+ text-align: center;
+ }
+ .result-num-card .rn-label { font-size: 0.78rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; }
+ .result-num-card .rn-value { font-size: 1.3rem; font-weight: 700; color: var(--bs-primary); }
 
-  .detail-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    padding: 0.55rem 0;
-    border-bottom: 1px solid #f0f0f0;
-    font-size: 0.92rem;
-  }
-  .detail-row:last-of-type { border-bottom: none; }
-  .detail-row .dr-label { color: #6c757d; }
-  .detail-row .dr-value { font-weight: 600; color: #212529; }
+ .detail-row {
+ display: flex;
+ justify-content: space-between;
+ align-items: baseline;
+ padding: 0.55rem 0;
+ border-bottom: 1px solid #f0f0f0;
+ font-size: 0.92rem;
+ }
+ .detail-row:last-of-type { border-bottom: none; }
+ .detail-row .dr-label { color: #6c757d; }
+ .detail-row .dr-value { font-weight: 600; color: #212529; }
 
-  @keyframes calcFadeIn {
-    from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
+ @keyframes calcFadeIn {
+ from { opacity: 0; transform: translateY(14px); }
+ to { opacity: 1; transform: translateY(0); }
+ }
 
-  .calc-submit-btn {
-    min-width: 140px;
-    border-radius: 10px;
-    font-size: 1rem;
-    font-weight: 600;
-    padding: 0.72rem;
-    letter-spacing: 0.02em;
-  }
+ .calc-submit-btn {
+ min-width: 140px;
+ border-radius: 10px;
+ font-size: 1rem;
+ font-weight: 600;
+ padding: 0.72rem;
+ letter-spacing: 0.02em;
+ }
 
-  /* ── back / share ────────────────────────────────────────────────── */
-  .btn-calc-back {
-    border-radius: 8px;
-    background: #f0f0f0;
-    color: #444;
-  }
-  .btn-calc-back:hover { background: #e0e0e0; }
+ /* â”€â”€ back / share â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+ .calc-back-btn {
+ border-radius: 8px;
+ background: #f0f0f0;
+ color: #444;
+ }
+ .calc-back-btn:hover { background: #e0e0e0; }
 
-  .btn-calc-copy {
-    border-radius: 8px;
-    font-size: 0.8rem;
-  }
+ .calc-copy-btn {
+ border-radius: 8px;
+ font-size: 0.8rem;
+ }
 </style>
 {% endblock %}
 
 {% block content %}
 <section class="py-5">
-<div class="container">
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-  <div class="row g-4 mb-4">
-    <div class="col-12 col-xl-4 order-2 order-xl-1">
-      <div class="sticky-top" style="top:100px">
-        {% include 'public/partials/calculator-sidebar.twig' with {'groups': groups, 'current_type': calc_type} %}
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
+ <div class="col-span-12 xl:col-span-4 order-2 order-xl-1">
+ <div class="sticky-top" style="top:100px">
+ {% include 'public/partials/calculator-sidebar.twig' with {'groups': groups, 'current_type': calc_type} %}
 
-        <div class="result-card shadow-sm mt-4 mb-3">
-          <div class="result-header bg-white border-bottom">
-            <div class="d-flex align-items-center">
-              <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center me-3"
-                   style="width:44px;height:44px;font-size:1.2rem"><i class="bi {{ calc_icon|default('bi-calculator') }}"></i></div>
-              <div>
-                <h4 class="mb-0 fw-bold text-dark">{{ calc_label|default('Calculator') }}</h4>
-                <span class="badge bg-primary-subtle text-primary text-capitalize">{{ calc_category|default('') }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="result-body">
-            {{ getCalculatorDescription(calc_type|default('')) }}
-          </div>
-        </div>
-        <div class="text-center mt-3">
-          <a href="/calculators" class="btn btn-calc-back">
-            <i class="bi bi-grid me-1"></i>{{ current_lang == 'bn' ? 'সমস্ত ক্যালকুলেটর' : 'All Calculators' }}
-          </a>
-        </div>
-      </div>
-    </div>
+ <div class="result-card mt-4 mb-3">
+ <div class="result-header bg-white border-bottom">
+ <div class="flex items-center">
+ <div class="bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mr-3"
+ style="width:44px;height:44px;font-size:1.2rem"><i class="bi {{ calc_icon|default('icon-calculator') }}"></i></div>
+ <div>
+ <h4 class="mb-0 font-bold text-slate-900">{{ calc_label|default('Calculator') }}</h4>
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-indigo-600-subtle text-indigo-600 text-capitalize">{{ calc_category|default('') }}</span>
+ </div>
+ </div>
+ </div>
+ <div class="result-body">
+ {{ getCalculatorDescription(calc_type|default('')) }}
+ </div>
+ </div>
+ <div class="text-center mt-3">
+ <a href="/calculators" class="transition calc-back-btn">
+ <i class="lucide lucide-grid mr-1"></i>{{ current_lang == 'bn' ? 'à¦¸à¦®à¦¸à§à¦¤ à¦•à§à¦¯à¦¾à¦²à¦•à§à¦²à§‡à¦Ÿà¦°' : 'All Calculators' }}
+ </a>
+ </div>
+ </div>
+ </div>
 
-    <!-- ── Form card ── -->
-    <div class="col-12 col-xl-8 order-1 order-xl-2">
-      <div class="result-card shadow-sm">
-        <div class="result-header bg-primary text-white">
-          <i class="bi bi-input-cursor-text me-2"></i>
-          <span class="fw-bold">{{ current_lang == 'bn' ? 'মান লিখুন' : 'Enter Values' }}</span>
-        </div>
-        <div class="result-body" id="calc-form-wrap">
+ <!-- â”€â”€ Form rounded-xl border border-slate-200 bg-white shadow-sm â”€â”€ -->
+ <div class="col-span-12 xl:col-span-8 order-1 order-xl-2">
+ <div class="result-card">
+ <div class="result-header bg-indigo-600 text-white">
+ <i class="lucide lucide-cursor-text mr-2"></i>
+ <span class="font-bold">{{ current_lang == 'bn' ? 'à¦®à¦¾à¦¨ à¦²à¦¿à¦–à§à¦¨' : 'Enter Values' }}</span>
+ </div>
+ <div class="result-body" id="calc-form-wrap">
 
-          <form id="calculator-form" class="calc-form-wrapper"
-                action="/api/calculator/compute/{{ calc_type }}"
-                method="POST"
-                novalidate>
+ <form id="calculator-form" class="calc-form-wrapper"
+ action="/api/calculator/compute/{{ calc_type }}"
+ method="POST"
+ novalidate>
 
-            <input type="hidden" name="calc_type" value="{{ calc_type }}">
+ <input type="hidden" name="calc_type" value="{{ calc_type }}">
 
-            {% for field in fields %}
-              <div class="calc-field-group">
-                <label for="{{ field.name }}">
-                  {% if field.icon %}<i class="bi {{ field.icon }} me-1 text-muted"></i>{% endif %}
-                  {{ field.label }}
-                </label>
+ {% for field in fields %}
+ <div class="calc-field-group">
+ <label for="{{ field.name }}">
+ {% if field.icon %}<i class="bi {{ field.icon }} mr-1 text-slate-500"></i>{% endif %}
+ {{ field.label }}
+ </label>
 
-                {# number / text / email / url / date / datetime ── #}
-                {% if field.type in ['number','text','email','url','date','datetime'] %}
-                  <input type="{{ field.type }}"
-                         id="{{ field.name }}"
-                         name="{{ field.name }}"
-                         class="form-control calc-field-input {% if field.step %}step-any{% endif %} {% if field.type == 'date' %}datepicker{% endif %}"
-                         {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
-                         {% if field.step      is defined %}step="{{ field.step }}"{% endif %}
-                         {% if field.min       is defined %}min="{{ field.min }}"{% endif %}
-                         {% if field.max       is defined %}max="{{ field.max }}"{% endif %}
-                         {% if field.type == 'date' %}data-format="YYYY-MM-DD"{% endif %}
-                         value="{{ field.default|default('') }}"
-                         required>
+ {# number / text / email / url / date / datetime â”€â”€ #}
+ {% if field.type in ['number','text','email','url','date','datetime'] %}
+ <input type="{{ field.type }}"
+ id="{{ field.name }}"
+ name="{{ field.name }}"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 calc-field-input {% if field.step %}step-any{% endif %} field.type == 'date' %}datepicker{%"
+ {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+ {% if field.step is defined %}step="{{ field.step }}"{% endif %}
+ {% if field.min is defined %}min="{{ field.min }}"{% endif %}
+ {% if field.max is defined %}max="{{ field.max }}"{% endif %}
+ {% if field.type == 'date' %}data-format="YYYY-MM-DD"{% endif %}
+ value="{{ field.default|default('') }}"
+ required>
 
-                {# select ── #}
-                {% elseif field.type == 'select' %}
-                  <select id="{{ field.name }}"
-                          name="{{ field.name }}"
-                          class="form-select calc-field-input"
-                          required>
-                    {% for optVal, optLabel in field.options %}
-                      <option value="{{ optVal }}" {% if optVal == (field.default|default('')) %}selected{% endif %}>
-                        {{ optLabel }}
-                      </option>
-                    {% endfor %}
-                  </select>
+ {# select â”€â”€ #}
+ {% elseif field.type == 'select' %}
+ <select id="{{ field.name }}"
+ name="{{ field.name }}"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 calc-field-input"
+ required>
+ {% for optVal, optLabel in field.options %}
+ <option value="{{ optVal }}" {% if optVal == (field.default|default('')) %}selected{% endif %}>
+ {{ optLabel }}
+ </option>
+ {% endfor %}
+ </select>
 
-                {# radio group ── #}
-                {% elseif field.type == 'radio' %}
-                  <div class="d-flex flex-wrap gap-3 mt-1">
-                    {% for optVal, optLabel in field.options %}
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio"
-                               id="{{ field.name }}_{{ optVal }}"
-                               name="{{ field.name }}"
-                               value="{{ optVal }}"
-                               {% if optVal == (field.default|default('')) %}checked{% endif %}>
-                        <label class="form-check-label" for="{{ field.name }}_{{ optVal }}">
-                          {{ optLabel }}
-                        </label>
-                      </div>
-                    {% endfor %}
-                  </div>
+ {# radio group â”€â”€ #}
+ {% elseif field.type == 'radio' %}
+ <div class="flex flex-wrap gap-3 mt-1">
+ {% for optVal, optLabel in field.options %}
+ <div class="flex items-start gap-2">
+ <input class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="radio"
+ id="{{ field.name }}_{{ optVal }}"
+ name="{{ field.name }}"
+ value="{{ optVal }}"
+ {% if optVal == (field.default|default('')) %}checked{% endif %}>
+ <label class="text-sm text-slate-700" for="{{ field.name }}_{{ optVal }}">
+ {{ optLabel }}
+ </label>
+ </div>
+ {% endfor %}
+ </div>
 
-                {# checkbox ── #}
-                {% elseif field.type == 'checkbox' %}
-                  <div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox"
-                             id="{{ field.name }}"
-                             name="{{ field.name }}"
-                             value="1"
-                             {% if field.default %}checked{% endif %}>
-                      <label class="form-check-label" for="{{ field.name }}">
-                        {{ field.label_checkbox|default('Enabled') }}
-                      </label>
-                    </div>
-                  </div>
+ {# checkbox â”€â”€ #}
+ {% elseif field.type == 'checkbox' %}
+ <div>
+ <div class="flex items-start gap-2">
+ <input class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox"
+ id="{{ field.name }}"
+ name="{{ field.name }}"
+ value="1"
+ {% if field.default %}checked{% endif %}>
+ <label class="text-sm text-slate-700" for="{{ field.name }}">
+ {{ field.label_checkbox|default('Enabled') }}
+ </label>
+ </div>
+ </div>
 
-                {# textarea ── #}
-                {% elseif field.type == 'textarea' %}
-                  <textarea id="{{ field.name }}"
-                            name="{{ field.name }}"
-                            class="form-control calc-field-input"
-                            rows="4"
-                            {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
-                            required>{{ field.default|default('') }}</textarea>
-                  {% if field.help %}<p class="calc-field-help">{{ field.help|raw }}</p>{% endif %}
-                {% endif %}
+ {# textarea â”€â”€ #}
+ {% elseif field.type == 'textarea' %}
+ <textarea id="{{ field.name }}"
+ name="{{ field.name }}"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 calc-field-input"
+ rows="4"
+ {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+ required>{{ field.default|default('') }}</textarea>
+ {% if field.help %}<p class="calc-field-help">{{ field.help|raw }}</p>{% endif %}
+ {% endif %}
 
-                {% if field.help and field.type != 'textarea' %}
-                  <p class="calc-field-help">{{ field.help|raw }}</p>
-                {% endif %}
-                <div class="calc-field-error" id="err-{{ field.name }}"></div>
-              </div>
-            {% endfor %}
+ {% if field.help and field.type != 'textarea' %}
+ <p class="calc-field-help">{{ field.help|raw }}</p>
+ {% endif %}
+ <div class="calc-field-error" id="err-{{ field.name }}"></div>
+ </div>
+ {% endfor %}
 
-            <div class="p-3 text-end border-top bg-light">
-              <button type="submit" class="btn btn-primary calc-submit-btn" id="calc-submit-btn">
-                <span id="calc-btn-label">
-                  <i class="bi bi-calculator me-1"></i>{{ current_lang == 'bn' ? 'গণনা করুন' : 'Calculate' }}
-                </span>
-                <span id="calc-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
-              </button>
-            </div>
+ <div class="p-3 text-right border-top bg-slate-100">
+ <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 calc-submit-inline-flex" id="calc-submit-btn">
+ <span id="calc-submit-label">
+ <i class="lucide lucide-calculator mr-1"></i>{{ current_lang == 'bn' ? 'à¦—à¦£à¦¨à¦¾ à¦•à¦°à§à¦¨' : 'Calculate' }}
+ </span>
+ <span id="calc-spinner" class="inline-spinner inline-spinner-sm hidden" role="status"></span>
+ </button>
+ </div>
 
-          </form>
+ </form>
 
-          {# ── Results panel (hidden initially) ── #}
-          <div id="calc-results" class="d-none mt-4"></div>
+ {# â”€â”€ Results panel (hidden initially) â”€â”€ #}
+ <div id="calc-results" class="hidden mt-4"></div>
 
-        </div>
-      </div>
-    </div>
-  </div>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 </section>
 {% endblock %}
 
 {% block extra_javascripts %}
-<script src="/assets/js/calculator.js"></script>
+<script type="module" src="/assets/js/dist/calculator.js"></script>
 {% endblock %}
+
+
+
+
+
+

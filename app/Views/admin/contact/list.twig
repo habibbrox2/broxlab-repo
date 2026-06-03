@@ -1,124 +1,130 @@
-{% extends "admin/layout.twig" %}
+﻿{% extends"admin/layout.twig" %}
 {% block title %}{{ title }}{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <!-- Page Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-envelope me-2"></i>
-        Contact Messages
-      </div>
-      <div class="admin-page-subtitle">Manage customer inquiries and messages</div>
-    </div>
-    <!-- Card Wrapper -->
-    <div class="admin-panel-card shadow-sm border-0 rounded-4">
-      <div class="admin-panel-card-header text-white rounded-top-4 d-flex justify-content-between align-items-center">
-        <h4 class="mb-0">
-          <i class="bi bi-envelope me-2"></i> {{ header_title }}
-        </h4>
-        <span class="badge bg-light text-primary rounded-pill">
-          <i class="bi bi-inbox me-1"></i> {{ messages|length }} Messages
-        </span>
-      </div>
-      <div class="admin-panel-card-body p-4">
-        <!-- Search & Filter Form -->
-        <div class="border-bottom px-3 py-3 mb-3">
-          <form method="get" class="row g-2 align-items-end">
-            <div class="col-md-4">
-              <label class="form-label small text-muted mb-1">Search</label>
-              <div class="input-group input-group-sm">
-                <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
-                <input type="text"
-                       name="search"
-                       value="{{ pagination.search|default("") }}"
-                       class="form-control form-control-sm"
-                       placeholder="Search by name, email, or subject...">
-              </div>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small text-muted mb-1">Limit</label>
-              <select name="limit" class="form-select form-select-sm">
-                <option value="10">10 items</option>
-                <option value="20" selected>20 items</option>
-                <option value="50">50 items</option>
-                <option value="100">100 items</option>
-              </select>
-            </div>
-            <div class="col-md-5 text-end">
-              <button type="submit" class="modern-btn modern-btn-primary btn-sm">
-                <i class="bi bi-funnel me-1"></i> Apply
-              </button>
-            </div>
-          </form>
-        </div>
-        <div class="table-responsive shadow-sm rounded-3">
-          <table class="table table-stacked table-hover align-middle mb-0">
-            <thead class="table-primary text-primary fw-semibold">
-              <tr>
-                <th>#</th>
-                <th>
-                  <i class="bi bi-person-fill"></i> Name
-                </th>
-                <th>
-                  <i class="bi bi-envelope-fill"></i> Email
-                </th>
-                <th>
-                  <i class="bi bi-type"></i> Subject
-                </th>
-                <th>
-                  <i class="bi bi-calendar-fill"></i> Date
-                </th>
-                <th class="text-center">
-                  <i class="bi bi-gear-fill"></i> Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for msg in messages %}
-                <tr>
-                  <td class="fw-bold" data-label="#">ID</td>
-                  <td data-label="Name">{{ msg.name }}</td>
-                  <td data-label="Email">
-                    {% if msg.email matches '/^.+@.+\..+$/' %}
-                      <a href="mailto:{{ msg.email }}" class="text-decoration-none"><i class="bi bi-envelope-check text-success me-1"></i>{{ msg.email }}</a>
-                    {% else %}
-                      {{ msg.email }}
-                    {% endif %}
-                  </td>
-                  <td data-label="Subject">{{ msg.subject }}</td>
-                  <td data-label="Date">
-                    <i class="bi bi-clock-fill text-info me-1"></i>{{ msg.created_at|date("Y-m-d H:i") }}
-                  </td>
-                  <td class="text-center" data-label="Actions">
-                    <a href="/admin/contact/view/{{ msg.id }}"
-                       class="modern-btn btn-sm btn-outline-info rounded-circle me-1"
-                       title="View">
-                      <i class="bi bi-eye-fill"></i>
-                    </a>
-                    <a href="/admin/contact/delete/{{ msg.id }}"
-                       class="modern-btn btn-sm btn-danger-outline rounded-circle"
-                       title="Delete"
-                       onclick="return confirm('Are you sure?')">
-                      <i class="bi bi-trash-fill"></i>
-                    </a>
-                  </td>
-                </tr>
-              {% else %}
-                <tr>
-                  <td colspan="6" class="text-center text-muted py-4">
-                    <i class="bi bi-info-circle-fill me-1"></i> No messages found.
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        <!-- Pagination -->
-        {% include "admin/partials/pagination.twig" %}
-      </div>
-    </div>
-  </div>
+ <div class="w-full px-4 sm:px-6 py-4">
+ <!-- Page Header -->
+ <div class=" mb-4">
+ <div>
+ <i class="lucide lucide-mail mr-2"></i>
+ Contact Messages
+ </div>
+ <div>Manage customer inquiries and messages</div>
+ </div>
+ <!-- Card Wrapper -->
+ <div class=" border border-slate-200 bg-white shadow-sm border-0 rounded-2xl">
+ <div class=" border-slate-200 px-4 py-3 text-white rounded-top-4 flex justify-between items-center">
+ <h4 class="mb-0">
+ <i class="lucide lucide-mail mr-2"></i> {{ header_title }}
+ </h4>
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-100 text-indigo-600">
+ <i class="lucide lucide-inbox mr-1"></i> {{ messages|length }} Messages
+ </span>
+ </div>
+ <div class="p-4 p-4">
+ <!-- Search & Filter Form -->
+ <div class="border-bottom px-3 py-3 mb-3">
+ <form method="get" class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-2 items-end">
+ <div class="md:col-span-4">
+ <label class="form-label small text-slate-500 mb-1">Search</label>
+ <div class="input-group input-group-sm">
+ <span class="inline-flex items-center bg-slate-100"><i class="lucide lucide-search"></i></span>
+ <input type="text"
+ name="search"
+ value="{{ pagination.search|default("") }}"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:border-indigo-500-sm"
+ placeholder="Search by name, email, or subject...">
+ </div>
+ </div>
+ <div class="md:col-span-3">
+ <label class="form-label small text-slate-500 mb-1">Limit</label>
+ <select name="limit" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:border-indigo-500-sm">
+ <option value="10">10 items</option>
+ <option value="20" selected>20 items</option>
+ <option value="50">50 items</option>
+ <option value="100">100 items</option>
+ </select>
+ </div>
+ <div class="md:col-span-5 text-right">
+ <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-1.5 text-xs">
+ <i class="lucide lucide-filter mr-1"></i> Apply
+ </button>
+ </div>
+ </form>
+ </div>
+ <div class="overflow-x-auto shadow-sm rounded-xl">
+ <table class="table table-stacked table-hover align-middle mb-0">
+ <thead class="table-primary text-indigo-600 font-semibold">
+ <tr>
+ <th>#</th>
+ <th>
+ <i class="lucide lucide-user"></i> Name
+ </th>
+ <th>
+ <i class="lucide lucide-mail"></i> Email
+ </th>
+ <th>
+ <i class="lucide lucide-text"></i> Subject
+ </th>
+ <th>
+ <i class="lucide lucide-calendar"></i> Date
+ </th>
+ <th class="text-center">
+ <i class="lucide lucide-settings"></i> Actions
+ </th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for msg in messages %}
+ <tr>
+ <td class="font-bold" data-label="#">ID</td>
+ <td data-label="Name">{{ msg.name }}</td>
+ <td data-label="Email">
+ {% if msg.email matches '/^.+@.+\..+$/' %}
+ <a href="mailto:{{ msg.email }}" class="no-underline"><i class="lucide lucide-mail-check text-emerald-600 mr-1"></i>{{ msg.email }}</a>
+ {% else %}
+ {{ msg.email }}
+ {% endif %}
+ </td>
+ <td data-label="Subject">{{ msg.subject }}</td>
+ <td data-label="Date">
+ <i class="lucide lucide-clock text-sky-600 mr-1"></i>{{ msg.created_at|date("Y-m-d H:i") }}
+ </td>
+ <td class="text-center" data-label="Actions">
+ <a href="/admin/contact/view/{{ msg.id }}"
+ class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs inline-flex text-sky-600 hover:bg-sky-100 rounded-full mr-1"
+ title="View">
+ <i class="lucide lucide-eye"></i>
+ </a>
+ <a href="/admin/contact/delete/{{ msg.id }}"
+ class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-red-600 text-white hover:bg-red-700-outline rounded-full"
+ title="Delete"
+ onclick="return confirm('Are you sure?')">
+ <i class="lucide lucide-trash-2"></i>
+ </a>
+ </td>
+ </tr>
+ {% else %}
+ <tr>
+ <td colspan="6" class="text-center text-slate-500 py-4">
+ <i class="lucide lucide-info mr-1"></i> No messages found.
+ </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ <!-- Pagination -->
+ {% include"admin/partials/pagination.twig" %}
+ </div>
+ </div>
+ </div>
 {% endblock %}
+
+
+
+
+
+
 
 

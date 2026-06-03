@@ -1,55 +1,55 @@
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="card mb-4">
-                <div class="card-header pb-0">
-                    <h6>Feature Flags (Super Admin)</h6>
-                </div>
-                <div class="card-body px-0 pt-0 pb-2">
-                    <div class="table-responsive p-0">
-                        <table class="table align-items-center mb-0">
-                            <thead>
-                                <tr>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Feature</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Status</th>
-                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Super Admin Only</th>
-                                    <th class="text-secondary opacity-7"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for feature in features %}
-                                <tr>
-                                    <td>
-                                        <p class="text-xs font-weight-bold mb-0">{{ feature.feature_key }}</p>
-                                    </td>
-                                    <td>
-                                        <span class="badge badge-sm bg-gradient-{{ feature.enabled ? 'success' : 'secondary' }}">
-                                            {{ feature.enabled ? 'Enabled' : 'Disabled' }}
-                                        </span>
-                                    </td>
-                                    <td class="align-middle text-center">
-                                        <span class="text-secondary text-xs font-weight-bold">{{ feature.super_admin_only ? 'Yes' : 'No' }}</span>
-                                    </td>
-                                    <td class="align-middle">
-                                        <form method="POST" action="/admin/feature-flags/toggle" class="d-inline">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                            <input type="hidden" name="id" value="{{ feature.id }}">
-                                            <button type="submit" class="btn btn-link text-secondary font-weight-bold text-xs">
-                                                Toggle
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="w-full px-4 sm:px-6 py-4 space-y-4">
+ <section class="admin-page-header">
+  <div class="flex items-end justify-between gap-3">
+   <div>
+    <p class="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">
+     <i class="lucide lucide-flag"></i>
+     Feature Flags
+    </p>
+    <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">Super Admin Flags</h1>
+    <p class="mt-2 text-sm text-slate-600">Toggle platform-wide features without changing code.</p>
+   </div>
+  </div>
+ </section>
+
+ <section class="admin-panel-card">
+  <div class="overflow-x-auto">
+   <table class="table">
+    <thead>
+     <tr>
+      <th>Feature</th>
+      <th>Status</th>
+      <th class="text-center">Super Admin Only</th>
+      <th></th>
+     </tr>
+    </thead>
+    <tbody>
+     {% for feature in features %}
+     <tr>
+      <td class="font-medium text-slate-900">{{ feature.feature_key }}</td>
+      <td>
+       <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {{ feature.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700' }}">
+        {{ feature.enabled ? 'Enabled' : 'Disabled' }}
+       </span>
+      </td>
+      <td class="text-center text-sm text-slate-600">{{ feature.super_admin_only ? 'Yes' : 'No' }}</td>
+      <td class="text-right">
+       <form method="POST" action="/admin/feature-flags/toggle" class="inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="id" value="{{ feature.id }}">
+        <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100">
+         <i class="lucide lucide-toggle-right"></i> Toggle
+        </button>
+       </form>
+      </td>
+     </tr>
+     {% endfor %}
+    </tbody>
+   </table>
+  </div>
+ </section>
 </div>
 {% endblock %}

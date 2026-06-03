@@ -57,6 +57,8 @@ const SECTION_TITLES = [
     'storage'            => ['en' => 'Storage Conditions', 'bn' => 'সংরক্ষণ'],
 ];
 
+require_once __DIR__ . '/medex-cloudflare-helper.php';
+
 if (!defined('MEDEX_BRAND_PARSER_LOADED')) {
     define('MEDEX_BRAND_PARSER_LOADED', true);
 
@@ -250,33 +252,7 @@ if (!defined('MEDEX_BRAND_PARSER_LOADED')) {
 
     function fetch_page(string $url, int $maxRetries = MAX_RETRIES): string|false
     {
-        $attempt = 0;
-        while ($attempt < $maxRetries) {
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL            => $url,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_MAXREDIRS      => 8,
-                CURLOPT_CONNECTTIMEOUT => 20,
-                CURLOPT_TIMEOUT        => 45,
-                CURLOPT_USERAGENT      => USER_AGENT,
-                CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_VERIFYHOST => false,
-                CURLOPT_HTTPHEADER     => [
-                    'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                    'Accept-Language: en-US,en;q=0.9,bn;q=0.8',
-                    'Referer: https://medex.com.bd/',
-                ],
-            ]);
-            $resp = curl_exec($ch);
-            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-            if ($resp !== false && $code >= 200 && $code < 400) return $resp;
-            $attempt++;
-            if ($attempt < $maxRetries) sleep(min(5, $attempt * 2));
-        }
-        return false;
+        return medex_fetch_page($url, $maxRetries);
     }
 
     function normalize_brand_url(string $url): string

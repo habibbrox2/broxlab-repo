@@ -324,7 +324,7 @@ class AIChatManager {
     if (this.nodes.activeStatus) {
       this.nodes.activeStatus.className = isActive ? 'small text-success' : 'small text-secondary';
       this.nodes.activeStatus.innerHTML = `
-        <i class="bi bi-circle-fill" style="font-size: 6px;"></i>
+        <i class="lucide lucide-circle" style="font-size: 6px;"></i>
         <span id="statusText">${isActive ? 'Active' : 'Inactive'}</span>
       `;
     }
@@ -343,7 +343,7 @@ class AIChatManager {
   setTranscriptLoading() {
     if (!this.nodes.chatTranscript) return;
     this.nodes.chatTranscript.innerHTML =
-      '<div class="text-center py-5 text-muted"><i class="bi bi-arrow-repeat spin"></i> Loading transcript...</div>';
+      '<div class="text-center py-5 text-muted"><i class="lucide lucide-refresh-cw spin"></i> Loading transcript...</div>';
   }
 
   setTranscriptError(text) {
@@ -388,7 +388,7 @@ class AIChatManager {
     this.nodes.suggestionContainer.innerHTML = `
       <div class="text-center py-4">
         <button class="btn btn-primary btn-sm rounded-pill js-generate-suggestion">
-          <i class="bi bi-magic"></i> Generate Suggested Reply
+          <i class="lucide lucide-wand"></i> Generate Suggested Reply
         </button>
       </div>
     `;
@@ -402,7 +402,7 @@ class AIChatManager {
     if (!this.nodes.suggestionContainer) return;
     this.nodes.suggestionContainer.innerHTML = `
       <div class="text-center py-4">
-        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+        <div class="inline-spinner inline-spinner-sm text-primary" role="status"></div>
         <div class="small text-muted mt-2">AI is drafting a reply...</div>
       </div>
     `;
@@ -434,7 +434,7 @@ class AIChatManager {
     this.nodes.suggestionContainer.innerHTML = `
       <div class="suggestion-card">
         <div class="suggestion-header">
-          <i class="bi bi-stars"></i> Suggested Reply
+          <i class="lucide lucide-sparkles"></i> Suggested Reply
         </div>
         <div class="suggestion-content">${this.escapeHtml(text)}</div>
         <button class="btn btn-primary btn-apply-suggestion btn-sm rounded-pill js-apply-suggestion">
@@ -443,7 +443,7 @@ class AIChatManager {
       </div>
       <div class="text-center mt-3">
         <button class="btn btn-link btn-sm text-muted js-retry-suggestion">
-          <i class="bi bi-arrow-clockwise"></i> Try again
+          <i class="lucide lucide-refresh-cw"></i> Try again
         </button>
       </div>
     `;

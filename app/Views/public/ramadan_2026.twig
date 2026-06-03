@@ -1,191 +1,197 @@
-{% extends 'layout.twig' %}
+﻿{% extends 'layout.twig' %}
 
-{% block title %}রমজান ক্যালেন্ডার ২০২৬ | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+{% block title %}à¦°à¦®à¦œà¦¾à¦¨ à¦•à§à¦¯à¦¾à¦²à§‡à¦¨à§à¦¡à¦¾à¦° à§¨à§¦à§¨à§¬ | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
 
 {% set breadcrumbs = [
-  { label: 'রমজান ২০২৬', url: '/ramadan-2026', icon: 'calendar-event' }
+ { label: 'à¦°à¦®à¦œà¦¾à¦¨ à§¨à§¦à§¨à§¬', url: '/ramadan-2026', icon: 'calendar-event' }
 ] %}
 
 {% block content %}
 <section class="ramadan-2026-page py-5">
-  <div class="container">
-    <div class="ramadan-2026-hero text-center rounded-4 p-4 p-md-5 mb-4">
-      <span class="ramadan-2026-chip">রমজান ১৪৪৭ হিজরি</span>
-      <h1 class="display-5 fw-bold mt-3 mb-2">রমজান ক্যালেন্ডার ২০২৬</h1>
-      <p class="mb-0 text-light-emphasis">
-        লাইভ কাউন্টডাউন, বিভাগভিত্তিক সময় সমন্বয় এবং দৈনিক আপডেটসহ সেহরি-ইফতারের পূর্ণ সময়সূচী।
-      </p>
-    </div>
+ <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+ <div class="ramadan-2026-hero text-center rounded-2xl p-4 md:p-5 mb-4">
+ <span class="ramadan-2026-chip">à¦°à¦®à¦œà¦¾à¦¨ à§§à§ªà§ªà§­ à¦¹à¦¿à¦œà¦°à¦¿</span>
+ <h1 class="text-3xl font-bold mt-3 mb-2">à¦°à¦®à¦œà¦¾à¦¨ à¦•à§à¦¯à¦¾à¦²à§‡à¦¨à§à¦¡à¦¾à¦° à§¨à§¦à§¨à§¬</h1>
+ <p class="mb-0 text-white-emphasis">
+ à¦²à¦¾à¦‡à¦­ à¦•à¦¾à¦‰à¦¨à§à¦Ÿà¦¡à¦¾à¦‰à¦¨, à¦¬à¦¿à¦­à¦¾à¦—à¦­à¦¿à¦¤à§à¦¤à¦¿à¦• à¦¸à¦®à§Ÿ à¦¸à¦®à¦¨à§à¦¬à§Ÿ à¦à¦¬à¦‚ à¦¦à§ˆà¦¨à¦¿à¦• à¦†à¦ªà¦¡à§‡à¦Ÿà¦¸à¦¹ à¦¸à§‡à¦¹à¦°à¦¿-à¦‡à¦«à¦¤à¦¾à¦°à§‡à¦° à¦ªà§‚à¦°à§à¦£ à¦¸à¦®à§Ÿà¦¸à§‚à¦šà§€à¥¤
+ </p>
+ </div>
 
-    <div class="ramadan-2026-widget card border-0 shadow-sm rounded-4 mb-4"
-         data-ramadan-widget
-         data-ramadan-mode="full"
-         data-ramadan-today="{{ 'now'|date('Y-m-d', 'Asia/Dhaka') }}">
-      <div class="card-body p-4 p-md-5">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-          <div>
-            <span class="badge rounded-pill ramadan-status-badge" data-ramadan-status>লোড হচ্ছে...</span>
-            <h2 class="h4 fw-bold mb-0 mt-2" data-ramadan-countdown-title>কাউন্টডাউন লোড হচ্ছে...</h2>
-          </div>
-          <div class="ramadan-division-wrap">
-            <label for="ramadanDivisionSelect" class="form-label fw-semibold mb-1">বিভাগ নির্বাচন</label>
-            <select id="ramadanDivisionSelect" class="form-select form-select-sm" data-ramadan-division>
-              <option value="Dhaka">ঢাকা (বেস)</option>
-              <option value="Chattogram">চট্টগ্রাম (+৫ মিনিট)</option>
-              <option value="Sylhet">সিলেট (+৬ মিনিট)</option>
-              <option value="Rajshahi">রাজশাহী (-৭ মিনিট)</option>
-              <option value="Khulna">খুলনা (-৩ মিনিট)</option>
-              <option value="Barishal">বরিশাল (-১ মিনিট)</option>
-              <option value="Rangpur">রংপুর (-৬ মিনিট)</option>
-              <option value="Mymensingh">ময়মনসিংহ (+০ মিনিট)</option>
-            </select>
-          </div>
-        </div>
+ <div class="ramadan-2026-widget rounded-xl border border-slate-200 bg-white shadow-sm border-0 rounded-2xl mb-4"
+ data-ramadan-widget
+ data-ramadan-mode="full"
+ data-ramadan-today="{{ 'now'|date('Y-m-d', 'Asia/Dhaka') }}">
+ <div class="p-4 md:p-5">
+ <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+ <div>
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ramadan-status-badge" data-ramadan-status>à¦²à§‹à¦¡ à¦¹à¦šà§à¦›à§‡...</span>
+ <h2 class="h4 font-bold mb-0 mt-2" data-ramadan-countdown-title>à¦•à¦¾à¦‰à¦¨à§à¦Ÿà¦¡à¦¾à¦‰à¦¨ à¦²à§‹à¦¡ à¦¹à¦šà§à¦›à§‡...</h2>
+ </div>
+ <div class="ramadan-division-wrap">
+ <label for="ramadanDivisionSelect" class="form-label font-semibold mb-1">à¦¬à¦¿à¦­à¦¾à¦— à¦¨à¦¿à¦°à§à¦¬à¦¾à¦šà¦¨</label>
+ <select id="ramadanDivisionSelect" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:border-indigo-500-sm" data-ramadan-division>
+ <option value="Dhaka">à¦¢à¦¾à¦•à¦¾ (à¦¬à§‡à¦¸)</option>
+ <option value="Chattogram">à¦šà¦Ÿà§à¦Ÿà¦—à§à¦°à¦¾à¦® (+à§« à¦®à¦¿à¦¨à¦¿à¦Ÿ)</option>
+ <option value="Sylhet">à¦¸à¦¿à¦²à§‡à¦Ÿ (+à§¬ à¦®à¦¿à¦¨à¦¿à¦Ÿ)</option>
+ <option value="Rajshahi">à¦°à¦¾à¦œà¦¶à¦¾à¦¹à§€ (-à§­ à¦®à¦¿à¦¨à¦¿à¦Ÿ)</option>
+ <option value="Khulna">à¦–à§à¦²à¦¨à¦¾ (-à§© à¦®à¦¿à¦¨à¦¿à¦Ÿ)</option>
+ <option value="Barishal">à¦¬à¦°à¦¿à¦¶à¦¾à¦² (-à§§ à¦®à¦¿à¦¨à¦¿à¦Ÿ)</option>
+ <option value="Rangpur">à¦°à¦‚à¦ªà§à¦° (-à§¬ à¦®à¦¿à¦¨à¦¿à¦Ÿ)</option>
+ <option value="Mymensingh">à¦®à§Ÿà¦®à¦¨à¦¸à¦¿à¦‚à¦¹ (+à§¦ à¦®à¦¿à¦¨à¦¿à¦Ÿ)</option>
+ </select>
+ </div>
+ </div>
 
-        <div class="ramadan-2026-countdown d-flex align-items-center justify-content-center gap-3 gap-md-4 mb-4">
-          <div class="count-box text-center">
-            <div class="count-num" data-ramadan-hours>০০</div>
-            <small>ঘণ্টা</small>
-          </div>
-          <span class="count-sep">:</span>
-          <div class="count-box text-center">
-            <div class="count-num" data-ramadan-minutes>০০</div>
-            <small>মিনিট</small>
-          </div>
-          <span class="count-sep">:</span>
-          <div class="count-box text-center">
-            <div class="count-num" data-ramadan-seconds>০০</div>
-            <small>সেকেন্ড</small>
-          </div>
-        </div>
+ <div class="ramadan-2026-countdown flex items-center justify-center gap-3 gap-md-4 mb-4">
+ <div class="count-box text-center">
+ <div class="count-num" data-ramadan-hours>à§¦à§¦</div>
+ <small>à¦˜à¦£à§à¦Ÿà¦¾</small>
+ </div>
+ <span class="count-sep">:</span>
+ <div class="count-box text-center">
+ <div class="count-num" data-ramadan-minutes>à§¦à§¦</div>
+ <small>à¦®à¦¿à¦¨à¦¿à¦Ÿ</small>
+ </div>
+ <span class="count-sep">:</span>
+ <div class="count-box text-center">
+ <div class="count-num" data-ramadan-seconds>à§¦à§¦</div>
+ <small>à¦¸à§‡à¦•à§‡à¦¨à§à¦¡</small>
+ </div>
+ </div>
 
-        <div class="row g-3">
-          <div class="col-sm-6 col-lg-3">
-            <div class="ramadan-stat-box">
-              <small>আজকের তারিখ</small>
-              <div class="fw-bold" data-ramadan-date>--</div>
-            </div>
-          </div>
-          <div class="col-sm-6 col-lg-3">
-            <div class="ramadan-stat-box">
-              <small>রোজা</small>
-              <div class="fw-bold" data-ramadan-roja>--</div>
-            </div>
-          </div>
-          <div class="col-sm-6 col-lg-3">
-            <div class="ramadan-stat-box">
-              <small>সেহরি</small>
-              <div class="fw-bold" data-ramadan-today-sehri>--</div>
-            </div>
-          </div>
-          <div class="col-sm-6 col-lg-3">
-            <div class="ramadan-stat-box">
-              <small>ইফতার</small>
-              <div class="fw-bold" data-ramadan-today-iftar>--</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3">
+ <div class="sm:col-span-6 lg:col-span-3">
+ <div class="ramadan-stat-box">
+ <small>à¦†à¦œà¦•à§‡à¦° à¦¤à¦¾à¦°à¦¿à¦–</small>
+ <div class="font-bold" data-ramadan-date>--</div>
+ </div>
+ </div>
+ <div class="sm:col-span-6 lg:col-span-3">
+ <div class="ramadan-stat-box">
+ <small>à¦°à§‹à¦œà¦¾</small>
+ <div class="font-bold" data-ramadan-roja>--</div>
+ </div>
+ </div>
+ <div class="sm:col-span-6 lg:col-span-3">
+ <div class="ramadan-stat-box">
+ <small>à¦¸à§‡à¦¹à¦°à¦¿</small>
+ <div class="font-bold" data-ramadan-today-sehri>--</div>
+ </div>
+ </div>
+ <div class="sm:col-span-6 lg:col-span-3">
+ <div class="ramadan-stat-box">
+ <small>à¦‡à¦«à¦¤à¦¾à¦°</small>
+ <div class="font-bold" data-ramadan-today-iftar>--</div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-      <div class="card-header bg-transparent border-0 px-4 pt-4 pb-2 d-flex justify-content-between align-items-center">
-        <h2 class="h5 fw-bold mb-0">পূর্ণাঙ্গ সময়সূচী (রমজান ২০২৬)</h2>
-        <span class="small text-muted">অফিশিয়াল সময়সূচীর ভিত্তিতে</span>
-      </div>
-      <div class="card-body pt-2 px-0 pb-0">
-        <div class="table-responsive">
-          <table class="table align-middle mb-0 ramadan-2026-table">
-            <thead>
-              <tr>
-                <th class="ps-4">রোজা</th>
-                <th>তারিখ</th>
-                <th>বার</th>
-                <th>সেহরি</th>
-                <th class="pe-4">ইফতার</th>
-              </tr>
-            </thead>
-            <tbody data-ramadan-table-body>
-              <tr>
-                <td colspan="5" class="text-center py-4 text-muted">সময়সূচী লোড হচ্ছে...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 rounded-2xl mb-4">
+ <div class="border-b border-slate-200 px-4 py-3 bg-transparent border-0 pt-4 pb-2 flex justify-between items-center">
+ <h2 class="h5 font-bold mb-0">à¦ªà§‚à¦°à§à¦£à¦¾à¦™à§à¦— à¦¸à¦®à§Ÿà¦¸à§‚à¦šà§€ (à¦°à¦®à¦œà¦¾à¦¨ à§¨à§¦à§¨à§¬)</h2>
+ <span class="small text-slate-500">à¦…à¦«à¦¿à¦¶à¦¿à§Ÿà¦¾à¦² à¦¸à¦®à§Ÿà¦¸à§‚à¦šà§€à¦° à¦­à¦¿à¦¤à§à¦¤à¦¿à¦¤à§‡</span>
+ </div>
+ <div class="p-4 pt-2 px-0 pb-0">
+ <div class="overflow-x-auto">
+ <table class="table align-middle mb-0 ramadan-2026-table">
+ <thead>
+ <tr>
+ <th class="ps-4">à¦°à§‹à¦œà¦¾</th>
+ <th>à¦¤à¦¾à¦°à¦¿à¦–</th>
+ <th>à¦¬à¦¾à¦°</th>
+ <th>à¦¸à§‡à¦¹à¦°à¦¿</th>
+ <th class="pe-4">à¦‡à¦«à¦¤à¦¾à¦°</th>
+ </tr>
+ </thead>
+ <tbody data-ramadan-table-body>
+ <tr>
+ <td colspan="5" class="text-center py-4 text-slate-500">à¦¸à¦®à§Ÿà¦¸à§‚à¦šà§€ à¦²à§‹à¦¡ à¦¹à¦šà§à¦›à§‡...</td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
 
-    <div class="row g-4">
-      <div class="col-lg-5">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
-          <div class="card-body p-4">
-            <h3 class="h5 fw-bold mb-3">ডিজিটাল তাসবিহ</h3>
-            <div class="ramadan-tasbih-display mb-3" data-ramadan-tasbih-value>০</div>
-            <div class="d-flex flex-wrap gap-2">
-              <button type="button" class="btn btn-success rounded-pill px-4" data-ramadan-tasbih-inc>
-                গণনা +১
-              </button>
-              <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-ramadan-tasbih-reset>
-                রিসেট
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-7">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
-          <div class="card-body p-4">
-            <h3 class="h5 fw-bold mb-3">দৈনিক দোয়া</h3>
-            <div class="ramadan-dua-box mb-3">
-              <h4 class="h6 fw-bold mb-3">সেহরির দোয়া</h4>
-              <div class="ramadan-dua-row">
-                <span class="ramadan-dua-meta-label">আরবি</span>
-                <p class="ramadan-dua-arabic mb-2" dir="rtl" lang="ar">
-                  وَبِصَوْمِ غَدٍ نَوَيْتُ مِنْ شَهْرِ رَمَضَانَ
-                </p>
-              </div>
-              <div class="ramadan-dua-row">
-                <span class="ramadan-dua-meta-label">বাংলা অর্থ</span>
-                <p class="ramadan-dua-translation mb-2">
-                  আমি রমজান মাসের আগামী দিনের রোজা রাখার নিয়ত করলাম।
-                </p>
-              </div>
-              <div class="ramadan-dua-row">
-                <span class="ramadan-dua-meta-label">উচ্চারণ</span>
-                <p class="ramadan-dua-translit mb-0 small text-muted">
-                  Nawaytu an asuma ghadam min shahri ramadana al-mubaraki fardal-laka ya Allahu fataqabbal minni.
-                </p>
-              </div>
-            </div>
-            <div class="ramadan-dua-box">
-              <h4 class="h6 fw-bold mb-3">ইফতারের দোয়া</h4>
-              <div class="ramadan-dua-row">
-                <span class="ramadan-dua-meta-label">আরবি</span>
-                <p class="ramadan-dua-arabic mb-2" dir="rtl" lang="ar">
-                  اللَّهُمَّ لَكَ صُمْتُ وَعَلَىٰ رِزْقِكَ أَفْطَرْتُ
-                </p>
-              </div>
-              <div class="ramadan-dua-row">
-                <span class="ramadan-dua-meta-label">বাংলা অর্থ</span>
-                <p class="ramadan-dua-translation mb-2">
-                  হে আল্লাহ! আমি তোমারই জন্য রোজা রেখেছি এবং তোমারই দেওয়া রিজিক দিয়ে ইফতার করলাম।
-                </p>
-              </div>
-              <div class="ramadan-dua-row">
-                <span class="ramadan-dua-meta-label">উচ্চারণ</span>
-                <p class="ramadan-dua-translit mb-0 small text-muted">
-                  Allahumma laka sumtu wa ala rizqika aftartu.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+ <div class="lg:col-span-5">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 rounded-2xl h-full">
+ <div class="p-4">
+ <h3 class="h5 font-bold mb-3">à¦¡à¦¿à¦œà¦¿à¦Ÿà¦¾à¦² à¦¤à¦¾à¦¸à¦¬à¦¿à¦¹</h3>
+ <div class="ramadan-tasbih-display mb-3" data-ramadan-tasbih-value>à§¦</div>
+ <div class="flex flex-wrap gap-2">
+ <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-emerald-600 text-white hover:bg-emerald-700 rounded-full" data-ramadan-tasbih-inc>
+ à¦—à¦£à¦¨à¦¾ +à§§
+ </button>
+ <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-slate-600 hover:bg-slate-100 rounded-full" data-ramadan-tasbih-reset>
+ à¦°à¦¿à¦¸à§‡à¦Ÿ
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+ <div class="lg:col-span-7">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 rounded-2xl h-full">
+ <div class="p-4">
+ <h3 class="h5 font-bold mb-3">à¦¦à§ˆà¦¨à¦¿à¦• à¦¦à§‹à§Ÿà¦¾</h3>
+ <div class="ramadan-dua-box mb-3">
+ <h4 class="h6 font-bold mb-3">à¦¸à§‡à¦¹à¦°à¦¿à¦° à¦¦à§‹à§Ÿà¦¾</h4>
+ <div class="ramadan-dua-grid grid-cols-1 gap-4 md:grid-cols-12">
+ <span class="ramadan-dua-meta-label">à¦†à¦°à¦¬à¦¿</span>
+ <p class="ramadan-dua-arabic mb-2" dir="rtl" lang="ar">
+ ÙˆÙŽØ¨ÙØµÙŽÙˆÙ’Ù…Ù ØºÙŽØ¯Ù Ù†ÙŽÙˆÙŽÙŠÙ’ØªÙ Ù…ÙÙ†Ù’ Ø´ÙŽÙ‡Ù’Ø±Ù Ø±ÙŽÙ…ÙŽØ¶ÙŽØ§Ù†ÙŽ
+ </p>
+ </div>
+ <div class="ramadan-dua-grid grid-cols-1 gap-4 md:grid-cols-12">
+ <span class="ramadan-dua-meta-label">à¦¬à¦¾à¦‚à¦²à¦¾ à¦…à¦°à§à¦¥</span>
+ <p class="ramadan-dua-translation mb-2">
+ à¦†à¦®à¦¿ à¦°à¦®à¦œà¦¾à¦¨ à¦®à¦¾à¦¸à§‡à¦° à¦†à¦—à¦¾à¦®à§€ à¦¦à¦¿à¦¨à§‡à¦° à¦°à§‹à¦œà¦¾ à¦°à¦¾à¦–à¦¾à¦° à¦¨à¦¿à§Ÿà¦¤ à¦•à¦°à¦²à¦¾à¦®à¥¤
+ </p>
+ </div>
+ <div class="ramadan-dua-grid grid-cols-1 gap-4 md:grid-cols-12">
+ <span class="ramadan-dua-meta-label">à¦‰à¦šà§à¦šà¦¾à¦°à¦£</span>
+ <p class="ramadan-dua-translit mb-0 small text-slate-500">
+ Nawaytu an asuma ghadam min shahri ramadana al-mubaraki fardal-laka ya Allahu fataqabbal minni.
+ </p>
+ </div>
+ </div>
+ <div class="ramadan-dua-box">
+ <h4 class="h6 font-bold mb-3">à¦‡à¦«à¦¤à¦¾à¦°à§‡à¦° à¦¦à§‹à§Ÿà¦¾</h4>
+ <div class="ramadan-dua-grid grid-cols-1 gap-4 md:grid-cols-12">
+ <span class="ramadan-dua-meta-label">à¦†à¦°à¦¬à¦¿</span>
+ <p class="ramadan-dua-arabic mb-2" dir="rtl" lang="ar">
+ Ø§Ù„Ù„ÙŽÙ‘Ù‡ÙÙ…ÙŽÙ‘ Ù„ÙŽÙƒÙŽ ØµÙÙ…Ù’ØªÙ ÙˆÙŽØ¹ÙŽÙ„ÙŽÙ‰Ù° Ø±ÙØ²Ù’Ù‚ÙÙƒÙŽ Ø£ÙŽÙÙ’Ø·ÙŽØ±Ù’ØªÙ
+ </p>
+ </div>
+ <div class="ramadan-dua-grid grid-cols-1 gap-4 md:grid-cols-12">
+ <span class="ramadan-dua-meta-label">à¦¬à¦¾à¦‚à¦²à¦¾ à¦…à¦°à§à¦¥</span>
+ <p class="ramadan-dua-translation mb-2">
+ à¦¹à§‡ à¦†à¦²à§à¦²à¦¾à¦¹! à¦†à¦®à¦¿ à¦¤à§‹à¦®à¦¾à¦°à¦‡ à¦œà¦¨à§à¦¯ à¦°à§‹à¦œà¦¾ à¦°à§‡à¦–à§‡à¦›à¦¿ à¦à¦¬à¦‚ à¦¤à§‹à¦®à¦¾à¦°à¦‡ à¦¦à§‡à¦“à§Ÿà¦¾ à¦°à¦¿à¦œà¦¿à¦• à¦¦à¦¿à§Ÿà§‡ à¦‡à¦«à¦¤à¦¾à¦° à¦•à¦°à¦²à¦¾à¦®à¥¤
+ </p>
+ </div>
+ <div class="ramadan-dua-grid grid-cols-1 gap-4 md:grid-cols-12">
+ <span class="ramadan-dua-meta-label">à¦‰à¦šà§à¦šà¦¾à¦°à¦£</span>
+ <p class="ramadan-dua-translit mb-0 small text-slate-500">
+ Allahumma laka sumtu wa ala rizqika aftartu.
+ </p>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 </section>
 {% endblock %}
 
 {% block extra_scripts %}
-  <script src="{{ asset('/assets/js/ramadan-2026.js') }}" defer></script>
+ <script type="module" src="{{ asset('/assets/js/dist/ramadan-2026.js') }}" defer></script>
 {% endblock %}
+
+
+
+
+
+

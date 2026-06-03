@@ -554,7 +554,7 @@ async function enhanceCurrentPrompt() {
   if (button) {
     button.disabled = true;
     button.dataset.originalHtml = button.innerHTML;
-    button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enhancing...';
+    button.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-1"></span>Enhancing...';
   }
 
   try {
@@ -578,7 +578,7 @@ async function enhanceCurrentPrompt() {
   } finally {
     if (button) {
       button.disabled = false;
-      button.innerHTML = button.dataset.originalHtml || '<i class="bi bi-stars"></i> Enhance Prompt';
+      button.innerHTML = button.dataset.originalHtml || '<i class="bi icon-sparkles"></i> Enhance Prompt';
     }
   }
 }

@@ -1404,21 +1404,21 @@ if (!window.BroxAssistantLoaded) {
                 const feedback = document.createElement('div');
                 feedback.className = 'brox-ai-feedback';
                 feedback.innerHTML = `
-                    <button class="brox-ai-feedback-btn" data-rating="1" title="Poor"><i class="bi bi-hand-thumbs-down"></i></button>
-                    <button class="brox-ai-feedback-btn" data-rating="5" title="Excellent"><i class="bi bi-hand-thumbs-up"></i></button>
+                    <button class="brox-ai-feedback-btn" data-rating="1" title="Poor"><i class="lucide lucide-thumbs-down"></i></button>
+                    <button class="brox-ai-feedback-btn" data-rating="5" title="Excellent"><i class="lucide lucide-thumbs-up"></i></button>
                 `;
 
                 // Add copy button
                 const copyBtn = document.createElement('button');
                 copyBtn.className = 'brox-ai-copy-btn';
                 copyBtn.title = this.lang === 'bn' ? 'কপি করুন' : 'Copy';
-                copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+                copyBtn.innerHTML = '<i class="lucide lucide-clipboard"></i>';
                 copyBtn.addEventListener('click', async () => {
                     try {
                         await navigator.clipboard.writeText(content);
-                        copyBtn.innerHTML = '<i class="bi bi-check2"></i>';
+                        copyBtn.innerHTML = '<i class="lucide lucide-check"></i>';
                         setTimeout(() => {
-                            copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+                            copyBtn.innerHTML = '<i class="lucide lucide-clipboard"></i>';
                         }, 2000);
                     } catch (e) {
                         console.error('Copy failed', e);
@@ -1589,21 +1589,21 @@ if (!window.BroxAssistantLoaded) {
                 const feedback = document.createElement('div');
                 feedback.className = 'brox-ai-feedback';
                 feedback.innerHTML = `
-                    <button class="brox-ai-feedback-btn" data-rating="1" title="Poor"><i class="bi bi-hand-thumbs-down"></i></button>
-                    <button class="brox-ai-feedback-btn" data-rating="5" title="Excellent"><i class="bi bi-hand-thumbs-up"></i></button>
+                    <button class="brox-ai-feedback-btn" data-rating="1" title="Poor"><i class="lucide lucide-thumbs-down"></i></button>
+                    <button class="brox-ai-feedback-btn" data-rating="5" title="Excellent"><i class="lucide lucide-thumbs-up"></i></button>
                 `;
 
                 const copyBtn = document.createElement('button');
                 copyBtn.className = 'brox-ai-copy-btn';
                 copyBtn.title = this.lang === 'bn' ? 'কপি করুন' : 'Copy';
-                copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+                copyBtn.innerHTML = '<i class="lucide lucide-clipboard"></i>';
                 copyBtn.addEventListener('click', async () => {
                     try {
                         const textToCopy = body.innerText || body.textContent || '';
                         await navigator.clipboard.writeText(textToCopy);
-                        copyBtn.innerHTML = '<i class="bi bi-check2"></i>';
+                        copyBtn.innerHTML = '<i class="lucide lucide-check"></i>';
                         setTimeout(() => {
-                            copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+                            copyBtn.innerHTML = '<i class="lucide lucide-clipboard"></i>';
                         }, 2000);
                     } catch (e) {
                         console.error('Copy failed', e);
@@ -1716,7 +1716,7 @@ if (!window.BroxAssistantLoaded) {
                 const icon = thinkingWrap.querySelector('[data-brox-ai-stage-icon]');
                 if (label) label.textContent = meta.label;
                 if (sub) sub.textContent = `${meta.detail} ${meta.summary ? `(${meta.summary})` : ''}`.trim();
-                if (icon) icon.className = 'bi bi-gear';
+                if (icon) icon.className = 'lucide lucide-settings';
                 thinkingWrap.dataset.stage = 'calling';
             }
             const statusText = this.lang === 'bn'
@@ -1774,16 +1774,16 @@ if (!window.BroxAssistantLoaded) {
             let stageTimer = null;
             const stageMeta = this.lang === 'bn'
                 ? {
-                    thinking: { label: 'Thinking', sub: 'উত্তর সাজাচ্ছি...', icon: 'bi-stars', },
-                    searching: { label: 'Searching', sub: 'প্রাসঙ্গিক তথ্য খুঁজছি...', icon: 'bi-search', },
-                    calling: { label: 'Calling', sub: 'টুল/সিস্টেম কল চলছে...', icon: 'bi-gear', },
-                    writing: { label: 'Writing', sub: 'সম্পূর্ণ উত্তর লিখছি...', icon: 'bi-pencil-square', },
+                    thinking: { label: 'Thinking', sub: 'উত্তর সাজাচ্ছি...', icon: 'icon-sparkles', },
+                    searching: { label: 'Searching', sub: 'প্রাসঙ্গিক তথ্য খুঁজছি...', icon: 'icon-search', },
+                    calling: { label: 'Calling', sub: 'টুল/সিস্টেম কল চলছে...', icon: 'icon-settings', },
+                    writing: { label: 'Writing', sub: 'সম্পূর্ণ উত্তর লিখছি...', icon: 'icon-square-pen', },
                 }
                 : {
-                    thinking: { label: 'Thinking', sub: 'Working on your request...', icon: 'bi-stars', },
-                    searching: { label: 'Searching', sub: 'Looking up relevant context...', icon: 'bi-search', },
-                    calling: { label: 'Calling', sub: 'Running tools/actions...', icon: 'bi-gear', },
-                    writing: { label: 'Writing', sub: 'Composing the final answer...', icon: 'bi-pencil-square', },
+                    thinking: { label: 'Thinking', sub: 'Working on your request...', icon: 'icon-sparkles', },
+                    searching: { label: 'Searching', sub: 'Looking up relevant context...', icon: 'icon-search', },
+                    calling: { label: 'Calling', sub: 'Running tools/actions...', icon: 'icon-settings', },
+                    writing: { label: 'Writing', sub: 'Composing the final answer...', icon: 'icon-square-pen', },
                 };
 
             const detectInitialStage = () => {
@@ -1818,7 +1818,7 @@ if (!window.BroxAssistantLoaded) {
                 msgBubble.innerHTML = `
                     <div class="brox-ai-thinking-wrap" aria-live="polite" aria-busy="true">
                         <div class="brox-ai-progress-pill" role="status">
-                            <span class="brox-ai-progress-icon" aria-hidden="true"><i data-brox-ai-stage-icon class="bi bi-stars"></i></span>
+                            <span class="brox-ai-progress-icon" aria-hidden="true"><i data-brox-ai-stage-icon class="lucide lucide-sparkles"></i></span>
                             <span class="brox-ai-thinking-text" data-brox-ai-stage-label>${this.t('thinking')}</span>
                             <span class="brox-ai-thinking-dots" aria-hidden="true"><span></span><span></span><span></span></span>
                         </div>

@@ -1,356 +1,423 @@
-{# 
-    BroxBhai AI Admin Copilot - Premium 2026 Redesign
-    Features: CSRF refresh, input validation, file attachment, mobile responsive,
-    typing indicators, auto-save feedback, enhanced history management
-    
-    IMPORTANT: Uses unique 'brox-ai-' prefix for all classes to avoid conflicts
-    with other libraries/bundles
-#}
+{# Premium Admin Copilot - command center layout #}
+{# Keep all existing IDs for compatibility with admin assistant JS #}
 
-{# Hidden file input for attachments #}
-<input type="file" id="adminAiFileInput" class="brox-ai-input-file" accept="image/*,.pdf,.txt,.doc,.docx" multiple>
+<input type="file" id="adminAiFileInput" class="brox-ai-input-file hidden" accept="image/*,.pdf,.txt,.doc,.docx" multiple>
 
-{# Main Copilot Sidebar #}
-<div id="adminAiShell" class="brox-ai-copilot-sidebar brox-ai-hidden" role="dialog" aria-labelledby="adminAiTitle" aria-modal="true">
+<div id="adminAiShell" class="brox-ai-copilot-sidebar brox-ai-hidden pointer-events-auto relative w-[min(100vw,56rem)] overflow-hidden rounded-none border-l border-white/10 bg-slate-950/96 text-slate-100 shadow-[0_35px_100px_rgba(2,6,23,0.5)] backdrop-blur-2xl lg:rounded-l-[2rem]" role="dialog" aria-labelledby="adminAiTitle" aria-modal="true">
+ <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_30%),radial-gradient(circle_at_top_right,rgba(34,211,238,0.12),transparent_32%)]"></div>
 
-    {# Resizer handle for width #}
-    <div class="admin-assistant-chat-resizer" data-resizer="width" aria-hidden="true"></div>
+ <div class="relative flex h-[100dvh] flex-col lg:h-screen">
+  <div class="admin-assistant-chat-resizer absolute left-0 top-0 hidden h-full w-1 cursor-col-resize bg-cyan-400/35 lg:block" data-resizer="width" aria-hidden="true"></div>
 
-    {# Sidebar (Chat History with Tabs) #}
-    <div id="adminAiSidebar" class="brox-ai-sidebar brox-ai-collapsed">
-        <div class="brox-ai-sidebar-header">
-            <div class="brox-ai-sidebar-header-content">
-                <span>Copilot</span>
-                <button id="adminAiSidebarClose" class="brox-ai-icon-btn-sm" aria-label="Close sidebar"><i class="bi bi-x-lg"></i></button>
-            </div>
-        </div>
-
-        {# Tabs Navigation #}
-        <div class="brox-ai-tabs">
-            <div class="brox-ai-tabs-nav">
-                <button class="brox-ai-tabs-nav-item brox-ai-tabs-nav-item-active" data-tab="brox-ai-history-tab" aria-selected="true">
-                    <i class="bi bi-clock-history"></i> History
-                </button>
-                <button class="brox-ai-tabs-nav-item" data-tab="brox-ai-settings-tab" aria-selected="false">
-                    <i class="bi bi-gear"></i> Settings
-                </button>
-            </div>
-
-            {# History Tab Panel #}
-            <div class="brox-ai-tabs-content">
-                <div id="brox-ai-history-tab" class="brox-ai-tabs-panel brox-ai-tabs-panel-active" role="tabpanel">
-                    <div id="adminAiHistory" class="brox-ai-history-list"></div>
-                    <div class="brox-ai-history-empty">
-                        <i class="bi bi-inbox"></i>
-                        <p>No history yet</p>
-                    </div>
-                </div>
-
-                {# Settings Tab Panel #}
-                <div id="brox-ai-settings-tab" class="brox-ai-tabs-panel" role="tabpanel">
-                    <div class="brox-ai-settings-content">
-                        <p class="brox-ai-settings-note">
-                            Copilot manages provider, model, and tool orchestration automatically. Use these controls only when you want to adjust browsing, document parsing, or reasoning behavior.
-                        </p>
-                        <div class="brox-ai-setting-item">
-                            <label class="brox-ai-setting-label">Dark Mode</label>
-                            <button class="brox-ai-toggle-switch" id="adminAiDarkModeToggle" title="Toggle dark mode" data-feature="dark-mode">
-                                <span class="brox-ai-toggle-slider"></span>
-                            </button>
-                        </div>
-                        <div class="brox-ai-setting-item">
-                            <label class="brox-ai-setting-label">Clear History</label>
-                            <button id="adminAiClearHistory" class="brox-ai-btn-clear" title="Clear all history">
-                                <i class="bi bi-trash3"></i> Clear
-                            </button>
-                        </div>
-                        <div class="brox-ai-setting-item">
-                            <label class="brox-ai-setting-label">Auto-Save</label>
-                            <button class="brox-ai-toggle-switch" id="adminAiAutoSaveToggle" title="Toggle auto-save">
-                                <span class="brox-ai-toggle-slider"></span>
-                            </button>
-                        </div>
-                        <div class="brox-ai-setting-item">
-                            <label class="brox-ai-setting-label">Web Plugin</label>
-                            <div class="brox-ai-setting-inline">
-                                <select id="adminAiWebMaxResults" class="brox-ai-setting-select" title="Web max results">
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="5">5</option>
-                                    <option value="10">10</option>
-                                </select>
-                                <button class="brox-ai-toggle-switch" id="adminAiWebPluginToggle" title="Enable web plugin">
-                                    <span class="brox-ai-toggle-slider"></span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="brox-ai-setting-item">
-                            <label class="brox-ai-setting-label">PDF Parser</label>
-                            <div class="brox-ai-setting-inline">
-                                <select id="adminAiPdfEngine" class="brox-ai-setting-select" title="PDF parser engine">
-                                    <option value="pdf-text">pdf-text</option>
-                                    <option value="mistral-ocr">mistral-ocr</option>
-                                    <option value="native">native</option>
-                                </select>
-                                <button class="brox-ai-toggle-switch" id="adminAiPdfPluginToggle" title="Enable PDF parser plugin">
-                                    <span class="brox-ai-toggle-slider"></span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="brox-ai-setting-item">
-                            <label class="brox-ai-setting-label">Reasoning Effort</label>
-                            <select id="adminAiReasoningEffort" class="brox-ai-setting-select" title="Model reasoning effort">
-                                <option value="">Default</option>
-                                <option value="none">none</option>
-                                <option value="minimal">minimal</option>
-                                <option value="low">low</option>
-                                <option value="medium">medium</option>
-                                <option value="high">high</option>
-                                <option value="xhigh">xhigh</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div class="grid flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[21rem_minmax(0,1fr)]">
+   <aside id="adminAiSidebar" class="brox-ai-sidebar brox-ai-collapsed border-b border-white/10 bg-slate-950/90 lg:border-b-0 lg:border-r">
+    <div class="border-b border-white/10 px-4 py-4">
+     <div class="flex items-center justify-between gap-3">
+      <div>
+       <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-200/80">Command center</p>
+       <h2 class="mt-1 text-base font-bold text-white">Brox AI Copilot</h2>
+      </div>
+      <button id="adminAiSidebarClose" class="brox-ai-icon-btn inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 hover:text-white lg:hidden" aria-label="Close sidebar">
+       <i class="lucide lucide-x text-[1rem]"></i>
+      </button>
+     </div>
+     <div class="mt-4 grid grid-cols-2 gap-2">
+      <div class="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3">
+       <p class="text-[11px] uppercase tracking-[0.18em] text-slate-500">Context</p>
+       <p class="mt-1 text-sm font-semibold text-white"><span id="adminAiContextModule">Global</span></p>
+      </div>
+      <div class="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3">
+       <p class="text-[11px] uppercase tracking-[0.18em] text-slate-500">Saved state</p>
+       <p id="adminAiSaveIndicator" class="mt-1 flex items-center gap-2 text-sm font-semibold text-emerald-200">
+        <i class="lucide lucide-check-circle text-emerald-300"></i> Saved
+       </p>
+      </div>
+     </div>
     </div>
 
-    <div class="brox-ai-chat-main">
-        {# Header: Context Aware with auto-save indicator #}
-        <div class="brox-ai-header admin-theme">
-            <div class="brox-ai-header-info">
-                <h3 class="brox-ai-header-title" id="adminAiTitle">
-                    <i class="bi bi-stars"></i> Copilot
-                </h3>
-                <div class="brox-ai-header-meta">
-                    <span class="brox-ai-context-badge" id="adminAiContextBadge">
-                        <i class="bi bi-folder2"></i> <span id="adminAiContextModule">Global</span>
-                    </span>
-                    <span class="brox-ai-save-indicator" id="adminAiSaveIndicator">
-                        <i class="bi bi-check-circle-fill"></i> Saved
-                    </span>
-                    <div class="brox-ai-model-status" id="adminAiModelStatus">
-                        <span class="brox-ai-status-indicator" id="adminAiModelStatusIndicator" title="Model status"></span>
-                        <span class="brox-ai-model-name" id="adminAiCurrentModel">Loading...</span>
-                    </div>
-                    <div class="brox-ai-header-status" id="adminAiStatusText">Ready</div>
-                </div>
-            </div>
-            <div class="brox-ai-header-actions">
-                <button id="adminAiHistoryToggle" class="brox-ai-icon-btn" title="Chat history" aria-label="Chat history">
-                    <i class="bi bi-clock-history"></i>
-                </button>
-                <button id="adminAiMinimize" class="brox-ai-icon-btn" title="Minimize" aria-label="Minimize">
-                    <i class="bi bi-dash-lg"></i>
-                </button>
-                <button id="adminAiClose" class="brox-ai-icon-btn brox-ai-close-btn" title="Close Sidebar" aria-label="Close">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
+    <div class="brox-ai-tabs flex h-full flex-col overflow-hidden">
+     <div class="brox-ai-tabs-nav grid grid-cols-2 gap-2 border-b border-white/10 px-4 py-3">
+      <button class="brox-ai-tabs-nav-item brox-ai-tabs-nav-item-active inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-3 py-3 text-sm font-semibold text-white transition" data-tab="brox-ai-history-tab" aria-selected="true">
+       <i class="lucide lucide-clock text-sm"></i> History
+      </button>
+      <button class="brox-ai-tabs-nav-item inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white" data-tab="brox-ai-settings-tab" aria-selected="false">
+       <i class="lucide lucide-sliders-horizontal text-sm"></i> Settings
+      </button>
+     </div>
+
+     <div class="brox-ai-tabs-content flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div id="brox-ai-history-tab" class="brox-ai-tabs-panel brox-ai-tabs-panel-active min-h-0 flex-1 overflow-y-auto px-4 py-4" role="tabpanel">
+       <div class="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3">
+        <div>
+         <p class="text-[11px] uppercase tracking-[0.18em] text-slate-500">Chat history</p>
+         <p class="text-sm font-semibold text-white">Recent sessions</p>
         </div>
+        <button id="adminAiClearHistory" class="brox-ai-btn-secondary inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-rose-500/15 hover:text-rose-100" title="Clear all history">
+         <i class="lucide lucide-trash-2 text-sm"></i> Clear
+        </button>
+       </div>
+       <div id="adminAiHistory" class="brox-ai-history-list mt-3 space-y-2"></div>
+       <div class="brox-ai-history-empty flex flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-white/10 bg-white/[0.03] px-4 py-10 text-center text-slate-400">
+        <i class="lucide lucide-inbox text-3xl text-slate-500"></i>
+        <p class="mt-3 text-sm font-medium text-slate-300">No history yet</p>
+        <p class="mt-1 text-xs leading-5 text-slate-500">Conversations will show up here after the first message.</p>
+       </div>
+      </div>
 
-        {# Body: Chat Messages & Artifacts #}
-        <div id="adminAiBody" class="brox-ai-body custom-scrollbar brox-ai-scrollbar" role="log" aria-live="polite">
-            {# Welcome message #}
-            <div class="brox-ai-welcome" id="adminAiWelcome">
-                <div class="brox-ai-welcome-icon">
-                    <i class="bi bi-stars"></i>
-                </div>
-                <h4>Welcome to Admin Copilot</h4>
-                <p>Your AI assistant for administrative tasks. Type '/' in the input field or use one of these commands:</p>
-                <div class="brox-ai-welcome-commands">
-                    <button class="brox-ai-cmd-chip" data-cmd="/summarize">
-                        <i class="bi bi-body-text"></i> /summarize
-                    </button>
-                    <button class="brox-ai-cmd-chip" data-cmd="/analyze-logs">
-                        <i class="bi bi-journal-text"></i> /analyze-logs
-                    </button>
-                    <button class="brox-ai-cmd-chip" data-cmd="/list-tools">
-                        <i class="bi bi-list-task"></i> /list-tools
-                    </button>
-                    <button class="brox-ai-cmd-chip" data-cmd="/help">
-                        <i class="bi bi-question-circle"></i> /help
-                    </button>
-                </div>
-            </div>
-
-        {# Thinking Indicator #}
-        <div class="thinking-indicator brox-ai-hidden" id="adminAiThinkingIndicator">
-            <div class="thinking-content">
-                <span class="thinking-text">Thinking...</span>
-                <div class="thinking-dots">
-                    <span class="thinking-dot"></span>
-                    <span class="thinking-dot"></span>
-                    <span class="thinking-dot"></span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {# Slash Command Menu #}
-    <div id="adminAiSlashMenu" class="brox-ai-slash-menu brox-ai-hidden" role="menu">
-        <div class="brox-ai-slash-header">
-            <span>Commands</span>
-            <button class="brox-ai-slash-close" aria-label="Close menu">
-                <i class="bi bi-x"></i>
+      <div id="brox-ai-settings-tab" class="brox-ai-tabs-panel min-h-0 flex-1 overflow-y-auto px-4 py-4" role="tabpanel">
+       <div class="space-y-4">
+        <div class="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4">
+         <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200/80">Model routing</p>
+         <div class="mt-3 space-y-3">
+          <label class="block space-y-2">
+           <span class="block text-sm font-semibold text-white">Provider</span>
+           <div class="flex gap-2">
+            <select id="adminAiProvider" class="brox-ai-setting-select min-w-0 flex-1 rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20"></select>
+            <button id="adminAiRefreshModels" class="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 hover:text-white" type="button" title="Refresh models">
+             <i class="lucide lucide-refresh-cw text-sm"></i>
             </button>
+           </div>
+          </label>
+          <label class="block space-y-2">
+           <span class="block text-sm font-semibold text-white">Model</span>
+           <select id="adminAiModel" class="brox-ai-setting-select w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20"></select>
+          </label>
+          <label class="block space-y-2">
+           <span class="block text-sm font-semibold text-white">Response format</span>
+           <select id="adminAiResponseFormat" class="brox-ai-setting-select w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20">
+            <option value="text">Text</option>
+            <option value="markdown">Markdown</option>
+            <option value="json">JSON</option>
+           </select>
+          </label>
+         </div>
         </div>
-        <ul class="brox-ai-slash-list">
-            <li class="brox-ai-slash-item" data-cmd="/summarize" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-body-text"></i></div>
-                <div class="brox-ai-slash-info">
-                    <strong>/summarize</strong>
-                    <small>Summarize current page data</small>
-                </div>
-            </li>
-            <li class="brox-ai-slash-item" data-cmd="/analyze-logs" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-journal-text"></i></div>
-                <div class="brox-ai-slash-info">
-                    <strong>/analyze-logs</strong>
-                    <small>Analyze system error logs</small>
-                </div>
-            </li>
-            <li class="brox-ai-slash-item" data-cmd="/clear-cache" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-trash"></i></div>
-                <div class="brox-ai-slash-info">
-                    <strong>/clear-cache</strong>
-                    <small>Clear system cache</small>
-                </div>
-            </li>
-            <li class="brox-ai-slash-item" data-cmd="/search-kb" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-book"></i></div>
-                <div class="brox-ai-slash-info">
-                    <strong>/search-kb</strong>
-                    <small>Search knowledge base</small>
-                </div>
-            </li>
-            <li class="brox-ai-slash-item" data-cmd="/web-search" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-globe"></i></div>
-                <div class="brox-ai-slash-info">
-                    <strong>/web-search</strong>
-                    <small>Search the web</small>
-                </div>
-            </li>
-            <li class="brox-ai-slash-item" data-cmd="/get-cache-stats" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-speedometer2"></i></div>
-                <div class="brox-ai-slash-info">
-                    <strong>/get-cache-stats</strong>
-                    <small>View cache statistics</small>
-                </div>
-            </li>
-            <li class="brox-ai-slash-item" data-cmd="/user-stats" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-people"></i></div>
-                <div class="brox-ai-slash-info">
-                    <strong>/user-stats</strong>
-                    <small>View user statistics</small>
-                </div>
-            </li>
-            <li class="brox-ai-slash-item" data-cmd="/content-stats" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-file-earmark-text"></i></div>
-                <div class="brox-ai-slash-info">
-                    <strong>/content-stats</strong>
-                    <small>View content statistics</small>
-                </div>
-            </li>
-            <li class="brox-ai-slash-item" data-cmd="/list-tools" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-list-task"></i></div>
-                <div class="brox-ai-slash-info">
-                    <strong>/list-tools</strong>
-                    <small>Show available admin tools</small>
-                </div>
-            </li>
-            <li class="brox-ai-slash-item" data-cmd="/help" role="menuitem">
-                <div class="brox-ai-slash-icon"><i class="bi bi-question-circle"></i></div>
-                <div class="brox-ai-slash-info">
-                    <strong>/help</strong>
-                    <small>Show the same tool list as /list-tools</small>
-                </div>
-            </li>
-        </ul>
-    </div>
 
-    {# Auto Suggestion Panel #}
-    <div id="adminAiSuggestionPanel" class="brox-ai-suggestion-panel brox-ai-hidden" role="listbox">
-        <div class="brox-ai-suggestion-header">
-            <span>Suggestions</span>
-            <button class="brox-ai-suggestion-close" aria-label="Close suggestions">
-                <i class="bi bi-x"></i>
+        <div class="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4">
+         <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200/80">Automation toggles</p>
+         <div class="mt-3 space-y-3">
+          <div class="brox-ai-setting-item flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/60 px-3 py-3">
+           <label class="brox-ai-setting-label text-sm font-semibold text-white" for="adminAiDarkModeToggle">Dark Mode</label>
+           <button class="brox-ai-toggle-switch relative inline-flex h-7 w-14 items-center rounded-full bg-slate-700 transition" id="adminAiDarkModeToggle" title="Toggle dark mode" data-feature="dark-mode">
+            <span class="brox-ai-toggle-slider absolute left-1 h-5 w-5 rounded-full bg-white shadow transition"></span>
+           </button>
+          </div>
+          <div class="brox-ai-setting-item flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/60 px-3 py-3">
+           <label class="brox-ai-setting-label text-sm font-semibold text-white" for="adminAiAutoSaveToggle">Auto-Save</label>
+           <button class="brox-ai-toggle-switch relative inline-flex h-7 w-14 items-center rounded-full bg-slate-700 transition" id="adminAiAutoSaveToggle" title="Toggle auto-save">
+            <span class="brox-ai-toggle-slider absolute left-1 h-5 w-5 rounded-full bg-white shadow transition"></span>
+           </button>
+          </div>
+          <div class="brox-ai-setting-item flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/60 px-3 py-3">
+           <label class="brox-ai-setting-label text-sm font-semibold text-white" for="adminAiResponseHealingToggle">Response healing</label>
+           <button class="brox-ai-toggle-switch relative inline-flex h-7 w-14 items-center rounded-full bg-slate-700 transition" id="adminAiResponseHealingToggle" title="Toggle response healing">
+            <span class="brox-ai-toggle-slider absolute left-1 h-5 w-5 rounded-full bg-white shadow transition"></span>
+           </button>
+          </div>
+          <div class="brox-ai-setting-item flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/60 px-3 py-3">
+           <label class="brox-ai-setting-label text-sm font-semibold text-white" for="adminAiWebPluginToggle">Web plugin</label>
+           <div class="brox-ai-setting-inline flex items-center gap-2">
+            <select id="adminAiWebMaxResults" class="brox-ai-setting-select rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20">
+             <option value="1">1</option>
+             <option value="2">2</option>
+             <option value="3">3</option>
+             <option value="5">5</option>
+             <option value="10">10</option>
+            </select>
+            <button class="brox-ai-toggle-switch relative inline-flex h-7 w-14 items-center rounded-full bg-slate-700 transition" id="adminAiWebPluginToggle" title="Enable web plugin">
+             <span class="brox-ai-toggle-slider absolute left-1 h-5 w-5 rounded-full bg-white shadow transition"></span>
             </button>
-        </div>
-        <ul class="brox-ai-suggestion-list" id="adminAiSuggestionList"></ul>
-    </div>
-
-    {# Attachment Preview #}
-    <div class="brox-ai-attachment-preview brox-ai-hidden" id="adminAiAttachmentPreview">
-        <div class="brox-ai-attachment-info">
-            <i class="bi bi-paperclip"></i>
-            <div class="brox-ai-attachment-thumb" id="adminAiAttachmentThumb"></div>
-            <span class="brox-ai-attachment-name" id="adminAiFileName">file.pdf</span>
-            <span class="brox-ai-attachment-size" id="adminAiFileSize">0 KB</span>
-        </div>
-        <div class="brox-ai-attachment-progress brox-ai-hidden" id="adminAiAttachmentProgress">
-            <span class="brox-ai-attachment-progress-bar" id="adminAiAttachmentProgressBar"></span>
-        </div>
-        <button class="brox-ai-attachment-remove" id="adminAiRemoveAttachment" aria-label="Remove attachment">
-            <i class="bi bi-x"></i>
-        </button>
-    </div>
-
-    {# Quick Actions #}
-    <div class="brox-ai-quick-actions" id="adminAiQuickActions" aria-label="Quick actions">
-        <button type="button" class="brox-ai-action-chip" id="adminAiCollectData" title="Collect visible form fields">
-            <i class="bi bi-clipboard-data"></i> Collect
-        </button>
-        <button type="button" class="brox-ai-action-chip" id="adminAiAutoFill" title="Auto-fill form (uses URL in input if present)">
-            <i class="bi bi-magic"></i> Auto-fill
-        </button>
-        <button type="button" class="brox-ai-action-chip" id="adminAiEnhancePrompt" title="Enhance the current prompt with clearer instructions and context">
-            <i class="bi bi-stars"></i> Enhance Prompt
-        </button>
-        <button type="button" class="brox-ai-action-chip" id="adminAiQuickSummarize" title="Summarize current page">
-            <i class="bi bi-body-text"></i> Summarize
-        </button>
-        <button type="button" class="brox-ai-action-chip" id="adminAiClear" title="Clear chat history">
-            <i class="bi bi-trash3"></i> Clear
-        </button>
-    </div>
-
-    {# Footer: Input #}
-    <div id="adminAiFooter" class="brox-ai-footer">
-        {# Input Area #}
-        <div class="brox-ai-input-wrapper">
-            <button id="adminAiAttach" class="brox-ai-action-btn brox-ai-action-btn-left" title="Attach file" aria-label="Attach file">
-                <i class="bi bi-paperclip"></i>
+           </div>
+          </div>
+          <div class="brox-ai-setting-item flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/60 px-3 py-3">
+           <label class="brox-ai-setting-label text-sm font-semibold text-white" for="adminAiPdfPluginToggle">PDF parser</label>
+           <div class="brox-ai-setting-inline flex items-center gap-2">
+            <select id="adminAiPdfEngine" class="brox-ai-setting-select rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20">
+             <option value="pdf-text">pdf-text</option>
+             <option value="mistral-ocr">mistral-ocr</option>
+             <option value="native">native</option>
+            </select>
+            <button class="brox-ai-toggle-switch relative inline-flex h-7 w-14 items-center rounded-full bg-slate-700 transition" id="adminAiPdfPluginToggle" title="Enable PDF parser plugin">
+             <span class="brox-ai-toggle-slider absolute left-1 h-5 w-5 rounded-full bg-white shadow transition"></span>
             </button>
-            <div class="brox-ai-input-container">
-                <textarea 
-                    id="adminAiInput" 
-                    placeholder="Ask Copilot or type '/' for commands..." 
-                    rows="1" 
-                    class="form-control brox-ai-textarea"
-                    aria-label="Message input"
-                    maxlength="5000"
-                ></textarea>
-                <div class="brox-ai-char-count" id="adminAiCharCount">0/5000</div>
-            </div>
-            <button id="adminAiMic" class="brox-ai-action-btn brox-ai-mic-btn" title="Voice input" aria-label="Voice input">
-                <i class="bi bi-mic-fill"></i>
-            </button>
-            <div class="brox-ai-input-actions">
-                <button id="adminAiSend" class="brox-ai-send-btn" title="Send message" aria-label="Send">
-                    <i class="bi bi-send-fill"></i>
-                </button>
-            </div>
+           </div>
+          </div>
+          <label class="block space-y-2 rounded-2xl border border-white/10 bg-slate-950/60 px-3 py-3">
+           <span class="block text-sm font-semibold text-white">Reasoning effort</span>
+           <select id="adminAiReasoningEffort" class="brox-ai-setting-select w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20">
+            <option value="">Default</option>
+            <option value="none">none</option>
+            <option value="minimal">minimal</option>
+            <option value="low">low</option>
+            <option value="medium">medium</option>
+            <option value="high">high</option>
+            <option value="xhigh">xhigh</option>
+           </select>
+          </label>
+         </div>
         </div>
-        
-        {# Keyboard Shortcuts Hint #}
-        <div class="brox-ai-input-hint">
-            <span><kbd>Enter</kbd> Send</span>
-            <span><kbd>Ctrl + Enter</kbd> Send (always)</span>
-            <span><kbd>Shift + Enter</kbd> New line</span>
-            <span><kbd>/</kbd> Commands</span>
+
+        <div class="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4">
+         <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200/80">Advanced</p>
+         <div class="mt-3 space-y-3">
+          <button id="adminAiEnhancePrompt" type="button" class="brox-ai-action-chip inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-400 to-indigo-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110">
+           <i class="lucide lucide-stars"></i> Enhance Prompt
+          </button>
+          <label class="block space-y-2">
+           <span class="block text-sm font-semibold text-white">Advanced options JSON</span>
+           <textarea id="adminAiAdvancedOptionsJson" rows="7" class="brox-ai-setting-json w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-sm font-mono text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20" placeholder='{"temperature":0.4}'></textarea>
+          </label>
+         </div>
         </div>
+       </div>
+      </div>
+     </div>
     </div>
+   </aside>
+
+   <section class="brox-ai-chat-main flex min-w-0 flex-col overflow-hidden">
+    <div class="border-b border-white/10 bg-white/[0.04] px-4 py-4 sm:px-5">
+     <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="min-w-0">
+       <div class="mb-2 flex flex-wrap items-center gap-2">
+        <span class="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200">
+         <i class="lucide lucide-stars text-[0.9rem]"></i>
+         Copilot
+        </span>
+        <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-slate-300" id="adminAiContextBadge">
+         <i class="lucide lucide-folder text-[0.9rem]"></i>
+         <span id="adminAiContextModule">Global</span>
+        </span>
+       </div>
+       <h3 class="flex items-center gap-2 text-[1.1rem] font-bold tracking-tight text-white" id="adminAiTitle">
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-indigo-500 text-slate-950 shadow-lg shadow-cyan-500/25">
+         <i class="lucide lucide-bot text-[1.05rem]"></i>
+        </span>
+        Brox Admin Copilot
+       </h3>
+       <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+        <span id="adminAiStatusText" class="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 font-medium text-emerald-200">Ready</span>
+        <span class="brox-ai-model-status inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-medium text-slate-200" id="adminAiModelStatus">
+         <span class="brox-ai-status-indicator" id="adminAiModelStatusIndicator" title="Model status"></span>
+         <span class="brox-ai-model-name" id="adminAiCurrentModel">Loading...</span>
+        </span>
+       </div>
+      </div>
+
+      <div class="flex shrink-0 items-center gap-2">
+       <button id="adminAiHistoryToggle" class="brox-ai-icon-btn inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 hover:text-white" title="Chat history" aria-label="Chat history">
+        <i class="lucide lucide-clock text-[1rem]"></i>
+       </button>
+       <button id="adminAiMinimize" class="brox-ai-icon-btn inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 hover:text-white" title="Minimize" aria-label="Minimize">
+        <i class="lucide lucide-minus text-[1rem]"></i>
+       </button>
+       <button id="adminAiClose" class="brox-ai-icon-btn inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-rose-500/15 hover:text-rose-100" title="Close Sidebar" aria-label="Close">
+        <i class="lucide lucide-x text-[1rem]"></i>
+       </button>
+      </div>
+     </div>
+    </div>
+
+    <div id="adminAiBody" class="brox-ai-body custom-scrollbar brox-ai-scrollbar relative flex-1 overflow-y-auto px-4 py-4 sm:px-5" role="log" aria-live="polite">
+     <div class="brox-ai-welcome" id="adminAiWelcome">
+      <div class="rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-white/[0.06] via-white/[0.04] to-transparent p-5 shadow-[0_16px_40px_rgba(2,6,23,0.2)]">
+       <div class="flex items-start gap-4">
+        <div class="brox-ai-welcome-icon flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.35rem] bg-gradient-to-br from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 shadow-lg shadow-cyan-500/25">
+         <i class="lucide lucide-stars text-[1.35rem]"></i>
+        </div>
+        <div class="min-w-0">
+         <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-200/80">Welcome</p>
+         <h4 class="mt-1 text-xl font-bold text-white">Welcome to Admin Copilot</h4>
+         <p class="mt-1 text-sm leading-6 text-slate-300">Use slash commands, collect page context, or generate replies with the tools below.</p>
+        </div>
+       </div>
+
+       <div class="brox-ai-welcome-commands mt-5 grid gap-2 sm:grid-cols-2">
+        <button class="brox-ai-cmd-chip inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white" data-cmd="/summarize">
+         <i class="lucide lucide-text"></i> /summarize
+        </button>
+        <button class="brox-ai-cmd-chip inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white" data-cmd="/analyze-logs">
+         <i class="lucide lucide-file-text"></i> /analyze-logs
+        </button>
+        <button class="brox-ai-cmd-chip inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white" data-cmd="/list-tools">
+         <i class="lucide lucide-list-checks"></i> /list-tools
+        </button>
+        <button class="brox-ai-cmd-chip inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white" data-cmd="/help">
+         <i class="lucide lucide-help-circle"></i> /help
+        </button>
+       </div>
+      </div>
+     </div>
+
+     <div class="thinking-indicator brox-ai-hidden mt-4" id="adminAiThinkingIndicator"></div>
+     <div class="d-none mt-4 rounded-2xl border border-cyan-400/15 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100" id="adminAiTypingIndicator">
+      <div class="flex items-center gap-2">
+       <span class="inline-flex h-2.5 w-2.5 animate-pulse rounded-full bg-cyan-300"></span>
+       Assistant is preparing a response...
+      </div>
+     </div>
+
+     <div id="adminAiSlashMenu" class="brox-ai-slash-menu brox-ai-hidden absolute inset-x-4 top-4 z-20 rounded-[1.5rem] border border-white/10 bg-slate-950/98 shadow-[0_20px_50px_rgba(2,6,23,0.28)] backdrop-blur-xl" role="menu">
+      <div class="flex items-center justify-between border-b border-white/10 px-4 py-3">
+       <span class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Commands</span>
+       <button class="brox-ai-slash-close inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white" aria-label="Close menu">
+        <i class="lucide lucide-x text-sm"></i>
+       </button>
+      </div>
+      <ul class="brox-ai-slash-list max-h-80 overflow-y-auto p-2">
+       <li class="brox-ai-slash-item flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-3 transition hover:bg-white/5" data-cmd="/summarize" role="menuitem">
+        <div class="brox-ai-slash-icon flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200"><i class="lucide lucide-text"></i></div>
+        <div class="brox-ai-slash-info">
+         <strong class="block text-sm font-semibold text-white">/summarize</strong>
+         <small class="block text-xs leading-5 text-slate-400">Summarize current page data</small>
+        </div>
+       </li>
+       <li class="brox-ai-slash-item flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-3 transition hover:bg-white/5" data-cmd="/analyze-logs" role="menuitem">
+        <div class="brox-ai-slash-icon flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200"><i class="lucide lucide-file-text"></i></div>
+        <div class="brox-ai-slash-info">
+         <strong class="block text-sm font-semibold text-white">/analyze-logs</strong>
+         <small class="block text-xs leading-5 text-slate-400">Analyze system error logs</small>
+        </div>
+       </li>
+       <li class="brox-ai-slash-item flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-3 transition hover:bg-white/5" data-cmd="/clear-cache" role="menuitem">
+        <div class="brox-ai-slash-icon flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200"><i class="lucide lucide-trash-2"></i></div>
+        <div class="brox-ai-slash-info">
+         <strong class="block text-sm font-semibold text-white">/clear-cache</strong>
+         <small class="block text-xs leading-5 text-slate-400">Clear system cache</small>
+        </div>
+       </li>
+       <li class="brox-ai-slash-item flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-3 transition hover:bg-white/5" data-cmd="/search-kb" role="menuitem">
+        <div class="brox-ai-slash-icon flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200"><i class="lucide lucide-book"></i></div>
+        <div class="brox-ai-slash-info">
+         <strong class="block text-sm font-semibold text-white">/search-kb</strong>
+         <small class="block text-xs leading-5 text-slate-400">Search knowledge base</small>
+        </div>
+       </li>
+       <li class="brox-ai-slash-item flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-3 transition hover:bg-white/5" data-cmd="/web-search" role="menuitem">
+        <div class="brox-ai-slash-icon flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200"><i class="lucide lucide-globe"></i></div>
+        <div class="brox-ai-slash-info">
+         <strong class="block text-sm font-semibold text-white">/web-search</strong>
+         <small class="block text-xs leading-5 text-slate-400">Search the web</small>
+        </div>
+       </li>
+       <li class="brox-ai-slash-item flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-3 transition hover:bg-white/5" data-cmd="/get-cache-stats" role="menuitem">
+        <div class="brox-ai-slash-icon flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200"><i class="lucide lucide-gauge"></i></div>
+        <div class="brox-ai-slash-info">
+         <strong class="block text-sm font-semibold text-white">/get-cache-stats</strong>
+         <small class="block text-xs leading-5 text-slate-400">View cache statistics</small>
+        </div>
+       </li>
+       <li class="brox-ai-slash-item flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-3 transition hover:bg-white/5" data-cmd="/user-stats" role="menuitem">
+        <div class="brox-ai-slash-icon flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200"><i class="lucide lucide-users"></i></div>
+        <div class="brox-ai-slash-info">
+         <strong class="block text-sm font-semibold text-white">/user-stats</strong>
+         <small class="block text-xs leading-5 text-slate-400">View user statistics</small>
+        </div>
+       </li>
+       <li class="brox-ai-slash-item flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-3 transition hover:bg-white/5" data-cmd="/content-stats" role="menuitem">
+        <div class="brox-ai-slash-icon flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200"><i class="lucide lucide-file-text"></i></div>
+        <div class="brox-ai-slash-info">
+         <strong class="block text-sm font-semibold text-white">/content-stats</strong>
+         <small class="block text-xs leading-5 text-slate-400">View content statistics</small>
+        </div>
+       </li>
+       <li class="brox-ai-slash-item flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-3 transition hover:bg-white/5" data-cmd="/list-tools" role="menuitem">
+        <div class="brox-ai-slash-icon flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200"><i class="lucide lucide-list-checks"></i></div>
+        <div class="brox-ai-slash-info">
+         <strong class="block text-sm font-semibold text-white">/list-tools</strong>
+         <small class="block text-xs leading-5 text-slate-400">Show available admin tools</small>
+        </div>
+       </li>
+       <li class="brox-ai-slash-item flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-3 transition hover:bg-white/5" data-cmd="/help" role="menuitem">
+        <div class="brox-ai-slash-icon flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200"><i class="lucide lucide-help-circle"></i></div>
+        <div class="brox-ai-slash-info">
+         <strong class="block text-sm font-semibold text-white">/help</strong>
+         <small class="block text-xs leading-5 text-slate-400">Show the same tool list as /list-tools</small>
+        </div>
+       </li>
+      </ul>
+     </div>
+
+     <div id="adminAiSuggestionPanel" class="brox-ai-suggestion-panel brox-ai-hidden absolute inset-x-4 top-4 z-20 rounded-[1.5rem] border border-white/10 bg-slate-950/98 shadow-[0_20px_50px_rgba(2,6,23,0.28)] backdrop-blur-xl" role="listbox">
+      <div class="flex items-center justify-between border-b border-white/10 px-4 py-3">
+       <span class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Suggestions</span>
+       <button class="brox-ai-suggestion-close inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white" aria-label="Close suggestions">
+        <i class="lucide lucide-x text-sm"></i>
+       </button>
+      </div>
+      <ul class="brox-ai-suggestion-list max-h-72 overflow-y-auto p-2" id="adminAiSuggestionList"></ul>
+     </div>
+
+     <div class="brox-ai-attachment-preview brox-ai-hidden mt-4 rounded-[1.5rem] border border-white/10 bg-white/[0.04] px-4 py-3" id="adminAiAttachmentPreview">
+      <div class="flex items-start gap-3">
+       <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200"><i class="lucide lucide-paperclip"></i></div>
+       <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2 text-sm text-slate-100">
+         <div class="brox-ai-attachment-thumb flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5" id="adminAiAttachmentThumb"></div>
+         <span class="brox-ai-attachment-name font-medium" id="adminAiFileName">file.pdf</span>
+         <span class="brox-ai-attachment-size text-xs text-slate-400" id="adminAiFileSize">0 KB</span>
+        </div>
+        <div class="brox-ai-attachment-progress brox-ai-hidden mt-2 h-1.5 rounded-full bg-white/10" id="adminAiAttachmentProgress">
+         <span class="brox-ai-attachment-progress-bar block h-full rounded-full bg-gradient-to-r from-cyan-400 to-indigo-500" id="adminAiAttachmentProgressBar"></span>
+        </div>
+       </div>
+       <button class="brox-ai-attachment-remove inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition hover:bg-rose-500/15 hover:text-rose-100" id="adminAiRemoveAttachment" aria-label="Remove attachment">
+        <i class="lucide lucide-x text-sm"></i>
+       </button>
+      </div>
+     </div>
+
+     <div id="adminAiQuickActions" class="brox-ai-quick-actions grid gap-2 border-t border-white/10 bg-white/[0.03] px-4 py-3 sm:grid-cols-2" aria-label="Quick actions">
+      <button type="button" class="brox-ai-action-chip inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white" id="adminAiCollectData" title="Collect visible form fields">
+       <i class="lucide lucide-clipboard"></i> Collect
+      </button>
+      <button type="button" class="brox-ai-action-chip inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white" id="adminAiAutoFill" title="Auto-fill form (uses URL in input if present)">
+       <i class="lucide lucide-wand-sparkles"></i> Auto-fill
+      </button>
+      <button type="button" class="brox-ai-action-chip inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white" id="adminAiEnhancePrompt" title="Enhance the current prompt with clearer instructions and context">
+       <i class="lucide lucide-stars"></i> Enhance Prompt
+      </button>
+      <button type="button" class="brox-ai-action-chip inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white" id="adminAiQuickSummarize" title="Summarize current page">
+       <i class="lucide lucide-text"></i> Summarize
+      </button>
+      <button type="button" class="brox-ai-action-chip inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white sm:col-span-2" id="adminAiClear" title="Clear chat history">
+       <i class="lucide lucide-trash-2"></i> Clear
+      </button>
+     </div>
+
+     <div id="adminAiFooter" class="brox-ai-footer border-t border-white/10 bg-slate-950/95 px-4 py-4">
+      <div class="brox-ai-input-wrapper flex items-end gap-2 rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+       <button id="adminAiAttach" class="brox-ai-action-btn inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 hover:text-white" title="Attach file" aria-label="Attach file">
+        <i class="lucide lucide-paperclip text-[1rem]"></i>
+       </button>
+       <div class="brox-ai-input-container relative flex-1">
+        <textarea
+         id="adminAiInput"
+         placeholder="Ask Copilot or type '/' for commands..."
+         rows="1"
+         class="brox-ai-textarea min-h-[3.5rem] w-full resize-none rounded-[1.2rem] border border-white/10 bg-slate-900/80 px-4 py-3 pb-7 text-sm text-slate-100 placeholder:text-slate-400 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20"
+         aria-label="Message input"
+         maxlength="5000"></textarea>
+        <div class="brox-ai-char-count absolute bottom-2 right-3 text-[11px] text-slate-500" id="adminAiCharCount">0/5000</div>
+       </div>
+       <button id="adminAiMic" class="brox-ai-action-btn inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 hover:text-white" title="Voice input" aria-label="Voice input">
+        <i class="lucide lucide-mic text-[1rem]"></i>
+       </button>
+       <div class="brox-ai-input-actions">
+        <button id="adminAiSend" class="brox-ai-send-btn inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-indigo-500 text-slate-950 transition hover:brightness-110" title="Send message" aria-label="Send">
+         <i class="lucide lucide-send text-[1rem]"></i>
+        </button>
+       </div>
+      </div>
+      <div class="brox-ai-input-hint mt-3 flex flex-wrap gap-2 text-[11px] text-slate-400">
+       <span class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1"><kbd class="rounded-md border border-white/10 bg-slate-900/80 px-1.5 py-0.5 text-[10px] font-semibold text-slate-100">Enter</kbd> Send</span>
+       <span class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1"><kbd class="rounded-md border border-white/10 bg-slate-900/80 px-1.5 py-0.5 text-[10px] font-semibold text-slate-100">Ctrl + Enter</kbd> Send</span>
+       <span class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1"><kbd class="rounded-md border border-white/10 bg-slate-900/80 px-1.5 py-0.5 text-[10px] font-semibold text-slate-100">Shift + Enter</kbd> New line</span>
+       <span class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1"><kbd class="rounded-md border border-white/10 bg-slate-900/80 px-1.5 py-0.5 text-[10px] font-semibold text-slate-100">/</kbd> Commands</span>
+      </div>
+     </div>
+    </div>
+   </section>
   </div>
+ </div>
 </div>

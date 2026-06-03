@@ -1,152 +1,154 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ cv.title }}</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Arial', sans-serif;
-            font-size: 11pt;
-            line-height: 1.4;
-            color: #000;
-        }
-        
-        .container {
-            max-width: 210mm;
-            margin: 0 auto;
-            padding: 15mm;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .header h1 {
-            font-size: 20pt;
-            font-weight: normal;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-        
-        .section {
-            margin-bottom: 15px;
-        }
-        
-        .section-title {
-            font-size: 12pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-            padding-bottom: 3px;
-            border-bottom: 1px solid #000;
-        }
-        
-        .item {
-            margin-bottom: 10px;
-        }
-        
-        .item-title {
-            font-weight: bold;
-        }
-        
-        .item-subtitle {
-            font-style: italic;
-        }
-        
-        .item-date {
-            float: right;
-        }
-        
-        .item-content {
-            margin-top: 3px;
-        }
-        
-        .skills-list {
-            font-size: 10pt;
-        }
-        
-        ul {
-            margin-left: 15px;
-        }
-    </style>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>{{ cv.title }}</title>
+ <style>
+ * {
+ margin: 0;
+ padding: 0;
+ box-sizing: border-box;
+ }
+ 
+ body {
+ font-family: 'Arial', sans-serif;
+ font-size: 11pt;
+ line-height: 1.4;
+ color: #000;
+ }
+ 
+ .mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 {
+ max-width: 210mm;
+ margin: 0 auto;
+ padding: 15mm;
+ }
+ 
+ .header {
+ text-align: center;
+ margin-bottom: 20px;
+ }
+ 
+ .header h1 {
+ font-size: 20pt;
+ font-weight: normal;
+ letter-spacing: 2px;
+ text-transform: uppercase;
+ }
+ 
+ .section {
+ margin-bottom: 15px;
+ }
+ 
+ .section-title {
+ font-size: 12pt;
+ font-weight: bold;
+ text-transform: uppercase;
+ letter-spacing: 1px;
+ margin-bottom: 8px;
+ padding-bottom: 3px;
+ border-bottom: 1px solid #000;
+ }
+ 
+ .item {
+ margin-bottom: 10px;
+ }
+ 
+ .item-title {
+ font-weight: bold;
+ }
+ 
+ .item-subtitle {
+ font-style: italic;
+ }
+ 
+ .item-date {
+ float: right;
+ }
+ 
+ .item-content {
+ margin-top: 3px;
+ }
+ 
+ .skills-list {
+ font-size: 10pt;
+ }
+ 
+ ul {
+ margin-left: 15px;
+ }
+ </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>{{ cv.title }}</h1>
-        </div>
+ <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+ <!-- Header -->
+ <div class="header">
+ <h1>{{ cv.title }}</h1>
+ </div>
 
-        <!-- Sections -->
-        {% for section in sections %}
-            <div class="section">
-                <h2 class="section-title">{{ section.title }}</h2>
-                
-                {% if section.section_type == 'summary' %}
-                    {% for item in section.items %}
-                        <div class="item-content">
-                            {{ item.content.text ?? '' }}
-                        </div>
-                    {% endfor %}
-                    
-                {% elseif section.section_type == 'experience' %}
-                    {% for item in section.items %}
-                        <div class="item">
-                            <span class="item-title">{{ item.content.position ?? '' }}</span>
-                            <span class="item-subtitle">{{ item.content.company ?? '' }}</span>
-                            <span class="item-date">{{ item.content.start_date ?? '' }}-{{ item.content.end_date ?? '' }}</span>
-                            <div class="item-content">
-                                {{ item.content.description ?? '' }}
-                            </div>
-                        </div>
-                    {% endfor %}
-                    
-                {% elseif section.section_type == 'education' %}
-                    {% for item in section.items %}
-                        <div class="item">
-                            <span class="item-title">{{ item.content.degree ?? '' }}</span>
-                            <span class="item-subtitle">{{ item.content.institution ?? '' }}</span>
-                            <span class="item-date">{{ item.content.start_date ?? '' }}-{{ item.content.end_date ?? '' }}</span>
-                        </div>
-                    {% endfor %}
-                    
-                {% elseif section.section_type == 'skills' %}
-                    <div class="skills-list">
-                        {% for item in section.items %}
-                            {{ item.content.name ?? '' }}{% if not loop.last %}, {% endif %}
-                        {% endfor %}
-                    </div>
-                    
-                {% elseif section.section_type == 'projects' %}
-                    {% for item in section.items %}
-                        <div class="item">
-                            <span class="item-title">{{ item.content.name ?? '' }}</span>
-                            <div class="item-content">
-                                {{ item.content.description ?? '' }}
-                            </div>
-                        </div>
-                    {% endfor %}
-                    
-                {% elseif section.section_type == 'certifications' %}
-                    {% for item in section.items %}
-                        <div class="item">
-                            <span class="item-title">{{ item.content.name ?? '' }}</span>
-                            <span class="item-subtitle">{{ item.content.issuer ?? '' }}</span>
-                            <span class="item-date">{{ item.content.date ?? '' }}</span>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            </div>
-        {% endfor %}
-    </div>
+ <!-- Sections -->
+ {% for section in sections %}
+ <div class="section">
+ <h2 class="section-title">{{ section.title }}</h2>
+ 
+ {% if section.section_type == 'summary' %}
+ {% for item in section.items %}
+ <div class="item-content">
+ {{ item.content.text ?? '' }}
+ </div>
+ {% endfor %}
+ 
+ {% elseif section.section_type == 'experience' %}
+ {% for item in section.items %}
+ <div class="item">
+ <span class="item-title">{{ item.content.position ?? '' }}</span>
+ <span class="item-subtitle">{{ item.content.company ?? '' }}</span>
+ <span class="item-date">{{ item.content.start_date ?? '' }}-{{ item.content.end_date ?? '' }}</span>
+ <div class="item-content">
+ {{ item.content.description ?? '' }}
+ </div>
+ </div>
+ {% endfor %}
+ 
+ {% elseif section.section_type == 'education' %}
+ {% for item in section.items %}
+ <div class="item">
+ <span class="item-title">{{ item.content.degree ?? '' }}</span>
+ <span class="item-subtitle">{{ item.content.institution ?? '' }}</span>
+ <span class="item-date">{{ item.content.start_date ?? '' }}-{{ item.content.end_date ?? '' }}</span>
+ </div>
+ {% endfor %}
+ 
+ {% elseif section.section_type == 'skills' %}
+ <div class="skills-list">
+ {% for item in section.items %}
+ {{ item.content.name ?? '' }}{% if not loop.last %}, {% endif %}
+ {% endfor %}
+ </div>
+ 
+ {% elseif section.section_type == 'projects' %}
+ {% for item in section.items %}
+ <div class="item">
+ <span class="item-title">{{ item.content.name ?? '' }}</span>
+ <div class="item-content">
+ {{ item.content.description ?? '' }}
+ </div>
+ </div>
+ {% endfor %}
+ 
+ {% elseif section.section_type == 'certifications' %}
+ {% for item in section.items %}
+ <div class="item">
+ <span class="item-title">{{ item.content.name ?? '' }}</span>
+ <span class="item-subtitle">{{ item.content.issuer ?? '' }}</span>
+ <span class="item-date">{{ item.content.date ?? '' }}</span>
+ </div>
+ {% endfor %}
+ {% endif %}
+ </div>
+ {% endfor %}
+ </div>
 </body>
 </html>
+
+

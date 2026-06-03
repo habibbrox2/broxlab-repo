@@ -1,97 +1,103 @@
-{% extends "layout.twig" %}
+﻿{% extends"layout.twig" %}
 
 {% block title %}Push Endpoints - {{ app_settings.site_name|default('BroxLab') }}{% endblock %}
 
 {% block content %}
 <section class="py-5" style="background: radial-gradient(circle at 10% 10%, #bfdbfe 0%, #ffffff 55%, #d1fae5 100%);">
-  <div class="container">
-    <div class="mx-auto" style="max-width: 920px;">
-      <div class="rounded-4 shadow-sm p-4 p-md-5" style="background:#ffffff; border:1px solid #e2e8f0;">
-        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
-          <div>
-            <h1 class="fw-bold mb-1">Push Endpoint Reference</h1>
-            <p class="text-muted mb-0">API integration guide for pushing content to BroxLab. Data is automatically staged and processed.</p>
-          </div>
-          <a href="/" class="btn btn-outline-secondary">Back Home</a>
-        </div>
+ <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+ <div class="mx-auto" style="max-width: 920px;">
+ <div class="rounded-2xl shadow-sm p-4 md:p-5" style="background:#ffffff; border:1px solid #e2e8f0;">
+ <div class="flex justify-between items-start flex-wrap gap-3 mb-4">
+ <div>
+ <h1 class="font-bold mb-1">Push Endpoint Reference</h1>
+ <p class="text-slate-500 mb-0">API integration guide for pushing content to BroxLab. Data is automatically staged and processed.</p>
+ </div>
+ <a href="/" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-slate-600 hover:bg-slate-100">Back Home</a>
+ </div>
 
-        <div class="alert alert-warning" role="alert">
-          Keep your bearer token private. Do not expose it in client-side apps or public repositories.
-        </div>
+ <div class="p-4 rounded-lg bg-amber-50 text-amber-700 border border-amber-200" role="alert">
+ Keep your bearer token private. Do not expose it in client-side apps or public repositories.
+ </div>
 
-        <div class="row g-3 mb-4">
-          <div class="col-12">
-            <label class="form-label fw-semibold small text-uppercase text-muted">Articles Push URL</label>
-            <div class="input-group">
-              <input id="publicPushArticlesUrl" class="form-control" value="{{ push_articles_url }}" readonly>
-              <button class="btn btn-outline-primary copy-target" data-target="publicPushArticlesUrl" type="button">Copy</button>
-            </div>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold small text-uppercase text-muted">Mobiles Push URL</label>
-            <div class="input-group">
-              <input id="publicPushMobilesUrl" class="form-control" value="{{ push_mobiles_url }}" readonly>
-              <button class="btn btn-outline-primary copy-target" data-target="publicPushMobilesUrl" type="button">Copy</button>
-            </div>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold small text-uppercase text-muted">Combined/Batch Push URL</label>
-            <div class="input-group">
-              <input id="publicPushLegacyUrl" class="form-control" value="{{ push_legacy_url }}" readonly>
-              <button class="btn btn-outline-primary copy-target" data-target="publicPushLegacyUrl" type="button">Copy</button>
-            </div>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold small text-uppercase text-muted">Push Headers (JSON)</label>
-            <textarea id="publicPushHeadersJson" class="form-control" rows="3" readonly>{{ push_headers_json }}</textarea>
-          </div>
-        </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3 mb-4">
+ <div class="col-span-12">
+ <label class="form-label font-semibold small text-uppercase text-slate-500">Articles Push URL</label>
+ <div class="input-group">
+ <input id="publicPushArticlesUrl" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" value="{{ push_articles_url }}" readonly>
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-indigo-600 hover:bg-indigo-100 copy-target" data-target="publicPushArticlesUrl" type="button">Copy</button>
+ </div>
+ </div>
+ <div class="col-span-12">
+ <label class="form-label font-semibold small text-uppercase text-slate-500">Mobiles Push URL</label>
+ <div class="input-group">
+ <input id="publicPushMobilesUrl" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" value="{{ push_mobiles_url }}" readonly>
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-indigo-600 hover:bg-indigo-100 copy-target" data-target="publicPushMobilesUrl" type="button">Copy</button>
+ </div>
+ </div>
+ <div class="col-span-12">
+ <label class="form-label font-semibold small text-uppercase text-slate-500">Combined/Batch Push URL</label>
+ <div class="input-group">
+ <input id="publicPushLegacyUrl" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" value="{{ push_legacy_url }}" readonly>
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-indigo-600 hover:bg-indigo-100 copy-target" data-target="publicPushLegacyUrl" type="button">Copy</button>
+ </div>
+ </div>
+ <div class="col-span-12">
+ <label class="form-label font-semibold small text-uppercase text-slate-500">Push Headers (JSON)</label>
+ <textarea id="publicPushHeadersJson" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" rows="3" readonly>{{ push_headers_json }}</textarea>
+ </div>
+ </div>
 
-        <h2 class="h5 fw-bold mb-2">Quick Example (cURL)</h2>
-        <pre class="p-3 rounded-3 text-light" style="background:#0f172a; overflow:auto;"><code>curl -X POST "{{ push_articles_url }}" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{"articles":[{"title":"Sample"}],"source":"scraper"}'</code></pre>
+ <h2 class="h5 font-bold mb-2">Quick Example (cURL)</h2>
+ <pre class="p-3 rounded-xl text-white" style="background:#0f172a; overflow:auto;"><code>curl -X POST"{{ push_articles_url }}" \
+ -H"Content-Type: application/json" \
+ -H"Authorization: Bearer YOUR_TOKEN" \
+ -d '{"articles":[{"title":"Sample"}],"source":"scraper"}'</code></pre>
 
-        <p id="copyStatus" class="small text-muted mb-0"></p>
-      </div>
-    </div>
-  </div>
+ <p id="copyStatus" class="small text-slate-500 mb-0"></p>
+ </div>
+ </div>
+ </div>
 </section>
 
 <script>
 (() => {
-  const status = document.getElementById('copyStatus');
-  const copyText = async (text) => {
-    if (!text) return false;
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-    } catch (_) {}
-    const temp = document.createElement('textarea');
-    temp.value = text;
-    temp.style.position = 'absolute';
-    temp.style.left = '-9999px';
-    document.body.appendChild(temp);
-    temp.select();
-    const ok = document.execCommand('copy');
-    document.body.removeChild(temp);
-    return ok;
-  };
+ const status = document.getElementById('copyStatus');
+ const copyText = async (text) => {
+ if (!text) return false;
+ try {
+ if (navigator.clipboard && navigator.clipboard.writeText) {
+ await navigator.clipboard.writeText(text);
+ return true;
+ }
+ } catch (_) {}
+ const temp = document.createElement('textarea');
+ temp.value = text;
+ temp.style.position = 'absolute';
+ temp.style.left = '-9999px';
+ document.body.appendChild(temp);
+ temp.select();
+ const ok = document.execCommand('copy');
+ document.body.removeChild(temp);
+ return ok;
+ };
 
-  document.querySelectorAll('.copy-target').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const id = btn.getAttribute('data-target');
-      const target = id ? document.getElementById(id) : null;
-      const value = target ? target.value : '';
-      const ok = await copyText(value.trim());
-      status.textContent = ok ? 'Copied to clipboard.' : 'Copy failed.';
-      status.classList.toggle('text-success', ok);
-      status.classList.toggle('text-danger', !ok);
-    });
-  });
+ document.querySelectorAll('.copy-target').forEach((inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition) => {
+ inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition.addEventListener('click', async () => {
+ const id = inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition.getAttribute('data-target');
+ const target = id ? document.getElementById(id) : null;
+ const value = target ? target.value : '';
+ const ok = await copyText(value.trim());
+ status.textContent = ok ? 'Copied to clipboard.' : 'Copy failed.';
+ status.classList.toggle('text-emerald-600', ok);
+ status.classList.toggle('text-red-600', !ok);
+ });
+ });
 })();
 </script>
 {% endblock %}
+
+
+
+
+
+

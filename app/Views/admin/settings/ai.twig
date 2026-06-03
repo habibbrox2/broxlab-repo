@@ -1,61 +1,64 @@
-<div class="mb-4">
-  <h5 class="mb-3"><i class="bi bi-robot me-2"></i>AI Provider Configuration</h5>
-  
-  <div class="row g-3">
-    <div class="col-md-6">
-      <label class="form-label">AI Provider</label>
-      <select class="form-select" name="ai_provider" id="ai_provider">
-        <option value="openrouter" {{ settings.ai_provider|default('openrouter') == 'openrouter' ? 'selected' : '' }}>OpenRouter</option>
-        <option value="ollama" {{ settings.ai_provider|default('openrouter') == 'ollama' ? 'selected' : '' }}>Ollama Cloud</option>
-      </select>
-      <small class="text-muted">Select the AI provider to use for content generation and analysis.</small>
-    </div>
-    
-    <div class="col-md-6">
-      <label class="form-label">AI Model</label>
-      <input type="text"
-             class="form-control"
-             name="ai_model"
-             id="ai_model"
-             value="{{ settings.ai_model|default('meta-llama/llama-3-8b-instruct:free') }}"
-             placeholder="e.g., meta-llama/llama-3-8b-instruct:free, llama2">
-      <small class="text-muted">Model identifier for the selected provider.</small>
-    </div>
-    
-    <div class="col-12">
-      <label class="form-label">API Key</label>
-      <input type="password"
-             class="form-control"
-             name="ai_api_key"
-             id="ai_api_key"
-             value="{{ settings.ai_api_key|default('') }}"
-             placeholder="Enter API key"
-             autocomplete="off">
-      <small class="text-muted">
-        For OpenRouter: Get your API key from <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a><br>
-        For Ollama: Usually not required when running locally, but can be set if configured.
-      </small>
-    </div>
+<section class="admin-panel-card">
+ <div class="mb-4 flex items-center gap-2">
+  <i class="lucide lucide-bot text-indigo-600"></i>
+  <h2 class="text-lg font-semibold text-slate-950">AI Provider Configuration</h2>
+ </div>
+
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+  <div class="md:col-span-6">
+   <label class="form-label">AI Provider</label>
+   <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="ai_provider" id="ai_provider">
+    <option value="openrouter" {{ settings.ai_provider|default('openrouter') == 'openrouter' ? 'selected' : '' }}>OpenRouter</option>
+    <option value="ollama" {{ settings.ai_provider|default('openrouter') == 'ollama' ? 'selected' : '' }}>Ollama Cloud</option>
+   </select>
+   <small class="text-slate-500">Select the AI provider to use for content generation and analysis.</small>
   </div>
-</div>
+
+  <div class="md:col-span-6">
+   <label class="form-label">AI Model</label>
+   <input type="text"
+    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+    name="ai_model"
+    id="ai_model"
+    value="{{ settings.ai_model|default('meta-llama/llama-3-8b-instruct:free') }}"
+    placeholder="e.g., meta-llama/llama-3-8b-instruct:free, llama2">
+   <small class="text-slate-500">Model identifier for the selected provider.</small>
+  </div>
+
+  <div class="col-span-12">
+   <label class="form-label">API Key</label>
+   <input type="password"
+    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+    name="ai_api_key"
+    id="ai_api_key"
+    value="{{ settings.ai_api_key|default('') }}"
+    placeholder="Enter API key"
+    autocomplete="off">
+   <small class="text-slate-500">
+    For OpenRouter: Get your API key from <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer">openrouter.ai/keys</a><br>
+    For Ollama: Usually not required when running locally, but can be set if configured.
+   </small>
+  </div>
+ </div>
+</section>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const aiProviderSelect = document.getElementById('ai_provider');
-  const aiModelInput = document.getElementById('ai_model');
-  
-  if (aiProviderSelect && aiModelInput) {
-    const updateModelPlaceholder = () => {
-      const provider = aiProviderSelect.value;
-      if (provider === 'openrouter') {
-        aiModelInput.placeholder = 'e.g., meta-llama/llama-3-8b-instruct:free, google/gemini-2.0-flash-exp:free';
-      } else if (provider === 'ollama') {
-        aiModelInput.placeholder = 'e.g., llama2, codellama, mistral (via Ollama Cloud)';
-      }
-    };
-    
-    aiProviderSelect.addEventListener('change', updateModelPlaceholder);
-    updateModelPlaceholder(); // Set initial placeholder
-  }
+ const aiProviderSelect = document.getElementById('ai_provider');
+ const aiModelInput = document.getElementById('ai_model');
+
+ if (aiProviderSelect && aiModelInput) {
+  const updateModelPlaceholder = () => {
+   const provider = aiProviderSelect.value;
+   if (provider === 'openrouter') {
+    aiModelInput.placeholder = 'e.g., meta-llama/llama-3-8b-instruct:free, google/gemini-2.0-flash-exp:free';
+   } else if (provider === 'ollama') {
+    aiModelInput.placeholder = 'e.g., llama2, codellama, mistral (via Ollama Cloud)';
+   }
+  };
+
+  aiProviderSelect.addEventListener('change', updateModelPlaceholder);
+  updateModelPlaceholder();
+ }
 });
 </script>

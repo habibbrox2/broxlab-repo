@@ -1,98 +1,103 @@
-{% extends "admin/layout.twig" %}
+﻿{% extends"admin/layout.twig" %}
 {% block title %}All Pages{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-file-earmark-text"></i>
-        Pages Management
-      </div>
-      <div class="admin-page-subtitle">Manage all static pages</div>
-    </div>
+ <div class="w-full px-4 sm:px-6 py-4">
+ <div class=" mb-4">
+ <div>
+ <i class="lucide lucide-file-text"></i>
+ Pages Management
+ </div>
+ <div>Manage all static pages</div>
+ </div>
 
-    <div class="d-flex justify-content-end mb-4">
-      <a href="/admin/pages/create" class="modern-btn modern-btn-primary">
-        <i class="bi bi-plus-circle me-1"></i> Add New Page
-      </a>
-    </div>
+ <div class="flex justify-end mb-4">
+ <a href="/admin/pages/create" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700">
+ <i class="lucide lucide-plus-circle mr-1"></i> Add New Page
+ </a>
+ </div>
 
-    <div class="admin-panel-card mb-4">
-      <div class="admin-panel-card-body">
-        <form class="row" method="get" action="">
-          <div class="col-md-4">
-            <div class="input-group">
-              <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
-              <input type="text" name="search" value="{{ search|default('') }}" class="form-control" placeholder="Search by title...">
-            </div>
-          </div>
-          <div class="col-md-3">
-            <select name="sort" class="form-select">
-              <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Latest</option>
-              <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest</option>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <button type="submit" class="modern-btn modern-btn-primary w-100">
-              <i class="bi bi-funnel-fill me-1"></i> Filter
-            </button>
-          </div>
-          <div class="col-md-1">
-            <select name="limit" class="form-select form-select-sm">
-              <option value="20" selected>20</option>
-              <option value="10">10</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-          </div>
-        </form>
-      </div>
-    </div>
+ <div class=" border border-slate-200 bg-white shadow-sm mb-4">
+ <div class="p-4">
+ <form class="grid grid-cols-1 gap-4 md:grid-cols-12" method="get" action="">
+ <div class="md:col-span-4">
+ <div class="input-group">
+ <span class="inline-flex items-center bg-slate-100"><i class="lucide lucide-search"></i></span>
+ <input type="text" name="search" value="{{ search|default('') }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="Search by title...">
+ </div>
+ </div>
+ <div class="md:col-span-3">
+ <select name="sort" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+ <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Latest</option>
+ <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest</option>
+ </select>
+ </div>
+ <div class="md:col-span-2">
+ <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 w-full">
+ <i class="lucide lucide-filter mr-1"></i> Filter
+ </button>
+ </div>
+ <div class="md:col-span-1">
+ <select name="limit" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:border-indigo-500-sm">
+ <option value="20" selected>20</option>
+ <option value="10">10</option>
+ <option value="50">50</option>
+ <option value="100">100</option>
+ </select>
+ </div>
+ </form>
+ </div>
+ </div>
 
-    {% if pages is not empty %}
-      <div class="admin-panel-card">
-        <div class="admin-panel-card-body">
-          <div class="table-responsive">
-            <table class="table table-stacked">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th><i class="bi bi-type"></i> Title</th>
-                  <th><i class="bi bi-link-45deg"></i> Slug</th>
-                  <th><i class="bi bi-calendar-check"></i> Status</th>
-                  <th class="text-center"><i class="bi bi-gear"></i> Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for page in pages %}
-                  <tr>
-                    <td class="fw-bold" data-label="#">ID</td>
-                    <td data-label="Title">{{ page.title }}</td>
-                    <td data-label="Slug"><code class="text-muted">{{ page.slug ?? '-' }}</code></td>
-                    <td data-label="Status">
-                      {% if page.published %}
-                        <span class="badge bg-success rounded-pill"><i class="bi bi-check2"></i> Published</span>
-                      {% else %}
-                        <span class="badge bg-warning text-surface-dark rounded-pill"><i class="bi bi-pencil"></i> Draft</span>
-                      {% endif %}
-                    </td>
-                    <td class="text-center" data-label="Actions">
-                      <a href="/admin/pages/view/{{ page.slug }}" class="modern-btn btn-sm btn-info me-1" title="View"><i class="bi bi-eye-fill"></i></a>
-                      <a href="/admin/pages/edit?id={{ page.id }}" class="modern-btn btn-sm btn-warning me-1" title="Edit"><i class="bi bi-pencil-square"></i></a>
-                      <a href="/admin/pages/delete?id={{ page.id }}" class="modern-btn btn-sm btn-danger" title="Delete" onclick="return confirm('Are you sure?');"><i class="bi bi-trash3-fill"></i></a>
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          {% include "admin/partials/pagination.twig" %}
-        </div>
-      </div>
-    {% else %}
-      <div class="alert alert-info">
-        <i class="bi bi-info-circle me-1"></i> No pages found.
-      </div>
-    {% endif %}
-  </div>
+ {% if pages is not empty %}
+ <div class=" border border-slate-200 bg-white shadow-sm">
+ <div class="p-4">
+ <div class="overflow-x-auto">
+ <table class="table table-stacked">
+ <thead>
+ <tr>
+ <th>#</th>
+ <th><i class="lucide lucide-text"></i> Title</th>
+ <th><i class="lucide lucide-link"></i> Slug</th>
+ <th><i class="lucide lucide-calendar-check"></i> Status</th>
+ <th class="text-center"><i class="lucide lucide-settings"></i> Actions</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for page in pages %}
+ <tr>
+ <td class="font-bold" data-label="#">ID</td>
+ <td data-label="Title">{{ page.title }}</td>
+ <td data-label="Slug"><code class="text-slate-500">{{ page.slug ?? '-' }}</code></td>
+ <td data-label="Status">
+ {% if page.published %}
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-600"><i class="lucide lucide-check"></i> Published</span>
+ {% else %}
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-amber-500 text-surface-dark"><i class="lucide lucide-pencil"></i> Draft</span>
+ {% endif %}
+ </td>
+ <td class="text-center" data-label="Actions">
+ <a href="/admin/pages/view/{{ page.slug }}" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-sky-500 text-white hover:bg-sky-600 mr-1" title="View"><i class="lucide lucide-eye"></i></a>
+ <a href="/admin/pages/edit?id={{ page.id }}" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-amber-500 text-black hover:bg-amber-600 mr-1" title="Edit"><i class="lucide lucide-pencil"></i></a>
+ <a href="/admin/pages/delete?id={{ page.id }}" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-red-600 text-white hover:bg-red-700" title="Delete" onclick="return confirm('Are you sure?');"><i class="lucide lucide-trash"></i></a>
+ </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ {% include"admin/partials/pagination.twig" %}
+ </div>
+ </div>
+ {% else %}
+ <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
+ <i class="lucide lucide-info mr-1"></i> No pages found.
+ </div>
+ {% endif %}
+ </div>
 {% endblock %}
+
+
+
+
+

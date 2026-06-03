@@ -1,209 +1,123 @@
 {# templates/admin/applications/index.twig #}
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
 {% set skip_auto_breadcrumb = true %}
 {% block title %}Service Applications - Admin Panel{% endblock %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <!-- Page Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-file-earmark me-2"></i>
-        Service Applications
-      </div>
-      <div class="admin-page-subtitle">Manage service applications</div>
-    </div>
-    <div class="d-flex justify-content-end mb-4">
-      <a href="/admin/applications/export/csv"
-         class="modern-btn modern-btn-white">
-        <i class="bi bi-download"></i> Export CSV
-      </a>
-    </div>
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card border-left-primary">
-          <div class="admin-panel-card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h6 class="text-primary">Total</h6>
-                <h3>{{ stats.total }}</h3>
-              </div>
-              <i class="bi bi-file-earmark-text fs-1 text-primary opacity-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card border-left-warning">
-          <div class="admin-panel-card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h6 class="text-warning">Pending</h6>
-                <h3>{{ stats.pending }}</h3>
-              </div>
-              <i class="bi bi-hourglass-split fs-1 text-warning opacity-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card border-left-info">
-          <div class="admin-panel-card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h6 class="text-info">Processing</h6>
-                <h3>{{ stats.processing }}</h3>
-              </div>
-              <i class="bi bi-gear fs-1 text-info opacity-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card border-left-success">
-          <div class="admin-panel-card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h6 class="text-success">Approved</h6>
-                <h3>{{ stats.approved }}</h3>
-              </div>
-              <i class="bi bi-check-circle fs-1 text-success opacity-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Filters -->
-    <div class="admin-panel-card mb-4">
-      <div class="admin-panel-card-body">
-        <form method="GET" class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label">Status</label>
-            <select name="status" class="form-select">
-              <option value="">All Statuses</option>
-              <option value="pending"
-                      {% if filters.status == 'pending' %}selected{% endif %}>Pending</option>
-              <option value="processing"
-                      {% if filters.status == 'processing' %}selected{% endif %}>Processing</option>
-              <option value="approved"
-                      {% if filters.status == 'approved' %}selected{% endif %}>Approved</option>
-              <option value="rejected"
-                      {% if filters.status == 'rejected' %}selected{% endif %}>Rejected</option>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">From</label>
-            <input type="date"
-                   name="date_from"
-                   class="form-control"
-                   value="{{ filters.date_from ?? '' }}">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">To</label>
-            <input type="date"
-                   name="date_to"
-                   class="form-control"
-                   value="{{ filters.date_to ?? '' }}">
-          </div>
-          <div class="col-12">
-            <button type="submit" class="modern-btn modern-btn-primary">
-              <i class="bi bi-funnel"></i> Filter
-            </button>
-            <a href="/admin/applications" class="modern-btn modern-btn-white">
-              <i class="bi bi-arrow-clockwise"></i> Reset
-            </a>
-          </div>
-        </form>
-      </div>
-    </div>
-    <!-- Applications Table -->
-    <div class="admin-panel-card">
-      <div class="table-responsive">
-        <table class="table table-stacked table-hover mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>ID</th>
-              <th>User</th>
-              <th>Service</th>
-              <th>Status</th>
-              <th>Submitted</th>
-              <th>Approver</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for app in applications %}
-              <tr>
-                <td data-label="ID">
-                  <strong>#{{ app.id }}</strong>
-                </td>
-                <td data-label="User">
-                  {{ app.user_name }}
-                  <br>
-                  <small class="text-muted">{{ app.user_email }}</small>
-                </td>
-                <td data-label="Service">
-                  <strong>{{ app.service_name }}</strong>
-                </td>
-                <td data-label="Status">
-                  {% set status_colors = {"pending": "warning", "processing": "info", "approved": "success", "rejected": "danger"} %}
-                  <span class="badge bg-{{ status_colors[app.status] }}">{{ app.status|title }}</span>
-                </td>
-                <td data-label="Submitted">
-                  <small>{{ app.created_at|date("M d, Y") }}</small>
-                </td>
-                <td data-label="Approver">
-                  {% if app.approved_by_name %}
-                    <small>{{ app.approved_by_name }}</small>
-                  {% else %}
-                    <span class="text-muted">-</span>
-                  {% endif %}
-                </td>
-                <td data-label="Actions">
-                  <div class="modern-btn-group btn-group-sm" role="group">
-                    <a href="/admin/applications/{{ app.id }}"
-                       class="modern-btn modern-btn-white"
-                       title="View">
-                      <i class="bi bi-eye"></i>
-                    </a>
-                  </div>
-                </td>
-              </tr>
-            {% else %}
-              <tr>
-                <td colspan="7" class="text-center py-4 text-muted">
-                  <i class="bi bi-inbox fs-2 mb-2"></i>
-                  <p>No applications found</p>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <!-- Pagination -->
-      {% if total_pages > 1 %}
-        <nav aria-label="Page navigation" class="admin-panel-card-footer">
-          <ul class="pagination justify-content-center mb-0">
-            {% if page > 1 %}
-              <li class="page-item">
-                <a class="page-link" href="?page={{ page - 1 }}">Previous</a>
-              </li>
-            {% endif %}
-            {% for p in range(max(1, page - 2), min(total_pages, page + 2) + 1) %}
-              <li class="page-item {% if p == page %}active{% endif %}">
-                <a class="page-link" href="?page={{ p }}">{{ p }}</a>
-              </li>
-            {% endfor %}
-            {% if page < total_pages %}
-              <li class="page-item">
-                <a class="page-link" href="?page={{ page + 1 }}">Next</a>
-              </li>
-            {% endif %}
-          </ul>
-        </nav>
-      {% endif %}
-    </div>
+<div class="space-y-6">
+ <section class="admin-page-header">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+   <div>
+    <p class="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">
+     <i class="lucide lucide-file"></i>
+     Service Applications
+    </p>
+    <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">Manage service applications</h1>
+    <p class="mt-2 max-w-2xl text-sm text-slate-600">Review, filter, and approve submissions from one place.</p>
+   </div>
+   <a href="/admin/applications/export/csv" class="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-200">
+    <i class="lucide lucide-download"></i> Export CSV
+   </a>
   </div>
+ </section>
+
+ <section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+  <div class="admin-panel-card"><p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600">Total</p><div class="mt-2 flex items-end justify-between gap-4"><div class="text-3xl font-bold text-slate-950">{{ stats.total }}</div><i class="lucide lucide-file-text text-4xl text-indigo-600/40"></i></div></div>
+  <div class="admin-panel-card"><p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600">Pending</p><div class="mt-2 flex items-end justify-between gap-4"><div class="text-3xl font-bold text-slate-950">{{ stats.pending }}</div><i class="lucide lucide-hourglass text-4xl text-amber-600/40"></i></div></div>
+  <div class="admin-panel-card"><p class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">Processing</p><div class="mt-2 flex items-end justify-between gap-4"><div class="text-3xl font-bold text-slate-950">{{ stats.processing }}</div><i class="lucide lucide-settings text-4xl text-sky-600/40"></i></div></div>
+  <div class="admin-panel-card"><p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">Approved</p><div class="mt-2 flex items-end justify-between gap-4"><div class="text-3xl font-bold text-slate-950">{{ stats.approved }}</div><i class="lucide lucide-check-circle text-4xl text-emerald-600/40"></i></div></div>
+ </section>
+
+ <section class="admin-panel-card">
+  <form method="GET" class="grid grid-cols-1 gap-4 md:grid-cols-12">
+   <div class="md:col-span-4">
+    <label class="form-label">Status</label>
+    <select name="status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+     <option value="">All Statuses</option>
+     <option value="pending" {% if filters.status == 'pending' %}selected{% endif %}>Pending</option>
+     <option value="processing" {% if filters.status == 'processing' %}selected{% endif %}>Processing</option>
+     <option value="approved" {% if filters.status == 'approved' %}selected{% endif %}>Approved</option>
+     <option value="rejected" {% if filters.status == 'rejected' %}selected{% endif %}>Rejected</option>
+    </select>
+   </div>
+   <div class="md:col-span-4">
+    <label class="form-label">From</label>
+    <input type="date" name="date_from" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" value="{{ filters.date_from ?? '' }}">
+   </div>
+   <div class="md:col-span-4">
+    <label class="form-label">To</label>
+    <input type="date" name="date_to" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" value="{{ filters.date_to ?? '' }}">
+   </div>
+   <div class="col-span-12 flex flex-wrap gap-2">
+    <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"><i class="lucide lucide-filter"></i> Filter</button>
+    <a href="/admin/applications" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"><i class="lucide lucide-refresh-cw"></i> Reset</a>
+   </div>
+  </form>
+ </section>
+
+ <section class="admin-panel-card">
+  <div class="overflow-x-auto">
+   <table class="table">
+    <thead>
+     <tr>
+      <th>ID</th>
+      <th>User</th>
+      <th>Service</th>
+      <th>Status</th>
+      <th>Submitted</th>
+      <th>Approver</th>
+      <th>Actions</th>
+     </tr>
+    </thead>
+    <tbody>
+     {% for app in applications %}
+     <tr>
+      <td data-label="ID"><strong>#{{ app.id }}</strong></td>
+      <td data-label="User">{{ app.user_name }}<br><small class="text-slate-500">{{ app.user_email }}</small></td>
+      <td data-label="Service"><strong>{{ app.service_name }}</strong></td>
+      <td data-label="Status">
+       {% set status_colors = {
+        "pending":"bg-amber-100 text-amber-700",
+        "processing":"bg-sky-100 text-sky-700",
+        "approved":"bg-emerald-100 text-emerald-700",
+        "rejected":"bg-rose-100 text-rose-700"
+       } %}
+       <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {{ status_colors[app.status]|default('bg-slate-100 text-slate-700') }}">{{ app.status|title }}</span>
+      </td>
+      <td data-label="Submitted"><small>{{ app.created_at|date("M d, Y") }}</small></td>
+      <td data-label="Approver">{% if app.approved_by_name %}<small>{{ app.approved_by_name }}</small>{% else %}<span class="text-slate-500">-</span>{% endif %}</td>
+      <td data-label="Actions">
+       <div class="inline-flex items-center justify-center gap-2">
+        <a href="/admin/applications/{{ app.id }}" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" title="View"><i class="lucide lucide-eye"></i></a>
+       </div>
+      </td>
+     </tr>
+     {% else %}
+     <tr>
+      <td colspan="7" class="py-4 text-center text-slate-500">
+       <i class="lucide lucide-inbox text-3xl mb-2"></i>
+       <p>No applications found</p>
+      </td>
+     </tr>
+     {% endfor %}
+    </tbody>
+   </table>
+  </div>
+
+  {% if total_pages > 1 %}
+  <nav aria-label="Page navigation" class="mt-4">
+   <ul class="pagination justify-center">
+    {% if page > 1 %}
+    <li class="page-item"><a class="page-link" href="?page={{ page - 1 }}">Previous</a></li>
+    {% endif %}
+    {% for p in range(max(1, page - 2), min(total_pages, page + 2) + 1) %}
+    <li class="page-item {% if p == page %}active{% endif %}"><a class="page-link" href="?page={{ p }}">{{ p }}</a></li>
+    {% endfor %}
+    {% if page < total_pages %}
+    <li class="page-item"><a class="page-link" href="?page={{ page + 1 }}">Next</a></li>
+    {% endif %}
+   </ul>
+  </nav>
+  {% endif %}
+ </section>
+</div>
 {% endblock %}
-
-

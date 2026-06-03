@@ -1,6 +1,6 @@
-{% extends 'admin/layout.twig' %}
+﻿{% extends 'admin/layout.twig' %}
 
-{% block title %}Donations – Admin | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+{% block title %}Donations â€“ Admin | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="/admin/dashboard">Admin</a></li>
@@ -9,157 +9,163 @@
 {% endblock %}
 
 {% block page_content %}
-<div class="dashboard-page">
-  <div class="row g-4 mb-4">
-    <div class="col-md-4">
-      <div class="card stat-card h-100 border-0 shadow-sm"><div class="card-body p-4">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <small class="text-muted text-uppercase">Total Received</small>
-            <div class="h3 mb-0 fw-bold text-success">৳{{ donations|reduce((carry,d)=>carry+(d.status=='completed'?d.amount:0),0)|number_format(0) }}</div>
-          </div>
-          <div class="icon-circle bg-success bg-opacity-15 rounded-circle p-3"><i class="bi bi-currency-dollar text-success"></i></div>
-        </div>
-      </div></div>
-    </div>
-    <div class="col-md-4">
-      <div class="card stat-card h-100 border-0 shadow-sm"><div class="card-body p-4">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <small class="text-muted text-uppercase">Contributors</small>
-            <div class="h3 mb-0 fw-bold text-primary">{{ donation_count|default(0) }}</div>
-          </div>
-          <div class="icon-circle bg-primary bg-opacity-15 rounded-circle p-3"><i class="bi bi-people-fill text-primary"></i></div>
-        </div>
-      </div></div>
-    </div>
-    <div class="col-md-4">
-      <div class="card stat-card h-100 border-0 shadow-sm"><div class="card-body p-4">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <small class="text-muted text-uppercase">Current Page</small>
-            <div class="h3 mb-0 fw-bold text-warning">{{ page }} / {{ total_pages }}</div>
-          </div>
-          <div class="icon-circle bg-warning bg-opacity-15 rounded-circle p-3"><i class="bi bi-layout-text-sidebar text-warning"></i></div>
-        </div>
-      </div></div>
-    </div>
-  </div>
+<div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
+ <div class="md:col-span-4">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm  h-full border-0"><div class="p-4">
+ <div class="flex justify-between items-center">
+ <div>
+ <small class="text-slate-500 text-uppercase">Total Received</small>
+ <div class="h3 mb-0 font-bold text-emerald-600">à§³{{ donations|reduce((carry,d)=>carry+(d.status=='completed'?d.amount:0),0)|number_format(0) }}</div>
+ </div>
+ <div class="icon-circle bg-emerald-600 bg-opacity-15 rounded-full p-3"><i class="lucide lucide-dollar-sign text-emerald-600"></i></div>
+ </div>
+ </div></div>
+ </div>
+ <div class="md:col-span-4">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm  h-full border-0"><div class="p-4">
+ <div class="flex justify-between items-center">
+ <div>
+ <small class="text-slate-500 text-uppercase">Contributors</small>
+ <div class="h3 mb-0 font-bold text-indigo-600">{{ donation_count|default(0) }}</div>
+ </div>
+ <div class="icon-circle bg-indigo-600 bg-opacity-15 rounded-full p-3"><i class="lucide lucide-users text-indigo-600"></i></div>
+ </div>
+ </div></div>
+ </div>
+ <div class="md:col-span-4">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm  h-full border-0"><div class="p-4">
+ <div class="flex justify-between items-center">
+ <div>
+ <small class="text-slate-500 text-uppercase">Current Page</small>
+ <div class="h3 mb-0 font-bold text-amber-600">{{ page }} / {{ total_pages }}</div>
+ </div>
+ <div class="icon-circle bg-amber-500 bg-opacity-15 rounded-full p-3"><i class="lucide lucide-sidebar text-amber-600"></i></div>
+ </div>
+ </div></div>
+ </div>
+ </div>
 
-  {# ── Filterbar ── #}
-  <form method="GET" class="card border-0 shadow-sm rounded-4 mb-4">
-    <div class="card-body p-4">
-      <div class="row g-3">
-        <div class="col-md-4">
-          <input type="text" name="search" class="form-control" placeholder="Search by name, email or phone…"
-                 value="{{ filters.search|default('') }}">
-        </div>
-        <div class="col-md-3">
-          <select name="status" class="form-select">
-            <option value="">All statuses</option>
-            {% for s in ['pending','processing','completed','failed','cancelled','refunded'] %}
-            <option value="{{ s }}" {% if filters.status==s %}selected{% endif %}>{{ s|capitalize }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <select name="limit" class="form-select">
-            {% for l in [5,10,20,50] %}<option value="{{ l }}" {% if limit==l %}selected{% endif %}>{{ l }} / page</option>{% endfor %}
-          </select>
-        </div>
-        <div class="col-md-3 d-grid">
-          <button type="submit" class="btn btn-primary rounded-pill">
-            <i class="bi bi-funnel me-1"></i>Filter
-          </button>
-        </div>
-      </div>
-    </div>
-  </form>
+ {# â”€â”€ Filterbar â”€â”€ #}
+ <form method="GET" class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 rounded-2xl mb-4">
+ <div class="p-4">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3">
+ <div class="md:col-span-4">
+ <input type="text" name="search" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="Search by name, email or phoneâ€¦"
+ value="{{ filters.search|default('') }}">
+ </div>
+ <div class="md:col-span-3">
+ <select name="status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+ <option value="">All statuses</option>
+ {% for s in ['pending','processing','completed','failed','cancelled','refunded'] %}
+ <option value="{{ s }}" {% if filters.status==s %}selected{% endif %}>{{ s|capitalize }}</option>
+ {% endfor %}
+ </select>
+ </div>
+ <div class="md:col-span-2">
+ <select name="limit" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+ {% for l in [5,10,20,50] %}<option value="{{ l }}" {% if limit==l %}selected{% endif %}>{{ l }} / page</option>{% endfor %}
+ </select>
+ </div>
+ <div class="md:col-span-3 grid">
+ <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 rounded-full">
+ <i class="lucide lucide-filter mr-1"></i>Filter
+ </button>
+ </div>
+ </div>
+ </div>
+ </form>
 
-  {# ── Table ── #}
-  <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-    <div class="card-header bg-white border-0 py-3 px-4">
-      <h5 class="mb-0 fw-bold"><i class="bi bi-heart-fill text-danger me-2"></i>Donation Records</h5>
-    </div>
-    <div class="card-body p-0 table-responsive">
-      <table class="table table-hover mb-0 align-middle">
-        <thead class="table-light">
-          <tr>
-            <th class="px-4">ID</th>
-            <th>Donor</th>
-            <th>Phone</th>
-            <th>Amount</th>
-            <th>Method</th>
-            <th>Status</th>
-            <th>Tx ID</th>
-            <th>Date</th>
-            <th class="text-end px-4">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for d in donations %}
-          <tr>
-            <td class="px-4"><span class="badge bg-secondary">#{{ d.id }}</span></td>
-            <td>
-              <div class="fw-semibold">{{ d.donor_name }}</div>
-              <small class="text-muted">{{ d.donor_email|default('—') }}</small>
-            </td>
-            <td class="font-monospace small">{{ d.donor_phone }}</td>
-            <td class="fw-bold">{{ d.currency|default('BDT') }} {{ d.amount|number_format(2) }}</td>
-            <td>
-              <span class="badge bg-info-subtle text-info">{{ d.method|capitalize }}</span>
-            </td>
-            <td>
-              {% set sc = d.status %}
-              {% set cls = sc == 'completed' ? 'bg-success-subtle text-success'
-                          : sc == 'pending' or sc == 'processing' ? 'bg-warning-subtle text-warning'
-                          : 'bg-danger-subtle text-danger' %}
-              <span class="badge {{ cls }}">{{ sc|capitalize }}</span>
-            </td>
-            <td class="font-monospace small">{{ d.bkash_trxid or d.nagad_trxid or d.stripe_charge_id or '—' }}</td>
-            <td>{{ d.created_at|date('M j, Y g:i') }}</td>
-            <td class="text-end px-4">
-              <div class="btn-group btn-group-sm">
-                {% if d.status in ['pending','processing'] %}
-                <form method="POST" action="/admin/revenue/donations/{{ d.id }}/confirm"
-                      style="display:inline" class="me-1"
-                      onsubmit="return confirm('Mark donation #{{ d.id }} as confirmed?')">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                  <button class="btn btn-success btn-sm rounded-pill">Confirm</button>
-                </form>
-                <form method="POST" action="/admin/revenue/donations/{{ d.id }}/reject"
-                      style="display:inline"
-                      onsubmit="return confirm('Cancel donation #{{ d.id }}?')">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                  <button class="btn btn-outline-danger btn-sm rounded-pill">Cancel</button>
-                </form>
-                {% else %}
-                <span class="badge bg-light text-muted">—</span>
-                {% endif %}
-              </div>
-            </td>
-          </tr>
-          {% else %}
-          <tr><td colspan="9" class="text-center py-5 text-muted">
-            <i class="bi bi-inbox fs-4 d-block mb-2"></i>No donations found.
-          </td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% if total_pages > 1 %}
-    <div class="card-footer bg-white py-3">
-      <nav aria-label="Donations pagination">
-        <ul class="pagination mb-0 justify-content-center">
-          {% for p in 1..total_pages %}
-            <li class="page-item {% if p == page %}active{% endif %}">
-              <a class="page-link rounded-pill mx-1" href="?page={{ p }}&{% if filters.status %}status={{ filters.status }}&{% endif %}{% if filters.search %}search={{ filters.search|url_encode }}&{% endif %}limit={{ limit }}">{{ p }}</a>
-            </li>
-          {% endfor %}
-        </ul>
-      </nav>
-    </div>
-    {% endif %}
-  </div>
+ {# â”€â”€ Table â”€â”€ #}
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 rounded-2xl overflow-hidden">
+ <div class="border-b border-slate-200 px-4 py-3 bg-white border-0">
+ <h5 class="mb-0 font-bold"><i class="lucide lucide-heart text-red-600 mr-2"></i>Donation Records</h5>
+ </div>
+ <div class="p-4 p-0 overflow-x-auto">
+ <table class="table table-hover mb-0 align-middle">
+ <thead class="table-light">
+ <tr>
+ <th class="px-4">ID</th>
+ <th>Donor</th>
+ <th>Phone</th>
+ <th>Amount</th>
+ <th>Method</th>
+ <th>Status</th>
+ <th>Tx ID</th>
+ <th>Date</th>
+ <th class="text-right px-4">Actions</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for d in donations %}
+ <tr>
+ <td class="px-4"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-600">#{{ d.id }}</span></td>
+ <td>
+ <div class="font-semibold">{{ d.donor_name }}</div>
+ <small class="text-slate-500">{{ d.donor_email|default('â€”') }}</small>
+ </td>
+ <td class="font-monospace small">{{ d.donor_phone }}</td>
+ <td class="font-bold">{{ d.currency|default('BDT') }} {{ d.amount|number_format(2) }}</td>
+ <td>
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-sky-500-subtle text-sky-600">{{ d.method|capitalize }}</span>
+ </td>
+ <td>
+ {% set sc = d.status %}
+ {% set cls = sc == 'completed' ? 'bg-emerald-600-subtle text-emerald-600'
+ : sc == 'pending' or sc == 'processing' ? 'bg-amber-500-subtle text-amber-600'
+ : 'bg-red-600-subtle text-red-600' %}
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {{ cls }}">{{ sc|capitalize }}</span>
+ </td>
+ <td class="font-monospace small">{{ d.bkash_trxid or d.nagad_trxid or d.stripe_charge_id or 'â€”' }}</td>
+ <td>{{ d.created_at|date('M j, Y g:i') }}</td>
+ <td class="text-right px-4">
+ <div class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-group transition-group-sm">
+ {% if d.status in ['pending','processing'] %}
+ <form method="POST" action="/admin/revenue/donations/{{ d.id }}/confirm"
+ style="display:inline" class="mr-1"
+ onsubmit="return confirm('Mark donation #{{ d.id }} as confirmed?')">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-1.5 text-xs rounded-full">Confirm</button>
+ </form>
+ <form method="POST" action="/admin/revenue/donations/{{ d.id }}/reject"
+ style="display:inline"
+ onsubmit="return confirm('Cancel donation #{{ d.id }}?')">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+ <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-red-600 hover:bg-red-100 px-3 py-1.5 text-xs rounded-full">Cancel</button>
+ </form>
+ {% else %}
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-500">â€”</span>
+ {% endif %}
+ </div>
+ </td>
+ </tr>
+ {% else %}
+ <tr><td colspan="9" class="text-center py-5 text-slate-500">
+ <i class="lucide lucide-inbox text-xl block mb-2"></i>No donations found.
+ </td></tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ {% if total_pages > 1 %}
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm-footer py-3">
+ <nav aria-label="Donations pagination">
+ <ul class="pagination mb-0 justify-center">
+ {% for p in 1..total_pages %}
+ <li class="page-item {% if p == page %}active{% endif %}">
+ <a class="page-link rounded-full mx-1" href="?page={{ p }}&{% if filters.status %}status={{ filters.status }}&{% endif %}{% if filters.search %}search={{ filters.search|url_encode }}&{% endif %}limit={{ limit }}">{{ p }}</a>
+ </li>
+ {% endfor %}
+ </ul>
+ </nav>
+ </div>
+ {% endif %}
+ </div>
 </div>
 {% endblock %}
+
+
+
+
+
+

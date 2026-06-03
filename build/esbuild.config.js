@@ -18,7 +18,6 @@ const ENTRY_POINTS = {
   script: join(ROOT_DIR, 'public_html', 'assets', 'js', 'script.js'),
   admin: join(ROOT_DIR, 'public_html', 'assets', 'js', 'admin.js'),
   'app-config': join(ROOT_DIR, 'public_html', 'assets', 'js', 'app-config.js'),
-  'bootstrap-lite': join(ROOT_DIR, 'public_html', 'assets', 'js', 'bootstrap-lite.js'),
   'sweetalert2-handler': join(ROOT_DIR, 'public_html', 'assets', 'js', 'sweetalert2-handler.js'),
   'theme-manager': join(ROOT_DIR, 'public_html', 'assets', 'js', 'theme-manager.js'),
   datepicker: join(ROOT_DIR, 'public_html', 'assets', 'js', 'datepicker.js'),
@@ -26,6 +25,27 @@ const ENTRY_POINTS = {
   'auth/login': join(ROOT_DIR, 'public_html', 'assets', 'js', 'auth', 'login.js'),
   'auth/register': join(ROOT_DIR, 'public_html', 'assets', 'js', 'auth', 'register.js'),
   'brox-i18n': join(ROOT_DIR, 'public_html', 'assets', 'js', 'brox-i18n.js'),
+  'brox-ui': join(ROOT_DIR, 'public_html', 'assets', 'js', 'brox-ui.js'),
+
+  // Standalone feature scripts (converted from IIFE to ES modules)
+  'medex-scraper': join(ROOT_DIR, 'public_html', 'assets', 'js', 'medex-scraper.js'),
+  'medex-autocollect': join(ROOT_DIR, 'public_html', 'assets', 'js', 'medex-autocollect.js'),
+  'medex-details-page': join(ROOT_DIR, 'public_html', 'assets', 'js', 'medex-details-page.js'),
+  'medex-route-fetch': join(ROOT_DIR, 'public_html', 'assets', 'js', 'medex-route-fetch.js'),
+  'medex-brand-page': join(ROOT_DIR, 'public_html', 'assets', 'js', 'medex-brand-page.js'),
+  'medex-collector-ui': join(ROOT_DIR, 'public_html', 'assets', 'js', 'medex-collector-ui.js'),
+  'ramadan-2026': join(ROOT_DIR, 'public_html', 'assets', 'js', 'ramadan-2026.js'),
+  calculator: join(ROOT_DIR, 'public_html', 'assets', 'js', 'calculator.js'),
+  'bangla-converter': join(ROOT_DIR, 'public_html', 'assets', 'js', 'bangla-converter.js'),
+  'cv-admin': join(ROOT_DIR, 'public_html', 'assets', 'js', 'cv-admin.js'),
+  'ai-system-admin': join(ROOT_DIR, 'public_html', 'assets', 'js', 'ai-system-admin.js'),
+  'admin-bulk-article-writer': join(ROOT_DIR, 'public_html', 'assets', 'js', 'admin-bulk-article-writer.js'),
+  'admin-article-writer': join(ROOT_DIR, 'public_html', 'assets', 'js', 'admin-article-writer.js'),
+  'admin-article-writer-stream': join(ROOT_DIR, 'public_html', 'assets', 'js', 'admin-article-writer-stream.js'),
+  'lucide-compat': join(ROOT_DIR, 'public_html', 'assets', 'js', 'lucide-compat.js'),
+  'lucide-svg': join(ROOT_DIR, 'public_html', 'assets', 'js', 'lucide-svg.js'),
+  'feed-discovery': join(ROOT_DIR, 'public_html', 'assets', 'js', 'feed-discovery.js'),
+  'photo-studio/editor': join(ROOT_DIR, 'public_html', 'assets', 'js', 'photo-studio', 'editor.js'),
 };
 
 const buildOptions = {

@@ -19,24 +19,26 @@
     "build:prod": "npm run build:css && npm run build:js && npm run build:ai && npm run build:rte && npm run build:assistants && npm run build:firebase:v2",
     "dev": "npm run build:css && npm run build:js && npm run build:ai",
     "dev:rte": "node build/esbuild-rte.mjs",
-    "lint": "eslint \"public_html/assets/js/**/*.{js,ts}\" --ext .js,.ts --ignore-pattern \"public_html/assets/js/dist/**\"",
-    "type-check": "tsc -p build/tsconfig.json --noEmit",
+    "lint": "eslint public_html/assets/js/",
+    "type-check": "node node_modules/typescript/bin/tsc -p build/tsconfig.json --noEmit",
     "test": "vitest --passWithNoTests",
     "validate": "npm run lint --if-present && npm run type-check --if-present && npm test --if-present"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.0",
     "@playwright/test": "^1.60.0",
     "@types/node": "^20.19.41",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
     "esbuild": "^0.28.0",
-    "eslint": "^8.57.1",
+    "eslint": "^10.4.0",
+    "globals": "^16.5.0",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.3.3",
-    "vitest": "^1.6.1"
+    "vitest": "^4.1.7"
   },
   "dependencies": {
     "firebase": "^12.13.0",
+    "lucide": "^1.3.0",
+    "lucide-static": "^1.16.0",
     "playwright": "^1.60.0"
   }
 }

@@ -1,214 +1,143 @@
-{% extends 'layout.twig' %}
+﻿{% extends 'layout.twig' %}
 
 {% block title %}FAQ - Frequently Asked Questions | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
 
 {% set breadcrumbs = [
-  { label: 'FAQ', url: '/faq', icon: 'question' }
+ { label: 'FAQ', url: '/faq', icon: 'question' }
 ] %}
 
 {% set faq_items = [
-  {
-    '@type': 'Question',
-    'name': 'What is BroxBhai?',
-    'acceptedAnswer': {
-      '@type': 'Answer',
-      'text': 'BroxBhai is a comprehensive platform for mobile device reviews, tech news, and gadget discussions with detailed reviews, comparisons, and guides.'
-    }
-  },
-  {
-    '@type': 'Question',
-    'name': 'How can I submit a review?',
-    'acceptedAnswer': {
-      '@type': 'Answer',
-      'text': 'Create an account, go to your dashboard, click Submit Review, and include detailed information with images if possible.'
-    }
-  },
-  {
-    '@type': 'Question',
-    'name': 'How do I report inappropriate content?',
-    'acceptedAnswer': {
-      '@type': 'Answer',
-      'text': 'Use the report button on the content or contact us directly with details about the issue.'
-    }
-  },
-  {
-    '@type': 'Question',
-    'name': 'Can I edit my profile?',
-    'acceptedAnswer': {
-      '@type': 'Answer',
-      'text': 'Yes. After login, open your profile settings to update personal information and profile picture.'
-    }
-  },
-  {
-    '@type': 'Question',
-    'name': 'How often is content updated?',
-    'acceptedAnswer': {
-      '@type': 'Answer',
-      'text': 'We publish news, reviews, and guides regularly. Subscribe to our newsletter for the latest updates.'
-    }
-  },
-  {
-    '@type': 'Question',
-    'name': 'Is BroxBhai free to use?',
-    'acceptedAnswer': {
-      '@type': 'Answer',
-      'text': 'Yes. Most content on BroxBhai is available free of charge, though some services may require registration or premium access.'
-    }
+ {
+  '@type': 'Question',
+  'name': 'What is BroxBhai?',
+  'acceptedAnswer': {
+   '@type': 'Answer',
+   'text': 'BroxBhai is a comprehensive platform for mobile device reviews, tech news, and gadget discussions with detailed reviews, comparisons, and guides.'
   }
+ },
+ {
+  '@type': 'Question',
+  'name': 'How can I submit a review?',
+  'acceptedAnswer': {
+   '@type': 'Answer',
+   'text': 'Create an account, go to your dashboard, click Submit Review, and include detailed information with images if possible.'
+  }
+ },
+ {
+  '@type': 'Question',
+  'name': 'How do I report inappropriate content?',
+  'acceptedAnswer': {
+   '@type': 'Answer',
+   'text': 'Use the report button on the content or contact us directly with details about the issue.'
+  }
+ },
+ {
+  '@type': 'Question',
+  'name': 'Can I edit my profile?',
+  'acceptedAnswer': {
+   '@type': 'Answer',
+   'text': 'Yes. After login, open your profile settings to update personal information and profile picture.'
+  }
+ },
+ {
+  '@type': 'Question',
+  'name': 'How often is content updated?',
+  'acceptedAnswer': {
+   '@type': 'Answer',
+   'text': 'We publish news, reviews, and guides regularly. Subscribe to our newsletter for the latest updates.'
+  }
+ },
+ {
+  '@type': 'Question',
+  'name': 'Is BroxBhai free to use?',
+  'acceptedAnswer': {
+   '@type': 'Answer',
+   'text': 'Yes. Most content on BroxBhai is available free of charge, though some services may require registration or premium access.'
+  }
+ }
 ] %}
+
 {% set page_schema = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  'mainEntity': faq_items
+ '@context': 'https://schema.org',
+ '@type': 'FAQPage',
+ 'mainEntity': faq_items
 } %}
+
 {% block schema %}
-  <script type="application/ld+json">
+ <script type="application/ld+json">
 {{ page_schema|schema_json }}
-  </script>
+ </script>
 {% endblock %}
 
 {% block content %}
-<div class="page-faq public-static-page">
-  <section class="hero-section public-page-hero public-hero--faq position-relative py-5 mb-4 overflow-hidden">
-    <div class="container">
-      <div class="row align-items-center g-4">
-        <div class="col-lg-8">
-          <h1 class="display-4 fw-bold text-theme-strong mb-3">
-            <i class="bi bi-question-circle me-2"></i>Frequently Asked Questions
-          </h1>
-          <p class="lead text-theme-strong fs-5 mb-0">
-            Find answers to common questions about our platform and services.
-          </p>
-        </div>
-        <div class="col-lg-4 text-center">
-          <div class="public-hero-icon text-theme-strong" aria-hidden="true">
-            <i class="bi bi-patch-question-fill"></i>
-          </div>
-        </div>
-      </div>
+<div class="public-static-page py-6 md:py-10">
+ <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+  <section class="hero-section mb-6 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white">
+   <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+    <div class="max-w-3xl">
+     <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
+      <i class="lucide lucide-help-circle h-3.5 w-3.5" aria-hidden="true"></i>
+      Help center
+     </div>
+     <h1 class="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">Frequently Asked Questions</h1>
+     <p class="mt-3 max-w-2xl text-sm leading-7 text-white/85 sm:text-base">
+      Find answers to common questions about the platform, accounts, publishing, and updates.
+     </p>
     </div>
+    <div class="public-hero-icon" aria-hidden="true">
+     <i class="lucide lucide-help-circle"></i>
+    </div>
+   </div>
   </section>
 
-  <div class="container py-4 py-lg-5">
-    <div class="row">
-      <div class="col-lg-8 mx-auto">
-        <h2 class="h3 fw-bold mb-4">Frequently Asked Questions</h2>
-
-        <div class="accordion" id="faqAccordion">
-          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
-            <h2 class="accordion-header">
-              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                What is BroxBhai?
-              </button>
-            </h2>
-            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-              <div class="accordion-body">
-                BroxBhai is a comprehensive platform for mobile device reviews, tech news, and gadget discussions.
-                We provide detailed reviews, comparisons, and guides to help you make informed purchase decisions.
-              </div>
-            </div>
-          </div>
-
-          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
-            <h2 class="accordion-header">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                How can I submit a review?
-              </button>
-            </h2>
-            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body">
-                Create an account first, then go to your dashboard and click "Submit Review". Include detailed information and images if possible.
-              </div>
-            </div>
-          </div>
-
-          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
-            <h2 class="accordion-header">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                How do I report inappropriate content?
-              </button>
-            </h2>
-            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body">
-                Use the report button on the content or <a href="/contact">contact us</a> directly with details.
-              </div>
-            </div>
-          </div>
-
-          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
-            <h2 class="accordion-header">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
-                Can I edit my profile?
-              </button>
-            </h2>
-            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body">
-                Yes. After login, open your profile settings to update personal info and profile picture.
-              </div>
-            </div>
-          </div>
-
-          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
-            <h2 class="accordion-header">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
-                How often is content updated?
-              </button>
-            </h2>
-            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body">
-                We publish news, reviews, and guides regularly. Subscribe to our newsletter for updates.
-              </div>
-            </div>
-          </div>
-
-          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
-            <h2 class="accordion-header">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
-                Is BroxBhai free to use?
-              </button>
-            </h2>
-            <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body">
-                Yes. Browsing and reading content is free. You only need a free account for submissions and participation.
-              </div>
-            </div>
-          </div>
-
-          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
-            <h2 class="accordion-header">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq7">
-                How can I delete my account?
-              </button>
-            </h2>
-            <div id="faq7" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body">
-                Request account deletion from account settings. This action cannot be undone.
-              </div>
-            </div>
-          </div>
-
-          <div class="accordion-item rounded-3 mb-2 border-0 shadow-sm">
-            <h2 class="accordion-header">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq8">
-                Do you accept guest posts?
-              </button>
-            </h2>
-            <div id="faq8" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body">
-                Yes. We welcome guest posts from experienced reviewers and tech writers. Please <a href="/contact">contact us</a> with your proposal.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card public-surface-card border-0 mt-4 p-4">
-          <h5 class="fw-bold mb-2"><i class="bi bi-chat-left-text me-2"></i>Didn't find your answer?</h5>
-          <p class="mb-0">
-            Feel free to <a href="/contact" class="btn btn-primary btn-sm">contact us</a> for any other questions.
-          </p>
-        </div>
-      </div>
-    </div>
+  <div class="listing-header">
+   <h2><i class="lucide lucide-message-circle-question text-indigo-600" aria-hidden="true"></i>FAQ</h2>
+   <p>Quick answers to the most common questions.</p>
   </div>
+
+  <div class="grid gap-6 lg:grid-cols-12">
+   <div class="lg:col-span-8">
+    <div id="faqAccordion" class="space-y-3">
+     {% for item in [
+      { title: 'What is BroxBhai?', body: 'BroxBhai is a platform for mobile reviews, tech news, and gadget discussions.' },
+      { title: 'How can I submit a review?', body: 'Create an account, open your dashboard, and submit a review with detailed information and images.' },
+      { title: 'How do I report inappropriate content?', body: 'Use the report button on the content or <a href="/contact" class="text-indigo-600 hover:text-indigo-700 underline">contact us</a> directly.' },
+      { title: 'Can I edit my profile?', body: 'Yes. After login, open your profile settings to update personal information and profile picture.' },
+      { title: 'How often is content updated?', body: 'We publish news, reviews, and guides regularly. Subscribe to our newsletter for the latest updates.' },
+      { title: 'Is BroxBhai free to use?', body: 'Yes. Most content is free, though some services may require registration or premium access.' },
+      { title: 'How can I delete my account?', body: 'Request account deletion from account settings. This action cannot be undone.' },
+      { title: 'Do you accept guest posts?', body: 'Yes. We welcome guest posts from experienced reviewers and tech writers. Please <a href="/contact" class="text-indigo-600 hover:text-indigo-700 underline">contact us</a> with your proposal.' }
+     ] %}
+     {% set faq_id = 'faq' ~ loop.index %}
+     <article class="faq-card overflow-hidden">
+      <button class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50" type="button" data-brox-toggle="collapse" data-brox-target="#{{ faq_id }}" aria-expanded="{{ loop.first ? 'true' : 'false' }}" aria-controls="{{ faq_id }}">
+       <span>{{ item.title }}</span>
+       <i class="lucide lucide-chevron-down h-4 w-4 text-slate-400 transition-transform" aria-hidden="true"></i>
+      </button>
+      <div id="{{ faq_id }}" class="collapse {% if loop.first %}show{% endif %}" data-brox-parent="#faqAccordion">
+       <div class="px-5 py-4 text-sm leading-7 text-slate-600">
+        {{ item.body|raw }}
+       </div>
+      </div>
+     </article>
+     {% endfor %}
+    </div>
+   </div>
+
+   <aside class="lg:col-span-4">
+    <div class="support-card">
+     <h3 class="text-lg font-bold text-slate-900">Need more help?</h3>
+     <p class="mt-2 text-sm leading-7 text-slate-600">
+      If you still need assistance, send us a message and we will get back to you as soon as we can.
+     </p>
+     <a href="/contact" class="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+      <i class="lucide lucide-send h-4 w-4" aria-hidden="true"></i>
+      Contact us
+     </a>
+    </div>
+   </aside>
+  </div>
+ </div>
 </div>
 {% endblock %}
+

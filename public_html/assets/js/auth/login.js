@@ -12,7 +12,7 @@ import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
 
 const runWhenReady = (fn) => {
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', fn, { once: true });
+    document.addEventListener('DOMContentLoaded', fn, { once: true, });
   } else {
     fn();
   }
@@ -167,7 +167,7 @@ const runWhenReady = (fn) => {
       btn.setAttribute('aria-busy', isActive ? 'true' : 'false');
 
       if (isActive) {
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        btn.innerHTML = '<span class="inline-spinner inline-spinner-sm" role="status" aria-hidden="true"></span>';
       }
     });
   }
@@ -208,16 +208,23 @@ const runWhenReady = (fn) => {
   function initPasswordToggle() {
     if (!elements.passwordToggle || !elements.passwordInput) return;
 
+    const updateIcon = (isPassword) => {
+      // Remove all lucide icons and replace with correct one
+      const iconName = isPassword ? 'eye' : 'eye-off';
+      elements.passwordToggle.innerHTML = `<i class="lucide lucide-${iconName} w-5 h-5"></i>`;
+      elements.passwordToggle.setAttribute('aria-label', isPassword ? 'Show password' : 'Hide password');
+      elements.passwordToggle.setAttribute('aria-pressed', isPassword ? 'false' : 'true');
+    };
+
     const toggle = () => {
       const isPassword = elements.passwordInput.type === 'password';
       elements.passwordInput.type = isPassword ? 'text' : 'password';
-      elements.passwordToggle.className = isPassword
-        ? 'bi bi-eye-slash password-toggle'
-        : 'bi bi-eye password-toggle';
-      elements.passwordToggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
-      elements.passwordToggle.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+      updateIcon(isPassword);
       elements.passwordInput.focus();
     };
+
+    // Initialize icon
+    updateIcon(true);
 
     elements.passwordToggle.addEventListener('click', (e) => {
       e.preventDefault();

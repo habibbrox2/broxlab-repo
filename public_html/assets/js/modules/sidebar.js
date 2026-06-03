@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Sidebar Module - Mobile-First Responsive
  * Handles sidebar toggle, mini-mode, resizing, and responsive behaviors
  */
@@ -189,7 +189,7 @@ export function initSidebar() {
   });
 
   // ========== MENU LINKS (MOBILE) ==========
-  sidebar.querySelectorAll('a.list-group-item:not([data-bs-toggle])').forEach((link) => {
+  sidebar.querySelectorAll('a.list-group-item:not([data-brox-toggle])').forEach((link) => {
     link.addEventListener('click', () => {
       if (isMobile()) closeSidebar();
     });
@@ -324,9 +324,9 @@ export function initSidebar() {
 
     openSet.forEach((id) => {
       const el = document.getElementById(id);
-      if (el && typeof bootstrap !== 'undefined') {
+      if (el && typeof window.broxUI !== 'undefined') {
         try {
-          bootstrap.Collapse.getOrCreateInstance(el, { toggle: false, }).show();
+          window.broxUI.Collapse.getOrCreateInstance(el, { toggle: false, }).show();
         } catch {
           // ignore
         }
@@ -334,12 +334,12 @@ export function initSidebar() {
     });
 
     collapses.forEach((collapse) => {
-      collapse.addEventListener('show.bs.collapse', () => {
+      collapse.addEventListener('brox:show', () => {
         openSet.add(collapse.id);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(openSet)));
       });
 
-      collapse.addEventListener('hide.bs.collapse', () => {
+      collapse.addEventListener('brox:hide', () => {
         openSet.delete(collapse.id);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(openSet)));
       });

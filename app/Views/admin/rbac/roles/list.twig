@@ -1,143 +1,123 @@
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <!-- Page Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-shield-check me-2"></i>
-        Manage Roles
-      </div>
-      <div class="admin-page-subtitle">Role management</div>
-    </div>
-    <div class="row mb-4">
-      <div class="col-md-8">
-        <h1 class="h3 mb-0">
-          <i class="bi bi-shield-lock me-2"></i>Manage Roles
-        </h1>
-      </div>
-      <div class="col-md-4 text-end">
-        <a href="/admin/roles/create" class="modern-btn modern-btn-primary">
-          <i class="bi bi-plus-circle me-2"></i>Create New Role
-        </a>
-      </div>
-    </div>
-    <div class="admin-panel-card border-0 shadow-sm">
-      <div class="admin-panel-card-body">
-        <!-- Search & Filter Form -->
-        <div class="border-bottom px-4 py-3 mb-3">
-          <form method="get" class="row g-2 align-items-end">
-            <div class="col-md-3">
-              <label class="form-label small text-muted mb-1">Search</label>
-              <div class="input-group input-group-sm">
-                <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
-                <input type="text"
-                       name="search"
-                       value="{{ pagination.search|default("") }}"
-                       class="form-control form-control-sm"
-                       placeholder="Search by name...">
-              </div>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label small text-muted mb-1">Sort By</label>
-              <select name="sort" class="form-select form-select-sm">
-                <option value="name" {% if pagination.sort == 'name' %}selected{% endif %}>Name</option>
-                <option value="id" {% if pagination.sort == 'id' %}selected{% endif %}>ID</option>
-              </select>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label small text-muted mb-1">Limit</label>
-              <select name="limit" class="form-select form-select-sm">
-                <option value="10">10 items</option>
-                <option value="20" selected>20 items</option>
-                <option value="50">50 items</option>
-                <option value="100">100 items</option>
-              </select>
-            </div>
-            <div class="col-md-3 text-end">
-              <button type="submit" class="modern-btn modern-btn-primary btn-sm">
-                <i class="bi bi-funnel me-1"></i> Apply
-              </button>
-            </div>
-          </form>
-        </div>
-        {% if roles|length > 0 %}
-          <div class="table-responsive">
-            <table class="table table-stacked table-hover align-middle">
-              <thead class="table-light">
-                <tr>
-                  <th>Role Name</th>
-                  <th>Description</th>
-                  <th>Permissions</th>
-                  <th>Type</th>
-                  <th>Created</th>
-                  <th class="text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for role in roles %}
-                  <tr>
-                    <td data-label="Role Name">
-                      <div class="fw-semibold">{{ role.name|upper }}</div>
-                    </td>
-                    <td data-label="Description">
-                      <small class="text-muted">{{ role.description|default("N/A") }}</small>
-                    </td>
-                    <td data-label="Permissions">
-                      <span class="badge bg-info">{{ role.permission_count }} permissions</span>
-                    </td>
-                    <td data-label="Type">
-                      {% if role.is_super_admin %}
-                        <span class="badge bg-danger">Super Admin</span>
-                      {% else %}
-                        <span class="badge bg-secondary">Standard</span>
-                      {% endif %}
-                    </td>
-                    <td data-label="Created">
-                      <small class="text-muted">{{ role.created_at|date("M d, Y") }}</small>
-                    </td>
-                    <td class="text-center" data-label="Actions">
-                      <a href="/admin/roles/{{ role.id }}"
-                         class="modern-btn btn-sm btn-primary-outline"
-                         title="View">
-                        <i class="bi bi-eye"></i>
-                      </a>
-                      {% if not role.is_super_admin %}
-                        <a href="/admin/roles/{{ role.id }}/edit"
-                           class="modern-btn btn-sm btn-outline-warning"
-                           title="Edit">
-                          <i class="bi bi-pencil"></i>
-                        </a>
-                        <form method="POST"
-                              action="/admin/roles/{{ role.id }}/delete"
-                              class="delete-btn-inline"
-                              onsubmit="return confirm('Delete this role?')">
-                          <button type="submit"
-                                  class="modern-btn btn-sm btn-danger-outline"
-                                  title="Delete">
-                            <i class="bi bi-trash"></i>
-                          </button>
-                        </form>
-                      {% else %}
-                        <span class="text-muted small">Cannot modify</span>
-                      {% endif %}
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          <!-- Pagination -->
-          {% include "admin/partials/pagination.twig" %}
-        {% else %}
-          <div class="alert alert-info text-center py-4">
-            <i class="bi bi-info-circle me-2"></i>
-            <strong>No roles found.</strong> <a href="/admin/roles/create">Create one now</a>
-          </div>
-        {% endif %}
-      </div>
-    </div>
+<div class="space-y-6">
+ <section class="admin-page-header">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+   <div>
+    <p class="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">
+     <i class="lucide lucide-shield-check"></i>
+     RBAC
+    </p>
+    <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">Manage Roles</h1>
+    <p class="mt-2 max-w-2xl text-sm text-slate-600">Search, review, and update role definitions.</p>
+   </div>
+   <a href="/admin/roles/create" class="btn btn-primary">
+    <i class="lucide lucide-plus-circle"></i>
+    Create New Role
+   </a>
   </div>
+ </section>
+
+ <section class="admin-panel-card">
+  <form method="get" class="grid gap-4 lg:grid-cols-12">
+   <div class="lg:col-span-4">
+    <label class="form-label" for="role-search">Search</label>
+    <div class="flex overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+     <span class="inline-flex items-center border-r border-slate-200 bg-slate-50 px-3 text-slate-400"><i class="lucide lucide-search"></i></span>
+     <input id="role-search" type="text" name="search" value="{{ pagination.search|default('') }}" class="w-full border-0 px-4 py-3 text-sm shadow-none focus:ring-0" placeholder="Search by name...">
+    </div>
+   </div>
+   <div class="lg:col-span-2">
+    <label class="form-label" for="role-sort">Sort By</label>
+    <select id="role-sort" name="sort">
+     <option value="name" {% if pagination.sort == 'name' %}selected{% endif %}>Name</option>
+     <option value="id" {% if pagination.sort == 'id' %}selected{% endif %}>ID</option>
+    </select>
+   </div>
+   <div class="lg:col-span-2">
+    <label class="form-label" for="role-limit">Limit</label>
+    <select id="role-limit" name="limit">
+     <option value="10">10</option>
+     <option value="20" selected>20</option>
+     <option value="50">50</option>
+     <option value="100">100</option>
+    </select>
+   </div>
+   <div class="lg:col-span-4 flex items-end justify-end gap-2">
+    <button type="submit" class="btn btn-primary">
+     <i class="lucide lucide-filter"></i>
+     Apply
+    </button>
+   </div>
+  </form>
+ </section>
+
+ <section class="admin-panel-card">
+  <div class="flex items-center justify-between border-b border-slate-200/80 pb-4">
+   <div>
+    <h2 class="text-lg font-semibold text-slate-950">All Roles</h2>
+    <p class="mt-1 text-sm text-slate-500">Role name, description, permissions, and type.</p>
+   </div>
+  </div>
+
+  {% if roles|length > 0 %}
+  <div class="table-responsive mt-5">
+   <table class="table table-stacked table-hover align-middle">
+    <thead>
+     <tr>
+      <th>Role Name</th>
+      <th>Description</th>
+      <th>Permissions</th>
+      <th>Type</th>
+      <th>Created</th>
+      <th class="text-center">Actions</th>
+     </tr>
+    </thead>
+    <tbody>
+     {% for role in roles %}
+     <tr>
+      <td data-label="Role Name" class="font-semibold text-slate-900">{{ role.name|upper }}</td>
+      <td data-label="Description" class="text-slate-500">{{ role.description|default("N/A") }}</td>
+      <td data-label="Permissions"><span class="badge bg-indigo-100 text-indigo-700">{{ role.permission_count }} permissions</span></td>
+      <td data-label="Type">
+       {% if role.is_super_admin %}
+        <span class="badge bg-rose-100 text-rose-700">Super Admin</span>
+       {% else %}
+        <span class="badge bg-slate-100 text-slate-700">Standard</span>
+       {% endif %}
+      </td>
+      <td data-label="Created" class="text-slate-500">{{ role.created_at|date("M d, Y") }}</td>
+      <td data-label="Actions" class="text-center">
+       <div class="inline-flex flex-wrap justify-center gap-2">
+        <a href="/admin/roles/{{ role.id }}" class="btn btn-secondary btn-sm" title="View">
+         <i class="lucide lucide-eye"></i>
+        </a>
+        {% if not role.is_super_admin %}
+        <a href="/admin/roles/{{ role.id }}/edit" class="btn btn-secondary btn-sm" title="Edit">
+         <i class="lucide lucide-pencil"></i>
+        </a>
+        <form method="POST" action="/admin/roles/{{ role.id }}/delete" class="inline" onsubmit="return confirm('Delete this role?')">
+         <button type="submit" class="btn btn-danger btn-sm" title="Delete">
+          <i class="lucide lucide-trash-2"></i>
+         </button>
+        </form>
+        {% else %}
+        <span class="text-sm text-slate-500">Cannot modify</span>
+        {% endif %}
+       </div>
+      </td>
+     </tr>
+     {% endfor %}
+    </tbody>
+   </table>
+  </div>
+  {% else %}
+  <div class="mt-5 rounded-2xl border border-sky-200 bg-sky-50 p-5 text-center text-sky-900">
+   <i class="lucide lucide-info mr-2"></i>
+   <strong>No roles found.</strong> <a href="/admin/roles/create" class="font-semibold text-sky-700">Create one now</a>
+  </div>
+  {% endif %}
+ </section>
+</div>
 {% endblock %}
-
-

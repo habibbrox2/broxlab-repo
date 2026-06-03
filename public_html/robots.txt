@@ -113,5 +113,5 @@ Allow: /
 # ============================================
 # XML SITEMAP
 # ============================================
-Sitemap: https://broxlab.govinpqms.online/sitemap.xml
+Sitemap: https://broxlab.online/sitemap.xml
 

@@ -1,0 +1,54 @@
+﻿{# ============================================================================
+ BADGES â€” Reusable inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold/pill component macros
+ Usage: {% import '_components/badges.twig' as badges %}
+ {{ badges.primary('Active') }}
+ {{ badges.success('Published', { size: 'sm' }) }}
+ {{ badges.custom({ text: 'New', class: 'bg-purple-100 text-purple-700' }) }}
+ ============================================================================ #}
+
+{# â”€â”€ Base inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold â€” internal â”€â”€ #}
+{% macro _base(text, opts) %}
+ {% set opts = opts|default({}) %}
+ {% set size = opts.size|default('md') %}
+ {% set class = opts.class|default('') %}
+ {% set icon = opts.icon|default(null) %}
+ 
+ {% set sizeClass = size == 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs' %}
+ 
+ <span class="inline-flex items-center gap-1 font-semibold leading-tight whitespace-nowrap rounded-full {{ sizeClass }} {{ class }}">
+ {% if icon %}<i class="lucide lucide-{{ icon }} w-3 h-3"></i>{% endif %}
+ {{ text }}
+ </span>
+{% endmacro %}
+
+{% macro primary(text, opts) %}
+ {{ _self._base(text, opts|default({})|merge({ class: 'bg-indigo-100 text-indigo-700 ' ~ (opts.class|default('')) })) }}
+{% endmacro %}
+
+{% macro success(text, opts) %}
+ {{ _self._base(text, opts|default({})|merge({ class: 'bg-emerald-100 text-emerald-700 ' ~ (opts.class|default('')) })) }}
+{% endmacro %}
+
+{% macro danger(text, opts) %}
+ {{ _self._base(text, opts|default({})|merge({ class: 'bg-red-100 text-red-700 ' ~ (opts.class|default('')) })) }}
+{% endmacro %}
+
+{% macro warning(text, opts) %}
+ {{ _self._base(text, opts|default({})|merge({ class: 'bg-amber-100 text-amber-700 ' ~ (opts.class|default('')) })) }}
+{% endmacro %}
+
+{% macro info(text, opts) %}
+ {{ _self._base(text, opts|default({})|merge({ class: 'bg-sky-100 text-sky-700 ' ~ (opts.class|default('')) })) }}
+{% endmacro %}
+
+{% macro neutral(text, opts) %}
+ {{ _self._base(text, opts|default({})|merge({ class: 'bg-slate-100 text-slate-700 ' ~ (opts.class|default('')) })) }}
+{% endmacro %}
+
+{% macro custom(opts) %}
+ {{ _self._base(opts.text|default(''), { class: opts.class|default(''), icon: opts.icon|default(null), size: opts.size|default('md') }) }}
+{% endmacro %}
+
+
+
+

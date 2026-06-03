@@ -1,6 +1,6 @@
-{% extends 'admin/layout.twig' %}
+﻿{% extends 'admin/layout.twig' %}
 
-{% block title %}Revenue Dashboard – Admin | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+{% block title %}Revenue Dashboard â€“ Admin | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="/admin/dashboard">Admin</a></li>
@@ -8,207 +8,211 @@
 {% endblock %}
 
 {% block page_content %}
-<div class="dashboard-page">
+<div>
 
-  {# ── Stats Cards ── #}
-  <div class="row g-3 mb-4">
-    <div class="col-md-3">
-      <div class="card stat-card h-100 border-0 shadow-sm">
-        <div class="card-body p-4">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <small class="text-muted text-uppercase fw-semibold">Donations</small>
-              <div class="h3 mb-0 fw-bold text-success">৳{{ donation_total|default(0)|number_format(0) }}</div>
-            </div>
-            <div class="icon-circle bg-success bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-heart-fill text-success"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card stat-card h-100 border-0 shadow-sm">
-        <div class="card-body p-4">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <small class="text-muted text-uppercase fw-semibold">Ad Revenue</small>
-              <div class="h3 mb-0 fw-bold text-primary">৳{{ ad_revenue|default(0)|number_format(0) }}</div>
-            </div>
-            <div class="icon-circle bg-primary bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-megaphone-fill text-primary"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card stat-card h-100 border-0 shadow-sm">
-        <div class="card-body p-4">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <small class="text-muted text-uppercase fw-semibold">Total</small>
-              <div class="h3 mb-0 fw-bold text-warning">৳{{ total_revenue|default(0)|number_format(0) }}</div>
-            </div>
-            <div class="icon-circle bg-warning bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-currency-dollar text-warning"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card stat-card h-100 border-0 shadow-sm">
-        <div class="card-body p-4">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <small class="text-muted text-uppercase fw-semibold">Donors</small>
-              <div class="h3 mb-0 fw-bold text-info">{{ donation_count|default(0) }}</div>
-            </div>
-            <div class="icon-circle bg-info bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-people-fill text-info"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+ {# â”€â”€ Stats Cards â”€â”€ #}
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3 mb-4">
+ <div class="md:col-span-3">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm  h-full border-0">
+ <div class="p-4">
+ <div class="flex justify-between items-center">
+ <div>
+ <small class="text-slate-500 text-uppercase font-semibold">Donations</small>
+ <div class="h3 mb-0 font-bold text-emerald-600">à§³{{ donation_total|default(0)|number_format(0) }}</div>
+ </div>
+ <div class="icon-circle bg-emerald-600 bg-opacity-15 rounded-full p-3">
+ <i class="lucide lucide-heart text-emerald-600"></i>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ <div class="md:col-span-3">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm  h-full border-0">
+ <div class="p-4">
+ <div class="flex justify-between items-center">
+ <div>
+ <small class="text-slate-500 text-uppercase font-semibold">Ad Revenue</small>
+ <div class="h3 mb-0 font-bold text-indigo-600">à§³{{ ad_revenue|default(0)|number_format(0) }}</div>
+ </div>
+ <div class="icon-circle bg-indigo-600 bg-opacity-15 rounded-full p-3">
+ <i class="lucide lucide-megaphone text-indigo-600"></i>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ <div class="md:col-span-3">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm  h-full border-0">
+ <div class="p-4">
+ <div class="flex justify-between items-center">
+ <div>
+ <small class="text-slate-500 text-uppercase font-semibold">Total</small>
+ <div class="h3 mb-0 font-bold text-amber-600">à§³{{ total_revenue|default(0)|number_format(0) }}</div>
+ </div>
+ <div class="icon-circle bg-amber-500 bg-opacity-15 rounded-full p-3">
+ <i class="lucide lucide-dollar-sign text-amber-600"></i>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ <div class="md:col-span-3">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm  h-full border-0">
+ <div class="p-4">
+ <div class="flex justify-between items-center">
+ <div>
+ <small class="text-slate-500 text-uppercase font-semibold">Donors</small>
+ <div class="h3 mb-0 font-bold text-sky-600">{{ donation_count|default(0) }}</div>
+ </div>
+ <div class="icon-circle bg-sky-500 bg-opacity-15 rounded-full p-3">
+ <i class="lucide lucide-users text-sky-600"></i>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 
-  {# ── Chart ── #}
-  <div class="card border-0 shadow-sm rounded-4 mb-4">
-    <div class="card-header bg-white border-0 py-3">
-      <h5 class="mb-0 fw-bold">
-        <i class="bi bi-graph-up-arrow me-2 text-primary"></i>Revenue Trend (Last 12 Months)
-      </h5>
-    </div>
-    <div class="card-body p-4">
-      <div id="revenue-chart" style="height:300px;"></div>
-    </div>
-  </div>
+ {# â”€â”€ Chart â”€â”€ #}
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 rounded-2xl mb-4">
+ <div class="border-b border-slate-200 px-4 py-3 bg-white border-0">
+ <h5 class="mb-0 font-bold">
+ <i class="lucide lucide-trending-up mr-2 text-indigo-600"></i>Revenue Trend (Last 12 Months)
+ </h5>
+ </div>
+ <div class="p-4">
+ <div id="revenue-chart" style="height:300px;"></div>
+ </div>
+ </div>
 
-  {# ── Quick Links ── #}
-  <div class="row g-3">
-    <div class="col-md-4">
-      <a href="/admin/revenue/donations" class="card border-0 shadow-sm rounded-4 h-100 text-decoration-none hover-shadow">
-        <div class="card-body p-4">
-          <div class="d-flex align-items-center gap-3">
-            <div class="icon-circle bg-success bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-heart-fill text-success"></i>
-            </div>
-            <div>
-              <h6 class="fw-bold mb-0">All Donations</h6>
-              <small class="text-muted">View and manage donations</small>
-            </div>
-          </div>
-        </div>
-      </a>
-    </div>
-    <div class="col-md-4">
-      <a href="/admin/revenue/ads" class="card border-0 shadow-sm rounded-4 h-100 text-decoration-none hover-shadow">
-        <div class="card-body p-4">
-          <div class="d-flex align-items-center gap-3">
-            <div class="icon-circle bg-primary bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-megaphone-fill text-primary"></i>
-            </div>
-            <div>
-              <h6 class="fw-bold mb-0">Ad Placements</h6>
-              <small class="text-muted">Manage ad slots across the site</small>
-            </div>
-          </div>
-        </div>
-      </a>
-    </div>
-    <div class="col-md-4">
-      <a href="/admin/revenue/sponsored" class="card border-0 shadow-sm rounded-4 h-100 text-decoration-none hover-shadow">
-        <div class="card-body p-4">
-          <div class="d-flex align-items-center gap-3">
-            <div class="icon-circle bg-warning bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-award-fill text-warning"></i>
-            </div>
-            <div>
-              <h6 class="fw-bold mb-0">Sponsored Posts</h6>
-              <small class="text-muted">Label and manage sponsorships</small>
-            </div>
-          </div>
-        </div>
-      </a>
-    </div>
-    <div class="col-md-4">
-      <a href="/admin/revenue/settings" class="card border-0 shadow-sm rounded-4 h-100 text-decoration-none hover-shadow">
-        <div class="card-body p-4">
-          <div class="d-flex align-items-center gap-3">
-            <div class="icon-circle bg-info bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-gear-fill text-info"></i>
-            </div>
-            <div>
-              <h6 class="fw-bold mb-0">Revenue Settings</h6>
-              <small class="text-muted">Payments, goals &amp; defaults</small>
-            </div>
-          </div>
-        </div>
-      </a>
-    </div>
-  </div>
+ {# â”€â”€ Quick Links â”€â”€ #}
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3">
+ <div class="md:col-span-4">
+ <a href="/admin/revenue/donations" class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 rounded-2xl h-full no-underline ">
+ <div class="p-4">
+ <div class="flex items-center gap-3">
+ <div class="icon-circle bg-emerald-600 bg-opacity-15 rounded-full p-3">
+ <i class="lucide lucide-heart text-emerald-600"></i>
+ </div>
+ <div>
+ <h6 class="font-bold mb-0">All Donations</h6>
+ <small class="text-slate-500">View and manage donations</small>
+ </div>
+ </div>
+ </div>
+ </a>
+ </div>
+ <div class="md:col-span-4">
+ <a href="/admin/revenue/ads" class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 rounded-2xl h-full no-underline ">
+ <div class="p-4">
+ <div class="flex items-center gap-3">
+ <div class="icon-circle bg-indigo-600 bg-opacity-15 rounded-full p-3">
+ <i class="lucide lucide-megaphone text-indigo-600"></i>
+ </div>
+ <div>
+ <h6 class="font-bold mb-0">Ad Placements</h6>
+ <small class="text-slate-500">Manage ad slots across the site</small>
+ </div>
+ </div>
+ </div>
+ </a>
+ </div>
+ <div class="md:col-span-4">
+ <a href="/admin/revenue/sponsored" class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 rounded-2xl h-full no-underline ">
+ <div class="p-4">
+ <div class="flex items-center gap-3">
+ <div class="icon-circlebg-amber-500 bg-opacity-15 rounded-full p-3"><i class="lucide lucide-award text-amber-600"></i>
+ </div>
+ <div>
+ <h6 class="font-bold mb-0">Sponsored Posts</h6>
+ <small class="text-slate-500">Label and manage sponsorships</small>
+ </div>
+ </div>
+ </div>
+ </a>
+ </div>
+ <div class="md:col-span-4">
+ <a href="/admin/revenue/settings" class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 rounded-2xl h-full no-underline ">
+ <div class="p-4">
+ <div class="flex items-center gap-3">
+ <div class="icon-circlebg-sky-500 bg-opacity-15 rounded-full p-3"><i class="lucide lucide-settings text-sky-600"></i>
+ </div>
+ <div>
+ <h6 class="font-bold mb-0">Revenue Settings</h6>
+ <small class="text-slate-500">Payments, goals &amp; defaults</small>
+ </div>
+ </div>
+ </div>
+ </a>
+ </div>
+ </div>
 
 </div>
 
-{# ── Chart.js CDN + tiny init ── #}
+{# â”€â”€ Chart.js CDN + tiny init â”€â”€ #}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 (function () {
-  const months   = {{ chart_months|json_encode|raw }};
-  const don      = {{ donation_series|json_encode|raw }};
-  const ads      = {{ ad_series|default([])|json_encode|raw }};
-  const sponsored= {{ sponsored_series|default([])|json_encode|raw }};
+ const months = {{ chart_months|json_encode|raw }};
+ const don = {{ donation_series|json_encode|raw }};
+ const ads = {{ ad_series|default([])|json_encode|raw }};
+ const sponsored= {{ sponsored_series|default([])|json_encode|raw }};
 
-  const ctx = document.getElementById('revenue-chart');
-  if (!ctx) return;
+ const ctx = document.getElementById('revenue-chart');
+ if (!ctx) return;
 
-  const hex = (hex8) => hex8;
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: months,
-      datasets: [
-        {
-          label: 'Donations (৳)',
-          data: don,
-          backgroundColor: 'rgba(16,185,129,.65)',
-          borderRadius: 6, stack: 'stack0',
-        },
-        {
-          label: 'Ads (৳)',
-          data: ads,
-          backgroundColor: 'rgba(99,102,241,.65)',
-          borderRadius: 6, stack: 'stack0',
-        },
-        {
-          label: 'Sponsored (৳)',
-          data: sponsored,
-          backgroundColor: 'rgba(245,158,11,.65)',
-          borderRadius: 6, stack: 'stack0',
-        },
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'top' },
-        tooltip: {
-          callbacks: {
-            label: ctx => ' ' + ctx.dataset.label + ': ৳' + ctx.raw.toLocaleString()
-          }
-        }
-      },
-      scales: {
-        x: { stacked: true },
-        y: {
-          stacked: true,
-          ticks: { callback: v => '৳' + v.toLocaleString() }
-        }
-      }
-    }
-  });
+ const hex = (hex8) => hex8;
+ new Chart(ctx, {
+ type: 'bar',
+ data: {
+ labels: months,
+ datasets: [
+ {
+ label: 'Donations (à§³)',
+ data: don,
+ backgroundColor: 'rgba(16,185,129,.65)',
+ borderRadius: 6, stack: 'stack0',
+ },
+ {
+ label: 'Ads (à§³)',
+ data: ads,
+ backgroundColor: 'rgba(99,102,241,.65)',
+ borderRadius: 6, stack: 'stack0',
+ },
+ {
+ label: 'Sponsored (à§³)',
+ data: sponsored,
+ backgroundColor: 'rgba(245,158,11,.65)',
+ borderRadius: 6, stack: 'stack0',
+ },
+ ]
+ },
+ options: {
+ responsive: true, maintainAspectRatio: false,
+ plugins: {
+ legend: { position: 'top' },
+ tooltip: {
+ callbacks: {
+ label: ctx => ' ' + ctx.dataset.label + ': à§³' + ctx.raw.toLocaleString()
+ }
+ }
+ },
+ scales: {
+ x: { stacked: true },
+ y: {
+ stacked: true,
+ ticks: { callback: v => 'à§³' + v.toLocaleString() }
+ }
+ }
+ }
+ });
 })();
 </script>
 {% endblock %}
+
+
+
+
+
+

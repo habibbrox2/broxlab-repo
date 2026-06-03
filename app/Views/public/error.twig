@@ -1,4 +1,4 @@
-{# templates/error.twig #}
+﻿{# templates/error.twig #}
 {% extends 'layout.twig' %}
 
 {% block title %}{% if code %}{{ code }}{% endif %} Error - {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
@@ -6,9 +6,9 @@
 {% block content %}
 
 <style>
-  @keyframes float-icon { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
-  .error-icon-float { animation: float-icon 4s ease-in-out infinite; }
-  .error-card-hover:hover { transform: translateY(-5px); transition: transform 0.3s ease; }
+ @keyframes float-icon { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
+ .error-icon-float { animation: float-icon 4s ease-in-out infinite; }
+ .error-rounded-xl border border-slate-200 bg-white shadow-sm-hover:hover { transform: translateY(-5px); transition: transform 0.3s ease; }
 </style>
 
 {% set c = code|default(500) %}
@@ -16,101 +16,107 @@
 
 {# Common presets #}
 {% set presets = {
-  400: { title: 'Bad Request',           desc: 'The request can’t be processed.',             icon: 'exclamation-triangle-fill', color: 'warning' },
-  401: { title: 'Unauthorized',          desc: 'Authentication required or failed.',          icon: 'shield-lock-fill',          color: 'warning' },
-  403: { title: 'Forbidden',             desc: 'You don’t have permission to view this.',     icon: 'hand-thumbs-down-fill',     color: 'warning' },
-  404: { title: 'Not Found',             desc: 'We couldn’t find what you asked for.',        icon: 'search-heart',               color: 'info' },
-  405: { title: 'Method Not Allowed',    desc: 'This route doesn’t accept that method.',      icon: 'signpost-2-fill',           color: 'warning' },
-  419: { title: 'Page Expired',          desc: 'The page has expired. Try again.',            icon: 'clock-history',              color: 'warning' },
-  429: { title: 'Too Many Requests',     desc: 'Rate limit exceeded. Slow down.',             icon: 'speedometer2',               color: 'warning' },
-  500: { title: 'Internal Server Error', desc: 'Something went wrong on our side.',           icon: 'server',                     color: 'danger' },
-  503: { title: 'Service Unavailable',   desc: 'The service is temporarily unavailable.',     icon: 'router-fill',                color: 'danger' }
+ 400: { title: 'Bad Request', desc: 'The request canâ€™t be processed.', icon: 'exclamation-triangle-fill', color: 'warning' },
+ 401: { title: 'Unauthorized', desc: 'Authentication required or failed.', icon: 'shield-lock-fill', color: 'warning' },
+ 403: { title: 'Forbidden', desc: 'You donâ€™t have permission to view this.', icon: 'hand-thumbs-down-fill', color: 'warning' },
+ 404: { title: 'Not Found', desc: 'We couldnâ€™t find what you asked for.', icon: 'search-heart', color: 'info' },
+ 405: { title: 'Method Not Allowed', desc: 'This route doesnâ€™t accept that method.', icon: 'signpost-2-fill', color: 'warning' },
+ 419: { title: 'Page Expired', desc: 'The page has expired. Try again.', icon: 'clock-history', color: 'warning' },
+ 429: { title: 'Too Many Requests', desc: 'Rate limit exceeded. Slow down.', icon: 'speedometer2', color: 'warning' },
+ 500: { title: 'Internal Server Error', desc: 'Something went wrong on our side.', icon: 'server', color: 'danger' },
+ 503: { title: 'Service Unavailable', desc: 'The service is temporarily unavailable.', icon: 'router-fill', color: 'danger' }
 } %}
 
 {% set fallback = {
-  title: family == 4 ? 'Client Error' : 'Server Error',
-  desc:  family == 4 ? 'There’s an issue with the request.' : 'There’s an issue on the server.',
-  icon:  family == 4 ? 'exclamation-triangle-fill' : 'bug-fill',
-  color: family == 4 ? 'warning' : 'danger'
+ title: family == 4 ? 'Client Error' : 'Server Error',
+ desc: family == 4 ? 'Thereâ€™s an issue with the request.' : 'Thereâ€™s an issue on the server.',
+ icon: family == 4 ? 'exclamation-triangle-fill' : 'bug-fill',
+ color: family == 4 ? 'warning' : 'danger'
 } %}
 
 {% set meta = presets[c]|default(fallback) %}
 
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-10">
-      {# Error Hero Section #}
-      <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4 error-card-hover">
-        <div class="card-body p-0">
-          <div class="row g-0">
-            <div class="col-md-5 bg-{{ meta.color }} bg-opacity-10 d-flex align-items-center justify-content-center p-5">
-              <div class="text-center">
-                <div class="display-1 fw-bold text-{{ meta.color }} mb-0 error-icon-float">
-                    <i class="bi bi-{{ meta.icon }}"></i>
-                </div>
-                <h2 class="h4 fw-bold text-{{ meta.color }} mt-3">HTTP {{ c }}</h2>
-              </div>
-            </div>
-            <div class="col-md-7 p-5 d-flex align-items-center">
-              <div>
-                <h1 class="fw-bold mb-3">{{ meta.title }}</h1>
-                <p class="lead text-muted mb-4">{{ message|default(meta.desc) }}</p>
-                
-                {% if details is defined and details %}
-                  <div class="alert alert-light border rounded-3 mb-4">
-                    <div class="d-flex">
-                        <i class="bi bi-info-circle-fill text-{{ meta.color }} me-2 mt-1"></i>
-                        <div>
-                            <small class="text-muted d-block fw-bold">Error Details:</small>
-                            <span class="small">{{ details }}</span>
-                        </div>
-                    </div>
-                  </div>
-                {% endif %}
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 justify-center">
+ <div class="lg:col-span-10">
+ {# Error Hero Section #}
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 shadow-lg rounded-2xl overflow-hidden mb-4 error-rounded-xl shadow-sm-hover">
+ <div class="p-4 p-0">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-0">
+ <div class="md:col-span-5 bg-{{ meta.color }} bg-opacity-10 flex items-center justify-center p-5">
+ <div class="text-center">
+ <div class="text-7xl font-bold text-{{ meta.color }} mb-0 error-icon-float">
+ <i class="lucide lucide-{{ meta.icon }}"></i>
+ </div>
+ <h2 class="h4 font-bold text-{{ meta.color }} mt-3">HTTP {{ c }}</h2>
+ </div>
+ </div>
+ <div class="md:col-span-7 p-5 flex items-center">
+ <div>
+ <h1 class="font-bold mb-3">{{ meta.title }}</h1>
+ <p class="lead text-slate-500 mb-4">{{ message|default(meta.desc) }}</p>
+ 
+ {% if details is defined and details %}
+ <div class="p-4 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 rounded-xl mb-4">
+ <div class="flex">
+ <i class="lucide lucide-info text-{{ meta.color }} mr-2 mt-1"></i>
+ <div>
+ <small class="text-slate-500 block font-bold">Error Details:</small>
+ <span class="small">{{ details }}</span>
+ </div>
+ </div>
+ </div>
+ {% endif %}
 
-                <div class="d-flex flex-wrap gap-2">
-                  <a href="{{ home_url|default('/') }}" class="btn btn-primary rounded-pill px-4">
-                    <i class="bi bi-house-door-fill me-2"></i>Home
-                  </a>
-                  <a href="javascript:history.back()" class="btn btn-outline-secondary rounded-pill px-4">
-                    <i class="bi bi-arrow-left me-2"></i>Back
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+ <div class="flex flex-wrap gap-2">
+ <a href="{{ home_url|default('/') }}" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 rounded-full">
+ <i class="lucide lucide-house mr-2"></i>Home
+ </a>
+ <a href="javascript:history.back()" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-slate-600 hover:bg-slate-100 rounded-full">
+ <i class="lucide lucide-arrow-left mr-2"></i>Back
+ </a>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 
-      {# Search or Help Section for 404 #}
-      {% if c == 404 %}
-      <div class="text-center mt-5">
-        <h3 class="h5 fw-bold mb-3">Looking for something else?</h3>
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <form action="/search" method="get" class="position-relative">
-                    <input type="text" name="q" class="form-control form-control-lg rounded-pill ps-5" placeholder="Search...">
-                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                    <button type="submit" class="btn btn-primary rounded-pill position-absolute top-0 end-0 m-1">Search</button>
-                </form>
-            </div>
-        </div>
-      </div>
-      {% endif %}
+ {# Search or Help Section for 404 #}
+ {% if c == 404 %}
+ <div class="text-center mt-5">
+ <h3 class="h5 font-bold mb-3">Looking for something else?</h3>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 justify-center">
+ <div class="md:col-span-6">
+ <form action="/search" method="get" class="relative">
+ <input type="text" name="q" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:border-indigo-500-lg rounded-full ps-5" placeholder="Search...">
+ <i class="lucide lucide-search position-absolute top-50 start-0 translate-middle-y ml-3 text-slate-500"></i>
+ <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 rounded-full position-absolute top-0 end-0 m-1">Search</button>
+ </form>
+ </div>
+ </div>
+ </div>
+ {% endif %}
 
-      {# Stack Trace for Debugging #}
-      {% if show_trace|default(false) and trace is defined and trace %}
-        <div class="card border-0 shadow-sm rounded-4 mt-5">
-            <div class="card-header bg-danger bg-opacity-10 border-0 py-3">
-                <h6 class="mb-0 text-danger fw-bold"><i class="bi bi-bug-fill me-2"></i>Stack Trace (Debug Mode)</h6>
-            </div>
-            <div class="card-body bg-dark rounded-bottom-4">
-                <pre class="text-light small mb-0 overflow-auto" style="max-height: 400px;"><code>{{ trace }}</code></pre>
-            </div>
-        </div>
-      {% endif %}
+ {# Stack Trace for Debugging #}
+ {% if show_trace|default(false) and trace is defined and trace %}
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 rounded-2xl mt-5">
+ <div class="border-b border-slate-200 px-4 py-3 bg-red-600 bg-opacity-10 border-0">
+ <h6 class="mb-0 text-red-600 font-bold"><i class="lucide lucide-bug mr-2"></i>Stack Trace (Debug Mode)</h6>
+ </div>
+ <div class="p-4 bg-slate-900 rounded-bottom-4">
+ <pre class="text-white small mb-0 overflow-auto" style="max-height: 400px;"><code>{{ trace }}</code></pre>
+ </div>
+ </div>
+ {% endif %}
 
-    </div>
-  </div>
+ </div>
+ </div>
 </div>
 {% endblock %}
+
+
+
+
+
+

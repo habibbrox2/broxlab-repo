@@ -1,85 +1,66 @@
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <!-- Page Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-key me-2"></i>
-        Permission Details
-      </div>
-      <div class="admin-page-subtitle">View permission details</div>
-    </div>
-    <div class="row mb-4">
-      <div class="col">
-        <h1 class="h3 mb-0">
-          <a href="/admin/permissions" class="text-decoration-none text-theme-strong">
-            <i class="bi bi-key me-2"></i>Permissions
-          </a>
-          <span class="text-muted">/</span>
-          <span><code>{{ permission.name }}</code></span>
-        </h1>
-      </div>
-      <div class="col-md-4 text-end">
-        <a href="/admin/permissions/{{ permission.id }}/edit"
-           class="modern-btn modern-btn-secondary btn-sm">
-          <i class="bi bi-pencil me-2"></i>Edit
-        </a>
-        <form method="POST"
-              action="/admin/permissions/{{ permission.id }}/delete"
-              class="delete-btn-inline"
-              onsubmit="return confirm('Delete this permission?')">
-          <button type="submit" class="modern-btn modern-btn-primary btn-sm">
-            <i class="bi bi-trash me-2"></i>Delete
-          </button>
-        </form>
-        <a href="/admin/permissions" class="modern-btn modern-btn-white btn-sm">
-          <i class="bi bi-arrow-left me-2"></i>Back
-        </a>
-      </div>
-    </div>
-    <div class="admin-panel-card border-0 shadow-sm">
-      <div class="admin-panel-card-header bg-light border-bottom">
-        <h5 class="mb-0">Permission Details</h5>
-      </div>
-      <div class="admin-panel-card-body">
-        <div class="row">
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label class="text-muted small text-uppercase">Permission Name</label>
-              <p class="h5 mb-0">
-                <code>{{ permission.name }}</code>
-              </p>
-            </div>
-            <div class="mb-3">
-              <label class="text-muted small text-uppercase">Module</label>
-              <p class="mb-0">
-                <span class="badge bg-light text-surface-dark">{{ permission.module }}</span>
-              </p>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label class="text-muted small text-uppercase">Created</label>
-              <p class="mb-0 small">{{ permission.created_at|date("M d, Y H:i") }}</p>
-            </div>
-            <div class="mb-3">
-              <label class="text-muted small text-uppercase">Updated</label>
-              <p class="mb-0 small">
-                {% if permission.updated_at %}
-                  {{ permission.updated_at|date("M d, Y H:i") }}
-                {% else %}
-                  Never
-                {% endif %}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div class="mb-0">
-          <label class="text-muted small text-uppercase d-block mb-2">Description</label>
-          <p class="mb-0">{{ permission.description|default("No description provided") }}</p>
-        </div>
-      </div>
-    </div>
+<div class="w-full px-4 sm:px-6 py-4 space-y-4">
+ <section class="admin-page-header">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+   <div>
+    <p class="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">
+     <i class="lucide lucide-key"></i>
+     Permission Details
+    </p>
+    <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-950"><code>{{ permission.name }}</code></h1>
+    <p class="mt-2 text-sm text-slate-600">Inspect the permission module, description, and timestamps.</p>
+   </div>
+   <div class="flex flex-wrap gap-2">
+    <a href="/admin/permissions/{{ permission.id }}/edit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">
+     <i class="lucide lucide-pencil"></i> Edit
+    </a>
+    <form method="POST" action="/admin/permissions/{{ permission.id }}/delete" onsubmit="return confirm('Delete this permission?')">
+     <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100">
+      <i class="lucide lucide-trash-2"></i> Delete
+     </button>
+    </form>
+    <a href="/admin/permissions" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+     <i class="lucide lucide-arrow-left"></i> Back
+    </a>
+   </div>
   </div>
+ </section>
+
+ <section class="admin-panel-card">
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-12">
+   <div class="lg:col-span-6 space-y-4">
+    <div>
+     <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Permission Name</p>
+     <p class="mt-1 text-lg font-semibold text-slate-950"><code>{{ permission.name }}</code></p>
+    </div>
+    <div>
+     <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Module</p>
+     <span class="mt-1 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">{{ permission.module }}</span>
+    </div>
+   </div>
+   <div class="lg:col-span-6 space-y-4">
+    <div>
+     <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Created</p>
+     <p class="mt-1 text-sm text-slate-700">{{ permission.created_at|date("M d, Y H:i") }}</p>
+    </div>
+    <div>
+     <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Updated</p>
+     <p class="mt-1 text-sm text-slate-700">
+      {% if permission.updated_at %}
+       {{ permission.updated_at|date("M d, Y H:i") }}
+      {% else %}
+       Never
+      {% endif %}
+     </p>
+    </div>
+   </div>
+  </div>
+  <div class="mt-6">
+   <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Description</p>
+   <p class="mt-1 text-sm text-slate-700">{{ permission.description|default('No description provided') }}</p>
+  </div>
+ </section>
+</div>
 {% endblock %}

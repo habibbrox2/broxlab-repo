@@ -973,9 +973,9 @@ class FirebaseModel
     public function getEnabledOAuthProvidersLive(): array
     {
         $providerMeta = [
-            'google' => ['name' => 'Google', 'icon' => 'fab fa-google'],
-            'facebook' => ['name' => 'Facebook', 'icon' => 'fab fa-facebook'],
-            'github' => ['name' => 'GitHub', 'icon' => 'fab fa-github'],
+            'google' => ['name' => 'Google', 'icon' => 'google'],
+            'facebook' => ['name' => 'Facebook', 'icon' => 'facebook'],
+            'github' => ['name' => 'GitHub', 'icon' => 'github'],
         ];
 
         $statuses = [

@@ -193,7 +193,8 @@ class LanguageHelper
             return trim((string)$response['content']);
         }
 
-        error_log('AI Translation failed: ' . ($response['error'] ?? 'Unknown error'));
+        $errMsg = $response['error'] ?? $response['debug'] ?? 'Unknown error';
+        error_log('AI Translation failed: ' . $errMsg);
         return null;
     }
 

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /**
  * MedEx Controller
@@ -11,16 +11,16 @@
  * - Provide JSON API endpoints
  *
  * ROUTES:
- * - GET  /medex                   → companies list (paginated, 20/page)
- * - GET  /medex/details           → medex dataset details dashboard
- * - GET  /medex/companies         → 301 redirect to /medex
- * - GET  /medex/company/{id}      → single company page
- * - GET  /medex/brand/{id}        → single brand detail page
- * - GET  /api/medex/companies     → JSON: all companies
- * - GET  /api/medex/company/{id}  → JSON: single company
- * - GET  /api/medex/brand/{id}    → JSON: single brand
- * - POST /api/medex/proxy         → Proxy fetch for JS scraper (whitelisted medex.com.bd)
- * - POST /api/medex/save-data     → Accept JS-collected JSON, atomic save + backup (CSRF protected)
+ * - GET  /medex                   ? companies list (paginated, 20/page)
+ * - GET  /medex/details           ? medex dataset details dashboard
+ * - GET  /medex/companies         ? 301 redirect to /medex
+ * - GET  /medex/company/{id}      ? single company page
+ * - GET  /medex/brand/{id}        ? single brand detail page
+ * - GET  /api/medex/companies     ? JSON: all companies
+ * - GET  /api/medex/company/{id}  ? JSON: single company
+ * - GET  /api/medex/brand/{id}    ? JSON: single brand
+ * - POST /api/medex/proxy         ? Proxy fetch for JS scraper (whitelisted medex.com.bd)
+ * - POST /api/medex/save-data     ? Accept JS-collected JSON, atomic save + backup (CSRF protected)
  *
  * DATA FILES:
  * - Base: medex_herbal_companies.json
@@ -186,17 +186,17 @@ $router->get("/medex/brand/{id}", function ($id) use ($twig, $medexBaseUrl) {
 
     // Define all 11 medication sections (English + Bengali titles)
     $sectionMeta = [
-        "indications"        => ["Indications", "নির্দেশনা"],
-        "pharmacology"       => ["Pharmacology", "ফার্মাকোলজি"],
-        "dosage"             => ["Dosage & Administration", "মাত্রা ও সেবনবিধি"],
-        "interactions"       => ["Drug Interactions", "ঔষধের মিথস্ক্রিয়া"],
-        "contraindications"  => ["Contraindications", "প্রতিনির্দেশনা"],
-        "side_effects"       => ["Side Effects", "পার্শ্ব প্রতিক্রিয়া"],
-        "pregnancy"          => ["Pregnancy & Lactation", "গর্ভাবস্থায় ও স্তন্যদানকালে"],
-        "precautions"        => ["Precautions", "সতর্কতা"],
-        "overdose"           => ["Overdose", "মাত্রাধিক্যতা"],
-        "therapeutic_class"  => ["Therapeutic Class", "থেরাপিউটিক ক্লাস"],
-        "storage"            => ["Storage", "সংরক্ষণ"],
+        "indications"        => ["Indications", "?????????"],
+        "pharmacology"       => ["Pharmacology", "???????????"],
+        "dosage"             => ["Dosage & Administration", "?????? ? ????????"],
+        "interactions"       => ["Drug Interactions", "????? ????????????"],
+        "contraindications"  => ["Contraindications", "??????????????"],
+        "side_effects"       => ["Side Effects", "??????? ????????????"],
+        "pregnancy"          => ["Pregnancy & Lactation", "???????????? ? ?????????????"],
+        "precautions"        => ["Precautions", "???????"],
+        "overdose"           => ["Overdose", "?????????????"],
+        "therapeutic_class"  => ["Therapeutic Class", "?????????? ?????"],
+        "storage"            => ["Storage", "???????"],
     ];
 
     $sections = [];
@@ -309,9 +309,9 @@ function medexRequireAuth(?array $payload = null): void
         $providedToken = trim((string)($_REQUEST["token"] ?? ($payload["token"] ?? ($payload["meta"]["token"] ?? ""))));
         $tokenValid = $providedToken !== "" && hash_equals($expectedToken, $providedToken);
         if ($tokenValid) {
-            return; // Token valid — bypass all other checks
+            return; // Token valid � bypass all other checks
         }
-        // Token not valid — CSRF-only is acceptable for POST
+        // Token not valid � CSRF-only is acceptable for POST
         if ($_SERVER["REQUEST_METHOD"] === "POST" && $csrfValid) {
             return;
         }
@@ -322,7 +322,7 @@ function medexRequireAuth(?array $payload = null): void
         exit;
     }
 
-    // No MEDEX_REFRESH_TOKEN configured — require CSRF for POST
+    // No MEDEX_REFRESH_TOKEN configured � require CSRF for POST
     if ($_SERVER["REQUEST_METHOD"] === "POST" && !$csrfValid) {
         error_log("MedEx CSRF auth failed: path=" . ($_SERVER['REQUEST_URI'] ?? 'unknown') . ", token_configured=no, csrf_provided=" . (isset($csrfToken) && $csrfToken !== '' ? 'yes' : 'no'));
         http_response_code(403);
@@ -332,21 +332,6 @@ function medexRequireAuth(?array $payload = null): void
     }
 }
 
-function medexRunBackgroundCommand(string $command): bool
-{
-    if (stripos(PHP_OS, 'WIN') === 0) {
-        $backgroundCmd = 'cmd /c start /B "" ' . $command . ' > NUL 2>&1';
-        $process = @popen($backgroundCmd, 'r');
-        if ($process === false) {
-            return false;
-        }
-        return @pclose($process) !== false;
-    }
-
-    exec($command . ' > /dev/null 2>&1 &', $output, $returnCode);
-    return true;
-}
-
 function medexNormalizePath(string $path): string
 {
     if (DIRECTORY_SEPARATOR === '\\') {
@@ -354,145 +339,6 @@ function medexNormalizePath(string $path): string
     }
     return $path;
 }
-
-function medexRunRouteRefresh(string $step, array $params = []): array
-{
-    $root = medexNormalizePath(dirname(__DIR__, 2));
-    $phpBinary = PHP_BINARY;
-    $script = '';
-    $cmd = '';
-
-    switch ($step) {
-        case 'companies':
-            $script = medexNormalizePath($root . '/scripts/scrape-medex-companies.php');
-            $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($script);
-            break;
-        case 'detailed':
-            $script = medexNormalizePath($root . '/scripts/scrape-medex-detailed.php');
-            $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($script) . ' --resume';
-            break;
-        case 'drug-details':
-            $script = medexNormalizePath($root . '/scripts/collect-medex-drug-details.php');
-            $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($script) . ' --resume';
-            if (!empty($params['bilingual'])) {
-                $cmd .= ' --bilingual';
-            }
-            break;
-        case 'brand-details':
-            if (empty($params['brand_id'])) {
-                return ['success' => false, 'error' => 'Missing brand_id for brand-details step'];
-            }
-            $brandId = (int)$params['brand_id'];
-            try {
-                $service = new \App\Services\MedexDataService();
-                $brand = $service->getBrandById($brandId);
-            } catch (Exception $e) {
-                return ['success' => false, 'error' => 'Unable to load brand metadata'];
-            }
-            if (!$brand) {
-                return ['success' => false, 'error' => 'Brand not found'];
-            }
-            $brandUrl = '';
-            if (!empty($brand['brand_url_en'])) {
-                $brandUrl = $brand['brand_url_en'];
-            } elseif (!empty($brand['brand_url'])) {
-                $brandUrl = $brand['brand_url'];
-            } elseif (!empty($brand['url'])) {
-                $brandUrl = $brand['url'];
-            }
-            if ($brandUrl === '') {
-                return ['success' => false, 'error' => 'Brand URL unavailable for brand-details step'];
-            }
-
-            $outputDir = medexNormalizePath($root . '/public_html/uploads/medex/brand-details');
-            if (!is_dir($outputDir)) {
-                @mkdir($outputDir, 0755, true);
-            }
-            $outputFile = medexNormalizePath($outputDir . '/brand-' . $brandId . '.json');
-
-            $script = medexNormalizePath($root . '/scripts/scrape-medex-brand-details.php');
-            $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($script)
-                . ' --url=' . escapeshellarg($brandUrl)
-                . ' --output=' . escapeshellarg($outputFile);
-            if (!empty($params['bilingual'])) {
-                $cmd .= ' --bilingual';
-            }
-            break;
-        default:
-            return ['success' => false, 'error' => 'Unknown refresh step'];
-    }
-
-    if ($script === '' || !is_file($script)) {
-        return ['success' => false, 'error' => 'Script not found for step: ' . $step];
-    }
-
-    $started = medexRunBackgroundCommand($cmd);
-    if (!$started) {
-        return ['success' => false, 'error' => 'Failed to start background job'];
-    }
-
-    return ['success' => true, 'started' => true, 'step' => $step];
-}
-
-// API: trigger a full MedEx refresh + collector run from browser UI
-$router->match(['GET', 'POST'], "/api/medex/refresh-all", function () {
-    header("Content-Type: application/json; charset=utf-8");
-    medexRequireAuth();
-
-    $root = medexNormalizePath(dirname(__DIR__, 2));
-    $phpBinary = PHP_BINARY;
-    $refreshScript = medexNormalizePath($root . '/scripts/cron/medex-refresh.php');
-    $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($refreshScript) . ' --detailed --drug-details';
-    $bilingualEnv = trim((string)($_ENV['MEDEX_AUTO_DRUG_DETAILS_BILINGUAL'] ?? '')) === '1';
-    if ($bilingualEnv || trim((string)($_REQUEST['bilingual'] ?? '')) !== '') {
-        $cmd .= ' --bilingual';
-    }
-
-    $started = medexRunBackgroundCommand($cmd);
-
-    if (!$started) {
-        http_response_code(500);
-        echo json_encode(["success" => false, "error" => "Failed to start MedEx refresh job"]);
-        exit;
-    }
-
-    echo json_encode([
-        "success" => true,
-        "started" => true,
-        "message" => "MedEx refresh and collector job started.",
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-});
-
-$router->match(['GET', 'POST'], "/api/medex/refresh-route", function () {
-    header("Content-Type: application/json; charset=utf-8");
-    medexRequireAuth();
-
-    $step = trim((string)($_REQUEST['step'] ?? ''));
-    if ($step === '') {
-        http_response_code(400);
-        echo json_encode(["success" => false, "error" => "Missing step parameter"]);
-        exit;
-    }
-
-    $params = [];
-    if (isset($_REQUEST['brand_id'])) {
-        $params['brand_id'] = (int)$_REQUEST['brand_id'];
-    }
-    if (trim((string)($_REQUEST['bilingual'] ?? '')) !== '') {
-        $params['bilingual'] = true;
-    }
-
-    $result = medexRunRouteRefresh($step, $params);
-    if (!$result['success']) {
-        http_response_code(500);
-        echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        exit;
-    }
-
-    echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-});
 
 // API: single company by ID
 $router->get("/api/medex/company/{id}", function ($id) {
@@ -591,6 +437,43 @@ $router->post("/api/medex/proxy", function () {
     exit;
 });
 
+// POST /api/medex/fetch-page - Direct cURL-backed page fetch for JS clients
+// Body JSON: { url: "https://medex.com.bd/..." }
+// Auth: CSRF (POST) + optional MEDEX_REFRESH_TOKEN
+$router->match(['GET', 'POST'], "/api/medex/fetch-page", function () {
+    header("Content-Type: application/json; charset=utf-8");
+    medexRequireAuth();
+
+    $payload = [];
+    $rawBody = file_get_contents('php://input');
+    if ($rawBody !== '') {
+        $payload = json_decode($rawBody, true) ?: [];
+    }
+
+    $targetUrl = trim((string)($_REQUEST["url"] ?? $payload["url"] ?? ""));
+    if ($targetUrl === "") {
+        http_response_code(400);
+        echo json_encode(["success" => false, "error" => "Missing url"]);
+        exit;
+    }
+
+    try {
+        $service = new \App\Services\MedexDataService();
+        $result = $service->curlFetchPage($targetUrl);
+    } catch (Exception $e) {
+        logError("MedEx fetch-page error: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(["success" => false, "error" => "Fetch failed"]);
+        exit;
+    }
+
+    if (!$result["success"]) {
+        http_response_code(422);
+    }
+    echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+});
+
 // POST /api/medex/save-data - Receive full collected dataset from JS scraper and persist
 // Body (JSON or form): { data: [ ...companies... ], meta?: { collected_at, source: "js-scraper-v1", count } }
 // Validates structure, creates timestamped backup, atomic write.
@@ -618,57 +501,34 @@ $router->post("/api/medex/save-data", function () {
         exit;
     }
 
-    $companies = $payload["data"];
-    if (count($companies) < 5) {
+    $data = $payload["data"];
+    $saveType = trim(strtolower((string)($payload["type"] ?? $_REQUEST["type"] ?? $payload["meta"]["type"] ?? 'companies')));
+    if ($saveType === '') {
+        $saveType = 'companies';
+    }
+
+    if ($saveType === 'companies' && count($data) < 5) {
         http_response_code(400);
-        echo json_encode(["success" => false, "error" => "Refusing suspiciously small dataset"]);
+        echo json_encode(["success" => false, "error" => "Refusing suspiciously small companies dataset"]);
         exit;
     }
 
-    // Reuse service to get the authoritative dataFile path + uploads dir logic
-    $service = new \App\Services\MedexDataService();
-    $targetFile = $service->getDataFilePath(); // assumes we expose or add getter; fallback below if not
-
-    // Fallback resolution if method not present (defensive)
-    if (!is_string($targetFile) || $targetFile === "") {
-        $uploadsDir = defined('UPLOADS_DIR') ? rtrim(UPLOADS_DIR, '/\\') . '/medex' : BASE_PATH . 'public_html/uploads/medex';
-        if (!is_dir($uploadsDir)) {
-            @mkdir($uploadsDir, 0755, true);
-        }
-        $targetFile = rtrim($uploadsDir, '/\\') . '/medex_herbal_companies.json';
-    }
-
-    // Create backup of existing file if present
-    if (is_file($targetFile)) {
-        $ts = date('Ymd-His');
-        $backup = $targetFile . '.bak-' . $ts;
-        @copy($targetFile, $backup);
-    }
-
-    // Atomic write
-    $json = json_encode($companies, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    $tmp = $targetFile . '.tmp-' . uniqid();
-    if (file_put_contents($tmp, $json, LOCK_EX) === false) {
+    try {
+        $service = new \App\Services\MedexDataService();
+        $result = $service->saveCollectedData($data, $saveType);
+    } catch (Exception $e) {
+        logError('MedEx save-data failed: ' . $e->getMessage());
         http_response_code(500);
-        echo json_encode(["success" => false, "error" => "Failed to write temp file"]);
+        echo json_encode(["success" => false, "error" => "Unable to save MedEx data file"]);
         exit;
     }
-    if (!@rename($tmp, $targetFile)) {
-        @unlink($tmp);
-        http_response_code(500);
-        echo json_encode(["success" => false, "error" => "Failed to commit new data file"]);
-        exit;
-    }
-
-    // Touch mtime so service sees fresh
-    @touch($targetFile);
 
     echo json_encode([
         "success"       => true,
-        "saved"         => count($companies),
-        "file"          => basename($targetFile),
-        "last_updated"  => date('c', filemtime($targetFile)),
-        "backup"        => isset($backup) ? basename($backup) : null,
+        "saved"         => $result['saved'],
+        "file"          => basename($result['target']),
+        "last_updated"  => $result['last_updated'],
+        "backup"        => isset($result['backup']) ? basename($result['backup']) : null,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 });

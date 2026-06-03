@@ -1,22 +1,37 @@
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
 {% block title %}Send By Topic{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container py-4">
-    <h3>Send Notification By Topic</h3>
-    <div class="mb-3">
-      <label class="form-label">Topic</label>
-      <select id="topicSelect" class="form-control"></select>
-    </div>
-    <div class="mb-3">
-      <label class="form-label">Title</label>
-      <input id="title" class="form-control" />
-    </div>
-    <div class="mb-3">
-      <label class="form-label">Message</label>
-      <textarea id="message" class="form-control" rows="4"></textarea>
-    </div>
-    <div>
-      <button id="sendBtn" class="modern-btn modern-btn-primary">Send</button>
-    </div>
+<div class="w-full px-4 sm:px-6 py-4 space-y-4">
+ <section class="admin-page-header">
+  <div>
+   <p class="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">
+    <i class="lucide lucide-broadcast"></i>
+    Notifications
+   </p>
+   <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">Send Notification By Topic</h1>
+   <p class="mt-2 text-sm text-slate-600">Target every subscriber of a topic with a single notification.</p>
   </div>
+ </section>
+
+ <section class="admin-panel-card max-w-3xl">
+  <div class="space-y-4">
+   <div>
+    <label class="form-label">Topic</label>
+    <select id="topicSelect" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"></select>
+   </div>
+   <div>
+    <label class="form-label">Title</label>
+    <input id="title" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+   </div>
+   <div>
+    <label class="form-label">Message</label>
+    <textarea id="message" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" rows="4"></textarea>
+   </div>
+   <div class="flex justify-end">
+    <button id="sendBtn" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"><i class="lucide lucide-send"></i> Send</button>
+   </div>
+  </div>
+ </section>
+</div>
 {% endblock %}

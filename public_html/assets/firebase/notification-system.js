@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
         notificationList.innerHTML = '';
 
         if (notifications.length === 0) {
-            notificationList.innerHTML = '<div class="text-center py-4 text-muted"><i class="bi bi-inbox fs-4"></i><p class="mb-0 mt-2 small">No new notifications</p></div>';
+            notificationList.innerHTML = '<div class="text-center py-4 text-muted"><i class="bi icon-inbox fs-4"></i><p class="mb-0 mt-2 small">No new notifications</p></div>';
             return;
         }
 

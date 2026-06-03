@@ -176,7 +176,7 @@
   position: absolute;
   inset: -2px;
   border-radius: var(--ai-radius-2xl);
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(14, 165, 233, 0.15));
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.15));
   opacity: 0;
   transition: opacity var(--ai-transition-base);
   pointer-events: none;
@@ -185,8 +185,8 @@
 
 #publicAssistantBtn.brox-ai-grok-fab:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: var(--ai-shadow-xl);
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.05), rgba(14, 165, 233, 0.05));
+  box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.25), 0 10px 10px -5px rgba(79, 70, 229, 0.15);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(79, 70, 229, 0.05));
 }
 
 #publicAssistantBtn.brox-ai-grok-fab:hover::before {
@@ -897,7 +897,7 @@
   position: absolute;
   inset: -2px;
   border-radius: var(--ai-radius-2xl);
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(14, 165, 233, 0.15));
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.15));
   opacity: 0;
   transition: opacity var(--ai-transition-base);
   pointer-events: none;
@@ -906,8 +906,8 @@
 
 #adminAiBtn.brox-ai-trigger-fab:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: var(--ai-shadow-xl);
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(14, 165, 233, 0.05));
+  box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.25), 0 10px 10px -5px rgba(79, 70, 229, 0.15);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(79, 70, 229, 0.05));
 }
 
 #adminAiBtn.brox-ai-trigger-fab:hover::before {

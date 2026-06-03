@@ -8,7 +8,7 @@ async function initNotificationModuleHelpers() {
     const notificationSystem = await import('/assets/firebase/v2/dist/notification-system.js');
     const analytics = await import('/assets/firebase/v2/dist/analytics.js');
     return { notificationSystem, analytics, };
-  } catch (e) {
+  } catch {
     return { notificationSystem: null, analytics: null, };
   }
 }
@@ -37,7 +37,7 @@ export async function initNotificationsSend() {
     try {
       const parsed = JSON.parse(raw);
       return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
-    } catch (error) {
+    } catch {
       return null;
     }
   };
@@ -127,7 +127,7 @@ export async function initNotificationsSend() {
 
       applyChannelsFromTemplate(data.channels || []);
       return true;
-    } catch (error) {
+    } catch {
       showWarning?.('Template preview failed. Notification will use template during send.');
       return false;
     }
@@ -155,7 +155,7 @@ export async function initNotificationsSend() {
       break;
     }
     if (info && infoEl) {
-      infoEl.innerHTML = `<small class="text-success d-block mt-2"><i class="bi bi-check-circle"></i> ${ info }</small>`;
+      infoEl.innerHTML = `<small class="text-success d-block mt-2"><i class="bi icon-check-circle"></i> ${info}</small>`;
     }
   }
 
@@ -207,7 +207,7 @@ export async function initNotificationsSend() {
         const perm = byId('permissionSelect')?.value;
         if (perm) params.set('permission', perm);
       }
-      const response = await fetch(`/api/notification/count-recipients?${ params.toString()}`);
+      const response = await fetch(`/api/notification/count-recipients?${params.toString()}`);
       const data = await response.json();
       byId('recipientCount').textContent = data.count;
       const totalUsers = byId('totalUsers');
@@ -349,7 +349,7 @@ export async function initNotificationsSend() {
       'warning': 'Warning',
       'urgent': 'Urgent',
     };
-    byId('previewType').textContent = `Type: ${ typeLabels[this.value] || this.value}`;
+    byId('previewType').textContent = `Type: ${typeLabels[this.value] || this.value}`;
   });
 
   form.addEventListener('submit', async (e) => {
@@ -376,7 +376,7 @@ export async function initNotificationsSend() {
       }
     }
 
-    let recipientCount = 0;
+    let recipientCount;
     if (recipientTypeVal === 'specific') {
       recipientCount = specificIds.length;
     } else {
@@ -408,7 +408,7 @@ export async function initNotificationsSend() {
 
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+      submitBtn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-2"></span>Sending...';
     }
 
     try {
@@ -423,18 +423,18 @@ export async function initNotificationsSend() {
         showSuccess?.(data.message || 'Notification sent successfully');
         setTimeout(() => window.location.href = '/admin/notifications', 1500);
       } else {
-        showError?.(`Error: ${ data.error || 'Unknown error'}`);
+        showError?.(`Error: ${data.error || 'Unknown error'}`);
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.innerHTML = '<i class="bi bi-check me-2"></i>Send Notification';
+          submitBtn.innerHTML = '<i class="bi icon-check mr-2"></i>Send Notification';
         }
       }
     } catch (error) {
       console.error('Error:', error);
-      showError?.(`Notification sending failed: ${ error.message}`);
+      showError?.(`Notification sending failed: ${error.message}`);
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="bi bi-check me-2"></i>Send Notification';
+        submitBtn.innerHTML = '<i class="bi icon-check mr-2"></i>Send Notification';
       }
     }
   });
@@ -448,7 +448,7 @@ export async function initNotificationsSend() {
       data.users?.forEach(user => {
         const option = document.createElement('option');
         option.value = user.id;
-        option.textContent = `${user.username } (${ user.email })`;
+        option.textContent = `${user.username} (${user.email})`;
         select.appendChild(option);
       });
     });
@@ -499,7 +499,7 @@ export async function initNotificationsSend() {
       emptyState = document.createElement('div');
       emptyState.id = 'recipientFilterEmptyState';
       emptyState.className = 'recipient-empty-filter';
-      emptyState.innerHTML = '<i class="bi bi-search me-1"></i>No recipients matched the selected filters';
+      emptyState.innerHTML = '<i class="bi icon-search mr-1"></i>No recipients matched the selected filters';
       container.appendChild(emptyState);
     }
   }
@@ -525,11 +525,11 @@ export async function initNotificationsSend() {
       const deviceCategory = normalizeText(card.dataset.recipientDeviceCategory);
 
       const textMatched = !searchQuery
-                || name.includes(searchQuery)
-                || email.includes(searchQuery);
+        || name.includes(searchQuery)
+        || email.includes(searchQuery);
       const deviceMatched = !deviceQuery
-                || deviceCategory === deviceQuery
-                || device.includes(deviceQuery);
+        || deviceCategory === deviceQuery
+        || device.includes(deviceQuery);
 
       const visible = textMatched && deviceMatched;
       card.classList.toggle('is-hidden', !visible);
@@ -586,15 +586,15 @@ export async function initNotificationsSend() {
       }
       params.set('permission', perm);
     }
-    const modal = new bootstrap.Modal(byId('recipientModal'));
+    const modal = new broxUI.Modal(byId('recipientModal'));
     try {
-      const response = await fetch(`/api/notification/preview-recipients?${ params.toString()}`);
+      const response = await fetch(`/api/notification/preview-recipients?${params.toString()}`);
       const text = await response.text();
       let data;
       try {
         data = JSON.parse(text);
-      } catch (e) {
-        throw new Error(`Invalid response from server: ${ text.substring(0, 100)}`);
+      } catch {
+        throw new Error(`Invalid response from server: ${text.substring(0, 100)}`);
       }
 
       const list = byId('recipientList');
@@ -603,12 +603,12 @@ export async function initNotificationsSend() {
 
       if (data.error) {
         if (totalCountEl) totalCountEl.textContent = '0';
-        list.innerHTML = `<div class="alert alert-danger mb-0"><i class="bi bi-exclamation-circle me-2"></i>Recipient load error: ${ data.error }</div>`;
+        list.innerHTML = `<div class="p-4 rounded-lg bg-danger-light text-danger-dark border border-danger mb-0"><i class="bi icon-alert-circle mr-2"></i>Recipient load error: ${data.error}</div>`;
         updateFilteredMeta(0, 0);
       } else if (!data.recipients || data.recipients.length === 0) {
         if (totalCountEl) totalCountEl.textContent = '0';
-        const warning = data.warning ? `<div class="alert alert-warning mb-2"><i class="bi bi-exclamation-triangle me-2"></i>${data.warning}</div>` : '';
-        list.innerHTML = `${warning }<div class="alert alert-info text-center mb-0"><i class="bi bi-info-circle me-2"></i>No recipients found for this selection</div>`;
+        const warning = data.warning ? `<div class="p-4 rounded-lg bg-warning-light text-warning-dark border border-warning mb-2"><i class="bi icon-alert-triangle mr-2"></i>${data.warning}</div>` : '';
+        list.innerHTML = `${warning}<div class="p-4 rounded-lg bg-info-light text-info-dark border border-info text-center mb-0"><i class="bi icon-info mr-2"></i>No recipients found for this selection</div>`;
         updateFilteredMeta(0, 0);
       } else {
         const actualTotal = data.count ?? data.recipients.length;
@@ -642,12 +642,12 @@ export async function initNotificationsSend() {
                                             ${email ? `<small class="text-muted text-truncate">${email}</small>` : ''}
                                         </div>
                                     </div>
-                                    <span class="badge bg-primary ms-2">${index + 1}</span>
+                                    <span class="badge bg-primary ml-2">${index + 1}</span>
                                 </div>
                                 <div class="recipient-body">
                                     <div class="recipient-info-item">
                                         <div class="recipient-info-label">
-                                            <i class="bi bi-device-type"></i>
+                                            <i class="bi icon-smartphone"></i>
                                             Device
                                         </div>
                                         <div class="flex-grow-1 text-end">
@@ -656,7 +656,7 @@ export async function initNotificationsSend() {
                                     </div>
                                     <div class="recipient-info-item">
                                         <div class="recipient-info-label">
-                                            <i class="bi bi-calendar-event"></i>
+                                            <i class="bi icon-calendar-clock"></i>
                                             Date
                                         </div>
                                         <div class="flex-grow-1 text-end">
@@ -665,7 +665,7 @@ export async function initNotificationsSend() {
                                     </div>
                                     <div class="recipient-info-item">
                                         <div class="recipient-info-label">
-                                            <i class="bi bi-clock"></i>
+                                            <i class="bi icon-clock"></i>
                                             Time
                                         </div>
                                         <div class="flex-grow-1 text-end">
@@ -685,7 +685,7 @@ export async function initNotificationsSend() {
       const totalCountEl = byId('recipientTotalCount');
       if (totalCountEl) totalCountEl.textContent = '0';
       updateFilteredMeta(0, 0);
-      byId('recipientList').innerHTML = `<div class="alert alert-danger mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Error: ${ error.message }</div>`;
+      byId('recipientList').innerHTML = `<div class="p-4 rounded-lg bg-danger-light text-danger-dark border border-danger mb-0"><i class="bi icon-alert-triangle mr-2"></i>Error: ${error.message}</div>`;
     }
 
     modal.show();
@@ -708,7 +708,7 @@ export async function initNotificationsScheduled() {
   }
 
   const scheduleModalEl = byId('scheduleModal');
-  const scheduleModal = scheduleModalEl ? new bootstrap.Modal(scheduleModalEl) : null;
+  const scheduleModal = scheduleModalEl ? new broxUI.Modal(scheduleModalEl) : null;
 
   function openScheduleModal() {
     const form = byId('scheduleForm');
@@ -728,7 +728,7 @@ export async function initNotificationsScheduled() {
     const submitBtn = byId('submitBtn');
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Scheduling...';
+      submitBtn.innerHTML = '<i class="bi icon-hourglass mr-2"></i>Scheduling...';
     }
 
     try {
@@ -763,15 +763,15 @@ export async function initNotificationsScheduled() {
         scheduleModal?.hide();
         loadScheduledNotifications('scheduled');
       } else {
-        alert(`Failed to schedule notification: ${ result?.error || 'Unknown error'}`);
+        alert(`Failed to schedule notification: ${result?.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error:', error);
-      alert(`Server error: ${ error.message}`);
+      alert(`Server error: ${error.message}`);
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Schedule';
+        submitBtn.innerHTML = '<i class="bi icon-check mr-2"></i>Schedule';
       }
     }
   }
@@ -801,7 +801,7 @@ export async function initNotificationsScheduled() {
         container.innerHTML = `
                     <div class="col-12">
                         <div class="text-center py-5 text-muted">
-                            <i class="bi bi-inbox display-4 mb-3 d-block"></i>
+                            <i class="bi icon-inbox display-4 mb-3 d-block"></i>
                             <p>No notifications found.</p>
                         </div>
                     </div>
@@ -827,11 +827,11 @@ export async function initNotificationsScheduled() {
 
                                 <div class="mb-3">
                                     <div class="mb-2">
-                                        <small class="text-muted"><i class="bi bi-calendar me-1"></i>Scheduled:</small>
+                                        <small class="text-muted"><i class="bi icon-calendar mr-1"></i>Scheduled:</small>
                                         <div class="fw-bold">${escapeHtml(notif.scheduled_at || '-')}</div>
                                     </div>
                                     <div>
-                                        <small class="text-muted"><i class="bi bi-people me-1"></i>Recipient:</small>
+                                        <small class="text-muted"><i class="bi icon-users mr-1"></i>Recipient:</small>
                                         <span class="badge bg-info text-capitalize">${escapeHtml(notif.recipient_type || 'all')}</span>
                                     </div>
                                 </div>
@@ -839,11 +839,11 @@ export async function initNotificationsScheduled() {
                                 <div class="mt-auto pt-2 border-top">
                                     <div class="btn-group btn-group-sm w-100" role="group">
                                         <button class="btn btn-outline-primary" data-action="view-scheduled" data-notification-id="${notif.id}">
-                                            <i class="bi bi-eye me-1"></i>Details
+                                            <i class="bi icon-eye mr-1"></i>Details
                                         </button>
                                         ${notif.status === 'scheduled' ? `
                                             <button class="btn btn-outline-danger" data-action="cancel-scheduled" data-notification-id="${notif.id}">
-                                                <i class="bi bi-x me-1"></i>Cancel
+                                                <i class="bi icon-x mr-1"></i>Cancel
                                             </button>
                                         ` : ''}
                                     </div>
@@ -859,8 +859,8 @@ export async function initNotificationsScheduled() {
       if (container) {
         container.innerHTML = `
                     <div class="col-12">
-                        <div class="alert alert-danger">
-                            <i class="bi bi-exclamation-triangle me-2"></i>Error: ${escapeHtml(error.message || 'Failed to load')}
+                        <div class="p-4 rounded-lg bg-danger-light text-danger-dark border border-danger">
+                            <i class="bi icon-alert-triangle mr-2"></i>Error: ${escapeHtml(error.message || 'Failed to load')}
                         </div>
                     </div>
                 `;
@@ -880,7 +880,7 @@ export async function initNotificationsScheduled() {
         alert('Schedule cancelled.');
         loadScheduledNotifications('scheduled');
       } else {
-        alert(`Failed: ${ data.message || data.error || 'Unknown error'}`);
+        alert(`Failed: ${data.message || data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -889,7 +889,7 @@ export async function initNotificationsScheduled() {
   }
 
   function viewScheduledDetail(id) {
-    alert(`Detailed view is coming soon. ID: ${ id}`);
+    alert(`Detailed view is coming soon. ID: ${id}`);
   }
 
   document.addEventListener('click', (event) => {
@@ -917,11 +917,10 @@ export async function initNotificationsScheduled() {
   byId('recipientType')?.addEventListener('change', handleRecipientTypeChange);
 
   handleRecipientTypeChange();
-  loadScheduledNotifications('scheduled');
-  byId('scheduled-tab')?.addEventListener('shown.bs.tab', () => loadScheduledNotifications('scheduled'));
-  byId('sent-tab')?.addEventListener('shown.bs.tab', () => loadScheduledNotifications('sent'));
-  byId('failed-tab')?.addEventListener('shown.bs.tab', () => loadScheduledNotifications('failed'));
-  byId('draft-tab')?.addEventListener('shown.bs.tab', () => loadScheduledNotifications('draft'));
+  loadScheduledNotifications('scheduled'); byId('scheduled-tab')?.addEventListener('brox:shown', () => loadScheduledNotifications('scheduled'));
+  byId('sent-tab')?.addEventListener('brox:shown', () => loadScheduledNotifications('sent'));
+  byId('failed-tab')?.addEventListener('brox:shown', () => loadScheduledNotifications('failed'));
+  byId('draft-tab')?.addEventListener('brox:shown', () => loadScheduledNotifications('draft'));
 }
 
 
@@ -950,10 +949,10 @@ export function initNotificationsDeviceSync() {
 
   function getActionBadge(action) {
     const badges = {
-      read: '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Read</span>',
-      dismissed: '<span class="badge bg-warning"><i class="bi bi-x-circle me-1"></i>Dismissed</span>',
-      deleted: '<span class="badge bg-danger"><i class="bi bi-trash me-1"></i>Deleted</span>',
-      sync: '<span class="badge bg-info"><i class="bi bi-arrow-repeat me-1"></i>Sync</span>',
+      read: '<span class="badge bg-success"><i class="bi icon-check-circle mr-1"></i>Read</span>',
+      dismissed: '<span class="badge bg-warning"><i class="bi icon-x-circle mr-1"></i>Dismissed</span>',
+      deleted: '<span class="badge bg-danger"><i class="bi icon-trash-2 mr-1"></i>Deleted</span>',
+      sync: '<span class="badge bg-info"><i class="bi icon-repeat mr-1"></i>Sync</span>',
     };
     return badges[action] || `<span class="badge bg-secondary">${escapeHtml(action || 'unknown')}</span>`;
   }
@@ -975,7 +974,7 @@ export function initNotificationsDeviceSync() {
     try {
       return JSON.parse(cleaned || '{}');
     } catch (e) {
-      throw new Error(`Invalid JSON response (${response.status}): ${cleaned.slice(0, 160)}`);
+      throw new Error(`Invalid JSON response (${response.status}): ${cleaned.slice(0, 160)}`, { cause: e, });
     }
   }
 
@@ -990,7 +989,7 @@ export function initNotificationsDeviceSync() {
 
       const total = (data.pending_count || 0) + (data.synced_count || 0);
       const syncRate = total > 0 ? Math.round(((data.synced_count || 0) / total) * 100) : 0;
-      byId('syncRatePercent').textContent = `${syncRate }%`;
+      byId('syncRatePercent').textContent = `${syncRate}%`;
     } catch (error) {
       console.error('Error updating stats:', error);
     }
@@ -1013,7 +1012,7 @@ export function initNotificationsDeviceSync() {
         tbody.innerHTML = `
                     <tr>
                         <td colspan="5" class="text-center text-muted py-4">
-                            <i class="bi bi-inbox"></i> No devices found
+                            <i class="bi icon-inbox"></i> No devices found
                         </td>
                     </tr>
                 `;
@@ -1031,7 +1030,7 @@ export function initNotificationsDeviceSync() {
         tbody.innerHTML += `
                     <tr>
                         <td>
-                            <i class="bi bi-phone me-2"></i>
+                            <i class="bi icon-phone mr-2"></i>
                             ${escapeHtml(deviceName)}
                         </td>
                         <td><code>${escapeHtml(shortId(deviceId))}</code></td>
@@ -1039,10 +1038,10 @@ export function initNotificationsDeviceSync() {
                         <td><small class="text-muted">${escapeHtml(lastSeen)}</small></td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary" onclick="syncDevice('${escapeHtml(deviceId)}')">
-                                <i class="bi bi-arrow-repeat"></i>
+                                <i class="bi icon-repeat"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger" onclick="removeDevice('${escapeHtml(deviceId)}')">
-                                <i class="bi bi-trash"></i>
+                                <i class="bi icon-trash-2"></i>
                             </button>
                         </td>
                     </tr>
@@ -1057,7 +1056,7 @@ export function initNotificationsDeviceSync() {
         tbody.innerHTML = `
                     <tr>
                         <td colspan="5" class="text-center text-danger py-4">
-                            <i class="bi bi-exclamation-triangle me-2"></i>${escapeHtml(error.message || 'Failed')}
+                            <i class="bi icon-alert-triangle mr-2"></i>${escapeHtml(error.message || 'Failed')}
                         </td>
                     </tr>
                 `;
@@ -1078,7 +1077,7 @@ export function initNotificationsDeviceSync() {
         tbody.innerHTML = `
                     <tr>
                         <td colspan="5" class="text-center text-muted py-4">
-                            <i class="bi bi-inbox"></i> No sync logs
+                            <i class="bi icon-inbox"></i> No sync logs
                         </td>
                     </tr>
                 `;
@@ -1123,7 +1122,7 @@ export function initNotificationsDeviceSync() {
         loadSyncLog();
         loadDevicesList();
       } else {
-        alert(`Sync failed: ${ data.error || data.message || 'Unknown error'}`);
+        alert(`Sync failed: ${data.error || data.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -1148,7 +1147,7 @@ export function initNotificationsDeviceSync() {
         loadDevicesList();
         loadSyncLog();
       } else {
-        alert(`Device sync failed: ${ data.error || data.message || 'Unknown error'}`);
+        alert(`Device sync failed: ${data.error || data.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -1169,7 +1168,7 @@ export function initNotificationsDeviceSync() {
         loadDevicesList();
         loadSyncLog();
       } else {
-        alert(`Failed to remove device: ${ data.error || data.message || 'Unknown error'}`);
+        alert(`Failed to remove device: ${data.error || data.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -1213,7 +1212,7 @@ export function initNotificationsDeviceSync() {
   }
 }
 
-/* eslint-disable no-inner-declarations */
+
 export async function initNotificationsOfflineHandler() {
   if (!byId('offlineHandlerRoot')) return;
   try {
@@ -1227,8 +1226,8 @@ export async function initNotificationsOfflineHandler() {
     function initializeOfflineModal() {
       if (offlineModal) return;
       const offlineModalElement = byId('offlineModal');
-      if (offlineModalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-        offlineModal = new bootstrap.Modal(offlineModalElement);
+      if (offlineModalElement && typeof broxUI !== 'undefined' && broxUI.Modal) {
+        offlineModal = new broxUI.Modal(offlineModalElement);
       }
     }
 
@@ -1242,7 +1241,7 @@ export async function initNotificationsOfflineHandler() {
           tbody.innerHTML = `
                         <tr>
                             <td colspan="5" class="text-center text-muted py-4">
-                                <i class="bi bi-inbox"></i> No buffered notifications found
+                                <i class="bi icon-inbox"></i> No buffered notifications found
                             </td>
                         </tr>
                     `;
@@ -1259,7 +1258,7 @@ export async function initNotificationsOfflineHandler() {
                             <td><span class="badge bg-info">Buffered</span></td>
                             <td>
                                 <button class="btn btn-sm btn-outline-danger" data-action="remove-buffer" data-notification-id="${notif.id}">
-                                    <i class="bi bi-trash"></i>
+                                    <i class="bi icon-trash-2"></i>
                                 </button>
                             </td>
                         </tr>
@@ -1289,7 +1288,7 @@ export async function initNotificationsOfflineHandler() {
           tbody.innerHTML = `
                         <tr>
                             <td colspan="6" class="text-center text-muted py-4">
-                                <i class="bi bi-inbox"></i> No retry queue items
+                                <i class="bi icon-inbox"></i> No retry queue items
                             </td>
                         </tr>
                     `;
@@ -1310,7 +1309,7 @@ export async function initNotificationsOfflineHandler() {
                             <td>${statusBadge}</td>
                             <td>
                                 <button class="btn btn-sm btn-outline-primary" data-action="force-retry" data-retry-id="${retry.id}">
-                                    <i class="bi bi-arrow-repeat"></i>
+                                    <i class="bi icon-repeat"></i>
                                 </button>
                             </td>
                         </tr>
@@ -1349,7 +1348,7 @@ export async function initNotificationsOfflineHandler() {
         refreshBuffer();
         loadRetryQueue();
       } catch (error) {
-        alert(`Error: ${ error.message}`);
+        alert(`Error: ${error.message}`);
       }
     }
 
@@ -1359,7 +1358,7 @@ export async function initNotificationsOfflineHandler() {
         alert('Expired cache cleared successfully');
         refreshBuffer();
       } catch (error) {
-        alert(`Error: ${ error.message}`);
+        alert(`Error: ${error.message}`);
       }
     }
 
@@ -1370,7 +1369,7 @@ export async function initNotificationsOfflineHandler() {
         alert('All buffered notifications were cleared');
         refreshBuffer();
       } catch (error) {
-        alert(`Error: ${ error.message}`);
+        alert(`Error: ${error.message}`);
       }
     }
 
@@ -1411,7 +1410,7 @@ export async function initNotificationsOfflineHandler() {
           tbody.innerHTML = `
                         <tr>
                             <td colspan="5" class="text-center text-muted py-4">
-                                <i class="bi bi-inbox"></i> No delivery history records
+                                <i class="bi icon-inbox"></i> No delivery history records
                             </td>
                         </tr>
                     `;
@@ -1458,7 +1457,7 @@ export async function initNotificationsOfflineHandler() {
     });
 
     function initializePageContent() {
-      if (typeof bootstrap === 'undefined') {
+      if (typeof broxUI === 'undefined') {
         setTimeout(initializePageContent, 100);
         return;
       }

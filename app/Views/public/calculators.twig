@@ -1,184 +1,176 @@
-{# app/Views/public/calculators.twig
-   Calculator directory – mirrors the category-gallery style of Calculator.net  #}
+﻿{# app/Views/public/calculators.twig
+ Calculator directory â€“ mirrors the category-gallery style of Calculator.net #}
 {% extends 'layout.twig' %}
 
-{% block title %}{{ current_lang == 'bn' ? 'অনলাইন ক্যালকুলেটর' : 'Online Calculators' }} | {{ app_settings.site_name|default('BroxLab') }}{% endblock %}
-{% block meta_description %}{{ current_lang == 'bn' ? 'ফাইন্যান্স, গণিত, স্বাস্থ্য এবং ফিটনেসের জন্য বিনামূল্যে অনলাইন ক্যালকুলেটর। সঠিক, দ্রুত ফলাফল - কোন সাইন-আপের প্রয়োজন নেই।' : 'Free online calculators for finance, math, health & fitness. Accurate, instant results — no sign-up required.' }}{% endblock %}
+{% block title %}{{ current_lang == 'bn' ? 'à¦…à¦¨à¦²à¦¾à¦‡à¦¨ à¦•à§à¦¯à¦¾à¦²à¦•à§à¦²à§‡à¦Ÿà¦°' : 'Online Calculators' }} | {{ app_settings.site_name|default('BroxLab') }}{% endblock %}
+{% block meta_description %}{{ current_lang == 'bn' ? 'à¦«à¦¾à¦‡à¦¨à§à¦¯à¦¾à¦¨à§à¦¸, à¦—à¦£à¦¿à¦¤, à¦¸à§à¦¬à¦¾à¦¸à§à¦¥à§à¦¯ à¦à¦¬à¦‚ à¦«à¦¿à¦Ÿà¦¨à§‡à¦¸à§‡à¦° à¦œà¦¨à§à¦¯ à¦¬à¦¿à¦¨à¦¾à¦®à§‚à¦²à§à¦¯à§‡ à¦…à¦¨à¦²à¦¾à¦‡à¦¨ à¦•à§à¦¯à¦¾à¦²à¦•à§à¦²à§‡à¦Ÿà¦°à¥¤ à¦¸à¦ à¦¿à¦•, à¦¦à§à¦°à§à¦¤ à¦«à¦²à¦¾à¦«à¦² - à¦•à§‹à¦¨ à¦¸à¦¾à¦‡à¦¨-à¦†à¦ªà§‡à¦° à¦ªà§à¦°à¦¯à¦¼à§‹à¦œà¦¨ à¦¨à§‡à¦‡à¥¤' : 'Free online calculators for finance, math, health & fitness. Accurate, instant results â€” no sign-up required.' }}{% endblock %}
 {% block meta_keywords %}calculator, online calculator, finance calculator, BMI calculator, loan calculator, mortgage calculator, GPA calculator{% endblock %}
 
 {% set breadcrumbs = [
-  { label: current_lang == 'bn' ? 'ক্যালকুলেটর' : 'Calculators' }
+ { label: current_lang == 'bn' ? 'à¦•à§à¦¯à¦¾à¦²à¦•à§à¦²à§‡à¦Ÿà¦°' : 'Calculators' }
 ] %}
 
 {% block extra_styles %}
 <style>
-  .calc-card {
-    transition: transform 0.22s ease, box-shadow 0.22s ease;
-    border-radius: 14px;
-  }
-  .calc-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
-  }
-  .calc-card .icon-circle {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    flex-shrink: 0;
-  }
-  .calc-card .card-title {
-    font-weight: 700;
-    font-size: 1.05rem;
-    margin-bottom: 0.35rem;
-  }
-  .calc-card .card-text {
-    font-size: 0.89rem;
-    color: #6c757d;
-  }
-  .calc-card .card-link {
-    font-size: 0.87rem;
-    font-weight: 600;
-    color: var(--bs-primary);
-    text-decoration: none;
-  }
-  .calc-card .card-link:hover { text-decoration: underline; }
-  .cat-badge {
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-  @media(max-width:575px){
-    .cat-badge{margin-bottom:1.2rem}
-  }
+ .calc-card {
+ transition: transform 0.22s ease, box-shadow 0.22s ease;
+ border-radius: 14px;
+ }
+ .calc-card:hover {
+ transform: translateY(-5px);
+ box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
+ }
+ .calc-card .icon-circle {
+ width: 56px;
+ height: 56px;
+ border-radius: 50%;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-size: 1.5rem;
+ flex-shrink: 0;
+ }
+ .calc-card .calc-card-title {
+ font-weight: 700;
+ font-size: 1.05rem;
+ margin-bottom: 0.35rem;
+ }
+ .calc-card .calc-card-text {
+ font-size: 0.89rem;
+ color: #6c757d;
+ }
+ @media(max-width:575px){
+ .cat-badge { margin-bottom: 1.2rem; }
+ }
 </style>
 {% endblock %}
 
 {% block content %}
 <section class="py-5">
 
-  {# ── Hero ── #}
-  <div class="bg-primary text-white rounded-4 p-5 mb-5 position-relative overflow-hidden">
-    <div class="container py-3 position-relative z-1">
-      <div class="row align-items-center g-4">
-        <div class="col-lg-8">
-          <h1 class="display-5 fw-bold mb-3">
-            <i class="bi bi-calculator-fill me-3"></i>{{ current_lang == 'bn' ? 'অনলাইন ক্যালকুলেটর' : 'Online Calculators' }}
-          </h1>
-          <p class="lead mb-0">
-            {{ current_lang == 'bn' ? 'দৈনন্দিন কাজের জন্য বিনামূল্যে ও সঠিক ক্যালকুলেটর — ফাইন্যান্স, গণিত, স্বাস্থ্য ও ফিটনেস।' : 'Free, accurate calculators for everyday needs — finance, math, health & fitness.' }}
-            <br>
-            {{ current_lang == 'bn' ? 'একটি বিভাগ নির্বাচন করুন এবং তাত্ক্ষণিকভাবে গণনা শুরু করুন।' : 'Pick a category and start calculating instantly.' }}
-          </p>
-        </div>
-        <div class="col-lg-4 text-center">
-          <div class="display-1 opacity-75"><i class="bi bi-calculator-fill"></i></div>
-        </div>
-      </div>
-    </div>
-    <i class="bi bi-dot position-absolute top-0 end-0 text-white opacity-10" style="font-size:20rem;line-height:1"></i>
-  </div>
+ {# â”€â”€ Hero â”€â”€ #}
+ <div class="bg-indigo-600 text-white rounded-2xl p-5 mb-5 relative overflow-hidden">
+ <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 relative z-1">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 items-center">
+ <div class="lg:col-span-8">
+ <h1 class="text-4xl font-bold mb-3">
+ <i class="lucide lucide-calculator mr-3"></i>{{ current_lang == 'bn' ? 'à¦…à¦¨à¦²à¦¾à¦‡à¦¨ à¦•à§à¦¯à¦¾à¦²à¦•à§à¦²à§‡à¦Ÿà¦°' : 'Online Calculators' }}
+ </h1>
+ <p class="lead mb-0">
+ {{ current_lang == 'bn' ? 'à¦¦à§ˆà¦¨à¦¨à§à¦¦à¦¿à¦¨ à¦•à¦¾à¦œà§‡à¦° à¦œà¦¨à§à¦¯ à¦¬à¦¿à¦¨à¦¾à¦®à§‚à¦²à§à¦¯à§‡ à¦“ à¦¸à¦ à¦¿à¦• à¦•à§à¦¯à¦¾à¦²à¦•à§à¦²à§‡à¦Ÿà¦° â€” à¦«à¦¾à¦‡à¦¨à§à¦¯à¦¾à¦¨à§à¦¸, à¦—à¦£à¦¿à¦¤, à¦¸à§à¦¬à¦¾à¦¸à§à¦¥à§à¦¯ à¦“ à¦«à¦¿à¦Ÿà¦¨à§‡à¦¸à¥¤' : 'Free, accurate calculators for everyday needs â€” finance, math, health & fitness.' }}
+ <br>
+ {{ current_lang == 'bn' ? 'à¦à¦•à¦Ÿà¦¿ à¦¬à¦¿à¦­à¦¾à¦— à¦¨à¦¿à¦°à§à¦¬à¦¾à¦šà¦¨ à¦•à¦°à§à¦¨ à¦à¦¬à¦‚ à¦¤à¦¾à¦¤à§à¦•à§à¦·à¦£à¦¿à¦•à¦­à¦¾à¦¬à§‡ à¦—à¦£à¦¨à¦¾ à¦¶à§à¦°à§ à¦•à¦°à§à¦¨à¥¤' : 'Pick a category and start calculating instantly.' }}
+ </p>
+ </div>
+ <div class="lg:col-span-4 text-center">
+ <div class="text-6xl opacity-75"><i class="lucide lucide-calculator"></i></div>
+ </div>
+ </div>
+ </div>
+ <i class="lucide lucide-dot position-absolute top-0 end-0 text-white opacity-10" style="font-size:20rem;line-height:1"></i>
+ </div>
 
-  <div class="container">
+ <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-    {# ── Stats bar ── #}
-    <div class="row g-3 mb-5">
-      <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm text-center py-3">
-          <div class="display-6 fw-bold text-primary">{{ total_calculators }}</div>
-          <div class="text-muted small">{{ current_lang == 'bn' ? 'ক্যালকুলেটর' : 'Calculators' }}</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm text-center py-3">
-          <div class="display-6 fw-bold text-success">{{ groups|length }}</div>
-          <div class="text-muted small">{{ current_lang == 'bn' ? 'বিভাগ' : 'Categories' }}</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        {% set totalPosts   = stats.total_posts|default(0)|int %}
-        {% set totalUsers   = stats.total_users|default(0)|int %}
-        <div class="card border-0 shadow-sm text-center py-3">
-          <div class="display-6 fw-bold text-info">{{ totalPosts }}</div>
-          <div class="text-muted small">{{ current_lang == 'bn' ? 'আর্টিকেল' : 'Articles' }}</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm text-center py-3">
-          <div class="display-6 fw-bold text-warning">{{ totalUsers }}</div>
-          <div class="text-muted small">{{ current_lang == 'bn' ? 'ইউজার' : 'Users' }}</div>
-        </div>
-      </div>
-    </div>
+ {# â”€â”€ Stats bar â”€â”€ #}
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3 mb-5">
+ <div class="col-span-6 md:col-span-3">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 text-center py-3">
+ <div class="text-xl font-bold text-indigo-600">{{ total_calculators }}</div>
+ <div class="text-slate-500 text-sm">{{ current_lang == 'bn' ? 'à¦•à§à¦¯à¦¾à¦²à¦•à§à¦²à§‡à¦Ÿà¦°' : 'Calculators' }}</div>
+ </div>
+ </div>
+ <div class="col-span-6 md:col-span-3">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 text-center py-3">
+ <div class="text-xl font-bold text-emerald-600">{{ groups|length }}</div>
+ <div class="text-slate-500 text-sm">{{ current_lang == 'bn' ? 'à¦¬à¦¿à¦­à¦¾à¦—' : 'Categories' }}</div>
+ </div>
+ </div>
+ <div class="col-span-6 md:col-span-3">
+ {% set totalPosts = stats.total_posts|default(0)|int %}
+ {% set totalUsers = stats.total_users|default(0)|int %}
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 text-center py-3">
+ <div class="text-xl font-bold text-sky-600">{{ totalPosts }}</div>
+ <div class="text-slate-500 text-sm">{{ current_lang == 'bn' ? 'à¦†à¦°à§à¦Ÿà¦¿à¦•à§‡à¦²' : 'Articles' }}</div>
+ </div>
+ </div>
+ <div class="col-span-6 md:col-span-3">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 text-center py-3">
+ <div class="text-xl font-bold text-amber-600">{{ totalUsers }}</div>
+ <div class="text-slate-500 text-sm">{{ current_lang == 'bn' ? 'à¦‡à¦‰à¦œà¦¾à¦°' : 'Users' }}</div>
+ </div>
+ </div>
+ </div>
 
-    <div class="row g-4">
-      <div class="col-lg-4">
-        {% set current_type = 'all' %}
-        {% include 'public/partials/calculator-sidebar.twig' with {'groups': groups, 'current_type': current_type} %}
-      </div>
-      <div class="col-lg-8">
-        {# ── Category Groups ── #}
-        {% for groupKey, group in groups %}
-          {% set catLabel  = group.label %}
-          {% set items     = group.items %}
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+ <div class="lg:col-span-4">
+ {% set current_type = 'all' %}
+ {% include 'public/partials/calculator-sidebar.twig' with {'groups': groups, 'current_type': current_type} %}
+ </div>
+ <div class="lg:col-span-8">
+ {# â”€â”€ Category Groups â”€â”€ #}
+ {% for groupKey, group in groups %}
+ {% set catLabel = group.label %}
+ {% set items = group.items %}
 
-          <div class="mb-5">
-        <div class="d-flex align-items-center mb-4">
-          {% set catIcon = {
-            'calculator': 'bi-calculator text-primary',
-            'converter':  'bi-arrow-left-right text-success',
-          }[groupKey] ?? 'bi-grid' %}
-          <h2 class="h3 fw-bold mb-0 me-3">
-            <i class="bi {{ catIcon }} me-2"></i>{{ catLabel }}
-          </h2>
-          <span class="badge bg-secondary cat-badge">{{ items|length }} tools</span>
-        </div>
+ <div class="mb-5">
+ <div class="flex items-center mb-4">
+ {% set catIcon = {  'calculator': 'lucide lucide-calculator text-indigo-600',
+  'converter': 'lucide lucide-arrow-left-right text-emerald-600',
+  }[groupKey] ?? 'lucide lucide-grid' %}
+ <h2 class="h3 font-bold mb-0 mr-3">
+ <i class="{{ catIcon }} mr-2"></i>{{ catLabel }}
+ </h2>
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-600 cat-badge">{{ items|length }} tools</span>
+ </div>
 
-        <div class="row g-3">
-          {% for item in items %}
-            {% set bgColor = {
-              'calculator': 'bg-primary-subtle text-primary',
-              'converter':  'bg-success-subtle text-success',
-            }[item.category] ?? 'bg-secondary-subtle text-secondary' %}
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3">
+ {% for item in items %}
+ {% set bgColor = {
+ 'calculator': 'bg-indigo-600-subtle text-indigo-600',
+ 'converter': 'bg-emerald-600-subtle text-emerald-600',
+ }[item.category] ?? 'bg-slate-600-subtle text-slate-600' %}
 
-            <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-              <a href="/calculators/{{ item.type }}"
-                 class="card calc-card border-0 shadow-sm h-100 text-decoration-none p-3 d-flex align-items-start gap-3">
+ <div class="col-span-12 sm:col-span-6 lg:col-span-4 xl:col-span-3">
+ <a href="/calculators/{{ item.type }}"
+ class="rounded-xl border border-slate-200 bg-white shadow-sm calc-card border-0 h-full no-underline p-3 flex items-start gap-3">
 
-                <div class="icon-circle {{ bgColor }}"><i class="bi {{ item.icon }}"></i></div>
+ <div class="icon-circle {{ bgColor }}"><i class="{{ item.icon }}"></i></div>
 
-                <div class="flex-grow-1">
-                  <div class="card-title text-dark mb-1">{{ item.label }}</div>
-                  <div class="card-text">
-                    <i class="bi bi-arrow-right-circle me-1"></i>{{ current_lang == 'bn' ? 'গণনা শুরু করুন' : 'Start Calculating' }}
-                  </div>
-                </div>
-              </a>
-            </div>
-          {% endfor %}
-        </div>
-      </div>
-    {% endfor %}
+ <div class="flex-grow-1">
+ <div class="calc-card-title text-slate-900 mb-1">{{ item.label }}</div>
+ <div class="calc-card-text">
+ <i class="lucide lucide-arrow-right-circle mr-1"></i>{{ current_lang == 'bn' ? 'à¦—à¦£à¦¨à¦¾ à¦¶à§à¦°à§ à¦•à¦°à§à¦¨' : 'Start Calculating' }}
+ </div>
+ </div>
+ </a>
+ </div>
+ {% endfor %}
+ </div>
+ </div>
+ {% endfor %}
 
-      </div>
-    </div>
+ </div>
+ </div>
 
-    {# ── Subscribe CTA ── #}
-    <div class="bg-light rounded-4 p-5 text-center mt-5">
-      <h3 class="fw-bold mb-2">
-        <i class="bi bi-rss text-danger me-2"></i>{{ current_lang == 'bn' ? 'আপডেট থাকুন' : 'Stay Updated' }}
-      </h3>
-      <p class="text-muted mb-3">{{ current_lang == 'bn' ? 'নিয়মিত নতুন ক্যালকুলেটর ও টুলস যোগ করা হয়। নিউজলেটারে সাবস্ক্রাইব করুন যাতে আপনি কিছুই মিস না করেন।' : 'New calculators and tools are added regularly. Subscribe to our newsletter so you don\'t miss a thing.' }}</p>
-      <div class="d-inline-flex gap-2 flex-wrap justify-content-center">
-        <a href="/newsletter" class="btn btn-danger"><i class="bi bi-envelope me-1"></i>{{ current_lang == 'bn' ? 'সাবস্ক্রাইব করুন' : 'Subscribe' }}</a>
-        <a href="/" class="btn btn-outline-secondary">{{ current_lang == 'bn' ? 'হোমে ফিরে যান' : 'Back to Home' }}</a>
-      </div>
-    </div>
+ {# â”€â”€ Subscribe CTA â”€â”€ #}
+ <div class="bg-slate-100 rounded-2xl p-5 text-center mt-5">
+ <h3 class="font-bold mb-2">
+ <i class="lucide lucide-rss text-red-600 mr-2"></i>{{ current_lang == 'bn' ? 'à¦†à¦ªà¦¡à§‡à¦Ÿ à¦¥à¦¾à¦•à§à¦¨' : 'Stay Updated' }}
+ </h3>
+ <p class="text-slate-500 mb-3">{{ current_lang == 'bn' ? 'à¦¨à¦¿à¦¯à¦¼à¦®à¦¿à¦¤ à¦¨à¦¤à§à¦¨ à¦•à§à¦¯à¦¾à¦²à¦•à§à¦²à§‡à¦Ÿà¦° à¦“ à¦Ÿà§à¦²à¦¸ à¦¯à§‹à¦— à¦•à¦°à¦¾ à¦¹à¦¯à¦¼à¥¤ à¦¨à¦¿à¦‰à¦œà¦²à§‡à¦Ÿà¦¾à¦°à§‡ à¦¸à¦¾à¦¬à¦¸à§à¦•à§à¦°à¦¾à¦‡à¦¬ à¦•à¦°à§à¦¨ à¦¯à¦¾à¦¤à§‡ à¦†à¦ªà¦¨à¦¿ à¦•à¦¿à¦›à§à¦‡ à¦®à¦¿à¦¸ à¦¨à¦¾ à¦•à¦°à§‡à¦¨à¥¤' : 'New calculators and tools are added regularly. Subscribe to our newsletter so you don\'t miss a thing.' }}</p>
+ <div class="inline-flex gap-2 flex-wrap justify-center">
+ <a href="/newsletter" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-red-600 text-white hover:bg-red-700"><i class="lucide lucide-mail mr-1"></i>{{ current_lang == 'bn' ? 'à¦¸à¦¾à¦¬à¦¸à§à¦•à§à¦°à¦¾à¦‡à¦¬ à¦•à¦°à§à¦¨' : 'Subscribe' }}</a>
+ <a href="/" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-slate-600 hover:bg-slate-100">{{ current_lang == 'bn' ? 'à¦¹à§‹à¦®à§‡ à¦«à¦¿à¦°à§‡ à¦¯à¦¾à¦¨' : 'Back to Home' }}</a>
+ </div>
+ </div>
 
-  </div>
+ </div>
 </section>
 {% endblock %}
+
+
+
+
+
+

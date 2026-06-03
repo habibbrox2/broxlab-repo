@@ -1,129 +1,137 @@
-{% extends "admin/layout.twig" %}
+﻿{% extends"admin/layout.twig" %}
 {% block title %}AI Knowledge Base{% endblock %}
 {% set breadcrumbs = breadcrumbs ?? [] %}
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="admin-page-header mb-4">
-        <div class="admin-page-title"><i class="bi bi-book"></i> AI Knowledge Base</div>
-        <div class="admin-page-subtitle">Upload and manage knowledge slices used to ground AI responses.</div>
-    </div>
+<div class="admin-page-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+ <div>
+ <h1 class="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900"><i class="lucide lucide-book text-indigo-600"></i> AI Knowledge Base</h1>
+ <p class="mt-1 max-w-2xl text-sm text-slate-500">Upload and manage knowledge slices used to ground AI responses.</p>
+ </div>
+ <div class="flex gap-2">
+ <button class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" id="btnRefresh" title="Refresh">
+ <i class="lucide lucide-refresh-cw"></i>
+ </button>
+ <button class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700" id="btnAddSlice">
+ <i class="lucide lucide-plus"></i> Add Slice
+ </button>
+ </div>
+</div>
 
-    <div id="alertContainer"></div>
+<div class="px-4 sm:px-6">
 
-    <div class="row mb-3">
-        <div class="col-md-3">
-            <input type="text" class="form-control" id="kbSearch" placeholder="Search knowledge base...">
-        </div>
-        <div class="col-md-2">
-            <select class="form-select" id="kbFilterCategory">
-                <option value="">All Categories</option>
-                <option value="general">General</option>
-                <option value="admin">Admin</option>
-                <option value="api">API</option>
-                <option value="features">Features</option>
-                <option value="security">Security</option>
-                <option value="deployment">Deployment</option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <select class="form-select" id="kbFilterType">
-                <option value="">All Types</option>
-                <option value="text">Text</option>
-                <option value="pdf">PDF</option>
-                <option value="url">URL</option>
-                <option value="document">Document</option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <span class="badge bg-primary" id="kbCount">0 items</span>
-        </div>
-        <div class="col-md-3 text-end">
-            <button class="btn btn-outline-secondary btn-sm me-1" id="btnRefresh" title="Refresh">
-                <i class="bi bi-arrow-clockwise"></i>
-            </button>
-            <button class="btn btn-primary btn-sm" id="btnAddSlice"><i class="bi bi-plus-lg"></i> Add Slice</button>
-        </div>
-    </div>
+ <div id="alertContainer"></div>
 
-    <div class="card border-0 shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Knowledge Slices</h5>
-            <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="kbShowInactive">
-                <label class="form-check-label" for="kbShowInactive">Show Inactive</label>
-            </div>
-        </div>
-        <div class="card-body">
-            <div id="kbList"></div>
-        </div>
-    </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-3">
+ <div class="md:col-span-3">
+ <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="kbSearch" placeholder="Search knowledge base...">
+ </div>
+ <div class="md:col-span-2">
+ <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="kbFilterCategory">
+ <option value="">All Categories</option>
+ <option value="general">General</option>
+ <option value="admin">Admin</option>
+ <option value="api">API</option>
+ <option value="features">Features</option>
+ <option value="security">Security</option>
+ <option value="deployment">Deployment</option>
+ </select>
+ </div>
+ <div class="md:col-span-2">
+ <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="kbFilterType">
+ <option value="">All Types</option>
+ <option value="text">Text</option>
+ <option value="pdf">PDF</option>
+ <option value="url">URL</option>
+ <option value="document">Document</option>
+ </select>
+ </div>
+ <div class="md:col-span-2">
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-indigo-600" id="kbCount">0 items</span>
+ </div>
+ <div class="md:col-span-3 text-right">
 
-    <!-- Modal -->
-    <div class="modal fade" id="kbModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Knowledge Slice</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <form id="kbForm">
-                <input type="hidden" name="id" id="kb_id" value="0">
-                <div class="row mb-3">
-                    <div class="col-md-8">
-                        <label class="form-label">Title <span class="text-danger">*</span></label>
-                        <input class="form-control" name="title" id="kb_title" required placeholder="e.g., Company Policies">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Priority</label>
-                        <input type="number" class="form-control" name="priority" id="kb_priority" value="0" min="0" max="100">
-                        <small class="text-muted">Higher = more important</small>
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Category</label>
-                        <select class="form-select" name="category" id="kb_category">
-                            <option value="">No Category</option>
-                            <option value="general">General</option>
-                            <option value="admin">Admin</option>
-                            <option value="api">API</option>
-                            <option value="features">Features</option>
-                            <option value="security">Security</option>
-                            <option value="deployment">Deployment</option>
-                            <option value="content">Content</option>
-                            <option value="notification">Notification</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Source Type</label>
-                        <select class="form-select" name="source_type" id="kb_source_type">
-                            <option value="text">Text</option>
-                            <option value="pdf">PDF Document</option>
-                            <option value="url">Web URL</option>
-                            <option value="document">Other Document</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Content <span class="text-danger">*</span></label>
-                    <textarea class="form-control" name="content" id="kb_content" rows="10" required placeholder="Enter the knowledge content here..."></textarea>
-                    <small class="text-muted">For PDFs/URLs, you may paste extracted text content for AI context.</small>
-                </div>
-                <div class="mb-3 form-check">
-                    <input type="checkbox" class="form-check-input" id="kb_is_active" checked>
-                    <label class="form-check-label" for="kb_is_active">Active</label>
-                </div>
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary" id="kbSaveBtn">Save</button>
-          </div>
-        </div>
-      </div>
-    </div>
+ </div>
+ </div>
+
+ <div class="admin-panel-card">
+ <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+ <h5 class="mb-0 font-semibold">Knowledge Slices</h5>
+ <div class="flex items-start gap-2 form-switch">
+ <input class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" id="kbShowInactive">
+ <label class="text-sm text-slate-700" for="kbShowInactive">Show Inactive</label>
+ </div>
+ </div>
+ <div class="p-4">
+ <div id="kbList"></div>
+ </div>
+ </div>
+
+ <!-- Modal -->
+ <div class="modal fade" id="kbModal" tabindex="-1" aria-hidden="true">
+ <div class="modal-dialog modal-lg">
+ <div class="modal-content">
+ <div class="modal-header">
+ <h5 class="modal-title">Knowledge Slice</h5>
+ <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition" data-brox-dismiss="modal" aria-label="Close"></button>
+ </div>
+ <div class="modal-body">
+ <form id="kbForm">
+ <input type="hidden" name="id" id="kb_id" value="0">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-3">
+ <div class="md:col-span-8">
+ <label class="form-label">Title <span class="text-red-600">*</span></label>
+ <input class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="title" id="kb_title" required placeholder="e.g., Company Policies">
+ </div>
+ <div class="md:col-span-4">
+ <label class="form-label">Priority</label>
+ <input type="number" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="priority" id="kb_priority" value="0" min="0" max="100">
+ <small class="text-slate-500">Higher = more important</small>
+ </div>
+ </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-3">
+ <div class="md:col-span-6">
+ <label class="form-label">Category</label>
+ <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="category" id="kb_category">
+ <option value="">No Category</option>
+ <option value="general">General</option>
+ <option value="admin">Admin</option>
+ <option value="api">API</option>
+ <option value="features">Features</option>
+ <option value="security">Security</option>
+ <option value="deployment">Deployment</option>
+ <option value="content">Content</option>
+ <option value="notification">Notification</option>
+ </select>
+ </div>
+ <div class="md:col-span-6">
+ <label class="form-label">Source Type</label>
+ <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="source_type" id="kb_source_type">
+ <option value="text">Text</option>
+ <option value="pdf">PDF Document</option>
+ <option value="url">Web URL</option>
+ <option value="document">Other Document</option>
+ </select>
+ </div>
+ </div>
+ <div class="mb-3">
+ <label class="form-label">Content <span class="text-red-600">*</span></label>
+ <textarea class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="content" id="kb_content" rows="10" required placeholder="Enter the knowledge content here..."></textarea>
+ <small class="text-slate-500">For PDFs/URLs, you may paste extracted text content for AI context.</small>
+ </div>
+ <div class="mb-3 flex items-start gap-2">
+ <input type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" id="kb_is_active" checked>
+ <label class="text-sm text-slate-700" for="kb_is_active">Active</label>
+ </div>
+ <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+ </form>
+ </div>
+ <div class="modal-footer">
+ <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" data-brox-dismiss="modal">Close</button>
+ <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700" id="kbSaveBtn">Save</button>
+ </div>
+ </div>
+ </div>
+ </div>
 
 </div>
 {% endblock %}
@@ -131,3 +139,8 @@
 {% block scripts %}
 <script src="/ai/dist/ai-knowledge-manager.js?v=5"></script>
 {% endblock %}
+
+
+
+
+

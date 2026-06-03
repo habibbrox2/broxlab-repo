@@ -32,9 +32,9 @@ export function appendMessage(container, role, text, options = {}) {
   const avatarEl = document.createElement('div');
   avatarEl.className = 'brox-ai-message-avatar';
   if (role === 'user') {
-    avatarEl.innerHTML = '<i class="bi bi-person-circle"></i>';
+    avatarEl.innerHTML = '<i class="bi icon-user-circle"></i>';
   } else {
-    avatarEl.innerHTML = '<i class="bi bi-stars"></i>';
+    avatarEl.innerHTML = '<i class="bi icon-sparkles"></i>';
   }
   msgEl.appendChild(avatarEl);
 
@@ -109,7 +109,7 @@ export async function appendAssistant(container, text, options = {}) {
   // Avatar
   const avatarEl = document.createElement('div');
   avatarEl.className = 'brox-ai-message-avatar';
-  avatarEl.innerHTML = '<i class="bi bi-stars"></i>';
+  avatarEl.innerHTML = '<i class="bi icon-sparkles"></i>';
   msgEl.appendChild(avatarEl);
 
   // Message content

@@ -112,6 +112,13 @@ initializeErrorLogging();
 function secureSession(): void
 {
     if (session_status() === PHP_SESSION_NONE) {
+        $sessionDir = TEMP_DIR . 'sessions' . DIRECTORY_SEPARATOR;
+        if (!is_dir($sessionDir)) {
+            @mkdir($sessionDir, 0775, true);
+        }
+        @ini_set('session.save_path', $sessionDir);
+        session_save_path($sessionDir);
+
         $isHttps =
             (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
             ($_SERVER['SERVER_PORT'] ?? 80) == 443;
