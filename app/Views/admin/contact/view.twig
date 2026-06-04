@@ -12,7 +12,7 @@
  <div>View and manage customer message</div>
  </div>
  <div class=" border border-slate-200 bg-white shadow-sm border-0 rounded-2xl">
- <div class=" border-slate-200 px-4 py-3 bg-sky-500 text-white rounded-top-4">
+ <div class="border-slate-200 px-4 py-3 bg-sky-500 text-white rounded-t-xl">
  <h4 class="mb-0">
  <i class="lucide lucide-mail-open"></i> {{ header_title }}
  </h4>
@@ -42,11 +42,11 @@
  </dl>
  </div>
  {% if replies is defined and replies|length > 0 %}
- <div class="p-4 p-4 border-top">
+ <div class="p-4 border-t border-slate-200">
  <h5>Replies</h5>
- <ul class="list-group">
+ <ul class="flex flex-col divide-y divide-slate-100">
  {% for r in replies %}
- <li class="list-group-item">
+ <li class="flex items-start justify-between px-4 py-3">
  <strong>{{ r.username }} ({{ r.replied_at|date("Y-m-d H:i") }}):</strong><br>
  {{ r.reply_message }}
  </li>
@@ -55,7 +55,7 @@
  </div>
  {% endif %}
 
- <div class="p-4 p-4 border-top">
+ <div class="p-4 border-t border-slate-200">
  <form method="post" action="/admin/contact/reply/{{ message.id }}">
  <div class="mb-3">
  <label for="reply" class="form-label">Send Reply</label>
